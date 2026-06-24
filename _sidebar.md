@@ -1,6 +1,7 @@
 - [ホーム](README.md)
 
 - **ルール**
+
   - [全体コンセプト](rules/01_overall_concept.md)
   - [リソース](rules/02_resources.md)
   - [土地システム](rules/03_land_system/README.md)
@@ -15,4 +16,5 @@
   - [その他](rules/07_other.md)
 
 - **保留事項**
+
   - [保留コンセプト](retained_concepts.md)
