@@ -12,7 +12,6 @@
   - [ドローシステム](rules/04_draw_system.md)
   - [試練](rules/05_trial.md)
   - [ロール](rules/06_roles.md)
-  - [その他](rules/07_other.md)
 
 - **保留事項**
-  - [保留コンセプト](retained_concepts.md)
+  - [その他](rules/07_other.md)
