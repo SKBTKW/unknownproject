@@ -1,17 +1,15 @@
-- [ホーム](README.md)
+- **🏠 ホーム**
+  - [プロジェクト概要](README.md)
+  - [📜 仕様書インデックス](rules/README.md)
 
-- **ルール**
-  - [全体コンセプト](rules/01_overall_concept.md)
-  - [リソース](rules/02_resources.md)
-  - [土地システム](rules/03_land_system/README.md)
-    - [ベース地形](rules/03_land_system/01_base_terrains.md)
-    - [属性](rules/03_land_system/02_attributes.md)
-    - [開発](rules/03_land_system/03_development.md)
-    - [保留](rules/03_land_system/04_reserve.md)
-    - [ボーナス資源](rules/03_land_system/05_bonus_resources.md)
-  - [ドローシステム](rules/04_draw_system.md)
-  - [試練](rules/05_trial.md)
-  - [ロール](rules/06_roles.md)
+- **🚀 決定版マスター仕様書**
+  - [00. プロトタイプマスター確定仕様書](rules/00_master_handover_specification.md)
 
-- **保留事項**
-  - [その他](rules/07_other.md)
+- **📚 確定ゲームルール**
+  - [01. 全体コンセプト ＆ 勝利条件](rules/01_overall_concept.md)
+  - [02. リソース ＆ 🔥残り火連動](rules/02_resources_and_ember.md)
+  - [03. 土地システム ＆ 水脈](rules/03_land_system.md)
+  - [04. ドロー ＆ 手札 ＆ 4重レイヤー](rules/04_draw_and_hand_system.md)
+  - [05. 試練 ＆ 二段階空間防衛](rules/05_trials_and_defense.md)
+  - [06. 3大指導者ロール](rules/06_leader_roles.md)
+  - [07. 神秘 ＆ 砂漠確定仕様](rules/07_mysticism_and_desert.md)
