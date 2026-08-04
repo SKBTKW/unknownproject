@@ -14,7 +14,7 @@
    - **清湖 (Lake) 仕様**: オアシス開花 ＆ 灌漑バフ (+50%) ＆ 泥濘減衰 (-30%)。
 
 2. **[`02_outpost_system.md`](file:///C:/Users/mam07/.gemini/antigravity/scratch/unknownproject/rules/03_land_system/02_outpost_system.md)**:
-   - **拠点 (Outpost) 確定仕様**: 第 1 試練突破後解禁 ✕ 3 マス離隔 ✕ 未配置グリッド建設 ✕ 前線開拓ハブ機能 ✕ コスト漸増。
+   - **拠点 (Outpost) 確定仕様**: 第 1 試練突破後解禁 ✕ 3 マス離隔 ✕ 未配置グリッド建設 ✕ 前線開拓ハブ ✕ **3×3拠点圏開発 ＆ 前線要塞コンプリートボーナス (🛡️+10 / 🔥+3)** ✕ コスト漸増。
 
 3. **[`03_merge_system.md`](file:///C:/Users/mam07/.gemini/antigravity/scratch/unknownproject/rules/03_land_system/03_merge_system.md)**:
    - **4マス マージ合体仕様**: H1: 2×2のみ, H2: 2×2 ＆ L字, H3: 2×2 ＆ 凸字 の固定役割分担。
