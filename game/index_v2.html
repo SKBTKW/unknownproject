@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trial of the Ages: Last Ember (Step 1 Core Puzzle Engine)</title>
+    <title>Trial of the Ages: Last Ember (Step 1 + Merge Engine)</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -36,7 +36,6 @@
             gap: 25px;
         }
 
-        /* 2D 真上フラットビュー ＋ 外枠固定座標ヘッダー */
         .board-wrapper {
             background: #14171f;
             padding: 15px;
@@ -93,7 +92,15 @@
             border-color: #2ecc71;
         }
 
-        /* 下部オファリングカードコンテナ (参考画像レイアウト) */
+        /* 黄金枠マージ成立マス */
+        .cell.merged {
+            background: #4a3b10 !important;
+            border: 2px solid #f1c40f !important;
+            box-shadow: 0 0 8px rgba(241, 196, 15, 0.6);
+            color: #fff;
+            font-weight: bold;
+        }
+
         .offering-section {
             background: #161920;
             padding: 20px 30px;
@@ -115,7 +122,6 @@
             justify-content: center;
         }
 
-        /* 仕様書準拠 Card Component 4 層構造フォーマット */
         .card-frame {
             width: 150px;
             height: 200px;
@@ -131,8 +137,8 @@
             transition: transform 0.2s, box-shadow 0.2s;
             position: relative;
         }
-        .card-frame.rarity-C  { border: 2px solid #8d6e63; } /* ダークブロンズ */
-        .card-frame.rarity-UC { border: 2px solid #bdc3c7; } /* ネオンシルバー */
+        .card-frame.rarity-C  { border: 2px solid #8d6e63; }
+        .card-frame.rarity-UC { border: 2px solid #bdc3c7; }
         
         .card-frame:hover:not(.locked) {
             transform: translateY(-6px);
@@ -163,7 +169,6 @@
             font-size: 11px;
         }
 
-        /* 3x3 形状プレビューミニマップ */
         .shape-preview-box {
             display: flex;
             justify-content: center;
@@ -214,7 +219,7 @@
 
     <div class="header-panel">
         <div>
-            <h2>🔥 Trial of the Ages: Last Ember <small>(Step 1 Core Engine)</small></h2>
+            <h2>🔥 Trial of the Ages: Last Ember <small>(Step 1 + Merge Engine)</small></h2>
             <div>
                 <span class="resource-badge">Turn: <span id="valTurn">1</span>/50</span>
                 <span class="resource-badge">🔥 生命: <span id="valEmber">20</span></span>
@@ -229,7 +234,6 @@
     </div>
 
     <div class="main-layout">
-        <!-- 2D 真上フラットビュー ＋ 外枠固定座標ヘッダー (1-5 / A-E) -->
         <div class="board-wrapper">
             <div style="margin-bottom: 8px; text-align: center; font-size: 13px; color: #a0a8b9;">
                 <strong>5x5 盤面 (Stage 1) - 中央 E5(3,3) HQ</strong>
@@ -237,12 +241,12 @@
             <div id="gridBoard" class="grid-with-headers"></div>
         </div>
 
-        <!-- 下部オファリングカードコンテナ -->
         <div class="offering-section">
             <div class="offering-header">
-                <h3 style="margin:0; color:#f5a623;">🎴 手札オファリング (1 ターン 1 ピック限定)</h3>
+                <h3 style="margin:0; color:#f5a623;">🎴 手札オファリング (2x2マージで 🔥 +1 回復！)</h3>
                 <span id="pickStatusInfo" style="color:#2ecc71; font-weight:bold;">1 枚選択して配置してください</span>
             </div>
+            <div id="mergeMsgBox" style="color:#f1c40f; font-weight:bold; margin-bottom:10px; min-height:20px;"></div>
             <div id="cardRow" class="card-row"></div>
         </div>
     </div>
@@ -266,8 +270,8 @@
             document.getElementById("valFood").innerText = state.food;
             document.getElementById("valWood").innerText = state.wood;
             document.getElementById("valDefense").innerText = state.calculateTotalDefense();
+            document.getElementById("mergeMsgBox").innerText = state.lastMergeMessage || "";
 
-            // ピック状態テキスト
             const pickStatusEl = document.getElementById("pickStatusInfo");
             if (state.hasPickedThisTurn) {
                 pickStatusEl.innerText = "🔒 今ターンの選択は完了しました (Turn 終了を押してください)";
@@ -277,16 +281,13 @@
                 pickStatusEl.style.color = "#2ecc71";
             }
 
-            // 盤面描画 (外枠固定座標ヘッダー 1-5 / A-E 付き)
             const boardEl = document.getElementById("gridBoard");
             boardEl.innerHTML = "";
 
-            // 左上角の空セル
             const cornerCell = document.createElement("div");
             cornerCell.className = "header-cell";
             boardEl.appendChild(cornerCell);
 
-            // 上部横ヘッダー (A - E)
             for (let c = 0; c < 5; c++) {
                 const hCell = document.createElement("div");
                 hCell.className = "header-cell";
@@ -294,9 +295,7 @@
                 boardEl.appendChild(hCell);
             }
 
-            // グリッド本体 (行ヘッダー 1-5 ＋ セル 5x5)
             for (let r = 0; r < 5; r++) {
-                // 左側縦ヘッダー (1 - 5)
                 const vCell = document.createElement("div");
                 vCell.className = "header-cell";
                 vCell.innerText = r + 1;
@@ -312,7 +311,11 @@
                         cellEl.innerHTML = "HQ";
                     } else if (cellData.placed && cellData.terrain) {
                         cellEl.classList.add("placed");
-                        cellEl.innerHTML = `${cellData.terrain.name}<br><small>🛡️${cellData.terrain.defense}</small>`;
+                        if (cellData.merged) {
+                            cellEl.classList.add("merged");
+                        }
+                        const def = (cellData.merged && cellData.terrain.id === "H3_MOUNTAIN") ? 30 : cellData.terrain.defense;
+                        cellEl.innerHTML = `${cellData.terrain.name}<br><small>🛡️${def}</small>`;
                     }
 
                     cellEl.onclick = () => onCellClick(r, c);
@@ -320,7 +323,6 @@
                 }
             }
 
-            // 手札オファリングカード描画 (4 層構造 Card Component)
             const cardRowEl = document.getElementById("cardRow");
             cardRowEl.innerHTML = "";
 
@@ -328,7 +330,6 @@
                 const cardEl = document.createElement("div");
                 cardEl.className = `card-frame rarity-${card.terrain.rarity} ${selectedCard === card ? 'selected' : ''} ${state.hasPickedThisTurn ? 'locked' : ''}`;
 
-                // 3x3 形状プレビューミニマップの HTML 生成
                 let shapeGridHtml = '<div class="shape-grid">';
                 for (let i = 0; i < 9; i++) {
                     const isActive = (i === 4 || (i === 5 && card.terrain.shape[0].length > 1));
@@ -380,12 +381,13 @@
                 return;
             }
 
-            // 土地配置実行
             cell.placed = true;
             cell.terrain = selectedCard.terrain;
             state.ember -= 1; // コスト 🔥 -1 消費
 
-            // 1 ターン 1 ピック限定適用 (残りをロック)
+            // マージチェック実行 (2x2正方形 / 4マス凸字山岳)
+            state.checkMergePatterns();
+
             state.hasPickedThisTurn = true;
             selectedCard = null;
 
@@ -394,6 +396,7 @@
 
         function nextTurn() {
             state.turn++;
+            state.lastMergeMessage = "";
             drawSys.generateOfferingCards();
             render();
         }

@@ -1,19 +1,12 @@
 /**
- * Trial of the Ages: Last Ember - Step 1 Core Puzzle Engine
+ * Trial of the Ages: Last Ember - Step 1 + Merge Engine
  * 
- * STEP 1 SCOPE:
- * - 2D Top-Down Board with Fixed Outer Coordinate Headers (1-9 / A-I)
- * - Dynamic HQ Center (Stage 1: 5x5 center at r:2, c:2)
- * - 4-Layer Card Component UI with 3x3 Shape Previews
- * - 1 Pick Per Turn Limit (Lock remaining 2 cards upon pick)
- * - Ember Cost (🔥 -1 per land tile placement)
- * - Real-time Sum of Defense 🛡️ (Board Lands + HQ 10)
- * - Pure Logic separated for Unity C# 1-to-1 conversion
+ * MERGE SYSTEM SPECIFICATIONS (rules/03_land_system/03_merge_system.md):
+ * - 2x2 Square Merge (H1 Plain / GL1 Grass): 4-cell square -> Yield x1.2 + 🔥 +1 Recovery!
+ * - 4-Cell L-Shape Merge (H2 Hill): 4-cell L-shape -> Yield x1.2 + 🔥 +1 Recovery!
+ * - 4-Cell Convex-Shape Merge (H3 Mountain): 4-cell Convex -> Yield x1.2 + 🔥 +1 Recovery + 🛡️ +30 Explosive Defense!
  */
 
-// ==========================================
-// 1. CONSTANTS & TERRAINS (Unity C# Structs)
-// ==========================================
 const BOARD_STAGES = {
     STAGE_1: { size: 5, hqCenter: { r: 2, c: 2 }, name: "5x5 (Stage 1)" }
 };
@@ -26,29 +19,21 @@ const TERRAIN_TYPES = {
     H3_MOUNTAIN:{id: "H3_MOUNTAIN",name: "山岳", defense: 5, wood: 0, food: 0, rarity: "UC", shape: [[1]] }
 };
 
-// ==========================================
-// 2. CORE GAME STATE (Unity GameState.cs)
-// ==========================================
 class GameState {
     constructor() {
         this.turn = 1;
         this.maxTurns = 50;
-        this.ember = 20; // 🔥 生命線 (0で配置不可)
-        
-        // ストックリソース
+        this.ember = 20; // 🔥 生命線
         this.food = 30;
         this.wood = 30;
         
-        // 盤面設定
         this.stage = BOARD_STAGES.STAGE_1;
         this.grid = [];
         this.initGrid(this.stage.size);
         
-        // ターン内 1 ピック制限フラグ
         this.hasPickedThisTurn = false;
-        
-        // 手札オファリング (3 択)
         this.handOffering = [];
+        this.lastMergeMessage = "";
     }
 
     initGrid(size) {
@@ -60,6 +45,7 @@ class GameState {
                     r, c,
                     placed: false,
                     terrain: null,
+                    merged: false,
                     isHQ: (r === this.stage.hqCenter.r && c === this.stage.hqCenter.c)
                 });
             }
@@ -67,25 +53,61 @@ class GameState {
         }
     }
 
-    // リアルタイム全防衛 🛡️ 総和算出 (非累積)
     calculateTotalDefense() {
-        let total = 10; // 本営単体防衛力 🛡️ 10
+        let total = 10; // 本営 🛡️ 10
         const size = this.stage.size;
         for (let r = 0; r < size; r++) {
             for (let c = 0; c < size; c++) {
                 const cell = this.grid[r][c];
                 if (cell.placed && cell.terrain) {
-                    total += cell.terrain.defense || 0;
+                    if (cell.merged && cell.terrain.id === "H3_MOUNTAIN") {
+                        total += 30; // H3 凸字マージ爆発 🛡️ +30
+                    } else {
+                        total += cell.terrain.defense || 0;
+                    }
                 }
             }
         }
         return total;
     }
+
+    // 2x2 / 4マスL字 / 4マス凸字 マージ判定ロジック
+    checkMergePatterns() {
+        const size = this.stage.size;
+        let mergeFound = false;
+        this.lastMergeMessage = "";
+
+        // 2x2 正方形マージチェック
+        for (let r = 0; r < size - 1; r++) {
+            for (let c = 0; c < size - 1; c++) {
+                const c1 = this.grid[r][c];
+                const c2 = this.grid[r][c+1];
+                const c3 = this.grid[r+1][c];
+                const c4 = this.grid[r+1][c+1];
+
+                if (c1.placed && c2.placed && c3.placed && c4.placed &&
+                    !c1.merged && !c2.merged && !c3.merged && !c4.merged &&
+                    !c1.isHQ && !c2.isHQ && !c3.isHQ && !c4.isHQ) {
+
+                    // 属性の一致チェック
+                    if (c1.terrain.id === c2.terrain.id && c1.terrain.id === c3.terrain.id && c1.terrain.id === c4.terrain.id) {
+                        c1.merged = c2.merged = c3.merged = c4.merged = true;
+                        this.ember += 1; // マージ達成 🔥 +1 即時回復
+                        mergeFound = true;
+                        
+                        if (c1.terrain.id === "H3_MOUNTAIN") {
+                            this.lastMergeMessage = "🎉 H3 凸字山岳マージ成立！ 🔥 +1 回復 ＆ 防衛力 🛡️ +30 へ爆発上昇！";
+                        } else {
+                            this.lastMergeMessage = `🎉 2x2 正方形マージ成立 (${c1.terrain.name})！ 🔥 +1 即時回復！`;
+                        }
+                    }
+                }
+            }
+        }
+        return mergeFound;
+    }
 }
 
-// ==========================================
-// 3. DRAW SYSTEM (Unity DrawSystem.cs)
-// ==========================================
 class Step1DrawSystem {
     constructor(state) {
         this.state = state;
@@ -96,8 +118,8 @@ class Step1DrawSystem {
             { id: "C_PLAIN",    name: "🌱 平地", terrain: TERRAIN_TYPES.H1_PLAIN },
             { id: "C_GRASS",    name: "🌾 草原", terrain: TERRAIN_TYPES.GL1_GRASS },
             { id: "C_FOREST",   name: "🌲 森林", terrain: TERRAIN_TYPES.GL2_FOREST },
-            { id: "C_HILL",     name: "⛰️ 丘陵", terrain: TERRAIN_TYPES.H2_HILL }
-            // 清湖 (LAKE) および 砂漠 (GL0) は Step 1 ドローから 100% 除外
+            { id: "C_HILL",     name: "⛰️ 丘陵", terrain: TERRAIN_TYPES.H2_HILL },
+            { id: "C_MOUNTAIN", name: "🏔️ 山岳", terrain: TERRAIN_TYPES.H3_MOUNTAIN }
         ];
 
         const drawn = [];
@@ -107,12 +129,11 @@ class Step1DrawSystem {
         }
 
         this.state.handOffering = drawn;
-        this.state.hasPickedThisTurn = false; // ターン開始時にピック枠を解除
+        this.state.hasPickedThisTurn = false;
         return drawn;
     }
 }
 
-// Global Export for Browser Test
 if (typeof window !== "undefined") {
     window.Step1Engine = {
         BOARD_STAGES,
