@@ -1,13 +1,11 @@
 /**
- * Trial of the Ages: Last Ember - Step 1 + Shape Placement Preview Engine
+ * Trial of the Ages: Last Ember - Step 1 + Strict Placement Adjacency Engine
  * 
  * SPECIFICATIONS:
- * - Primary Source Land Values (rules/03_land_system/01_land_base.md):
- *   - Plain (H1+GL1): Food 4, Wood 0, Defense 0
- *   - Forest (H1+GL2): Food 2, Wood 2, Defense 0
- *   - Hill (H2+GL1): Food 2, Wood 1, Defense 3
- *   - Mountain (H3+GL1): Food 0, Wood 4, Defense 5
- * - Exact Shape Placement Hover Preview & 90-degree Rotation (R Key).
+ * - Placement Adjacency Rule (rules/00 Line 149 / rules/03 Line 159):
+ *   1. First land MUST be placed directly adjacent (4-directional: Up/Down/Left/Right) to the HQ.
+ *   2. Subsequent lands MUST be placed directly adjacent to the HQ or ANY existing placed land.
+ *   3. Overlapping placed lands, overlapping HQ, or out-of-bounds placement is STRICTLY PROHIBITED.
  */
 
 const BOARD_STAGES = {
@@ -85,11 +83,13 @@ class GameState {
         return count;
     }
 
+    // 確定ルール: 本営 HQ または既存配置土地に上下左右4方向で面隣接しているか検証
     canPlaceShape(r, c, shape) {
         const size = this.stage.size;
         const rows = shape.length;
         const cols = shape[0].length;
 
+        // 1. 範囲オーバー ＆ 重なり判定
         for (let dr = 0; dr < rows; dr++) {
             for (let dc = 0; dc < cols; dc++) {
                 if (shape[dr][dc] === 1) {
@@ -110,6 +110,38 @@ class GameState {
                 }
             }
         }
+
+        // 2. 本営 HQ 独立面隣接チェック (上下左右4方向)
+        let isAdjacentToHQOrPlaced = false;
+
+        for (let dr = 0; dr < rows; dr++) {
+            for (let dc = 0; dc < cols; dc++) {
+                if (shape[dr][dc] === 1) {
+                    const tr = r + dr;
+                    const tc = c + dc;
+
+                    const neighbors = [
+                        [tr - 1, tc], [tr + 1, tc], [tr, tc - 1], [tr, tc + 1]
+                    ];
+
+                    for (const [nr, nc] of neighbors) {
+                        if (nr >= 0 && nr < size && nc >= 0 && nc < size) {
+                            const neighborCell = this.grid[nr][nc];
+                            if (neighborCell.isHQ || neighborCell.placed) {
+                                isAdjacentToHQOrPlaced = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (isAdjacentToHQOrPlaced) break;
+            }
+        }
+
+        if (!isAdjacentToHQOrPlaced) {
+            return { can: false, reason: "土地は本営(HQ)または既存の土地に面隣接させて配置してください" };
+        }
+
         return { can: true };
     }
 
