@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trial of the Ages: Last Ember (Exact Shape Placement Preview)</title>
+    <title>Trial of the Ages: Last Ember (Ember Maintenance & Survival Engine)</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -83,7 +83,6 @@
             background: #252b3a;
         }
 
-        /* 形状動的プレビューハイライト (有効:青発光, 無効:赤発光) */
         .cell.preview-valid {
             border: 2px solid #3498db !important;
             background: rgba(52, 152, 219, 0.35) !important;
@@ -265,7 +264,7 @@
 
     <div class="header-panel">
         <div>
-            <h2>🔥 Trial of the Ages: Last Ember <small>(Exact Shape Placement Preview)</small></h2>
+            <h2>🔥 Trial of the Ages: Last Ember <small>(Ember Maintenance & Survival Engine)</small></h2>
             <div>
                 <span class="resource-badge">Turn: <span id="valTurn">1</span>/50</span>
                 <span class="resource-badge">🔥 生命: <span id="valEmber">20</span></span>
@@ -289,7 +288,7 @@
 
         <div class="offering-section">
             <div class="offering-header">
-                <h3 style="margin:0; color:#f5a623;">🎴 手札オファリング (ブロック選択時、形状通り盤面プレビュー！)</h3>
+                <h3 style="margin:0; color:#f5a623;">🎴 手札オファリング (Turn終了時に 🔥ステージ連動食料維持費発生！)</h3>
                 <span id="pickStatusInfo" style="color:#2ecc71; font-weight:bold;">1 枚選択して配置してください</span>
             </div>
             <div id="mergeMsgBox" style="color:#f1c40f; font-weight:bold; margin-bottom:10px; min-height:20px;"></div>
@@ -481,7 +480,7 @@
             if (!selectedCard) return;
 
             if (state.ember <= 0) {
-                alert("❌ 生命力 🔥 が 0 のため土地を配置できません！");
+                alert("💀 生命力 🔥 が 0 のため土地を配置できません！");
                 return;
             }
 
@@ -516,8 +515,27 @@
         }
 
         function nextTurn() {
+            // ターン終了時食料維持費 ＆ 判定
+            const maint = state.processTurnEndMaintenance();
+            let msg = `[Turn ${state.turn} 終了] ${maint.stageName}: 食料維持費 -${maint.foodCost} 🌾 消費。`;
+            if (maint.deficit > 0) {
+                msg += ` ⚠️ 食料不足のため 🔥 -${maint.deficit} ダメージ！`;
+            }
+            state.lastMergeMessage = msg;
+
+            if (maint.isGameOver) {
+                render();
+                alert("💀 【GAME OVER】 生命力 🔥 が 0 になりました。人類の灯火は消滅しました。");
+                return;
+            }
+
+            if (maint.isGameClear) {
+                render();
+                alert("🎉 【GAME CLEAR】 50 ターンを生存抜けて人類の生存目標を達成しました！");
+                return;
+            }
+
             state.turn++;
-            state.lastMergeMessage = "";
             drawSys.generateOfferingCards();
             clearCellPreviews();
             render();

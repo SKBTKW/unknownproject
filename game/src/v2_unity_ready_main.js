@@ -1,14 +1,14 @@
 /**
- * Trial of the Ages: Last Ember - Step 1 + Strict Specification Alignment
+ * Trial of the Ages: Last Ember - Step 1 + Ember Maintenance & Survival Engine
  * 
  * SPECIFICATIONS:
- * - Primary Source Land Values (rules/03_land_system/01_land_base.md Line 7-14):
- *   - Grassland (H1+GL1): Food 4, Wood 0, Defense 0 (🌾 草原)
- *   - Forest (H1+GL2): Food 2, Wood 2, Defense 0 (🌲 森林)
- *   - Hill (H2+GL1): Food 2, Wood 1, Defense 3 (⛰️ 丘陵)
- *   - Mountain (H3+GL1): Food 0, Wood 4, Defense 5 (🏔️ 山岳)
- * - Placement Adjacency Rule (rules/00 Line 149 / rules/03 Line 159):
- *   Must be placed adjacent to HQ or existing placed land.
+ * - Ember Maintenance Cost (rules/00 Line 63-66):
+ *   - Ember >= 24 (Flame Age): Food Cost -25/T, Ember +2/T bonus, Production +10%.
+ *   - Ember 10-23 (Standard Age): Food Cost -20/T.
+ *   - Ember <= 9 (Extinction Age): Food Cost -15/T (Emergency Mode).
+ * - Food Deficit: Deducted directly from Ember 🔥.
+ * - Game Over: Ember <= 0.
+ * - Game Clear: Turn >= 50 and Ember >= 1.
  */
 
 const BOARD_STAGES = {
@@ -202,6 +202,41 @@ class GameState {
             this.wood += 2;
             this.toastQueue.push({ r, c, text: "✨ +2 🌾🧱 (4連結)" });
         }
+    }
+
+    // ターン終了時食料維持費 ＆ 生存判定 (rules/00 Line 63-66)
+    processTurnEndMaintenance() {
+        let foodCost = 20;
+        let stageName = "標準期 (10-23)";
+
+        if (this.ember >= 24) {
+            foodCost = 25;
+            stageName = "炎上期 (24以上)";
+            this.ember += 2; // 炎上期ボーナス 🔥 +2
+        } else if (this.ember <= 9) {
+            foodCost = 15;
+            stageName = "鎮火期 (9以下)";
+        }
+
+        let deficit = 0;
+        if (this.food >= foodCost) {
+            this.food -= foodCost;
+        } else {
+            deficit = foodCost - this.food;
+            this.food = 0;
+            this.ember -= deficit; // 不足分が生命力 🔥 へ直接ダメージ
+        }
+
+        const isGameOver = (this.ember <= 0);
+        const isGameClear = (!isGameOver && this.turn >= this.maxTurns);
+
+        return {
+            foodCost,
+            deficit,
+            stageName,
+            isGameOver,
+            isGameClear
+        };
     }
 
     calculateTotalDefense() {
