@@ -1,13 +1,13 @@
 /**
- * Trial of the Ages: Last Ember - Step 1 + Connection Bonus & Floating Toast Engine
+ * Trial of the Ages: Last Ember - Step 1 + Shape Placement Preview Engine
  * 
  * SPECIFICATIONS:
- * - 2 to 4 Same-attribute Tile Connection Immediate Bonus (Step 925 / 935 / 997).
- * - 2-connection: +1 Food/Wood
- * - 3-connection: +2 Defense 🛡️
- * - 4-connection: +2 Food/Wood
- * - Independent of 2x2 Square Merge Bonus (🔥 +1 recovery & H3 mountain 🛡️ +30).
- * - Floating Icon Toast (+1 🌾 / +2 🛡️) for intuitive non-text feedback.
+ * - Primary Source Land Values (rules/03_land_system/01_land_base.md):
+ *   - Plain (H1+GL1): Food 4, Wood 0, Defense 0
+ *   - Forest (H1+GL2): Food 2, Wood 2, Defense 0
+ *   - Hill (H2+GL1): Food 2, Wood 1, Defense 3
+ *   - Mountain (H3+GL1): Food 0, Wood 4, Defense 5
+ * - Exact Shape Placement Hover Preview & 90-degree Rotation (R Key).
  */
 
 const BOARD_STAGES = {
@@ -15,11 +15,11 @@ const BOARD_STAGES = {
 };
 
 const TERRAIN_TYPES = {
-    H1_PLAIN:   { id: "H1_PLAIN",   name: "平地", defense: 0, wood: 0, food: 1, rarity: "C",  shape: [[1]] },
-    GL1_GRASS:  { id: "GL1_GRASS",  name: "草原", defense: 1, wood: 0, food: 2, rarity: "C",  shape: [[1]] },
-    GL2_FOREST: { id: "GL2_FOREST", name: "森林", defense: 2, wood: 2, food: 0, rarity: "UC", shape: [[1, 1]] },
-    H2_HILL:    { id: "H2_HILL",    name: "丘陵", defense: 3, wood: 0, food: 0, rarity: "UC", shape: [[1, 1]] },
-    H3_MOUNTAIN:{ id: "H3_MOUNTAIN",name: "山岳", defense: 5, wood: 0, food: 0, rarity: "UC", shape: [[1]] }
+    H1_PLAIN:   { id: "H1_PLAIN",   name: "平地", defense: 0, wood: 0, food: 4, rarity: "C",  shape: [[1]] },
+    GL1_GRASS:  { id: "GL1_GRASS",  name: "草原", defense: 0, wood: 0, food: 4, rarity: "C",  shape: [[1]] },
+    GL2_FOREST: { id: "GL2_FOREST", name: "森林", defense: 0, wood: 2, food: 2, rarity: "UC", shape: [[1, 1]] },
+    H2_HILL:    { id: "H2_HILL",    name: "丘陵", defense: 3, wood: 1, food: 2, rarity: "UC", shape: [[1, 1]] },
+    H3_MOUNTAIN:{ id: "H3_MOUNTAIN",name: "山岳", defense: 5, wood: 4, food: 0, rarity: "UC", shape: [[1]] }
 };
 
 function rotateShapeMatrix(matrix) {
@@ -51,7 +51,7 @@ class GameState {
         this.hasPickedThisTurn = false;
         this.handOffering = [];
         this.lastMergeMessage = "";
-        this.toastQueue = []; // マス直上ポップアップ用キュー [{r, c, text}]
+        this.toastQueue = [];
     }
 
     initGrid(size) {
@@ -127,7 +127,6 @@ class GameState {
                     cell.placed = true;
                     cell.terrain = terrain;
 
-                    // 配置マスごとに同属性段階的連結即時ボーナス判定 (Step 925)
                     this.checkConnectionBonus(r + dr, c + dc, terrain);
                 }
             }
@@ -135,7 +134,6 @@ class GameState {
         return { success: true };
     }
 
-    // 同属性マス 2〜4 段階的連結即時ボーナス判定 (Step 925 / 935 / 997)
     checkConnectionBonus(r, c, terrain) {
         const size = this.stage.size;
         const visited = new Set();
@@ -162,7 +160,6 @@ class GameState {
 
         const connectionCount = visited.size;
 
-        // 2〜4 段階的連結即時ボーナス配給 (Step 925: 2度目より3度目の方がボーナス増)
         if (connectionCount === 2) {
             if (terrain.id === "GL1_GRASS" || terrain.id === "H1_PLAIN") this.food += 1;
             else this.wood += 1;

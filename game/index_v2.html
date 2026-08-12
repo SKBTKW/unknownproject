@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trial of the Ages: Last Ember (Step 1 + Floating Toast Engine)</title>
+    <title>Trial of the Ages: Last Ember (Exact Shape Placement Preview)</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -76,12 +76,25 @@
             cursor: pointer;
             user-select: none;
             position: relative;
-            transition: border-color 0.15s, background-color 0.15s;
+            transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
         }
         .cell:hover {
             border-color: #4a90e2;
             background: #252b3a;
         }
+
+        /* 形状動的プレビューハイライト (有効:青発光, 無効:赤発光) */
+        .cell.preview-valid {
+            border: 2px solid #3498db !important;
+            background: rgba(52, 152, 219, 0.35) !important;
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.7);
+        }
+        .cell.preview-invalid {
+            border: 2px solid #e74c3c !important;
+            background: rgba(231, 76, 60, 0.35) !important;
+            box-shadow: 0 0 10px rgba(231, 76, 60, 0.7);
+        }
+
         .cell.hq {
             background: #5a3d10 !important;
             border-color: #f5a623 !important;
@@ -100,7 +113,6 @@
             font-weight: bold;
         }
 
-        /* 浮遊数値アイコンポップアップ (Step 1004 / 理念 6 準拠) */
         .tile-bonus-toast {
             position: absolute;
             top: -22px;
@@ -253,7 +265,7 @@
 
     <div class="header-panel">
         <div>
-            <h2>🔥 Trial of the Ages: Last Ember <small>(Step 1 + Floating Toast Engine)</small></h2>
+            <h2>🔥 Trial of the Ages: Last Ember <small>(Exact Shape Placement Preview)</small></h2>
             <div>
                 <span class="resource-badge">Turn: <span id="valTurn">1</span>/50</span>
                 <span class="resource-badge">🔥 生命: <span id="valEmber">20</span></span>
@@ -277,7 +289,7 @@
 
         <div class="offering-section">
             <div class="offering-header">
-                <h3 style="margin:0; color:#f5a623;">🎴 手札オファリング (同属性3連結で 🛡️ +2 ポップアップ！)</h3>
+                <h3 style="margin:0; color:#f5a623;">🎴 手札オファリング (ブロック選択時、形状通り盤面プレビュー！)</h3>
                 <span id="pickStatusInfo" style="color:#2ecc71; font-weight:bold;">1 枚選択して配置してください</span>
             </div>
             <div id="mergeMsgBox" style="color:#f1c40f; font-weight:bold; margin-bottom:10px; min-height:20px;"></div>
@@ -313,6 +325,42 @@
 
             card.currentShape = engine.rotateShapeMatrix(card.currentShape);
             render();
+        }
+
+        function clearCellPreviews() {
+            const cells = document.querySelectorAll(".cell");
+            cells.forEach(c => {
+                c.classList.remove("preview-valid", "preview-invalid");
+            });
+        }
+
+        function onCellMouseEnter(r, c) {
+            if (!selectedCard || state.hasPickedThisTurn) return;
+            clearCellPreviews();
+
+            const shape = selectedCard.currentShape;
+            const check = state.canPlaceShape(r, c, shape);
+            const isValid = check.can;
+
+            const rows = shape.length;
+            const cols = shape[0].length;
+            const boardEl = document.getElementById("gridBoard");
+
+            for (let dr = 0; dr < rows; dr++) {
+                for (let dc = 0; dc < cols; dc++) {
+                    if (shape[dr][dc] === 1) {
+                        const tr = r + dr;
+                        const tc = c + dc;
+                        if (tr < 5 && tc < 5) {
+                            const cellIdx = (tr + 1) * 6 + (tc + 1);
+                            const targetEl = boardEl.children[cellIdx];
+                            if (targetEl) {
+                                targetEl.classList.add(isValid ? "preview-valid" : "preview-invalid");
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         function render() {
@@ -369,6 +417,8 @@
                         cellEl.innerHTML = `${cellData.terrain.name}<br><small>🛡️${def}</small>`;
                     }
 
+                    cellEl.onmouseenter = () => onCellMouseEnter(r, c);
+                    cellEl.onmouseleave = clearCellPreviews;
                     cellEl.onclick = () => onCellClick(r, c);
                     boardEl.appendChild(cellEl);
                 }
@@ -420,7 +470,6 @@
                 cardRowEl.appendChild(cardEl);
             });
 
-            // マス直上への浮遊数値アイコンポップアップ描画 (1.2秒トースト)
             while (state.toastQueue.length > 0) {
                 const toastData = state.toastQueue.shift();
                 showTileToast(toastData.r, toastData.c, toastData.text);
@@ -442,20 +491,19 @@
                 return;
             }
 
-            state.ember -= 1; // コスト 🔥 -1 消費
+            state.ember -= 1;
 
-            // マージチェック実行 (2x2正方形 / 4マス凸字山岳)
             state.checkMergePatterns();
 
             state.hasPickedThisTurn = true;
             selectedCard = null;
 
+            clearCellPreviews();
             render();
         }
 
         function showTileToast(r, c, text) {
             const boardEl = document.getElementById("gridBoard");
-            // 外枠ヘッダーがあるため 1 行目・1 列目をオフセット考慮
             const cellIndex = (r + 1) * 6 + (c + 1);
             const cellEl = boardEl.children[cellIndex];
             if (cellEl) {
@@ -471,6 +519,7 @@
             state.turn++;
             state.lastMergeMessage = "";
             drawSys.generateOfferingCards();
+            clearCellPreviews();
             render();
         }
 
