@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trial of the Ages: Last Ember (v2 Unity-Ready Testbed)</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Trial of the Ages: Last Ember (v2 Unity-Ready Clean Engine)</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -150,14 +149,71 @@
             0% { opacity: 1; transform: translate(-50%, 0); }
             100% { opacity: 0; transform: translate(-50%, -15px); }
         }
+
+        /* 3大指導者ロール選択モーダル */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .modal-content {
+            background: #1a1d24;
+            border: 2px solid #f5a623;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 650px;
+            text-align: center;
+        }
+        .role-option {
+            background: #252934;
+            border: 1px solid #3a3f50;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 12px 0;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+        }
+        .role-option:hover {
+            border-color: #f5a623;
+            background: #2c3242;
+        }
     </style>
 </head>
 <body>
+
+    <!-- 3大指導者ロール選択モーダル -->
+    <div id="roleModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 style="color:#f5a623;">🛡️ 指導者ロール (Leader Role) を選択せよ</h2>
+            <p style="color:#aaa;">ゲーム開始時の能力と試練へのアプローチを決定します。</p>
+
+            <div class="role-option" onclick="selectRole('GENERAL')">
+                <h3 style="margin:0; color:#3498db;">🛡️ 将軍 (General)</h3>
+                <p style="margin:5px 0 0 0; font-size:13px;">【王道防衛】 場の全防衛力 +10% ✕ 迎撃戦術効果 +10%</p>
+            </div>
+
+            <div class="role-option" onclick="selectRole('PROPHET')">
+                <h3 style="margin:0; color:#9b59b6;">✨ 預言者 (Prophet)</h3>
+                <p style="margin:5px 0 0 0; font-size:13px;">【⚠️上級者向け】 試練最長 7T 前予報 ✕ 予報中全産出 +10% ✕ 砂漠ドロー率UP</p>
+            </div>
+
+            <div class="role-option" onclick="selectRole('PIONEER')">
+                <h3 style="margin:0; color:#2ecc71;">🌾 開拓者 (Pioneer)</h3>
+                <p style="margin:5px 0 0 0; font-size:13px;">【内政・省エネ】 中・高レア土地ドロー率UP ✕ 試練中全 🔥 行動コスト -1 軽減</p>
+            </div>
+        </div>
+    </div>
 
     <div class="header-panel">
         <div>
             <h2>🔥 Trial of the Ages: Last Ember <small>(v2 Unity-Ready Clean Engine)</small></h2>
             <div id="statusInfo">
+                <span class="resource-badge">指導者: <span id="valRole" style="color:#f5a623;">未選択</span></span>
                 <span class="resource-badge">Turn: <span id="valTurn">1</span>/50</span>
                 <span class="resource-badge">🔥 生命: <span id="valEmber">20</span></span>
                 <span class="resource-badge">🌾 食料: <span id="valFood">50</span></span>
@@ -182,7 +238,7 @@
 
         <div class="side-panel">
             <div class="card-offering">
-                <h3>🎴 手札オファリング (盤面共鳴隠し味バイアス)</h3>
+                <h3>🎴 手札オファリング (1枚配置で手札消費 / LAKE物理除外)</h3>
                 <div id="cardList" class="card-list"></div>
             </div>
 
@@ -202,7 +258,6 @@
 
     <script src="src/v2_unity_ready_main.js"></script>
     <script>
-        // Web View UI Controller (Observer Pattern)
         const engine = window.V2UnityReadyEngine;
         const state = new engine.GameState();
         const outpostSys = new engine.OutpostSystem(state);
@@ -211,23 +266,24 @@
         let selectedCard = null;
         let isBuildOutpostMode = false;
 
-        function initUI() {
+        function selectRole(roleId) {
+            state.setLeaderRole(roleId);
+            document.getElementById("roleModal").style.display = "none";
+            document.getElementById("valRole").innerText = engine.t(state.leaderRole.nameKey);
             drawSys.generateOfferingCards();
             render();
-            addLog("ゲーム開始！v2 Unity C# 1対1対応クリーンエンジンが起動しました。");
+            addLog(`指導者ロール 【${engine.t(state.leaderRole.nameKey)}】 を選択してゲームを開始しました！`);
         }
 
         function render() {
-            // ステータス更新
             document.getElementById("valTurn").innerText = state.turn;
             document.getElementById("valEmber").innerText = state.ember;
             document.getElementById("valFood").innerText = state.food;
             document.getElementById("valWood").innerText = state.wood;
             document.getElementById("valMystic").innerText = state.mystic;
             document.getElementById("valDefense").innerText = state.calculateTotalDefense();
-            document.getElementById("stageLabel").innerText = state.stage.name;
+            document.getElementById("stageLabel").innerText = engine.t(state.stage.nameKey);
 
-            // 拠点コスト情報
             const nextCost = state.getOutpostCost(state.outpostCount);
             if (nextCost) {
                 document.getElementById("outpostCostInfo").innerText = `第 ${state.outpostCount+1} 拠点コスト: 🧱 ${nextCost.wood} ＋ 🔥 ${nextCost.ember} (必要土地: ${nextCost.reqTiles}マス以上)`;
@@ -235,7 +291,6 @@
                 document.getElementById("outpostCostInfo").innerText = `拠点上限 (最大 3 個) に達しました`;
             }
 
-            // 盤面グリッド描画
             const boardEl = document.getElementById("gridBoard");
             const size = state.stage.size;
             boardEl.style.gridTemplateColumns = `repeat(${size}, 48px)`;
@@ -250,7 +305,7 @@
 
                     if (cellData.isHQ) {
                         cellEl.classList.add("hq");
-                        cellEl.innerHTML = "HQ<br>E5";
+                        cellEl.innerHTML = `HQ<br>${r+1},${String.fromCharCode(65+c)}`;
                     } else if (cellData.isOutpost) {
                         cellEl.classList.add("outpost");
                         cellEl.innerHTML = `🏰<br>${sector[0]}`;
@@ -265,7 +320,6 @@
                 }
             }
 
-            // 手札カード描画
             const cardListEl = document.getElementById("cardList");
             cardListEl.innerHTML = "";
             state.handOffering.forEach((card, idx) => {
@@ -281,7 +335,6 @@
                 cardListEl.appendChild(item);
             });
 
-            // 市民フキダシ表示
             while (state.speechQueue.length > 0) {
                 const speech = state.speechQueue.shift();
                 showToastSpeech(speech.r, speech.c, speech.text);
@@ -303,6 +356,10 @@
             }
 
             if (selectedCard) {
+                if (state.ember <= 0) {
+                    addLog("❌ 生命力 🔥 が 0 のため土地を配置できません！");
+                    return;
+                }
                 const cell = state.grid[r][c];
                 if (cell.isHQ || cell.isOutpost) {
                     addLog("❌ 本営や拠点の上に土地は置けません");
@@ -310,7 +367,15 @@
                 }
                 cell.placed = true;
                 cell.terrain = selectedCard.terrain;
-                addLog(`🌱 土地配置: ${selectedCard.name} (${r+1},${String.fromCharCode(65+c)})`);
+                state.ember -= 1; // 土地配置コスト 🔥 -1 消費
+
+                addLog(`🌱 土地配置: ${selectedCard.name} (${r+1},${String.fromCharCode(65+c)}) - コスト 🔥-1`);
+                
+                // オファリングから配置したカードを手札から削除
+                const cardIdx = state.handOffering.indexOf(selectedCard);
+                if (cardIdx !== -1) {
+                    state.handOffering.splice(cardIdx, 1);
+                }
                 selectedCard = null;
                 render();
             }
@@ -328,11 +393,13 @@
             if (state.turn === 16 && state.currentStageIndex === 0) {
                 state.currentStageIndex = 1;
                 state.stage = engine.BOARD_STAGES.STAGE_2;
-                addLog("🎉 Stage 2 開幕！ 7x7 盤面拡大 ＆ 拠点建設が初解禁されました！");
+                state.updateHQPosition();
+                addLog("🎉 Stage 2 開幕！ 7x7 盤面拡大 ＆ 中央 D4(3,3) に HQ 移動 ＆ 拠点建設初解禁！");
             } else if (state.turn === 31 && state.currentStageIndex === 1) {
                 state.currentStageIndex = 2;
                 state.stage = engine.BOARD_STAGES.STAGE_3;
-                addLog("👑 Stage 3 開幕！ 9x9 盤面拡大 ＆ 第 2・第 3 拠点自由建設解禁！");
+                state.updateHQPosition();
+                addLog("👑 Stage 3 開幕！ 9x9 盤面拡大 ＆ 中央 E5(4,4) に HQ 移動 ＆ 自由拠点建設解禁！");
             }
             drawSys.generateOfferingCards();
             render();
@@ -352,8 +419,6 @@
             boardEl.appendChild(toast);
             setTimeout(() => toast.remove(), 1500);
         }
-
-        window.onload = initUI;
     </script>
 </body>
 </html>

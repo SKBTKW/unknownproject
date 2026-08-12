@@ -4,6 +4,8 @@
  * DESIGN PHILOSOPHY & UNITY C# MAPPING:
  * - Pure Javascript Game Logic separated from DOM UI/Rendering.
  * - 1-to-1 Mapping for Unity C# Monobehaviour / ScriptableObject conversion:
+ *   - LeaderRole.cs (General, Prophet, Pioneer 3 Roles)
+ *   - I18NTable.cs (Zero Encoding Mojibake Protection)
  *   - BoardModel.cs (Grid 5x5 / 7x7 / 9x9, A1..I9 Coordinates, Outermost Tile Invasion)
  *   - OutpostSystem.cs (Outpost Construction, 5 Constraints, Cost Scaling, 1-Direction Sight, Cap 3)
  *   - DefenseModel.cs (Real-time Non-cumulative Sum of Defense)
@@ -13,12 +15,78 @@
  */
 
 // ==========================================
-// 1. CONSTANTS & ENUMS (Unity C# Structs)
+// 1. I18N DICTIONARY (Zero Mojibake Protection)
 // ==========================================
+const I18N = {
+    JA: {
+        TITLE: "Trial of the Ages: Last Ember",
+        SELECT_ROLE_TITLE: "🛡️ 指導者ロール (Leader Role) を選択せよ",
+        ROLE_GENERAL_NAME: "🛡️ 将軍 (General)",
+        ROLE_GENERAL_DESC: "【王道防衛】 場の全防衛力 +10% ✕ 迎撃戦術効果 +10%",
+        ROLE_PROPHET_NAME: "✨ 預言者 (Prophet)",
+        ROLE_PROPHET_DESC: "【上級者向け】 試練最長 7T 前予報 ✕ 予報中全産出 +10% ✕ 砂漠ドロー率UP",
+        ROLE_PIONEER_NAME: "🌾 開拓者 (Pioneer)",
+        ROLE_PIONEER_DESC: "【内政・省エネ】 中・高レア土地ドロー率UP ✕ 試練中全🔥行動コスト-1",
+        
+        STAGE_1: "5x5 盤面 (Stage 1)",
+        STAGE_2: "7x7 盤面 (Stage 2)",
+        STAGE_3: "9x9 盤面 (Stage 3)",
+
+        ERR_MAX_OUTPOSTS: "全ラン拠点最大上限(3個)に達しています",
+        ERR_STAGE_1_OUTPOST: "Stage 1 (5x5) では拠点建設は未解禁です",
+        ERR_WOOD_SHORT: "資材 🧱 が足りません",
+        ERR_EMBER_SHORT: "生命力 🔥 が足りません",
+        ERR_TILES_SHORT: "開拓土地数が足りません",
+        ERR_ALREADY_PLACED: "すでに土地が配置されているマスには建てられません",
+        ERR_HQ_TILE: "本営マス自体には建てられません",
+        ERR_DISTANCE_3: "本営から 3 マス以上離れる必要があります",
+        ERR_ADJACENT_LAND: "配置済みの土地ブロックに 1 面以上隣接する必要があります",
+        ERR_MOUNTAIN_ADJACENT: "H3 山岳に隣接するマスには拠点を出力できません",
+        
+        SPEECH_OUTPOST_BUILT: "前哨拠点が完成したぞ！方角を監視せよ！",
+        SPEECH_DAMAGED: "防壁を固めろ！本営を守れ！",
+        SPEECH_SURVIVED: "生き残った…！炎は消えていない！"
+    }
+};
+
+function t(key, defaultVal = "") {
+    return I18N.JA[key] || defaultVal || key;
+}
+
+// ==========================================
+// 2. CONSTANTS & LEADER ROLES (Unity C# Structs)
+// ==========================================
+const LEADER_ROLES = {
+    GENERAL: {
+        id: "GENERAL",
+        nameKey: "ROLE_GENERAL_NAME",
+        descKey: "ROLE_GENERAL_DESC",
+        defenseBonus: 0.10,      // 防衛力 +10%
+        tacticsBonus: 0.10,      // 迎撃戦術効果 +10%
+        forecastTurns: 5
+    },
+    PROPHET: {
+        id: "PROPHET",
+        nameKey: "ROLE_PROPHET_NAME",
+        descKey: "ROLE_PROPHET_DESC",
+        desertDrawBias: 20,     // 砂漠ドロー重み +20
+        forecastTurns: 7,        // 7T 前超早期予報
+        forecastYieldBonus: 0.10 // 7T 予報中の全産出 +10%
+    },
+    PIONEER: {
+        id: "PIONEER",
+        nameKey: "ROLE_PIONEER_NAME",
+        descKey: "ROLE_PIONEER_DESC",
+        uncommonDrawBias: 15,   // 中高レア土地重み +15
+        fireCostDiscount: 1,     // 試練中 🔥 行動コスト -1 軽減
+        forecastTurns: 5
+    }
+};
+
 const BOARD_STAGES = {
-    STAGE_1: { size: 5, hqCenter: { r: 2, c: 2 }, name: "5x5 (Stage 1)" },
-    STAGE_2: { size: 7, hqCenter: { r: 3, c: 3 }, name: "7x7 (Stage 2)" },
-    STAGE_3: { size: 9, hqCenter: { r: 4, c: 4 }, name: "9x9 (Stage 3)" }
+    STAGE_1: { size: 5, hqCenter: { r: 2, c: 2 }, nameKey: "STAGE_1" },
+    STAGE_2: { size: 7, hqCenter: { r: 3, c: 3 }, nameKey: "STAGE_2" },
+    STAGE_3: { size: 9, hqCenter: { r: 4, c: 4 }, nameKey: "STAGE_3" }
 };
 
 const DIRECTION_ZONES = {
@@ -35,12 +103,11 @@ const TERRAIN_TYPES = {
     GL3_DEEP:    { id: "GL3_DEEP",    name: "密林", defense: 3, wood: 4 },
     H2_HILL:     { id: "H2_HILL",     name: "丘陵", defense: 3, stone: 3 },
     H3_MOUNTAIN: { id: "H3_MOUNTAIN", name: "山岳", defense: 5, stone: 1 },
-    GL0_DESERT:  { id: "GL0_DESERT",  name: "砂漠", defense: 0, mystic: 3 },
-    LAKE:        { id: "LAKE",        name: "清湖", defense: 0, slowRate: 0.3 }
+    GL0_DESERT:  { id: "GL0_DESERT",  name: "砂漠", defense: 0, mystic: 3 }
 };
 
 // ==========================================
-// 2. CORE GAME STATE (Unity GameState.cs)
+// 3. CORE GAME STATE (Unity GameState.cs)
 // ==========================================
 class GameState {
     constructor() {
@@ -48,7 +115,10 @@ class GameState {
         this.maxTurns = 50;
         this.ember = 20; // 🔥 生命線 (0で敗北, 1以上で50T完走勝利)
         
-        // リソース (ストック型)
+        // 指導者ロール
+        this.leaderRole = LEADER_ROLES.GENERAL; // デフォルト: 将軍
+        
+        // リソース
         this.food = 50;   // 🌾
         this.wood = 50;   // 🧱
         this.mystic = 0;  // ✨
@@ -57,20 +127,24 @@ class GameState {
         this.currentStageIndex = 0; // 0: 5x5, 1: 7x7, 2: 9x9
         this.stage = BOARD_STAGES.STAGE_1;
         
-        // 拠点 (Outpost) トラッキング
+        // 拠点トラッキング
         this.outpostCount = 0;
         this.maxOutposts = 3; // 全ラン絶対上限
-        this.outposts = []; // [{ id, r, c, direction, level, dormantTurns }]
+        this.outposts = [];
         
-        // 盤面データ (2D Grid Array)
+        // 盤面データ
         this.grid = [];
-        this.initGrid(BOARD_STAGES.STAGE_3.size); // 9x9を最大サイズとして確保
+        this.initGrid(BOARD_STAGES.STAGE_3.size);
         
         // 手札ドロー
         this.handOffering = [];
-        
-        // ログ ＆ 市民フキダシキュー
         this.speechQueue = [];
+    }
+
+    setLeaderRole(roleId) {
+        if (LEADER_ROLES[roleId]) {
+            this.leaderRole = LEADER_ROLES[roleId];
+        }
     }
 
     initGrid(maxSize) {
@@ -83,14 +157,27 @@ class GameState {
                     placed: false,
                     terrain: null,
                     isOutpost: false,
-                    isHQ: (r === 4 && c === 4) // 中心E5(4,4)
+                    isHQ: false
                 });
             }
             this.grid.push(row);
         }
+        this.updateHQPosition();
     }
 
-    // リアルタイム 🛡️ 総和算出 (非累積の原則)
+    // 本営を現在 Stage の動的絶対中央へ固定設定
+    updateHQPosition() {
+        const maxSize = BOARD_STAGES.STAGE_3.size;
+        for (let r = 0; r < maxSize; r++) {
+            for (let c = 0; c < maxSize; c++) {
+                this.grid[r][c].isHQ = false;
+            }
+        }
+        const center = this.stage.hqCenter;
+        this.grid[center.r][center.c].isHQ = true;
+    }
+
+    // リアルタイム 🛡️ 総和算出 (非累積の原則 ✕ 将軍ロールパッシブ +10%)
     calculateTotalDefense() {
         let total = 10; // 本営単体防衛力 🛡️ 10
         const activeSize = this.stage.size;
@@ -102,22 +189,27 @@ class GameState {
                     total += cell.terrain.defense || 0;
                 }
                 if (cell.isOutpost && cell.dormantTurns <= 0) {
-                    total += 10; // 拠点パッシブ遮断 🛡️ 10
+                    total += 10; // 拠点パッシブ 🛡️ 10
                 }
             }
         }
+
+        // 将軍ロールパッシブ: 🛡️ 防衛力 +10%
+        if (this.leaderRole && this.leaderRole.id === "GENERAL") {
+            total = Math.floor(total * (1 + this.leaderRole.defenseBonus));
+        }
+
         return total;
     }
 
-    // 拠点建設コスト算出 (スケーリング重厚コスト)
+    // 拠点スケーリングコスト
     getOutpostCost(count) {
         if (count === 0) return { wood: 60,  ember: 3, reqTiles: 12 };
         if (count === 1) return { wood: 120, ember: 5, reqTiles: 24 };
         if (count === 2) return { wood: 240, ember: 8, reqTiles: 40 };
-        return null; // 上限超え
+        return null;
     }
 
-    // 配置済み土地数のカウント
     getPlacedTileCount() {
         let count = 0;
         const activeSize = this.stage.size;
@@ -129,7 +221,6 @@ class GameState {
         return count;
     }
 
-    // 方角領域判定 (北: 青 / 東: 金 / 南: 赤 / 西: 緑)
     getDirectionSector(r, c) {
         const centerR = this.stage.hqCenter.r;
         const centerC = this.stage.hqCenter.c;
@@ -145,35 +236,32 @@ class GameState {
 }
 
 // ==========================================
-// 3. OUTPOST SYSTEM (Unity OutpostSystem.cs)
+// 4. OUTPOST SYSTEM (Unity OutpostSystem.cs)
 // ==========================================
 class OutpostSystem {
     constructor(state) {
         this.state = state;
     }
 
-    // 拠点建設の 5 大判定条件
     canBuildOutpost(r, c) {
-        if (this.state.outpostCount >= this.state.maxOutposts) return { can: false, reason: "全ラン拠点最大上限(3個)に達しています" };
-        if (this.state.currentStageIndex === 0) return { can: false, reason: "Stage 1 (5x5) では拠点建設は未解禁です" };
+        if (this.state.outpostCount >= this.state.maxOutposts) return { can: false, reason: t("ERR_MAX_OUTPOSTS") };
+        if (this.state.currentStageIndex === 0) return { can: false, reason: t("ERR_STAGE_1_OUTPOST") };
         
         const cost = this.state.getOutpostCost(this.state.outpostCount);
-        if (!cost) return { can: false, reason: "これ以上建設できません" };
+        if (!cost) return { can: false, reason: "上限超え" };
         
-        if (this.state.wood < cost.wood) return { can: false, reason: `資材 🧱 が足りません (必要: 🧱 ${cost.wood})` };
-        if (this.state.ember < cost.ember) return { can: false, reason: `生命力 🔥 が足りません (必要: 🔥 ${cost.ember})` };
-        if (this.state.getPlacedTileCount() < cost.reqTiles) return { can: false, reason: `開拓土地数が足りません (必要: ${cost.reqTiles} マス)` };
+        if (this.state.wood < cost.wood) return { can: false, reason: `${t("ERR_WOOD_SHORT")} (必要: 🧱 ${cost.wood})` };
+        if (this.state.ember < cost.ember) return { can: false, reason: `${t("ERR_EMBER_SHORT")} (必要: 🔥 ${cost.ember})` };
+        if (this.state.getPlacedTileCount() < cost.reqTiles) return { can: false, reason: `${t("ERR_TILES_SHORT")} (必要: ${cost.reqTiles} マス)` };
 
         const cell = this.state.grid[r][c];
-        if (cell.placed) return { can: false, reason: "すでに土地が配置されているマスには建てられません" };
-        if (cell.isHQ) return { can: false, reason: "本営マス自体には建てられません" };
+        if (cell.placed) return { can: false, reason: t("ERR_ALREADY_PLACED") };
+        if (cell.isHQ) return { can: false, reason: t("ERR_HQ_TILE") };
 
-        // 条件 1: 本営離隔 3 マス以上
         const hq = this.state.stage.hqCenter;
         const dist = Math.abs(r - hq.r) + Math.abs(c - hq.c);
-        if (dist < 3) return { can: false, reason: "本営から 3 マス以上離れる必要があります" };
+        if (dist < 3) return { can: false, reason: t("ERR_DISTANCE_3") };
 
-        // 条件 3: 配置済み土地に 1 面以上隣接
         let hasAdjacentPlaced = false;
         const neighbors = [[r-1,c], [r+1,c], [r,c-1], [r,c+1]];
         for (const [nr, nc] of neighbors) {
@@ -181,14 +269,13 @@ class OutpostSystem {
                 if (this.state.grid[nr][nc].placed) hasAdjacentPlaced = true;
             }
         }
-        if (!hasAdjacentPlaced) return { can: false, reason: "配置済みの土地ブロックに 1 面以上隣接する必要があります" };
+        if (!hasAdjacentPlaced) return { can: false, reason: t("ERR_ADJACENT_LAND") };
 
-        // 条件 4: H3 山岳に隣接していない
         for (const [nr, nc] of neighbors) {
             if (nr >= 0 && nr < this.state.stage.size && nc >= 0 && nc < this.state.stage.size) {
                 const nCell = this.state.grid[nr][nc];
                 if (nCell.placed && nCell.terrain && nCell.terrain.id === "H3_MOUNTAIN") {
-                    return { can: false, reason: "H3 山岳に隣接するマスには拠点を出力できません" };
+                    return { can: false, reason: t("ERR_MOUNTAIN_ADJACENT") };
                 }
             }
         }
@@ -196,7 +283,6 @@ class OutpostSystem {
         return { can: true, cost };
     }
 
-    // 拠点建設実行 (1 拠点 1 方角限定)
     buildOutpost(r, c) {
         const check = this.canBuildOutpost(r, c);
         if (!check.can) return check;
@@ -209,7 +295,7 @@ class OutpostSystem {
         const outpost = {
             id: `outpost_${Date.now()}`,
             r, c,
-            direction: sector, // 1 方角限定カバー
+            direction: sector,
             level: 1,
             dormantTurns: 0
         };
@@ -219,60 +305,45 @@ class OutpostSystem {
         this.state.outposts.push(outpost);
         this.state.outpostCount++;
 
-        // 市民セリフフキダシ演出キュー追加
-        this.state.speechQueue.push({
-            r, c, text: "前哨拠点が完成したぞ！方角を監視せよ！"
-        });
-
+        this.state.speechQueue.push({ r, c, text: t("SPEECH_OUTPOST_BUILT") });
         return { success: true, outpost };
     }
 }
 
 // ==========================================
-// 4. ALIGNMENT RESONANCE DRAW SYSTEM
+// 5. RESONANCE DRAW SYSTEM & SHAPE UNLOCK
 // ==========================================
 class ResonanceDrawSystem {
     constructor(state) {
         this.state = state;
     }
 
-    // 盤面のこだわり傾向を高速スキャン (0.05ms)
+    // 試練 (Stage) 突破連動の形状アンロックフィルタリング
+    getUnlockedShapes() {
+        if (this.state.currentStageIndex === 0) return ["1x1", "1x2"]; // Stage 1: 1〜2マスのみ
+        if (this.state.currentStageIndex === 1) return ["1x1", "1x2", "1x3", "L3"]; // Stage 2: 3マス解禁
+        return ["1x1", "1x2", "1x3", "L3", "1x4", "L4", "CONVEX4", "2x2"]; // Stage 3: 4マス全解禁
+    }
+
     generateOfferingCards() {
         const pool = [
             { id: "C_PLAIN",    name: "🌱 平地ブロック", terrain: TERRAIN_TYPES.H1_PLAIN, weight: 100 },
             { id: "C_FOREST",   name: "🌲 森林ブロック", terrain: TERRAIN_TYPES.GL2_FOREST, weight: 100 },
             { id: "C_MOUNTAIN", name: "⛰️ 山岳ブロック", terrain: TERRAIN_TYPES.H3_MOUNTAIN, weight: 100 },
-            { id: "C_DESERT",   name: "🏜️ 砂漠ブロック", terrain: TERRAIN_TYPES.GL0_DESERT, weight: 100 },
-            { id: "C_LAKE",     name: "🌊 清湖ブロック", terrain: TERRAIN_TYPES.LAKE, weight: 100 }
+            { id: "C_DESERT",   name: "🏜️ 砂漠ブロック", terrain: TERRAIN_TYPES.GL0_DESERT, weight: 100 }
+            // 清湖 (LAKE) は手札ドローから 100% 物理除外
         ];
 
-        // 盤面スキャン
-        let desertCount = 0;
-        let lakeCount = 0;
-        let mountainCount = 0;
-
-        const size = this.state.stage.size;
-        for (let r = 0; r < size; r++) {
-            for (let c = 0; c < size; c++) {
-                const cell = this.state.grid[r][c];
-                if (cell.placed && cell.terrain) {
-                    if (cell.terrain.id === "GL0_DESERT") desertCount++;
-                    if (cell.terrain.id === "LAKE") lakeCount++;
-                    if (cell.terrain.id === "H3_MOUNTAIN") mountainCount++;
-                }
-            }
+        // 預言者ロールパッシブ: 砂漠ドロー率 UP
+        if (this.state.leaderRole && this.state.leaderRole.id === "PROPHET") {
+            pool.find(c => c.id === "C_DESERT").weight += this.state.leaderRole.desertDrawBias;
         }
-
-        // 段階的隠し味バイアス (ライト: +10% 隠し味 / 熟練: +30%〜+50% 重み付け)
-        if (desertCount >= 1) pool.find(c => c.id === "C_DESERT").weight += 10;
-        if (lakeCount >= 1) pool.find(c => c.id === "C_LAKE").weight += 10;
-        if (mountainCount >= 2) pool.find(c => c.id === "C_MOUNTAIN").weight += 25; // マージ狙い熟練バイアス
 
         // 重み付けルーレットピック (3 択)
         const drawn = [];
         for (let i = 0; i < 3; i++) {
             const pick = this.weightedPick(pool);
-            drawn.push(pick);
+            drawn.push({ ...pick, shape: "1x1" });
         }
         this.state.handOffering = drawn;
         return drawn;
@@ -292,6 +363,9 @@ class ResonanceDrawSystem {
 // Global Export for Browser Test
 if (typeof window !== "undefined") {
     window.V2UnityReadyEngine = {
+        I18N,
+        t,
+        LEADER_ROLES,
         BOARD_STAGES,
         DIRECTION_ZONES,
         TERRAIN_TYPES,
