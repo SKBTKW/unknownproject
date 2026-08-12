@@ -1,12 +1,12 @@
 /**
- * Trial of the Ages: Last Ember - Step 1 + Strict Placement Adjacency Engine
+ * Trial of the Ages: Last Ember - Step 1 + Strict Specification Alignment
  * 
  * SPECIFICATIONS:
- * - Primary Source Land Values (rules/03_land_system/01_land_base.md):
- *   - Plain (H1+GL1): Food 4, Wood 0, Defense 0
- *   - Forest (H1+GL2): Food 2, Wood 2, Defense 0
- *   - Hill (H2+GL1): Food 2, Wood 1, Defense 3
- *   - Mountain (H3+GL1): Food 0, Wood 4, Defense 5
+ * - Primary Source Land Values (rules/03_land_system/01_land_base.md Line 7-14):
+ *   - Grassland (H1+GL1): Food 4, Wood 0, Defense 0 (🌾 草原)
+ *   - Forest (H1+GL2): Food 2, Wood 2, Defense 0 (🌲 森林)
+ *   - Hill (H2+GL1): Food 2, Wood 1, Defense 3 (⛰️ 丘陵)
+ *   - Mountain (H3+GL1): Food 0, Wood 4, Defense 5 (🏔️ 山岳)
  * - Placement Adjacency Rule (rules/00 Line 149 / rules/03 Line 159):
  *   Must be placed adjacent to HQ or existing placed land.
  */
@@ -16,7 +16,6 @@ const BOARD_STAGES = {
 };
 
 const TERRAIN_TYPES = {
-    H1_PLAIN:   { id: "H1_PLAIN",   name: "平地", defense: 0, wood: 0, food: 4, rarity: "C",  shape: [[1]] },
     GL1_GRASS:  { id: "GL1_GRASS",  name: "草原", defense: 0, wood: 0, food: 4, rarity: "C",  shape: [[1]] },
     GL2_FOREST: { id: "GL2_FOREST", name: "森林", defense: 0, wood: 2, food: 2, rarity: "UC", shape: [[1, 1]] },
     H2_HILL:    { id: "H2_HILL",    name: "丘陵", defense: 3, wood: 1, food: 2, rarity: "UC", shape: [[1, 1]] },
@@ -193,7 +192,7 @@ class GameState {
         const connectionCount = visited.size;
 
         if (connectionCount === 2) {
-            if (terrain.id === "GL1_GRASS" || terrain.id === "H1_PLAIN") this.food += 1;
+            if (terrain.id === "GL1_GRASS") this.food += 1;
             else this.wood += 1;
             this.toastQueue.push({ r, c, text: "🌾 +1 (2連結)" });
         } else if (connectionCount === 3) {
@@ -266,7 +265,7 @@ class Step1DrawSystem {
 
     generateOfferingCards() {
         const pool = [
-            { id: "C_PLAIN",  name: "🌱 平地", terrain: TERRAIN_TYPES.H1_PLAIN },
+            { id: "C_GRASS",  name: "🌾 草原", terrain: TERRAIN_TYPES.GL1_GRASS },
             { id: "C_FOREST", name: "🌲 森林", terrain: TERRAIN_TYPES.GL2_FOREST },
             { id: "C_HILL",   name: "⛰️ 丘陵", terrain: TERRAIN_TYPES.H2_HILL }
         ];
