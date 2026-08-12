@@ -3,53 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trial of the Ages: Last Ember (v2 Unity-Ready Clean Engine)</title>
+    <title>Trial of the Ages: Last Ember (Step 1 Core Puzzle Engine)</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #0f1115;
+            background-color: #0b0d11;
             color: #e0e0e0;
             margin: 0;
             padding: 20px;
         }
         .header-panel {
-            background: #1a1d24;
-            padding: 15px 20px;
+            background: #161920;
+            padding: 15px 25px;
             border-radius: 8px;
-            border: 1px solid #2a2e39;
+            border: 1px solid #282c37;
             margin-bottom: 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
         .resource-badge {
             display: inline-block;
-            margin-right: 15px;
+            margin-right: 20px;
             font-weight: bold;
             font-size: 1.1em;
         }
-        .main-container {
+        .main-layout {
             display: flex;
-            gap: 20px;
+            flex-direction: column;
+            align-items: center;
+            gap: 25px;
         }
-        .board-container {
-            background: #15181e;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #2a2e39;
+
+        /* 2D 真上フラットビュー ＋ 外枠固定座標ヘッダー */
+        .board-wrapper {
+            background: #14171f;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #282c37;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.6);
         }
-        .grid-board {
+        .grid-with-headers {
             display: grid;
-            gap: 4px;
-            background: #090a0c;
-            padding: 8px;
+            grid-template-columns: 32px repeat(5, 52px);
+            grid-template-rows: 32px repeat(5, 52px);
+            gap: 3px;
+            background: #08090c;
+            padding: 6px;
             border-radius: 6px;
         }
+        .header-cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #8a92a5;
+            font-size: 13px;
+            user-select: none;
+        }
+
         .cell {
-            width: 48px;
-            height: 48px;
-            background: #1f232d;
-            border: 1px solid #2d3241;
+            width: 52px;
+            height: 52px;
+            background: #1c202b;
+            border: 1px solid #2c3243;
             border-radius: 4px;
             display: flex;
             flex-direction: column;
@@ -57,11 +75,12 @@
             justify-content: center;
             font-size: 11px;
             cursor: pointer;
-            position: relative;
             user-select: none;
+            transition: border-color 0.15s, background-color 0.15s;
         }
         .cell:hover {
             border-color: #4a90e2;
+            background: #252b3a;
         }
         .cell.hq {
             background: #5a3d10 !important;
@@ -69,156 +88,138 @@
             color: #ffe082;
             font-weight: bold;
         }
-        .cell.outpost {
-            border: 2px solid #e74c3c !important;
+        .cell.placed {
+            background: #283328;
+            border-color: #2ecc71;
         }
-        .cell.sector-NORTH { border-top: 2px solid #3498db; }
-        .cell.sector-EAST  { border-right: 2px solid #f1c40f; }
-        .cell.sector-SOUTH { border-bottom: 2px solid #e74c3c; }
-        .cell.sector-WEST  { border-left: 2px solid #2ecc71; }
-        
-        .side-panel {
-            flex: 1;
+
+        /* 下部オファリングカードコンテナ (参考画像レイアウト) */
+        .offering-section {
+            background: #161920;
+            padding: 20px 30px;
+            border-radius: 10px;
+            border: 1px solid #282c37;
+            width: 100%;
+            max-width: 750px;
+            box-sizing: border-box;
+        }
+        .offering-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .card-row {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        /* 仕様書準拠 Card Component 4 層構造フォーマット */
+        .card-frame {
+            width: 150px;
+            height: 200px;
+            background: #1e222d;
+            border-radius: 8px;
+            padding: 12px;
+            box-sizing: border-box;
             display: flex;
             flex-direction: column;
-            gap: 15px;
-        }
-        .card-offering {
-            background: #1a1d24;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #2a2e39;
-        }
-        .card-list {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        .card-item {
-            flex: 1;
-            background: #252934;
-            padding: 10px;
-            border-radius: 6px;
-            border: 1px solid #3a3f50;
+            justify-content: space-between;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
             cursor: pointer;
-            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
         }
-        .card-item.selected {
-            border-color: #f5a623;
-            background: #323746;
+        .card-frame.rarity-C  { border: 2px solid #8d6e63; } /* ダークブロンズ */
+        .card-frame.rarity-UC { border: 2px solid #bdc3c7; } /* ネオンシルバー */
+        
+        .card-frame:hover:not(.locked) {
+            transform: translateY(-6px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.7);
         }
+        .card-frame.selected {
+            border-color: #f5a623 !important;
+            background: #2b3040;
+            box-shadow: 0 0 15px rgba(245, 166, 35, 0.5);
+        }
+        .card-frame.locked {
+            opacity: 0.35;
+            cursor: not-allowed;
+            filter: grayscale(80%);
+        }
+
+        .card-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #ffffff;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #333a4d;
+            padding-bottom: 5px;
+        }
+        .card-cost {
+            color: #ff7675;
+            font-size: 11px;
+        }
+
+        /* 3x3 形状プレビューミニマップ */
+        .shape-preview-box {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #12141a;
+            border-radius: 4px;
+            padding: 8px;
+            margin: 8px 0;
+            height: 45px;
+        }
+        .shape-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 10px);
+            gap: 2px;
+        }
+        .shape-dot {
+            width: 10px;
+            height: 10px;
+            background: #252a36;
+            border-radius: 1px;
+        }
+        .shape-dot.active {
+            background: #2ecc71;
+            box-shadow: 0 0 4px #2ecc71;
+        }
+
+        .card-stats {
+            font-size: 11px;
+            color: #b2bec3;
+            line-height: 1.4;
+        }
+
         .action-btn {
             background: #27ae60;
             color: white;
             border: none;
-            padding: 10px 18px;
-            border-radius: 4px;
+            padding: 10px 20px;
+            border-radius: 5px;
             font-weight: bold;
+            font-size: 14px;
             cursor: pointer;
-            margin-right: 10px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
         }
         .action-btn:hover { background: #2ecc71; }
-        .log-box {
-            background: #111317;
-            border: 1px solid #222630;
-            height: 140px;
-            overflow-y: auto;
-            padding: 10px;
-            font-family: monospace;
-            font-size: 12px;
-            border-radius: 4px;
-        }
-        .speech-toast {
-            position: absolute;
-            top: -30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #ffeaa7;
-            color: #2d3436;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 10px;
-            font-weight: bold;
-            white-space: nowrap;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-            animation: riseFade 1.5s forwards;
-            pointer-events: none;
-            z-index: 10;
-        }
-        @keyframes riseFade {
-            0% { opacity: 1; transform: translate(-50%, 0); }
-            100% { opacity: 0; transform: translate(-50%, -15px); }
-        }
-
-        /* 3大指導者ロール選択モーダル */
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.85);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-        }
-        .modal-content {
-            background: #1a1d24;
-            border: 2px solid #f5a623;
-            border-radius: 12px;
-            padding: 30px;
-            max-width: 650px;
-            text-align: center;
-        }
-        .role-option {
-            background: #252934;
-            border: 1px solid #3a3f50;
-            border-radius: 8px;
-            padding: 15px;
-            margin: 12px 0;
-            cursor: pointer;
-            text-align: left;
-            transition: all 0.2s;
-        }
-        .role-option:hover {
-            border-color: #f5a623;
-            background: #2c3242;
-        }
     </style>
 </head>
 <body>
 
-    <!-- 3大指導者ロール選択モーダル -->
-    <div id="roleModal" class="modal-overlay">
-        <div class="modal-content">
-            <h2 style="color:#f5a623;">🛡️ 指導者ロール (Leader Role) を選択せよ</h2>
-            <p style="color:#aaa;">ゲーム開始時の能力と試練へのアプローチを決定します。</p>
-
-            <div class="role-option" onclick="selectRole('GENERAL')">
-                <h3 style="margin:0; color:#3498db;">🛡️ 将軍 (General)</h3>
-                <p style="margin:5px 0 0 0; font-size:13px;">【王道防衛】 場の全防衛力 +10% ✕ 迎撃戦術効果 +10%</p>
-            </div>
-
-            <div class="role-option" onclick="selectRole('PROPHET')">
-                <h3 style="margin:0; color:#9b59b6;">✨ 預言者 (Prophet)</h3>
-                <p style="margin:5px 0 0 0; font-size:13px;">【⚠️上級者向け】 試練最長 7T 前予報 ✕ 予報中全産出 +10% ✕ 砂漠ドロー率UP</p>
-            </div>
-
-            <div class="role-option" onclick="selectRole('PIONEER')">
-                <h3 style="margin:0; color:#2ecc71;">🌾 開拓者 (Pioneer)</h3>
-                <p style="margin:5px 0 0 0; font-size:13px;">【内政・省エネ】 中・高レア土地ドロー率UP ✕ 試練中全 🔥 行動コスト -1 軽減</p>
-            </div>
-        </div>
-    </div>
-
     <div class="header-panel">
         <div>
-            <h2>🔥 Trial of the Ages: Last Ember <small>(v2 Unity-Ready Clean Engine)</small></h2>
-            <div id="statusInfo">
-                <span class="resource-badge">指導者: <span id="valRole" style="color:#f5a623;">未選択</span></span>
+            <h2>🔥 Trial of the Ages: Last Ember <small>(Step 1 Core Engine)</small></h2>
+            <div>
                 <span class="resource-badge">Turn: <span id="valTurn">1</span>/50</span>
                 <span class="resource-badge">🔥 生命: <span id="valEmber">20</span></span>
-                <span class="resource-badge">🌾 食料: <span id="valFood">50</span></span>
-                <span class="resource-badge">🧱 資材: <span id="valWood">50</span></span>
-                <span class="resource-badge">✨ 神秘: <span id="valMystic">0</span></span>
+                <span class="resource-badge">🌾 食料: <span id="valFood">30</span></span>
+                <span class="resource-badge">🧱 資材: <span id="valWood">30</span></span>
                 <span class="resource-badge">🛡️ リアルタイム全防衛: <span id="valDefense">10</span></span>
             </div>
         </div>
@@ -227,52 +228,36 @@
         </div>
     </div>
 
-    <div class="main-container">
-        <div class="board-container">
-            <div style="margin-bottom: 10px; display: flex; justify-content: space-between;">
-                <strong id="stageLabel">5x5 盤面 (Stage 1)</strong>
-                <span>インデックス: 左上軸 1-9 / 右上軸 A-I</span>
+    <div class="main-layout">
+        <!-- 2D 真上フラットビュー ＋ 外枠固定座標ヘッダー (1-5 / A-E) -->
+        <div class="board-wrapper">
+            <div style="margin-bottom: 8px; text-align: center; font-size: 13px; color: #a0a8b9;">
+                <strong>5x5 盤面 (Stage 1) - 中央 E5(3,3) HQ</strong>
             </div>
-            <div id="gridBoard" class="grid-board"></div>
+            <div id="gridBoard" class="grid-with-headers"></div>
         </div>
 
-        <div class="side-panel">
-            <div class="card-offering">
-                <h3>🎴 手札オファリング (1枚配置で手札消費 / LAKE物理除外)</h3>
-                <div id="cardList" class="card-list"></div>
+        <!-- 下部オファリングカードコンテナ -->
+        <div class="offering-section">
+            <div class="offering-header">
+                <h3 style="margin:0; color:#f5a623;">🎴 手札オファリング (1 ターン 1 ピック限定)</h3>
+                <span id="pickStatusInfo" style="color:#2ecc71; font-weight:bold;">1 枚選択して配置してください</span>
             </div>
-
-            <div class="card-offering">
-                <h3>🏰 拠点建設コマンド (1拠点1方角限定)</h3>
-                <p id="outpostCostInfo">建設コスト: 🧱 60 ＋ 🔥 3 (必要保有土地: 12マス以上)</p>
-                <button class="action-btn" style="background:#e67e22;" onclick="toggleBuildOutpostMode()">🏰 拠点建設モード切替</button>
-                <span id="outpostModeState" style="color:#aaa;">(通常モード)</span>
-            </div>
-
-            <div class="card-offering">
-                <h3>📜 状況ログ ＆ 市民フキダシ</h3>
-                <div id="logBox" class="log-box"></div>
-            </div>
+            <div id="cardRow" class="card-row"></div>
         </div>
     </div>
 
     <script src="src/v2_unity_ready_main.js"></script>
     <script>
-        const engine = window.V2UnityReadyEngine;
+        const engine = window.Step1Engine;
         const state = new engine.GameState();
-        const outpostSys = new engine.OutpostSystem(state);
-        const drawSys = new engine.ResonanceDrawSystem(state);
+        const drawSys = new engine.Step1DrawSystem(state);
 
         let selectedCard = null;
-        let isBuildOutpostMode = false;
 
-        function selectRole(roleId) {
-            state.setLeaderRole(roleId);
-            document.getElementById("roleModal").style.display = "none";
-            document.getElementById("valRole").innerText = engine.t(state.leaderRole.nameKey);
+        function init() {
             drawSys.generateOfferingCards();
             render();
-            addLog(`指導者ロール 【${engine.t(state.leaderRole.nameKey)}】 を選択してゲームを開始しました！`);
         }
 
         function render() {
@@ -280,39 +265,54 @@
             document.getElementById("valEmber").innerText = state.ember;
             document.getElementById("valFood").innerText = state.food;
             document.getElementById("valWood").innerText = state.wood;
-            document.getElementById("valMystic").innerText = state.mystic;
             document.getElementById("valDefense").innerText = state.calculateTotalDefense();
-            document.getElementById("stageLabel").innerText = engine.t(state.stage.nameKey);
 
-            const nextCost = state.getOutpostCost(state.outpostCount);
-            if (nextCost) {
-                document.getElementById("outpostCostInfo").innerText = `第 ${state.outpostCount+1} 拠点コスト: 🧱 ${nextCost.wood} ＋ 🔥 ${nextCost.ember} (必要土地: ${nextCost.reqTiles}マス以上)`;
+            // ピック状態テキスト
+            const pickStatusEl = document.getElementById("pickStatusInfo");
+            if (state.hasPickedThisTurn) {
+                pickStatusEl.innerText = "🔒 今ターンの選択は完了しました (Turn 終了を押してください)";
+                pickStatusEl.style.color = "#ff7675";
             } else {
-                document.getElementById("outpostCostInfo").innerText = `拠点上限 (最大 3 個) に達しました`;
+                pickStatusEl.innerText = "1 枚選択して盤面へ配置してください";
+                pickStatusEl.style.color = "#2ecc71";
             }
 
+            // 盤面描画 (外枠固定座標ヘッダー 1-5 / A-E 付き)
             const boardEl = document.getElementById("gridBoard");
-            const size = state.stage.size;
-            boardEl.style.gridTemplateColumns = `repeat(${size}, 48px)`;
             boardEl.innerHTML = "";
 
-            for (let r = 0; r < size; r++) {
-                for (let c = 0; c < size; c++) {
+            // 左上角の空セル
+            const cornerCell = document.createElement("div");
+            cornerCell.className = "header-cell";
+            boardEl.appendChild(cornerCell);
+
+            // 上部横ヘッダー (A - E)
+            for (let c = 0; c < 5; c++) {
+                const hCell = document.createElement("div");
+                hCell.className = "header-cell";
+                hCell.innerText = String.fromCharCode(65 + c);
+                boardEl.appendChild(hCell);
+            }
+
+            // グリッド本体 (行ヘッダー 1-5 ＋ セル 5x5)
+            for (let r = 0; r < 5; r++) {
+                // 左側縦ヘッダー (1 - 5)
+                const vCell = document.createElement("div");
+                vCell.className = "header-cell";
+                vCell.innerText = r + 1;
+                boardEl.appendChild(vCell);
+
+                for (let c = 0; c < 5; c++) {
                     const cellData = state.grid[r][c];
                     const cellEl = document.createElement("div");
-                    const sector = state.getDirectionSector(r, c);
-                    cellEl.className = `cell sector-${sector}`;
+                    cellEl.className = "cell";
 
                     if (cellData.isHQ) {
                         cellEl.classList.add("hq");
-                        cellEl.innerHTML = `HQ<br>${r+1},${String.fromCharCode(65+c)}`;
-                    } else if (cellData.isOutpost) {
-                        cellEl.classList.add("outpost");
-                        cellEl.innerHTML = `🏰<br>${sector[0]}`;
+                        cellEl.innerHTML = "HQ";
                     } else if (cellData.placed && cellData.terrain) {
-                        cellEl.innerHTML = `${cellData.terrain.name}<br>🛡️${cellData.terrain.defense}`;
-                    } else {
-                        cellEl.innerHTML = `<span style="color:#555;">${r+1},${String.fromCharCode(65+c)}</span>`;
+                        cellEl.classList.add("placed");
+                        cellEl.innerHTML = `${cellData.terrain.name}<br><small>🛡️${cellData.terrain.defense}</small>`;
                     }
 
                     cellEl.onclick = () => onCellClick(r, c);
@@ -320,105 +320,85 @@
                 }
             }
 
-            const cardListEl = document.getElementById("cardList");
-            cardListEl.innerHTML = "";
-            state.handOffering.forEach((card, idx) => {
-                const item = document.createElement("div");
-                item.className = `card-item ${selectedCard === card ? 'selected' : ''}`;
-                item.innerHTML = `<strong>${card.name}</strong><br><small>防衛 🛡️ ${card.terrain.defense}</small>`;
-                item.onclick = () => {
+            // 手札オファリングカード描画 (4 層構造 Card Component)
+            const cardRowEl = document.getElementById("cardRow");
+            cardRowEl.innerHTML = "";
+
+            state.handOffering.forEach((card) => {
+                const cardEl = document.createElement("div");
+                cardEl.className = `card-frame rarity-${card.terrain.rarity} ${selectedCard === card ? 'selected' : ''} ${state.hasPickedThisTurn ? 'locked' : ''}`;
+
+                // 3x3 形状プレビューミニマップの HTML 生成
+                let shapeGridHtml = '<div class="shape-grid">';
+                for (let i = 0; i < 9; i++) {
+                    const isActive = (i === 4 || (i === 5 && card.terrain.shape[0].length > 1));
+                    shapeGridHtml += `<div class="shape-dot ${isActive ? 'active' : ''}"></div>`;
+                }
+                shapeGridHtml += '</div>';
+
+                cardEl.innerHTML = `
+                    <div class="card-title">
+                        <span>${card.name}</span>
+                        <span class="card-cost">🔥 -1</span>
+                    </div>
+                    <div class="shape-preview-box">
+                        ${shapeGridHtml}
+                    </div>
+                    <div class="card-stats">
+                        防衛力: 🛡️ +${card.terrain.defense}<br>
+                        産出: 🌾 +${card.terrain.food || 0} / 🧱 +${card.terrain.wood || 0}
+                    </div>
+                    <div style="font-size:10px; color:#7f8c8d; text-align:right;">[${card.terrain.rarity}]</div>
+                `;
+
+                cardEl.onclick = () => {
+                    if (state.hasPickedThisTurn) return;
                     selectedCard = card;
-                    isBuildOutpostMode = false;
-                    document.getElementById("outpostModeState").innerText = "(通常モード)";
                     render();
                 };
-                cardListEl.appendChild(item);
-            });
 
-            while (state.speechQueue.length > 0) {
-                const speech = state.speechQueue.shift();
-                showToastSpeech(speech.r, speech.c, speech.text);
-            }
+                cardRowEl.appendChild(cardEl);
+            });
         }
 
         function onCellClick(r, c) {
-            if (isBuildOutpostMode) {
-                const res = outpostSys.buildOutpost(r, c);
-                if (res.success) {
-                    addLog(`🏰 拠点建設成功！(${r+1},${String.fromCharCode(65+c)}) - 方角 ${res.outpost.direction} 視界確保`);
-                    isBuildOutpostMode = false;
-                    document.getElementById("outpostModeState").innerText = "(通常モード)";
-                } else {
-                    addLog(`❌ 拠点建設不可: ${res.reason}`);
-                }
-                render();
+            if (state.hasPickedThisTurn) return;
+            if (!selectedCard) return;
+
+            if (state.ember <= 0) {
+                alert("❌ 生命力 🔥 が 0 のため土地を配置できません！");
                 return;
             }
 
-            if (selectedCard) {
-                if (state.ember <= 0) {
-                    addLog("❌ 生命力 🔥 が 0 のため土地を配置できません！");
-                    return;
-                }
-                const cell = state.grid[r][c];
-                if (cell.isHQ || cell.isOutpost) {
-                    addLog("❌ 本営や拠点の上に土地は置けません");
-                    return;
-                }
-                cell.placed = true;
-                cell.terrain = selectedCard.terrain;
-                state.ember -= 1; // 土地配置コスト 🔥 -1 消費
-
-                addLog(`🌱 土地配置: ${selectedCard.name} (${r+1},${String.fromCharCode(65+c)}) - コスト 🔥-1`);
-                
-                // オファリングから配置したカードを手札から削除
-                const cardIdx = state.handOffering.indexOf(selectedCard);
-                if (cardIdx !== -1) {
-                    state.handOffering.splice(cardIdx, 1);
-                }
-                selectedCard = null;
-                render();
+            const cell = state.grid[r][c];
+            if (cell.isHQ) {
+                alert("❌ 本営マスの上には配置できません！");
+                return;
             }
-        }
+            if (cell.placed) {
+                alert("❌ すでに土地が配置されています！");
+                return;
+            }
 
-        function toggleBuildOutpostMode() {
-            isBuildOutpostMode = !isBuildOutpostMode;
+            // 土地配置実行
+            cell.placed = true;
+            cell.terrain = selectedCard.terrain;
+            state.ember -= 1; // コスト 🔥 -1 消費
+
+            // 1 ターン 1 ピック限定適用 (残りをロック)
+            state.hasPickedThisTurn = true;
             selectedCard = null;
-            document.getElementById("outpostModeState").innerText = isBuildOutpostMode ? "(🏰 建設マス選択中...)" : "(通常モード)";
+
             render();
         }
 
         function nextTurn() {
             state.turn++;
-            if (state.turn === 16 && state.currentStageIndex === 0) {
-                state.currentStageIndex = 1;
-                state.stage = engine.BOARD_STAGES.STAGE_2;
-                state.updateHQPosition();
-                addLog("🎉 Stage 2 開幕！ 7x7 盤面拡大 ＆ 中央 D4(3,3) に HQ 移動 ＆ 拠点建設初解禁！");
-            } else if (state.turn === 31 && state.currentStageIndex === 1) {
-                state.currentStageIndex = 2;
-                state.stage = engine.BOARD_STAGES.STAGE_3;
-                state.updateHQPosition();
-                addLog("👑 Stage 3 開幕！ 9x9 盤面拡大 ＆ 中央 E5(4,4) に HQ 移動 ＆ 自由拠点建設解禁！");
-            }
             drawSys.generateOfferingCards();
             render();
         }
 
-        function addLog(msg) {
-            const box = document.getElementById("logBox");
-            box.innerHTML += `[T${state.turn}] ${msg}<br>`;
-            box.scrollTop = box.scrollHeight;
-        }
-
-        function showToastSpeech(r, c, text) {
-            const boardEl = document.getElementById("gridBoard");
-            const toast = document.createElement("div");
-            toast.className = "speech-toast";
-            toast.innerText = text;
-            boardEl.appendChild(toast);
-            setTimeout(() => toast.remove(), 1500);
-        }
+        window.onload = init;
     </script>
 </body>
 </html>
