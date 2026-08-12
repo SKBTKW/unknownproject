@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trial of the Ages: Last Ember (Step 1 + Merge Engine)</title>
+    <title>Trial of the Ages: Last Ember (Step 1 + Shape Rotation Engine)</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -91,8 +91,6 @@
             background: #283328;
             border-color: #2ecc71;
         }
-
-        /* 黄金枠マージ成立マス */
         .cell.merged {
             background: #4a3b10 !important;
             border: 2px solid #f1c40f !important;
@@ -107,7 +105,7 @@
             border-radius: 10px;
             border: 1px solid #282c37;
             width: 100%;
-            max-width: 750px;
+            max-width: 780px;
             box-sizing: border-box;
         }
         .offering-header {
@@ -123,8 +121,8 @@
         }
 
         .card-frame {
-            width: 150px;
-            height: 200px;
+            width: 160px;
+            height: 220px;
             background: #1e222d;
             border-radius: 8px;
             padding: 12px;
@@ -176,12 +174,11 @@
             background: #12141a;
             border-radius: 4px;
             padding: 8px;
-            margin: 8px 0;
+            margin: 6px 0;
             height: 45px;
         }
         .shape-grid {
             display: grid;
-            grid-template-columns: repeat(3, 10px);
             gap: 2px;
         }
         .shape-dot {
@@ -195,10 +192,23 @@
             box-shadow: 0 0 4px #2ecc71;
         }
 
+        .rotate-btn {
+            background: #34495e;
+            color: #ecf0f1;
+            border: 1px solid #5d6d7e;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            margin-top: 4px;
+            width: 100%;
+        }
+        .rotate-btn:hover { background: #415b76; }
+
         .card-stats {
             font-size: 11px;
             color: #b2bec3;
-            line-height: 1.4;
+            line-height: 1.3;
         }
 
         .action-btn {
@@ -219,7 +229,7 @@
 
     <div class="header-panel">
         <div>
-            <h2>🔥 Trial of the Ages: Last Ember <small>(Step 1 + Merge Engine)</small></h2>
+            <h2>🔥 Trial of the Ages: Last Ember <small>(Step 1 + Rotation Engine)</small></h2>
             <div>
                 <span class="resource-badge">Turn: <span id="valTurn">1</span>/50</span>
                 <span class="resource-badge">🔥 生命: <span id="valEmber">20</span></span>
@@ -236,14 +246,14 @@
     <div class="main-layout">
         <div class="board-wrapper">
             <div style="margin-bottom: 8px; text-align: center; font-size: 13px; color: #a0a8b9;">
-                <strong>5x5 盤面 (Stage 1) - 中央 E5(3,3) HQ</strong>
+                <strong>5x5 盤面 (Stage 1) - 中央 E5(3,3) HQ (Rキーで形状回転)</strong>
             </div>
             <div id="gridBoard" class="grid-with-headers"></div>
         </div>
 
         <div class="offering-section">
             <div class="offering-header">
-                <h3 style="margin:0; color:#f5a623;">🎴 手札オファリング (2x2マージで 🔥 +1 回復！)</h3>
+                <h3 style="margin:0; color:#f5a623;">🎴 手札オファリング (丘陵 H2 3マスで山岳 H3 解禁)</h3>
                 <span id="pickStatusInfo" style="color:#2ecc71; font-weight:bold;">1 枚選択して配置してください</span>
             </div>
             <div id="mergeMsgBox" style="color:#f1c40f; font-weight:bold; margin-bottom:10px; min-height:20px;"></div>
@@ -262,6 +272,25 @@
         function init() {
             drawSys.generateOfferingCards();
             render();
+
+            // キーボード 'R' キーでの回転ショートカット
+            window.addEventListener("keydown", (e) => {
+                if (e.key === "r" || e.key === "R") {
+                    if (selectedCard) {
+                        rotateSelectedCard(selectedCard);
+                    }
+                }
+            });
+        }
+
+        function rotateSelectedCard(card) {
+            // 2x2 正方形を除き 90 度回転
+            const rows = card.currentShape.length;
+            const cols = card.currentShape[0].length;
+            if (rows === 2 && cols === 2) return; // 2x2 は除外
+
+            card.currentShape = engine.rotateShapeMatrix(card.currentShape);
+            render();
         }
 
         function render() {
@@ -277,7 +306,7 @@
                 pickStatusEl.innerText = "🔒 今ターンの選択は完了しました (Turn 終了を押してください)";
                 pickStatusEl.style.color = "#ff7675";
             } else {
-                pickStatusEl.innerText = "1 枚選択して盤面へ配置してください";
+                pickStatusEl.innerText = "1 枚選択して盤面へ配置してください (Rキーで回転)";
                 pickStatusEl.style.color = "#2ecc71";
             }
 
@@ -330,12 +359,20 @@
                 const cardEl = document.createElement("div");
                 cardEl.className = `card-frame rarity-${card.terrain.rarity} ${selectedCard === card ? 'selected' : ''} ${state.hasPickedThisTurn ? 'locked' : ''}`;
 
-                let shapeGridHtml = '<div class="shape-grid">';
-                for (let i = 0; i < 9; i++) {
-                    const isActive = (i === 4 || (i === 5 && card.terrain.shape[0].length > 1));
-                    shapeGridHtml += `<div class="shape-dot ${isActive ? 'active' : ''}"></div>`;
+                // 動的な 90 度回転対応形状プレビュー HTML 生成
+                const sRows = card.currentShape.length;
+                const sCols = card.currentShape[0].length;
+                
+                let shapeGridHtml = `<div class="shape-grid" style="grid-template-columns: repeat(${sCols}, 10px);">`;
+                for (let dr = 0; dr < sRows; dr++) {
+                    for (let dc = 0; dc < sCols; dc++) {
+                        const isActive = card.currentShape[dr][dc] === 1;
+                        shapeGridHtml += `<div class="shape-dot ${isActive ? 'active' : ''}"></div>`;
+                    }
                 }
                 shapeGridHtml += '</div>';
+
+                const canRotate = !(sRows === 2 && sCols === 2) && (sRows > 1 || sCols > 1);
 
                 cardEl.innerHTML = `
                     <div class="card-title">
@@ -345,6 +382,7 @@
                     <div class="shape-preview-box">
                         ${shapeGridHtml}
                     </div>
+                    ${canRotate ? `<button class="rotate-btn" onclick="event.stopPropagation(); rotateSelectedCard(state.handOffering[${state.handOffering.indexOf(card)}])">🔄 90度回転 (R)</button>` : ''}
                     <div class="card-stats">
                         防衛力: 🛡️ +${card.terrain.defense}<br>
                         産出: 🌾 +${card.terrain.food || 0} / 🧱 +${card.terrain.wood || 0}
@@ -371,21 +409,16 @@
                 return;
             }
 
-            const cell = state.grid[r][c];
-            if (cell.isHQ) {
-                alert("❌ 本営マスの上には配置できません！");
-                return;
-            }
-            if (cell.placed) {
-                alert("❌ すでに土地が配置されています！");
+            // 多マス形状通りの安全一括配置実行
+            const res = state.placeShape(r, c, selectedCard.currentShape, selectedCard.terrain);
+            if (!res.success) {
+                alert(`❌ 配置不可: ${res.reason}`);
                 return;
             }
 
-            cell.placed = true;
-            cell.terrain = selectedCard.terrain;
             state.ember -= 1; // コスト 🔥 -1 消費
 
-            // マージチェック実行 (2x2正方形 / 4マス凸字山岳)
+            // マージチェック実行
             state.checkMergePatterns();
 
             state.hasPickedThisTurn = true;
