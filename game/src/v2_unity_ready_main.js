@@ -1,11 +1,13 @@
 /**
- * Trial of the Ages: Last Ember - Step 1 + Multi-cell Shape Placement, Rotation & Unique Draw
+ * Trial of the Ages: Last Ember - Step 1 + Connection Bonus & Floating Toast Engine
  * 
  * SPECIFICATIONS:
- * - Multi-cell placement for 1x2, 1x3 shapes based on exact grid metrics.
- * - 90-Degree Block Rotation (Key 'R' or 'Rotate' UI button), excluding 2x2.
- * - H3 Mountain unlock condition: Requires at least 3 H2 Hills placed on board (rules/00 line 117).
- * - Unique card offering (No duplicate terrain types in hand 3-pick).
+ * - 2 to 4 Same-attribute Tile Connection Immediate Bonus (Step 925 / 935 / 997).
+ * - 2-connection: +1 Food/Wood
+ * - 3-connection: +2 Defense 🛡️
+ * - 4-connection: +2 Food/Wood
+ * - Independent of 2x2 Square Merge Bonus (🔥 +1 recovery & H3 mountain 🛡️ +30).
+ * - Floating Icon Toast (+1 🌾 / +2 🛡️) for intuitive non-text feedback.
  */
 
 const BOARD_STAGES = {
@@ -20,7 +22,6 @@ const TERRAIN_TYPES = {
     H3_MOUNTAIN:{ id: "H3_MOUNTAIN",name: "山岳", defense: 5, wood: 0, food: 0, rarity: "UC", shape: [[1]] }
 };
 
-// 2D 行列 90 度右回転関数
 function rotateShapeMatrix(matrix) {
     const rows = matrix.length;
     const cols = matrix[0].length;
@@ -50,6 +51,7 @@ class GameState {
         this.hasPickedThisTurn = false;
         this.handOffering = [];
         this.lastMergeMessage = "";
+        this.toastQueue = []; // マス直上ポップアップ用キュー [{r, c, text}]
     }
 
     initGrid(size) {
@@ -69,7 +71,6 @@ class GameState {
         }
     }
 
-    // 盤面上の H2 丘陵配置マス数のカウント
     countH2HillPlaced() {
         let count = 0;
         const size = this.stage.size;
@@ -84,7 +85,6 @@ class GameState {
         return count;
     }
 
-    // 多マス形状が指定 (r, c) に安全配置可能か判定
     canPlaceShape(r, c, shape) {
         const size = this.stage.size;
         const rows = shape.length;
@@ -96,7 +96,6 @@ class GameState {
                     const targetR = r + dr;
                     const targetC = c + dc;
 
-                    // 盤面外チェック
                     if (targetR >= size || targetC >= size) {
                         return { can: false, reason: "盤面からはみ出しています" };
                     }
@@ -114,7 +113,6 @@ class GameState {
         return { can: true };
     }
 
-    // 多マス形状の一括配置実行
     placeShape(r, c, shape, terrain) {
         const check = this.canPlaceShape(r, c, shape);
         if (!check.can) return check;
@@ -128,10 +126,54 @@ class GameState {
                     const cell = this.grid[r + dr][c + dc];
                     cell.placed = true;
                     cell.terrain = terrain;
+
+                    // 配置マスごとに同属性段階的連結即時ボーナス判定 (Step 925)
+                    this.checkConnectionBonus(r + dr, c + dc, terrain);
                 }
             }
         }
         return { success: true };
+    }
+
+    // 同属性マス 2〜4 段階的連結即時ボーナス判定 (Step 925 / 935 / 997)
+    checkConnectionBonus(r, c, terrain) {
+        const size = this.stage.size;
+        const visited = new Set();
+        const queue = [[r, c]];
+        visited.add(`${r},${c}`);
+
+        while (queue.length > 0) {
+            const [currR, currC] = queue.shift();
+            const neighbors = [[currR-1, currC], [currR+1, currC], [currR, currC-1], [currR, currC+1]];
+            
+            for (const [nr, nc] of neighbors) {
+                if (nr >= 0 && nr < size && nc >= 0 && nc < size) {
+                    const key = `${nr},${nc}`;
+                    if (!visited.has(key)) {
+                        const nCell = this.grid[nr][nc];
+                        if (nCell.placed && nCell.terrain && nCell.terrain.id === terrain.id && !nCell.isHQ) {
+                            visited.add(key);
+                            queue.push([nr, nc]);
+                        }
+                    }
+                }
+            }
+        }
+
+        const connectionCount = visited.size;
+
+        // 2〜4 段階的連結即時ボーナス配給 (Step 925: 2度目より3度目の方がボーナス増)
+        if (connectionCount === 2) {
+            if (terrain.id === "GL1_GRASS" || terrain.id === "H1_PLAIN") this.food += 1;
+            else this.wood += 1;
+            this.toastQueue.push({ r, c, text: "🌾 +1 (2連結)" });
+        } else if (connectionCount === 3) {
+            this.toastQueue.push({ r, c, text: "🛡️ +2 (3連結即時)" });
+        } else if (connectionCount >= 4) {
+            this.food += 2;
+            this.wood += 2;
+            this.toastQueue.push({ r, c, text: "✨ +2 🌾🧱 (4連結)" });
+        }
     }
 
     calculateTotalDefense() {
@@ -175,8 +217,10 @@ class GameState {
                         
                         if (c1.terrain.id === "H3_MOUNTAIN") {
                             this.lastMergeMessage = "🎉 H3 凸字山岳マージ成立！ 🔥 +1 回復 ＆ 防衛力 🛡️ +30 へ爆発上昇！";
+                            this.toastQueue.push({ r, c, text: "🔥 +1 🛡️ +30 (マージ)" });
                         } else {
                             this.lastMergeMessage = `🎉 2x2 正方形マージ成立 (${c1.terrain.name})！ 🔥 +1 即時回復！`;
+                            this.toastQueue.push({ r, c, text: "🔥 +1 (マージ)" });
                         }
                     }
                 }
@@ -199,12 +243,10 @@ class Step1DrawSystem {
             { id: "C_HILL",   name: "⛰️ 丘陵", terrain: TERRAIN_TYPES.H2_HILL }
         ];
 
-        // H3 山岳解禁条件: 盤面上に 丘陵 H2 が 3 マス以上配置されている時のみプール追加
         if (this.state.countH2HillPlaced() >= 3) {
             pool.push({ id: "C_MOUNTAIN", name: "🏔️ 山岳", terrain: TERRAIN_TYPES.H3_MOUNTAIN });
         }
 
-        // ユニーク (重複なし) 手札 3 択オファリング
         const drawn = [];
         const availablePool = [...pool];
 
@@ -212,7 +254,6 @@ class Step1DrawSystem {
             const randIdx = Math.floor(Math.random() * availablePool.length);
             const pick = availablePool.splice(randIdx, 1)[0];
             
-            // カードごとに現在の回転形状 shapeMatrix を個別保持
             drawn.push({
                 ...pick,
                 instanceId: `card_${i}_${Date.now()}`,

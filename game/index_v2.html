@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trial of the Ages: Last Ember (Step 1 + Shape Rotation Engine)</title>
+    <title>Trial of the Ages: Last Ember (Step 1 + Floating Toast Engine)</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -75,6 +75,7 @@
             font-size: 11px;
             cursor: pointer;
             user-select: none;
+            position: relative;
             transition: border-color 0.15s, background-color 0.15s;
         }
         .cell:hover {
@@ -97,6 +98,29 @@
             box-shadow: 0 0 8px rgba(241, 196, 15, 0.6);
             color: #fff;
             font-weight: bold;
+        }
+
+        /* 浮遊数値アイコンポップアップ (Step 1004 / 理念 6 準拠) */
+        .tile-bonus-toast {
+            position: absolute;
+            top: -22px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(46, 204, 113, 0.9);
+            color: #111;
+            font-weight: bold;
+            font-size: 11px;
+            padding: 1px 6px;
+            border-radius: 8px;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+            animation: floatUp 1.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+            pointer-events: none;
+            z-index: 30;
+        }
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translate(-50%, 0); }
+            100% { opacity: 0; transform: translate(-50%, -20px); }
         }
 
         .offering-section {
@@ -229,7 +253,7 @@
 
     <div class="header-panel">
         <div>
-            <h2>🔥 Trial of the Ages: Last Ember <small>(Step 1 + Rotation Engine)</small></h2>
+            <h2>🔥 Trial of the Ages: Last Ember <small>(Step 1 + Floating Toast Engine)</small></h2>
             <div>
                 <span class="resource-badge">Turn: <span id="valTurn">1</span>/50</span>
                 <span class="resource-badge">🔥 生命: <span id="valEmber">20</span></span>
@@ -246,14 +270,14 @@
     <div class="main-layout">
         <div class="board-wrapper">
             <div style="margin-bottom: 8px; text-align: center; font-size: 13px; color: #a0a8b9;">
-                <strong>5x5 盤面 (Stage 1) - 中央 E5(3,3) HQ (Rキーで形状回転)</strong>
+                <strong>5x5 盤面 (Stage 1) - 中央 E5(3,3) HQ (Rキーで回転)</strong>
             </div>
             <div id="gridBoard" class="grid-with-headers"></div>
         </div>
 
         <div class="offering-section">
             <div class="offering-header">
-                <h3 style="margin:0; color:#f5a623;">🎴 手札オファリング (丘陵 H2 3マスで山岳 H3 解禁)</h3>
+                <h3 style="margin:0; color:#f5a623;">🎴 手札オファリング (同属性3連結で 🛡️ +2 ポップアップ！)</h3>
                 <span id="pickStatusInfo" style="color:#2ecc71; font-weight:bold;">1 枚選択して配置してください</span>
             </div>
             <div id="mergeMsgBox" style="color:#f1c40f; font-weight:bold; margin-bottom:10px; min-height:20px;"></div>
@@ -273,7 +297,6 @@
             drawSys.generateOfferingCards();
             render();
 
-            // キーボード 'R' キーでの回転ショートカット
             window.addEventListener("keydown", (e) => {
                 if (e.key === "r" || e.key === "R") {
                     if (selectedCard) {
@@ -284,10 +307,9 @@
         }
 
         function rotateSelectedCard(card) {
-            // 2x2 正方形を除き 90 度回転
             const rows = card.currentShape.length;
             const cols = card.currentShape[0].length;
-            if (rows === 2 && cols === 2) return; // 2x2 は除外
+            if (rows === 2 && cols === 2) return;
 
             card.currentShape = engine.rotateShapeMatrix(card.currentShape);
             render();
@@ -359,7 +381,6 @@
                 const cardEl = document.createElement("div");
                 cardEl.className = `card-frame rarity-${card.terrain.rarity} ${selectedCard === card ? 'selected' : ''} ${state.hasPickedThisTurn ? 'locked' : ''}`;
 
-                // 動的な 90 度回転対応形状プレビュー HTML 生成
                 const sRows = card.currentShape.length;
                 const sCols = card.currentShape[0].length;
                 
@@ -398,6 +419,12 @@
 
                 cardRowEl.appendChild(cardEl);
             });
+
+            // マス直上への浮遊数値アイコンポップアップ描画 (1.2秒トースト)
+            while (state.toastQueue.length > 0) {
+                const toastData = state.toastQueue.shift();
+                showTileToast(toastData.r, toastData.c, toastData.text);
+            }
         }
 
         function onCellClick(r, c) {
@@ -409,7 +436,6 @@
                 return;
             }
 
-            // 多マス形状通りの安全一括配置実行
             const res = state.placeShape(r, c, selectedCard.currentShape, selectedCard.terrain);
             if (!res.success) {
                 alert(`❌ 配置不可: ${res.reason}`);
@@ -418,13 +444,27 @@
 
             state.ember -= 1; // コスト 🔥 -1 消費
 
-            // マージチェック実行
+            // マージチェック実行 (2x2正方形 / 4マス凸字山岳)
             state.checkMergePatterns();
 
             state.hasPickedThisTurn = true;
             selectedCard = null;
 
             render();
+        }
+
+        function showTileToast(r, c, text) {
+            const boardEl = document.getElementById("gridBoard");
+            // 外枠ヘッダーがあるため 1 行目・1 列目をオフセット考慮
+            const cellIndex = (r + 1) * 6 + (c + 1);
+            const cellEl = boardEl.children[cellIndex];
+            if (cellEl) {
+                const toast = document.createElement("div");
+                toast.className = "tile-bonus-toast";
+                toast.innerText = text;
+                cellEl.appendChild(toast);
+                setTimeout(() => toast.remove(), 1200);
+            }
         }
 
         function nextTurn() {
