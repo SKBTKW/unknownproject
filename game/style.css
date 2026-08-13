@@ -1,0 +1,248 @@
+/* style.css - Updated with Civ-Style Border River CSS Styling */
+
+:root {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --accent-gold: #fbbf24;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  overflow-x: hidden;
+}
+
+#app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background: var(--bg-secondary);
+  border-bottom: 2px solid #334155;
+}
+
+.resource-bar {
+  display: flex;
+  gap: 15px;
+  font-weight: bold;
+}
+
+.resource-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(15, 23, 42, 0.6);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #334155;
+}
+
+main {
+  display: flex;
+  flex: 1;
+  gap: 15px;
+  padding: 15px;
+  box-sizing: border-box;
+}
+
+#left-panel {
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+#center-board-zone {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  border: 1px solid #334155;
+  padding: 15px;
+  position: relative;
+}
+
+#grid-cells-layer {
+  display: grid;
+  grid-template-columns: repeat(8, 48px);
+  grid-template-rows: repeat(8, 48px);
+  gap: 4px;
+  padding: 8px;
+  background: #090d16;
+  border-radius: 8px;
+  border: 2px solid #334155;
+  position: relative;
+}
+
+.grid-tile-cell {
+  width: 48px;
+  height: 48px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+  border: 1px solid rgba(255,255,255,0.1);
+  transition: all 0.15s ease;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.grid-tile-cell.locked {
+  opacity: 0.25;
+  background: #020617;
+  cursor: not-allowed;
+}
+
+.grid-tile-cell.unlocked:hover {
+  filter: brightness(1.2);
+  border-color: var(--accent-gold);
+}
+
+/* Civ式 境界線川 (Border River) ネオン描画スタイル */
+.grid-tile-cell.river-border-top::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -2px;
+  width: 52px;
+  height: 5px;
+  background: #38bdf8;
+  box-shadow: 0 0 8px #0284c7;
+  z-index: 10;
+  border-radius: 2px;
+}
+
+.grid-tile-cell.river-border-left::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -4px;
+  width: 5px;
+  height: 52px;
+  background: #38bdf8;
+  box-shadow: 0 0 8px #0284c7;
+  z-index: 10;
+  border-radius: 2px;
+}
+
+#card-offerings-zone {
+  display: flex;
+  gap: 15px;
+  margin-top: 15px;
+  justify-content: center;
+}
+
+/* 高視認性 170px ゆったりカード */
+.card-item {
+  width: 170px !important;
+  padding: 12px !important;
+  border: 2px solid #4b5563 !important;
+  border-radius: 10px !important;
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
+  cursor: pointer;
+  color: #fff;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.card-item:hover {
+  transform: translateY(-4px);
+  border-color: #60a5fa !important;
+}
+
+.card-item.selected {
+  border-color: var(--accent-gold) !important;
+  box-shadow: 0 0 14px var(--accent-gold) !important;
+}
+
+.card-shape-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 14px);
+  grid-template-rows: repeat(4, 14px);
+  gap: 2px;
+  margin: 8px 0;
+  padding: 4px;
+  background: #090d16;
+  border-radius: 6px;
+  border: 1px solid #334155;
+}
+
+.mini-preview-cell {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  background: transparent;
+}
+
+.mini-preview-cell.filled {
+  background: var(--accent-gold);
+  border: 1px solid #f59e0b;
+}
+
+.card-yield-summary {
+  background: rgba(15, 23, 42, 0.8);
+  border-radius: 6px;
+  padding: 4px 8px;
+  margin: 6px 0;
+  width: 90%;
+  font-size: 0.72rem;
+  border: 1px solid #334155;
+  display: flex;
+  justify-content: space-around;
+  color: #34d399;
+  font-weight: bold;
+}
+
+#right-panel {
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.panel-box {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid #334155;
+}
+
+#log-console {
+  height: 200px;
+  overflow-y: auto;
+  font-family: monospace;
+  font-size: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.log-entry {
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+.log-entry.info { color: #94a3b8; }
+.log-entry.success { color: #34d399; background: rgba(52,211,153,0.1); }
+.log-entry.warning { color: #f87171; background: rgba(248,113,113,0.1); }

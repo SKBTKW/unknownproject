@@ -18,11 +18,12 @@ const Step1Terrains = {
     HQ: new Step1Terrain("HQ", "本営", 10, 10, 10, 1)
 };
 
+/* ユーザー確定 1x1 + 1x1 連結即時ボーナス数値マトリクス */
 const CONNECTION_BONUS_TABLE = {
     "GL1_GRASS":          { food: 5, wood: 0, mystic: 0 },
     "GL2_FOREST":         { food: 2, wood: 3, mystic: 0 },
     "H1_PLAINS":          { food: 0, wood: 5, mystic: 0 },
-    "H2_HILL":            { food: 0, wood: 4, mystic: 0 },
+    "H2_HILL":            { food: 3, wood: 2, mystic: 0 },
     "H3_MOUNTAIN":        { food: 0, wood: 5, mystic: 2 }
 };
 
@@ -237,16 +238,24 @@ class GameState {
 
         dfs(r, c);
 
-        const isHQVic = this.isHQVicinity(r, c);
-        const mult = isHQVic ? 2 : 1;
+        /* 近郊部（本営周囲8マス）での連結2倍は保留（等倍） */
+        const mult = 1;
         const b = CONNECTION_BONUS_TABLE[terrain.id] || { food: 2, wood: 2, mystic: 0 };
 
         if (connectionCount === 2) {
             const fVal = b.food * mult;
             const wVal = b.wood * mult;
+            const mVal = b.mystic * mult;
             this.food += fVal;
             this.wood += wVal;
-            this.toastQueue.push({ r, c, text: `連結+ ${fVal > 0 ? '🌾'+fVal : ''} ${wVal > 0 ? '🧱'+wVal : ''}` });
+            this.mystic += mVal;
+
+            let toastStr = "連結+ ";
+            if (fVal > 0) toastStr += `🌾+${fVal} `;
+            if (wVal > 0) toastStr += `🧱+${wVal} `;
+            if (mVal > 0) toastStr += `✨+${mVal}`;
+
+            this.toastQueue.push({ r, c, text: toastStr.trim() });
             this.addLog(`2連結即時ボーナス獲得 (${terrain.name})`);
         } else if (connectionCount === 3) {
             const fVal = b.food * 2 * mult;

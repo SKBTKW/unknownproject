@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trial of Ages : Last Ember (Faithful Wireframe Layout)</title>
+    <title>Trial of Ages : Last Ember (3-Column Architecture)</title>
     <style>
         * {
             box-sizing: border-box;
@@ -14,12 +14,12 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #0d0f14;
             color: #e0e0e0;
-            padding: 15px;
+            padding: 12px;
             display: flex;
             flex-direction: column;
-            gap: 15px;
-            min-height: 100vh;
-            overflow-y: auto;
+            gap: 12px;
+            height: 100vh;
+            overflow: hidden;
         }
 
         /* 1. 最上部ヘッダー (トップステータスバー) */
@@ -27,13 +27,13 @@
             background: #161922;
             border: 1px solid #2a2e3d;
             border-radius: 8px;
-            padding: 10px 20px;
+            padding: 8px 20px;
             display: grid;
             grid-template-columns: 340px 1fr 240px 140px;
             align-items: center;
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
             flex-shrink: 0;
-            height: 55px;
+            height: 52px;
         }
         
         .app-title-box {
@@ -41,7 +41,7 @@
             align-items: center;
             gap: 15px;
             font-weight: bold;
-            font-size: 16px;
+            font-size: 15px;
         }
 
         .role-avatar-box {
@@ -62,22 +62,22 @@
             align-items: center;
             justify-content: center;
             gap: 10px;
-            font-size: 26px;
+            font-size: 24px;
             font-weight: bold;
             color: #ffffff;
         }
         .ember-icon {
-            font-size: 32px;
+            font-size: 28px;
             filter: drop-shadow(0 0 8px #ff7675);
         }
 
         .trial-announcement {
             background: #1f2430;
             border: 1px dashed #e67e22;
-            padding: 6px 12px;
+            padding: 4px 10px;
             border-radius: 6px;
             text-align: center;
-            font-size: 12px;
+            font-size: 11px;
             color: #f39c12;
             font-weight: bold;
             display: none;
@@ -86,25 +86,146 @@
         .turn-box {
             background: #1abc9c;
             color: #0b0d11;
-            padding: 6px 15px;
+            padding: 4px 12px;
             border-radius: 6px;
             text-align: center;
             font-weight: bold;
         }
         .turn-box .turn-num {
-            font-size: 18px;
+            font-size: 16px;
             display: block;
         }
 
-        /* 2. メインエリア (盤面 ✕ 右サイドパネル) */
-        .middle-content {
+        /* 2. メイン 3 カラムレイアウト構造 */
+        .main-layout {
             display: grid;
-            grid-template-columns: 1fr 280px;
-            gap: 15px;
+            grid-template-columns: 280px 1fr 280px;
+            gap: 12px;
             flex: 1;
-            min-height: 460px;
+            min-height: 0;
+            overflow: hidden;
         }
 
+        /* 👈 左サイドバー (ドローエリア ＋ 保留エリア) */
+        .left-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-height: 0;
+            overflow-y: auto;
+        }
+
+        .offering-box {
+            background: #161922;
+            border: 1px solid #2a2e3d;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+        }
+        .section-label {
+            font-size: 11px;
+            font-weight: bold;
+            color: #1abc9c;
+            text-align: center;
+            border-bottom: 1px solid #2a2e3d;
+            padding-bottom: 4px;
+        }
+
+        .card-row-vertical {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex: 1;
+            overflow-y: auto;
+            align-items: center;
+        }
+
+        .card-frame {
+            width: 100%;
+            max-width: 240px;
+            min-height: 115px;
+            background: #1e2330;
+            border: 1px solid #34495e;
+            border-radius: 6px;
+            padding: 8px 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: transform 0.15s, border-color 0.15s;
+            position: relative;
+        }
+        .card-frame:hover:not(.locked) {
+            transform: scale(1.02);
+            border-color: #1abc9c;
+        }
+        .card-frame.selected {
+            border-color: #f39c12 !important;
+            background: #2b3245;
+            box-shadow: 0 0 10px rgba(243, 156, 18, 0.5);
+        }
+        .card-frame.locked {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        .card-title-mini {
+            font-size: 11px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+        }
+        .card-shape-mini {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #12151f;
+            border-radius: 3px;
+            padding: 4px;
+            height: 45px;
+            margin: 3px 0;
+        }
+
+        .reserve-box {
+            background: #161922;
+            border: 1px solid #2a2e3d;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            height: 180px;
+        }
+        .reserve-row-vertical {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            align-items: center;
+            flex: 1;
+        }
+        .reserve-slot {
+            flex: 1;
+            height: 120px;
+            background: #12141c;
+            border: 1px dashed #34495e;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: #7f8c8d;
+            cursor: pointer;
+        }
+        .reserve-slot.filled {
+            border: 1px solid #e67e22;
+            background: #231c12;
+            color: #fff;
+        }
+
+        /* 🎯 中央メインエリア (9x9拡張対応特大ボード領域) */
         .board-container {
             background: #13161f;
             border: 1px solid #252a38;
@@ -116,26 +237,27 @@
             position: relative;
             padding: 20px;
             box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
-            min-height: 440px;
+            height: 100%;
+            overflow: auto;
         }
 
         .main-area-badge {
             position: absolute;
-            top: 15px;
-            right: 20px;
+            top: 12px;
+            right: 15px;
             background: #1abc9c;
             color: #000;
             font-weight: bold;
-            padding: 6px 16px;
+            padding: 4px 12px;
             border-radius: 4px;
-            font-size: 13px;
+            font-size: 12px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.4);
         }
 
         .grid-with-headers {
             display: grid;
-            grid-template-columns: 40px repeat(5, 64px);
-            grid-template-rows: 40px repeat(5, 64px);
+            grid-template-columns: 36px repeat(5, 60px);
+            grid-template-rows: 36px repeat(5, 60px);
             gap: 4px;
             background: #08090d;
             padding: 10px;
@@ -148,13 +270,13 @@
             justify-content: center;
             font-weight: bold;
             color: #7f8c8d;
-            font-size: 14px;
+            font-size: 13px;
             user-select: none;
         }
 
         .cell {
-            width: 64px;
-            height: 64px;
+            width: 60px;
+            height: 60px;
             background: #1c202c;
             border: 1px solid #2c3345;
             border-radius: 6px;
@@ -162,7 +284,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            font-size: 13px;
+            font-size: 12px;
             cursor: pointer;
             user-select: none;
             position: relative;
@@ -173,7 +295,7 @@
             background: #252d3e;
         }
 
-        /* 本営周囲8マスの薄いエメラルド光彩枠 (置いたら良い効果がありそう) */
+        /* 本営周囲8マスのエメラルド光彩枠 */
         .cell.hq-vicinity-unplaced {
             border: 1px dashed rgba(26, 188, 156, 0.7) !important;
             box-shadow: inset 0 0 10px rgba(26, 188, 156, 0.3);
@@ -232,7 +354,7 @@
             background: rgba(46, 204, 113, 0.95);
             color: #111;
             font-weight: bold;
-            font-size: 13px;
+            font-size: 12px;
             padding: 2px 8px;
             border-radius: 8px;
             white-space: nowrap;
@@ -246,7 +368,6 @@
             100% { opacity: 0; transform: translate(-50%, -24px); }
         }
 
-        /* マウス位置追従ツールチップ */
         .tile-tooltip {
             position: fixed;
             background: rgba(22, 25, 34, 0.95);
@@ -261,18 +382,19 @@
             display: none;
         }
 
-        /* 右サイドパネル */
+        /* 👉 右サイドバー (データ表示 ✕ ログ ✕ アクションボタン) */
         .right-sidebar {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
+            min-height: 0;
         }
 
         .data-panel {
             background: #1abc9c;
             color: #0b0d11;
             border-radius: 8px;
-            padding: 12px 15px;
+            padding: 10px 12px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.4);
             cursor: pointer;
             transition: transform 0.15s;
@@ -283,24 +405,24 @@
         }
         .data-panel h4 {
             text-align: center;
-            font-size: 14px;
-            margin-bottom: 8px;
+            font-size: 13px;
+            margin-bottom: 6px;
             border-bottom: 1px solid rgba(0,0,0,0.2);
-            padding-bottom: 4px;
+            padding-bottom: 3px;
         }
         .resource-list {
             display: flex;
             flex-direction: column;
-            gap: 6px;
-            font-size: 14px;
+            gap: 4px;
+            font-size: 13px;
             font-weight: bold;
         }
 
         .breakdown-modal {
             position: absolute;
-            top: 70px;
-            right: 310px;
-            width: 260px;
+            top: 65px;
+            right: 290px;
+            width: 250px;
             background: #161922;
             border: 1px solid #1abc9c;
             border-radius: 8px;
@@ -312,18 +434,19 @@
         }
         .breakdown-modal h5 {
             color: #1abc9c;
-            font-size: 13px;
+            font-size: 12px;
             border-bottom: 1px solid #2c3345;
             padding-bottom: 4px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
         .breakdown-row {
             display: flex;
             justify-content: space-between;
             font-size: 11px;
-            margin-bottom: 4px;
+            margin-bottom: 3px;
         }
 
+        /* ログエリア自体の上下スライド格納コンテナ */
         .log-panel-wrapper {
             background: #e8d5f5;
             color: #333;
@@ -333,163 +456,68 @@
             display: flex;
             flex-direction: column;
             box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-            min-height: 180px;
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            overflow: hidden;
+            min-height: 120px;
         }
+        .log-panel-wrapper.collapsed {
+            max-height: 40px !important;
+            flex: none !important;
+            min-height: 40px !important;
+            background: #d4bce8;
+        }
+        .log-panel-wrapper.collapsed .log-content {
+            display: none !important;
+        }
+
         .log-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             font-weight: bold;
-            font-size: 14px;
-            margin-bottom: 6px;
+            font-size: 13px;
+            margin-bottom: 4px;
             border-bottom: 1px solid #c8b2d6;
-            padding-bottom: 4px;
+            padding-bottom: 3px;
+            user-select: none;
         }
         .toggle-btn {
             background: #9b59b6;
             color: white;
             border: none;
-            padding: 4px 10px;
+            padding: 3px 8px;
             border-radius: 4px;
-            font-size: 11px;
+            font-size: 10px;
             cursor: pointer;
+            font-weight: bold;
         }
+        .toggle-btn:hover { background: #8e44ad; }
+
         .log-content {
             flex: 1;
             overflow-y: auto;
             font-size: 11px;
-            line-height: 1.4;
+            line-height: 1.3;
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 3px;
         }
 
-        /* 3. 最下部アクションバー (ドローエリア縦方向拡大 220px) */
-        .bottom-bar {
-            display: grid;
-            grid-template-columns: 1fr 340px 180px;
-            gap: 15px;
-            height: 220px;
+        /* 右サイド下部のアクション制御領域 */
+        .controls-box-vertical {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
             flex-shrink: 0;
-        }
-
-        .offering-box {
-            background: #161922;
-            border: 1px solid #2a2e3d;
-            border-radius: 8px;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            min-height: 200px;
-        }
-        .section-label {
-            font-size: 12px;
-            font-weight: bold;
-            color: #1abc9c;
-            text-align: center;
-            margin-bottom: 6px;
-        }
-
-        .card-row {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            flex: 1;
-            align-items: center;
-        }
-
-        .card-frame {
-            width: 160px;
-            min-height: 165px;
-            background: #1e2330;
-            border: 1px solid #34495e;
-            border-radius: 6px;
-            padding: 8px 10px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            cursor: pointer;
-            transition: transform 0.15s, border-color 0.15s;
-            position: relative;
-        }
-        .card-frame:hover:not(.locked) {
-            transform: translateY(-4px);
-            border-color: #1abc9c;
-        }
-        .card-frame.selected {
-            border-color: #f39c12 !important;
-            background: #2b3245;
-            box-shadow: 0 0 10px rgba(243, 156, 18, 0.5);
-        }
-        .card-frame.locked {
-            opacity: 0.35;
-            cursor: not-allowed;
-        }
-
-        .card-title-mini {
-            font-size: 11px;
-            font-weight: bold;
-            display: flex;
-            justify-content: space-between;
-        }
-        .card-shape-mini {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: #12151f;
-            border-radius: 3px;
-            padding: 4px;
-            height: 75px;
-            margin: 4px 0;
-        }
-
-        .reserve-box {
-            background: #161922;
-            border: 1px solid #2a2e3d;
-            border-radius: 8px;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-        }
-        .reserve-row {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            flex: 1;
-            align-items: center;
-        }
-        .reserve-slot {
-            width: 90px;
-            height: 145px;
-            background: #12141c;
-            border: 1px dashed #34495e;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 11px;
-            color: #7f8c8d;
-        }
-        .reserve-slot.filled {
-            border: 1px solid #e67e22;
-            background: #231c12;
-            color: #fff;
-        }
-
-        .controls-box {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            justify-content: center;
         }
         .mulligan-btn {
             background: #e74c3c;
             color: white;
             border: none;
-            padding: 12px;
+            padding: 10px;
             border-radius: 6px;
             font-weight: bold;
-            font-size: 13px;
+            font-size: 12px;
             cursor: pointer;
             box-shadow: 0 3px 8px rgba(0,0,0,0.3);
         }
@@ -499,10 +527,10 @@
             background: #1abc9c;
             color: #0b0d11;
             border: none;
-            padding: 16px;
+            padding: 14px;
             border-radius: 6px;
             font-weight: bold;
-            font-size: 15px;
+            font-size: 14px;
             cursor: pointer;
             box-shadow: 0 4px 10px rgba(0,0,0,0.4);
         }
@@ -528,23 +556,39 @@
 
         <div id="trialNoticeBox" class="trial-announcement">
             試練まで残り <span id="trialCountdown">5</span> ターン<br>
-            <small style="font-weight:normal; font-size:10px;">(試練アナウンス発生時に表示)</small>
+            <small style="font-weight:normal; font-size:9px;">(試練アナウンス発生時に表示)</small>
         </div>
 
         <div class="turn-box">
-            <div style="font-size:10px;">ターン表示</div>
+            <div style="font-size:9px;">ターン表示</div>
             <span class="turn-num"><span id="valTurn">1</span>/50</span>
         </div>
     </div>
 
-    <!-- 2. メインエリア (盤面 ✕ 右サイドパネル) -->
-    <div class="middle-content">
+    <!-- 2. メイン 3 カラムレイアウト構造 -->
+    <div class="main-layout">
+        
+        <!-- 👈 左サイドバー: ドローオファリングエリア ＋ 保留エリア -->
+        <div class="left-sidebar">
+            <div class="offering-box">
+                <div class="section-label">ドローオファリングエリア (6カテゴリ ✕ 3) [R回転]</div>
+                <div id="cardRow" class="card-row-vertical"></div>
+            </div>
+
+            <div class="reserve-box">
+                <div class="section-label">保留エリア (保留中 ✕ 3 / 維持費 🔥-1/T)</div>
+                <div id="reserveRow" class="reserve-row-vertical"></div>
+            </div>
+        </div>
+
+        <!-- 🎯 中央メインエリア: 9x9対応特大ボード領域 -->
         <div class="board-container">
             <div class="main-area-badge">メインエリア <span id="valPlacedCount">1</span>/24</div>
             <div id="gridBoard" class="grid-with-headers"></div>
             <div id="tileTooltip" class="tile-tooltip"></div>
         </div>
 
+        <!-- 👉 右サイドバー: 各種データ表示 ✕ ログ ✕ アクションボタン -->
         <div class="right-sidebar">
             <div class="data-panel" onmouseenter="showBreakdownModal()" onmouseleave="hideBreakdownModal()" onclick="toggleBreakdownModal()">
                 <h4>各種データ表示パネル</h4>
@@ -563,7 +607,7 @@
                 <div class="breakdown-row" style="color:#7f8c8d;"><span>├ 土地配置:</span><span id="bdFoodTiles">+0/T</span></div>
                 <div class="breakdown-row" style="color:#7f8c8d;"><span>├ ソケット開花:</span><span id="bdFoodSockets">+0/T</span></div>
                 <div class="breakdown-row" style="color:#7f8c8d;"><span>└ 本営近郊(+1):</span><span id="bdFoodVicinity">+0/T</span></div>
-                <hr style="border-color:#2c3345; margin:6px 0;">
+                <hr style="border-color:#2c3345; margin:4px 0;">
                 <div class="breakdown-row"><span>🧱 資材全産出:</span><span id="bdWoodTotal">+10/T</span></div>
                 <div class="breakdown-row" style="color:#7f8c8d;"><span>├ 本営基礎:</span><span>+10/T</span></div>
                 <div class="breakdown-row" style="color:#7f8c8d;"><span>├ 土地配置:</span><span id="bdWoodTiles">+0/T</span></div>
@@ -571,7 +615,7 @@
                 <div class="breakdown-row" style="color:#7f8c8d;"><span>└ 本営近郊(+1):</span><span id="bdWoodVicinity">+0/T</span></div>
             </div>
 
-            <div class="log-panel-wrapper">
+            <div id="logPanelWrapper" class="log-panel-wrapper">
                 <div class="log-header">
                     <span>ログ</span>
                     <button class="toggle-btn" onclick="toggleLogPanel()">トグル</button>
@@ -580,25 +624,13 @@
                     <div style="color:#7f8c8d;">格納状態と展開状態を切り替え可能</div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- 3. 最下部アクションバー (ドローエリア縦方向拡大 220px) -->
-    <div class="bottom-bar">
-        <div class="offering-box">
-            <div class="section-label">ドローオファリングエリア (6カテゴリから選ばれたカード x 3) [Rキーで回転]</div>
-            <div id="cardRow" class="card-row"></div>
+            <div class="controls-box-vertical">
+                <button class="mulligan-btn" onclick="mulligan()">マリガン : 🔥 -1</button>
+                <button class="turn-end-btn" onclick="nextTurn()">TURN END ➔</button>
+            </div>
         </div>
 
-        <div class="reserve-box">
-            <div class="section-label">保留エリア (保留中のカード x 3 / 維持費 🔥-1/T)</div>
-            <div id="reserveRow" class="reserve-row"></div>
-        </div>
-
-        <div class="controls-box">
-            <button class="mulligan-btn" onclick="mulligan()">マリガン : 🔥 -1</button>
-            <button class="turn-end-btn" onclick="nextTurn()">TURN END ➔</button>
-        </div>
     </div>
 
     <script src="src/v2_unity_ready_main.js"></script>
@@ -606,7 +638,6 @@
         let state = null;
         let drawSys = null;
         let selectedCard = null;
-        let isLogExpanded = true;
 
         document.addEventListener("DOMContentLoaded", () => {
             const engine = window.Step1Engine;
@@ -627,7 +658,6 @@
                 }
             });
 
-            // マウス位置追従ツールチップ
             window.addEventListener("mousemove", (e) => {
                 const tt = document.getElementById("tileTooltip");
                 if (tt && tt.style.display === "block") {
@@ -828,7 +858,6 @@
                                 cellEl.innerHTML = `<span style="color:#f39c12;font-size:16px;">★</span>`;
                             } else {
                                 if (isHQVic) {
-                                    /* 本営周囲8マスの薄いエメラルド光彩表示 */
                                     cellEl.classList.add("hq-vicinity-unplaced");
                                     cellEl.innerHTML = `<span style="font-size:10px; color:#1abc9c; opacity:0.8;">✨+1</span>`;
                                 }
@@ -846,7 +875,7 @@
                     highlightPlaceableCells();
                 }
 
-                // ドローカード描画
+                // 左サイドバー: ドローオファリングエリア描画 (縦並び)
                 const cardRowEl = document.getElementById("cardRow");
                 if (cardRowEl) {
                     cardRowEl.innerHTML = "";
@@ -858,11 +887,11 @@
                         const sRows = card.currentShape.length;
                         const sCols = card.currentShape[0].length;
                         
-                        let shapeGridHtml = `<div style="display:grid; grid-template-columns:repeat(${sCols}, 14px); gap:3px;">`;
+                        let shapeGridHtml = `<div style="display:grid; grid-template-columns:repeat(${sCols}, 12px); gap:2px;">`;
                         for (let dr = 0; dr < sRows; dr++) {
                             for (let dc = 0; dc < sCols; dc++) {
                                 const isActive = card.currentShape[dr][dc] === 1;
-                                shapeGridHtml += `<div style="width:14px;height:14px;background:${isActive ? '#1abc9c' : '#252a36'};border-radius:2px;"></div>`;
+                                shapeGridHtml += `<div style="width:12px;height:12px;background:${isActive ? '#1abc9c' : '#252a36'};border-radius:2px;"></div>`;
                             }
                         }
                         shapeGridHtml += '</div>';
@@ -889,7 +918,7 @@
                     });
                 }
 
-                // 保留エリア描画
+                // 左サイドバー: 保留エリア描画
                 const reserveRowEl = document.getElementById("reserveRow");
                 if (reserveRowEl) {
                     reserveRowEl.innerHTML = "";
@@ -903,7 +932,7 @@
                             slotEl.innerHTML = `
                                 <div style="text-align:center;">
                                     <strong>${card.name}</strong><br>
-                                    <small style="font-size:10px; color:#f59e0b;">🔥-1/T</small>
+                                    <small style="font-size:9px; color:#f59e0b;">🔥-1/T</small>
                                 </div>
                             `;
                             slotEl.onclick = () => {
@@ -1007,10 +1036,9 @@
         }
 
         function toggleLogPanel() {
-            const el = document.getElementById("logContent");
+            const el = document.getElementById("logPanelWrapper");
             if (!el) return;
-            isLogExpanded = !isLogExpanded;
-            el.style.display = isLogExpanded ? "flex" : "none";
+            el.classList.toggle("collapsed");
         }
 
         function showBreakdownModal() {
