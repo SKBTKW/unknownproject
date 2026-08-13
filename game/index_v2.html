@@ -172,6 +172,14 @@
             border-color: #3498db;
             background: #252d3e;
         }
+
+        /* 本営周囲8マスの薄いエメラルド光彩枠 (置いたら良い効果がありそう) */
+        .cell.hq-vicinity-unplaced {
+            border: 1px dashed rgba(26, 188, 156, 0.7) !important;
+            box-shadow: inset 0 0 10px rgba(26, 188, 156, 0.3);
+            background: #18262a !important;
+        }
+
         .cell.preview-valid {
             border: 2px solid #3498db !important;
             background: rgba(52, 152, 219, 0.35) !important;
@@ -238,19 +246,18 @@
             100% { opacity: 0; transform: translate(-50%, -24px); }
         }
 
+        /* マウス位置追従ツールチップ */
         .tile-tooltip {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
+            position: fixed;
             background: rgba(22, 25, 34, 0.95);
-            border: 1px solid #3498db;
+            border: 1px solid #1abc9c;
             border-radius: 6px;
             padding: 8px 12px;
             font-size: 12px;
             color: #ecf0f1;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.7);
             pointer-events: none;
-            z-index: 40;
+            z-index: 100;
             display: none;
         }
 
@@ -357,7 +364,7 @@
             gap: 4px;
         }
 
-        /* 3. 最下部アクションバー (ドローエリア縦方向 220px 拡大) */
+        /* 3. 最下部アクションバー (ドローエリア縦方向拡大 220px) */
         .bottom-bar {
             display: grid;
             grid-template-columns: 1fr 340px 180px;
@@ -545,7 +552,7 @@
                     <div>🌾 食料: <span id="valFood">30</span> (<span id="valFoodProd">+10</span>/T)</div>
                     <div>🧱 資材: <span id="valWood">30</span> (<span id="valWoodProd">+10</span>/T)</div>
                     <div>🛡️ 防衛: <span id="valDefense">10</span></div>
-                    <div>✨ 神秘: <span id="valMystic">10</span> (+1/T)</div>
+                    <div>✨ 神秘: <span id="valMystic">0</span> (+1/T)</div>
                 </div>
             </div>
 
@@ -560,7 +567,6 @@
                 <div class="breakdown-row"><span>🧱 資材全産出:</span><span id="bdWoodTotal">+10/T</span></div>
                 <div class="breakdown-row" style="color:#7f8c8d;"><span>├ 本営基礎:</span><span>+10/T</span></div>
                 <div class="breakdown-row" style="color:#7f8c8d;"><span>├ 土地配置:</span><span id="bdWoodTiles">+0/T</span></div>
-                <!-- 欠落していた id="bdWoodSockets" を追加・復元 -->
                 <div class="breakdown-row" style="color:#7f8c8d;"><span>├ ソケット開花:</span><span id="bdWoodSockets">+0/T</span></div>
                 <div class="breakdown-row" style="color:#7f8c8d;"><span>└ 本営近郊(+1):</span><span id="bdWoodVicinity">+0/T</span></div>
             </div>
@@ -620,6 +626,15 @@
                     }
                 }
             });
+
+            // マウス位置追従ツールチップ
+            window.addEventListener("mousemove", (e) => {
+                const tt = document.getElementById("tileTooltip");
+                if (tt && tt.style.display === "block") {
+                    tt.style.left = (e.clientX + 15) + "px";
+                    tt.style.top = (e.clientY + 15) + "px";
+                }
+            });
         });
 
         function init() {
@@ -663,10 +678,10 @@
             }
         }
 
-        function onCellMouseEnter(r, c) {
+        function onCellMouseEnter(e, r, c) {
             if (!state) return;
             const cellData = state.grid[r][c];
-            showTileTooltip(r, c, cellData);
+            showTileTooltip(e, r, c, cellData);
 
             if (!selectedCard || state.hasPickedThisTurn) return;
             clearCellPreviews();
@@ -695,24 +710,27 @@
             }
         }
 
-        function showTileTooltip(r, c, cell) {
+        function showTileTooltip(e, r, c, cell) {
             const tt = document.getElementById("tileTooltip");
             if (!tt || !cell) return;
 
             const pos = `(${String.fromCharCode(65+c)}${r+1})`;
+            const isHQVic = state.isHQVicinity(r, c);
 
             if (cell.isHQ) {
-                tt.innerHTML = `<strong>本営 HQ ${pos}</strong><br>基礎産出: 🌾+10 🧱+10 🛡️10 ✨+1<br><small style="color:#2ecc71;">周囲8マス産出+1バフ</small>`;
+                tt.innerHTML = `<strong>本営 HQ ${pos}</strong><br>基礎産出: 🌾+10 🧱+10 🛡️10 ✨+1<br><small style="color:#1abc9c;">周囲8マス: 土地配置で全産出+1バフ</small>`;
             } else if (cell.placed && cell.terrain) {
-                const isVicinity = state.isHQVicinity(r, c);
                 const socketText = cell.socketResource ? `<br><span style="color:#f1c40f;">★${cell.socketResource.name} (🌾+${cell.socketResource.bonusFood||0} 🧱+${cell.socketResource.bonusWood||0})</span>` : "";
                 const searchText = cell.searched ? `<br><span style="color:#2ecc71;">[✓ 探索済み]</span>` : `<br><span style="color:#3498db;">[🔍 クリックで2D6探索]</span>`;
-                tt.innerHTML = `<strong>${cell.terrain.name} ${pos}</strong><br>防衛: 🛡️${cell.terrain.defense} | 産出: 🌾+${cell.terrain.food||0} 🧱+${cell.terrain.wood||0}${isVicinity?' (近郊+1)':''}${socketText}${searchText}`;
+                tt.innerHTML = `<strong>${cell.terrain.name} ${pos}</strong><br>防衛: 🛡️${cell.terrain.defense} | 産出: 🌾+${cell.terrain.food||0} 🧱+${cell.terrain.wood||0}${isHQVic?' (本営近郊+1)':''}${socketText}${searchText}`;
             } else if (cell.hasSocket) {
-                tt.innerHTML = `<strong>未開花 ★ソケットマス ${pos}</strong><br>土地配置または 2D6探索で資源開花!`;
+                tt.innerHTML = `<strong>未開花 ★ソケットマス ${pos}</strong>${isHQVic?'<br><small style="color:#1abc9c;">✨ 本営近郊: 全産出+1バフエリア</small>':''}`;
             } else {
-                tt.innerHTML = `<strong>未配置マス ${pos}</strong>`;
+                tt.innerHTML = `<strong>未配置マス ${pos}</strong>${isHQVic?'<br><small style="color:#1abc9c;">✨ 本営近郊: 土地配置で全産出+1バフ!</small>':''}`;
             }
+
+            tt.style.left = (e.clientX + 15) + "px";
+            tt.style.top = (e.clientY + 15) + "px";
             tt.style.display = "block";
         }
 
@@ -721,7 +739,6 @@
             if (tt) tt.style.display = "none";
         }
 
-        // 全 DOM 操作に null 安全ガードを付与した完全堅牢 render()
         function setElementText(id, text) {
             const el = document.getElementById(id);
             if (el) el.innerText = text;
@@ -792,6 +809,8 @@
                             cellEl.setAttribute("data-r", r);
                             cellEl.setAttribute("data-c", c);
 
+                            const isHQVic = state.isHQVicinity(r, c);
+
                             if (cellData.isHQ) {
                                 cellEl.classList.add("hq");
                                 cellEl.innerHTML = "本営";
@@ -805,10 +824,17 @@
                                 cellEl.innerHTML = `${cellData.terrain.name}${socketBadge}${searchedBadge}`;
                             } else if (cellData.hasSocket) {
                                 cellEl.classList.add("socket-unopened");
+                                if (isHQVic) cellEl.classList.add("hq-vicinity-unplaced");
                                 cellEl.innerHTML = `<span style="color:#f39c12;font-size:16px;">★</span>`;
+                            } else {
+                                if (isHQVic) {
+                                    /* 本営周囲8マスの薄いエメラルド光彩表示 */
+                                    cellEl.classList.add("hq-vicinity-unplaced");
+                                    cellEl.innerHTML = `<span style="font-size:10px; color:#1abc9c; opacity:0.8;">✨+1</span>`;
+                                }
                             }
 
-                            cellEl.onmouseenter = () => onCellMouseEnter(r, c);
+                            cellEl.onmouseenter = (e) => onCellMouseEnter(e, r, c);
                             cellEl.onmouseleave = clearCellPreviews;
                             cellEl.onclick = () => onCellClick(r, c);
                             boardEl.appendChild(cellEl);

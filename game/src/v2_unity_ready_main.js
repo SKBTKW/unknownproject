@@ -1,246 +1,168 @@
-/**
- * Trial of the Ages: Last Ember - Master Engine & Trial Notice
- * 
- * SPECIFICATIONS:
- * 1. Trials Cycle (rules/05):
- *    - Occurs at Turn 15, 30, 45.
- *    - Notice appears 5 turns before (Turn 10-15, 25-30, 40-45). Hidden otherwise.
- * 2. HQ Base Production (rules/00):
- *    - Food +10/T, Wood +10/T, Defense 10 (base), Mystic +1/T.
- * 3. 2D6 Land Exploration (rules/03-04):
- *    - Cost Ember -1, max 1 search per cell.
- */
-
-const BOARD_STAGES = {
-    STAGE_1: { size: 5, hqCenter: { r: 2, c: 2 }, name: "5x5 (Stage 1)" }
-};
-
-const TERRAIN_TYPES = {
-    GL1_GRASS:  { id: "GL1_GRASS",  name: "草原", defense: 0, wood: 0, food: 4, rarity: "C",  shape: [[1]] },
-    GL2_FOREST: { id: "GL2_FOREST", name: "森",   defense: 0, wood: 2, food: 2, rarity: "UC", shape: [[1, 1]] },
-    H2_HILL:    { id: "H2_HILL",    name: "丘陵", defense: 3, wood: 1, food: 2, rarity: "UC", shape: [[1, 1]] },
-    H3_MOUNTAIN:{ id: "H3_MOUNTAIN",name: "山岳", defense: 5, wood: 4, food: 0, rarity: "UC", shape: [[1]] }
-};
-
-const SOCKET_RESOURCES = {
-    GL1_GRASS:  { name: "野麦", icon: "🍎", bonusFood: 3, bonusWood: 0, bonusDefense: 0 },
-    GL2_FOREST: { name: "杉",   icon: "🌲", bonusFood: 0, bonusWood: 3, bonusDefense: 0 },
-    H2_HILL:    { name: "石灰岩",icon: "⛏️", bonusFood: 0, bonusWood: 3, bonusDefense: 0 },
-    H3_MOUNTAIN:{ name: "花崗岩",icon: "🛡️", bonusFood: 0, bonusWood: 0, bonusDefense: 3 }
-};
-
-function rotateShapeMatrix(matrix) {
-    const rows = matrix.length;
-    const cols = matrix[0].length;
-    const result = [];
-    for (let c = 0; c < cols; c++) {
-        const newRow = [];
-        for (let r = rows - 1; r >= 0; r--) {
-            newRow.push(matrix[r][c]);
-        }
-        result.push(newRow);
+class Step1Terrain {
+    constructor(id, name, defense, food, wood, mystic = 0) {
+        this.id = id;
+        this.name = name;
+        this.defense = defense;
+        this.food = food;
+        this.wood = wood;
+        this.mystic = mystic;
     }
-    return result;
 }
+
+const Step1Terrains = {
+    GL1_GRASS: new Step1Terrain("GL1_GRASS", "草原", 0, 4, 0),
+    GL2_FOREST: new Step1Terrain("GL2_FOREST", "森", 0, 4, 4),
+    H1_PLAINS: new Step1Terrain("H1_PLAINS", "平地", 0, 0, 4),
+    H2_HILL: new Step1Terrain("H2_HILL", "丘陵", 3, 0, 4),
+    H3_MOUNTAIN: new Step1Terrain("H3_MOUNTAIN", "山岳", 5, 0, 3, 1),
+    HQ: new Step1Terrain("HQ", "本営", 10, 10, 10, 1)
+};
+
+const CONNECTION_BONUS_TABLE = {
+    "GL1_GRASS":          { food: 5, wood: 0, mystic: 0 },
+    "GL2_FOREST":         { food: 2, wood: 3, mystic: 0 },
+    "H1_PLAINS":          { food: 0, wood: 5, mystic: 0 },
+    "H2_HILL":            { food: 0, wood: 4, mystic: 0 },
+    "H3_MOUNTAIN":        { food: 0, wood: 5, mystic: 2 }
+};
 
 class GameState {
     constructor() {
         this.turn = 1;
-        this.maxTurns = 50;
         this.ember = 20;
         this.food = 30;
         this.wood = 30;
-        this.mystic = 10;
-        
-        this.stage = BOARD_STAGES.STAGE_1;
-        this.grid = [];
+        this.mystic = 0; /* ✨ 初期値 0 */
         this.hasPickedThisTurn = false;
-        this.handOffering = [];
+        
+        this.stage = { size: 5, hqR: 2, hqC: 2 };
+        this.grid = this.initGrid(5);
         this.reserveSlots = [null, null, null];
-        this.lastMergeMessage = "";
-        this.toastQueue = [];
         this.gameLogs = [];
+        this.toastQueue = [];
 
-        this.initGrid(this.stage.size);
-    }
-
-    addLog(msg) {
-        const timeStr = `[T${this.turn}]`;
-        this.gameLogs.unshift(`${timeStr} ${msg}`);
-        if (this.gameLogs.length > 50) this.gameLogs.pop();
+        this.addLog("[T1] ゲーム開始: 5x5 盤面が初期化されました。");
     }
 
     initGrid(size) {
-        this.grid = [];
+        let grid = [];
         for (let r = 0; r < size; r++) {
-            const row = [];
+            let row = [];
             for (let c = 0; c < size; c++) {
+                const isHQ = (r === 2 && c === 2);
                 row.push({
                     r, c,
-                    placed: false,
-                    terrain: null,
+                    isHQ,
+                    placed: isHQ,
+                    terrain: isHQ ? Step1Terrains.HQ : null,
                     merged: false,
                     searched: false,
                     hasSocket: false,
-                    socketResource: null,
-                    isHQ: (r === this.stage.hqCenter.r && c === this.stage.hqCenter.c)
+                    socketResource: null
                 });
             }
-            this.grid.push(row);
+            grid.push(row);
         }
 
-        // 初期未開花 ★ ソケット配置
-        this.grid[0][1].hasSocket = true;
-        this.grid[1][3].hasSocket = true;
-        this.grid[3][1].hasSocket = true;
+        grid[0][1].hasSocket = true;
+        grid[1][3].hasSocket = true;
+        grid[3][1].hasSocket = true;
 
-        this.addLog("ゲーム開始: 5x5 盤面が初期化されました。");
+        return grid;
     }
 
-    // 試練予告判定 (Turn 15/30/45 の 5 ターン前から表示: rules/05)
-    getTrialNotice() {
-        const nextTrialTurn = [15, 30, 45].find(t => t >= this.turn);
-        if (!nextTrialTurn) return null;
-
-        const remaining = nextTrialTurn - this.turn;
-        if (remaining <= 5) {
-            return { active: true, remaining, targetTurn: nextTrialTurn };
-        }
-        return { active: false, remaining, targetTurn: nextTrialTurn };
+    addLog(msg) {
+        this.gameLogs.unshift(msg);
+        if (this.gameLogs.length > 20) this.gameLogs.pop();
     }
 
     isHQVicinity(r, c) {
-        const hqR = this.stage.hqCenter.r;
-        const hqC = this.stage.hqCenter.c;
-        return Math.abs(r - hqR) <= 1 && Math.abs(c - hqC) <= 1 && !(r === hqR && c === hqC);
+        if (r === 2 && c === 2) return false;
+        return Math.abs(r - 2) <= 1 && Math.abs(c - 2) <= 1;
     }
 
     countPlacedTiles() {
         let count = 0;
-        const size = this.stage.size;
-        for (let r = 0; r < size; r++) {
-            for (let c = 0; c < size; c++) {
-                if (this.grid[r][c].placed) count++;
+        for (let r = 0; r < 5; r++) {
+            for (let c = 0; c < 5; c++) {
+                if (this.grid[r][c].placed && !this.grid[r][c].isHQ) count++;
             }
         }
         return count;
     }
 
-    countH2HillPlaced() {
-        let count = 0;
+    canPlaceShape(startR, startC, shapeMatrix) {
+        const rows = shapeMatrix.length;
+        const cols = shapeMatrix[0].length;
         const size = this.stage.size;
-        for (let r = 0; r < size; r++) {
-            for (let c = 0; c < size; c++) {
-                const cell = this.grid[r][c];
-                if (cell.placed && cell.terrain && cell.terrain.id === "H2_HILL") {
-                    count++;
-                }
-            }
-        }
-        return count;
-    }
-
-    canPlaceShape(r, c, shape) {
-        const size = this.stage.size;
-        const rows = shape.length;
-        const cols = shape[0].length;
 
         for (let dr = 0; dr < rows; dr++) {
             for (let dc = 0; dc < cols; dc++) {
-                if (shape[dr][dc] === 1) {
-                    const targetR = r + dr;
-                    const targetC = c + dc;
-
-                    if (targetR >= size || targetC >= size) {
-                        return { can: false, reason: "盤面からはみ出しています" };
-                    }
-
-                    const targetCell = this.grid[targetR][targetC];
-                    if (targetCell.isHQ) {
-                        return { can: false, reason: "本営 HQ マスの上には置けません" };
-                    }
-                    if (targetCell.placed) {
-                        return { can: false, reason: "すでに土地が配置されています" };
-                    }
+                if (shapeMatrix[dr][dc] === 1) {
+                    const r = startR + dr;
+                    const c = startC + dc;
+                    if (r >= size || c >= size) return { can: false, reason: "盤面外には配置できません" };
+                    if (this.grid[r][c].placed) return { can: false, reason: "既に土地が配置されています" };
                 }
             }
         }
 
-        let isAdjacentToHQOrPlaced = false;
-
+        let isAdjacent = false;
         for (let dr = 0; dr < rows; dr++) {
             for (let dc = 0; dc < cols; dc++) {
-                if (shape[dr][dc] === 1) {
-                    const tr = r + dr;
-                    const tc = c + dc;
-
+                if (shapeMatrix[dr][dc] === 1) {
+                    const r = startR + dr;
+                    const c = startC + dc;
                     const neighbors = [
-                        [tr - 1, tc], [tr + 1, tc], [tr, tc - 1], [tr, tc + 1]
+                        [r-1, c], [r+1, c], [r, c-1], [r, c+1]
                     ];
-
-                    for (const [nr, nc] of neighbors) {
+                    for (let [nr, nc] of neighbors) {
                         if (nr >= 0 && nr < size && nc >= 0 && nc < size) {
-                            const neighborCell = this.grid[nr][nc];
-                            if (neighborCell.isHQ || neighborCell.placed) {
-                                isAdjacentToHQOrPlaced = true;
+                            if (this.grid[nr][nc].placed) {
+                                isAdjacent = true;
                                 break;
                             }
                         }
                     }
                 }
-                if (isAdjacentToHQOrPlaced) break;
+                if (isAdjacent) break;
             }
         }
 
-        if (!isAdjacentToHQOrPlaced) {
-            return { can: false, reason: "土地は本営(HQ)または既存の土地に面隣接させて配置してください" };
-        }
-
+        if (!isAdjacent) return { can: false, reason: "既存の配置済み土地に隣接させる必要があります" };
         return { can: true };
     }
 
-    placeShape(r, c, shape, terrain) {
-        const check = this.canPlaceShape(r, c, shape);
+    placeShape(startR, startC, shapeMatrix, terrain) {
+        const check = this.canPlaceShape(startR, startC, shapeMatrix);
         if (!check.can) return check;
 
-        const rows = shape.length;
-        const cols = shape[0].length;
+        const rows = shapeMatrix.length;
+        const cols = shapeMatrix[0].length;
 
         for (let dr = 0; dr < rows; dr++) {
             for (let dc = 0; dc < cols; dc++) {
-                if (shape[dr][dc] === 1) {
-                    const targetR = r + dr;
-                    const targetC = c + dc;
-                    const cell = this.grid[targetR][targetC];
+                if (shapeMatrix[dr][dc] === 1) {
+                    const r = startR + dr;
+                    const c = startC + dc;
+                    const cell = this.grid[r][c];
                     cell.placed = true;
                     cell.terrain = terrain;
 
-                    this.addLog(`土地配置: (${String.fromCharCode(65+targetC)}${targetR+1}) ${terrain.name}`);
-
-                    if (cell.hasSocket && !cell.socketResource) {
-                        const socketDef = SOCKET_RESOURCES[terrain.id] || SOCKET_RESOURCES.GL1_GRASS;
-                        cell.socketResource = socketDef;
-                        this.toastQueue.push({ r: targetR, c: targetC, text: `★ ${socketDef.name} 開花!` });
-                        this.addLog(`★ ソケット開花: (${String.fromCharCode(65+targetC)}${targetR+1}) ${socketDef.name}`);
-                    }
-
-                    if (this.isHQVicinity(targetR, targetC)) {
-                        this.toastQueue.push({ r: targetR, c: targetC, text: "🏰 本営近郊 (+1産出)" });
-                    }
-
-                    this.checkConnectionBonus(targetR, targetC, terrain);
+                    this.checkConnectionBonus(r, c, terrain);
                 }
             }
         }
+
+        this.addLog(`土地配置: (${String.fromCharCode(65+startC)}${startR+1}) に ${terrain.name} を配置。`);
         return { success: true };
     }
 
     executeExploration(r, c) {
         const cell = this.grid[r][c];
-        if (!cell.placed || cell.isHQ) return { success: false, reason: "配置された土地マスのみ探索可能です" };
-        if (cell.searched) return { success: false, reason: "このマスはすでに探索済みです (1マス通算1回のみ)" };
-        if (cell.merged) return { success: false, reason: "マージ済みの合体土地は探索できません" };
-        if (this.ember <= 1) return { success: false, reason: "🔥 生命力が不足しています (コスト: 🔥 -1)" };
+        if (!cell.placed || cell.isHQ) return { success: false, reason: "未配置または本営マスは探索できません" };
+        if (cell.searched) return { success: false, reason: "既に探索済みです" };
+        if (this.ember <= 1) return { success: false, reason: "🔥 生命力が不足しています" };
 
         this.ember -= 1;
         cell.searched = true;
@@ -251,17 +173,11 @@ class GameState {
         const posStr = `(${String.fromCharCode(65+c)}${r+1})`;
 
         let resultMsg = "";
-
-        if (d1 === 6 && d2 === 6) {
-            this.ember += 3;
-            this.mystic += 5;
-            resultMsg = `✨ 出目12 ゾロ目! レアイベント【神秘の泉】発見! 🔥+3 ＆ ✨+5 獲得!`;
-            this.toastQueue.push({ r, c, text: "✨ 神秘の泉! 🔥+3 ✨+5" });
-        } else if (totalRoll >= 9) {
-            if (!cell.socketResource) {
-                const socketDef = SOCKET_RESOURCES[cell.terrain.id] || SOCKET_RESOURCES.GL1_GRASS;
+        if (totalRoll >= 9) {
+            if (cell.hasSocket && !cell.socketResource) {
+                const socketDef = { name: "野麦 🌾+3/T", bonusFood: 3, bonusWood: 0 };
                 cell.socketResource = socketDef;
-                resultMsg = `🎲 出目${totalRoll}: ★ ${socketDef.name} 開花露出! (毎ターン産出UP)`;
+                resultMsg = `🎲 出目${totalRoll}: ★ ${socketDef.name} 開花露出!`;
                 this.toastQueue.push({ r, c, text: `★ ${socketDef.name} 開花!` });
             } else {
                 this.food += 3;
@@ -287,70 +203,62 @@ class GameState {
     checkConnectionBonus(r, c, terrain) {
         const size = this.stage.size;
         const visited = new Set();
-        const queue = [[r, c]];
-        visited.add(`${r},${c}`);
+        let connectionCount = 0;
 
-        while (queue.length > 0) {
-            const [currR, currC] = queue.shift();
-            const neighbors = [[currR-1, currC], [currR+1, currC], [currR, currC-1], [currR, currC+1]];
-            
-            for (const [nr, nc] of neighbors) {
+        const dfs = (cr, cc) => {
+            const key = `${cr},${cc}`;
+            if (visited.has(key)) return;
+            visited.add(key);
+            connectionCount++;
+
+            const neighbors = [[cr-1, cc], [cr+1, cc], [cr, cc-1], [cr, cc+1]];
+            for (let [nr, nc] of neighbors) {
                 if (nr >= 0 && nr < size && nc >= 0 && nc < size) {
-                    const key = `${nr},${nc}`;
-                    if (!visited.has(key)) {
-                        const nCell = this.grid[nr][nc];
-                        if (nCell.placed && nCell.terrain && nCell.terrain.id === terrain.id && !nCell.isHQ) {
-                            visited.add(key);
-                            queue.push([nr, nc]);
-                        }
+                    const nCell = this.grid[nr][nc];
+                    if (nCell.placed && nCell.terrain && nCell.terrain.id === terrain.id && !nCell.isHQ) {
+                        dfs(nr, nc);
                     }
                 }
             }
-        }
+        };
 
-        const connectionCount = visited.size;
+        dfs(r, c);
+
+        const isHQVic = this.isHQVicinity(r, c);
+        const mult = isHQVic ? 2 : 1;
+        const b = CONNECTION_BONUS_TABLE[terrain.id] || { food: 2, wood: 2, mystic: 0 };
 
         if (connectionCount === 2) {
-            if (terrain.id === "GL1_GRASS") this.food += 1;
-            else this.wood += 1;
-            this.toastQueue.push({ r, c, text: "🌾 +1 (2連結)" });
+            const fVal = b.food * mult;
+            const wVal = b.wood * mult;
+            this.food += fVal;
+            this.wood += wVal;
+            this.toastQueue.push({ r, c, text: `連結+ ${fVal > 0 ? '🌾'+fVal : ''} ${wVal > 0 ? '🧱'+wVal : ''}` });
             this.addLog(`2連結即時ボーナス獲得 (${terrain.name})`);
         } else if (connectionCount === 3) {
-            this.food += 1;
-            this.wood += 1;
-            this.toastQueue.push({ r, c, text: "🌾🧱 +1 (3連結)" });
-            this.addLog(`3連結即時ボーナス獲得 (${terrain.name})`);
+            const fVal = b.food * 2 * mult;
+            const wVal = b.wood * 2 * mult;
+            const mVal = (b.mystic + 2) * mult;
+            this.food += fVal;
+            this.wood += wVal;
+            this.mystic += mVal;
+            this.toastQueue.push({ r, c, text: `3連結コンボ!` });
+            this.addLog(`★ 3連結コンボボーナス獲得 (${terrain.name})`);
         } else if (connectionCount >= 4) {
-            this.ember += 1;
-            this.food += 2;
-            this.wood += 2;
-            this.toastQueue.push({ r, c, text: "🔥+1 🌾🧱+2 (4連結)" });
-            this.addLog(`★ 4連結最大即時ボーナス! 🔥+1 回復! (${terrain.name})`);
+            this.ember += 2 * mult;
+            const fVal = b.food * 3 * mult;
+            const wVal = b.wood * 3 * mult;
+            const mVal = (b.mystic + 5) * mult;
+            this.food += fVal;
+            this.wood += wVal;
+            this.mystic += mVal;
+            this.toastQueue.push({ r, c, text: `4連結最大コンボ! 🔥+${2*mult}` });
+            this.addLog(`★ 4連結最大コンボボーナス! 🔥+${2*mult} 回復! (${terrain.name})`);
         }
     }
 
     processTurnEndMaintenance() {
-        let foodCost = 20;
-        let stageName = "標準期 (10-23)";
-
-        if (this.ember >= 24) {
-            foodCost = 25;
-            stageName = "炎上期 (24以上)";
-            this.ember += 2;
-        } else if (this.ember <= 9) {
-            foodCost = 15;
-            stageName = "鎮火期 (9以下)";
-        }
-
-        let reserveCost = 0;
-        this.reserveSlots.forEach(card => {
-            if (card) reserveCost++;
-        });
-        this.ember -= reserveCost;
-        if (reserveCost > 0) {
-            this.addLog(`保留カード維持費: 🔥 -${reserveCost} 消費`);
-        }
-
+        const foodCost = 20;
         let deficit = 0;
         if (this.food >= foodCost) {
             this.food -= foodCost;
@@ -362,12 +270,11 @@ class GameState {
         }
 
         const isGameOver = (this.ember <= 0);
-        const isGameClear = (!isGameOver && this.turn >= this.maxTurns);
+        const isGameClear = (this.turn >= 50 && this.ember > 0);
 
         return {
             foodCost,
             deficit,
-            stageName,
             isGameOver,
             isGameClear
         };
@@ -379,26 +286,19 @@ class GameState {
         for (let r = 0; r < size; r++) {
             for (let c = 0; c < size; c++) {
                 const cell = this.grid[r][c];
-                if (cell.placed && cell.terrain) {
+                if (cell.placed && cell.terrain && !cell.isHQ) {
                     let tileDef = cell.terrain.defense || 0;
-                    if (cell.merged && cell.terrain.id === "H3_MOUNTAIN") {
-                        tileDef = 30;
+                    if (cell.socketResource) {
+                        tileDef += cell.socketResource.bonusDefense || 0;
                     }
                     total += tileDef;
-
-                    if (this.isHQVicinity(r, c)) {
-                        total += 1;
-                    }
-
-                    if (cell.socketResource && cell.socketResource.bonusDefense) {
-                        total += cell.socketResource.bonusDefense;
-                    }
                 }
             }
         }
         return total;
     }
 
+    // 本営周囲8マスは配置済みマス (placed === true) のみ +1/マス 加算
     calculateTotalProduction() {
         let totalFood = 10;
         let totalWood = 10;
@@ -408,15 +308,15 @@ class GameState {
         for (let r = 0; r < size; r++) {
             for (let c = 0; c < size; c++) {
                 const cell = this.grid[r][c];
-                if (cell.placed && cell.terrain) {
+                if (cell.placed && cell.terrain && !cell.isHQ) {
                     let food = cell.terrain.food || 0;
                     let wood = cell.terrain.wood || 0;
-
                     if (cell.socketResource) {
                         food += cell.socketResource.bonusFood || 0;
                         wood += cell.socketResource.bonusWood || 0;
                     }
 
+                    /* 本営近郊（周囲8マス）かつ配置済みマスのみ +1/マス 加算 */
                     if (this.isHQVicinity(r, c)) {
                         food += 1;
                         wood += 1;
@@ -443,7 +343,7 @@ class GameState {
         for (let r = 0; r < size; r++) {
             for (let c = 0; c < size; c++) {
                 const cell = this.grid[r][c];
-                if (cell.placed && cell.terrain) {
+                if (cell.placed && cell.terrain && !cell.isHQ) {
                     breakdown.food.tiles += (cell.terrain.food || 0);
                     breakdown.wood.tiles += (cell.terrain.wood || 0);
                     breakdown.defense.tiles += (cell.terrain.defense || 0);
@@ -457,7 +357,6 @@ class GameState {
                     if (this.isHQVicinity(r, c)) {
                         breakdown.food.vicinity += 1;
                         breakdown.wood.vicinity += 1;
-                        breakdown.defense.vicinity += 1;
                     }
                 }
             }
@@ -470,10 +369,23 @@ class GameState {
         return breakdown;
     }
 
+    getTrialNotice() {
+        const cycle = 15;
+        const currentTurn = this.turn;
+        const nextTrialTurn = Math.ceil(currentTurn / cycle) * cycle;
+        const remaining = nextTrialTurn - currentTurn;
+
+        const active = (remaining <= 5);
+        return {
+            active,
+            remaining,
+            trialTurn: nextTrialTurn
+        };
+    }
+
     checkMergePatterns() {
         const size = this.stage.size;
         let mergeFound = false;
-        this.lastMergeMessage = "";
 
         for (let r = 0; r < size - 1; r++) {
             for (let c = 0; c < size - 1; c++) {
@@ -482,22 +394,26 @@ class GameState {
                 const c3 = this.grid[r+1][c];
                 const c4 = this.grid[r+1][c+1];
 
-                if (c1.placed && c2.placed && c3.placed && c4.placed &&
-                    !c1.merged && !c2.merged && !c3.merged && !c4.merged &&
-                    !c1.isHQ && !c2.isHQ && !c3.isHQ && !c4.isHQ) {
+                if (c1.placed && c2.placed && c3.placed && c4.placed) {
+                    if (c1.terrain && c2.terrain && c3.terrain && c4.terrain &&
+                        c1.terrain.id === c2.terrain.id &&
+                        c1.terrain.id === c3.terrain.id &&
+                        c1.terrain.id === c4.terrain.id &&
+                        !c1.isHQ && !c2.isHQ && !c3.isHQ && !c4.isHQ &&
+                        !c1.merged && !c2.merged && !c3.merged && !c4.merged) {
 
-                    if (c1.terrain.id === c2.terrain.id && c1.terrain.id === c3.terrain.id && c1.terrain.id === c4.terrain.id) {
                         c1.merged = c2.merged = c3.merged = c4.merged = true;
-                        this.ember += 1;
                         mergeFound = true;
-                        
+
+                        const isHQVic = this.isHQVicinity(r, c) || this.isHQVicinity(r+1, c+1);
+                        const emberVal = isHQVic ? 2 : 1;
+                        this.ember += emberVal;
+
                         if (c1.terrain.id === "H3_MOUNTAIN") {
-                            this.lastMergeMessage = "🎉 H3 凸字山岳マージ成立！ 🔥 +1 回復 ＆ 防衛力 🛡️ +30 へ爆発上昇！";
-                            this.toastQueue.push({ r, c, text: "🔥 +1 🛡️ +30 (マージ)" });
+                            this.toastQueue.push({ r, c, text: `🔥 +${emberVal} 🛡️ +30 (マージ)` });
                             this.addLog("🎉 H3 凸字山岳マージ成立!");
                         } else {
-                            this.lastMergeMessage = `🎉 2x2 正方形マージ成立 (${c1.terrain.name})！ 🔥 +1 即時回復！`;
-                            this.toastQueue.push({ r, c, text: "🔥 +1 (マージ)" });
+                            this.toastQueue.push({ r, c, text: `🔥 +${emberVal} (マージ)` });
                             this.addLog(`🎉 2x2 正方形マージ成立 (${c1.terrain.name})!`);
                         }
                     }
@@ -526,55 +442,44 @@ class GameState {
 class Step1DrawSystem {
     constructor(state) {
         this.state = state;
+        this.deck = [
+            { id: "C_GRASS", name: "草原", terrain: Step1Terrains.GL1_GRASS, shape: [[1,1]] },
+            { id: "C_FOREST", name: "森", terrain: Step1Terrains.GL2_FOREST, shape: [[1,1]] },
+            { id: "C_HILL", name: "丘陵", terrain: Step1Terrains.H2_HILL, shape: [[1,1]] },
+            { id: "C_MOUNTAIN", name: "山岳", terrain: Step1Terrains.H3_MOUNTAIN, shape: [[1,1]] }
+        ];
     }
 
     generateOfferingCards() {
-        const pool = [
-            { id: "C_GRASS",  name: "🌾 草原", terrain: TERRAIN_TYPES.GL1_GRASS },
-            { id: "C_FOREST", name: "🌲 森",   terrain: TERRAIN_TYPES.GL2_FOREST },
-            { id: "C_HILL",   name: "⛰️ 丘陵", terrain: TERRAIN_TYPES.H2_HILL }
-        ];
-
-        if (this.state.countH2HillPlaced() >= 3) {
-            pool.push({ id: "C_MOUNTAIN", name: "🏔️ 山岳", terrain: TERRAIN_TYPES.H3_MOUNTAIN });
-        }
-
-        const drawn = [];
-        const availablePool = [...pool];
-
-        for (let i = 0; i < 3 && availablePool.length > 0; i++) {
-            const randIdx = Math.floor(Math.random() * availablePool.length);
-            const pick = availablePool.splice(randIdx, 1)[0];
-            
+        let drawn = [];
+        for (let i = 0; i < 3; i++) {
+            const item = this.deck[Math.floor(Math.random() * this.deck.length)];
             drawn.push({
-                ...pick,
-                instanceId: `card_${i}_${Date.now()}`,
-                currentShape: JSON.parse(JSON.stringify(pick.terrain.shape))
+                ...item,
+                currentShape: JSON.parse(JSON.stringify(item.shape))
             });
         }
-
         this.state.handOffering = drawn;
         this.state.hasPickedThisTurn = false;
-        return drawn;
     }
 }
 
-if (typeof window !== "undefined") {
-    window.Step1Engine = {
-        BOARD_STAGES,
-        TERRAIN_TYPES,
-        SOCKET_RESOURCES,
-        GameState,
-        Step1DrawSystem,
-        rotateShapeMatrix
-    };
+function rotateShapeMatrix(matrix) {
+    const rows = matrix.length;
+    const cols = matrix[0].length;
+    let rotated = Array.from({ length: cols }, () => Array(rows).fill(0));
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            rotated[c][rows - 1 - r] = matrix[r][c];
+        }
+    }
+    return rotated;
 }
 
-if (typeof module !== "undefined" && module.exports) {
-    module.exports = {
-        BOARD_STAGES,
-        TERRAIN_TYPES,
-        SOCKET_RESOURCES,
+if (typeof window !== 'undefined') {
+    window.Step1Engine = {
+        Step1Terrain,
+        Step1Terrains,
         GameState,
         Step1DrawSystem,
         rotateShapeMatrix
