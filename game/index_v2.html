@@ -33,6 +33,7 @@
             grid-template-columns: 340px 1fr 240px 140px;
             align-items: center;
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            flex-shrink: 0;
         }
         
         .app-title-box {
@@ -116,8 +117,9 @@
             align-items: center;
             justify-content: center;
             position: relative;
-            padding: 20px 0;
+            padding: 25px;
             box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+            min-height: 400px;
         }
 
         .main-area-badge {
@@ -363,8 +365,8 @@
             display: grid;
             grid-template-columns: 1fr 340px 180px;
             gap: 15px;
-            height: 280px;
-            min-height: 280px;
+            min-height: 260px;
+            flex-shrink: 0;
         }
 
         .offering-box {
@@ -388,6 +390,7 @@
             gap: 15px;
             justify-content: center;
             flex: 1;
+            align-items: center;
         }
 
         .card-frame {
@@ -395,13 +398,14 @@
             background: #1e2330;
             border: 1px solid #34495e;
             border-radius: 8px;
-            padding: 10px;
+            padding: 12px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             cursor: pointer;
             transition: transform 0.15s, border-color 0.15s;
             position: relative;
+            min-height: 200px;
         }
         .card-frame:hover:not(.locked) {
             transform: translateY(-6px);
@@ -451,9 +455,11 @@
             gap: 10px;
             justify-content: center;
             flex: 1;
+            align-items: center;
         }
         .reserve-slot {
             width: 95px;
+            height: 180px;
             background: #12141c;
             border: 1px dashed #34495e;
             border-radius: 6px;
@@ -479,7 +485,7 @@
             background: #e74c3c;
             color: white;
             border: none;
-            padding: 14px;
+            padding: 16px;
             border-radius: 6px;
             font-weight: bold;
             font-size: 14px;
@@ -492,7 +498,7 @@
             background: #1abc9c;
             color: #0b0d11;
             border: none;
-            padding: 18px;
+            padding: 20px;
             border-radius: 6px;
             font-weight: bold;
             font-size: 16px;
@@ -593,18 +599,24 @@
         </div>
     </div>
 
+    <!-- スクリプトの読み込みと安全な初期化 -->
     <script src="src/v2_unity_ready_main.js"></script>
     <script>
-        const engine = window.Step1Engine;
-        const state = new engine.GameState();
-        const drawSys = new engine.Step1DrawSystem(state);
-
+        let state = null;
+        let drawSys = null;
         let selectedCard = null;
         let isLogExpanded = true;
 
-        function init() {
-            drawSys.generateOfferingCards();
-            render();
+        document.addEventListener("DOMContentLoaded", () => {
+            const engine = window.Step1Engine;
+            if (!engine) {
+                console.error("Step1Engine is not defined! Check v2_unity_ready_main.js loading.");
+                return;
+            }
+            state = new engine.GameState();
+            drawSys = new engine.Step1DrawSystem(state);
+
+            init();
 
             window.addEventListener("keydown", (e) => {
                 if (e.key === "r" || e.key === "R") {
@@ -613,6 +625,12 @@
                     }
                 }
             });
+        });
+
+        function init() {
+            if (!drawSys) return;
+            drawSys.generateOfferingCards();
+            render();
         }
 
         function rotateSelectedCard(card) {
@@ -620,6 +638,7 @@
             const cols = card.currentShape[0].length;
             if (rows === 2 && cols === 2) return;
 
+            const engine = window.Step1Engine;
             card.currentShape = engine.rotateShapeMatrix(card.currentShape);
             render();
         }
@@ -632,9 +651,8 @@
             hideTileTooltip();
         }
 
-        // 100% 確実に DOM セル要素を取得してハイライト表示する修復ロジック
         function highlightPlaceableCells() {
-            if (!selectedCard || state.hasPickedThisTurn) return;
+            if (!selectedCard || !state || state.hasPickedThisTurn) return;
             const shape = selectedCard.currentShape;
 
             for (let r = 0; r < 5; r++) {
@@ -651,6 +669,7 @@
         }
 
         function onCellMouseEnter(r, c) {
+            if (!state) return;
             const cellData = state.grid[r][c];
             showTileTooltip(r, c, cellData);
 
@@ -683,6 +702,8 @@
 
         function showTileTooltip(r, c, cell) {
             const tt = document.getElementById("tileTooltip");
+            if (!tt || !cell) return;
+
             const pos = `(${String.fromCharCode(65+c)}${r+1})`;
 
             if (cell.isHQ) {
@@ -701,180 +722,187 @@
         }
 
         function hideTileTooltip() {
-            document.getElementById("tileTooltip").style.display = "none";
+            const tt = document.getElementById("tileTooltip");
+            if (tt) tt.style.display = "none";
         }
 
         function render() {
-            const prods = state.calculateTotalProduction();
-            const bd = state.getResourceBreakdown();
-            const trialNotice = state.getTrialNotice();
+            if (!state) return;
+            try {
+                const prods = state.calculateTotalProduction();
+                const bd = state.getResourceBreakdown();
+                const trialNotice = state.getTrialNotice();
 
-            document.getElementById("valTurn").innerText = state.turn;
-            document.getElementById("valEmber").innerText = state.ember;
-            document.getElementById("valFood").innerText = state.food;
-            document.getElementById("valFoodProd").innerText = `+${prods.totalFood}`;
-            document.getElementById("valWood").innerText = state.wood;
-            document.getElementById("valWoodProd").innerText = `+${prods.totalWood}`;
-            document.getElementById("valDefense").innerText = state.calculateTotalDefense();
-            document.getElementById("valMystic").innerText = state.mystic;
-            document.getElementById("valPlacedCount").innerText = `${state.countPlacedTiles()}/24`;
+                document.getElementById("valTurn").innerText = state.turn;
+                document.getElementById("valEmber").innerText = state.ember;
+                document.getElementById("valFood").innerText = state.food;
+                document.getElementById("valFoodProd").innerText = `+${prods.totalFood}`;
+                document.getElementById("valWood").innerText = state.wood;
+                document.getElementById("valWoodProd").innerText = `+${prods.totalWood}`;
+                document.getElementById("valDefense").innerText = state.calculateTotalDefense();
+                document.getElementById("valMystic").innerText = state.mystic;
+                document.getElementById("valPlacedCount").innerText = `${state.countPlacedTiles()}/24`;
 
-            const trialBox = document.getElementById("trialNoticeBox");
-            if (trialNotice && trialNotice.active) {
-                trialBox.style.display = "block";
-                document.getElementById("trialCountdown").innerText = trialNotice.remaining;
-            } else {
-                trialBox.style.display = "none";
-            }
+                const trialBox = document.getElementById("trialNoticeBox");
+                if (trialNotice && trialNotice.active) {
+                    trialBox.style.display = "block";
+                    document.getElementById("trialCountdown").innerText = trialNotice.remaining;
+                } else {
+                    trialBox.style.display = "none";
+                }
 
-            document.getElementById("bdFoodTotal").innerText = `+${bd.food.total}/T`;
-            document.getElementById("bdFoodTiles").innerText = `+${bd.food.tiles}/T`;
-            document.getElementById("bdFoodSockets").innerText = `+${bd.food.sockets}/T`;
-            document.getElementById("bdFoodVicinity").innerText = `+${bd.food.vicinity}/T`;
+                document.getElementById("bdFoodTotal").innerText = `+${bd.food.total}/T`;
+                document.getElementById("bdFoodTiles").innerText = `+${bd.food.tiles}/T`;
+                document.getElementById("bdFoodSockets").innerText = `+${bd.food.sockets}/T`;
+                document.getElementById("bdFoodVicinity").innerText = `+${bd.food.vicinity}/T`;
 
-            document.getElementById("bdWoodTotal").innerText = `+${bd.wood.total}/T`;
-            document.getElementById("bdWoodTiles").innerText = `+${bd.wood.tiles}/T`;
-            document.getElementById("bdWoodSockets").innerText = `+${bd.wood.sockets}/T`;
-            document.getElementById("bdWoodVicinity").innerText = `+${bd.wood.vicinity}/T`;
+                document.getElementById("bdWoodTotal").innerText = `+${bd.wood.total}/T`;
+                document.getElementById("bdWoodTiles").innerText = `+${bd.wood.tiles}/T`;
+                document.getElementById("bdWoodSockets").innerText = `+${bd.wood.sockets}/T`;
+                document.getElementById("bdWoodVicinity").innerText = `+${bd.wood.vicinity}/T`;
 
-            const boardEl = document.getElementById("gridBoard");
-            boardEl.innerHTML = "";
+                const boardEl = document.getElementById("gridBoard");
+                boardEl.innerHTML = "";
 
-            const cornerCell = document.createElement("div");
-            cornerCell.className = "header-cell";
-            boardEl.appendChild(cornerCell);
-
-            for (let c = 0; c < 5; c++) {
-                const hCell = document.createElement("div");
-                hCell.className = "header-cell";
-                hCell.innerText = String.fromCharCode(65 + c);
-                boardEl.appendChild(hCell);
-            }
-
-            for (let r = 0; r < 5; r++) {
-                const vCell = document.createElement("div");
-                vCell.className = "header-cell";
-                vCell.innerText = r + 1;
-                boardEl.appendChild(vCell);
+                const cornerCell = document.createElement("div");
+                cornerCell.className = "header-cell";
+                boardEl.appendChild(cornerCell);
 
                 for (let c = 0; c < 5; c++) {
-                    const cellData = state.grid[r][c];
-                    const cellEl = document.createElement("div");
-                    cellEl.className = "cell";
-                    cellEl.setAttribute("data-r", r);
-                    cellEl.setAttribute("data-c", c);
+                    const hCell = document.createElement("div");
+                    hCell.className = "header-cell";
+                    hCell.innerText = String.fromCharCode(65 + c);
+                    boardEl.appendChild(hCell);
+                }
 
-                    if (cellData.isHQ) {
-                        cellEl.classList.add("hq");
-                        cellEl.innerHTML = "本営";
-                    } else if (cellData.placed && cellData.terrain) {
-                        cellEl.classList.add("placed");
-                        if (cellData.merged) {
-                            cellEl.classList.add("merged");
+                for (let r = 0; r < 5; r++) {
+                    const vCell = document.createElement("div");
+                    vCell.className = "header-cell";
+                    vCell.innerText = r + 1;
+                    boardEl.appendChild(vCell);
+
+                    for (let c = 0; c < 5; c++) {
+                        const cellData = state.grid[r][c];
+                        const cellEl = document.createElement("div");
+                        cellEl.className = "cell";
+                        cellEl.setAttribute("data-r", r);
+                        cellEl.setAttribute("data-c", c);
+
+                        if (cellData.isHQ) {
+                            cellEl.classList.add("hq");
+                            cellEl.innerHTML = "本営";
+                        } else if (cellData.placed && cellData.terrain) {
+                            cellEl.classList.add("placed");
+                            if (cellData.merged) {
+                                cellEl.classList.add("merged");
+                            }
+                            const socketBadge = cellData.socketResource ? `<br><small style="color:#f1c40f;">★${cellData.socketResource.name}</small>` : "";
+                            const searchedBadge = cellData.searched ? `<span class="searched-badge">✓探索済</span>` : "";
+                            cellEl.innerHTML = `${cellData.terrain.name}${socketBadge}${searchedBadge}`;
+                        } else if (cellData.hasSocket) {
+                            cellEl.classList.add("socket-unopened");
+                            cellEl.innerHTML = `<span style="color:#f39c12;font-size:16px;">★</span>`;
                         }
-                        const socketBadge = cellData.socketResource ? `<br><small style="color:#f1c40f;">★${cellData.socketResource.name}</small>` : "";
-                        const searchedBadge = cellData.searched ? `<span class="searched-badge">✓探索済</span>` : "";
-                        cellEl.innerHTML = `${cellData.terrain.name}${socketBadge}${searchedBadge}`;
-                    } else if (cellData.hasSocket) {
-                        cellEl.classList.add("socket-unopened");
-                        cellEl.innerHTML = `<span style="color:#f39c12;font-size:16px;">★</span>`;
-                    }
 
-                    cellEl.onmouseenter = () => onCellMouseEnter(r, c);
-                    cellEl.onmouseleave = clearCellPreviews;
-                    cellEl.onclick = () => onCellClick(r, c);
-                    boardEl.appendChild(cellEl);
-                }
-            }
-
-            if (selectedCard) {
-                highlightPlaceableCells();
-            }
-
-            // ドローカード描画
-            const cardRowEl = document.getElementById("cardRow");
-            cardRowEl.innerHTML = "";
-
-            state.handOffering.forEach((card, idx) => {
-                const cardEl = document.createElement("div");
-                cardEl.className = `card-frame ${selectedCard === card ? 'selected' : ''} ${state.hasPickedThisTurn ? 'locked' : ''}`;
-
-                const sRows = card.currentShape.length;
-                const sCols = card.currentShape[0].length;
-                
-                let shapeGridHtml = `<div style="display:grid; grid-template-columns:repeat(${sCols}, 16px); gap:4px;">`;
-                for (let dr = 0; dr < sRows; dr++) {
-                    for (let dc = 0; dc < sCols; dc++) {
-                        const isActive = card.currentShape[dr][dc] === 1;
-                        shapeGridHtml += `<div style="width:16px;height:16px;background:${isActive ? '#1abc9c' : '#252a36'};border-radius:2px;"></div>`;
+                        cellEl.onmouseenter = () => onCellMouseEnter(r, c);
+                        cellEl.onmouseleave = clearCellPreviews;
+                        cellEl.onclick = () => onCellClick(r, c);
+                        boardEl.appendChild(cellEl);
                     }
                 }
-                shapeGridHtml += '</div>';
 
-                cardEl.innerHTML = `
-                    <div class="card-title-mini">
-                        <span>${card.name}</span>
-                        <span style="color:#ff7675;">🔥-1</span>
-                    </div>
-                    <div class="card-shape-mini">${shapeGridHtml}</div>
-                    <div style="font-size:11px; color:#a0a8b9; text-align:center;">
-                        🛡️+${card.terrain.defense} | 🌾+${card.terrain.food||0} | 🧱+${card.terrain.wood||0}
-                    </div>
-                    <button style="font-size:11px; background:#2980b9; color:white; border:none; border-radius:4px; padding:4px; margin-top:4px; cursor:pointer;" onclick="event.stopPropagation(); reserveCard(${idx})">📦 保留エリアへ</button>
-                `;
+                if (selectedCard) {
+                    highlightPlaceableCells();
+                }
 
-                cardEl.onclick = () => {
-                    if (state.hasPickedThisTurn) return;
-                    selectedCard = card;
-                    render();
-                };
+                // ドローカード描画
+                const cardRowEl = document.getElementById("cardRow");
+                cardRowEl.innerHTML = "";
 
-                cardRowEl.appendChild(cardEl);
-            });
+                state.handOffering.forEach((card, idx) => {
+                    const cardEl = document.createElement("div");
+                    cardEl.className = `card-frame ${selectedCard === card ? 'selected' : ''} ${state.hasPickedThisTurn ? 'locked' : ''}`;
 
-            // 保留エリア描画
-            const reserveRowEl = document.getElementById("reserveRow");
-            reserveRowEl.innerHTML = "";
+                    const sRows = card.currentShape.length;
+                    const sCols = card.currentShape[0].length;
+                    
+                    let shapeGridHtml = `<div style="display:grid; grid-template-columns:repeat(${sCols}, 16px); gap:4px;">`;
+                    for (let dr = 0; dr < sRows; dr++) {
+                        for (let dc = 0; dc < sCols; dc++) {
+                            const isActive = card.currentShape[dr][dc] === 1;
+                            shapeGridHtml += `<div style="width:16px;height:16px;background:${isActive ? '#1abc9c' : '#252a36'};border-radius:2px;"></div>`;
+                        }
+                    }
+                    shapeGridHtml += '</div>';
 
-            for (let i = 0; i < 3; i++) {
-                const card = state.reserveSlots[i];
-                const slotEl = document.createElement("div");
-                slotEl.className = `reserve-slot ${card ? 'filled' : ''}`;
-
-                if (card) {
-                    slotEl.innerHTML = `
-                        <div style="text-align:center;">
-                            <strong>${card.name}</strong><br>
-                            <small style="font-size:10px; color:#e67e22;">🔥-1/T</small>
+                    cardEl.innerHTML = `
+                        <div class="card-title-mini">
+                            <span>${card.name}</span>
+                            <span style="color:#ff7675;">🔥-1</span>
                         </div>
+                        <div class="card-shape-mini">${shapeGridHtml}</div>
+                        <div style="font-size:11px; color:#a0a8b9; text-align:center;">
+                            🛡️+${card.terrain.defense} | 🌾+${card.terrain.food||0} | 🧱+${card.terrain.wood||0}
+                        </div>
+                        <button style="font-size:11px; background:#2980b9; color:white; border:none; border-radius:4px; padding:4px; margin-top:4px; cursor:pointer;" onclick="event.stopPropagation(); reserveCard(${idx})">📦 保留エリアへ</button>
                     `;
-                    slotEl.onclick = () => {
+
+                    cardEl.onclick = () => {
                         if (state.hasPickedThisTurn) return;
                         selectedCard = card;
                         render();
                     };
-                } else {
-                    slotEl.innerText = `空枠 ${i+1}`;
+
+                    cardRowEl.appendChild(cardEl);
+                });
+
+                // 保留エリア描画
+                const reserveRowEl = document.getElementById("reserveRow");
+                reserveRowEl.innerHTML = "";
+
+                for (let i = 0; i < 3; i++) {
+                    const card = state.reserveSlots[i];
+                    const slotEl = document.createElement("div");
+                    slotEl.className = `reserve-slot ${card ? 'filled' : ''}`;
+
+                    if (card) {
+                        slotEl.innerHTML = `
+                            <div style="text-align:center;">
+                                <strong>${card.name}</strong><br>
+                                <small style="font-size:10px; color:#e67e22;">🔥-1/T</small>
+                            </div>
+                        `;
+                        slotEl.onclick = () => {
+                            if (state.hasPickedThisTurn) return;
+                            selectedCard = card;
+                            render();
+                        };
+                    } else {
+                        slotEl.innerText = `空枠 ${i+1}`;
+                    }
+                    reserveRowEl.appendChild(slotEl);
                 }
-                reserveRowEl.appendChild(slotEl);
-            }
 
-            // ログ描画
-            const logContentEl = document.getElementById("logContent");
-            logContentEl.innerHTML = "";
-            state.gameLogs.forEach(log => {
-                const item = document.createElement("div");
-                item.innerText = log;
-                logContentEl.appendChild(item);
-            });
+                // ログ描画
+                const logContentEl = document.getElementById("logContent");
+                logContentEl.innerHTML = "";
+                state.gameLogs.forEach(log => {
+                    const item = document.createElement("div");
+                    item.innerText = log;
+                    logContentEl.appendChild(item);
+                });
 
-            while (state.toastQueue.length > 0) {
-                const toastData = state.toastQueue.shift();
-                showTileToast(toastData.r, toastData.c, toastData.text);
+                while (state.toastQueue.length > 0) {
+                    const toastData = state.toastQueue.shift();
+                    showTileToast(toastData.r, toastData.c, toastData.text);
+                }
+            } catch (err) {
+                console.error("Render Error:", err);
             }
         }
 
         function onCellClick(r, c) {
+            if (!state) return;
             const cell = state.grid[r][c];
 
             if (!selectedCard) {
@@ -921,6 +949,7 @@
         }
 
         function reserveCard(idx) {
+            if (!state) return;
             if (state.moveToReserve(idx)) {
                 render();
             } else {
@@ -929,6 +958,7 @@
         }
 
         function mulligan() {
+            if (!state || !drawSys) return;
             if (state.ember <= 1) {
                 alert("❌ 🔥 生命力が不足しているためマリガンできません！");
                 return;
@@ -941,20 +971,24 @@
 
         function toggleLogPanel() {
             const el = document.getElementById("logContent");
+            if (!el) return;
             isLogExpanded = !isLogExpanded;
             el.style.display = isLogExpanded ? "flex" : "none";
         }
 
         function showBreakdownModal() {
-            document.getElementById("breakdownModal").style.display = "block";
+            const el = document.getElementById("breakdownModal");
+            if (el) el.style.display = "block";
         }
 
         function hideBreakdownModal() {
-            document.getElementById("breakdownModal").style.display = "none";
+            const el = document.getElementById("breakdownModal");
+            if (el) el.style.display = "none";
         }
 
         function toggleBreakdownModal() {
             const el = document.getElementById("breakdownModal");
+            if (!el) return;
             el.style.display = (el.style.display === "block") ? "none" : "block";
         }
 
@@ -970,6 +1004,7 @@
         }
 
         function nextTurn() {
+            if (!state || !drawSys) return;
             const prods = state.calculateTotalProduction();
             state.food += prods.totalFood;
             state.wood += prods.totalWood;
@@ -995,8 +1030,6 @@
             clearCellPreviews();
             render();
         }
-
-        window.onload = init;
     </script>
 </body>
 </html>
