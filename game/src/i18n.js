@@ -1,0 +1,200 @@
+// Trial of Ages : Last Ember I18N Dictionary Manager (AGENTS.md Rule 3 Compliant)
+(function(exports) {
+
+    const dictionaries = {
+        ja: {
+            // 地形・リソース名
+            TERRAIN_HQ: "本営",
+            TERRAIN_PLAINS: "草原",
+            TERRAIN_FOREST: "森",
+            TERRAIN_DEEP_FOREST: "深い森",
+            TERRAIN_DESERT_HILLS: "砂漠丘陵",
+            TERRAIN_HILL: "丘陵",
+            TERRAIN_FOREST_HILLS: "森丘陵",
+            TERRAIN_DEEP_HILLS: "森林丘陵",
+            TERRAIN_MOUNTAIN: "山岳",
+            TERRAIN_DESERT: "砂漠",
+
+            // 開花ソケット資源名
+            SOCKET_WILD_WHEAT: "野麦 🌾+3/T",
+            SOCKET_APPLES: "林檎 🌾+3/T",
+            SOCKET_QUARRY: "採石層 🧱+3/T",
+            SOCKET_IRON_DEPOSIT: "金銀鉱脈 🧱+2 ✨+1/T",
+            SOCKET_DATES: "デーツ 🌾+1/T",
+
+            // UIラベル
+            UI_TITLE: "Trial of Ages : Last Ember",
+            UI_ROLE_AVATAR: "ロールアイコン",
+            UI_TURN_LABEL: "ターン表示",
+            UI_OFFERING_TITLE: "手札オファリング (6カテゴリ対応 TCGカード) [R回転]",
+            UI_RESERVE_TITLE: "保留エリア (保留中 ✕ 3 / 維持費 🔥-1/T)",
+            UI_MAIN_AREA_BADGE: "メインエリア",
+            UI_DATA_PANEL_TITLE: "各種データ表示パネル",
+            UI_FOOD: "🌾 食料",
+            UI_WOOD: "🧱 資材",
+            UI_DEFENSE: "🛡️ 防衛",
+            UI_MYSTIC: "✨ 神秘",
+            UI_BREAKDOWN_HEADER: "📊 各リソース持続産出 内訳",
+            UI_BREAKDOWN_FOOD_TOTAL: "🌾 食料全産出:",
+            UI_BREAKDOWN_WOOD_TOTAL: "🧱 資材全産出:",
+            UI_BREAKDOWN_HQ_BASE: "├ 本営基礎:",
+            UI_BREAKDOWN_TILES: "├ 土地配置:",
+            UI_BREAKDOWN_SOCKETS: "├ ソケット開花:",
+            UI_BREAKDOWN_VICINITY: "└ 本営近郊(+1):",
+            UI_LOG_TITLE: "ログ",
+            UI_LOG_TOGGLE: "トグル",
+            UI_MULLIGAN_BTN: "マリガン : 🔥 -1",
+            UI_TURN_END_BTN: "TURN END ➔",
+            UI_LAND_BLOCK_CATEGORY: "🌱 土地ブロック",
+            UI_COST_EMBER_1: "🔥-1",
+            UI_RESERVE_BTN: "📦 保留エリアへ移動",
+            UI_RESERVE_LOCKED_BTN: "配置済み (保留不可)",
+            UI_RESERVE_EMPTY: "空枠 {slot}",
+            UI_SEARCH_LINK: "[🔍 クリックで2D6探索]",
+            UI_SEARCHED_BADGE: "✓探索済",
+            UI_MERGED_SEARCH_DISABLED: "[マージ合体済・探索不可]",
+
+            // ログ ＆ トーストメッセージ
+            LOG_INIT_5X5: "[T1] ゲーム開始: 5x5 盤面が初期化されました。",
+            LOG_LAND_PLACED: "土地配置: ({pos}) に {name} を配置。",
+            LOG_CONNECTION_BONUS: "連結成立: {name} ✕ 同種接続で {bonus} 獲得!",
+            LOG_MERGE_2X2_COMPLETE: "🎉 2x2 マージ大土地完成! ({name}) 持続産出1.2倍 ＆ 🔥+1 即時回復!",
+            LOG_SOCKET_SPAWNED: "✨ ★ソケット開花: {pos} の★の上に {terrainName} を配置し [{socketName}] が即時開花・湧出!",
+            LOG_EXPLORATION_RESULT: "探索判定: 位置{pos} {result}",
+            LOG_MULLIGAN_EXECUTED: "マリガン実行: 🔥 -1 消費し手札を再抽選。",
+            LOG_TURN_END: "Turn {turn} 終了: 🌾+{food} 🧱+{wood} ✨+{mystic} 獲得。食料維持費 -{cost} 🌾",
+            LOG_FOOD_DEFICIT_PENALTY: "⚠️ 食料不足ペナルティ! 食料維持費未払いで生命力 🔥 -2 ダメージ (残り火: {ember})",
+            LOG_RESERVE_ADDED: "保留登録: {name} を保留スロット {slot} へ移動。",
+
+            TOAST_CONNECTION_BONUS: "⚡ 連結ボーナス! {text}",
+            TOAST_MERGE_2X2: "🎉 2x2大土地完成! 🔥+1",
+            TOAST_SOCKET_SPAWNED: "✨ ★開花! {name}",
+            TOAST_EXPLORATION_SUCCESS: "発掘! 🌾🧱+3",
+            TOAST_EXPLORATION_MED: "成果 🌾+2",
+            TOAST_EXPLORATION_LOW: "成果 🌾+1",
+
+            // ツールチップ ＆ ダイアログ
+            TOOLTIP_HQ_TITLE: "本営 HQ {pos}",
+            TOOLTIP_HQ_DESC: "基礎産出: 🌾+10 🧱+10 🛡️10 ✨+1<br><small style=\"color:#1abc9c;\">周囲8マス: 土地配置で全産出+1バフ</small>",
+            TOOLTIP_SOCKET_UNOPENED: "★ 未開花ソケットマス {pos}",
+            TOOLTIP_UNPLACED: "未配置マス {pos}",
+            TOOLTIP_HQ_VICINITY_BUFF: "✨ 本営近郊: 土地配置で全産出+1バフ!",
+            CONFIRM_EXPLORATION: "🔍 2D6 土地探索を実行しますか？\n位置: ({pos}) {name}\nコスト: 🔥 -1 (生命力)\n※1マス通算1回のみ実行可能です。",
+            ALERT_LAND_ALREADY_PLACED: "❌ 【当ターン土地配置済み】 1ターンに配置できる土地は1つのみです！",
+            ALERT_EMBER_ZERO: "💀 生命力 🔥 が 0 のため土地を配置できません！",
+            ALERT_MULLIGAN_NO_EMBER: "❌ 🔥 生命力が不足しているためマリガンできません！",
+            ALERT_RESERVE_FULL: "❌ 保留エリアが満配です (最大3枠)",
+            ALERT_GAME_OVER: "💀 【GAME OVER】 生命力 🔥 が 0 になりました。人類の灯火は消滅しました。",
+            ALERT_GAME_CLEAR: "🎉 【GAME CLEAR】 50 ターンを生存抜けて人類の生存目標を達成しました！"
+        },
+        en: {
+            TERRAIN_HQ: "Headquarters",
+            TERRAIN_PLAINS: "Plains",
+            TERRAIN_FOREST: "Forest",
+            TERRAIN_DEEP_FOREST: "Deep Forest",
+            TERRAIN_DESERT_HILLS: "Desert Hills",
+            TERRAIN_HILL: "Hills",
+            TERRAIN_FOREST_HILLS: "Forest Hills",
+            TERRAIN_DEEP_HILLS: "Dense Hills",
+            TERRAIN_MOUNTAIN: "Mountains",
+            TERRAIN_DESERT: "Desert",
+
+            SOCKET_WILD_WHEAT: "Wild Wheat 🌾+3/T",
+            SOCKET_APPLES: "Apples 🌾+3/T",
+            SOCKET_QUARRY: "Quarry 🧱+3/T",
+            SOCKET_IRON_DEPOSIT: "Ore Vein 🧱+2 ✨+1/T",
+            SOCKET_DATES: "Dates 🌾+1/T",
+
+            UI_TITLE: "Trial of Ages : Last Ember",
+            UI_ROLE_AVATAR: "Role Icon",
+            UI_TURN_LABEL: "Turn Counter",
+            UI_OFFERING_TITLE: "Hand Offering (6 Categories TCG) [R Rotate]",
+            UI_RESERVE_TITLE: "Reserve Slots (3 Slots / Maint 🔥-1/T)",
+            UI_MAIN_AREA_BADGE: "Main Territory",
+            UI_DATA_PANEL_TITLE: "Data Overview Panel",
+            UI_FOOD: "🌾 Food",
+            UI_WOOD: "🧱 Wood",
+            UI_DEFENSE: "🛡️ Defense",
+            UI_MYSTIC: "✨ Mystic",
+            UI_BREAKDOWN_HEADER: "📊 Sustainable Yield Breakdown",
+            UI_BREAKDOWN_FOOD_TOTAL: "🌾 Food Yield Total:",
+            UI_BREAKDOWN_WOOD_TOTAL: "🧱 Wood Yield Total:",
+            UI_BREAKDOWN_HQ_BASE: "├ HQ Base:",
+            UI_BREAKDOWN_TILES: "├ Land Tiles:",
+            UI_BREAKDOWN_SOCKETS: "├ Socket Bloom:",
+            UI_BREAKDOWN_VICINITY: "└ HQ Vicinity (+1):",
+            UI_LOG_TITLE: "Log",
+            UI_LOG_TOGGLE: "Toggle",
+            UI_MULLIGAN_BTN: "Mulligan : 🔥 -1",
+            UI_TURN_END_BTN: "TURN END ➔",
+            UI_LAND_BLOCK_CATEGORY: "🌱 Land Block",
+            UI_COST_EMBER_1: "🔥-1",
+            UI_RESERVE_BTN: "📦 Move to Reserve",
+            UI_RESERVE_LOCKED_BTN: "Placed (Locked)",
+            UI_RESERVE_EMPTY: "Empty {slot}",
+            UI_SEARCH_LINK: "[🔍 Click 2D6 Explore]",
+            UI_SEARCHED_BADGE: "✓ Explored",
+            UI_MERGED_SEARCH_DISABLED: "[Merged Tile / Cannot Explore]",
+
+            LOG_INIT_5X5: "[T1] Game Start: 5x5 board initialized.",
+            LOG_LAND_PLACED: "Land Placed: {name} at ({pos}).",
+            LOG_CONNECTION_BONUS: "Adjacency Bonus: {name} connection earned {bonus}!",
+            LOG_MERGE_2X2_COMPLETE: "🎉 2x2 Large Territory Complete! ({name}) 1.2x Yield & 🔥+1 Restored!",
+            LOG_SOCKET_SPAWNED: "✨ Socket Bloomed: {terrainName} at {pos} spawned [{socketName}]!",
+            LOG_EXPLORATION_RESULT: "Exploration at {pos}: {result}",
+            LOG_MULLIGAN_EXECUTED: "Mulligan: Spent 🔥 -1 to redraw hand.",
+            LOG_TURN_END: "Turn {turn} End: Gained 🌾+{food} 🧱+{wood} ✨+{mystic}. Food Maint -{cost} 🌾",
+            LOG_FOOD_DEFICIT_PENALTY: "⚠️ Food Deficit Penalty! 🔥 -2 Damage (Ember: {ember})",
+            LOG_RESERVE_ADDED: "Reserve Registered: Moved {name} to Slot {slot}.",
+
+            TOAST_CONNECTION_BONUS: "⚡ Connection Bonus! {text}",
+            TOAST_MERGE_2X2: "🎉 2x2 Territory! 🔥+1",
+            TOAST_SOCKET_SPAWNED: "✨ Bloomed! {name}",
+            TOAST_EXPLORATION_SUCCESS: "Discovered! 🌾🧱+3",
+            TOAST_EXPLORATION_MED: "Result 🌾+2",
+            TOAST_EXPLORATION_LOW: "Result 🌾+1",
+
+            TOOLTIP_HQ_TITLE: "HQ Base {pos}",
+            TOOLTIP_HQ_DESC: "Base Yield: 🌾+10 🧱+10 🛡️10 ✨+1<br><small style=\"color:#1abc9c;\">Vicinity: +1 to all yields</small>",
+            TOOLTIP_SOCKET_UNOPENED: "★ Unbloomed Socket {pos}",
+            TOOLTIP_UNPLACED: "Unplaced Cell {pos}",
+            TOOLTIP_HQ_VICINITY_BUFF: "✨ HQ Vicinity: +1 Yield Buff!",
+            CONFIRM_EXPLORATION: "🔍 Execute 2D6 Land Exploration?\nLocation: ({pos}) {name}\nCost: 🔥 -1 (Ember)\n*Max once per tile.",
+            ALERT_LAND_ALREADY_PLACED: "❌ [Already Placed] Only 1 land tile allowed per turn!",
+            ALERT_EMBER_ZERO: "💀 Ember 🔥 is 0! Cannot place land.",
+            ALERT_MULLIGAN_NO_EMBER: "❌ Insufficient Ember 🔥 for Mulligan!",
+            ALERT_RESERVE_FULL: "❌ Reserve slots full (Max 3)",
+            ALERT_GAME_OVER: "💀 [GAME OVER] Ember extinguished.",
+            ALERT_GAME_CLEAR: "🎉 [GAME CLEAR] Survived 50 Turns!"
+        }
+    };
+
+    let currentLang = "ja";
+
+    function setLanguage(lang) {
+        if (dictionaries[lang]) {
+            currentLang = lang;
+        }
+    }
+
+    function getLanguage() {
+        return currentLang;
+    }
+
+    function t(key, params = {}) {
+        const dict = dictionaries[currentLang] || dictionaries["ja"];
+        let val = dict[key] || dictionaries["ja"][key] || key;
+
+        for (let p in params) {
+            val = val.replace(new RegExp(`\\{${p}\\}`, 'g'), params[p]);
+        }
+        return val;
+    }
+
+    exports.I18n = {
+        setLanguage,
+        getLanguage,
+        t
+    };
+
+})(typeof exports !== 'undefined' ? exports : window);

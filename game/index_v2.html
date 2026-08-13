@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trial of Ages : Last Ember (Socket Placement Resource Spawn & Multi-Cell Connection)</title>
+    <title>Trial of Ages : Last Ember (AGENTS.md Rule 3 I18n Dictionary Compliant)</title>
     <style>
         * {
             box-sizing: border-box;
@@ -610,9 +610,9 @@
     <!-- 1. 最上部ヘッダー (トップステータスバー) -->
     <div class="top-bar">
         <div class="app-title-box">
-            <div>Trial of Ages : Last Ember</div>
+            <div id="lblAppTitle">Trial of Ages : Last Ember</div>
             <div class="role-avatar-box">
-                <span>ロールアイコン</span>
+                <span id="lblRoleAvatar">ロールアイコン</span>
                 <span class="icon">👤</span>
             </div>
         </div>
@@ -628,7 +628,7 @@
         </div>
 
         <div class="turn-box">
-            <div style="font-size:9px;">ターン表示</div>
+            <div style="font-size:9px;" id="lblTurnHeader">ターン表示</div>
             <span class="turn-num"><span id="valTurn">1</span>/50</span>
         </div>
     </div>
@@ -639,19 +639,19 @@
         <!-- 👈 左サイドバー: 本格 TCG 4重レイヤーカード表示 -->
         <div class="left-sidebar">
             <div class="offering-box">
-                <div class="section-label">手札オファリング (6カテゴリ対応 TCGカード) [R回転]</div>
+                <div class="section-label" id="lblOfferingTitle">手札オファリング (6カテゴリ対応 TCGカード) [R回転]</div>
                 <div id="cardRow" class="card-row-vertical"></div>
             </div>
 
             <div class="reserve-box">
-                <div class="section-label">保留エリア (保留中 ✕ 3 / 維持費 🔥-1/T)</div>
+                <div class="section-label" id="lblReserveTitle">保留エリア (保留中 ✕ 3 / 維持費 🔥-1/T)</div>
                 <div id="reserveRow" class="reserve-row-vertical"></div>
             </div>
         </div>
 
         <!-- 🎯 中央メインエリア: 大幅拡大グリッド領域 (文字がくっきり読める78px) -->
         <div class="board-container">
-            <div class="main-area-badge">メインエリア <span id="valPlacedCount">1</span>/24</div>
+            <div class="main-area-badge"><span id="lblMainBadge">メインエリア</span> <span id="valPlacedCount">1</span>/24</div>
             <div id="gridBoard" class="grid-with-headers"></div>
             <div id="tileTooltip" class="tile-tooltip"></div>
         </div>
@@ -659,34 +659,34 @@
         <!-- 👉 右サイドバー: 各種データ表示 ✕ ログ ✕ アクションボタン -->
         <div class="right-sidebar">
             <div class="data-panel" onmouseenter="showBreakdownModal()" onmouseleave="hideBreakdownModal()" onclick="toggleBreakdownModal()">
-                <h4>各種データ表示パネル</h4>
+                <h4 id="lblDataPanelTitle">各種データ表示パネル</h4>
                 <div class="resource-list">
-                    <div>🌾 食料: <span id="valFood">30</span> (<span id="valFoodProd">+10</span>/T)</div>
-                    <div>🧱 資材: <span id="valWood">30</span> (<span id="valWoodProd">+10</span>/T)</div>
-                    <div>🛡️ 防衛: <span id="valDefense">10</span></div>
-                    <div>✨ 神秘: <span id="valMystic">0</span> (+1/T)</div>
+                    <div><span id="lblFood">🌾 食料</span>: <span id="valFood">30</span> (<span id="valFoodProd">+10</span>/T)</div>
+                    <div><span id="lblWood">🧱 資材</span>: <span id="valWood">30</span> (<span id="valWoodProd">+10</span>/T)</div>
+                    <div><span id="lblDefense">🛡️ 防衛</span>: <span id="valDefense">10</span></div>
+                    <div><span id="lblMystic">✨ 神秘</span>: <span id="valMystic">0</span> (+1/T)</div>
                 </div>
             </div>
 
             <div id="breakdownModal" class="breakdown-modal">
-                <h5>📊 各リソース持続産出 内訳</h5>
-                <div class="breakdown-row"><span>🌾 食料全産出:</span><span id="bdFoodTotal">+10/T</span></div>
-                <div class="breakdown-row" style="color:#7f8c8d;"><span>├ 本営基礎:</span><span>+10/T</span></div>
-                <div class="breakdown-row" style="color:#7f8c8d;"><span>├ 土地配置:</span><span id="bdFoodTiles">+0/T</span></div>
-                <div class="breakdown-row" style="color:#7f8c8d;"><span>├ ソケット開花:</span><span id="bdFoodSockets">+0/T</span></div>
-                <div class="breakdown-row" style="color:#7f8c8d;"><span>└ 本営近郊(+1):</span><span id="bdFoodVicinity">+0/T</span></div>
+                <h5 id="lblBdHeader">📊 各リソース持続産出 内訳</h5>
+                <div class="breakdown-row"><span id="lblBdFoodTotal">🌾 食料全産出:</span><span id="bdFoodTotal">+10/T</span></div>
+                <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdFoodHq">├ 本営基礎:</span><span>+10/T</span></div>
+                <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdFoodTiles">├ 土地配置:</span><span id="bdFoodTiles">+0/T</span></div>
+                <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdFoodSockets">├ ソケット開花:</span><span id="bdFoodSockets">+0/T</span></div>
+                <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdFoodVicinity">└ 本営近郊(+1):</span><span id="bdFoodVicinity">+0/T</span></div>
                 <hr style="border-color:#2c3345; margin:4px 0;">
-                <div class="breakdown-row"><span>🧱 資材全産出:</span><span id="bdWoodTotal">+10/T</span></div>
-                <div class="breakdown-row" style="color:#7f8c8d;"><span>├ 本営基礎:</span><span>+10/T</span></div>
-                <div class="breakdown-row" style="color:#7f8c8d;"><span>├ 土地配置:</span><span id="bdWoodTiles">+0/T</span></div>
-                <div class="breakdown-row" style="color:#7f8c8d;"><span>├ ソケット開花:</span><span id="bdWoodSockets">+0/T</span></div>
-                <div class="breakdown-row" style="color:#7f8c8d;"><span>└ 本営近郊(+1):</span><span id="bdWoodVicinity">+0/T</span></div>
+                <div class="breakdown-row"><span id="lblBdWoodTotal">🧱 資材全産出:</span><span id="bdWoodTotal">+10/T</span></div>
+                <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdWoodHq">├ 本営基礎:</span><span>+10/T</span></div>
+                <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdWoodTiles">├ 土地配置:</span><span id="bdWoodTiles">+0/T</span></div>
+                <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdWoodSockets">├ ソケット開花:</span><span id="bdWoodSockets">+0/T</span></div>
+                <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdWoodVicinity">└ 本営近郊(+1):</span><span id="bdWoodVicinity">+0/T</span></div>
             </div>
 
             <div id="logPanelWrapper" class="log-panel-wrapper">
                 <div class="log-header">
-                    <span>ログ</span>
-                    <button class="toggle-btn" onclick="toggleLogPanel()">トグル</button>
+                    <span id="lblLogTitle">ログ</span>
+                    <button class="toggle-btn" onclick="toggleLogPanel()" id="btnLogToggle">トグル</button>
                 </div>
                 <div id="logContent" class="log-content">
                     <div style="color:#7f8c8d;">格納状態と展開状態を切り替え可能</div>
@@ -694,13 +694,15 @@
             </div>
 
             <div class="controls-box-vertical">
-                <button class="mulligan-btn" onclick="mulligan()">マリガン : 🔥 -1</button>
-                <button class="turn-end-btn" onclick="nextTurn()">TURN END ➔</button>
+                <button class="mulligan-btn" onclick="mulligan()" id="btnMulligan">マリガン : 🔥 -1</button>
+                <button class="turn-end-btn" onclick="nextTurn()" id="btnTurnEnd">TURN END ➔</button>
             </div>
         </div>
 
     </div>
 
+    <!-- 🌐 AGENTS.md Rule 3 I18n Dictionary Manager -->
+    <script src="src/i18n.js"></script>
     <script src="src/v2_unity_ready_main.js"></script>
     <script>
         let state = null;
@@ -716,6 +718,7 @@
             state = new engine.GameState();
             drawSys = new engine.Step1DrawSystem(state);
 
+            initStaticI18nLabels();
             init();
 
             window.addEventListener("keydown", (e) => {
@@ -734,6 +737,38 @@
                 }
             });
         });
+
+        function initStaticI18nLabels() {
+            const I18n = window.I18n;
+            if (!I18n) return;
+            document.title = I18n.t("UI_TITLE") + " (AGENTS.md Rule 3 Compliant)";
+            setElementText("lblAppTitle", I18n.t("UI_TITLE"));
+            setElementText("lblRoleAvatar", I18n.t("UI_ROLE_AVATAR"));
+            setElementText("lblTurnHeader", I18n.t("UI_TURN_LABEL"));
+            setElementText("lblOfferingTitle", I18n.t("UI_OFFERING_TITLE"));
+            setElementText("lblReserveTitle", I18n.t("UI_RESERVE_TITLE"));
+            setElementText("lblMainBadge", I18n.t("UI_MAIN_AREA_BADGE"));
+            setElementText("lblDataPanelTitle", I18n.t("UI_DATA_PANEL_TITLE"));
+            setElementText("lblFood", I18n.t("UI_FOOD"));
+            setElementText("lblWood", I18n.t("UI_WOOD"));
+            setElementText("lblDefense", I18n.t("UI_DEFENSE"));
+            setElementText("lblMystic", I18n.t("UI_MYSTIC"));
+            setElementText("lblBdHeader", I18n.t("UI_BREAKDOWN_HEADER"));
+            setElementText("lblBdFoodTotal", I18n.t("UI_BREAKDOWN_FOOD_TOTAL"));
+            setElementText("lblBdFoodHq", I18n.t("UI_BREAKDOWN_HQ_BASE"));
+            setElementText("lblBdFoodTiles", I18n.t("UI_BREAKDOWN_TILES"));
+            setElementText("lblBdFoodSockets", I18n.t("UI_BREAKDOWN_SOCKETS"));
+            setElementText("lblBdFoodVicinity", I18n.t("UI_BREAKDOWN_VICINITY"));
+            setElementText("lblBdWoodTotal", I18n.t("UI_BREAKDOWN_WOOD_TOTAL"));
+            setElementText("lblBdWoodHq", I18n.t("UI_BREAKDOWN_HQ_BASE"));
+            setElementText("lblBdWoodTiles", I18n.t("UI_BREAKDOWN_TILES"));
+            setElementText("lblBdWoodSockets", I18n.t("UI_BREAKDOWN_SOCKETS"));
+            setElementText("lblBdWoodVicinity", I18n.t("UI_BREAKDOWN_VICINITY"));
+            setElementText("lblLogTitle", I18n.t("UI_LOG_TITLE"));
+            setElementText("btnLogToggle", I18n.t("UI_LOG_TOGGLE"));
+            setElementText("btnMulligan", I18n.t("UI_MULLIGAN_BTN"));
+            setElementText("btnTurnEnd", I18n.t("UI_TURN_END_BTN"));
+        }
 
         function init() {
             if (!drawSys) return;
@@ -811,22 +846,25 @@
 
         function showTileTooltip(e, r, c, cell) {
             const tt = document.getElementById("tileTooltip");
-            if (!tt || !cell) return;
+            const I18n = window.I18n;
+            if (!tt || !cell || !I18n) return;
 
             const pos = `(${String.fromCharCode(65+c)}${r+1})`;
             const isHQVic = state.isHQVicinity(r, c);
 
             if (cell.isHQ) {
-                tt.innerHTML = `<strong>本営 HQ ${pos}</strong><br>基礎産出: 🌾+10 🧱+10 🛡️10 ✨+1<br><small style="color:#1abc9c;">周囲8マス: 土地配置で全産出+1バフ</small>`;
+                tt.innerHTML = `<strong>${I18n.t("TOOLTIP_HQ_TITLE", { pos })}</strong><br>${I18n.t("TOOLTIP_HQ_DESC")}`;
             } else if (cell.placed && cell.terrain) {
-                const mergeText = cell.merged ? `<br><span style="color:#f1c40f;font-weight:bold;">✨ 2x2単一大土地 [持続産出1.2倍!]</span>` : "";
-                const socketText = cell.socketResource ? `<br><span style="color:#f1c40f;font-weight:bold;">★ ${cell.socketResource.name} (開花中)</span>` : (cell.hasSocket ? `<br><span style="color:#f39c12;font-weight:bold;">★ 未開花ソケットあり</span>` : "");
-                const searchText = cell.searched ? `<br><span style="color:#2ecc71;">[✓ 探索済み]</span>` : (cell.merged ? `<br><span style="color:#7f8c8d;">[マージ合体済・探索不可]</span>` : `<br><span style="color:#3498db;">[🔍 クリックで2D6探索]</span>`);
-                tt.innerHTML = `<strong>${cell.terrain.name} ${pos}</strong>${mergeText}<br>防衛: 🛡️${cell.terrain.defense} | 産出: 🌾+${cell.terrain.food||0} 🧱+${cell.terrain.wood||0}${isHQVic?' (本営近郊+1)':''}${socketText}${searchText}`;
+                const tName = I18n.t(cell.terrain.nameKey);
+                const sName = cell.socketResource ? I18n.t(cell.socketResource.nameKey) : "";
+                const mergeText = cell.merged ? `<br><span style="color:#f1c40f;font-weight:bold;">✨ 2x2大${tName} [1.2倍!]</span>` : "";
+                const socketText = cell.socketResource ? `<br><span style="color:#f1c40f;font-weight:bold;">★ ${sName} (開花中)</span>` : (cell.hasSocket ? `<br><span style="color:#f39c12;font-weight:bold;">★ 未開花ソケットあり</span>` : "");
+                const searchText = cell.searched ? `<br><span style="color:#2ecc71;">${I18n.t("UI_SEARCHED_BADGE")}</span>` : (cell.merged ? `<br><span style="color:#7f8c8d;">${I18n.t("UI_MERGED_SEARCH_DISABLED")}</span>` : `<br><span style="color:#3498db;">${I18n.t("UI_SEARCH_LINK")}</span>`);
+                tt.innerHTML = `<strong>${tName} ${pos}</strong>${mergeText}<br>🛡️${cell.terrain.defense} | 🌾+${cell.terrain.food||0} 🧱+${cell.terrain.wood||0}${isHQVic?' (+1)':''}${socketText}${searchText}`;
             } else if (cell.hasSocket) {
-                tt.innerHTML = `<strong>★ 未開花ソケットマス ${pos}</strong><br><small style="color:#f39c12;">土地配置で地形対応資源が即時湧出開花!</small>`;
+                tt.innerHTML = `<strong>${I18n.t("TOOLTIP_SOCKET_UNOPENED", { pos })}</strong>`;
             } else {
-                tt.innerHTML = `<strong>未配置マス ${pos}</strong>${isHQVic?'<br><small style="color:#1abc9c;">✨ 本営近郊: 土地配置で全産出+1バフ!</small>':''}`;
+                tt.innerHTML = `<strong>${I18n.t("TOOLTIP_UNPLACED", { pos })}</strong>${isHQVic?`<br><small style="color:#1abc9c;">${I18n.t("TOOLTIP_HQ_VICINITY_BUFF")}</small>`:''}`;
             }
 
             tt.style.left = (e.clientX + 15) + "px";
@@ -846,6 +884,7 @@
 
         function render() {
             if (!state) return;
+            const I18n = window.I18n;
             try {
                 const prods = state.calculateTotalProduction();
                 const bd = state.getResourceBreakdown();
@@ -913,11 +952,11 @@
 
                             if (cellData.isHQ) {
                                 cellEl.classList.add("hq");
-                                cellEl.innerHTML = "本営";
+                                cellEl.innerHTML = I18n.t("TERRAIN_HQ");
                             } else if (cellData.placed && cellData.terrain) {
                                 cellEl.classList.add("placed");
 
-                                // 🧩 単一ブロック マージ合体 ＆ 1x2 / 1x3 配置時即時連結ビジュアル一体化
+                                const tName = I18n.t(cellData.terrain.nameKey);
                                 const mergeId = cellData.mergeGroupId;
                                 const placeId = cellData.placementGroupId;
                                 const activeGroupId = mergeId || placeId;
@@ -927,7 +966,6 @@
                                         cellEl.classList.add("merged");
                                     }
 
-                                    // 同一グループの上下左右隣接チェックして境界線を消去
                                     const topSame = (r > 0 && (state.grid[r-1][c].mergeGroupId === activeGroupId || state.grid[r-1][c].placementGroupId === activeGroupId));
                                     const rightSame = (c < 4 && (state.grid[r][c+1].mergeGroupId === activeGroupId || state.grid[r][c+1].placementGroupId === activeGroupId));
                                     const bottomSame = (r < 4 && (state.grid[r+1][c].mergeGroupId === activeGroupId || state.grid[r+1][c].placementGroupId === activeGroupId));
@@ -938,22 +976,21 @@
                                     if (bottomSame) cellEl.style.borderBottom = "none";
                                     if (leftSame) cellEl.style.borderLeft = "none";
 
-                                    // マージグループ全体の左上セルに単一統一ラベルを表示
                                     if (!topSame && !leftSame) {
-                                        const socketText = cellData.socketResource ? `<br><small style="color:#f1c40f;">★${cellData.socketResource.name}</small>` : "";
+                                        const socketText = cellData.socketResource ? `<br><small style="color:#f1c40f;">★${I18n.t(cellData.socketResource.nameKey)}</small>` : "";
                                         if (cellData.merged) {
-                                            cellEl.innerHTML = `<span style="font-size:12px; color:#f1c40f; font-weight:bold; white-space:nowrap; z-index:5;">2x2 大${cellData.terrain.name}<br><small style="color:#fff;">[1.2倍]</small>${socketText}</span>`;
+                                            cellEl.innerHTML = `<span style="font-size:12px; color:#f1c40f; font-weight:bold; white-space:nowrap; z-index:5;">2x2 大${tName}<br><small style="color:#fff;">[1.2倍]</small>${socketText}</span>`;
                                         } else {
-                                            cellEl.innerHTML = `<span style="font-size:13px; color:#fff; font-weight:bold; z-index:5;">${cellData.terrain.name}${socketText}</span>`;
+                                            cellEl.innerHTML = `<span style="font-size:13px; color:#fff; font-weight:bold; z-index:5;">${tName}${socketText}</span>`;
                                         }
                                     } else {
-                                        const socketBadge = cellData.socketResource ? `<small style="color:#f1c40f; font-size:10px;">★${cellData.socketResource.name}</small>` : "";
+                                        const socketBadge = cellData.socketResource ? `<small style="color:#f1c40f; font-size:10px;">★${I18n.t(cellData.socketResource.nameKey)}</small>` : "";
                                         cellEl.innerHTML = socketBadge;
                                     }
                                 } else {
-                                    const socketBadge = cellData.socketResource ? `<br><small style="color:#f1c40f;">★${cellData.socketResource.name}</small>` : "";
-                                    const searchedBadge = cellData.searched ? `<span class="searched-badge">✓探索済</span>` : "";
-                                    cellEl.innerHTML = `${cellData.terrain.name}${socketBadge}${searchedBadge}`;
+                                    const socketBadge = cellData.socketResource ? `<br><small style="color:#f1c40f;">★${I18n.t(cellData.socketResource.nameKey)}</small>` : "";
+                                    const searchedBadge = cellData.searched ? `<span class="searched-badge">${I18n.t("UI_SEARCHED_BADGE")}</span>` : "";
+                                    cellEl.innerHTML = `${tName}${socketBadge}${searchedBadge}`;
                                 }
                             } else if (cellData.hasSocket) {
                                 cellEl.classList.add("socket-unopened");
@@ -1003,15 +1040,16 @@
                         }
                         shapeGridHtml += '</div>';
 
+                        const cName = I18n.t(card.terrain.nameKey);
                         const reserveBtnHtml = isLocked ? 
-                            `<button style="font-size:10px; background:#4a5568; color:#a0aec0; border:none; border-radius:4px; padding:4px; cursor:not-allowed;" disabled>配置済み (保留不可)</button>` :
-                            `<button style="font-size:10px; background:linear-gradient(to right, #2980b9, #3498db); color:white; border:none; border-radius:4px; padding:4px; cursor:pointer; font-weight:bold;" onclick="event.stopPropagation(); reserveCard(${idx})">📦 保留エリアへ移動</button>`;
+                            `<button style="font-size:10px; background:#4a5568; color:#a0aec0; border:none; border-radius:4px; padding:4px; cursor:not-allowed;" disabled>${I18n.t("UI_RESERVE_LOCKED_BTN")}</button>` :
+                            `<button style="font-size:10px; background:linear-gradient(to right, #2980b9, #3498db); color:white; border:none; border-radius:4px; padding:4px; cursor:pointer; font-weight:bold;" onclick="event.stopPropagation(); reserveCard(${idx})">${I18n.t("UI_RESERVE_BTN")}</button>`;
 
                         cardEl.innerHTML = `
                             <div class="tcg-card-header">
-                                <span class="tcg-category-badge">🌱 土地ブロック</span>
-                                <span class="tcg-card-title">${card.name}</span>
-                                <span class="tcg-cost-badge">🔥-1</span>
+                                <span class="tcg-category-badge">${I18n.t("UI_LAND_BLOCK_CATEGORY")}</span>
+                                <span class="tcg-card-title">${cName}</span>
+                                <span class="tcg-cost-badge">${I18n.t("UI_COST_EMBER_1")}</span>
                             </div>
                             <div class="tcg-art-container">
                                 <div class="tcg-art-bg-texture"></div>
@@ -1048,9 +1086,10 @@
                         slotEl.className = `reserve-slot ${card ? 'filled' : ''} ${isLocked ? 'locked' : ''}`;
 
                         if (card) {
+                            const cName = I18n.t(card.terrain.nameKey);
                             slotEl.innerHTML = `
                                 <div style="text-align:center;">
-                                    <strong>${card.name}</strong><br>
+                                    <strong>${cName}</strong><br>
                                     <small style="font-size:9px; color:#f59e0b;">🔥-1/T</small>
                                 </div>
                             `;
@@ -1060,7 +1099,7 @@
                                 render();
                             };
                         } else {
-                            slotEl.innerText = `空枠 ${i+1}`;
+                            slotEl.innerText = I18n.t("UI_RESERVE_EMPTY", { slot: i + 1 });
                         }
                         reserveRowEl.appendChild(slotEl);
                     }
@@ -1089,10 +1128,13 @@
         function onCellClick(r, c) {
             if (!state) return;
             const cell = state.grid[r][c];
+            const I18n = window.I18n;
 
             if (!selectedCard) {
                 if (cell.placed && !cell.isHQ && !cell.searched && !cell.merged) {
-                    const confirmSearch = confirm(`🔍 2D6 土地探索を実行しますか？\n位置: (${String.fromCharCode(65+c)}${r+1}) ${cell.terrain.name}\nコスト: 🔥 -1 (生命力)\n※1マス通算1回のみ実行可能です。`);
+                    const tName = I18n.t(cell.terrain.nameKey);
+                    const posStr = `${String.fromCharCode(65+c)}${r+1}`;
+                    const confirmSearch = confirm(I18n.t("CONFIRM_EXPLORATION", { pos: posStr, name: tName }));
                     if (confirmSearch) {
                         const res = state.executeExploration(r, c);
                         if (!res.success) {
@@ -1104,9 +1146,8 @@
                 return;
             }
 
-            // 1ターン1土地制限ガード
             if (state.hasPickedThisTurn) {
-                alert("❌ 【当ターン土地配置済み】 1ターンに配置できる土地は1つのみです！");
+                alert(I18n.t("ALERT_LAND_ALREADY_PLACED"));
                 selectedCard = null;
                 clearCellPreviews();
                 render();
@@ -1114,7 +1155,7 @@
             }
 
             if (state.ember <= 0) {
-                alert("💀 生命力 🔥 が 0 のため土地を配置できません！");
+                alert(I18n.t("ALERT_EMBER_ZERO"));
                 return;
             }
 
@@ -1145,19 +1186,19 @@
             if (state.moveToReserve(idx)) {
                 render();
             } else {
-                alert("❌ 保留エリアが満配です (最大3枠)");
+                alert(window.I18n.t("ALERT_RESERVE_FULL"));
             }
         }
 
         function mulligan() {
             if (!state || !drawSys) return;
             if (state.ember <= 1) {
-                alert("❌ 🔥 生命力が不足しているためマリガンできません！");
+                alert(window.I18n.t("ALERT_MULLIGAN_NO_EMBER"));
                 return;
             }
             state.ember -= 1;
             drawSys.generateOfferingCards();
-            state.addLog("マリガン実行: 🔥 -1 消費し手札を再抽選。");
+            state.addLog(window.I18n.t("LOG_MULLIGAN_EXECUTED"));
             render();
         }
 
@@ -1196,23 +1237,24 @@
 
         function nextTurn() {
             if (!state || !drawSys) return;
+            const I18n = window.I18n;
             const prods = state.calculateTotalProduction();
             state.food += prods.totalFood;
             state.wood += prods.totalWood;
             state.mystic += prods.totalMystic;
 
             const maint = state.processTurnEndMaintenance();
-            state.addLog(`Turn ${state.turn} 終了: 🌾+${prods.totalFood} 🧱+${prods.totalWood} ✨+${prods.totalMystic} 獲得。食料維持費 -${maint.foodCost} 🌾`);
+            state.addLog(I18n.t("LOG_TURN_END", { turn: state.turn, food: prods.totalFood, wood: prods.totalWood, mystic: prods.totalMystic, cost: maint.foodCost }));
 
             if (maint.isGameOver) {
                 render();
-                alert("💀 【GAME OVER】 生命力 🔥 が 0 になりました。人類の灯火は消滅しました。");
+                alert(I18n.t("ALERT_GAME_OVER"));
                 return;
             }
 
             if (maint.isGameClear) {
                 render();
-                alert("🎉 【GAME CLEAR】 50 ターンを生存抜けて人類の生存目標を達成しました！");
+                alert(I18n.t("ALERT_GAME_CLEAR"));
                 return;
             }
 

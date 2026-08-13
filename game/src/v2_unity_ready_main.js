@@ -1,5 +1,7 @@
-// Trial of Ages : Last Ember Engine (V2 Unity-Ready Main Engine with Socket Placement Resource Spawn & Multi-Cell Connection)
+// Trial of Ages : Last Ember Engine (V2 Unity-Ready Main Engine - AGENTS.md Rule 3 I18n Compliant)
 (function(exports) {
+
+    const I18n = (typeof window !== 'undefined' && window.I18n) ? window.I18n : { t: (k, p) => k };
 
     class GameState {
         constructor() {
@@ -20,7 +22,7 @@
             this.mergeGroupCounter = 1;
             this.placementGroupCounter = 1;
 
-            this.addLog("[T1] ゲーム開始: 5x5 盤面が初期化されました。");
+            this.addLog(I18n.t("LOG_INIT_5X5"));
         }
 
         initGrid(size) {
@@ -37,7 +39,7 @@
                         mergeGroupId: null,
                         mergeType: null,
                         placementGroupId: null,
-                        terrain: isHQ ? { id: "HQ", name: "本営", food: 10, wood: 10, defense: 10, mystic: 1 } : null,
+                        terrain: isHQ ? { id: "HQ", nameKey: "TERRAIN_HQ", food: 10, wood: 10, defense: 10, mystic: 1 } : null,
                         searched: false,
                         hasSocket: false,
                         socketResource: null
@@ -96,8 +98,8 @@
                     if (shapeMatrix[dr][dc] === 1) {
                         const r = startR + dr;
                         const c = startC + dc;
-                        if (r >= size || c >= size) return { can: false, reason: "盤面外には配置できません" };
-                        if (this.grid[r][c].placed) return { can: false, reason: "既に土地が配置されています" };
+                        if (r >= size || c >= size) return { can: false, reason: "OUT_OF_BOUNDS" };
+                        if (this.grid[r][c].placed) return { can: false, reason: "ALREADY_PLACED" };
                     }
                 }
             }
@@ -124,7 +126,7 @@
                 }
             }
 
-            if (!isAdjacent) return { can: false, reason: "既存の配置済み土地に隣接させる必要があります" };
+            if (!isAdjacent) return { can: false, reason: "NOT_ADJACENT" };
             return { can: true };
         }
 
@@ -143,6 +145,8 @@
                 }
             }
 
+            const terrainName = I18n.t(terrain.nameKey);
+
             for (let dr = 0; dr < rows; dr++) {
                 for (let dc = 0; dc < cols; dc++) {
                     if (shapeMatrix[dr][dc] === 1) {
@@ -156,21 +160,22 @@
                             cell.placementGroupId = pGroupId;
                         }
 
-                        // 🌾★ソケットマス上への土地配置時：01仕様書準拠 対応資源の即時開花・湧出アクション
+                        // ★ソケットマス上への土地配置時対応資源即時湧出
                         if (cell.hasSocket && !cell.socketResource) {
                             const socketMap = {
-                                "GL1_PLAINS":      { name: "野麦 🌾+3/T", bonusFood: 3, bonusWood: 0, bonusMystic: 0 },
-                                "GL2_FOREST":      { name: "林檎 🌾+3/T", bonusFood: 3, bonusWood: 0, bonusMystic: 0 },
-                                "H2_HILL":         { name: "採石層 🧱+3/T", bonusFood: 0, bonusWood: 3, bonusMystic: 0 },
-                                "H3_MOUNTAIN":     { name: "金銀鉱脈 🧱+2 ✨+1/T", bonusFood: 0, bonusWood: 2, bonusMystic: 1 },
-                                "GL0_DESERT":      { name: "デーツ 🌾+1/T", bonusFood: 1, bonusWood: 0, bonusMystic: 0 }
+                                "GL1_PLAINS":      { nameKey: "SOCKET_WILD_WHEAT", bonusFood: 3, bonusWood: 0, bonusMystic: 0 },
+                                "GL2_FOREST":      { nameKey: "SOCKET_APPLES", bonusFood: 3, bonusWood: 0, bonusMystic: 0 },
+                                "H2_HILL":         { nameKey: "SOCKET_QUARRY", bonusFood: 0, bonusWood: 3, bonusMystic: 0 },
+                                "H3_MOUNTAIN":     { nameKey: "SOCKET_IRON_DEPOSIT", bonusFood: 0, bonusWood: 2, bonusMystic: 1 },
+                                "GL0_DESERT":      { nameKey: "SOCKET_DATES", bonusFood: 1, bonusWood: 0, bonusMystic: 0 }
                             };
-                            const spawnedSocket = socketMap[terrain.id] || { name: "野麦 🌾+3/T", bonusFood: 3, bonusWood: 0, bonusMystic: 0 };
+                            const spawnedSocket = socketMap[terrain.id] || { nameKey: "SOCKET_WILD_WHEAT", bonusFood: 3, bonusWood: 0, bonusMystic: 0 };
                             cell.socketResource = spawnedSocket;
 
                             const posStr = `(${String.fromCharCode(65+c)}${r+1})`;
-                            this.addLog(`✨ ★ソケット開花: ${posStr} の★の上に ${terrain.name} を配置し [${spawnedSocket.name}] が即時開花・湧出!`);
-                            this.toastQueue.push({ r, c, text: `✨ ★開花! ${spawnedSocket.name}` });
+                            const sName = I18n.t(spawnedSocket.nameKey);
+                            this.addLog(I18n.t("LOG_SOCKET_SPAWNED", { pos: posStr, terrainName, socketName: sName }));
+                            this.toastQueue.push({ r, c, text: I18n.t("TOAST_SOCKET_SPAWNED", { name: sName }) });
                         }
 
                         this.checkConnectionBonus(r, c, terrain);
@@ -178,7 +183,8 @@
                 }
             }
 
-            this.addLog(`土地配置: (${String.fromCharCode(65+startC)}${startR+1}) に ${terrain.name} を配置。`);
+            const posStr = `(${String.fromCharCode(65+startC)}${startR+1})`;
+            this.addLog(I18n.t("LOG_LAND_PLACED", { pos: posStr, name: terrainName }));
             return { success: true };
         }
 
@@ -202,6 +208,7 @@
             };
 
             const bonus = bonusTable[terrain.id] || { food: 2, wood: 2, mystic: 0 };
+            const terrainName = I18n.t(terrain.nameKey);
 
             for (let [nr, nc] of neighbors) {
                 if (nr >= 0 && nr < 5 && nc >= 0 && nc < 5) {
@@ -220,8 +227,9 @@
                         if (earnedWood > 0) textParts.push(`🧱+${earnedWood}`);
                         if (earnedMystic > 0) textParts.push(`✨+${earnedMystic}`);
 
-                        const toastText = `⚡ 連結ボーナス! ${textParts.join(" ")}`;
-                        this.addLog(`連結成立: ${terrain.name} ✕ 同種接続で ${toastText} 獲得!`);
+                        const bText = textParts.join(" ");
+                        const toastText = I18n.t("TOAST_CONNECTION_BONUS", { text: bText });
+                        this.addLog(I18n.t("LOG_CONNECTION_BONUS", { name: terrainName, bonus: bText }));
                         this.toastQueue.push({ r, c, text: toastText });
                     }
                 }
@@ -253,9 +261,9 @@
                             });
 
                             this.ember = Math.min(20, this.ember + 1);
-                            const tName = c1.terrain.name;
-                            this.addLog(`🎉 2x2 マージ大土地完成! (${tName}) 持続産出1.2倍 ＆ 🔥+1 即時回復!`);
-                            this.toastQueue.push({ r, c, text: `🎉 2x2大土地完成! 🔥+1` });
+                            const tName = I18n.t(c1.terrain.nameKey);
+                            this.addLog(I18n.t("LOG_MERGE_2X2_COMPLETE", { name: tName }));
+                            this.toastQueue.push({ r, c, text: I18n.t("TOAST_MERGE_2X2") });
                         }
                     }
                 }
@@ -264,10 +272,10 @@
 
         executeExploration(r, c) {
             const cell = this.grid[r][c];
-            if (!cell.placed || cell.isHQ) return { success: false, reason: "未配置または本営マスは探索できません" };
-            if (cell.searched) return { success: false, reason: "既に探索済みです" };
-            if (cell.merged) return { success: false, reason: "マージ合体済みの土地は探索できません" };
-            if (this.ember <= 1) return { success: false, reason: "🔥 生命力が不足しています" };
+            if (!cell.placed || cell.isHQ) return { success: false, reason: "INVALID_CELL" };
+            if (cell.searched) return { success: false, reason: "ALREADY_SEARCHED" };
+            if (cell.merged) return { success: false, reason: "MERGED_CELL" };
+            if (this.ember <= 1) return { success: false, reason: "LOW_EMBER" };
 
             this.ember -= 1;
             cell.searched = true;
@@ -275,31 +283,33 @@
             const d1 = Math.floor(Math.random() * 6) + 1;
             const d2 = Math.floor(Math.random() * 6) + 1;
             const totalRoll = d1 + d2;
+            const posStr = `(${String.fromCharCode(65+c)}${r+1})`;
 
             let resultMsg = "";
             if (totalRoll >= 9) {
                 if (!cell.socketResource) {
-                    const socketDef = { name: "野麦 🌾+3/T", bonusFood: 3, bonusWood: 0, bonusMystic: 0 };
+                    const socketDef = { nameKey: "SOCKET_WILD_WHEAT", bonusFood: 3, bonusWood: 0, bonusMystic: 0 };
                     cell.socketResource = socketDef;
-                    resultMsg = `🎲 出目${totalRoll}: ★ ${socketDef.name} 開花露出!`;
-                    this.toastQueue.push({ r, c, text: `★ ${socketDef.name} 開花!` });
+                    const sName = I18n.t(socketDef.nameKey);
+                    resultMsg = `🎲 Roll ${totalRoll}: ★ ${sName}`;
+                    this.toastQueue.push({ r, c, text: I18n.t("TOAST_SOCKET_SPAWNED", { name: sName }) });
                 } else {
                     this.food += 3;
                     this.wood += 3;
-                    resultMsg = `🎲 出目${totalRoll}: 発掘成功! 🌾+3 🧱+3 即時獲得!`;
-                    this.toastQueue.push({ r, c, text: "発掘! 🌾🧱+3" });
+                    resultMsg = `🎲 Roll ${totalRoll}: Success 🌾+3 🧱+3`;
+                    this.toastQueue.push({ r, c, text: I18n.t("TOAST_EXPLORATION_SUCCESS") });
                 }
             } else if (totalRoll >= 5) {
                 this.food += 2;
-                resultMsg = `🎲 出目${totalRoll}: 小規模成果 🌾+2 即時獲得`;
-                this.toastQueue.push({ r, c, text: "成果 🌾+2" });
+                resultMsg = `🎲 Roll ${totalRoll}: Result 🌾+2`;
+                this.toastQueue.push({ r, c, text: I18n.t("TOAST_EXPLORATION_MED") });
             } else {
                 this.food += 1;
-                resultMsg = `🎲 出目${totalRoll}: 控えめな成果 🌾+1`;
-                this.toastQueue.push({ r, c, text: "成果 🌾+1" });
+                resultMsg = `🎲 Roll ${totalRoll}: Result 🌾+1`;
+                this.toastQueue.push({ r, c, text: I18n.t("TOAST_EXPLORATION_LOW") });
             }
 
-            this.addLog(`探索判定: 位置(${String.fromCharCode(65+c)}${r+1}) ${resultMsg}`);
+            this.addLog(I18n.t("LOG_EXPLORATION_RESULT", { pos: posStr, result: resultMsg }));
             return { success: true };
         }
 
@@ -451,7 +461,7 @@
                 const deficit = Math.abs(this.food);
                 this.food = 0;
                 this.ember -= 2;
-                this.addLog(`⚠️ 食料不足ペナルティ! 食料維持費未払いで生命力 🔥 -2 ダメージ (残り火: ${this.ember})`);
+                this.addLog(I18n.t("LOG_FOOD_DEFICIT_PENALTY", { ember: this.ember }));
 
                 if (this.ember <= 0) {
                     this.ember = 0;
@@ -472,7 +482,8 @@
 
             this.reserveSlots[emptyIdx] = card;
             this.handOffering[cardIdx] = null;
-            this.addLog(`保留登録: ${card.name} を保留スロット ${emptyIdx+1} へ移動。`);
+            const cName = I18n.t(card.terrain.nameKey);
+            this.addLog(I18n.t("LOG_RESERVE_ADDED", { name: cName, slot: emptyIdx + 1 }));
             return true;
         }
     }
@@ -484,10 +495,10 @@
 
         generateOfferingCards() {
             const candidates = [
-                { id: "GL1_PLAINS", name: "草原", food: 4, wood: 0, defense: 0, weight: 0.320 },
-                { id: "GL2_FOREST", name: "森", food: 2, wood: 2, defense: 2, weight: 0.224 },
-                { id: "H2_HILL", name: "丘陵", food: 0, wood: 4, defense: 3, weight: 0.250 },
-                { id: "H3_MOUNTAIN", name: "山岳", food: 0, wood: 5, defense: 5, mystic: 1, weight: 0.110 }
+                { id: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", food: 4, wood: 0, defense: 0, weight: 0.320 },
+                { id: "GL2_FOREST", nameKey: "TERRAIN_FOREST", food: 2, wood: 2, defense: 2, weight: 0.224 },
+                { id: "H2_HILL", nameKey: "TERRAIN_HILL", food: 0, wood: 4, defense: 3, weight: 0.250 },
+                { id: "H3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", food: 0, wood: 5, defense: 5, mystic: 1, weight: 0.110 }
             ];
 
             const h2Count = this.state.countH2HillsOnBoard();
@@ -525,7 +536,7 @@
 
                 return {
                     id: `card_${this.state.turn}_${idx}`,
-                    name: tDef.name,
+                    nameKey: tDef.nameKey,
                     terrain: tDef,
                     currentShape: shape
                 };
