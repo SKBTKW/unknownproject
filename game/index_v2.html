@@ -3,61 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trial of the Ages: Last Ember (Master HQ & Resource Engine)</title>
+    <title>Trial of Ages : Last Ember (Layout Engine)</title>
     <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #0b0d11;
+            background-color: #0d0f14;
             color: #e0e0e0;
-            margin: 0;
-            padding: 20px;
-        }
-        .header-panel {
-            background: #161920;
-            padding: 15px 25px;
-            border-radius: 8px;
-            border: 1px solid #282c37;
-            margin-bottom: 20px;
+            padding: 15px;
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
+            gap: 15px;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 1. 最上部ヘッダー (トップステータスバー) */
+        .top-bar {
+            background: #161922;
+            border: 1px solid #2a2e3d;
+            border-radius: 8px;
+            padding: 10px 20px;
+            display: grid;
+            grid-template-columns: 240px 1fr 220px 140px;
             align-items: center;
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
-        .resource-badge {
-            display: inline-block;
-            margin-right: 20px;
+        .app-title-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             font-weight: bold;
-            font-size: 1.1em;
+            font-size: 16px;
         }
-        .main-layout {
+        .role-avatar {
+            width: 36px;
+            height: 36px;
+            background: #2a3142;
+            border: 1px solid #4a90e2;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .ember-center-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 26px;
+            font-weight: bold;
+            color: #ffffff;
+        }
+        .ember-icon {
+            font-size: 32px;
+            filter: drop-shadow(0 0 8px #ff7675);
+        }
+
+        .trial-announcement {
+            background: #1f2430;
+            border: 1px dashed #e67e22;
+            padding: 6px 12px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 12px;
+            color: #f39c12;
+            font-weight: bold;
+        }
+
+        .turn-box {
+            background: #1abc9c;
+            color: #0b0d11;
+            padding: 6px 15px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .turn-box .turn-num {
+            font-size: 18px;
+            display: block;
+        }
+
+        /* 2. メインレイアウト (盤面 ✕ 右サイドデータ/ログ) */
+        .middle-content {
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 15px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        /* 盤面エリア */
+        .board-container {
+            background: #13161f;
+            border: 1px solid #252a38;
+            border-radius: 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 25px;
+            justify-content: center;
+            position: relative;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
         }
 
-        .board-wrapper {
-            background: #14171f;
-            padding: 18px;
-            border-radius: 10px;
-            border: 1px solid #282c37;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+        .main-area-badge {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: #1abc9c;
+            color: #000;
+            font-weight: bold;
+            padding: 6px 16px;
+            border-radius: 4px;
+            font-size: 13px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
         }
+
         .grid-with-headers {
             display: grid;
-            grid-template-columns: 36px repeat(5, 64px);
-            grid-template-rows: 36px repeat(5, 64px);
+            grid-template-columns: 40px repeat(5, 64px);
+            grid-template-rows: 40px repeat(5, 64px);
             gap: 4px;
-            background: #08090c;
-            padding: 8px;
-            border-radius: 6px;
+            background: #08090d;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.7);
         }
         .header-cell {
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            color: #8a92a5;
+            color: #7f8c8d;
             font-size: 14px;
             user-select: none;
         }
@@ -65,8 +148,8 @@
         .cell {
             width: 64px;
             height: 64px;
-            background: #1c202b;
-            border: 1px solid #2c3243;
+            background: #1c202c;
+            border: 1px solid #2c3345;
             border-radius: 6px;
             display: flex;
             flex-direction: column;
@@ -76,13 +159,12 @@
             cursor: pointer;
             user-select: none;
             position: relative;
-            transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
+            transition: border-color 0.15s, background-color 0.15s;
         }
         .cell:hover {
-            border-color: #4a90e2;
-            background: #252b3a;
+            border-color: #3498db;
+            background: #252d3e;
         }
-
         .cell.preview-valid {
             border: 2px solid #3498db !important;
             background: rgba(52, 152, 219, 0.35) !important;
@@ -95,15 +177,16 @@
         }
 
         .cell.hq {
-            background: #5a3d10 !important;
-            border: 2px solid #f5a623 !important;
-            color: #ffe082;
+            background: #16a085 !important;
+            border: 2px solid #1abc9c !important;
+            color: #ffffff;
             font-weight: bold;
-            box-shadow: 0 0 10px rgba(245, 166, 35, 0.4);
         }
         .cell.placed {
-            background: #283328;
-            border-color: #2ecc71;
+            background: #005a70 !important;
+            border-color: #2980b9 !important;
+            color: #ffffff;
+            font-weight: bold;
         }
         .cell.merged {
             background: #4a3b10 !important;
@@ -112,8 +195,6 @@
             color: #fff;
             font-weight: bold;
         }
-
-        /* 未開花 ★ ソケットセル表示 */
         .cell.socket-unopened {
             border: 1px dashed #f39c12 !important;
             background: #231c10 !important;
@@ -141,165 +222,281 @@
             100% { opacity: 0; transform: translate(-50%, -24px); }
         }
 
-        .offering-section {
-            background: #161920;
-            padding: 20px 30px;
-            border-radius: 10px;
-            border: 1px solid #282c37;
-            width: 100%;
-            max-width: 780px;
-            box-sizing: border-box;
+        /* 右サイドパネル (各種データ ✕ ログ) */
+        .right-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
-        .offering-header {
+
+        .data-panel {
+            background: #1abc9c;
+            color: #0b0d11;
+            border-radius: 8px;
+            padding: 12px 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+        .data-panel h4 {
+            text-align: center;
+            font-size: 14px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid rgba(0,0,0,0.2);
+            padding-bottom: 4px;
+        }
+        .resource-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .log-panel-wrapper {
+            background: #e8d5f5;
+            color: #333;
+            border-radius: 8px;
+            padding: 10px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            min-height: 0;
+        }
+        .log-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 6px;
+            border-bottom: 1px solid #c8b2d6;
+            padding-bottom: 4px;
         }
+        .toggle-btn {
+            background: #9b59b6;
+            color: white;
+            border: none;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+        .log-content {
+            flex: 1;
+            overflow-y: auto;
+            font-size: 11px;
+            line-height: 1.4;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        /* 3. 最下部アクションバー (ドロー ✕ 保留 ✕ コントロール) */
+        .bottom-bar {
+            display: grid;
+            grid-template-columns: 1fr 340px 180px;
+            gap: 15px;
+            height: 150px;
+        }
+
+        .offering-box {
+            background: #161922;
+            border: 1px solid #2a2e3d;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+        .section-label {
+            font-size: 12px;
+            font-weight: bold;
+            color: #1abc9c;
+            text-align: center;
+            margin-bottom: 6px;
+        }
+
         .card-row {
             display: flex;
-            gap: 20px;
+            gap: 10px;
             justify-content: center;
+            flex: 1;
         }
 
         .card-frame {
-            width: 160px;
-            height: 220px;
-            background: #1e222d;
-            border-radius: 8px;
-            padding: 12px;
-            box-sizing: border-box;
+            width: 120px;
+            background: #1e2330;
+            border: 1px solid #34495e;
+            border-radius: 6px;
+            padding: 6px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: transform 0.15s, border-color 0.15s;
             position: relative;
         }
-        .card-frame.rarity-C  { border: 2px solid #8d6e63; }
-        .card-frame.rarity-UC { border: 2px solid #bdc3c7; }
-        
         .card-frame:hover:not(.locked) {
-            transform: translateY(-6px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.7);
+            transform: translateY(-4px);
+            border-color: #1abc9c;
         }
         .card-frame.selected {
-            border-color: #f5a623 !important;
-            background: #2b3040;
-            box-shadow: 0 0 15px rgba(245, 166, 35, 0.5);
+            border-color: #f39c12 !important;
+            background: #2b3245;
+            box-shadow: 0 0 10px rgba(243, 156, 18, 0.5);
         }
         .card-frame.locked {
             opacity: 0.35;
             cursor: not-allowed;
-            filter: grayscale(80%);
         }
 
-        .card-title {
-            font-size: 14px;
+        .card-title-mini {
+            font-size: 11px;
             font-weight: bold;
-            color: #ffffff;
             display: flex;
             justify-content: space-between;
-            border-bottom: 1px solid #333a4d;
-            padding-bottom: 5px;
         }
-        .card-cost {
-            color: #ff7675;
-            font-size: 12px;
-        }
-
-        .shape-preview-box {
+        .card-shape-mini {
             display: flex;
             justify-content: center;
             align-items: center;
-            background: #12141a;
-            border-radius: 4px;
-            padding: 8px;
-            margin: 6px 0;
-            height: 45px;
-        }
-        .shape-grid {
-            display: grid;
-            gap: 2px;
-        }
-        .shape-dot {
-            width: 10px;
-            height: 10px;
-            background: #252a36;
-            border-radius: 1px;
-        }
-        .shape-dot.active {
-            background: #2ecc71;
-            box-shadow: 0 0 4px #2ecc71;
+            background: #12151f;
+            border-radius: 3px;
+            padding: 4px;
+            height: 32px;
+            margin: 3px 0;
         }
 
-        .rotate-btn {
-            background: #34495e;
-            color: #ecf0f1;
-            border: 1px solid #5d6d7e;
-            padding: 4px 8px;
-            border-radius: 4px;
+        .reserve-box {
+            background: #161922;
+            border: 1px solid #2a2e3d;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+        .reserve-row {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex: 1;
+        }
+        .reserve-slot {
+            width: 90px;
+            background: #12141c;
+            border: 1px dashed #34495e;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-size: 11px;
-            cursor: pointer;
-            margin-top: 4px;
-            width: 100%;
+            color: #7f8c8d;
         }
-        .rotate-btn:hover { background: #415b76; }
-
-        .card-stats {
-            font-size: 12px;
-            color: #b2bec3;
-            line-height: 1.3;
+        .reserve-slot.filled {
+            border: 1px solid #e67e22;
+            background: #231c12;
+            color: #fff;
         }
 
-        .action-btn {
-            background: #27ae60;
+        .controls-box {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            justify-content: center;
+        }
+        .mulligan-btn {
+            background: #e74c3c;
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+            padding: 10px;
+            border-radius: 6px;
             font-weight: bold;
-            font-size: 14px;
+            font-size: 13px;
             cursor: pointer;
             box-shadow: 0 3px 8px rgba(0,0,0,0.3);
         }
-        .action-btn:hover { background: #2ecc71; }
+        .mulligan-btn:hover { background: #c0392b; }
+
+        .turn-end-btn {
+            background: #1abc9c;
+            color: #0b0d11;
+            border: none;
+            padding: 14px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 15px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+        }
+        .turn-end-btn:hover { background: #16a085; color: white; }
     </style>
 </head>
 <body>
 
-    <div class="header-panel">
-        <div>
-            <h2>🔥 Trial of the Ages: Last Ember <small>(Master HQ Engine)</small></h2>
-            <div>
-                <span class="resource-badge">Turn: <span id="valTurn">1</span>/50</span>
-                <span class="resource-badge">🔥 生命: <span id="valEmber">20</span></span>
-                <span class="resource-badge">🌾 食料: <span id="valFood">30</span> (<span id="valFoodProd" style="color:#2ecc71;">+0</span>/T)</span>
-                <span class="resource-badge">🧱 資材: <span id="valWood">30</span> (<span id="valWoodProd" style="color:#3498db;">+0</span>/T)</span>
-                <span class="resource-badge">🛡️ 全防衛: <span id="valDefense">10</span> (本営🛡️10含)</span>
-            </div>
+    <!-- 1. 最上部ヘッダー (トップステータスバー) -->
+    <div class="top-bar">
+        <div class="app-title-box">
+            <div class="role-avatar">👤</div>
+            <div>Trial of Ages : Last Ember</div>
         </div>
-        <div>
-            <button class="action-btn" onclick="nextTurn()">Turn 終了 ➔</button>
+        <div class="ember-center-box">
+            <span class="ember-icon">🔥</span>
+            <span>: <span id="valEmber">20</span></span>
+        </div>
+        <div class="trial-announcement">
+            試練まで残り <span id="trialCountdown">4</span> ターン<br>
+            <small style="font-weight:normal; font-size:10px;">(試練アナウンス発生時に表示)</small>
+        </div>
+        <div class="turn-box">
+            <div style="font-size:10px;">ターン表示</div>
+            <span class="turn-num"><span id="valTurn">1</span>/50</span>
         </div>
     </div>
 
-    <div class="main-layout">
-        <div class="board-wrapper">
-            <div style="margin-bottom: 8px; text-align: center; font-size: 13px; color: #a0a8b9;">
-                <strong>5x5 盤面 - 中央 E5(3,3) HQ (周囲8マス産出+1/マス) (Rキーで回転)</strong>
-            </div>
+    <!-- 2. メインエリア (盤面 ✕ 右サイドパネル) -->
+    <div class="middle-content">
+        <div class="board-container">
+            <div class="main-area-badge">メインエリア <span id="valPlacedCount">1</span>/24</div>
             <div id="gridBoard" class="grid-with-headers"></div>
         </div>
 
-        <div class="offering-section">
-            <div class="offering-header">
-                <h3 style="margin:0; color:#f5a623;">🎴 手札オファリング (本営周囲に置くと産出+1強化！)</h3>
-                <span id="pickStatusInfo" style="color:#2ecc71; font-weight:bold;">1 枚選択して配置してください</span>
+        <div class="right-sidebar">
+            <div class="data-panel">
+                <h4>各種データ表示パネル</h4>
+                <div class="resource-list">
+                    <div>🌾 食料: <span id="valFood">30</span> (<span id="valFoodProd">+10</span>/T)</div>
+                    <div>🧱 資材: <span id="valWood">30</span> (<span id="valWoodProd">+10</span>/T)</div>
+                    <div>🛡️ 防衛: <span id="valDefense">10</span></div>
+                    <div>✨ 神秘: <span id="valMystic">10</span> (+1/T)</div>
+                </div>
             </div>
-            <div id="mergeMsgBox" style="color:#f1c40f; font-weight:bold; margin-bottom:10px; min-height:20px;"></div>
+
+            <div class="log-panel-wrapper">
+                <div class="log-header">
+                    <span>ログ</span>
+                    <button class="toggle-btn" onclick="toggleLogPanel()">トグル</button>
+                </div>
+                <div id="logContent" class="log-content">
+                    <div style="color:#7f8c8d;">格細状態と展開状態を切り替え可能</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. 最下部アクションバー -->
+    <div class="bottom-bar">
+        <div class="offering-box">
+            <div class="section-label">ドローオファリングエリア (6カテゴリから選ばれたカード x 3) [Rキーで回転]</div>
             <div id="cardRow" class="card-row"></div>
+        </div>
+
+        <div class="reserve-box">
+            <div class="section-label">保留エリア (保留中のカード x 3 / 維持費 🔥-1/T)</div>
+            <div id="reserveRow" class="reserve-row"></div>
+        </div>
+
+        <div class="controls-box">
+            <button class="mulligan-btn" onclick="mulligan()">マリガン : 🔥 -1</button>
+            <button class="turn-end-btn" onclick="nextTurn()">TURN END ➔</button>
         </div>
     </div>
 
@@ -378,16 +575,8 @@
             document.getElementById("valWood").innerText = state.wood;
             document.getElementById("valWoodProd").innerText = `+${prods.totalWood}`;
             document.getElementById("valDefense").innerText = state.calculateTotalDefense();
-            document.getElementById("mergeMsgBox").innerText = state.lastMergeMessage || "";
-
-            const pickStatusEl = document.getElementById("pickStatusInfo");
-            if (state.hasPickedThisTurn) {
-                pickStatusEl.innerText = "🔒 今ターンの選択は完了しました (Turn 終了を押してください)";
-                pickStatusEl.style.color = "#ff7675";
-            } else {
-                pickStatusEl.innerText = "1 枚選択して盤面へ配置してください (Rキーで回転)";
-                pickStatusEl.style.color = "#2ecc71";
-            }
+            document.getElementById("valMystic").innerText = state.mystic;
+            document.getElementById("valPlacedCount").innerText = `${state.countPlacedTiles()}/24`;
 
             const boardEl = document.getElementById("gridBoard");
             boardEl.innerHTML = "";
@@ -416,7 +605,7 @@
 
                     if (cellData.isHQ) {
                         cellEl.classList.add("hq");
-                        cellEl.innerHTML = "HQ<br><small>🛡️10</small>";
+                        cellEl.innerHTML = "本営";
                     } else if (cellData.placed && cellData.terrain) {
                         cellEl.classList.add("placed");
                         if (cellData.merged) {
@@ -424,12 +613,12 @@
                         }
                         const def = (cellData.merged && cellData.terrain.id === "H3_MOUNTAIN") ? 30 : cellData.terrain.defense;
                         const isVicinity = state.isHQVicinity(r, c);
-                        const socketBadge = cellData.socketResource ? `<br><small style="color:#f1c40f;font-weight:bold;">★${cellData.socketResource.name}</small>` : "";
-                        const vicinityBadge = isVicinity ? `<div style="font-size:9px;color:#2ecc71;font-weight:bold;">🏰近郊+1</div>` : "";
-                        cellEl.innerHTML = `${cellData.terrain.name}<br><small>🛡️${def}</small>${socketBadge}${vicinityBadge}`;
+                        const socketBadge = cellData.socketResource ? `<br><small style="color:#f1c40f;">★${cellData.socketResource.name}</small>` : "";
+                        const vicinityBadge = isVicinity ? `<div style="font-size:9px;color:#2ecc71;">近郊+1</div>` : "";
+                        cellEl.innerHTML = `${cellData.terrain.name}${socketBadge}${vicinityBadge}`;
                     } else if (cellData.hasSocket) {
                         cellEl.classList.add("socket-unopened");
-                        cellEl.innerHTML = `<span style="color:#f39c12;font-weight:bold;font-size:11px;">★未開花</span>`;
+                        cellEl.innerHTML = `<span style="color:#f39c12;font-size:16px;">★</span>`;
                     }
 
                     cellEl.onmouseenter = () => onCellMouseEnter(r, c);
@@ -439,41 +628,36 @@
                 }
             }
 
+            // ドローカード描画
             const cardRowEl = document.getElementById("cardRow");
             cardRowEl.innerHTML = "";
 
-            state.handOffering.forEach((card) => {
+            state.handOffering.forEach((card, idx) => {
                 const cardEl = document.createElement("div");
-                cardEl.className = `card-frame rarity-${card.terrain.rarity} ${selectedCard === card ? 'selected' : ''} ${state.hasPickedThisTurn ? 'locked' : ''}`;
+                cardEl.className = `card-frame ${selectedCard === card ? 'selected' : ''} ${state.hasPickedThisTurn ? 'locked' : ''}`;
 
                 const sRows = card.currentShape.length;
                 const sCols = card.currentShape[0].length;
                 
-                let shapeGridHtml = `<div class="shape-grid" style="grid-template-columns: repeat(${sCols}, 10px);">`;
+                let shapeGridHtml = `<div style="display:grid; grid-template-columns:repeat(${sCols}, 8px); gap:2px;">`;
                 for (let dr = 0; dr < sRows; dr++) {
                     for (let dc = 0; dc < sCols; dc++) {
                         const isActive = card.currentShape[dr][dc] === 1;
-                        shapeGridHtml += `<div class="shape-dot ${isActive ? 'active' : ''}"></div>`;
+                        shapeGridHtml += `<div style="width:8px;height:8px;background:${isActive ? '#1abc9c' : '#252a36'};"></div>`;
                     }
                 }
                 shapeGridHtml += '</div>';
 
-                const canRotate = !(sRows === 2 && sCols === 2) && (sRows > 1 || sCols > 1);
-
                 cardEl.innerHTML = `
-                    <div class="card-title">
+                    <div class="card-title-mini">
                         <span>${card.name}</span>
-                        <span class="card-cost">🔥 -1</span>
+                        <span style="color:#ff7675;">🔥-1</span>
                     </div>
-                    <div class="shape-preview-box">
-                        ${shapeGridHtml}
+                    <div class="card-shape-mini">${shapeGridHtml}</div>
+                    <div style="font-size:9px; color:#a0a8b9;">
+                        🛡️+${card.terrain.defense} 🌾+${card.terrain.food||0} 🧱+${card.terrain.wood||0}
                     </div>
-                    ${canRotate ? `<button class="rotate-btn" onclick="event.stopPropagation(); rotateSelectedCard(state.handOffering[${state.handOffering.indexOf(card)}])">🔄 90度回転 (R)</button>` : ''}
-                    <div class="card-stats">
-                        防衛力: 🛡️ +${card.terrain.defense}<br>
-                        産出: 🌾 +${card.terrain.food || 0} / 🧱 +${card.terrain.wood || 0}
-                    </div>
-                    <div style="font-size:10px; color:#7f8c8d; text-align:right;">[${card.terrain.rarity}]</div>
+                    <button style="font-size:9px; background:#2980b9; color:white; border:none; border-radius:2px; padding:2px; margin-top:2px;" onclick="event.stopPropagation(); reserveCard(${idx})">📦 保留へ</button>
                 `;
 
                 cardEl.onclick = () => {
@@ -483,6 +667,42 @@
                 };
 
                 cardRowEl.appendChild(cardEl);
+            });
+
+            // 保留エリア描画
+            const reserveRowEl = document.getElementById("reserveRow");
+            reserveRowEl.innerHTML = "";
+
+            for (let i = 0; i < 3; i++) {
+                const card = state.reserveSlots[i];
+                const slotEl = document.createElement("div");
+                slotEl.className = `reserve-slot ${card ? 'filled' : ''}`;
+
+                if (card) {
+                    slotEl.innerHTML = `
+                        <div style="text-align:center;">
+                            <strong>${card.name}</strong><br>
+                            <small style="font-size:9px; color:#e67e22;">🔥-1/T</small>
+                        </div>
+                    `;
+                    slotEl.onclick = () => {
+                        if (state.hasPickedThisTurn) return;
+                        selectedCard = card;
+                        render();
+                    };
+                } else {
+                    slotEl.innerText = `空枠 ${i+1}`;
+                }
+                reserveRowEl.appendChild(slotEl);
+            }
+
+            // ログエリア描画
+            const logContentEl = document.getElementById("logContent");
+            logContentEl.innerHTML = "";
+            state.gameLogs.forEach(log => {
+                const item = document.createElement("div");
+                item.innerText = log;
+                logContentEl.appendChild(item);
             });
 
             while (state.toastQueue.length > 0) {
@@ -508,6 +728,12 @@
 
             state.ember -= 1;
 
+            // 保留枠から使用した場合、枠をクリア
+            const resIdx = state.reserveSlots.indexOf(selectedCard);
+            if (resIdx !== -1) {
+                state.reserveSlots[resIdx] = null;
+            }
+
             state.checkMergePatterns();
 
             state.hasPickedThisTurn = true;
@@ -515,6 +741,30 @@
 
             clearCellPreviews();
             render();
+        }
+
+        function reserveCard(idx) {
+            if (state.moveToReserve(idx)) {
+                render();
+            } else {
+                alert("❌ 保留エリアが満配です (最大3枠)");
+            }
+        }
+
+        function mulligan() {
+            if (state.ember <= 1) {
+                alert("❌ 🔥 生命力が不足しているためマリガンできません！");
+                return;
+            }
+            state.ember -= 1;
+            drawSys.generateOfferingCards();
+            state.addLog("マリガン実行: 🔥 -1 消費し手札を再抽選。");
+            render();
+        }
+
+        function toggleLogPanel() {
+            const el = document.getElementById("logContent");
+            el.style.display = (el.style.display === "none") ? "flex" : "none";
         }
 
         function showTileToast(r, c, text) {
@@ -531,17 +781,13 @@
         }
 
         function nextTurn() {
-            // 毎ターンの持続産出を加算
             const prods = state.calculateTotalProduction();
             state.food += prods.totalFood;
             state.wood += prods.totalWood;
+            state.mystic += prods.totalMystic;
 
             const maint = state.processTurnEndMaintenance();
-            let msg = `[Turn ${state.turn} 終了] 産出: 🌾+${prods.totalFood}/🧱+${prods.totalWood} | ${maint.stageName}: 食料維持費 -${maint.foodCost} 🌾 消費。`;
-            if (maint.deficit > 0) {
-                msg += ` ⚠️ 食料不足のため 🔥 -${maint.deficit} ダメージ！`;
-            }
-            state.lastMergeMessage = msg;
+            state.addLog(`Turn ${state.turn} 終了: 🌾+${prods.totalFood} 🧱+${prods.totalWood} ✨+${prods.totalMystic} 獲得。食料維持費 -${maint.foodCost} 🌾`);
 
             if (maint.isGameOver) {
                 render();

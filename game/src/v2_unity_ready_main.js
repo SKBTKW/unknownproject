@@ -1,12 +1,15 @@
 /**
- * Trial of the Ages: Last Ember - Master Specification HQ & Land Engine
+ * Trial of the Ages: Last Ember - Master HQ & Layout Engine
  * 
- * MASTER HQ SPECIFICATIONS (rules/00, rules/02, rules/03_land_system/01_land_base.md):
- * 1. HQ Base Defense (rules/02 Line 98): Defense +10 constant.
- * 2. HQ Vicinity Bonus (rules/00 Line 93): All 8 neighboring tiles around HQ (3x3 area) gain +1 to all yields (Food/Wood/Defense) per tile.
- * 3. Primary Spec Terrain Names (rules/03 Line 8): GL1_GRASS is "🌾 草原", GL2_FOREST is "🌲 森".
- * 4. Ember Maintenance Costs (rules/00 Line 63-66): Flame Age (24+) -25 Food/T, Standard (10-23) -20 Food/T, Extinction (<=9) -15 Food/T.
- * 5. Resource Sockets: Unopened ★ Sockets at initial setup, blooming into matching resources upon placement.
+ * SPECIFICATIONS:
+ * 1. HQ Base Production (rules/00):
+ *    - Food +10/T, Wood +10/T, Defense 10 (base), Mystic +1/T.
+ * 2. Ember Maintenance:
+ *    - Flame Age (24+) -25 Food/T, Standard (10-23) -20 Food/T, Extinction (<=9) -15 Food/T.
+ * 3. Reserve Slot System:
+ *    - Up to 3 cards can be reserved. Reserved cards cost Ember -1/T maintenance.
+ * 4. 2D6 Land Exploration & Sockets:
+ *    - Sockets un-opened at start, blooming on placement.
  */
 
 const BOARD_STAGES = {
@@ -45,18 +48,28 @@ class GameState {
     constructor() {
         this.turn = 1;
         this.maxTurns = 50;
+        this.trialCountdown = 4;
         this.ember = 20;
         this.food = 30;
         this.wood = 30;
+        this.mystic = 10;
         
         this.stage = BOARD_STAGES.STAGE_1;
         this.grid = [];
-        this.initGrid(this.stage.size);
-        
         this.hasPickedThisTurn = false;
         this.handOffering = [];
+        this.reserveSlots = [null, null, null];
         this.lastMergeMessage = "";
         this.toastQueue = [];
+        this.gameLogs = [];
+
+        this.initGrid(this.stage.size);
+    }
+
+    addLog(msg) {
+        const timeStr = `[T${this.turn}]`;
+        this.gameLogs.unshift(`${timeStr} ${msg}`);
+        if (this.gameLogs.length > 50) this.gameLogs.pop();
     }
 
     initGrid(size) {
@@ -77,17 +90,29 @@ class GameState {
             this.grid.push(row);
         }
 
-        // 初期未開花 ★ ソケットを本営周囲の固定座標（1,1 / 1,3 / 3,1）に配置
-        this.grid[1][1].hasSocket = true;
+        // 初期未開花 ★ ソケットを配置
+        this.grid[0][1].hasSocket = true;
         this.grid[1][3].hasSocket = true;
         this.grid[3][1].hasSocket = true;
+
+        this.addLog("ゲーム開始: 5x5 盤面が初期化されました。");
     }
 
-    // 本営 HQ 周囲 8 マス（3x3本営近郊）判定 (rules/00 Line 93)
     isHQVicinity(r, c) {
         const hqR = this.stage.hqCenter.r;
         const hqC = this.stage.hqCenter.c;
         return Math.abs(r - hqR) <= 1 && Math.abs(c - hqC) <= 1 && !(r === hqR && c === hqC);
+    }
+
+    countPlacedTiles() {
+        let count = 0;
+        const size = this.stage.size;
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
+                if (this.grid[r][c].placed) count++;
+            }
+        }
+        return count;
     }
 
     countH2HillPlaced() {
@@ -179,14 +204,15 @@ class GameState {
                     cell.placed = true;
                     cell.terrain = terrain;
 
-                    // ★ ソケットマスの場合、地形に応じたソケットが開花
+                    this.addLog(`土地配置: (${String.fromCharCode(65+targetC)}${targetR+1}) ${terrain.name}`);
+
                     if (cell.hasSocket && !cell.socketResource) {
                         const socketDef = SOCKET_RESOURCES[terrain.id] || SOCKET_RESOURCES.GL1_GRASS;
                         cell.socketResource = socketDef;
                         this.toastQueue.push({ r: targetR, c: targetC, text: `★ ${socketDef.name} 開花!` });
+                        this.addLog(`★ ソケット開花: (${String.fromCharCode(65+targetC)}${targetR+1}) ${socketDef.name}`);
                     }
 
-                    // 本営周囲 8 マス（本営近郊）の場合、全産出 +1 ボーナスを通知
                     if (this.isHQVicinity(targetR, targetC)) {
                         this.toastQueue.push({ r: targetR, c: targetC, text: "🏰 本営近郊 (+1産出)" });
                     }
@@ -228,12 +254,18 @@ class GameState {
             if (terrain.id === "GL1_GRASS") this.food += 1;
             else this.wood += 1;
             this.toastQueue.push({ r, c, text: "🌾 +1 (2連結)" });
+            this.addLog(`2連結即時ボーナス獲得 (${terrain.name})`);
         } else if (connectionCount === 3) {
-            this.toastQueue.push({ r, c, text: "🛡️ +2 (3連結即時)" });
+            this.food += 1;
+            this.wood += 1;
+            this.toastQueue.push({ r, c, text: "🌾🧱 +1 (3連結)" });
+            this.addLog(`3連結即時ボーナス獲得 (${terrain.name})`);
         } else if (connectionCount >= 4) {
+            this.ember += 1;
             this.food += 2;
             this.wood += 2;
-            this.toastQueue.push({ r, c, text: "✨ +2 🌾🧱 (4連結)" });
+            this.toastQueue.push({ r, c, text: "🔥+1 🌾🧱+2 (4連結)" });
+            this.addLog(`★ 4連結最大即時ボーナス! 🔥+1 回復! (${terrain.name})`);
         }
     }
 
@@ -250,6 +282,16 @@ class GameState {
             stageName = "鎮火期 (9以下)";
         }
 
+        // 保留枠のカード1枚につき 🔥 -1 維持コスト発生
+        let reserveCost = 0;
+        this.reserveSlots.forEach(card => {
+            if (card) reserveCost++;
+        });
+        this.ember -= reserveCost;
+        if (reserveCost > 0) {
+            this.addLog(`保留カード維持費: 🔥 -${reserveCost} 消費`);
+        }
+
         let deficit = 0;
         if (this.food >= foodCost) {
             this.food -= foodCost;
@@ -257,6 +299,7 @@ class GameState {
             deficit = foodCost - this.food;
             this.food = 0;
             this.ember -= deficit;
+            this.addLog(`⚠️ 食料不足! 🔥 -${deficit} ダメージ!`);
         }
 
         const isGameOver = (this.ember <= 0);
@@ -271,9 +314,8 @@ class GameState {
         };
     }
 
-    // 全防衛力計算 (本営 HQ 固有基礎防衛力 🛡️ 10 復元: rules/02 Line 98)
     calculateTotalDefense() {
-        let total = 10; // 本営 HQ 固有基礎防衛力 🛡️ 10
+        let total = 10;
         const size = this.stage.size;
         for (let r = 0; r < size; r++) {
             for (let c = 0; c < size; c++) {
@@ -285,7 +327,6 @@ class GameState {
                     }
                     total += tileDef;
 
-                    // 本営周囲 8 マス（本営近郊）の場合、防衛力 +1 ボーナス
                     if (this.isHQVicinity(r, c)) {
                         total += 1;
                     }
@@ -299,10 +340,10 @@ class GameState {
         return total;
     }
 
-    // 全食料・資材持続産出計算 (本営周囲 8 マス +1/マス ボーナス復元: rules/00 Line 93)
     calculateTotalProduction() {
-        let totalFood = 0;
-        let totalWood = 0;
+        let totalFood = 10;
+        let totalWood = 10;
+        let totalMystic = 1;
         const size = this.stage.size;
 
         for (let r = 0; r < size; r++) {
@@ -317,7 +358,6 @@ class GameState {
                         wood += cell.socketResource.bonusWood || 0;
                     }
 
-                    // 本営周囲 8 マス（3x3本営近郊）の場合、全産出 +1 / マス (rules/00 Line 93)
                     if (this.isHQVicinity(r, c)) {
                         food += 1;
                         wood += 1;
@@ -329,7 +369,7 @@ class GameState {
             }
         }
 
-        return { totalFood, totalWood };
+        return { totalFood, totalWood, totalMystic };
     }
 
     checkMergePatterns() {
@@ -356,15 +396,32 @@ class GameState {
                         if (c1.terrain.id === "H3_MOUNTAIN") {
                             this.lastMergeMessage = "🎉 H3 凸字山岳マージ成立！ 🔥 +1 回復 ＆ 防衛力 🛡️ +30 へ爆発上昇！";
                             this.toastQueue.push({ r, c, text: "🔥 +1 🛡️ +30 (マージ)" });
+                            this.addLog("🎉 H3 凸字山岳マージ成立!");
                         } else {
                             this.lastMergeMessage = `🎉 2x2 正方形マージ成立 (${c1.terrain.name})！ 🔥 +1 即時回復！`;
                             this.toastQueue.push({ r, c, text: "🔥 +1 (マージ)" });
+                            this.addLog(`🎉 2x2 正方形マージ成立 (${c1.terrain.name})!`);
                         }
                     }
                 }
             }
         }
         return mergeFound;
+    }
+
+    moveToReserve(cardIndex) {
+        if (cardIndex < 0 || cardIndex >= this.handOffering.length) return false;
+        const card = this.handOffering[cardIndex];
+
+        for (let i = 0; i < 3; i++) {
+            if (this.reserveSlots[i] === null) {
+                this.reserveSlots[i] = card;
+                this.handOffering.splice(cardIndex, 1);
+                this.addLog(`カードを保留エリアへ移動: ${card.name}`);
+                return true;
+            }
+        }
+        return false;
     }
 }
 
