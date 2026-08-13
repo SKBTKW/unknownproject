@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trial of Ages : Last Ember (Spec-Compliant Card Visual & Readable Board)</title>
+    <title>Trial of Ages : Last Ember (Strict 1 Land Per Turn Limit)</title>
     <style>
         * {
             box-sizing: border-box;
@@ -178,7 +178,8 @@
         }
         .card-frame-tcg.locked {
             opacity: 0.35;
-            cursor: not-allowed;
+            cursor: not-allowed !important;
+            filter: grayscale(80%);
         }
 
         /* 上層: タイトル ✕ カテゴリ ✕ コスト */
@@ -282,6 +283,10 @@
             border: 1px solid #e67e22;
             background: #231c12;
             color: #fff;
+        }
+        .reserve-slot.locked {
+            opacity: 0.35;
+            cursor: not-allowed !important;
         }
 
         /* 🎯 中央メインエリア (大幅拡大グリッド / 文字視認性 100% 確保) */
@@ -734,6 +739,7 @@
         }
 
         function rotateSelectedCard(card) {
+            if (state && state.hasPickedThisTurn) return;
             const rows = card.currentShape.length;
             const cols = card.currentShape[0].length;
             if (rows === 2 && cols === 2) return;
@@ -931,11 +937,11 @@
                     }
                 }
 
-                if (selectedCard) {
+                if (selectedCard && !state.hasPickedThisTurn) {
                     highlightPlaceableCells();
                 }
 
-                // rules/04 Section 6 確定: 本格 4重レイヤー構造 TCG カード描画
+                // 1ターン1土地制限ロックの厳格適用
                 const cardRowEl = document.getElementById("cardRow");
                 if (cardRowEl) {
                     cardRowEl.innerHTML = "";
@@ -960,6 +966,10 @@
                         }
                         shapeGridHtml += '</div>';
 
+                        const reserveBtnHtml = isLocked ? 
+                            `<button style="font-size:10px; background:#4a5568; color:#a0aec0; border:none; border-radius:4px; padding:4px; cursor:not-allowed;" disabled>配置済み (保留不可)</button>` :
+                            `<button style="font-size:10px; background:linear-gradient(to right, #2980b9, #3498db); color:white; border:none; border-radius:4px; padding:4px; cursor:pointer; font-weight:bold;" onclick="event.stopPropagation(); reserveCard(${idx})">📦 保留エリアへ移動</button>`;
+
                         cardEl.innerHTML = `
                             <div class="tcg-card-header">
                                 <span class="tcg-category-badge">🌱 土地ブロック</span>
@@ -976,7 +986,7 @@
                                 <span class="param-badge" style="color:#3498db;">🛡️+${card.terrain.defense||0}</span>
                                 ${card.terrain.mystic > 0 ? `<span class="param-badge" style="color:#f1c40f;">✨+${card.terrain.mystic}</span>` : ''}
                             </div>
-                            <button style="font-size:10px; background:linear-gradient(to right, #2980b9, #3498db); color:white; border:none; border-radius:4px; padding:4px; cursor:pointer; font-weight:bold;" onclick="event.stopPropagation(); reserveCard(${idx})">📦 保留エリアへ移動</button>
+                            ${reserveBtnHtml}
                         `;
 
                         cardEl.onclick = () => {
@@ -997,7 +1007,8 @@
                     for (let i = 0; i < 3; i++) {
                         const card = state.reserveSlots[i];
                         const slotEl = document.createElement("div");
-                        slotEl.className = `reserve-slot ${card ? 'filled' : ''}`;
+                        const isLocked = state.hasPickedThisTurn;
+                        slotEl.className = `reserve-slot ${card ? 'filled' : ''} ${isLocked ? 'locked' : ''}`;
 
                         if (card) {
                             slotEl.innerHTML = `
@@ -1056,7 +1067,14 @@
                 return;
             }
 
-            if (state.hasPickedThisTurn) return;
+            // 1ターン1土地制限ガード
+            if (state.hasPickedThisTurn) {
+                alert("❌ 【当ターン土地配置済み】 1ターンに配置できる土地は1つのみです！");
+                selectedCard = null;
+                clearCellPreviews();
+                render();
+                return;
+            }
 
             if (state.ember <= 0) {
                 alert("💀 生命力 🔥 が 0 のため土地を配置できません！");
@@ -1086,7 +1104,7 @@
         }
 
         function reserveCard(idx) {
-            if (!state) return;
+            if (!state || state.hasPickedThisTurn) return;
             if (state.moveToReserve(idx)) {
                 render();
             } else {
@@ -1162,6 +1180,8 @@
             }
 
             state.turn++;
+            state.hasPickedThisTurn = false; // 次のターン開始で解禁
+            selectedCard = null;
             drawSys.generateOfferingCards();
             clearCellPreviews();
             render();
