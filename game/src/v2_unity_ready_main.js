@@ -1,4 +1,4 @@
-// Trial of Ages : Last Ember Engine (V2 Unity-Ready Main Engine with Single Block Merge Update)
+// Trial of Ages : Last Ember Engine (V2 Unity-Ready Main Engine with Socket Placement Resource Spawn & Multi-Cell Connection)
 (function(exports) {
 
     class GameState {
@@ -18,6 +18,7 @@
             this.toastQueue = [];
             this.hasPickedThisTurn = false;
             this.mergeGroupCounter = 1;
+            this.placementGroupCounter = 1;
 
             this.addLog("[T1] ゲーム開始: 5x5 盤面が初期化されました。");
         }
@@ -35,6 +36,7 @@
                         merged: false,
                         mergeGroupId: null,
                         mergeType: null,
+                        placementGroupId: null,
                         terrain: isHQ ? { id: "HQ", name: "本営", food: 10, wood: 10, defense: 10, mystic: 1 } : null,
                         searched: false,
                         hasSocket: false,
@@ -132,6 +134,14 @@
 
             const rows = shapeMatrix.length;
             const cols = shapeMatrix[0].length;
+            const pGroupId = `place_${this.placementGroupCounter++}`;
+
+            let activeCellCount = 0;
+            for (let dr = 0; dr < rows; dr++) {
+                for (let dc = 0; dc < cols; dc++) {
+                    if (shapeMatrix[dr][dc] === 1) activeCellCount++;
+                }
+            }
 
             for (let dr = 0; dr < rows; dr++) {
                 for (let dc = 0; dc < cols; dc++) {
@@ -141,6 +151,27 @@
                         const cell = this.grid[r][c];
                         cell.placed = true;
                         cell.terrain = terrain;
+
+                        if (activeCellCount > 1) {
+                            cell.placementGroupId = pGroupId;
+                        }
+
+                        // 🌾★ソケットマス上への土地配置時：01仕様書準拠 対応資源の即時開花・湧出アクション
+                        if (cell.hasSocket && !cell.socketResource) {
+                            const socketMap = {
+                                "GL1_PLAINS":      { name: "野麦 🌾+3/T", bonusFood: 3, bonusWood: 0, bonusMystic: 0 },
+                                "GL2_FOREST":      { name: "林檎 🌾+3/T", bonusFood: 3, bonusWood: 0, bonusMystic: 0 },
+                                "H2_HILL":         { name: "採石層 🧱+3/T", bonusFood: 0, bonusWood: 3, bonusMystic: 0 },
+                                "H3_MOUNTAIN":     { name: "金銀鉱脈 🧱+2 ✨+1/T", bonusFood: 0, bonusWood: 2, bonusMystic: 1 },
+                                "GL0_DESERT":      { name: "デーツ 🌾+1/T", bonusFood: 1, bonusWood: 0, bonusMystic: 0 }
+                            };
+                            const spawnedSocket = socketMap[terrain.id] || { name: "野麦 🌾+3/T", bonusFood: 3, bonusWood: 0, bonusMystic: 0 };
+                            cell.socketResource = spawnedSocket;
+
+                            const posStr = `(${String.fromCharCode(65+c)}${r+1})`;
+                            this.addLog(`✨ ★ソケット開花: ${posStr} の★の上に ${terrain.name} を配置し [${spawnedSocket.name}] が即時開花・湧出!`);
+                            this.toastQueue.push({ r, c, text: `✨ ★開花! ${spawnedSocket.name}` });
+                        }
 
                         this.checkConnectionBonus(r, c, terrain);
                     }
@@ -197,11 +228,9 @@
             }
         }
 
-        // 🧩 4マス マージ合体判定 ＆ 単一ブロックID付与
         checkMergePatterns() {
             const size = 5;
 
-            // 2x2 正方形マージ
             for (let r = 0; r < size - 1; r++) {
                 for (let c = 0; c < size - 1; c++) {
                     const c1 = this.grid[r][c];
@@ -249,8 +278,8 @@
 
             let resultMsg = "";
             if (totalRoll >= 9) {
-                if (cell.hasSocket && !cell.socketResource) {
-                    const socketDef = { name: "野麦 🌾+3/T", bonusFood: 3, bonusWood: 0 };
+                if (!cell.socketResource) {
+                    const socketDef = { name: "野麦 🌾+3/T", bonusFood: 3, bonusWood: 0, bonusMystic: 0 };
                     cell.socketResource = socketDef;
                     resultMsg = `🎲 出目${totalRoll}: ★ ${socketDef.name} 開花露出!`;
                     this.toastQueue.push({ r, c, text: `★ ${socketDef.name} 開花!` });
@@ -281,6 +310,7 @@
 
             let foodSockets = 0;
             let woodSockets = 0;
+            let mysticSockets = 0;
 
             let foodVicinity = 0;
             let woodVicinity = 0;
@@ -312,6 +342,7 @@
                         if (cell.socketResource) {
                             foodSockets += cell.socketResource.bonusFood || 0;
                             woodSockets += cell.socketResource.bonusWood || 0;
+                            mysticSockets += cell.socketResource.bonusMystic || 0;
                         }
 
                         if (this.isHQVicinity(r, c)) {
@@ -331,7 +362,7 @@
 
             const totalFood = 10 + foodTiles + foodSockets + foodVicinity;
             const totalWood = 10 + woodTiles + woodSockets + woodVicinity;
-            const totalMystic = 1 + mysticTiles;
+            const totalMystic = 1 + mysticTiles + mysticSockets;
 
             return { totalFood, totalWood, totalMystic };
         }

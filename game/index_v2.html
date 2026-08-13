@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trial of Ages : Last Ember (Single Block Unified Merge Visual)</title>
+    <title>Trial of Ages : Last Ember (Socket Placement Resource Spawn & Multi-Cell Connection)</title>
     <style>
         * {
             box-sizing: border-box;
@@ -820,11 +820,11 @@
                 tt.innerHTML = `<strong>本営 HQ ${pos}</strong><br>基礎産出: 🌾+10 🧱+10 🛡️10 ✨+1<br><small style="color:#1abc9c;">周囲8マス: 土地配置で全産出+1バフ</small>`;
             } else if (cell.placed && cell.terrain) {
                 const mergeText = cell.merged ? `<br><span style="color:#f1c40f;font-weight:bold;">✨ 2x2単一大土地 [持続産出1.2倍!]</span>` : "";
-                const socketText = cell.socketResource ? `<br><span style="color:#f1c40f;">★${cell.socketResource.name} (🌾+${cell.socketResource.bonusFood||0} 🧱+${cell.socketResource.bonusWood||0})</span>` : "";
+                const socketText = cell.socketResource ? `<br><span style="color:#f1c40f;font-weight:bold;">★ ${cell.socketResource.name} (開花中)</span>` : (cell.hasSocket ? `<br><span style="color:#f39c12;font-weight:bold;">★ 未開花ソケットあり</span>` : "");
                 const searchText = cell.searched ? `<br><span style="color:#2ecc71;">[✓ 探索済み]</span>` : (cell.merged ? `<br><span style="color:#7f8c8d;">[マージ合体済・探索不可]</span>` : `<br><span style="color:#3498db;">[🔍 クリックで2D6探索]</span>`);
                 tt.innerHTML = `<strong>${cell.terrain.name} ${pos}</strong>${mergeText}<br>防衛: 🛡️${cell.terrain.defense} | 産出: 🌾+${cell.terrain.food||0} 🧱+${cell.terrain.wood||0}${isHQVic?' (本営近郊+1)':''}${socketText}${searchText}`;
             } else if (cell.hasSocket) {
-                tt.innerHTML = `<strong>未開花 ★ソケットマス ${pos}</strong>${isHQVic?'<br><small style="color:#1abc9c;">✨ 本営近郊: 全産出+1バフエリア</small>':''}`;
+                tt.innerHTML = `<strong>★ 未開花ソケットマス ${pos}</strong><br><small style="color:#f39c12;">土地配置で地形対応資源が即時湧出開花!</small>`;
             } else {
                 tt.innerHTML = `<strong>未配置マス ${pos}</strong>${isHQVic?'<br><small style="color:#1abc9c;">✨ 本営近郊: 土地配置で全産出+1バフ!</small>':''}`;
             }
@@ -917,16 +917,21 @@
                             } else if (cellData.placed && cellData.terrain) {
                                 cellEl.classList.add("placed");
 
-                                // 🧩 単一ブロック マージ合体ビジュアル一体化
-                                if (cellData.merged && cellData.mergeGroupId) {
-                                    cellEl.classList.add("merged");
-                                    const gId = cellData.mergeGroupId;
+                                // 🧩 単一ブロック マージ合体 ＆ 1x2 / 1x3 配置時即時連結ビジュアル一体化
+                                const mergeId = cellData.mergeGroupId;
+                                const placeId = cellData.placementGroupId;
+                                const activeGroupId = mergeId || placeId;
+
+                                if (activeGroupId) {
+                                    if (cellData.merged) {
+                                        cellEl.classList.add("merged");
+                                    }
 
                                     // 同一グループの上下左右隣接チェックして境界線を消去
-                                    const topSame = (r > 0 && state.grid[r-1][c].mergeGroupId === gId);
-                                    const rightSame = (c < 4 && state.grid[r][c+1].mergeGroupId === gId);
-                                    const bottomSame = (r < 4 && state.grid[r+1][c].mergeGroupId === gId);
-                                    const leftSame = (c > 0 && state.grid[r][c-1].mergeGroupId === gId);
+                                    const topSame = (r > 0 && (state.grid[r-1][c].mergeGroupId === activeGroupId || state.grid[r-1][c].placementGroupId === activeGroupId));
+                                    const rightSame = (c < 4 && (state.grid[r][c+1].mergeGroupId === activeGroupId || state.grid[r][c+1].placementGroupId === activeGroupId));
+                                    const bottomSame = (r < 4 && (state.grid[r+1][c].mergeGroupId === activeGroupId || state.grid[r+1][c].placementGroupId === activeGroupId));
+                                    const leftSame = (c > 0 && (state.grid[r][c-1].mergeGroupId === activeGroupId || state.grid[r][c-1].placementGroupId === activeGroupId));
 
                                     if (topSame) cellEl.style.borderTop = "none";
                                     if (rightSame) cellEl.style.borderRight = "none";
@@ -935,9 +940,15 @@
 
                                     // マージグループ全体の左上セルに単一統一ラベルを表示
                                     if (!topSame && !leftSame) {
-                                        cellEl.innerHTML = `<span style="font-size:12px; color:#f1c40f; font-weight:bold; white-space:nowrap; z-index:5;">2x2 大${cellData.terrain.name}<br><small style="font-size:9px; color:#fff;">[1.2倍]</small></span>`;
+                                        const socketText = cellData.socketResource ? `<br><small style="color:#f1c40f;">★${cellData.socketResource.name}</small>` : "";
+                                        if (cellData.merged) {
+                                            cellEl.innerHTML = `<span style="font-size:12px; color:#f1c40f; font-weight:bold; white-space:nowrap; z-index:5;">2x2 大${cellData.terrain.name}<br><small style="color:#fff;">[1.2倍]</small>${socketText}</span>`;
+                                        } else {
+                                            cellEl.innerHTML = `<span style="font-size:13px; color:#fff; font-weight:bold; z-index:5;">${cellData.terrain.name}${socketText}</span>`;
+                                        }
                                     } else {
-                                        cellEl.innerHTML = "";
+                                        const socketBadge = cellData.socketResource ? `<small style="color:#f1c40f; font-size:10px;">★${cellData.socketResource.name}</small>` : "";
+                                        cellEl.innerHTML = socketBadge;
                                     }
                                 } else {
                                     const socketBadge = cellData.socketResource ? `<br><small style="color:#f1c40f;">★${cellData.socketResource.name}</small>` : "";
