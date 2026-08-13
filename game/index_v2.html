@@ -43,7 +43,6 @@
             font-size: 16px;
         }
 
-        /* 画像通りタイトルの右に独立配置されるロールアイコンボックス */
         .role-avatar-box {
             background: #1abc9c;
             color: #0b0d11;
@@ -74,7 +73,6 @@
             filter: drop-shadow(0 0 8px #ff7675);
         }
 
-        /* 試練アナウンス発生時にのみ表示されるボックス */
         .trial-announcement {
             background: #1f2430;
             border: 1px dashed #e67e22;
@@ -84,7 +82,7 @@
             font-size: 12px;
             color: #f39c12;
             font-weight: bold;
-            display: none; /* 初期および予告前は非表示 */
+            display: none;
         }
 
         .turn-box {
@@ -100,7 +98,7 @@
             display: block;
         }
 
-        /* 2. メインレイアウト (盤面 ✕ 右サイドデータ/ログ) */
+        /* 2. メインエリア (盤面 ✕ 右サイドパネル) */
         .middle-content {
             display: grid;
             grid-template-columns: 1fr 280px;
@@ -359,43 +357,43 @@
             gap: 4px;
         }
 
-        /* 3. 最下部アクションバー */
+        /* 3. 最下部アクションバー (ドローエリア縦方向 2倍拡大: height: 280px) */
         .bottom-bar {
             display: grid;
             grid-template-columns: 1fr 340px 180px;
             gap: 15px;
-            height: 150px;
+            height: 280px;
         }
 
         .offering-box {
             background: #161922;
             border: 1px solid #2a2e3d;
             border-radius: 8px;
-            padding: 10px;
+            padding: 12px;
             display: flex;
             flex-direction: column;
         }
         .section-label {
-            font-size: 12px;
+            font-size: 13px;
             font-weight: bold;
             color: #1abc9c;
             text-align: center;
-            margin-bottom: 6px;
+            margin-bottom: 10px;
         }
 
         .card-row {
             display: flex;
-            gap: 10px;
+            gap: 15px;
             justify-content: center;
             flex: 1;
         }
 
         .card-frame {
-            width: 120px;
+            width: 160px;
             background: #1e2330;
             border: 1px solid #34495e;
-            border-radius: 6px;
-            padding: 6px;
+            border-radius: 8px;
+            padding: 10px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -404,13 +402,14 @@
             position: relative;
         }
         .card-frame:hover:not(.locked) {
-            transform: translateY(-4px);
+            transform: translateY(-6px);
             border-color: #1abc9c;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.5);
         }
         .card-frame.selected {
             border-color: #f39c12 !important;
             background: #2b3245;
-            box-shadow: 0 0 10px rgba(243, 156, 18, 0.5);
+            box-shadow: 0 0 15px rgba(243, 156, 18, 0.6);
         }
         .card-frame.locked {
             opacity: 0.35;
@@ -418,45 +417,48 @@
         }
 
         .card-title-mini {
-            font-size: 11px;
+            font-size: 14px;
             font-weight: bold;
             display: flex;
             justify-content: space-between;
+            border-bottom: 1px solid #2c3345;
+            padding-bottom: 4px;
         }
         .card-shape-mini {
             display: flex;
             justify-content: center;
             align-items: center;
             background: #12151f;
-            border-radius: 3px;
-            padding: 4px;
-            height: 32px;
-            margin: 3px 0;
+            border-radius: 6px;
+            padding: 10px;
+            height: 110px;
+            margin: 8px 0;
+            border: 1px inset #252a38;
         }
 
         .reserve-box {
             background: #161922;
             border: 1px solid #2a2e3d;
             border-radius: 8px;
-            padding: 10px;
+            padding: 12px;
             display: flex;
             flex-direction: column;
         }
         .reserve-row {
             display: flex;
-            gap: 8px;
+            gap: 10px;
             justify-content: center;
             flex: 1;
         }
         .reserve-slot {
-            width: 90px;
+            width: 95px;
             background: #12141c;
             border: 1px dashed #34495e;
             border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 11px;
+            font-size: 12px;
             color: #7f8c8d;
         }
         .reserve-slot.filled {
@@ -468,17 +470,17 @@
         .controls-box {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 12px;
             justify-content: center;
         }
         .mulligan-btn {
             background: #e74c3c;
             color: white;
             border: none;
-            padding: 10px;
+            padding: 14px;
             border-radius: 6px;
             font-weight: bold;
-            font-size: 13px;
+            font-size: 14px;
             cursor: pointer;
             box-shadow: 0 3px 8px rgba(0,0,0,0.3);
         }
@@ -488,10 +490,10 @@
             background: #1abc9c;
             color: #0b0d11;
             border: none;
-            padding: 14px;
+            padding: 18px;
             border-radius: 6px;
             font-weight: bold;
-            font-size: 15px;
+            font-size: 16px;
             cursor: pointer;
             box-shadow: 0 4px 10px rgba(0,0,0,0.4);
         }
@@ -504,7 +506,6 @@
     <div class="top-bar">
         <div class="app-title-box">
             <div>Trial of Ages : Last Ember</div>
-            <!-- 画像通りタイトルの右隣に配置されたロールアイコンボックス -->
             <div class="role-avatar-box">
                 <span>ロールアイコン</span>
                 <span class="icon">👤</span>
@@ -516,7 +517,6 @@
             <span>: <span id="valEmber">20</span></span>
         </div>
 
-        <!-- 試練アナウンス発生時にのみ表示される枠 -->
         <div id="trialNoticeBox" class="trial-announcement">
             試練まで残り <span id="trialCountdown">5</span> ターン<br>
             <small style="font-weight:normal; font-size:10px;">(試練アナウンス発生時に表示)</small>
@@ -573,7 +573,7 @@
         </div>
     </div>
 
-    <!-- 3. 最下部アクションバー -->
+    <!-- 3. 最下部アクションバー (ドローエリア縦2倍拡大) -->
     <div class="bottom-bar">
         <div class="offering-box">
             <div class="section-label">ドローオファリングエリア (6カテゴリから選ばれたカード x 3) [Rキーで回転]</div>
@@ -630,6 +630,7 @@
             hideTileTooltip();
         }
 
+        // ヌル安全ガード付きハイライト処理
         function highlightPlaceableCells() {
             if (!selectedCard || state.hasPickedThisTurn) return;
             const shape = selectedCard.currentShape;
@@ -720,7 +721,6 @@
             document.getElementById("valMystic").innerText = state.mystic;
             document.getElementById("valPlacedCount").innerText = `${state.countPlacedTiles()}/24`;
 
-            // 試練予告表示の制御 (予告発令時のみ表示)
             const trialBox = document.getElementById("trialNoticeBox");
             if (trialNotice && trialNotice.active) {
                 trialBox.style.display = "block";
@@ -729,7 +729,6 @@
                 trialBox.style.display = "none";
             }
 
-            // モーダル内訳更新
             document.getElementById("bdFoodTotal").innerText = `+${bd.food.total}/T`;
             document.getElementById("bdFoodTiles").innerText = `+${bd.food.tiles}/T`;
             document.getElementById("bdFoodSockets").innerText = `+${bd.food.sockets}/T`;
@@ -788,10 +787,12 @@
                 }
             }
 
-            // カード選択時の全配置可能エリア可視化
-            highlightPlaceableCells();
+            // カード選択時のみハイライト呼び出し
+            if (selectedCard) {
+                highlightPlaceableCells();
+            }
 
-            // ドローカード描画
+            // ドローカード描画 (縦方向2倍拡大対応)
             const cardRowEl = document.getElementById("cardRow");
             cardRowEl.innerHTML = "";
 
@@ -802,11 +803,11 @@
                 const sRows = card.currentShape.length;
                 const sCols = card.currentShape[0].length;
                 
-                let shapeGridHtml = `<div style="display:grid; grid-template-columns:repeat(${sCols}, 8px); gap:2px;">`;
+                let shapeGridHtml = `<div style="display:grid; grid-template-columns:repeat(${sCols}, 16px); gap:4px;">`;
                 for (let dr = 0; dr < sRows; dr++) {
                     for (let dc = 0; dc < sCols; dc++) {
                         const isActive = card.currentShape[dr][dc] === 1;
-                        shapeGridHtml += `<div style="width:8px;height:8px;background:${isActive ? '#1abc9c' : '#252a36'};"></div>`;
+                        shapeGridHtml += `<div style="width:16px;height:16px;background:${isActive ? '#1abc9c' : '#252a36'};border-radius:2px;"></div>`;
                     }
                 }
                 shapeGridHtml += '</div>';
@@ -817,10 +818,10 @@
                         <span style="color:#ff7675;">🔥-1</span>
                     </div>
                     <div class="card-shape-mini">${shapeGridHtml}</div>
-                    <div style="font-size:9px; color:#a0a8b9;">
-                        🛡️+${card.terrain.defense} 🌾+${card.terrain.food||0} 🧱+${card.terrain.wood||0}
+                    <div style="font-size:11px; color:#a0a8b9; text-align:center;">
+                        🛡️+${card.terrain.defense} | 🌾+${card.terrain.food||0} | 🧱+${card.terrain.wood||0}
                     </div>
-                    <button style="font-size:9px; background:#2980b9; color:white; border:none; border-radius:2px; padding:2px; margin-top:2px;" onclick="event.stopPropagation(); reserveCard(${idx})">📦 保留へ</button>
+                    <button style="font-size:11px; background:#2980b9; color:white; border:none; border-radius:4px; padding:4px; margin-top:4px; cursor:pointer;" onclick="event.stopPropagation(); reserveCard(${idx})">📦 保留エリアへ</button>
                 `;
 
                 cardEl.onclick = () => {
@@ -845,7 +846,7 @@
                     slotEl.innerHTML = `
                         <div style="text-align:center;">
                             <strong>${card.name}</strong><br>
-                            <small style="font-size:9px; color:#e67e22;">🔥-1/T</small>
+                            <small style="font-size:10px; color:#e67e22;">🔥-1/T</small>
                         </div>
                     `;
                     slotEl.onclick = () => {
