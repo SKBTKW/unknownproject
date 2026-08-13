@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trial of Ages : Last Ember (Wireframe Faithful)</title>
+    <title>Trial of Ages : Last Ember (Faithful Wireframe Layout)</title>
     <style>
         * {
             box-sizing: border-box;
@@ -20,7 +20,6 @@
             gap: 15px;
             min-height: 100vh;
             overflow-y: auto;
-            position: relative;
         }
 
         /* 1. 最上部ヘッダー (トップステータスバー) */
@@ -45,6 +44,7 @@
             font-size: 16px;
         }
 
+        /* 画像通りタイトルの右に配置されたロールアイコンボックス */
         .role-avatar-box {
             background: #1abc9c;
             color: #0b0d11;
@@ -56,9 +56,6 @@
             font-size: 12px;
             font-weight: bold;
             box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-        }
-        .role-avatar-box .icon {
-            font-size: 18px;
         }
 
         .ember-center-box {
@@ -136,6 +133,7 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.4);
         }
 
+        /* 動作確定 bae5025 のクッキリ明瞭なグリッドスタイル */
         .grid-with-headers {
             display: grid;
             grid-template-columns: 40px repeat(5, 64px);
@@ -361,7 +359,7 @@
             gap: 4px;
         }
 
-        /* 3. 最下部アクションバー (黄金バランス 220px) */
+        /* 3. 最下部アクションバー (動作確定 bae5025 の手札枠 ✕ 縦2倍拡大) */
         .bottom-bar {
             display: grid;
             grid-template-columns: 1fr 340px 180px;
@@ -579,7 +577,7 @@
         </div>
     </div>
 
-    <!-- 3. 最下部アクションバー (黄金バランス 220px) -->
+    <!-- 3. 最下部アクションバー (動作確定 bae5025 の描画 ✕ 220px 縦拡大) -->
     <div class="bottom-bar">
         <div class="offering-box">
             <div class="section-label">ドローオファリングエリア (6カテゴリから選ばれたカード x 3) [Rキーで回転]</div>
@@ -597,7 +595,7 @@
         </div>
     </div>
 
-    <!-- スクリプト読み込みと安全な初期化 -->
+    <!-- 動作確定 bae5025 スクリプト読み込みと完全同一の描画ロジック -->
     <script src="src/v2_unity_ready_main.js"></script>
     <script>
         let state = null;
@@ -724,6 +722,7 @@
             if (tt) tt.style.display = "none";
         }
 
+        // 動作確定 bae5025 の 100% 同一描画ロジック
         function render() {
             if (!state) return;
             try {
@@ -813,7 +812,7 @@
                     highlightPlaceableCells();
                 }
 
-                // ドローカード描画
+                // 動作確定 bae5025 ドローカード描画
                 const cardRowEl = document.getElementById("cardRow");
                 cardRowEl.innerHTML = "";
 
