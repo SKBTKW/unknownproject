@@ -135,14 +135,16 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.4);
         }
 
+        /* クッキリ明瞭な5x5盤面グリッド */
         .grid-with-headers {
             display: grid;
             grid-template-columns: 40px repeat(5, 64px);
             grid-template-rows: 40px repeat(5, 64px);
-            gap: 4px;
-            background: #08090d;
-            padding: 10px;
+            gap: 6px;
+            background: #11141d;
+            padding: 12px;
             border-radius: 8px;
+            border: 1px solid #2d3748;
             box-shadow: 0 8px 24px rgba(0,0,0,0.7);
         }
         .header-cell {
@@ -150,16 +152,17 @@
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            color: #7f8c8d;
+            color: #cbd5e0;
             font-size: 14px;
             user-select: none;
         }
 
+        /* 未配置セルを真っ黒な塊にさせない明瞭な枠線と文字 */
         .cell {
             width: 64px;
             height: 64px;
-            background: #1c202c;
-            border: 1px solid #2c3345;
+            background: #1a202c;
+            border: 1px solid #4a5568;
             border-radius: 6px;
             display: flex;
             flex-direction: column;
@@ -172,18 +175,18 @@
             transition: border-color 0.15s, background-color 0.15s;
         }
         .cell:hover {
-            border-color: #3498db;
-            background: #252d3e;
+            border-color: #3182ce;
+            background: #2d3748;
         }
         .cell.preview-valid {
-            border: 2px solid #3498db !important;
-            background: rgba(52, 152, 219, 0.45) !important;
-            box-shadow: 0 0 12px rgba(52, 152, 219, 0.8);
+            border: 2px solid #3182ce !important;
+            background: rgba(49, 130, 206, 0.45) !important;
+            box-shadow: 0 0 12px rgba(49, 130, 206, 0.8);
         }
         .cell.preview-invalid {
-            border: 2px solid #e74c3c !important;
-            background: rgba(231, 76, 60, 0.45) !important;
-            box-shadow: 0 0 12px rgba(231, 76, 60, 0.8);
+            border: 2px solid #e53e3e !important;
+            background: rgba(229, 62, 62, 0.45) !important;
+            box-shadow: 0 0 12px rgba(229, 62, 62, 0.8);
         }
 
         .cell.hq {
@@ -206,8 +209,8 @@
             font-weight: bold;
         }
         .cell.socket-unopened {
-            border: 1px dashed #f39c12 !important;
-            background: #231c10 !important;
+            border: 1px dashed #f6ad55 !important;
+            background: #2c2115 !important;
         }
 
         .searched-badge {
@@ -360,12 +363,12 @@
             gap: 4px;
         }
 
-        /* 3. 最下部アクションバー (ドローエリア縦方向 2倍拡大) */
+        /* 3. 最下部アクションバー (ドローカードが絶対に見える鮮明スタイル) */
         .bottom-bar {
             display: grid;
             grid-template-columns: 1fr 340px 180px;
             gap: 15px;
-            min-height: 260px;
+            min-height: 240px;
             flex-shrink: 0;
         }
 
@@ -393,29 +396,31 @@
             align-items: center;
         }
 
+        /* 一目でクッキリ見える大きなカードフレーム */
         .card-frame {
-            width: 160px;
-            background: #1e2330;
-            border: 1px solid #34495e;
+            width: 170px;
+            min-height: 180px;
+            background: #1e293b;
+            border: 2px solid #3b82f6;
             border-radius: 8px;
-            padding: 12px;
+            padding: 10px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             cursor: pointer;
             transition: transform 0.15s, border-color 0.15s;
             position: relative;
-            min-height: 200px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
         .card-frame:hover:not(.locked) {
             transform: translateY(-6px);
-            border-color: #1abc9c;
-            box-shadow: 0 6px 15px rgba(0,0,0,0.5);
+            border-color: #60a5fa;
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
         }
         .card-frame.selected {
-            border-color: #f39c12 !important;
-            background: #2b3245;
-            box-shadow: 0 0 15px rgba(243, 156, 18, 0.6);
+            border-color: #f59e0b !important;
+            background: #334155;
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.7);
         }
         .card-frame.locked {
             opacity: 0.35;
@@ -425,21 +430,22 @@
         .card-title-mini {
             font-size: 14px;
             font-weight: bold;
+            color: #ffffff;
             display: flex;
             justify-content: space-between;
-            border-bottom: 1px solid #2c3345;
+            border-bottom: 1px solid #475569;
             padding-bottom: 4px;
         }
         .card-shape-mini {
             display: flex;
             justify-content: center;
             align-items: center;
-            background: #12151f;
+            background: #0f172a;
             border-radius: 6px;
-            padding: 10px;
-            height: 110px;
-            margin: 8px 0;
-            border: 1px inset #252a38;
+            padding: 8px;
+            height: 90px;
+            margin: 6px 0;
+            border: 1px solid #334155;
         }
 
         .reserve-box {
@@ -459,19 +465,19 @@
         }
         .reserve-slot {
             width: 95px;
-            height: 180px;
+            height: 160px;
             background: #12141c;
-            border: 1px dashed #34495e;
+            border: 1px dashed #475569;
             border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 12px;
-            color: #7f8c8d;
+            color: #94a3b8;
         }
         .reserve-slot.filled {
-            border: 1px solid #e67e22;
-            background: #231c12;
+            border: 2px solid #f59e0b;
+            background: #281e11;
             color: #fff;
         }
 
@@ -482,30 +488,30 @@
             justify-content: center;
         }
         .mulligan-btn {
-            background: #e74c3c;
+            background: #ef4444;
             color: white;
             border: none;
-            padding: 16px;
+            padding: 14px;
             border-radius: 6px;
             font-weight: bold;
             font-size: 14px;
             cursor: pointer;
             box-shadow: 0 3px 8px rgba(0,0,0,0.3);
         }
-        .mulligan-btn:hover { background: #c0392b; }
+        .mulligan-btn:hover { background: #dc2626; }
 
         .turn-end-btn {
-            background: #1abc9c;
-            color: #0b0d11;
+            background: #10b981;
+            color: #042f2e;
             border: none;
-            padding: 20px;
+            padding: 18px;
             border-radius: 6px;
             font-weight: bold;
             font-size: 16px;
             cursor: pointer;
             box-shadow: 0 4px 10px rgba(0,0,0,0.4);
         }
-        .turn-end-btn:hover { background: #16a085; color: white; }
+        .turn-end-btn:hover { background: #059669; color: white; }
     </style>
 </head>
 <body>
@@ -599,7 +605,7 @@
         </div>
     </div>
 
-    <!-- スクリプトの読み込みと安全な初期化 -->
+    <!-- スクリプト読み込みと安全な初期化 -->
     <script src="src/v2_unity_ready_main.js"></script>
     <script>
         let state = null;
@@ -802,6 +808,9 @@
                         } else if (cellData.hasSocket) {
                             cellEl.classList.add("socket-unopened");
                             cellEl.innerHTML = `<span style="color:#f39c12;font-size:16px;">★</span>`;
+                        } else {
+                            // 未配置セルに座標文字をうっすら表示して「格子」だと明確化
+                            cellEl.innerHTML = `<span style="font-size:10px; color:#4a5568;">${String.fromCharCode(65+c)}${r+1}</span>`;
                         }
 
                         cellEl.onmouseenter = () => onCellMouseEnter(r, c);
@@ -815,7 +824,7 @@
                     highlightPlaceableCells();
                 }
 
-                // ドローカード描画
+                // クッキリ鮮明なドローカード描画
                 const cardRowEl = document.getElementById("cardRow");
                 cardRowEl.innerHTML = "";
 
@@ -830,7 +839,7 @@
                     for (let dr = 0; dr < sRows; dr++) {
                         for (let dc = 0; dc < sCols; dc++) {
                             const isActive = card.currentShape[dr][dc] === 1;
-                            shapeGridHtml += `<div style="width:16px;height:16px;background:${isActive ? '#1abc9c' : '#252a36'};border-radius:2px;"></div>`;
+                            shapeGridHtml += `<div style="width:16px;height:16px;background:${isActive ? '#38bdf8' : '#334155'};border-radius:2px;"></div>`;
                         }
                     }
                     shapeGridHtml += '</div>';
@@ -838,13 +847,13 @@
                     cardEl.innerHTML = `
                         <div class="card-title-mini">
                             <span>${card.name}</span>
-                            <span style="color:#ff7675;">🔥-1</span>
+                            <span style="color:#f87171;">🔥-1</span>
                         </div>
                         <div class="card-shape-mini">${shapeGridHtml}</div>
-                        <div style="font-size:11px; color:#a0a8b9; text-align:center;">
+                        <div style="font-size:11px; color:#cbd5e1; text-align:center; font-weight:bold;">
                             🛡️+${card.terrain.defense} | 🌾+${card.terrain.food||0} | 🧱+${card.terrain.wood||0}
                         </div>
-                        <button style="font-size:11px; background:#2980b9; color:white; border:none; border-radius:4px; padding:4px; margin-top:4px; cursor:pointer;" onclick="event.stopPropagation(); reserveCard(${idx})">📦 保留エリアへ</button>
+                        <button style="font-size:11px; background:#2563eb; color:white; border:none; border-radius:4px; padding:6px; margin-top:4px; cursor:pointer; font-weight:bold;" onclick="event.stopPropagation(); reserveCard(${idx})">📦 保留エリアへ</button>
                     `;
 
                     cardEl.onclick = () => {
@@ -869,7 +878,7 @@
                         slotEl.innerHTML = `
                             <div style="text-align:center;">
                                 <strong>${card.name}</strong><br>
-                                <small style="font-size:10px; color:#e67e22;">🔥-1/T</small>
+                                <small style="font-size:10px; color:#f59e0b;">🔥-1/T</small>
                             </div>
                         `;
                         slotEl.onclick = () => {
