@@ -44,7 +44,6 @@
             font-size: 16px;
         }
 
-        /* 画像通りタイトルの右に配置されたロールアイコンボックス */
         .role-avatar-box {
             background: #1abc9c;
             color: #0b0d11;
@@ -133,7 +132,6 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.4);
         }
 
-        /* 動作確定 bae5025 のクッキリ明瞭なグリッドスタイル */
         .grid-with-headers {
             display: grid;
             grid-template-columns: 40px repeat(5, 64px);
@@ -359,7 +357,7 @@
             gap: 4px;
         }
 
-        /* 3. 最下部アクションバー (動作確定 bae5025 の手札枠 ✕ 縦2倍拡大) */
+        /* 3. 最下部アクションバー (ドローエリア縦方向 220px 拡大) */
         .bottom-bar {
             display: grid;
             grid-template-columns: 1fr 340px 180px;
@@ -562,6 +560,8 @@
                 <div class="breakdown-row"><span>🧱 資材全産出:</span><span id="bdWoodTotal">+10/T</span></div>
                 <div class="breakdown-row" style="color:#7f8c8d;"><span>├ 本営基礎:</span><span>+10/T</span></div>
                 <div class="breakdown-row" style="color:#7f8c8d;"><span>├ 土地配置:</span><span id="bdWoodTiles">+0/T</span></div>
+                <!-- 欠落していた id="bdWoodSockets" を追加・復元 -->
+                <div class="breakdown-row" style="color:#7f8c8d;"><span>├ ソケット開花:</span><span id="bdWoodSockets">+0/T</span></div>
                 <div class="breakdown-row" style="color:#7f8c8d;"><span>└ 本営近郊(+1):</span><span id="bdWoodVicinity">+0/T</span></div>
             </div>
 
@@ -577,7 +577,7 @@
         </div>
     </div>
 
-    <!-- 3. 最下部アクションバー (動作確定 bae5025 の描画 ✕ 220px 縦拡大) -->
+    <!-- 3. 最下部アクションバー (ドローエリア縦方向拡大 220px) -->
     <div class="bottom-bar">
         <div class="offering-box">
             <div class="section-label">ドローオファリングエリア (6カテゴリから選ばれたカード x 3) [Rキーで回転]</div>
@@ -595,7 +595,6 @@
         </div>
     </div>
 
-    <!-- 動作確定 bae5025 スクリプト読み込みと完全同一の描画ロジック -->
     <script src="src/v2_unity_ready_main.js"></script>
     <script>
         let state = null;
@@ -722,7 +721,12 @@
             if (tt) tt.style.display = "none";
         }
 
-        // 動作確定 bae5025 の 100% 同一描画ロジック
+        // 全 DOM 操作に null 安全ガードを付与した完全堅牢 render()
+        function setElementText(id, text) {
+            const el = document.getElementById(id);
+            if (el) el.innerText = text;
+        }
+
         function render() {
             if (!state) return;
             try {
@@ -730,81 +734,85 @@
                 const bd = state.getResourceBreakdown();
                 const trialNotice = state.getTrialNotice();
 
-                document.getElementById("valTurn").innerText = state.turn;
-                document.getElementById("valEmber").innerText = state.ember;
-                document.getElementById("valFood").innerText = state.food;
-                document.getElementById("valFoodProd").innerText = `+${prods.totalFood}`;
-                document.getElementById("valWood").innerText = state.wood;
-                document.getElementById("valWoodProd").innerText = `+${prods.totalWood}`;
-                document.getElementById("valDefense").innerText = state.calculateTotalDefense();
-                document.getElementById("valMystic").innerText = state.mystic;
-                document.getElementById("valPlacedCount").innerText = `${state.countPlacedTiles()}/24`;
+                setElementText("valTurn", state.turn);
+                setElementText("valEmber", state.ember);
+                setElementText("valFood", state.food);
+                setElementText("valFoodProd", `+${prods.totalFood}`);
+                setElementText("valWood", state.wood);
+                setElementText("valWoodProd", `+${prods.totalWood}`);
+                setElementText("valDefense", state.calculateTotalDefense());
+                setElementText("valMystic", state.mystic);
+                setElementText("valPlacedCount", `${state.countPlacedTiles()}/24`);
 
                 const trialBox = document.getElementById("trialNoticeBox");
-                if (trialNotice && trialNotice.active) {
-                    trialBox.style.display = "block";
-                    document.getElementById("trialCountdown").innerText = trialNotice.remaining;
-                } else {
-                    trialBox.style.display = "none";
+                if (trialBox) {
+                    if (trialNotice && trialNotice.active) {
+                        trialBox.style.display = "block";
+                        setElementText("trialCountdown", trialNotice.remaining);
+                    } else {
+                        trialBox.style.display = "none";
+                    }
                 }
 
-                document.getElementById("bdFoodTotal").innerText = `+${bd.food.total}/T`;
-                document.getElementById("bdFoodTiles").innerText = `+${bd.food.tiles}/T`;
-                document.getElementById("bdFoodSockets").innerText = `+${bd.food.sockets}/T`;
-                document.getElementById("bdFoodVicinity").innerText = `+${bd.food.vicinity}/T`;
+                setElementText("bdFoodTotal", `+${bd.food.total}/T`);
+                setElementText("bdFoodTiles", `+${bd.food.tiles}/T`);
+                setElementText("bdFoodSockets", `+${bd.food.sockets}/T`);
+                setElementText("bdFoodVicinity", `+${bd.food.vicinity}/T`);
 
-                document.getElementById("bdWoodTotal").innerText = `+${bd.wood.total}/T`;
-                document.getElementById("bdWoodTiles").innerText = `+${bd.wood.tiles}/T`;
-                document.getElementById("bdWoodSockets").innerText = `+${bd.wood.sockets}/T`;
-                document.getElementById("bdWoodVicinity").innerText = `+${bd.wood.vicinity}/T`;
+                setElementText("bdWoodTotal", `+${bd.wood.total}/T`);
+                setElementText("bdWoodTiles", `+${bd.wood.tiles}/T`);
+                setElementText("bdWoodSockets", `+${bd.wood.sockets}/T`);
+                setElementText("bdWoodVicinity", `+${bd.wood.vicinity}/T`);
 
                 const boardEl = document.getElementById("gridBoard");
-                boardEl.innerHTML = "";
+                if (boardEl) {
+                    boardEl.innerHTML = "";
 
-                const cornerCell = document.createElement("div");
-                cornerCell.className = "header-cell";
-                boardEl.appendChild(cornerCell);
-
-                for (let c = 0; c < 5; c++) {
-                    const hCell = document.createElement("div");
-                    hCell.className = "header-cell";
-                    hCell.innerText = String.fromCharCode(65 + c);
-                    boardEl.appendChild(hCell);
-                }
-
-                for (let r = 0; r < 5; r++) {
-                    const vCell = document.createElement("div");
-                    vCell.className = "header-cell";
-                    vCell.innerText = r + 1;
-                    boardEl.appendChild(vCell);
+                    const cornerCell = document.createElement("div");
+                    cornerCell.className = "header-cell";
+                    boardEl.appendChild(cornerCell);
 
                     for (let c = 0; c < 5; c++) {
-                        const cellData = state.grid[r][c];
-                        const cellEl = document.createElement("div");
-                        cellEl.className = "cell";
-                        cellEl.setAttribute("data-r", r);
-                        cellEl.setAttribute("data-c", c);
+                        const hCell = document.createElement("div");
+                        hCell.className = "header-cell";
+                        hCell.innerText = String.fromCharCode(65 + c);
+                        boardEl.appendChild(hCell);
+                    }
 
-                        if (cellData.isHQ) {
-                            cellEl.classList.add("hq");
-                            cellEl.innerHTML = "本営";
-                        } else if (cellData.placed && cellData.terrain) {
-                            cellEl.classList.add("placed");
-                            if (cellData.merged) {
-                                cellEl.classList.add("merged");
+                    for (let r = 0; r < 5; r++) {
+                        const vCell = document.createElement("div");
+                        vCell.className = "header-cell";
+                        vCell.innerText = r + 1;
+                        boardEl.appendChild(vCell);
+
+                        for (let c = 0; c < 5; c++) {
+                            const cellData = state.grid[r][c];
+                            const cellEl = document.createElement("div");
+                            cellEl.className = "cell";
+                            cellEl.setAttribute("data-r", r);
+                            cellEl.setAttribute("data-c", c);
+
+                            if (cellData.isHQ) {
+                                cellEl.classList.add("hq");
+                                cellEl.innerHTML = "本営";
+                            } else if (cellData.placed && cellData.terrain) {
+                                cellEl.classList.add("placed");
+                                if (cellData.merged) {
+                                    cellEl.classList.add("merged");
+                                }
+                                const socketBadge = cellData.socketResource ? `<br><small style="color:#f1c40f;">★${cellData.socketResource.name}</small>` : "";
+                                const searchedBadge = cellData.searched ? `<span class="searched-badge">✓探索済</span>` : "";
+                                cellEl.innerHTML = `${cellData.terrain.name}${socketBadge}${searchedBadge}`;
+                            } else if (cellData.hasSocket) {
+                                cellEl.classList.add("socket-unopened");
+                                cellEl.innerHTML = `<span style="color:#f39c12;font-size:16px;">★</span>`;
                             }
-                            const socketBadge = cellData.socketResource ? `<br><small style="color:#f1c40f;">★${cellData.socketResource.name}</small>` : "";
-                            const searchedBadge = cellData.searched ? `<span class="searched-badge">✓探索済</span>` : "";
-                            cellEl.innerHTML = `${cellData.terrain.name}${socketBadge}${searchedBadge}`;
-                        } else if (cellData.hasSocket) {
-                            cellEl.classList.add("socket-unopened");
-                            cellEl.innerHTML = `<span style="color:#f39c12;font-size:16px;">★</span>`;
-                        }
 
-                        cellEl.onmouseenter = () => onCellMouseEnter(r, c);
-                        cellEl.onmouseleave = clearCellPreviews;
-                        cellEl.onclick = () => onCellClick(r, c);
-                        boardEl.appendChild(cellEl);
+                            cellEl.onmouseenter = () => onCellMouseEnter(r, c);
+                            cellEl.onmouseleave = clearCellPreviews;
+                            cellEl.onclick = () => onCellClick(r, c);
+                            boardEl.appendChild(cellEl);
+                        }
                     }
                 }
 
@@ -812,82 +820,88 @@
                     highlightPlaceableCells();
                 }
 
-                // 動作確定 bae5025 ドローカード描画
+                // ドローカード描画
                 const cardRowEl = document.getElementById("cardRow");
-                cardRowEl.innerHTML = "";
+                if (cardRowEl) {
+                    cardRowEl.innerHTML = "";
 
-                state.handOffering.forEach((card, idx) => {
-                    const cardEl = document.createElement("div");
-                    cardEl.className = `card-frame ${selectedCard === card ? 'selected' : ''} ${state.hasPickedThisTurn ? 'locked' : ''}`;
+                    state.handOffering.forEach((card, idx) => {
+                        const cardEl = document.createElement("div");
+                        cardEl.className = `card-frame ${selectedCard === card ? 'selected' : ''} ${state.hasPickedThisTurn ? 'locked' : ''}`;
 
-                    const sRows = card.currentShape.length;
-                    const sCols = card.currentShape[0].length;
-                    
-                    let shapeGridHtml = `<div style="display:grid; grid-template-columns:repeat(${sCols}, 14px); gap:3px;">`;
-                    for (let dr = 0; dr < sRows; dr++) {
-                        for (let dc = 0; dc < sCols; dc++) {
-                            const isActive = card.currentShape[dr][dc] === 1;
-                            shapeGridHtml += `<div style="width:14px;height:14px;background:${isActive ? '#1abc9c' : '#252a36'};border-radius:2px;"></div>`;
+                        const sRows = card.currentShape.length;
+                        const sCols = card.currentShape[0].length;
+                        
+                        let shapeGridHtml = `<div style="display:grid; grid-template-columns:repeat(${sCols}, 14px); gap:3px;">`;
+                        for (let dr = 0; dr < sRows; dr++) {
+                            for (let dc = 0; dc < sCols; dc++) {
+                                const isActive = card.currentShape[dr][dc] === 1;
+                                shapeGridHtml += `<div style="width:14px;height:14px;background:${isActive ? '#1abc9c' : '#252a36'};border-radius:2px;"></div>`;
+                            }
                         }
-                    }
-                    shapeGridHtml += '</div>';
+                        shapeGridHtml += '</div>';
 
-                    cardEl.innerHTML = `
-                        <div class="card-title-mini">
-                            <span>${card.name}</span>
-                            <span style="color:#ff7675;">🔥-1</span>
-                        </div>
-                        <div class="card-shape-mini">${shapeGridHtml}</div>
-                        <div style="font-size:9px; color:#a0a8b9; text-align:center;">
-                            🛡️+${card.terrain.defense} | 🌾+${card.terrain.food||0} | 🧱+${card.terrain.wood||0}
-                        </div>
-                        <button style="font-size:9px; background:#2980b9; color:white; border:none; border-radius:2px; padding:2px; margin-top:2px; cursor:pointer;" onclick="event.stopPropagation(); reserveCard(${idx})">📦 保留エリアへ</button>
-                    `;
-
-                    cardEl.onclick = () => {
-                        if (state.hasPickedThisTurn) return;
-                        selectedCard = card;
-                        render();
-                    };
-
-                    cardRowEl.appendChild(cardEl);
-                });
-
-                // 保留エリア描画
-                const reserveRowEl = document.getElementById("reserveRow");
-                reserveRowEl.innerHTML = "";
-
-                for (let i = 0; i < 3; i++) {
-                    const card = state.reserveSlots[i];
-                    const slotEl = document.createElement("div");
-                    slotEl.className = `reserve-slot ${card ? 'filled' : ''}`;
-
-                    if (card) {
-                        slotEl.innerHTML = `
-                            <div style="text-align:center;">
-                                <strong>${card.name}</strong><br>
-                                <small style="font-size:10px; color:#f59e0b;">🔥-1/T</small>
+                        cardEl.innerHTML = `
+                            <div class="card-title-mini">
+                                <span>${card.name}</span>
+                                <span style="color:#ff7675;">🔥-1</span>
                             </div>
+                            <div class="card-shape-mini">${shapeGridHtml}</div>
+                            <div style="font-size:9px; color:#a0a8b9; text-align:center;">
+                                🛡️+${card.terrain.defense} | 🌾+${card.terrain.food||0} | 🧱+${card.terrain.wood||0}
+                            </div>
+                            <button style="font-size:9px; background:#2980b9; color:white; border:none; border-radius:2px; padding:2px; margin-top:2px; cursor:pointer;" onclick="event.stopPropagation(); reserveCard(${idx})">📦 保留エリアへ</button>
                         `;
-                        slotEl.onclick = () => {
+
+                        cardEl.onclick = () => {
                             if (state.hasPickedThisTurn) return;
                             selectedCard = card;
                             render();
                         };
-                    } else {
-                        slotEl.innerText = `空枠 ${i+1}`;
+
+                        cardRowEl.appendChild(cardEl);
+                    });
+                }
+
+                // 保留エリア描画
+                const reserveRowEl = document.getElementById("reserveRow");
+                if (reserveRowEl) {
+                    reserveRowEl.innerHTML = "";
+
+                    for (let i = 0; i < 3; i++) {
+                        const card = state.reserveSlots[i];
+                        const slotEl = document.createElement("div");
+                        slotEl.className = `reserve-slot ${card ? 'filled' : ''}`;
+
+                        if (card) {
+                            slotEl.innerHTML = `
+                                <div style="text-align:center;">
+                                    <strong>${card.name}</strong><br>
+                                    <small style="font-size:10px; color:#f59e0b;">🔥-1/T</small>
+                                </div>
+                            `;
+                            slotEl.onclick = () => {
+                                if (state.hasPickedThisTurn) return;
+                                selectedCard = card;
+                                render();
+                            };
+                        } else {
+                            slotEl.innerText = `空枠 ${i+1}`;
+                        }
+                        reserveRowEl.appendChild(slotEl);
                     }
-                    reserveRowEl.appendChild(slotEl);
                 }
 
                 // ログ描画
                 const logContentEl = document.getElementById("logContent");
-                logContentEl.innerHTML = "";
-                state.gameLogs.forEach(log => {
-                    const item = document.createElement("div");
-                    item.innerText = log;
-                    logContentEl.appendChild(item);
-                });
+                if (logContentEl) {
+                    logContentEl.innerHTML = "";
+                    state.gameLogs.forEach(log => {
+                        const item = document.createElement("div");
+                        item.innerText = log;
+                        logContentEl.appendChild(item);
+                    });
+                }
 
                 while (state.toastQueue.length > 0) {
                     const toastData = state.toastQueue.shift();
