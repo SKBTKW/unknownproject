@@ -1,14 +1,14 @@
 /**
- * Trial of the Ages: Last Ember - Master HQ, 2D6 Exploration & Breakdown Engine
+ * Trial of the Ages: Last Ember - Master Engine & Trial Notice
  * 
  * SPECIFICATIONS:
- * 1. HQ Base Production (rules/00):
+ * 1. Trials Cycle (rules/05):
+ *    - Occurs at Turn 15, 30, 45.
+ *    - Notice appears 5 turns before (Turn 10-15, 25-30, 40-45). Hidden otherwise.
+ * 2. HQ Base Production (rules/00):
  *    - Food +10/T, Wood +10/T, Defense 10 (base), Mystic +1/T.
- * 2. 2D6 Land Exploration (rules/03-04):
- *    - Cost Ember -1, max 1 search per cell. Merged cells cannot be searched.
- *    - Roll 2-4: Small resources, 5-8: Medium resources, 9-11: ★ Socket blooms, 12: Mystic Spring (Double 6).
- * 3. Resource Breakdown:
- *    - Detailed breakdown calculation for Food, Wood, Defense, Mystic.
+ * 3. 2D6 Land Exploration (rules/03-04):
+ *    - Cost Ember -1, max 1 search per cell.
  */
 
 const BOARD_STAGES = {
@@ -47,7 +47,6 @@ class GameState {
     constructor() {
         this.turn = 1;
         this.maxTurns = 50;
-        this.trialCountdown = 4;
         this.ember = 20;
         this.food = 30;
         this.wood = 30;
@@ -81,7 +80,7 @@ class GameState {
                     placed: false,
                     terrain: null,
                     merged: false,
-                    searched: false, // 探索済みフラグ
+                    searched: false,
                     hasSocket: false,
                     socketResource: null,
                     isHQ: (r === this.stage.hqCenter.r && c === this.stage.hqCenter.c)
@@ -96,6 +95,18 @@ class GameState {
         this.grid[3][1].hasSocket = true;
 
         this.addLog("ゲーム開始: 5x5 盤面が初期化されました。");
+    }
+
+    // 試練予告判定 (Turn 15/30/45 の 5 ターン前から表示: rules/05)
+    getTrialNotice() {
+        const nextTrialTurn = [15, 30, 45].find(t => t >= this.turn);
+        if (!nextTrialTurn) return null;
+
+        const remaining = nextTrialTurn - this.turn;
+        if (remaining <= 5) {
+            return { active: true, remaining, targetTurn: nextTrialTurn };
+        }
+        return { active: false, remaining, targetTurn: nextTrialTurn };
     }
 
     isHQVicinity(r, c) {
@@ -224,7 +235,6 @@ class GameState {
         return { success: true };
     }
 
-    // 2D6 土地探索実行 (rules/03-04 確定仕様)
     executeExploration(r, c) {
         const cell = this.grid[r][c];
         if (!cell.placed || cell.isHQ) return { success: false, reason: "配置された土地マスのみ探索可能です" };
@@ -242,12 +252,12 @@ class GameState {
 
         let resultMsg = "";
 
-        if (d1 === 6 && d2 === 6) { // 出目12 素のゾロ目 (神秘の泉)
+        if (d1 === 6 && d2 === 6) {
             this.ember += 3;
             this.mystic += 5;
             resultMsg = `✨ 出目12 ゾロ目! レアイベント【神秘の泉】発見! 🔥+3 ＆ ✨+5 獲得!`;
             this.toastQueue.push({ r, c, text: "✨ 神秘の泉! 🔥+3 ✨+5" });
-        } else if (totalRoll >= 9) { // 出目 9〜11 (★ ソケット開花)
+        } else if (totalRoll >= 9) {
             if (!cell.socketResource) {
                 const socketDef = SOCKET_RESOURCES[cell.terrain.id] || SOCKET_RESOURCES.GL1_GRASS;
                 cell.socketResource = socketDef;
@@ -259,12 +269,12 @@ class GameState {
                 resultMsg = `🎲 出目${totalRoll}: 発掘成功! 🌾+3 🧱+3 即時獲得!`;
                 this.toastQueue.push({ r, c, text: "発掘! 🌾🧱+3" });
             }
-        } else if (totalRoll >= 5) { // 出目 5〜8 (中額即時ボーナス)
+        } else if (totalRoll >= 5) {
             this.food += 2;
             this.wood += 2;
             resultMsg = `🎲 出目${totalRoll}: 中額資源発掘 🌾+2 🧱+2 即時獲得!`;
             this.toastQueue.push({ r, c, text: "発掘! 🌾🧱+2" });
-        } else { // 出目 2〜4 (少額即時ボーナス)
+        } else {
             this.food += 1;
             resultMsg = `🎲 出目${totalRoll}: 少額食料発見 🌾+1 即時獲得!`;
             this.toastQueue.push({ r, c, text: "発見! 🌾+1" });
@@ -421,7 +431,6 @@ class GameState {
         return { totalFood, totalWood, totalMystic };
     }
 
-    // 各種リソース計算の詳細内訳を取得 (データパネルモーダル用)
     getResourceBreakdown() {
         const breakdown = {
             food: { base: 10, tiles: 0, sockets: 0, vicinity: 0, total: 10 },

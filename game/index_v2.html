@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trial of Ages : Last Ember (Layout Engine)</title>
+    <title>Trial of Ages : Last Ember (Wireframe Faithful)</title>
     <style>
         * {
             box-sizing: border-box;
@@ -30,27 +30,34 @@
             border-radius: 8px;
             padding: 10px 20px;
             display: grid;
-            grid-template-columns: 240px 1fr 220px 140px;
+            grid-template-columns: 340px 1fr 240px 140px;
             align-items: center;
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
+        
         .app-title-box {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 15px;
             font-weight: bold;
             font-size: 16px;
         }
-        .role-avatar {
-            width: 36px;
-            height: 36px;
-            background: #2a3142;
-            border: 1px solid #4a90e2;
+
+        /* 画像通りタイトルの右に独立配置されるロールアイコンボックス */
+        .role-avatar-box {
+            background: #1abc9c;
+            color: #0b0d11;
+            padding: 4px 10px;
             border-radius: 6px;
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-size: 20px;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
+        .role-avatar-box .icon {
+            font-size: 18px;
         }
 
         .ember-center-box {
@@ -67,6 +74,7 @@
             filter: drop-shadow(0 0 8px #ff7675);
         }
 
+        /* 試練アナウンス発生時にのみ表示されるボックス */
         .trial-announcement {
             background: #1f2430;
             border: 1px dashed #e67e22;
@@ -76,6 +84,7 @@
             font-size: 12px;
             color: #f39c12;
             font-weight: bold;
+            display: none; /* 初期および予告前は非表示 */
         }
 
         .turn-box {
@@ -100,7 +109,6 @@
             min-height: 0;
         }
 
-        /* 盤面エリア */
         .board-container {
             background: #13161f;
             border: 1px solid #252a38;
@@ -232,7 +240,6 @@
             100% { opacity: 0; transform: translate(-50%, -24px); }
         }
 
-        /* 盤面マス詳細ホバーツールチップ */
         .tile-tooltip {
             position: absolute;
             bottom: 20px;
@@ -249,7 +256,7 @@
             display: none;
         }
 
-        /* 右サイドパネル (各種データ ✕ ログ) */
+        /* 右サイドパネル */
         .right-sidebar {
             display: flex;
             flex-direction: column;
@@ -284,7 +291,6 @@
             font-weight: bold;
         }
 
-        /* リソース内訳ポップアップモーダル */
         .breakdown-modal {
             position: absolute;
             top: 70px;
@@ -338,7 +344,7 @@
             background: #9b59b6;
             color: white;
             border: none;
-            padding: 2px 8px;
+            padding: 4px 10px;
             border-radius: 4px;
             font-size: 11px;
             cursor: pointer;
@@ -497,17 +503,25 @@
     <!-- 1. 最上部ヘッダー (トップステータスバー) -->
     <div class="top-bar">
         <div class="app-title-box">
-            <div class="role-avatar">👤</div>
             <div>Trial of Ages : Last Ember</div>
+            <!-- 画像通りタイトルの右隣に配置されたロールアイコンボックス -->
+            <div class="role-avatar-box">
+                <span>ロールアイコン</span>
+                <span class="icon">👤</span>
+            </div>
         </div>
+        
         <div class="ember-center-box">
             <span class="ember-icon">🔥</span>
             <span>: <span id="valEmber">20</span></span>
         </div>
-        <div class="trial-announcement">
-            試練まで残り <span id="trialCountdown">4</span> ターン<br>
+
+        <!-- 試練アナウンス発生時にのみ表示される枠 -->
+        <div id="trialNoticeBox" class="trial-announcement">
+            試練まで残り <span id="trialCountdown">5</span> ターン<br>
             <small style="font-weight:normal; font-size:10px;">(試練アナウンス発生時に表示)</small>
         </div>
+
         <div class="turn-box">
             <div style="font-size:10px;">ターン表示</div>
             <span class="turn-num"><span id="valTurn">1</span>/50</span>
@@ -519,14 +533,12 @@
         <div class="board-container">
             <div class="main-area-badge">メインエリア <span id="valPlacedCount">1</span>/24</div>
             <div id="gridBoard" class="grid-with-headers"></div>
-            <!-- マス詳細ホバーツールチップ -->
             <div id="tileTooltip" class="tile-tooltip"></div>
         </div>
 
         <div class="right-sidebar">
-            <!-- 各種データ表示パネル (ホバー/クリックで内訳表示) -->
             <div class="data-panel" onmouseenter="showBreakdownModal()" onmouseleave="hideBreakdownModal()" onclick="toggleBreakdownModal()">
-                <h4>各種データ表示パネル (詳細内訳)</h4>
+                <h4>各種データ表示パネル</h4>
                 <div class="resource-list">
                     <div>🌾 食料: <span id="valFood">30</span> (<span id="valFoodProd">+10</span>/T)</div>
                     <div>🧱 資材: <span id="valWood">30</span> (<span id="valWoodProd">+10</span>/T)</div>
@@ -535,7 +547,6 @@
                 </div>
             </div>
 
-            <!-- リソース内訳モーダル -->
             <div id="breakdownModal" class="breakdown-modal">
                 <h5>📊 各リソース持続産出 内訳</h5>
                 <div class="breakdown-row"><span>🌾 食料全産出:</span><span id="bdFoodTotal">+10/T</span></div>
@@ -556,7 +567,7 @@
                     <button class="toggle-btn" onclick="toggleLogPanel()">トグル</button>
                 </div>
                 <div id="logContent" class="log-content">
-                    <div style="color:#7f8c8d;">格細状態と展開状態を切り替え可能</div>
+                    <div style="color:#7f8c8d;">格納状態と展開状態を切り替え可能</div>
                 </div>
             </div>
         </div>
@@ -587,6 +598,7 @@
         const drawSys = new engine.Step1DrawSystem(state);
 
         let selectedCard = null;
+        let isLogExpanded = true;
 
         function init() {
             drawSys.generateOfferingCards();
@@ -618,12 +630,32 @@
             hideTileTooltip();
         }
 
+        function highlightPlaceableCells() {
+            if (!selectedCard || state.hasPickedThisTurn) return;
+            const shape = selectedCard.currentShape;
+
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 5; c++) {
+                    const check = state.canPlaceShape(r, c, shape);
+                    if (check.can) {
+                        const cellIdx = (r + 1) * 6 + (c + 1);
+                        const boardEl = document.getElementById("gridBoard");
+                        const targetEl = boardEl.children[cellIdx];
+                        if (targetEl) {
+                            targetEl.classList.add("preview-valid");
+                        }
+                    }
+                }
+            }
+        }
+
         function onCellMouseEnter(r, c) {
             const cellData = state.grid[r][c];
             showTileTooltip(r, c, cellData);
 
             if (!selectedCard || state.hasPickedThisTurn) return;
             clearCellPreviews();
+            highlightPlaceableCells();
 
             const shape = selectedCard.currentShape;
             const check = state.canPlaceShape(r, c, shape);
@@ -676,6 +708,7 @@
         function render() {
             const prods = state.calculateTotalProduction();
             const bd = state.getResourceBreakdown();
+            const trialNotice = state.getTrialNotice();
 
             document.getElementById("valTurn").innerText = state.turn;
             document.getElementById("valEmber").innerText = state.ember;
@@ -686,6 +719,15 @@
             document.getElementById("valDefense").innerText = state.calculateTotalDefense();
             document.getElementById("valMystic").innerText = state.mystic;
             document.getElementById("valPlacedCount").innerText = `${state.countPlacedTiles()}/24`;
+
+            // 試練予告表示の制御 (予告発令時のみ表示)
+            const trialBox = document.getElementById("trialNoticeBox");
+            if (trialNotice && trialNotice.active) {
+                trialBox.style.display = "block";
+                document.getElementById("trialCountdown").innerText = trialNotice.remaining;
+            } else {
+                trialBox.style.display = "none";
+            }
 
             // モーダル内訳更新
             document.getElementById("bdFoodTotal").innerText = `+${bd.food.total}/T`;
@@ -745,6 +787,9 @@
                     boardEl.appendChild(cellEl);
                 }
             }
+
+            // カード選択時の全配置可能エリア可視化
+            highlightPlaceableCells();
 
             // ドローカード描画
             const cardRowEl = document.getElementById("cardRow");
@@ -814,7 +859,7 @@
                 reserveRowEl.appendChild(slotEl);
             }
 
-            // ログエリア描画
+            // ログ描画
             const logContentEl = document.getElementById("logContent");
             logContentEl.innerHTML = "";
             state.gameLogs.forEach(log => {
@@ -832,7 +877,6 @@
         function onCellClick(r, c) {
             const cell = state.grid[r][c];
 
-            // 1. 手札非選択時 ➔ 配置済み未探索土地マスをクリックで 2D6 探索確認ダイアログ
             if (!selectedCard) {
                 if (cell.placed && !cell.isHQ && !cell.searched && !cell.merged) {
                     const confirmSearch = confirm(`🔍 2D6 土地探索を実行しますか？\n位置: (${String.fromCharCode(65+c)}${r+1}) ${cell.terrain.name}\nコスト: 🔥 -1 (生命力)\n※1マス通算1回のみ実行可能です。`);
@@ -847,7 +891,6 @@
                 return;
             }
 
-            // 2. 手札選択時 ➔ 土地カード配置
             if (state.hasPickedThisTurn) return;
 
             if (state.ember <= 0) {
@@ -898,7 +941,8 @@
 
         function toggleLogPanel() {
             const el = document.getElementById("logContent");
-            el.style.display = (el.style.display === "none") ? "flex" : "none";
+            isLogExpanded = !isLogExpanded;
+            el.style.display = isLogExpanded ? "flex" : "none";
         }
 
         function showBreakdownModal() {
