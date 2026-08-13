@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trial of Ages : Last Ember (3-Column Architecture)</title>
+    <title>Trial of Ages : Last Ember (Spec-Compliant Card Visual & Readable Board)</title>
     <style>
         * {
             box-sizing: border-box;
@@ -99,14 +99,14 @@
         /* 2. メイン 3 カラムレイアウト構造 */
         .main-layout {
             display: grid;
-            grid-template-columns: 280px 1fr 280px;
+            grid-template-columns: 290px 1fr 280px;
             gap: 12px;
             flex: 1;
             min-height: 0;
             overflow: hidden;
         }
 
-        /* 👈 左サイドバー (ドローエリア ＋ 保留エリア) */
+        /* 👈 左サイドバー (本格 TCG 4重レイヤーカード表示) */
         .left-sidebar {
             display: flex;
             flex-direction: column;
@@ -137,56 +137,115 @@
         .card-row-vertical {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
             flex: 1;
             overflow-y: auto;
             align-items: center;
+            padding: 4px;
         }
 
-        .card-frame {
+        /* rules/04 Section 6 確定: 4重レイヤー仕様 TCG カードフレーム */
+        .card-frame-tcg {
             width: 100%;
-            max-width: 240px;
-            min-height: 115px;
-            background: #1e2330;
-            border: 1px solid #34495e;
-            border-radius: 6px;
-            padding: 8px 10px;
+            background: linear-gradient(145deg, #1c2230 0%, #111521 100%);
+            border-radius: 8px;
+            padding: 8px;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            gap: 6px;
             cursor: pointer;
-            transition: transform 0.15s, border-color 0.15s;
+            transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.2s;
             position: relative;
+            user-select: none;
         }
-        .card-frame:hover:not(.locked) {
-            transform: scale(1.02);
-            border-color: #1abc9c;
+        .card-frame-tcg:hover:not(.locked) {
+            transform: translateY(-4px) scale(1.02);
         }
-        .card-frame.selected {
-            border-color: #f39c12 !important;
-            background: #2b3245;
-            box-shadow: 0 0 10px rgba(243, 156, 18, 0.5);
+
+        /* 中層 (Middle Layer / レアリティ別質感フレーム) */
+        .card-frame-tcg.rarity-c {
+            border: 2px solid #8c6d46;
+            box-shadow: 0 4px 12px rgba(140, 109, 70, 0.35);
         }
-        .card-frame.locked {
+        .card-frame-tcg.rarity-uc {
+            border: 2px solid #a0b2c6;
+            box-shadow: 0 4px 14px rgba(160, 178, 198, 0.45);
+        }
+        .card-frame-tcg.selected {
+            border-color: #f1c40f !important;
+            box-shadow: 0 0 16px rgba(241, 196, 15, 0.7) !important;
+            background: linear-gradient(145deg, #2b3348 0%, #1b2030 100%);
+        }
+        .card-frame-tcg.locked {
             opacity: 0.35;
             cursor: not-allowed;
         }
 
-        .card-title-mini {
-            font-size: 11px;
-            font-weight: bold;
+        /* 上層: タイトル ✕ カテゴリ ✕ コスト */
+        .tcg-card-header {
             display: flex;
             justify-content: space-between;
-        }
-        .card-shape-mini {
-            display: flex;
-            justify-content: center;
             align-items: center;
-            background: #12151f;
-            border-radius: 3px;
-            padding: 4px;
-            height: 45px;
-            margin: 3px 0;
+        }
+        .tcg-category-badge {
+            background: rgba(26, 188, 156, 0.2);
+            color: #1abc9c;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid rgba(26, 188, 156, 0.4);
+        }
+        .tcg-card-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #ffffff;
+        }
+        .tcg-cost-badge {
+            background: rgba(231, 76, 60, 0.25);
+            color: #ff7675;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid rgba(231, 76, 60, 0.5);
+        }
+
+        /* 最下層: スーファミ風レトロドット絵・アセット/形状アートエリア */
+        .tcg-art-container {
+            height: 60px;
+            background: #0d1017;
+            border-radius: 6px;
+            border: 1px solid #232a3b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+        }
+        .tcg-art-bg-texture {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(26, 188, 156, 0.15) 0%, rgba(0,0,0,0.6) 100%);
+        }
+
+        /* 上層: パラメータ ＆ 効果テキストフッター */
+        .tcg-card-footer {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background: #141824;
+            padding: 4px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        .param-badge {
+            display: flex;
+            align-items: center;
+            gap: 2px;
         }
 
         .reserve-box {
@@ -197,7 +256,7 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
-            height: 180px;
+            height: 160px;
         }
         .reserve-row-vertical {
             display: flex;
@@ -208,7 +267,7 @@
         }
         .reserve-slot {
             flex: 1;
-            height: 120px;
+            height: 100px;
             background: #12141c;
             border: 1px dashed #34495e;
             border-radius: 6px;
@@ -225,7 +284,7 @@
             color: #fff;
         }
 
-        /* 🎯 中央メインエリア (9x9拡張対応特大ボード領域) */
+        /* 🎯 中央メインエリア (大幅拡大グリッド / 文字視認性 100% 確保) */
         .board-container {
             background: #13161f;
             border: 1px solid #252a38;
@@ -254,37 +313,39 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.4);
         }
 
+        /* グリッドセル超大幅拡大: 60px ➔ 78px, 太字フォント 15px */
         .grid-with-headers {
             display: grid;
-            grid-template-columns: 36px repeat(5, 60px);
-            grid-template-rows: 36px repeat(5, 60px);
-            gap: 4px;
+            grid-template-columns: 44px repeat(5, 78px);
+            grid-template-rows: 44px repeat(5, 78px);
+            gap: 5px;
             background: #08090d;
-            padding: 10px;
-            border-radius: 8px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.7);
+            padding: 12px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
         }
         .header-cell {
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            color: #7f8c8d;
-            font-size: 13px;
+            color: #95a5a6;
+            font-size: 16px;
             user-select: none;
         }
 
         .cell {
-            width: 60px;
-            height: 60px;
+            width: 78px;
+            height: 78px;
             background: #1c202c;
             border: 1px solid #2c3345;
-            border-radius: 6px;
+            border-radius: 8px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
+            font-size: 15px;
+            font-weight: bold;
             cursor: pointer;
             user-select: none;
             position: relative;
@@ -297,20 +358,20 @@
 
         /* 本営周囲8マスのエメラルド光彩枠 */
         .cell.hq-vicinity-unplaced {
-            border: 1px dashed rgba(26, 188, 156, 0.7) !important;
-            box-shadow: inset 0 0 10px rgba(26, 188, 156, 0.3);
+            border: 1px dashed rgba(26, 188, 156, 0.8) !important;
+            box-shadow: inset 0 0 12px rgba(26, 188, 156, 0.35);
             background: #18262a !important;
         }
 
         .cell.preview-valid {
             border: 2px solid #3498db !important;
             background: rgba(52, 152, 219, 0.35) !important;
-            box-shadow: 0 0 10px rgba(52, 152, 219, 0.7);
+            box-shadow: 0 0 12px rgba(52, 152, 219, 0.7);
         }
         .cell.preview-invalid {
             border: 2px solid #e74c3c !important;
             background: rgba(231, 76, 60, 0.35) !important;
-            box-shadow: 0 0 10px rgba(231, 76, 60, 0.7);
+            box-shadow: 0 0 12px rgba(231, 76, 60, 0.7);
         }
 
         .cell.hq {
@@ -318,6 +379,7 @@
             border: 2px solid #1abc9c !important;
             color: #ffffff;
             font-weight: bold;
+            font-size: 16px;
         }
         .cell.placed {
             background: #005a70 !important;
@@ -328,7 +390,7 @@
         .cell.merged {
             background: #4a3b10 !important;
             border: 2px solid #f1c40f !important;
-            box-shadow: 0 0 10px rgba(241, 196, 15, 0.6);
+            box-shadow: 0 0 12px rgba(241, 196, 15, 0.7);
             color: #fff;
             font-weight: bold;
         }
@@ -339,23 +401,23 @@
 
         .searched-badge {
             position: absolute;
-            bottom: 2px;
-            right: 3px;
-            font-size: 9px;
+            bottom: 3px;
+            right: 4px;
+            font-size: 10px;
             color: #2ecc71;
             font-weight: bold;
         }
 
         .tile-bonus-toast {
             position: absolute;
-            top: -26px;
+            top: -28px;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(46, 204, 113, 0.95);
             color: #111;
             font-weight: bold;
-            font-size: 12px;
-            padding: 2px 8px;
+            font-size: 13px;
+            padding: 3px 10px;
             border-radius: 8px;
             white-space: nowrap;
             box-shadow: 0 2px 10px rgba(0,0,0,0.7);
@@ -365,7 +427,7 @@
         }
         @keyframes floatUp {
             0% { opacity: 1; transform: translate(-50%, 0); }
-            100% { opacity: 0; transform: translate(-50%, -24px); }
+            100% { opacity: 0; transform: translate(-50%, -26px); }
         }
 
         .tile-tooltip {
@@ -446,7 +508,6 @@
             margin-bottom: 3px;
         }
 
-        /* ログエリア自体の上下スライド格納コンテナ */
         .log-panel-wrapper {
             background: #e8d5f5;
             color: #333;
@@ -503,7 +564,6 @@
             gap: 3px;
         }
 
-        /* 右サイド下部のアクション制御領域 */
         .controls-box-vertical {
             display: flex;
             flex-direction: column;
@@ -568,10 +628,10 @@
     <!-- 2. メイン 3 カラムレイアウト構造 -->
     <div class="main-layout">
         
-        <!-- 👈 左サイドバー: ドローオファリングエリア ＋ 保留エリア -->
+        <!-- 👈 左サイドバー: 本格 TCG 4重レイヤーカード表示 -->
         <div class="left-sidebar">
             <div class="offering-box">
-                <div class="section-label">ドローオファリングエリア (6カテゴリ ✕ 3) [R回転]</div>
+                <div class="section-label">手札オファリング (6カテゴリ対応 TCGカード) [R回転]</div>
                 <div id="cardRow" class="card-row-vertical"></div>
             </div>
 
@@ -581,7 +641,7 @@
             </div>
         </div>
 
-        <!-- 🎯 中央メインエリア: 9x9対応特大ボード領域 -->
+        <!-- 🎯 中央メインエリア: 大幅拡大グリッド領域 (文字がくっきり読める78px) -->
         <div class="board-container">
             <div class="main-area-badge">メインエリア <span id="valPlacedCount">1</span>/24</div>
             <div id="gridBoard" class="grid-with-headers"></div>
@@ -855,11 +915,11 @@
                             } else if (cellData.hasSocket) {
                                 cellEl.classList.add("socket-unopened");
                                 if (isHQVic) cellEl.classList.add("hq-vicinity-unplaced");
-                                cellEl.innerHTML = `<span style="color:#f39c12;font-size:16px;">★</span>`;
+                                cellEl.innerHTML = `<span style="color:#f39c12;font-size:18px;">★</span>`;
                             } else {
                                 if (isHQVic) {
                                     cellEl.classList.add("hq-vicinity-unplaced");
-                                    cellEl.innerHTML = `<span style="font-size:10px; color:#1abc9c; opacity:0.8;">✨+1</span>`;
+                                    cellEl.innerHTML = `<span style="font-size:12px; color:#1abc9c; opacity:0.8;">✨+1</span>`;
                                 }
                             }
 
@@ -875,37 +935,48 @@
                     highlightPlaceableCells();
                 }
 
-                // 左サイドバー: ドローオファリングエリア描画 (縦並び)
+                // rules/04 Section 6 確定: 本格 4重レイヤー構造 TCG カード描画
                 const cardRowEl = document.getElementById("cardRow");
                 if (cardRowEl) {
                     cardRowEl.innerHTML = "";
 
                     state.handOffering.forEach((card, idx) => {
+                        const isSelected = (selectedCard === card);
+                        const isLocked = state.hasPickedThisTurn;
+                        const rarityClass = (card.terrain.id === "H3_MOUNTAIN") ? "rarity-uc" : "rarity-c";
+
                         const cardEl = document.createElement("div");
-                        cardEl.className = `card-frame ${selectedCard === card ? 'selected' : ''} ${state.hasPickedThisTurn ? 'locked' : ''}`;
+                        cardEl.className = `card-frame-tcg ${rarityClass} ${isSelected ? 'selected' : ''} ${isLocked ? 'locked' : ''}`;
 
                         const sRows = card.currentShape.length;
                         const sCols = card.currentShape[0].length;
                         
-                        let shapeGridHtml = `<div style="display:grid; grid-template-columns:repeat(${sCols}, 12px); gap:2px;">`;
+                        let shapeGridHtml = `<div style="display:grid; grid-template-columns:repeat(${sCols}, 12px); gap:2px; z-index:2;">`;
                         for (let dr = 0; dr < sRows; dr++) {
                             for (let dc = 0; dc < sCols; dc++) {
                                 const isActive = card.currentShape[dr][dc] === 1;
-                                shapeGridHtml += `<div style="width:12px;height:12px;background:${isActive ? '#1abc9c' : '#252a36'};border-radius:2px;"></div>`;
+                                shapeGridHtml += `<div style="width:12px;height:12px;background:${isActive ? '#1abc9c' : '#252a36'};border-radius:2px;box-shadow:0 0 4px ${isActive ? '#1abc9c' : 'transparent'};"></div>`;
                             }
                         }
                         shapeGridHtml += '</div>';
 
                         cardEl.innerHTML = `
-                            <div class="card-title-mini">
-                                <span>${card.name}</span>
-                                <span style="color:#ff7675;">🔥-1</span>
+                            <div class="tcg-card-header">
+                                <span class="tcg-category-badge">🌱 土地ブロック</span>
+                                <span class="tcg-card-title">${card.name}</span>
+                                <span class="tcg-cost-badge">🔥-1</span>
                             </div>
-                            <div class="card-shape-mini">${shapeGridHtml}</div>
-                            <div style="font-size:9px; color:#a0a8b9; text-align:center;">
-                                🛡️+${card.terrain.defense} | 🌾+${card.terrain.food||0} | 🧱+${card.terrain.wood||0}
+                            <div class="tcg-art-container">
+                                <div class="tcg-art-bg-texture"></div>
+                                ${shapeGridHtml}
                             </div>
-                            <button style="font-size:9px; background:#2980b9; color:white; border:none; border-radius:2px; padding:2px; margin-top:2px; cursor:pointer;" onclick="event.stopPropagation(); reserveCard(${idx})">📦 保留エリアへ</button>
+                            <div class="tcg-card-footer">
+                                <span class="param-badge" style="color:#2ecc71;">🌾+${card.terrain.food||0}</span>
+                                <span class="param-badge" style="color:#e67e22;">🧱+${card.terrain.wood||0}</span>
+                                <span class="param-badge" style="color:#3498db;">🛡️+${card.terrain.defense||0}</span>
+                                ${card.terrain.mystic > 0 ? `<span class="param-badge" style="color:#f1c40f;">✨+${card.terrain.mystic}</span>` : ''}
+                            </div>
+                            <button style="font-size:10px; background:linear-gradient(to right, #2980b9, #3498db); color:white; border:none; border-radius:4px; padding:4px; cursor:pointer; font-weight:bold;" onclick="event.stopPropagation(); reserveCard(${idx})">📦 保留エリアへ移動</button>
                         `;
 
                         cardEl.onclick = () => {
@@ -918,7 +989,7 @@
                     });
                 }
 
-                // 左サイドバー: 保留エリア描画
+                // 保留エリア描画
                 const reserveRowEl = document.getElementById("reserveRow");
                 if (reserveRowEl) {
                     reserveRowEl.innerHTML = "";
