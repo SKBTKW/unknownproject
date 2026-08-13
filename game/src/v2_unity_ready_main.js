@@ -91,6 +91,19 @@ class GameState {
         return count;
     }
 
+    countH2HillsOnBoard() {
+        let count = 0;
+        for (let r = 0; r < 5; r++) {
+            for (let c = 0; c < 5; c++) {
+                const cell = this.grid[r][c];
+                if (cell.placed && cell.terrain && cell.terrain.id === "H2_HILL") {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
     canPlaceShape(startR, startC, shapeMatrix) {
         const rows = shapeMatrix.length;
         const cols = shapeMatrix[0].length;
@@ -298,7 +311,6 @@ class GameState {
         return total;
     }
 
-    // 本営周囲8マスは配置済みマス (placed === true) のみ +1/マス 加算
     calculateTotalProduction() {
         let totalFood = 10;
         let totalWood = 10;
@@ -316,7 +328,6 @@ class GameState {
                         wood += cell.socketResource.bonusWood || 0;
                     }
 
-                    /* 本営近郊（周囲8マス）かつ配置済みマスのみ +1/マス 加算 */
                     if (this.isHQVicinity(r, c)) {
                         food += 1;
                         wood += 1;
@@ -439,26 +450,56 @@ class GameState {
     }
 }
 
+/* rules/04_draw_and_hand_system.md 確定仕様ドローシステム */
 class Step1DrawSystem {
     constructor(state) {
         this.state = state;
-        this.deck = [
-            { id: "C_GRASS", name: "草原", terrain: Step1Terrains.GL1_GRASS, shape: [[1,1]] },
-            { id: "C_FOREST", name: "森", terrain: Step1Terrains.GL2_FOREST, shape: [[1,1]] },
-            { id: "C_HILL", name: "丘陵", terrain: Step1Terrains.H2_HILL, shape: [[1,1]] },
-            { id: "C_MOUNTAIN", name: "山岳", terrain: Step1Terrains.H3_MOUNTAIN, shape: [[1,1]] }
+        /* Line 92-95 確定ドロープール重み定義 */
+        this.terrainPool = [
+            { id: "C_GRASS", name: "草原", terrain: Step1Terrains.GL1_GRASS, weight: 32.0 },
+            { id: "C_FOREST", name: "森", terrain: Step1Terrains.GL2_FOREST, weight: 22.4 },
+            { id: "C_HILL", name: "丘陵", terrain: Step1Terrains.H2_HILL, weight: 25.0 }
         ];
+
+        /* H3 山岳 (11%) 超レアカード */
+        this.mountainCard = { id: "C_MOUNTAIN", name: "山岳", terrain: Step1Terrains.H3_MOUNTAIN, weight: 11.0 };
     }
 
     generateOfferingCards() {
+        const hillCount = this.state.countH2HillsOnBoard();
+        let currentPool = [...this.terrainPool];
+
+        /* rules/00 Line 4 / rules/04 Line 95: 丘陵(H2)が3マス以上配置された場合、山岳(H3 11%)を解禁 */
+        if (hillCount >= 3) {
+            currentPool.push(this.mountainCard);
+        }
+
+        let totalWeight = 0;
+        currentPool.forEach(item => totalWeight += item.weight);
+
         let drawn = [];
         for (let i = 0; i < 3; i++) {
-            const item = this.deck[Math.floor(Math.random() * this.deck.length)];
+            /* Stage 1: 1x1 (80%) / 1x2 (20%) 形状比率 (Line 97, 106) */
+            const is1x2 = Math.random() < 0.20;
+            const shape = is1x2 ? [[1, 1]] : [[1]];
+
+            let rand = Math.random() * totalWeight;
+            let selectedTerrain = currentPool[0];
+            for (let item of currentPool) {
+                if (rand < item.weight) {
+                    selectedTerrain = item;
+                    break;
+                }
+                rand -= item.weight;
+            }
+
             drawn.push({
-                ...item,
-                currentShape: JSON.parse(JSON.stringify(item.shape))
+                ...selectedTerrain,
+                shape: shape,
+                currentShape: JSON.parse(JSON.stringify(shape))
             });
         }
+
         this.state.handOffering = drawn;
         this.state.hasPickedThisTurn = false;
     }
