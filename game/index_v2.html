@@ -34,6 +34,7 @@
             align-items: center;
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
             flex-shrink: 0;
+            height: 55px;
         }
         
         .app-title-box {
@@ -99,13 +100,13 @@
             display: block;
         }
 
-        /* 2. メインエリア (盤面 ✕ 右サイドパネル) */
+        /* 2. メインエリア (盤面 ✕ 右サイドパネル) - 盤面主役の縦幅優先確保 */
         .middle-content {
             display: grid;
             grid-template-columns: 1fr 280px;
             gap: 15px;
             flex: 1;
-            min-height: 420px;
+            min-height: 460px;
         }
 
         .board-container {
@@ -119,7 +120,7 @@
             position: relative;
             padding: 25px;
             box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
-            min-height: 400px;
+            min-height: 440px;
         }
 
         .main-area-badge {
@@ -363,12 +364,12 @@
             gap: 4px;
         }
 
-        /* 3. 最下部アクションバー (ドローカードが絶対に見える鮮明スタイル) */
+        /* 3. 最下部アクションバー (黄金バランス高さ: 220px) */
         .bottom-bar {
             display: grid;
             grid-template-columns: 1fr 340px 180px;
             gap: 15px;
-            min-height: 240px;
+            height: 220px;
             flex-shrink: 0;
         }
 
@@ -376,16 +377,16 @@
             background: #161922;
             border: 1px solid #2a2e3d;
             border-radius: 8px;
-            padding: 12px;
+            padding: 10px;
             display: flex;
             flex-direction: column;
         }
         .section-label {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: bold;
             color: #1abc9c;
             text-align: center;
-            margin-bottom: 10px;
+            margin-bottom: 6px;
         }
 
         .card-row {
@@ -396,14 +397,13 @@
             align-items: center;
         }
 
-        /* 一目でクッキリ見える大きなカードフレーム */
         .card-frame {
-            width: 170px;
-            min-height: 180px;
+            width: 160px;
+            min-height: 165px;
             background: #1e293b;
             border: 2px solid #3b82f6;
             border-radius: 8px;
-            padding: 10px;
+            padding: 8px 10px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -413,7 +413,7 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
         .card-frame:hover:not(.locked) {
-            transform: translateY(-6px);
+            transform: translateY(-5px);
             border-color: #60a5fa;
             box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
         }
@@ -428,13 +428,13 @@
         }
 
         .card-title-mini {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: bold;
             color: #ffffff;
             display: flex;
             justify-content: space-between;
             border-bottom: 1px solid #475569;
-            padding-bottom: 4px;
+            padding-bottom: 3px;
         }
         .card-shape-mini {
             display: flex;
@@ -442,9 +442,9 @@
             align-items: center;
             background: #0f172a;
             border-radius: 6px;
-            padding: 8px;
-            height: 90px;
-            margin: 6px 0;
+            padding: 6px;
+            height: 75px;
+            margin: 4px 0;
             border: 1px solid #334155;
         }
 
@@ -452,7 +452,7 @@
             background: #161922;
             border: 1px solid #2a2e3d;
             border-radius: 8px;
-            padding: 12px;
+            padding: 10px;
             display: flex;
             flex-direction: column;
         }
@@ -464,15 +464,15 @@
             align-items: center;
         }
         .reserve-slot {
-            width: 95px;
-            height: 160px;
+            width: 90px;
+            height: 145px;
             background: #12141c;
             border: 1px dashed #475569;
             border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
+            font-size: 11px;
             color: #94a3b8;
         }
         .reserve-slot.filled {
@@ -484,17 +484,17 @@
         .controls-box {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
             justify-content: center;
         }
         .mulligan-btn {
             background: #ef4444;
             color: white;
             border: none;
-            padding: 14px;
+            padding: 12px;
             border-radius: 6px;
             font-weight: bold;
-            font-size: 14px;
+            font-size: 13px;
             cursor: pointer;
             box-shadow: 0 3px 8px rgba(0,0,0,0.3);
         }
@@ -504,10 +504,10 @@
             background: #10b981;
             color: #042f2e;
             border: none;
-            padding: 18px;
+            padding: 16px;
             border-radius: 6px;
             font-weight: bold;
-            font-size: 16px;
+            font-size: 15px;
             cursor: pointer;
             box-shadow: 0 4px 10px rgba(0,0,0,0.4);
         }
@@ -587,7 +587,7 @@
         </div>
     </div>
 
-    <!-- 3. 最下部アクションバー (ドローエリア縦2倍拡大) -->
+    <!-- 3. 最下部アクションバー (黄金バランス 220px) -->
     <div class="bottom-bar">
         <div class="offering-box">
             <div class="section-label">ドローオファリングエリア (6カテゴリから選ばれたカード x 3) [Rキーで回転]</div>
@@ -809,7 +809,6 @@
                             cellEl.classList.add("socket-unopened");
                             cellEl.innerHTML = `<span style="color:#f39c12;font-size:16px;">★</span>`;
                         } else {
-                            // 未配置セルに座標文字をうっすら表示して「格子」だと明確化
                             cellEl.innerHTML = `<span style="font-size:10px; color:#4a5568;">${String.fromCharCode(65+c)}${r+1}</span>`;
                         }
 
@@ -824,7 +823,7 @@
                     highlightPlaceableCells();
                 }
 
-                // クッキリ鮮明なドローカード描画
+                // ドローカード描画
                 const cardRowEl = document.getElementById("cardRow");
                 cardRowEl.innerHTML = "";
 
@@ -835,11 +834,11 @@
                     const sRows = card.currentShape.length;
                     const sCols = card.currentShape[0].length;
                     
-                    let shapeGridHtml = `<div style="display:grid; grid-template-columns:repeat(${sCols}, 16px); gap:4px;">`;
+                    let shapeGridHtml = `<div style="display:grid; grid-template-columns:repeat(${sCols}, 14px); gap:3px;">`;
                     for (let dr = 0; dr < sRows; dr++) {
                         for (let dc = 0; dc < sCols; dc++) {
                             const isActive = card.currentShape[dr][dc] === 1;
-                            shapeGridHtml += `<div style="width:16px;height:16px;background:${isActive ? '#38bdf8' : '#334155'};border-radius:2px;"></div>`;
+                            shapeGridHtml += `<div style="width:14px;height:14px;background:${isActive ? '#38bdf8' : '#334155'};border-radius:2px;"></div>`;
                         }
                     }
                     shapeGridHtml += '</div>';
@@ -850,10 +849,10 @@
                             <span style="color:#f87171;">🔥-1</span>
                         </div>
                         <div class="card-shape-mini">${shapeGridHtml}</div>
-                        <div style="font-size:11px; color:#cbd5e1; text-align:center; font-weight:bold;">
+                        <div style="font-size:10px; color:#cbd5e1; text-align:center; font-weight:bold;">
                             🛡️+${card.terrain.defense} | 🌾+${card.terrain.food||0} | 🧱+${card.terrain.wood||0}
                         </div>
-                        <button style="font-size:11px; background:#2563eb; color:white; border:none; border-radius:4px; padding:6px; margin-top:4px; cursor:pointer; font-weight:bold;" onclick="event.stopPropagation(); reserveCard(${idx})">📦 保留エリアへ</button>
+                        <button style="font-size:10px; background:#2563eb; color:white; border:none; border-radius:4px; padding:4px; margin-top:2px; cursor:pointer; font-weight:bold;" onclick="event.stopPropagation(); reserveCard(${idx})">📦 保留エリアへ</button>
                     `;
 
                     cardEl.onclick = () => {
