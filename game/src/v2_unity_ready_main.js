@@ -1,11 +1,12 @@
 /**
- * Trial of the Ages: Last Ember - Step 1 + Resource Socket & Maintenance Engine
+ * Trial of the Ages: Last Ember - Master Specification HQ & Land Engine
  * 
- * SPECIFICATIONS:
- * - Resource Sockets (rules/03_land_system/01_land_base.md Section 2):
- *   - Unopened ★ Sockets generated at initial grid setup.
- *   - Discovered upon land placement or 2D6 Exploration (9-11).
- *   - Adds permanent turn income (+y/T) matching terrain (Grassland: 野麦/牛, Forest: 杉/林檎, Hill: 石灰岩, Mountain: 花崗岩).
+ * MASTER HQ SPECIFICATIONS (rules/00, rules/02, rules/03_land_system/01_land_base.md):
+ * 1. HQ Base Defense (rules/02 Line 98): Defense +10 constant.
+ * 2. HQ Vicinity Bonus (rules/00 Line 93): All 8 neighboring tiles around HQ (3x3 area) gain +1 to all yields (Food/Wood/Defense) per tile.
+ * 3. Primary Spec Terrain Names (rules/03 Line 8): GL1_GRASS is "🌾 草原", GL2_FOREST is "🌲 森".
+ * 4. Ember Maintenance Costs (rules/00 Line 63-66): Flame Age (24+) -25 Food/T, Standard (10-23) -20 Food/T, Extinction (<=9) -15 Food/T.
+ * 5. Resource Sockets: Unopened ★ Sockets at initial setup, blooming into matching resources upon placement.
  */
 
 const BOARD_STAGES = {
@@ -14,7 +15,7 @@ const BOARD_STAGES = {
 
 const TERRAIN_TYPES = {
     GL1_GRASS:  { id: "GL1_GRASS",  name: "草原", defense: 0, wood: 0, food: 4, rarity: "C",  shape: [[1]] },
-    GL2_FOREST: { id: "GL2_FOREST", name: "森林", defense: 0, wood: 2, food: 2, rarity: "UC", shape: [[1, 1]] },
+    GL2_FOREST: { id: "GL2_FOREST", name: "森",   defense: 0, wood: 2, food: 2, rarity: "UC", shape: [[1, 1]] },
     H2_HILL:    { id: "H2_HILL",    name: "丘陵", defense: 3, wood: 1, food: 2, rarity: "UC", shape: [[1, 1]] },
     H3_MOUNTAIN:{ id: "H3_MOUNTAIN",name: "山岳", defense: 5, wood: 4, food: 0, rarity: "UC", shape: [[1]] }
 };
@@ -80,6 +81,13 @@ class GameState {
         this.grid[1][1].hasSocket = true;
         this.grid[1][3].hasSocket = true;
         this.grid[3][1].hasSocket = true;
+    }
+
+    // 本営 HQ 周囲 8 マス（3x3本営近郊）判定 (rules/00 Line 93)
+    isHQVicinity(r, c) {
+        const hqR = this.stage.hqCenter.r;
+        const hqC = this.stage.hqCenter.c;
+        return Math.abs(r - hqR) <= 1 && Math.abs(c - hqC) <= 1 && !(r === hqR && c === hqC);
     }
 
     countH2HillPlaced() {
@@ -178,6 +186,11 @@ class GameState {
                         this.toastQueue.push({ r: targetR, c: targetC, text: `★ ${socketDef.name} 開花!` });
                     }
 
+                    // 本営周囲 8 マス（本営近郊）の場合、全産出 +1 ボーナスを通知
+                    if (this.isHQVicinity(targetR, targetC)) {
+                        this.toastQueue.push({ r: targetR, c: targetC, text: "🏰 本営近郊 (+1産出)" });
+                    }
+
                     this.checkConnectionBonus(targetR, targetC, terrain);
                 }
             }
@@ -258,17 +271,23 @@ class GameState {
         };
     }
 
+    // 全防衛力計算 (本営 HQ 固有基礎防衛力 🛡️ 10 復元: rules/02 Line 98)
     calculateTotalDefense() {
-        let total = 10;
+        let total = 10; // 本営 HQ 固有基礎防衛力 🛡️ 10
         const size = this.stage.size;
         for (let r = 0; r < size; r++) {
             for (let c = 0; c < size; c++) {
                 const cell = this.grid[r][c];
                 if (cell.placed && cell.terrain) {
+                    let tileDef = cell.terrain.defense || 0;
                     if (cell.merged && cell.terrain.id === "H3_MOUNTAIN") {
-                        total += 30;
-                    } else {
-                        total += cell.terrain.defense || 0;
+                        tileDef = 30;
+                    }
+                    total += tileDef;
+
+                    // 本営周囲 8 マス（本営近郊）の場合、防衛力 +1 ボーナス
+                    if (this.isHQVicinity(r, c)) {
+                        total += 1;
                     }
 
                     if (cell.socketResource && cell.socketResource.bonusDefense) {
@@ -278,6 +297,39 @@ class GameState {
             }
         }
         return total;
+    }
+
+    // 全食料・資材持続産出計算 (本営周囲 8 マス +1/マス ボーナス復元: rules/00 Line 93)
+    calculateTotalProduction() {
+        let totalFood = 0;
+        let totalWood = 0;
+        const size = this.stage.size;
+
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
+                const cell = this.grid[r][c];
+                if (cell.placed && cell.terrain) {
+                    let food = cell.terrain.food || 0;
+                    let wood = cell.terrain.wood || 0;
+
+                    if (cell.socketResource) {
+                        food += cell.socketResource.bonusFood || 0;
+                        wood += cell.socketResource.bonusWood || 0;
+                    }
+
+                    // 本営周囲 8 マス（3x3本営近郊）の場合、全産出 +1 / マス (rules/00 Line 93)
+                    if (this.isHQVicinity(r, c)) {
+                        food += 1;
+                        wood += 1;
+                    }
+
+                    totalFood += food;
+                    totalWood += wood;
+                }
+            }
+        }
+
+        return { totalFood, totalWood };
     }
 
     checkMergePatterns() {
@@ -324,7 +376,7 @@ class Step1DrawSystem {
     generateOfferingCards() {
         const pool = [
             { id: "C_GRASS",  name: "🌾 草原", terrain: TERRAIN_TYPES.GL1_GRASS },
-            { id: "C_FOREST", name: "🌲 森林", terrain: TERRAIN_TYPES.GL2_FOREST },
+            { id: "C_FOREST", name: "🌲 森",   terrain: TERRAIN_TYPES.GL2_FOREST },
             { id: "C_HILL",   name: "⛰️ 丘陵", terrain: TERRAIN_TYPES.H2_HILL }
         ];
 

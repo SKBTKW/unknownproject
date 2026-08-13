@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trial of the Ages: Last Ember (Resource Socket Engine)</title>
+    <title>Trial of the Ages: Last Ember (Master HQ & Resource Engine)</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -38,18 +38,18 @@
 
         .board-wrapper {
             background: #14171f;
-            padding: 15px;
+            padding: 18px;
             border-radius: 10px;
             border: 1px solid #282c37;
             box-shadow: 0 6px 20px rgba(0,0,0,0.6);
         }
         .grid-with-headers {
             display: grid;
-            grid-template-columns: 32px repeat(5, 52px);
-            grid-template-rows: 32px repeat(5, 52px);
-            gap: 3px;
+            grid-template-columns: 36px repeat(5, 64px);
+            grid-template-rows: 36px repeat(5, 64px);
+            gap: 4px;
             background: #08090c;
-            padding: 6px;
+            padding: 8px;
             border-radius: 6px;
         }
         .header-cell {
@@ -58,21 +58,21 @@
             justify-content: center;
             font-weight: bold;
             color: #8a92a5;
-            font-size: 13px;
+            font-size: 14px;
             user-select: none;
         }
 
         .cell {
-            width: 52px;
-            height: 52px;
+            width: 64px;
+            height: 64px;
             background: #1c202b;
             border: 1px solid #2c3243;
-            border-radius: 4px;
+            border-radius: 6px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            font-size: 11px;
+            font-size: 13px;
             cursor: pointer;
             user-select: none;
             position: relative;
@@ -96,9 +96,10 @@
 
         .cell.hq {
             background: #5a3d10 !important;
-            border-color: #f5a623 !important;
+            border: 2px solid #f5a623 !important;
             color: #ffe082;
             font-weight: bold;
+            box-shadow: 0 0 10px rgba(245, 166, 35, 0.4);
         }
         .cell.placed {
             background: #283328;
@@ -107,7 +108,7 @@
         .cell.merged {
             background: #4a3b10 !important;
             border: 2px solid #f1c40f !important;
-            box-shadow: 0 0 8px rgba(241, 196, 15, 0.6);
+            box-shadow: 0 0 10px rgba(241, 196, 15, 0.6);
             color: #fff;
             font-weight: bold;
         }
@@ -120,7 +121,7 @@
 
         .tile-bonus-toast {
             position: absolute;
-            top: -24px;
+            top: -26px;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(46, 204, 113, 0.95);
@@ -195,7 +196,7 @@
         }
 
         .card-title {
-            font-size: 13px;
+            font-size: 14px;
             font-weight: bold;
             color: #ffffff;
             display: flex;
@@ -205,7 +206,7 @@
         }
         .card-cost {
             color: #ff7675;
-            font-size: 11px;
+            font-size: 12px;
         }
 
         .shape-preview-box {
@@ -247,7 +248,7 @@
         .rotate-btn:hover { background: #415b76; }
 
         .card-stats {
-            font-size: 11px;
+            font-size: 12px;
             color: #b2bec3;
             line-height: 1.3;
         }
@@ -270,13 +271,13 @@
 
     <div class="header-panel">
         <div>
-            <h2>🔥 Trial of the Ages: Last Ember <small>(Resource Socket Engine)</small></h2>
+            <h2>🔥 Trial of the Ages: Last Ember <small>(Master HQ Engine)</small></h2>
             <div>
                 <span class="resource-badge">Turn: <span id="valTurn">1</span>/50</span>
                 <span class="resource-badge">🔥 生命: <span id="valEmber">20</span></span>
-                <span class="resource-badge">🌾 食料: <span id="valFood">30</span></span>
-                <span class="resource-badge">🧱 資材: <span id="valWood">30</span></span>
-                <span class="resource-badge">🛡️ リアルタイム全防衛: <span id="valDefense">10</span></span>
+                <span class="resource-badge">🌾 食料: <span id="valFood">30</span> (<span id="valFoodProd" style="color:#2ecc71;">+0</span>/T)</span>
+                <span class="resource-badge">🧱 資材: <span id="valWood">30</span> (<span id="valWoodProd" style="color:#3498db;">+0</span>/T)</span>
+                <span class="resource-badge">🛡️ 全防衛: <span id="valDefense">10</span> (本営🛡️10含)</span>
             </div>
         </div>
         <div>
@@ -287,14 +288,14 @@
     <div class="main-layout">
         <div class="board-wrapper">
             <div style="margin-bottom: 8px; text-align: center; font-size: 13px; color: #a0a8b9;">
-                <strong>5x5 盤面 (Stage 1) - ★未開花ソケット配置済み (Rキーで回転)</strong>
+                <strong>5x5 盤面 - 中央 E5(3,3) HQ (周囲8マス産出+1/マス) (Rキーで回転)</strong>
             </div>
             <div id="gridBoard" class="grid-with-headers"></div>
         </div>
 
         <div class="offering-section">
             <div class="offering-header">
-                <h3 style="margin:0; color:#f5a623;">🎴 手札オファリング (★ソケット上に土地配置で資源開花！)</h3>
+                <h3 style="margin:0; color:#f5a623;">🎴 手札オファリング (本営周囲に置くと産出+1強化！)</h3>
                 <span id="pickStatusInfo" style="color:#2ecc71; font-weight:bold;">1 枚選択して配置してください</span>
             </div>
             <div id="mergeMsgBox" style="color:#f1c40f; font-weight:bold; margin-bottom:10px; min-height:20px;"></div>
@@ -369,10 +370,13 @@
         }
 
         function render() {
+            const prods = state.calculateTotalProduction();
             document.getElementById("valTurn").innerText = state.turn;
             document.getElementById("valEmber").innerText = state.ember;
             document.getElementById("valFood").innerText = state.food;
+            document.getElementById("valFoodProd").innerText = `+${prods.totalFood}`;
             document.getElementById("valWood").innerText = state.wood;
+            document.getElementById("valWoodProd").innerText = `+${prods.totalWood}`;
             document.getElementById("valDefense").innerText = state.calculateTotalDefense();
             document.getElementById("mergeMsgBox").innerText = state.lastMergeMessage || "";
 
@@ -412,18 +416,20 @@
 
                     if (cellData.isHQ) {
                         cellEl.classList.add("hq");
-                        cellEl.innerHTML = "HQ";
+                        cellEl.innerHTML = "HQ<br><small>🛡️10</small>";
                     } else if (cellData.placed && cellData.terrain) {
                         cellEl.classList.add("placed");
                         if (cellData.merged) {
                             cellEl.classList.add("merged");
                         }
                         const def = (cellData.merged && cellData.terrain.id === "H3_MOUNTAIN") ? 30 : cellData.terrain.defense;
+                        const isVicinity = state.isHQVicinity(r, c);
                         const socketBadge = cellData.socketResource ? `<br><small style="color:#f1c40f;font-weight:bold;">★${cellData.socketResource.name}</small>` : "";
-                        cellEl.innerHTML = `${cellData.terrain.name}<br><small>🛡️${def}</small>${socketBadge}`;
+                        const vicinityBadge = isVicinity ? `<div style="font-size:9px;color:#2ecc71;font-weight:bold;">🏰近郊+1</div>` : "";
+                        cellEl.innerHTML = `${cellData.terrain.name}<br><small>🛡️${def}</small>${socketBadge}${vicinityBadge}`;
                     } else if (cellData.hasSocket) {
                         cellEl.classList.add("socket-unopened");
-                        cellEl.innerHTML = `<span style="color:#f39c12;font-weight:bold;font-size:10px;">★未開花</span>`;
+                        cellEl.innerHTML = `<span style="color:#f39c12;font-weight:bold;font-size:11px;">★未開花</span>`;
                     }
 
                     cellEl.onmouseenter = () => onCellMouseEnter(r, c);
@@ -525,8 +531,13 @@
         }
 
         function nextTurn() {
+            // 毎ターンの持続産出を加算
+            const prods = state.calculateTotalProduction();
+            state.food += prods.totalFood;
+            state.wood += prods.totalWood;
+
             const maint = state.processTurnEndMaintenance();
-            let msg = `[Turn ${state.turn} 終了] ${maint.stageName}: 食料維持費 -${maint.foodCost} 🌾 消費。`;
+            let msg = `[Turn ${state.turn} 終了] 産出: 🌾+${prods.totalFood}/🧱+${prods.totalWood} | ${maint.stageName}: 食料維持費 -${maint.foodCost} 🌾 消費。`;
             if (maint.deficit > 0) {
                 msg += ` ⚠️ 食料不足のため 🔥 -${maint.deficit} ダメージ！`;
             }
