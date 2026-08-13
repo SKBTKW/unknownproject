@@ -43,6 +43,9 @@
             UI_BREAKDOWN_VICINITY: "└ 本営近郊(+1):",
             UI_LOG_TITLE: "ログ",
             UI_LOG_TOGGLE: "トグル",
+            UI_LOG_SUB_HINT: "格納状態と展開状態を切り替え可能",
+            UI_TRIAL_NOTICE: "試練まで残り",
+            UI_TRIAL_SUB_HINT: "(試練アナウンス発生時に表示)",
             UI_MULLIGAN_BTN: "マリガン : 🔥 -1",
             UI_TURN_END_BTN: "TURN END ➔",
             UI_LAND_BLOCK_CATEGORY: "🌱 土地ブロック",
@@ -53,6 +56,9 @@
             UI_SEARCH_LINK: "[🔍 クリックで2D6探索]",
             UI_SEARCHED_BADGE: "✓探索済",
             UI_MERGED_SEARCH_DISABLED: "[マージ合体済・探索不可]",
+            UI_MERGE_2X2_LABEL: "✨ 2x2大{name} [1.2倍!]",
+            UI_SOCKET_BLOOMING: "開花中",
+            UI_UNOPENED_SOCKET_LABEL: "★ 未開花ソケットあり",
 
             // ログ ＆ トーストメッセージ
             LOG_INIT_5X5: "[T1] ゲーム開始: 5x5 盤面が初期化されました。",
@@ -85,7 +91,9 @@
             ALERT_MULLIGAN_NO_EMBER: "❌ 🔥 生命力が不足しているためマリガンできません！",
             ALERT_RESERVE_FULL: "❌ 保留エリアが満配です (最大3枠)",
             ALERT_GAME_OVER: "💀 【GAME OVER】 生命力 🔥 が 0 になりました。人類の灯火は消滅しました。",
-            ALERT_GAME_CLEAR: "🎉 【GAME CLEAR】 50 ターンを生存抜けて人類の生存目標を達成しました！"
+            ALERT_GAME_CLEAR: "🎉 【GAME CLEAR】 50 ターンを生存抜けて人類の生存目標を達成しました！",
+            ALERT_SEARCH_FAILED: "❌ 探索不可: {reason}",
+            ALERT_PLACE_FAILED: "❌ 配置不可: {reason}"
         },
         en: {
             TERRAIN_HQ: "Headquarters",
@@ -125,6 +133,9 @@
             UI_BREAKDOWN_VICINITY: "└ HQ Vicinity (+1):",
             UI_LOG_TITLE: "Log",
             UI_LOG_TOGGLE: "Toggle",
+            UI_LOG_SUB_HINT: "Toggle expanded / collapsed log view",
+            UI_TRIAL_NOTICE: "Turns until Trial:",
+            UI_TRIAL_SUB_HINT: "(Appears on Trial Announcement)",
             UI_MULLIGAN_BTN: "Mulligan : 🔥 -1",
             UI_TURN_END_BTN: "TURN END ➔",
             UI_LAND_BLOCK_CATEGORY: "🌱 Land Block",
@@ -135,6 +146,9 @@
             UI_SEARCH_LINK: "[🔍 Click 2D6 Explore]",
             UI_SEARCHED_BADGE: "✓ Explored",
             UI_MERGED_SEARCH_DISABLED: "[Merged Tile / Cannot Explore]",
+            UI_MERGE_2X2_LABEL: "✨ 2x2 Large {name} [1.2x]",
+            UI_SOCKET_BLOOMING: "Bloomed",
+            UI_UNOPENED_SOCKET_LABEL: "★ Unbloomed Socket Present",
 
             LOG_INIT_5X5: "[T1] Game Start: 5x5 board initialized.",
             LOG_LAND_PLACED: "Land Placed: {name} at ({pos}).",
@@ -165,7 +179,9 @@
             ALERT_MULLIGAN_NO_EMBER: "❌ Insufficient Ember 🔥 for Mulligan!",
             ALERT_RESERVE_FULL: "❌ Reserve slots full (Max 3)",
             ALERT_GAME_OVER: "💀 [GAME OVER] Ember extinguished.",
-            ALERT_GAME_CLEAR: "🎉 [GAME CLEAR] Survived 50 Turns!"
+            ALERT_GAME_CLEAR: "🎉 [GAME CLEAR] Survived 50 Turns!",
+            ALERT_SEARCH_FAILED: "❌ Cannot Explore: {reason}",
+            ALERT_PLACE_FAILED: "❌ Cannot Place: {reason}"
         }
     };
 

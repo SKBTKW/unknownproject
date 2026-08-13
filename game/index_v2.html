@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trial of Ages : Last Ember (AGENTS.md Rule 3 I18n Dictionary Compliant)</title>
+    <title>Trial of Ages : Last Ember (AGENTS.md Rule 3 Compliant)</title>
     <style>
         * {
             box-sizing: border-box;
@@ -607,12 +607,11 @@
 </head>
 <body>
 
-    <!-- 1. 最上部ヘッダー (トップステータスバー) -->
     <div class="top-bar">
         <div class="app-title-box">
-            <div id="lblAppTitle">Trial of Ages : Last Ember</div>
+            <div id="lblAppTitle"></div>
             <div class="role-avatar-box">
-                <span id="lblRoleAvatar">ロールアイコン</span>
+                <span id="lblRoleAvatar"></span>
                 <span class="icon">👤</span>
             </div>
         </div>
@@ -623,79 +622,75 @@
         </div>
 
         <div id="trialNoticeBox" class="trial-announcement">
-            試練まで残り <span id="trialCountdown">5</span> ターン<br>
-            <small style="font-weight:normal; font-size:9px;">(試練アナウンス発生時に表示)</small>
+            <span id="lblTrialNotice"></span> <span id="trialCountdown">5</span><br>
+            <small style="font-weight:normal; font-size:9px;" id="lblTrialSub"></small>
         </div>
 
         <div class="turn-box">
-            <div style="font-size:9px;" id="lblTurnHeader">ターン表示</div>
+            <div style="font-size:9px;" id="lblTurnHeader"></div>
             <span class="turn-num"><span id="valTurn">1</span>/50</span>
         </div>
     </div>
 
-    <!-- 2. メイン 3 カラムレイアウト構造 -->
     <div class="main-layout">
         
-        <!-- 👈 左サイドバー: 本格 TCG 4重レイヤーカード表示 -->
         <div class="left-sidebar">
             <div class="offering-box">
-                <div class="section-label" id="lblOfferingTitle">手札オファリング (6カテゴリ対応 TCGカード) [R回転]</div>
+                <div class="section-label" id="lblOfferingTitle"></div>
                 <div id="cardRow" class="card-row-vertical"></div>
             </div>
 
             <div class="reserve-box">
-                <div class="section-label" id="lblReserveTitle">保留エリア (保留中 ✕ 3 / 維持費 🔥-1/T)</div>
+                <div class="section-label" id="lblReserveTitle"></div>
                 <div id="reserveRow" class="reserve-row-vertical"></div>
             </div>
         </div>
 
-        <!-- 🎯 中央メインエリア: 大幅拡大グリッド領域 (文字がくっきり読める78px) -->
         <div class="board-container">
-            <div class="main-area-badge"><span id="lblMainBadge">メインエリア</span> <span id="valPlacedCount">1</span>/24</div>
+            <div class="main-area-badge"><span id="lblMainBadge"></span> <span id="valPlacedCount">1</span>/24</div>
             <div id="gridBoard" class="grid-with-headers"></div>
             <div id="tileTooltip" class="tile-tooltip"></div>
         </div>
 
-        <!-- 👉 右サイドバー: 各種データ表示 ✕ ログ ✕ アクションボタン -->
         <div class="right-sidebar">
             <div class="data-panel" onmouseenter="showBreakdownModal()" onmouseleave="hideBreakdownModal()" onclick="toggleBreakdownModal()">
-                <h4 id="lblDataPanelTitle">各種データ表示パネル</h4>
+                <h4 id="lblDataPanelTitle"></h4>
                 <div class="resource-list">
-                    <div><span id="lblFood">🌾 食料</span>: <span id="valFood">30</span> (<span id="valFoodProd">+10</span>/T)</div>
-                    <div><span id="lblWood">🧱 資材</span>: <span id="valWood">30</span> (<span id="valWoodProd">+10</span>/T)</div>
-                    <div><span id="lblDefense">🛡️ 防衛</span>: <span id="valDefense">10</span></div>
-                    <div><span id="lblMystic">✨ 神秘</span>: <span id="valMystic">0</span> (+1/T)</div>
+                    <div><span id="lblFood"></span>: <span id="valFood">30</span> (<span id="valFoodProd">+10</span>/T)</div>
+                    <div><span id="lblWood"></span>: <span id="valWood">30</span> (<span id="valWoodProd">+10</span>/T)</div>
+                    <div><span id="lblDefense"></span>: <span id="valDefense">10</span></div>
+                    <div><span id="lblMystic"></span>: <span id="valMystic">0</span> (+1/T)</div>
                 </div>
             </div>
 
             <div id="breakdownModal" class="breakdown-modal">
-                <h5 id="lblBdHeader">📊 各リソース持続産出 内訳</h5>
-                <div class="breakdown-row"><span id="lblBdFoodTotal">🌾 食料全産出:</span><span id="bdFoodTotal">+10/T</span></div>
-                <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdFoodHq">├ 本営基礎:</span><span>+10/T</span></div>
-                <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdFoodTiles">├ 土地配置:</span><span id="bdFoodTiles">+0/T</span></div>
-                <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdFoodSockets">├ ソケット開花:</span><span id="bdFoodSockets">+0/T</span></div>
-                <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdFoodVicinity">└ 本営近郊(+1):</span><span id="bdFoodVicinity">+0/T</span></div>
+                <h5 id="lblBdHeader"></h5>
+                <div class="breakdown-row"><span id="lblBdFoodTotal"></span><span id="bdFoodTotal">+10/T</span></div>
+                <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdFoodHq"></span><span>+10/T</span></div>
+                <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdFoodTiles"></span><span id="bdFoodTiles">+0/T</span></div>
+                <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdFoodSockets"></span><span id="bdFoodSockets">+0/T</span></div>
+                <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdFoodVicinity"></span><span id="bdFoodVicinity">+0/T</span></div>
                 <hr style="border-color:#2c3345; margin:4px 0;">
-                <div class="breakdown-row"><span id="lblBdWoodTotal">🧱 資材全産出:</span><span id="bdWoodTotal">+10/T</span></div>
-                <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdWoodHq">├ 本営基礎:</span><span>+10/T</span></div>
-                <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdWoodTiles">├ 土地配置:</span><span id="bdWoodTiles">+0/T</span></div>
-                <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdWoodSockets">├ ソケット開花:</span><span id="bdWoodSockets">+0/T</span></div>
-                <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdWoodVicinity">└ 本営近郊(+1):</span><span id="bdWoodVicinity">+0/T</span></div>
+                <div class="breakdown-row"><span id="lblBdWoodTotal"></span><span id="bdWoodTotal">+10/T</span></div>
+                <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdWoodHq"></span><span>+10/T</span></div>
+                <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdWoodTiles"></span><span id="bdWoodTiles">+0/T</span></div>
+                <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdWoodSockets"></span><span id="bdWoodSockets">+0/T</span></div>
+                <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdWoodVicinity"></span><span id="bdWoodVicinity">+0/T</span></div>
             </div>
 
             <div id="logPanelWrapper" class="log-panel-wrapper">
                 <div class="log-header">
-                    <span id="lblLogTitle">ログ</span>
-                    <button class="toggle-btn" onclick="toggleLogPanel()" id="btnLogToggle">トグル</button>
+                    <span id="lblLogTitle"></span>
+                    <button class="toggle-btn" onclick="toggleLogPanel()" id="btnLogToggle"></button>
                 </div>
                 <div id="logContent" class="log-content">
-                    <div style="color:#7f8c8d;">格納状態と展開状態を切り替え可能</div>
+                    <div style="color:#7f8c8d;" id="lblLogSub"></div>
                 </div>
             </div>
 
             <div class="controls-box-vertical">
-                <button class="mulligan-btn" onclick="mulligan()" id="btnMulligan">マリガン : 🔥 -1</button>
-                <button class="turn-end-btn" onclick="nextTurn()" id="btnTurnEnd">TURN END ➔</button>
+                <button class="mulligan-btn" onclick="mulligan()" id="btnMulligan"></button>
+                <button class="turn-end-btn" onclick="nextTurn()" id="btnTurnEnd"></button>
             </div>
         </div>
 
@@ -768,6 +763,7 @@
             setElementText("btnLogToggle", I18n.t("UI_LOG_TOGGLE"));
             setElementText("btnMulligan", I18n.t("UI_MULLIGAN_BTN"));
             setElementText("btnTurnEnd", I18n.t("UI_TURN_END_BTN"));
+            setElementText("lblLogSub", I18n.t("UI_LOG_SUB_HINT"));
         }
 
         function init() {
@@ -857,8 +853,8 @@
             } else if (cell.placed && cell.terrain) {
                 const tName = I18n.t(cell.terrain.nameKey);
                 const sName = cell.socketResource ? I18n.t(cell.socketResource.nameKey) : "";
-                const mergeText = cell.merged ? `<br><span style="color:#f1c40f;font-weight:bold;">✨ 2x2大${tName} [1.2倍!]</span>` : "";
-                const socketText = cell.socketResource ? `<br><span style="color:#f1c40f;font-weight:bold;">★ ${sName} (開花中)</span>` : (cell.hasSocket ? `<br><span style="color:#f39c12;font-weight:bold;">★ 未開花ソケットあり</span>` : "");
+                const mergeText = cell.merged ? `<br><span style="color:#f1c40f;font-weight:bold;">${I18n.t("UI_MERGE_2X2_LABEL", { name: tName })}</span>` : "";
+                const socketText = cell.socketResource ? `<br><span style="color:#f1c40f;font-weight:bold;">★ ${sName} (${I18n.t("UI_SOCKET_BLOOMING")})</span>` : (cell.hasSocket ? `<br><span style="color:#f39c12;font-weight:bold;">${I18n.t("UI_UNOPENED_SOCKET_LABEL")}</span>` : "");
                 const searchText = cell.searched ? `<br><span style="color:#2ecc71;">${I18n.t("UI_SEARCHED_BADGE")}</span>` : (cell.merged ? `<br><span style="color:#7f8c8d;">${I18n.t("UI_MERGED_SEARCH_DISABLED")}</span>` : `<br><span style="color:#3498db;">${I18n.t("UI_SEARCH_LINK")}</span>`);
                 tt.innerHTML = `<strong>${tName} ${pos}</strong>${mergeText}<br>🛡️${cell.terrain.defense} | 🌾+${cell.terrain.food||0} 🧱+${cell.terrain.wood||0}${isHQVic?' (+1)':''}${socketText}${searchText}`;
             } else if (cell.hasSocket) {
@@ -979,7 +975,7 @@
                                     if (!topSame && !leftSame) {
                                         const socketText = cellData.socketResource ? `<br><small style="color:#f1c40f;">★${I18n.t(cellData.socketResource.nameKey)}</small>` : "";
                                         if (cellData.merged) {
-                                            cellEl.innerHTML = `<span style="font-size:12px; color:#f1c40f; font-weight:bold; white-space:nowrap; z-index:5;">2x2 大${tName}<br><small style="color:#fff;">[1.2倍]</small>${socketText}</span>`;
+                                            cellEl.innerHTML = `<span style="font-size:12px; color:#f1c40f; font-weight:bold; white-space:nowrap; z-index:5;">${I18n.t("UI_MERGE_2X2_LABEL", { name: tName })}${socketText}</span>`;
                                         } else {
                                             cellEl.innerHTML = `<span style="font-size:13px; color:#fff; font-weight:bold; z-index:5;">${tName}${socketText}</span>`;
                                         }
@@ -1015,7 +1011,6 @@
                     highlightPlaceableCells();
                 }
 
-                // 1ターン1土地制限ロックの厳格適用
                 const cardRowEl = document.getElementById("cardRow");
                 if (cardRowEl) {
                     cardRowEl.innerHTML = "";
@@ -1074,7 +1069,6 @@
                     });
                 }
 
-                // 保留エリア描画
                 const reserveRowEl = document.getElementById("reserveRow");
                 if (reserveRowEl) {
                     reserveRowEl.innerHTML = "";
@@ -1105,7 +1099,6 @@
                     }
                 }
 
-                // ログ描画
                 const logContentEl = document.getElementById("logContent");
                 if (logContentEl) {
                     logContentEl.innerHTML = "";
@@ -1138,7 +1131,7 @@
                     if (confirmSearch) {
                         const res = state.executeExploration(r, c);
                         if (!res.success) {
-                            alert(`❌ 探索不可: ${res.reason}`);
+                            alert(I18n.t("ALERT_SEARCH_FAILED", { reason: res.reason }));
                         }
                         render();
                     }
@@ -1161,7 +1154,7 @@
 
             const res = state.placeShape(r, c, selectedCard.currentShape, selectedCard.terrain);
             if (!res.success) {
-                alert(`❌ 配置不可: ${res.reason}`);
+                alert(I18n.t("ALERT_PLACE_FAILED", { reason: res.reason }));
                 return;
             }
 
