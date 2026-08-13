@@ -1,14 +1,11 @@
 /**
- * Trial of the Ages: Last Ember - Step 1 + Ember Maintenance & Survival Engine
+ * Trial of the Ages: Last Ember - Step 1 + Resource Socket & Maintenance Engine
  * 
  * SPECIFICATIONS:
- * - Ember Maintenance Cost (rules/00 Line 63-66):
- *   - Ember >= 24 (Flame Age): Food Cost -25/T, Ember +2/T bonus, Production +10%.
- *   - Ember 10-23 (Standard Age): Food Cost -20/T.
- *   - Ember <= 9 (Extinction Age): Food Cost -15/T (Emergency Mode).
- * - Food Deficit: Deducted directly from Ember 🔥.
- * - Game Over: Ember <= 0.
- * - Game Clear: Turn >= 50 and Ember >= 1.
+ * - Resource Sockets (rules/03_land_system/01_land_base.md Section 2):
+ *   - Unopened ★ Sockets generated at initial grid setup.
+ *   - Discovered upon land placement or 2D6 Exploration (9-11).
+ *   - Adds permanent turn income (+y/T) matching terrain (Grassland: 野麦/牛, Forest: 杉/林檎, Hill: 石灰岩, Mountain: 花崗岩).
  */
 
 const BOARD_STAGES = {
@@ -20,6 +17,13 @@ const TERRAIN_TYPES = {
     GL2_FOREST: { id: "GL2_FOREST", name: "森林", defense: 0, wood: 2, food: 2, rarity: "UC", shape: [[1, 1]] },
     H2_HILL:    { id: "H2_HILL",    name: "丘陵", defense: 3, wood: 1, food: 2, rarity: "UC", shape: [[1, 1]] },
     H3_MOUNTAIN:{ id: "H3_MOUNTAIN",name: "山岳", defense: 5, wood: 4, food: 0, rarity: "UC", shape: [[1]] }
+};
+
+const SOCKET_RESOURCES = {
+    GL1_GRASS:  { name: "野麦", icon: "🍎", bonusFood: 3, bonusWood: 0, bonusDefense: 0 },
+    GL2_FOREST: { name: "杉",   icon: "🌲", bonusFood: 0, bonusWood: 3, bonusDefense: 0 },
+    H2_HILL:    { name: "石灰岩",icon: "⛏️", bonusFood: 0, bonusWood: 3, bonusDefense: 0 },
+    H3_MOUNTAIN:{ name: "花崗岩",icon: "🛡️", bonusFood: 0, bonusWood: 0, bonusDefense: 3 }
 };
 
 function rotateShapeMatrix(matrix) {
@@ -64,11 +68,18 @@ class GameState {
                     placed: false,
                     terrain: null,
                     merged: false,
+                    hasSocket: false,
+                    socketResource: null,
                     isHQ: (r === this.stage.hqCenter.r && c === this.stage.hqCenter.c)
                 });
             }
             this.grid.push(row);
         }
+
+        // 初期未開花 ★ ソケットを本営周囲の固定座標（1,1 / 1,3 / 3,1）に配置
+        this.grid[1][1].hasSocket = true;
+        this.grid[1][3].hasSocket = true;
+        this.grid[3][1].hasSocket = true;
     }
 
     countH2HillPlaced() {
@@ -154,11 +165,20 @@ class GameState {
         for (let dr = 0; dr < rows; dr++) {
             for (let dc = 0; dc < cols; dc++) {
                 if (shape[dr][dc] === 1) {
-                    const cell = this.grid[r + dr][c + dc];
+                    const targetR = r + dr;
+                    const targetC = c + dc;
+                    const cell = this.grid[targetR][targetC];
                     cell.placed = true;
                     cell.terrain = terrain;
 
-                    this.checkConnectionBonus(r + dr, c + dc, terrain);
+                    // ★ ソケットマスの場合、地形に応じたソケットが開花
+                    if (cell.hasSocket && !cell.socketResource) {
+                        const socketDef = SOCKET_RESOURCES[terrain.id] || SOCKET_RESOURCES.GL1_GRASS;
+                        cell.socketResource = socketDef;
+                        this.toastQueue.push({ r: targetR, c: targetC, text: `★ ${socketDef.name} 開花!` });
+                    }
+
+                    this.checkConnectionBonus(targetR, targetC, terrain);
                 }
             }
         }
@@ -204,7 +224,6 @@ class GameState {
         }
     }
 
-    // ターン終了時食料維持費 ＆ 生存判定 (rules/00 Line 63-66)
     processTurnEndMaintenance() {
         let foodCost = 20;
         let stageName = "標準期 (10-23)";
@@ -212,7 +231,7 @@ class GameState {
         if (this.ember >= 24) {
             foodCost = 25;
             stageName = "炎上期 (24以上)";
-            this.ember += 2; // 炎上期ボーナス 🔥 +2
+            this.ember += 2;
         } else if (this.ember <= 9) {
             foodCost = 15;
             stageName = "鎮火期 (9以下)";
@@ -224,7 +243,7 @@ class GameState {
         } else {
             deficit = foodCost - this.food;
             this.food = 0;
-            this.ember -= deficit; // 不足分が生命力 🔥 へ直接ダメージ
+            this.ember -= deficit;
         }
 
         const isGameOver = (this.ember <= 0);
@@ -250,6 +269,10 @@ class GameState {
                         total += 30;
                     } else {
                         total += cell.terrain.defense || 0;
+                    }
+
+                    if (cell.socketResource && cell.socketResource.bonusDefense) {
+                        total += cell.socketResource.bonusDefense;
                     }
                 }
             }
@@ -333,6 +356,7 @@ if (typeof window !== "undefined") {
     window.Step1Engine = {
         BOARD_STAGES,
         TERRAIN_TYPES,
+        SOCKET_RESOURCES,
         GameState,
         Step1DrawSystem,
         rotateShapeMatrix
@@ -343,6 +367,7 @@ if (typeof module !== "undefined" && module.exports) {
     module.exports = {
         BOARD_STAGES,
         TERRAIN_TYPES,
+        SOCKET_RESOURCES,
         GameState,
         Step1DrawSystem,
         rotateShapeMatrix

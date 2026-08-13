@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trial of the Ages: Last Ember (Ember Maintenance & Survival Engine)</title>
+    <title>Trial of the Ages: Last Ember (Resource Socket Engine)</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -112,7 +112,12 @@
             font-weight: bold;
         }
 
-        /* 浮遊数値アイコンポップアップ (13px, 2.0秒延長) */
+        /* 未開花 ★ ソケットセル表示 */
+        .cell.socket-unopened {
+            border: 1px dashed #f39c12 !important;
+            background: #231c10 !important;
+        }
+
         .tile-bonus-toast {
             position: absolute;
             top: -24px;
@@ -265,7 +270,7 @@
 
     <div class="header-panel">
         <div>
-            <h2>🔥 Trial of the Ages: Last Ember <small>(Ember Maintenance & Survival Engine)</small></h2>
+            <h2>🔥 Trial of the Ages: Last Ember <small>(Resource Socket Engine)</small></h2>
             <div>
                 <span class="resource-badge">Turn: <span id="valTurn">1</span>/50</span>
                 <span class="resource-badge">🔥 生命: <span id="valEmber">20</span></span>
@@ -282,14 +287,14 @@
     <div class="main-layout">
         <div class="board-wrapper">
             <div style="margin-bottom: 8px; text-align: center; font-size: 13px; color: #a0a8b9;">
-                <strong>5x5 盤面 (Stage 1) - 中央 E5(3,3) HQ (Rキーで回転)</strong>
+                <strong>5x5 盤面 (Stage 1) - ★未開花ソケット配置済み (Rキーで回転)</strong>
             </div>
             <div id="gridBoard" class="grid-with-headers"></div>
         </div>
 
         <div class="offering-section">
             <div class="offering-header">
-                <h3 style="margin:0; color:#f5a623;">🎴 手札オファリング (Turn終了時に 🔥ステージ連動食料維持費発生！)</h3>
+                <h3 style="margin:0; color:#f5a623;">🎴 手札オファリング (★ソケット上に土地配置で資源開花！)</h3>
                 <span id="pickStatusInfo" style="color:#2ecc71; font-weight:bold;">1 枚選択して配置してください</span>
             </div>
             <div id="mergeMsgBox" style="color:#f1c40f; font-weight:bold; margin-bottom:10px; min-height:20px;"></div>
@@ -414,7 +419,11 @@
                             cellEl.classList.add("merged");
                         }
                         const def = (cellData.merged && cellData.terrain.id === "H3_MOUNTAIN") ? 30 : cellData.terrain.defense;
-                        cellEl.innerHTML = `${cellData.terrain.name}<br><small>🛡️${def}</small>`;
+                        const socketBadge = cellData.socketResource ? `<br><small style="color:#f1c40f;font-weight:bold;">★${cellData.socketResource.name}</small>` : "";
+                        cellEl.innerHTML = `${cellData.terrain.name}<br><small>🛡️${def}</small>${socketBadge}`;
+                    } else if (cellData.hasSocket) {
+                        cellEl.classList.add("socket-unopened");
+                        cellEl.innerHTML = `<span style="color:#f39c12;font-weight:bold;font-size:10px;">★未開花</span>`;
                     }
 
                     cellEl.onmouseenter = () => onCellMouseEnter(r, c);
