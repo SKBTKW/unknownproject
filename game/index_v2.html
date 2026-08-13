@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trial of Ages : Last Ember (Strict 1 Land Per Turn Limit)</title>
+    <title>Trial of Ages : Last Ember (Single Block Unified Merge Visual)</title>
     <style>
         * {
             box-sizing: border-box;
@@ -392,13 +392,16 @@
             color: #ffffff;
             font-weight: bold;
         }
+
+        /* 🧩 単一ブロック マージ合体スタイリング */
         .cell.merged {
-            background: #4a3b10 !important;
-            border: 2px solid #f1c40f !important;
-            box-shadow: 0 0 12px rgba(241, 196, 15, 0.7);
+            background: linear-gradient(135deg, #5c4710 0%, #302407 100%) !important;
+            box-shadow: inset 0 0 15px rgba(241, 196, 15, 0.5);
             color: #fff;
             font-weight: bold;
+            border-color: #f1c40f !important;
         }
+
         .cell.socket-unopened {
             border: 1px dashed #f39c12 !important;
             background: #231c10 !important;
@@ -816,9 +819,10 @@
             if (cell.isHQ) {
                 tt.innerHTML = `<strong>本営 HQ ${pos}</strong><br>基礎産出: 🌾+10 🧱+10 🛡️10 ✨+1<br><small style="color:#1abc9c;">周囲8マス: 土地配置で全産出+1バフ</small>`;
             } else if (cell.placed && cell.terrain) {
+                const mergeText = cell.merged ? `<br><span style="color:#f1c40f;font-weight:bold;">✨ 2x2単一大土地 [持続産出1.2倍!]</span>` : "";
                 const socketText = cell.socketResource ? `<br><span style="color:#f1c40f;">★${cell.socketResource.name} (🌾+${cell.socketResource.bonusFood||0} 🧱+${cell.socketResource.bonusWood||0})</span>` : "";
-                const searchText = cell.searched ? `<br><span style="color:#2ecc71;">[✓ 探索済み]</span>` : `<br><span style="color:#3498db;">[🔍 クリックで2D6探索]</span>`;
-                tt.innerHTML = `<strong>${cell.terrain.name} ${pos}</strong><br>防衛: 🛡️${cell.terrain.defense} | 産出: 🌾+${cell.terrain.food||0} 🧱+${cell.terrain.wood||0}${isHQVic?' (本営近郊+1)':''}${socketText}${searchText}`;
+                const searchText = cell.searched ? `<br><span style="color:#2ecc71;">[✓ 探索済み]</span>` : (cell.merged ? `<br><span style="color:#7f8c8d;">[マージ合体済・探索不可]</span>` : `<br><span style="color:#3498db;">[🔍 クリックで2D6探索]</span>`);
+                tt.innerHTML = `<strong>${cell.terrain.name} ${pos}</strong>${mergeText}<br>防衛: 🛡️${cell.terrain.defense} | 産出: 🌾+${cell.terrain.food||0} 🧱+${cell.terrain.wood||0}${isHQVic?' (本営近郊+1)':''}${socketText}${searchText}`;
             } else if (cell.hasSocket) {
                 tt.innerHTML = `<strong>未開花 ★ソケットマス ${pos}</strong>${isHQVic?'<br><small style="color:#1abc9c;">✨ 本営近郊: 全産出+1バフエリア</small>':''}`;
             } else {
@@ -912,12 +916,34 @@
                                 cellEl.innerHTML = "本営";
                             } else if (cellData.placed && cellData.terrain) {
                                 cellEl.classList.add("placed");
-                                if (cellData.merged) {
+
+                                // 🧩 単一ブロック マージ合体ビジュアル一体化
+                                if (cellData.merged && cellData.mergeGroupId) {
                                     cellEl.classList.add("merged");
+                                    const gId = cellData.mergeGroupId;
+
+                                    // 同一グループの上下左右隣接チェックして境界線を消去
+                                    const topSame = (r > 0 && state.grid[r-1][c].mergeGroupId === gId);
+                                    const rightSame = (c < 4 && state.grid[r][c+1].mergeGroupId === gId);
+                                    const bottomSame = (r < 4 && state.grid[r+1][c].mergeGroupId === gId);
+                                    const leftSame = (c > 0 && state.grid[r][c-1].mergeGroupId === gId);
+
+                                    if (topSame) cellEl.style.borderTop = "none";
+                                    if (rightSame) cellEl.style.borderRight = "none";
+                                    if (bottomSame) cellEl.style.borderBottom = "none";
+                                    if (leftSame) cellEl.style.borderLeft = "none";
+
+                                    // マージグループ全体の左上セルに単一統一ラベルを表示
+                                    if (!topSame && !leftSame) {
+                                        cellEl.innerHTML = `<span style="font-size:12px; color:#f1c40f; font-weight:bold; white-space:nowrap; z-index:5;">2x2 大${cellData.terrain.name}<br><small style="font-size:9px; color:#fff;">[1.2倍]</small></span>`;
+                                    } else {
+                                        cellEl.innerHTML = "";
+                                    }
+                                } else {
+                                    const socketBadge = cellData.socketResource ? `<br><small style="color:#f1c40f;">★${cellData.socketResource.name}</small>` : "";
+                                    const searchedBadge = cellData.searched ? `<span class="searched-badge">✓探索済</span>` : "";
+                                    cellEl.innerHTML = `${cellData.terrain.name}${socketBadge}${searchedBadge}`;
                                 }
-                                const socketBadge = cellData.socketResource ? `<br><small style="color:#f1c40f;">★${cellData.socketResource.name}</small>` : "";
-                                const searchedBadge = cellData.searched ? `<span class="searched-badge">✓探索済</span>` : "";
-                                cellEl.innerHTML = `${cellData.terrain.name}${socketBadge}${searchedBadge}`;
                             } else if (cellData.hasSocket) {
                                 cellEl.classList.add("socket-unopened");
                                 if (isHQVic) cellEl.classList.add("hq-vicinity-unplaced");
@@ -1180,7 +1206,7 @@
             }
 
             state.turn++;
-            state.hasPickedThisTurn = false; // 次のターン開始で解禁
+            state.hasPickedThisTurn = false;
             selectedCard = null;
             drawSys.generateOfferingCards();
             clearCellPreviews();
