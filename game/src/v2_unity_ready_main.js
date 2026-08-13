@@ -1,15 +1,14 @@
 /**
- * Trial of the Ages: Last Ember - Master HQ & Layout Engine
+ * Trial of the Ages: Last Ember - Master HQ, 2D6 Exploration & Breakdown Engine
  * 
  * SPECIFICATIONS:
  * 1. HQ Base Production (rules/00):
  *    - Food +10/T, Wood +10/T, Defense 10 (base), Mystic +1/T.
- * 2. Ember Maintenance:
- *    - Flame Age (24+) -25 Food/T, Standard (10-23) -20 Food/T, Extinction (<=9) -15 Food/T.
- * 3. Reserve Slot System:
- *    - Up to 3 cards can be reserved. Reserved cards cost Ember -1/T maintenance.
- * 4. 2D6 Land Exploration & Sockets:
- *    - Sockets un-opened at start, blooming on placement.
+ * 2. 2D6 Land Exploration (rules/03-04):
+ *    - Cost Ember -1, max 1 search per cell. Merged cells cannot be searched.
+ *    - Roll 2-4: Small resources, 5-8: Medium resources, 9-11: ★ Socket blooms, 12: Mystic Spring (Double 6).
+ * 3. Resource Breakdown:
+ *    - Detailed breakdown calculation for Food, Wood, Defense, Mystic.
  */
 
 const BOARD_STAGES = {
@@ -82,6 +81,7 @@ class GameState {
                     placed: false,
                     terrain: null,
                     merged: false,
+                    searched: false, // 探索済みフラグ
                     hasSocket: false,
                     socketResource: null,
                     isHQ: (r === this.stage.hqCenter.r && c === this.stage.hqCenter.c)
@@ -90,7 +90,7 @@ class GameState {
             this.grid.push(row);
         }
 
-        // 初期未開花 ★ ソケットを配置
+        // 初期未開花 ★ ソケット配置
         this.grid[0][1].hasSocket = true;
         this.grid[1][3].hasSocket = true;
         this.grid[3][1].hasSocket = true;
@@ -224,6 +224,56 @@ class GameState {
         return { success: true };
     }
 
+    // 2D6 土地探索実行 (rules/03-04 確定仕様)
+    executeExploration(r, c) {
+        const cell = this.grid[r][c];
+        if (!cell.placed || cell.isHQ) return { success: false, reason: "配置された土地マスのみ探索可能です" };
+        if (cell.searched) return { success: false, reason: "このマスはすでに探索済みです (1マス通算1回のみ)" };
+        if (cell.merged) return { success: false, reason: "マージ済みの合体土地は探索できません" };
+        if (this.ember <= 1) return { success: false, reason: "🔥 生命力が不足しています (コスト: 🔥 -1)" };
+
+        this.ember -= 1;
+        cell.searched = true;
+
+        const d1 = Math.floor(Math.random() * 6) + 1;
+        const d2 = Math.floor(Math.random() * 6) + 1;
+        const totalRoll = d1 + d2;
+        const posStr = `(${String.fromCharCode(65+c)}${r+1})`;
+
+        let resultMsg = "";
+
+        if (d1 === 6 && d2 === 6) { // 出目12 素のゾロ目 (神秘の泉)
+            this.ember += 3;
+            this.mystic += 5;
+            resultMsg = `✨ 出目12 ゾロ目! レアイベント【神秘の泉】発見! 🔥+3 ＆ ✨+5 獲得!`;
+            this.toastQueue.push({ r, c, text: "✨ 神秘の泉! 🔥+3 ✨+5" });
+        } else if (totalRoll >= 9) { // 出目 9〜11 (★ ソケット開花)
+            if (!cell.socketResource) {
+                const socketDef = SOCKET_RESOURCES[cell.terrain.id] || SOCKET_RESOURCES.GL1_GRASS;
+                cell.socketResource = socketDef;
+                resultMsg = `🎲 出目${totalRoll}: ★ ${socketDef.name} 開花露出! (毎ターン産出UP)`;
+                this.toastQueue.push({ r, c, text: `★ ${socketDef.name} 開花!` });
+            } else {
+                this.food += 3;
+                this.wood += 3;
+                resultMsg = `🎲 出目${totalRoll}: 発掘成功! 🌾+3 🧱+3 即時獲得!`;
+                this.toastQueue.push({ r, c, text: "発掘! 🌾🧱+3" });
+            }
+        } else if (totalRoll >= 5) { // 出目 5〜8 (中額即時ボーナス)
+            this.food += 2;
+            this.wood += 2;
+            resultMsg = `🎲 出目${totalRoll}: 中額資源発掘 🌾+2 🧱+2 即時獲得!`;
+            this.toastQueue.push({ r, c, text: "発掘! 🌾🧱+2" });
+        } else { // 出目 2〜4 (少額即時ボーナス)
+            this.food += 1;
+            resultMsg = `🎲 出目${totalRoll}: 少額食料発見 🌾+1 即時獲得!`;
+            this.toastQueue.push({ r, c, text: "発見! 🌾+1" });
+        }
+
+        this.addLog(`2D6探索 ${posStr}: ${resultMsg}`);
+        return { success: true, roll: totalRoll, msg: resultMsg };
+    }
+
     checkConnectionBonus(r, c, terrain) {
         const size = this.stage.size;
         const visited = new Set();
@@ -282,7 +332,6 @@ class GameState {
             stageName = "鎮火期 (9以下)";
         }
 
-        // 保留枠のカード1枚につき 🔥 -1 維持コスト発生
         let reserveCost = 0;
         this.reserveSlots.forEach(card => {
             if (card) reserveCost++;
@@ -370,6 +419,46 @@ class GameState {
         }
 
         return { totalFood, totalWood, totalMystic };
+    }
+
+    // 各種リソース計算の詳細内訳を取得 (データパネルモーダル用)
+    getResourceBreakdown() {
+        const breakdown = {
+            food: { base: 10, tiles: 0, sockets: 0, vicinity: 0, total: 10 },
+            wood: { base: 10, tiles: 0, sockets: 0, vicinity: 0, total: 10 },
+            defense: { base: 10, tiles: 0, sockets: 0, vicinity: 0, total: 10 },
+            mystic: { base: 1, total: 1 }
+        };
+
+        const size = this.stage.size;
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
+                const cell = this.grid[r][c];
+                if (cell.placed && cell.terrain) {
+                    breakdown.food.tiles += (cell.terrain.food || 0);
+                    breakdown.wood.tiles += (cell.terrain.wood || 0);
+                    breakdown.defense.tiles += (cell.terrain.defense || 0);
+
+                    if (cell.socketResource) {
+                        breakdown.food.sockets += (cell.socketResource.bonusFood || 0);
+                        breakdown.wood.sockets += (cell.socketResource.bonusWood || 0);
+                        breakdown.defense.sockets += (cell.socketResource.bonusDefense || 0);
+                    }
+
+                    if (this.isHQVicinity(r, c)) {
+                        breakdown.food.vicinity += 1;
+                        breakdown.wood.vicinity += 1;
+                        breakdown.defense.vicinity += 1;
+                    }
+                }
+            }
+        }
+
+        breakdown.food.total = breakdown.food.base + breakdown.food.tiles + breakdown.food.sockets + breakdown.food.vicinity;
+        breakdown.wood.total = breakdown.wood.base + breakdown.wood.tiles + breakdown.wood.sockets + breakdown.wood.vicinity;
+        breakdown.defense.total = breakdown.defense.base + breakdown.defense.tiles + breakdown.defense.sockets + breakdown.defense.vicinity;
+
+        return breakdown;
     }
 
     checkMergePatterns() {

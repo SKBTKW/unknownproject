@@ -20,6 +20,7 @@
             gap: 15px;
             height: 100vh;
             overflow: hidden;
+            position: relative;
         }
 
         /* 1. 最上部ヘッダー (トップステータスバー) */
@@ -200,6 +201,15 @@
             background: #231c10 !important;
         }
 
+        .searched-badge {
+            position: absolute;
+            bottom: 2px;
+            right: 3px;
+            font-size: 9px;
+            color: #2ecc71;
+            font-weight: bold;
+        }
+
         .tile-bonus-toast {
             position: absolute;
             top: -26px;
@@ -222,6 +232,23 @@
             100% { opacity: 0; transform: translate(-50%, -24px); }
         }
 
+        /* 盤面マス詳細ホバーツールチップ */
+        .tile-tooltip {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(22, 25, 34, 0.95);
+            border: 1px solid #3498db;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 12px;
+            color: #ecf0f1;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+            pointer-events: none;
+            z-index: 40;
+            display: none;
+        }
+
         /* 右サイドパネル (各種データ ✕ ログ) */
         .right-sidebar {
             display: flex;
@@ -235,6 +262,12 @@
             border-radius: 8px;
             padding: 12px 15px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            cursor: pointer;
+            transition: transform 0.15s;
+            position: relative;
+        }
+        .data-panel:hover {
+            transform: scale(1.02);
         }
         .data-panel h4 {
             text-align: center;
@@ -249,6 +282,35 @@
             gap: 6px;
             font-size: 14px;
             font-weight: bold;
+        }
+
+        /* リソース内訳ポップアップモーダル */
+        .breakdown-modal {
+            position: absolute;
+            top: 70px;
+            right: 310px;
+            width: 260px;
+            background: #161922;
+            border: 1px solid #1abc9c;
+            border-radius: 8px;
+            padding: 12px 15px;
+            color: #ecf0f1;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.8);
+            z-index: 50;
+            display: none;
+        }
+        .breakdown-modal h5 {
+            color: #1abc9c;
+            font-size: 13px;
+            border-bottom: 1px solid #2c3345;
+            padding-bottom: 4px;
+            margin-bottom: 8px;
+        }
+        .breakdown-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            margin-bottom: 4px;
         }
 
         .log-panel-wrapper {
@@ -291,7 +353,7 @@
             gap: 4px;
         }
 
-        /* 3. 最下部アクションバー (ドロー ✕ 保留 ✕ コントロール) */
+        /* 3. 最下部アクションバー */
         .bottom-bar {
             display: grid;
             grid-template-columns: 1fr 340px 180px;
@@ -457,17 +519,35 @@
         <div class="board-container">
             <div class="main-area-badge">メインエリア <span id="valPlacedCount">1</span>/24</div>
             <div id="gridBoard" class="grid-with-headers"></div>
+            <!-- マス詳細ホバーツールチップ -->
+            <div id="tileTooltip" class="tile-tooltip"></div>
         </div>
 
         <div class="right-sidebar">
-            <div class="data-panel">
-                <h4>各種データ表示パネル</h4>
+            <!-- 各種データ表示パネル (ホバー/クリックで内訳表示) -->
+            <div class="data-panel" onmouseenter="showBreakdownModal()" onmouseleave="hideBreakdownModal()" onclick="toggleBreakdownModal()">
+                <h4>各種データ表示パネル (詳細内訳)</h4>
                 <div class="resource-list">
                     <div>🌾 食料: <span id="valFood">30</span> (<span id="valFoodProd">+10</span>/T)</div>
                     <div>🧱 資材: <span id="valWood">30</span> (<span id="valWoodProd">+10</span>/T)</div>
                     <div>🛡️ 防衛: <span id="valDefense">10</span></div>
                     <div>✨ 神秘: <span id="valMystic">10</span> (+1/T)</div>
                 </div>
+            </div>
+
+            <!-- リソース内訳モーダル -->
+            <div id="breakdownModal" class="breakdown-modal">
+                <h5>📊 各リソース持続産出 内訳</h5>
+                <div class="breakdown-row"><span>🌾 食料全産出:</span><span id="bdFoodTotal">+10/T</span></div>
+                <div class="breakdown-row" style="color:#7f8c8d;"><span>├ 本営基礎:</span><span>+10/T</span></div>
+                <div class="breakdown-row" style="color:#7f8c8d;"><span>├ 土地配置:</span><span id="bdFoodTiles">+0/T</span></div>
+                <div class="breakdown-row" style="color:#7f8c8d;"><span>├ ソケット開花:</span><span id="bdFoodSockets">+0/T</span></div>
+                <div class="breakdown-row" style="color:#7f8c8d;"><span>└ 本営近郊(+1):</span><span id="bdFoodVicinity">+0/T</span></div>
+                <hr style="border-color:#2c3345; margin:6px 0;">
+                <div class="breakdown-row"><span>🧱 資材全産出:</span><span id="bdWoodTotal">+10/T</span></div>
+                <div class="breakdown-row" style="color:#7f8c8d;"><span>├ 本営基礎:</span><span>+10/T</span></div>
+                <div class="breakdown-row" style="color:#7f8c8d;"><span>├ 土地配置:</span><span id="bdWoodTiles">+0/T</span></div>
+                <div class="breakdown-row" style="color:#7f8c8d;"><span>└ 本営近郊(+1):</span><span id="bdWoodVicinity">+0/T</span></div>
             </div>
 
             <div class="log-panel-wrapper">
@@ -535,9 +615,13 @@
             cells.forEach(c => {
                 c.classList.remove("preview-valid", "preview-invalid");
             });
+            hideTileTooltip();
         }
 
         function onCellMouseEnter(r, c) {
+            const cellData = state.grid[r][c];
+            showTileTooltip(r, c, cellData);
+
             if (!selectedCard || state.hasPickedThisTurn) return;
             clearCellPreviews();
 
@@ -566,8 +650,33 @@
             }
         }
 
+        function showTileTooltip(r, c, cell) {
+            const tt = document.getElementById("tileTooltip");
+            const pos = `(${String.fromCharCode(65+c)}${r+1})`;
+
+            if (cell.isHQ) {
+                tt.innerHTML = `<strong>本営 HQ ${pos}</strong><br>基礎産出: 🌾+10 🧱+10 🛡️10 ✨+1<br><small style="color:#2ecc71;">周囲8マス産出+1バフ</small>`;
+            } else if (cell.placed && cell.terrain) {
+                const isVicinity = state.isHQVicinity(r, c);
+                const socketText = cell.socketResource ? `<br><span style="color:#f1c40f;">★${cell.socketResource.name} (🌾+${cell.socketResource.bonusFood||0} 🧱+${cell.socketResource.bonusWood||0})</span>` : "";
+                const searchText = cell.searched ? `<br><span style="color:#2ecc71;">[✓ 探索済み]</span>` : `<br><span style="color:#3498db;">[🔍 クリックで2D6探索]</span>`;
+                tt.innerHTML = `<strong>${cell.terrain.name} ${pos}</strong><br>防衛: 🛡️${cell.terrain.defense} | 産出: 🌾+${cell.terrain.food||0} 🧱+${cell.terrain.wood||0}${isVicinity?' (近郊+1)':''}${socketText}${searchText}`;
+            } else if (cell.hasSocket) {
+                tt.innerHTML = `<strong>未開花 ★ソケットマス ${pos}</strong><br>土地配置または 2D6探索で資源開花!`;
+            } else {
+                tt.innerHTML = `<strong>未配置マス ${pos}</strong>`;
+            }
+            tt.style.display = "block";
+        }
+
+        function hideTileTooltip() {
+            document.getElementById("tileTooltip").style.display = "none";
+        }
+
         function render() {
             const prods = state.calculateTotalProduction();
+            const bd = state.getResourceBreakdown();
+
             document.getElementById("valTurn").innerText = state.turn;
             document.getElementById("valEmber").innerText = state.ember;
             document.getElementById("valFood").innerText = state.food;
@@ -577,6 +686,17 @@
             document.getElementById("valDefense").innerText = state.calculateTotalDefense();
             document.getElementById("valMystic").innerText = state.mystic;
             document.getElementById("valPlacedCount").innerText = `${state.countPlacedTiles()}/24`;
+
+            // モーダル内訳更新
+            document.getElementById("bdFoodTotal").innerText = `+${bd.food.total}/T`;
+            document.getElementById("bdFoodTiles").innerText = `+${bd.food.tiles}/T`;
+            document.getElementById("bdFoodSockets").innerText = `+${bd.food.sockets}/T`;
+            document.getElementById("bdFoodVicinity").innerText = `+${bd.food.vicinity}/T`;
+
+            document.getElementById("bdWoodTotal").innerText = `+${bd.wood.total}/T`;
+            document.getElementById("bdWoodTiles").innerText = `+${bd.wood.tiles}/T`;
+            document.getElementById("bdWoodSockets").innerText = `+${bd.wood.sockets}/T`;
+            document.getElementById("bdWoodVicinity").innerText = `+${bd.wood.vicinity}/T`;
 
             const boardEl = document.getElementById("gridBoard");
             boardEl.innerHTML = "";
@@ -611,11 +731,9 @@
                         if (cellData.merged) {
                             cellEl.classList.add("merged");
                         }
-                        const def = (cellData.merged && cellData.terrain.id === "H3_MOUNTAIN") ? 30 : cellData.terrain.defense;
-                        const isVicinity = state.isHQVicinity(r, c);
                         const socketBadge = cellData.socketResource ? `<br><small style="color:#f1c40f;">★${cellData.socketResource.name}</small>` : "";
-                        const vicinityBadge = isVicinity ? `<div style="font-size:9px;color:#2ecc71;">近郊+1</div>` : "";
-                        cellEl.innerHTML = `${cellData.terrain.name}${socketBadge}${vicinityBadge}`;
+                        const searchedBadge = cellData.searched ? `<span class="searched-badge">✓探索済</span>` : "";
+                        cellEl.innerHTML = `${cellData.terrain.name}${socketBadge}${searchedBadge}`;
                     } else if (cellData.hasSocket) {
                         cellEl.classList.add("socket-unopened");
                         cellEl.innerHTML = `<span style="color:#f39c12;font-size:16px;">★</span>`;
@@ -712,8 +830,25 @@
         }
 
         function onCellClick(r, c) {
+            const cell = state.grid[r][c];
+
+            // 1. 手札非選択時 ➔ 配置済み未探索土地マスをクリックで 2D6 探索確認ダイアログ
+            if (!selectedCard) {
+                if (cell.placed && !cell.isHQ && !cell.searched && !cell.merged) {
+                    const confirmSearch = confirm(`🔍 2D6 土地探索を実行しますか？\n位置: (${String.fromCharCode(65+c)}${r+1}) ${cell.terrain.name}\nコスト: 🔥 -1 (生命力)\n※1マス通算1回のみ実行可能です。`);
+                    if (confirmSearch) {
+                        const res = state.executeExploration(r, c);
+                        if (!res.success) {
+                            alert(`❌ 探索不可: ${res.reason}`);
+                        }
+                        render();
+                    }
+                }
+                return;
+            }
+
+            // 2. 手札選択時 ➔ 土地カード配置
             if (state.hasPickedThisTurn) return;
-            if (!selectedCard) return;
 
             if (state.ember <= 0) {
                 alert("💀 生命力 🔥 が 0 のため土地を配置できません！");
@@ -728,7 +863,6 @@
 
             state.ember -= 1;
 
-            // 保留枠から使用した場合、枠をクリア
             const resIdx = state.reserveSlots.indexOf(selectedCard);
             if (resIdx !== -1) {
                 state.reserveSlots[resIdx] = null;
@@ -765,6 +899,19 @@
         function toggleLogPanel() {
             const el = document.getElementById("logContent");
             el.style.display = (el.style.display === "none") ? "flex" : "none";
+        }
+
+        function showBreakdownModal() {
+            document.getElementById("breakdownModal").style.display = "block";
+        }
+
+        function hideBreakdownModal() {
+            document.getElementById("breakdownModal").style.display = "none";
+        }
+
+        function toggleBreakdownModal() {
+            const el = document.getElementById("breakdownModal");
+            el.style.display = (el.style.display === "block") ? "none" : "block";
         }
 
         function showTileToast(r, c, text) {
