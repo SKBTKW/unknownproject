@@ -14,10 +14,10 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #0d0f14;
             color: #e0e0e0;
-            padding: 12px;
+            padding: 10px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
             height: 100vh;
             overflow: hidden;
         }
@@ -29,38 +29,33 @@
             height: 100%;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
+            position: relative;
         }
 
-        /* 1. 最上部ヘッダー (右端 280px ターン表示が右サイドバー 280px と 100% 垂直直線アライン) */
+        /* 1. 最上部ヘッダー (高さ 72px ✕ 🔥 100% 画面中央固定 ✕ 右端 280px ターン表示垂直同期) */
         .top-bar {
             background: #161922;
             border: 1px solid #2a2e3d;
             border-radius: 10px;
-            padding: 0;
-            display: grid;
-            grid-template-columns: 1fr 280px;
+            padding: 0 16px;
+            display: flex;
+            justify-content: space-between;
             align-items: center;
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
             flex-shrink: 0;
             height: 72px;
+            position: relative;
             overflow: hidden;
         }
-
-        .top-bar-left {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 20px;
-            height: 100%;
-        }
-
+        
         .app-title-box {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
             font-weight: bold;
-            font-size: 15px;
+            font-size: 16px;
+            z-index: 2;
         }
 
         .role-avatar-box {
@@ -75,16 +70,22 @@
             font-weight: bold;
         }
 
+        /* 🔥 残り火表示: 画面真中央に物理固定 */
         .ember-center-box {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 14px;
-            font-size: 32px;
+            font-size: 34px;
             font-weight: 900;
             color: #ffffff;
             text-shadow: 0 0 10px rgba(255, 118, 117, 0.8), 0 0 20px rgba(231, 76, 60, 0.5);
             height: 100%;
+            z-index: 2;
+            pointer-events: none;
         }
         .ember-icon {
             font-size: 44px;
@@ -111,10 +112,19 @@
             display: none;
         }
 
+        /* 右端 280px ターン表示 (右サイドバー 280px と 100% 垂直直線同期) */
+        .turn-box-header-wrapper {
+            width: 280px;
+            height: 100%;
+            margin-right: -16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
         .turn-box {
             background: #1abc9c;
             color: #0b0d11;
-            padding: 4px 12px;
             text-align: center;
             font-weight: bold;
             width: 100%;
@@ -139,7 +149,7 @@
             overflow: hidden;
         }
 
-        /* 🎯 中央広大盤面エリア (下配置により幅 100% 開放) */
+        /* 🎯 中央盤面エリア (グリッド最優先拡大 ✕ セルサイズ 84px ✕ 9x9 拡張設計) */
         .board-container {
             background: #13161f;
             border: 1px solid #252a38;
@@ -149,7 +159,7 @@
             align-items: center;
             justify-content: center;
             position: relative;
-            padding: 15px;
+            padding: 12px;
             box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
             height: 100%;
             overflow: auto;
@@ -157,7 +167,7 @@
 
         .main-area-badge {
             position: absolute;
-            top: 12px;
+            top: 10px;
             right: 15px;
             background: #1abc9c;
             color: #000;
@@ -165,16 +175,18 @@
             padding: 4px 12px;
             border-radius: 4px;
             font-size: 12px;
+            z-index: 10;
         }
 
+        /* 盤面グリッド: 84px セルで視認性・拡大感を最優先 */
         .grid-with-headers {
             display: grid;
-            grid-template-columns: 40px repeat(5, 74px);
-            grid-template-rows: 40px repeat(5, 74px);
-            gap: 4px;
+            grid-template-columns: 44px repeat(5, 84px);
+            grid-template-rows: 44px repeat(5, 84px);
+            gap: 5px;
             background: #08090d;
-            padding: 10px;
-            border-radius: 10px;
+            padding: 12px;
+            border-radius: 12px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.8);
         }
         .header-cell {
@@ -183,13 +195,13 @@
             justify-content: center;
             font-weight: bold;
             color: #95a5a6;
-            font-size: 15px;
+            font-size: 16px;
             user-select: none;
         }
 
         .cell {
-            width: 74px;
-            height: 74px;
+            width: 84px;
+            height: 84px;
             background: #1c202c;
             border: 1px solid #2c3345;
             border-radius: 6px;
@@ -197,7 +209,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
+            font-size: 15px;
             font-weight: bold;
             cursor: pointer;
             user-select: none;
@@ -289,7 +301,7 @@
             display: none;
         }
 
-        /* 👉 右サイドバー (幅 280px) */
+        /* 👉 右サイドバー (幅 280px ピクセル一致) */
         .right-sidebar {
             display: flex;
             flex-direction: column;
@@ -363,12 +375,12 @@
             gap: 3px;
         }
 
-        /* 👇 最下部ドローオファリング ＆ 保留エリア (横 6 枚全並びエリア) */
+        /* 👇 最下部ドローオファリング ＆ 保留エリア (限界まで広げる幅大開放デザイン) */
         .bottom-card-container {
             display: grid;
             grid-template-columns: 1fr 280px;
             gap: 10px;
-            height: 235px;
+            height: 225px;
             flex-shrink: 0;
         }
 
@@ -376,10 +388,10 @@
             background: #161922;
             border: 1px solid #2a2e3d;
             border-radius: 10px;
-            padding: 8px 12px;
+            padding: 8px 16px;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
+            gap: 16px;
             align-items: center;
         }
 
@@ -404,15 +416,16 @@
         .subgroup-cards-row {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
+            gap: 10px;
             flex: 1;
             align-items: center;
+            justify-items: center;
         }
 
-        /* 🃏 TCG カードフレーム (厳密な比率: 幅2:高さ3 -> 110px:165px = 完全 2:3) */
+        /* 🃏 TCG カードフレーム (幅 115px : 高さ 172.5px = 完全 2:3 比率) */
         .card-frame-tcg {
-            width: 110px !important;
-            height: 165px !important;
+            width: 115px !important;
+            height: 172.5px !important;
             aspect-ratio: 2 / 3 !important;
             background: #ffffff;
             border-radius: 10px;
@@ -482,7 +495,7 @@
             align-items: center;
             justify-content: center;
             margin: 1px 0;
-            min-height: 40px;
+            min-height: 42px;
         }
 
         .tcg-yield-strip {
@@ -558,30 +571,31 @@
 <body>
 
     <div class="app-wrapper">
+        <!-- 1. Top Header Bar (🔥 True Center Position & Right 280px Turn Box) -->
         <div class="top-bar">
-            <div class="top-bar-left">
-                <div class="app-title-box">
-                    <div id="lblAppTitle"></div>
-                    <div class="role-avatar-box">
-                        <span id="lblRoleAvatar"></span>
-                        <span class="icon">👤</span>
-                    </div>
-                </div>
-                
-                <div class="ember-center-box">
-                    <span class="ember-icon">🔥</span>
-                    <span>: <span id="valEmber">20</span></span>
-                </div>
-
-                <div id="trialNoticeBox" class="trial-announcement">
-                    <span id="lblTrialNotice"></span> <span id="trialCountdown">5</span><br>
-                    <small style="font-weight:normal; font-size:9px;" id="lblTrialSub"></small>
+            <div class="app-title-box">
+                <div id="lblAppTitle"></div>
+                <div class="role-avatar-box">
+                    <span id="lblRoleAvatar"></span>
+                    <span class="icon">👤</span>
                 </div>
             </div>
+            
+            <div class="ember-center-box">
+                <span class="ember-icon">🔥</span>
+                <span>: <span id="valEmber">20</span></span>
+            </div>
 
-            <div class="turn-box">
-                <div style="font-size:10px;" id="lblTurnHeader"></div>
-                <span class="turn-num"><span id="valTurn">1</span>/50</span>
+            <div id="trialNoticeBox" class="trial-announcement">
+                <span id="lblTrialNotice"></span> <span id="trialCountdown">5</span><br>
+                <small style="font-weight:normal; font-size:9px;" id="lblTrialSub"></small>
+            </div>
+
+            <div class="turn-box-header-wrapper">
+                <div class="turn-box">
+                    <div style="font-size:10px;" id="lblTurnHeader"></div>
+                    <span class="turn-num"><span id="valTurn">1</span>/50</span>
+                </div>
             </div>
         </div>
 
@@ -719,9 +733,8 @@
             showTileTooltip(e, r, c, cellData);
 
             if (!selectedCard || state.hasPickedThisTurn) return;
-            clearCellPreviews();
-            highlightPlaceableCells();
-
+            
+            // 全体の配置可能緑枠を残しつつ、ホバー位置のプレビューを表示
             const shape = selectedCard.currentShape;
             const check = state.canPlaceShape(r, c, shape);
             const isValid = check.can;
@@ -873,7 +886,7 @@
                             } else if (cellData.hasSocket) {
                                 cellEl.classList.add("socket-unopened");
                                 if (isHQVic) cellEl.classList.add("hq-vicinity-unplaced");
-                                cellEl.innerHTML = `<span style="color:#f39c12;font-size:20px;filter:drop-shadow(0 0 4px #f39c12);">★</span>`;
+                                cellEl.innerHTML = `<span style="color:#f39c12;font-size:22px;filter:drop-shadow(0 0 4px #f39c12);">★</span>`;
                             } else {
                                 if (isHQVic) {
                                     cellEl.classList.add("hq-vicinity-unplaced");
@@ -889,7 +902,7 @@
                     }
                 }
 
-                // 1. ドローオファリングエリア描画 (最下部配置 3枚)
+                // 1. ドローオファリングエリア描画
                 const cardRowEl = document.getElementById("cardRow");
                 if (cardRowEl) {
                     cardRowEl.innerHTML = "";
@@ -899,7 +912,7 @@
                         if (card.isBlank) {
                             const blankEl = document.createElement("div");
                             blankEl.className = "card-frame-tcg locked";
-                            blankEl.style.cssText = "background:#11141d; border:2px dashed #7f8c8d; border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center;";
+                            blankEl.style.cssText = "background:#11141d; border:2px dashed #7f8c8d; border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center;";
                             blankEl.innerHTML = `<div style="font-size:28px; color:#e74c3c; font-weight:bold;">✖</div>`;
                             cardRowEl.appendChild(blankEl);
                             return;
@@ -912,6 +925,7 @@
 
                         const cardEl = document.createElement("div");
                         cardEl.className = `card-frame-tcg ${rarityClass} ${isSelected ? 'selected' : ''} ${isLocked ? 'locked' : ''}`;
+                        cardEl.onclick = () => selectCard(idx);
 
                         const cName = I18n.t(card.terrain.nameKey);
                         cardEl.innerHTML = `
@@ -929,14 +943,14 @@
                             </div>
                             <div class="tcg-action-controls">
                                 <button class="tcg-reserve-btn-wireframe" onclick="event.stopPropagation(); reserveCard(${idx})">${I18n.t("UI_RESERVE_BTN")}</button>
-                                <button class="tcg-rotate-btn-wireframe">${I18n.t("UI_ROTATE_BTN")} 🔄</button>
+                                <button class="tcg-rotate-btn-wireframe" onclick="rotateSelectedCard(event, ${idx})">${I18n.t("UI_ROTATE_BTN")} 🔄</button>
                             </div>
                         `;
                         cardRowEl.appendChild(cardEl);
                     });
                 }
 
-                // 2. 保留エリア描画 (最下部配置 3枚)
+                // 2. 保留エリア描画
                 const reserveRowEl = document.getElementById("reserveRow");
                 if (reserveRowEl) {
                     reserveRowEl.innerHTML = "";
@@ -967,7 +981,7 @@
                         } else {
                             const emptySlotEl = document.createElement("div");
                             emptySlotEl.className = "reserve-slot";
-                            emptySlotEl.style.cssText = "width:100%; height:100%; max-height:175px; aspect-ratio:2/3; background:#12141c; border:2px dashed #34495e; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:11px; color:#7f8c8d; margin:0 auto;";
+                            emptySlotEl.style.cssText = "width:115px; height:172.5px; aspect-ratio:2/3; background:#12141c; border:2px dashed #34495e; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:11px; color:#7f8c8d; margin:0 auto;";
                             emptySlotEl.innerText = I18n.t("UI_RESERVE_EMPTY", { slot: i + 1 });
                             reserveRowEl.appendChild(emptySlotEl);
                         }
@@ -976,6 +990,93 @@
             } catch (err) {
                 console.error("Render Error:", err);
             }
+        }
+
+        function selectCard(idx) {
+            if (!state || state.hasPickedThisTurn) return;
+            const card = state.handOffering[idx];
+            if (!card || card.isBlank) return;
+
+            if (selectedCard === card) {
+                selectedCard = null;
+            } else {
+                selectedCard = card;
+            }
+            render();
+            highlightPlaceableCells();
+        }
+
+        function rotateSelectedCard(e, idx) {
+            if (e) e.stopPropagation();
+            if (!state) return;
+            const card = state.handOffering[idx];
+            if (!card || card.isBlank) return;
+            card.rotate();
+            render();
+            if (selectedCard === card) {
+                highlightPlaceableCells();
+            }
+        }
+
+        function onCellClick(r, c) {
+            if (!state) return;
+            const cell = state.grid[r][c];
+            const I18n = window.I18n;
+
+            if (!selectedCard) {
+                if (cell.placed && !cell.isHQ && !cell.searched && !cell.merged) {
+                    const tName = I18n.t(cell.terrain.nameKey);
+                    const posStr = `${String.fromCharCode(65+c)}${r+1}`;
+                    const confirmSearch = confirm(I18n.t("CONFIRM_EXPLORATION", { pos: posStr, name: tName }));
+                    if (confirmSearch) {
+                        const res = state.executeExploration(r, c);
+                        if (!res.success) {
+                            alert(I18n.t("ALERT_SEARCH_FAILED", { reason: res.reason }));
+                        }
+                        render();
+                    }
+                }
+                return;
+            }
+
+            // カード選択状態でのグリッド盤面クリック配置処理
+            if (state.hasPickedThisTurn) return;
+            const shape = selectedCard.currentShape;
+            const terrain = selectedCard.terrain;
+            const res = state.placeShape(r, c, shape, terrain);
+            if (res.can) {
+                // 手札オファリングからカードを除外（スロットロックまたは空枠）
+                const cardIdx = state.handOffering.indexOf(selectedCard);
+                if (cardIdx !== -1) {
+                    state.handOffering[cardIdx] = { isBlank: true };
+                }
+                state.hasPickedThisTurn = true;
+                selectedCard = null;
+
+                // 2x2 合体（Merger）判定を実行
+                state.checkMergePatterns();
+
+                render();
+            } else {
+                alert(I18n.t("ALERT_CANNOT_PLACE"));
+            }
+        }
+
+        function showPlacementBonusToast(r, c, bonuses) {
+            const cellEl = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
+            if (!cellEl) return;
+            const toast = document.createElement("div");
+            toast.className = "tile-bonus-toast";
+            
+            const parts = [];
+            if (bonuses.food > 0) parts.push(`🌾+${bonuses.food}`);
+            if (bonuses.wood > 0) parts.push(`🧱+${bonuses.wood}`);
+            if (bonuses.defense > 0) parts.push(`🛡️+${bonuses.defense}`);
+            if (bonuses.ember > 0) parts.push(`🔥+${bonuses.ember}`);
+            
+            toast.innerText = parts.length > 0 ? parts.join(" ") : "Placement Success!";
+            cellEl.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
         }
 
         function reserveCard(idx) {

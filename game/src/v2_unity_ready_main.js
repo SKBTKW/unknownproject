@@ -98,7 +98,7 @@
                     if (shapeMatrix[dr][dc] === 1) {
                         const r = startR + dr;
                         const c = startC + dc;
-                        if (r >= size || c >= size) return { can: false, reason: "OUT_OF_BOUNDS" };
+                        if (r < 0 || r >= size || c < 0 || c >= size) return { can: false, reason: "OUT_OF_BOUNDS" };
                         if (this.grid[r][c].placed) return { can: false, reason: "ALREADY_PLACED" };
                     }
                 }
