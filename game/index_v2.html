@@ -1092,12 +1092,27 @@
                     highlightPlaceableCells();
                 }
 
-                // 1. ドローオファリングエリア描画 (比率 2:3 TCGカード ✕ 完全収容)
+                // 1. ドローオファリングエリア描画 (比率 2:3 TCGカード ✕ 保留中裏面表示)
                 const cardRowEl = document.getElementById("cardRow");
                 if (cardRowEl) {
                     cardRowEl.innerHTML = "";
 
                     state.handOffering.forEach((card, idx) => {
+                        if (!card) return;
+
+                        if (card.isBlank) {
+                            // 🃏 手札の抜け部分はカード裏表示 (✖)
+                            const blankEl = document.createElement("div");
+                            blankEl.className = "card-frame-tcg locked";
+                            blankEl.style.cssText = "background:linear-gradient(145deg, #11141d, #090a0f); border:1px dashed #34495e; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;";
+                            blankEl.innerHTML = `
+                                <div style="font-size:32px; color:#e74c3c; font-weight:bold; filter:drop-shadow(0 0 6px rgba(231,76,60,0.6));">✖</div>
+                                <div style="font-size:10px; color:#7f8c8d; font-weight:bold;">${I18n.t("UI_RESERVE_BLANK_SLOT")}</div>
+                            `;
+                            cardRowEl.appendChild(blankEl);
+                            return;
+                        }
+
                         const isSelected = (selectedCard === card);
                         const isLocked = state.hasPickedThisTurn;
                         const rarityClass = (card.terrain.id === "H3_MOUNTAIN") ? "rarity-uc" : "rarity-c";
@@ -1163,7 +1178,7 @@
                     });
                 }
 
-                // 2. 保留エリア描画 (比率 2:3 TCGカード ✕ 完全収容)
+                // 2. 保留エリア描画 (比率 2:3 TCGカード ✕ 復元ボタン付き)
                 const reserveRowEl = document.getElementById("reserveRow");
                 if (reserveRowEl) {
                     reserveRowEl.innerHTML = "";
@@ -1195,6 +1210,9 @@
                             const rotateBtnHtml = isLocked ? "" :
                                 `<button class="tcg-rotate-btn" onclick="event.stopPropagation(); event.preventDefault(); rotateReserveCardByIdx(${i})">${I18n.t("UI_ROTATE_BTN")}</button>`;
 
+                            const returnBtnHtml = isLocked ? "" :
+                                `<button style="font-size:8px; background:linear-gradient(to right, #e67e22, #f39c12); color:white; border:none; border-radius:3px; padding:2px; cursor:pointer; font-weight:bold; width:100%; margin-top:2px;" onclick="event.stopPropagation(); returnReserveCard(${i})">${I18n.t("UI_RESERVE_RETURN_BTN")}</button>`;
+
                             cardEl.innerHTML = `
                                 <div class="tcg-card-header">
                                     <span class="tcg-category-badge" style="color:#f39c12; border-color:rgba(243,156,18,0.4); background:rgba(243,156,18,0.2);">${I18n.t("UI_RESERVE_SLOT_BADGE", { slot: i + 1 })}</span>
@@ -1214,6 +1232,7 @@
                                     <span class="param-badge" style="color:#3498db;">🛡️+${card.terrain.defense||0}</span>
                                     ${card.terrain.mystic > 0 ? `<span class="param-badge" style="color:#f1c40f;">✨+${card.terrain.mystic}</span>` : ''}
                                 </div>
+                                ${returnBtnHtml}
                             `;
 
                             cardEl.onclick = () => {
@@ -1336,6 +1355,16 @@
                 render();
             } else {
                 alert(window.I18n.t("ALERT_RESERVE_FULL"));
+            }
+        }
+
+        function returnReserveCard(reserveIdx) {
+            if (!state || state.hasPickedThisTurn) return;
+            if (state.returnFromReserve(reserveIdx)) {
+                if (selectedCard === state.reserveSlots[reserveIdx]) {
+                    selectedCard = null;
+                }
+                render();
             }
         }
 

@@ -475,22 +475,89 @@
 
         moveToReserve(cardIdx) {
             const card = this.handOffering[cardIdx];
-            if (!card) return false;
+            if (!card || card.isBlank) return false;
 
             const emptyIdx = this.reserveSlots.findIndex(slot => slot === null);
             if (emptyIdx === -1) return false;
 
+            card.originalHandIdx = cardIdx;
             this.reserveSlots[emptyIdx] = card;
-            this.handOffering[cardIdx] = null;
+
+            // 手札の抜け部分はカード裏表示 (isBlank: true)
+            this.handOffering[cardIdx] = {
+                isBlank: true,
+                originalCard: card,
+                id: `blank_${cardIdx}`
+            };
+
             const cName = I18n.t(card.terrain.nameKey);
             this.addLog(I18n.t("LOG_RESERVE_ADDED", { name: cName, slot: emptyIdx + 1 }));
             return true;
+        }
+
+        returnFromReserve(reserveIdx) {
+            const card = this.reserveSlots[reserveIdx];
+            if (!card) return false;
+
+            const origIdx = card.originalHandIdx;
+            if (origIdx !== undefined && this.handOffering[origIdx] && this.handOffering[origIdx].isBlank) {
+                this.handOffering[origIdx] = card;
+                delete card.originalHandIdx;
+                this.reserveSlots[reserveIdx] = null;
+                const cName = I18n.t(card.terrain.nameKey);
+                this.addLog(I18n.t("LOG_RESERVE_RETURNED", { name: cName }));
+                return true;
+            }
+            return false;
         }
     }
 
     class Step1DrawSystem {
         constructor(gameState) {
             this.state = gameState;
+        }
+
+        drawSingleCard() {
+            const candidates = [
+                { id: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", food: 4, wood: 0, defense: 0, mystic: 0, weight: 0.320 },
+                { id: "GL2_FOREST", nameKey: "TERRAIN_FOREST", food: 2, wood: 2, defense: 2, mystic: 0, weight: 0.224 },
+                { id: "H2_HILL", nameKey: "TERRAIN_HILL", food: 2, wood: 1, defense: 1, mystic: 0, weight: 0.250 },
+                { id: "H3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", food: 0, wood: 3, defense: 5, mystic: 1, weight: 0.110 }
+            ];
+
+            const h2Count = this.state.countH2HillsOnBoard();
+            const filtered = candidates.filter(c => {
+                if (c.id === "H3_MOUNTAIN") {
+                    return h2Count >= 3;
+                }
+                return true;
+            });
+
+            let totalW = filtered.reduce((acc, c) => acc + c.weight, 0);
+            let rand = Math.random() * totalW;
+            let sum = 0;
+            let chosen = filtered[0];
+
+            for (let c of filtered) {
+                sum += c.weight;
+                if (rand <= sum) {
+                    chosen = c;
+                    break;
+                }
+            }
+
+            const shapeRoll = Math.random();
+            let shape = [[1]];
+            if (shapeRoll >= 0.80) {
+                shape = Math.random() > 0.5 ? [[1, 1]] : [[1], [1]];
+            }
+
+            return {
+                id: `card_${this.state.turn}_${Date.now()}_${Math.floor(Math.random()*1000)}`,
+                nameKey: chosen.nameKey,
+                terrain: chosen,
+                currentShape: shape
+            };
         }
 
         generateOfferingCards() {
