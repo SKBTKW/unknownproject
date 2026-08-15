@@ -298,7 +298,7 @@ if (typeof window !== "undefined") {
     "minStage": 1,
     "reqH2": 0,
     "rarity": "R",
-    "weight": 0.30,
+    "weight": 0.15,
     "descriptionKey": "CARD_DESC_DESERT_1X1"
   },
   {
@@ -313,7 +313,7 @@ if (typeof window !== "undefined") {
     "minStage": 1,
     "reqH2": 0,
     "rarity": "UR",
-    "weight": 0.08,
+    "weight": 0.03,
     "descriptionKey": "CARD_DESC_DESERT_1X2"
   },
   {
@@ -328,7 +328,7 @@ if (typeof window !== "undefined") {
     "minStage": 1,
     "reqH2": 0,
     "rarity": "R",
-    "weight": 0.08,
+    "weight": 0.03,
     "descriptionKey": "CARD_DESC_DESERT_HILL_1X2"
   },
   {
