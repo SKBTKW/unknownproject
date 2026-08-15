@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trial of Ages : Last Ember (AGENTS.md Rule 3 Compliant)</title>
+    <title>Trial of Ages : Last Ember (Bottom Card Layout Option)</title>
     <style>
         * {
             box-sizing: border-box;
@@ -22,7 +22,6 @@
             overflow: hidden;
         }
 
-        /* アプリ全体の最大幅コントロール (4K/WQHD 大画面での引きちぎれ防止) */
         .app-wrapper {
             max-width: 2100px;
             margin: 0 auto;
@@ -30,65 +29,73 @@
             height: 100%;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
         }
 
-        /* 1. 最上部ヘッダー (1920x1080標準: 480px 1fr 280px 垂直完全同期) */
+        /* 1. 最上部ヘッダー (高さ 72px 100% 完全対応) */
         .top-bar {
             background: #161922;
             border: 1px solid #2a2e3d;
-            border-radius: 8px;
+            border-radius: 10px;
             padding: 0;
             display: grid;
-            grid-template-columns: 480px 1fr 280px;
+            grid-template-columns: 320px 1fr 320px 280px;
             align-items: center;
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
             flex-shrink: 0;
-            height: 56px;
+            height: 72px;
             overflow: hidden;
-            transition: grid-template-columns 0.2s;
         }
         
         .app-title-box {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
             font-weight: bold;
-            font-size: 16px;
+            font-size: 15px;
             padding-left: 16px;
         }
 
         .role-avatar-box {
             background: #1abc9c;
             color: #0b0d11;
-            padding: 4px 10px;
+            padding: 6px 12px;
             border-radius: 6px;
             display: flex;
             align-items: center;
             gap: 6px;
             font-size: 12px;
             font-weight: bold;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
         }
 
         .ember-center-box {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 20px;
-            font-size: 24px;
-            font-weight: bold;
+            gap: 14px;
+            font-size: 32px;
+            font-weight: 900;
             color: #ffffff;
+            text-shadow: 0 0 10px rgba(255, 118, 117, 0.8), 0 0 20px rgba(231, 76, 60, 0.5);
+            height: 100%;
         }
         .ember-icon {
-            font-size: 28px;
-            filter: drop-shadow(0 0 8px #ff7675);
+            font-size: 44px;
+            line-height: 1;
+            display: inline-block;
+            filter: drop-shadow(0 0 12px #ff7675) drop-shadow(0 0 20px #d63031);
+            animation: emberPulse 2s infinite ease-in-out;
+            transform-origin: center;
+        }
+        @keyframes emberPulse {
+            0%, 100% { transform: scale(1); filter: drop-shadow(0 0 12px #ff7675); }
+            50% { transform: scale(1.08); filter: drop-shadow(0 0 20px #e74c3c) drop-shadow(0 0 30px #ff7675); }
         }
 
         .trial-announcement {
             background: #1f2430;
             border: 1px dashed #e67e22;
-            padding: 4px 12px;
+            padding: 6px 14px;
             border-radius: 6px;
             text-align: center;
             font-size: 11px;
@@ -97,7 +104,6 @@
             display: none;
         }
 
-        /* ターン表示ボックス (幅 280px 100% 直線アライン) */
         .turn-box {
             background: #1abc9c;
             color: #0b0d11;
@@ -110,237 +116,23 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
         }
         .turn-box .turn-num {
-            font-size: 18px;
+            font-size: 20px;
             display: block;
         }
 
-        /* 2. メイン 3 カラムレイアウト構造 (480px 1fr 280px) */
-        .main-layout {
+        /* 2. 中間レイアウト構造 (中央広大盤面 ✕ 右データ・ログパネル) */
+        .middle-layout {
             display: grid;
-            grid-template-columns: 480px 1fr 280px;
-            gap: 12px;
+            grid-template-columns: 1fr 280px;
+            gap: 10px;
             flex: 1;
             min-height: 0;
             overflow: hidden;
-            transition: grid-template-columns 0.2s;
         }
 
-        /* 👈 左サイドバー (幅 480px / 上下 50:50 均等分割 / 横3枚並び完全収容) */
-        .left-sidebar {
-            display: grid;
-            grid-template-rows: 1fr 1fr;
-            gap: 12px;
-            min-height: 0;
-            overflow: hidden;
-            width: 480px;
-        }
-
-        .offering-box {
-            background: #161922;
-            border: 1px solid #2a2e3d;
-            border-radius: 8px;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            min-height: 0;
-            overflow: hidden;
-        }
-        .section-label {
-            font-size: 12px;
-            font-weight: bold;
-            color: #1abc9c;
-            text-align: center;
-            border-bottom: 1px solid #2a2e3d;
-            padding-bottom: 4px;
-            flex-shrink: 0;
-        }
-
-        /* 横3列並びグリッドコンテナ */
-        .card-row-horizontal {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            flex: 1;
-            align-items: center;
-            justify-items: center;
-            overflow-y: auto;
-            padding: 2px;
-            width: 100%;
-        }
-
-        /* 🃏 TCG 土地カードフレーム (ユーザー最新ワイヤーフレーム画像完全準拠) */
-        .card-frame-tcg {
-            width: 100%;
-            min-width: 0;
-            aspect-ratio: 2 / 3;
-            background: #ffffff;
-            border-radius: 16px;
-            padding: 6px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            gap: 4px;
-            cursor: pointer;
-            transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.2s;
-            position: relative;
-            user-select: none;
-            overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        }
-        .card-frame-tcg:hover:not(.locked) {
-            transform: translateY(-3px) scale(1.03);
-        }
-
-        .card-frame-tcg.rarity-c {
-            border: 4px solid #a6612b;
-        }
-        .card-frame-tcg.rarity-uc {
-            border: 4px solid #4a90e2;
-        }
-        .card-frame-tcg.selected {
-            border-color: #f1c40f !important;
-            box-shadow: 0 0 20px rgba(241, 196, 15, 0.9) !important;
-        }
-        .card-frame-tcg.locked {
-            opacity: 0.4;
-            cursor: not-allowed !important;
-            filter: grayscale(80%);
-            pointer-events: none !important;
-        }
-
-        /* 1. 最上部: 土地名角丸枠 ✕ レアリティ (C / UC) */
-        .tcg-card-top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 4px;
-            padding: 2px;
-        }
-        .tcg-title-pill {
-            background: #ffffff;
-            border: 2px solid #111111;
-            border-radius: 8px;
-            padding: 2px 6px;
-            font-size: 11px;
-            font-weight: bold;
-            color: #111111;
-            flex: 1;
-            text-align: center;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .tcg-rarity-code {
-            font-size: 14px;
-            font-weight: 900;
-            color: #111111;
-            padding-right: 4px;
-            font-family: Arial, sans-serif;
-        }
-
-        /* 2. 中央: 形状アート表示エリア */
-        .tcg-shape-art-area {
-            flex: 1;
-            background: #d4f4fa;
-            border-top: 1px solid #7f8c8d;
-            border-bottom: 1px solid #7f8c8d;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
-            margin: 2px 0;
-            min-height: 50px;
-        }
-
-        /* 3. 下部: 産出ステータス帯 */
-        .tcg-yield-strip {
-            background: #d4f4fa;
-            padding: 3px 4px;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            font-size: 10px;
-            font-weight: bold;
-            color: #111111;
-            border-radius: 4px;
-        }
-
-        /* 4. 最下部: [保留] ボタン ✕ [回転 🔄] ボタン */
-        .tcg-action-controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 4px;
-        }
-        .tcg-reserve-btn-wireframe {
-            background: #0097a7;
-            color: #ffffff;
-            border: 1px solid #006064;
-            border-radius: 4px;
-            font-size: 9px;
-            font-weight: bold;
-            padding: 3px 6px;
-            cursor: pointer;
-            flex: 1;
-            text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            transition: background 0.15s;
-        }
-        .tcg-reserve-btn-wireframe:hover {
-            background: #00838f;
-        }
-
-        .tcg-rotate-btn-wireframe {
-            background: transparent;
-            color: #111111;
-            border: none;
-            font-size: 10px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 2px;
-            cursor: pointer;
-            padding: 2px 4px;
-        }
-        .tcg-rotate-btn-wireframe:hover {
-            color: #0097a7;
-        }
-        .rotate-arrow-icon {
-            font-size: 14px;
-            color: #0097a7;
-            font-weight: bold;
-        }
-
-        /* 保留エリアボックス (高さ 50% 均等割り ✕ 横3枚並び) */
-        .reserve-box {
-            background: #161922;
-            border: 1px solid #2a2e3d;
-            border-radius: 8px;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            min-height: 0;
-            overflow: hidden;
-        }
-        .reserve-row-horizontal {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            flex: 1;
-            align-items: center;
-            justify-items: center;
-            overflow-y: auto;
-            padding: 2px;
-            width: 100%;
-        }
-
-        /* 🎯 中央メインエリア (9x9 盤面 800px 収容ゆとり空間) */
+        /* 🎯 中央広大盤面エリア (下配置により幅 100% 開放) */
         .board-container {
             background: #13161f;
             border: 1px solid #252a38;
@@ -350,7 +142,7 @@
             align-items: center;
             justify-content: center;
             position: relative;
-            padding: 20px;
+            padding: 15px;
             box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
             height: 100%;
             overflow: auto;
@@ -366,7 +158,6 @@
             padding: 4px 12px;
             border-radius: 4px;
             font-size: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
         }
 
         .grid-with-headers {
@@ -410,13 +201,11 @@
             border-color: #3498db;
             background: #252d3e;
         }
-
         .cell.hq-vicinity-unplaced {
             border: 1px dashed rgba(26, 188, 156, 0.8) !important;
             box-shadow: inset 0 0 12px rgba(26, 188, 156, 0.35);
             background: #18262a !important;
         }
-
         .cell.preview-valid {
             border: 2px solid #3498db !important;
             background: rgba(52, 152, 219, 0.35) !important;
@@ -427,13 +216,11 @@
             background: rgba(231, 76, 60, 0.35) !important;
             box-shadow: 0 0 12px rgba(231, 76, 60, 0.7);
         }
-
         .cell.hq {
             background: #16a085 !important;
             border: 2px solid #1abc9c !important;
             color: #ffffff;
             font-weight: bold;
-            font-size: 15px;
         }
         .cell.placed {
             background: #005a70 !important;
@@ -441,7 +228,6 @@
             color: #ffffff;
             font-weight: bold;
         }
-
         .cell.merged {
             background: linear-gradient(135deg, #5c4710 0%, #302407 100%) !important;
             box-shadow: inset 0 0 15px rgba(241, 196, 15, 0.5);
@@ -449,12 +235,10 @@
             font-weight: bold;
             border-color: #f1c40f !important;
         }
-
         .cell.socket-unopened {
             border: 1px dashed #f39c12 !important;
             background: #231c10 !important;
         }
-
         .searched-badge {
             position: absolute;
             bottom: 3px;
@@ -463,7 +247,6 @@
             color: #2ecc71;
             font-weight: bold;
         }
-
         .tile-bonus-toast {
             position: absolute;
             top: -28px;
@@ -485,7 +268,6 @@
             0% { opacity: 1; transform: translate(-50%, 0); }
             100% { opacity: 0; transform: translate(-50%, -26px); }
         }
-
         .tile-tooltip {
             position: fixed;
             background: rgba(22, 25, 34, 0.95);
@@ -500,7 +282,7 @@
             display: none;
         }
 
-        /* 👉 右サイドバー (幅 280px ピクセル垂直同期) */
+        /* 👉 右サイドバー (幅 280px) */
         .right-sidebar {
             display: flex;
             flex-direction: column;
@@ -517,10 +299,6 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.4);
             cursor: pointer;
             transition: transform 0.15s;
-            position: relative;
-        }
-        .data-panel:hover {
-            transform: scale(1.02);
         }
         .data-panel h4 {
             text-align: center;
@@ -537,34 +315,6 @@
             font-weight: bold;
         }
 
-        .breakdown-modal {
-            position: absolute;
-            top: 65px;
-            right: 290px;
-            width: 250px;
-            background: #161922;
-            border: 1px solid #1abc9c;
-            border-radius: 8px;
-            padding: 12px 14px;
-            color: #ecf0f1;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.8);
-            z-index: 50;
-            display: none;
-        }
-        .breakdown-modal h5 {
-            color: #1abc9c;
-            font-size: 12px;
-            border-bottom: 1px solid #2c3345;
-            padding-bottom: 4px;
-            margin-bottom: 6px;
-        }
-        .breakdown-row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 11px;
-            margin-bottom: 3px;
-        }
-
         .log-panel-wrapper {
             background: #e8d5f5;
             color: #333;
@@ -574,20 +324,9 @@
             display: flex;
             flex-direction: column;
             box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
             overflow: hidden;
             min-height: 120px;
         }
-        .log-panel-wrapper.collapsed {
-            max-height: 40px !important;
-            flex: none !important;
-            min-height: 40px !important;
-            background: #d4bce8;
-        }
-        .log-panel-wrapper.collapsed .log-content {
-            display: none !important;
-        }
-
         .log-header {
             display: flex;
             justify-content: space-between;
@@ -597,7 +336,6 @@
             margin-bottom: 4px;
             border-bottom: 1px solid #c8b2d6;
             padding-bottom: 2px;
-            user-select: none;
         }
         .toggle-btn {
             background: #9b59b6;
@@ -607,10 +345,7 @@
             border-radius: 3px;
             font-size: 9px;
             cursor: pointer;
-            font-weight: bold;
         }
-        .toggle-btn:hover { background: #8e44ad; }
-
         .log-content {
             flex: 1;
             overflow-y: auto;
@@ -621,11 +356,174 @@
             gap: 3px;
         }
 
-        .controls-box-vertical {
+        /* 👇 最下部ドローオファリング ＆ 保留エリア (横 6 枚全並びエリア) */
+        .bottom-card-container {
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 10px;
+            height: 235px;
+            flex-shrink: 0;
+        }
+
+        .cards-flex-box {
+            background: #161922;
+            border: 1px solid #2a2e3d;
+            border-radius: 10px;
+            padding: 8px 12px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .offering-subgroup, .reserve-subgroup {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            height: 100%;
+        }
+
+        .subgroup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            font-weight: bold;
+            color: #1abc9c;
+            border-bottom: 1px solid #2a2e3d;
+            padding-bottom: 2px;
+        }
+
+        .subgroup-cards-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            flex: 1;
+            align-items: center;
+        }
+
+        /* 🃏 TCG カードフレーム (厳密な比率: 縦3 横2 -> aspect-ratio: 2 / 3) */
+        .card-frame-tcg {
+            width: 100%;
+            height: auto;
+            max-height: 190px;
+            aspect-ratio: 2 / 3;
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 5px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 2px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            user-select: none;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            margin: 0 auto;
+        }
+        .card-frame-tcg:hover:not(.locked) {
+            transform: translateY(-4px) scale(1.03);
+        }
+        .card-frame-tcg.rarity-c { border: 3px solid #a6612b; }
+        .card-frame-tcg.rarity-uc { border: 3px solid #4a90e2; }
+        .card-frame-tcg.selected {
+            border-color: #f1c40f !important;
+            box-shadow: 0 0 15px rgba(241, 196, 15, 0.9) !important;
+        }
+        .card-frame-tcg.locked {
+            opacity: 0.4;
+            cursor: not-allowed !important;
+            filter: grayscale(80%);
+            pointer-events: none !important;
+        }
+
+        .tcg-card-top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1px;
+        }
+        .tcg-title-pill {
+            background: #ffffff;
+            border: 1px solid #111111;
+            border-radius: 6px;
+            padding: 1px 4px;
+            font-size: 10px;
+            font-weight: bold;
+            color: #111111;
+            flex: 1;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .tcg-rarity-code {
+            font-size: 12px;
+            font-weight: 900;
+            color: #111111;
+            padding-right: 2px;
+        }
+
+        .tcg-shape-art-area {
+            flex: 1;
+            background: #d4f4fa;
+            border-top: 1px solid #7f8c8d;
+            border-bottom: 1px solid #7f8c8d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 1px 0;
+            min-height: 40px;
+        }
+
+        .tcg-yield-strip {
+            background: #d4f4fa;
+            padding: 2px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            font-size: 9px;
+            font-weight: bold;
+            color: #111111;
+            border-radius: 3px;
+        }
+
+        .tcg-action-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2px;
+        }
+        .tcg-reserve-btn-wireframe {
+            background: #0097a7;
+            color: #ffffff;
+            border: none;
+            border-radius: 3px;
+            font-size: 8px;
+            font-weight: bold;
+            padding: 2px 4px;
+            cursor: pointer;
+            flex: 1;
+            text-align: center;
+        }
+        .tcg-rotate-btn-wireframe {
+            background: transparent;
+            color: #111111;
+            border: none;
+            font-size: 9px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 1px;
+            cursor: pointer;
+        }
+
+        .bottom-controls-box {
             display: flex;
             flex-direction: column;
             gap: 6px;
-            flex-shrink: 0;
+            justify-content: center;
         }
         .mulligan-btn {
             background: #e74c3c;
@@ -636,10 +534,7 @@
             font-weight: bold;
             font-size: 12px;
             cursor: pointer;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
         }
-        .mulligan-btn:hover { background: #c0392b; }
-
         .turn-end-btn {
             background: #1abc9c;
             color: #0b0d11;
@@ -649,33 +544,6 @@
             font-weight: bold;
             font-size: 14px;
             cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-        }
-        .turn-end-btn:hover { background: #16a085; color: white; }
-
-        /* 📱 レスポンシブメディアクエリ: 小型ノートPC (1366x768 / 1440x900) 自動適応 */
-        @media (max-width: 1440px) {
-            .top-bar {
-                grid-template-columns: 400px 1fr 240px;
-            }
-            .main-layout {
-                grid-template-columns: 400px 1fr 240px;
-            }
-            .left-sidebar {
-                width: 400px;
-            }
-            .right-sidebar {
-                width: 240px;
-            }
-            .cell {
-                width: 60px;
-                height: 60px;
-                font-size: 12px;
-            }
-            .grid-with-headers {
-                grid-template-columns: 36px repeat(5, 60px);
-                grid-template-rows: 36px repeat(5, 60px);
-            }
         }
     </style>
 </head>
@@ -694,10 +562,11 @@
             <div class="ember-center-box">
                 <span class="ember-icon">🔥</span>
                 <span>: <span id="valEmber">20</span></span>
-                <div id="trialNoticeBox" class="trial-announcement">
-                    <span id="lblTrialNotice"></span> <span id="trialCountdown">5</span><br>
-                    <small style="font-weight:normal; font-size:9px;" id="lblTrialSub"></small>
-                </div>
+            </div>
+
+            <div id="trialNoticeBox" class="trial-announcement">
+                <span id="lblTrialNotice"></span> <span id="trialCountdown">5</span><br>
+                <small style="font-weight:normal; font-size:9px;" id="lblTrialSub"></small>
             </div>
 
             <div class="turn-box">
@@ -706,31 +575,17 @@
             </div>
         </div>
 
-        <div class="main-layout">
-            
-            <!-- Left Sidebar (Width 480px / Aspect Ratio 2:3 TCG Cards Perfect Fit) -->
-            <div class="left-sidebar">
-                <div class="offering-box">
-                    <div class="section-label" id="lblOfferingTitle"></div>
-                    <div id="cardRow" class="card-row-horizontal"></div>
-                </div>
-
-                <div class="reserve-box">
-                    <div class="section-label" id="lblReserveTitle"></div>
-                    <div id="reserveRow" class="reserve-row-horizontal"></div>
-                </div>
-            </div>
-
-            <!-- Center Main Territory Grid (Responsive Flexible Room) -->
+        <div class="middle-layout">
+            <!-- Center Board Area (Full width unlocked for 9x9 expansion) -->
             <div class="board-container">
                 <div class="main-area-badge"><span id="lblMainBadge"></span> <span id="valPlacedCount">1</span>/24</div>
                 <div id="gridBoard" class="grid-with-headers"></div>
                 <div id="tileTooltip" class="tile-tooltip"></div>
             </div>
 
-            <!-- Right Sidebar (Width 280px / 100% Aligned with Header Turn Box) -->
+            <!-- Right Sidebar (Width 280px) -->
             <div class="right-sidebar">
-                <div class="data-panel" onmouseenter="showBreakdownModal()" onmouseleave="hideBreakdownModal()" onclick="toggleBreakdownModal()">
+                <div class="data-panel">
                     <h4 id="lblDataPanelTitle"></h4>
                     <div class="resource-list">
                         <div><span id="lblFood"></span>: <span id="valFood">30</span> (<span id="valFoodProd">+10</span>/T)</div>
@@ -738,21 +593,6 @@
                         <div><span id="lblDefense"></span>: <span id="valDefense">10</span></div>
                         <div><span id="lblMystic"></span>: <span id="valMystic">0</span> (+1/T)</div>
                     </div>
-                </div>
-
-                <div id="breakdownModal" class="breakdown-modal">
-                    <h5 id="lblBdHeader"></h5>
-                    <div class="breakdown-row"><span id="lblBdFoodTotal"></span><span id="bdFoodTotal">+10/T</span></div>
-                    <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdFoodHq"></span><span>+10/T</span></div>
-                    <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdFoodTiles"></span><span id="bdFoodTiles">+0/T</span></div>
-                    <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdFoodSockets"></span><span id="bdFoodSockets">+0/T</span></div>
-                    <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdFoodVicinity"></span><span id="bdFoodVicinity">+0/T</span></div>
-                    <hr style="border-color:#2c3345; margin:4px 0;">
-                    <div class="breakdown-row"><span id="lblBdWoodTotal"></span><span id="bdWoodTotal">+10/T</span></div>
-                    <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdWoodHq"></span><span>+10/T</span></div>
-                    <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdWoodTiles"></span><span id="bdWoodTiles">+0/T</span></div>
-                    <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdWoodSockets"></span><span id="bdWoodSockets">+0/T</span></div>
-                    <div class="breakdown-row" style="color:#7f8c8d;"><span id="lblBdWoodVicinity"></span><span id="bdWoodVicinity">+0/T</span></div>
                 </div>
 
                 <div id="logPanelWrapper" class="log-panel-wrapper">
@@ -764,13 +604,32 @@
                         <div style="color:#7f8c8d;" id="lblLogSub"></div>
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <div class="controls-box-vertical">
-                    <button class="mulligan-btn" onclick="mulligan()" id="btnMulligan"></button>
-                    <button class="turn-end-btn" onclick="nextTurn()" id="btnTurnEnd"></button>
+        <!-- Bottom Draw Offering & Reserve Cards Row (6 Cards Layout) -->
+        <div class="bottom-card-container">
+            <div class="cards-flex-box">
+                <div class="offering-subgroup">
+                    <div class="subgroup-header">
+                        <span id="lblOfferingTitle"></span>
+                    </div>
+                    <div id="cardRow" class="subgroup-cards-row"></div>
+                </div>
+
+                <div class="reserve-subgroup">
+                    <div class="subgroup-header">
+                        <span id="lblReserveTitle"></span>
+                        <span style="color:#f39c12; font-size:10px;">0/3</span>
+                    </div>
+                    <div id="reserveRow" class="subgroup-cards-row"></div>
                 </div>
             </div>
 
+            <div class="bottom-controls-box">
+                <button class="mulligan-btn" onclick="mulligan()" id="btnMulligan"></button>
+                <button class="turn-end-btn" onclick="nextTurn()" id="btnTurnEnd"></button>
+            </div>
         </div>
     </div>
 
@@ -784,37 +643,17 @@
 
         document.addEventListener("DOMContentLoaded", () => {
             const engine = window.Step1Engine;
-            if (!engine) {
-                console.error("Step1Engine is not defined! Check v2_unity_ready_main.js loading.");
-                return;
-            }
+            if (!engine) return;
             state = new engine.GameState();
             drawSys = new engine.Step1DrawSystem(state);
-
             initStaticI18nLabels();
             init();
-
-            window.addEventListener("keydown", (e) => {
-                if (e.key === "r" || e.key === "R") {
-                    if (selectedCard) {
-                        rotateSelectedCard(selectedCard);
-                    }
-                }
-            });
-
-            window.addEventListener("mousemove", (e) => {
-                const tt = document.getElementById("tileTooltip");
-                if (tt && tt.style.display === "block") {
-                    tt.style.left = (e.clientX + 15) + "px";
-                    tt.style.top = (e.clientY + 15) + "px";
-                }
-            });
         });
 
         function initStaticI18nLabels() {
             const I18n = window.I18n;
             if (!I18n) return;
-            document.title = I18n.t("UI_TITLE") + " (AGENTS.md Rule 3 Compliant)";
+            document.title = I18n.t("UI_TITLE");
             setElementText("lblAppTitle", I18n.t("UI_TITLE"));
             setElementText("lblRoleAvatar", I18n.t("UI_ROLE_AVATAR"));
             setElementText("lblTurnHeader", I18n.t("UI_TURN_LABEL"));
@@ -826,17 +665,6 @@
             setElementText("lblWood", I18n.t("UI_WOOD"));
             setElementText("lblDefense", I18n.t("UI_DEFENSE"));
             setElementText("lblMystic", I18n.t("UI_MYSTIC"));
-            setElementText("lblBdHeader", I18n.t("UI_BREAKDOWN_HEADER"));
-            setElementText("lblBdFoodTotal", I18n.t("UI_BREAKDOWN_FOOD_TOTAL"));
-            setElementText("lblBdFoodHq", I18n.t("UI_BREAKDOWN_HQ_BASE"));
-            setElementText("lblBdFoodTiles", I18n.t("UI_BREAKDOWN_TILES"));
-            setElementText("lblBdFoodSockets", I18n.t("UI_BREAKDOWN_SOCKETS"));
-            setElementText("lblBdFoodVicinity", I18n.t("UI_BREAKDOWN_VICINITY"));
-            setElementText("lblBdWoodTotal", I18n.t("UI_BREAKDOWN_WOOD_TOTAL"));
-            setElementText("lblBdWoodHq", I18n.t("UI_BREAKDOWN_HQ_BASE"));
-            setElementText("lblBdWoodTiles", I18n.t("UI_BREAKDOWN_TILES"));
-            setElementText("lblBdWoodSockets", I18n.t("UI_BREAKDOWN_SOCKETS"));
-            setElementText("lblBdWoodVicinity", I18n.t("UI_BREAKDOWN_VICINITY"));
             setElementText("lblLogTitle", I18n.t("UI_LOG_TITLE"));
             setElementText("btnLogToggle", I18n.t("UI_LOG_TOGGLE"));
             setElementText("btnMulligan", I18n.t("UI_MULLIGAN_BTN"));
@@ -850,107 +678,6 @@
             render();
         }
 
-        function rotateSelectedCard(card) {
-            if (state && state.hasPickedThisTurn) return;
-            const rows = card.currentShape.length;
-            const cols = card.currentShape[0].length;
-            if (rows === 2 && cols === 2) return;
-
-            const engine = window.Step1Engine;
-            card.currentShape = engine.rotateShapeMatrix(card.currentShape);
-            render();
-        }
-
-        function clearCellPreviews() {
-            const cells = document.querySelectorAll(".cell");
-            cells.forEach(c => {
-                c.classList.remove("preview-valid", "preview-invalid");
-            });
-            hideTileTooltip();
-        }
-
-        function highlightPlaceableCells() {
-            if (!selectedCard || !state || state.hasPickedThisTurn) return;
-            const shape = selectedCard.currentShape;
-
-            for (let r = 0; r < 5; r++) {
-                for (let c = 0; c < 5; c++) {
-                    const check = state.canPlaceShape(r, c, shape);
-                    if (check.can) {
-                        const targetEl = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
-                        if (targetEl) {
-                            targetEl.classList.add("preview-valid");
-                        }
-                    }
-                }
-            }
-        }
-
-        function onCellMouseEnter(e, r, c) {
-            if (!state) return;
-            const cellData = state.grid[r][c];
-            showTileTooltip(e, r, c, cellData);
-
-            if (!selectedCard || state.hasPickedThisTurn) return;
-            clearCellPreviews();
-            highlightPlaceableCells();
-
-            const shape = selectedCard.currentShape;
-            const check = state.canPlaceShape(r, c, shape);
-            const isValid = check.can;
-
-            const rows = shape.length;
-            const cols = shape[0].length;
-
-            for (let dr = 0; dr < rows; dr++) {
-                for (let dc = 0; dc < cols; dc++) {
-                    if (shape[dr][dc] === 1) {
-                        const tr = r + dr;
-                        const tc = c + dc;
-                        if (tr < 5 && tc < 5) {
-                            const targetEl = document.querySelector(`.cell[data-r="${tr}"][data-c="${tc}"]`);
-                            if (targetEl) {
-                                targetEl.classList.add(isValid ? "preview-valid" : "preview-invalid");
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        function showTileTooltip(e, r, c, cell) {
-            const tt = document.getElementById("tileTooltip");
-            const I18n = window.I18n;
-            if (!tt || !cell || !I18n) return;
-
-            const pos = `(${String.fromCharCode(65+c)}${r+1})`;
-            const isHQVic = state.isHQVicinity(r, c);
-
-            if (cell.isHQ) {
-                tt.innerHTML = `<strong>${I18n.t("TOOLTIP_HQ_TITLE", { pos })}</strong><br>${I18n.t("TOOLTIP_HQ_DESC")}`;
-            } else if (cell.placed && cell.terrain) {
-                const tName = I18n.t(cell.terrain.nameKey);
-                const sName = cell.socketResource ? I18n.t(cell.socketResource.nameKey) : "";
-                const mergeText = cell.merged ? `<br><span style="color:#f1c40f;font-weight:bold;">${I18n.t("UI_MERGE_2X2_LABEL", { name: tName })}</span>` : "";
-                const socketText = cell.socketResource ? `<br><span style="color:#f1c40f;font-weight:bold;">★ ${sName} (${I18n.t("UI_SOCKET_BLOOMING")})</span>` : (cell.hasSocket ? `<br><span style="color:#f39c12;font-weight:bold;">${I18n.t("UI_UNOPENED_SOCKET_LABEL")}</span>` : "");
-                const searchText = cell.searched ? `<br><span style="color:#2ecc71;">${I18n.t("UI_SEARCHED_BADGE")}</span>` : (cell.merged ? `<br><span style="color:#7f8c8d;">${I18n.t("UI_MERGED_SEARCH_DISABLED")}</span>` : `<br><span style="color:#3498db;">${I18n.t("UI_SEARCH_LINK")}</span>`);
-                tt.innerHTML = `<strong>${tName} ${pos}</strong>${mergeText}<br>🛡️${cell.terrain.defense} | 🌾+${cell.terrain.food||0} 🧱+${cell.terrain.wood||0}${isHQVic?' (+1)':''}${socketText}${searchText}`;
-            } else if (cell.hasSocket) {
-                tt.innerHTML = `<strong>${I18n.t("TOOLTIP_SOCKET_UNOPENED", { pos })}</strong>`;
-            } else {
-                tt.innerHTML = `<strong>${I18n.t("TOOLTIP_UNPLACED", { pos })}</strong>${isHQVic?`<br><small style="color:#1abc9c;">${I18n.t("TOOLTIP_HQ_VICINITY_BUFF")}</small>`:''}`;
-            }
-
-            tt.style.left = (e.clientX + 15) + "px";
-            tt.style.top = (e.clientY + 15) + "px";
-            tt.style.display = "block";
-        }
-
-        function hideTileTooltip() {
-            const tt = document.getElementById("tileTooltip");
-            if (tt) tt.style.display = "none";
-        }
-
         function setElementText(id, text) {
             const el = document.getElementById(id);
             if (el) el.innerText = text;
@@ -961,9 +688,6 @@
             const I18n = window.I18n;
             try {
                 const prods = state.calculateTotalProduction();
-                const bd = state.getResourceBreakdown();
-                const trialNotice = state.getTrialNotice();
-
                 setElementText("valTurn", state.turn);
                 setElementText("valEmber", state.ember);
                 setElementText("valFood", state.food);
@@ -973,26 +697,6 @@
                 setElementText("valDefense", state.calculateTotalDefense());
                 setElementText("valMystic", state.mystic);
                 setElementText("valPlacedCount", `${state.countPlacedTiles()}/24`);
-
-                const trialBox = document.getElementById("trialNoticeBox");
-                if (trialBox) {
-                    if (trialNotice && trialNotice.active) {
-                        trialBox.style.display = "block";
-                        setElementText("trialCountdown", trialNotice.remaining);
-                    } else {
-                        trialBox.style.display = "none";
-                    }
-                }
-
-                setElementText("bdFoodTotal", `+${bd.food.total}/T`);
-                setElementText("bdFoodTiles", `+${bd.food.tiles}/T`);
-                setElementText("bdFoodSockets", `+${bd.food.sockets}/T`);
-                setElementText("bdFoodVicinity", `+${bd.food.vicinity}/T`);
-
-                setElementText("bdWoodTotal", `+${bd.wood.total}/T`);
-                setElementText("bdWoodTiles", `+${bd.wood.tiles}/T`);
-                setElementText("bdWoodSockets", `+${bd.wood.sockets}/T`);
-                setElementText("bdWoodVicinity", `+${bd.wood.vicinity}/T`);
 
                 const boardEl = document.getElementById("gridBoard");
                 if (boardEl) {
@@ -1019,9 +723,6 @@
                             const cellData = state.grid[r][c];
                             const cellEl = document.createElement("div");
                             cellEl.className = "cell";
-                            cellEl.setAttribute("data-r", r);
-                            cellEl.setAttribute("data-c", c);
-
                             const isHQVic = state.isHQVicinity(r, c);
 
                             if (cellData.isHQ) {
@@ -1029,83 +730,29 @@
                                 cellEl.innerHTML = I18n.t("TERRAIN_HQ");
                             } else if (cellData.placed && cellData.terrain) {
                                 cellEl.classList.add("placed");
-
                                 const tName = I18n.t(cellData.terrain.nameKey);
-                                const mergeId = cellData.mergeGroupId;
-                                const placeId = cellData.placementGroupId;
-                                const activeGroupId = mergeId || placeId;
-
-                                if (activeGroupId) {
-                                    if (cellData.merged) {
-                                        cellEl.classList.add("merged");
-                                    }
-
-                                    const topSame = (r > 0 && (state.grid[r-1][c].mergeGroupId === activeGroupId || state.grid[r-1][c].placementGroupId === activeGroupId));
-                                    const rightSame = (c < 4 && (state.grid[r][c+1].mergeGroupId === activeGroupId || state.grid[r][c+1].placementGroupId === activeGroupId));
-                                    const bottomSame = (r < 4 && (state.grid[r+1][c].mergeGroupId === activeGroupId || state.grid[r+1][c].placementGroupId === activeGroupId));
-                                    const leftSame = (c > 0 && (state.grid[r][c-1].mergeGroupId === activeGroupId || state.grid[r][c-1].placementGroupId === activeGroupId));
-
-                                    if (topSame) cellEl.style.borderTop = "none";
-                                    if (rightSame) cellEl.style.borderRight = "none";
-                                    if (bottomSame) cellEl.style.borderBottom = "none";
-                                    if (leftSame) cellEl.style.borderLeft = "none";
-
-                                    if (!topSame && !leftSame) {
-                                        const socketText = cellData.socketResource ? `<br><small style="color:#f1c40f;">★${I18n.t(cellData.socketResource.nameKey)}</small>` : "";
-                                        if (cellData.merged) {
-                                            cellEl.innerHTML = `<span style="font-size:12px; color:#f1c40f; font-weight:bold; white-space:nowrap; z-index:5;">${I18n.t("UI_MERGE_2X2_LABEL", { name: tName })}${socketText}</span>`;
-                                        } else {
-                                            cellEl.innerHTML = `<span style="font-size:13px; color:#fff; font-weight:bold; z-index:5;">${tName}${socketText}</span>`;
-                                        }
-                                    } else {
-                                        const socketBadge = cellData.socketResource ? `<small style="color:#f1c40f; font-size:10px;">★${I18n.t(cellData.socketResource.nameKey)}</small>` : "";
-                                        cellEl.innerHTML = socketBadge;
-                                    }
-                                } else {
-                                    const socketBadge = cellData.socketResource ? `<br><small style="color:#f1c40f;">★${I18n.t(cellData.socketResource.nameKey)}</small>` : "";
-                                    const searchedBadge = cellData.searched ? `<span class="searched-badge">${I18n.t("UI_SEARCHED_BADGE")}</span>` : "";
-                                    cellEl.innerHTML = `${tName}${socketBadge}${searchedBadge}`;
-                                }
-                            } else if (cellData.hasSocket) {
-                                cellEl.classList.add("socket-unopened");
-                                if (isHQVic) cellEl.classList.add("hq-vicinity-unplaced");
-                                cellEl.innerHTML = `<span style="color:#f39c12;font-size:18px;">★</span>`;
-                            } else {
-                                if (isHQVic) {
-                                    cellEl.classList.add("hq-vicinity-unplaced");
-                                    cellEl.innerHTML = `<span style="font-size:12px; color:#1abc9c; opacity:0.8;">✨+1</span>`;
-                                }
+                                cellEl.innerHTML = tName;
+                            } else if (isHQVic) {
+                                cellEl.classList.add("hq-vicinity-unplaced");
+                                cellEl.innerHTML = `<span style="font-size:12px; color:#1abc9c; opacity:0.8;">✨+1</span>`;
                             }
-
-                            cellEl.onmouseenter = (e) => onCellMouseEnter(e, r, c);
-                            cellEl.onmouseleave = clearCellPreviews;
-                            cellEl.onclick = () => onCellClick(r, c);
                             boardEl.appendChild(cellEl);
                         }
                     }
                 }
 
-                if (selectedCard && !state.hasPickedThisTurn) {
-                    highlightPlaceableCells();
-                }
-
-                // 1. ドローオファリングエリア描画 (ユーザー最新ワイヤーフレーム画像 100% 同期)
+                // 1. ドローオファリングエリア描画 (最下部配置 3枚)
                 const cardRowEl = document.getElementById("cardRow");
                 if (cardRowEl) {
                     cardRowEl.innerHTML = "";
-
                     state.handOffering.forEach((card, idx) => {
                         if (!card) return;
 
                         if (card.isBlank) {
-                            // 🃏 手札の抜け部分はカード裏表示 (✖)
                             const blankEl = document.createElement("div");
                             blankEl.className = "card-frame-tcg locked";
-                            blankEl.style.cssText = "background:linear-gradient(145deg, #11141d, #090a0f); border:2px dashed #7f8c8d; border-radius:16px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;";
-                            blankEl.innerHTML = `
-                                <div style="font-size:36px; color:#e74c3c; font-weight:bold; filter:drop-shadow(0 0 6px rgba(231,76,60,0.6));">✖</div>
-                                <div style="font-size:10px; color:#7f8c8d; font-weight:bold;">${I18n.t("UI_RESERVE_BLANK_SLOT")}</div>
-                            `;
+                            blankEl.style.cssText = "background:#11141d; border:2px dashed #7f8c8d; border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center;";
+                            blankEl.innerHTML = `<div style="font-size:28px; color:#e74c3c; font-weight:bold;">✖</div>`;
                             cardRowEl.appendChild(blankEl);
                             return;
                         }
@@ -1118,324 +765,90 @@
                         const cardEl = document.createElement("div");
                         cardEl.className = `card-frame-tcg ${rarityClass} ${isSelected ? 'selected' : ''} ${isLocked ? 'locked' : ''}`;
 
-                        const sRows = card.currentShape.length;
-                        const sCols = card.currentShape[0].length;
-                        
-                        let shapeGridHtml = `<div style="display:grid; grid-template-columns:repeat(${sCols}, 12px); gap:2px; z-index:2;">`;
-                        for (let dr = 0; dr < sRows; dr++) {
-                            for (let dc = 0; dc < sCols; dc++) {
-                                const isActive = card.currentShape[dr][dc] === 1;
-                                shapeGridHtml += `<div style="width:12px;height:12px;background:${isActive ? '#0097a7' : '#b2ebf2'};border:1px solid #006064;border-radius:2px;"></div>`;
-                            }
-                        }
-                        shapeGridHtml += '</div>';
-
                         const cName = I18n.t(card.terrain.nameKey);
-                        const reserveBtnHtml = isLocked ? 
-                            `<button class="tcg-reserve-btn-wireframe" style="background:#7f8c8d; border-color:#95a5a6; cursor:not-allowed;" disabled>${I18n.t("UI_RESERVE_LOCKED_BTN")}</button>` :
-                            `<button class="tcg-reserve-btn-wireframe" onclick="event.stopPropagation(); reserveCard(${idx})">${I18n.t("UI_RESERVE_BTN")}</button>`;
-
-                        const rotateBtnHtml = isLocked ? "" :
-                            `<button class="tcg-rotate-btn-wireframe" onclick="event.stopPropagation(); event.preventDefault(); rotateCardByIdx(${idx})">${I18n.t("UI_ROTATE_BTN")} <span class="rotate-arrow-icon">🔄</span></button>`;
-
                         cardEl.innerHTML = `
                             <div class="tcg-card-top-bar">
                                 <div class="tcg-title-pill">${cName}</div>
                                 <div class="tcg-rarity-code">${rarityCode}</div>
                             </div>
                             <div class="tcg-shape-art-area">
-                                ${shapeGridHtml}
+                                <div style="width:12px;height:12px;background:#0097a7;border-radius:2px;"></div>
                             </div>
                             <div class="tcg-yield-strip">
                                 <span>🌾: ${card.terrain.food||0}</span>
                                 <span>🧱: ${card.terrain.wood||0}</span>
                                 <span>🛡️ ${card.terrain.defense||0}</span>
-                                ${card.terrain.mystic > 0 ? `<span>✨ ${card.terrain.mystic}</span>` : ''}
                             </div>
                             <div class="tcg-action-controls">
-                                ${reserveBtnHtml}
-                                ${rotateBtnHtml}
+                                <button class="tcg-reserve-btn-wireframe" onclick="event.stopPropagation(); reserveCard(${idx})">${I18n.t("UI_RESERVE_BTN")}</button>
+                                <button class="tcg-rotate-btn-wireframe">${I18n.t("UI_ROTATE_BTN")} 🔄</button>
                             </div>
                         `;
-
-                        cardEl.onclick = () => {
-                            if (state.hasPickedThisTurn) return;
-                            selectedCard = card;
-                            render();
-                        };
-
-                        cardEl.oncontextmenu = (e) => {
-                            e.preventDefault();
-                            if (state.hasPickedThisTurn) return;
-                            rotateCardByIdx(idx);
-                        };
-
                         cardRowEl.appendChild(cardEl);
                     });
                 }
 
-                // 2. 保留エリア描画 (ユーザー最新ワイヤーフレーム画像 100% 同期 ✕ [↩ 手札へ戻す] ボタン)
+                // 2. 保留エリア描画 (最下部配置 3枚)
                 const reserveRowEl = document.getElementById("reserveRow");
                 if (reserveRowEl) {
                     reserveRowEl.innerHTML = "";
-
                     for (let i = 0; i < 3; i++) {
                         const card = state.reserveSlots[i];
-                        const isLocked = state.hasPickedThisTurn;
-
                         if (card) {
-                            const isSelected = (selectedCard === card);
                             const cName = I18n.t(card.terrain.nameKey);
-                            const rarityClass = (card.terrain.id === "H3_MOUNTAIN") ? "rarity-uc" : "rarity-c";
-                            const rarityCode = (card.terrain.id === "H3_MOUNTAIN") ? "UC" : "C";
-
                             const cardEl = document.createElement("div");
-                            cardEl.className = `card-frame-tcg ${rarityClass} ${isSelected ? 'selected' : ''} ${isLocked ? 'locked' : ''}`;
-
-                            const sRows = card.currentShape.length;
-                            const sCols = card.currentShape[0].length;
-                            
-                            let shapeGridHtml = `<div style="display:grid; grid-template-columns:repeat(${sCols}, 12px); gap:2px; z-index:2;">`;
-                            for (let dr = 0; dr < sRows; dr++) {
-                                for (let dc = 0; dc < sCols; dc++) {
-                                    const isActive = card.currentShape[dr][dc] === 1;
-                                    shapeGridHtml += `<div style="width:12px;height:12px;background:${isActive ? '#e67e22' : '#ffe0b2'};border:1px solid #d35400;border-radius:2px;"></div>`;
-                                }
-                            }
-                            shapeGridHtml += '</div>';
-
-                            const rotateBtnHtml = isLocked ? "" :
-                                `<button class="tcg-rotate-btn-wireframe" onclick="event.stopPropagation(); event.preventDefault(); rotateReserveCardByIdx(${i})">${I18n.t("UI_ROTATE_BTN")} <span class="rotate-arrow-icon">🔄</span></button>`;
-
-                            const returnBtnHtml = isLocked ? "" :
-                                `<button class="tcg-reserve-btn-wireframe" style="background:#e67e22; border-color:#d35400;" onclick="event.stopPropagation(); returnReserveCard(${i})">${I18n.t("UI_RESERVE_RETURN_BTN")}</button>`;
-
+                            cardEl.className = "card-frame-tcg rarity-c";
                             cardEl.innerHTML = `
                                 <div class="tcg-card-top-bar">
                                     <div class="tcg-title-pill" style="border-color:#d35400;">${cName}</div>
-                                    <div class="tcg-rarity-code" style="color:#d35400;">${rarityCode}</div>
+                                    <div class="tcg-rarity-code" style="color:#d35400;">C</div>
                                 </div>
                                 <div class="tcg-shape-art-area" style="background:#fff3e0;">
-                                    ${shapeGridHtml}
+                                    <div style="width:12px;height:12px;background:#e67e22;border-radius:2px;"></div>
                                 </div>
                                 <div class="tcg-yield-strip" style="background:#fff3e0;">
                                     <span>🌾: ${card.terrain.food||0}</span>
                                     <span>🧱: ${card.terrain.wood||0}</span>
                                     <span>🛡️ ${card.terrain.defense||0}</span>
-                                    ${card.terrain.mystic > 0 ? `<span>✨ ${card.terrain.mystic}</span>` : ''}
                                 </div>
                                 <div class="tcg-action-controls">
-                                    ${returnBtnHtml}
-                                    ${rotateBtnHtml}
+                                    <button class="tcg-reserve-btn-wireframe" style="background:#e67e22;" onclick="event.stopPropagation(); returnReserveCard(${i})">${I18n.t("UI_RESERVE_RETURN_BTN")}</button>
                                 </div>
                             `;
-
-                            cardEl.onclick = () => {
-                                if (state.hasPickedThisTurn) return;
-                                selectedCard = card;
-                                render();
-                            };
-
-                            cardEl.oncontextmenu = (e) => {
-                                e.preventDefault();
-                                if (state.hasPickedThisTurn) return;
-                                rotateReserveCardByIdx(i);
-                            };
-
                             reserveRowEl.appendChild(cardEl);
                         } else {
                             const emptySlotEl = document.createElement("div");
-                            emptySlotEl.className = `reserve-slot ${isLocked ? 'locked' : ''}`;
-                            emptySlotEl.style.cssText = "width:100%; aspect-ratio:2/3; background:#12141c; border:2px dashed #34495e; border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:11px; color:#7f8c8d;";
+                            emptySlotEl.className = "reserve-slot";
+                            emptySlotEl.style.cssText = "width:100%; height:100%; max-height:175px; aspect-ratio:2/3; background:#12141c; border:2px dashed #34495e; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:11px; color:#7f8c8d; margin:0 auto;";
                             emptySlotEl.innerText = I18n.t("UI_RESERVE_EMPTY", { slot: i + 1 });
                             reserveRowEl.appendChild(emptySlotEl);
                         }
                     }
-                }
-
-                const logContentEl = document.getElementById("logContent");
-                if (logContentEl) {
-                    logContentEl.innerHTML = "";
-                    state.gameLogs.forEach(log => {
-                        const item = document.createElement("div");
-                        item.innerText = log;
-                        logContentEl.appendChild(item);
-                    });
-                }
-
-                while (state.toastQueue.length > 0) {
-                    const toastData = state.toastQueue.shift();
-                    showTileToast(toastData.r, toastData.c, toastData.text);
                 }
             } catch (err) {
                 console.error("Render Error:", err);
             }
         }
 
-        function rotateCardByIdx(idx) {
-            if (!state || state.hasPickedThisTurn) return;
-            const card = state.handOffering[idx];
-            if (card) {
-                rotateSelectedCard(card);
-            }
-        }
-
-        function rotateReserveCardByIdx(idx) {
-            if (!state || state.hasPickedThisTurn) return;
-            const card = state.reserveSlots[idx];
-            if (card) {
-                rotateSelectedCard(card);
-            }
-        }
-
-        function onCellClick(r, c) {
-            if (!state) return;
-            const cell = state.grid[r][c];
-            const I18n = window.I18n;
-
-            if (!selectedCard) {
-                if (cell.placed && !cell.isHQ && !cell.searched && !cell.merged) {
-                    const tName = I18n.t(cell.terrain.nameKey);
-                    const posStr = `${String.fromCharCode(65+c)}${r+1}`;
-                    const confirmSearch = confirm(I18n.t("CONFIRM_EXPLORATION", { pos: posStr, name: tName }));
-                    if (confirmSearch) {
-                        const res = state.executeExploration(r, c);
-                        if (!res.success) {
-                            alert(I18n.t("ALERT_SEARCH_FAILED", { reason: res.reason }));
-                        }
-                        render();
-                    }
-                }
-                return;
-            }
-
-            if (state.hasPickedThisTurn) {
-                alert(I18n.t("ALERT_LAND_ALREADY_PLACED"));
-                selectedCard = null;
-                clearCellPreviews();
-                render();
-                return;
-            }
-
-            if (state.ember <= 0) {
-                alert(I18n.t("ALERT_EMBER_ZERO"));
-                return;
-            }
-
-            const res = state.placeShape(r, c, selectedCard.currentShape, selectedCard.terrain);
-            if (!res.success) {
-                alert(I18n.t("ALERT_PLACE_FAILED", { reason: res.reason }));
-                return;
-            }
-
-            state.ember -= 1;
-
-            const resIdx = state.reserveSlots.indexOf(selectedCard);
-            if (resIdx !== -1) {
-                state.reserveSlots[resIdx] = null;
-            }
-
-            state.checkMergePatterns();
-
-            state.hasPickedThisTurn = true;
-            selectedCard = null;
-
-            clearCellPreviews();
-            render();
-        }
-
         function reserveCard(idx) {
-            if (!state || state.hasPickedThisTurn) return;
-            if (state.moveToReserve(idx)) {
-                render();
-            } else {
-                alert(window.I18n.t("ALERT_RESERVE_FULL"));
-            }
+            if (!state) return;
+            if (state.moveToReserve(idx)) render();
         }
-
-        function returnReserveCard(reserveIdx) {
-            if (!state || state.hasPickedThisTurn) return;
-            if (state.returnFromReserve(reserveIdx)) {
-                if (selectedCard === state.reserveSlots[reserveIdx]) {
-                    selectedCard = null;
-                }
-                render();
-            }
+        function returnReserveCard(idx) {
+            if (!state) return;
+            if (state.returnFromReserve(idx)) render();
         }
-
         function mulligan() {
             if (!state || !drawSys) return;
-            if (state.ember <= 1) {
-                alert(window.I18n.t("ALERT_MULLIGAN_NO_EMBER"));
-                return;
-            }
             state.ember -= 1;
             drawSys.generateOfferingCards();
-            state.addLog(window.I18n.t("LOG_MULLIGAN_EXECUTED"));
             render();
         }
-
-        function toggleLogPanel() {
-            const el = document.getElementById("logPanelWrapper");
-            if (!el) return;
-            el.classList.toggle("collapsed");
-        }
-
-        function showBreakdownModal() {
-            const el = document.getElementById("breakdownModal");
-            if (el) el.style.display = "block";
-        }
-
-        function hideBreakdownModal() {
-            const el = document.getElementById("breakdownModal");
-            if (el) el.style.display = "none";
-        }
-
-        function toggleBreakdownModal() {
-            const el = document.getElementById("breakdownModal");
-            if (!el) return;
-            el.style.display = (el.style.display === "block") ? "none" : "block";
-        }
-
-        function showTileToast(r, c, text) {
-            const targetEl = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
-            if (targetEl) {
-                const toast = document.createElement("div");
-                toast.className = "tile-bonus-toast";
-                toast.innerText = text;
-                targetEl.appendChild(toast);
-                setTimeout(() => toast.remove(), 2000);
-            }
-        }
-
         function nextTurn() {
             if (!state || !drawSys) return;
-            const I18n = window.I18n;
-            const prods = state.calculateTotalProduction();
-            state.food += prods.totalFood;
-            state.wood += prods.totalWood;
-            state.mystic += prods.totalMystic;
-
-            const maint = state.processTurnEndMaintenance();
-            state.addLog(I18n.t("LOG_TURN_END", { turn: state.turn, food: prods.totalFood, wood: prods.totalWood, mystic: prods.totalMystic, cost: maint.foodCost }));
-
-            if (maint.isGameOver) {
-                render();
-                alert(I18n.t("ALERT_GAME_OVER"));
-                return;
-            }
-
-            if (maint.isGameClear) {
-                render();
-                alert(I18n.t("ALERT_GAME_CLEAR"));
-                return;
-            }
-
             state.turn++;
             state.hasPickedThisTurn = false;
-            selectedCard = null;
             drawSys.generateOfferingCards();
-            clearCellPreviews();
             render();
         }
     </script>
