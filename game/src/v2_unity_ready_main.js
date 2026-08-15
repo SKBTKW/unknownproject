@@ -154,29 +154,25 @@
                             cell.placementGroupId = pGroupId;
                         }
 
-                        // ★ソケットマス上への土地配置時対応資源即時湧出 (Spec 01 遵守)
                         if (cell.hasSocket && !cell.socketResource) {
                             const baseTerrainId = terrain.terrainId || terrain.id;
-                            const socketMap = {
-                                "GL1_PLAINS":      [{ nameKey: "SOCKET_WILD_WHEAT", bonusFood: 3, bonusWood: 0, bonusMystic: 0 }, { nameKey: "SOCKET_APPLES", bonusFood: 3, bonusWood: 0, bonusMystic: 0 }],
-                                "GL2_FOREST":      [{ nameKey: "SOCKET_APPLES", bonusFood: 3, bonusWood: 0, bonusMystic: 0 }],
-                                "GL3_DEEP_FOREST": [{ nameKey: "SOCKET_APPLES", bonusFood: 3, bonusWood: 0, bonusMystic: 0 }],
-                                "H2_HILL":         [{ nameKey: "SOCKET_QUARRY", bonusFood: 0, bonusWood: 3, bonusMystic: 0 }, { nameKey: "SOCKET_IRON_DEPOSIT", bonusFood: 0, bonusWood: 2, bonusMystic: 1 }],
-                                "H3_MOUNTAIN":     [{ nameKey: "SOCKET_IRON_DEPOSIT", bonusFood: 0, bonusWood: 2, bonusMystic: 1 }],
-                                "H2_FOREST_HILL":  [{ nameKey: "SOCKET_QUARRY", bonusFood: 0, bonusWood: 3, bonusMystic: 0 }, { nameKey: "SOCKET_APPLES", bonusFood: 3, bonusWood: 0, bonusMystic: 0 }],
-                                "H2_DEEP_HILL":    [{ nameKey: "SOCKET_QUARRY", bonusFood: 0, bonusWood: 3, bonusMystic: 0 }],
-                                "H2_DESERT_HILL":  [{ nameKey: "SOCKET_QUARRY", bonusFood: 0, bonusWood: 3, bonusMystic: 0 }]
-                            };
-
+                            const sysMaster = (typeof window !== "undefined" && window.LAND_SYSTEM_DATA && window.LAND_SYSTEM_DATA.sockets) ? window.LAND_SYSTEM_DATA.sockets : null;
+                            
                             let spawnedSocket = null;
                             if (baseTerrainId === "GL0_DESERT") {
-                                // ★ 砂漠配置特殊ルール: 25% の確率でオアシス「デーツ 🌾+1」が開花
                                 if (Math.random() < 0.25) {
                                     spawnedSocket = { nameKey: "SOCKET_DATES", bonusFood: 1, bonusWood: 0, bonusMystic: 0 };
                                 }
-                            } else if (socketMap[baseTerrainId]) {
-                                const candidates = socketMap[baseTerrainId];
-                                spawnedSocket = candidates[Math.floor(Math.random() * candidates.length)];
+                            } else if (sysMaster && sysMaster[baseTerrainId]) {
+                                const candidates = sysMaster[baseTerrainId];
+                                const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+                                spawnedSocket = {
+                                    nameKey: chosen.nameKey,
+                                    bonusFood: chosen.bonusYields.food || 0,
+                                    bonusWood: chosen.bonusYields.wood || 0,
+                                    bonusDefense: chosen.bonusYields.defense || 0,
+                                    bonusMystic: chosen.bonusYields.mystic || 0
+                                };
                             } else {
                                 spawnedSocket = { nameKey: "SOCKET_WILD_WHEAT", bonusFood: 3, bonusWood: 0, bonusMystic: 0 };
                             }
@@ -195,7 +191,6 @@
                 }
             }
 
-            // 🛡️ 再発防止策: コスト減算・手札消滅・配置ロックをエンジン内部で全自動完全一元化
             this.ember = Math.max(0, this.ember - 1);
             this.hasPickedThisTurn = true;
 
@@ -209,22 +204,27 @@
         }
 
         checkConnectionBonus(r, c, terrain) {
+            const size = 5;
             const neighbors = [
-                [r-1, c], [r+1, c], [r, c-1], [r, c+1]
+                [r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]
             ];
-            
-            const mult = 1;
+
+            const placedCount = this.countPlacedTiles();
+            let mult = 1.0;
+            if (placedCount >= 4) {
+                mult = 1.2;
+            }
 
             const bonusTable = {
-                "GL0_DESERT":      { food: 0, wood: 0, mystic: 5 },
-                "GL1_PLAINS":      { food: 5, wood: 0, mystic: 0 },
-                "GL2_FOREST":      { food: 2, wood: 3, mystic: 0 },
-                "GL3_DEEP_FOREST": { food: 0, wood: 3, mystic: 2 },
-                "H2_DESERT":       { food: 0, wood: 3, mystic: 2 },
-                "H2_HILL":         { food: 3, wood: 2, mystic: 0 },
+                "GL0_DESERT":      { food: 0, wood: 0, mystic: 2 },
+                "GL1_PLAINS":      { food: 4, wood: 0, mystic: 0 },
+                "GL2_FOREST":      { food: 2, wood: 2, mystic: 0 },
+                "GL3_DEEP_FOREST": { food: 1, wood: 3, mystic: 1 },
+                "H2_DESERT":       { food: 0, wood: 1, mystic: 2 },
+                "H2_HILL":         { food: 2, wood: 1, mystic: 0 },
                 "H2_FOREST_HILL":  { food: 1, wood: 4, mystic: 0 },
-                "H2_DEEP_HILL":    { food: 0, wood: 5, mystic: 2 },
-                "H3_MOUNTAIN":     { food: 0, wood: 5, mystic: 2 }
+                "H2_DEEP_HILL":    { food: 1, wood: 5, mystic: 1 },
+                "H3_MOUNTAIN":     { food: 0, wood: 3, mystic: 1 }
             };
 
             const bonus = bonusTable[terrain.id] || { food: 2, wood: 2, mystic: 0 };
@@ -234,9 +234,9 @@
                 if (nr >= 0 && nr < 5 && nc >= 0 && nc < 5) {
                     const adjCell = this.grid[nr][nc];
                     if (adjCell.placed && !adjCell.isHQ && adjCell.terrain && adjCell.terrain.id === terrain.id) {
-                        const earnedFood = bonus.food * mult;
-                        const earnedWood = bonus.wood * mult;
-                        const earnedMystic = bonus.mystic * mult;
+                        const earnedFood = Math.floor(bonus.food * mult);
+                        const earnedWood = Math.floor(bonus.wood * mult);
+                        const earnedMystic = Math.floor(bonus.mystic * mult);
 
                         this.food += earnedFood;
                         this.wood += earnedWood;
@@ -308,7 +308,24 @@
             let resultMsg = "";
             if (totalRoll >= 9) {
                 if (!cell.socketResource) {
-                    const socketDef = { nameKey: "SOCKET_WILD_WHEAT", bonusFood: 3, bonusWood: 0, bonusMystic: 0 };
+                    const baseTerrainId = cell.terrain ? (cell.terrain.terrainId || cell.terrain.id) : "GL1_PLAINS";
+                    const sysMaster = (typeof window !== "undefined" && window.LAND_SYSTEM_DATA && window.LAND_SYSTEM_DATA.sockets) ? window.LAND_SYSTEM_DATA.sockets : null;
+                    
+                    let socketDef = null;
+                    if (sysMaster && sysMaster[baseTerrainId]) {
+                        const candidates = sysMaster[baseTerrainId];
+                        const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+                        socketDef = {
+                            nameKey: chosen.nameKey,
+                            bonusFood: chosen.bonusYields.food || 0,
+                            bonusWood: chosen.bonusYields.wood || 0,
+                            bonusDefense: chosen.bonusYields.defense || 0,
+                            bonusMystic: chosen.bonusYields.mystic || 0
+                        };
+                    } else {
+                        socketDef = { nameKey: "SOCKET_WILD_WHEAT", bonusFood: 3, bonusWood: 0, bonusMystic: 0 };
+                    }
+
                     cell.socketResource = socketDef;
                     const sName = I18n.t(socketDef.nameKey);
                     resultMsg = `🎲 Roll ${totalRoll}: ★ ${sName}`;

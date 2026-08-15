@@ -18,12 +18,24 @@
             TERRAIN_FOREST_HILL: "森丘陵",
             TERRAIN_DEEP_HILL: "森林丘陵",
 
-            // 開花ソケット資源名
+            // 開花ソケット資源名 (全17種)
+            SOCKET_COW: "牛 🌾+3 🧱+1/T",
+            SOCKET_SHEEP: "羊 🌾+2 🧱+1/T",
+            SOCKET_DEER: "鹿・猪 🌾+2 🧱+1/T",
+            SOCKET_HORSE: "馬 🛡️+2/T",
+            SOCKET_GOAT: "山羊 🌾+2 🧱+1/T",
+            SOCKET_CAMEL: "ラクダ 🌾+1 🧱+1/T",
             SOCKET_WILD_WHEAT: "野麦 🌾+3/T",
+            SOCKET_BARLEY: "大麦 🌾+2/T",
             SOCKET_APPLES: "林檎 🌾+3/T",
-            SOCKET_QUARRY: "採石層 🧱+3/T",
-            SOCKET_IRON_DEPOSIT: "金銀鉱脈 🧱+2 ✨+1/T",
             SOCKET_DATES: "デーツ 🌾+1/T",
+            SOCKET_LIMESTONE: "石灰岩 🧱+3/T",
+            SOCKET_HEMATITE: "赤鉄鉱 🛡️+2 🧱+1/T",
+            SOCKET_GRANITE: "花崗岩 🛡️+3/T",
+            SOCKET_IRON_DEPOSIT: "金銀鉱脈 🧱+2 ✨+1/T",
+            SOCKET_NITER: "硝石 🧱+1 ✨+2/T",
+            SOCKET_CEDAR: "杉・楢 🧱+3/T",
+            SOCKET_GREAT_TREE: "巨木 🧱+2 ✨+1/T",
 
             // UIラベル
             UI_TITLE: "Trial of Ages : Last Ember",
