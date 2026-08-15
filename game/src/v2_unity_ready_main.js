@@ -564,14 +564,14 @@
                     { shape: [[0, 1, 1], [1, 1, 0]], weight: 0.02, minStage: 3 }, // 1x4 S-shape
                     { shape: [[1, 1], [1, 1]], weight: 0.02, minStage: 3 }
                 ];
-            } else if (chosen.id === "GL2_FOREST" || chosen.id === "GL3_DEEP_FOREST") {
-                // 森: 1x1 (70%), 1x2 (30%) 常時固定
+            } else if (chosen.id === "GL0_DESERT") {
+                // 🏜️ 砂漠: 森と同仕様の 1x1 (70%), 1x2 (30%) 常時固定 (小回りオアシス狙撃枠)
                 availableShapes = [
                     { shape: [[1]], weight: 0.70, minStage: 1 },
                     { shape: [[1, 1]], weight: 0.30, minStage: 1 }
                 ];
-            } else if (chosen.id === "H2_FOREST_HILL" || chosen.id === "H2_DEEP_HILL") {
-                // 🛡️ 100% クラッシュゼロ保証付き 複合土地 (森 ✕ 丘陵) 形状判定ロジック (モデル A 確定 ＆ 即時シフト機能)
+            } else if (chosen.id === "H2_DESERT_HILL" || chosen.id === "H2_FOREST_HILL" || chosen.id === "H2_DEEP_HILL") {
+                // 🛡️ 100% クラッシュゼロ保証付き 複合土地 (砂漠/森 ✕ 丘陵) 形状判定ロジック (モデル A 確定 ＆ 即時シフト機能)
                 const rawMode = this.state.COMPLEX_SHAPE_MODE;
                 const validModes = ['MODEL_A', 'MODEL_B', 'MODEL_C'];
                 const mode = validModes.includes(rawMode) ? rawMode : 'MODEL_A';
@@ -584,7 +584,7 @@
                         { shape: [[1, 0, 0], [1, 1, 1]], weight: 0.10, minStage: 1 }
                     ];
                 } else if (mode === 'MODEL_C') {
-                    // 気候優先 (森の形状 1x1, 1x2)
+                    // 気候優先 (砂漠/森の形状 1x1, 1x2)
                     availableShapes = [
                         { shape: [[1]], weight: 0.70, minStage: 1 },
                         { shape: [[1, 1]], weight: 0.30, minStage: 1 }
@@ -688,14 +688,14 @@
                         { shape: [[0, 1, 1], [1, 1, 0]], weight: 0.02, minStage: 3 }, // 1x4 S-shape
                         { shape: [[1, 1], [1, 1]], weight: 0.02, minStage: 3 }
                     ];
-                } else if (tDef.id === "GL2_FOREST" || tDef.id === "GL3_DEEP_FOREST") {
-                    // 森: 1x1 (70%), 1x2 (30%) 常時固定
+                } else if (tDef.id === "GL0_DESERT") {
+                    // 🏜️ 砂漠: 森と同仕様の 1x1 (70%), 1x2 (30%) 常時固定
                     availableShapes = [
                         { shape: [[1]], weight: 0.70, minStage: 1 },
                         { shape: [[1, 1]], weight: 0.30, minStage: 1 }
                     ];
-                } else if (tDef.id === "H2_FOREST_HILL" || tDef.id === "H2_DEEP_HILL") {
-                    // 🛡️ 100% クラッシュゼロ保証付き 複合土地 (森 ✕ 丘陵) 形状判定ロジック (モデル A 確定 ＆ 即時シフト機能)
+                } else if (tDef.id === "H2_DESERT_HILL" || tDef.id === "H2_FOREST_HILL" || tDef.id === "H2_DEEP_HILL") {
+                    // 🛡️ 100% クラッシュゼロ保証付き 複合土地 (砂漠/森 ✕ 丘陵) 形状判定ロジック (モデル A 確定 ＆ 即時シフト機能)
                     const rawMode = this.state.COMPLEX_SHAPE_MODE;
                     const validModes = ['MODEL_A', 'MODEL_B', 'MODEL_C'];
                     const mode = validModes.includes(rawMode) ? rawMode : 'MODEL_A';
