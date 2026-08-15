@@ -358,7 +358,7 @@ if (typeof window !== "undefined") {
     "minStage": 1,
     "reqH2": 0,
     "rarity": "UR",
-    "weight": 0.05,
+    "weight": 0.02,
     "descriptionKey": "CARD_DESC_DEEP_HILL_1X2"
   }
 ];
