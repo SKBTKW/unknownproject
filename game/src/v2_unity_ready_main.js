@@ -115,7 +115,8 @@
                         ];
                         for (let [nr, nc] of neighbors) {
                             if (nr >= 0 && nr < size && nc >= 0 && nc < size) {
-                                if (this.grid[nr][nc].placed) {
+                                const targetCell = this.grid[nr][nc];
+                                if (targetCell.placed || targetCell.isHQ) {
                                     isAdjacent = true;
                                     break;
                                 }
@@ -130,7 +131,9 @@
             return { can: true };
         }
 
-        placeShape(startR, startC, shapeMatrix, terrain) {
+        placeShape(startR, startC, shapeMatrix, terrain, handIdx = -1) {
+            if (this.hasPickedThisTurn) return { can: false, reason: "ALREADY_PICKED_THIS_TURN" };
+
             const check = this.canPlaceShape(startR, startC, shapeMatrix);
             if (!check.can) return check;
 
@@ -183,9 +186,17 @@
                 }
             }
 
+            // 🛡️ 再発防止策: コスト減算・手札消滅・配置ロックをエンジン内部で全自動完全一元化
+            this.ember = Math.max(0, this.ember - 1);
+            this.hasPickedThisTurn = true;
+
+            if (handIdx >= 0 && handIdx < this.handOffering.length && this.handOffering[handIdx]) {
+                this.handOffering[handIdx] = { isBlank: true };
+            }
+
             const posStr = `(${String.fromCharCode(65+startC)}${startR+1})`;
             this.addLog(I18n.t("LOG_LAND_PLACED", { pos: posStr, name: terrainName }));
-            return { success: true };
+            return { can: true, success: true };
         }
 
         checkConnectionBonus(r, c, terrain) {

@@ -296,7 +296,7 @@
             font-size: 12px;
             color: #ecf0f1;
             box-shadow: 0 4px 15px rgba(0,0,0,0.7);
-            pointer-events: none;
+            pointer-events: none !important;
             z-index: 100;
             display: none;
         }
@@ -664,11 +664,13 @@
         let state = null;
         let drawSys = null;
         let selectedCard = null;
+        let selectedCardIdx = -1;
 
         document.addEventListener("DOMContentLoaded", () => {
             const engine = window.Step1Engine;
             if (!engine) return;
             state = new engine.GameState();
+            window.state = state;
             drawSys = new engine.Step1DrawSystem(state);
             initStaticI18nLabels();
             init();
@@ -918,7 +920,7 @@
                             return;
                         }
 
-                        const isSelected = (selectedCard === card);
+                        const isSelected = (selectedCardIdx === idx);
                         const isLocked = state.hasPickedThisTurn;
                         const rarityClass = (card.terrain.id === "H3_MOUNTAIN") ? "rarity-uc" : "rarity-c";
                         const rarityCode = (card.terrain.id === "H3_MOUNTAIN") ? "UC" : "C";
@@ -997,10 +999,12 @@
             const card = state.handOffering[idx];
             if (!card || card.isBlank) return;
 
-            if (selectedCard === card) {
+            if (selectedCardIdx === idx) {
                 selectedCard = null;
+                selectedCardIdx = -1;
             } else {
                 selectedCard = card;
+                selectedCardIdx = idx;
             }
             render();
             highlightPlaceableCells();
@@ -1010,10 +1014,24 @@
             if (e) e.stopPropagation();
             if (!state) return;
             const card = state.handOffering[idx];
-            if (!card || card.isBlank) return;
-            card.rotate();
+            if (!card || card.isBlank || !card.currentShape) return;
+            
+            // 90度回転行列計算 (1x2 [[1, 1]] -> 2x1 [[1], [1]])
+            const oldShape = card.currentShape;
+            const rows = oldShape.length;
+            const cols = oldShape[0].length;
+            const newShape = [];
+            for (let c = 0; c < cols; c++) {
+                const newRow = [];
+                for (let r = rows - 1; r >= 0; r--) {
+                    newRow.push(oldShape[r][c]);
+                }
+                newShape.push(newRow);
+            }
+            card.currentShape = newShape;
+
             render();
-            if (selectedCard === card) {
+            if (selectedCardIdx === idx) {
                 highlightPlaceableCells();
             }
         }
@@ -1039,19 +1057,16 @@
                 return;
             }
 
-            // カード選択状態でのグリッド盤面クリック配置処理
+            // カード選択状態でのグリッド盤面クリック配置処理 (エンジン内部全自動一元化対応)
             if (state.hasPickedThisTurn) return;
             const shape = selectedCard.currentShape;
             const terrain = selectedCard.terrain;
-            const res = state.placeShape(r, c, shape, terrain);
-            if (res.can) {
-                // 手札オファリングからカードを除外（スロットロックまたは空枠）
-                const cardIdx = state.handOffering.indexOf(selectedCard);
-                if (cardIdx !== -1) {
-                    state.handOffering[cardIdx] = { isBlank: true };
-                }
-                state.hasPickedThisTurn = true;
+            const currentIdx = selectedCardIdx !== -1 ? selectedCardIdx : state.handOffering.indexOf(selectedCard);
+            const res = state.placeShape(r, c, shape, terrain, currentIdx);
+
+            if (res && (res.can || res.success)) {
                 selectedCard = null;
+                selectedCardIdx = -1;
 
                 // 2x2 合体（Merger）判定を実行
                 state.checkMergePatterns();
@@ -1081,11 +1096,19 @@
 
         function reserveCard(idx) {
             if (!state) return;
-            if (state.moveToReserve(idx)) render();
+            if (state.moveToReserve(idx)) {
+                selectedCard = null;
+                selectedCardIdx = -1;
+                render();
+            }
         }
         function returnReserveCard(idx) {
             if (!state) return;
-            if (state.returnFromReserve(idx)) render();
+            if (state.returnFromReserve(idx)) {
+                selectedCard = null;
+                selectedCardIdx = -1;
+                render();
+            }
         }
         function mulligan() {
             if (!state || !drawSys) return;
