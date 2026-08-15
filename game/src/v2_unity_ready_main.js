@@ -631,11 +631,15 @@
 
         generateOfferingCards() {
             const master = this.getLandCardMaster();
-            const stage = (this.state && this.state.stage) ? (typeof this.state.stage === 'object' ? (this.state.stage.id || 1) : this.state.stage) : 1;
+            let stageNum = 1;
+            if (this.state && this.state.stage !== undefined) {
+                if (typeof this.state.stage === 'number') stageNum = this.state.stage;
+                else if (typeof this.state.stage === 'object' && this.state.stage !== null) stageNum = Number(this.state.stage.id || 1);
+            }
             const h2Count = (this.state && typeof this.state.countH2HillsOnBoard === 'function') ? this.state.countH2HillsOnBoard() : 0;
 
-            let eligible = master.filter(c => stage >= (c.minStage || 1) && h2Count >= (c.reqH2 || 0));
-            if (eligible.length === 0) eligible = master.filter(c => (c.reqH2 || 0) === 0);
+            let eligible = master.filter(c => stageNum >= (c.minStage || 1) && h2Count >= (c.reqH2 || 0));
+            if (eligible.length === 0) eligible = master.filter(c => (c.minStage || 1) <= 1 && (c.reqH2 || 0) === 0);
 
             let totalW = eligible.reduce((acc, c) => acc + (c.weight || 0.1), 0);
 

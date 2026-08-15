@@ -674,6 +674,7 @@
             state = new engine.GameState();
             window.state = state;
             drawSys = new engine.Step1DrawSystem(state);
+            window.drawSys = drawSys;
             initStaticI18nLabels();
             init();
         });
