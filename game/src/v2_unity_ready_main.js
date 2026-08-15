@@ -640,10 +640,18 @@
         return rotated;
     }
 
+    if (typeof window !== 'undefined') {
+        window.GameState = GameState;
+        window.Step1DrawSystem = Step1DrawSystem;
+        window.GameEngine = Step1DrawSystem;
+        window.rotateShapeMatrix = rotateShapeMatrix;
+    }
+
     exports.Step1Engine = {
         GameState,
         Step1DrawSystem,
+        GameEngine: Step1DrawSystem,
         rotateShapeMatrix
     };
 
-})(typeof exports !== 'undefined' ? exports : window);
+})(typeof exports !== 'undefined' ? exports : (typeof window !== 'undefined' ? window : this));

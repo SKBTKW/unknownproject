@@ -923,18 +923,18 @@
 
                         const isSelected = (selectedCardIdx === idx);
                         const isLocked = state.hasPickedThisTurn;
-                        const rarityClass = (card.terrain.id === "H3_MOUNTAIN") ? "rarity-uc" : "rarity-c";
-                        const rarityCode = (card.terrain.id === "H3_MOUNTAIN") ? "UC" : "C";
+                        const rCode = (card.terrain && card.terrain.rarity) ? card.terrain.rarity : "C";
+                        const rarityClass = `rarity-${rCode.toLowerCase()}`;
 
                         const cardEl = document.createElement("div");
                         cardEl.className = `card-frame-tcg ${rarityClass} ${isSelected ? 'selected' : ''} ${isLocked ? 'locked' : ''}`;
                         cardEl.onclick = () => selectCard(idx);
 
-                        const cName = I18n.t(card.terrain.nameKey);
+                        const cName = card.terrain ? I18n.t(card.terrain.nameKey) : "Land";
                         cardEl.innerHTML = `
                             <div class="tcg-card-top-bar">
                                 <div class="tcg-title-pill">${cName}</div>
-                                <div class="tcg-rarity-code">${rarityCode}</div>
+                                <div class="tcg-rarity-code">${rCode}</div>
                             </div>
                             <div class="tcg-shape-art-area">
                                 <div style="width:12px;height:12px;background:#0097a7;border-radius:2px;"></div>
