@@ -182,11 +182,12 @@
             filter: grayscale(80%);
         }
 
-        /* 上層: タイトル ✕ カテゴリ ✕ コスト */
+        /* 上層: タイトル ✕ カテゴリ ✕ コスト ✕ 回転ボタン */
         .tcg-card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 4px;
         }
         .tcg-category-badge {
             background: rgba(26, 188, 156, 0.2);
@@ -201,6 +202,29 @@
             font-size: 13px;
             font-weight: bold;
             color: #ffffff;
+            flex: 1;
+            text-align: center;
+        }
+        .tcg-header-controls {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .tcg-rotate-btn {
+            background: linear-gradient(135deg, #f39c12, #d35400);
+            color: #ffffff;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+            transition: transform 0.1s;
+        }
+        .tcg-rotate-btn:hover {
+            transform: scale(1.08);
+            background: linear-gradient(135deg, #f1c40f, #e67e22);
         }
         .tcg-cost-badge {
             background: rgba(231, 76, 60, 0.25);
@@ -1040,11 +1064,17 @@
                             `<button style="font-size:10px; background:#4a5568; color:#a0aec0; border:none; border-radius:4px; padding:4px; cursor:not-allowed;" disabled>${I18n.t("UI_RESERVE_LOCKED_BTN")}</button>` :
                             `<button style="font-size:10px; background:linear-gradient(to right, #2980b9, #3498db); color:white; border:none; border-radius:4px; padding:4px; cursor:pointer; font-weight:bold;" onclick="event.stopPropagation(); reserveCard(${idx})">${I18n.t("UI_RESERVE_BTN")}</button>`;
 
+                        const rotateBtnHtml = isLocked ? "" :
+                            `<button class="tcg-rotate-btn" onclick="event.stopPropagation(); event.preventDefault(); rotateCardByIdx(${idx})">${I18n.t("UI_ROTATE_BTN")}</button>`;
+
                         cardEl.innerHTML = `
                             <div class="tcg-card-header">
                                 <span class="tcg-category-badge">${I18n.t("UI_LAND_BLOCK_CATEGORY")}</span>
                                 <span class="tcg-card-title">${cName}</span>
-                                <span class="tcg-cost-badge">${I18n.t("UI_COST_EMBER_1")}</span>
+                                <div class="tcg-header-controls">
+                                    ${rotateBtnHtml}
+                                    <span class="tcg-cost-badge">${I18n.t("UI_COST_EMBER_1")}</span>
+                                </div>
                             </div>
                             <div class="tcg-art-container">
                                 <div class="tcg-art-bg-texture"></div>
@@ -1063,6 +1093,12 @@
                             if (state.hasPickedThisTurn) return;
                             selectedCard = card;
                             render();
+                        };
+
+                        cardEl.oncontextmenu = (e) => {
+                            e.preventDefault();
+                            if (state.hasPickedThisTurn) return;
+                            rotateCardByIdx(idx);
                         };
 
                         cardRowEl.appendChild(cardEl);
@@ -1115,6 +1151,14 @@
                 }
             } catch (err) {
                 console.error("Render Error:", err);
+            }
+        }
+
+        function rotateCardByIdx(idx) {
+            if (!state || state.hasPickedThisTurn) return;
+            const card = state.handOffering[idx];
+            if (card) {
+                rotateSelectedCard(card);
             }
         }
 
