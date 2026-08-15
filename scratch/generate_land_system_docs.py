@@ -47,7 +47,7 @@ def generate_docs(json_path, output_path):
         ("GL1_PLAINS", "🌾 草原 (`H1+GL1`)"),
         ("GL2_FOREST", "🌲 森 (`H1+GL2`)"),
         ("GL3_DEEP_FOREST", "🌳 深い森 (`H1+GL3`)"),
-        ("H2_DESERT_HILL", "🏜️ 砂漠丘陵 (`H2+GL0`)"),
+        ("H2_DESERT_HILL", "🏜️ 荒野 (`H2+GL0`)"),
         ("H2_HILL", "⛰️ 丘陵 (`H2+GL1`)"),
         ("H2_FOREST_HILL", "🪵 森丘陵 (`H2+GL2`)"),
         ("H2_DEEP_HILL", "🌲 森林丘陵 (`H2+GL3`)"),

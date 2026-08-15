@@ -14,9 +14,12 @@
             TERRAIN_DEEP_HILLS: "森林丘陵",
             TERRAIN_MOUNTAIN: "山岳",
             TERRAIN_DESERT: "砂漠",
-            TERRAIN_DESERT_HILL: "砂漠丘陵",
+            TERRAIN_DESERT_HILL: "荒野",
             TERRAIN_FOREST_HILL: "森丘陵",
             TERRAIN_DEEP_HILL: "森林丘陵",
+            CARD_DESC_DESERT_1X1: "極度に乾燥した広大な砂地。命の恵みは得られないが古代の神秘を漂わせる。",
+            CARD_DESC_DESERT_1X2: "広大な砂の流砂地帯。足場は劣悪だが非常に強い神秘を秘めたUR地勢。",
+            CARD_DESC_DESERT_HILL_1X2: "岩石と乾燥した大地が広がる荒野。資材と防衛力に加え、古代の神秘が宿る。",
 
             // 開花ソケット資源名 (全17種)
             SOCKET_COW: "牛 🌾+3 🧱+1/T",
