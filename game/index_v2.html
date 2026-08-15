@@ -1092,7 +1092,7 @@
             const currentIdx = selectedCardIdx !== -1 ? selectedCardIdx : state.handOffering.indexOf(selectedCard);
             const res = state.placeShape(r, c, shape, terrain, currentIdx);
 
-            if (res && (res.can || res.success)) {
+            if (res === true || (res && (res.can || res.success))) {
                 selectedCard = null;
                 selectedCardIdx = -1;
 
