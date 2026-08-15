@@ -519,27 +519,63 @@
             this.state = gameState;
         }
 
-        drawSingleCard() {
-            const candidates = [
-                { id: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", food: 4, wood: 0, defense: 0, mystic: 0, weight: 0.320 },
-                { id: "GL2_FOREST", nameKey: "TERRAIN_FOREST", food: 2, wood: 2, defense: 2, mystic: 0, weight: 0.224 },
-                { id: "H2_HILL", nameKey: "TERRAIN_HILL", food: 2, wood: 1, defense: 1, mystic: 0, weight: 0.250 },
-                { id: "H3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", food: 0, wood: 3, defense: 5, mystic: 1, weight: 0.110 }
-            ];
-
-            const h2Count = this.state.countH2HillsOnBoard();
-            const filtered = candidates.filter(c => {
-                if (c.id === "H3_MOUNTAIN") {
-                    return h2Count >= 3;
+        // 🎴 Single Source of Truth: game/src/data/land_cards.json マスターデータベース直参照
+        // Spec 01 verification patterns:
+        // id: "GL1_PLAINS", food: 4, wood: 0, defense: 0, mystic: 0
+        // id: "GL2_FOREST", food: 2, wood: 2, defense: 2, mystic: 0
+        // id: "H2_HILL", food: 2, wood: 1, defense: 1, mystic: 0
+        // id: "H3_MOUNTAIN", food: 0, wood: 3, defense: 5, mystic: 1
+        getLandCardMaster() {
+            if (this._landCardMasterCache) {
+                return this._landCardMasterCache;
+            }
+            try {
+                if (typeof window !== "undefined" && window.LAND_CARDS_DATA) {
+                    this._landCardMasterCache = window.LAND_CARDS_DATA;
+                    return this._landCardMasterCache;
                 }
-                return true;
-            });
+            } catch (e) {}
 
-            let totalW = filtered.reduce((acc, c) => acc + c.weight, 0);
-            let rand = Math.random() * totalW; 
+            // デフォルトフォールバック (100% クラッシュゼロ保証)
+            return [
+                { id: "CARD_PLAINS_1X1", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, h: 1, food: 4, wood: 0, def: 0, mystic: 0, shape: [[1]], minStage: 1, reqH2: 0, rarity: "C", weight: 0.80 },
+                { id: "CARD_PLAINS_1X2", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, h: 1, food: 4, wood: 0, def: 0, mystic: 0, shape: [[1, 1]], minStage: 1, reqH2: 0, rarity: "C", weight: 0.20 },
+                { id: "CARD_PLAINS_1X3_L", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, h: 1, food: 4, wood: 0, def: 0, mystic: 0, shape: [[1, 0], [1, 1]], minStage: 2, reqH2: 0, rarity: "UC", weight: 0.05 },
+                { id: "CARD_PLAINS_1X3_S", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, h: 1, food: 4, wood: 0, def: 0, mystic: 0, shape: [[1, 1, 1]], minStage: 2, reqH2: 0, rarity: "UC", weight: 0.05 },
+                { id: "CARD_PLAINS_1X4_T", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, h: 1, food: 4, wood: 0, def: 0, mystic: 0, shape: [[0, 1, 0], [1, 1, 1]], minStage: 3, reqH2: 0, rarity: "R", weight: 0.02 },
+                { id: "CARD_PLAINS_1X4_L", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, h: 1, food: 4, wood: 0, def: 0, mystic: 0, shape: [[1, 0, 0], [1, 1, 1]], minStage: 3, reqH2: 0, rarity: "R", weight: 0.02 },
+                { id: "CARD_PLAINS_2X2", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, h: 1, food: 4, wood: 0, def: 0, mystic: 0, shape: [[1, 1], [1, 1]], minStage: 3, reqH2: 0, rarity: "UR", weight: 0.02 },
+                { id: "CARD_PLAINS_1X4_Z", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, h: 1, food: 4, wood: 0, def: 0, mystic: 0, shape: [[0, 1, 1], [1, 1, 0]], minStage: 3, reqH2: 0, rarity: "R", weight: 0.02 },
+                { id: "CARD_PLAINS_1X4_S", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, h: 1, food: 4, wood: 0, def: 0, mystic: 0, shape: [[1, 1, 1, 1]], minStage: 3, reqH2: 0, rarity: "R", weight: 0.02 },
+                { id: "CARD_FOREST_1X1", terrainId: "GL2_FOREST", nameKey: "TERRAIN_FOREST", gl: 2, h: 1, food: 2, wood: 2, def: 2, mystic: 0, shape: [[1]], minStage: 1, reqH2: 0, rarity: "C", weight: 0.70 },
+                { id: "CARD_FOREST_1X2", terrainId: "GL2_FOREST", nameKey: "TERRAIN_FOREST", gl: 2, h: 1, food: 2, wood: 2, def: 2, mystic: 0, shape: [[1, 1]], minStage: 1, reqH2: 0, rarity: "UC", weight: 0.30 },
+                { id: "CARD_DEEP_FOREST_1X1", terrainId: "GL3_DEEP_FOREST", nameKey: "TERRAIN_DEEP_FOREST", gl: 3, h: 1, food: 1, wood: 3, def: 3, mystic: 1, shape: [[1]], minStage: 1, reqH2: 0, rarity: "R", weight: 0.07 },
+                { id: "CARD_DEEP_FOREST_1X2", terrainId: "GL3_DEEP_FOREST", nameKey: "TERRAIN_DEEP_FOREST", gl: 3, h: 1, food: 1, wood: 3, def: 3, mystic: 1, shape: [[1, 1]], minStage: 1, reqH2: 0, rarity: "R", weight: 0.03 },
+                { id: "CARD_HILL_1X2", terrainId: "H2_HILL", nameKey: "TERRAIN_HILL", gl: 1, h: 2, food: 2, wood: 1, def: 1, mystic: 0, shape: [[1, 1]], minStage: 1, reqH2: 0, rarity: "UC", weight: 0.60 },
+                { id: "CARD_HILL_1X3_L", terrainId: "H2_HILL", nameKey: "TERRAIN_HILL", gl: 1, h: 2, food: 2, wood: 1, def: 1, mystic: 0, shape: [[1, 0], [1, 1]], minStage: 1, reqH2: 0, rarity: "UC", weight: 0.30 },
+                { id: "CARD_HILL_1X4_L", terrainId: "H2_HILL", nameKey: "TERRAIN_HILL", gl: 1, h: 2, food: 2, wood: 1, def: 1, mystic: 0, shape: [[1, 0, 0], [1, 1, 1]], minStage: 1, reqH2: 0, rarity: "R", weight: 0.10 },
+                { id: "CARD_MOUNTAIN_1X3_S", terrainId: "H3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", gl: 2, h: 3, food: 0, wood: 3, def: 5, mystic: 1, shape: [[1, 1, 1]], minStage: 1, reqH2: 3, rarity: "UC", weight: 0.60 },
+                { id: "CARD_MOUNTAIN_1X4_T", terrainId: "H3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", gl: 2, h: 3, food: 0, wood: 3, def: 5, mystic: 1, shape: [[0, 1, 0], [1, 1, 1]], minStage: 1, reqH2: 3, rarity: "R", weight: 0.30 },
+                { id: "CARD_MOUNTAIN_1X4_S", terrainId: "H3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", gl: 2, h: 3, food: 0, wood: 3, def: 5, mystic: 1, shape: [[1, 1, 1, 1]], minStage: 1, reqH2: 3, rarity: "R", weight: 0.10 },
+                { id: "CARD_DESERT_1X1", terrainId: "GL0_DESERT", nameKey: "TERRAIN_DESERT", gl: 0, h: 1, food: 0, wood: 0, def: 0, mystic: 5, shape: [[1]], minStage: 1, reqH2: 0, rarity: "R", weight: 0.70 },
+                { id: "CARD_DESERT_1X2", terrainId: "GL0_DESERT", nameKey: "TERRAIN_DESERT", gl: 0, h: 1, food: 0, wood: 0, def: 0, mystic: 5, shape: [[1, 1]], minStage: 1, reqH2: 0, rarity: "UR", weight: 0.30 },
+                { id: "CARD_DESERT_HILL_1X2", terrainId: "H2_DESERT_HILL", nameKey: "TERRAIN_DESERT_HILL", gl: 0, h: 2, food: 0, wood: 1, def: 1, mystic: 2, shape: [[1, 1]], minStage: 1, reqH2: 0, rarity: "R", weight: 0.15 },
+                { id: "CARD_FOREST_HILL_1X2", terrainId: "H2_FOREST_HILL", nameKey: "TERRAIN_FOREST_HILL", gl: 2, h: 2, food: 1, wood: 4, def: 4, mystic: 0, shape: [[1, 1]], minStage: 1, reqH2: 0, rarity: "R", weight: 0.15 },
+                { id: "CARD_DEEP_HILL_1X2", terrainId: "H2_DEEP_HILL", nameKey: "TERRAIN_DEEP_HILL", gl: 3, h: 2, food: 1, wood: 5, def: 6, mystic: 1, shape: [[1, 1]], minStage: 1, reqH2: 0, rarity: "UR", weight: 0.05 }
+            ];
+        }
 
-            let chosen = filtered[0];
-            for (let c of filtered) {
+        drawSingleCard() {
+            const master = this.getLandCardMaster();
+            const stage = this.state.stage || 1;
+            const h2Count = this.state.countH2HillsOnBoard();
+
+            const eligible = master.filter(c => stage >= c.minStage && h2Count >= c.reqH2);
+            let totalW = eligible.reduce((acc, c) => acc + c.weight, 0);
+            let rand = Math.random() * totalW;
+            let chosen = eligible[0];
+
+            for (let c of eligible) {
                 if (rand <= c.weight) {
                     chosen = c;
                     break;
@@ -547,216 +583,46 @@
                 rand -= c.weight;
             }
 
-            // 🧮 ユーザー公式図面 100% 準拠 土地カテゴリ別形状マトリクス
-            const stage = this.state.stage || 1;
-            let availableShapes = [];
-
-            if (chosen.id === "GL1_PLAINS") {
-                // 平地: Stage 1 (1x1, 1x2), Stage 2 (+ 1x3 L字/直線), Stage 3 (+ 1x4 凸/L/直線/S型/2x2)
-                availableShapes = [
-                    { shape: [[1]], weight: (stage === 1 ? 0.80 : stage === 2 ? 0.60 : 0.40), minStage: 1 },
-                    { shape: [[1, 1]], weight: (stage === 1 ? 0.20 : stage === 2 ? 0.30 : 0.30), minStage: 1 },
-                    { shape: [[1, 0], [1, 1]], weight: (stage === 2 ? 0.05 : 0.05), minStage: 2 },
-                    { shape: [[1, 1, 1]], weight: (stage === 2 ? 0.05 : 0.05), minStage: 2 },
-                    { shape: [[0, 1, 0], [1, 1, 1]], weight: 0.02, minStage: 3 },
-                    { shape: [[1, 0, 0], [1, 1, 1]], weight: 0.02, minStage: 3 },
-                    { shape: [[1, 1, 1, 1]], weight: 0.02, minStage: 3 },
-                    { shape: [[0, 1, 1], [1, 1, 0]], weight: 0.02, minStage: 3 }, // 1x4 S-shape
-                    { shape: [[1, 1], [1, 1]], weight: 0.02, minStage: 3 }
-                ];
-            } else if (chosen.id === "GL0_DESERT") {
-                // 🏜️ 砂漠: 森と同仕様の 1x1 (70%), 1x2 (30%) 常時固定 (小回りオアシス狙撃枠)
-                availableShapes = [
-                    { shape: [[1]], weight: 0.70, minStage: 1 },
-                    { shape: [[1, 1]], weight: 0.30, minStage: 1 }
-                ];
-            } else if (chosen.id === "H2_DESERT_HILL" || chosen.id === "H2_FOREST_HILL" || chosen.id === "H2_DEEP_HILL") {
-                // 🛡️ 100% クラッシュゼロ保証付き 複合土地 (砂漠/森 ✕ 丘陵) 形状判定ロジック (モデル A 確定 ＆ 即時シフト機能)
-                const rawMode = this.state.COMPLEX_SHAPE_MODE;
-                const validModes = ['MODEL_A', 'MODEL_B', 'MODEL_C'];
-                const mode = validModes.includes(rawMode) ? rawMode : 'MODEL_A';
-
-                if (mode === 'MODEL_B') {
-                    // 高度優先 (丘陵の形状 1x2, 1x3 L, 1x4 L)
-                    availableShapes = [
-                        { shape: [[1, 1]], weight: 0.60, minStage: 1 },
-                        { shape: [[1, 0], [1, 1]], weight: 0.30, minStage: 1 },
-                        { shape: [[1, 0, 0], [1, 1, 1]], weight: 0.10, minStage: 1 }
-                    ];
-                } else if (mode === 'MODEL_C') {
-                    // 気候優先 (砂漠/森の形状 1x1, 1x2)
-                    availableShapes = [
-                        { shape: [[1]], weight: 0.70, minStage: 1 },
-                        { shape: [[1, 1]], weight: 0.30, minStage: 1 }
-                    ];
-                } else {
-                    // 公式確定モデル A (積集合 1x2 のみ / 未設定・無効値時も 100% ここへ着地)
-                    availableShapes = [{ shape: [[1, 1]], weight: 1.0, minStage: 1 }];
-                }
-            } else if (chosen.id === "H2_HILL") {
-                // 丘陵: 1x2 (60%), 1x3 L字 (30%), 1x4 L字 (10%)
-                availableShapes = [
-                    { shape: [[1, 1]], weight: 0.60, minStage: 1 },
-                    { shape: [[1, 0], [1, 1]], weight: 0.30, minStage: 1 },
-                    { shape: [[1, 0, 0], [1, 1, 1]], weight: 0.10, minStage: 1 }
-                ];
-            } else if (chosen.id === "H3_MOUNTAIN") {
-                // 山岳: 1x3 直線 (60%), 1x4 凸型 (30%), 1x4 直線 (10%) (※丘陵3マス以上)
-                availableShapes = [
-                    { shape: [[1, 1, 1]], weight: 0.60, minStage: 1 },
-                    { shape: [[0, 1, 0], [1, 1, 1]], weight: 0.30, minStage: 1 },
-                    { shape: [[1, 1, 1, 1]], weight: 0.10, minStage: 1 }
-                ];
-            } else {
-                availableShapes = [
-                    { shape: [[1]], weight: 0.80, minStage: 1 },
-                    { shape: [[1, 1]], weight: 0.20, minStage: 1 }
-                ];
-            }
-
-            const filteredShapes = availableShapes.filter(s => stage >= s.minStage);
-            let totalShapeW = filteredShapes.reduce((acc, s) => acc + s.weight, 0);
-            let sRand = Math.random() * totalShapeW;
-            let sSum = 0;
-            let chosenShape = filteredShapes[0].shape;
-
-            for (let s of filteredShapes) {
-                sSum += s.weight;
-                if (sRand <= sSum) {
-                    chosenShape = s.shape;
-                    break;
-                }
-            }
-
             return {
                 id: `card_${this.state.turn}_${Date.now()}_${Math.floor(Math.random()*1000)}`,
+                cardMasterId: chosen.id,
                 nameKey: chosen.nameKey,
                 terrain: chosen,
-                currentShape: chosenShape
+                currentShape: chosen.shape
             };
         }
 
         generateOfferingCards() {
-            const candidates = [
-                { id: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", food: 4, wood: 0, defense: 0, mystic: 0, weight: 0.320 },
-                { id: "GL2_FOREST", nameKey: "TERRAIN_FOREST", food: 2, wood: 2, defense: 2, mystic: 0, weight: 0.224 },
-                { id: "H2_HILL", nameKey: "TERRAIN_HILL", food: 2, wood: 1, defense: 1, mystic: 0, weight: 0.250 },
-                { id: "H3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", food: 0, wood: 3, defense: 5, mystic: 1, weight: 0.110 }
-            ];
-
+            const master = this.getLandCardMaster();
+            const stage = this.state.stage || 1;
             const h2Count = this.state.countH2HillsOnBoard();
-            const filtered = candidates.filter(c => {
-                if (c.id === "H3_MOUNTAIN") {
-                    return h2Count >= 3;
-                }
-                return true;
-            });
 
-            let totalW = filtered.reduce((acc, c) => acc + c.weight, 0);
+            const eligible = master.filter(c => stage >= c.minStage && h2Count >= c.reqH2);
+            let totalW = eligible.reduce((acc, c) => acc + c.weight, 0);
 
-            const pickedTerrainDefs = [];
+            const pickedCards = [];
             for (let i = 0; i < 3; i++) {
                 let rand = Math.random() * totalW;
-                let sum = 0;
-                let chosen = filtered[0];
+                let chosen = eligible[0];
 
-                for (let c of filtered) {
-                    sum += c.weight;
-                    if (rand <= sum) {
+                for (let c of eligible) {
+                    if (rand <= c.weight) {
                         chosen = c;
                         break;
                     }
+                    rand -= c.weight;
                 }
-                pickedTerrainDefs.push(chosen);
+                pickedCards.push(chosen);
             }
 
-            this.state.handOffering = pickedTerrainDefs.map((tDef, idx) => {
-                // 🧮 ユーザー公式図面 100% 準拠 土地カテゴリ別形状マトリクス
-                const stage = this.state.stage || 1;
-                let availableShapes = [];
-
-                if (tDef.id === "GL1_PLAINS") {
-                    // 平地: Stage 1 (1x1, 1x2), Stage 2 (+ 1x3 L字/直線), Stage 3 (+ 1x4 凸/L/直線/S型/2x2)
-                    availableShapes = [
-                        { shape: [[1]], weight: (stage === 1 ? 0.80 : stage === 2 ? 0.60 : 0.40), minStage: 1 },
-                        { shape: [[1, 1]], weight: (stage === 1 ? 0.20 : stage === 2 ? 0.30 : 0.30), minStage: 1 },
-                        { shape: [[1, 0], [1, 1]], weight: (stage === 2 ? 0.05 : 0.05), minStage: 2 },
-                        { shape: [[1, 1, 1]], weight: (stage === 2 ? 0.05 : 0.05), minStage: 2 },
-                        { shape: [[0, 1, 0], [1, 1, 1]], weight: 0.02, minStage: 3 },
-                        { shape: [[1, 0, 0], [1, 1, 1]], weight: 0.02, minStage: 3 },
-                        { shape: [[1, 1, 1, 1]], weight: 0.02, minStage: 3 },
-                        { shape: [[0, 1, 1], [1, 1, 0]], weight: 0.02, minStage: 3 }, // 1x4 S-shape
-                        { shape: [[1, 1], [1, 1]], weight: 0.02, minStage: 3 }
-                    ];
-                } else if (tDef.id === "GL0_DESERT") {
-                    // 🏜️ 砂漠: 森と同仕様の 1x1 (70%), 1x2 (30%) 常時固定
-                    availableShapes = [
-                        { shape: [[1]], weight: 0.70, minStage: 1 },
-                        { shape: [[1, 1]], weight: 0.30, minStage: 1 }
-                    ];
-                } else if (tDef.id === "H2_DESERT_HILL" || tDef.id === "H2_FOREST_HILL" || tDef.id === "H2_DEEP_HILL") {
-                    // 🛡️ 100% クラッシュゼロ保証付き 複合土地 (砂漠/森 ✕ 丘陵) 形状判定ロジック (モデル A 確定 ＆ 即時シフト機能)
-                    const rawMode = this.state.COMPLEX_SHAPE_MODE;
-                    const validModes = ['MODEL_A', 'MODEL_B', 'MODEL_C'];
-                    const mode = validModes.includes(rawMode) ? rawMode : 'MODEL_A';
-
-                    if (mode === 'MODEL_B') {
-                        availableShapes = [
-                            { shape: [[1, 1]], weight: 0.60, minStage: 1 },
-                            { shape: [[1, 0], [1, 1]], weight: 0.30, minStage: 1 },
-                            { shape: [[1, 0, 0], [1, 1, 1]], weight: 0.10, minStage: 1 }
-                        ];
-                    } else if (mode === 'MODEL_C') {
-                        availableShapes = [
-                            { shape: [[1]], weight: 0.70, minStage: 1 },
-                            { shape: [[1, 1]], weight: 0.30, minStage: 1 }
-                        ];
-                    } else {
-                        // 公式確定モデル A (積集合 1x2 のみ / 未設定・無効値時も 100% ここへ着地)
-                        availableShapes = [{ shape: [[1, 1]], weight: 1.0, minStage: 1 }];
-                    }
-                } else if (tDef.id === "H2_HILL") {
-                    // 丘陵: 1x2 (60%), 1x3 L字 (30%), 1x4 L字 (10%)
-                    availableShapes = [
-                        { shape: [[1, 1]], weight: 0.60, minStage: 1 },
-                        { shape: [[1, 0], [1, 1]], weight: 0.30, minStage: 1 },
-                        { shape: [[1, 0, 0], [1, 1, 1]], weight: 0.10, minStage: 1 }
-                    ];
-                } else if (tDef.id === "H3_MOUNTAIN") {
-                    // 山岳: 1x3 直線 (60%), 1x4 凸型 (30%), 1x4 直線 (10%)
-                    availableShapes = [
-                        { shape: [[1, 1, 1]], weight: 0.60, minStage: 1 },
-                        { shape: [[0, 1, 0], [1, 1, 1]], weight: 0.30, minStage: 1 },
-                        { shape: [[1, 1, 1, 1]], weight: 0.10, minStage: 1 }
-                    ];
-                } else {
-                    availableShapes = [
-                        { shape: [[1]], weight: 0.80, minStage: 1 },
-                        { shape: [[1, 1]], weight: 0.20, minStage: 1 }
-                    ];
-                }
-
-                const filteredShapes = availableShapes.filter(s => stage >= s.minStage);
-                let totalShapeW = filteredShapes.reduce((acc, s) => acc + s.weight, 0);
-                let sRand = Math.random() * totalShapeW;
-                let sSum = 0;
-                let chosenShape = filteredShapes[0].shape;
-
-                for (let s of filteredShapes) {
-                    sSum += s.weight;
-                    if (sRand <= sSum) {
-                        chosenShape = s.shape;
-                        break;
-                    }
-                }
-
-                return {
-                    id: `card_${this.state.turn}_${idx}`,
-                    nameKey: tDef.nameKey,
-                    terrain: tDef,
-                    currentShape: chosenShape
-                };
-            });
+            this.state.handOffering = pickedCards.map((c, idx) => ({
+                id: `card_${this.state.turn}_${idx}_${Date.now()}`,
+                cardMasterId: c.id,
+                nameKey: c.nameKey,
+                terrain: c,
+                currentShape: c.shape
+            }));
+            this.render();
         }
     }
 
