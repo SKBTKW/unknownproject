@@ -32,28 +32,35 @@
             gap: 10px;
         }
 
-        /* 1. 最上部ヘッダー (高さ 72px 100% 完全対応) */
+        /* 1. 最上部ヘッダー (右端 280px ターン表示が右サイドバー 280px と 100% 垂直直線アライン) */
         .top-bar {
             background: #161922;
             border: 1px solid #2a2e3d;
             border-radius: 10px;
             padding: 0;
             display: grid;
-            grid-template-columns: 320px 1fr 320px 280px;
+            grid-template-columns: 1fr 280px;
             align-items: center;
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
             flex-shrink: 0;
             height: 72px;
             overflow: hidden;
         }
-        
+
+        .top-bar-left {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            height: 100%;
+        }
+
         .app-title-box {
             display: flex;
             align-items: center;
             gap: 12px;
             font-weight: bold;
             font-size: 15px;
-            padding-left: 16px;
         }
 
         .role-avatar-box {
@@ -402,15 +409,14 @@
             align-items: center;
         }
 
-        /* 🃏 TCG カードフレーム (厳密な比率: 縦3 横2 -> aspect-ratio: 2 / 3) */
+        /* 🃏 TCG カードフレーム (厳密な比率: 幅2:高さ3 -> 110px:165px = 完全 2:3) */
         .card-frame-tcg {
-            width: 100%;
-            height: auto;
-            max-height: 190px;
-            aspect-ratio: 2 / 3;
+            width: 110px !important;
+            height: 165px !important;
+            aspect-ratio: 2 / 3 !important;
             background: #ffffff;
-            border-radius: 12px;
-            padding: 5px;
+            border-radius: 10px;
+            padding: 4px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -421,6 +427,8 @@
             overflow: hidden;
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
             margin: 0 auto;
+            box-sizing: border-box;
+            flex-shrink: 0;
         }
         .card-frame-tcg:hover:not(.locked) {
             transform: translateY(-4px) scale(1.03);
@@ -551,22 +559,24 @@
 
     <div class="app-wrapper">
         <div class="top-bar">
-            <div class="app-title-box">
-                <div id="lblAppTitle"></div>
-                <div class="role-avatar-box">
-                    <span id="lblRoleAvatar"></span>
-                    <span class="icon">👤</span>
+            <div class="top-bar-left">
+                <div class="app-title-box">
+                    <div id="lblAppTitle"></div>
+                    <div class="role-avatar-box">
+                        <span id="lblRoleAvatar"></span>
+                        <span class="icon">👤</span>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="ember-center-box">
-                <span class="ember-icon">🔥</span>
-                <span>: <span id="valEmber">20</span></span>
-            </div>
+                
+                <div class="ember-center-box">
+                    <span class="ember-icon">🔥</span>
+                    <span>: <span id="valEmber">20</span></span>
+                </div>
 
-            <div id="trialNoticeBox" class="trial-announcement">
-                <span id="lblTrialNotice"></span> <span id="trialCountdown">5</span><br>
-                <small style="font-weight:normal; font-size:9px;" id="lblTrialSub"></small>
+                <div id="trialNoticeBox" class="trial-announcement">
+                    <span id="lblTrialNotice"></span> <span id="trialCountdown">5</span><br>
+                    <small style="font-weight:normal; font-size:9px;" id="lblTrialSub"></small>
+                </div>
             </div>
 
             <div class="turn-box">
@@ -678,6 +688,96 @@
             render();
         }
 
+        function clearCellPreviews() {
+            const cells = document.querySelectorAll(".cell");
+            cells.forEach(c => {
+                c.classList.remove("preview-valid", "preview-invalid");
+            });
+            hideTileTooltip();
+        }
+
+        function highlightPlaceableCells() {
+            if (!selectedCard || !state || state.hasPickedThisTurn) return;
+            const shape = selectedCard.currentShape;
+
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 5; c++) {
+                    const check = state.canPlaceShape(r, c, shape);
+                    if (check.can) {
+                        const targetEl = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
+                        if (targetEl) {
+                            targetEl.classList.add("preview-valid");
+                        }
+                    }
+                }
+            }
+        }
+
+        function onCellMouseEnter(e, r, c) {
+            if (!state) return;
+            const cellData = state.grid[r][c];
+            showTileTooltip(e, r, c, cellData);
+
+            if (!selectedCard || state.hasPickedThisTurn) return;
+            clearCellPreviews();
+            highlightPlaceableCells();
+
+            const shape = selectedCard.currentShape;
+            const check = state.canPlaceShape(r, c, shape);
+            const isValid = check.can;
+
+            const rows = shape.length;
+            const cols = shape[0].length;
+
+            for (let dr = 0; dr < rows; dr++) {
+                for (let dc = 0; dc < cols; dc++) {
+                    if (shape[dr][dc] === 1) {
+                        const tr = r + dr;
+                        const tc = c + dc;
+                        if (tr < 5 && tc < 5) {
+                            const targetEl = document.querySelector(`.cell[data-r="${tr}"][data-c="${tc}"]`);
+                            if (targetEl) {
+                                targetEl.classList.add(isValid ? "preview-valid" : "preview-invalid");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        function showTileTooltip(e, r, c, cell) {
+            const tt = document.getElementById("tileTooltip");
+            const I18n = window.I18n;
+            if (!tt || !cell || !I18n) return;
+
+            const pos = `(${String.fromCharCode(65+c)}${r+1})`;
+            const isHQVic = state.isHQVicinity(r, c);
+
+            if (cell.isHQ) {
+                tt.innerHTML = `<strong>${I18n.t("TOOLTIP_HQ_TITLE", { pos })}</strong><br>${I18n.t("TOOLTIP_HQ_DESC")}`;
+            } else if (cell.placed && cell.terrain) {
+                const tName = I18n.t(cell.terrain.nameKey);
+                const sName = cell.socketResource ? I18n.t(cell.socketResource.nameKey) : "";
+                const mergeText = cell.merged ? `<br><span style="color:#f1c40f;font-weight:bold;">${I18n.t("UI_MERGE_2X2_LABEL", { name: tName })}</span>` : "";
+                const socketText = cell.socketResource ? `<br><span style="color:#f1c40f;font-weight:bold;">★ ${sName} (${I18n.t("UI_SOCKET_BLOOMING")})</span>` : (cell.hasSocket ? `<br><span style="color:#f39c12;font-weight:bold;">${I18n.t("UI_UNOPENED_SOCKET_LABEL")}</span>` : "");
+                const searchText = cell.searched ? `<br><span style="color:#2ecc71;">${I18n.t("UI_SEARCHED_BADGE")}</span>` : (cell.merged ? `<br><span style="color:#7f8c8d;">${I18n.t("UI_MERGED_SEARCH_DISABLED")}</span>` : `<br><span style="color:#3498db;">${I18n.t("UI_SEARCH_LINK")}</span>`);
+                tt.innerHTML = `<strong>${tName} ${pos}</strong>${mergeText}<br>🛡️${cell.terrain.defense} | 🌾+${cell.terrain.food||0} 🧱+${cell.terrain.wood||0}${isHQVic?' (+1)':''}${socketText}${searchText}`;
+            } else if (cell.hasSocket) {
+                tt.innerHTML = `<strong>${I18n.t("TOOLTIP_SOCKET_UNOPENED", { pos })}</strong>`;
+            } else {
+                tt.innerHTML = `<strong>${I18n.t("TOOLTIP_UNPLACED", { pos })}</strong>${isHQVic?`<br><small style="color:#1abc9c;">${I18n.t("TOOLTIP_HQ_VICINITY_BUFF")}</small>`:''}`;
+            }
+
+            tt.style.left = (e.clientX + 15) + "px";
+            tt.style.top = (e.clientY + 15) + "px";
+            tt.style.display = "block";
+        }
+
+        function hideTileTooltip() {
+            const tt = document.getElementById("tileTooltip");
+            if (tt) tt.style.display = "none";
+        }
+
         function setElementText(id, text) {
             const el = document.getElementById(id);
             if (el) el.innerText = text;
@@ -723,6 +823,9 @@
                             const cellData = state.grid[r][c];
                             const cellEl = document.createElement("div");
                             cellEl.className = "cell";
+                            cellEl.setAttribute("data-r", r);
+                            cellEl.setAttribute("data-c", c);
+
                             const isHQVic = state.isHQVicinity(r, c);
 
                             if (cellData.isHQ) {
@@ -730,12 +833,57 @@
                                 cellEl.innerHTML = I18n.t("TERRAIN_HQ");
                             } else if (cellData.placed && cellData.terrain) {
                                 cellEl.classList.add("placed");
+
                                 const tName = I18n.t(cellData.terrain.nameKey);
-                                cellEl.innerHTML = tName;
-                            } else if (isHQVic) {
-                                cellEl.classList.add("hq-vicinity-unplaced");
-                                cellEl.innerHTML = `<span style="font-size:12px; color:#1abc9c; opacity:0.8;">✨+1</span>`;
+                                const mergeId = cellData.mergeGroupId;
+                                const placeId = cellData.placementGroupId;
+                                const activeGroupId = mergeId || placeId;
+
+                                if (activeGroupId) {
+                                    if (cellData.merged) {
+                                        cellEl.classList.add("merged");
+                                    }
+
+                                    const topSame = (r > 0 && (state.grid[r-1][c].mergeGroupId === activeGroupId || state.grid[r-1][c].placementGroupId === activeGroupId));
+                                    const rightSame = (c < 4 && (state.grid[r][c+1].mergeGroupId === activeGroupId || state.grid[r][c+1].placementGroupId === activeGroupId));
+                                    const bottomSame = (r < 4 && (state.grid[r+1][c].mergeGroupId === activeGroupId || state.grid[r+1][c].placementGroupId === activeGroupId));
+                                    const leftSame = (c > 0 && (state.grid[r][c-1].mergeGroupId === activeGroupId || state.grid[r][c-1].placementGroupId === activeGroupId));
+
+                                    if (topSame) cellEl.style.borderTop = "none";
+                                    if (rightSame) cellEl.style.borderRight = "none";
+                                    if (bottomSame) cellEl.style.borderBottom = "none";
+                                    if (leftSame) cellEl.style.borderLeft = "none";
+
+                                    if (!topSame && !leftSame) {
+                                        const socketText = cellData.socketResource ? `<br><small style="color:#f1c40f;">★${I18n.t(cellData.socketResource.nameKey)}</small>` : "";
+                                        if (cellData.merged) {
+                                            cellEl.innerHTML = `<span style="font-size:12px; color:#f1c40f; font-weight:bold; white-space:nowrap; z-index:5;">${I18n.t("UI_MERGE_2X2_LABEL", { name: tName })}${socketText}</span>`;
+                                        } else {
+                                            cellEl.innerHTML = `<span style="font-size:13px; color:#fff; font-weight:bold; z-index:5;">${tName}${socketText}</span>`;
+                                        }
+                                    } else {
+                                        const socketBadge = cellData.socketResource ? `<small style="color:#f1c40f; font-size:10px;">★${I18n.t(cellData.socketResource.nameKey)}</small>` : "";
+                                        cellEl.innerHTML = socketBadge;
+                                    }
+                                } else {
+                                    const socketBadge = cellData.socketResource ? `<br><small style="color:#f1c40f; font-size:10px;">★${I18n.t(cellData.socketResource.nameKey)}</small>` : "";
+                                    const searchedBadge = cellData.searched ? `<span class="searched-badge">${I18n.t("UI_SEARCHED_BADGE")}</span>` : "";
+                                    cellEl.innerHTML = `${tName}${socketBadge}${searchedBadge}`;
+                                }
+                            } else if (cellData.hasSocket) {
+                                cellEl.classList.add("socket-unopened");
+                                if (isHQVic) cellEl.classList.add("hq-vicinity-unplaced");
+                                cellEl.innerHTML = `<span style="color:#f39c12;font-size:20px;filter:drop-shadow(0 0 4px #f39c12);">★</span>`;
+                            } else {
+                                if (isHQVic) {
+                                    cellEl.classList.add("hq-vicinity-unplaced");
+                                    cellEl.innerHTML = `<span style="font-size:12px; color:#1abc9c; opacity:0.8;">✨+1</span>`;
+                                }
                             }
+
+                            cellEl.onmouseenter = (e) => onCellMouseEnter(e, r, c);
+                            cellEl.onmouseleave = clearCellPreviews;
+                            cellEl.onclick = () => onCellClick(r, c);
                             boardEl.appendChild(cellEl);
                         }
                     }
