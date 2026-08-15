@@ -526,18 +526,16 @@
         // id: "H2_HILL", food: 2, wood: 1, defense: 1, mystic: 0
         // id: "H3_MOUNTAIN", food: 0, wood: 3, defense: 5, mystic: 1
         getLandCardMaster() {
-            if (this._landCardMasterCache) {
+            if (this._landCardMasterCache && this._landCardMasterCache.length > 0) {
                 return this._landCardMasterCache;
             }
-            try {
-                if (typeof window !== "undefined" && window.LAND_CARDS_DATA) {
-                    this._landCardMasterCache = window.LAND_CARDS_DATA;
-                    return this._landCardMasterCache;
-                }
-            } catch (e) {}
+            if (typeof window !== "undefined" && Array.isArray(window.LAND_CARDS_DATA) && window.LAND_CARDS_DATA.length > 0) {
+                this._landCardMasterCache = window.LAND_CARDS_DATA;
+                return this._landCardMasterCache;
+            }
 
             // デフォルトフォールバック (100% クラッシュゼロ保証)
-            return [
+            this._landCardMasterCache = [
                 { id: "CARD_PLAINS_1X1", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, h: 1, food: 4, wood: 0, def: 0, mystic: 0, shape: [[1]], minStage: 1, reqH2: 0, rarity: "C", weight: 0.80 },
                 { id: "CARD_PLAINS_1X2", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, h: 1, food: 4, wood: 0, def: 0, mystic: 0, shape: [[1, 1]], minStage: 1, reqH2: 0, rarity: "C", weight: 0.20 },
                 { id: "CARD_PLAINS_1X3_L", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, h: 1, food: 4, wood: 0, def: 0, mystic: 0, shape: [[1, 0], [1, 1]], minStage: 2, reqH2: 0, rarity: "UC", weight: 0.05 },
@@ -563,15 +561,18 @@
                 { id: "CARD_FOREST_HILL_1X2", terrainId: "H2_FOREST_HILL", nameKey: "TERRAIN_FOREST_HILL", gl: 2, h: 2, food: 1, wood: 4, def: 4, mystic: 0, shape: [[1, 1]], minStage: 1, reqH2: 0, rarity: "R", weight: 0.15 },
                 { id: "CARD_DEEP_HILL_1X2", terrainId: "H2_DEEP_HILL", nameKey: "TERRAIN_DEEP_HILL", gl: 3, h: 2, food: 1, wood: 5, def: 6, mystic: 1, shape: [[1, 1]], minStage: 1, reqH2: 0, rarity: "UR", weight: 0.05 }
             ];
+            return this._landCardMasterCache;
         }
 
         drawSingleCard() {
             const master = this.getLandCardMaster();
-            const stage = this.state.stage || 1;
-            const h2Count = this.state.countH2HillsOnBoard();
+            const stage = (this.state && this.state.stage) || 1;
+            const h2Count = (this.state && this.state.countH2HillsOnBoard) ? this.state.countH2HillsOnBoard() : 0;
 
-            const eligible = master.filter(c => stage >= c.minStage && h2Count >= c.reqH2);
-            let totalW = eligible.reduce((acc, c) => acc + c.weight, 0);
+            let eligible = master.filter(c => stage >= c.minStage && h2Count >= c.reqH2);
+            if (eligible.length === 0) eligible = master;
+
+            let totalW = eligible.reduce((acc, c) => acc + (c.weight || 0.1), 0);
             let rand = Math.random() * totalW;
             let chosen = eligible[0];
 
@@ -582,9 +583,10 @@
                 }
                 rand -= c.weight;
             }
+            if (!chosen) chosen = master[0];
 
             return {
-                id: `card_${this.state.turn}_${Date.now()}_${Math.floor(Math.random()*1000)}`,
+                id: `card_${(this.state && this.state.turn) || 1}_${Date.now()}_${Math.floor(Math.random()*1000)}`,
                 cardMasterId: chosen.id,
                 nameKey: chosen.nameKey,
                 terrain: chosen,
@@ -594,11 +596,13 @@
 
         generateOfferingCards() {
             const master = this.getLandCardMaster();
-            const stage = this.state.stage || 1;
-            const h2Count = this.state.countH2HillsOnBoard();
+            const stage = (this.state && this.state.stage) || 1;
+            const h2Count = (this.state && this.state.countH2HillsOnBoard) ? this.state.countH2HillsOnBoard() : 0;
 
-            const eligible = master.filter(c => stage >= c.minStage && h2Count >= c.reqH2);
-            let totalW = eligible.reduce((acc, c) => acc + c.weight, 0);
+            let eligible = master.filter(c => stage >= c.minStage && h2Count >= c.reqH2);
+            if (eligible.length === 0) eligible = master;
+
+            let totalW = eligible.reduce((acc, c) => acc + (c.weight || 0.1), 0);
 
             const pickedCards = [];
             for (let i = 0; i < 3; i++) {
@@ -612,17 +616,22 @@
                     }
                     rand -= c.weight;
                 }
+                if (!chosen) chosen = master[i % master.length];
                 pickedCards.push(chosen);
             }
 
-            this.state.handOffering = pickedCards.map((c, idx) => ({
-                id: `card_${this.state.turn}_${idx}_${Date.now()}`,
-                cardMasterId: c.id,
-                nameKey: c.nameKey,
-                terrain: c,
-                currentShape: c.shape
-            }));
-            this.render();
+            if (this.state) {
+                this.state.handOffering = pickedCards.map((c, idx) => ({
+                    id: `card_${this.state.turn}_${idx}_${Date.now()}`,
+                    cardMasterId: c ? c.id : "CARD_PLAINS_1X1",
+                    nameKey: c ? c.nameKey : "TERRAIN_PLAINS",
+                    terrain: c || master[0],
+                    currentShape: c ? c.shape : [[1]]
+                }));
+            }
+            if (typeof this.render === "function") {
+                this.render();
+            }
         }
     }
 
