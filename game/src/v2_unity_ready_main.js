@@ -570,6 +570,29 @@
                     { shape: [[1]], weight: 0.70, minStage: 1 },
                     { shape: [[1, 1]], weight: 0.30, minStage: 1 }
                 ];
+            } else if (chosen.id === "H2_FOREST_HILL" || chosen.id === "H2_DEEP_HILL") {
+                // 🛡️ 100% クラッシュゼロ保証付き 複合土地 (森 ✕ 丘陵) 形状判定ロジック (モデル A 確定 ＆ 即時シフト機能)
+                const rawMode = this.state.COMPLEX_SHAPE_MODE;
+                const validModes = ['MODEL_A', 'MODEL_B', 'MODEL_C'];
+                const mode = validModes.includes(rawMode) ? rawMode : 'MODEL_A';
+
+                if (mode === 'MODEL_B') {
+                    // 高度優先 (丘陵の形状 1x2, 1x3 L, 1x4 L)
+                    availableShapes = [
+                        { shape: [[1, 1]], weight: 0.60, minStage: 1 },
+                        { shape: [[1, 0], [1, 1]], weight: 0.30, minStage: 1 },
+                        { shape: [[1, 0, 0], [1, 1, 1]], weight: 0.10, minStage: 1 }
+                    ];
+                } else if (mode === 'MODEL_C') {
+                    // 気候優先 (森の形状 1x1, 1x2)
+                    availableShapes = [
+                        { shape: [[1]], weight: 0.70, minStage: 1 },
+                        { shape: [[1, 1]], weight: 0.30, minStage: 1 }
+                    ];
+                } else {
+                    // 公式確定モデル A (積集合 1x2 のみ / 未設定・無効値時も 100% ここへ着地)
+                    availableShapes = [{ shape: [[1, 1]], weight: 1.0, minStage: 1 }];
+                }
             } else if (chosen.id === "H2_HILL") {
                 // 丘陵: 1x2 (60%), 1x3 L字 (30%), 1x4 L字 (10%)
                 availableShapes = [
@@ -671,6 +694,27 @@
                         { shape: [[1]], weight: 0.70, minStage: 1 },
                         { shape: [[1, 1]], weight: 0.30, minStage: 1 }
                     ];
+                } else if (tDef.id === "H2_FOREST_HILL" || tDef.id === "H2_DEEP_HILL") {
+                    // 🛡️ 100% クラッシュゼロ保証付き 複合土地 (森 ✕ 丘陵) 形状判定ロジック (モデル A 確定 ＆ 即時シフト機能)
+                    const rawMode = this.state.COMPLEX_SHAPE_MODE;
+                    const validModes = ['MODEL_A', 'MODEL_B', 'MODEL_C'];
+                    const mode = validModes.includes(rawMode) ? rawMode : 'MODEL_A';
+
+                    if (mode === 'MODEL_B') {
+                        availableShapes = [
+                            { shape: [[1, 1]], weight: 0.60, minStage: 1 },
+                            { shape: [[1, 0], [1, 1]], weight: 0.30, minStage: 1 },
+                            { shape: [[1, 0, 0], [1, 1, 1]], weight: 0.10, minStage: 1 }
+                        ];
+                    } else if (mode === 'MODEL_C') {
+                        availableShapes = [
+                            { shape: [[1]], weight: 0.70, minStage: 1 },
+                            { shape: [[1, 1]], weight: 0.30, minStage: 1 }
+                        ];
+                    } else {
+                        // 公式確定モデル A (積集合 1x2 のみ / 未設定・無効値時も 100% ここへ着地)
+                        availableShapes = [{ shape: [[1, 1]], weight: 1.0, minStage: 1 }];
+                    }
                 } else if (tDef.id === "H2_HILL") {
                     // 丘陵: 1x2 (60%), 1x3 L字 (30%), 1x4 L字 (10%)
                     availableShapes = [
