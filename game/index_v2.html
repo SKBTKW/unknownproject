@@ -159,7 +159,7 @@
             flex-shrink: 0;
         }
 
-        /* 横3列並びグリッドコンテナ (はみ出し防止 minmax/fit 設定) */
+        /* 横3列並びグリッドコンテナ */
         .card-row-horizontal {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -172,151 +172,148 @@
             width: 100%;
         }
 
-        /* 🃏 TCG カードフレーム (比率: 縦3 : 横2 厳密固定 ✕ 枠内完全収容) */
+        /* 🃏 TCG 土地カードフレーム (ユーザー最新ワイヤーフレーム画像完全準拠) */
         .card-frame-tcg {
             width: 100%;
             min-width: 0;
             aspect-ratio: 2 / 3;
-            background: linear-gradient(145deg, #1c2230 0%, #111521 100%);
-            border-radius: 8px;
+            background: #ffffff;
+            border-radius: 16px;
             padding: 6px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            gap: 3px;
+            gap: 4px;
             cursor: pointer;
             transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.2s;
             position: relative;
             user-select: none;
             overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
         .card-frame-tcg:hover:not(.locked) {
-            transform: translateY(-3px) scale(1.02);
+            transform: translateY(-3px) scale(1.03);
         }
 
         .card-frame-tcg.rarity-c {
-            border: 1px solid #8c6d46;
-            box-shadow: 0 3px 10px rgba(140, 109, 70, 0.35);
+            border: 4px solid #a6612b;
         }
         .card-frame-tcg.rarity-uc {
-            border: 1px solid #a0b2c6;
-            box-shadow: 0 3px 12px rgba(160, 178, 198, 0.45);
+            border: 4px solid #4a90e2;
         }
         .card-frame-tcg.selected {
             border-color: #f1c40f !important;
-            box-shadow: 0 0 16px rgba(241, 196, 15, 0.7) !important;
-            background: linear-gradient(145deg, #2b3348 0%, #1b2030 100%);
+            box-shadow: 0 0 20px rgba(241, 196, 15, 0.9) !important;
         }
         .card-frame-tcg.locked {
-            opacity: 0.35;
+            opacity: 0.4;
             cursor: not-allowed !important;
             filter: grayscale(80%);
             pointer-events: none !important;
         }
 
-        /* 上層: タイトル ✕ カテゴリ ✕ コスト ✕ 回転ボタン */
-        .tcg-card-header {
+        /* 1. 最上部: 土地名角丸枠 ✕ レアリティ (C / UC) */
+        .tcg-card-top-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 2px;
-            width: 100%;
-            overflow: hidden;
+            gap: 4px;
+            padding: 2px;
         }
-        .tcg-category-badge {
-            background: rgba(26, 188, 156, 0.2);
-            color: #1abc9c;
-            font-size: 8px;
+        .tcg-title-pill {
+            background: #ffffff;
+            border: 2px solid #111111;
+            border-radius: 8px;
+            padding: 2px 6px;
+            font-size: 11px;
             font-weight: bold;
-            padding: 1px 3px;
-            border-radius: 3px;
-            border: 1px solid rgba(26, 188, 156, 0.4);
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-        .tcg-card-title {
-            font-size: 10px;
-            font-weight: bold;
-            color: #ffffff;
+            color: #111111;
             flex: 1;
             text-align: center;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        .tcg-header-controls {
-            display: flex;
-            align-items: center;
-            gap: 2px;
-            flex-shrink: 0;
-        }
-        .tcg-rotate-btn {
-            background: linear-gradient(135deg, #f39c12, #d35400);
-            color: #ffffff;
-            font-size: 8px;
-            font-weight: bold;
-            padding: 1px 3px;
-            border: none;
-            border-radius: 2px;
-            cursor: pointer;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-            transition: transform 0.1s;
-        }
-        .tcg-rotate-btn:hover {
-            transform: scale(1.08);
-            background: linear-gradient(135deg, #f1c40f, #e67e22);
-        }
-        .tcg-cost-badge {
-            background: rgba(231, 76, 60, 0.25);
-            color: #ff7675;
-            font-size: 9px;
-            font-weight: bold;
-            padding: 1px 3px;
-            border-radius: 2px;
-            border: 1px solid rgba(231, 76, 60, 0.5);
-            white-space: nowrap;
+        .tcg-rarity-code {
+            font-size: 14px;
+            font-weight: 900;
+            color: #111111;
+            padding-right: 4px;
+            font-family: Arial, sans-serif;
         }
 
-        /* 形状アートエリア */
-        .tcg-art-container {
+        /* 2. 中央: 形状アート表示エリア */
+        .tcg-shape-art-area {
             flex: 1;
-            background: #0d1017;
-            border-radius: 4px;
-            border: 1px solid #232a3b;
+            background: #d4f4fa;
+            border-top: 1px solid #7f8c8d;
+            border-bottom: 1px solid #7f8c8d;
             display: flex;
             align-items: center;
             justify-content: center;
             position: relative;
             overflow: hidden;
-            box-shadow: inset 0 0 8px rgba(0,0,0,0.8);
-            min-height: 40px;
-            width: 100%;
-        }
-        .tcg-art-bg-texture {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle, rgba(26, 188, 156, 0.15) 0%, rgba(0,0,0,0.6) 100%);
+            margin: 2px 0;
+            min-height: 50px;
         }
 
-        /* パラメータ ＆ 効果テキストフッター */
-        .tcg-card-footer {
+        /* 3. 下部: 産出ステータス帯 */
+        .tcg-yield-strip {
+            background: #d4f4fa;
+            padding: 3px 4px;
             display: flex;
             justify-content: space-around;
             align-items: center;
-            background: #141824;
-            padding: 3px;
-            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+            color: #111111;
+            border-radius: 4px;
+        }
+
+        /* 4. 最下部: [保留] ボタン ✕ [回転 🔄] ボタン */
+        .tcg-action-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 4px;
+        }
+        .tcg-reserve-btn-wireframe {
+            background: #0097a7;
+            color: #ffffff;
+            border: 1px solid #006064;
+            border-radius: 4px;
             font-size: 9px;
             font-weight: bold;
-            width: 100%;
-            overflow: hidden;
+            padding: 3px 6px;
+            cursor: pointer;
+            flex: 1;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: background 0.15s;
         }
-        .param-badge {
+        .tcg-reserve-btn-wireframe:hover {
+            background: #00838f;
+        }
+
+        .tcg-rotate-btn-wireframe {
+            background: transparent;
+            color: #111111;
+            border: none;
+            font-size: 10px;
+            font-weight: bold;
             display: flex;
             align-items: center;
-            gap: 1px;
-            white-space: nowrap;
+            gap: 2px;
+            cursor: pointer;
+            padding: 2px 4px;
+        }
+        .tcg-rotate-btn-wireframe:hover {
+            color: #0097a7;
+        }
+        .rotate-arrow-icon {
+            font-size: 14px;
+            color: #0097a7;
+            font-weight: bold;
         }
 
         /* 保留エリアボックス (高さ 50% 均等割り ✕ 横3枚並び) */
@@ -1092,7 +1089,7 @@
                     highlightPlaceableCells();
                 }
 
-                // 1. ドローオファリングエリア描画 (比率 2:3 TCGカード ✕ 保留中裏面表示)
+                // 1. ドローオファリングエリア描画 (ユーザー最新ワイヤーフレーム画像 100% 同期)
                 const cardRowEl = document.getElementById("cardRow");
                 if (cardRowEl) {
                     cardRowEl.innerHTML = "";
@@ -1104,9 +1101,9 @@
                             // 🃏 手札の抜け部分はカード裏表示 (✖)
                             const blankEl = document.createElement("div");
                             blankEl.className = "card-frame-tcg locked";
-                            blankEl.style.cssText = "background:linear-gradient(145deg, #11141d, #090a0f); border:1px dashed #34495e; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;";
+                            blankEl.style.cssText = "background:linear-gradient(145deg, #11141d, #090a0f); border:2px dashed #7f8c8d; border-radius:16px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;";
                             blankEl.innerHTML = `
-                                <div style="font-size:32px; color:#e74c3c; font-weight:bold; filter:drop-shadow(0 0 6px rgba(231,76,60,0.6));">✖</div>
+                                <div style="font-size:36px; color:#e74c3c; font-weight:bold; filter:drop-shadow(0 0 6px rgba(231,76,60,0.6));">✖</div>
                                 <div style="font-size:10px; color:#7f8c8d; font-weight:bold;">${I18n.t("UI_RESERVE_BLANK_SLOT")}</div>
                             `;
                             cardRowEl.appendChild(blankEl);
@@ -1116,6 +1113,7 @@
                         const isSelected = (selectedCard === card);
                         const isLocked = state.hasPickedThisTurn;
                         const rarityClass = (card.terrain.id === "H3_MOUNTAIN") ? "rarity-uc" : "rarity-c";
+                        const rarityCode = (card.terrain.id === "H3_MOUNTAIN") ? "UC" : "C";
 
                         const cardEl = document.createElement("div");
                         cardEl.className = `card-frame-tcg ${rarityClass} ${isSelected ? 'selected' : ''} ${isLocked ? 'locked' : ''}`;
@@ -1123,43 +1121,41 @@
                         const sRows = card.currentShape.length;
                         const sCols = card.currentShape[0].length;
                         
-                        let shapeGridHtml = `<div style="display:grid; grid-template-columns:repeat(${sCols}, 8px); gap:1px; z-index:2;">`;
+                        let shapeGridHtml = `<div style="display:grid; grid-template-columns:repeat(${sCols}, 12px); gap:2px; z-index:2;">`;
                         for (let dr = 0; dr < sRows; dr++) {
                             for (let dc = 0; dc < sCols; dc++) {
                                 const isActive = card.currentShape[dr][dc] === 1;
-                                shapeGridHtml += `<div style="width:8px;height:8px;background:${isActive ? '#1abc9c' : '#252a36'};border-radius:1px;box-shadow:0 0 3px ${isActive ? '#1abc9c' : 'transparent'};"></div>`;
+                                shapeGridHtml += `<div style="width:12px;height:12px;background:${isActive ? '#0097a7' : '#b2ebf2'};border:1px solid #006064;border-radius:2px;"></div>`;
                             }
                         }
                         shapeGridHtml += '</div>';
 
                         const cName = I18n.t(card.terrain.nameKey);
                         const reserveBtnHtml = isLocked ? 
-                            `<button style="font-size:8px; background:#4a5568; color:#a0aec0; border:none; border-radius:3px; padding:2px; cursor:not-allowed; width:100%;" disabled>${I18n.t("UI_RESERVE_LOCKED_BTN")}</button>` :
-                            `<button style="font-size:8px; background:linear-gradient(to right, #2980b9, #3498db); color:white; border:none; border-radius:3px; padding:2px; cursor:pointer; font-weight:bold; width:100%;" onclick="event.stopPropagation(); reserveCard(${idx})">${I18n.t("UI_RESERVE_BTN")}</button>`;
+                            `<button class="tcg-reserve-btn-wireframe" style="background:#7f8c8d; border-color:#95a5a6; cursor:not-allowed;" disabled>${I18n.t("UI_RESERVE_LOCKED_BTN")}</button>` :
+                            `<button class="tcg-reserve-btn-wireframe" onclick="event.stopPropagation(); reserveCard(${idx})">${I18n.t("UI_RESERVE_BTN")}</button>`;
 
                         const rotateBtnHtml = isLocked ? "" :
-                            `<button class="tcg-rotate-btn" onclick="event.stopPropagation(); event.preventDefault(); rotateCardByIdx(${idx})">${I18n.t("UI_ROTATE_BTN")}</button>`;
+                            `<button class="tcg-rotate-btn-wireframe" onclick="event.stopPropagation(); event.preventDefault(); rotateCardByIdx(${idx})">${I18n.t("UI_ROTATE_BTN")} <span class="rotate-arrow-icon">🔄</span></button>`;
 
                         cardEl.innerHTML = `
-                            <div class="tcg-card-header">
-                                <span class="tcg-category-badge">${I18n.t("UI_LAND_BLOCK_CATEGORY")}</span>
-                                <span class="tcg-card-title">${cName}</span>
-                                <div class="tcg-header-controls">
-                                    ${rotateBtnHtml}
-                                    <span class="tcg-cost-badge">${I18n.t("UI_COST_EMBER_1")}</span>
-                                </div>
+                            <div class="tcg-card-top-bar">
+                                <div class="tcg-title-pill">${cName}</div>
+                                <div class="tcg-rarity-code">${rarityCode}</div>
                             </div>
-                            <div class="tcg-art-container">
-                                <div class="tcg-art-bg-texture"></div>
+                            <div class="tcg-shape-art-area">
                                 ${shapeGridHtml}
                             </div>
-                            <div class="tcg-card-footer">
-                                <span class="param-badge" style="color:#2ecc71;">🌾+${card.terrain.food||0}</span>
-                                <span class="param-badge" style="color:#e67e22;">🧱+${card.terrain.wood||0}</span>
-                                <span class="param-badge" style="color:#3498db;">🛡️+${card.terrain.defense||0}</span>
-                                ${card.terrain.mystic > 0 ? `<span class="param-badge" style="color:#f1c40f;">✨+${card.terrain.mystic}</span>` : ''}
+                            <div class="tcg-yield-strip">
+                                <span>🌾: ${card.terrain.food||0}</span>
+                                <span>🧱: ${card.terrain.wood||0}</span>
+                                <span>🛡️ ${card.terrain.defense||0}</span>
+                                ${card.terrain.mystic > 0 ? `<span>✨ ${card.terrain.mystic}</span>` : ''}
                             </div>
-                            ${reserveBtnHtml}
+                            <div class="tcg-action-controls">
+                                ${reserveBtnHtml}
+                                ${rotateBtnHtml}
+                            </div>
                         `;
 
                         cardEl.onclick = () => {
@@ -1178,7 +1174,7 @@
                     });
                 }
 
-                // 2. 保留エリア描画 (比率 2:3 TCGカード ✕ 復元ボタン付き)
+                // 2. 保留エリア描画 (ユーザー最新ワイヤーフレーム画像 100% 同期 ✕ [↩ 手札へ戻す] ボタン)
                 const reserveRowEl = document.getElementById("reserveRow");
                 if (reserveRowEl) {
                     reserveRowEl.innerHTML = "";
@@ -1191,6 +1187,7 @@
                             const isSelected = (selectedCard === card);
                             const cName = I18n.t(card.terrain.nameKey);
                             const rarityClass = (card.terrain.id === "H3_MOUNTAIN") ? "rarity-uc" : "rarity-c";
+                            const rarityCode = (card.terrain.id === "H3_MOUNTAIN") ? "UC" : "C";
 
                             const cardEl = document.createElement("div");
                             cardEl.className = `card-frame-tcg ${rarityClass} ${isSelected ? 'selected' : ''} ${isLocked ? 'locked' : ''}`;
@@ -1198,41 +1195,39 @@
                             const sRows = card.currentShape.length;
                             const sCols = card.currentShape[0].length;
                             
-                            let shapeGridHtml = `<div style="display:grid; grid-template-columns:repeat(${sCols}, 8px); gap:1px; z-index:2;">`;
+                            let shapeGridHtml = `<div style="display:grid; grid-template-columns:repeat(${sCols}, 12px); gap:2px; z-index:2;">`;
                             for (let dr = 0; dr < sRows; dr++) {
                                 for (let dc = 0; dc < sCols; dc++) {
                                     const isActive = card.currentShape[dr][dc] === 1;
-                                    shapeGridHtml += `<div style="width:8px;height:8px;background:${isActive ? '#f39c12' : '#252a36'};border-radius:1px;"></div>`;
+                                    shapeGridHtml += `<div style="width:12px;height:12px;background:${isActive ? '#e67e22' : '#ffe0b2'};border:1px solid #d35400;border-radius:2px;"></div>`;
                                 }
                             }
                             shapeGridHtml += '</div>';
 
                             const rotateBtnHtml = isLocked ? "" :
-                                `<button class="tcg-rotate-btn" onclick="event.stopPropagation(); event.preventDefault(); rotateReserveCardByIdx(${i})">${I18n.t("UI_ROTATE_BTN")}</button>`;
+                                `<button class="tcg-rotate-btn-wireframe" onclick="event.stopPropagation(); event.preventDefault(); rotateReserveCardByIdx(${i})">${I18n.t("UI_ROTATE_BTN")} <span class="rotate-arrow-icon">🔄</span></button>`;
 
                             const returnBtnHtml = isLocked ? "" :
-                                `<button style="font-size:8px; background:linear-gradient(to right, #e67e22, #f39c12); color:white; border:none; border-radius:3px; padding:2px; cursor:pointer; font-weight:bold; width:100%; margin-top:2px;" onclick="event.stopPropagation(); returnReserveCard(${i})">${I18n.t("UI_RESERVE_RETURN_BTN")}</button>`;
+                                `<button class="tcg-reserve-btn-wireframe" style="background:#e67e22; border-color:#d35400;" onclick="event.stopPropagation(); returnReserveCard(${i})">${I18n.t("UI_RESERVE_RETURN_BTN")}</button>`;
 
                             cardEl.innerHTML = `
-                                <div class="tcg-card-header">
-                                    <span class="tcg-category-badge" style="color:#f39c12; border-color:rgba(243,156,18,0.4); background:rgba(243,156,18,0.2);">${I18n.t("UI_RESERVE_SLOT_BADGE", { slot: i + 1 })}</span>
-                                    <span class="tcg-card-title">${cName}</span>
-                                    <div class="tcg-header-controls">
-                                        ${rotateBtnHtml}
-                                        <span class="tcg-cost-badge" style="color:#f39c12; border-color:rgba(243,156,18,0.5); background:rgba(243,156,18,0.25);">🔥-1/T</span>
-                                    </div>
+                                <div class="tcg-card-top-bar">
+                                    <div class="tcg-title-pill" style="border-color:#d35400;">${cName}</div>
+                                    <div class="tcg-rarity-code" style="color:#d35400;">${rarityCode}</div>
                                 </div>
-                                <div class="tcg-art-container">
-                                    <div class="tcg-art-bg-texture"></div>
+                                <div class="tcg-shape-art-area" style="background:#fff3e0;">
                                     ${shapeGridHtml}
                                 </div>
-                                <div class="tcg-card-footer">
-                                    <span class="param-badge" style="color:#2ecc71;">🌾+${card.terrain.food||0}</span>
-                                    <span class="param-badge" style="color:#e67e22;">🧱+${card.terrain.wood||0}</span>
-                                    <span class="param-badge" style="color:#3498db;">🛡️+${card.terrain.defense||0}</span>
-                                    ${card.terrain.mystic > 0 ? `<span class="param-badge" style="color:#f1c40f;">✨+${card.terrain.mystic}</span>` : ''}
+                                <div class="tcg-yield-strip" style="background:#fff3e0;">
+                                    <span>🌾: ${card.terrain.food||0}</span>
+                                    <span>🧱: ${card.terrain.wood||0}</span>
+                                    <span>🛡️ ${card.terrain.defense||0}</span>
+                                    ${card.terrain.mystic > 0 ? `<span>✨ ${card.terrain.mystic}</span>` : ''}
                                 </div>
-                                ${returnBtnHtml}
+                                <div class="tcg-action-controls">
+                                    ${returnBtnHtml}
+                                    ${rotateBtnHtml}
+                                </div>
                             `;
 
                             cardEl.onclick = () => {
@@ -1251,7 +1246,7 @@
                         } else {
                             const emptySlotEl = document.createElement("div");
                             emptySlotEl.className = `reserve-slot ${isLocked ? 'locked' : ''}`;
-                            emptySlotEl.style.cssText = "width:100%; aspect-ratio:2/3; background:#12141c; border:1px dashed #34495e; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:11px; color:#7f8c8d;";
+                            emptySlotEl.style.cssText = "width:100%; aspect-ratio:2/3; background:#12141c; border:2px dashed #34495e; border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:11px; color:#7f8c8d;";
                             emptySlotEl.innerText = I18n.t("UI_RESERVE_EMPTY", { slot: i + 1 });
                             reserveRowEl.appendChild(emptySlotEl);
                         }
