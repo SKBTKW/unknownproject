@@ -536,35 +536,84 @@
             });
 
             let totalW = filtered.reduce((acc, c) => acc + c.weight, 0);
-            let rand = Math.random() * totalW;
-            let sum = 0;
-            let chosen = filtered[0];
+            let rand = Math.random() * totalW; 
 
+            let chosen = filtered[0];
             for (let c of filtered) {
-                sum += c.weight;
-                if (rand <= sum) {
+                if (rand <= c.weight) {
                     chosen = c;
                     break;
                 }
+                rand -= c.weight;
             }
 
-            const shapeRoll = Math.random();
-            let shape = [[1]];
-            if (shapeRoll >= 0.80) {
-                // 1x2ブロックの初期表示は回転すれば全て同じ形状のため横長[[1, 1]]に統一
-                shape = [[1, 1]];
+            // 🧮 ユーザー公式図面 100% 準拠 土地カテゴリ別形状マトリクス
+            const stage = this.state.stage || 1;
+            let availableShapes = [];
+
+            if (chosen.id === "GL1_PLAINS") {
+                // 平地: Stage 1 (1x1, 1x2), Stage 2 (+ 1x3 L字/直線), Stage 3 (+ 1x4 凸/L/直線/S型/2x2)
+                availableShapes = [
+                    { shape: [[1]], weight: (stage === 1 ? 0.80 : stage === 2 ? 0.60 : 0.40), minStage: 1 },
+                    { shape: [[1, 1]], weight: (stage === 1 ? 0.20 : stage === 2 ? 0.30 : 0.30), minStage: 1 },
+                    { shape: [[1, 0], [1, 1]], weight: (stage === 2 ? 0.05 : 0.05), minStage: 2 },
+                    { shape: [[1, 1, 1]], weight: (stage === 2 ? 0.05 : 0.05), minStage: 2 },
+                    { shape: [[0, 1, 0], [1, 1, 1]], weight: 0.02, minStage: 3 },
+                    { shape: [[1, 0, 0], [1, 1, 1]], weight: 0.02, minStage: 3 },
+                    { shape: [[1, 1, 1, 1]], weight: 0.02, minStage: 3 },
+                    { shape: [[0, 1, 1], [1, 1, 0]], weight: 0.02, minStage: 3 }, // 1x4 S-shape
+                    { shape: [[1, 1], [1, 1]], weight: 0.02, minStage: 3 }
+                ];
+            } else if (chosen.id === "GL2_FOREST" || chosen.id === "GL3_DEEP_FOREST") {
+                // 森: 1x1 (70%), 1x2 (30%) 常時固定
+                availableShapes = [
+                    { shape: [[1]], weight: 0.70, minStage: 1 },
+                    { shape: [[1, 1]], weight: 0.30, minStage: 1 }
+                ];
+            } else if (chosen.id === "H2_HILL") {
+                // 丘陵: 1x2 (60%), 1x3 L字 (30%), 1x4 L字 (10%)
+                availableShapes = [
+                    { shape: [[1, 1]], weight: 0.60, minStage: 1 },
+                    { shape: [[1, 0], [1, 1]], weight: 0.30, minStage: 1 },
+                    { shape: [[1, 0, 0], [1, 1, 1]], weight: 0.10, minStage: 1 }
+                ];
+            } else if (chosen.id === "H3_MOUNTAIN") {
+                // 山岳: 1x3 直線 (60%), 1x4 凸型 (30%), 1x4 直線 (10%) (※丘陵3マス以上)
+                availableShapes = [
+                    { shape: [[1, 1, 1]], weight: 0.60, minStage: 1 },
+                    { shape: [[0, 1, 0], [1, 1, 1]], weight: 0.30, minStage: 1 },
+                    { shape: [[1, 1, 1, 1]], weight: 0.10, minStage: 1 }
+                ];
+            } else {
+                availableShapes = [
+                    { shape: [[1]], weight: 0.80, minStage: 1 },
+                    { shape: [[1, 1]], weight: 0.20, minStage: 1 }
+                ];
+            }
+
+            const filteredShapes = availableShapes.filter(s => stage >= s.minStage);
+            let totalShapeW = filteredShapes.reduce((acc, s) => acc + s.weight, 0);
+            let sRand = Math.random() * totalShapeW;
+            let sSum = 0;
+            let chosenShape = filteredShapes[0].shape;
+
+            for (let s of filteredShapes) {
+                sSum += s.weight;
+                if (sRand <= sSum) {
+                    chosenShape = s.shape;
+                    break;
+                }
             }
 
             return {
                 id: `card_${this.state.turn}_${Date.now()}_${Math.floor(Math.random()*1000)}`,
                 nameKey: chosen.nameKey,
                 terrain: chosen,
-                currentShape: shape
+                currentShape: chosenShape
             };
         }
 
         generateOfferingCards() {
-            // 🧮 01_land_base.md Spec 01 Line 6-14 確定マトリクス完全同期 (1マス基礎産出)
             const candidates = [
                 { id: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", food: 4, wood: 0, defense: 0, mystic: 0, weight: 0.320 },
                 { id: "GL2_FOREST", nameKey: "TERRAIN_FOREST", food: 2, wood: 2, defense: 2, mystic: 0, weight: 0.224 },
@@ -599,18 +648,69 @@
             }
 
             this.state.handOffering = pickedTerrainDefs.map((tDef, idx) => {
-                const shapeRoll = Math.random();
-                let shape = [[1]];
-                if (shapeRoll >= 0.80) {
-                    // 1x2ブロックの初期表示は回転すれば全て同じ形状のため横長[[1, 1]]に統一
-                    shape = [[1, 1]];
+                // 🧮 ユーザー公式図面 100% 準拠 土地カテゴリ別形状マトリクス
+                const stage = this.state.stage || 1;
+                let availableShapes = [];
+
+                if (tDef.id === "GL1_PLAINS") {
+                    // 平地: Stage 1 (1x1, 1x2), Stage 2 (+ 1x3 L字/直線), Stage 3 (+ 1x4 凸/L/直線/S型/2x2)
+                    availableShapes = [
+                        { shape: [[1]], weight: (stage === 1 ? 0.80 : stage === 2 ? 0.60 : 0.40), minStage: 1 },
+                        { shape: [[1, 1]], weight: (stage === 1 ? 0.20 : stage === 2 ? 0.30 : 0.30), minStage: 1 },
+                        { shape: [[1, 0], [1, 1]], weight: (stage === 2 ? 0.05 : 0.05), minStage: 2 },
+                        { shape: [[1, 1, 1]], weight: (stage === 2 ? 0.05 : 0.05), minStage: 2 },
+                        { shape: [[0, 1, 0], [1, 1, 1]], weight: 0.02, minStage: 3 },
+                        { shape: [[1, 0, 0], [1, 1, 1]], weight: 0.02, minStage: 3 },
+                        { shape: [[1, 1, 1, 1]], weight: 0.02, minStage: 3 },
+                        { shape: [[0, 1, 1], [1, 1, 0]], weight: 0.02, minStage: 3 }, // 1x4 S-shape
+                        { shape: [[1, 1], [1, 1]], weight: 0.02, minStage: 3 }
+                    ];
+                } else if (tDef.id === "GL2_FOREST" || tDef.id === "GL3_DEEP_FOREST") {
+                    // 森: 1x1 (70%), 1x2 (30%) 常時固定
+                    availableShapes = [
+                        { shape: [[1]], weight: 0.70, minStage: 1 },
+                        { shape: [[1, 1]], weight: 0.30, minStage: 1 }
+                    ];
+                } else if (tDef.id === "H2_HILL") {
+                    // 丘陵: 1x2 (60%), 1x3 L字 (30%), 1x4 L字 (10%)
+                    availableShapes = [
+                        { shape: [[1, 1]], weight: 0.60, minStage: 1 },
+                        { shape: [[1, 0], [1, 1]], weight: 0.30, minStage: 1 },
+                        { shape: [[1, 0, 0], [1, 1, 1]], weight: 0.10, minStage: 1 }
+                    ];
+                } else if (tDef.id === "H3_MOUNTAIN") {
+                    // 山岳: 1x3 直線 (60%), 1x4 凸型 (30%), 1x4 直線 (10%)
+                    availableShapes = [
+                        { shape: [[1, 1, 1]], weight: 0.60, minStage: 1 },
+                        { shape: [[0, 1, 0], [1, 1, 1]], weight: 0.30, minStage: 1 },
+                        { shape: [[1, 1, 1, 1]], weight: 0.10, minStage: 1 }
+                    ];
+                } else {
+                    availableShapes = [
+                        { shape: [[1]], weight: 0.80, minStage: 1 },
+                        { shape: [[1, 1]], weight: 0.20, minStage: 1 }
+                    ];
+                }
+
+                const filteredShapes = availableShapes.filter(s => stage >= s.minStage);
+                let totalShapeW = filteredShapes.reduce((acc, s) => acc + s.weight, 0);
+                let sRand = Math.random() * totalShapeW;
+                let sSum = 0;
+                let chosenShape = filteredShapes[0].shape;
+
+                for (let s of filteredShapes) {
+                    sSum += s.weight;
+                    if (sRand <= sSum) {
+                        chosenShape = s.shape;
+                        break;
+                    }
                 }
 
                 return {
                     id: `card_${this.state.turn}_${idx}`,
                     nameKey: tDef.nameKey,
                     terrain: tDef,
-                    currentShape: shape
+                    currentShape: chosenShape
                 };
             });
         }
