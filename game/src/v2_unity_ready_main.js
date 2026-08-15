@@ -1,4 +1,4 @@
-// Trial of Ages : Last Ember Engine (V2 Unity-Ready Main Engine - AGENTS.md Rule 3 I18n Compliant)
+// Trial of Ages : Last Ember Engine (V2 Unity-Ready Main Engine - AGENTS.md Rule 2 Spec 01 Synchronized)
 (function(exports) {
 
     const I18n = (typeof window !== 'undefined' && window.I18n) ? window.I18n : { t: (k, p) => k };
@@ -494,11 +494,12 @@
         }
 
         generateOfferingCards() {
+            // 🧮 01_land_base.md Spec 01 Line 6-14 確定マトリクス完全同期 (1マス基礎産出)
             const candidates = [
-                { id: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", food: 4, wood: 0, defense: 0, weight: 0.320 },
-                { id: "GL2_FOREST", nameKey: "TERRAIN_FOREST", food: 2, wood: 2, defense: 2, weight: 0.224 },
-                { id: "H2_HILL", nameKey: "TERRAIN_HILL", food: 0, wood: 4, defense: 3, weight: 0.250 },
-                { id: "H3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", food: 0, wood: 5, defense: 5, mystic: 1, weight: 0.110 }
+                { id: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", food: 4, wood: 0, defense: 0, mystic: 0, weight: 0.320 },
+                { id: "GL2_FOREST", nameKey: "TERRAIN_FOREST", food: 2, wood: 2, defense: 2, mystic: 0, weight: 0.224 },
+                { id: "H2_HILL", nameKey: "TERRAIN_HILL", food: 2, wood: 1, defense: 1, mystic: 0, weight: 0.250 },
+                { id: "H3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", food: 0, wood: 3, defense: 5, mystic: 1, weight: 0.110 }
             ];
 
             const h2Count = this.state.countH2HillsOnBoard();
