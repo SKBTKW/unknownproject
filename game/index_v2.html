@@ -931,18 +931,45 @@
                         cardEl.onclick = () => selectCard(idx);
 
                         const cName = card.terrain ? I18n.t(card.terrain.nameKey) : "Land";
+                        const y = (card.terrain && card.terrain.yields) ? card.terrain.yields : {
+                            food: card.terrain ? card.terrain.food || 0 : 0,
+                            wood: card.terrain ? card.terrain.wood || 0 : 0,
+                            defense: card.terrain ? card.terrain.def || card.terrain.defense || 0 : 0,
+                            mystic: card.terrain ? card.terrain.mystic || 0 : 0
+                        };
+                        const shapeMat = card.currentShape || (card.terrain ? card.terrain.shape : [[1]]);
+                        const tileCount = shapeMat.reduce((acc, row) => acc + row.reduce((a, b) => a + b, 0), 0);
+                        const totF = (y.food || 0) * tileCount;
+                        const totW = (y.wood || 0) * tileCount;
+                        const totD = (y.defense || 0) * tileCount;
+                        const totM = (y.mystic || 0) * tileCount;
+
+                        // 2D ブロック形状プレビュー描画
+                        let shapeHtml = `<div style="display:grid; grid-template-rows:repeat(${shapeMat.length}, 10px); grid-template-columns:repeat(${shapeMat[0].length}, 10px); gap:2px;">`;
+                        for (let r = 0; r < shapeMat.length; r++) {
+                            for (let c = 0; c < shapeMat[0].length; c++) {
+                                if (shapeMat[r][c] === 1) {
+                                    shapeHtml += `<div style="width:10px;height:10px;background:#0097a7;border-radius:2px;"></div>`;
+                                } else {
+                                    shapeHtml += `<div style="width:10px;height:10px;background:transparent;"></div>`;
+                                }
+                            }
+                        }
+                        shapeHtml += `</div>`;
+
+                        let yieldText = `<span>🌾${totF}</span> <span>🧱${totW}</span> <span>🛡️${totD}</span>`;
+                        if (totM > 0) yieldText += ` <span>✨${totM}</span>`;
+
                         cardEl.innerHTML = `
                             <div class="tcg-card-top-bar">
                                 <div class="tcg-title-pill">${cName}</div>
                                 <div class="tcg-rarity-code">${rCode}</div>
                             </div>
-                            <div class="tcg-shape-art-area">
-                                <div style="width:12px;height:12px;background:#0097a7;border-radius:2px;"></div>
+                            <div class="tcg-shape-art-area" style="display:flex; align-items:center; justify-content:center;">
+                                ${shapeHtml}
                             </div>
                             <div class="tcg-yield-strip">
-                                <span>🌾: ${card.terrain.food||0}</span>
-                                <span>🧱: ${card.terrain.wood||0}</span>
-                                <span>🛡️ ${card.terrain.defense||0}</span>
+                                ${yieldText}
                             </div>
                             <div class="tcg-action-controls">
                                 <button class="tcg-reserve-btn-wireframe" onclick="event.stopPropagation(); reserveCard(${idx})">${I18n.t("UI_RESERVE_BTN")}</button>

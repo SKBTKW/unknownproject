@@ -14,6 +14,9 @@
             TERRAIN_DEEP_HILLS: "森林丘陵",
             TERRAIN_MOUNTAIN: "山岳",
             TERRAIN_DESERT: "砂漠",
+            TERRAIN_DESERT_HILL: "砂漠丘陵",
+            TERRAIN_FOREST_HILL: "森丘陵",
+            TERRAIN_DEEP_HILL: "森林丘陵",
 
             // 開花ソケット資源名
             SOCKET_WILD_WHEAT: "野麦 🌾+3/T",
@@ -111,6 +114,9 @@
             TERRAIN_DEEP_HILLS: "Dense Hills",
             TERRAIN_MOUNTAIN: "Mountains",
             TERRAIN_DESERT: "Desert",
+            TERRAIN_DESERT_HILL: "Desert Hill",
+            TERRAIN_FOREST_HILL: "Forest Hill",
+            TERRAIN_DEEP_HILL: "Deep Forest Hill",
 
             SOCKET_WILD_WHEAT: "Wild Wheat 🌾+3/T",
             SOCKET_APPLES: "Apples 🌾+3/T",

@@ -566,11 +566,11 @@
 
         drawSingleCard() {
             const master = this.getLandCardMaster();
-            const stage = (this.state && this.state.stage) || 1;
-            const h2Count = (this.state && this.state.countH2HillsOnBoard) ? this.state.countH2HillsOnBoard() : 0;
+            const stage = (this.state && this.state.stage) ? (typeof this.state.stage === 'object' ? (this.state.stage.id || 1) : this.state.stage) : 1;
+            const h2Count = (this.state && typeof this.state.countH2HillsOnBoard === 'function') ? this.state.countH2HillsOnBoard() : 0;
 
-            let eligible = master.filter(c => stage >= c.minStage && h2Count >= c.reqH2);
-            if (eligible.length === 0) eligible = master;
+            let eligible = master.filter(c => stage >= (c.minStage || 1) && h2Count >= (c.reqH2 || 0));
+            if (eligible.length === 0) eligible = master.filter(c => (c.reqH2 || 0) === 0);
 
             let totalW = eligible.reduce((acc, c) => acc + (c.weight || 0.1), 0);
             let rand = Math.random() * totalW;
@@ -583,7 +583,7 @@
                 }
                 rand -= c.weight;
             }
-            if (!chosen) chosen = master[0];
+            if (!chosen) chosen = eligible[0] || master[0];
 
             return {
                 id: `card_${(this.state && this.state.turn) || 1}_${Date.now()}_${Math.floor(Math.random()*1000)}`,
@@ -596,11 +596,11 @@
 
         generateOfferingCards() {
             const master = this.getLandCardMaster();
-            const stage = (this.state && this.state.stage) || 1;
-            const h2Count = (this.state && this.state.countH2HillsOnBoard) ? this.state.countH2HillsOnBoard() : 0;
+            const stage = (this.state && this.state.stage) ? (typeof this.state.stage === 'object' ? (this.state.stage.id || 1) : this.state.stage) : 1;
+            const h2Count = (this.state && typeof this.state.countH2HillsOnBoard === 'function') ? this.state.countH2HillsOnBoard() : 0;
 
-            let eligible = master.filter(c => stage >= c.minStage && h2Count >= c.reqH2);
-            if (eligible.length === 0) eligible = master;
+            let eligible = master.filter(c => stage >= (c.minStage || 1) && h2Count >= (c.reqH2 || 0));
+            if (eligible.length === 0) eligible = master.filter(c => (c.reqH2 || 0) === 0);
 
             let totalW = eligible.reduce((acc, c) => acc + (c.weight || 0.1), 0);
 
@@ -616,7 +616,7 @@
                     }
                     rand -= c.weight;
                 }
-                if (!chosen) chosen = master[i % master.length];
+                if (!chosen) chosen = eligible[0] || master[0];
                 pickedCards.push(chosen);
             }
 
