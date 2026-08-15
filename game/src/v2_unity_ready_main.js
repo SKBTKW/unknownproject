@@ -549,7 +549,8 @@
             const shapeRoll = Math.random();
             let shape = [[1]];
             if (shapeRoll >= 0.80) {
-                shape = Math.random() > 0.5 ? [[1, 1]] : [[1], [1]];
+                // 1x2ブロックの初期表示は回転すれば全て同じ形状のため横長[[1, 1]]に統一
+                shape = [[1, 1]];
             }
 
             return {
@@ -599,7 +600,8 @@
                 const shapeRoll = Math.random();
                 let shape = [[1]];
                 if (shapeRoll >= 0.80) {
-                    shape = Math.random() > 0.5 ? [[1, 1]] : [[1], [1]];
+                    // 1x2ブロックの初期表示は回転すれば全て同じ形状のため横長[[1, 1]]に統一
+                    shape = [[1, 1]];
                 }
 
                 return {
