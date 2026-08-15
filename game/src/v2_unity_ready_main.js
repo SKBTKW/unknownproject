@@ -154,22 +154,40 @@
                             cell.placementGroupId = pGroupId;
                         }
 
-                        // ★ソケットマス上への土地配置時対応資源即時湧出
+                        // ★ソケットマス上への土地配置時対応資源即時湧出 (Spec 01 遵守)
                         if (cell.hasSocket && !cell.socketResource) {
+                            const baseTerrainId = terrain.terrainId || terrain.id;
                             const socketMap = {
-                                "GL1_PLAINS":      { nameKey: "SOCKET_WILD_WHEAT", bonusFood: 3, bonusWood: 0, bonusMystic: 0 },
-                                "GL2_FOREST":      { nameKey: "SOCKET_APPLES", bonusFood: 3, bonusWood: 0, bonusMystic: 0 },
-                                "H2_HILL":         { nameKey: "SOCKET_QUARRY", bonusFood: 0, bonusWood: 3, bonusMystic: 0 },
-                                "H3_MOUNTAIN":     { nameKey: "SOCKET_IRON_DEPOSIT", bonusFood: 0, bonusWood: 2, bonusMystic: 1 },
-                                "GL0_DESERT":      { nameKey: "SOCKET_DATES", bonusFood: 1, bonusWood: 0, bonusMystic: 0 }
+                                "GL1_PLAINS":      [{ nameKey: "SOCKET_WILD_WHEAT", bonusFood: 3, bonusWood: 0, bonusMystic: 0 }, { nameKey: "SOCKET_APPLES", bonusFood: 3, bonusWood: 0, bonusMystic: 0 }],
+                                "GL2_FOREST":      [{ nameKey: "SOCKET_APPLES", bonusFood: 3, bonusWood: 0, bonusMystic: 0 }],
+                                "GL3_DEEP_FOREST": [{ nameKey: "SOCKET_APPLES", bonusFood: 3, bonusWood: 0, bonusMystic: 0 }],
+                                "H2_HILL":         [{ nameKey: "SOCKET_QUARRY", bonusFood: 0, bonusWood: 3, bonusMystic: 0 }, { nameKey: "SOCKET_IRON_DEPOSIT", bonusFood: 0, bonusWood: 2, bonusMystic: 1 }],
+                                "H3_MOUNTAIN":     [{ nameKey: "SOCKET_IRON_DEPOSIT", bonusFood: 0, bonusWood: 2, bonusMystic: 1 }],
+                                "H2_FOREST_HILL":  [{ nameKey: "SOCKET_QUARRY", bonusFood: 0, bonusWood: 3, bonusMystic: 0 }, { nameKey: "SOCKET_APPLES", bonusFood: 3, bonusWood: 0, bonusMystic: 0 }],
+                                "H2_DEEP_HILL":    [{ nameKey: "SOCKET_QUARRY", bonusFood: 0, bonusWood: 3, bonusMystic: 0 }],
+                                "H2_DESERT_HILL":  [{ nameKey: "SOCKET_QUARRY", bonusFood: 0, bonusWood: 3, bonusMystic: 0 }]
                             };
-                            const spawnedSocket = socketMap[terrain.id] || { nameKey: "SOCKET_WILD_WHEAT", bonusFood: 3, bonusWood: 0, bonusMystic: 0 };
-                            cell.socketResource = spawnedSocket;
 
-                            const posStr = `(${String.fromCharCode(65+c)}${r+1})`;
-                            const sName = I18n.t(spawnedSocket.nameKey);
-                            this.addLog(I18n.t("LOG_SOCKET_SPAWNED", { pos: posStr, terrainName, socketName: sName }));
-                            this.toastQueue.push({ r, c, text: I18n.t("TOAST_SOCKET_SPAWNED", { name: sName }) });
+                            let spawnedSocket = null;
+                            if (baseTerrainId === "GL0_DESERT") {
+                                // ★ 砂漠配置特殊ルール: 25% の確率でオアシス「デーツ 🌾+1」が開花
+                                if (Math.random() < 0.25) {
+                                    spawnedSocket = { nameKey: "SOCKET_DATES", bonusFood: 1, bonusWood: 0, bonusMystic: 0 };
+                                }
+                            } else if (socketMap[baseTerrainId]) {
+                                const candidates = socketMap[baseTerrainId];
+                                spawnedSocket = candidates[Math.floor(Math.random() * candidates.length)];
+                            } else {
+                                spawnedSocket = { nameKey: "SOCKET_WILD_WHEAT", bonusFood: 3, bonusWood: 0, bonusMystic: 0 };
+                            }
+
+                            if (spawnedSocket) {
+                                cell.socketResource = spawnedSocket;
+                                const posStr = `(${String.fromCharCode(65+c)}${r+1})`;
+                                const sName = I18n.t(spawnedSocket.nameKey);
+                                this.addLog(I18n.t("LOG_SOCKET_SPAWNED", { pos: posStr, terrainName, socketName: sName }));
+                                this.toastQueue.push({ r, c, text: I18n.t("TOAST_SOCKET_SPAWNED", { name: sName }) });
+                            }
                         }
 
                         this.checkConnectionBonus(r, c, terrain);
