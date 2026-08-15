@@ -104,26 +104,17 @@
                 }
             }
 
+            // 🛡️ 再発防止策: クリック始点セル (startR, startC) 自体が配置済みマス (本営含む) と上下左右4方向で直交接合しているか検証
             let isAdjacent = false;
-            for (let dr = 0; dr < rows; dr++) {
-                for (let dc = 0; dc < cols; dc++) {
-                    if (shapeMatrix[dr][dc] === 1) {
-                        const r = startR + dr;
-                        const c = startC + dc;
-                        const neighbors = [
-                            [r-1, c], [r+1, c], [r, c-1], [r, c+1]
-                        ];
-                        for (let [nr, nc] of neighbors) {
-                            if (nr >= 0 && nr < size && nc >= 0 && nc < size) {
-                                const targetCell = this.grid[nr][nc];
-                                if (targetCell.placed || targetCell.isHQ) {
-                                    isAdjacent = true;
-                                    break;
-                                }
-                            }
-                        }
+            const startNeighbors = [
+                [startR - 1, startC], [startR + 1, startC], [startR, startC - 1], [startR, startC + 1]
+            ];
+            for (let [nr, nc] of startNeighbors) {
+                if (nr >= 0 && nr < size && nc >= 0 && nc < size) {
+                    if (this.grid[nr][nc].placed) {
+                        isAdjacent = true;
+                        break;
                     }
-                    if (isAdjacent) break;
                 }
             }
 
