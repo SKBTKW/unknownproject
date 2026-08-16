@@ -1,0 +1,68 @@
+/* =============================================================
+   1_top_header / top_header.css
+   画面上部ヘッダー（ロール情報 ＆ 🔥残量表示）専用スタイル
+   ============================================================= */
+
+/* 画面上部ヘッダーコンテナ */
+.top-header {
+    width: 100%;
+    height: 48px;
+    background: #12151e;
+    border-bottom: 2px solid #232736;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    z-index: 10;
+}
+
+/* 🎭 ロール情報エリア (左側) */
+.role-info-card {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: bold;
+    color: #e0e6ed;
+    background: #1a1e2b;
+    padding: 4px 12px;
+    border-radius: 6px;
+    border: 1px solid #343a4e;
+}
+
+.role-avatar-icon {
+    font-size: 16px;
+    color: #1abc9c;
+}
+
+/* 🔥 残量表示 (中央、大きく) */
+.ember-status-panel {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 20px;
+    font-weight: 900;
+    color: #ffffff;
+    text-shadow: 0 0 10px rgba(230, 126, 34, 0.8);
+    background: rgba(230, 126, 34, 0.12);
+    padding: 4px 20px;
+    border-radius: 20px;
+    border: 1px solid rgba(230, 126, 34, 0.4);
+}
+
+.ember-icon-large {
+    font-size: 24px;
+    animation: emberPulse 2s infinite ease-in-out;
+}
+
+@keyframes emberPulse {
+    0%, 100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 6px rgba(230, 126, 34, 0.8));
+    }
+    50% {
+        transform: scale(1.15);
+        filter: drop-shadow(0 0 14px rgba(241, 196, 15, 1));
+    }
+}

@@ -1,0 +1,139 @@
+/* =============================================================
+   3_bottom_area / bottom_cards.css
+   画面下部（ドローオファリングエリア ＆ 保留エリア）専用スタイル
+   ============================================================= */
+
+/* 🎴 画面下部全体の独立コンテナ */
+.bottom-area-container {
+    width: 100%;
+    display: flex;
+    gap: 16px;
+    padding: 10px 16px;
+    background: #11141d;
+    border-top: 2px solid #232736;
+    align-items: center;
+}
+
+/* 🎴 ドローオファリングエリア (左側・3枚グリッド) */
+.offering-hand-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.section-title-label {
+    font-size: 12px;
+    font-weight: bold;
+    color: #1abc9c;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.offering-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    width: 100%;
+}
+
+/* 📥 保留エリア (右側・3スロットグリッド) */
+.reserve-row-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.reserve-slots-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    width: 100%;
+}
+
+/* 🃏 TCG風カードフレームスタイル定義 */
+.card-frame-tcg {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    max-height: 180px;
+    background: linear-gradient(145deg, #1c202c 0%, #151822 100%);
+    border: 2px solid #343a4e;
+    border-radius: 8px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    user-select: none;
+}
+
+.card-frame-tcg:hover {
+    transform: translateY(-4px);
+    border-color: #1abc9c;
+    box-shadow: 0 6px 14px rgba(26, 188, 156, 0.3);
+}
+
+.card-frame-tcg.selected {
+    border-color: #f1c40f !important;
+    box-shadow: 0 0 16px rgba(241, 196, 15, 0.8), inset 0 0 8px rgba(241, 196, 15, 0.3) !important;
+    transform: translateY(-6px) scale(1.03);
+}
+
+/* 🎴 カード内アート領域 ＆ 産出量帯 */
+.tcg-shape-art-area {
+    width: 100%;
+    height: 48px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 4px 0;
+}
+
+.tcg-yield-strip {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+    padding: 3px 6px;
+    font-size: 11px;
+    font-weight: bold;
+    color: #ffffff;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+
+/* 🔄 カード内アクションコントロール（回転・保留ボタン） */
+.tcg-action-controls {
+    display: flex;
+    gap: 4px;
+    width: 100%;
+    margin-top: 4px;
+}
+
+.tcg-rotate-btn-wireframe,
+.tcg-reserve-btn-wireframe {
+    flex: 1;
+    padding: 4px 0;
+    font-size: 10px;
+    font-weight: bold;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.tcg-rotate-btn-wireframe:hover {
+    background: #27ae60 !important;
+}
+
+.tcg-reserve-btn-wireframe:hover {
+    background: #d35400 !important;
+}

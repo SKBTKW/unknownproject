@@ -1,0 +1,71 @@
+/* =============================================================
+   0_global_common / typography_theme.css
+   文字スタイル・タイポグラフィ ＆ グローバルカラーテーマ一元管理
+   ============================================================= */
+
+:root {
+    /* 🎨 1. 気候 (GL0〜GL3) テーマグラデーション一元管理変数 */
+    --theme-gl0-desert: linear-gradient(135deg, #f1c40f 0%, #e67e22 100%);
+    --theme-gl1-plains: linear-gradient(135deg, #48bb78 0%, #2f855a 100%);
+    --theme-gl2-forest: linear-gradient(135deg, #2ecc71 0%, #1e8449 100%);
+    --theme-gl3-deep-forest: linear-gradient(135deg, #1e824c 0%, #0e3a20 100%);
+
+    /* ⛰️ 2. 高度 (H1〜H3) 立体ボーダー ＆ シャドウ一元管理変数 */
+    --height-h1-shadow: none;
+    --height-h2-shadow: 0 4px 10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    --height-h2-border-bottom: 3px solid rgba(0, 0, 0, 0.45);
+
+    --height-h3-shadow: 0 8px 18px rgba(0, 0, 0, 0.75), inset 0 1px 1px rgba(255, 255, 255, 0.45);
+    --height-h3-border-bottom: 5px solid rgba(0, 0, 0, 0.65);
+    --height-h3-gold-border: #f1c40f;
+
+    /* 🌌 3. ダークUIテーマベースカラー */
+    --bg-dark-main: #0c0e14;
+    --bg-dark-panel: #161922;
+    --bg-dark-card: #1c202c;
+    --border-dark-line: #2a2e3d;
+
+    /* 🔤 4. タイポグラフィ ＆ 文字スタイル定義 */
+    --font-family-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    --font-size-title: 15px;
+    --font-size-normal: 13px;
+    --font-size-small: 11px;
+
+    --text-color-main: #e0e6ed;
+    --text-color-bright: #ffffff;
+    --text-color-gold: #f1c40f;
+    --text-color-emerald: #1abc9c;
+    --text-shadow-heavy: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+/* 全体基本タイポグラフィ適用 */
+body {
+    font-family: var(--font-family-main);
+    background-color: var(--bg-dark-main);
+    color: var(--text-color-main);
+}
+
+/* 🌿 土地気候 (GL0〜GL3) クラス一元定義 */
+.cell.placed.gl-0 {
+    background: var(--theme-gl0-desert) !important;
+    color: var(--text-color-bright) !important;
+    text-shadow: var(--text-shadow-heavy) !important;
+}
+
+.cell.placed.gl-1 {
+    background: var(--theme-gl1-plains) !important;
+    color: var(--text-color-bright) !important;
+    text-shadow: var(--text-shadow-heavy) !important;
+}
+
+.cell.placed.gl-2 {
+    background: var(--theme-gl2-forest) !important;
+    color: var(--text-color-bright) !important;
+    text-shadow: var(--text-shadow-heavy) !important;
+}
+
+.cell.placed.gl-3 {
+    background: var(--theme-gl3-deep-forest) !important;
+    color: var(--text-color-bright) !important;
+    text-shadow: var(--text-shadow-heavy) !important;
+}

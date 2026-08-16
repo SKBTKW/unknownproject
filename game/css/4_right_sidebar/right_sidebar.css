@@ -1,0 +1,195 @@
+/* =============================================================
+   4_right_sidebar / right_sidebar.css
+   画面右側（ターン表示・データパネル・ログエリア・下部ボタン）専用スタイル
+   ============================================================= */
+
+/* 👉 右サイドバー貫通独立コラムコンテナ */
+.right-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 0;
+    width: 280px;
+    background: #161922;
+    border-left: 2px solid #2a2e3d;
+    padding: 14px 12px;
+    align-items: center;
+    box-shadow: -4px 0 12px rgba(0, 0, 0, 0.4);
+}
+
+/* ⏳ 1. ターン表示 ＆ 試練アナウンス */
+.turn-box-panel {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+}
+
+.turn-box {
+    background: linear-gradient(135deg, #16a085 0%, #1abc9c 100%);
+    color: #ffffff;
+    border-radius: 6px;
+    border: 1px solid #2ecc71;
+    text-align: center;
+    font-weight: bold;
+    width: 100%;
+    padding: 10px 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.turn-box .turn-num {
+    font-size: 22px;
+    font-weight: 900;
+    display: block;
+    margin-top: 2px;
+}
+
+.trial-announcement {
+    display: none;
+    background: #231c10;
+    border: 1px dashed #e67e22;
+    padding: 8px 12px;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 11px;
+    color: #f39c12;
+    font-weight: bold;
+    width: 100%;
+}
+
+/* 🩵 2. 産出データ表示パネル (インデント左揃え) */
+.data-panel {
+    background: #1a1e2b;
+    color: #ffffff;
+    border: 1px solid #2e3547;
+    border-radius: 6px;
+    padding: 14px 12px;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.data-panel h4 {
+    margin: 0 0 10px 0;
+    color: #1abc9c;
+    font-size: 13px;
+    border-bottom: 1px solid #2e3547;
+    padding-bottom: 6px;
+    text-align: left;
+}
+
+.resource-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-left: 16px;
+}
+
+.resource-item {
+    font-size: 13px;
+    font-weight: bold;
+    color: #ffffff;
+    text-align: left;
+}
+
+/* 🟣 3. ログパネル (エリア全体上下格納対応) */
+.log-panel-wrapper {
+    background: #181424;
+    color: #e2d9f3;
+    border: 1px solid #36284d;
+    border-radius: 6px;
+    padding: 10px 12px;
+    flex: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: max-height 0.3s cubic-bezier(0.25, 1, 0.5, 1), flex 0.3s ease, padding 0.3s ease;
+}
+
+.log-panel-wrapper.collapsed {
+    flex: 0 0 38px !important;
+    max-height: 38px !important;
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+}
+
+.log-panel-wrapper.collapsed .log-content {
+    display: none !important;
+}
+
+.log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+    font-size: 13px;
+    color: #9b59b6;
+    border-bottom: 1px solid #36284d;
+    padding-bottom: 6px;
+    margin-bottom: 6px;
+}
+
+.log-header .toggle-btn {
+    background: transparent !important;
+    border: none !important;
+    color: #f39c12 !important;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0 4px;
+}
+
+.log-content {
+    flex: 1;
+    overflow-y: auto;
+    font-size: 11px;
+    line-height: 1.5;
+    color: #ffffff;
+    padding-right: 4px;
+    max-height: 380px;
+}
+
+/* 🕹️ 4. マリガン ＆ ターンエンドボタン群 */
+.sidebar-bottom-controls {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: auto;
+}
+
+.mulligan-btn {
+    background: #d35400;
+    color: #ffffff;
+    border: none;
+    padding: 10px;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.mulligan-btn:hover {
+    background: #e67e22;
+}
+
+.turn-end-btn {
+    background: #1abc9c;
+    color: #0b0d11;
+    border: none;
+    padding: 14px;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.turn-end-btn:hover {
+    background: #2ecc71;
+}
