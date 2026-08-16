@@ -21,6 +21,7 @@
             this.hasPickedThisTurn = false;
             this.mergeGroupCounter = 1;
             this.placementGroupCounter = 1;
+            this.mergedBlocks = {};
 
             this.addLog(I18n.t("LOG_INIT_5X5"));
         }
@@ -197,6 +198,7 @@
                         }
 
                         this.checkConnectionBonus(r, c, terrain);
+                        this.checkMergePatterns();
                     }
                 }
             }
@@ -214,54 +216,133 @@
         }
 
         checkConnectionBonus(r, c, terrain) {
-            const size = 5;
+            const baseTerrainId = terrain.terrainId || terrain.id;
+            const terrainName = I18n.t(terrain.nameKey);
             const neighbors = [
                 [r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]
             ];
 
-            const placedCount = this.countPlacedTiles();
-            let mult = 1.0;
-            if (placedCount >= 4) {
-                mult = 1.2;
-            }
-
-            const bonusTable = {
-                "GL0_DESERT":      { food: 0, wood: 0, mystic: 2 },
-                "GL1_PLAINS":      { food: 4, wood: 0, mystic: 0 },
-                "GL2_FOREST":      { food: 2, wood: 2, mystic: 0 },
-                "GL3_DEEP_FOREST": { food: 1, wood: 3, mystic: 1 },
-                "H2_DESERT":       { food: 0, wood: 1, mystic: 2 },
+            // 1x2 連結即時ボーナス (1マス基礎産出 x 0.80 切り捨て / rules/00_master_handover_specification.md 確定構造)
+            const bonus1x2Table = {
+                "GL0_DESERT":      { food: 0, wood: 0, mystic: 1 },
+                "GL1_PLAINS":      { food: 3, wood: 0, mystic: 0 },
+                "GL2_FOREST":      { food: 1, wood: 1, mystic: 0 },
+                "GL3_DEEP_FOREST": { food: 0, wood: 2, mystic: 1 },
+                "H2_DESERT":       { food: 0, wood: 1, mystic: 1 },
+                "H2_DESERT_HILL":  { food: 0, wood: 1, mystic: 1 },
                 "H2_HILL":         { food: 2, wood: 1, mystic: 0 },
-                "H2_FOREST_HILL":  { food: 1, wood: 4, mystic: 0 },
-                "H2_DEEP_HILL":    { food: 1, wood: 5, mystic: 1 },
-                "H3_MOUNTAIN":     { food: 0, wood: 3, mystic: 1 }
+                "H2_FOREST_HILL":  { food: 0, wood: 3, mystic: 0 },
+                "H2_DEEP_HILL":    { food: 0, wood: 4, mystic: 1 },
+                "H3_MOUNTAIN":     { food: 0, wood: 4, mystic: 1 }
             };
 
-            const bonus = bonusTable[terrain.id] || { food: 2, wood: 2, mystic: 0 };
-            const terrainName = I18n.t(terrain.nameKey);
+            // 1x3 直線連結即時ボーナス (1マス基礎産出 x 1.50 繰り上げ / rules/00_master_handover_specification.md 確定構造)
+            const bonus1x3Table = {
+                "GL0_DESERT":      { food: 0, wood: 0, mystic: 3 },
+                "GL1_PLAINS":      { food: 6, wood: 0, mystic: 0 },
+                "GL2_FOREST":      { food: 3, wood: 3, mystic: 0 },
+                "GL3_DEEP_FOREST": { food: 0, wood: 5, mystic: 3 },
+                "H2_DESERT":       { food: 0, wood: 3, mystic: 3 },
+                "H2_DESERT_HILL":  { food: 0, wood: 3, mystic: 3 },
+                "H2_HILL":         { food: 5, wood: 3, mystic: 0 },
+                "H2_FOREST_HILL":  { food: 2, wood: 6, mystic: 0 },
+                "H2_DEEP_HILL":    { food: 0, wood: 8, mystic: 3 },
+                "H3_MOUNTAIN":     { food: 0, wood: 8, mystic: 3 }
+            };
 
-            for (let [nr, nc] of neighbors) {
-                if (nr >= 0 && nr < 5 && nc >= 0 && nc < 5) {
+            // 1x3 連結判定 (直線または L字 の 3マス以上同属性連結)
+            const isMatch = (nr, nc) => {
+                if (nr < 0 || nr >= 5 || nc < 0 || nc >= 5) return false;
+                const cell = this.grid[nr][nc];
+                if (!cell.placed || cell.isHQ || !cell.terrain) return false;
+                const tid = cell.terrain.terrainId || cell.terrain.id;
+                return tid === baseTerrainId;
+            };
+
+            const matchingNeighbors = neighbors.filter(([nr, nc]) => isMatch(nr, nc));
+
+            // 直線判定 (水平・垂直 3連)
+            let isLinear1x3 = (
+                (isMatch(r, c - 1) && isMatch(r, c + 1)) ||
+                (isMatch(r, c - 2) && isMatch(r, c - 1)) ||
+                (isMatch(r, c + 1) && isMatch(r, c + 2)) ||
+                (isMatch(r - 1, c) && isMatch(r + 1, c)) ||
+                (isMatch(r - 2, c) && isMatch(r - 1, c)) ||
+                (isMatch(r + 1, c) && isMatch(r + 2, c))
+            );
+
+            // 隣接セルに既存のマージグループがあるかチェック
+            let hasExistingGroup = false;
+            let existingGroupId = null;
+            for (let [nr, nc] of matchingNeighbors) {
+                const adjCell = this.grid[nr][nc];
+                if (adjCell.mergeGroupId) {
+                    hasExistingGroup = true;
+                    existingGroupId = adjCell.mergeGroupId;
+                    break;
+                }
+            }
+
+            // 2つ以上の同属性隣接、または既存グループへの接続、または直線3連なら 1x3 連結
+            let is1x3 = isLinear1x3 || matchingNeighbors.length >= 2 || hasExistingGroup;
+
+            const targetTable = is1x3 ? bonus1x3Table : bonus1x2Table;
+            const bonus = targetTable[baseTerrainId] || targetTable[terrain.id] || (is1x3 ? { food: 3, wood: 3, mystic: 1 } : { food: 1, wood: 1, mystic: 0 });
+
+            // 隣接判定チェックおよび融合グループ（mergeGroupId）統合アタッチ
+            if (matchingNeighbors.length > 0) {
+                const currentCell = this.grid[r][c];
+                const groupId = existingGroupId || currentCell.mergeGroupId || `merge_${this.mergeGroupCounter++}`;
+
+                currentCell.merged = true;
+                currentCell.mergeGroupId = groupId;
+                currentCell.mergeType = is1x3 ? "1x3" : "1x2";
+
+                // 全隣接同属性セルのグループIDとマージフラグを統一・拡張
+                for (let [nr, nc] of matchingNeighbors) {
                     const adjCell = this.grid[nr][nc];
-                    if (adjCell.placed && !adjCell.isHQ && adjCell.terrain && adjCell.terrain.id === terrain.id) {
-                        const earnedFood = Math.floor(bonus.food * mult);
-                        const earnedWood = Math.floor(bonus.wood * mult);
-                        const earnedMystic = Math.floor(bonus.mystic * mult);
+                    adjCell.merged = true;
+                    adjCell.mergeGroupId = groupId;
+                    adjCell.mergeType = is1x3 ? "1x3" : "1x2";
+                }
 
-                        this.food += earnedFood;
-                        this.wood += earnedWood;
-                        this.mystic += earnedMystic;
-
-                        let textParts = [];
-                        if (earnedFood > 0) textParts.push(`🌾+${earnedFood}`);
-                        if (earnedWood > 0) textParts.push(`🧱+${earnedWood}`);
-                        if (earnedMystic > 0) textParts.push(`✨+${earnedMystic}`);
-
-                        const bText = textParts.join(" ");
-                        const toastText = I18n.t("TOAST_CONNECTION_BONUS", { text: bText });
-                        this.addLog(I18n.t("LOG_CONNECTION_BONUS", { name: terrainName, bonus: bText }));
-                        this.toastQueue.push({ r, c, text: toastText });
+                // 統合ブロックオブジェクトの登録・更新
+                if (!this.mergedBlocks[groupId]) {
+                    this.mergedBlocks[groupId] = {
+                        groupId: groupId,
+                        terrainId: baseTerrainId,
+                        nameKey: terrain.nameKey,
+                        mergeType: is1x3 ? "1x3" : "1x2",
+                        cells: [{ r, c }, ...matchingNeighbors.map(([nr, nc]) => ({ r: nr, c: nc }))],
+                        yieldMultiplier: 1.0,
+                        createdTurn: this.turn
+                    };
+                } else {
+                    const blockObj = this.mergedBlocks[groupId];
+                    blockObj.mergeType = is1x3 ? "1x3" : blockObj.mergeType;
+                    if (!blockObj.cells.some(cell => cell.r === r && cell.c === c)) {
+                        blockObj.cells.push({ r, c });
                     }
+                }
+
+                const earnedFood = bonus.food || 0;
+                const earnedWood = bonus.wood || 0;
+                const earnedMystic = bonus.mystic || 0;
+
+                if (earnedFood > 0 || earnedWood > 0 || earnedMystic > 0) {
+                    this.food += earnedFood;
+                    this.wood += earnedWood;
+                    this.mystic += earnedMystic;
+
+                    let textParts = [];
+                    if (earnedFood > 0) textParts.push(`🌾+${earnedFood}`);
+                    if (earnedWood > 0) textParts.push(`🧱+${earnedWood}`);
+                    if (earnedMystic > 0) textParts.push(`✨+${earnedMystic}`);
+
+                    const bText = textParts.join(" ");
+                    const toastText = I18n.t("TOAST_CONNECTION_BONUS", { text: bText });
+                    this.addLog(I18n.t("LOG_CONNECTION_BONUS", { name: terrainName, bonus: bText }));
+                    this.toastQueue.push({ r, c, text: toastText });
                 }
             }
         }
@@ -277,18 +358,28 @@
                     const c4 = this.grid[r+1][c+1];
 
                     const cells = [c1, c2, c3, c4];
-                    const allPlaced = cells.every(cell => cell.placed && !cell.isHQ && !cell.merged);
+                    const allPlaced = cells.every(cell => cell.placed && !cell.isHQ && (!cell.merged || cell.mergeType !== "2x2"));
                     if (allPlaced) {
-                        const firstTerrainId = c1.terrain.id;
-                        const sameTerrain = cells.every(cell => cell.terrain && cell.terrain.id === firstTerrainId);
+                        const firstBaseId = c1.terrain ? (c1.terrain.terrainId || c1.terrain.id) : null;
+                        const sameTerrain = cells.every(cell => cell.terrain && (cell.terrain.terrainId || cell.terrain.id) === firstBaseId);
 
-                        if (sameTerrain) {
+                        if (sameTerrain && firstBaseId) {
                             const groupId = `merge_${this.mergeGroupCounter++}`;
                             cells.forEach(cell => {
                                 cell.merged = true;
                                 cell.mergeGroupId = groupId;
                                 cell.mergeType = "2x2";
                             });
+
+                            this.mergedBlocks[groupId] = {
+                                groupId: groupId,
+                                terrainId: firstBaseId,
+                                nameKey: c1.terrain.nameKey,
+                                mergeType: "2x2",
+                                cells: cells.map(cell => ({ r: cell.r, c: cell.c })),
+                                yieldMultiplier: 1.20,
+                                createdTurn: this.turn
+                            };
 
                             this.ember = Math.min(20, this.ember + 1);
                             const tName = I18n.t(c1.terrain.nameKey);
@@ -440,8 +531,14 @@
         getResourceBreakdown() {
             let foodTiles = 0;
             let woodTiles = 0;
+            let defenseTiles = 0;
+            let mysticTiles = 0;
+
             let foodSockets = 0;
             let woodSockets = 0;
+            let defenseSockets = 0;
+            let mysticSockets = 0;
+
             let foodVicinity = 0;
             let woodVicinity = 0;
 
@@ -453,21 +550,29 @@
                     if (cell.placed && !cell.isHQ && cell.terrain) {
                         const tf = cell.terrain.food || 0;
                         const tw = cell.terrain.wood || 0;
+                        const td = cell.terrain.defense || 0;
+                        const tm = cell.terrain.mystic || 0;
 
                         if (cell.merged && cell.mergeGroupId) {
                             if (!groupSums[cell.mergeGroupId]) {
-                                groupSums[cell.mergeGroupId] = { food: 0, wood: 0 };
+                                groupSums[cell.mergeGroupId] = { food: 0, wood: 0, defense: 0, mystic: 0 };
                             }
                             groupSums[cell.mergeGroupId].food += tf;
                             groupSums[cell.mergeGroupId].wood += tw;
+                            groupSums[cell.mergeGroupId].defense += td;
+                            groupSums[cell.mergeGroupId].mystic += tm;
                         } else {
                             foodTiles += tf;
                             woodTiles += tw;
+                            defenseTiles += td;
+                            mysticTiles += tm;
                         }
 
                         if (cell.socketResource) {
                             foodSockets += cell.socketResource.bonusFood || 0;
                             woodSockets += cell.socketResource.bonusWood || 0;
+                            defenseSockets += cell.socketResource.bonusDefense || 0;
+                            mysticSockets += cell.socketResource.bonusMystic || 0;
                         }
 
                         if (this.isHQVicinity(r, c)) {
@@ -482,11 +587,15 @@
                 const g = groupSums[gId];
                 foodTiles += Math.ceil(g.food * 1.2);
                 woodTiles += Math.ceil(g.wood * 1.2);
+                defenseTiles += Math.ceil(g.defense * 1.2);
+                mysticTiles += Math.ceil(g.mystic * 1.2);
             }
 
             return {
                 food: { total: 10 + foodTiles + foodSockets + foodVicinity, tiles: foodTiles, sockets: foodSockets, vicinity: foodVicinity },
-                wood: { total: 10 + woodTiles + woodSockets + woodVicinity, tiles: woodTiles, sockets: woodSockets, vicinity: woodVicinity }
+                wood: { total: 10 + woodTiles + woodSockets + woodVicinity, tiles: woodTiles, sockets: woodSockets, vicinity: woodVicinity },
+                defense: { total: 10 + defenseTiles + defenseSockets, base: 10, tiles: defenseTiles, sockets: defenseSockets },
+                mystic: { total: 1 + mysticTiles + mysticSockets, base: 1, tiles: mysticTiles, sockets: mysticSockets }
             };
         }
 

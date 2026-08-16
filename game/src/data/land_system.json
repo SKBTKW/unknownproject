@@ -106,9 +106,21 @@
     ]
   },
   "mergeRules": {
-    "H1_PLAINS": { "pattern": "2X2_SQUARE", "minTiles": 4, "explorationAllowed": false, "yieldMultiplier": 1.2, "emberReward": 1 },
-    "H2_HILL": { "pattern": "4TILE_L_SHAPE", "minTiles": 4, "explorationAllowed": false, "yieldMultiplier": 1.2, "emberReward": 1 },
-    "H3_MOUNTAIN": { "pattern": "4TILE_CONVEX_SHAPE", "minTiles": 4, "explorationAllowed": false, "yieldMultiplier": 1.2, "emberReward": 1 }
+    "H1_PLAINS": { "pattern": "2X2_SQUARE", "minTiles": 4, "explorationAllowed": false, "yieldMultiplier": 1.2, "emberReward": 1, "description": "H1平地 2x2正方形" },
+    "H2_HILL": { "pattern": "4TILE_L_SHAPE", "minTiles": 4, "explorationAllowed": false, "yieldMultiplier": 1.2, "emberReward": 1, "description": "H2丘陵 L字型(1x3直線+端1マス)" },
+    "H3_MOUNTAIN": { "pattern": "4TILE_CONVEX_SHAPE", "minTiles": 4, "explorationAllowed": false, "yieldMultiplier": 1.2, "emberReward": 1, "description": "H3山岳 凸字型(1x3直線+中央1マス)" }
+  },
+  "merge_instant_bonus_matrix": {
+    "GL0_DESERT":      { "1x1": { "mystic": 2 }, "1x2": { "mystic": 1 }, "1x3": { "mystic": 3 } },
+    "GL1_PLAINS":      { "1x1": { "food": 4 },   "1x2": { "food": 3 },   "1x3": { "food": 6 } },
+    "GL2_FOREST":      { "1x1": { "food": 2, "wood": 2 }, "1x2": { "food": 1, "wood": 1 }, "1x3": { "food": 3, "wood": 3 } },
+    "GL3_DEEP_FOREST": { "1x1": { "wood": 3, "mystic": 2 }, "1x2": { "wood": 2, "mystic": 1 }, "1x3": { "wood": 5, "mystic": 3 } },
+    "H2_DESERT":       { "1x1": { "wood": 2, "mystic": 2 }, "1x2": { "wood": 1, "mystic": 1 }, "1x3": { "wood": 3, "mystic": 3 } },
+    "H2_DESERT_HILL":  { "1x1": { "wood": 2, "mystic": 2 }, "1x2": { "wood": 1, "mystic": 1 }, "1x3": { "wood": 3, "mystic": 3 } },
+    "H2_HILL":         { "1x1": { "food": 3, "wood": 2 }, "1x2": { "food": 2, "wood": 1 }, "1x3": { "food": 5, "wood": 3 } },
+    "H2_FOREST_HILL":  { "1x1": { "food": 1, "wood": 4 }, "1x2": { "wood": 3 }, "1x3": { "food": 2, "wood": 6 } },
+    "H2_DEEP_HILL":    { "1x1": { "wood": 5, "mystic": 2 }, "1x2": { "wood": 4, "mystic": 1 }, "1x3": { "wood": 8, "mystic": 3 } },
+    "H3_MOUNTAIN":     { "1x1": { "wood": 5, "mystic": 2 }, "1x2": { "wood": 4, "mystic": 1 }, "1x3": { "wood": 8, "mystic": 3 } }
   },
   "merge_instant_bonus": {
     "connection_1x2": {
@@ -126,5 +138,10 @@
       "yieldMultiplier": 1.20,
       "cssClass": "toast-4tile-merge"
     }
+  },
+  "surround_fill_bonus": {
+    "patternA_normal": { "mysticYield": 10, "emberReward": 2 },
+    "patternB_oasis": { "triggerRate": 0.25, "foodYield": 3, "mysticYield": 5, "emberReward": 3 },
+    "patternC_unification_9tile": { "yieldMultiplier": 1.30, "auraClass": "aura-3x3-unified" }
   }
 }

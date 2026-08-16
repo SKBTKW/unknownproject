@@ -94,7 +94,7 @@
     text-align: left;
 }
 
-/* 🟣 3. ログパネル (エリア全体上下格納対応) */
+/* 🟣 3. ログパネル (上下アコーディオン滑らか格納対応) */
 .log-panel-wrapper {
     background: #181424;
     color: #e2d9f3;
@@ -107,7 +107,8 @@
     flex-direction: column;
     overflow: hidden;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    transition: max-height 0.3s cubic-bezier(0.25, 1, 0.5, 1), flex 0.3s ease, padding 0.3s ease;
+    max-height: 400px;
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), padding 0.35s ease;
 }
 
 .log-panel-wrapper.collapsed {
@@ -117,8 +118,21 @@
     padding-bottom: 6px !important;
 }
 
+.log-content {
+    flex: 1;
+    overflow-y: auto;
+    font-size: 11px;
+    line-height: 1.5;
+    color: #ffffff;
+    padding-right: 4px;
+    max-height: 380px;
+    opacity: 1;
+    transition: opacity 0.25s ease;
+}
+
 .log-panel-wrapper.collapsed .log-content {
-    display: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
 }
 
 .log-header {
