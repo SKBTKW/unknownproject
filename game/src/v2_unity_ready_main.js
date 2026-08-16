@@ -579,32 +579,24 @@
                 return this._landCardMasterCache;
             }
 
-            // デフォルトフォールバック (100% クラッシュゼロ保証)
+            // rules/09_card_list.md 仕様書完全準拠のフォールバックデータ
             this._landCardMasterCache = [
-                { id: "CARD_PLAINS_1X1", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, h: 1, food: 4, wood: 0, def: 0, mystic: 0, shape: [[1]], minStage: 1, reqH2: 0, rarity: "C", weight: 0.80 },
-                { id: "CARD_PLAINS_1X2", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, h: 1, food: 4, wood: 0, def: 0, mystic: 0, shape: [[1, 1]], minStage: 1, reqH2: 0, rarity: "C", weight: 0.20 },
-                { id: "CARD_PLAINS_1X3_L", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, h: 1, food: 4, wood: 0, def: 0, mystic: 0, shape: [[1, 0], [1, 1]], minStage: 2, reqH2: 0, rarity: "UC", weight: 0.05 },
-                { id: "CARD_PLAINS_1X3_S", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, h: 1, food: 4, wood: 0, def: 0, mystic: 0, shape: [[1, 1, 1]], minStage: 2, reqH2: 0, rarity: "UC", weight: 0.05 },
-                { id: "CARD_PLAINS_1X4_T", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, h: 1, food: 4, wood: 0, def: 0, mystic: 0, shape: [[0, 1, 0], [1, 1, 1]], minStage: 3, reqH2: 0, rarity: "R", weight: 0.02 },
-                { id: "CARD_PLAINS_1X4_L", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, h: 1, food: 4, wood: 0, def: 0, mystic: 0, shape: [[1, 0, 0], [1, 1, 1]], minStage: 3, reqH2: 0, rarity: "R", weight: 0.02 },
-                { id: "CARD_PLAINS_2X2", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, h: 1, food: 4, wood: 0, def: 0, mystic: 0, shape: [[1, 1], [1, 1]], minStage: 3, reqH2: 0, rarity: "UR", weight: 0.02 },
-                { id: "CARD_PLAINS_1X4_Z", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, h: 1, food: 4, wood: 0, def: 0, mystic: 0, shape: [[0, 1, 1], [1, 1, 0]], minStage: 3, reqH2: 0, rarity: "R", weight: 0.02 },
-                { id: "CARD_PLAINS_1X4_S", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, h: 1, food: 4, wood: 0, def: 0, mystic: 0, shape: [[1, 1, 1, 1]], minStage: 3, reqH2: 0, rarity: "R", weight: 0.02 },
-                { id: "CARD_FOREST_1X1", terrainId: "GL2_FOREST", nameKey: "TERRAIN_FOREST", gl: 2, h: 1, food: 2, wood: 2, def: 2, mystic: 0, shape: [[1]], minStage: 1, reqH2: 0, rarity: "C", weight: 0.70 },
-                { id: "CARD_FOREST_1X2", terrainId: "GL2_FOREST", nameKey: "TERRAIN_FOREST", gl: 2, h: 1, food: 2, wood: 2, def: 2, mystic: 0, shape: [[1, 1]], minStage: 1, reqH2: 0, rarity: "UC", weight: 0.30 },
-                { id: "CARD_DEEP_FOREST_1X1", terrainId: "GL3_DEEP_FOREST", nameKey: "TERRAIN_DEEP_FOREST", gl: 3, h: 1, food: 1, wood: 3, def: 3, mystic: 1, shape: [[1]], minStage: 1, reqH2: 0, rarity: "R", weight: 0.07 },
-                { id: "CARD_DEEP_FOREST_1X2", terrainId: "GL3_DEEP_FOREST", nameKey: "TERRAIN_DEEP_FOREST", gl: 3, h: 1, food: 1, wood: 3, def: 3, mystic: 1, shape: [[1, 1]], minStage: 1, reqH2: 0, rarity: "R", weight: 0.03 },
-                { id: "CARD_HILL_1X2", terrainId: "H2_HILL", nameKey: "TERRAIN_HILL", gl: 1, h: 2, food: 2, wood: 1, def: 1, mystic: 0, shape: [[1, 1]], minStage: 1, reqH2: 0, rarity: "UC", weight: 0.60 },
-                { id: "CARD_HILL_1X3_L", terrainId: "H2_HILL", nameKey: "TERRAIN_HILL", gl: 1, h: 2, food: 2, wood: 1, def: 1, mystic: 0, shape: [[1, 0], [1, 1]], minStage: 1, reqH2: 0, rarity: "UC", weight: 0.30 },
-                { id: "CARD_HILL_1X4_L", terrainId: "H2_HILL", nameKey: "TERRAIN_HILL", gl: 1, h: 2, food: 2, wood: 1, def: 1, mystic: 0, shape: [[1, 0, 0], [1, 1, 1]], minStage: 1, reqH2: 0, rarity: "R", weight: 0.10 },
-                { id: "CARD_MOUNTAIN_1X3_S", terrainId: "H3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", gl: 2, h: 3, food: 0, wood: 3, def: 5, mystic: 1, shape: [[1, 1, 1]], minStage: 1, reqH2: 3, rarity: "UC", weight: 0.60 },
-                { id: "CARD_MOUNTAIN_1X4_T", terrainId: "H3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", gl: 2, h: 3, food: 0, wood: 3, def: 5, mystic: 1, shape: [[0, 1, 0], [1, 1, 1]], minStage: 1, reqH2: 3, rarity: "R", weight: 0.30 },
-                { id: "CARD_MOUNTAIN_1X4_S", terrainId: "H3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", gl: 2, h: 3, food: 0, wood: 3, def: 5, mystic: 1, shape: [[1, 1, 1, 1]], minStage: 1, reqH2: 3, rarity: "R", weight: 0.10 },
-                { id: "CARD_DESERT_1X1", terrainId: "GL0_DESERT", nameKey: "TERRAIN_DESERT", gl: 0, h: 1, food: 0, wood: 0, def: 0, mystic: 5, shape: [[1]], minStage: 1, reqH2: 0, rarity: "R", weight: 0.70 },
-                { id: "CARD_DESERT_1X2", terrainId: "GL0_DESERT", nameKey: "TERRAIN_DESERT", gl: 0, h: 1, food: 0, wood: 0, def: 0, mystic: 5, shape: [[1, 1]], minStage: 1, reqH2: 0, rarity: "UR", weight: 0.30 },
-                { id: "CARD_DESERT_HILL_1X2", terrainId: "H2_DESERT_HILL", nameKey: "TERRAIN_DESERT_HILL", gl: 0, h: 2, food: 0, wood: 1, def: 1, mystic: 2, shape: [[1, 1]], minStage: 1, reqH2: 0, rarity: "R", weight: 0.15 },
-                { id: "CARD_FOREST_HILL_1X2", terrainId: "H2_FOREST_HILL", nameKey: "TERRAIN_FOREST_HILL", gl: 2, h: 2, food: 1, wood: 4, def: 4, mystic: 0, shape: [[1, 1]], minStage: 1, reqH2: 0, rarity: "R", weight: 0.15 },
-                { id: "CARD_DEEP_HILL_1X2", terrainId: "H2_DEEP_HILL", nameKey: "TERRAIN_DEEP_HILL", gl: 3, h: 2, food: 1, wood: 5, def: 6, mystic: 1, shape: [[1, 1]], minStage: 1, reqH2: 0, rarity: "UR", weight: 0.05 }
+                { id: "CARD_PLAINS_1X1", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, h: 1, yields: { food: 4, wood: 0, defense: 0, mystic: 0 }, shape: [[1]], minStage: 1, reqH2: 0, rarity: "C", weight: 1.0 },
+                { id: "CARD_PLAINS_1X2", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, h: 1, yields: { food: 4, wood: 0, defense: 0, mystic: 0 }, shape: [[1, 1]], minStage: 1, reqH2: 0, rarity: "C", weight: 0.8 },
+                { id: "CARD_PLAINS_1X3_S", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, h: 1, yields: { food: 4, wood: 0, defense: 0, mystic: 0 }, shape: [[1, 1, 1]], minStage: 2, reqH2: 0, rarity: "UC", weight: 0.5 },
+                { id: "CARD_PLAINS_1X3_L", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, h: 1, yields: { food: 4, wood: 0, defense: 0, mystic: 0 }, shape: [[1, 0], [1, 1]], minStage: 2, reqH2: 0, rarity: "UC", weight: 0.4 },
+                { id: "CARD_FOREST_1X1", terrainId: "GL2_FOREST", nameKey: "TERRAIN_FOREST", gl: 2, h: 1, yields: { food: 2, wood: 2, defense: 2, mystic: 0 }, shape: [[1]], minStage: 1, reqH2: 0, rarity: "C", weight: 0.8 },
+                { id: "CARD_FOREST_1X2", terrainId: "GL2_FOREST", nameKey: "TERRAIN_FOREST", gl: 2, h: 1, yields: { food: 2, wood: 2, defense: 2, mystic: 0 }, shape: [[1, 1]], minStage: 1, reqH2: 0, rarity: "UC", weight: 0.5 },
+                { id: "CARD_DEEP_FOREST_1X1", terrainId: "GL3_DEEP_FOREST", nameKey: "TERRAIN_DEEP_FOREST", gl: 3, h: 1, yields: { food: 1, wood: 3, defense: 3, mystic: 1 }, shape: [[1]], minStage: 1, reqH2: 0, rarity: "R", weight: 0.3 },
+                { id: "CARD_DEEP_FOREST_1X2", terrainId: "GL3_DEEP_FOREST", nameKey: "TERRAIN_DEEP_FOREST", gl: 3, h: 1, yields: { food: 1, wood: 3, defense: 3, mystic: 1 }, shape: [[1, 1]], minStage: 1, reqH2: 0, rarity: "R", weight: 0.2 },
+                { id: "CARD_HILL_1X1", terrainId: "H2_HILL", nameKey: "TERRAIN_HILL", gl: 1, h: 2, yields: { food: 2, wood: 1, defense: 1, mystic: 0 }, shape: [[1]], minStage: 1, reqH2: 0, rarity: "UC", weight: 0.5 },
+                { id: "CARD_HILL_1X2", terrainId: "H2_HILL", nameKey: "TERRAIN_HILL", gl: 1, h: 2, yields: { food: 2, wood: 1, defense: 1, mystic: 0 }, shape: [[1, 1]], minStage: 1, reqH2: 0, rarity: "UC", weight: 0.4 },
+                { id: "CARD_HILL_1X3_L", terrainId: "H2_HILL", nameKey: "TERRAIN_HILL", gl: 1, h: 2, yields: { food: 2, wood: 1, defense: 1, mystic: 0 }, shape: [[1, 0], [1, 1]], minStage: 2, reqH2: 0, rarity: "UC", weight: 0.3 },
+                { id: "CARD_MOUNTAIN_1X1", terrainId: "H3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", gl: 2, h: 3, yields: { food: 0, wood: 3, defense: 5, mystic: 1 }, shape: [[1]], minStage: 2, reqH2: 3, rarity: "R", weight: 0.2 },
+                { id: "CARD_MOUNTAIN_1X2", terrainId: "H3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", gl: 2, h: 3, yields: { food: 0, wood: 3, defense: 5, mystic: 1 }, shape: [[1, 1]], minStage: 2, reqH2: 3, rarity: "R", weight: 0.15 },
+                { id: "CARD_MOUNTAIN_1X3_S", terrainId: "H3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", gl: 2, h: 3, yields: { food: 0, wood: 3, defense: 5, mystic: 1 }, shape: [[1, 1, 1]], minStage: 2, reqH2: 3, rarity: "UC", weight: 0.2 },
+                { id: "CARD_DESERT_1X1", terrainId: "GL0_DESERT", nameKey: "TERRAIN_DESERT", gl: 0, h: 1, yields: { food: 0, wood: 0, defense: 0, mystic: 5 }, shape: [[1]], minStage: 1, reqH2: 0, rarity: "R", weight: 0.15 },
+                { id: "CARD_DESERT_1X2", terrainId: "GL0_DESERT", nameKey: "TERRAIN_DESERT", gl: 0, h: 1, yields: { food: 0, wood: 0, defense: 0, mystic: 5 }, shape: [[1, 1]], minStage: 1, reqH2: 0, rarity: "UR", weight: 0.03 }
             ];
             return this._landCardMasterCache;
         }

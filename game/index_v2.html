@@ -674,8 +674,19 @@
             window.state = state;
             drawSys = new engine.Step1DrawSystem(state);
             window.drawSys = drawSys;
-            initStaticI18nLabels();
-            init();
+
+            fetch('src/data/land_cards.json')
+                .then(res => res.json())
+                .then(data => {
+                    window.LAND_CARDS_DATA = data;
+                    initStaticI18nLabels();
+                    init();
+                })
+                .catch(err => {
+                    console.warn("Failed to load land_cards.json, using fallback:", err);
+                    initStaticI18nLabels();
+                    init();
+                });
         });
 
         function initStaticI18nLabels() {
