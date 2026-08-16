@@ -660,7 +660,6 @@
     <!-- 🌐 AGENTS.md Rule 3 I18n Dictionary Manager -->
     <script src="src/i18n.js"></script>
     <script src="src/data/land_system.js"></script>
-    <script src="src/data/land_cards.js"></script>
     <script src="src/v2_unity_ready_main.js"></script>
     <script>
         let state = null;
@@ -761,6 +760,12 @@
                     }
                 }
             }
+        }
+
+        function onCellMouseMove(e, r, c) {
+            if (!state) return;
+            const cellData = state.grid[r][c];
+            showTileTooltip(e, r, c, cellData);
         }
 
         function showTileTooltip(e, r, c, cell) {
@@ -900,8 +905,16 @@
                             }
 
                             cellEl.onmouseenter = (e) => onCellMouseEnter(e, r, c);
+                            cellEl.onmousemove = (e) => onCellMouseMove(e, r, c);
                             cellEl.onmouseleave = clearCellPreviews;
                             cellEl.onclick = () => onCellClick(r, c);
+                            cellEl.oncontextmenu = (e) => {
+                                e.preventDefault();
+                                if (selectedCard) {
+                                    const activeIdx = selectedCardIdx !== -1 ? selectedCardIdx : 0;
+                                    rotateSelectedCard(e, activeIdx);
+                                }
+                            };
                             boardEl.appendChild(cellEl);
                         }
                     }
@@ -931,6 +944,11 @@
                         const cardEl = document.createElement("div");
                         cardEl.className = `card-frame-tcg ${rarityClass} ${isSelected ? 'selected' : ''} ${isLocked ? 'locked' : ''}`;
                         cardEl.onclick = () => selectCard(idx);
+                        cardEl.oncontextmenu = (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            rotateSelectedCard(e, idx);
+                        };
 
                         const cName = card.terrain ? I18n.t(card.terrain.nameKey) : "Land";
                         const y = (card.terrain && card.terrain.yields) ? card.terrain.yields : {
@@ -1152,6 +1170,12 @@
             state.hasPickedThisTurn = false;
             drawSys.generateOfferingCards();
             render();
+        }
+        function toggleLogPanel() {
+            const wrapper = document.getElementById("logPanelWrapper");
+            if (wrapper) {
+                wrapper.classList.toggle("collapsed");
+            }
         }
     </script>
 </body>
