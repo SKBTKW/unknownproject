@@ -109,5 +109,22 @@
     "H1_PLAINS": { "pattern": "2X2_SQUARE", "minTiles": 4, "explorationAllowed": false, "yieldMultiplier": 1.2, "emberReward": 1 },
     "H2_HILL": { "pattern": "4TILE_L_SHAPE", "minTiles": 4, "explorationAllowed": false, "yieldMultiplier": 1.2, "emberReward": 1 },
     "H3_MOUNTAIN": { "pattern": "4TILE_CONVEX_SHAPE", "minTiles": 4, "explorationAllowed": false, "yieldMultiplier": 1.2, "emberReward": 1 }
+  },
+  "merge_instant_bonus": {
+    "connection_1x2": {
+      "rate": 0.80,
+      "rounding": "floor",
+      "cssClass": "toast-1x2-bonus"
+    },
+    "connection_1x3": {
+      "rate": 1.50,
+      "rounding": "ceil",
+      "cssClass": "toast-1x3-bonus"
+    },
+    "large_merge_4tile": {
+      "emberReward": 1,
+      "yieldMultiplier": 1.20,
+      "cssClass": "toast-4tile-merge"
+    }
   }
 }
