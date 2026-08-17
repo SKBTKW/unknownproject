@@ -11,7 +11,7 @@
     "minStage": 1,
     "reqH2": 0,
     "rarity": "C",
-    "weight": 1.0,
+    "weight": 1.2,
     "descriptionKey": "CARD_DESC_PLAINS_1X1"
   },
   {
@@ -26,7 +26,7 @@
     "minStage": 1,
     "reqH2": 0,
     "rarity": "C",
-    "weight": 0.8,
+    "weight": 1.0,
     "descriptionKey": "CARD_DESC_PLAINS_1X2"
   },
   {
@@ -40,8 +40,8 @@
     "shape": [[1, 1, 1]],
     "minStage": 2,
     "reqH2": 0,
-    "rarity": "UC",
-    "weight": 0.5,
+    "rarity": "R",
+    "weight": 0.18,
     "descriptionKey": "CARD_DESC_PLAINS_1X3_S"
   },
   {
@@ -55,8 +55,8 @@
     "shape": [[1, 0], [1, 1]],
     "minStage": 2,
     "reqH2": 0,
-    "rarity": "UC",
-    "weight": 0.4,
+    "rarity": "R",
+    "weight": 0.14,
     "descriptionKey": "CARD_DESC_PLAINS_1X3_L"
   },
   {
@@ -116,7 +116,7 @@
     "minStage": 1,
     "reqH2": 0,
     "rarity": "C",
-    "weight": 0.8,
+    "weight": 1.0,
     "descriptionKey": "CARD_DESC_FOREST_1X1"
   },
   {
@@ -131,7 +131,7 @@
     "minStage": 1,
     "reqH2": 0,
     "rarity": "UC",
-    "weight": 0.5,
+    "weight": 0.6,
     "descriptionKey": "CARD_DESC_FOREST_1X2"
   },
   {
@@ -146,7 +146,7 @@
     "minStage": 1,
     "reqH2": 0,
     "rarity": "R",
-    "weight": 0.3,
+    "weight": 0.15,
     "descriptionKey": "CARD_DESC_DEEP_FOREST_1X1"
   },
   {
@@ -158,10 +158,10 @@
     "h": 1,
     "yields": { "food": 1, "wood": 3, "defense": 3, "mystic": 1 },
     "shape": [[1, 1]],
-    "minStage": 1,
+    "minStage": 2,
     "reqH2": 0,
     "rarity": "R",
-    "weight": 0.2,
+    "weight": 0.05,
     "descriptionKey": "CARD_DESC_DEEP_FOREST_1X2"
   },
   {
@@ -176,7 +176,7 @@
     "minStage": 1,
     "reqH2": 0,
     "rarity": "UC",
-    "weight": 0.5,
+    "weight": 0.50,
     "descriptionKey": "CARD_DESC_HILL_1X1"
   },
   {
@@ -191,7 +191,7 @@
     "minStage": 1,
     "reqH2": 0,
     "rarity": "UC",
-    "weight": 0.4,
+    "weight": 0.35,
     "descriptionKey": "CARD_DESC_HILL_1X2"
   },
   {
@@ -205,8 +205,8 @@
     "shape": [[1, 0], [1, 1]],
     "minStage": 2,
     "reqH2": 0,
-    "rarity": "UC",
-    "weight": 0.3,
+    "rarity": "R",
+    "weight": 0.12,
     "descriptionKey": "CARD_DESC_HILL_1X3_L"
   },
   {
@@ -221,7 +221,7 @@
     "minStage": 2,
     "reqH2": 3,
     "rarity": "R",
-    "weight": 0.2,
+    "weight": 0.20,
     "descriptionKey": "CARD_DESC_MOUNTAIN_1X1"
   },
   {
@@ -250,8 +250,8 @@
     "shape": [[1, 1, 1]],
     "minStage": 2,
     "reqH2": 3,
-    "rarity": "UC",
-    "weight": 0.2,
+    "rarity": "R",
+    "weight": 0.03,
     "descriptionKey": "CARD_DESC_MOUNTAIN_1X3_S"
   },
   {
@@ -278,7 +278,7 @@
     "h": 1,
     "yields": { "food": 0, "wood": 0, "defense": 0, "mystic": 5 },
     "shape": [[1, 1]],
-    "minStage": 1,
+    "minStage": 2,
     "reqH2": 0,
     "rarity": "UR",
     "weight": 0.03,
@@ -293,10 +293,10 @@
     "h": 2,
     "yields": { "food": 0, "wood": 1, "defense": 1, "mystic": 2 },
     "shape": [[1, 1]],
-    "minStage": 1,
+    "minStage": 2,
     "reqH2": 0,
     "rarity": "R",
-    "weight": 0.03,
+    "weight": 0.02,
     "descriptionKey": "CARD_DESC_DESERT_HILL_1X2"
   },
   {
@@ -308,10 +308,10 @@
     "h": 2,
     "yields": { "food": 1, "wood": 4, "defense": 4, "mystic": 0 },
     "shape": [[1, 1]],
-    "minStage": 1,
+    "minStage": 2,
     "reqH2": 0,
     "rarity": "R",
-    "weight": 0.08,
+    "weight": 0.10,
     "descriptionKey": "CARD_DESC_FOREST_HILL_1X2"
   },
   {
@@ -323,10 +323,10 @@
     "h": 2,
     "yields": { "food": 1, "wood": 5, "defense": 6, "mystic": 1 },
     "shape": [[1, 1]],
-    "minStage": 1,
+    "minStage": 2,
     "reqH2": 0,
     "rarity": "UR",
-    "weight": 0.02,
+    "weight": 0.01,
     "descriptionKey": "CARD_DESC_DEEP_HILL_1X2"
   }
 ]
