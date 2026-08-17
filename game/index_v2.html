@@ -316,8 +316,9 @@
         }
 
         .data-panel {
-            background: #1abc9c;
-            color: #0b0d11;
+            background: #1a1e2b;
+            color: #ffffff;
+            border: 1px solid #2e3547;
             border-radius: 8px;
             padding: 10px 12px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.4);
@@ -325,11 +326,13 @@
             transition: transform 0.15s;
         }
         .data-panel h4 {
-            text-align: center;
+            text-align: left;
             font-size: 13px;
-            margin-bottom: 4px;
-            border-bottom: 1px solid rgba(0,0,0,0.2);
-            padding-bottom: 2px;
+            font-weight: bold;
+            color: #1abc9c;
+            margin-bottom: 6px;
+            border-bottom: 1px solid #2e3547;
+            padding-bottom: 4px;
         }
         .resource-list {
             display: flex;
@@ -571,6 +574,11 @@
                 <div class="main-area-badge"><span id="lblMainBadge"></span> <span id="valPlacedCount">1</span>/24</div>
                 <div id="gridBoard" class="grid-with-headers"></div>
                 <div id="tileTooltip" class="tile-tooltip"></div>
+
+                <!-- 4x Large Card Hover Preview Modal Container (Bottom-Right Corner Positioned) -->
+                <div id="cardHoverPreviewModal" style="display:none; position:absolute; bottom:12px; right:12px; width:260px; height:390px; z-index:900; pointer-events:none; box-shadow:0 14px 40px rgba(0,0,0,0.9), 0 0 25px rgba(26,188,156,0.85); border-radius:14px; border:3px solid #1abc9c; background:#11141a; padding:10px; transition:opacity 0.15s ease;">
+                    <div id="cardHoverPreviewContent" style="width:100%; height:100%; display:flex; flex-direction:column; justify-content:space-between;"></div>
+                </div>
             </div>
 
             <!-- Right Sidebar (Width 280px) -->
@@ -583,6 +591,11 @@
                         <div><span id="lblDefense"></span>: <span id="valDefense">10</span></div>
                         <div><span id="lblMystic"></span>: <span id="valMystic">0</span> (+1/T)</div>
                     </div>
+                </div>
+
+                <div id="activeBuffPanel" class="data-panel" style="display:none; background: linear-gradient(135deg, rgba(26,188,156,0.15) 0%, rgba(46,204,113,0.1) 100%); border:1px solid #1abc9c; margin-top:8px;">
+                    <h4 style="color:#1abc9c; font-size:12px; margin-bottom:6px;" id="lblBuffPanelTitle"></h4>
+                    <div id="activeBuffContent" style="font-size:11px; color:#e1b12c;"></div>
                 </div>
 
                 <div id="logPanelWrapper" class="log-panel-wrapper">
@@ -672,6 +685,7 @@
             setElementText("lblReserveTitle", I18n.t("UI_RESERVE_TITLE"));
             setElementText("lblMainBadge", I18n.t("UI_MAIN_AREA_BADGE"));
             setElementText("lblDataPanelTitle", I18n.t("UI_DATA_PANEL_TITLE"));
+            setElementText("lblBuffPanelTitle", I18n.t("UI_BUFF_PANEL_TITLE"));
             setElementText("lblFood", I18n.t("UI_FOOD"));
             setElementText("lblWood", I18n.t("UI_WOOD"));
             setElementText("lblDefense", I18n.t("UI_DEFENSE"));
@@ -863,6 +877,7 @@
             const I18n = window.I18n;
             try {
                 const prods = state.calculateTotalProduction();
+                setElementText("lblDataPanelTitle", I18n ? I18n.t("UI_DATA_PANEL_TITLE") : "産出データ");
                 setElementText("valTurn", state.turn);
                 setElementText("valEmber", state.ember);
                 setElementText("valFood", state.food);
@@ -872,6 +887,30 @@
                 setElementText("valDefense", state.calculateTotalDefense());
                 setElementText("valMystic", state.mystic);
                 setElementText("valPlacedCount", `${state.countPlacedTiles()}/24`);
+
+                // 🎯 発動中バフパネルの表示・非表示制御
+                const buffPanel = document.getElementById("activeBuffPanel");
+                const buffContent = document.getElementById("activeBuffContent");
+                setElementText("lblBuffPanelTitle", I18n.t("UI_BUFF_PANEL_TITLE"));
+
+                if (buffPanel && buffContent) {
+                    if (state.activeDrawBias) {
+                        const bias = state.activeDrawBias;
+                        let text = "";
+                        if (bias.targetCategory === "LAND") text = I18n.t("UI_BUFF_BIAS_LAND");
+                        else if (bias.targetCategory === "MILITARY") text = I18n.t("UI_BUFF_BIAS_MILITARY");
+                        else if (bias.targetCategory === "MYSTIC") text = I18n.t("UI_BUFF_BIAS_MYSTIC");
+                        
+                        if (bias.type === "UNTIL_BLOCKS") text += I18n.t("UI_BUFF_UNTIL_BLOCKS", { count: bias.untilValue });
+                        else if (bias.type === "UNTIL_DEFENSE") text += I18n.t("UI_BUFF_UNTIL_DEFENSE", { count: bias.untilValue });
+                        else if (bias.type === "TURNS") text += I18n.t("UI_BUFF_TURNS", { count: bias.remainingTurns });
+
+                        buffContent.innerText = text;
+                        buffPanel.style.display = "block";
+                    } else {
+                        buffPanel.style.display = "none";
+                    }
+                }
 
                 const boardEl = document.getElementById("gridBoard");
                 if (boardEl) {
@@ -998,64 +1037,119 @@
 
                         const isSelected = (selectedCardIdx === idx);
                         const isLocked = state.hasPickedThisTurn;
-                        const rCode = (card.terrain && card.terrain.rarity) ? card.terrain.rarity : "C";
+                        const tObj = card.terrain || card;
+                        const category = tObj.category || "LAND";
+                        const rCode = tObj.rarity || "C";
                         const rarityClass = `rarity-${rCode.toLowerCase()}`;
+                        const categoryClass = category !== "LAND" ? `category-${category.toLowerCase()}` : "";
 
+                        // コストチェック
+                        let costMet = true;
+                        let costBadgeText = "";
+                        if (category !== "LAND") {
+                            if (tObj.cost) {
+                                const c = tObj.cost;
+                                const parts = [];
+                                if (c.food) { parts.push(`🌾-${c.food}`); if (state.food < c.food) costMet = false; }
+                                if (c.wood) { parts.push(`🧱-${c.wood}`); if (state.wood < c.wood) costMet = false; }
+                                if (c.mystic) { parts.push(`✨-${c.mystic}`); if (state.mystic < c.mystic) costMet = false; }
+                                if (c.ember) { parts.push(`🔥-${c.ember}`); if (state.ember < c.ember) costMet = false; }
+                                costBadgeText = parts.join(" ");
+                            }
+                        }
+
+                        const isPinned = (window.pinnedPreviewCard === card);
                         const cardEl = document.createElement("div");
-                        cardEl.className = `card-frame-tcg ${rarityClass} ${isSelected ? 'selected' : ''} ${isLocked ? 'locked' : ''}`;
-                        cardEl.onclick = () => selectCard(idx);
+                        cardEl.className = `card-frame-tcg ${rarityClass} ${categoryClass} ${isSelected ? 'selected' : ''} ${isPinned ? 'pinned' : ''} ${isLocked ? 'locked' : ''} ${!costMet ? 'cost-disabled' : ''}`;
+                        cardEl.onmouseenter = () => showCardHoverPreview(card);
+                        cardEl.onmouseleave = () => hideCardHoverPreview();
+                        cardEl.onclick = (e) => {
+                            e.stopPropagation();
+                            togglePinCardPreview(card);
+                            if (category === "LAND") {
+                                selectCard(idx);
+                            }
+                        };
                         cardEl.oncontextmenu = (e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            rotateSelectedCard(e, idx);
+                            if (category === "LAND") rotateSelectedCard(e, idx);
                         };
 
-                        const cName = card.terrain ? I18n.t(card.terrain.nameKey) : "Land";
-                        const y = (card.terrain && card.terrain.yields) ? card.terrain.yields : {
-                            food: card.terrain ? card.terrain.food || 0 : 0,
-                            wood: card.terrain ? card.terrain.wood || 0 : 0,
-                            defense: card.terrain ? card.terrain.def || card.terrain.defense || 0 : 0,
-                            mystic: card.terrain ? card.terrain.mystic || 0 : 0
-                        };
-                        const shapeMat = card.currentShape || (card.terrain ? card.terrain.shape : [[1]]);
-                        const tileCount = shapeMat.reduce((acc, row) => acc + row.reduce((a, b) => a + b, 0), 0);
-                        const totF = (y.food || 0) * tileCount;
-                        const totW = (y.wood || 0) * tileCount;
-                        const totD = (y.defense || 0) * tileCount;
-                        const totM = (y.mystic || 0) * tileCount;
+                        const cName = tObj.nameKey ? I18n.t(tObj.nameKey) : (tObj.id || "Card");
+                        const cDesc = tObj.descriptionKey ? I18n.t(tObj.descriptionKey) : (tObj.description || "");
 
-                        // 2D ブロック形状プレビュー描画
-                        let shapeHtml = `<div style="display:grid; grid-template-rows:repeat(${shapeMat.length}, 10px); grid-template-columns:repeat(${shapeMat[0].length}, 10px); gap:2px;">`;
-                        for (let r = 0; r < shapeMat.length; r++) {
-                            for (let c = 0; c < shapeMat[0].length; c++) {
-                                if (shapeMat[r][c] === 1) {
-                                    shapeHtml += `<div style="width:10px;height:10px;background:#0097a7;border-radius:2px;"></div>`;
-                                } else {
-                                    shapeHtml += `<div style="width:10px;height:10px;background:transparent;"></div>`;
+                        if (category !== "LAND") {
+                            // コマンド / イベント / 施設 / 奇跡カード用ビジュアル描画
+                            let iconSymbol = "📜";
+                            if (category === "MILITARY") iconSymbol = "🛡️";
+                            else if (category === "MYSTIC") iconSymbol = "✨";
+                            else if (category === "FACILITY") iconSymbol = "🏛️";
+                            else if (category === "ECONOMY") iconSymbol = "📜";
+                            else if (category === "LEGEND") iconSymbol = "🟡";
+
+                            cardEl.innerHTML = `
+                                <div class="tcg-card-top-bar">
+                                    <div class="tcg-title-pill">${cName}</div>
+                                    <div class="tcg-rarity-code">${rCode}</div>
+                                </div>
+                                <div class="tcg-shape-art-area" style="display:flex; flex-direction:column; align-items:center; justify-content:center; background:#2c3e50; padding:4px; text-align:center; overflow:hidden;">
+                                    <div style="font-size:16px; line-height:1.1;">${iconSymbol}</div>
+                                    <div style="font-size:9px; color:#ffffff; margin-top:2px; line-height:1.2; font-weight:normal; text-shadow:0 1px 2px rgba(0,0,0,0.8);">${cDesc}</div>
+                                </div>
+                                <div class="tcg-yield-strip" style="font-size:10px; text-align:center; justify-content:center; padding:4px;">
+                                    <span>${costBadgeText ? (typeof I18n !== 'undefined' ? I18n.t("UI_CARD_COST_PREFIX", { cost: costBadgeText }) : 'Cost: ' + costBadgeText) : (typeof I18n !== 'undefined' ? I18n.t("UI_CMD_INSTANT_LABEL") : 'Instant')}</span>
+                                </div>
+                                <div class="tcg-action-controls">
+                                    <button class="tcg-reserve-btn-wireframe" onclick="event.stopPropagation(); reserveCard(${idx})">${I18n.t("UI_RESERVE_BTN")}</button>
+                                </div>
+                            `;
+                        } else {
+                            // 土地カード用標準描画
+                            const y = tObj.yields || {
+                                food: tObj.food || 0,
+                                wood: tObj.wood || 0,
+                                defense: tObj.def || tObj.defense || 0,
+                                mystic: tObj.mystic || 0
+                            };
+                            const shapeMat = card.currentShape || tObj.shape || [[1]];
+                            const tileCount = shapeMat.reduce((acc, row) => acc + row.reduce((a, b) => a + b, 0), 0);
+                            const totF = (y.food || 0) * tileCount;
+                            const totW = (y.wood || 0) * tileCount;
+                            const totD = (y.defense || 0) * tileCount;
+                            const totM = (y.mystic || 0) * tileCount;
+
+                            let shapeHtml = `<div style="display:grid; grid-template-rows:repeat(${shapeMat.length}, 10px); grid-template-columns:repeat(${shapeMat[0].length}, 10px); gap:2px;">`;
+                            for (let r = 0; r < shapeMat.length; r++) {
+                                for (let c = 0; c < shapeMat[0].length; c++) {
+                                    if (shapeMat[r][c] === 1) {
+                                        shapeHtml += `<div style="width:10px;height:10px;background:#0097a7;border-radius:2px;"></div>`;
+                                    } else {
+                                        shapeHtml += `<div style="width:10px;height:10px;background:transparent;"></div>`;
+                                    }
                                 }
                             }
+                            shapeHtml += `</div>`;
+
+                            let yieldText = `<span>🌾${totF}</span> <span>🧱${totW}</span> <span>🛡️${totD}</span>`;
+                            if (totM > 0) yieldText += ` <span>✨${totM}</span>`;
+
+                            cardEl.innerHTML = `
+                                <div class="tcg-card-top-bar">
+                                    <div class="tcg-title-pill">${cName}</div>
+                                    <div class="tcg-rarity-code">${rCode}</div>
+                                </div>
+                                <div class="tcg-shape-art-area" style="display:flex; align-items:center; justify-content:center;">
+                                    ${shapeHtml}
+                                </div>
+                                <div class="tcg-yield-strip">
+                                    ${yieldText}
+                                </div>
+                                <div class="tcg-action-controls">
+                                    <button class="tcg-reserve-btn-wireframe" onclick="event.stopPropagation(); reserveCard(${idx})">${I18n.t("UI_RESERVE_BTN")}</button>
+                                </div>
+                            `;
                         }
-                        shapeHtml += `</div>`;
-
-                        let yieldText = `<span>🌾${totF}</span> <span>🧱${totW}</span> <span>🛡️${totD}</span>`;
-                        if (totM > 0) yieldText += ` <span>✨${totM}</span>`;
-
-                        cardEl.innerHTML = `
-                            <div class="tcg-card-top-bar">
-                                <div class="tcg-title-pill">${cName}</div>
-                                <div class="tcg-rarity-code">${rCode}</div>
-                            </div>
-                            <div class="tcg-shape-art-area" style="display:flex; align-items:center; justify-content:center;">
-                                ${shapeHtml}
-                            </div>
-                            <div class="tcg-yield-strip">
-                                ${yieldText}
-                            </div>
-                            <div class="tcg-action-controls">
-                                <button class="tcg-reserve-btn-wireframe" onclick="event.stopPropagation(); reserveCard(${idx})">${I18n.t("UI_RESERVE_BTN")}</button>
-                                <button class="tcg-rotate-btn-wireframe" onclick="rotateSelectedCard(event, ${idx})">${I18n.t("UI_ROTATE_BTN")} 🔄</button>
-                            </div>
-                        `;
                         cardRowEl.appendChild(cardEl);
                     });
                 }
@@ -1109,6 +1203,43 @@
             }
         }
 
+        function playCommandCard(card) {
+            if (!state || state.hasPickedThisTurn) return;
+            const tObj = card.terrain || card;
+            const I18n = window.I18n;
+
+            if (tObj.cost) {
+                const c = tObj.cost;
+                if (c.food && state.food < c.food) return;
+                if (c.wood && state.wood < c.wood) return;
+                if (c.mystic && state.mystic < c.mystic) return;
+                if (c.ember && state.ember < c.ember) return;
+
+                if (c.food) state.food -= c.food;
+                if (c.wood) state.wood -= c.wood;
+                if (c.mystic) state.mystic -= c.mystic;
+                if (c.ember) state.ember -= c.ember;
+            }
+
+            if (tObj.biasTarget) {
+                state.activeDrawBias = {
+                    targetCategory: tObj.biasTarget,
+                    type: tObj.biasUntilBlocks ? "UNTIL_BLOCKS" : (tObj.biasUntilDefense ? "UNTIL_DEFENSE" : "TURNS"),
+                    untilValue: tObj.biasUntilBlocks || tObj.biasUntilDefense,
+                    remainingTurns: tObj.biasDurationTurns
+                };
+            }
+
+            const cardIdx = state.handOffering.indexOf(card);
+            if (cardIdx !== -1) {
+                state.handOffering[cardIdx] = null;
+            }
+            state.hasPickedThisTurn = true;
+            state.addLog(`[T${state.turn}] ${I18n ? I18n.t(tObj.nameKey) : tObj.id} を発動しました。`);
+            render();
+        }
+        window.playCommandCard = playCommandCard;
+
         function selectCard(idx) {
             if (!state || state.hasPickedThisTurn) return;
             const card = state.handOffering[idx];
@@ -1123,6 +1254,114 @@
             }
             render();
             highlightPlaceableCells();
+        }
+        window.selectCard = selectCard;
+
+        function showCardHoverPreview(card) {
+            const modal = document.getElementById("cardHoverPreviewModal");
+            const content = document.getElementById("cardHoverPreviewContent");
+            const I18n = window.I18n;
+            if (!modal || !content || !card || !I18n) return;
+
+            const tObj = card.terrain || card;
+            const category = tObj.category || "LAND";
+            const rCode = tObj.rarity || "C";
+            const cName = tObj.nameKey ? I18n.t(tObj.nameKey) : (tObj.id || "Card");
+            const cDesc = tObj.descriptionKey ? I18n.t(tObj.descriptionKey) : (tObj.description || "");
+
+            let costBadgeText = "";
+            if (category !== "LAND" && tObj.cost) {
+                const c = tObj.cost;
+                const parts = [];
+                if (c.food) parts.push(`🌾-${c.food}`);
+                if (c.wood) parts.push(`🧱-${c.wood}`);
+                if (c.mystic) parts.push(`✨-${c.mystic}`);
+                if (c.ember) parts.push(`🔥-${c.ember}`);
+                costBadgeText = parts.join(" ");
+            }
+
+            if (category !== "LAND") {
+                let iconSymbol = "📜";
+                if (category === "MILITARY") iconSymbol = "🛡️";
+                else if (category === "MYSTIC") iconSymbol = "✨";
+                else if (category === "FACILITY") iconSymbol = "🏛️";
+                else if (category === "ECONOMY") iconSymbol = "📜";
+                else if (category === "LEGEND") iconSymbol = "🟡";
+
+                content.innerHTML = `
+                    <div style="display:flex; justify-content:center; align-items:center; position:relative; background:#ffffff; border-radius:8px; padding:6px 12px; border:2px solid #111;">
+                        <strong style="font-size:17px; color:#111; text-align:center; width:100%; font-weight:bold;">${cName}</strong>
+                        <span style="font-size:20px; font-weight:900; color:#111; position:absolute; right:12px;">${rCode}</span>
+                    </div>
+                    <div style="flex:1; background:#2c3e50; border-radius:10px; margin:8px 0; padding:14px; display:flex; flex-direction:column; align-items:center; justify-content:center; border:1px solid #7f8c8d;">
+                        <div style="font-size:40px; margin-bottom:10px; filter:drop-shadow(0 0 8px rgba(255,255,255,0.6));">${iconSymbol}</div>
+                        <div style="font-size:14px; color:#ffffff; line-height:1.4; font-weight:bold; text-align:center; text-shadow:0 2px 4px rgba(0,0,0,0.9);">${cDesc}</div>
+                    </div>
+                    <div style="background:#d4f4fa; border-radius:8px; padding:6px 12px; text-align:center; font-size:14px; font-weight:bold; color:#111;">
+                        ${costBadgeText ? I18n.t("UI_CARD_COST_PREFIX", { cost: costBadgeText }) : I18n.t("UI_CMD_INSTANT_LABEL")}
+                    </div>
+                `;
+            } else {
+                const y = tObj.yields || { food: tObj.food || 0, wood: tObj.wood || 0, defense: tObj.def || tObj.defense || 0, mystic: tObj.mystic || 0 };
+                const shapeMat = card.currentShape || tObj.shape || [[1]];
+                const tileCount = shapeMat.reduce((acc, row) => acc + row.reduce((a, b) => a + b, 0), 0);
+                const totF = (y.food || 0) * tileCount;
+                const totW = (y.wood || 0) * tileCount;
+                const totD = (y.defense || 0) * tileCount;
+                const totM = (y.mystic || 0) * tileCount;
+
+                let shapeHtml = `<div style="display:grid; grid-template-rows:repeat(${shapeMat.length}, 24px); grid-template-columns:repeat(${shapeMat[0].length}, 24px); gap:4px;">`;
+                for (let r = 0; r < shapeMat.length; r++) {
+                    for (let c = 0; c < shapeMat[0].length; c++) {
+                        if (shapeMat[r][c] === 1) {
+                            shapeHtml += `<div style="width:24px;height:24px;background:#0097a7;border-radius:4px;box-shadow:0 0 6px rgba(0,151,167,0.8);"></div>`;
+                        } else {
+                            shapeHtml += `<div style="width:24px;height:24px;background:transparent;"></div>`;
+                        }
+                    }
+                }
+                shapeHtml += `</div>`;
+
+                let yieldText = `<span>🌾${totF}</span> <span>🧱${totW}</span> <span>🛡️${totD}</span>`;
+                if (totM > 0) yieldText += ` <span>✨${totM}</span>`;
+
+                content.innerHTML = `
+                    <div style="display:flex; justify-content:center; align-items:center; position:relative; background:#ffffff; border-radius:8px; padding:6px 12px; border:2px solid #111;">
+                        <strong style="font-size:17px; color:#111; text-align:center; width:100%; font-weight:bold;">${cName}</strong>
+                        <span style="font-size:20px; font-weight:900; color:#111; position:absolute; right:12px;">${rCode}</span>
+                    </div>
+                    <div style="flex:1; background:#d4f4fa; border-radius:10px; margin:8px 0; display:flex; align-items:center; justify-content:center; border:1px solid #7f8c8d;">
+                        ${shapeHtml}
+                    </div>
+                    <div style="background:#d4f4fa; border-radius:8px; padding:6px 12px; display:flex; justify-content:space-around; align-items:center; font-size:15px; font-weight:bold; color:#111;">
+                        ${yieldText}
+                    </div>
+                `;
+            }
+
+            modal.style.display = "block";
+        }
+
+        window.pinnedPreviewCard = null;
+
+        function togglePinCardPreview(card) {
+            const current = window.pinnedPreviewCard;
+            const isSame = current && (current === card || (current.id && card.id && current.id === card.id));
+            if (isSame) {
+                window.pinnedPreviewCard = null;
+                hideCardHoverPreview(true);
+            } else {
+                window.pinnedPreviewCard = card;
+                showCardHoverPreview(card);
+            }
+            render();
+        }
+        window.togglePinCardPreview = togglePinCardPreview;
+
+        function hideCardHoverPreview(force = false) {
+            if (!force && window.pinnedPreviewCard) return;
+            const modal = document.getElementById("cardHoverPreviewModal");
+            if (modal) modal.style.display = "none";
         }
 
         function rotateSelectedCard(e, idx) {
@@ -1180,6 +1419,8 @@
             const res = state.placeShape(r, c, shape, terrain, currentIdx);
 
             if (res === true || (res && (res.can || res.success))) {
+                window.pinnedPreviewCard = null;
+                hideCardHoverPreview(true);
                 selectedCard = null;
                 selectedCardIdx = -1;
 
@@ -1211,6 +1452,8 @@
 
         function reserveCard(idx) {
             if (!state) return;
+            window.pinnedPreviewCard = null;
+            hideCardHoverPreview(true);
             if (state.moveToReserve(idx)) {
                 selectedCard = null;
                 selectedCardIdx = -1;
@@ -1220,6 +1463,8 @@
         function returnReserveCard(idx) {
             if (!state) return;
             if (state.returnFromReserve(idx)) {
+                window.pinnedPreviewCard = null;
+                hideCardHoverPreview(true);
                 selectedCard = null;
                 selectedCardIdx = -1;
                 render();
@@ -1227,6 +1472,8 @@
         }
         function mulligan() {
             if (!state || !drawSys) return;
+            window.pinnedPreviewCard = null;
+            hideCardHoverPreview(true);
             state.ember -= 1;
             drawSys.generateOfferingCards();
             render();

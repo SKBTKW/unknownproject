@@ -809,10 +809,14 @@
 
             if (!this.state) return (c.category === "LAND" || !c.category);
 
-            // リソース条件チェック
-            if (c.reqFood && this.state.food < c.reqFood) return false;
-            if (c.reqWood && this.state.wood < c.reqWood) return false;
-            if (c.reqMystic && this.state.mystic < c.reqMystic) return false;
+            // 盤面動的上限・ドロー提示条件チェック
+            if (c.maxPlacedBlocks && typeof this.state.countPlacedTiles === 'function') {
+                if (this.state.countPlacedTiles() > c.maxPlacedBlocks) return false;
+            }
+            if (c.maxDefense && typeof this.state.calculateTotalDefense === 'function') {
+                if (this.state.calculateTotalDefense() > c.maxDefense) return false;
+            }
+            if (c.maxMystic && this.state.mystic > c.maxMystic) return false;
             if (c.maxEmber && this.state.ember > c.maxEmber) return false;
 
             // 盤面条件チェック
