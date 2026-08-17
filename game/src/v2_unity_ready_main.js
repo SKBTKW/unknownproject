@@ -23,6 +23,18 @@
             this.placementGroupCounter = 1;
             this.mergedBlocks = {};
 
+            this.defense = 0;
+            this.mystic = 0;
+            this.usedUniqueCards = [];
+            this.handOfferingSize = 3;
+            this.nextTrialDamageMitigation = 1.0;
+            this.nextTrialMultiplier = 1.0;
+            this.reserveFeeWaivedTurns = 0;
+            this.activeConstructionProjects = [];
+            this.permanentPlainsFoodBonus = 0;
+            this.permanentVicinityDefenseBonus = 0;
+            this.activeDrawBias = null;
+
             this.addLog(I18n.t("LOG_INIT_5X5"));
         }
 
@@ -391,6 +403,79 @@
             }
         }
 
+        playCommandCard(cardObj, targetTile = null) {
+            if (!cardObj || !cardObj.category || cardObj.category === "LAND") return { success: false, reason: "NOT_A_COMMAND_CARD" };
+
+            // コストチェック
+            const cost = cardObj.cost || {};
+            if (cost.food && this.food < cost.food) return { success: false, reason: "NOT_ENOUGH_FOOD" };
+            if (cost.wood && this.wood < cost.wood) return { success: false, reason: "NOT_ENOUGH_WOOD" };
+            if (cost.mystic && this.mystic < cost.mystic) return { success: false, reason: "NOT_ENOUGH_MYSTIC" };
+
+            // コスト消費
+            if (cost.food) this.food -= cost.food;
+            if (cost.wood) this.wood -= cost.wood;
+            if (cost.mystic) this.mystic -= cost.mystic;
+
+            const cId = cardObj.id;
+            const cName = (typeof I18n !== "undefined" ? I18n.t(cardObj.nameKey) : null) || cardObj.id;
+
+            if (cId === "CMD_AGRICULTURAL_POLICY") {
+                this.wood += 20;
+                this.permanentPlainsFoodBonus += 1;
+                this.addLog(I18n.t("LOG_CMD_AGRICULTURAL_POLICY", { wood: 20 }) || `📜 ${cName}を発動！ 🧱+20 ＆ 全平地産出 🌾+1/T！`);
+            } else if (cId === "CMD_BLACK_MARKET") {
+                this.wood += 35;
+                this.mystic += 10;
+                this.addLog(I18n.t("LOG_CMD_BLACK_MARKET") || `📜 ${cName}を発動！ 🧱+35 ＆ ✨+10 を獲得！`);
+            } else if (cId === "CMD_IRON_RAMPART") {
+                this.defense += 25;
+                this.permanentVicinityDefenseBonus += 2;
+                this.addLog(I18n.t("LOG_CMD_IRON_RAMPART") || `🛡️ ${cName}を発動！ グローバル防衛力 🛡️+25 獲得！`);
+            } else if (cId === "CMD_BALLISTA_SET") {
+                this.defense += 40;
+                this.nextTrialDamageMitigation = 0.5;
+                this.addLog(I18n.t("LOG_CMD_BALLISTA_SET") || `🛡️ ${cName}を発動！ 🛡️+40 ＆ 次試練被ダメ50%軽減！`);
+            } else if (cId === "CMD_REKINDLE_EMBER") {
+                this.ember = Math.min(20, this.ember + 3);
+                this.reserveFeeWaivedTurns = 3;
+                this.addLog(I18n.t("LOG_CMD_REKINDLE_EMBER") || `✨ ${cName}を発動！ 残り火 🔥+3 回復 ＆ 保留費3T無料化！`);
+            } else if (cId === "CMD_TRANSMUTE_GOLDEN") {
+                if (targetTile && targetTile.r !== undefined && targetTile.c !== undefined) {
+                    const cell = this.grid[targetTile.r][targetTile.c];
+                    cell.socketResource = { nameKey: "SOCKET_SACRED_VEIN", bonusMystic: 5, bonusEmber: 1 };
+                    this.addLog(I18n.t("LOG_CMD_TRANSMUTE_GOLDEN") || `✨ ${cName}を発動！ 土地を聖なる光脈 (✨+5 🔥+1/T) へ変容！`);
+                } else {
+                    this.mystic += 10;
+                    this.addLog(I18n.t("LOG_CMD_TRANSMUTE_GOLDEN") || `✨ ${cName}を発動！ ✨+10 獲得！`);
+                }
+            } else if (cId === "FAC_GREAT_WINDMILL") {
+                this.activeConstructionProjects.push({ name: "FAC_GREAT_WINDMILL", remainingTurns: 3, woodCostPerTurn: 4 });
+                this.addLog(I18n.t("LOG_FAC_GREAT_WINDMILL") || `🏛️ ${cName}の建設を開始！ 3T継続投資へ`);
+            } else if (cId === "LGD_DESPERATE_PACT") {
+                this.ember = Math.min(20, this.ember + 5);
+                this.handOfferingSize = 4;
+                this.nextTrialMultiplier = 1.5;
+                this.addLog(I18n.t("LOG_LGD_DESPERATE_PACT") || `📜 ${cName}を発動！ 🔥+5 ＆ 手札オファリング枠が永久に4枚へ拡張！`);
+            } else if (cId === "CMD_LAND_FOCUS") {
+                this.activeDrawBias = { targetCategory: "LAND", type: "UNTIL_BLOCKS", untilValue: 6 };
+                this.addLog(I18n.t("LOG_CMD_LAND_FOCUS") || `📜 ${cName}を発動！ 盤面6ブロック到達まで土地出現率2倍！`);
+            } else if (cId === "CMD_MILITARY_FOCUS") {
+                this.activeDrawBias = { targetCategory: "MILITARY", type: "UNTIL_DEFENSE", untilValue: 20 };
+                this.addLog(I18n.t("LOG_CMD_MILITARY_FOCUS") || `🛡️ ${cName}を発動！ 防衛力20到達まで軍事出現率2倍！`);
+            } else if (cId === "CMD_MYSTIC_FOCUS") {
+                this.activeDrawBias = { targetCategory: "MYSTIC", type: "TURNS", remainingTurns: 3 };
+                this.addLog(I18n.t("LOG_CMD_MYSTIC_FOCUS") || `✨ ${cName}を発動！ 3ターンの間神秘出現率2倍！`);
+            }
+
+            if (cardObj.isUnique) {
+                this.usedUniqueCards.push(cId);
+            }
+
+            this.hasPickedThisTurn = true;
+            return { success: true };
+        }
+
         executeExploration(r, c) {
             const cell = this.grid[r][c];
             if (!cell.placed || cell.isHQ) return { success: false, reason: "INVALID_CELL" };
@@ -614,6 +699,13 @@
             this.food -= foodCost;
             let isGameOver = false;
 
+            if (this.activeDrawBias && this.activeDrawBias.type === "TURNS") {
+                this.activeDrawBias.remainingTurns -= 1;
+                if (this.activeDrawBias.remainingTurns <= 0) {
+                    this.activeDrawBias = null;
+                }
+            }
+
             if (this.food < 0) {
                 const deficit = Math.abs(this.food);
                 this.food = 0;
@@ -711,13 +803,87 @@
             return this._landCardMasterCache;
         }
 
+        isCardEligible(c, stageNum, h2Count) {
+            if (stageNum < (c.minStage || 1)) return false;
+            if (h2Count < (c.reqH2 || 0)) return false;
+
+            if (!this.state) return (c.category === "LAND" || !c.category);
+
+            // リソース条件チェック
+            if (c.reqFood && this.state.food < c.reqFood) return false;
+            if (c.reqWood && this.state.wood < c.reqWood) return false;
+            if (c.reqMystic && this.state.mystic < c.reqMystic) return false;
+            if (c.maxEmber && this.state.ember > c.maxEmber) return false;
+
+            // 盤面条件チェック
+            if (c.reqPlains) {
+                let plainsCount = 0;
+                for (let r = 0; r < 5; r++) {
+                    for (let cCol = 0; cCol < 5; cCol++) {
+                        const cell = this.state.grid[r][cCol];
+                        if (cell.placed && cell.terrain && (cell.terrain.terrainId || cell.terrain.id) === "GL1_PLAINS") plainsCount++;
+                    }
+                }
+                if (plainsCount < c.reqPlains) return false;
+            }
+
+            if (c.reqHillOrMountain) {
+                let countHM = 0;
+                for (let r = 0; r < 5; r++) {
+                    for (let cCol = 0; cCol < 5; cCol++) {
+                        const cell = this.state.grid[r][cCol];
+                        if (cell.placed && cell.terrain) {
+                            const tid = cell.terrain.terrainId || cell.terrain.id;
+                            if (tid === "H2_HILL" || tid === "H3_MOUNTAIN") countHM++;
+                        }
+                    }
+                }
+                if (countHM === 0) return false;
+            }
+
+            if (c.reqUnmergedDesertOrMountain) {
+                let found = false;
+                for (let r = 0; r < 5; r++) {
+                    for (let cCol = 0; cCol < 5; cCol++) {
+                        const cell = this.state.grid[r][cCol];
+                        if (cell.placed && !cell.merged && cell.terrain) {
+                            const tid = cell.terrain.terrainId || cell.terrain.id;
+                            if (tid === "GL0_DESERT" || tid === "H3_MOUNTAIN") { found = true; break; }
+                        }
+                    }
+                }
+                if (!found) return false;
+            }
+
+            if (c.reqStage2End) {
+                if (this.state.turn < 20) return false;
+            }
+
+            if (c.maxPlacedBlocks !== undefined && typeof this.state.countPlacedTiles === 'function') {
+                if (this.state.countPlacedTiles() > c.maxPlacedBlocks) return false;
+            }
+            if (c.maxDefense !== undefined && typeof this.state.calculateTotalDefense === 'function') {
+                if (this.state.calculateTotalDefense() > c.maxDefense) return false;
+            }
+            if (c.maxMystic !== undefined && this.state.mystic !== undefined) {
+                if (this.state.mystic > c.maxMystic) return false;
+            }
+
+            // ユニーク重複チェック
+            if (c.isUnique && this.state.usedUniqueCards && this.state.usedUniqueCards.includes(c.id)) {
+                return false;
+            }
+
+            return true;
+        }
+
         drawSingleCard() {
             const master = this.getLandCardMaster();
-            const stage = (this.state && this.state.stage) ? (typeof this.state.stage === 'object' ? (this.state.stage.id || 1) : this.state.stage) : 1;
+            const stageNum = (this.state && this.state.stage) ? (typeof this.state.stage === 'object' ? (this.state.stage.id || 1) : this.state.stage) : 1;
             const h2Count = (this.state && typeof this.state.countH2HillsOnBoard === 'function') ? this.state.countH2HillsOnBoard() : 0;
 
-            let eligible = master.filter(c => stage >= (c.minStage || 1) && h2Count >= (c.reqH2 || 0));
-            if (eligible.length === 0) eligible = master.filter(c => (c.reqH2 || 0) === 0);
+            let eligible = master.filter(c => this.isCardEligible(c, stageNum, h2Count));
+            if (eligible.length === 0) eligible = master.filter(c => (c.category === "LAND" || !c.category) && (c.minStage || 1) <= stageNum);
 
             let totalW = eligible.reduce((acc, c) => acc + (c.weight || 0.1), 0);
             let rand = Math.random() * totalW;
@@ -737,7 +903,7 @@
                 cardMasterId: chosen.id,
                 nameKey: chosen.nameKey,
                 terrain: chosen,
-                currentShape: chosen.shape
+                currentShape: chosen.shape || [[1]]
             };
         }
 
@@ -750,10 +916,33 @@
             }
             const h2Count = (this.state && typeof this.state.countH2HillsOnBoard === 'function') ? this.state.countH2HillsOnBoard() : 0;
 
-            let eligible = master.filter(c => stageNum >= (c.minStage || 1) && h2Count >= (c.reqH2 || 0));
-            if (eligible.length === 0) eligible = master.filter(c => (c.minStage || 1) <= 1 && (c.reqH2 || 0) === 0);
+            // バイアスの自動評価
+            if (this.state && this.state.activeDrawBias) {
+                const bias = this.state.activeDrawBias;
+                let isActive = true;
+                if (bias.type === "UNTIL_BLOCKS" && typeof this.state.countPlacedTiles === 'function') {
+                    if (this.state.countPlacedTiles() >= bias.untilValue) isActive = false;
+                } else if (bias.type === "UNTIL_DEFENSE" && typeof this.state.calculateTotalDefense === 'function') {
+                    if (this.state.calculateTotalDefense() >= bias.untilValue) isActive = false;
+                } else if (bias.type === "TURNS") {
+                    if (bias.remainingTurns <= 0) isActive = false;
+                }
+                if (!isActive) this.state.activeDrawBias = null;
+            }
 
-            let totalW = eligible.reduce((acc, c) => acc + (c.weight || 0.1), 0);
+            let eligible = master.filter(c => this.isCardEligible(c, stageNum, h2Count));
+            if (eligible.length === 0) eligible = master.filter(c => (c.category === "LAND" || !c.category) && (c.minStage || 1) <= stageNum);
+
+            const activeBiasCategory = (this.state && this.state.activeDrawBias) ? this.state.activeDrawBias.targetCategory : null;
+
+            let totalW = eligible.reduce((acc, c) => {
+                let w = c.weight || 0.1;
+                const cat = c.category || "LAND";
+                if (activeBiasCategory && cat === activeBiasCategory) {
+                    w *= 2.0; // Boost weight by +100% for active draw bias
+                }
+                return acc + w;
+            }, 0);
 
             const pickedCards = [];
             for (let i = 0; i < 3; i++) {
@@ -761,11 +950,16 @@
                 let chosen = eligible[0];
 
                 for (let c of eligible) {
-                    if (rand <= c.weight) {
+                    let w = c.weight || 0.1;
+                    const cat = c.category || "LAND";
+                    if (activeBiasCategory && cat === activeBiasCategory) {
+                        w *= 2.0;
+                    }
+                    if (rand <= w) {
                         chosen = c;
                         break;
                     }
-                    rand -= c.weight;
+                    rand -= w;
                 }
                 if (!chosen) chosen = eligible[0] || master[0];
                 pickedCards.push(chosen);
