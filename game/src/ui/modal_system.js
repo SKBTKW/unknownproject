@@ -29,58 +29,63 @@
             pointer-events: auto;
         }
 
-        /* 🖼️ スリム横帯アクションモーダル (確認ダイアログ) */
+        /* 🖼️ スリム横帯アクションモーダル (完全センタリングデザイン) */
         .modal-system-strip-card {
             width: 90%;
             max-width: 580px;
-            background: rgba(17, 22, 31, 0.94);
+            background: rgba(17, 22, 31, 0.95);
             border: 1.5px solid rgba(26, 188, 156, 0.5);
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.95), 0 0 30px rgba(26, 188, 156, 0.3);
             border-radius: 14px;
-            padding: 18px 24px;
+            padding: 22px 28px;
             color: #ffffff;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            transform: scale(0.92) translateY(10px);
+            text-align: center;
+            transform: scale(0.92) translateY(0);
             transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            margin: auto;
         }
         .modal-system-overlay.active .modal-system-strip-card {
             transform: scale(1) translateY(0);
         }
 
         .modal-system-header-title {
-            font-size: 17px;
+            font-size: 18px;
             font-weight: 700;
             color: #ffffff;
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding-bottom: 8px;
+            padding-bottom: 10px;
+            text-align: center;
         }
 
         .modal-system-body-desc {
             font-size: 13px;
             color: #bdc3c7;
             line-height: 1.5;
-            margin-bottom: 16px;
+            margin-bottom: 18px;
+            text-align: center;
         }
         .modal-system-cost-badge {
             display: inline-block;
             background: rgba(241, 196, 15, 0.15);
             border: 1px solid rgba(241, 196, 15, 0.4);
             color: #f1c40f;
-            padding: 2px 8px;
+            padding: 3px 10px;
             border-radius: 4px;
             font-size: 12px;
             font-weight: 600;
-            margin-top: 4px;
+            margin: 6px auto 0 auto;
         }
 
         .modal-system-actions {
             display: flex;
-            justify-content: flex-end;
-            gap: 12px;
+            justify-content: center;
+            gap: 16px;
         }
 
         .modal-system-btn {
