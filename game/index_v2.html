@@ -1497,6 +1497,11 @@
                 state.handOffering[cardIdx] = null;
             }
 
+            // 🧹 発動時に右下のピン留めプレビュー・ツールチップを強制消去
+            window.pinnedPreviewCard = null;
+            if (typeof hideCardHoverPreview === "function") hideCardHoverPreview(true);
+            if (typeof hideCardRotateTooltip === "function") hideCardRotateTooltip();
+
             state.hasPickedThisTurn = true;
             const cName = tObj.nameKey ? (I18n ? I18n.t(tObj.nameKey) : tObj.nameKey) : (tObj.id || "Command Card");
             state.addLog(`[T${state.turn}] ${cName} を発動しました。`);
