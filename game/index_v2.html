@@ -774,10 +774,10 @@
             background: rgba(24, 34, 50, 0.95);
             border: 1.5px solid #2c3e50;
             border-radius: 8px;
-            padding: 6px 14px;
+            padding: 5px 12px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             box-shadow: 0 4px 14px rgba(0,0,0,0.6);
             cursor: pointer;
             user-select: none;
@@ -789,35 +789,25 @@
             box-shadow: 0 4px 18px rgba(26,188,156,0.4);
         }
 
-        /* 📊 右サイドバー (パーティション解除・フラットデザイン) */
-        .right-sidebar {
-            width: 280px;
-            background: #121620;
-            border-left: 1px solid #1e2538;
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        /* 🃏 右下隅: 統合操作パネル (ターン表示 ＋ マリガン ＋ TURN END) */
-        .sidebar-bottom-controls-partition {
+        /* 🎮 フッター右端: 統合操作・ターン表示枠 (下段パーティション) */
+        .footer-controls-partition {
+            width: 230px;
             background: rgba(24, 34, 50, 0.95);
             border: 1.5px solid #2c3e50;
             border-radius: 10px;
-            padding: 14px;
+            padding: 10px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.6);
-            margin-top: auto;
+            gap: 8px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+            flex-shrink: 0;
         }
 
         .turn-box-inside {
             background: rgba(26, 188, 156, 0.15);
             border: 1.5px solid #1abc9c;
             border-radius: 6px;
-            padding: 6px;
+            padding: 4px 8px;
             text-align: center;
         }
         .turn-box-inside .turn-label {
@@ -827,7 +817,7 @@
             letter-spacing: 1px;
         }
         .turn-box-inside .turn-num {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 900;
             color: #ffffff;
         }
@@ -835,13 +825,13 @@
             display: flex;
             align-items: center;
             gap: 4px;
-            font-size: 13.5px;
+            font-size: 13px;
             font-weight: 900;
             white-space: nowrap;
         }
-        .header-data-item .label { color: #a4b0be; font-size: 12px; font-weight: bold; }
-        .header-data-item .val { color: #ffffff; font-size: 16px; font-weight: 900; }
-        .header-data-item .prod { color: #2ecc71; font-size: 11.5px; font-weight: bold; }
+        .header-data-item .label { color: #a4b0be; font-size: 11.5px; font-weight: bold; }
+        .header-data-item .val { color: #ffffff; font-size: 15px; font-weight: 900; }
+        .header-data-item .prod { color: #2ecc71; font-size: 11px; font-weight: bold; }
 
         .log-dropdown-header-bar {
             background: #161a24;
@@ -943,9 +933,9 @@
             </div>
         </div>
 
+        <!-- 🕹️ 2. Middle Board Area (Horizontal Partition - No Vertical Sidebar) -->
         <div class="middle-layout">
-            <!-- Center Board Area (Full width unlocked for 9x9 expansion) -->
-            <div class="board-container">
+            <div class="board-container" style="flex:1; width:100%;">
                 <div class="main-area-badge"><span id="lblMainBadge"></span> <span id="valPlacedCount">1</span>/24</div>
                 <div id="gridBoard" class="grid-with-headers"></div>
                 <div id="tileTooltip" class="tile-tooltip"></div>
@@ -956,29 +946,11 @@
                     <div id="cardHoverPreviewContent" style="width:100%; height:100%; display:flex; flex-direction:column; justify-content:space-between;"></div>
                 </div>
             </div>
-
-            <!-- Right Sidebar (Width 280px, Streamlined layout for reserve & controls) -->
-            <div class="right-sidebar">
-                <div id="activeBuffPanel" class="data-panel" style="display:none; background: linear-gradient(135deg, rgba(26,188,156,0.15) 0%, rgba(46,204,113,0.1) 100%); border:1px solid #1abc9c;">
-                    <h4 style="color:#1abc9c; font-size:12px; margin-bottom:6px;" id="lblBuffPanelTitle"></h4>
-                    <div id="activeBuffContent" style="font-size:11px; color:#e1b12c;"></div>
-                </div>
-
-                <!-- 🃏 右下隅: 統合操作パネル (ターン表示 ＋ マリガン ＋ TURN END) -->
-                <div class="sidebar-bottom-controls-partition">
-                    <div class="turn-box-inside">
-                        <div class="turn-label" id="lblTurnHeader"></div>
-                        <div class="turn-num"><span id="valTurn">1</span> <span style="font-size:12px; color:#a4b0be; font-weight:normal;">/ 50</span></div>
-                    </div>
-                    <button class="mulligan-btn" onclick="mulligan()" id="btnMulligan" style="margin:0; width:100%;"></button>
-                    <button class="turn-end-btn" onclick="nextTurn()" id="btnTurnEnd" style="margin:0; width:100%;"></button>
-                </div>
-            </div>
         </div>
 
-        <!-- Bottom Draw Offering & Reserve Cards Row (6 Cards Layout) -->
-        <div class="bottom-card-container">
-            <div class="cards-flex-box" style="width:100%;">
+        <!-- 🃏 3. Bottom Footer Container (Horizontal Partition - Draw, Reserve & Controls) -->
+        <div class="bottom-card-container" style="display:flex; align-items:center; justify-content:space-between; gap:16px;">
+            <div class="cards-flex-box" style="flex:1;">
                 <div class="offering-subgroup">
                     <div class="subgroup-header">
                         <span id="lblOfferingTitle"></span>
@@ -993,6 +965,16 @@
                     </div>
                     <div id="reserveRow" class="subgroup-cards-row"></div>
                 </div>
+            </div>
+
+            <!-- 🎮 フッター右端: 統合操作・ターン表示枠 -->
+            <div class="footer-controls-partition" id="footerControlsPartition">
+                <div class="turn-box-inside">
+                    <div class="turn-label" id="lblTurnHeader"></div>
+                    <div class="turn-num"><span id="valTurn">1</span> <span style="font-size:11.5px; color:#a4b0be; font-weight:normal;">/ 50</span></div>
+                </div>
+                <button class="mulligan-btn" onclick="mulligan()" id="btnMulligan" style="margin:0; width:100%; font-size:12px; padding:8px;"></button>
+                <button class="turn-end-btn" onclick="nextTurn()" id="btnTurnEnd" style="margin:0; width:100%; font-size:13px; padding:10px; font-weight:900;"></button>
             </div>
         </div>
     <!-- 🏛️ 4大文明方針 変更モーダル画面 (バッジクリック一発ポップアップ) -->
