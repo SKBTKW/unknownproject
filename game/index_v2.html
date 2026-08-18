@@ -4,10 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trial of Ages : Last Ember (Bottom Card Layout Option)</title>
+    <link rel="stylesheet" href="css/0_global_common/global_animations.css">
+    <link rel="stylesheet" href="css/0_global_common/typography_theme.css">
     <link rel="stylesheet" href="css/0_global_common/base_layout.css">
     <link rel="stylesheet" href="css/1_top_header/top_header.css">
     <link rel="stylesheet" href="css/2_center_area/land_grid.css">
-    <link rel="stylesheet" href="css/3_bottom_area/card_hand.css">
+    <link rel="stylesheet" href="css/3_bottom_area/bottom_cards.css">
     <link rel="stylesheet" href="css/4_right_sidebar/right_sidebar.css">
     <style>
         * {
@@ -51,7 +53,7 @@
             flex-shrink: 0;
             height: 72px;
             position: relative;
-            overflow: hidden;
+            overflow: visible;
         }
         
         .app-title-box {
@@ -198,17 +200,18 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: bold;
-            color: #95a5a6;
-            font-size: 16px;
-            user-select: none;
+            font-size: 13px;
+            font-weight: 900;
+            color: #7f8c8d;
+            background: #11141d;
+            border-radius: 4px;
         }
 
         .cell {
             width: 84px;
             height: 84px;
-            background: #1c202c;
-            border: 1px solid #2c3345;
+            background: #191e2b;
+            border: 1px dashed #2c354a;
             border-radius: 6px;
             display: flex;
             flex-direction: column;
@@ -247,10 +250,34 @@
             font-weight: bold;
         }
         .cell.placed {
-            background: #005a70 !important;
             border-color: #2980b9;
             color: #ffffff;
             font-weight: bold;
+        }
+        /* 🌾 各土地属性の独立カラーパターン定義 */
+        .cell.terrain-plains {
+            background: linear-gradient(135deg, #1e4a26 0%, #122e17 100%) !important;
+            border-color: #2e7d32 !important;
+        }
+        .cell.terrain-forest {
+            background: linear-gradient(135deg, #134236 0%, #0a261f 100%) !important;
+            border-color: #1abc9c !important;
+        }
+        .cell.terrain-deep-forest {
+            background: linear-gradient(135deg, #0d383b 0%, #051e20 100%) !important;
+            border-color: #16a085 !important;
+        }
+        .cell.terrain-hill {
+            background: linear-gradient(135deg, #4e3519 0%, #2e1d0c 100%) !important;
+            border-color: #e67e22 !important;
+        }
+        .cell.terrain-mountain {
+            background: linear-gradient(135deg, #383a54 0%, #202236 100%) !important;
+            border-color: #9b59b6 !important;
+        }
+        .cell.terrain-desert {
+            background: linear-gradient(135deg, #5c4314 0%, #36260a 100%) !important;
+            border-color: #f39c12 !important;
         }
         .cell.no-border-top { border-top: 0px solid transparent !important; }
         .cell.no-border-right { border-right: 0px solid transparent !important; }
@@ -364,8 +391,6 @@
             font-size: 12px;
             font-weight: bold;
         }
-
-        /* log-panel-wrapper and right sidebar styles loaded from css/4_right_sidebar/right_sidebar.css */
 
         /* 👇 最下部ドローオファリング ＆ 保留エリア (限界まで広げる幅大開放デザイン) */
         .bottom-card-container {
@@ -558,6 +583,112 @@
             font-size: 14px;
             cursor: pointer;
         }
+
+        /* 🏛️ 方針表示バッジ (🔥残り火アイコンの真下に配置) */
+        .directive-pill {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.25);
+            line-height: 1.2;
+        }
+        .directive-pill:hover {
+            transform: translateY(-2px) scale(1.04);
+            box-shadow: 0 4px 14px rgba(26,188,156,0.6);
+            border-color: #1abc9c;
+        }
+        .directive-development { background: linear-gradient(135deg, #1e4a26 0%, #112e16 100%); color: #2ecc71; border-color: #2ecc71; }
+        .directive-production { background: linear-gradient(135deg, #5c4314 0%, #36260a 100%); color: #f39c12; border-color: #f39c12; }
+        .directive-military { background: linear-gradient(135deg, #1f3a52 0%, #0f2130 100%); color: #3498db; border-color: #3498db; }
+        .directive-prayer { background: linear-gradient(135deg, #3c245c 0%, #201133 100%); color: #9b59b6; border-color: #9b59b6; }
+
+        .directive-option-card {
+            background: #1d222e;
+            border: 1px solid #2e3547;
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 8px;
+            transition: all 0.15s ease;
+        }
+        .directive-option-card:hover:not(.disabled) {
+            border-color: #1abc9c;
+            background: #252c3c;
+        }
+        .directive-option-card.active {
+            border: 2px solid #2ecc71 !important;
+            background: rgba(46, 204, 113, 0.1) !important;
+        }
+        .directive-option-card.disabled {
+            opacity: 0.5;
+            filter: grayscale(60%);
+        }
+        .directive-card-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .directive-card-desc {
+            font-size: 11px;
+            color: #bdc3c7;
+            line-height: 1.4;
+        }
+        .directive-select-btn {
+            background: #1abc9c;
+            color: #0b0d11;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
+        .directive-select-btn:hover {
+            background: #16a085;
+        }
+        .directive-active-badge {
+            color: #2ecc71;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .directive-locked-badge {
+            color: #e74c3c;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        /* 🔍 マウスオーバー（ホバー）時の巨大化・超高視認性専用ポップアップツールチップ */
+        .large-directive-tooltip {
+            background: rgba(18, 22, 32, 0.96);
+            border: 2px solid #1abc9c;
+            border-radius: 12px;
+            padding: 16px 20px;
+            width: 380px;
+            max-width: 90vw;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.95), 0 0 20px rgba(26, 188, 156, 0.4);
+            pointer-events: none !important;
+            z-index: 100000;
+            display: none;
+            backdrop-filter: blur(8px);
+            animation: directivePopIn 0.15s ease-out forwards;
+        }
+        @keyframes directivePopIn {
+            0% { opacity: 0; transform: translateY(-4px) scale(0.96); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
     </style>
 </head>
 <body>
@@ -573,9 +704,12 @@
                 </div>
             </div>
             
-            <div class="ember-center-box">
-                <span class="ember-icon">🔥</span>
-                <span>: <span id="valEmber">20</span></span>
+            <div class="ember-center-box" style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; z-index:10; pointer-events:auto;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span class="ember-icon">🔥</span>
+                    <span>: <span id="valEmber">20</span></span>
+                </div>
+                <div id="directiveHeaderBadge" style="z-index:15; pointer-events:auto;"></div>
             </div>
 
             <div id="trialNoticeBox" class="trial-announcement">
@@ -658,12 +792,34 @@
                 <button class="turn-end-btn" onclick="nextTurn()" id="btnTurnEnd"></button>
             </div>
         </div>
+    <!-- 🏛️ 4大文明方針 変更モーダル画面 (バッジクリック一発ポップアップ) -->
+    <div id="directiveModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.75); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
+        <div style="background:#161922; border:2px solid #1abc9c; border-radius:12px; width:680px; max-width:92vw; padding:20px; box-shadow:0 10px 40px rgba(0,0,0,0.9); color:#e0e0e0; display:flex; flex-direction:column; gap:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #2a2e3d; padding-bottom:10px;">
+                <h3 style="margin:0; font-size:18px; color:#1abc9c; display:flex; align-items:center; gap:8px;">
+                    <span>🏛️</span> 文明方針の発令・変更 (Four Directives)
+                </h3>
+                <button onclick="closeDirectiveModal()" style="background:none; border:none; color:#a0a0a0; font-size:20px; cursor:pointer; font-weight:bold;">✕</button>
+            </div>
+            
+            <div style="font-size:12px; color:#a0a0a0; line-height:1.4;">
+                文明の注力方針を選択します。初回変更は <strong style="color:#1abc9c;">無料</strong>、2回目以降は変更コストとして <strong style="color:#e74c3c;" id="directiveChangeCostVal">🔥 -1</strong> を消費します。（発令後 3 ターンは固定）
+            </div>
+
+            <div id="directiveOptionsList" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:4px;"></div>
+
+            <div style="display:flex; justify-content:flex-end; border-top:1px solid #2a2e3d; padding-top:12px;">
+                <button onclick="closeDirectiveModal()" style="background:#2c3e50; color:#fff; border:none; padding:8px 20px; border-radius:6px; font-weight:bold; cursor:pointer;">閉じる</button>
+            </div>
+        </div>
     </div>
 
     <!-- 🌐 AGENTS.md Rule 3 I18n Dictionary Manager -->
     <script src="src/i18n.js"></script>
     <script src="src/data/land_system.js"></script>
+    <script src="src/systems/directive_system.js"></script>
     <script src="src/v2_unity_ready_main.js"></script>
+    <script src="src/ui/v2_ui_renderer.js"></script>
     <script>
         let state = null;
         let drawSys = null;
@@ -811,7 +967,7 @@
                 const sName = cell.socketResource ? I18n.t(cell.socketResource.nameKey) : "";
                 const mergeText = cell.merged ? `<br><span style="color:#f1c40f;font-weight:bold;">${I18n.t("UI_MERGE_2X2_LABEL", { name: tName })}</span>` : "";
                 const socketText = cell.socketResource ? `<br><span style="color:#f1c40f;font-weight:bold;">★ ${sName} (${I18n.t("UI_SOCKET_BLOOMING")})</span>` : (cell.hasSocket ? `<br><span style="color:#f39c12;font-weight:bold;">${I18n.t("UI_UNOPENED_SOCKET_LABEL")}</span>` : "");
-                const searchText = cell.searched ? `<br><span style="color:#2ecc71;">${I18n.t("UI_SEARCHED_BADGE")}</span>` : (cell.merged ? `<br><span style="color:#7f8c8d;">${I18n.t("UI_MERGED_SEARCH_DISABLED")}</span>` : `<br><span style="color:#3498db;">${I18n.t("UI_SEARCH_LINK")}</span>`);
+                const searchText = cell.searched ? `<br><span style="color:#2ecc71;">${I18n.t("UI_SEARCHED_BADGE")}</span>` : (cell.merged ? `<br><span style="color:#7f8c8d;">${I18n.t("UI_MERGED_SEARCH_DISABLED")}</span>` : "");
                 tt.innerHTML = `<strong>${tName} ${pos}</strong>${mergeText}<br>🛡️${cell.terrain.defense} | 🌾+${cell.terrain.food||0} 🧱+${cell.terrain.wood||0}${isHQVic?' (+1)':''}${socketText}${searchText}`;
             } else if (cell.hasSocket) {
                 tt.innerHTML = `<strong>${I18n.t("TOOLTIP_SOCKET_UNOPENED", { pos })}</strong>`;
@@ -912,6 +1068,10 @@
                 setElementText("valMystic", state.mystic);
                 setElementText("valPlacedCount", `${state.countPlacedTiles()}/24`);
 
+                if (typeof renderDirectiveHeaderBadge === "function") {
+                    renderDirectiveHeaderBadge();
+                }
+
                 // 🎯 発動中バフパネルの表示・非表示制御
                 const buffPanel = document.getElementById("activeBuffPanel");
                 const buffContent = document.getElementById("activeBuffContent");
@@ -941,7 +1101,18 @@
                     boardEl.innerHTML = "";
 
                     const cornerCell = document.createElement("div");
-                    cornerCell.className = "header-cell";
+                    cornerCell.className = "header-cell corner-toggle-cell";
+                    cornerCell.style.display = "flex";
+                    cornerCell.style.alignItems = "center";
+                    cornerCell.style.justifyContent = "center";
+
+                    const currentMode = window.currentBoardMode || 'hover';
+                    let modeIcon = "🏷️";
+                    if (currentMode === 'icon') modeIcon = "🌾";
+                    else if (currentMode === 'always') modeIcon = "👁️";
+
+                    cornerCell.title = "土地表示モード切替";
+                    cornerCell.innerHTML = `<button onclick="toggleBoardLabelMode(event)" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; border-radius:4px; padding:2px 4px; font-size:12px; cursor:pointer;" title="土地表示モード切替">${modeIcon}</button>`;
                     boardEl.appendChild(cornerCell);
 
                     for (let c = 0; c < 5; c++) {
@@ -972,10 +1143,18 @@
                             } else if (cellData.placed && cellData.terrain) {
                                 cellEl.classList.add("placed");
 
+                                const tid = cellData.terrain ? (cellData.terrain.terrainId || cellData.terrain.id || "") : "";
+                                if (tid.includes("PLAINS")) cellEl.classList.add("terrain-plains");
+                                else if (tid.includes("DEEP_FOREST") || tid.includes("DEEP_HILL")) cellEl.classList.add("terrain-deep-forest");
+                                else if (tid.includes("FOREST")) cellEl.classList.add("terrain-forest");
+                                else if (tid.includes("HILL")) cellEl.classList.add("terrain-hill");
+                                else if (tid.includes("MOUNTAIN")) cellEl.classList.add("terrain-mountain");
+                                else if (tid.includes("DESERT")) cellEl.classList.add("terrain-desert");
+
                                 const tName = I18n.t(cellData.terrain.nameKey);
                                 const mergeId = cellData.mergeGroupId;
                                 const placeId = cellData.placementGroupId;
-                                 const activeGroupId = mergeId || placeId;
+                                const activeGroupId = mergeId || placeId;
 
                                  if (activeGroupId) {
                                      cellEl.setAttribute("data-group-id", activeGroupId);
@@ -1507,18 +1686,6 @@
             const I18n = window.I18n;
 
             if (!selectedCard) {
-                if (cell.placed && !cell.isHQ && !cell.searched && !cell.merged) {
-                    const tName = I18n.t(cell.terrain.nameKey);
-                    const posStr = `${String.fromCharCode(65+c)}${r+1}`;
-                    const confirmSearch = confirm(I18n.t("CONFIRM_EXPLORATION", { pos: posStr, name: tName }));
-                    if (confirmSearch) {
-                        const res = state.executeExploration(r, c);
-                        if (!res.success) {
-                            alert(I18n.t("ALERT_SEARCH_FAILED", { reason: res.reason }));
-                        }
-                        render();
-                    }
-                }
                 return;
             }
 

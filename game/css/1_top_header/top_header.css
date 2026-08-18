@@ -1,68 +1,113 @@
 /* =============================================================
    1_top_header / top_header.css
-   画面上部ヘッダー（ロール情報 ＆ 🔥残量表示）専用スタイル
+   最上部ヘッダー（アプリタイトル・役割アバター・残り火中央固定・ターン表示）専用スタイル
    ============================================================= */
 
-/* 画面上部ヘッダーコンテナ */
-.top-header {
-    width: 100%;
-    height: 48px;
-    background: #12151e;
-    border-bottom: 2px solid #232736;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+.top-bar {
+    background: #161922;
+    border: 1px solid #2a2e3d;
+    border-radius: 10px;
     padding: 0 16px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-    z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    flex-shrink: 0;
+    height: 72px;
+    position: relative;
+    overflow: hidden;
 }
 
-/* 🎭 ロール情報エリア (左側) */
-.role-info-card {
+.app-title-box {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 13px;
+    gap: 14px;
     font-weight: bold;
-    color: #e0e6ed;
-    background: #1a1e2b;
-    padding: 4px 12px;
-    border-radius: 6px;
-    border: 1px solid #343a4e;
-}
-
-.role-avatar-icon {
     font-size: 16px;
-    color: #1abc9c;
+    z-index: 2;
 }
 
-/* 🔥 残量表示 (中央、大きく) */
-.ember-status-panel {
+.role-avatar-box {
+    background: #1abc9c;
+    color: #0b0d11;
+    padding: 6px 12px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 20px;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* 🔥 残り火表示: 画面真中央に物理固定 */
+.ember-center-box {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    font-size: 34px;
     font-weight: 900;
     color: #ffffff;
-    text-shadow: 0 0 10px rgba(230, 126, 34, 0.8);
-    background: rgba(230, 126, 34, 0.12);
-    padding: 4px 20px;
-    border-radius: 20px;
-    border: 1px solid rgba(230, 126, 34, 0.4);
+    text-shadow: 0 0 10px rgba(255, 118, 117, 0.8), 0 0 20px rgba(231, 76, 60, 0.5);
+    height: 100%;
+    z-index: 2;
+    pointer-events: none;
 }
 
-.ember-icon-large {
-    font-size: 24px;
+.ember-icon {
+    font-size: 44px;
+    line-height: 1;
+    display: inline-block;
+    filter: drop-shadow(0 0 12px #ff7675) drop-shadow(0 0 20px #d63031);
     animation: emberPulse 2s infinite ease-in-out;
+    transform-origin: center;
 }
 
 @keyframes emberPulse {
-    0%, 100% {
-        transform: scale(1);
-        filter: drop-shadow(0 0 6px rgba(230, 126, 34, 0.8));
-    }
-    50% {
-        transform: scale(1.15);
-        filter: drop-shadow(0 0 14px rgba(241, 196, 15, 1));
-    }
+    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 12px #ff7675); }
+    50% { transform: scale(1.08); filter: drop-shadow(0 0 20px #e74c3c) drop-shadow(0 0 30px #ff7675); }
+}
+
+.trial-announcement {
+    background: #1f2430;
+    border: 1px dashed #e67e22;
+    padding: 6px 14px;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 11px;
+    color: #f39c12;
+    font-weight: bold;
+    display: none;
+}
+
+/* 右端 280px ターン表示 (右サイドバー 280px と 100% 垂直直線同期) */
+.turn-box-header-wrapper {
+    width: 280px;
+    height: 100%;
+    margin-right: -16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+}
+
+.turn-box {
+    background: #1abc9c;
+    color: #0b0d11;
+    text-align: center;
+    font-weight: bold;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.turn-box .turn-num {
+    font-size: 20px;
+    display: block;
 }

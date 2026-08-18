@@ -113,9 +113,12 @@
 
 .log-panel-wrapper.collapsed {
     flex: 0 0 38px !important;
+    height: 38px !important;
+    min-height: 38px !important;
     max-height: 38px !important;
-    padding-top: 6px !important;
-    padding-bottom: 6px !important;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+    overflow: hidden !important;
 }
 
 .log-content {
@@ -131,6 +134,7 @@
 }
 
 .log-panel-wrapper.collapsed .log-content {
+    display: none !important;
     opacity: 0 !important;
     pointer-events: none !important;
 }

@@ -138,6 +138,32 @@
     box-shadow: 0 0 12px rgba(241, 196, 15, 0.4), inset 0 0 10px rgba(241, 196, 15, 0.2) !important;
 }
 
+/* 🌾 各土地属性の独立カラーパターン定義 (専用CSS管理) */
+.cell.terrain-plains {
+    background: linear-gradient(135deg, #1e4a26 0%, #122e17 100%) !important;
+    border-color: #2e7d32 !important;
+}
+.cell.terrain-forest {
+    background: linear-gradient(135deg, #134236 0%, #0a261f 100%) !important;
+    border-color: #1abc9c !important;
+}
+.cell.terrain-deep-forest {
+    background: linear-gradient(135deg, #0d383b 0%, #051e20 100%) !important;
+    border-color: #16a085 !important;
+}
+.cell.terrain-hill {
+    background: linear-gradient(135deg, #4e3519 0%, #2e1d0c 100%) !important;
+    border-color: #e67e22 !important;
+}
+.cell.terrain-mountain {
+    background: linear-gradient(135deg, #383a54 0%, #202236 100%) !important;
+    border-color: #9b59b6 !important;
+}
+.cell.terrain-desert {
+    background: linear-gradient(135deg, #5c4314 0%, #36260a 100%) !important;
+    border-color: #f39c12 !important;
+}
+
 /* 🌾 平地マージ (エメラルドグリーン) */
 .cell.merged.merged-plains {
     border: 2.5px solid #1abc9c !important;

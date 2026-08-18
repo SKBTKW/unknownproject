@@ -22,6 +22,8 @@
             this.mergeGroupCounter = 1;
             this.placementGroupCounter = 1;
             this.mergedBlocks = {};
+            this.mergeGroupCounter = 1;
+            this.grantedConnectionPairs = new Set();
 
             this.defense = 0;
             this.mystic = 0;
@@ -34,6 +36,14 @@
             this.permanentPlainsFoodBonus = 0;
             this.permanentVicinityDefenseBonus = 0;
             this.activeDrawBias = null;
+
+            if (typeof window !== 'undefined' && window.DirectiveSystem) {
+                this.directiveSystem = new window.DirectiveSystem(this);
+            } else if (typeof DirectiveSystem !== 'undefined') {
+                this.directiveSystem = new DirectiveSystem(this);
+            } else {
+                this.directiveSystem = null;
+            }
 
             this.addLog(I18n.t("LOG_INIT_5X5"));
         }
@@ -324,6 +334,21 @@
             // 2つ以上の同属性隣接、または既存グループへの接続、または直線3連なら 1x3 連結
             let is1x3 = isLinear1x3 || matchingNeighbors.length >= 2 || hasExistingGroup;
 
+            // 既に対象隣接セルとの間でボーナス付与済みかチェック
+            let newPairFound = false;
+            for (let [nr, nc] of matchingNeighbors) {
+                const pairKey = [`${r},${c}`, `${nr},${nc}`].sort().join("_");
+                if (!this.grantedConnectionPairs.has(pairKey)) {
+                    newPairFound = true;
+                    this.grantedConnectionPairs.add(pairKey);
+                }
+            }
+
+            if (!newPairFound) {
+                // すべての隣接セルと過去に接続ボーナス獲得済みの場合は重複加算・重複ログを完全にスキップ
+                return;
+            }
+
             const targetTable = is1x3 ? bonus1x3Table : bonus1x2Table;
             const bonus = targetTable[baseTerrainId] || targetTable[terrain.id] || (is1x3 ? { food: 3, wood: 3, mystic: 1 } : { food: 1, wood: 1, mystic: 0 });
 
@@ -419,10 +444,37 @@
                                 createdTurn: this.turn
                             };
 
+                            // 地形属性に応じた即時ボーナス給付計算
+                            const tid = firstBaseId.toUpperCase();
+                            let bonusFood = 0, bonusWood = 0, bonusMystic = 0;
+
+                            if (tid.includes("PLAINS")) {
+                                bonusFood = 10;
+                            } else if (tid.includes("HILL")) {
+                                bonusWood = 8;
+                                bonusFood = 4;
+                            } else if (tid.includes("MOUNTAIN")) {
+                                bonusWood = 10;
+                                bonusMystic = 5;
+                            } else {
+                                bonusFood = 5;
+                            }
+
+                            this.food += bonusFood;
+                            this.wood += bonusWood;
+                            this.mystic += bonusMystic;
                             this.ember = Math.min(20, this.ember + 1);
+
+                            let textParts = [];
+                            if (bonusFood > 0) textParts.push(`🌾+${bonusFood}`);
+                            if (bonusWood > 0) textParts.push(`🧱+${bonusWood}`);
+                            if (bonusMystic > 0) textParts.push(`✨+${bonusMystic}`);
+                            const bText = textParts.join(" ");
+
                             const tName = I18n.t(c1.terrain.nameKey);
-                            this.addLog(I18n.t("LOG_MERGE_2X2_COMPLETE", { name: tName }));
-                            this.toastQueue.push({ r, c, text: I18n.t("TOAST_MERGE_2X2") });
+                            const toastMsg = I18n.t("TOAST_MERGE_2X2", { text: bText });
+                            this.addLog(I18n.t("LOG_MERGE_2X2_COMPLETE", { name: tName, bonus: bText }));
+                            this.toastQueue.push({ r, c, text: toastMsg });
                         }
                     }
                 }
@@ -492,6 +544,27 @@
             } else if (cId === "CMD_MYSTIC_FOCUS") {
                 this.activeDrawBias = { targetCategory: "MYSTIC", type: "TURNS", remainingTurns: 3 };
                 this.addLog(I18n.t("LOG_CMD_MYSTIC_FOCUS") || `✨ ${cName}を発動！ 3ターンの間神秘出現率2倍！`);
+            } else if (cId === "CMD_LAND_EXPLORATION") {
+                // 探索対象マスの選定（配置済み・未探索・非HQ・非マージ）
+                const candidates = [];
+                for (let r = 0; r < 5; r++) {
+                    for (let c = 0; c < 5; c++) {
+                        const cell = this.grid[r][c];
+                        if (cell.placed && !cell.isHQ && !cell.searched && !cell.merged) {
+                            candidates.push({ r, c });
+                        }
+                    }
+                }
+
+                if (candidates.length === 0) {
+                    return { success: false, reason: "NO_EXPLORABLE_TILES" };
+                }
+
+                // ランダムに対象マスを選定して 2D6 判定を発動
+                const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+                this.addLog(`📜 ${cName}を発動！ コスト (🌾-30 🧱-30 🔥-1) を払い位置 (${String.fromCharCode(65+chosen.c)}${chosen.r+1}) で2D6探索を開始！`);
+                const expRes = this.executeExploration(chosen.r, chosen.c);
+                return { success: expRes.success };
             }
 
             if (cardObj.isUnique) {
@@ -620,9 +693,16 @@
                 mysticTiles += Math.ceil(g.mystic * 1.2);
             }
 
-            const totalFood = 10 + foodTiles + foodSockets + foodVicinity;
-            const totalWood = 10 + woodTiles + woodSockets + woodVicinity;
-            const totalMystic = 1 + mysticTiles + mysticSockets;
+            let foodMult = 1.0, woodMult = 1.0, mysticMult = 1.0;
+            if (this.directiveSystem) {
+                foodMult = this.directiveSystem.getResourceMultiplier("food");
+                woodMult = this.directiveSystem.getResourceMultiplier("wood");
+                mysticMult = this.directiveSystem.getResourceMultiplier("mystic");
+            }
+
+            const totalFood = Math.floor((10 + foodTiles + foodSockets + foodVicinity) * foodMult);
+            const totalWood = Math.floor((10 + woodTiles + woodSockets + woodVicinity) * woodMult);
+            const totalMystic = Math.floor((1 + mysticTiles + mysticSockets) * mysticMult);
 
             return { totalFood, totalWood, totalMystic };
         }
@@ -636,6 +716,9 @@
                         def += cell.terrain.defense || 0;
                     }
                 }
+            }
+            if (this.directiveSystem) {
+                def = Math.floor(def * this.directiveSystem.getResourceMultiplier("defense"));
             }
             return def;
         }
@@ -824,7 +907,10 @@
                 { id: "CARD_MOUNTAIN_1X2", terrainId: "H3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", gl: 2, h: 3, yields: { food: 0, wood: 3, defense: 5, mystic: 1 }, shape: [[1, 1]], minStage: 2, reqH2: 3, rarity: "R", weight: 0.15 },
                 { id: "CARD_MOUNTAIN_1X3_S", terrainId: "H3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", gl: 2, h: 3, yields: { food: 0, wood: 3, defense: 5, mystic: 1 }, shape: [[1, 1, 1]], minStage: 2, reqH2: 3, rarity: "R", weight: 0.03 },
                 { id: "CARD_DESERT_1X1", terrainId: "GL0_DESERT", nameKey: "TERRAIN_DESERT", gl: 0, h: 1, yields: { food: 0, wood: 0, defense: 0, mystic: 5 }, shape: [[1]], minStage: 1, reqH2: 0, rarity: "R", weight: 0.15 },
-                { id: "CARD_DESERT_1X2", terrainId: "GL0_DESERT", nameKey: "TERRAIN_DESERT", gl: 0, h: 1, yields: { food: 0, wood: 0, defense: 0, mystic: 5 }, shape: [[1, 1]], minStage: 2, reqH2: 0, rarity: "UR", weight: 0.03 }
+                { id: "CARD_DESERT_1X2", terrainId: "GL0_DESERT", nameKey: "TERRAIN_DESERT", gl: 0, h: 1, yields: { food: 0, wood: 0, defense: 0, mystic: 5 }, shape: [[1, 1]], minStage: 2, reqH2: 0, rarity: "UR", weight: 0.03 },
+
+                // コマンドカード 『土地探索』 (ドロー条件: 盤面にソケットが存在しない時)
+                { id: "CMD_LAND_EXPLORATION", category: "COMMAND", nameKey: "CMD_LAND_EXPLORATION_NAME", descriptionKey: "CMD_LAND_EXPLORATION_DESC", cost: { food: 30, wood: 30, ember: 1 }, noSocketsOnBoard: true, minStage: 1, rarity: "R", weight: 0.40 }
             ];
             return this._landCardMasterCache;
         }
@@ -899,6 +985,21 @@
                 if (this.state.mystic > c.maxMystic) return false;
             }
 
+            if (c.noSocketsOnBoard) {
+                let hasSocket = false;
+                for (let r = 0; r < 5; r++) {
+                    for (let cCol = 0; cCol < 5; cCol++) {
+                        const cell = this.state.grid[r][cCol];
+                        if (cell.socketResource) {
+                            hasSocket = true;
+                            break;
+                        }
+                    }
+                    if (hasSocket) break;
+                }
+                if (hasSocket) return false;
+            }
+
             // ユニーク重複チェック
             if (c.isUnique && this.state.usedUniqueCards && this.state.usedUniqueCards.includes(c.id)) {
                 return false;
@@ -915,16 +1016,32 @@
             let eligible = master.filter(c => this.isCardEligible(c, stageNum, h2Count));
             if (eligible.length === 0) eligible = master.filter(c => (c.category === "LAND" || !c.category) && (c.minStage || 1) <= stageNum);
 
-            let totalW = eligible.reduce((acc, c) => acc + (c.weight || 0.1), 0);
+            // 🎴 2段階カテゴリ抽選 ✕ 方針バイアス乗算
+            let getCardWeight = (c) => {
+                let baseW = c.weight || 0.1;
+                let cat = c.category || "LAND";
+                let dirMult = 1.0;
+                if (this.state && this.state.directiveSystem) {
+                    dirMult = this.state.directiveSystem.getCategoryWeightMultiplier(cat);
+                }
+                let biasMult = 1.0;
+                if (this.state && this.state.activeDrawBias === cat) {
+                    biasMult = 2.0;
+                }
+                return baseW * dirMult * biasMult;
+            };
+
+            let totalW = eligible.reduce((acc, c) => acc + getCardWeight(c), 0);
             let rand = Math.random() * totalW;
             let chosen = eligible[0];
 
             for (let c of eligible) {
-                if (rand <= c.weight) {
+                let w = getCardWeight(c);
+                if (rand <= w) {
                     chosen = c;
                     break;
                 }
-                rand -= c.weight;
+                rand -= w;
             }
             if (!chosen) chosen = eligible[0] || master[0];
 

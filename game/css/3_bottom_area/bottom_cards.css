@@ -1,63 +1,194 @@
-/* =============================================================
-   3_bottom_area / bottom_cards.css
-   画面下部（ドローオファリングエリア ＆ 保留エリア）専用スタイル
-   ============================================================= */
-
 /* 🎴 画面下部全体の独立コンテナ */
-.bottom-area-container {
-    width: 100%;
-    display: flex;
+.bottom-area-container, .bottom-card-container {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 10px;
+    height: 225px;
+    flex-shrink: 0;
+}
+
+.cards-flex-box {
+    background: #161922;
+    border: 1px solid #2a2e3d;
+    border-radius: 10px;
+    padding: 8px 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 16px;
-    padding: 10px 16px;
-    background: #11141d;
-    border-top: 2px solid #232736;
     align-items: center;
 }
 
-/* 🎴 ドローオファリングエリア (左側・3枚グリッド) */
-.offering-hand-section {
-    flex: 1;
+.offering-subgroup, .reserve-subgroup {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
+    height: 100%;
 }
 
-.section-title-label {
-    font-size: 12px;
+.subgroup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
     font-weight: bold;
     color: #1abc9c;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    border-bottom: 1px solid #2a2e3d;
+    padding-bottom: 2px;
 }
 
-.offering-cards-grid {
+.subgroup-cards-row {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    width: 100%;
+    gap: 10px;
+    flex: 1;
+    align-items: center;
+    justify-items: center;
 }
 
-/* 📥 保留エリア (右側・3スロットグリッド) */
-.reserve-row-section {
+/* 🃏 TCG カードフレーム (幅 115px : 高さ 172.5px = 完全 2:3 比率) */
+.card-frame-tcg {
+    width: 115px !important;
+    height: 172.5px !important;
+    aspect-ratio: 2 / 3 !important;
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 2px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    user-select: none;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    margin: 0 auto;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+.card-frame-tcg:hover:not(.locked) {
+    transform: translateY(-4px) scale(1.03);
+}
+.card-frame-tcg.rarity-c { border: 3px solid #a6612b; }
+.card-frame-tcg.rarity-uc { border: 3px solid #4a90e2; }
+.card-frame-tcg.selected {
+    border-color: #f1c40f !important;
+    box-shadow: 0 0 15px rgba(241, 196, 15, 0.9) !important;
+}
+.card-frame-tcg.locked {
+    opacity: 0.4;
+    cursor: not-allowed !important;
+    filter: grayscale(80%);
+    pointer-events: none !important;
+}
+
+.tcg-card-top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1px;
+}
+.tcg-title-pill {
+    background: #ffffff;
+    border: 1px solid #111111;
+    border-radius: 6px;
+    padding: 1px 4px;
+    font-size: 10px;
+    font-weight: bold;
+    color: #111111;
     flex: 1;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.tcg-rarity-code {
+    font-size: 12px;
+    font-weight: 900;
+    color: #111111;
+    padding-right: 2px;
+}
+
+.tcg-shape-art-area {
+    flex: 1;
+    background: #d4f4fa;
+    border-top: 1px solid #7f8c8d;
+    border-bottom: 1px solid #7f8c8d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 1px 0;
+    min-height: 42px;
+}
+
+.tcg-yield-strip {
+    background: #d4f4fa;
+    padding: 2px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    font-size: 9px;
+    font-weight: bold;
+    color: #111111;
+    border-radius: 3px;
+}
+
+.tcg-action-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2px;
+}
+.tcg-reserve-btn-wireframe {
+    background: #0097a7;
+    color: #ffffff;
+    border: none;
+    border-radius: 3px;
+    font-size: 8px;
+    font-weight: bold;
+    padding: 2px 4px;
+    cursor: pointer;
+    flex: 1;
+    text-align: center;
+}
+.tcg-rotate-btn-wireframe {
+    background: transparent;
+    color: #111111;
+    border: none;
+    font-size: 9px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 1px;
+    cursor: pointer;
+}
+
+.bottom-controls-box {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    justify-content: center;
 }
-
-.reserve-slots-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    width: 100%;
+.mulligan-btn {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 12px;
+    cursor: pointer;
 }
-
-/* 🃏 TCG風カードフレームスタイル定義 */
-.card-frame-tcg {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 2 / 3;
+.turn-end-btn {
+    background: #1abc9c;
+    color: #0b0d11;
+    border: none;
+    padding: 14px;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+}
     max-height: 180px;
     background: linear-gradient(145deg, #1c202c 0%, #151822 100%);
     border: 2px solid #343a4e;
