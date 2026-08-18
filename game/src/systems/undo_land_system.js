@@ -1,6 +1,6 @@
 /* =============================================================
    game/src/systems/undo_land_system.js
-   土地配置の「↩ 戻す（Undo）」ディープスナップショット独立モジュール
+   当ターン限定・ホバー追従型「↩ 配置を取り消す」独立モジュール
    ============================================================= */
 
 (function(exports) {
@@ -8,15 +8,16 @@
         constructor(gameState) {
             this.state = gameState;
             this.snapshot = null;
+            this.placedCellCoords = []; // 当ターンで配置されたマス {r, c} のリスト
+            this.initHoverTooltipDOM();
         }
 
         /**
-         * 📸 土地を置く直前の完全状態ディープスナップショット保存
+         * 📸 土地を置く直前のディープスナップショット保存 ＋ 置いたマス座標の記録
          */
-        captureSnapshot() {
+        captureSnapshot(placedCoords = []) {
             if (!this.state) return;
 
-            // 1. Grid のディープコピー
             const gridCopy = this.state.grid.map(row => 
                 row.map(cell => ({
                     ...cell,
@@ -25,13 +26,8 @@
                 }))
             );
 
-            // 2. grantedConnectionPairs のコピー (Set -> Array)
             const connPairsCopy = Array.from(this.state.grantedConnectionPairs || []);
-
-            // 3. mergedBlocks のコピー
             const mergedBlocksCopy = JSON.parse(JSON.stringify(this.state.mergedBlocks || {}));
-
-            // 4. handOffering のコピー
             const handOfferingCopy = (this.state.handOffering || []).map(c => 
                 c ? (c.isBlank ? { ...c, originalCard: c.originalCard ? { ...c.originalCard } : null } : { ...c }) : null
             );
@@ -52,11 +48,20 @@
                 placementGroupCounter: this.state.placementGroupCounter
             };
 
-            this.updateUndoButtonUI(true);
+            this.placedCellCoords = placedCoords;
         }
 
         /**
-         * ↩️ 取り消し（Undo）の実行（100% 完璧なロールバック）
+         * 🔍 マウスオーバー位置が「当ターンで置いたばかりの土地」か判定
+         */
+        isCellPlacedThisTurn(r, c) {
+            if (!this.snapshot || !this.state || !this.state.hasPickedThisTurn) return false;
+            if (!this.placedCellCoords || this.placedCellCoords.length === 0) return false;
+            return this.placedCellCoords.some(pos => pos.r === r && pos.c === c);
+        }
+
+        /**
+         * ↩️ 取り消し（Undo）の実行
          */
         undo() {
             if (!this.snapshot || !this.state) return false;
@@ -70,7 +75,6 @@
             this.state.defense = s.defense;
             this.state.mystic = s.mystic;
 
-            // 1. Grid の復原
             this.state.grid = s.grid.map(row => 
                 row.map(cell => ({
                     ...cell,
@@ -79,13 +83,8 @@
                 }))
             );
 
-            // 2. grantedConnectionPairs の復原
             this.state.grantedConnectionPairs = new Set(s.grantedConnectionPairs);
-
-            // 3. mergedBlocks の復原
             this.state.mergedBlocks = JSON.parse(JSON.stringify(s.mergedBlocks));
-
-            // 4. handOffering の復原
             this.state.handOffering = s.handOffering.map(c => 
                 c ? (c.isBlank ? { ...c, originalCard: c.originalCard ? { ...c.originalCard } : null } : { ...c }) : null
             );
@@ -110,61 +109,77 @@
         }
 
         /**
-         * 🧹 確定時のスナップショット消去（TURN END や他の行動時）
+         * 🧹 確定（次ターン進出など）
          */
         clearSnapshot() {
             this.snapshot = null;
-            this.updateUndoButtonUI(false);
+            this.placedCellCoords = [];
+            this.hideHoverTooltip();
         }
 
         /**
-         * 🎨 「↩ 配置を取り消す」ボタンの表示/非表示UI制御
+         * 🎨 マウス追従型「↩ クリックで配置を取り消す」ツールチップの制御
          */
-        updateUndoButtonUI(show) {
+        initHoverTooltipDOM() {
             if (typeof document === "undefined") return;
-            let btn = document.getElementById("btnUndoLandPlacement");
-            if (!btn) {
-                const container = document.body;
-                btn = document.createElement("button");
-                btn.id = "btnUndoLandPlacement";
-                btn.className = "btn-undo-land-placement";
-                const I18n = window.I18n;
-                const labelText = (I18n && typeof I18n.t === 'function' && I18n.t("UI_UNDO_PLACEMENT_BTN") !== "UI_UNDO_PLACEMENT_BTN") ? I18n.t("UI_UNDO_PLACEMENT_BTN") : "配置を取り消す";
-                btn.innerHTML = `↩ ${labelText}`;
-                btn.style.cssText = `
-                    position: fixed;
-                    bottom: 180px;
-                    left: 50%;
-                    transform: translateX(-50%) scale(0.95);
-                    background: rgba(231, 76, 60, 0.94);
-                    color: #ffffff;
-                    border: 1.5px solid #c0392b;
-                    box-shadow: 0 6px 20px rgba(231, 76, 60, 0.5), 0 0 20px rgba(231, 76, 60, 0.3);
-                    border-radius: 8px;
-                    padding: 9px 20px;
-                    font-size: 13px;
-                    font-weight: bold;
-                    cursor: pointer;
-                    z-index: 100000;
-                    opacity: 0;
-                    pointer-events: none;
-                    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-                `;
-                btn.onclick = () => this.undo();
-                container.appendChild(btn);
-            }
+            if (document.getElementById("undoHoverCursorTooltip")) return;
 
-            if (show) {
-                const I18n = window.I18n;
-                btn.innerHTML = `↩ ${I18n ? I18n.t("UI_UNDO_PLACEMENT_BTN") : "配置を取り消す"}`;
-                btn.style.opacity = "1";
-                btn.style.pointerEvents = "auto";
-                btn.style.transform = "translateX(-50%) scale(1)";
-            } else {
-                btn.style.opacity = "0";
-                btn.style.pointerEvents = "none";
-                btn.style.transform = "translateX(-50%) scale(0.95)";
+            const tt = document.createElement("div");
+            tt.id = "undoHoverCursorTooltip";
+            tt.style.cssText = `
+                position: fixed;
+                pointer-events: none;
+                z-index: 300000;
+                display: none;
+                background: rgba(231, 76, 60, 0.94);
+                color: #ffffff;
+                border: 1px solid #c0392b;
+                box-shadow: 0 4px 15px rgba(231, 76, 60, 0.5), 0 0 15px rgba(231, 76, 60, 0.4);
+                padding: 6px 14px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: bold;
+                white-space: nowrap;
+                backdrop-filter: blur(4px);
+                transition: opacity 0.15s ease;
+            `;
+            const I18n = window.I18n;
+            const labelText = (I18n && typeof I18n.t === 'function' && I18n.t("UI_HOVER_CLICK_TO_UNDO") !== "UI_HOVER_CLICK_TO_UNDO") ? I18n.t("UI_HOVER_CLICK_TO_UNDO") : "↩ クリックで配置を取り消す";
+            tt.innerHTML = labelText;
+            document.body.appendChild(tt);
+        }
+
+        showHoverTooltip(e, r, c) {
+            if (!this.isCellPlacedThisTurn(r, c)) {
+                this.hideHoverTooltip();
+                return;
             }
+            const tt = document.getElementById("undoHoverCursorTooltip");
+            if (!tt) return;
+
+            const I18n = window.I18n;
+            const labelText = (I18n && typeof I18n.t === 'function' && I18n.t("UI_HOVER_CLICK_TO_UNDO") !== "UI_HOVER_CLICK_TO_UNDO") ? I18n.t("UI_HOVER_CLICK_TO_UNDO") : "↩ クリックで配置を取り消す";
+            tt.innerHTML = labelText;
+
+            tt.style.display = "block";
+            if (e) {
+                tt.style.top = (e.clientY + 18) + "px";
+                tt.style.left = (e.clientX + 16) + "px";
+            }
+        }
+
+        updateHoverTooltipPosition(e) {
+            const tt = document.getElementById("undoHoverCursorTooltip");
+            if (tt && tt.style.display !== "none" && e) {
+                tt.style.top = (e.clientY + 18) + "px";
+                tt.style.left = (e.clientX + 16) + "px";
+            }
+        }
+
+        hideHoverTooltip() {
+            if (typeof document === "undefined") return;
+            const tt = document.getElementById("undoHoverCursorTooltip");
+            if (tt) tt.style.display = "none";
         }
     }
 

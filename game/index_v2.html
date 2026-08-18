@@ -920,6 +920,7 @@
             if (!state) return;
             const cellData = state.grid[r][c];
             showTileTooltip(e, r, c, cellData);
+            if (window.undoSys) window.undoSys.showHoverTooltip(e, r, c);
 
             // 同一マージグループ連動ホバーライトアップハイライト
             const groupId = cellData ? (cellData.mergeGroupId || cellData.placementGroupId) : null;
@@ -958,6 +959,7 @@
             if (!state) return;
             const cellData = state.grid[r][c];
             showTileTooltip(e, r, c, cellData);
+            if (window.undoSys) window.undoSys.updateHoverTooltipPosition(e);
         }
 
         function showTileTooltip(e, r, c, cell) {
@@ -991,6 +993,7 @@
         function hideTileTooltip() {
             const tt = document.getElementById("tileTooltip");
             if (tt) tt.style.display = "none";
+            if (window.undoSys) window.undoSys.hideHoverTooltip();
         }
 
         function showDataPanelTooltip(e) {
@@ -1746,23 +1749,36 @@
 
         function onCellClick(r, c) {
             if (!state) return;
-            const cell = state.grid[r][c];
             const I18n = window.I18n;
 
-            if (!selectedCard) {
+            // ↩ 当ターンで配置した土地マスのクリック ➔ 即座にUndo実行
+            if (window.undoSys && window.undoSys.isCellPlacedThisTurn(r, c)) {
+                window.undoSys.undo();
                 return;
             }
 
-            // カード選択状態でのグリッド盤面クリック配置処理 (エンジン内部全自動一元化対応)
-            if (state.hasPickedThisTurn) return;
-
-            // 📸 土地配置直前のディープスナップショット保存
-            if (window.undoSys) {
-                window.undoSys.captureSnapshot();
-            }
+            if (!selectedCard || state.hasPickedThisTurn) return;
 
             const shape = selectedCard.currentShape;
             const terrain = selectedCard.terrain;
+
+            // 📸 土地配置直前のディープスナップショット保存 (配置される全マス座標の計算)
+            if (window.undoSys) {
+                const placedCoords = [];
+                if (shape && Array.isArray(shape)) {
+                    for (let dr = 0; dr < shape.length; dr++) {
+                        for (let dc = 0; dc < shape[dr].length; dc++) {
+                            if (shape[dr][dc] === 1) {
+                                placedCoords.push({ r: r + dr, c: c + dc });
+                            }
+                        }
+                    }
+                } else {
+                    placedCoords.push({ r, c });
+                }
+                window.undoSys.captureSnapshot(placedCoords);
+            }
+
             const currentIdx = selectedCardIdx !== -1 ? selectedCardIdx : state.handOffering.indexOf(selectedCard);
             const res = state.placeShape(r, c, shape, terrain, currentIdx);
 
