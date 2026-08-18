@@ -47,6 +47,10 @@
             CMD_LAND_EXPLORATION_NAME: "土地探索",
             CMD_LAND_EXPLORATION_DESC: "支配地から資源を探す。2D6で判定を行い、運が良ければ資源を得る。",
 
+            // 📜 UIボタン・システムログ
+            UI_UNDO_PLACEMENT_BTN: "配置を取り消す",
+            LOG_UNDO_LAND: "↩ 土地の配置を取り消しました。",
+
             // 4大文明方針 (Four Directives)
             DIRECTIVE_DEVELOPMENT_NAME: "🚩 開拓方針",
             DIRECTIVE_DEVELOPMENT_DESC: "🌱 土地カード提示率上昇",

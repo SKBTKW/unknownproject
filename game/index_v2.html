@@ -820,6 +820,7 @@
     <script src="src/systems/directive_system.js"></script>
     <script src="src/systems/draw_system.js"></script>
     <script src="src/systems/production_calculator.js"></script>
+    <script src="src/systems/undo_land_system.js?v=20260818_1"></script>
     <script src="src/v2_unity_ready_main.js?v=20260818_2"></script>
     <script src="src/ui/modal_system.js?v=20260818_1"></script>
     <script src="src/ui/v2_ui_renderer.js"></script>
@@ -836,6 +837,9 @@
             window.state = state;
             drawSys = new engine.Step1DrawSystem(state);
             window.drawSys = drawSys;
+            if (window.UndoLandSystem) {
+                window.undoSys = new window.UndoLandSystem(state);
+            }
 
             fetch('src/data/land_cards.json')
                 .then(res => res.json())
@@ -1751,6 +1755,12 @@
 
             // カード選択状態でのグリッド盤面クリック配置処理 (エンジン内部全自動一元化対応)
             if (state.hasPickedThisTurn) return;
+
+            // 📸 土地配置直前のディープスナップショット保存
+            if (window.undoSys) {
+                window.undoSys.captureSnapshot();
+            }
+
             const shape = selectedCard.currentShape;
             const terrain = selectedCard.terrain;
             const currentIdx = selectedCardIdx !== -1 ? selectedCardIdx : state.handOffering.indexOf(selectedCard);
@@ -1767,6 +1777,7 @@
 
                 render();
             } else {
+                if (window.undoSys) window.undoSys.clearSnapshot();
                 alert(I18n.t("ALERT_CANNOT_PLACE"));
             }
         }
@@ -1818,6 +1829,7 @@
         }
         function nextTurn() {
             if (!state || !drawSys) return;
+            if (window.undoSys) window.undoSys.clearSnapshot();
             state.turn++;
             state.hasPickedThisTurn = false;
             drawSys.generateOfferingCards();
