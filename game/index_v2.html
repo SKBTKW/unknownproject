@@ -248,10 +248,18 @@
         }
         .cell.placed {
             background: #005a70 !important;
-            border-color: #2980b9 !important;
+            border-color: #2980b9;
             color: #ffffff;
             font-weight: bold;
         }
+        .cell.no-border-top { border-top: 0px solid transparent !important; }
+        .cell.no-border-right { border-right: 0px solid transparent !important; }
+        .cell.no-border-bottom { border-bottom: 0px solid transparent !important; }
+        .cell.no-border-left { border-left: 0px solid transparent !important; }
+        .no-radius-tl { border-top-left-radius: 0 !important; }
+        .no-radius-tr { border-top-right-radius: 0 !important; }
+        .no-radius-br { border-bottom-right-radius: 0 !important; }
+        .no-radius-bl { border-bottom-left-radius: 0 !important; }
         .cell.merged {
             background: linear-gradient(135deg, #5c4710 0%, #302407 100%) !important;
             box-shadow: inset 0 0 15px rgba(241, 196, 15, 0.5);
@@ -967,42 +975,81 @@
                                 const tName = I18n.t(cellData.terrain.nameKey);
                                 const mergeId = cellData.mergeGroupId;
                                 const placeId = cellData.placementGroupId;
-                                const activeGroupId = mergeId || placeId;
+                                 const activeGroupId = mergeId || placeId;
 
-                                if (activeGroupId) {
-                                    cellEl.setAttribute("data-group-id", activeGroupId);
-                                    if (cellData.merged) {
-                                        cellEl.classList.add("merged");
-                                        const tid = cellData.terrain ? (cellData.terrain.terrainId || cellData.terrain.id) : "";
-                                        if (tid.includes("PLAINS")) cellEl.classList.add("merged-plains");
-                                        else if (tid.includes("DEEP_FOREST") || tid.includes("DEEP_HILL")) cellEl.classList.add("merged-deep-forest");
-                                        else if (tid.includes("FOREST")) cellEl.classList.add("merged-forest");
-                                        else if (tid.includes("HILL")) cellEl.classList.add("merged-hill");
-                                        else if (tid.includes("MOUNTAIN")) cellEl.classList.add("merged-mountain");
-                                        else if (tid.includes("DESERT")) cellEl.classList.add("merged-desert");
-                                    }
+                                 if (activeGroupId) {
+                                     cellEl.setAttribute("data-group-id", activeGroupId);
+                                     if (cellData.merged) {
+                                         // 🌟 差別化案C: マージ領域は黄金発光＋格調高い黄金マージコアと元のマス目名残を維持
+                                         cellEl.classList.add("merged");
+                                         const tid = cellData.terrain ? (cellData.terrain.terrainId || cellData.terrain.id) : "";
+                                         if (tid.includes("PLAINS")) cellEl.classList.add("merged-plains");
+                                         else if (tid.includes("DEEP_FOREST") || tid.includes("DEEP_HILL")) cellEl.classList.add("merged-deep-forest");
+                                         else if (tid.includes("FOREST")) cellEl.classList.add("merged-forest");
+                                         else if (tid.includes("HILL")) cellEl.classList.add("merged-hill");
+                                         else if (tid.includes("MOUNTAIN")) cellEl.classList.add("merged-mountain");
+                                         else if (tid.includes("DESERT")) cellEl.classList.add("merged-desert");
 
-                                    const topSame = (r > 0 && (state.grid[r-1][c].mergeGroupId === activeGroupId || state.grid[r-1][c].placementGroupId === activeGroupId));
-                                    const rightSame = (c < 4 && (state.grid[r][c+1].mergeGroupId === activeGroupId || state.grid[r][c+1].placementGroupId === activeGroupId));
-                                    const bottomSame = (r < 4 && (state.grid[r+1][c].mergeGroupId === activeGroupId || state.grid[r+1][c].placementGroupId === activeGroupId));
-                                    const leftSame = (c > 0 && (state.grid[r][c-1].mergeGroupId === activeGroupId || state.grid[r][c-1].placementGroupId === activeGroupId));
+                                         // マージ領域は境界線の名残(薄い破線)を維持
+                                         cellEl.style.borderColor = "rgba(241, 196, 15, 0.4)";
+                                         cellEl.style.borderStyle = "dashed";
+                                     } else if (placeId) {
+                                         // ⛰️ 差別化案C: 元々多マスカードは内部境界線を完全に消去し「シームレスな一枚岩」として結合描画
+                                         const topSame = (r > 0 && state.grid[r-1][c].placementGroupId === placeId);
+                                         const rightSame = (c < 4 && state.grid[r][c+1].placementGroupId === placeId);
+                                         const bottomSame = (r < 4 && state.grid[r+1][c].placementGroupId === placeId);
+                                         const leftSame = (c > 0 && state.grid[r][c-1].placementGroupId === placeId);
 
-                                    if (topSame) { cellEl.style.borderTop = "none"; cellEl.classList.add("no-border-top"); }
-                                    if (rightSame) { cellEl.style.borderRight = "none"; cellEl.classList.add("no-border-right"); }
-                                    if (bottomSame) { cellEl.style.borderBottom = "none"; cellEl.classList.add("no-border-bottom"); }
-                                    if (leftSame) { cellEl.style.borderLeft = "none"; cellEl.classList.add("no-border-left"); }
+                                         if (topSame) {
+                                             cellEl.classList.add("no-border-top", "no-radius-tl", "no-radius-tr");
+                                             cellEl.style.setProperty("border-top", "none", "important");
+                                             cellEl.style.marginTop = "-4px";
+                                             cellEl.style.height = "calc(100% + 4px)";
+                                         }
+                                         if (rightSame) {
+                                             cellEl.classList.add("no-border-right", "no-radius-tr", "no-radius-br");
+                                             cellEl.style.setProperty("border-right", "none", "important");
+                                             cellEl.style.width = "calc(100% + 4px)";
+                                             cellEl.style.zIndex = "2";
+                                         }
+                                         if (bottomSame) {
+                                             cellEl.classList.add("no-border-bottom", "no-radius-bl", "no-radius-br");
+                                             cellEl.style.setProperty("border-bottom", "none", "important");
+                                             cellEl.style.height = "calc(100% + 4px)";
+                                             cellEl.style.zIndex = "2";
+                                         }
+                                         if (leftSame) {
+                                             cellEl.classList.add("no-border-left", "no-radius-tl", "no-radius-bl");
+                                             cellEl.style.setProperty("border-left", "none", "important");
+                                             cellEl.style.marginLeft = "-4px";
+                                             cellEl.style.width = "calc(100% + 4px)";
+                                         }
+                                     }
 
-                                    if (!topSame && !leftSame) {
-                                        const socketText = cellData.socketResource ? `<br><small style="color:#f1c40f;">★${I18n.t(cellData.socketResource.nameKey)}</small>` : "";
-                                        if (cellData.merged && cellData.mergeType === "2x2") {
-                                            cellEl.innerHTML = `<span style="font-size:12px; color:#f1c40f; font-weight:bold; white-space:nowrap; z-index:5;">${I18n.t("UI_MERGE_2X2_LABEL", { name: tName })}${socketText}</span>`;
-                                        } else {
-                                            cellEl.innerHTML = `<span style="font-size:13px; color:#fff; font-weight:bold; z-index:5;">${tName}${socketText}</span>`;
-                                        }
-                                    } else {
-                                        const socketBadge = cellData.socketResource ? `<small style="color:#f1c40f; font-size:10px;">★${I18n.t(cellData.socketResource.nameKey)}</small>` : "";
-                                        cellEl.innerHTML = socketBadge;
-                                    }
+                                     // マージ領域・多マスカードの内側接続チェック (ラベル位置決定用)
+                                     const topGroupSame = (r > 0 && (state.grid[r-1][c].mergeGroupId === activeGroupId || state.grid[r-1][c].placementGroupId === activeGroupId));
+                                     const leftGroupSame = (c > 0 && (state.grid[r][c-1].mergeGroupId === activeGroupId || state.grid[r][c-1].placementGroupId === activeGroupId));
+
+                                     if (!topGroupSame && !leftGroupSame) {
+                                         const socketText = cellData.socketResource ? `<br><small style="color:#f1c40f;">★${I18n.t(cellData.socketResource.nameKey)}</small>` : "";
+                                         if (cellData.merged && cellData.mergeType === "2x2") {
+                                             cellEl.innerHTML = `<span style="font-size:12px; color:#f1c40f; font-weight:bold; white-space:nowrap; z-index:5; text-shadow:0 0 6px rgba(0,0,0,0.9);">${I18n.t("UI_MERGE_2X2_LABEL", { name: tName })}${socketText}</span>`;
+                                         } else {
+                                             // 幾何学的中心センタリング (一体型カードのタイトル表記)
+                                             const hasRight = (c < 4 && state.grid[r][c+1].placementGroupId === placeId);
+                                             const hasBottom = (r < 4 && state.grid[r+1][c].placementGroupId === placeId);
+                                             let spanStyle = "font-size:13px; color:#fff; font-weight:bold; z-index:5; text-shadow:0 2px 4px rgba(0,0,0,0.8); pointer-events:none;";
+                                             if (hasRight && !hasBottom) {
+                                                 spanStyle += " position:absolute; left:0; width:200%; text-align:center;";
+                                             } else if (hasBottom && !hasRight) {
+                                                 spanStyle += " position:absolute; top:0; left:0; width:100%; height:200%; display:flex; align-items:center; justify-content:center;";
+                                             }
+                                             cellEl.innerHTML = `<span style="${spanStyle}">${tName}${socketText}</span>`;
+                                         }
+                                     } else {
+                                         const socketBadge = cellData.socketResource ? `<small style="color:#f1c40f; font-size:10px;">★${I18n.t(cellData.socketResource.nameKey)}</small>` : "";
+                                         cellEl.innerHTML = socketBadge;
+                                     }
                                 } else {
                                     const socketBadge = cellData.socketResource ? `<br><small style="color:#f1c40f; font-size:10px;">★${I18n.t(cellData.socketResource.nameKey)}</small>` : "";
                                     const searchedBadge = cellData.searched ? `<span class="searched-badge">${I18n.t("UI_SEARCHED_BADGE")}</span>` : "";

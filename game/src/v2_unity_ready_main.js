@@ -173,9 +173,7 @@
                         cell.placed = true;
                         cell.terrain = terrain;
 
-                        if (activeCellCount > 1) {
-                            cell.placementGroupId = pGroupId;
-                        }
+                        cell.placementGroupId = pGroupId;
 
                         if (cell.hasSocket && !cell.socketResource) {
                             const baseTerrainId = terrain.terrainId || terrain.id;
@@ -208,12 +206,21 @@
                                 this.toastQueue.push({ r, c, text: I18n.t("TOAST_SOCKET_SPAWNED", { name: sName }) });
                             }
                         }
-
-                        this.checkConnectionBonus(r, c, terrain);
-                        this.checkMergePatterns();
                     }
                 }
             }
+
+            // ⚠️ 全セルの配置と placementGroupId の割当が完了した後に、隣接およびマージ判定を一括実行！
+            for (let dr = 0; dr < rows; dr++) {
+                for (let dc = 0; dc < cols; dc++) {
+                    if (shapeMatrix[dr][dc] === 1) {
+                        const r = startR + dr;
+                        const c = startC + dc;
+                        this.checkConnectionBonus(r, c, terrain);
+                    }
+                }
+            }
+            this.checkMergePatterns();
 
             this.ember = Math.max(0, this.ember - 1);
             this.hasPickedThisTurn = true;
@@ -223,7 +230,19 @@
             }
 
             const posStr = `(${String.fromCharCode(65+startC)}${startR+1})`;
-            this.addLog(I18n.t("LOG_LAND_PLACED", { pos: posStr, name: terrainName }));
+            
+            let dimSuffix = "";
+            if (rows > 1 || cols > 1) {
+                const totalCells = activeCellCount;
+                if (rows === 1 || cols === 1) {
+                    dimSuffix = ` (1x${totalCells})`;
+                } else {
+                    dimSuffix = ` (${cols}x${rows})`;
+                }
+            }
+            const logTerrainName = `${terrainName}${dimSuffix}`;
+
+            this.addLog(I18n.t("LOG_LAND_PLACED", { pos: posStr, name: logTerrainName }));
             return { can: true, success: true };
         }
 
@@ -267,6 +286,13 @@
                 if (nr < 0 || nr >= 5 || nc < 0 || nc >= 5) return false;
                 const cell = this.grid[nr][nc];
                 if (!cell.placed || cell.isHQ || !cell.terrain) return false;
+                
+                // 同一カード内のマス同士 (同じ placementGroupId) は自己連結から除外
+                const currentCell = this.grid[r][c];
+                if (currentCell.placementGroupId && cell.placementGroupId && currentCell.placementGroupId === cell.placementGroupId) {
+                    return false;
+                }
+
                 const tid = cell.terrain.terrainId || cell.terrain.id;
                 return tid === baseTerrainId;
             };
