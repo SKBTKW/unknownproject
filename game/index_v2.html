@@ -754,6 +754,37 @@
             font-size: 11.5px;
             color: #dcdde1;
         }
+
+        /* 📊 ヘッダー中央右: 横一列データ表示パネル */
+        .header-resource-data-panel {
+            background: rgba(24, 34, 50, 0.9);
+            border: 1.5px solid #2c3e50;
+            border-radius: 8px;
+            padding: 5px 14px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+        .header-resource-data-panel:hover {
+            border-color: #1abc9c;
+            box-shadow: 0 4px 16px rgba(26,188,156,0.35);
+        }
+        .header-data-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        .header-data-item .label { color: #a4b0be; font-size: 11px; }
+        .header-data-item .val { color: #ffffff; }
+        .header-data-item .prod { color: #2ecc71; font-size: 10.5px; }
     </style>
 </head>
 <body>
@@ -787,12 +818,42 @@
                 </div>
             </div>
             
-            <div class="ember-center-box" style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; z-index:10; pointer-events:auto;">
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <span class="ember-icon">🔥</span>
-                    <span>: <span id="valEmber">20</span></span>
+            <div class="ember-center-box" style="position:relative; left:auto; transform:none; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; z-index:10; pointer-events:auto; margin:0 12px;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <span class="ember-icon" style="font-size:22px;">🔥</span>
+                    <span style="font-size:20px; font-weight:900; color:#f1c40f;">: <span id="valEmber">20</span></span>
                 </div>
                 <div id="directiveHeaderBadge" style="z-index:15; pointer-events:auto;"></div>
+            </div>
+
+            <!-- 📊 ヘッダー中央右: 各種データ表示パネル (横一列) -->
+            <div class="header-resource-data-panel" id="headerDataPanel" onmouseenter="showDataPanelTooltip(event)" onmouseleave="hideDataPanelTooltip()">
+                <div class="header-data-item">
+                    <span>🌾</span>
+                    <span class="label" id="lblFood"></span>:
+                    <span class="val" id="valFood">30</span>
+                    <span class="prod">(<span id="valFoodProd">+10</span>/T)</span>
+                </div>
+                <div style="width:1px; height:14px; background:#2c3e50;"></div>
+                <div class="header-data-item">
+                    <span>🧱</span>
+                    <span class="label" id="lblWood"></span>:
+                    <span class="val" id="valWood">30</span>
+                    <span class="prod">(<span id="valWoodProd">+10</span>/T)</span>
+                </div>
+                <div style="width:1px; height:14px; background:#2c3e50;"></div>
+                <div class="header-data-item">
+                    <span>🛡️</span>
+                    <span class="label" id="lblDefense"></span>:
+                    <span class="val" id="valDefense">10</span>
+                </div>
+                <div style="width:1px; height:14px; background:#2c3e50;"></div>
+                <div class="header-data-item">
+                    <span>✨</span>
+                    <span class="label" id="lblMystic"></span>:
+                    <span class="val" id="valMystic">0</span>
+                    <span class="prod">(<span id="valMysticProd">+1</span>/T)</span>
+                </div>
             </div>
 
             <div id="trialNoticeBox" class="trial-announcement">
@@ -822,19 +883,9 @@
                 </div>
             </div>
 
-            <!-- Right Sidebar (Width 280px, Log area removed & streamlined) -->
+            <!-- Right Sidebar (Width 280px, Streamlined layout for reserve & controls) -->
             <div class="right-sidebar">
-                <div class="data-panel">
-                    <h4 id="lblDataPanelTitle"></h4>
-                    <div class="resource-list">
-                        <div><span id="lblFood"></span>: <span id="valFood">30</span> (<span id="valFoodProd">+10</span>/T)</div>
-                        <div><span id="lblWood"></span>: <span id="valWood">30</span> (<span id="valWoodProd">+10</span>/T)</div>
-                        <div><span id="lblDefense"></span>: <span id="valDefense">10</span></div>
-                        <div><span id="lblMystic"></span>: <span id="valMystic">0</span> (+1/T)</div>
-                    </div>
-                </div>
-
-                <div id="activeBuffPanel" class="data-panel" style="display:none; background: linear-gradient(135deg, rgba(26,188,156,0.15) 0%, rgba(46,204,113,0.1) 100%); border:1px solid #1abc9c; margin-top:8px;">
+                <div id="activeBuffPanel" class="data-panel" style="display:none; background: linear-gradient(135deg, rgba(26,188,156,0.15) 0%, rgba(46,204,113,0.1) 100%); border:1px solid #1abc9c;">
                     <h4 style="color:#1abc9c; font-size:12px; margin-bottom:6px;" id="lblBuffPanelTitle"></h4>
                     <div id="activeBuffContent" style="font-size:11px; color:#e1b12c;"></div>
                 </div>
