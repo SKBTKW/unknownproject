@@ -58,18 +58,12 @@
         }
 
         getCategoryWeightMultiplier(category) {
-            const active = this.getCurrentDirective();
-            if (active && active.categoryMultipliers && active.categoryMultipliers[category]) {
-                return active.categoryMultipliers[category];
-            }
+            // 方針効果を一旦停止（常に 1.0 倍）
             return 1.0;
         }
 
         getResourceMultiplier(resourceType) {
-            const active = this.getCurrentDirective();
-            if (active && active.resourceMultipliers && active.resourceMultipliers[resourceType] !== undefined) {
-                return active.resourceMultipliers[resourceType];
-            }
+            // 方針効果を一旦停止（常に 1.0 倍）
             return 1.0;
         }
 

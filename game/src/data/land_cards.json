@@ -26,7 +26,7 @@
     "minStage": 1,
     "reqH2": 0,
     "rarity": "C",
-    "weight": 1.0,
+    "weight": 0.13,
     "descriptionKey": "CARD_DESC_PLAINS_1X2"
   },
   {
@@ -131,9 +131,10 @@
     "minStage": 1,
     "reqH2": 0,
     "rarity": "UC",
-    "weight": 0.6,
+    "weight": 0.08,
     "descriptionKey": "CARD_DESC_FOREST_1X2"
   },
+
   {
     "id": "CARD_DEEP_FOREST_1X1",
     "terrainId": "GL3_DEEP_FOREST",
@@ -191,7 +192,7 @@
     "minStage": 1,
     "reqH2": 0,
     "rarity": "UC",
-    "weight": 0.35,
+    "weight": 0.05,
     "descriptionKey": "CARD_DESC_HILL_1X2"
   },
   {
