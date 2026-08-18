@@ -1351,8 +1351,7 @@
                                 <div class="tcg-yield-strip" style="font-size:10px; text-align:center; justify-content:center; padding:4px;">
                                     <span>${costBadgeText ? (typeof I18n !== 'undefined' ? I18n.t("UI_CARD_COST_PREFIX", { cost: costBadgeText }) : 'Cost: ' + costBadgeText) : (typeof I18n !== 'undefined' ? I18n.t("UI_CMD_INSTANT_LABEL") : 'Instant')}</span>
                                 </div>
-                                <div class="tcg-action-controls" style="gap:4px;">
-                                    ${isSelected && costMet ? `<button class="tcg-reserve-btn-wireframe" style="background:#1abc9c; color:#fff; border-color:#16a085; font-weight:bold;" onclick="event.stopPropagation(); playCommandCard(state.handOffering[${idx}])">⚡ ${I18n.t("UI_PLAY_CMD_BTN") || "発動"}</button>` : ''}
+                                <div class="tcg-action-controls">
                                     <button class="tcg-reserve-btn-wireframe" onclick="event.stopPropagation(); reserveCard(${idx})">${I18n.t("UI_RESERVE_BTN")}</button>
                                 </div>
                             `;
