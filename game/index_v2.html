@@ -771,8 +771,8 @@
                 </div>
 
                 <!-- 📜 タイトル直下のログトグルボタン -->
-                <button class="btn-log-toggle-header" id="btnLogToggleHeader" onclick="toggleLogDropdownPanel()">
-                    📜 <span id="lblLogTitleHeader">ログ</span> <span id="logHeaderArrow">▽</span>
+                <button class="btn-log-toggle-header" id="btnLogToggleHeader" onclick="toggleLogDropdownPanel(event)">
+                    📜 <span id="lblLogTitleHeader">ログ</span> <span id="logHeaderArrow" style="margin-left:2px; font-weight:900;">▽</span>
                 </button>
 
                 <!-- 📜 タイトル直下ログドロップダウンパネル (デフォルト格納: display: none) -->
@@ -1131,16 +1131,19 @@
             if (tt) tt.style.display = "none";
         }
 
-        function toggleLogDropdownPanel() {
+        function toggleLogDropdownPanel(e) {
+            if (e) e.stopPropagation();
             const panel = document.getElementById("logDropdownPanelHeader");
             const arrow = document.getElementById("logHeaderArrow");
             if (!panel) return;
-            if (panel.style.display === "flex") {
+
+            const isCurrentlyOpen = (panel.style.display === "flex" || window.getComputedStyle(panel).display === "flex");
+            if (isCurrentlyOpen) {
                 panel.style.display = "none";
-                if (arrow) arrow.innerText = "▽";
+                if (arrow) arrow.innerHTML = "▽";
             } else {
                 panel.style.display = "flex";
-                if (arrow) arrow.innerText = "△";
+                if (arrow) arrow.innerHTML = "△";
             }
         }
         window.toggleLogDropdownPanel = toggleLogDropdownPanel;
