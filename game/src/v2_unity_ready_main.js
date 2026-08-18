@@ -71,7 +71,7 @@
                 grid.push(row);
             }
 
-            // 🎲 ソケット位置のランダム選定（本営(2,2)および直近周囲を除く外周候補から3マス抽選）
+            // 🎲 ソケット位置のランダム選定（本営(2,2)および直近周囲を除く外周候補から3マス抽出）
             const candidates = [];
             for (let r = 0; r < size; r++) {
                 for (let c = 0; c < size; c++) {
@@ -83,15 +83,25 @@
                 }
             }
 
-            // Fisher-Yates シャッフルで 3 マスをランダム抽出
+            // Fisher-Yates シャッフル
             for (let i = candidates.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
             }
 
-            const socketCount = Math.min(3, candidates.length);
-            for (let i = 0; i < socketCount; i++) {
-                const pos = candidates[i];
+            // 🚫 ソケット同士の隣接禁止ルール（縦・横・斜めで接しないマスを順次選定）
+            const selectedSockets = [];
+            for (let candidate of candidates) {
+                if (selectedSockets.length >= 3) break;
+                const isAdjacent = selectedSockets.some(s =>
+                    Math.abs(s.r - candidate.r) <= 1 && Math.abs(s.c - candidate.c) <= 1
+                );
+                if (!isAdjacent) {
+                    selectedSockets.push(candidate);
+                }
+            }
+
+            for (let pos of selectedSockets) {
                 grid[pos.r][pos.c].hasSocket = true;
             }
 
