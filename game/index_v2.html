@@ -736,20 +736,48 @@
             0% { opacity: 0; transform: translateY(-6px) scale(0.97); }
             100% { opacity: 1; transform: translateY(0) scale(1); }
         }
-        /* 🏛️ 方針表示バッジ (一旦表示を停止) */
-        #directiveHeaderBadge {
-            display: none !important;
+        /* 1. 最上部ヘッダー (高さ 84px ✕ 🔥 超巨大センタリング ✕ 📊 右端拡大データ) */
+        .top-bar {
+            background: #161922;
+            border: 1px solid #2a2e3d;
+            border-radius: 10px;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+            flex-shrink: 0;
+            height: 84px;
+            position: relative;
+            overflow: visible;
         }
 
-        /* 📊 ヘッダー中央右: 横一列データ表示パネル (文字サイズ視覚大拡大) */
+        /* 🔥 中央: 残り火 画面真中央センタリング (超巨大 & 発光) */
+        .ember-center-box-master {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 36px;
+            font-weight: 900;
+            color: #f1c40f;
+            text-shadow: 0 0 18px rgba(241, 196, 15, 0.6);
+            z-index: 10;
+            pointer-events: auto;
+        }
+
+        /* 📊 右端: 各種データ表示パネル (右寄せ ＆ 最適視認拡大表示) */
         .header-resource-data-panel {
+            margin-left: auto;
             background: rgba(24, 34, 50, 0.95);
             border: 1.5px solid #2c3e50;
             border-radius: 8px;
-            padding: 6px 16px;
+            padding: 6px 14px;
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
             box-shadow: 0 4px 14px rgba(0,0,0,0.6);
             cursor: pointer;
             user-select: none;
@@ -760,17 +788,60 @@
             border-color: #1abc9c;
             box-shadow: 0 4px 18px rgba(26,188,156,0.4);
         }
+
+        /* 📊 右サイドバー (パーティション解除・フラットデザイン) */
+        .right-sidebar {
+            width: 280px;
+            background: #121620;
+            border-left: 1px solid #1e2538;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* 🃏 右下隅: 統合操作パネル (ターン表示 ＋ マリガン ＋ TURN END) */
+        .sidebar-bottom-controls-partition {
+            background: rgba(24, 34, 50, 0.95);
+            border: 1.5px solid #2c3e50;
+            border-radius: 10px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+            margin-top: auto;
+        }
+
+        .turn-box-inside {
+            background: rgba(26, 188, 156, 0.15);
+            border: 1.5px solid #1abc9c;
+            border-radius: 6px;
+            padding: 6px;
+            text-align: center;
+        }
+        .turn-box-inside .turn-label {
+            font-size: 10.5px;
+            font-weight: bold;
+            color: #1abc9c;
+            letter-spacing: 1px;
+        }
+        .turn-box-inside .turn-num {
+            font-size: 20px;
+            font-weight: 900;
+            color: #ffffff;
+        }
         .header-data-item {
             display: flex;
             align-items: center;
-            gap: 5px;
-            font-size: 16px;
+            gap: 4px;
+            font-size: 13.5px;
             font-weight: 900;
             white-space: nowrap;
         }
-        .header-data-item .label { color: #a4b0be; font-size: 14px; font-weight: bold; }
-        .header-data-item .val { color: #ffffff; font-size: 18px; font-weight: 900; }
-        .header-data-item .prod { color: #2ecc71; font-size: 13px; font-weight: bold; }
+        .header-data-item .label { color: #a4b0be; font-size: 12px; font-weight: bold; }
+        .header-data-item .val { color: #ffffff; font-size: 16px; font-weight: 900; }
+        .header-data-item .prod { color: #2ecc71; font-size: 11.5px; font-weight: bold; }
 
         .log-dropdown-header-bar {
             background: #161a24;
@@ -806,8 +877,9 @@
 <body>
 
     <div class="app-wrapper">
-        <!-- 1. Top Header Bar (🔥 True Center Position & Right 280px Turn Box) -->
+        <!-- 1. Top Header Bar (🔥 True Center Position & Right Aligned Data Panel) -->
         <div class="top-bar">
+            <!-- 左: タイトル ＆ ログボタン -->
             <div class="app-title-box" style="position:relative; display:flex; flex-direction:column; align-items:flex-start; justify-content:center;">
                 <div style="display:flex; align-items:center; gap:8px;">
                     <div id="lblAppTitle"></div>
@@ -834,49 +906,39 @@
                 </div>
             </div>
             
-            <div class="ember-center-box" style="position:relative; left:auto; transform:none; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; z-index:10; pointer-events:auto; margin:0 12px;">
-                <div style="display:flex; align-items:center; gap:6px;">
-                    <span class="ember-icon" style="font-size:22px;">🔥</span>
-                    <span style="font-size:20px; font-weight:900; color:#f1c40f;">: <span id="valEmber">20</span></span>
-                </div>
-                <div id="directiveHeaderBadge" style="z-index:15; pointer-events:auto;"></div>
+            <!-- 🔥 画面真中央: 目立つサイズでセンタリング -->
+            <div class="ember-center-box-master" id="emberCenterBoxMaster">
+                <span class="ember-icon" style="font-size:44px;">🔥</span>
+                <span>: <span id="valEmber">20</span></span>
             </div>
 
-            <!-- 📊 ヘッダー中央右: 各種データ表示パネル (横一列) -->
+            <!-- 📊 ヘッダー右端: 各種データ表示パネル (右寄せ ＆ 拡大表示) -->
             <div class="header-resource-data-panel" id="headerDataPanel" onmouseenter="showDataPanelTooltip(event)" onmouseleave="hideDataPanelTooltip()">
                 <div class="header-data-item">
+                    <span style="font-size:18px;">🌾</span>
                     <span class="label" id="lblFood"></span>:
                     <span class="val" id="valFood">30</span>
                     <span class="prod">(<span id="valFoodProd">+10</span>/T)</span>
                 </div>
-                <div style="width:1px; height:14px; background:#2c3e50;"></div>
+                <div style="width:1px; height:18px; background:#2c3e50;"></div>
                 <div class="header-data-item">
+                    <span style="font-size:18px;">🧱</span>
                     <span class="label" id="lblWood"></span>:
                     <span class="val" id="valWood">30</span>
                     <span class="prod">(<span id="valWoodProd">+10</span>/T)</span>
                 </div>
-                <div style="width:1px; height:14px; background:#2c3e50;"></div>
+                <div style="width:1px; height:18px; background:#2c3e50;"></div>
                 <div class="header-data-item">
+                    <span style="font-size:18px;">🛡️</span>
                     <span class="label" id="lblDefense"></span>:
                     <span class="val" id="valDefense">10</span>
                 </div>
-                <div style="width:1px; height:14px; background:#2c3e50;"></div>
+                <div style="width:1px; height:18px; background:#2c3e50;"></div>
                 <div class="header-data-item">
+                    <span style="font-size:18px;">✨</span>
                     <span class="label" id="lblMystic"></span>:
                     <span class="val" id="valMystic">0</span>
                     <span class="prod">(<span id="valMysticProd">+1</span>/T)</span>
-                </div>
-            </div>
-
-            <div id="trialNoticeBox" class="trial-announcement">
-                <span id="lblTrialNotice"></span> <span id="trialCountdown">5</span><br>
-                <small style="font-weight:normal; font-size:9px;" id="lblTrialSub"></small>
-            </div>
-
-            <div class="turn-box-header-wrapper">
-                <div class="turn-box">
-                    <div style="font-size:10px;" id="lblTurnHeader"></div>
-                    <span class="turn-num"><span id="valTurn">1</span>/50</span>
                 </div>
             </div>
         </div>
@@ -901,12 +963,22 @@
                     <h4 style="color:#1abc9c; font-size:12px; margin-bottom:6px;" id="lblBuffPanelTitle"></h4>
                     <div id="activeBuffContent" style="font-size:11px; color:#e1b12c;"></div>
                 </div>
+
+                <!-- 🃏 右下隅: 統合操作パネル (ターン表示 ＋ マリガン ＋ TURN END) -->
+                <div class="sidebar-bottom-controls-partition">
+                    <div class="turn-box-inside">
+                        <div class="turn-label" id="lblTurnHeader"></div>
+                        <div class="turn-num"><span id="valTurn">1</span> <span style="font-size:12px; color:#a4b0be; font-weight:normal;">/ 50</span></div>
+                    </div>
+                    <button class="mulligan-btn" onclick="mulligan()" id="btnMulligan" style="margin:0; width:100%;"></button>
+                    <button class="turn-end-btn" onclick="nextTurn()" id="btnTurnEnd" style="margin:0; width:100%;"></button>
+                </div>
             </div>
         </div>
 
         <!-- Bottom Draw Offering & Reserve Cards Row (6 Cards Layout) -->
         <div class="bottom-card-container">
-            <div class="cards-flex-box">
+            <div class="cards-flex-box" style="width:100%;">
                 <div class="offering-subgroup">
                     <div class="subgroup-header">
                         <span id="lblOfferingTitle"></span>
@@ -921,11 +993,6 @@
                     </div>
                     <div id="reserveRow" class="subgroup-cards-row"></div>
                 </div>
-            </div>
-
-            <div class="bottom-controls-box">
-                <button class="mulligan-btn" onclick="mulligan()" id="btnMulligan"></button>
-                <button class="turn-end-btn" onclick="nextTurn()" id="btnTurnEnd"></button>
             </div>
         </div>
     <!-- 🏛️ 4大文明方針 変更モーダル画面 (バッジクリック一発ポップアップ) -->
