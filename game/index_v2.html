@@ -689,6 +689,71 @@
             0% { opacity: 0; transform: translateY(-4px) scale(0.96); }
             100% { opacity: 1; transform: translateY(0) scale(1); }
         }
+        /* 📜 タイトル直下のログトグルボタン ＆ ドロップダウンパネル */
+        .btn-log-toggle-header {
+            margin-top: 3px;
+            background: rgba(42, 46, 61, 0.85);
+            color: #1abc9c;
+            border: 1.5px solid #2c3e50;
+            border-radius: 5px;
+            padding: 2px 10px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            width: fit-content;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            user-select: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
+        .btn-log-toggle-header:hover {
+            background: #1abc9c;
+            color: #0b0e14;
+            border-color: #16a085;
+            box-shadow: 0 4px 12px rgba(26,188,156,0.5);
+        }
+
+        .log-dropdown-panel-header {
+            position: absolute;
+            top: 52px;
+            left: 0;
+            width: 360px;
+            max-height: 260px;
+            background: rgba(15, 20, 29, 0.97);
+            border: 1.5px solid #2c3e50;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 20px rgba(26,188,156,0.2);
+            border-radius: 8px;
+            z-index: 99999;
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: dropdownFadeIn 0.15s ease-out forwards;
+        }
+        @keyframes dropdownFadeIn {
+            0% { opacity: 0; transform: translateY(-6px) scale(0.97); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .log-dropdown-header-bar {
+            background: #161a24;
+            padding: 7px 12px;
+            font-size: 11.5px;
+            font-weight: bold;
+            color: #1abc9c;
+            border-bottom: 1px solid #2a2e3d;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .log-content-header {
+            padding: 8px 12px;
+            overflow-y: auto;
+            max-height: 210px;
+            font-size: 11.5px;
+            color: #dcdde1;
+        }
     </style>
 </head>
 <body>
@@ -696,11 +761,29 @@
     <div class="app-wrapper">
         <!-- 1. Top Header Bar (🔥 True Center Position & Right 280px Turn Box) -->
         <div class="top-bar">
-            <div class="app-title-box">
-                <div id="lblAppTitle"></div>
-                <div class="role-avatar-box">
-                    <span id="lblRoleAvatar"></span>
-                    <span class="icon">👤</span>
+            <div class="app-title-box" style="position:relative; display:flex; flex-direction:column; align-items:flex-start; justify-content:center;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <div id="lblAppTitle"></div>
+                    <div class="role-avatar-box">
+                        <span id="lblRoleAvatar"></span>
+                        <span class="icon">👤</span>
+                    </div>
+                </div>
+
+                <!-- 📜 タイトル直下のログトグルボタン -->
+                <button class="btn-log-toggle-header" id="btnLogToggleHeader" onclick="toggleLogDropdownPanel()">
+                    📜 <span id="lblLogTitleHeader">ログ</span> <span id="logHeaderArrow">▽</span>
+                </button>
+
+                <!-- 📜 タイトル直下ログドロップダウンパネル (デフォルト格納: display: none) -->
+                <div id="logDropdownPanelHeader" class="log-dropdown-panel-header" style="display:none;">
+                    <div class="log-dropdown-header-bar">
+                        <span id="lblLogDropdownTitle">📜 システムログ一覧</span>
+                        <span style="cursor:pointer;" onclick="toggleLogDropdownPanel()">✕</span>
+                    </div>
+                    <div id="logContent" class="log-content-header">
+                        <div style="color:#7f8c8d;" id="lblLogSub"></div>
+                    </div>
                 </div>
             </div>
             
@@ -739,7 +822,7 @@
                 </div>
             </div>
 
-            <!-- Right Sidebar (Width 280px) -->
+            <!-- Right Sidebar (Width 280px, Log area removed & streamlined) -->
             <div class="right-sidebar">
                 <div class="data-panel">
                     <h4 id="lblDataPanelTitle"></h4>
@@ -754,16 +837,6 @@
                 <div id="activeBuffPanel" class="data-panel" style="display:none; background: linear-gradient(135deg, rgba(26,188,156,0.15) 0%, rgba(46,204,113,0.1) 100%); border:1px solid #1abc9c; margin-top:8px;">
                     <h4 style="color:#1abc9c; font-size:12px; margin-bottom:6px;" id="lblBuffPanelTitle"></h4>
                     <div id="activeBuffContent" style="font-size:11px; color:#e1b12c;"></div>
-                </div>
-
-                <div id="logPanelWrapper" class="log-panel-wrapper">
-                    <div class="log-header">
-                        <span id="lblLogTitle"></span>
-                        <button class="toggle-btn" onclick="toggleLogPanel()" id="btnLogToggle"></button>
-                    </div>
-                    <div id="logContent" class="log-content">
-                        <div style="color:#7f8c8d;" id="lblLogSub"></div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -1057,6 +1130,20 @@
             const tt = document.getElementById("tileTooltip");
             if (tt) tt.style.display = "none";
         }
+
+        function toggleLogDropdownPanel() {
+            const panel = document.getElementById("logDropdownPanelHeader");
+            const arrow = document.getElementById("logHeaderArrow");
+            if (!panel) return;
+            if (panel.style.display === "flex") {
+                panel.style.display = "none";
+                if (arrow) arrow.innerText = "▽";
+            } else {
+                panel.style.display = "flex";
+                if (arrow) arrow.innerText = "△";
+            }
+        }
+        window.toggleLogDropdownPanel = toggleLogDropdownPanel;
 
         function setElementText(id, text) {
             const el = document.getElementById(id);
