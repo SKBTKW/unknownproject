@@ -1456,9 +1456,10 @@
             }
         }
 
-        function playCommandCard(card) {
+        function playCommandCard(card, targetIdx) {
             if (!state || state.hasPickedThisTurn) return;
-            const tObj = card.terrain || card;
+            const tObj = card ? (card.terrain || card) : null;
+            if (!tObj) return;
             const I18n = window.I18n;
 
             if (tObj.cost) {
@@ -1483,12 +1484,22 @@
                 };
             }
 
-            const cardIdx = state.handOffering.indexOf(card);
+            // 🎯 手札オファリング配列からの確実に消去（インデックス指定 ＋ ID照合 ＋ 参照照合）
+            let cardIdx = (typeof targetIdx === "number" && targetIdx >= 0) ? targetIdx : -1;
+            if (cardIdx === -1) {
+                cardIdx = state.handOffering.indexOf(card);
+            }
+            if (cardIdx === -1 && card) {
+                cardIdx = state.handOffering.findIndex(c => c && (c === card || c.id === card.id || c.cardMasterId === card.cardMasterId));
+            }
+
             if (cardIdx !== -1) {
                 state.handOffering[cardIdx] = null;
             }
+
             state.hasPickedThisTurn = true;
-            state.addLog(`[T${state.turn}] ${I18n ? I18n.t(tObj.nameKey) : tObj.id} を発動しました。`);
+            const cName = tObj.nameKey ? (I18n ? I18n.t(tObj.nameKey) : tObj.nameKey) : (tObj.id || "Command Card");
+            state.addLog(`[T${state.turn}] ${cName} を発動しました。`);
             render();
         }
         window.playCommandCard = playCommandCard;
@@ -1537,7 +1548,7 @@
                     confirmLabel: "⚡ 発動する",
                     cancelLabel: "✖ キャンセル",
                     onConfirm: () => {
-                        playCommandCard(card);
+                        playCommandCard(card, idx);
                         selectedCard = null;
                         selectedCardIdx = -1;
                         render();

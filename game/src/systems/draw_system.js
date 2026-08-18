@@ -164,12 +164,14 @@
         }
 
         generateOfferingCards() {
-            this.state.offeringCards = [
+            const newCards = [
                 this.drawSingleCard(),
                 this.drawSingleCard(),
                 this.drawSingleCard()
             ];
-            return this.state.offeringCards;
+            this.state.handOffering = newCards;
+            this.state.offeringCards = newCards;
+            return newCards;
         }
     }
 
