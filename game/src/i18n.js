@@ -38,7 +38,7 @@
             FAC_GREAT_WINDMILL_DESC: "3ターンの継続投資後、完成品として『大風車』を設置し 🌾+12 🔥+1/T を永続産出する。",
             LGD_DESPERATE_PACT_NAME: "決死の開拓大契約",
             LGD_DESPERATE_PACT_DESC: "即座に 🔥+5 を獲得し、毎ターンの手札オファリング枠が永久に 4 枚へ拡張される。",
-            CMD_LAND_FOCUS_NAME: "土地探索重視",
+            CMD_LAND_FOCUS_NAME: "土地探索",
             CMD_LAND_FOCUS_DESC: "盤面が 6 ブロックに達するまで、土地カードの出現率が 2 倍になる。",
             CMD_MILITARY_FOCUS_NAME: "軍事重視",
             CMD_MILITARY_FOCUS_DESC: "防衛力が 🛡️20 に達するまで、軍事カードの出現率が 2 倍になる。",

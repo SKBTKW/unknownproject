@@ -821,6 +821,11 @@
 
             if (!this.state) return (c.category === "LAND" || !c.category);
 
+            // 🚫 バフ（activeDrawBias）が発生している時、バフ指定カード（biasTargetを持つカード）はオファリング提示されない
+            if ((c.biasTarget || c.id === "CMD_LAND_FOCUS" || c.id === "CMD_MILITARY_FOCUS" || c.id === "CMD_MYSTIC_FOCUS") && this.state.activeDrawBias) {
+                return false;
+            }
+
             // 盤面動的上限・ドロー提示条件チェック
             if (c.maxPlacedBlocks && typeof this.state.countPlacedTiles === 'function') {
                 if (this.state.countPlacedTiles() > c.maxPlacedBlocks) return false;

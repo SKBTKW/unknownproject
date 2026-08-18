@@ -23,6 +23,13 @@
             const cardStage = c.minStage || 1;
             if (cardStage > stageNum) return false;
 
+            // 🚫 バフ（activeDrawBias または drawBias）が発生している時、バフ指定カード（biasTargetを持つカード）はオファリング提示されない
+            if (c.biasTarget || c.id === "CMD_LAND_FOCUS" || c.id === "CMD_MILITARY_FOCUS" || c.id === "CMD_MYSTIC_FOCUS") {
+                if (this.state && (this.state.activeDrawBias || this.state.drawBias)) {
+                    return false;
+                }
+            }
+
             if (c.reqH2HillsOnBoard && h2Count < c.reqH2HillsOnBoard) return false;
 
             if (c.reqHillOrMountainAroundHQ) {
@@ -101,6 +108,12 @@
                     if (hasSocket) break;
                 }
                 if (hasSocket) return false;
+            }
+
+            // 🚫 バフ（activeDrawBias または drawBias）が発生している時、バフ指定カード（biasTargetを持つカード）はオファリング提示されない
+            const hasActiveBiasBuff = this.state && (this.state.activeDrawBias || this.state.drawBias);
+            if ((c.biasTarget || c.id === "CMD_LAND_FOCUS") && hasActiveBiasBuff) {
+                return false;
             }
 
             if (c.isUnique && this.state.usedUniqueCards && this.state.usedUniqueCards.includes(c.id)) {
