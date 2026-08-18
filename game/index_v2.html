@@ -305,6 +305,21 @@
             z-index: 100;
             display: none;
         }
+        .card-rotate-cursor-tooltip {
+            position: fixed;
+            pointer-events: none !important;
+            z-index: 100000;
+            background: rgba(10, 14, 23, 0.92);
+            border: 1.5px solid #1abc9c;
+            color: #1abc9c;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 4px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8), 0 0 10px rgba(26, 188, 156, 0.4);
+            white-space: nowrap;
+            display: none;
+        }
 
         /* 👉 右サイドバー (幅 280px ピクセル一致) */
         .right-sidebar {
@@ -574,6 +589,7 @@
                 <div class="main-area-badge"><span id="lblMainBadge"></span> <span id="valPlacedCount">1</span>/24</div>
                 <div id="gridBoard" class="grid-with-headers"></div>
                 <div id="tileTooltip" class="tile-tooltip"></div>
+                <div id="cardRotateCursorTooltip" class="card-rotate-cursor-tooltip"></div>
 
                 <!-- 4x Large Card Hover Preview Modal Container (Bottom-Right Corner Positioned) -->
                 <div id="cardHoverPreviewModal" style="display:none; position:absolute; bottom:12px; right:12px; width:260px; height:390px; z-index:900; pointer-events:none; box-shadow:0 14px 40px rgba(0,0,0,0.9), 0 0 25px rgba(26,188,156,0.85); border-radius:14px; border:3px solid #1abc9c; background:#11141a; padding:10px; transition:opacity 0.15s ease;">
@@ -1061,8 +1077,17 @@
                         const isPinned = (window.pinnedPreviewCard === card);
                         const cardEl = document.createElement("div");
                         cardEl.className = `card-frame-tcg ${rarityClass} ${categoryClass} ${isSelected ? 'selected' : ''} ${isPinned ? 'pinned' : ''} ${isLocked ? 'locked' : ''} ${!costMet ? 'cost-disabled' : ''}`;
-                        cardEl.onmouseenter = () => showCardHoverPreview(card);
-                        cardEl.onmouseleave = () => hideCardHoverPreview();
+                        cardEl.onmouseenter = (e) => {
+                            showCardHoverPreview(card);
+                            showCardRotateTooltip(e, card);
+                        };
+                        cardEl.onmousemove = (e) => {
+                            moveCardRotateTooltip(e);
+                        };
+                        cardEl.onmouseleave = () => {
+                            hideCardHoverPreview();
+                            hideCardRotateTooltip();
+                        };
                         cardEl.onclick = (e) => {
                             e.stopPropagation();
                             togglePinCardPreview(card);
@@ -1362,6 +1387,45 @@
             if (!force && window.pinnedPreviewCard) return;
             const modal = document.getElementById("cardHoverPreviewModal");
             if (modal) modal.style.display = "none";
+        }
+
+        function canRotateCard(card) {
+            if (!card || card.isBlank) return false;
+            const tObj = card.terrain || card;
+            const category = tObj.category || "LAND";
+            if (category !== "LAND") return false;
+            const shape = card.currentShape || tObj.shape;
+            if (!shape || !Array.isArray(shape)) return false;
+            const rows = shape.length;
+            const cols = (shape[0] && Array.isArray(shape[0])) ? shape[0].length : 0;
+            return (rows > 1 || cols > 1);
+        }
+
+        function showCardRotateTooltip(e, card) {
+            if (!canRotateCard(card)) return;
+            const tt = document.getElementById("cardRotateCursorTooltip");
+            const I18n = window.I18n;
+            if (!tt || !I18n) return;
+            tt.innerText = I18n.t("UI_HOVER_RIGHT_CLICK_ROTATE");
+            tt.style.display = "block";
+            if (e) {
+                tt.style.top = (e.clientY + 16) + "px";
+                tt.style.left = (e.clientX + 16) + "px";
+            }
+        }
+
+        function moveCardRotateTooltip(e) {
+            const tt = document.getElementById("cardRotateCursorTooltip");
+            if (!tt || tt.style.display === "none") return;
+            if (e) {
+                tt.style.top = (e.clientY + 16) + "px";
+                tt.style.left = (e.clientX + 16) + "px";
+            }
+        }
+
+        function hideCardRotateTooltip() {
+            const tt = document.getElementById("cardRotateCursorTooltip");
+            if (tt) tt.style.display = "none";
         }
 
         function rotateSelectedCard(e, idx) {
