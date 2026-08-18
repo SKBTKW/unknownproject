@@ -146,11 +146,10 @@
             display: block;
         }
 
-        /* 2. 中間レイアウト構造 (中央広大盤面 ✕ 右データ・ログパネル) */
+        /* 2. 中間レイアウト構造 (縦分割なし ✕ 画面全幅 100% 広大盤面エリア) */
         .middle-layout {
-            display: grid;
-            grid-template-columns: 1fr 280px;
-            gap: 10px;
+            display: flex;
+            width: 100%;
             flex: 1;
             min-height: 0;
             overflow: hidden;
