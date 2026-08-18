@@ -94,23 +94,23 @@
 
 ```mermaid
 graph TD
-    subgraph 平地 [🌾 平地 (Plains)]
+    subgraph 平地 ["🌾 平地 (Plains)"]
         P1["Stage 1: 1x1, 1x2"]
         P2["Stage 2: 1x3 L字, 1x3 直線"]
         P3["Stage 3: 1x4 凸型, 1x4 L字, 2x2 正方形, 1x4 S型, 1x4 直線"]
         P1 --> P2 --> P3
     end
-    subgraph 丘陵 [⛰️ 丘陵 (Hill)]
+    subgraph 丘陵 ["⛰️ 丘陵 (Hill)"]
         H1["1x2 (UC)"]
         H2["1x3 L字 (UC)"]
         H3["1x4 L字 (R)"]
     end
-    subgraph 山岳 [🏔️ 山岳 (Mountain)]
+    subgraph 山岳 ["🏔️ 山岳 (Mountain)"]
         M1["1x3 直線 (UC)"]
         M2["1x4 凸型 (R)"]
         M3["1x4 直線 (R)"]
     end
-    subgraph 森 [🌲 森 (Forest)]
+    subgraph 森 ["🌲 森 (Forest)"]
         F1["1x1 (単体)"]
         F2["1x2 (直列)"]
     end
