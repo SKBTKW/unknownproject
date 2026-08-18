@@ -1353,11 +1353,11 @@
                                     <div class="tcg-title-pill">${cName}</div>
                                     <div class="tcg-rarity-code">${rCode}</div>
                                 </div>
-                                <div class="tcg-shape-art-area" style="display:flex; flex-direction:column; align-items:center; justify-content:center; background:#2c3e50; padding:4px; text-align:center; overflow:hidden;">
-                                    <div style="font-size:16px; line-height:1.1;">${iconSymbol}</div>
-                                    <div style="font-size:9px; color:#ffffff; margin-top:2px; line-height:1.2; font-weight:normal; text-shadow:0 1px 2px rgba(0,0,0,0.8);">${cDesc}</div>
+                                <div class="tcg-shape-art-area" style="display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-start; background:#2c3e50; padding:4px 6px; text-align:left; overflow:hidden;">
+                                    <div style="font-size:14px; line-height:1.1; margin-bottom:2px;">${iconSymbol}</div>
+                                    <div style="font-size:9px; color:#ffffff; line-height:1.25; font-weight:normal; text-align:left; width:100%; text-shadow:0 1px 2px rgba(0,0,0,0.8);">${cDesc}</div>
                                 </div>
-                                <div class="tcg-yield-strip" style="font-size:10px; text-align:center; justify-content:center; padding:4px;">
+                                <div class="tcg-yield-strip" style="font-size:9.5px; text-align:left; justify-content:flex-start; padding:3px 6px; width:100%; box-sizing:border-box;">
                                     <span>${costBadgeText ? (typeof I18n !== 'undefined' ? I18n.t("UI_CARD_COST_PREFIX", { cost: costBadgeText }) : 'Cost: ' + costBadgeText) : (typeof I18n !== 'undefined' ? I18n.t("UI_CMD_INSTANT_LABEL") : 'Instant')}</span>
                                 </div>
                                 <div class="tcg-action-controls">
@@ -1611,11 +1611,11 @@
                         <strong style="font-size:17px; color:#111; text-align:center; width:100%; font-weight:bold;">${cName}</strong>
                         <span style="font-size:20px; font-weight:900; color:#111; position:absolute; right:12px;">${rCode}</span>
                     </div>
-                    <div style="flex:1; background:#2c3e50; border-radius:10px; margin:8px 0; padding:14px; display:flex; flex-direction:column; align-items:center; justify-content:center; border:1px solid #7f8c8d;">
-                        <div style="font-size:40px; margin-bottom:10px; filter:drop-shadow(0 0 8px rgba(255,255,255,0.6));">${iconSymbol}</div>
-                        <div style="font-size:14px; color:#ffffff; line-height:1.4; font-weight:bold; text-align:center; text-shadow:0 2px 4px rgba(0,0,0,0.9);">${cDesc}</div>
+                    <div style="flex:1; background:#2c3e50; border-radius:10px; margin:8px 0; padding:14px; display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-start; border:1px solid #7f8c8d; text-align:left;">
+                        <div style="font-size:32px; margin-bottom:8px; filter:drop-shadow(0 0 8px rgba(255,255,255,0.6));">${iconSymbol}</div>
+                        <div style="font-size:14px; color:#ffffff; line-height:1.45; font-weight:bold; text-align:left; text-shadow:0 2px 4px rgba(0,0,0,0.9); width:100%;">${cDesc}</div>
                     </div>
-                    <div style="background:#d4f4fa; border-radius:8px; padding:6px 12px; text-align:center; font-size:14px; font-weight:bold; color:#111;">
+                    <div style="background:#d4f4fa; border-radius:8px; padding:8px 12px; text-align:left; font-size:14px; font-weight:bold; color:#111; display:flex; justify-content:flex-start; align-items:center;">
                         ${costBadgeText ? I18n.t("UI_CARD_COST_PREFIX", { cost: costBadgeText }) : I18n.t("UI_CMD_INSTANT_LABEL")}
                     </div>
                 `;
