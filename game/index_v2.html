@@ -736,6 +736,42 @@
             0% { opacity: 0; transform: translateY(-6px) scale(0.97); }
             100% { opacity: 1; transform: translateY(0) scale(1); }
         }
+        /* 🏛️ 方針表示バッジ (一旦表示を停止) */
+        #directiveHeaderBadge {
+            display: none !important;
+        }
+
+        /* 📊 ヘッダー中央右: 横一列データ表示パネル (文字サイズ視覚大拡大) */
+        .header-resource-data-panel {
+            background: rgba(24, 34, 50, 0.95);
+            border: 1.5px solid #2c3e50;
+            border-radius: 8px;
+            padding: 6px 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.6);
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+        .header-resource-data-panel:hover {
+            border-color: #1abc9c;
+            box-shadow: 0 4px 18px rgba(26,188,156,0.4);
+        }
+        .header-data-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 16px;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+        .header-data-item .label { color: #a4b0be; font-size: 14px; font-weight: bold; }
+        .header-data-item .val { color: #ffffff; font-size: 18px; font-weight: 900; }
+        .header-data-item .prod { color: #2ecc71; font-size: 13px; font-weight: bold; }
+
         .log-dropdown-header-bar {
             background: #161a24;
             padding: 7px 12px;
@@ -753,26 +789,6 @@
             max-height: 210px;
             font-size: 11.5px;
             color: #dcdde1;
-        }
-
-        /* 📊 ヘッダー中央右: 横一列データ表示パネル */
-        .header-resource-data-panel {
-            background: rgba(24, 34, 50, 0.9);
-            border: 1.5px solid #2c3e50;
-            border-radius: 8px;
-            padding: 5px 14px;
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            cursor: pointer;
-            user-select: none;
-            transition: all 0.2s ease;
-            z-index: 10;
-        }
-        .header-resource-data-panel:hover {
-            border-color: #1abc9c;
-            box-shadow: 0 4px 16px rgba(26,188,156,0.35);
         }
         .header-data-item {
             display: flex;
