@@ -5,8 +5,8 @@
 (function(exports) {
     // 🛡️ 1秒で復帰できる安全策スイッチ (Feature Flag)
     exports.UI_FEATURE_FLAGS = {
-        enableBottomFocusBlur: true, // 下部カードフォーカスボカシ演出
-        enableReserveArea: false     // 保留エリアの表示スイッチ (現在表示停止・退避中)
+        enableBottomFocusBlur: true, // 左下カードエリアフォーカスボカシ演出
+        enableReserveArea: false     // 保留エリアの表示スイッチ (退避中)
     };
 
     const UILayoutConfig = {
@@ -62,10 +62,20 @@
             whiteSpace: "nowrap"
         },
 
-        // 🃏 6. ドローカード選択エリア用独立レイアウト設定
-        drawCardSelectArea: {
-            position: "relative",
-            width: "100%",
+        // 🃏 6. 画面左下隅: ドローカード選択エリア
+        offeringCardArea: {
+            position: "absolute",
+            bottom: "16px",
+            left: "20px",
+            zIndex: 100
+        },
+
+        // 🎮 7. 画面右下隅: 統合操作グループ (ターン表示・マリガン・TURN END)
+        rightBottomControls: {
+            position: "absolute",
+            bottom: "16px",
+            right: "20px",
+            width: "260px",
             zIndex: 100
         }
     };
@@ -99,48 +109,43 @@
             Object.assign(boardContainer.style, this.boardContainer);
         }
 
-        const drawArea = document.querySelector(".bottom-card-container");
-        if (drawArea) {
-            Object.assign(drawArea.style, this.drawCardSelectArea);
+        const offeringSec = document.querySelector(".offering-section");
+        if (offeringSec) {
+            Object.assign(offeringSec.style, this.offeringCardArea);
         }
 
-        // 🛑 保留エリアの表示/非表示スイッチ制御 (表示停止・退避)
-        const reservePartition = document.querySelector(".reserve-partition");
-        if (reservePartition) {
-            if (exports.UI_FEATURE_FLAGS && exports.UI_FEATURE_FLAGS.enableReserveArea) {
-                reservePartition.style.display = "flex";
-            } else {
-                reservePartition.style.display = "none";
-            }
+        const footerControls = document.querySelector(".footer-controls-partition");
+        if (footerControls) {
+            Object.assign(footerControls.style, this.rightBottomControls);
         }
 
-        // 🎯 下部カードエリアのマウスオーバー時「盤面微細ボカシフォーカス」イベント設定
+        // 🎯 左下カードエリアのマウスオーバー時「盤面微細ボカシフォーカス」イベント設定
         this.initBottomFocusEvents();
     };
 
     /**
-     * 下部カードエリアのマウス進入・離脱に応じた盤面フォーカス制御
+     * 左下カードエリアのマウス進入・離脱に応じた盤面フォーカス制御
      */
     UILayoutConfig.initBottomFocusEvents = function() {
-        const bottomCardContainer = document.querySelector(".bottom-card-container");
+        const offeringSec = document.querySelector(".offering-section");
         const boardContainer = document.querySelector(".board-container");
 
-        if (!bottomCardContainer || !boardContainer) return;
+        if (!offeringSec || !boardContainer) return;
 
         // 重複登録防止
-        if (bottomCardContainer._hasFocusEvents) return;
-        bottomCardContainer._hasFocusEvents = true;
+        if (offeringSec._hasFocusEvents) return;
+        offeringSec._hasFocusEvents = true;
 
-        bottomCardContainer.addEventListener("mouseenter", () => {
+        offeringSec.addEventListener("mouseenter", () => {
             if (exports.UI_FEATURE_FLAGS && exports.UI_FEATURE_FLAGS.enableBottomFocusBlur) {
                 boardContainer.classList.add("board-blur-focus");
-                bottomCardContainer.classList.add("card-container-active-focus");
+                offeringSec.classList.add("card-container-active-focus");
             }
         });
 
-        bottomCardContainer.addEventListener("mouseleave", () => {
+        offeringSec.addEventListener("mouseleave", () => {
             boardContainer.classList.remove("board-blur-focus");
-            bottomCardContainer.classList.remove("card-container-active-focus");
+            offeringSec.classList.remove("card-container-active-focus");
         });
     };
 

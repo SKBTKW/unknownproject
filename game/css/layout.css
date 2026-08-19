@@ -140,9 +140,12 @@ body {
 /* 2. 中間レイアウト構造 */
 .middle-layout {
     display: flex;
+    justify-content: center;
+    align-items: center;
     width: 100%;
     flex: 1;
     min-height: 0;
+    position: relative;
     overflow: visible !important;
 }
 
@@ -159,6 +162,7 @@ body {
     padding: 12px;
     box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
     height: 100%;
+    margin: 0 auto;
     overflow: visible !important;
     transition: filter 0.25s ease, opacity 0.25s ease;
 }
