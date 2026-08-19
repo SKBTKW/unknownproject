@@ -225,7 +225,7 @@
         function clearCellPreviews() {
             const cells = document.querySelectorAll(".cell");
             cells.forEach(c => {
-                c.classList.remove("preview-valid", "preview-invalid", "merge-hover-highlight");
+                c.classList.remove("preview-valid", "preview-invalid", "merge-hover-highlight", "hq-vicinity-hover-glow");
             });
             hideTileTooltip();
         }
@@ -272,20 +272,31 @@
 
             const rows = shape.length;
             const cols = shape[0].length;
+            let hitsHQVicinity = false;
 
             for (let dr = 0; dr < rows; dr++) {
                 for (let dc = 0; dc < cols; dc++) {
                     if (shape[dr][dc] === 1) {
                         const tr = r + dr;
                         const tc = c + dc;
-                        if (tr < 5 && tc < 5) {
+                        if (tr >= 0 && tr < 5 && tc >= 0 && tc < 5) {
                             const targetEl = document.querySelector(`.cell[data-r="${tr}"][data-c="${tc}"]`);
                             if (targetEl) {
                                 targetEl.classList.add(isValid ? "preview-valid" : "preview-invalid");
+                                if (state.isHQVicinity && state.isHQVicinity(tr, tc)) {
+                                    hitsHQVicinity = true;
+                                    targetEl.classList.add("hq-vicinity-hover-glow");
+                                }
                             }
                         }
                     }
                 }
+            }
+
+            if (hitsHQVicinity && isValid) {
+                // 本営周囲マスに被っている場合、本営自体もエメラルド波紋発光
+                const hqEl = document.querySelector(".cell.hq");
+                if (hqEl) hqEl.classList.add("hq-vicinity-hover-glow");
             }
         }
 

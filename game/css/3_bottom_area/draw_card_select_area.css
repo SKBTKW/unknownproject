@@ -166,3 +166,21 @@
     z-index: 50;
     box-shadow: 0 0 20px rgba(26, 188, 156, 1.0) !important;
 }
+
+/* 🌟 本営周囲マス被り時の強烈なエメラルド波紋発光演出 */
+.cell.hq-vicinity-hover-glow {
+    animation: hqGlowPulse 0.8s infinite alternate !important;
+    border-color: #1abc9c !important;
+    z-index: 60 !important;
+}
+
+@keyframes hqGlowPulse {
+    0% {
+        box-shadow: 0 0 12px rgba(26, 188, 156, 0.7), inset 0 0 8px rgba(26, 188, 156, 0.5);
+        filter: brightness(1.2);
+    }
+    100% {
+        box-shadow: 0 0 30px rgba(26, 188, 156, 1.0), inset 0 0 18px rgba(26, 188, 156, 0.9);
+        filter: brightness(1.6);
+    }
+}
