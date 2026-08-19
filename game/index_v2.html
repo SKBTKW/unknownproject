@@ -823,10 +823,10 @@
                     window.BuffPanelComponent.update(activeBuffs);
                 }
 
-                // 🎯 マリガンボタンの動的グレーアウト UI 連動 (残り火 0 以下またはカード配置済み)
+                // 🎯 マリガンボタンの動的グレーアウト UI 連動 (残り火 0 以下、配置済み、または当ターン1回使用済み)
                 const btnMulligan = document.getElementById("btnMulligan");
                 if (btnMulligan && state) {
-                    const isMulliganBlocked = state.hasPickedThisTurn || state.ember < 1;
+                    const isMulliganBlocked = state.hasPickedThisTurn || state.hasMulliganedThisTurn || state.ember < 1;
                     btnMulligan.disabled = isMulliganBlocked;
                     btnMulligan.style.opacity = isMulliganBlocked ? "0.45" : "1.0";
                     btnMulligan.style.cursor = isMulliganBlocked ? "not-allowed" : "pointer";
@@ -1211,11 +1211,12 @@
         }
         function mulligan() {
             if (!state || !drawSys) return;
-            // 🛡️ 残り火不足 (1未満) または配置済み時はマリガンを完全遮断
-            if (state.hasPickedThisTurn || state.ember < 1) return;
+            // 🛡️ 残り火不足 (1未満)、カード配置済み、または当ターンマリガン実行済み時は100%遮断
+            if (state.hasPickedThisTurn || state.hasMulliganedThisTurn || state.ember < 1) return;
             window.pinnedPreviewCard = null;
             hideCardHoverPreview(true);
             state.ember -= 1;
+            state.hasMulliganedThisTurn = true; // 🎯 当ターンマリガン済みフラグをセット
             drawSys.generateOfferingCards();
             render();
         }
@@ -1224,6 +1225,7 @@
             if (window.undoSys) window.undoSys.clearSnapshot();
             state.turn++;
             state.hasPickedThisTurn = false;
+            state.hasMulliganedThisTurn = false; // 🎯 ターン経過でマリガン権を回復
             drawSys.generateOfferingCards();
             render();
         }
