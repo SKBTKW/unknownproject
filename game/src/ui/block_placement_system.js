@@ -1,6 +1,6 @@
 /* =============================================================
    game/src/ui/block_placement_system.js
-   ブロック配置・プレビュー・ルール検証・発光一元管理モジュール
+   ブロック配置・プレビュー・ルール検証一元管理モジュール (余計なエフェクト一切なしの純粋復元)
    ============================================================= */
 
 (function(window) {
@@ -13,7 +13,7 @@
         }
 
         /**
-         * 1. プレビューおよびハイライトの全消去
+         * 1. プレビューハイライトの全消去
          */
         clearAllPreviews() {
             const cells = document.querySelectorAll("#gridBoard .cell");
@@ -21,8 +21,7 @@
                 cell.classList.remove(
                     "preview-valid",
                     "preview-invalid",
-                    "merge-hover-highlight",
-                    "hq-vicinity-hover-glow"
+                    "merge-hover-highlight"
                 );
             });
             if (typeof window.hideTileTooltip === "function") {
@@ -57,10 +56,9 @@
         }
 
         /**
-         * 3. セルホバー時の「配置ブロックプレビューハイライト」描画
-         *    表示優先順位:
-         *    1位: preview-valid / preview-invalid (最優先・近郊マスの上でも緑/赤枠が勝つ)
-         *    2位: hq-vicinity-hover-glow (本営隣接ボーナス波紋)
+         * 3. セルホバー時のシンプルで確実な「配置ブロックプレビューハイライト」描画
+         *    - 近郊マス(hq-vicinity-unplaced)の上であっても、余計なアニメーションなしで
+         *      シンプルに .preview-valid (緑枠) / .preview-invalid (赤枠) が100%最前面にクッキリ表示される
          * @param {Event} e 
          * @param {number} r 
          * @param {number} c 
@@ -86,7 +84,6 @@
 
             const rows = shape.length;
             const cols = shape[0].length;
-            let hitsHQVicinity = false;
 
             for (let dr = 0; dr < rows; dr++) {
                 for (let dc = 0; dc < cols; dc++) {
@@ -96,23 +93,12 @@
                         if (tr >= 0 && tr < 5 && tc >= 0 && tc < 5) {
                             const targetEl = document.querySelector(`#gridBoard .cell[data-r="${tr}"][data-c="${tc}"]`);
                             if (targetEl) {
-                                // 🌟 優先順位1位: どんなマス（近郊・ソケット）の上でもプレビュー枠が勝つ
+                                // 🌟 近郊マスやソケットマスの元スタイルを上書きし、緑枠/赤枠プレビューを忠実に最前面表示
                                 targetEl.classList.add(isValid ? "preview-valid" : "preview-invalid");
-
-                                if (gameState.isHQVicinity && gameState.isHQVicinity(tr, tc)) {
-                                    hitsHQVicinity = true;
-                                    targetEl.classList.add("hq-vicinity-hover-glow");
-                                }
                             }
                         }
                     }
                 }
-            }
-
-            // 本営周囲マスに被っている場合、本営自体もエメラルド波紋発光
-            if (hitsHQVicinity && isValid) {
-                const hqEl = document.querySelector("#gridBoard .cell.hq");
-                if (hqEl) hqEl.classList.add("hq-vicinity-hover-glow");
             }
         }
     }
