@@ -43,7 +43,7 @@
 
             for (let r = 0; r < 5; r++) {
                 for (let c = 0; c < 5; c++) {
-                    const check = gameState.canPlaceShape(shape, r, c);
+                    const check = gameState.canPlaceShape(r, c, shape);
                     const canPlace = (typeof check === 'object' && check !== null) ? check.can : check;
                     if (canPlace) {
                         const targetEl = document.querySelector(`#gridBoard .cell[data-r="${r}"][data-c="${c}"]`);
@@ -79,7 +79,7 @@
             const shape = card.currentShape || (card.terrain ? card.terrain.shape : [[1]]);
             if (!shape || !Array.isArray(shape)) return;
 
-            const check = gameState.canPlaceShape(shape, r, c);
+            const check = gameState.canPlaceShape(r, c, shape);
             const isValid = (typeof check === 'object' && check !== null) ? check.can : check;
 
             const rows = shape.length;
