@@ -927,12 +927,11 @@
     <div class="app-wrapper">
         <!-- 1. Top Header Bar (🔥 True Center Position & Right Aligned Data Panel) -->
         <div class="top-bar">
-            <!-- 左: タイトル -->
-            <div class="app-title-box" style="display:flex; align-items:center; gap:8px;">
-                <div id="lblAppTitle"></div>
-                <div class="role-avatar-box">
-                    <span id="lblRoleAvatar"></span>
-                    <span class="icon">👤</span>
+            <!-- 左: タイトルロゴ ＆ 30px右に配置されたロールアイコン -->
+            <div class="app-title-box" style="display:flex; align-items:center;">
+                <img src="assets/title_logo.png" alt="THE AGE OF TRIALS" id="imgTitleLogo" style="height: 52px; object-fit: contain; cursor: pointer;">
+                <div class="role-avatar-box" style="margin-left: 30px; display:flex; align-items:center; cursor:pointer;" id="roleAvatarBox">
+                    <img src="assets/role_icon.png" alt="Role Icon" id="imgRoleIcon" style="width: 42px; height: 42px; border-radius: 8px; border: 2px solid #1abc9c; box-shadow: 0 0 12px rgba(26, 188, 156, 0.6); transition: transform 0.15s ease;" onmouseenter="this.style.transform='scale(1.08)'" onmouseleave="this.style.transform='scale(1.0)'">
                 </div>
             </div>
             
