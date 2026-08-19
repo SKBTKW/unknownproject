@@ -224,20 +224,20 @@
         }
 
         function clearCellPreviews() {
-            if (window.BlockPlacementSystem) {
-                window.BlockPlacementSystem.clearAllPreviews();
+            if (window.BlockPlacementManager) {
+                window.BlockPlacementManager.clearAllPreviews();
             } else {
                 const cells = document.querySelectorAll(".cell");
                 cells.forEach(c => {
-                    c.classList.remove("preview-valid", "preview-invalid", "merge-hover-highlight", "hq-vicinity-hover-glow");
+                    c.classList.remove("preview-valid", "preview-invalid", "merge-hover-highlight");
                 });
                 hideTileTooltip();
             }
         }
 
         function highlightPlaceableCells() {
-            if (window.BlockPlacementSystem) {
-                window.BlockPlacementSystem.highlightPlaceableCandidates(selectedCard, state);
+            if (window.BlockPlacementManager) {
+                window.BlockPlacementManager.highlightPlaceableCandidates(selectedCard, state);
             }
         }
 
@@ -252,8 +252,8 @@
                 groupCells.forEach(el => el.classList.add("merge-hover-highlight"));
             }
 
-            if (window.BlockPlacementSystem) {
-                window.BlockPlacementSystem.updateHoverPreview(e, r, c, selectedCard, state);
+            if (window.BlockPlacementManager) {
+                window.BlockPlacementManager.updateHoverPreview(e, r, c, selectedCard, state);
             }
         }
 
