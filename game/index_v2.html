@@ -428,8 +428,7 @@
                 setElementText("valWoodProd", `+${prods.totalWood}`);
                 setElementText("valDefense", state.calculateTotalDefense());
                 setElementText("valMystic", state.mystic);
-                const mysticProdVal = (prods.totalMystic && prods.totalMystic > 1) ? (prods.totalMystic - 1) : 0;
-                setElementText("valMysticProd", `+${mysticProdVal}`);
+                setElementText("valMysticProd", `+${prods.totalMystic || 1}`);
                 setElementText("valPlacedCount", `${state.countPlacedTiles()}/24`);
 
                 if (typeof renderDirectiveHeaderBadge === "function") {
@@ -740,8 +739,7 @@
                             }
                             shapeHtml += `</div>`;
 
-                            let yieldText = `<span>🌾${totF}</span> <span>🧱${totW}</span> <span>🛡️${totD}</span>`;
-                            if (totM > 0) yieldText += ` <span>✨${totM}</span>`;
+                            let yieldText = `<span>🌾${totF}</span> <span>🧱${totW}</span> <span>🛡️${totD}</span> <span>✨${totM}</span>`;
 
                             cardEl.innerHTML = `
                                 <div class="tcg-card-top-bar" style="padding:4px 8px;">
