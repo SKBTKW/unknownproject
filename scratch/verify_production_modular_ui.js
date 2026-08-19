@@ -24,13 +24,13 @@ const { chromium } = require('playwright');
 
     const brainDir = 'C:/Users/mam07/.gemini/antigravity/brain/af6d4803-5dd7-4a55-87d7-472ecdecfde4';
     
-    // 1. 通常時 (マウスが下部エリア外の盤面上にある状態)
+    // 1. 通常時 (画面中央盤面クッキリ)
     const pathNormal = `${brainDir}/normal_focus_${timeStamp}.png`;
     await page.screenshot({ path: pathNormal });
     console.log(`Captured normal focus state: ${pathNormal}`);
 
-    // 2. 下部カードエリアにマウスが乗った時 (ボカシフォーカス発生状態)
-    await page.hover('.bottom-card-container');
+    // 2. 左下カード選択エリアにマウスが入った時 (ボカシフォーカス発生状態)
+    await page.hover('.offering-section');
     await page.waitForTimeout(400); // アニメーション待ち
 
     const pathFocused = `${brainDir}/card_hover_focus_${timeStamp}.png`;

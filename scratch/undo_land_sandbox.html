@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Undo Land Placement Sandbox</title>
+    <style>
+        body {
+            background: #0f141d;
+            color: #ffffff;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        .status-box {
+            background: #182232;
+            border: 1px solid #2c3e50;
+            padding: 16px 24px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            min-width: 350px;
+        }
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            background: #1abc9c;
+            color: #0d201a;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:hover { background: #16a085; color: #fff; }
+    </style>
+</head>
+<body>
+
+    <h1>↩ 土地配置取り消し（Undo）仮作業検証サンドボックス</h1>
+
+    <div class="status-box">
+        <h3>現在の GameState 状態</h3>
+        <p id="resourceState">🌾 食料: 30 | 🧱 資材: 30 | 🛡️ 防衛: 10</p>
+        <p id="placementState">配置状態: 未配置 (hasPicked: false)</p>
+        <p id="handState">手札枠0: [ 草原 1x1 ]</p>
+    </div>
+
+    <div class="btn-group">
+        <button onclick="simulateLandPlacement()">1. 土地配置（接続ボーナス 🌾+10 / 🧱+10 発生）</button>
+        <button onclick="simulateNextTurn()">2. 次のターンへ進む (TURN END)</button>
+    </div>
+
+    <div id="bottomActionContainer"></div>
+
+    <script src="undo_land_system.js"></script>
+    <script>
+        // 🧪 仮の GameState オブジェクト構造
+        const fakeState = {
+            turn: 1,
+            food: 30,
+            wood: 30,
+            defense: 10,
+            ember: 20,
+            mystic: 0,
+            hasPickedThisTurn: false,
+            grid: Array(5).fill(0).map((_, r) => Array(5).fill(0).map((_, c) => ({ r, c, placed: (r===2&&c===2) }))),
+            grantedConnectionPairs: new Set(),
+            mergedBlocks: {},
+            handOffering: [{ id: "card_plains_01", nameKey: "LAND_PLAINS_1X1", terrain: { nameKey: "LAND_PLAINS" } }, null, null],
+            addLog: (msg) => console.log("LOG:", msg)
+        };
+
+        const undoSys = new UndoLandSystem(fakeState);
+
+        function updateUI() {
+            document.getElementById("resourceState").innerText = `🌾 食料: ${fakeState.food} | 🧱 資材: ${fakeState.wood} | 🛡️ 防衛: ${fakeState.defense}`;
+            document.getElementById("placementState").innerText = `配置状態: ${fakeState.hasPickedThisTurn ? "配置完了 (hasPicked: true)" : "未配置 (hasPicked: false)"}`;
+            document.getElementById("handState").innerText = `手札枠0: ${fakeState.handOffering[0] ? fakeState.handOffering[0].nameKey : "(空き・使用済み)"}`;
+        }
+
+        function simulateLandPlacement() {
+            if (fakeState.hasPickedThisTurn) return;
+
+            // 📸 1. 置く直前にディープスナップショット保存
+            undoSys.captureSnapshot();
+
+            // 2. 土地配置＆接続ボーナス加算
+            fakeState.grid[2][1].placed = true;
+            fakeState.food += 10;
+            fakeState.wood += 10;
+            fakeState.grantedConnectionPairs.add("HQ_2_1");
+            fakeState.handOffering[0] = null;
+            fakeState.hasPickedThisTurn = true;
+
+            updateUI();
+        }
+
+        function simulateNextTurn() {
+            undoSys.clearSnapshot();
+            fakeState.turn++;
+            fakeState.hasPickedThisTurn = false;
+            fakeState.handOffering[0] = { id: "card_forest_02", nameKey: "LAND_FOREST_1X1", terrain: { nameKey: "LAND_FOREST" } };
+            updateUI();
+        }
+
+        window.render = updateUI;
+        updateUI();
+    </script>
+</body>
+</html>

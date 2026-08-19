@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Relocated 2x Log Panel Sandbox - Main Area Top-Left</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: #0b0e14;
+            color: #ffffff;
+            font-family: 'Segoe UI', sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* 👑 最上部ヘッダー */
+        .header-bar-master {
+            height: 84px;
+            background: #121620;
+            border-bottom: 1.5px solid #1e2538;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            position: relative;
+        }
+        .app-title { font-size: 18px; font-weight: bold; }
+        .ember-center {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 36px;
+            font-weight: 900;
+            color: #f1c40f;
+        }
+        .header-data { margin-left: auto; font-size: 20px; font-weight: bold; }
+
+        /* 🕹️ メインエリア (全幅 100%) */
+        .middle-board-area {
+            flex: 1;
+            background: #0f141d;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 📜 メインエリア左上隅: 2倍拡大ログトグルコンテナ */
+        .main-top-left-log-wrapper {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            z-index: 800;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        /* 2倍拡大ボタン */
+        .btn-log-toggle-2x {
+            background: rgba(24, 34, 50, 0.95);
+            color: #1abc9c;
+            border: 2px solid #1abc9c;
+            border-radius: 8px;
+            padding: 10px 22px;
+            font-size: 20px;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+            transition: all 0.2s ease;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-log-toggle-2x:hover {
+            background: #1abc9c;
+            color: #0b0e14;
+            box-shadow: 0 6px 20px rgba(26,188,156,0.6);
+        }
+
+        /* 2倍拡大ログドロップダウンパネル */
+        .log-dropdown-panel-2x {
+            margin-top: 8px;
+            width: 680px;
+            max-width: 85vw;
+            max-height: 480px;
+            background: rgba(15, 20, 29, 0.98);
+            border: 2.5px solid #1abc9c;
+            border-radius: 12px;
+            box-shadow: 0 14px 40px rgba(0,0,0,0.95), 0 0 25px rgba(26,188,156,0.3);
+            backdrop-filter: blur(12px);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: dropdownFadeIn 0.15s ease-out forwards;
+        }
+        @keyframes dropdownFadeIn {
+            0% { opacity: 0; transform: translateY(-8px) scale(0.97); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .log-dropdown-header-2x {
+            background: #161a24;
+            padding: 12px 20px;
+            font-size: 20px;
+            font-weight: 900;
+            color: #1abc9c;
+            border-bottom: 2px solid #2c3e50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .log-content-2x {
+            padding: 16px 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            font-size: 18px;
+            line-height: 1.6;
+            color: #ecf0f1;
+        }
+        .log-entry {
+            border-bottom: 1px solid rgba(44, 62, 80, 0.6);
+            padding-bottom: 6px;
+        }
+        .log-entry .time { color: #1abc9c; font-weight: bold; margin-right: 8px; }
+
+        /* 盤面グリッド */
+        .grid-mock {
+            width: 320px;
+            height: 320px;
+            background: #182232;
+            border-radius: 8px;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 4px;
+            padding: 8px;
+        }
+        .grid-cell { background: #2c3e50; border-radius: 4px; }
+        .grid-cell.hq { background: #1abc9c; }
+    </style>
+</head>
+<body>
+
+    <!-- 👑 最上部ヘッダー -->
+    <div class="header-bar-master">
+        <div class="app-title">Trial of Ages : Last Ember 👤</div>
+        <div class="ember-center">🔥 : 20</div>
+        <div class="header-data">🌾 30 (+10/T) | 🧱 30 | 🛡️ 10 | ✨ 0</div>
+    </div>
+
+    <!-- 🕹️ メインエリア (全幅) -->
+    <div class="middle-board-area">
+        <!-- 📜 メインエリア左上隅: 2倍拡大ログボタン ＆ パネル -->
+        <div class="main-top-left-log-wrapper">
+            <button class="btn-log-toggle-2x" id="btnLogToggle2x" onclick="toggleLogPanel2x(event)">
+                📜 ログ <span id="logArrow2x">△</span>
+            </button>
+
+            <div class="log-dropdown-panel-2x" id="logPanel2x">
+                <div class="log-dropdown-header-2x">
+                    <span>📜 システム動作・内政ログ一覧</span>
+                    <span style="cursor:pointer; font-size:22px;" onclick="toggleLogPanel2x(event)">✕</span>
+                </div>
+                <div class="log-content-2x">
+                    <div class="log-entry"><span class="time">[T1]</span> ゲーム開始。初期残り火 🔥 20 が灯されました。</div>
+                    <div class="log-entry"><span class="time">[T1]</span> 土地探索カード 『草原 (1x2)』 を B3〜C3 マスに配置しました。</div>
+                    <div class="log-entry"><span class="time">[T1]</span> 食料産出 +10/T、資材産出 +10/T が正常に更新されました。</div>
+                    <div class="log-entry"><span class="time">[T2]</span> ターン経過。維持コスト 🌾-20 が自動決済されました。</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 盤面グリッド -->
+        <div class="grid-mock">
+            <div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div>
+            <div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div>
+            <div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell hq"></div><div class="grid-cell"></div><div class="grid-cell"></div>
+            <div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div>
+            <div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div>
+        </div>
+    </div>
+
+    <script>
+        function toggleLogPanel2x(e) {
+            if (e) e.stopPropagation();
+            const panel = document.getElementById("logPanel2x");
+            const arrow = document.getElementById("logArrow2x");
+            if (!panel) return;
+
+            const isHidden = (panel.style.display === "none");
+            panel.style.display = isHidden ? "flex" : "none";
+            if (arrow) arrow.innerText = isHidden ? "△" : "▽";
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Integration Test Clone</title>
+    <!-- Original styles imported from game/ -->
+    <link rel="stylesheet" href="../game/css/0_global_common/base_layout.css">
+    <link rel="stylesheet" href="../game/css/1_top_header/top_header.css">
+    <link rel="stylesheet" href="../game/css/2_center_area/land_grid.css">
+    <link rel="stylesheet" href="../game/css/3_bottom_area/bottom_cards.css">
+    <link rel="stylesheet" href="../game/css/4_right_sidebar/right_sidebar.css">
+    <style>
+        /* Exact copy of inline styles from game/index_v2.html */
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        body { background: #0f141d; color: #ecf0f1; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+        .app-wrapper { display: flex; flex-direction: column; height: 100vh; width: 100vw; }
+        .top-bar { height: 50px; background: #182232; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; border-bottom: 1px solid #2c3e50; }
+        .middle-layout { flex: 1; display: flex; overflow: hidden; }
+        .board-container { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; background: #111823; }
+        .sidebar { width: 280px; background: #182232; border-left: 1px solid #2c3e50; display: flex; flex-direction: column; padding: 12px; }
+        .bottom-card-container { height: 160px; background: #141c2b; border-top: 1px solid #2c3e50; padding: 8px 16px; display: flex; align-items: center; }
+    </style>
+</head>
+<body>
+    <!-- Real App Clone Layout for Isolated Integration Test -->
+    <div class="app-wrapper">
+        <div class="top-bar">
+            <div>Trial of Ages : Last Ember</div>
+            <div>🔥: 20</div>
+            <div>Turn: 1/50</div>
+        </div>
+        <div class="middle-layout">
+            <div class="board-container">
+                <div style="width:300px; height:300px; border:1px solid #1abc9c; display:flex; align-items:center; justify-content:center; color:#1abc9c;">5x5 Grid Simulated Area</div>
+            </div>
+            <div class="sidebar">
+                <h3>産出データ</h3>
+                <p>🌾 食料: 30 (+10/T)</p>
+                <p>🧱 資材: 30 (+10/T)</p>
+            </div>
+        </div>
+        <div class="bottom-card-container">
+            <div style="color:#bdc3c7;">手札オファリング Area</div>
+        </div>
+    </div>
+
+    <!-- 🧪 ModalSystem 共通モジュールの仮読み込みテスト -->
+    <script src="modal_system.js"></script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ModalSystem Sandbox Verification</title>
+    <style>
+        body {
+            background: #0f141d;
+            color: #ffffff;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            gap: 20px;
+        }
+        .btn-group {
+            display: flex;
+            gap: 15px;
+        }
+        button {
+            padding: 12px 24px;
+            background: #2c3e50;
+            color: #fff;
+            border: 1px solid #1abc9c;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #1abc9c;
+        }
+        #resultLog {
+            background: #182232;
+            padding: 12px 20px;
+            border-radius: 6px;
+            min-width: 300px;
+            text-align: center;
+            color: #f1c40f;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🏛️ ModalSystem 共通モジュール 仮作業検証サンドボックス</h1>
+    
+    <div class="btn-group">
+        <button onclick="testConfirmDialog()">📜 コマンド確認ダイアログ テスト</button>
+        <button onclick="testEyecatch()">🎬 ターン開始アイキャッチ テスト</button>
+    </div>
+
+    <div id="resultLog">待機中...</div>
+
+    <script src="modal_system.js"></script>
+    <script>
+        function testConfirmDialog() {
+            ModalSystem.showConfirmDialog({
+                title: "📜 治水農具 を発動しますか？",
+                descText: "農地を整備し、資材を獲得して持続的な食料産出を強化します。",
+                costText: "🌾-10",
+                confirmLabel: "⚡ 発動する",
+                cancelLabel: "✖ キャンセル",
+                onConfirm: () => {
+                    document.getElementById("resultLog").innerText = "結果: ⚡ 治水農具 を発動しました！（実行）";
+                },
+                onCancel: () => {
+                    document.getElementById("resultLog").innerText = "結果: ✖ キャンセルされました（非破壊）";
+                }
+            });
+        }
+
+        function testEyecatch() {
+            ModalSystem.showEyecatch({
+                title: "TURN 15 / 50",
+                subtitle: "🛡️ 第1試練 到来！ 試練ダメージに備えよ",
+                durationMs: 2000,
+                onComplete: () => {
+                    document.getElementById("resultLog").innerText = "結果: 🎬 アイキャッチ演出完了";
+                }
+            });
+        }
+    </script>
+</body>
+</html>

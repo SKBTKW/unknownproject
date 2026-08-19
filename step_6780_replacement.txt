@@ -1,0 +1,190 @@
+function checkPolityUnlocks(policyId) {
+  if (policyId === 'tactics') {
+    state.polities.autocracy = true;
+    state.addLog('新たな政体「専制君主制」が選択可能になりました！', 'system');
+  } else if (policyId === 'mysticism') {
+    state.polities.theocracy = true;
+    state.addLog('新たな政体「神聖君主制」が選択可能になりました！', 'system');
+  } else if (policyId === 'agriculture') {
+    state.polities.pioneer_democracy = true;
+    state.addLog('新たな政体「開拓民主制」が選択可能になりました！', 'system');
+  }
+}
+
+// Bind click listeners for resource details modal
+const resFireEl = document.getElementById('res-fire');
+if (resFireEl) resFireEl.onclick = () => showResourceDetail('fire');
+const totalFoodEl = document.getElementById('total-food');
+const totalMatEl = document.getElementById('total-materials');
+const totalDefEl = document.getElementById('total-defense');
+const totalMysEl = document.getElementById('total-mystic');
+if (totalFoodEl) totalFoodEl.onclick = () => showResourceDetail('food');
+if (totalMatEl) totalMatEl.onclick = () => showResourceDetail('materials');
+if (totalDefEl) totalDefEl.onclick = () => showResourceDetail('defense');
+if (totalMysEl) totalMysEl.onclick = () => showResourceDetail('mystic');
+
+// Bind click listeners for Mystic Miracles
+const btnMiracleLow = document.getElementById('btn-miracle-low');
+const btnMiracleMed = document.getElementById('btn-miracle-med');
+const btnMiracleHigh = document.getElementById('btn-miracle-high');
+
+if (btnMiracleLow) {
+  btnMiracleLow.onclick = () => {
+    let discount = state.role === ROLES.PROPHET ? 0.8 : 1.0;
+    if (state.activePolity === 'theocracy') discount *= 0.9;
+    const cost = Math.round(30 * discount);
+    if (state.mystic < cost) return;
+    state.adjustResource('mystic', -cost);
+    triggerMysticMiracleFX();
+
+    el.modalGenericEvent.style.display = 'flex';
+    const imgEl = document.getElementById('generic-event-image');
+    if (imgEl) imgEl.style.backgroundImage = "url('images/lake.png')";
+    document.getElementById('generic-event-icon').style.display = 'none';
+    document.getElementById('generic-event-title').innerText = '神秘の奇跡（初級）';
+    document.getElementById('generic-event-text').innerText = '精霊の啓示を受け、一時的な支援を得る奇跡。';
+
+    const container = document.getElementById('generic-event-options');
+    container.innerHTML = `
+      <button class="event-option-btn" id="btn-mir-low-opt1">
+        <span>予知の啓示（次の試練の襲来を +1 ターン遅らせる）</span>
+      </button>
+      <button class="event-option-btn" id="btn-mir-low-opt2">
+        <span>戦士の鼓舞（当ターンのみ防衛力 +20）</span>
+      </button>
+    `;
+
+    document.getElementById('btn-mir-low-opt1').onclick = () => {
+      state.upcomingTrial.turn += 1;
+      state.addLog('奇跡発動：予知により次の試練の襲来時期が 1 ターン延期されました！', 'reward');
+      el.modalGenericEvent.style.display = 'none';
+      updateUI();
+    };
+
+    document.getElementById('btn-mir-low-opt2').onclick = () => {
+      state.accumulatedDefense = (state.accumulatedDefense || 0) + 20;
+      state.defense += 20;
+      state.addLog('奇跡発動：戦士の士気が高まり、防衛力 +20 を獲得しました！', 'reward');
+      el.modalGenericEvent.style.display = 'none';
+      updateUI();
+    };
+  };
+}
+
+if (btnMiracleMed) {
+  btnMiracleMed.onclick = () => {
+    let discount = state.role === ROLES.PROPHET ? 0.8 : 1.0;
+    if (state.activePolity === 'theocracy') discount *= 0.9;
+    const cost = Math.round(70 * discount);
+    if (state.mystic < cost) return;
+    state.adjustResource('mystic', -cost);
+    triggerMysticMiracleFX();
+
+    el.modalGenericEvent.style.display = 'flex';
+    const imgEl = document.getElementById('generic-event-image');
+    if (imgEl) imgEl.style.backgroundImage = "url('images/lake.png')";
+    document.getElementById('generic-event-icon').style.display = 'none';
+    document.getElementById('generic-event-title').innerText = '神秘の奇跡（中級）';
+    document.getElementById('generic-event-text').innerText = '大地の恵みを呼び覚まし、大いなる発展を遂げる奇跡。';
+
+    const container = document.getElementById('generic-event-options');
+    container.innerHTML = `
+      <button class="event-option-btn" id="btn-mir-med-opt1">
+        <span>大地の豊穣（食料 +50、資材 +50 を獲得）</span>
+      </button>
+      <button class="event-option-btn" id="btn-mir-med-opt2">
+        <span>天啓の知恵（未解禁の社会制度をランダムで1つ即座に解禁する）</span>
+      </button>
+    `;
+
+    document.getElementById('btn-mir-med-opt1').onclick = () => {
+      state.adjustResource('food', 50);
+      state.adjustResource('materials', 50);
+      state.addLog('奇跡発動：大地の豊穣により食料 +50、資材 +50 を獲得しました！', 'reward');
+      el.modalGenericEvent.style.display = 'none';
+      updateUI();
+    };
+
+    document.getElementById('btn-mir-med-opt2').onclick = () => {
+      const locked = [];
+      Object.keys(state.policies).forEach(k => {
+        if (!state.policies[k]) locked.push(k);
+      });
+      if (locked.length > 0) {
+        const target = locked[Math.floor(Math.random() * locked.length)];
+        state.policies[target] = true;
+        checkPolityUnlocks(target);
+        state.addLog(\`奇跡発動：天啓により社会制度「\${target}」が即時解禁されました！\`, 'reward');
+      } else {
+        state.adjustResource('materials', 100);
+        state.addLog('奇跡発動：すべての制度が解禁済みなため、資材 +100 を獲得しました。', 'reward');
+      }
+      el.modalGenericEvent.style.display = 'none';
+      updateUI();
+    };
+  };
+}
+
+if (btnMiracleHigh) {
+  btnMiracleHigh.onclick = () => {
+    let discount = state.role === ROLES.PROPHET ? 0.8 : 1.0;
+    if (state.activePolity === 'theocracy') discount *= 0.9;
+    const cost = Math.round(150 * discount);
+    if (state.mystic < cost) return;
+    state.adjustResource('mystic', -cost);
+    triggerMysticMiracleFX();
+
+    el.modalGenericEvent.style.display = 'flex';
+    const imgEl = document.getElementById('generic-event-image');
+    if (imgEl) imgEl.style.backgroundImage = "url('images/lake.png')";
+    document.getElementById('generic-event-icon').style.display = 'none';
+    document.getElementById('generic-event-title').innerText = '神秘の奇跡（上級）';
+    document.getElementById('generic-event-text').innerText = '世界の残り火と一体となり、運命を改変する奇跡を引き起こします。';
+
+    const container = document.getElementById('generic-event-options');
+    container.innerHTML = `
+      <button class="event-option-btn" id="btn-mir-high-opt1">
+        <span>神罰の雷（次の試練の敵戦闘力を -30% 永久低下させる）</span>
+      </button>
+      <button class="event-option-btn" id="btn-mir-high-opt2">
+        <span>地殻の急成長（任意の土地1スロットを、即座に最大開発段階「レジェンダリ★4」へ昇格する）</span>
+      </button>
+    `;
+
+    document.getElementById('btn-mir-high-opt1').onclick = () => {
+      state.upcomingTrial.basePower = Math.round(state.upcomingTrial.basePower * 0.7);
+      state.upcomingTrial.power = Math.round(state.upcomingTrial.power * 0.7);
+      state.addLog('奇跡発動：次の試練 of 敵戦闘力を 30% 減弱しました！', 'reward');
+      el.modalGenericEvent.style.display = 'none';
+      updateUI();
+    };
+
+    document.getElementById('btn-mir-high-opt2').onclick = () => {
+      el.modalGenericEvent.style.display = 'none';
+      state.addLog('奇跡発動：最大開発する土地を盤面からクリックしてください。', 'system');
+      
+      const slots = document.querySelectorAll('.board-slot');
+      slots.forEach(slot => {
+        const idx = parseInt(slot.dataset.slotIndex);
+        const land = state.board[idx];
+        if (land && land.terrain && !land.seaOccupied && idx !== 0) {
+          slot.classList.add('highlight-attachment');
+          slot.onclick = () => {
+            land.devLevel = 4;
+            updateLandRarity(land);
+            state.addLog(\`奇跡適用：\${getTerrainDisplayName(land.terrain)} を最大開発段階（L★4）に昇格しました！\`, 'reward');
+            triggerMergeFX(idx);
+            
+            slots.forEach(s => {
+              s.classList.remove('highlight-attachment');
+              s.onclick = null;
+            });
+            updateUI();
+          };
+        }
+      });
+    };
+  };
+}
+`
+);
