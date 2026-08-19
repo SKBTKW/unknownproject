@@ -231,8 +231,10 @@
         }
 
         function highlightPlaceableCells() {
+            clearCellPreviews();
             if (!selectedCard || !state || state.hasPickedThisTurn) return;
-            const shape = selectedCard.currentShape;
+
+            const shape = selectedCard.currentShape || (selectedCard.terrain ? selectedCard.terrain.shape : [[1]]);
             if (!shape) return;
 
             for (let r = 0; r < 5; r++) {
@@ -264,9 +266,9 @@
             if (!selectedCard || state.hasPickedThisTurn) return;
             
             // 全体の配置可能緑枠を残しつつ、ホバー位置のプレビューを表示
-            const shape = selectedCard.currentShape;
-            const check = state.canPlaceShape(r, c, shape);
-            const isValid = check.can;
+            const shape = selectedCard.currentShape || (selectedCard.terrain ? selectedCard.terrain.shape : [[1]]);
+            const check = state.canPlaceShape(shape, r, c);
+            const isValid = (typeof check === 'object' && check !== null) ? check.can : check;
 
             const rows = shape.length;
             const cols = shape[0].length;
@@ -621,6 +623,11 @@
                             boardEl.appendChild(cellEl);
                         }
                     }
+                }
+
+                // 🎯 土地カード選択時の置けるマス発光ハイライト復元
+                if (selectedCard) {
+                    highlightPlaceableCells();
                 }
 
                 // 1. ドローオファリングエリア描画
