@@ -970,18 +970,18 @@
         </div>
 
         <!-- 🕹️ 2. Middle Board Area (Horizontal Partition - Relocated Modular Log & Buff Dropup) -->
-        <div class="middle-layout" style="padding-top: 32px; padding-bottom: 12px; box-sizing: border-box;">
-            <div class="board-container" style="flex:1; width:100%; position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:0; overflow:visible !important;">
+        <div class="middle-layout" style="position:relative; overflow:visible !important;">
+            <div class="board-container">
                 <!-- 📜 メインエリア左上隅: モジュール化 0.75x ログコンテナ -->
                 <div id="logComponentContainer"></div>
 
-                <!-- 🏷️ 盤面エリア右上隅バッジ (gridBoard内ではなく、外枠右上ヘッダー位置) -->
+                <!-- 🏷️ 盤面エリア右上隅バッジ -->
                 <div class="main-area-badge"><span id="lblMainBadge"></span> <span id="valPlacedCount">1</span>/24</div>
 
-                <!-- 🧩 盤面中央エリアコンテナ -->
-                <div class="board-container-wrapper" style="position:relative; display:flex; flex-direction:column; align-items:center;">
+                <!-- 🧩 盤面中央エリアコンテナ (UILayoutConfigによる集中一元管理) -->
+                <div class="board-container-wrapper">
                     <!-- ✨ 盤面直上: モジュール化 上方向トグル展開バフコンテナ -->
-                    <div id="buffComponentContainer" style="width:520px; position:absolute; bottom:calc(100% + 8px); z-index:800;"></div>
+                    <div id="buffComponentContainer"></div>
 
                     <div id="gridBoard" class="grid-with-headers"></div>
                 </div>
@@ -1058,6 +1058,7 @@
     <script src="src/ui/modal_system.js?v=20260818_1"></script>
     <script src="src/ui/log_component.js"></script>
     <script src="src/ui/buff_panel_component.js"></script>
+    <script src="src/ui/layout_config.js"></script>
     <script src="src/ui/v2_ui_renderer.js"></script>
     <script>
         let state = null;
@@ -1066,6 +1067,9 @@
         let selectedCardIdx = -1;
 
         function initModularUIComponents() {
+            if (window.UILayoutConfig) {
+                window.UILayoutConfig.applyLayout();
+            }
             const logContainer = document.getElementById("logComponentContainer");
             if (window.LogComponent && logContainer && !logContainer.hasChildNodes()) {
                 window.LogComponent.mount(logContainer);
