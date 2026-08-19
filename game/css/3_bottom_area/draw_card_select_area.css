@@ -159,19 +159,29 @@
     filter: blur(3px) brightness(0.68) !important;
 }
 
-/* 🎯 カード選択時でも配置可能マス（ハイライトセル）はボカシを抜けて鮮明発光 */
-.board-blur-focus .cell.preview-valid,
-.board-blur-focus .cell.hq-vicinity-unplaced {
-    filter: blur(0px) brightness(1.3) !important;
-    z-index: 50;
-    box-shadow: 0 0 20px rgba(26, 188, 156, 1.0) !important;
+/* 🎯 表示優先順位1位: 配置ブロックプレビューハイライト (.preview-valid / .preview-invalid)
+   近郊マス(.hq-vicinity-unplaced)やソケットマスの上であっても、緑/赤枠プレビューが素直に最前面に出る */
+.cell.preview-valid {
+    background: rgba(26, 188, 156, 0.45) !important;
+    border: 2.5px solid #1abc9c !important;
+    box-shadow: 0 0 16px rgba(26, 188, 156, 0.8) !important;
+    z-index: 80 !important;
+    filter: blur(0px) brightness(1.2) !important;
 }
 
-/* 🌟 本営周囲マス被り時の強烈なエメラルド波紋発光演出 */
+.cell.preview-invalid {
+    background: rgba(231, 76, 60, 0.45) !important;
+    border: 2.5px solid #e74c3c !important;
+    box-shadow: 0 0 16px rgba(231, 76, 60, 0.8) !important;
+    z-index: 80 !important;
+    filter: blur(0px) brightness(1.2) !important;
+}
+
+/* 🌟 本営周囲マス被り時のエメラルド波紋発光演出 */
 .cell.hq-vicinity-hover-glow {
-    animation: hqGlowPulse 0.8s infinite alternate !important;
-    border-color: #1abc9c !important;
-    z-index: 60 !important;
+    animation: hqGlowPulse 0.8s infinite alternate;
+    border-color: #1abc9c;
+    z-index: 70;
 }
 
 @keyframes hqGlowPulse {

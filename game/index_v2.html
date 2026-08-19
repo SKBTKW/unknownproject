@@ -141,6 +141,7 @@
     <script src="src/ui/log_component.js"></script>
     <script src="src/ui/buff_panel_component.js"></script>
     <script src="src/ui/layout_config.js"></script>
+    <script src="src/ui/block_placement_system.js"></script>
     <script src="src/ui/v2_ui_renderer.js"></script>
     <script>
         let state = null;
@@ -223,38 +224,26 @@
         }
 
         function clearCellPreviews() {
-            const cells = document.querySelectorAll(".cell");
-            cells.forEach(c => {
-                c.classList.remove("preview-valid", "preview-invalid", "merge-hover-highlight", "hq-vicinity-hover-glow");
-            });
-            hideTileTooltip();
+            if (window.BlockPlacementSystem) {
+                window.BlockPlacementSystem.clearAllPreviews();
+            } else {
+                const cells = document.querySelectorAll(".cell");
+                cells.forEach(c => {
+                    c.classList.remove("preview-valid", "preview-invalid", "merge-hover-highlight", "hq-vicinity-hover-glow");
+                });
+                hideTileTooltip();
+            }
         }
 
         function highlightPlaceableCells() {
-            clearCellPreviews();
-            if (!selectedCard || !state || state.hasPickedThisTurn) return;
-
-            const shape = selectedCard.currentShape || (selectedCard.terrain ? selectedCard.terrain.shape : [[1]]);
-            if (!shape) return;
-
-            for (let r = 0; r < 5; r++) {
-                for (let c = 0; c < 5; c++) {
-                    const check = state.canPlaceShape(r, c, shape);
-                    if (check.can) {
-                        const targetEl = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
-                        if (targetEl) {
-                            targetEl.classList.add("preview-valid");
-                        }
-                    }
-                }
+            if (window.BlockPlacementSystem) {
+                window.BlockPlacementSystem.highlightPlaceableCandidates(selectedCard, state);
             }
         }
 
         function onCellMouseEnter(e, r, c) {
             if (!state) return;
             const cellData = state.grid[r][c];
-            showTileTooltip(e, r, c, cellData);
-            if (window.undoSys) window.undoSys.showHoverTooltip(e, r, c);
 
             // 同一マージグループ連動ホバーライトアップハイライト
             const groupId = cellData ? (cellData.mergeGroupId || cellData.placementGroupId) : null;
@@ -263,40 +252,8 @@
                 groupCells.forEach(el => el.classList.add("merge-hover-highlight"));
             }
 
-            if (!selectedCard || state.hasPickedThisTurn) return;
-            
-            // 全体の配置可能緑枠を残しつつ、ホバー位置のプレビューを表示
-            const shape = selectedCard.currentShape || (selectedCard.terrain ? selectedCard.terrain.shape : [[1]]);
-            const check = state.canPlaceShape(shape, r, c);
-            const isValid = (typeof check === 'object' && check !== null) ? check.can : check;
-
-            const rows = shape.length;
-            const cols = shape[0].length;
-            let hitsHQVicinity = false;
-
-            for (let dr = 0; dr < rows; dr++) {
-                for (let dc = 0; dc < cols; dc++) {
-                    if (shape[dr][dc] === 1) {
-                        const tr = r + dr;
-                        const tc = c + dc;
-                        if (tr >= 0 && tr < 5 && tc >= 0 && tc < 5) {
-                            const targetEl = document.querySelector(`.cell[data-r="${tr}"][data-c="${tc}"]`);
-                            if (targetEl) {
-                                targetEl.classList.add(isValid ? "preview-valid" : "preview-invalid");
-                                if (state.isHQVicinity && state.isHQVicinity(tr, tc)) {
-                                    hitsHQVicinity = true;
-                                    targetEl.classList.add("hq-vicinity-hover-glow");
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (hitsHQVicinity && isValid) {
-                // 本営周囲マスに被っている場合、本営自体もエメラルド波紋発光
-                const hqEl = document.querySelector(".cell.hq");
-                if (hqEl) hqEl.classList.add("hq-vicinity-hover-glow");
+            if (window.BlockPlacementSystem) {
+                window.BlockPlacementSystem.updateHoverPreview(e, r, c, selectedCard, state);
             }
         }
 
