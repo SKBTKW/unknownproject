@@ -149,7 +149,7 @@ body {
     overflow: visible !important;
 }
 
-/* 🎯 中央盤面エリア */
+/* 🎯 中央盤面エリア (画面全幅のメインエリア枠 ✕ パターンA) */
 .board-container {
     background: #13161f;
     border: 1px solid #252a38;
@@ -159,12 +159,12 @@ body {
     align-items: center;
     justify-content: center;
     position: relative;
-    padding: 12px;
+    padding: 16px;
     box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
-    height: 100%;
-    margin: 0 auto;
+    width: 100% !important;
+    height: 100% !important;
+    flex: 1;
     overflow: visible !important;
-    transition: filter 0.25s ease, opacity 0.25s ease;
 }
 
 /* 🌀 下部カードエリアフォーカス時の盤面微細ボカシ演出 */

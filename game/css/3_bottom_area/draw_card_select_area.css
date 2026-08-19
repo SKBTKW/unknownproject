@@ -1,9 +1,9 @@
 /* =============================================================
    game/css/3_bottom_area/draw_card_select_area.css
-   下部エリア統合：左下カード選択エリア ＆ 右下操作グループ
+   パターンA: メインエリア枠 (board-container) 内包レイアウトスタイル
    ============================================================= */
 
-/* 🃏 左下隅: ドローカード選択エリア (手札オファリング3枚) */
+/* 🃏 メインエリア枠内 左下隅: ドローカード選択エリア (手札3枚) */
 .offering-section {
     position: absolute;
     bottom: 16px;
@@ -13,10 +13,10 @@
     gap: 6px;
     z-index: 100;
     padding: 8px 12px;
-    background: rgba(19, 22, 31, 0.85);
+    background: rgba(19, 22, 31, 0.92);
     border: 1px solid #252a38;
     border-radius: 10px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(4px);
     transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
 }
@@ -70,11 +70,11 @@
     transform: translateY(-8px);
 }
 
-/* 🎮 画面右下隅: 統合操作グループ (ターン表示・マリガン・TURN END) - サイズ維持＆高さぴったり吸着 */
+/* 🎮 メインエリア枠内 右下隅: 統合操作グループ (ターン表示・マリガン・TURN END) */
 .footer-controls-partition {
     position: absolute;
-    bottom: 20px;
-    right: 24px;
+    bottom: 16px;
+    right: 20px;
     width: 240px;
     height: auto !important;
     background: #161922;
@@ -138,14 +138,17 @@
     transform: translateY(-2px);
 }
 
-/* 🌀 左下カードエリアホバー時の背景盤面・微細ボカシ演出 */
-.board-container.board-blur-focus {
-    filter: blur(2.5px) brightness(0.68) !important;
+/* 🌀 左下カードエリアホバー時：土地盤面グリッドのみが奥へボヤける */
+.board-container-wrapper {
+    transition: filter 0.25s ease, opacity 0.25s ease;
+}
+.board-blur-focus .board-container-wrapper {
+    filter: blur(3px) brightness(0.68) !important;
 }
 
 /* 🎯 カード選択時でも配置可能マス（ハイライトセル）はボカシを抜けて鮮明発光 */
-.board-container.board-blur-focus .cell.preview-valid,
-.board-container.board-blur-focus .cell.hq-vicinity-unplaced {
+.board-blur-focus .cell.preview-valid,
+.board-blur-focus .cell.hq-vicinity-unplaced {
     filter: blur(0px) brightness(1.3) !important;
     z-index: 50;
     box-shadow: 0 0 20px rgba(26, 188, 156, 1.0) !important;
