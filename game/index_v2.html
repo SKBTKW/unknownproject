@@ -971,13 +971,13 @@
 
         <!-- 🕹️ 2. Middle Board Area (Horizontal Partition - Relocated Modular Log & Buff Dropup) -->
         <div class="middle-layout">
-            <div class="board-container" style="flex:1; width:100%; position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding-top:50px;">
+            <div class="board-container" style="flex:1; width:100%; position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding-top: 64px;">
                 <!-- 📜 メインエリア左上隅: モジュール化 0.75x ログコンテナ -->
                 <div id="logComponentContainer"></div>
 
-                <!-- 🧩 盤面中央エリアコンテナ (位置ズレ 0.0% 完全固定) -->
+                <!-- 🧩 盤面中央エリアコンテナ (バフ0件でも位置影響 0.0% 完全固定) -->
                 <div class="board-container-wrapper" style="position:relative; display:flex; flex-direction:column; align-items:center;">
-                    <!-- ✨ 盤面直上: モジュール化 上方向トグル展開バフコンテナ (位置ズレ 0.0%) -->
+                    <!-- ✨ 盤面直上: モジュール化 上方向トグル展開バフコンテナ (バフ有無に関わらず位置ズレ 0.0%) -->
                     <div id="buffComponentContainer" style="width:520px; position:absolute; bottom:100%; margin-bottom:8px; z-index:800;"></div>
 
                     <div class="main-area-badge"><span id="lblMainBadge"></span> <span id="valPlacedCount">1</span>/24</div>
