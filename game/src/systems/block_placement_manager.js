@@ -47,6 +47,12 @@
         updateHoverPreview(e, r, c, card, gameState) {
             if (!gameState) return;
 
+            // ホバープレビュー枠のみを毎回クリーンアップ
+            const cells = document.querySelectorAll("#gridBoard .cell");
+            cells.forEach(cell => {
+                cell.classList.remove("preview-valid", "preview-invalid");
+            });
+
             if (!card || gameState.hasPickedThisTurn) {
                 if (typeof window.showTileTooltip === "function") {
                     window.showTileTooltip(e, r, c, gameState.grid[r][c]);
@@ -57,7 +63,7 @@
             const shape = card.currentShape || (card.terrain ? card.terrain.shape : [[1]]);
             if (!shape || !Array.isArray(shape)) return;
 
-            const check = gameState.canPlaceShape(r, c, shape);
+            const check = gameState.canPlaceShape ? gameState.canPlaceShape(r, c, shape) : { can: false };
             const isValid = (typeof check === 'object' && check !== null) ? check.can : check;
 
             const rows = shape.length;
