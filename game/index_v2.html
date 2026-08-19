@@ -1071,7 +1071,8 @@
             if (window.BuffPanelComponent && buffContainer && !buffContainer.hasChildNodes()) {
                 window.BuffPanelComponent.mount(buffContainer);
                 window.BuffPanelComponent.update([
-                    { name: "本営近郊配置ボーナス", shortName: "近郊+1", icon: "🏰", description: "本営周囲8マス配置マス 産出+1", badgeText: "本営近郊", category: "ADJACENCY" }
+                    { name: "🔥 残り火旺盛バフ", shortName: "🔥 旺盛 (+20%)", icon: "🔥", description: "全リソース産出 +20% ＆ 自動✨+2/T", badgeText: "環境バフ", category: "ENVIRONMENT" },
+                    { name: "📜 土地探索効果", shortName: "土地確率2倍", icon: "📜", description: "盤面6ブロックまで土地出現率2倍", badgeText: "残り 3T", category: "CARD_EFFECT" }
                 ]);
             }
         }
@@ -1710,26 +1711,54 @@
                     }
                 }
 
-                // 4. モジュール化 UI コンポーネントへの自動更新連携
+                // 4. モジュール化 UI コンポーネントへの動的バフ自動更新連携 (効果に期限・変動があるバフのみ抽出)
                 if (window.BuffPanelComponent) {
                     const activeBuffs = [];
                     if (state) {
-                        activeBuffs.push({
-                            name: "本営近郊配置ボーナス",
-                            shortName: "近郊+1",
-                            icon: "🏰",
-                            description: "本営周囲8マス配置マス 産出+1",
-                            badgeText: "本営近郊",
-                            category: "ADJACENCY"
-                        });
+                        // ① 残り火旺盛・標準バフ (残り火数値で動的に変動・解除)
                         if (state.ember >= 24) {
                             activeBuffs.push({
                                 name: "🔥 残り火旺盛バフ",
-                                shortName: "🔥+10%",
+                                shortName: "🔥 旺盛 (産出+20%)",
                                 icon: "🔥",
-                                description: "全リソース産出 +10% ＆ 自動✨+2/T",
+                                description: "全リソース産出 +20% ＆ 自動✨+2/T",
                                 badgeText: "環境バフ",
                                 category: "ENVIRONMENT"
+                            });
+                        } else if (state.ember >= 12) {
+                            activeBuffs.push({
+                                name: "🔥 残り火標準バフ",
+                                shortName: "🔥 標準 (産出+10%)",
+                                icon: "🔥",
+                                description: "全リソース産出 +10% ＆ 自動✨+1/T",
+                                badgeText: "環境バフ",
+                                category: "ENVIRONMENT"
+                            });
+                        }
+
+                        // ② カード効果バフ (数ターン持続の期限付きバフ)
+                        if (state.activeCardBuffs && Array.isArray(state.activeCardBuffs)) {
+                            state.activeCardBuffs.forEach(buff => {
+                                activeBuffs.push({
+                                    name: buff.name || "📜 持続カード効果",
+                                    shortName: buff.shortName || "カード効果",
+                                    icon: buff.icon || "📜",
+                                    description: buff.description || "カードによる持続補正",
+                                    badgeText: `残り ${buff.remainingTurns || 1}T`,
+                                    category: "CARD_EFFECT"
+                                });
+                            });
+                        }
+
+                        // ③ 試練期間中バフ (試練ターン制限内の期限付きバフ/デバフ)
+                        if (state.currentTrial && state.currentTrial.active) {
+                            activeBuffs.push({
+                                name: `⚔️ 試練: ${state.currentTrial.name || "アクティブ試練"}`,
+                                shortName: state.currentTrial.shortName || "試練補正",
+                                icon: "⚔️",
+                                description: state.currentTrial.description || "試練期間中の限定ルール補正",
+                                badgeText: `試練中 (${state.currentTrial.turnsRemaining || 0}T)`,
+                                category: "TRIAL"
                             });
                         }
                     }
