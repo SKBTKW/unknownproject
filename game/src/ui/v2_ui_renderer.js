@@ -44,6 +44,11 @@ function initStaticI18nLabels() {
     setElementText("lblLogSub", I18n.t("UI_LOG_SUB_HINT"));
 }
 
+window.V2UIRenderer = {
+    setElementText,
+    initStaticI18nLabels
+};
+
 function renderDirectiveHeaderBadge() {
     const badgeEl = document.getElementById("directiveHeaderBadge");
     if (!badgeEl || !window.state || !window.state.directiveSystem) return;

@@ -183,37 +183,28 @@
                 .then(res => res.json())
                 .then(data => {
                     window.LAND_CARDS_DATA = data;
-                    initStaticI18nLabels();
+                    if (window.V2UIRenderer && typeof window.V2UIRenderer.initStaticI18nLabels === "function") {
+                        window.V2UIRenderer.initStaticI18nLabels();
+                    } else if (typeof initStaticI18nLabels === "function") {
+                        initStaticI18nLabels();
+                    }
                     init();
                 })
                 .catch(err => {
                     console.warn("Failed to load land_cards.json, using fallback:", err);
-                    initStaticI18nLabels();
+                    if (window.V2UIRenderer && typeof window.V2UIRenderer.initStaticI18nLabels === "function") {
+                        window.V2UIRenderer.initStaticI18nLabels();
+                    } else if (typeof initStaticI18nLabels === "function") {
+                        initStaticI18nLabels();
+                    }
                     init();
                 });
         });
 
         function initStaticI18nLabels() {
-            const I18n = window.I18n;
-            if (!I18n) return;
-            document.title = I18n.t("UI_TITLE");
-            setElementText("lblAppTitle", I18n.t("UI_TITLE"));
-            setElementText("lblRoleAvatar", I18n.t("UI_ROLE_AVATAR"));
-            setElementText("lblTurnHeader", I18n.t("UI_TURN_LABEL"));
-            setElementText("lblOfferingTitle", I18n.t("UI_OFFERING_TITLE"));
-            setElementText("lblReserveTitle", I18n.t("UI_RESERVE_TITLE"));
-            setElementText("lblMainBadge", I18n.t("UI_MAIN_AREA_BADGE"));
-            setElementText("lblDataPanelTitle", I18n.t("UI_DATA_PANEL_TITLE"));
-            setElementText("lblBuffPanelTitle", I18n.t("UI_BUFF_PANEL_TITLE"));
-            setElementText("lblFood", I18n.t("UI_FOOD"));
-            setElementText("lblWood", I18n.t("UI_WOOD"));
-            setElementText("lblDefense", I18n.t("UI_DEFENSE"));
-            setElementText("lblMystic", I18n.t("UI_MYSTIC"));
-            setElementText("lblLogTitle", I18n.t("UI_LOG_TITLE"));
-            setElementText("btnLogToggle", "▼");
-            setElementText("btnMulligan", I18n.t("UI_MULLIGAN_BTN"));
-            setElementText("btnTurnEnd", I18n.t("UI_TURN_END_BTN"));
-            setElementText("lblLogSub", I18n.t("UI_LOG_SUB_HINT"));
+            if (window.V2UIRenderer && typeof window.V2UIRenderer.initStaticI18nLabels === "function") {
+                window.V2UIRenderer.initStaticI18nLabels();
+            }
         }
 
         function init() {
