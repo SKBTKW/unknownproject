@@ -88,7 +88,7 @@
 }
 
 .reserve-partition {
-    display: flex;
+    display: none; /* 保留エリア表示停止・退避 */
     flex-direction: column;
     gap: 6px;
     border-left: 1px solid #2c354a;

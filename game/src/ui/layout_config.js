@@ -3,9 +3,10 @@
  * ゲーム全UI要素の絶対レイアウト・位置座標・重ね順(z-index)を一括集中管理する設定ファイル
  */
 (function(exports) {
-    // 🛡️ 1秒で元の仕様に復帰できる安全策スイッチ (Feature Flag)
+    // 🛡️ 1秒で復帰できる安全策スイッチ (Feature Flag)
     exports.UI_FEATURE_FLAGS = {
-        enableBottomFocusBlur: true // false にすると即座に元の仕様(ボカシなし)に復帰します
+        enableBottomFocusBlur: true, // 下部カードフォーカスボカシ演出
+        enableReserveArea: false     // 保留エリアの表示スイッチ (現在表示停止・退避中)
     };
 
     const UILayoutConfig = {
@@ -14,7 +15,7 @@
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            justifyContent: "center",
+            justify-content: "center",
             position: "relative",
             width: "100%",
             height: "100%",
@@ -29,7 +30,7 @@
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            justifyContent: "center",
+            justify-content: "center",
             marginTop: "auto",
             marginBottom: "auto"
         },
@@ -101,6 +102,16 @@
         const drawArea = document.querySelector(".bottom-card-container");
         if (drawArea) {
             Object.assign(drawArea.style, this.drawCardSelectArea);
+        }
+
+        // 🛑 保留エリアの表示/非表示スイッチ制御 (表示停止・退避)
+        const reservePartition = document.querySelector(".reserve-partition");
+        if (reservePartition) {
+            if (exports.UI_FEATURE_FLAGS && exports.UI_FEATURE_FLAGS.enableReserveArea) {
+                reservePartition.style.display = "flex";
+            } else {
+                reservePartition.style.display = "none";
+            }
         }
 
         // 🎯 下部カードエリアのマウスオーバー時「盤面微細ボカシフォーカス」イベント設定
