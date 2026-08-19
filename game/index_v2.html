@@ -399,6 +399,16 @@
                 setElementText("valMysticProd", `+${prods.totalMystic || 1}`);
                 setElementText("valPlacedCount", `${state.countPlacedTiles()}/24`);
 
+                // 🛡️ マリガンボタンの活性/非活性(グレーアウト)自動連動
+                const mulliganBtn = document.querySelector(".btn-mulligan");
+                if (mulliganBtn) {
+                    const cannotMulligan = state.hasPickedThisTurn || state.ember < 1;
+                    mulliganBtn.disabled = cannotMulligan;
+                    mulliganBtn.style.opacity = cannotMulligan ? "0.45" : "1.0";
+                    mulliganBtn.style.cursor = cannotMulligan ? "not-allowed" : "pointer";
+                    mulliganBtn.style.filter = cannotMulligan ? "grayscale(80%)" : "none";
+                }
+
                 if (typeof renderDirectiveHeaderBadge === "function") {
                     renderDirectiveHeaderBadge();
                 }
@@ -1205,6 +1215,7 @@
         }
         function mulligan() {
             if (!state || !drawSys) return;
+            if (state.hasPickedThisTurn || state.ember < 1) return; // 🛡️ 残り火不足(1未満)またはピック済みの場合はブロック
             window.pinnedPreviewCard = null;
             hideCardHoverPreview(true);
             state.ember -= 1;
