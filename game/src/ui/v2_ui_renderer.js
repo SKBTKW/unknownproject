@@ -225,3 +225,94 @@ function hideTileTooltip() {
     const tt = document.getElementById("tileTooltip");
     if (tt) tt.style.display = "none";
 }
+
+function showDataPanelTooltip(e) {
+    let tt = document.getElementById("dataPanelTooltipHuge");
+    if (!tt) {
+        tt = document.createElement("div");
+        tt.id = "dataPanelTooltipHuge";
+        tt.className = "large-directive-tooltip";
+        document.body.appendChild(tt);
+    }
+
+    // 旧小型ツールチップを非表示化
+    const oldTt = document.getElementById("dataPanelTooltip");
+    if (oldTt) oldTt.style.display = "none";
+
+    const state = window.state;
+    const foodVal = state ? state.food : 30;
+    const foodProd = state ? state.foodProduction : 10;
+    const woodVal = state ? state.wood : 30;
+    const woodProd = state ? state.woodProduction : 10;
+    const defVal = state ? state.defense : 10;
+    const mysticVal = state ? state.mystic : 0;
+    const mysticProd = state ? state.mysticProduction : 1;
+
+    tt.innerHTML = `
+        <div style="font-size:20px; font-weight:900; color:#1abc9c; margin-bottom:12px; border-bottom:1.5px solid #2a2e3d; padding-bottom:8px; display:flex; align-items:center; gap:8px;">
+            <span>📊</span> 各資源・産出データブレイクダウン
+        </div>
+
+        <div style="background:rgba(24, 34, 50, 0.7); border:1px solid #2c3e50; border-radius:8px; padding:12px 14px; margin-bottom:10px; display:flex; flex-direction:column; gap:6px;">
+            <div style="font-size:16.5px; font-weight:900; color:#ffffff; display:flex; justify-content:space-between;">
+                <span>🌾 食料 (Food)</span>
+                <span style="color:#2ecc71;">${foodVal} (+${foodProd}/T)</span>
+            </div>
+            <div style="font-size:14.5px; color:#a4b0be; display:flex; justify-content:space-between; padding-left:10px;">
+                <span>・ 本営基礎産出</span>
+                <span style="color:#2ecc71; font-weight:bold;">+10 / ターン</span>
+            </div>
+            <div style="font-size:14.5px; color:#a4b0be; display:flex; justify-content:space-between; padding-left:10px;">
+                <span>・ 土地・施設算定</span>
+                <span style="color:#2ecc71; font-weight:bold;">+0 / ターン</span>
+            </div>
+        </div>
+
+        <div style="background:rgba(24, 34, 50, 0.7); border:1px solid #2c3e50; border-radius:8px; padding:12px 14px; margin-bottom:10px; display:flex; flex-direction:column; gap:6px;">
+            <div style="font-size:16.5px; font-weight:900; color:#ffffff; display:flex; justify-content:space-between;">
+                <span>🧱 資材 (Wood)</span>
+                <span style="color:#2ecc71;">${woodVal} (+${woodProd}/T)</span>
+            </div>
+            <div style="font-size:14.5px; color:#a4b0be; display:flex; justify-content:space-between; padding-left:10px;">
+                <span>・ 本営基礎産出</span>
+                <span style="color:#2ecc71; font-weight:bold;">+10 / ターン</span>
+            </div>
+        </div>
+
+        <div style="background:rgba(24, 34, 50, 0.7); border:1px solid #2c3e50; border-radius:8px; padding:12px 14px; margin-bottom:10px; display:flex; flex-direction:column; gap:6px;">
+            <div style="font-size:16.5px; font-weight:900; color:#ffffff; display:flex; justify-content:space-between;">
+                <span>🛡️ 防衛 (Defense)</span>
+                <span style="color:#ffffff;">${defVal}</span>
+            </div>
+            <div style="font-size:14.5px; color:#a4b0be; display:flex; justify-content:space-between; padding-left:10px;">
+                <span>・ 本営初期防衛力</span>
+                <span style="color:#ffffff;">10</span>
+            </div>
+        </div>
+
+        <div style="background:rgba(24, 34, 50, 0.7); border:1px solid #2c3e50; border-radius:8px; padding:12px 14px; display:flex; flex-direction:column; gap:6px;">
+            <div style="font-size:16.5px; font-weight:900; color:#ffffff; display:flex; justify-content:space-between;">
+                <span>✨ 神秘 (Mystic)</span>
+                <span style="color:#2ecc71;">${mysticVal} (+${mysticProd}/T)</span>
+            </div>
+            <div style="font-size:14.5px; color:#a4b0be; display:flex; justify-content:space-between; padding-left:10px;">
+                <span>・ 本営基礎神秘力</span>
+                <span style="color:#2ecc71; font-weight:bold;">+1 / ターン</span>
+            </div>
+        </div>
+    `;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    tt.style.position = "fixed";
+    tt.style.top = `${rect.bottom + 8}px`;
+    tt.style.right = `${window.innerWidth - rect.right}px`;
+    tt.style.display = "block";
+}
+
+function hideDataPanelTooltip() {
+    const tt = document.getElementById("dataPanelTooltipHuge");
+    if (tt) tt.style.display = "none";
+}
+
+window.showDataPanelTooltip = showDataPanelTooltip;
+window.hideDataPanelTooltip = hideDataPanelTooltip;
