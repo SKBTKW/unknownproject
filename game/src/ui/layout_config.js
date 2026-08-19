@@ -1,15 +1,20 @@
 /**
  * 📐 UILayoutConfig
- * ゲーム全UI要素の絶対レイアウト・位置座標・重ね順(z-index)を一括集中管理する単一の設定ファイル (Single Source of Truth)
+ * ゲーム全UI要素の絶対レイアウト・位置座標・重ね順(z-index)を一括集中管理する単一の設定ファイル
  */
 (function(exports) {
+    // 🛡️ 1秒で元の仕様に復帰できる安全策スイッチ (Feature Flag)
+    exports.UI_FEATURE_FLAGS = {
+        enableBottomFocusBlur: true // false にすると即座に元の仕様(ボカシなし)に復帰します
+    };
+
     const UILayoutConfig = {
-        // 🎯 1. 中央土地盤面エリア (絶対不動のメイン基準軸)
+        // 🎯 1. 中央土地盤面エリア
         boardContainer: {
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            justifyContent: "center",
+            justify-content: "center",
             position: "relative",
             width: "100%",
             height: "100%",
@@ -18,7 +23,7 @@
             overflow: "visible"
         },
 
-        // 🧩 2. 盤面グリッドラッパー (可変盤面の親枠・完全レスポンシブ中央)
+        // 🧩 2. 盤面グリッドラッパー
         boardWrapper: {
             position: "relative",
             display: "flex",
@@ -28,7 +33,7 @@
             marginBottom: "auto"
         },
 
-        // ✨ 3. モジュール化バフ表示コンテナ (盤面直上の絶対配置・干渉0%)
+        // ✨ 3. モジュール化バフ表示コンテナ
         buffPanel: {
             position: "absolute",
             bottom: "calc(100% + 8px)",
@@ -38,7 +43,7 @@
             zIndex: 800
         },
 
-        // 🏷️ 4. メインエリア設置数バッジ (盤面エリア右上隅)
+        // 🏷️ 4. メインエリア設置数バッジ
         mainBadge: {
             position: "absolute",
             top: "16px",
@@ -46,7 +51,7 @@
             zIndex: 10
         },
 
-        // 📜 5. モジュール化ログコンテナ (盤面エリア左上隅)
+        // 📜 5. モジュール化ログコンテナ
         logPanel: {
             position: "absolute",
             top: "16px",
@@ -57,7 +62,7 @@
     };
 
     /**
-     * DOM要素にレイアウト設定を一括適用するヘルパー関数
+     * DOM要素にレイアウト設定を一括適用し、フォーカスイベントを初期化するヘルパー関数
      */
     UILayoutConfig.applyLayout = function() {
         const buffContainer = document.getElementById("buffComponentContainer");
@@ -84,6 +89,35 @@
         if (boardContainer) {
             Object.assign(boardContainer.style, this.boardContainer);
         }
+
+        // 🎯 下部カードエリアのマウスオーバー時「盤面微細ボカシフォーカス」イベント設定
+        this.initBottomFocusEvents();
+    };
+
+    /**
+     * 下部カードエリアのマウス進入・離脱に応じた盤面フォーカス制御
+     */
+    UILayoutConfig.initBottomFocusEvents = function() {
+        const bottomCardContainer = document.querySelector(".bottom-card-container");
+        const boardContainer = document.querySelector(".board-container");
+
+        if (!bottomCardContainer || !boardContainer) return;
+
+        // 重複登録防止
+        if (bottomCardContainer._hasFocusEvents) return;
+        bottomCardContainer._hasFocusEvents = true;
+
+        bottomCardContainer.addEventListener("mouseenter", () => {
+            if (exports.UI_FEATURE_FLAGS && exports.UI_FEATURE_FLAGS.enableBottomFocusBlur) {
+                boardContainer.classList.add("board-blur-focus");
+                bottomCardContainer.classList.add("card-container-active-focus");
+            }
+        });
+
+        bottomCardContainer.addEventListener("mouseleave", () => {
+            boardContainer.classList.remove("board-blur-focus");
+            bottomCardContainer.classList.remove("card-container-active-focus");
+        });
     };
 
     exports.UILayoutConfig = UILayoutConfig;

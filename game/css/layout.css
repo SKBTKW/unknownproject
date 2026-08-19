@@ -160,6 +160,20 @@ body {
     box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
     height: 100%;
     overflow: visible !important;
+    transition: filter 0.25s ease, opacity 0.25s ease;
+}
+
+/* 🌀 下部カードエリアフォーカス時の盤面微細ボカシ演出 */
+.board-container.board-blur-focus {
+    filter: blur(2.5px) brightness(0.72);
+}
+
+/* 🎯 カード選択時は置けるマス（ハイライトセル）をボカシから浮き立たせる */
+.board-container.board-blur-focus .cell.preview-valid,
+.board-container.board-blur-focus .cell.hq-vicinity-unplaced {
+    filter: blur(0px) brightness(1.25) !important;
+    z-index: 50;
+    box-shadow: 0 0 16px rgba(26, 188, 156, 0.9) !important;
 }
 
 .main-area-badge {
@@ -377,6 +391,12 @@ body {
     grid-template-columns: 1fr 280px;
     gap: 14px;
     align-items: center;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.bottom-card-container.card-container-active-focus {
+    border-color: #1abc9c;
+    box-shadow: 0 0 25px rgba(26, 188, 156, 0.4), 0 -4px 20px rgba(0,0,0,0.6);
 }
 
 .offering-section {
