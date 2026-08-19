@@ -51,7 +51,8 @@
             position: "absolute",
             top: "16px",
             left: "20px",
-            zIndex: 850
+            zIndex: 850,
+            whiteSpace: "nowrap"
         }
     };
 

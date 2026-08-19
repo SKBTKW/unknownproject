@@ -32,7 +32,7 @@
             this.btnEl.className = "btn-log-toggle-header";
             this.btnEl.id = "btnLogToggleHeader";
             this.btnEl.onclick = (e) => this.toggle(e);
-            this.btnEl.style.cssText = "font-size: 15px !important; padding: 7px 16px !important;";
+            this.btnEl.style.cssText = "font-size: 15px !important; padding: 7px 16px !important; white-space: nowrap !important; display: inline-flex !important; align-items: center !important; gap: 6px !important;";
             this.btnEl.innerHTML = `📜 <span id="lblLogTitleHeader">ログ</span> <span id="logHeaderArrow" style="margin-left:4px; font-weight:900;">▽</span>`;
 
             // 0.75x (75%) スケール ドロップダウンパネル
