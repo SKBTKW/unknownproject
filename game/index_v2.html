@@ -429,168 +429,20 @@
                 }
 
                 const boardEl = document.getElementById("gridBoard");
-                if (boardEl) {
-                    boardEl.innerHTML = "";
-
-                    const cornerCell = document.createElement("div");
-                    cornerCell.className = "header-cell corner-toggle-cell";
-                    cornerCell.style.display = "flex";
-                    cornerCell.style.alignItems = "center";
-                    cornerCell.style.justifyContent = "center";
-
-                    const currentMode = window.currentBoardMode || 'hover';
-                    let modeIcon = "🏷️";
-                    if (currentMode === 'icon') modeIcon = "🌾";
-                    else if (currentMode === 'always') modeIcon = "👁️";
-
-                    cornerCell.title = "土地表示モード切替";
-                    cornerCell.innerHTML = `<button onclick="toggleBoardLabelMode(event)" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; border-radius:4px; padding:2px 4px; font-size:12px; cursor:pointer;" title="土地表示モード切替">${modeIcon}</button>`;
-                    boardEl.appendChild(cornerCell);
-
-                    for (let c = 0; c < 5; c++) {
-                        const hCell = document.createElement("div");
-                        hCell.className = "header-cell";
-                        hCell.innerText = String.fromCharCode(65 + c);
-                        boardEl.appendChild(hCell);
-                    }
-
-                    for (let r = 0; r < 5; r++) {
-                        const vCell = document.createElement("div");
-                        vCell.className = "header-cell";
-                        vCell.innerText = r + 1;
-                        boardEl.appendChild(vCell);
-
-                        for (let c = 0; c < 5; c++) {
-                            const cellData = state.grid[r][c];
-                            const cellEl = document.createElement("div");
-                            cellEl.className = "cell";
-                            cellEl.setAttribute("data-r", r);
-                            cellEl.setAttribute("data-c", c);
-
-                            const isHQVic = state.isHQVicinity(r, c);
-
-                            if (cellData.isHQ) {
-                                cellEl.classList.add("hq");
-                                cellEl.innerHTML = I18n.t("TERRAIN_HQ");
-                            } else if (cellData.placed && cellData.terrain) {
-                                cellEl.classList.add("placed");
-
-                                const tid = cellData.terrain ? (cellData.terrain.terrainId || cellData.terrain.id || "") : "";
-                                if (tid.includes("PLAINS")) cellEl.classList.add("terrain-plains");
-                                else if (tid.includes("DEEP_FOREST") || tid.includes("DEEP_HILL")) cellEl.classList.add("terrain-deep-forest");
-                                else if (tid.includes("FOREST")) cellEl.classList.add("terrain-forest");
-                                else if (tid.includes("HILL")) cellEl.classList.add("terrain-hill");
-                                else if (tid.includes("MOUNTAIN")) cellEl.classList.add("terrain-mountain");
-                                else if (tid.includes("DESERT")) cellEl.classList.add("terrain-desert");
-
-                                const tName = I18n.t(cellData.terrain.nameKey);
-                                const mergeId = cellData.mergeGroupId;
-                                const placeId = cellData.placementGroupId;
-                                const activeGroupId = mergeId || placeId;
-
-                                 if (activeGroupId) {
-                                     cellEl.setAttribute("data-group-id", activeGroupId);
-                                     if (cellData.merged) {
-                                         // 🌟 差別化案C: マージ領域は黄金発光＋格調高い黄金マージコアと元のマス目名残を維持
-                                         cellEl.classList.add("merged");
-                                         const tid = cellData.terrain ? (cellData.terrain.terrainId || cellData.terrain.id) : "";
-                                         if (tid.includes("PLAINS")) cellEl.classList.add("merged-plains");
-                                         else if (tid.includes("DEEP_FOREST") || tid.includes("DEEP_HILL")) cellEl.classList.add("merged-deep-forest");
-                                         else if (tid.includes("FOREST")) cellEl.classList.add("merged-forest");
-                                         else if (tid.includes("HILL")) cellEl.classList.add("merged-hill");
-                                         else if (tid.includes("MOUNTAIN")) cellEl.classList.add("merged-mountain");
-                                         else if (tid.includes("DESERT")) cellEl.classList.add("merged-desert");
-
-                                         // マージ領域は境界線の名残(薄い破線)を維持
-                                         cellEl.style.borderColor = "rgba(241, 196, 15, 0.4)";
-                                         cellEl.style.borderStyle = "dashed";
-                                     } else if (placeId) {
-                                         // ⛰️ 差別化案C: 元々多マスカードは内部境界線を完全に消去し「シームレスな一枚岩」として結合描画
-                                         const topSame = (r > 0 && state.grid[r-1][c].placementGroupId === placeId);
-                                         const rightSame = (c < 4 && state.grid[r][c+1].placementGroupId === placeId);
-                                         const bottomSame = (r < 4 && state.grid[r+1][c].placementGroupId === placeId);
-                                         const leftSame = (c > 0 && state.grid[r][c-1].placementGroupId === placeId);
-
-                                         if (topSame) {
-                                             cellEl.classList.add("no-border-top", "no-radius-tl", "no-radius-tr");
-                                             cellEl.style.setProperty("border-top", "none", "important");
-                                             cellEl.style.marginTop = "-4px";
-                                             cellEl.style.height = "calc(100% + 4px)";
-                                         }
-                                         if (rightSame) {
-                                             cellEl.classList.add("no-border-right", "no-radius-tr", "no-radius-br");
-                                             cellEl.style.setProperty("border-right", "none", "important");
-                                             cellEl.style.width = "calc(100% + 4px)";
-                                             cellEl.style.zIndex = "2";
-                                         }
-                                         if (bottomSame) {
-                                             cellEl.classList.add("no-border-bottom", "no-radius-bl", "no-radius-br");
-                                             cellEl.style.setProperty("border-bottom", "none", "important");
-                                             cellEl.style.height = "calc(100% + 4px)";
-                                             cellEl.style.zIndex = "2";
-                                         }
-                                         if (leftSame) {
-                                             cellEl.classList.add("no-border-left", "no-radius-tl", "no-radius-bl");
-                                             cellEl.style.setProperty("border-left", "none", "important");
-                                             cellEl.style.marginLeft = "-4px";
-                                             cellEl.style.width = "calc(100% + 4px)";
-                                         }
-                                     }
-
-                                     // マージ領域・多マスカードの内側接続チェック (ラベル位置決定用)
-                                     const topGroupSame = (r > 0 && (state.grid[r-1][c].mergeGroupId === activeGroupId || state.grid[r-1][c].placementGroupId === activeGroupId));
-                                     const leftGroupSame = (c > 0 && (state.grid[r][c-1].mergeGroupId === activeGroupId || state.grid[r][c-1].placementGroupId === activeGroupId));
-
-                                     if (!topGroupSame && !leftGroupSame) {
-                                         const socketText = cellData.socketResource ? `<br><small style="color:#f1c40f;">★${I18n.t(cellData.socketResource.nameKey)}</small>` : "";
-                                         if (cellData.merged && cellData.mergeType === "2x2") {
-                                             cellEl.innerHTML = `<span style="font-size:12px; color:#f1c40f; font-weight:bold; white-space:nowrap; z-index:5; text-shadow:0 0 6px rgba(0,0,0,0.9);">${I18n.t("UI_MERGE_2X2_LABEL", { name: tName })}${socketText}</span>`;
-                                         } else {
-                                             // 幾何学的中心センタリング (一体型カードのタイトル表記)
-                                             const hasRight = (c < 4 && state.grid[r][c+1].placementGroupId === placeId);
-                                             const hasBottom = (r < 4 && state.grid[r+1][c].placementGroupId === placeId);
-                                             let spanStyle = "font-size:13px; color:#fff; font-weight:bold; z-index:5; text-shadow:0 2px 4px rgba(0,0,0,0.8); pointer-events:none;";
-                                             if (hasRight && !hasBottom) {
-                                                 spanStyle += " position:absolute; left:0; width:200%; text-align:center;";
-                                             } else if (hasBottom && !hasRight) {
-                                                 spanStyle += " position:absolute; top:0; left:0; width:100%; height:200%; display:flex; align-items:center; justify-content:center;";
-                                             }
-                                             cellEl.innerHTML = `<span style="${spanStyle}">${tName}${socketText}</span>`;
-                                         }
-                                     } else {
-                                         const socketBadge = cellData.socketResource ? `<small style="color:#f1c40f; font-size:10px;">★${I18n.t(cellData.socketResource.nameKey)}</small>` : "";
-                                         cellEl.innerHTML = socketBadge;
-                                     }
-                                } else {
-                                    const socketBadge = cellData.socketResource ? `<br><small style="color:#f1c40f; font-size:10px;">★${I18n.t(cellData.socketResource.nameKey)}</small>` : "";
-                                    const searchedBadge = cellData.searched ? `<span class="searched-badge">${I18n.t("UI_SEARCHED_BADGE")}</span>` : "";
-                                    cellEl.innerHTML = `${tName}${socketBadge}${searchedBadge}`;
-                                }
-                            } else if (cellData.hasSocket) {
-                                cellEl.classList.add("socket-unopened");
-                                if (isHQVic) cellEl.classList.add("hq-vicinity-unplaced");
-                                cellEl.innerHTML = `<span style="color:#f39c12;font-size:22px;filter:drop-shadow(0 0 4px #f39c12);">★</span>`;
-                            } else {
-                                if (isHQVic) {
-                                    cellEl.classList.add("hq-vicinity-unplaced");
-                                    cellEl.innerHTML = `<span style="font-size:12px; color:#1abc9c; opacity:0.8;">✨+1</span>`;
-                                }
+                if (boardEl && window.V2UIRenderer && typeof window.V2UIRenderer.renderGridBoard === "function") {
+                    window.V2UIRenderer.renderGridBoard(boardEl, state, {
+                        onmouseenter: onCellMouseEnter,
+                        onmousemove: onCellMouseMove,
+                        onmouseleave: clearCellPreviews,
+                        onclick: onCellClick,
+                        oncontextmenu: (e, r, c) => {
+                            e.preventDefault();
+                            if (selectedCard) {
+                                const activeIdx = selectedCardIdx !== -1 ? selectedCardIdx : 0;
+                                rotateSelectedCard(e, activeIdx);
                             }
-
-                            cellEl.onmouseenter = (e) => onCellMouseEnter(e, r, c);
-                            cellEl.onmousemove = (e) => onCellMouseMove(e, r, c);
-                            cellEl.onmouseleave = clearCellPreviews;
-                            cellEl.onclick = () => onCellClick(r, c);
-                            cellEl.oncontextmenu = (e) => {
-                                e.preventDefault();
-                                if (selectedCard) {
-                                    const activeIdx = selectedCardIdx !== -1 ? selectedCardIdx : 0;
-                                    rotateSelectedCard(e, activeIdx);
-                                }
-                            };
-                            boardEl.appendChild(cellEl);
                         }
-                    }
+                    });
                 }
 
                 // 🎯 土地カード選択時の置けるマス発光ハイライト復元
