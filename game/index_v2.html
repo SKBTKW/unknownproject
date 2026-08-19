@@ -426,7 +426,8 @@
                 setElementText("valWoodProd", `+${prods.totalWood}`);
                 setElementText("valDefense", state.calculateTotalDefense());
                 setElementText("valMystic", state.mystic);
-                setElementText("valMysticProd", `+${(prods.tilesMystic || prods.socketsMystic) ? (prods.tilesMystic + prods.socketsMystic) : 0}`);
+                const mysticProdVal = (prods.totalMystic && prods.totalMystic > 1) ? (prods.totalMystic - 1) : 0;
+                setElementText("valMysticProd", `+${mysticProdVal}`);
                 setElementText("valPlacedCount", `${state.countPlacedTiles()}/24`);
 
                 if (typeof renderDirectiveHeaderBadge === "function") {
@@ -689,26 +690,14 @@
                         const cName = tObj.nameKey ? I18n.t(tObj.nameKey) : (tObj.id || "Card");
                         const cDesc = tObj.descriptionKey ? I18n.t(tObj.descriptionKey) : (tObj.description || "");
 
-                        // 🖼️ game/images フォルダ内のリアルイラスト画像マッピング
-                        let cardImgPath = "images/plains.png";
-                        const idStr = (tObj.id || tObj.nameKey || "").toLowerCase();
-                        if (idStr.includes("forest") || idStr.includes("森")) cardImgPath = "images/plains_forest.png";
-                        else if (idStr.includes("hill") || idStr.includes("丘")) cardImgPath = "images/hills.png";
-                        else if (idStr.includes("mountain") || idStr.includes("山")) cardImgPath = "images/mountains.png";
-                        else if (idStr.includes("lake") || idStr.includes("湖")) cardImgPath = "images/lake.png";
-                        else if (idStr.includes("desert") || idStr.includes("砂漠")) cardImgPath = "images/plains_desert.png";
-                        else if (idStr.includes("jungle") || idStr.includes("密林")) cardImgPath = "images/plains_jungle.png";
-                        else if (category === "MILITARY" || category === "EVENT") cardImgPath = "images/crisis.png";
-                        else if (category === "FACILITY" || category === "MYSTIC") cardImgPath = "images/palace.png";
-
                         if (category !== "LAND") {
-                            // コマンド / イベント / 施設 / 奇跡カード用ビジュアル描画 (images画像背景)
+                            // コマンド / イベント / 施設 / 奇跡カード用ビジュアル描画 (イラスト停止・ダーク無地背景)
                             cardEl.innerHTML = `
                                 <div class="tcg-card-top-bar" style="padding:4px 8px;">
                                     <div class="tcg-title-pill" style="font-size:16px; font-weight:900; text-align:center; width:100%;">${cName}</div>
                                 </div>
-                                <div class="tcg-shape-art-area" style="display:flex; flex-direction:column; align-items:flex-start; justify-content:space-between; background:linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.75)), url('${cardImgPath}') center/cover no-repeat; padding:10px; text-align:left; overflow:hidden; flex:1; border-radius:6px; margin:4px 0;">
-                                    <div style="font-size:13px; color:#ffffff; line-height:1.4; font-weight:bold; text-align:left; width:100%; text-shadow:0 2px 4px rgba(0,0,0,0.9);">${cDesc}</div>
+                                <div class="tcg-shape-art-area" style="display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-start; background:#1c2536; padding:12px; text-align:left; overflow:hidden; flex:1; border-radius:6px; margin:4px 0;">
+                                    <div style="font-size:13.5px; color:#ffffff; line-height:1.45; font-weight:bold; text-align:left; width:100%;">${cDesc}</div>
                                 </div>
                                 <div class="tcg-yield-strip" style="font-size:13px; font-weight:bold; text-align:left; justify-content:flex-start; padding:6px 10px; width:100%; box-sizing:border-box;">
                                     <span>${costBadgeText ? (typeof I18n !== 'undefined' ? I18n.t("UI_CARD_COST_PREFIX", { cost: costBadgeText }) : 'Cost: ' + costBadgeText) : (typeof I18n !== 'undefined' ? I18n.t("UI_CMD_INSTANT_LABEL") : 'Instant')}</span>
@@ -718,7 +707,7 @@
                                 </div>
                             `;
                         } else {
-                            // 土地カード用標準描画 (images画像 ✕ 形状ミニマップ重ね合わせ)
+                            // 土地カード用標準描画 (イラスト停止・クッキリ形状ミニマップ)
                             const y = tObj.yields || {
                                 food: tObj.food || 0,
                                 wood: tObj.wood || 0,
@@ -732,13 +721,13 @@
                             const totD = (y.defense || 0) * tileCount;
                             const totM = (y.mystic || 0) * tileCount;
 
-                            let shapeHtml = `<div style="display:grid; grid-template-rows:repeat(${shapeMat.length}, 16px); grid-template-columns:repeat(${shapeMat[0].length}, 16px); gap:3px; background:rgba(0,0,0,0.65); padding:6px; border-radius:6px; border:1px solid rgba(255,255,255,0.2);">`;
+                            let shapeHtml = `<div style="display:grid; grid-template-rows:repeat(${shapeMat.length}, 18px); grid-template-columns:repeat(${shapeMat[0].length}, 18px); gap:4px; background:rgba(0,0,0,0.5); padding:8px; border-radius:6px; border:1px solid rgba(255,255,255,0.15);">`;
                             for (let r = 0; r < shapeMat.length; r++) {
                                 for (let c = 0; c < shapeMat[0].length; c++) {
                                     if (shapeMat[r][c] === 1) {
-                                        shapeHtml += `<div style="width:16px;height:16px;background:#1abc9c;border-radius:3px;box-shadow:0 0 6px #1abc9c;"></div>`;
+                                        shapeHtml += `<div style="width:18px;height:18px;background:#1abc9c;border-radius:3px;box-shadow:0 0 6px #1abc9c;"></div>`;
                                     } else {
-                                        shapeHtml += `<div style="width:16px;height:16px;background:transparent;"></div>`;
+                                        shapeHtml += `<div style="width:18px;height:18px;background:transparent;"></div>`;
                                     }
                                 }
                             }
@@ -751,7 +740,7 @@
                                 <div class="tcg-card-top-bar" style="padding:4px 8px;">
                                     <div class="tcg-title-pill" style="font-size:16px; font-weight:900; text-align:center; width:100%;">${cName}</div>
                                 </div>
-                                <div class="tcg-shape-art-area" style="display:flex; align-items:center; justify-content:center; padding:12px; flex:1; background:linear-gradient(rgba(0,0,0,0.25), rgba(0,0,0,0.45)), url('${cardImgPath}') center/cover no-repeat; border-radius:6px; margin:4px 0;">
+                                <div class="tcg-shape-art-area" style="display:flex; align-items:center; justify-content:center; padding:12px; flex:1; background:#1c2536; border-radius:6px; margin:4px 0;">
                                     ${shapeHtml}
                                 </div>
                                 <div class="tcg-yield-strip" style="font-size:13px; font-weight:bold; padding:6px 10px;">

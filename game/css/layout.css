@@ -149,18 +149,18 @@ body {
     overflow: visible !important;
 }
 
-/* 🎯 中央盤面エリア (画面全幅のメインエリア枠 ✕ パターンA) */
+/* 🎯 中央盤面エリア (画面全幅のメインエリア枠 ✕ 3.5px太枠フレーム) */
 .board-container {
     background: #13161f;
-    border: 1px solid #252a38;
-    border-radius: 10px;
+    border: 3.5px solid #2e384e; /* 3.5px 太枠フレーム */
+    border-radius: 12px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     position: relative;
     padding: 16px;
-    box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+    box-shadow: inset 0 0 25px rgba(0,0,0,0.6);
     width: 100% !important;
     height: 100% !important;
     flex: 1;
