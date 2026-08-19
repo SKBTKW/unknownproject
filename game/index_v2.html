@@ -822,6 +822,15 @@
                     }
                     window.BuffPanelComponent.update(activeBuffs);
                 }
+
+                // 🎯 マリガンボタンの動的グレーアウト UI 連動 (残り火 0 以下またはカード配置済み)
+                const btnMulligan = document.getElementById("btnMulligan");
+                if (btnMulligan && state) {
+                    const isMulliganBlocked = state.hasPickedThisTurn || state.ember < 1;
+                    btnMulligan.disabled = isMulliganBlocked;
+                    btnMulligan.style.opacity = isMulliganBlocked ? "0.45" : "1.0";
+                    btnMulligan.style.cursor = isMulliganBlocked ? "not-allowed" : "pointer";
+                }
             } catch (err) {
                 console.error("Render Error:", err);
             }
@@ -1202,6 +1211,8 @@
         }
         function mulligan() {
             if (!state || !drawSys) return;
+            // 🛡️ 残り火不足 (1未満) または配置済み時はマリガンを完全遮断
+            if (state.hasPickedThisTurn || state.ember < 1) return;
             window.pinnedPreviewCard = null;
             hideCardHoverPreview(true);
             state.ember -= 1;
