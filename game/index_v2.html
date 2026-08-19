@@ -226,8 +226,6 @@
         function clearCellPreviews() {
             if (window.BlockPlacementManager) {
                 window.BlockPlacementManager.clearAllPreviews();
-            } else if (window.BlockPlacementSystem) {
-                window.BlockPlacementSystem.clearAllPreviews();
             } else {
                 const cells = document.querySelectorAll(".cell");
                 cells.forEach(c => {
@@ -240,8 +238,6 @@
         function highlightPlaceableCells() {
             if (window.BlockPlacementManager) {
                 window.BlockPlacementManager.highlightPlaceableCandidates(selectedCard, state);
-            } else if (window.BlockPlacementSystem) {
-                window.BlockPlacementSystem.highlightPlaceableCandidates(selectedCard, state);
             }
         }
 
@@ -258,8 +254,6 @@
 
             if (window.BlockPlacementManager) {
                 window.BlockPlacementManager.updateHoverPreview(e, r, c, selectedCard, state);
-            } else if (window.BlockPlacementSystem) {
-                window.BlockPlacementSystem.updateHoverPreview(e, r, c, selectedCard, state);
             }
         }
 
