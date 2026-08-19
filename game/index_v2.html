@@ -152,7 +152,7 @@
             width: 100%;
             flex: 1;
             min-height: 0;
-            overflow: hidden;
+            overflow: visible !important;
         }
 
         /* 🎯 中央盤面エリア (グリッド最優先拡大 ✕ セルサイズ 84px ✕ 9x9 拡張設計) */
@@ -168,7 +168,7 @@
             padding: 12px;
             box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
             height: 100%;
-            overflow: auto;
+            overflow: visible !important;
         }
 
         .main-area-badge {
@@ -703,7 +703,9 @@
         .buff-display-master-container {
             position: relative;
             width: 520px;
-            margin-bottom: 10px;
+            margin-top: 6px;
+            margin-bottom: 8px;
+            z-index: 800;
         }
         .buff-summary-bar {
             background: rgba(24, 34, 50, 0.95);
@@ -968,16 +970,16 @@
         </div>
 
         <!-- 🕹️ 2. Middle Board Area (Horizontal Partition - Relocated Modular Log & Buff Dropup) -->
-        <div class="middle-layout">
-            <div class="board-container" style="flex:1; width:100%; position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-                <!-- 📜 メインエリア左上隅: モジュール化 2倍拡大ログコンテナ -->
+        <div class="middle-layout" style="overflow: visible !important;">
+            <div class="board-container" style="flex:1; width:100%; position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding-top: 24px; overflow: visible !important;">
+                <!-- 📜 メインエリア左上隅: モジュール化 0.75x ログコンテナ -->
                 <div id="logComponentContainer"></div>
 
-                <!-- 🧩 盤面中央エリアコンテナ -->
-                <div class="board-container-wrapper" style="position:relative; display:flex; flex-direction:column; align-items:center;">
-                    <!-- ✨ 盤面直上: モジュール化 上方向トグル展開バフコンテナ (位置ズレ 0%) -->
-                    <div id="buffComponentContainer"></div>
+                <!-- ✨ 盤面直上: モジュール化 上方向トグル展開バフコンテナ (位置ズレ 0%) -->
+                <div id="buffComponentContainer" style="width:520px; z-index:800; margin-bottom:12px; position:relative;"></div>
 
+                <!-- 🧩 盤面中央エリアコンテナ -->
+                <div class="board-container-wrapper" style="position:relative; display:flex; flex-direction:column; align-items:center; overflow: visible !important;">
                     <div class="main-area-badge"><span id="lblMainBadge"></span> <span id="valPlacedCount">1</span>/24</div>
                     <div id="gridBoard" class="grid-with-headers"></div>
                 </div>
