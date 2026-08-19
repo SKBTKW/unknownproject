@@ -975,12 +975,14 @@
                 <!-- 📜 メインエリア左上隅: モジュール化 0.75x ログコンテナ -->
                 <div id="logComponentContainer"></div>
 
-                <!-- 🧩 盤面中央エリアコンテナ (盤面拡大・リサイズ・バフ有無に100%完全連動するレスポンシブ構造) -->
+                <!-- 🏷️ 盤面エリア右上隅バッジ (gridBoard内ではなく、外枠右上ヘッダー位置) -->
+                <div class="main-area-badge"><span id="lblMainBadge"></span> <span id="valPlacedCount">1</span>/24</div>
+
+                <!-- 🧩 盤面中央エリアコンテナ -->
                 <div class="board-container-wrapper" style="position:relative; display:flex; flex-direction:column; align-items:center;">
-                    <!-- ✨ 盤面直上: モジュール化 上方向トグル展開バフコンテナ (高さ空間内へ完全フィット) -->
+                    <!-- ✨ 盤面直上: モジュール化 上方向トグル展開バフコンテナ -->
                     <div id="buffComponentContainer" style="width:520px; position:absolute; bottom:calc(100% + 8px); z-index:800;"></div>
 
-                    <div class="main-area-badge"><span id="lblMainBadge"></span> <span id="valPlacedCount">1</span>/24</div>
                     <div id="gridBoard" class="grid-with-headers"></div>
                 </div>
 
