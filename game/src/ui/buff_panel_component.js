@@ -4,6 +4,16 @@
    ============================================================= */
 
 (function(exports) {
+    /**
+     * ✨ BuffPanelComponent
+     * 土地盤面直上の1行サマリーバー ＆ 上方向トグル縦積み展開バフ表示モジュール
+     */
+    window.BUFF_FEATURE_FLAGS = {
+        enableEmberBuff: false,    // 🔥 残り火旺盛・標準バフ (false で一旦停止)
+        enableCardBuff: true,      // 📜 カード期限バフ (true で有効)
+        enableTrialBuff: true      // ⚔️ 試練期限バフ (true で有効)
+    };
+
     class BuffPanelComponent {
         constructor() {
             this.containerEl = null;
