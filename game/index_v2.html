@@ -699,6 +699,72 @@
             align-items: flex-start;
         }
 
+        /* ✨ 盤面直上: 上方向トグル展開バフ表示パネル CSS */
+        .buff-display-master-container {
+            position: relative;
+            width: 520px;
+            margin-bottom: 10px;
+        }
+        .buff-summary-bar {
+            background: rgba(24, 34, 50, 0.95);
+            border: 1.5px solid #1abc9c;
+            border-radius: 8px;
+            padding: 6px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        .buff-summary-bar:hover {
+            border-color: #2ecc71;
+            box-shadow: 0 6px 18px rgba(26,188,156,0.5);
+        }
+        .buff-summary-left { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: bold; color: #1abc9c; }
+        .buff-pills-preview { display: flex; gap: 6px; }
+        .buff-pill-mini { background: rgba(26, 188, 156, 0.15); border: 1px solid #1abc9c; border-radius: 4px; padding: 2px 8px; font-size: 12px; color: #ffffff; }
+        .buff-toggle-arrow { font-size: 14px; font-weight: 900; color: #1abc9c; }
+
+        .buff-dropup-panel {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            width: 100%;
+            margin-bottom: 8px;
+            background: rgba(15, 20, 29, 0.98);
+            border: 2px solid #1abc9c;
+            border-radius: 10px;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.9), 0 0 20px rgba(26,188,156,0.3);
+            backdrop-filter: blur(12px);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 900;
+        }
+        .buff-dropup-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2a2e3d; padding-bottom: 6px; font-size: 13px; font-weight: bold; color: #1abc9c; }
+        .sort-select-btn { background: #161a24; color: #a4b0be; border: 1px solid #2c3e50; border-radius: 4px; padding: 2px 8px; font-size: 11px; cursor: pointer; }
+
+        .buff-stack-list { display: flex; flex-direction: column; gap: 8px; }
+        .buff-card-item {
+            background: linear-gradient(135deg, rgba(41, 128, 185, 0.4) 0%, rgba(22, 160, 133, 0.3) 100%);
+            border: 1.5px solid #1abc9c;
+            border-radius: 6px;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+        .buff-card-left { display: flex; align-items: center; gap: 10px; }
+        .buff-card-icon { font-size: 20px; }
+        .buff-card-title { font-size: 14px; font-weight: bold; }
+        .buff-card-desc { font-size: 12px; color: #dcdde1; }
+        .buff-card-badge { background: rgba(0,0,0,0.4); border: 1px solid #1abc9c; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; color: #2ecc71; }
+
         .btn-log-toggle-header {
             background: rgba(24, 34, 50, 0.95);
             color: #1abc9c;
@@ -901,28 +967,21 @@
             </div>
         </div>
 
-        <!-- 🕹️ 2. Middle Board Area (Horizontal Partition - Relocated 2x Log Panel at Top-Left) -->
+        <!-- 🕹️ 2. Middle Board Area (Horizontal Partition - Relocated Modular Log & Buff Dropup) -->
         <div class="middle-layout">
-            <div class="board-container" style="flex:1; width:100%; position:relative;">
-                <!-- 📜 メインエリア左上隅: 2倍拡大ログボタン ＆ ドロップダウンパネル -->
-                <div class="main-top-left-log-wrapper">
-                    <button class="btn-log-toggle-header" id="btnLogToggleHeader" onclick="toggleLogDropdownPanel(event)">
-                        📜 <span id="lblLogTitleHeader">ログ</span> <span id="logHeaderArrow" style="margin-left:2px; font-weight:900;">▽</span>
-                    </button>
+            <div class="board-container" style="flex:1; width:100%; position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                <!-- 📜 メインエリア左上隅: モジュール化 2倍拡大ログコンテナ -->
+                <div id="logComponentContainer"></div>
 
-                    <div id="logDropdownPanelHeader" class="log-dropdown-panel-header" style="display:none;">
-                        <div class="log-dropdown-header-bar">
-                            <span id="lblLogDropdownTitle">📜 システム動作・内政ログ一覧</span>
-                            <span style="cursor:pointer; font-size:22px;" onclick="toggleLogDropdownPanel(event)">✕</span>
-                        </div>
-                        <div id="logContent" class="log-content-header">
-                            <div style="color:#7f8c8d;" id="lblLogSub"></div>
-                        </div>
-                    </div>
+                <!-- 🧩 盤面中央エリアコンテナ -->
+                <div class="board-container-wrapper" style="position:relative; display:flex; flex-direction:column; align-items:center;">
+                    <!-- ✨ 盤面直上: モジュール化 上方向トグル展開バフコンテナ (位置ズレ 0%) -->
+                    <div id="buffComponentContainer"></div>
+
+                    <div class="main-area-badge"><span id="lblMainBadge"></span> <span id="valPlacedCount">1</span>/24</div>
+                    <div id="gridBoard" class="grid-with-headers"></div>
                 </div>
 
-                <div class="main-area-badge"><span id="lblMainBadge"></span> <span id="valPlacedCount">1</span>/24</div>
-                <div id="gridBoard" class="grid-with-headers"></div>
                 <div id="tileTooltip" class="tile-tooltip"></div>
                 <div id="cardRotateCursorTooltip" class="card-rotate-cursor-tooltip"></div>
 
@@ -993,12 +1052,29 @@
     <script src="src/systems/undo_land_system.js?v=20260818_1"></script>
     <script src="src/v2_unity_ready_main.js?v=20260818_2"></script>
     <script src="src/ui/modal_system.js?v=20260818_1"></script>
+    <script src="src/ui/log_component.js"></script>
+    <script src="src/ui/buff_panel_component.js"></script>
     <script src="src/ui/v2_ui_renderer.js"></script>
     <script>
         let state = null;
         let drawSys = null;
         let selectedCard = null;
         let selectedCardIdx = -1;
+
+        function initModularUIComponents() {
+            const logContainer = document.getElementById("logComponentContainer");
+            if (window.LogComponent && logContainer && !logContainer.hasChildNodes()) {
+                window.LogComponent.mount(logContainer);
+                window.LogComponent.addLog("ゲーム開始。5×5盤面が初期化されました。", 1);
+            }
+            const buffContainer = document.getElementById("buffComponentContainer");
+            if (window.BuffPanelComponent && buffContainer && !buffContainer.hasChildNodes()) {
+                window.BuffPanelComponent.mount(buffContainer);
+                window.BuffPanelComponent.update([
+                    { name: "本営近郊配置ボーナス", shortName: "近郊+1", icon: "🏰", description: "本営周囲8マス配置マス 産出+1", badgeText: "本営近郊", category: "ADJACENCY" }
+                ]);
+            }
+        }
 
         document.addEventListener("DOMContentLoaded", () => {
             const engine = window.Step1Engine;
@@ -1023,12 +1099,6 @@
                     initStaticI18nLabels();
                     init();
                 });
-
-            const dp = document.querySelector(".data-panel");
-            if (dp) {
-                dp.onmousemove = (e) => showDataPanelTooltip(e);
-                dp.onmouseleave = () => hideDataPanelTooltip();
-            }
         });
 
         function initStaticI18nLabels() {
@@ -1055,6 +1125,7 @@
         }
 
         function init() {
+            if (typeof initModularUIComponents === "function") initModularUIComponents();
             if (!drawSys) return;
             drawSys.generateOfferingCards();
             render();
@@ -1639,11 +1710,30 @@
                     }
                 }
 
-                // 3. ログエリアリアルタイム描画 ＆ スムーズスクロール追従
-                const logContentEl = document.getElementById("logContent");
-                if (logContentEl && state.gameLogs) {
-                    logContentEl.innerHTML = state.gameLogs.map(log => `<div class="log-item" style="padding:4px 8px; border-bottom:1px solid #1a2233; font-size:12px; color:#dcdde1; line-height:1.4;">${log}</div>`).join("");
-                    logContentEl.scrollTop = logContentEl.scrollHeight;
+                // 4. モジュール化 UI コンポーネントへの自動更新連携
+                if (window.BuffPanelComponent) {
+                    const activeBuffs = [];
+                    if (state) {
+                        activeBuffs.push({
+                            name: "本営近郊配置ボーナス",
+                            shortName: "近郊+1",
+                            icon: "🏰",
+                            description: "本営周囲8マス配置マス 産出+1",
+                            badgeText: "本営近郊",
+                            category: "ADJACENCY"
+                        });
+                        if (state.ember >= 24) {
+                            activeBuffs.push({
+                                name: "🔥 残り火旺盛バフ",
+                                shortName: "🔥+10%",
+                                icon: "🔥",
+                                description: "全リソース産出 +10% ＆ 自動✨+2/T",
+                                badgeText: "環境バフ",
+                                category: "ENVIRONMENT"
+                            });
+                        }
+                    }
+                    window.BuffPanelComponent.update(activeBuffs);
                 }
             } catch (err) {
                 console.error("Render Error:", err);
