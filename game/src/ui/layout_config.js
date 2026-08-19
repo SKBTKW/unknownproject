@@ -1,6 +1,6 @@
 /**
  * 📐 UILayoutConfig
- * ゲーム全UI要素の絶対レイアウト・位置座標・重ね順(z-index)を一括集中管理する単一の設定ファイル
+ * ゲーム全UI要素の絶対レイアウト・位置座標・重ね順(z-index)を一括集中管理する設定ファイル
  */
 (function(exports) {
     // 🛡️ 1秒で元の仕様に復帰できる安全策スイッチ (Feature Flag)
@@ -9,31 +9,32 @@
     };
 
     const UILayoutConfig = {
-        // 🎯 1. 中央土地盤面エリア
+        // 🎯 1. 中央土地盤面エリア (画面の真中央へ100%完全自動固定)
         boardContainer: {
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            justify-content: "center",
+            justifyContent: "center",
             position: "relative",
             width: "100%",
             height: "100%",
             padding: "0px",
-            margin: "0px",
+            margin: "0 auto",
             overflow: "visible"
         },
 
-        // 🧩 2. 盤面グリッドラッパー
+        // 🧩 2. 盤面グリッドラッパー (中央揃えの不動軸)
         boardWrapper: {
             position: "relative",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
+            justifyContent: "center",
             marginTop: "auto",
             marginBottom: "auto"
         },
 
-        // ✨ 3. モジュール化バフ表示コンテナ
+        // ✨ 3. モジュール化バフ表示コンテナ (盤面直上の絶対配置)
         buffPanel: {
             position: "absolute",
             bottom: "calc(100% + 8px)",
@@ -43,7 +44,7 @@
             zIndex: 800
         },
 
-        // 🏷️ 4. メインエリア設置数バッジ
+        // 🏷️ 4. メインエリア設置数バッジ (右上隅)
         mainBadge: {
             position: "absolute",
             top: "16px",
@@ -51,13 +52,20 @@
             zIndex: 10
         },
 
-        // 📜 5. モジュール化ログコンテナ
+        // 📜 5. モジュール化ログコンテナ (左上隅)
         logPanel: {
             position: "absolute",
             top: "16px",
             left: "20px",
             zIndex: 850,
             whiteSpace: "nowrap"
+        },
+
+        // 🃏 6. ドローカード選択エリア用独立レイアウト設定
+        drawCardSelectArea: {
+            position: "relative",
+            width: "100%",
+            zIndex: 100
         }
     };
 
@@ -88,6 +96,11 @@
         const boardContainer = document.querySelector(".board-container");
         if (boardContainer) {
             Object.assign(boardContainer.style, this.boardContainer);
+        }
+
+        const drawArea = document.querySelector(".bottom-card-container");
+        if (drawArea) {
+            Object.assign(drawArea.style, this.drawCardSelectArea);
         }
 
         // 🎯 下部カードエリアのマウスオーバー時「盤面微細ボカシフォーカス」イベント設定
