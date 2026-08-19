@@ -58,7 +58,7 @@
                 <div class="header-data-item">
                     <span class="icon">✨</span>
                     <span class="val" id="valMystic">0</span>
-                    <span class="prod">(<span id="valMysticProd">+1</span>/T)</span>
+                    <span class="prod">(<span id="valMysticProd">+0</span>/T)</span>
                 </div>
             </div>
         </div>
@@ -426,6 +426,7 @@
                 setElementText("valWoodProd", `+${prods.totalWood}`);
                 setElementText("valDefense", state.calculateTotalDefense());
                 setElementText("valMystic", state.mystic);
+                setElementText("valMysticProd", `+${(prods.tilesMystic || prods.socketsMystic) ? (prods.tilesMystic + prods.socketsMystic) : 0}`);
                 setElementText("valPlacedCount", `${state.countPlacedTiles()}/24`);
 
                 if (typeof renderDirectiveHeaderBadge === "function") {
@@ -698,18 +699,17 @@
                             else if (category === "LEGEND") iconSymbol = "🟡";
 
                             cardEl.innerHTML = `
-                                <div class="tcg-card-top-bar">
-                                    <div class="tcg-title-pill">${cName}</div>
-                                    <div class="tcg-rarity-code">${rCode}</div>
+                                <div class="tcg-card-top-bar" style="padding:4px 8px;">
+                                    <div class="tcg-title-pill" style="font-size:16px; font-weight:900; text-align:center; width:100%;">${cName}</div>
                                 </div>
-                                <div class="tcg-shape-art-area" style="display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-start; background:#2c3e50; padding:4px 6px; text-align:left; overflow:hidden;">
-                                    <div style="font-size:14px; line-height:1.1; margin-bottom:2px; width:100%; text-align:center;">${iconSymbol}</div>
-                                    <div style="font-size:9px; color:#ffffff; line-height:1.25; font-weight:normal; text-align:left; width:100%; text-shadow:0 1px 2px rgba(0,0,0,0.8);">${cDesc}</div>
+                                <div class="tcg-shape-art-area" style="display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-start; background:#2c3e50; padding:10px; text-align:left; overflow:hidden; flex:1;">
+                                    <div style="font-size:20px; line-height:1.1; margin-bottom:6px; width:100%; text-align:center;">${iconSymbol}</div>
+                                    <div style="font-size:13px; color:#ffffff; line-height:1.4; font-weight:normal; text-align:left; width:100%; text-shadow:0 1px 2px rgba(0,0,0,0.8);">${cDesc}</div>
                                 </div>
-                                <div class="tcg-yield-strip" style="font-size:9.5px; text-align:left; justify-content:flex-start; padding:3px 6px; width:100%; box-sizing:border-box;">
+                                <div class="tcg-yield-strip" style="font-size:13px; font-weight:bold; text-align:left; justify-content:flex-start; padding:6px 10px; width:100%; box-sizing:border-box;">
                                     <span>${costBadgeText ? (typeof I18n !== 'undefined' ? I18n.t("UI_CARD_COST_PREFIX", { cost: costBadgeText }) : 'Cost: ' + costBadgeText) : (typeof I18n !== 'undefined' ? I18n.t("UI_CMD_INSTANT_LABEL") : 'Instant')}</span>
                                 </div>
-                                <div class="tcg-action-controls">
+                                <div class="tcg-action-controls" style="display:none;">
                                     <button class="tcg-reserve-btn-wireframe" onclick="event.stopPropagation(); reserveCard(${idx})">${I18n.t("UI_RESERVE_BTN")}</button>
                                 </div>
                             `;
@@ -728,13 +728,13 @@
                             const totD = (y.defense || 0) * tileCount;
                             const totM = (y.mystic || 0) * tileCount;
 
-                            let shapeHtml = `<div style="display:grid; grid-template-rows:repeat(${shapeMat.length}, 10px); grid-template-columns:repeat(${shapeMat[0].length}, 10px); gap:2px;">`;
+                            let shapeHtml = `<div style="display:grid; grid-template-rows:repeat(${shapeMat.length}, 16px); grid-template-columns:repeat(${shapeMat[0].length}, 16px); gap:3px;">`;
                             for (let r = 0; r < shapeMat.length; r++) {
                                 for (let c = 0; c < shapeMat[0].length; c++) {
                                     if (shapeMat[r][c] === 1) {
-                                        shapeHtml += `<div style="width:10px;height:10px;background:#0097a7;border-radius:2px;"></div>`;
+                                        shapeHtml += `<div style="width:16px;height:16px;background:#0097a7;border-radius:3px;"></div>`;
                                     } else {
-                                        shapeHtml += `<div style="width:10px;height:10px;background:transparent;"></div>`;
+                                        shapeHtml += `<div style="width:16px;height:16px;background:transparent;"></div>`;
                                     }
                                 }
                             }
@@ -744,17 +744,16 @@
                             if (totM > 0) yieldText += ` <span>✨${totM}</span>`;
 
                             cardEl.innerHTML = `
-                                <div class="tcg-card-top-bar">
-                                    <div class="tcg-title-pill">${cName}</div>
-                                    <div class="tcg-rarity-code">${rCode}</div>
+                                <div class="tcg-card-top-bar" style="padding:4px 8px;">
+                                    <div class="tcg-title-pill" style="font-size:16px; font-weight:900; text-align:center; width:100%;">${cName}</div>
                                 </div>
-                                <div class="tcg-shape-art-area" style="display:flex; align-items:center; justify-content:center;">
+                                <div class="tcg-shape-art-area" style="display:flex; align-items:center; justify-content:center; padding:12px; flex:1;">
                                     ${shapeHtml}
                                 </div>
-                                <div class="tcg-yield-strip">
+                                <div class="tcg-yield-strip" style="font-size:13px; font-weight:bold; padding:6px 10px;">
                                     ${yieldText}
                                 </div>
-                                <div class="tcg-action-controls">
+                                <div class="tcg-action-controls" style="display:none;">
                                     <button class="tcg-reserve-btn-wireframe" onclick="event.stopPropagation(); reserveCard(${idx})">${I18n.t("UI_RESERVE_BTN")}</button>
                                 </div>
                             `;
