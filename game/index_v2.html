@@ -688,44 +688,51 @@
             0% { opacity: 0; transform: translateY(-4px) scale(0.96); }
             100% { opacity: 1; transform: translateY(0) scale(1); }
         }
-        /* 📜 タイトル直下のログトグルボタン ＆ ドロップダウンパネル */
+        /* 📜 メインエリア左上隅: 2倍拡大ログパネル ＆ トグルボタン */
+        .main-top-left-log-wrapper {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            z-index: 850;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
         .btn-log-toggle-header {
-            margin-top: 3px;
-            background: rgba(42, 46, 61, 0.85);
+            background: rgba(24, 34, 50, 0.95);
             color: #1abc9c;
-            border: 1.5px solid #2c3e50;
-            border-radius: 5px;
-            padding: 2px 10px;
-            font-size: 11px;
-            font-weight: bold;
+            border: 2px solid #1abc9c;
+            border-radius: 8px;
+            padding: 10px 22px;
+            font-size: 20px;
+            font-weight: 900;
             cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            width: fit-content;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.6);
             transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             user-select: none;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
         .btn-log-toggle-header:hover {
             background: #1abc9c;
             color: #0b0e14;
-            border-color: #16a085;
-            box-shadow: 0 4px 12px rgba(26,188,156,0.5);
+            border-color: #1abc9c;
+            box-shadow: 0 6px 20px rgba(26,188,156,0.6);
         }
 
         .log-dropdown-panel-header {
-            position: absolute;
-            top: 68px;
-            left: 0;
-            width: 360px;
-            max-height: 260px;
-            background: rgba(15, 20, 29, 0.97);
-            border: 1.5px solid #2c3e50;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 20px rgba(26,188,156,0.2);
-            border-radius: 8px;
+            margin-top: 8px;
+            width: 680px;
+            max-width: 85vw;
+            max-height: 480px;
+            background: rgba(15, 20, 29, 0.98);
+            border: 2.5px solid #1abc9c;
+            box-shadow: 0 14px 40px rgba(0,0,0,0.95), 0 0 25px rgba(26,188,156,0.3);
+            border-radius: 12px;
             z-index: 99999;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(12px);
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -852,30 +859,12 @@
     <div class="app-wrapper">
         <!-- 1. Top Header Bar (🔥 True Center Position & Right Aligned Data Panel) -->
         <div class="top-bar">
-            <!-- 左: タイトル ＆ ログボタン -->
-            <div class="app-title-box" style="position:relative; display:flex; flex-direction:column; align-items:flex-start; justify-content:center;">
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <div id="lblAppTitle"></div>
-                    <div class="role-avatar-box">
-                        <span id="lblRoleAvatar"></span>
-                        <span class="icon">👤</span>
-                    </div>
-                </div>
-
-                <!-- 📜 タイトル直下のログトグルボタン -->
-                <button class="btn-log-toggle-header" id="btnLogToggleHeader" onclick="toggleLogDropdownPanel(event)">
-                    📜 <span id="lblLogTitleHeader">ログ</span> <span id="logHeaderArrow" style="margin-left:2px; font-weight:900;">▽</span>
-                </button>
-
-                <!-- 📜 タイトル直下ログドロップダウンパネル (デフォルト格納: display: none) -->
-                <div id="logDropdownPanelHeader" class="log-dropdown-panel-header" style="display:none;">
-                    <div class="log-dropdown-header-bar">
-                        <span id="lblLogDropdownTitle">📜 システムログ一覧</span>
-                        <span style="cursor:pointer;" onclick="toggleLogDropdownPanel()">✕</span>
-                    </div>
-                    <div id="logContent" class="log-content-header">
-                        <div style="color:#7f8c8d;" id="lblLogSub"></div>
-                    </div>
+            <!-- 左: タイトル -->
+            <div class="app-title-box" style="display:flex; align-items:center; gap:8px;">
+                <div id="lblAppTitle"></div>
+                <div class="role-avatar-box">
+                    <span id="lblRoleAvatar"></span>
+                    <span class="icon">👤</span>
                 </div>
             </div>
             
@@ -912,9 +901,26 @@
             </div>
         </div>
 
-        <!-- 🕹️ 2. Middle Board Area (Horizontal Partition - No Vertical Sidebar) -->
+        <!-- 🕹️ 2. Middle Board Area (Horizontal Partition - Relocated 2x Log Panel at Top-Left) -->
         <div class="middle-layout">
-            <div class="board-container" style="flex:1; width:100%;">
+            <div class="board-container" style="flex:1; width:100%; position:relative;">
+                <!-- 📜 メインエリア左上隅: 2倍拡大ログボタン ＆ ドロップダウンパネル -->
+                <div class="main-top-left-log-wrapper">
+                    <button class="btn-log-toggle-header" id="btnLogToggleHeader" onclick="toggleLogDropdownPanel(event)">
+                        📜 <span id="lblLogTitleHeader">ログ</span> <span id="logHeaderArrow" style="margin-left:2px; font-weight:900;">▽</span>
+                    </button>
+
+                    <div id="logDropdownPanelHeader" class="log-dropdown-panel-header" style="display:none;">
+                        <div class="log-dropdown-header-bar">
+                            <span id="lblLogDropdownTitle">📜 システム動作・内政ログ一覧</span>
+                            <span style="cursor:pointer; font-size:22px;" onclick="toggleLogDropdownPanel(event)">✕</span>
+                        </div>
+                        <div id="logContent" class="log-content-header">
+                            <div style="color:#7f8c8d;" id="lblLogSub"></div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="main-area-badge"><span id="lblMainBadge"></span> <span id="valPlacedCount">1</span>/24</div>
                 <div id="gridBoard" class="grid-with-headers"></div>
                 <div id="tileTooltip" class="tile-tooltip"></div>
