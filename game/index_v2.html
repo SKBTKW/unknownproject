@@ -975,6 +975,7 @@
         window.selectCard = selectCard;
 
         function showCardHoverPreview(card) {
+            return; // 🛑 ユーザー指示に基づきホバープレビューを完全に停止・停止無効化
             const modal = document.getElementById("cardHoverPreviewModal");
             const content = document.getElementById("cardHoverPreviewContent");
             const I18n = window.I18n;
