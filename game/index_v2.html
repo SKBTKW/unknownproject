@@ -141,7 +141,7 @@
     <script src="src/ui/log_component.js"></script>
     <script src="src/ui/buff_panel_component.js"></script>
     <script src="src/ui/layout_config.js"></script>
-    <script src="src/ui/block_placement_system.js"></script>
+    <script src="src/systems/block_placement_manager.js"></script>
     <script src="src/ui/v2_ui_renderer.js"></script>
     <script>
         let state = null;
@@ -224,19 +224,23 @@
         }
 
         function clearCellPreviews() {
-            if (window.BlockPlacementSystem) {
+            if (window.BlockPlacementManager) {
+                window.BlockPlacementManager.clearAllPreviews();
+            } else if (window.BlockPlacementSystem) {
                 window.BlockPlacementSystem.clearAllPreviews();
             } else {
                 const cells = document.querySelectorAll(".cell");
                 cells.forEach(c => {
-                    c.classList.remove("preview-valid", "preview-invalid", "merge-hover-highlight", "hq-vicinity-hover-glow");
+                    c.classList.remove("preview-valid", "preview-invalid", "merge-hover-highlight");
                 });
                 hideTileTooltip();
             }
         }
 
         function highlightPlaceableCells() {
-            if (window.BlockPlacementSystem) {
+            if (window.BlockPlacementManager) {
+                window.BlockPlacementManager.highlightPlaceableCandidates(selectedCard, state);
+            } else if (window.BlockPlacementSystem) {
                 window.BlockPlacementSystem.highlightPlaceableCandidates(selectedCard, state);
             }
         }
@@ -252,7 +256,9 @@
                 groupCells.forEach(el => el.classList.add("merge-hover-highlight"));
             }
 
-            if (window.BlockPlacementSystem) {
+            if (window.BlockPlacementManager) {
+                window.BlockPlacementManager.updateHoverPreview(e, r, c, selectedCard, state);
+            } else if (window.BlockPlacementSystem) {
                 window.BlockPlacementSystem.updateHoverPreview(e, r, c, selectedCard, state);
             }
         }
@@ -1087,28 +1093,31 @@
         }
 
         function rotateSelectedCard(e, idx) {
-            if (e) e.stopPropagation();
-            if (!state) return;
-            const card = state.handOffering[idx];
-            if (!card || card.isBlank || !card.currentShape) return;
-            
-            // 90度回転行列計算 (1x2 [[1, 1]] -> 2x1 [[1], [1]])
-            const oldShape = card.currentShape;
-            const rows = oldShape.length;
-            const cols = oldShape[0].length;
-            const newShape = [];
-            for (let c = 0; c < cols; c++) {
-                const newRow = [];
-                for (let r = rows - 1; r >= 0; r--) {
-                    newRow.push(oldShape[r][c]);
+            if (window.BlockPlacementManager) {
+                window.BlockPlacementManager.rotateCard(e, idx, state);
+            } else {
+                if (e) e.stopPropagation();
+                if (!state) return;
+                const card = state.handOffering[idx];
+                if (!card || card.isBlank || !card.currentShape) return;
+                
+                const oldShape = card.currentShape;
+                const rows = oldShape.length;
+                const cols = oldShape[0].length;
+                const newShape = [];
+                for (let c = 0; c < cols; c++) {
+                    const newRow = [];
+                    for (let r = rows - 1; r >= 0; r--) {
+                        newRow.push(oldShape[r][c]);
+                    }
+                    newShape.push(newRow);
                 }
-                newShape.push(newRow);
-            }
-            card.currentShape = newShape;
+                card.currentShape = newShape;
 
-            render();
-            if (selectedCardIdx === idx) {
-                highlightPlaceableCells();
+                render();
+                if (selectedCardIdx === idx) {
+                    highlightPlaceableCells();
+                }
             }
         }
 
