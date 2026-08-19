@@ -3,15 +3,15 @@
    パターンA: メインエリア枠内包 ✕ 太枠フレーム (4px~5px)
    ============================================================= */
 
-/* 🃏 メインエリア枠内 左下隅: ドローカード選択エリア (重なり防止 ＆ 3.5px 太枠) */
+/* 🃏 メインエリア枠内 左下隅: ドローカード選択エリア (盤面との物理的重なりを完全防止) */
 .offering-section {
-    position: absolute;
-    bottom: 12px;
-    left: 16px;
+    position: relative;
+    bottom: auto;
+    left: auto;
     display: flex;
     flex-direction: column;
     gap: 6px;
-    z-index: 90;
+    z-index: 10;
     padding: 10px 12px;
     background: rgba(19, 22, 31, 0.94);
     border: 3.5px solid #2e384e;
@@ -69,18 +69,18 @@
 
 .card-frame-tcg:hover,
 .card-slot-box:hover {
-    transform: scale(1.2) translateY(-16px) !important; /* 🌟 ユーザー指示: マウスオーバーで20%拡大表示 */
+    transform: scale(1.05) translateY(-4px) !important;
     border-color: #2ecc71 !important;
-    box-shadow: 0 16px 40px rgba(46, 204, 113, 0.7) !important;
-    z-index: 500 !important;
+    box-shadow: 0 8px 25px rgba(46, 204, 113, 0.7) !important;
+    z-index: 50 !important;
 }
 
 .card-frame-tcg.selected,
 .card-slot-box.selected {
     border-color: #f1c40f !important;
-    box-shadow: 0 0 35px rgba(241, 196, 15, 0.9) !important;
-    transform: scale(1.15) translateY(-12px) !important;
-    z-index: 400 !important;
+    box-shadow: 0 0 25px rgba(241, 196, 15, 0.8) !important;
+    transform: scale(1.05) translateY(-4px) !important;
+    z-index: 60 !important;
 }
 
 /* 🎮 メインエリア枠内 右下隅: 統合操作グループ (3.5px 太目枠) */

@@ -242,14 +242,16 @@ body {
     background: #18262a !important;
 }
 .cell.preview-valid {
-    border: 2px solid #3498db !important;
-    background: rgba(52, 152, 219, 0.35) !important;
-    box-shadow: 0 0 12px rgba(52, 152, 219, 0.7);
+    border: 2.5px solid #1abc9c !important;
+    background: rgba(26, 188, 156, 0.45) !important;
+    box-shadow: 0 0 15px rgba(26, 188, 156, 0.8) !important;
+    z-index: 100 !important;
 }
 .cell.preview-invalid {
-    border: 2px solid #e74c3c !important;
-    background: rgba(231, 76, 60, 0.35) !important;
-    box-shadow: 0 0 12px rgba(231, 76, 60, 0.7);
+    border: 2.5px solid #e74c3c !important;
+    background: rgba(231, 76, 60, 0.45) !important;
+    box-shadow: 0 0 15px rgba(231, 76, 60, 0.8) !important;
+    z-index: 100 !important;
 }
 .cell.hq {
     background: #16a085 !important;
