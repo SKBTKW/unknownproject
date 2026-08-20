@@ -3,42 +3,63 @@
    パターンA: メインエリア枠内包 ✕ 太枠フレーム (4px~5px)
    ============================================================= */
 
-/* 🃏 メインエリア枠内 左下隅: ドローカード選択エリア (重なり防止 ＆ 3.5px 太枠) */
+/* 🃏 メインエリア枠内 左下隅: ドローカード選択エリア (Layer 3: プレイヤートレイ層 - 15% 全体拡大) */
 .offering-section {
     position: absolute;
     bottom: 12px;
     left: 16px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    z-index: 90;
-    padding: 10px 12px;
-    background: rgba(19, 22, 31, 0.94);
-    border: 3.5px solid #2e384e;
-    border-radius: 14px;
+    gap: 8px;
+    z-index: 500;
+    padding: 12px 16px;
+    background: rgba(19, 22, 31, 0.96);
+    border: 3px solid #2e384e;
+    border-radius: 16px;
     box-shadow: 0 6px 30px rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(6px);
-    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
-    pointer-events: auto;
+    backdrop-filter: blur(4px);
+    transition: filter 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease, z-index 0.15s ease;
+    pointer-events: auto !important;
+    opacity: 1.0;
+    filter: none;
 }
 
-/* 🌟 左下カードエリアホバー時の強烈発光フォーカス */
-.offering-section.card-container-active-focus,
+/* 🌟 [最優先レイヤー] 手札完全フォーカス ＆ 最前面 (z-index: 700) ＆ 発光 */
+.offering-section.layer-active-front,
 .offering-section:hover {
+    z-index: 700 !important;
+    opacity: 1.0 !important;
+    filter: none !important;
     border-color: #1abc9c !important;
     box-shadow: 0 0 35px rgba(26, 188, 156, 0.6), 0 8px 35px rgba(0,0,0,0.9) !important;
 }
 
-/* 🎯 土地カード選択時: 手札エリアを半透明減光し、盤面グリッドエリアへ視線を完全誘導 */
-.offering-section.hand-dim-on-selection {
-    opacity: 0.35 !important;
-    filter: brightness(0.70) grayscale(0.2) !important;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.5) !important;
-    transition: opacity 0.22s ease, filter 0.22s ease, box-shadow 0.22s ease !important;
+/* 🎬 [下層レイヤー] 手札被写界深度ボケ (盤面優先時は奥に下がる: z-index: 50 で盤面が手前に乗る) */
+.offering-section.layer-dim-blur {
+    z-index: 50 !important;
+    opacity: 1.0 !important;
+    filter: brightness(0.70) blur(2.5px) !important;
+    border-color: #2e384e !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* 🃏 カード単体ホバー時の自然な浮き上がり (Hearthstone / Slay the Spire スタイル) */
+.offering-section .card-frame-tcg:hover:not(.locked) {
+    transform: translateY(-8px) scale(1.04) !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.8), 0 0 20px rgba(26,188,156,0.6) !important;
+    z-index: 10;
+}
+
+/* 🎯 土地カード選択時: 選択中カードの発光強調 */
+.offering-section .card-frame-tcg.selected {
+    border-color: #00d2d3 !important;
+    transform: translateY(-10px) scale(1.05) !important;
+    box-shadow: 0 0 30px rgba(0, 210, 211, 0.9), 0 12px 30px rgba(0,0,0,0.9) !important;
+    z-index: 15;
 }
 
 .section-title-offering {
-    font-size: 13px;
+    font-size: 15px;
     font-weight: bold;
     color: #1abc9c;
     display: flex;
@@ -50,23 +71,23 @@
 .cards-row-wrapper {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 18px;
 }
 
-/* 🃏 カードフレーム: 4.5px 存在感ある超太枠表示 ✕ 超大型 240px x 350px */
+/* 🃏 カードフレーム: 4.5px 超太枠フレーム ✕ 15% 拡大大型 276px x 402px */
 .card-frame-tcg,
 .card-slot-box {
-    width: 240px !important;
-    height: 350px !important;
-    min-width: 240px !important;
-    min-height: 350px !important;
+    width: 276px !important;
+    height: 402px !important;
+    min-width: 276px !important;
+    min-height: 402px !important;
     background: #11141a;
     border: 4.5px solid #1abc9c !important; /* 4.5px 超太枠フレーム */
-    border-radius: 14px;
+    border-radius: 16px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 12px;
+    padding: 14px;
     cursor: pointer;
     transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
     user-select: none;
@@ -77,7 +98,7 @@
 
 .card-frame-tcg:hover,
 .card-slot-box:hover {
-    transform: scale(1.2) translateY(-16px) !important; /* 🌟 ユーザー指示: マウスオーバーで20%拡大表示 */
+    transform: scale(1.15) translateY(-16px) !important;
     border-color: #2ecc71 !important;
     box-shadow: 0 16px 40px rgba(46, 204, 113, 0.7) !important;
     z-index: 500 !important;
@@ -87,7 +108,7 @@
 .card-slot-box.selected {
     border-color: #f1c40f !important;
     box-shadow: 0 0 35px rgba(241, 196, 15, 0.9) !important;
-    transform: scale(1.15) translateY(-12px) !important;
+    transform: scale(1.12) translateY(-12px) !important;
     z-index: 400 !important;
 }
 
@@ -96,16 +117,16 @@
     position: absolute;
     bottom: 16px;
     right: 20px;
-    width: 240px;
+    width: 276px;
     height: auto !important;
     background: #161922;
     border: 3.5px solid #2e384e; /* 3.5px 太枠 */
-    border-radius: 12px;
-    padding: 12px 14px;
+    border-radius: 14px;
+    padding: 14px 16px;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    gap: 10px;
+    gap: 12px;
     box-sizing: border-box;
     z-index: 100;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);

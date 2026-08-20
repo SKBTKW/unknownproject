@@ -22,6 +22,7 @@ import { BlockPlacementSystem } from './ui/block_placement_system.js';
 import { V2UIRenderer } from './ui/v2_ui_renderer.js';
 import { UIController } from './ui/ui_controller.js';
 import { FocusLayerManager, focusLayerManager } from './ui/focus_layer_system.js';
+import { BoardCameraSystem, boardCameraSystem } from './ui/board_camera_system.js';
 
 export {
     I18n,
@@ -48,7 +49,9 @@ export {
     V2UIRenderer,
     UIController,
     FocusLayerManager,
-    focusLayerManager
+    focusLayerManager,
+    BoardCameraSystem,
+    boardCameraSystem
 };
 
 console.log('🎮 [App] Clean True ES Modules Master Entrypoint Loaded Successfully.');

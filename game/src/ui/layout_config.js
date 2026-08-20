@@ -8,17 +8,48 @@ const UI_FEATURE_FLAGS = {
 };
 
 const UILayoutConfig = {
-    // 🏛️ 2層レイヤー構造 定義 (Layer 1: 盤面層 / Layer 2: 手札オーバーレイ層)
+    // 🏛️ 4大責務レイヤー構造 定義 (4 Major Responsibility Layers)
     layers: {
-        layer1Board: {
+        // 1️⃣ [Layer 1: Header HUD] 最上部固定情報バー
+        header: {
+            position: "fixed",
+            top: "0px",
+            left: "0px",
+            width: "100%",
+            height: "56px",
+            zIndex: 600,
+            pointerEvents: "auto"
+        },
+        // 2️⃣ [Layer 2: World Board] 画面中央・主役盤面
+        worldBoard: {
+            position: "relative",
+            width: "100%",
+            height: "100%",
             zIndex: 10,
+            pointerEvents: "auto",
             transition: "filter 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.22s ease, box-shadow 0.22s ease"
         },
-        layer2HandOverlay: {
+        // 3️⃣ [Layer 3: Player Action Tray] 画面下部・浮遊操作トレイ
+        playerTray: {
+            position: "absolute",
+            bottom: "16px",
+            left: "20px",
+            right: "20px",
             zIndex: 500,
+            pointerEvents: "none",
             defaultOpacity: 0.92,
             activeOpacity: 1.0,
             selectedDimOpacity: 0.35
+        },
+        // 4️⃣ [Layer 4: System Overlay] 四隅・最前面ポップアップ
+        systemOverlay: {
+            position: "fixed",
+            top: "0px",
+            left: "0px",
+            width: "100%",
+            height: "100%",
+            zIndex: 900,
+            pointerEvents: "none"
         },
         dimBlurStyle: {
             brightness: "0.60",
@@ -78,12 +109,13 @@ const UILayoutConfig = {
         whiteSpace: "nowrap"
     },
 
-    // 🃏 6. 画面左下隅: ドローカード選択エリア (Layer 2: オーバーレイ層)
+    // 🃏 6. 画面左下隅: ドローカード選択エリア (Layer 3: プレイヤートレイ)
     offeringCardArea: {
         position: "absolute",
         bottom: "16px",
         left: "20px",
-        zIndex: 500
+        zIndex: 500,
+        pointerEvents: "auto"
     },
 
     // 🎮 7. 画面右下隅: 統合操作グループ (TURN END 専用ボタン)
@@ -92,7 +124,8 @@ const UILayoutConfig = {
         bottom: "16px",
         right: "20px",
         width: "160px",
-        zIndex: 100
+        zIndex: 500,
+        pointerEvents: "auto"
     },
 
     // 🌌 8. メインエリア背景 ウォーターマーク ターン表示 (AAA級スタイリッシュ演出)
@@ -101,7 +134,8 @@ const UILayoutConfig = {
         top: "20px",
         right: "28px",
         opacity: "1.0",
-        zIndex: 2
+        zIndex: 2,
+        pointerEvents: "none"
     }
 };
 

@@ -379,13 +379,21 @@ class GridEngine {
         };
 
         const isMatch = (nr, nc) => {
-            if (nr < 0 || nr >= 5 || nc < 0 || nc >= 5) return false;
+            if (nr < 0 || nr >= this.state.grid.length || nc < 0 || nc >= this.state.grid.length) return false;
             const cell = this.state.grid[nr][nc];
             if (!cell.placed || cell.isHQ || !cell.terrain) return false;
             
             const currentCell = this.state.grid[r][c];
             if (currentCell.placementGroupId && cell.placementGroupId && currentCell.placementGroupId === cell.placementGroupId) {
                 return false;
+            }
+
+            // ⚠️ 連結上限4マス制限: 既存グループがすでに4マスに達している場合は連結不可
+            if (cell.mergeGroupId && this.state.mergedBlocks && this.state.mergedBlocks[cell.mergeGroupId]) {
+                const groupObj = this.state.mergedBlocks[cell.mergeGroupId];
+                if (groupObj.cells && groupObj.cells.length >= 4) {
+                    return false;
+                }
             }
 
             const tid = cell.terrain.terrainId || cell.terrain.id;
@@ -408,9 +416,12 @@ class GridEngine {
         for (let [nr, nc] of matchingNeighbors) {
             const adjCell = this.state.grid[nr][nc];
             if (adjCell.mergeGroupId) {
-                hasExistingGroup = true;
-                existingGroupId = adjCell.mergeGroupId;
-                break;
+                const groupObj = (this.state.mergedBlocks && this.state.mergedBlocks[adjCell.mergeGroupId]);
+                if (!groupObj || (groupObj.cells && groupObj.cells.length < 4)) {
+                    hasExistingGroup = true;
+                    existingGroupId = adjCell.mergeGroupId;
+                    break;
+                }
             }
         }
 
@@ -456,14 +467,14 @@ class GridEngine {
                     terrainId: baseTerrainId,
                     nameKey: terrain.nameKey,
                     mergeType: is1x3 ? "1x3" : "1x2",
-                    cells: [{ r, c }, ...matchingNeighbors.map(([nr, nc]) => ({ r: nr, c: nc }))],
+                    cells: [{ r, c }, ...matchingNeighbors.map(([nr, nc]) => ({ r: nr, c: nc }))].slice(0, 4),
                     yieldMultiplier: 1.0,
                     createdTurn: this.state.turn
                 };
             } else {
                 const blockObj = this.state.mergedBlocks[groupId];
                 blockObj.mergeType = is1x3 ? "1x3" : blockObj.mergeType;
-                if (!blockObj.cells.some(cell => cell.r === r && cell.c === c)) {
+                if (!blockObj.cells.some(cell => cell.r === r && cell.c === c) && blockObj.cells.length < 4) {
                     blockObj.cells.push({ r, c });
                 }
             }

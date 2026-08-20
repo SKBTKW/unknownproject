@@ -13,14 +13,15 @@
         }
 
         /**
-         * 1. プレビューハイライトの全消去
+         * 1. プレビューハイライトの消去 (カード選択解除時のみ完全消去)
          */
         clearAllPreviews() {
-            const cells = document.querySelectorAll("#gridBoard .cell");
+            const cells = document.querySelectorAll(".cell");
             cells.forEach(cell => {
                 cell.classList.remove(
                     "preview-valid",
                     "preview-invalid",
+                    "placeable-candidate",
                     "merge-hover-highlight"
                 );
             });
@@ -30,25 +31,45 @@
         }
 
         /**
-         * 2. 土地カード選択時の「置ける候補マス」全発光ハイライト
+         * 一時的なホバー枠のみ消去 (placeable-candidate は絶対に維持)
+         */
+        clearHoverPreviews() {
+            const cells = document.querySelectorAll(".cell");
+            cells.forEach(cell => {
+                cell.classList.remove("preview-valid", "preview-invalid", "merge-hover-highlight");
+            });
+        }
+
+        /**
+         * 2. 土地カード選択時の「置ける候補マス」全発光ハイライト (常時点灯パルス)
          * @param {Object} card 
          * @param {Object} gameState 
          */
         highlightPlaceableCandidates(card, gameState) {
-            this.clearAllPreviews();
-            if (!card || !gameState || gameState.hasPickedThisTurn) return;
+            if (!card || !gameState || gameState.hasPickedThisTurn) {
+                this.clearAllPreviews();
+                return;
+            }
 
-            const shape = card.currentShape || (card.terrain ? card.terrain.shape : [[1]]);
+            this.clearHoverPreviews();
+
+            const shape = card.currentShape || (card.terrain ? card.terrain.shape : (card.shape || [[1]]));
             if (!shape || !Array.isArray(shape)) return;
 
-            for (let r = 0; r < 5; r++) {
-                for (let c = 0; c < 5; c++) {
-                    const check = gameState.canPlaceShape(r, c, shape);
-                    const canPlace = (typeof check === 'object' && check !== null) ? check.can : check;
-                    if (canPlace) {
-                        const targetEl = document.querySelector(`#gridBoard .cell[data-r="${r}"][data-c="${c}"]`);
-                        if (targetEl) {
-                            targetEl.classList.add("preview-valid");
+            const size = (gameState.stage && gameState.stage.size) ? gameState.stage.size : (gameState.grid ? gameState.grid.length : 5);
+
+            for (let r = 0; r < size; r++) {
+                for (let c = 0; c < size; c++) {
+                    const check = (typeof gameState.canPlaceShape === "function") 
+                        ? gameState.canPlaceShape(r, c, shape) 
+                        : (gameState.gridEngine ? gameState.gridEngine.canPlaceShape(r, c, shape) : false);
+                    const canPlace = (typeof check === 'object' && check !== null) ? check.can : (check === true);
+                    const targetEl = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
+                    if (targetEl) {
+                        if (canPlace) {
+                            targetEl.classList.add("placeable-candidate");
+                        } else {
+                            targetEl.classList.remove("placeable-candidate");
                         }
                     }
                 }
@@ -56,25 +77,19 @@
         }
 
         /**
-         * 3. セルホバー時のシンプルで確実な「配置ブロックプレビューハイライト」描画
-         *    - 近郊マス(hq-vicinity-unplaced)の上であっても、余計なアニメーションなしで
-         *      シンプルに .preview-valid (緑枠) / .preview-invalid (赤枠) が100%最前面にクッキリ表示される
-         * @param {Event} e 
-         * @param {number} r 
-         * @param {number} c 
-         * @param {Object} card 
-         * @param {Object} gameState 
+         * 3. セルホバー時の配置プレビュー
          */
         updateHoverPreview(e, r, c, card, gameState) {
             if (!gameState) return;
 
-            // カード非選択時は通常ツールチップのみ表示
             if (!card || gameState.hasPickedThisTurn) {
                 if (typeof window.showTileTooltip === "function") {
                     window.showTileTooltip(e, r, c, gameState.grid[r][c]);
                 }
                 return;
             }
+
+            this.clearHoverPreviews();
 
             const shape = card.currentShape || (card.terrain ? card.terrain.shape : [[1]]);
             if (!shape || !Array.isArray(shape)) return;
@@ -84,16 +99,16 @@
 
             const rows = shape.length;
             const cols = shape[0].length;
+            const size = (gameState.stage && gameState.stage.size) ? gameState.stage.size : 5;
 
             for (let dr = 0; dr < rows; dr++) {
                 for (let dc = 0; dc < cols; dc++) {
                     if (shape[dr][dc] === 1) {
                         const tr = r + dr;
                         const tc = c + dc;
-                        if (tr >= 0 && tr < 5 && tc >= 0 && tc < 5) {
-                            const targetEl = document.querySelector(`#gridBoard .cell[data-r="${tr}"][data-c="${tc}"]`);
+                        if (tr >= 0 && tr < size && tc >= 0 && tc < size) {
+                            const targetEl = document.querySelector(`.cell[data-r="${tr}"][data-c="${tc}"]`);
                             if (targetEl) {
-                                // 🌟 近郊マスやソケットマスの元スタイルを上書きし、緑枠/赤枠プレビューを忠実に最前面表示
                                 targetEl.classList.add(isValid ? "preview-valid" : "preview-invalid");
                             }
                         }

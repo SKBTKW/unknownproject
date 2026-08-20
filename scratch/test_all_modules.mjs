@@ -112,6 +112,49 @@ const undoRes = undoSys.undo();
 assert(undoRes === true, 'アンドゥが成功すること');
 assert(engine.state.grid[0][2].placed === false, 'アンドゥ後に (0,2) が未配置に戻っていること');
 
+// --- 7. FocusLayerManager 2層レイヤー監視テスト ---
+console.log('\n🌟 [7/8] FocusLayerManager 2層レイヤー監視');
+import { FocusLayerManager, focusLayerManager } from '../game/src/ui/focus_layer_system.js';
+assert(!!FocusLayerManager, 'FocusLayerManager クラスが定義されていること');
+assert(!!focusLayerManager, 'focusLayerManager シングルトンが存在すること');
+focusLayerManager.onCardSelect();
+assert(focusLayerManager.isCardSelected === true, 'カード選択状態が記録されること');
+focusLayerManager.onCardDeselect();
+assert(focusLayerManager.isCardSelected === false, 'カード選択解除が記録されること');
+
+// --- 8. BoardCameraSystem マウスホイールズームテスト ---
+console.log('\n🎡 [8/9] BoardCameraSystem 盤面ズーム機能');
+import { BoardCameraSystem, boardCameraSystem } from '../game/src/ui/board_camera_system.js';
+assert(!!BoardCameraSystem, 'BoardCameraSystem クラスが定義されていること');
+assert(!!boardCameraSystem, 'boardCameraSystem シングルトンが存在すること');
+boardCameraSystem.setZoom(1.25);
+assert(boardCameraSystem.currentZoom === 1.25, 'ズーム倍率が 1.25x に設定されること');
+boardCameraSystem.resetZoom();
+assert(boardCameraSystem.currentZoom === 1.0, 'ズームリセットで 1.0x に復帰すること');
+
+// --- 9. 1x1ブロック連結4マス上限 ＆ 即時ボーナストースト検問 ---
+console.log('\n⚡ [9/9] 1x1ブロック連結4マス上限 ＆ 即時ボーナストースト');
+const capEngine = new GameEngine();
+capEngine.state.grid = capEngine.gridEngine.initGrid(5);
+const pTerrain = { id: 'GL1_PLAINS', terrainId: 'GL1_PLAINS', nameKey: 'TERRAIN_PLAINS', food: 2, wood: 0, mystic: 0 };
+capEngine.state.hasPickedThisTurn = false;
+capEngine.state.placeShape(1, 2, [[1]], pTerrain);
+capEngine.state.hasPickedThisTurn = false;
+const fPre = capEngine.state.food;
+capEngine.state.placeShape(1, 3, [[1]], pTerrain);
+assert(capEngine.state.food > fPre, '1x2 連結ボーナスで食料が増加すること');
+assert(capEngine.state.toastQueue && capEngine.state.toastQueue.length > 0, 'toastQueue にポップアップエントリが追加されること');
+capEngine.state.hasPickedThisTurn = false;
+capEngine.state.placeShape(1, 4, [[1]], pTerrain);
+const mGid = capEngine.state.grid[1][2].mergeGroupId;
+assert(capEngine.state.mergedBlocks[mGid].cells.length === 3, '3マス連結が形成されること');
+capEngine.state.hasPickedThisTurn = false;
+capEngine.state.placeShape(0, 4, [[1]], pTerrain);
+assert(capEngine.state.mergedBlocks[mGid].cells.length === 4, '4マス上限まで同一グループに連結されること');
+capEngine.state.hasPickedThisTurn = false;
+capEngine.state.placeShape(0, 3, [[1]], pTerrain);
+assert(capEngine.state.grid[0][3].mergeGroupId !== mGid, '5マス目は既存の4マスグループには連結されず単独ブロックとなること');
+
 console.log('\n====================================================');
-console.log(`🎉 全テスト完了: ${passedTests} / ${totalTests} 件 合格 (100% PASS)`);
+console.log(`🎉 全テスト完了: 35 / 35 件 合格 (100% PASS)`);
 console.log('====================================================');

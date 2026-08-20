@@ -8,6 +8,8 @@ import { ProductionCalculator } from '../systems/production_calculator.js';
 import { V2UIRenderer } from './v2_ui_renderer.js';
 import { ModalSystem } from './modal_system.js';
 import { focusLayerManager } from './focus_layer_system.js';
+import { boardCameraSystem } from './board_camera_system.js';
+import { UndoLandSystem } from '../systems/undo_land_system.js';
 
 class UIController {
     /**
@@ -17,9 +19,14 @@ class UIController {
         this.engine = engine;
         this.state = (engine && engine.state) ? engine.state : engine;
         this.drawSys = (engine && engine.deckManager) ? engine.deckManager : (engine && engine.drawSys ? engine.drawSys : null);
+        this.undoSys = (engine && engine.undoSys) ? engine.undoSys : (UndoLandSystem && this.state ? new UndoLandSystem(this.state) : null);
         this.selectedCard = null;
         this.selectedCardIdx = -1;
         this.pinnedPreviewCard = null;
+
+        if (typeof window !== "undefined" && this.undoSys) {
+            window.undoSys = this.undoSys;
+        }
 
         // グローバル参照および後方互換用プロキシバインド
         if (typeof window !== "undefined") {
@@ -37,6 +44,7 @@ class UIController {
 
             // HTML 内のインラインイベント用プロキシ
             window.selectCard = (idx) => this.selectCard(idx);
+            window.deselectCard = () => this.deselectCard();
             window.rotateSelectedCard = (e, idx) => this.rotateSelectedCard(e, idx);
             window.onCellClick = (r, c) => this.onCellClick(r, c);
             window.onCellMouseEnter = (e, r, c) => this.onCellMouseEnter(e, r, c);
@@ -63,10 +71,58 @@ class UIController {
     init() {
         this.initModularUIComponents();
         this.initStaticI18nLabels();
+        this.initGlobalCancelListeners();
         if (this.drawSys && (!this.state.handOffering || this.state.handOffering.length === 0)) {
             this.drawSys.generateOfferingCards();
         }
         this.render();
+    }
+
+    /**
+     * 🛑 土地カード選択のキャンセル（解除）
+     */
+    deselectCard() {
+        if (!this.selectedCard && this.selectedCardIdx === -1) return;
+        this.selectedCard = null;
+        this.selectedCardIdx = -1;
+        if (focusLayerManager) focusLayerManager.onCardDeselect();
+        this.clearCellPreviews();
+        this.render();
+        this.highlightPlaceableCells();
+    }
+
+    /**
+     * 🎯 盤面外クリック / Esc キー / 盤面外右クリックによる配置キャンセル検知
+     */
+    initGlobalCancelListeners() {
+        if (typeof document === "undefined") return;
+
+        // 1. 盤面外・背景クリックでキャンセル
+        document.addEventListener("click", (e) => {
+            if (!this.selectedCard) return;
+            // クリック先がマス目(.cell)、手札カード、マリガンボタン、モーダル内の場合は除外
+            if (e.target.closest(".cell") || e.target.closest(".card-frame-tcg") || e.target.closest(".card-slot-box") || e.target.closest("#btnMulligan") || e.target.closest(".modal-container") || e.target.closest("#directiveModal")) {
+                return;
+            }
+            this.deselectCard();
+        });
+
+        // 2. Esc キーで即時キャンセル
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" || e.key === "Esc") {
+                if (this.selectedCard) {
+                    this.deselectCard();
+                }
+            }
+        });
+
+        // 3. 盤面外右クリックでキャンセル
+        document.addEventListener("contextmenu", (e) => {
+            if (this.selectedCard && !e.target.closest(".cell") && !e.target.closest(".card-frame-tcg")) {
+                e.preventDefault();
+                this.deselectCard();
+            }
+        });
     }
 
     initModularUIComponents() {
@@ -94,10 +150,16 @@ class UIController {
         }
 
         // 🌟 2層レイヤー監視初期化 (手札フォーカス ✕ 盤面暗転ブラー)
-        const boardEl = document.querySelector(".board-container");
+        const boardEl = document.getElementById("layerWorldBoard") || document.querySelector(".layer-world-board") || document.querySelector(".board-container");
         const offeringEl = document.querySelector(".offering-section");
         if (focusLayerManager && typeof focusLayerManager.mount === "function") {
             focusLayerManager.mount(boardEl, offeringEl);
+        }
+
+        // 🎡 盤面マウスホイール可変ズーム初期化 (Civ6 スタイル)
+        const boardWrapperEl = document.querySelector(".board-container-wrapper") || document.getElementById("gridBoard");
+        if (boardCameraSystem && typeof boardCameraSystem.mount === "function") {
+            boardCameraSystem.mount(boardWrapperEl, boardEl);
         }
     }
 
@@ -354,8 +416,18 @@ class UIController {
                 } else {
                     if (isHQVic) {
                         cellEl.classList.add("hq-vicinity-unplaced");
-                        cellEl.innerHTML = `<span style="font-size:12px; color:#1abc9c; opacity:0.8;">✨+1</span>`;
                     }
+                }
+
+                // ↩️ 当ターン配置マスの場合: キャンセルガイドバッジ (Undo Badge) を付与
+                const undoSys = this.undoSys || (typeof window !== "undefined" ? window.undoSys : null);
+                if (undoSys && typeof undoSys.isCellPlacedThisTurn === "function" && undoSys.isCellPlacedThisTurn(r, c)) {
+                    cellEl.classList.add("cell-placed-this-turn");
+                    const undoBadge = document.createElement("div");
+                    undoBadge.className = "undo-badge";
+                    undoBadge.title = "↩ クリックで配置を取り消す";
+                    undoBadge.innerHTML = "↩";
+                    cellEl.appendChild(undoBadge);
                 }
 
                 cellEl.onmouseenter = (e) => this.onCellMouseEnter(e, r, c);
@@ -433,12 +505,12 @@ class UIController {
             if (category !== "LAND") {
                 cardEl.innerHTML = `
                     <div class="tcg-card-top-bar" style="padding:4px 8px;">
-                        <div class="tcg-title-pill" style="font-size:16px; font-weight:900; text-align:center; width:100%;">${cName}</div>
+                        <div class="tcg-title-pill" style="font-size:21px; font-weight:900; text-align:center; width:100%; letter-spacing:0.5px;">${cName}</div>
                     </div>
-                    <div class="tcg-shape-art-area" style="display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-start; background:#1c2536; padding:12px; text-align:left; overflow:hidden; flex:1; border-radius:6px; margin:4px 0;">
-                        <div style="font-size:13.5px; color:#ffffff; line-height:1.45; font-weight:bold; text-align:left; width:100%;">${cDesc}</div>
+                    <div class="tcg-shape-art-area" style="display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-start; background:#1c2536; padding:14px; text-align:left; overflow:hidden; flex:1; border-radius:6px; margin:4px 0;">
+                        <div style="font-size:17.5px; color:#ffffff; line-height:1.45; font-weight:bold; text-align:left; width:100%;">${cDesc}</div>
                     </div>
-                    <div class="tcg-yield-strip" style="font-size:13px; font-weight:bold; text-align:left; justify-content:flex-start; padding:6px 10px; width:100%; box-sizing:border-box;">
+                    <div class="tcg-yield-strip" style="font-size:16px; font-weight:bold; text-align:left; justify-content:flex-start; padding:8px 12px; width:100%; box-sizing:border-box;">
                         <span>${costBadgeText ? I18n.t("UI_CARD_COST_PREFIX", { cost: costBadgeText }) : I18n.t("UI_CMD_INSTANT_LABEL")}</span>
                     </div>
                     <div class="tcg-action-controls" style="display:none;">
@@ -454,27 +526,55 @@ class UIController {
                 const totD = (y.defense || 0) * tileCount;
                 const totM = (y.mystic || 0) * tileCount;
 
-                let shapeHtml = `<div style="display:grid; grid-template-rows:repeat(${shapeMat.length}, 18px); grid-template-columns:repeat(${shapeMat[0].length}, 18px); gap:4px; background:rgba(0,0,0,0.5); padding:8px; border-radius:6px; border:1px solid rgba(255,255,255,0.15);">`;
+                // 🎨 地形IDに応じたプレビューブロック色とネオンオーラ (配置時の盤面色と完全一致)
+                const tid = tObj.terrainId || tObj.id || "";
+                let blockBg = "#1abc9c";
+                let blockBorder = "#16a085";
+                let blockShadow = "rgba(26, 188, 156, 0.8)";
+
+                if (tid.includes("DEEP_FOREST") || tid.includes("DEEP_HILL")) {
+                    blockBg = "#16a085"; blockBorder = "#117a65"; blockShadow = "rgba(22, 160, 133, 0.85)";
+                } else if (tid.includes("FOREST")) {
+                    blockBg = "#2ecc71"; blockBorder = "#27ae60"; blockShadow = "rgba(46, 204, 113, 0.85)";
+                } else if (tid.includes("HILL")) {
+                    blockBg = "#e67e22"; blockBorder = "#d35400"; blockShadow = "rgba(230, 126, 34, 0.85)";
+                } else if (tid.includes("MOUNTAIN")) {
+                    blockBg = "#9b59b6"; blockBorder = "#8e44ad"; blockShadow = "rgba(155, 89, 182, 0.85)";
+                } else if (tid.includes("DESERT")) {
+                    blockBg = "#f39c12"; blockBorder = "#d68910"; blockShadow = "rgba(243, 156, 18, 0.85)";
+                } else if (tid.includes("PLAINS")) {
+                    blockBg = "#1abc9c"; blockBorder = "#16a085"; blockShadow = "rgba(26, 188, 156, 0.85)";
+                }
+
+                let shapeHtml = `<div style="display:grid; grid-template-rows:repeat(${shapeMat.length}, 22px); grid-template-columns:repeat(${shapeMat[0].length}, 22px); gap:5px; background:rgba(0,0,0,0.55); padding:10px; border-radius:8px; border:1.5px solid rgba(255,255,255,0.18);">`;
                 for (let r = 0; r < shapeMat.length; r++) {
                     for (let c = 0; c < shapeMat[0].length; c++) {
                         if (shapeMat[r][c] === 1) {
-                            shapeHtml += `<div style="width:18px;height:18px;background:#1abc9c;border-radius:3px;box-shadow:0 0 6px #1abc9c;"></div>`;
+                            shapeHtml += `<div style="width:22px;height:22px;background:${blockBg};border:1.5px solid ${blockBorder};border-radius:4px;box-shadow:0 0 8px ${blockShadow};"></div>`;
                         } else {
-                            shapeHtml += `<div style="width:18px;height:18px;background:transparent;"></div>`;
+                            shapeHtml += `<div style="width:22px;height:22px;background:transparent;"></div>`;
                         }
                     }
                 }
                 shapeHtml += `</div>`;
-                let yieldText = `<span>🌾${totF}</span> <span>🧱${totW}</span> <span>🛡️${totD}</span> <span>✨${totM}</span>`;
+
+                // 🌾 産出表示: 30%拡大 ＆ 「産出:」カラー統一 (純白) ＆ 0 は非表示
+                const yieldParts = [];
+                if (totF > 0) yieldParts.push(`<span>🌾${totF}</span>`);
+                if (totW > 0) yieldParts.push(`<span>🧱${totW}</span>`);
+                if (totD > 0) yieldParts.push(`<span>🛡️${totD}</span>`);
+                if (totM > 0) yieldParts.push(`<span>✨${totM}</span>`);
+                const yieldContent = yieldParts.length > 0 ? yieldParts.join(" ") : `<span>-</span>`;
+                const yieldText = `<span style="font-size:16px; color:#ffffff; font-weight:bold; margin-right:6px;">産出:</span> <span style="font-size:19.5px; font-weight:900; letter-spacing:0.8px; color:#ffffff;">${yieldContent}</span>`;
 
                 cardEl.innerHTML = `
                     <div class="tcg-card-top-bar" style="padding:4px 8px;">
-                        <div class="tcg-title-pill" style="font-size:16px; font-weight:900; text-align:center; width:100%;">${cName}</div>
+                        <div class="tcg-title-pill" style="font-size:21px; font-weight:900; text-align:center; width:100%; letter-spacing:0.5px;">${cName}</div>
                     </div>
                     <div class="tcg-shape-art-area" style="display:flex; align-items:center; justify-content:center; padding:12px; flex:1; background:#1c2536; border-radius:6px; margin:4px 0;">
                         ${shapeHtml}
                     </div>
-                    <div class="tcg-yield-strip" style="font-size:13px; font-weight:bold; padding:6px 10px;">
+                    <div class="tcg-yield-strip" style="padding:8px 10px; display:flex; align-items:center; justify-content:center;">
                         ${yieldText}
                     </div>
                     <div class="tcg-action-controls" style="display:none;">
@@ -497,6 +597,15 @@ class UIController {
                 const cName = I18n.t(card.terrain.nameKey);
                 const cardEl = document.createElement("div");
                 cardEl.className = "card-frame-tcg rarity-c";
+
+                const ry = card.terrain.yields || card.terrain;
+                const rParts = [];
+                if ((ry.food || 0) > 0) rParts.push(`<span>🌾: ${ry.food}</span>`);
+                if ((ry.wood || 0) > 0) rParts.push(`<span>🧱: ${ry.wood}</span>`);
+                if ((ry.defense || 0) > 0) rParts.push(`<span>🛡️: ${ry.defense}</span>`);
+                if ((ry.mystic || 0) > 0) rParts.push(`<span>✨: ${ry.mystic}</span>`);
+                const rYieldText = rParts.length > 0 ? rParts.join(" ") : `<span>-</span>`;
+
                 cardEl.innerHTML = `
                     <div class="tcg-card-top-bar">
                         <div class="tcg-title-pill" style="border-color:#d35400;">${cName}</div>
@@ -506,9 +615,7 @@ class UIController {
                         <div style="width:12px;height:12px;background:#e67e22;border-radius:2px;"></div>
                     </div>
                     <div class="tcg-yield-strip" style="background:#fff3e0;">
-                        <span>🌾: ${card.terrain.food||0}</span>
-                        <span>🧱: ${card.terrain.wood||0}</span>
-                        <span>🛡️ ${card.terrain.defense||0}</span>
+                        ${rYieldText}
                     </div>
                     <div class="tcg-action-controls">
                         <button class="tcg-reserve-btn-wireframe" style="background:#e67e22;" onclick="event.stopPropagation(); returnReserveCard(${i})">${I18n.t("UI_RESERVE_RETURN_BTN")}</button>
@@ -630,9 +737,16 @@ class UIController {
     onCellClick(r, c) {
         if (!this.state) return;
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
+        const undoSys = this.undoSys || (typeof window !== "undefined" ? window.undoSys : null);
 
-        if (typeof window !== "undefined" && window.undoSys && window.undoSys.isCellPlacedThisTurn(r, c)) {
-            window.undoSys.undo();
+        // ↩️ 当ターン配置済みマスをクリックした場合は配置取り消し（Undo）
+        if (undoSys && undoSys.isCellPlacedThisTurn(r, c)) {
+            undoSys.undo();
+            this.selectedCard = null;
+            this.selectedCardIdx = -1;
+            if (focusLayerManager) focusLayerManager.onCardDeselect();
+            this.render();
+            this.highlightPlaceableCells();
             return;
         }
 
@@ -641,7 +755,7 @@ class UIController {
         const shape = this.selectedCard.currentShape || this.selectedCard.shape || [[1]];
         const terrain = this.selectedCard.terrain || this.selectedCard;
 
-        if (typeof window !== "undefined" && window.undoSys) {
+        if (undoSys) {
             const placedCoords = [];
             if (shape && Array.isArray(shape)) {
                 for (let dr = 0; dr < shape.length; dr++) {
@@ -654,7 +768,7 @@ class UIController {
             } else {
                 placedCoords.push({ r, c });
             }
-            window.undoSys.captureSnapshot(placedCoords);
+            undoSys.captureSnapshot(placedCoords);
         }
 
         const currentIdx = this.selectedCardIdx !== -1 ? this.selectedCardIdx : this.state.handOffering.indexOf(this.selectedCard);
@@ -669,19 +783,69 @@ class UIController {
             }
 
             this.render();
+            this.processToastQueue();
         } else {
-            if (typeof window !== "undefined" && window.undoSys) window.undoSys.clearSnapshot();
+            if (undoSys) undoSys.clearSnapshot();
             if (typeof alert === "function") alert(I18n.t("ALERT_CANNOT_PLACE"));
+        }
+    }
+
+    /**
+     * 🌟 連結即時ボーナス・ソケット開花トーストキューの画面フロートポップアップ消費
+     */
+    processToastQueue() {
+        if (!this.state || !this.state.toastQueue || this.state.toastQueue.length === 0) return;
+        if (typeof document === "undefined") return;
+
+        while (this.state.toastQueue.length > 0) {
+            const toast = this.state.toastQueue.shift();
+            const { r, c, text } = toast;
+
+            // 当該セルの DOM 座標を取得
+            let targetX = window.innerWidth / 2;
+            let targetY = window.innerHeight / 2;
+
+            const cellEl = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`) || document.querySelector(`#cell_${r}_${c}`);
+            if (cellEl) {
+                const rect = cellEl.getBoundingClientRect();
+                targetX = rect.left + rect.width / 2;
+                targetY = rect.top + rect.height / 2;
+            }
+
+            // フロートポップアップ要素の生成
+            const popup = document.createElement("div");
+            popup.className = "float-toast-bonus";
+            popup.innerHTML = text;
+            popup.style.left = `${targetX}px`;
+            popup.style.top = `${targetY}px`;
+            document.body.appendChild(popup);
+
+            // アニメーション完了後に DOM から自動削除
+            setTimeout(() => {
+                if (popup.parentNode) popup.parentNode.removeChild(popup);
+            }, 1700);
         }
     }
 
     clearCellPreviews() {
         this.hideTileTooltip();
+        const undoSys = this.undoSys || (typeof window !== "undefined" ? window.undoSys : null);
+        if (undoSys) undoSys.hideHoverTooltip();
+
         if (typeof window !== "undefined" && window.BlockPlacementSystem) {
-            window.BlockPlacementSystem.clearAllPreviews();
+            if (this.selectedCard) {
+                // 🌟 カード選択中（手札の処理が残っている時）は配置可能ハイライトを絶対消去せず、ホバー枠のみ消去
+                window.BlockPlacementSystem.clearHoverPreviews();
+            } else {
+                // カード非選択時のみ全ハイライトを完全消去
+                window.BlockPlacementSystem.clearAllPreviews();
+            }
         } else if (typeof document !== "undefined") {
             const cells = document.querySelectorAll(".cell");
             cells.forEach(c => c.classList.remove("preview-valid", "preview-invalid", "merge-hover-highlight", "hq-vicinity-hover-glow"));
+            if (!this.selectedCard) {
+                cells.forEach(c => c.classList.remove("placeable-candidate"));
+            }
         }
     }
 
@@ -714,6 +878,15 @@ class UIController {
 
     onCellMouseMove(e, r, c) {
         if (!this.state) return;
+        const undoSys = this.undoSys || (typeof window !== "undefined" ? window.undoSys : null);
+        if (undoSys && undoSys.isCellPlacedThisTurn(r, c)) {
+            undoSys.showHoverTooltip(e, r, c);
+            this.hideTileTooltip();
+            return;
+        } else if (undoSys) {
+            undoSys.hideHoverTooltip();
+        }
+
         const cellData = this.state.grid[r][c];
         this.showTileTooltip(e, r, c, cellData);
     }
@@ -729,8 +902,11 @@ class UIController {
 
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' && window.I18n ? window.I18n : { t: k => k });
         const coordStr = `${String.fromCharCode(65 + c)}${r + 1}`;
+        const isHQVic = (this.state && typeof this.state.isHQVicinity === "function") ? this.state.isHQVicinity(r, c) : false;
         let title = `土地 [${coordStr}]`;
-        let desc = "未開拓の土地";
+        let desc = isHQVic 
+            ? "🏛️ <strong>本営近郊エリア</strong><br>本営に隣接する特別な地脈です。<br><span style='color:#1abc9c; font-weight:bold;'>ここに配置された土地が産出しているすべての数値（>0）にそれぞれ +1 ボーナス</span> が付与されます。<br><small style='color:#a4b0be;'>（例: 🌾2 ➔ 🌾3 / ✨5 ➔ ✨6、0の項目は0のまま）</small>" 
+            : "未開拓の土地";
 
         if (cell.isHQ) {
             title = `🏛️ 本営 HQ [${coordStr}]`;
@@ -757,11 +933,16 @@ class UIController {
                 bonusParts.push(`★${sName}`);
             }
 
-            // 本営近郊ボーナス
+            // 本営近郊ボーナス（産出している数値すべてに+1）
             if (this.state && typeof this.state.isHQVicinity === "function" && this.state.isHQVicinity(r, c)) {
-                if (tf > 0) tf += 1;
-                if (tw > 0) tw += 1;
-                bonusParts.push("本営近郊(+1)");
+                let hqBonusCount = 0;
+                if (tf > 0) { tf += 1; hqBonusCount++; }
+                if (tw > 0) { tw += 1; hqBonusCount++; }
+                if (td > 0) { td += 1; hqBonusCount++; }
+                if (tm > 0) { tm += 1; hqBonusCount++; }
+                if (hqBonusCount > 0) {
+                    bonusParts.push("本営近郊(+1)");
+                }
             }
 
             // 平地バフ
@@ -782,7 +963,7 @@ class UIController {
             desc = `毎ターン産出: <strong>${yieldStr}</strong>${bonusStr}`;
         }
 
-        tt.innerHTML = `<strong>${title}</strong><br><small>${desc}</small>`;
+        tt.innerHTML = `<div style="font-size:18px; font-weight:900; color:#1abc9c; margin-bottom:6px; letter-spacing:0.5px;">${title}</div><div style="font-size:15px; color:#e0e0e0; line-height:1.5;">${desc}</div>`;
         tt.style.left = `${e.pageX + 12}px`;
         tt.style.top = `${e.pageY + 12}px`;
         tt.style.display = "block";

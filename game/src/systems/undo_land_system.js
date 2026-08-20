@@ -56,8 +56,21 @@
          */
         isCellPlacedThisTurn(r, c) {
             if (!this.snapshot || !this.state || !this.state.hasPickedThisTurn) return false;
-            if (!this.placedCellCoords || this.placedCellCoords.length === 0) return false;
-            return this.placedCellCoords.some(pos => pos.r === r && pos.c === c);
+            // 1. 直接記録された座標にマッチするか判定
+            if (this.placedCellCoords && this.placedCellCoords.length > 0) {
+                if (this.placedCellCoords.some(pos => pos.r === r && pos.c === c)) {
+                    return true;
+                }
+            }
+            // 2. スナップショットのグリッドと比較し、当ターンで新たに置かれたマスかフォールバック判定
+            if (this.snapshot.grid && this.snapshot.grid[r] && this.snapshot.grid[r][c]) {
+                const wasPlaced = this.snapshot.grid[r][c].placed;
+                const isNowPlaced = this.state.grid[r] && this.state.grid[r][c] && this.state.grid[r][c].placed;
+                if (!wasPlaced && isNowPlaced) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         /**

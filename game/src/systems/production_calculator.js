@@ -49,6 +49,7 @@
                         if (state.isHQVicinity(r, c)) {
                             if (tf > 0) foodVicinity += 1;
                             if (tw > 0) woodVicinity += 1;
+                            if (tm > 0) mysticVicinity += 1;
                         }
                     }
                 }
@@ -169,6 +170,7 @@
                         if (state.isHQVicinity(r, c)) {
                             if (tf > 0) foodVicinity += 1;
                             if (tw > 0) woodVicinity += 1;
+                            if (tm > 0) mysticVicinity += 1;
                         }
                     }
                 }
