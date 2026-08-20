@@ -3,19 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trial of Ages : Last Ember (Bottom Card Layout Option)</title>
+    <title>Trial of Ages : Last Ember</title>
     <link rel="stylesheet" href="css/0_global_common/global_animations.css">
     <link rel="stylesheet" href="css/0_global_common/typography_theme.css">
     <link rel="stylesheet" href="css/0_global_common/base_layout.css">
     <link rel="stylesheet" href="css/1_top_header/top_header.css">
     <link rel="stylesheet" href="css/2_center_area/land_grid.css">
     <link rel="stylesheet" href="css/3_bottom_area/bottom_cards.css">
-    <!-- 🃏 個別分離管理されたドローカード選択エリア専用CSS -->
     <link rel="stylesheet" href="css/3_bottom_area/draw_card_select_area.css">
     <link rel="stylesheet" href="css/4_right_sidebar/right_sidebar.css">
-    <!-- 🎨 抽出・一括管理された外部レイアウトスタイルシート -->
     <link rel="stylesheet" href="css/layout.css">
-    
 </head>
 <body>
 
@@ -36,18 +33,18 @@
                 <span>: <span id="valEmber">20</span></span>
             </div>
 
-            <!-- 📊 ヘッダー右端: 各種データ表示パネル (限界超大型拡大 ✕ テキスト排除) -->
+            <!-- 📊 ヘッダー右端: 各種データ表示パネル -->
             <div class="header-resource-data-panel" id="headerDataPanel" onmouseenter="showDataPanelTooltip(event)" onmouseleave="hideDataPanelTooltip()">
                 <div class="header-data-item">
                     <span class="icon">🌾</span>
                     <span class="val" id="valFood">30</span>
-                    <span class="prod">(<span id="valFoodProd">+10</span>/T)</span>
+                    <span class="prod">(<span id="valFoodProd">+12</span>/T)</span>
                 </div>
                 <div style="width:1.5px; height:24px; background:#2c3e50;"></div>
                 <div class="header-data-item">
                     <span class="icon">🧱</span>
                     <span class="val" id="valWood">30</span>
-                    <span class="prod">(<span id="valWoodProd">+10</span>/T)</span>
+                    <span class="prod">(<span id="valWoodProd">+12</span>/T)</span>
                 </div>
                 <div style="width:1.5px; height:24px; background:#2c3e50;"></div>
                 <div class="header-data-item">
@@ -58,7 +55,7 @@
                 <div class="header-data-item">
                     <span class="icon">✨</span>
                     <span class="val" id="valMystic">0</span>
-                    <span class="prod">(<span id="valMysticProd">+0</span>/T)</span>
+                    <span class="prod">(<span id="valMysticProd">+3</span>/T)</span>
                 </div>
             </div>
         </div>
@@ -69,21 +66,21 @@
                 <!-- 📜 メインエリア左上隅: モジュール化 0.75x ログコンテナ -->
                 <div id="logComponentContainer"></div>
 
-                <!-- 🏷️ 盤面エリア右上隅バッジ -->
-                <div class="main-area-badge"><span id="lblMainBadge"></span> <span id="valPlacedCount">1</span>/24</div>
-
                 <!-- 🧩 盤面中央エリアコンテナ (UILayoutConfigによる集中一元管理) -->
-                <div class="board-container-wrapper">
+                <div class="board-container-wrapper" style="position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center;">
                     <!-- ✨ 盤面直上: モジュール化 上方向トグル展開バフコンテナ -->
                     <div id="buffComponentContainer"></div>
 
                     <div id="gridBoard" class="grid-with-headers"></div>
+
+                    <!-- 🏷️ 土地グリッドエリア右下隅吸着バッジコンテナ -->
+                    <div id="territoryBadgeContainer" style="position:absolute; bottom:-34px; right:0; z-index:20;"></div>
                 </div>
 
                 <div id="tileTooltip" class="tile-tooltip"></div>
                 <div id="cardRotateCursorTooltip" class="card-rotate-cursor-tooltip"></div>
 
-                <!-- 🃏 画面左下隅: 手札ドローカード選択エリア (メインエリア枠内内包) -->
+                <!-- 🃏 画面左下隅: 手札ドローカード選択エリア -->
                 <div class="offering-section">
                     <div class="section-title-offering">
                         <span id="lblOfferingTitle">手札オファリング</span>
@@ -91,7 +88,7 @@
                     <div id="cardRow" class="cards-row-wrapper"></div>
                 </div>
 
-                <!-- 🎮 画面右下隅: 統合操作グループ (メインエリア枠内内包) -->
+                <!-- 🎮 画面右下隅: 統合操作グループ -->
                 <div class="footer-controls-partition" id="footerControlsPartition">
                     <div class="turn-box-inside">
                         <div class="turn-label" id="lblTurnHeader">ターン表示</div>
@@ -101,13 +98,15 @@
                     <button class="btn-turn-end" onclick="nextTurn()" id="btnTurnEnd"></button>
                 </div>
 
-                <!-- 4x Large Card Hover Preview Modal Container (Bottom-Right Corner Positioned) -->
+                <!-- 4x Large Card Hover Preview Modal Container -->
                 <div id="cardHoverPreviewModal" style="display:none; position:absolute; bottom:12px; right:12px; width:260px; height:390px; z-index:900; pointer-events:none; box-shadow:0 14px 40px rgba(0,0,0,0.9), 0 0 25px rgba(26,188,156,0.85); border-radius:14px; border:3px solid #1abc9c; background:#11141a; padding:10px; transition:opacity 0.15s ease;">
                     <div id="cardHoverPreviewContent" style="width:100%; height:100%; display:flex; flex-direction:column; justify-content:space-between;"></div>
                 </div>
             </div>
         </div>
-    <!-- 🏛️ 4大文明方針 変更モーダル画面 (バッジクリック一発ポップアップ) -->
+    </div>
+
+    <!-- 🏛️ 4大文明方針 変更モーダル画面 -->
     <div id="directiveModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.75); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
         <div style="background:#161922; border:2px solid #1abc9c; border-radius:12px; width:680px; max-width:92vw; padding:20px; box-shadow:0 10px 40px rgba(0,0,0,0.9); color:#e0e0e0; display:flex; flex-direction:column; gap:16px;">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #2a2e3d; padding-bottom:10px;">
@@ -131,7 +130,7 @@
 
     <!-- 🌐 True ES Module Single Entrypoint Bootstrap (Zero-Latency Instant Launch) -->
     <script type="module">
-        import { GameEngine, UIController, UndoLandSystem, BuffSystem } from './src/app.js?v=20260820_v12';
+        import { GameEngine, UIController, UndoLandSystem, BuffSystem, TerritoryBadgeComponent } from './src/app.js?v=20260820_v15';
 
         function bootstrap() {
             // 🎮 GameEngine ＆ UIController の完全モジュールマウント起動 (ゼロ遅延・即時起動)

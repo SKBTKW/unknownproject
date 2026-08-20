@@ -16,6 +16,7 @@ import { GameEngine } from './core/game_engine.js';
 import { ModalSystem } from './ui/modal_system.js';
 import { LogComponent } from './ui/log_component.js';
 import { BuffPanelComponent } from './ui/buff_panel_component.js';
+import { territoryBadgeInstance as TerritoryBadgeComponent, TerritoryBadgeComponent as TerritoryBadgeComponentClass } from './ui/territory_badge_component.js';
 import { UILayoutConfig, UI_FEATURE_FLAGS } from './ui/layout_config.js';
 import { BlockPlacementSystem } from './ui/block_placement_system.js';
 import { V2UIRenderer } from './ui/v2_ui_renderer.js';
@@ -39,6 +40,7 @@ export {
     ModalSystem,
     LogComponent,
     BuffPanelComponent,
+    TerritoryBadgeComponent,
     UILayoutConfig,
     UI_FEATURE_FLAGS,
     BlockPlacementSystem,

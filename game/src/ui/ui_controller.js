@@ -1,6 +1,7 @@
 import { I18n } from '../i18n.js';
 import { LogComponent } from './log_component.js';
 import { BuffPanelComponent } from './buff_panel_component.js';
+import { TerritoryBadgeComponent } from './territory_badge_component.js';
 import { UILayoutConfig } from './layout_config.js';
 import { BlockPlacementSystem } from './block_placement_system.js';
 import { ProductionCalculator } from '../systems/production_calculator.js';
@@ -28,6 +29,7 @@ class UIController {
             window.I18n = I18n;
             window.LogComponent = LogComponent;
             window.BuffPanelComponent = BuffPanelComponent;
+            window.TerritoryBadgeComponent = TerritoryBadgeComponent;
             window.UILayoutConfig = UILayoutConfig;
             window.BlockPlacementSystem = BlockPlacementSystem;
 
@@ -147,7 +149,12 @@ class UIController {
             this.setElementText("valMysticProd", `+${prods.totalMystic || 1}`);
             
             const placedCount = (typeof this.state.countPlacedTiles === "function") ? this.state.countPlacedTiles() : 1;
-            this.setElementText("valPlacedCount", `${placedCount}/24`);
+            const badgeComp = (typeof TerritoryBadgeComponent !== "undefined" && TerritoryBadgeComponent) ? TerritoryBadgeComponent : (typeof window !== "undefined" ? window.TerritoryBadgeComponent : null);
+            if (badgeComp && typeof badgeComp.update === "function") {
+                badgeComp.update(placedCount, this.state);
+            } else {
+                this.setElementText("valPlacedCount", `${placedCount}/24`);
+            }
 
             if (typeof window !== "undefined" && typeof window.renderDirectiveHeaderBadge === "function") {
                 window.renderDirectiveHeaderBadge();
