@@ -7,6 +7,7 @@ import { BlockPlacementSystem } from './block_placement_system.js';
 import { ProductionCalculator } from '../systems/production_calculator.js';
 import { V2UIRenderer } from './v2_ui_renderer.js';
 import { ModalSystem } from './modal_system.js';
+import { focusLayerManager } from './focus_layer_system.js';
 
 class UIController {
     /**
@@ -90,6 +91,13 @@ class UIController {
             if (typeof badgeComp.mount === "function") {
                 badgeComp.mount(badgeContainer);
             }
+        }
+
+        // 🌟 2層レイヤー監視初期化 (手札フォーカス ✕ 盤面暗転ブラー)
+        const boardEl = document.querySelector(".board-container");
+        const offeringEl = document.querySelector(".offering-section");
+        if (focusLayerManager && typeof focusLayerManager.mount === "function") {
+            focusLayerManager.mount(boardEl, offeringEl);
         }
     }
 
@@ -216,18 +224,9 @@ class UIController {
         boardEl.appendChild(cornerCell);
 
         const size = this.state.grid.length;
-        let cellSize = '80px';
-        let headerSize = '40px';
-        if (size >= 9) {
-            cellSize = '44px';
-            headerSize = '24px';
-        } else if (size >= 7) {
-            cellSize = '56px';
-            headerSize = '28px';
-        } else {
-            cellSize = '80px';
-            headerSize = '40px';
-        }
+        // 🌟 2層レイヤー化により、7x7 でもセルサイズ 80px を維持して視認性を死守
+        const cellSize = (size >= 9) ? '70px' : '80px';
+        const headerSize = (size >= 9) ? '35px' : '40px';
 
         boardEl.style.gridTemplateColumns = `${headerSize} repeat(${size}, ${cellSize})`;
         boardEl.style.gridTemplateRows = `${headerSize} repeat(${size}, ${cellSize})`;
@@ -552,6 +551,7 @@ class UIController {
         if (this.selectedCardIdx === idx) {
             this.selectedCard = null;
             this.selectedCardIdx = -1;
+            if (focusLayerManager) focusLayerManager.onCardDeselect();
             this.render();
             this.highlightPlaceableCells();
             return;
@@ -559,6 +559,7 @@ class UIController {
 
         this.selectedCard = card;
         this.selectedCardIdx = idx;
+        if (focusLayerManager) focusLayerManager.onCardSelect();
         this.render();
         this.highlightPlaceableCells();
 
@@ -662,6 +663,7 @@ class UIController {
         if (res === true || (res && (res.can || res.success))) {
             this.selectedCard = null;
             this.selectedCardIdx = -1;
+            if (focusLayerManager) focusLayerManager.onCardDeselect();
             if (typeof this.state.checkMergePatterns === "function") {
                 this.state.checkMergePatterns();
             }

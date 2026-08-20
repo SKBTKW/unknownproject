@@ -3,7 +3,7 @@
    画面中央（5x5〜7x7可変対応土地グリッド板・本営オーラ・浮遊ラベル・ツールチップ）専用スタイル
    ============================================================= */
 
-/* 🟩 画面中央盤面全体コンテナ */
+/* 🟩 画面中央盤面全体コンテナ (Layer 1: 盤面層) */
 .board-container {
     position: relative;
     display: flex;
@@ -114,7 +114,20 @@
     border-radius: 10px;
     border: 2px solid #2a3144;
     user-select: none;
-    transition: all 0.3s ease;
+    transition: filter 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease;
+}
+
+/* 🌓 2層レイヤー構造: 手札ホバー時のグリッド暗転ブラー */
+.grid-with-headers.board-dim-blur {
+    filter: brightness(0.60) blur(2.5px) !important;
+    pointer-events: none !important;
+}
+
+/* 🎯 土地カード選択時: 土地グリッド盤面本体を最前面にフォーカス強調 */
+.grid-with-headers.board-focus-active {
+    filter: none !important;
+    border-color: #00d2d3 !important;
+    box-shadow: 0 0 35px rgba(0, 210, 211, 0.50), 0 10px 40px rgba(0, 0, 0, 0.9) !important;
 }
 
 /* 🅰️ 行・列ヘッダーセル (A-I, 1-9) */

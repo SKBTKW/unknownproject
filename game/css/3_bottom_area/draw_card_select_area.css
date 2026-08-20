@@ -29,6 +29,14 @@
     box-shadow: 0 0 35px rgba(26, 188, 156, 0.6), 0 8px 35px rgba(0,0,0,0.9) !important;
 }
 
+/* 🎯 土地カード選択時: 手札エリアを半透明減光し、盤面グリッドエリアへ視線を完全誘導 */
+.offering-section.hand-dim-on-selection {
+    opacity: 0.35 !important;
+    filter: brightness(0.70) grayscale(0.2) !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5) !important;
+    transition: opacity 0.22s ease, filter 0.22s ease, box-shadow 0.22s ease !important;
+}
+
 .section-title-offering {
     font-size: 13px;
     font-weight: bold;

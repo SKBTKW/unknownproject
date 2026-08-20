@@ -21,6 +21,7 @@ import { UILayoutConfig, UI_FEATURE_FLAGS } from './ui/layout_config.js';
 import { BlockPlacementSystem } from './ui/block_placement_system.js';
 import { V2UIRenderer } from './ui/v2_ui_renderer.js';
 import { UIController } from './ui/ui_controller.js';
+import { FocusLayerManager, focusLayerManager } from './ui/focus_layer_system.js';
 
 export {
     I18n,
@@ -45,7 +46,9 @@ export {
     UI_FEATURE_FLAGS,
     BlockPlacementSystem,
     V2UIRenderer,
-    UIController
+    UIController,
+    FocusLayerManager,
+    focusLayerManager
 };
 
 console.log('🎮 [App] Clean True ES Modules Master Entrypoint Loaded Successfully.');

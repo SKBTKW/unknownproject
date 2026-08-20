@@ -1,13 +1,31 @@
 /**
  * 📐 UILayoutConfig
- * ゲーム全UI要素の絶対レイアウト・位置座標・重ね順(z-index)を一括集中管理する設定ファイル
+ * ゲーム全UI要素の絶対レイアウト・位置座標・2層レイヤー構造・重ね順(z-index)を一括集中管理する設定ファイル
  */
 const UI_FEATURE_FLAGS = {
-    enableBottomFocusBlur: false, // ❌ 親要素全体のボケを完全無効化
+    enableBottomFocusBlur: true,  // 🌟 2層レイヤー構造（手札ホバー時の盤面暗転ブラー）有効化
     enableReserveArea: false
 };
 
 const UILayoutConfig = {
+    // 🏛️ 2層レイヤー構造 定義 (Layer 1: 盤面層 / Layer 2: 手札オーバーレイ層)
+    layers: {
+        layer1Board: {
+            zIndex: 10,
+            transition: "filter 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.22s ease, box-shadow 0.22s ease"
+        },
+        layer2HandOverlay: {
+            zIndex: 500,
+            defaultOpacity: 0.92,
+            activeOpacity: 1.0,
+            selectedDimOpacity: 0.35
+        },
+        dimBlurStyle: {
+            brightness: "0.60",
+            blur: "2.5px"
+        }
+    },
+
     // 🎯 1. 中央土地盤面エリア (画面の真中央へ100%完全自動固定)
     boardContainer: {
         display: "flex",
@@ -19,7 +37,8 @@ const UILayoutConfig = {
         height: "100%",
         padding: "0px",
         margin: "0 auto",
-        overflow: "visible"
+        overflow: "visible",
+        zIndex: 10
     },
 
     // 🧩 2. 盤面グリッドラッパー (中央揃えの不動軸)
@@ -59,12 +78,12 @@ const UILayoutConfig = {
         whiteSpace: "nowrap"
     },
 
-    // 🃏 6. 画面左下隅: ドローカード選択エリア
+    // 🃏 6. 画面左下隅: ドローカード選択エリア (Layer 2: オーバーレイ層)
     offeringCardArea: {
         position: "absolute",
         bottom: "16px",
         left: "20px",
-        zIndex: 100
+        zIndex: 500
     },
 
     // 🎮 7. 画面右下隅: 統合操作グループ (TURN END 専用ボタン)
