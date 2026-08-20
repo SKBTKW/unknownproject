@@ -1,0 +1,245 @@
+/* =============================================================
+   2_center_area / land_grid.css
+   画面中央（5x5〜7x7可変対応土地グリッド板・本営オーラ・浮遊ラベル・ツールチップ）専用スタイル
+   ============================================================= */
+
+/* 🟩 画面中央盤面全体コンテナ */
+.board-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: #0f121a;
+    border-radius: 12px;
+    border: 1px solid #232838;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.6), 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+/* 🏷️ メインエリアバッジ */
+.main-area-badge {
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    background: rgba(26, 188, 156, 0.15);
+    border: 1px solid #1abc9c;
+    color: #1abc9c;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+/* 🏁 可変サイズ対応グリッドボード (5x5, 6x6, 7x7 等のステージ拡大に完全自動追従) */
+.grid-with-headers {
+    display: grid;
+    grid-template-columns: 44px repeat(var(--board-size, 5), 84px);
+    grid-template-rows: 44px repeat(var(--board-size, 5), 84px);
+    gap: 5px;
+    background: #151924;
+    padding: 10px;
+    border-radius: 10px;
+    border: 2px solid #2a3144;
+    user-select: none;
+    transition: all 0.3s ease;
+}
+
+/* 🅰️ 行・列ヘッダーセル (A-G, 1-7) */
+.header-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 900;
+    color: #7f8c8d;
+    background: #11141d;
+    border-radius: 4px;
+}
+
+/* 🟩 土地セル基本定義 (84px x 84px) */
+.cell {
+    position: relative;
+    width: 84px;
+    height: 84px;
+    background: #1c202c;
+    border: 1px solid #2e3547;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 12px;
+    cursor: pointer;
+    overflow: hidden;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.cell:hover {
+    border-color: #3498db;
+    background: #252d3e;
+}
+
+/* 👑 本営 (HQ) マス (黄金ネオンオーラ) */
+.cell.hq {
+    background: linear-gradient(135deg, #d35400 0%, #e67e22 100%) !important;
+    border: 2px solid #f1c40f !important;
+    box-shadow: 0 0 15px rgba(241, 196, 15, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.4) !important;
+    color: #ffffff;
+    font-weight: 900;
+}
+
+/* ✨ 本営周囲8マス (拠点隣接) オーラ */
+.cell.hq-vicinity-unplaced {
+    border: 2px dashed #1abc9c !important;
+    box-shadow: inset 0 0 12px rgba(26, 188, 156, 0.4), 0 0 8px rgba(26, 188, 156, 0.3) !important;
+    background: rgba(26, 188, 156, 0.18) !important;
+    animation: vicinityPulse 2.5s infinite ease-in-out;
+}
+
+/* 🎯 配置ハイライトプレビュー最優先ネオン */
+.cell.preview-valid {
+    border: 3px solid #00d2d3 !important;
+    background: rgba(0, 210, 211, 0.65) !important;
+    box-shadow: 0 0 16px rgba(0, 210, 211, 0.9), inset 0 0 10px rgba(255, 255, 255, 0.5) !important;
+    z-index: 20 !important;
+    animation: none !important;
+}
+
+.cell.preview-invalid {
+    border: 3px solid #ff4757 !important;
+    background: rgba(255, 71, 87, 0.65) !important;
+    box-shadow: 0 0 16px rgba(255, 71, 87, 0.9), inset 0 0 10px rgba(255, 255, 255, 0.5) !important;
+    z-index: 20 !important;
+    animation: none !important;
+}
+
+/* ✨ 2x2マージブロック中央浮遊ラベル */
+.merge-center-label {
+    position: absolute !important;
+    transform: translate(-50%, -50%) !important;
+    background: rgba(22, 25, 34, 0.9) !important;
+    border: 1px solid #f1c40f !important;
+    color: #f1c40f !important;
+    font-weight: bold !important;
+    font-size: 11px !important;
+    padding: 3px 8px !important;
+    border-radius: 6px !important;
+    box-shadow: 0 0 10px rgba(241, 196, 15, 0.6) !important;
+    pointer-events: none !important;
+    white-space: nowrap !important;
+    z-index: 50 !important;
+}
+
+/* ✨ 統合単一マージブロック 地勢属性別カラー枠線・オーラスタイル (rules/03_merge_system.md 準拠) */
+.cell.merged {
+    border: 2px solid #f1c40f !important;
+    box-shadow: 0 0 12px rgba(241, 196, 15, 0.4), inset 0 0 10px rgba(241, 196, 15, 0.2) !important;
+}
+
+/* 🌾 各土地属性の独立カラーパターン定義 (専用CSS管理) */
+.cell.terrain-plains {
+    background: linear-gradient(135deg, #1e4a26 0%, #122e17 100%) !important;
+    border-color: #2e7d32 !important;
+}
+.cell.terrain-forest {
+    background: linear-gradient(135deg, #134236 0%, #0a261f 100%) !important;
+    border-color: #1abc9c !important;
+}
+.cell.terrain-deep-forest {
+    background: linear-gradient(135deg, #0d383b 0%, #051e20 100%) !important;
+    border-color: #16a085 !important;
+}
+.cell.terrain-hill {
+    background: linear-gradient(135deg, #4e3519 0%, #2e1d0c 100%) !important;
+    border-color: #e67e22 !important;
+}
+.cell.terrain-mountain {
+    background: linear-gradient(135deg, #383a54 0%, #202236 100%) !important;
+    border-color: #9b59b6 !important;
+}
+.cell.terrain-desert {
+    background: linear-gradient(135deg, #5c4314 0%, #36260a 100%) !important;
+    border-color: #f39c12 !important;
+}
+
+/* 🌾 平地マージ (エメラルドグリーン) */
+.cell.merged.merged-plains {
+    border: 2.5px solid #1abc9c !important;
+    box-shadow: 0 0 14px rgba(26, 188, 156, 0.6), inset 0 0 12px rgba(26, 188, 156, 0.3) !important;
+}
+
+/* 🌲 森マージ (ブライトグリーン) */
+.cell.merged.merged-forest {
+    border: 2.5px solid #2ecc71 !important;
+    box-shadow: 0 0 14px rgba(46, 204, 113, 0.6), inset 0 0 12px rgba(46, 204, 113, 0.3) !important;
+}
+
+/* 🌳 深い森マージ (バイオレットパープル) */
+.cell.merged.merged-deep-forest {
+    border: 2.5px solid #9b59b6 !important;
+    box-shadow: 0 0 14px rgba(155, 89, 182, 0.6), inset 0 0 12px rgba(155, 89, 182, 0.3) !important;
+}
+
+/* ⛰️ 丘陵マージ (アンバーオレンジ) */
+.cell.merged.merged-hill {
+    border: 2.5px solid #e67e22 !important;
+    box-shadow: 0 0 14px rgba(230, 126, 34, 0.6), inset 0 0 12px rgba(230, 126, 34, 0.3) !important;
+}
+
+/* 🏔️ 山岳マージ (シアンブルー) */
+.cell.merged.merged-mountain {
+    border: 2.5px solid #3498db !important;
+    box-shadow: 0 0 14px rgba(52, 152, 219, 0.6), inset 0 0 12px rgba(52, 152, 219, 0.3) !important;
+}
+
+/* 🏜️ 砂漠マージ (サンセットゴールド) */
+.cell.merged.merged-desert {
+    border: 2.5px solid #f1c40f !important;
+    box-shadow: 0 0 14px rgba(241, 196, 15, 0.6), inset 0 0 12px rgba(241, 196, 15, 0.3) !important;
+}
+
+/* 🚫 マージ内側境界線打消し (1枚の繋がった統合大土地化) */
+.cell.no-border-top, .cell.merged.no-border-top { border-top: none !important; }
+.cell.no-border-right, .cell.merged.no-border-right { border-right: none !important; }
+.cell.no-border-bottom, .cell.merged.no-border-bottom { border-bottom: none !important; }
+.cell.no-border-left, .cell.merged.no-border-left { border-left: none !important; }
+
+/* ✨ マージグループ連動ホバーライトアップハイライト */
+.cell.merge-hover-highlight {
+    filter: brightness(1.35) drop-shadow(0 0 12px rgba(255, 255, 255, 0.85)) !important;
+    z-index: 25 !important;
+    transition: filter 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease !important;
+    transform: scale(1.02) !important;
+}
+
+/* ⚡ 0.3秒ささやか吸い付き結合フラッシュアニメーション */
+@keyframes mergeFlash {
+    0% { border-color: #ffffff; box-shadow: 0 0 20px #ffffff; transform: scale(1.04); }
+    100% { border-color: #f1c40f; box-shadow: 0 0 12px rgba(241, 196, 15, 0.4); transform: scale(1); }
+}
+
+.cell.merge-flash {
+    animation: mergeFlash 0.3s cubic-bezier(0.25, 1, 0.5, 1) !important;
+}
+
+/* 👑 3x3 完遂大結界昇華 黄金光脈オーラ */
+.cell.aura-3x3-unified {
+    border: 2px solid #ffd700 !important;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.75), inset 0 0 14px rgba(255, 215, 0, 0.4) !important;
+}
+
+/* 💡 マスホバーツールチップ */
+.tile-tooltip {
+    position: fixed;
+    display: none;
+    background: rgba(18, 22, 32, 0.96);
+    border: 1px solid #34495e;
+    border-radius: 6px;
+    padding: 10px 12px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
+    pointer-events: none;
+    z-index: 1000;
+    max-width: 240px;
+}
