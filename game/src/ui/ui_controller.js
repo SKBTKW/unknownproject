@@ -6,6 +6,7 @@ import { UILayoutConfig } from './layout_config.js';
 import { BlockPlacementSystem } from './block_placement_system.js';
 import { ProductionCalculator } from '../systems/production_calculator.js';
 import { V2UIRenderer } from './v2_ui_renderer.js';
+import { ModalSystem } from './modal_system.js';
 
 class UIController {
     /**
@@ -81,10 +82,14 @@ class UIController {
         const buffContainer = document.getElementById("buffComponentContainer");
         if (BuffPanelComponent && buffContainer && !buffContainer.hasChildNodes()) {
             BuffPanelComponent.mount(buffContainer);
-            BuffPanelComponent.update([
-                { name: "🔥 残り火旺盛バフ", shortName: "🔥 旺盛 (+20%)", icon: "🔥", description: "全リソース産出 +20% ＆ 自動✨+2/T", badgeText: "環境バフ", category: "ENVIRONMENT" },
-                { name: "📜 土地探索効果", shortName: "土地確率2倍", icon: "📜", description: "盤面6ブロックまで土地出現率2倍", badgeText: "残り 3T", category: "CARD_EFFECT" }
-            ]);
+        }
+
+        const badgeContainer = document.getElementById("territoryBadgeContainer") || document.querySelector(".board-container-wrapper");
+        const badgeComp = (typeof TerritoryBadgeComponent !== "undefined" && TerritoryBadgeComponent) ? TerritoryBadgeComponent : (typeof window !== "undefined" ? window.TerritoryBadgeComponent : null);
+        if (badgeComp && badgeContainer && !badgeContainer.hasChildNodes()) {
+            if (typeof badgeComp.mount === "function") {
+                badgeComp.mount(badgeContainer);
+            }
         }
     }
 
@@ -97,7 +102,7 @@ class UIController {
         this.setElementText("lblAppTitle", I18n.t("UI_TITLE"));
         this.setElementText("lblRoleAvatar", I18n.t("UI_ROLE_AVATAR"));
         this.setElementText("lblTurnHeader", I18n.t("UI_TURN_LABEL"));
-        this.setElementText("lblOfferingTitle", I18n.t("UI_OFFERING_TITLE"));
+        this.setElementText("lblOfferingTitle", I18n.t("UI_OFFERING_TITLE") || "手札オファリング");
         this.setElementText("lblReserveTitle", I18n.t("UI_RESERVE_TITLE"));
         this.setElementText("lblMainBadge", I18n.t("UI_MAIN_AREA_BADGE"));
         this.setElementText("lblDataPanelTitle", I18n.t("UI_DATA_PANEL_TITLE"));
@@ -108,7 +113,6 @@ class UIController {
         this.setElementText("lblMystic", I18n.t("UI_MYSTIC"));
         this.setElementText("lblLogTitle", I18n.t("UI_LOG_TITLE"));
         this.setElementText("btnLogToggle", "▼");
-        this.setElementText("btnMulligan", I18n.t("UI_MULLIGAN_BTN"));
         this.setElementText("btnTurnEnd", I18n.t("UI_TURN_END_BTN"));
         this.setElementText("lblLogSub", I18n.t("UI_LOG_SUB_HINT"));
     }
@@ -139,6 +143,7 @@ class UIController {
 
             this.setElementText("lblDataPanelTitle", I18n.t("UI_DATA_PANEL_TITLE"));
             this.setElementText("valTurn", this.state.turn);
+            this.setElementText("valTurnBg", String(this.state.turn).padStart(2, '0'));
             this.setElementText("valEmber", this.state.ember);
             this.setElementText("valFood", this.state.food);
             this.setElementText("valFoodProd", `+${prods.totalFood}`);
@@ -165,6 +170,19 @@ class UIController {
             this.renderReserveSlots(I18n);
             this.renderBuffPanel();
             this.updateMulliganButton();
+
+            // ⚠️ 試練カウントダウンの動的表示 (予告期間中のみ点灯)
+            const trialBadge = document.getElementById("trialCountdownBadge");
+            if (trialBadge) {
+                const nextTrial = this.state.nextTrialTurn || (this.state.stage && this.state.stage.id ? this.state.stage.id * 20 : 20);
+                const turnsLeft = nextTrial - this.state.turn;
+                if (turnsLeft > 0 && turnsLeft <= 5) {
+                    trialBadge.style.display = "inline-flex";
+                    this.setElementText("valTrialCountdown", turnsLeft);
+                } else {
+                    trialBadge.style.display = "none";
+                }
+            }
 
         } catch (err) {
             console.error("UIController Render Error:", err);
@@ -197,20 +215,40 @@ class UIController {
         cornerCell.innerHTML = `<button onclick="toggleBoardLabelMode(event)" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; border-radius:4px; padding:2px 4px; font-size:12px; cursor:pointer;" title="土地表示モード切替">${modeIcon}</button>`;
         boardEl.appendChild(cornerCell);
 
-        for (let c = 0; c < 5; c++) {
+        const size = this.state.grid.length;
+        let cellSize = '80px';
+        let headerSize = '40px';
+        if (size >= 9) {
+            cellSize = '44px';
+            headerSize = '24px';
+        } else if (size >= 7) {
+            cellSize = '56px';
+            headerSize = '28px';
+        } else {
+            cellSize = '80px';
+            headerSize = '40px';
+        }
+
+        boardEl.style.gridTemplateColumns = `${headerSize} repeat(${size}, ${cellSize})`;
+        boardEl.style.gridTemplateRows = `${headerSize} repeat(${size}, ${cellSize})`;
+        boardEl.style.setProperty('--board-size', size);
+        boardEl.style.setProperty('--cell-size', cellSize);
+        boardEl.style.setProperty('--header-size', headerSize);
+
+        for (let c = 0; c < size; c++) {
             const hCell = document.createElement("div");
             hCell.className = "header-cell";
             hCell.innerText = String.fromCharCode(65 + c);
             boardEl.appendChild(hCell);
         }
 
-        for (let r = 0; r < 5; r++) {
+        for (let r = 0; r < size; r++) {
             const vCell = document.createElement("div");
             vCell.className = "header-cell";
             vCell.innerText = r + 1;
             boardEl.appendChild(vCell);
 
-            for (let c = 0; c < 5; c++) {
+            for (let c = 0; c < size; c++) {
                 const cellData = this.state.grid[r][c];
                 const cellEl = document.createElement("div");
                 cellEl.className = "cell";
@@ -253,8 +291,8 @@ class UIController {
                             cellEl.style.borderStyle = "dashed";
                         } else if (placeId) {
                             const topSame = (r > 0 && this.state.grid[r-1][c].placementGroupId === placeId);
-                            const rightSame = (c < 4 && this.state.grid[r][c+1].placementGroupId === placeId);
-                            const bottomSame = (r < 4 && this.state.grid[r+1][c].placementGroupId === placeId);
+                            const rightSame = (c < size - 1 && this.state.grid[r][c+1].placementGroupId === placeId);
+                            const bottomSame = (r < size - 1 && this.state.grid[r+1][c].placementGroupId === placeId);
                             const leftSame = (c > 0 && this.state.grid[r][c-1].placementGroupId === placeId);
 
                             if (topSame) {
@@ -636,11 +674,20 @@ class UIController {
     }
 
     clearCellPreviews() {
+        this.hideTileTooltip();
         if (typeof window !== "undefined" && window.BlockPlacementSystem) {
             window.BlockPlacementSystem.clearAllPreviews();
         } else if (typeof document !== "undefined") {
             const cells = document.querySelectorAll(".cell");
             cells.forEach(c => c.classList.remove("preview-valid", "preview-invalid", "merge-hover-highlight", "hq-vicinity-hover-glow"));
+        }
+    }
+
+    hideTileTooltip() {
+        if (typeof document === "undefined") return;
+        const tt = document.getElementById("tileTooltip");
+        if (tt) {
+            tt.style.display = "none";
         }
     }
 
@@ -740,26 +787,47 @@ class UIController {
     }
 
     mulligan() {
-        if (this.engine && typeof this.engine.mulligan === "function") {
-            const res = this.engine.mulligan();
-            if (res.success) {
-                this.selectedCard = null;
-                this.selectedCardIdx = -1;
-                this.render();
-            }
-            return;
-        }
-        if (!this.state || !this.drawSys) return;
+        if (!this.state) return;
         if (this.state.hasPickedThisTurn || this.state.hasMulliganedThisTurn || this.state.ember < 1) return;
-        this.state.ember -= 1;
-        this.state.hasMulliganedThisTurn = true;
-        this.drawSys.generateOfferingCards();
-        this.selectedCard = null;
-        this.selectedCardIdx = -1;
-        if (typeof this.state.addLog === "function") {
-            this.state.addLog("🎲 マリガン実行: 🔥 -1 を消費して手札を再抽選しました。");
+
+        const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
+        const modalSys = (typeof window !== "undefined" && window.ModalSystem) ? window.ModalSystem : (typeof ModalSystem !== "undefined" ? ModalSystem : null);
+
+        const executeMulligan = () => {
+            if (this.engine && typeof this.engine.mulligan === "function") {
+                const res = this.engine.mulligan();
+                if (res && res.success) {
+                    this.selectedCard = null;
+                    this.selectedCardIdx = -1;
+                    this.render();
+                }
+                return;
+            }
+            this.state.ember -= 1;
+            this.state.hasMulliganedThisTurn = true;
+            if (this.drawSys) {
+                this.drawSys.generateOfferingCards();
+            }
+            this.selectedCard = null;
+            this.selectedCardIdx = -1;
+            if (typeof this.state.addLog === "function") {
+                this.state.addLog(I18n.t("LOG_MULLIGAN_EXECUTED") || "🎲 マリガン実行: 🔥 -1 を消費して手札を再抽選しました。");
+            }
+            this.render();
+        };
+
+        if (modalSys && typeof modalSys.showConfirmDialog === "function") {
+            modalSys.showConfirmDialog({
+                title: "🔄 マリガンを実行しますか？",
+                descText: "手札オファリングを全て引き直します。<br><small style='color:#a4b0be; font-size:12px;'>（1ターン内1度きり）</small>",
+                confirmLabel: "🔄 引き直す (🔥-1)",
+                cancelLabel: "✖ キャンセル",
+                onConfirm: executeMulligan,
+                onCancel: () => {}
+            });
+        } else {
+            executeMulligan();
         }
-        this.render();
     }
 
     nextTurn() {

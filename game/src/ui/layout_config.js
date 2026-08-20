@@ -42,12 +42,12 @@ const UILayoutConfig = {
         zIndex: 800
     },
 
-    // 🏷️ 4. メインエリア設置数バッジ (右上隅)
+    // 🏷️ 4. 土地グリッド右下角直接吸着 領土占有バッジ (グリッド完全追従)
     mainBadge: {
         position: "absolute",
-        top: "16px",
-        right: "20px",
-        zIndex: 10
+        bottom: "6px",
+        right: "6px",
+        zIndex: 25
     },
 
     // 📜 5. モジュール化ログコンテナ (左上隅)
@@ -67,13 +67,22 @@ const UILayoutConfig = {
         zIndex: 100
     },
 
-    // 🎮 7. 画面右下隅: 統合操作グループ (ターン表示・マリガン・TURN END)
+    // 🎮 7. 画面右下隅: 統合操作グループ (TURN END 専用ボタン)
     rightBottomControls: {
         position: "absolute",
         bottom: "16px",
         right: "20px",
-        width: "260px",
+        width: "160px",
         zIndex: 100
+    },
+
+    // 🌌 8. メインエリア背景 ウォーターマーク ターン表示 (AAA級スタイリッシュ演出)
+    bgTurnWatermark: {
+        position: "absolute",
+        top: "20px",
+        right: "28px",
+        opacity: "1.0",
+        zIndex: 2
     }
 };
 
@@ -92,9 +101,14 @@ UILayoutConfig.applyLayout = function() {
         Object.assign(logContainer.style, this.logPanel);
     }
 
-    const mainBadge = document.querySelector(".main-area-badge");
-    if (mainBadge) {
-        Object.assign(mainBadge.style, this.mainBadge);
+    const badgeContainer = document.getElementById("territoryBadgeContainer");
+    if (badgeContainer) {
+        Object.assign(badgeContainer.style, this.mainBadge);
+    }
+
+    const bgTurn = document.getElementById("bgTurnWatermark");
+    if (bgTurn) {
+        Object.assign(bgTurn.style, this.bgTurnWatermark);
     }
 
     const offeringSec = document.querySelector(".offering-section");

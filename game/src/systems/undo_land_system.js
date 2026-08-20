@@ -93,9 +93,11 @@
             this.state.mergeGroupCounter = s.mergeGroupCounter;
             this.state.placementGroupCounter = s.placementGroupCounter;
 
-            const I18n = window.I18n;
+            const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' && window.I18n ? window.I18n : null);
             const logMsg = (I18n && typeof I18n.t === 'function' && I18n.t("LOG_UNDO_LAND") !== "LOG_UNDO_LAND") ? I18n.t("LOG_UNDO_LAND") : "↩ 土地の配置を取り消しました。";
-            this.state.addLog(logMsg);
+            if (typeof this.state.addLog === 'function') {
+                this.state.addLog(logMsg);
+            }
 
             this.clearSnapshot();
 

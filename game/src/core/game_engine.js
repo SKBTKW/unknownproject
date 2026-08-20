@@ -87,7 +87,33 @@ class GameEngine {
             this.state.hasMulliganedThisTurn = false;
         }
 
-        // 4. ログ出力
+        // ⚔️ 4. 試練到達チェック ＆ テスト用自動ステージ昇格（5x5 ➔ 7x7 拡大）
+        if (this.state && this.state.trialSchedule) {
+            const currentTurn = this.state.turn;
+            if (this.state.stage && this.state.stage.id === 1 && currentTurn >= this.state.trialSchedule.trial1) {
+                // 第1試練 到達 ➔ Stage 2 (7x7) へ昇格
+                this.state.stage = { id: 2, name: "Stage 2", size: 7, maxTiles: 48 };
+                this.state.nextTrialTurn = this.state.trialSchedule.trial2;
+                if (this.gridEngine) {
+                    this.gridEngine.expandGrid(7);
+                }
+                if (this.state.addLog) {
+                    this.state.addLog(`⚔️ [第1試練 到達] テストモードにより試練をスキップし、Stage 2 (7×7 盤面 / 48マス) へ拡張しました！`);
+                }
+            } else if (this.state.stage && this.state.stage.id === 2 && currentTurn >= this.state.trialSchedule.trial2) {
+                // 第2試練 到達 ➔ Stage 3 (9x9) へ昇格
+                this.state.stage = { id: 3, name: "Stage 3", size: 9, maxTiles: 80 };
+                this.state.nextTrialTurn = this.state.trialSchedule.trial3;
+                if (this.gridEngine) {
+                    this.gridEngine.expandGrid(9);
+                }
+                if (this.state.addLog) {
+                    this.state.addLog(`⚔️ [第2試練 到達] テストモードにより試練をスキップし、Stage 3 (9×9 盤面 / 80マス) へ拡張しました！`);
+                }
+            }
+        }
+
+        // 5. ログ出力
         if (this.state && typeof this.state.addLog === 'function') {
             this.state.addLog(`ターン ${this.state.turn} を開始しました。手札オファリングを補充しました。`);
         }

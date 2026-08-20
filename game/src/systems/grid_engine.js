@@ -77,43 +77,101 @@ class GridEngine {
     }
 
     /**
-     * 🏰 本営近郊判定（本営周囲8マス）
+     * 🏰 本営近郊判定（本営周囲8マス・可変グリッド対応）
      */
     isHQVicinity(r, c) {
-        if (r === 2 && c === 2) return false;
-        return Math.abs(r - 2) <= 1 && Math.abs(c - 2) <= 1;
+        if (!this.state || !this.state.grid) return false;
+        const size = this.state.grid.length;
+        const center = Math.floor(size / 2);
+        if (r === center && c === center) return false;
+        return Math.abs(r - center) <= 1 && Math.abs(c - center) <= 1;
     }
 
     /**
-     * 📊 盤面上の配置済み土地数集計（本営除く）
+     * 📊 盤面上の配置済み土地数集計（本営除く・可変グリッド対応）
      */
     countPlacedTiles() {
         if (!this.state || !this.state.grid) return 0;
+        const size = this.state.grid.length;
         let count = 0;
-        for (let r = 0; r < 5; r++) {
-            for (let c = 0; c < 5; c++) {
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
                 const cell = this.state.grid[r][c];
-                if (cell.placed && !cell.isHQ) count++;
+                if (cell && cell.placed && !cell.isHQ) count++;
             }
         }
         return count;
     }
 
     /**
-     * ⛰️ 盤面上の丘陵 (H2_HILL) 数集計
+     * ⛰️ 盤面上の丘陵 (H2_HILL) 数集計（可変グリッド対応）
      */
     countH2HillsOnBoard() {
         if (!this.state || !this.state.grid) return 0;
+        const size = this.state.grid.length;
         let count = 0;
-        for (let r = 0; r < 5; r++) {
-            for (let c = 0; c < 5; c++) {
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
                 const cell = this.state.grid[r][c];
-                if (cell.placed && cell.terrain && cell.terrain.id === "H2_HILL") {
+                if (cell && cell.placed && cell.terrain && cell.terrain.id === "H2_HILL") {
                     count++;
                 }
             }
         }
         return count;
+    }
+
+    /**
+     * 🗺️ 盤面拡張（5x5 ➔ 7x7 ➔ 9x9）
+     * 既存の配置状態（本営・配置済み土地・ソケット）を中心へ保持したまま外周を均等拡大
+     * @param {number} newSize - 拡張後の盤面サイズ（7 または 9）
+     * @returns {Array<Array<Object>>}
+     */
+    expandGrid(newSize = 7) {
+        if (!this.state || !this.state.grid) {
+            return this.initGrid(newSize);
+        }
+        const oldGrid = this.state.grid;
+        const oldSize = oldGrid.length;
+        if (newSize <= oldSize) return oldGrid;
+
+        const offset = Math.floor((newSize - oldSize) / 2); // 5x5 -> 7x7 の場合 offset = 1
+        const newGrid = [];
+        const newCenter = Math.floor(newSize / 2);
+
+        for (let r = 0; r < newSize; r++) {
+            const row = [];
+            for (let c = 0; c < newSize; c++) {
+                const oldR = r - offset;
+                const oldC = c - offset;
+                if (oldR >= 0 && oldR < oldSize && oldC >= 0 && oldC < oldSize) {
+                    const oldCell = oldGrid[oldR][oldC];
+                    row.push({
+                        ...oldCell,
+                        r, c
+                    });
+                } else {
+                    // 新設外周マス（未配置・ソケットなし）
+                    row.push({
+                        r, c,
+                        placed: false,
+                        isHQ: false,
+                        merged: false,
+                        mergeGroupId: null,
+                        mergeType: null,
+                        placementGroupId: null,
+                        terrain: null,
+                        searched: false,
+                        hasSocket: false,
+                        socketResource: null
+                    });
+                }
+            }
+            newGrid.push(row);
+        }
+
+        this.state.grid = newGrid;
+        return newGrid;
     }
 
     /**
@@ -203,6 +261,7 @@ class GridEngine {
                     cell.placed = true;
                     cell.terrain = terrain;
                     cell.placementGroupId = pGroupId;
+                    cell.isHQVicinity = (Math.abs(r - 2) <= 1 && Math.abs(c - 2) <= 1 && !(r === 2 && c === 2));
 
                     // ★ ソケット開花判定
                     if (cell.hasSocket && !cell.socketResource) {

@@ -63,6 +63,15 @@
         <!-- 🕹️ 2. Middle Board Area (Horizontal Partition - Relocated Modular Log & Buff Dropup) -->
         <div class="middle-layout" style="position:relative; overflow:visible !important;">
             <div class="board-container">
+                <!-- 🌌 メインエリア背景 ウォーターマーク ターン表示 ＆ 試練カウントダウン -->
+                <div id="bgTurnWatermark" class="bg-turn-watermark">
+                    <div class="bg-turn-label">TURN</div>
+                    <div class="bg-turn-num"><span id="valTurnBg">01</span><small>/50</small></div>
+                    <div id="trialCountdownBadge" class="trial-countdown-badge" style="display:none;">
+                        <span>⚠️ 試練まで あと</span> <strong id="valTrialCountdown" style="color:#ffffff; font-size:15px; margin:0 2px;">3</strong> <span>ターン</span>
+                    </div>
+                </div>
+
                 <!-- 📜 メインエリア左上隅: モジュール化 0.75x ログコンテナ -->
                 <div id="logComponentContainer"></div>
 
@@ -71,10 +80,12 @@
                     <!-- ✨ 盤面直上: モジュール化 上方向トグル展開バフコンテナ -->
                     <div id="buffComponentContainer"></div>
 
-                    <div id="gridBoard" class="grid-with-headers"></div>
-
-                    <!-- 🏷️ 土地グリッドエリア右下隅吸着バッジコンテナ -->
-                    <div id="territoryBadgeContainer" style="position:absolute; bottom:-34px; right:0; z-index:20;"></div>
+                    <!-- 🎯 土地グリッド専用アンカーラッパー (グリッド板に100%追従) -->
+                    <div class="grid-board-anchor" style="position:relative; display:inline-block; width:fit-content;">
+                        <div id="gridBoard" class="grid-with-headers"></div>
+                        <!-- 🏷️ 土地グリッド枠の右下隅に直接吸着・完全追従 -->
+                        <div id="territoryBadgeContainer" style="position:absolute; bottom:6px; right:6px; z-index:25;"></div>
+                    </div>
                 </div>
 
                 <div id="tileTooltip" class="tile-tooltip"></div>
@@ -82,19 +93,22 @@
 
                 <!-- 🃏 画面左下隅: 手札ドローカード選択エリア -->
                 <div class="offering-section">
-                    <div class="section-title-offering">
-                        <span id="lblOfferingTitle">手札オファリング</span>
+                    <div class="section-title-offering" style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:8px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span id="lblOfferingTitle" style="font-weight:bold; color:#1abc9c; font-size:13px;">手札オファリング</span>
+                            <span id="lblRotateHint" style="background:rgba(26,188,156,0.15); border:1px solid rgba(26,188,156,0.4); color:#1abc9c; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold; display:inline-flex; align-items:center; gap:4px; letter-spacing:0.5px;">
+                                <kbd style="background:#1f2430; border:1px solid #3d4455; border-radius:3px; padding:0 4px; font-weight:bold; font-size:10px; color:#fff;">R</kbd> 回転
+                            </span>
+                        </div>
+                        <button class="btn-mulligan-compact" onclick="mulligan()" id="btnMulligan" style="background:#d35400; border:1px solid #e67e22; color:#fff; padding:3px 12px; border-radius:6px; font-size:11.5px; font-weight:bold; cursor:pointer; display:flex; align-items:center; gap:4px; box-shadow:0 2px 6px rgba(0,0,0,0.4); transition:all 0.15s ease;">
+                            <span>🔄 マリガン</span> <span style="font-size:10.5px; opacity:0.9;">🔥-1</span>
+                        </button>
                     </div>
                     <div id="cardRow" class="cards-row-wrapper"></div>
                 </div>
 
-                <!-- 🎮 画面右下隅: 統合操作グループ -->
+                <!-- 🎮 画面右下隅: 統合操作グループ (大型 TURN END 専用ボタン) -->
                 <div class="footer-controls-partition" id="footerControlsPartition">
-                    <div class="turn-box-inside">
-                        <div class="turn-label" id="lblTurnHeader">ターン表示</div>
-                        <div class="turn-num"><span id="valTurn">1</span> <span style="font-size:14px; color:#a4b0be; font-weight:normal;">/ 50</span></div>
-                    </div>
-                    <button class="btn-mulligan" onclick="mulligan()" id="btnMulligan"></button>
                     <button class="btn-turn-end" onclick="nextTurn()" id="btnTurnEnd"></button>
                 </div>
 
@@ -130,12 +144,15 @@
 
     <!-- 🌐 True ES Module Single Entrypoint Bootstrap (Zero-Latency Instant Launch) -->
     <script type="module">
-        import { GameEngine, UIController, UndoLandSystem, BuffSystem, TerritoryBadgeComponent } from './src/app.js?v=20260820_v15';
+        import { GameEngine, UIController, UndoLandSystem, BuffSystem, TerritoryBadgeComponent, ModalSystem } from './src/app.js?v=20260820_v37';
 
         function bootstrap() {
-            // 🎮 GameEngine ＆ UIController の完全モジュールマウント起動 (ゼロ遅延・即時起動)
+            // 🎮 GameEngine ＆ UIController の完全モジュールマウント起動 (ゼロ遅延・即時起動 - Stage 1: 5x5 標準復元)
             const engine = GameEngine.createGame();
             const ui = new UIController(engine);
+
+            window.gameEngine = engine;
+            window.ui = ui;
 
             if (UndoLandSystem && ui.state) {
                 window.undoSys = new UndoLandSystem(ui.state);

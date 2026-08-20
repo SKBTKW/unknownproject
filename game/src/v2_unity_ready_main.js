@@ -55,6 +55,19 @@ class GameState {
             this.mergedBlocks = {};
             this.grantedConnectionPairs = new Set();
 
+            this.stage = { id: 1, name: "Stage 1", size: 5, maxTiles: 24 };
+        
+            // ⚔️ 3大試練スケジュール（±3前後ランダム決定 ＆ 5T前アナウンス）
+            const randomOffset1 = Math.floor(Math.random() * 7) - 3; // -3 to +3
+            const randomOffset2 = Math.floor(Math.random() * 7) - 3; // -3 to +3
+            this.trialSchedule = {
+                trial1: Math.max(12, Math.min(18, 15 + randomOffset1)), // Turn 12〜18
+                trial2: Math.max(27, Math.min(33, 30 + randomOffset2)), // Turn 27〜33
+                trial3: 50,                                            // Turn 50 固定
+                warningDuration: 5
+            };
+            this.nextTrialTurn = this.trialSchedule.trial1;
+
             this.usedUniqueCards = [];
             this.handOfferingSize = 3;
             this.nextTrialDamageMitigation = 1.0;

@@ -1,13 +1,13 @@
 /* =============================================================
    game/src/ui/territory_badge_component.js
-   土地グリッド右下隅吸着 領土占有状況・ステージ連動開拓数表示コンポーネント
+   土地グリッド底面右下隅吸着 20%拡大・シンプル領土占有バッジ
    ============================================================= */
 
 export class TerritoryBadgeComponent {
     constructor() {
         this.containerEl = null;
         this.badgeEl = null;
-        this.labelEl = null;
+        this.iconEl = null;
         this.countEl = null;
         this.currentCount = 0;
         this.maxCount = 24;
@@ -15,7 +15,7 @@ export class TerritoryBadgeComponent {
     }
 
     /**
-     * 🏗️ UIの初期構築 (土地グリッド右下隅へ吸着配置)
+     * 🏗️ UIの初期構築 (サイズ20%拡大 ＆ アイコン＋数値のみのシンプル設計)
      */
     mount(containerEl) {
         if (!containerEl) return;
@@ -28,41 +28,41 @@ export class TerritoryBadgeComponent {
         this.badgeEl.style.cssText = `
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            background: rgba(18, 24, 38, 0.92);
-            border: 1.5px solid #1abc9c;
+            gap: 7px;
+            background: rgba(18, 24, 38, 0.95);
+            border: 1.8px solid #1abc9c;
             color: #1abc9c;
             font-weight: 900;
-            padding: 5px 14px;
+            padding: 6px 16px;
             border-radius: 20px;
-            font-size: 13px;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 10px rgba(26, 188, 156, 0.3);
+            font-size: 15.5px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.8), 0 0 12px rgba(26, 188, 156, 0.3);
             backdrop-filter: blur(8px);
             transition: all 0.2s ease;
             user-select: none;
             cursor: default;
         `;
 
-        this.labelEl = document.createElement("span");
-        this.labelEl.id = "lblMainBadge";
-        this.labelEl.innerText = "🏛️ 領土占有";
+        this.iconEl = document.createElement("span");
+        this.iconEl.id = "lblMainBadgeIcon";
+        this.iconEl.style.cssText = "font-size: 18px; display: inline-flex; align-items: center;";
+        this.iconEl.innerText = "🏛️";
 
         this.countEl = document.createElement("span");
         this.countEl.id = "valPlacedCount";
-        this.countEl.style.cssText = "color: #ffffff; font-size: 13.5px; font-weight: bold;";
+        this.countEl.style.cssText = "color: #ffffff; font-size: 16.5px; font-weight: bold; letter-spacing: 0.5px;";
         this.countEl.innerText = "0/24";
 
-        this.badgeEl.appendChild(this.labelEl);
+        this.badgeEl.appendChild(this.iconEl);
         this.badgeEl.appendChild(this.countEl);
         this.containerEl.appendChild(this.badgeEl);
     }
 
-    /**
-     * 🎯 ステージに応じた最大開拓可能マス数の取得
-     * - Stage 1 (5x5): 本営1マスを除く 24 マス
-     * - Stage 2 (7x7): 本営1マスを除く 48 マス
-     * - Stage 3 (9x9): 本営1マスを除く 80 マス
-     */
+    // 🎯 ステージ最大マス数の取得 (インスタンス・クラス両対応)
+    getMaxTilesForStage(stageNum = 1) {
+        return TerritoryBadgeComponent.getMaxTilesForStage(stageNum);
+    }
+
     static getMaxTilesForStage(stageNum = 1) {
         if (stageNum === 3) return 80;
         if (stageNum === 2) return 48;
@@ -71,12 +71,14 @@ export class TerritoryBadgeComponent {
 
     /**
      * 🔄 占有数・ステージ最大マス数の更新
-     * @param {number} placedCount - 配置済みマス数 (本営を除く累積ブロック数)
-     * @param {number|Object} [stageOrState=1] - ステージ番号またはGameState
-     * @param {Object} [options={}] - オプション
      */
     update(placedCount = 0, stageOrState = 1, options = {}) {
         this.currentCount = placedCount;
+
+        if (!this.countEl && typeof document !== "undefined") {
+            const container = document.getElementById("territoryBadgeContainer") || document.querySelector(".board-container-wrapper");
+            if (container) this.mount(container);
+        }
 
         if (typeof stageOrState === "object" && stageOrState !== null) {
             this.stage = stageOrState.stage || (stageOrState.turn ? Math.min(3, Math.floor((stageOrState.turn - 1) / 20) + 1) : 1);
@@ -90,26 +92,27 @@ export class TerritoryBadgeComponent {
 
         if (!this.countEl) return;
 
-        const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' && window.I18n ? window.I18n : { t: k => k });
-        const labelText = options.labelText || I18n.t("UI_MAIN_AREA_BADGE") || "🏛️ 領土占有";
-
-        if (this.labelEl) {
-            this.labelEl.innerText = labelText;
-        }
-
         const pct = Math.round((this.currentCount / this.maxCount) * 100);
-        this.countEl.innerHTML = `<span style="color:#2ecc71;">${this.currentCount}</span><span style="color:#7f8c8d;">/${this.maxCount}</span> <small style="font-size:11px; color:#a4b0be; margin-left:4px;">(${pct}%)</small>`;
+        this.countEl.innerHTML = `<span style="color:#2ecc71;">${this.currentCount}</span><span style="color:#7f8c8d;">/${this.maxCount}</span> <small style="font-size:13px; color:#a4b0be; margin-left:5px; font-weight:normal;">(${pct}%)</small>`;
 
         if (this.badgeEl) {
             this.badgeEl.title = `Stage ${this.stage} 支配地占有率: ${pct}% (開拓済み: ${this.currentCount}マス / 最大: ${this.maxCount}マス / 残り: ${this.maxCount - this.currentCount}マス)`;
             if (pct >= 80) {
                 this.badgeEl.style.borderColor = "#f1c40f";
-                this.badgeEl.style.boxShadow = "0 4px 14px rgba(0,0,0,0.7), 0 0 14px rgba(241, 196, 15, 0.5)";
+                this.badgeEl.style.boxShadow = "0 5px 16px rgba(0,0,0,0.75), 0 0 16px rgba(241, 196, 15, 0.5)";
             } else {
                 this.badgeEl.style.borderColor = "#1abc9c";
-                this.badgeEl.style.boxShadow = "0 4px 14px rgba(0,0,0,0.7), 0 0 10px rgba(26, 188, 156, 0.3)";
+                this.badgeEl.style.boxShadow = "0 5px 16px rgba(0,0,0,0.75), 0 0 12px rgba(26, 188, 156, 0.35)";
             }
         }
+    }
+
+    // 🛡️ static メソッドによるインスタンスへの安全委譲 (クラス呼出・インスタンス呼出両対応)
+    static mount(containerEl) {
+        return territoryBadgeInstance.mount(containerEl);
+    }
+    static update(placedCount, stageOrState, options) {
+        return territoryBadgeInstance.update(placedCount, stageOrState, options);
     }
 }
 

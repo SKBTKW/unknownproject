@@ -35,18 +35,18 @@
             this.btnEl.style.cssText = "font-size: 15px !important; padding: 7px 16px !important; white-space: nowrap !important; display: inline-flex !important; align-items: center !important; gap: 6px !important;";
             this.btnEl.innerHTML = `📜 <span id="lblLogTitleHeader">ログ</span> <span id="logHeaderArrow" style="margin-left:4px; font-weight:900;">▽</span>`;
 
-            // 0.75x (75%) スケール ドロップダウンパネル (初期状態は display: none)
+            // 700px x 400px ドロップダウンパネル (初期状態は display: none)
             this.panelEl = document.createElement("div");
             this.panelEl.className = "log-dropdown-panel-header";
             this.panelEl.id = "logDropdownPanelHeader";
-            this.panelEl.style.cssText = "display: none; width: 380px !important; max-height: 220px !important; box-shadow: 0 8px 24px rgba(0,0,0,0.85), 0 0 12px rgba(26,188,156,0.3); border: 1.5px solid #1abc9c; border-radius: 8px; background: #11141d; overflow: hidden; z-index: 950;";
+            this.panelEl.style.cssText = "display: none; width: 700px !important; max-height: 400px !important; box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 16px rgba(26,188,156,0.35); border: 1.5px solid #1abc9c; border-radius: 10px; background: #11141d; overflow: hidden; z-index: 950;";
 
             this.panelEl.innerHTML = `
-                <div class="log-dropdown-header-bar" style="padding: 7px 12px !important; font-size: 13px !important; background: #19202c; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2a3547;">
+                <div class="log-dropdown-header-bar" style="padding: 9px 16px !important; font-size: 13.5px !important; background: #19202c; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2a3547;">
                     <span id="lblLogDropdownTitle" style="font-weight: bold; color: #1abc9c;">📜 システム・内政ログ</span>
-                    <span style="cursor:pointer; font-size:15px !important; color: #a4b0be; font-weight: bold;" id="btnCloseLogPanel">✕</span>
+                    <span style="cursor:pointer; font-size:16px !important; color: #a4b0be; font-weight: bold;" id="btnCloseLogPanel">✕</span>
                 </div>
-                <div id="logContent" class="log-content-header" style="padding: 8px 12px !important; font-size: 12.5px !important; gap: 6px !important; max-height: 175px !important; overflow-y: auto !important; color: #dcdde1;">
+                <div id="logContent" class="log-content-header" style="padding: 10px 16px !important; font-size: 13px !important; gap: 8px !important; max-height: 345px !important; overflow-y: auto !important; color: #dcdde1;">
                     <div style="color:#7f8c8d;" id="lblLogSub"></div>
                 </div>
             `;
