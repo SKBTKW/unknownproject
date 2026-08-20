@@ -121,7 +121,22 @@
         }
     }
 
-    exports.DIRECTIVES = DIRECTIVES;
-    exports.DirectiveSystem = DirectiveSystem;
+    if (typeof window !== 'undefined') {
+        window.DIRECTIVES = DIRECTIVES;
+        window.DirectiveSystem = DirectiveSystem;
+    }
+    if (typeof globalThis !== 'undefined') {
+        globalThis.DIRECTIVES = DIRECTIVES;
+        globalThis.DirectiveSystem = DirectiveSystem;
+    }
 
-})(typeof exports !== 'undefined' ? exports : window);
+})(typeof exports !== 'undefined' ? exports : (typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : {})));
+
+const DIRECTIVES = (typeof globalThis !== 'undefined' && globalThis.DIRECTIVES) ? globalThis.DIRECTIVES : null;
+const DirectiveSystem = (typeof globalThis !== 'undefined' && globalThis.DirectiveSystem) ? globalThis.DirectiveSystem : null;
+
+export { DIRECTIVES, DirectiveSystem };
+export default DirectiveSystem;
+
+
+

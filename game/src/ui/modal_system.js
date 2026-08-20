@@ -261,4 +261,14 @@
     if (typeof window !== "undefined") {
         window.ModalSystem = ModalSystem;
     }
-})(typeof exports !== "undefined" ? exports : window);
+    if (typeof globalThis !== "undefined") {
+        globalThis.ModalSystem = ModalSystem;
+    }
+})(typeof exports !== "undefined" ? exports : (typeof window !== "undefined" ? window : (typeof globalThis !== "undefined" ? globalThis : {})));
+
+const ModalSystem = (typeof globalThis !== "undefined" && globalThis.ModalSystem) ? globalThis.ModalSystem : null;
+export { ModalSystem };
+export default ModalSystem;
+
+
+

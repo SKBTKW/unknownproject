@@ -104,5 +104,18 @@
     }
 
     // グローバルへ公開
-    window.BlockPlacementSystem = new BlockPlacementSystem();
-})(window);
+    const instance = new BlockPlacementSystem();
+    if (typeof window !== "undefined") {
+        window.BlockPlacementSystem = instance;
+    }
+    if (typeof globalThis !== "undefined") {
+        globalThis.BlockPlacementSystem = instance;
+    }
+})(typeof window !== "undefined" ? window : (typeof globalThis !== "undefined" ? globalThis : {}));
+
+const BlockPlacementSystem = (typeof globalThis !== "undefined" && globalThis.BlockPlacementSystem) ? globalThis.BlockPlacementSystem : null;
+export { BlockPlacementSystem };
+export default BlockPlacementSystem;
+
+
+

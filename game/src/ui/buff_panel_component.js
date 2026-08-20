@@ -8,11 +8,17 @@
      * ✨ BuffPanelComponent
      * 土地盤面直上の1行サマリーバー ＆ 上方向トグル縦積み展開バフ表示モジュール
      */
-    window.BUFF_FEATURE_FLAGS = {
+    const BUFF_FEATURE_FLAGS = {
         enableEmberBuff: false,    // 🔥 残り火旺盛・標準バフ (false で一旦停止)
         enableCardBuff: true,      // 📜 カード期限バフ (true で有効)
         enableTrialBuff: true      // ⚔️ 試練期限バフ (true で有効)
     };
+    if (typeof window !== "undefined") {
+        window.BUFF_FEATURE_FLAGS = BUFF_FEATURE_FLAGS;
+    }
+    if (typeof globalThis !== "undefined") {
+        globalThis.BUFF_FEATURE_FLAGS = BUFF_FEATURE_FLAGS;
+    }
 
     class BuffPanelComponent {
         constructor() {
@@ -174,7 +180,14 @@
     if (typeof window !== "undefined") {
         window.BuffPanelComponent = instance;
     }
-    if (typeof exports !== "undefined") {
-        exports.BuffPanelComponent = instance;
+    if (typeof globalThis !== "undefined") {
+        globalThis.BuffPanelComponent = instance;
     }
-})(typeof exports !== "undefined" ? exports : window);
+})(typeof exports !== "undefined" ? exports : (typeof window !== "undefined" ? window : (typeof globalThis !== "undefined" ? globalThis : {})));
+
+const BuffPanelComponent = (typeof globalThis !== "undefined" && globalThis.BuffPanelComponent) ? globalThis.BuffPanelComponent : null;
+export { BuffPanelComponent };
+export default BuffPanelComponent;
+
+
+

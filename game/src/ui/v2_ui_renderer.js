@@ -3,18 +3,25 @@
    UIプレゼンテーション＆DOMレンダリング専用レンダラーモジュール
    ============================================================= */
 
-window.currentBoardMode = "hover";
+if (typeof window !== "undefined") {
+    window.currentBoardMode = "hover";
+}
 
 function toggleBoardLabelMode(e) {
     if (e) e.stopPropagation();
     const modes = ["hover", "icon", "always"];
-    const current = window.currentBoardMode || "hover";
+    const current = (typeof window !== "undefined" && window.currentBoardMode) ? window.currentBoardMode : "hover";
     const nextIdx = (modes.indexOf(current) + 1) % modes.length;
-    window.currentBoardMode = modes[nextIdx];
+    if (typeof window !== "undefined") {
+        window.currentBoardMode = modes[nextIdx];
+    }
     
     if (typeof render === "function") render();
 }
-window.toggleBoardLabelMode = toggleBoardLabelMode;
+if (typeof window !== "undefined") {
+    window.toggleBoardLabelMode = toggleBoardLabelMode;
+}
+
 
 function setElementText(id, text) {
     const el = document.getElementById(id);
@@ -180,10 +187,12 @@ function selectDirective(key) {
     }
 }
 
-window.renderDirectiveHeaderBadge = renderDirectiveHeaderBadge;
-window.openDirectiveModal = openDirectiveModal;
-window.closeDirectiveModal = closeDirectiveModal;
-window.selectDirective = selectDirective;
+if (typeof window !== "undefined") {
+    window.renderDirectiveHeaderBadge = renderDirectiveHeaderBadge;
+    window.openDirectiveModal = openDirectiveModal;
+    window.closeDirectiveModal = closeDirectiveModal;
+    window.selectDirective = selectDirective;
+}
 
 function clearCellPreviews() {
     const cells = document.querySelectorAll(".cell");
@@ -314,5 +323,32 @@ function hideDataPanelTooltip() {
     if (tt) tt.style.display = "none";
 }
 
-window.showDataPanelTooltip = showDataPanelTooltip;
-window.hideDataPanelTooltip = hideDataPanelTooltip;
+if (typeof window !== "undefined") {
+    window.showDataPanelTooltip = showDataPanelTooltip;
+    window.hideDataPanelTooltip = hideDataPanelTooltip;
+}
+const V2UIRenderer = {
+    initStaticI18nLabels,
+    renderDirectiveHeaderBadge,
+    showDirectiveTooltip,
+    hideDirectiveTooltip,
+    openDirectiveModal,
+    closeDirectiveModal,
+    selectDirective,
+    showDataPanelTooltip,
+    hideDataPanelTooltip,
+    toggleBoardLabelMode,
+    setElementText
+};
+
+if (typeof window !== "undefined") {
+    window.V2UIRenderer = V2UIRenderer;
+}
+if (typeof globalThis !== "undefined") {
+    globalThis.V2UIRenderer = V2UIRenderer;
+}
+
+export { V2UIRenderer };
+export default V2UIRenderer;
+
+

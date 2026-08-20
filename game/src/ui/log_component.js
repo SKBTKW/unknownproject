@@ -11,14 +11,14 @@
             this.panelEl = null;
             this.arrowEl = null;
             this.contentEl = null;
-            this.isOpen = false;
+            this.isOpen = false; // 🔒 初期状態は折りたたまれた状態で開始
             this.logs = [];
         }
 
         /**
          * 🏗️ UIの初期構築 (指定されたコンテナ内へレイアウト干渉なしでマウント)
          */
-        mount(containerEl) {
+        mount(containerEl, state = null) {
             if (!containerEl) return;
             this.containerEl = containerEl;
             this.containerEl.innerHTML = ""; // 初期化
@@ -35,18 +35,18 @@
             this.btnEl.style.cssText = "font-size: 15px !important; padding: 7px 16px !important; white-space: nowrap !important; display: inline-flex !important; align-items: center !important; gap: 6px !important;";
             this.btnEl.innerHTML = `📜 <span id="lblLogTitleHeader">ログ</span> <span id="logHeaderArrow" style="margin-left:4px; font-weight:900;">▽</span>`;
 
-            // 0.75x (75%) スケール ドロップダウンパネル
+            // 700px x 400px ドロップダウンパネル (初期状態は display: none)
             this.panelEl = document.createElement("div");
             this.panelEl.className = "log-dropdown-panel-header";
             this.panelEl.id = "logDropdownPanelHeader";
-            this.panelEl.style.cssText = "display: none; width: 510px !important; max-height: 360px !important;";
+            this.panelEl.style.cssText = "display: none; width: 700px !important; max-height: 400px !important; box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 16px rgba(26,188,156,0.35); border: 1.5px solid #1abc9c; border-radius: 10px; background: #11141d; overflow: hidden; z-index: 950;";
 
             this.panelEl.innerHTML = `
-                <div class="log-dropdown-header-bar" style="padding: 9px 15px !important; font-size: 15px !important;">
-                    <span id="lblLogDropdownTitle">📜 システム動作・内政ログ一覧</span>
-                    <span style="cursor:pointer; font-size:17px !important;" id="btnCloseLogPanel">✕</span>
+                <div class="log-dropdown-header-bar" style="padding: 9px 16px !important; font-size: 13.5px !important; background: #19202c; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2a3547;">
+                    <span id="lblLogDropdownTitle" style="font-weight: bold; color: #1abc9c;">📜 システム・内政ログ</span>
+                    <span style="cursor:pointer; font-size:16px !important; color: #a4b0be; font-weight: bold;" id="btnCloseLogPanel">✕</span>
                 </div>
-                <div id="logContent" class="log-content-header" style="padding: 12px 15px !important; font-size: 14px !important; gap: 8px !important;">
+                <div id="logContent" class="log-content-header" style="padding: 10px 16px !important; font-size: 13px !important; gap: 8px !important; max-height: 345px !important; overflow-y: auto !important; color: #dcdde1;">
                     <div style="color:#7f8c8d;" id="lblLogSub"></div>
                 </div>
             `;
@@ -63,34 +63,94 @@
                 closeBtn.onclick = (e) => this.toggle(e);
             }
 
+            if (state) {
+                this.importStateLogs(state);
+            } else {
+                this.renderLogs();
+            }
+        }
+
+        /**
+         * 📥 GameState から蓄積ログを一括インポート
+         */
+        importStateLogs(state) {
+            if (!state || !Array.isArray(state.gameLogs)) return;
+            const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
+
+            this.logs = [];
+            // 逆順（古い順）で取り出して最新が先頭に来るように
+            [...state.gameLogs].reverse().forEach(rawMsg => {
+                let msg = rawMsg;
+                if (typeof msg === "string" && msg.startsWith("LOG_")) {
+                    msg = I18n.t(msg);
+                }
+                let turn = state.turn || 1;
+                if (typeof msg === "string") {
+                    const match = msg.match(/^\[T(\d+)\]\s*(.*)$/);
+                    if (match) {
+                        turn = parseInt(match[1], 10);
+                        msg = match[2];
+                    }
+                }
+                this.logs.unshift({ turn, message: msg });
+            });
             this.renderLogs();
         }
 
         /**
-         * 📜 ログメッセージの動的追加
+         * 📜 ログメッセージの動的追加（開閉状態に関係なく常に裏で記録・蓄積）
          */
         addLog(msg, turn = 1) {
-            this.logs.unshift({ turn, message: msg });
-            if (this.logs.length > 50) this.logs.pop();
+            // [T1] などのプレフィックスがあれば整形
+            let cleanMsg = msg;
+            let displayTurn = turn;
+            if (typeof msg === "string") {
+                const match = msg.match(/^\[T(\d+)\]\s*(.*)$/);
+                if (match) {
+                    displayTurn = parseInt(match[1], 10);
+                    cleanMsg = match[2];
+                }
+            }
+
+            this.logs.unshift({ turn: displayTurn, message: cleanMsg });
+            if (this.logs.length > 100) this.logs.pop(); // 最大100件まで保持
+
+            // 閉じていても裏でDOM・状態を常に更新
             this.renderLogs();
+            this.updateButtonLabel();
+        }
+
+        /**
+         * 🏷️ トグルボタンのラベル・バッジ更新（閉じていても件数がわかる）
+         */
+        updateButtonLabel() {
+            const titleEl = this.btnEl ? this.btnEl.querySelector("#lblLogTitleHeader") : null;
+            if (titleEl) {
+                const countText = this.logs.length > 0 ? ` (${this.logs.length})` : "";
+                titleEl.innerText = `ログ${countText}`;
+            }
         }
 
         /**
          * 🔄 ログ一覧のレンダリング
          */
         renderLogs() {
-            if (!this.contentEl) return;
+            const targetEl = this.contentEl || (typeof document !== "undefined" ? document.getElementById("logContent") : null);
+            if (!targetEl) return;
+
             if (this.logs.length === 0) {
-                this.contentEl.innerHTML = `<div style="color:#7f8c8d; font-size:14px;">※内政・操作ログがここに記録されます。</div>`;
+                targetEl.innerHTML = `<div style="color:#7f8c8d; font-size:14px; padding:4px;">※内政・操作ログがここに記録されます。</div>`;
                 return;
             }
 
-            this.contentEl.innerHTML = this.logs.map(log => `
-                <div style="border-bottom:1px solid rgba(44, 62, 80, 0.6); padding-bottom:5px; margin-bottom:5px; font-size:14px; line-height:1.5;">
+            targetEl.innerHTML = this.logs.map(log => `
+                <div class="log-item" style="border-bottom:1px solid rgba(44, 62, 80, 0.6); padding:4px 0; margin-bottom:4px; font-size:13.5px; line-height:1.45;">
                     <span style="color:#1abc9c; font-weight:bold; margin-right:6px;">[T${log.turn}]</span>
                     <span>${log.message}</span>
                 </div>
             `).join("");
+
+            this.updateButtonLabel();
         }
 
         /**
@@ -105,6 +165,9 @@
             if (this.arrowEl) {
                 this.arrowEl.innerText = this.isOpen ? "△" : "▽";
             }
+            if (this.isOpen) {
+                this.renderLogs();
+            }
         }
     }
 
@@ -112,7 +175,14 @@
     if (typeof window !== "undefined") {
         window.LogComponent = instance;
     }
-    if (typeof exports !== "undefined") {
-        exports.LogComponent = instance;
+    if (typeof globalThis !== "undefined") {
+        globalThis.LogComponent = instance;
     }
-})(typeof exports !== "undefined" ? exports : window);
+})(typeof exports !== "undefined" ? exports : (typeof window !== "undefined" ? window : (typeof globalThis !== "undefined" ? globalThis : {})));
+
+const LogComponent = (typeof globalThis !== "undefined" && globalThis.LogComponent) ? globalThis.LogComponent : null;
+export { LogComponent };
+export default LogComponent;
+
+
+

@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trial of Ages: Last Ember - Fixed Empty Hold Slot Build</title>
+  <style>
+    :root {
+      --bg-board: #111625;
+      --panel-bg: #1a2235;
+      --card-gold: #c5a059;
+      --text-gold: #f3d082;
+      --text-main: #e2e8f0;
+    }
+    body {
+      margin: 0; padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg-board);
+      color: var(--text-main);
+      height: 100vh;
+      overflow: hidden;
+    }
+    #app-container {
+      display: flex; flex-direction: column;
+      height: 100vh;
+    }
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 55px; padding: 0 15px;
+      background: #0d121e; border-bottom: 2px solid #2d3748;
+    }
+    .header-logo { font-size: 1.1rem; font-weight: bold; color: var(--text-gold); }
+    .role-badge { background: #2d3748; border: 1px solid #4a5568; padding: 4px 10px; border-radius: 4px; font-size: 0.85rem; }
+    .relic-slot { background: #1a202c; border: 1px dashed #4a5568; padding: 4px 15px; font-size: 0.8rem; color: #a0aec0; }
+    .fire-status { display: flex; align-items: center; gap: 8px; font-size: 1rem; font-weight: bold; color: #f6ad55; }
+    .trial-announce { display: none; background: #742a2a; border: 1px solid #e53e3e; color: #feb2b2; padding: 4px 12px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+    .turn-counter { background: #1a202c; border: 2px solid #cbd5e0; padding: 4px 15px; border-radius: 6px; font-size: 1.1rem; font-weight: bold; text-align: center; }
+
+    main { display: flex; flex: 1; position: relative; overflow: hidden; }
+
+    #left-log-panel {
+      width: 210px; background: #2d1b2d; border-right: 2px solid #4a2040;
+      display: flex; flex-direction: column; padding: 10px; box-sizing: border-box;
+    }
+    .log-title { font-weight: bold; font-size: 1.2rem; color: #e9d8a6; text-align: center; margin-bottom: 8px; }
+    #log-console { flex: 1; overflow-y: auto; font-size: 0.75rem; display: flex; flex-direction: column; gap: 4px; }
+    .log-entry { padding: 3px 6px; border-radius: 3px; background: rgba(0,0,0,0.3); }
+
+    #main-map-area {
+      flex: 1; position: relative; background: radial-gradient(circle at center, #1a233a 0%, #0d121e 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+
+    #grid-board-container {
+      display: grid;
+      gap: 4px; padding: 8px;
+      background: #020617; border: 3px solid #334155; border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.7);
+      position: relative;
+    }
+    .grid-cell {
+      width: 52px; height: 52px; border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; font-weight: bold; text-align: center;
+      user-select: none; border: 1px solid rgba(255,255,255,0.15);
+      box-sizing: border-box; position: relative; cursor: pointer;
+    }
+    .grid-cell.hq {
+      background: radial-gradient(circle, #f59e0b 0%, #78350f 100%);
+      border: 2px solid #fbbf24; color: #fff;
+    }
+    .grid-cell.occupied { background: #15803d; border: 1px solid #22c55e; color: #fff; }
+    
+    .grid-cell.river-border-top::before {
+      content: ''; position: absolute; top: -4px; left: -2px; width: 56px; height: 5px;
+      background: #38bdf8; box-shadow: 0 0 8px #0284c7; z-index: 10; border-radius: 2px;
+    }
+
+    #right-data-panel {
+      width: 220px; background: #0f172a; border-left: 2px solid #2d3748;
+      padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; gap: 15px;
+    }
+    .data-title { font-weight: bold; font-size: 0.95rem; color: var(--text-gold); text-align: center; }
+    .resource-summary-box { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px; }
+    .res-row { display: flex; justify-content: space-between; align-items: center; margin: 8px 0; font-size: 1rem; font-weight: bold; }
+
+    footer {
+      height: 195px; background: #0d111a; border-top: 2px solid #2d3748;
+      display: flex; padding: 10px 15px; box-sizing: border-box; gap: 20px;
+    }
+    .zone-box { display: flex; flex-direction: column; height: 100%; }
+    .zone-title { font-size: 0.8rem; color: #a0aec0; margin-bottom: 6px; font-weight: bold; }
+    .cards-row { display: flex; gap: 12px; }
+
+    .offering-card {
+      width: 165px; height: 150px; background: #1a202c; border: 2px solid #4a5568;
+      border-radius: 8px; padding: 10px; box-sizing: border-box; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; text-align: center;
+      transition: all 0.2s ease; position: relative;
+    }
+    .offering-card:hover { transform: translateY(-4px); border-color: #63b3ed; }
+    .offering-card.selected { border-color: var(--accent-gold); box-shadow: 0 0 14px var(--accent-gold); }
+
+    .mini-shape-grid {
+      display: grid; grid-template-columns: repeat(4, 12px); grid-template-rows: repeat(4, 12px);
+      gap: 2px; background: #020617; padding: 3px; border-radius: 4px; margin: 6px 0;
+    }
+    .mini-dot { width: 12px; height: 12px; border-radius: 1px; }
+    .mini-dot.filled { background: var(--text-gold); }
+
+    .card-yield-info {
+      font-size: 0.78rem; font-weight: bold; color: #34d399;
+      background: rgba(0,0,0,0.5); padding: 3px 8px; border-radius: 4px; width: 90%;
+    }
+
+    .turn-control-zone {
+      display: flex; flex-direction: column; gap: 8px; margin-left: auto; justify-content: flex-end;
+    }
+    .btn-mulligan {
+      background: #7c3aed; color: white; border: none; padding: 8px 12px;
+      border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.85rem; width: 120px;
+    }
+    .btn-turn {
+      background: #059669; color: white; border: none; padding: 12px;
+      border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer; width: 120px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="app-container">
+  <header>
+    <div class="header-logo">Trial of Ages: Last Ember</div>
+    <div class="role-badge">ロール: 将軍</div>
+    <div class="relic-slot">レリックスロット (仮)</div>
+    <div class="fire-status">🔥 : <span id="val-fire">30</span>/<span id="val-max-fire">30</span> <span id="val-fire-bonus" style="font-size:0.75rem; color:#48bb78;">(+20% バフ)</span></div>
+    <div class="trial-announce" id="trial-announce-box">⚠️ 【試練予報】 蛮族の夜襲 まで残り 5 ターン</div>
+    <div class="turn-counter"><span id="val-turn">1</span>/50<br><span style="font-size:0.6rem; color:#a0aec0;">※経過ターン</span></div>
+  </header>
+
+  <main>
+    <div id="left-log-panel">
+      <div class="log-title">ログ</div>
+      <div id="log-console"></div>
+    </div>
+
+    <div id="main-map-area">
+      <div style="font-weight:bold; color:var(--text-gold); margin-bottom:8px;" id="grid-stage-title">Stage 1 (5×5 盤面)</div>
+      
+      <div id="grid-board-container"></div>
+
+      <div style="margin-top:8px; font-size:0.8rem; color:#a0aec0;">
+        土地スロット: <span style="color:#f6ad55; font-weight:bold;" id="slot-used-text">1/25</span> | 中央 (2,2) 🏰 1×1本営
+      </div>
+    </div>
+
+    <div id="right-data-panel">
+      <div class="data-title">※各種データ表示エリア</div>
+      <div class="resource-summary-box">
+        <div style="font-size:0.75rem; color:#a0aec0; margin-bottom:8px;">※場の産出の合計額<br>タップで詳細表示</div>
+        <div class="res-row" style="color:#48bb78;">🌾 食料 : <span id="val-food">100</span></div>
+        <div class="res-row" style="color:#ed8936;">🧱 資材 : <span id="val-wood">50</span></div>
+        <div class="res-row" style="color:#63b3ed;">🛡️ 防衛 : <span id="val-def">0</span></div>
+        <div class="res-row" style="color:#b794f4;">✨ 神秘 : <span id="val-spirit">0</span></div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="zone-box">
+      <div class="zone-title">※ドローエリア (6カテゴリから選ばれた大型カード)</div>
+      <div class="cards-row" id="card-offerings-row"></div>
+    </div>
+
+    <!-- 保留スロット (初期状態は100%空き) -->
+    <div class="zone-box" style="margin-left:20px;">
+      <div class="zone-title">※保留スロット (0/1)</div>
+      <div class="cards-row">
+        <div class="offering-card" style="border: 2px dashed #4a5568; background: rgba(0,0,0,0.3); justify-content:center;" id="hold-slot-card">
+          <!-- 初期表示は完全に空き -->
+          <div style="font-size:0.8rem; color:#a0aec0;">空き (未保留)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="turn-control-zone">
+      <button class="btn-mulligan" id="btn-mulligan-ui" onclick="doMulligan()">🎲 マリガン<br>(手札引き直し)</button>
+      <button class="btn-turn" onclick="endTurn()">TURN RND<br>(ターン終了)</button>
+    </div>
+  </footer>
+</div>
+
+<script>
+let turn = 1;
+let stage = 1;
+let gridSize = 5;
+let fire = 30;
+let maxFire = 30;
+let food = 100;
+let wood = 50;
+let def = 0;
+let spirit = 0;
+
+let selectedHandIndex = null;
+let hasPlacedLandThisTurn = false;
+let hasUsedMulliganThisTurn = false;
+let holdCard = null; // 最初は完全に null (空き)
+
+const HAND_CARDS = [
+  { name: '🌾 平地 1x2', elev: 1, type: '土地', shape: [{dx:0,dy:0},{dx:1,dy:0}] },
+  { name: '🌲 平地森 1x3', elev: 1, type: '土地', shape: [{dx:0,dy:0},{dx:1,dy:0},{dx:2,dy:0}] },
+  { name: '⛰️ 丘陵角型', elev: 2, type: '土地', shape: [{dx:0,dy:0},{dx:1,dy:0},{dx:0,dy:1}] }
+];
+
+function addLog(msg, type='info') {
+  const consoleEl = document.getElementById('log-console');
+  const div = document.createElement('div');
+  div.className = 'log-entry';
+  div.innerText = `[T${turn}] ${msg}`;
+  consoleEl.prepend(div);
+}
+
+function renderGrid() {
+  const container = document.getElementById('grid-board-container');
+  container.innerHTML = '';
+
+  gridSize = turn <= 15 ? 5 : (turn <= 30 ? 7 : 8);
+  stage = turn <= 15 ? 1 : (turn <= 30 ? 2 : 3);
+
+  document.getElementById('grid-stage-title').innerText = `Stage ${stage} (${gridSize}×${gridSize} 盤面)`;
+  container.style.gridTemplateColumns = `repeat(${gridSize}, 52px)`;
+  container.style.gridTemplateRows = `repeat(${gridSize}, 52px)`;
+
+  const hqX = (gridSize === 8) ? 3 : 2;
+  const hqY = (gridSize === 8) ? 3 : 2;
+
+  for (let r = 0; r < gridSize; r++) {
+    for (let c = 0; c < gridSize; c++) {
+      const cell = document.createElement('div');
+      if (r === hqY && c === hqX) {
+        cell.className = 'grid-cell hq';
+        cell.innerText = '🏰本営';
+      } else {
+        cell.className = 'grid-cell';
+      }
+
+      cell.onclick = () => {
+        if (selectedHandIndex !== null && !HAND_CARDS[selectedHandIndex].isUsed) {
+          if (hasPlacedLandThisTurn) {
+            addLog('⚠️ 1ターンに出せる土地は1つまでです！', 'warning');
+            return;
+          }
+          addLog(`(${c},${r}) に ${HAND_CARDS[selectedHandIndex].name} を配置！(1🔥消費)`, 'success');
+          HAND_CARDS[selectedHandIndex].isUsed = true;
+          hasPlacedLandThisTurn = true;
+          selectedHandIndex = null;
+          renderHand();
+          renderGrid();
+        }
+      };
+      container.appendChild(cell);
+    }
+  }
+}
+
+function renderHand() {
+  const container = document.getElementById('card-offerings-row');
+  container.innerHTML = '';
+
+  HAND_CARDS.forEach((card, idx) => {
+    const el = document.createElement('div');
+    const isSelected = selectedHandIndex === idx;
+    el.className = `offering-card ${card.isUsed ? 'used' : ''} ${isSelected ? 'selected' : ''}`;
+    
+    if (!card.isUsed) {
+      el.onclick = () => {
+        selectedHandIndex = idx;
+        renderHand();
+      };
+    }
+
+    let dotsHTML = '';
+    const filled = new Set(card.shape.map(s => `${s.dx},${s.dy}`));
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 4; c++) {
+        dotsHTML += `<div class="mini-dot ${filled.has(`${c},${r}`) ? 'filled' : ''}"></div>`;
+      }
+    }
+
+    let holdBtnHTML = '';
+    if (isSelected && !card.isUsed && !holdCard) {
+      holdBtnHTML = `<button id="btn-hold-action" style="margin-top:4px; font-size:0.7rem; background:#059669; color:#fff; border:none; border-radius:4px; padding:2px 6px; cursor:pointer;">📥 保留する</button>`;
+    }
+
+    el.innerHTML = `
+      <div style="font-size:0.85rem; font-weight:bold; color:var(--text-gold);">${card.name}</div>
+      <div class="mini-shape-grid">${dotsHTML}</div>
+      <div class="card-yield-info">🌾+10 🧱+10</div>
+      ${holdBtnHTML}
+    `;
+    container.appendChild(el);
+
+    const btnHold = el.querySelector('#btn-hold-action');
+    if (btnHold) {
+      btnHold.onclick = (e) => {
+        e.stopPropagation();
+        holdCard = JSON.parse(JSON.stringify(card));
+        card.isUsed = true;
+        selectedHandIndex = null;
+        addLog(`📥 ${card.name} を保留スロットにキープしました！`, 'info');
+        renderHand();
+        renderHoldSlot();
+      };
+    }
+  });
+
+  renderHoldSlot();
+}
+
+function renderHoldSlot() {
+  const container = document.getElementById('hold-slot-card');
+  if (!holdCard) {
+    container.style.border = '2px dashed #4a5568';
+    container.style.background = 'rgba(0,0,0,0.3)';
+    container.style.borderColor = '#4a5568';
+    container.innerHTML = `<div style="font-size:0.8rem; color:#a0aec0;">空き (未保留)</div>`;
+  } else {
+    container.style.border = '2px solid #b794f4';
+    container.style.background = '#1a202c';
+    container.innerHTML = `
+      <div style="font-size:0.85rem; font-weight:bold; color:var(--text-gold);">${holdCard.name}</div>
+      <div style="font-size:0.7rem; color:#b794f4; margin-top:2px;">保留中</div>
+      <button id="btn-return-hold" style="margin-top:auto; font-size:0.75rem; background:#2563eb; color:#fff; border:none; border-radius:4px; padding:3px 8px; cursor:pointer;">手札へ戻す</button>
+    `;
+    const btnReturn = container.querySelector('#btn-return-hold');
+    if (btnReturn) {
+      btnReturn.onclick = () => {
+        HAND_CARDS.push(JSON.parse(JSON.stringify(holdCard)));
+        holdCard = null;
+        addLog('📥 保留カードを手札に復帰させました。', 'info');
+        renderHand();
+        renderHoldSlot();
+      };
+    }
+  }
+}
+
+function doMulligan() {
+  if (hasUsedMulliganThisTurn) {
+    addLog('⚠️ マリガンは1ターンに1回までです！', 'warning');
+    return;
+  }
+  hasUsedMulliganThisTurn = true;
+  addLog('🎲 マリガン実行！手札を新しく引き直しました。', 'info');
+  HAND_CARDS.forEach(c => c.isUsed = false);
+  renderHand();
+}
+
+function endTurn() {
+  turn++;
+  hasPlacedLandThisTurn = false;
+  hasUsedMulliganThisTurn = false;
+  document.getElementById('val-turn').innerText = turn;
+  addLog(`Turn ${turn - 1} 終了: 各種資源を自動収穫。`);
+  renderGrid();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderGrid();
+  renderHand();
+  renderHoldSlot(); // 初期表示で100%空き状態に設定
+  addLog('Trial of Ages: Last Ember 正式修正版 (保留スロット初期空き確認)');
+});
+</script>
+
+</body>
+</html>
