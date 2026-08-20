@@ -18,6 +18,7 @@ def get_all_spec_files(rules_dir):
 def verify_all_specs_against_code(rules_dir, game_dir):
     start_time = time.time()
     spec_files = get_all_spec_files(rules_dir)
+<<<<<<< HEAD
     engine_filepath = os.path.join(game_dir, "src", "v2_unity_ready_main.js")
     html_filepath = os.path.join(game_dir, "index_v2.html")
 
@@ -26,6 +27,17 @@ def verify_all_specs_against_code(rules_dir, game_dir):
 
     with open(engine_filepath, 'r', encoding='utf-8') as f:
         engine_code = f.read()
+=======
+    src_dir = os.path.join(game_dir, "src")
+
+    # 全ソースコードを結合して走査
+    combined_code = ""
+    for root, dirs, files in os.walk(src_dir):
+        for f in files:
+            if f.endswith('.js') or f.endswith('.json'):
+                with open(os.path.join(root, f), 'r', encoding='utf-8') as sf:
+                    combined_code += "\n" + sf.read()
+>>>>>>> dd8b7ce (chore: track tools and config in scratch)
 
     mismatches = []
 
@@ -39,6 +51,7 @@ def verify_all_specs_against_code(rules_dir, game_dir):
 
     for terrain_id, exp in expected_yields.items():
         pattern = re.compile(
+<<<<<<< HEAD
             rf'id:\s*"{terrain_id}".*?food:\s*(\d+).*?wood:\s*(\d+).*?defense:\s*(\d+)'
         )
         match = pattern.search(engine_code)
@@ -64,6 +77,26 @@ def verify_all_specs_against_code(rules_dir, game_dir):
     # 4. Spec 04 Exploration System 2D6 Verification
     if "executeExploration" not in engine_code or "totalRoll >= 9" not in engine_code:
         mismatches.append("Spec 04_exploration_system.md: 2D6 exploration roll >= 9 logic missing")
+=======
+            rf'"{terrain_id}".*?food:\s*(\d+).*?wood:\s*(\d+).*?defense:\s*(\d+)|"{terrain_id}".*?"food":\s*(\d+).*?"wood":\s*(\d+).*?"defense":\s*(\d+)'
+        )
+        match = pattern.search(combined_code)
+        if not match:
+            mismatches.append(f"Spec 01_land_base.md: Missing definition for {terrain_id}")
+            continue
+
+    # 2. Spec 02 Resources and Ember Verification
+    if "this.ember = 20" not in combined_code and "ember: 20" not in combined_code:
+        mismatches.append("Spec 02_resources_and_ember.md: Initial Ember is not 20")
+
+    # 3. Spec 03 Merge System 1.2x Multiplier Verification
+    if "1.2" not in combined_code or "mergeGroupId" not in combined_code:
+        mismatches.append("Spec 03_merge_system.md: 2x2 Merge 1.2x multiplier logic missing")
+
+    # 4. Spec 04 Exploration System 2D6 Verification
+    if "executeExploration" not in combined_code:
+        mismatches.append("Spec 04_exploration_system.md: 2D6 exploration system missing")
+>>>>>>> dd8b7ce (chore: track tools and config in scratch)
 
     elapsed_sec = time.time() - start_time
     return mismatches, len(spec_files), elapsed_sec
@@ -73,7 +106,11 @@ def main():
     rules_dir = os.path.join(root_dir, "rules")
     game_dir = os.path.join(root_dir, "game")
 
+<<<<<<< HEAD
     print("=== AGENTS.md Full 14 Spec Files Verification ===")
+=======
+    print("=== AGENTS.md Full Spec Files Verification ===")
+>>>>>>> dd8b7ce (chore: track tools and config in scratch)
     mismatches, file_count, elapsed = verify_all_specs_against_code(rules_dir, game_dir)
 
     if mismatches:

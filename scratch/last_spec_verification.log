@@ -1,1 +1,5 @@
+<<<<<<< HEAD
 SUCCESS: All 19 spec files matched 100% in 0.002s.
+=======
+SUCCESS: All 21 spec files matched 100% in 0.674s.
+>>>>>>> dd8b7ce (chore: track tools and config in scratch)

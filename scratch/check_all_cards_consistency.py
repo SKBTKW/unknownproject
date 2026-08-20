@@ -51,7 +51,11 @@ def check_consistency():
     print(f"- 1x3 Cards Rarity = 'R': {[c['id'] + ': ' + c['rarity'] for c in cards_1x3]}")
 
     if errors:
+<<<<<<< HEAD
         print("\n❌ ERRORS FOUND:")
+=======
+        print("\n笶・ERRORS FOUND:")
+>>>>>>> dd8b7ce (chore: track tools and config in scratch)
         for err in errors:
             print(f"  - {err}")
         sys.exit(1)
