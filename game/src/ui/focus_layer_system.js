@@ -138,6 +138,8 @@ class FocusLayerManager {
         if (!this.boardContainerEl) return;
         const gridEl = this.getGridElement();
         const playerTray = document.getElementById('layerPlayerTray') || document.querySelector('.layer-player-tray');
+        const settings = (typeof window !== "undefined" && window.gameSettings) ? window.gameSettings : null;
+        const isBlurEnabled = settings ? settings.get("focusDoFBlur") : true;
 
         if (isFront) {
             this.boardContainerEl.classList.add('layer-active-front');
@@ -149,9 +151,14 @@ class FocusLayerManager {
             if (this.offeringSectionEl) this.offeringSectionEl.style.zIndex = '50';
         } else {
             this.boardContainerEl.classList.remove('layer-active-front');
-            this.boardContainerEl.classList.add('layer-dim-blur');
+            if (isBlurEnabled) {
+                this.boardContainerEl.classList.add('layer-dim-blur');
+                if (gridEl) gridEl.classList.add('board-dim-blur');
+            } else {
+                this.boardContainerEl.classList.remove('layer-dim-blur');
+                if (gridEl) gridEl.classList.remove('board-dim-blur');
+            }
             this.boardContainerEl.style.zIndex = '50';
-            if (gridEl) gridEl.classList.add('board-dim-blur');
         }
     }
 
@@ -161,6 +168,8 @@ class FocusLayerManager {
     setHandFocus(isFront) {
         if (!this.offeringSectionEl) return;
         const playerTray = document.getElementById('layerPlayerTray') || document.querySelector('.layer-player-tray');
+        const settings = (typeof window !== "undefined" && window.gameSettings) ? window.gameSettings : null;
+        const isBlurEnabled = settings ? settings.get("focusDoFBlur") : true;
 
         if (isFront) {
             this.offeringSectionEl.classList.add('layer-active-front');
@@ -171,7 +180,11 @@ class FocusLayerManager {
             if (this.boardContainerEl) this.boardContainerEl.style.zIndex = '50';
         } else {
             this.offeringSectionEl.classList.remove('layer-active-front');
-            this.offeringSectionEl.classList.add('layer-dim-blur');
+            if (isBlurEnabled) {
+                this.offeringSectionEl.classList.add('layer-dim-blur');
+            } else {
+                this.offeringSectionEl.classList.remove('layer-dim-blur');
+            }
             this.offeringSectionEl.style.zIndex = '50';
             if (playerTray) playerTray.style.zIndex = '50';
         }

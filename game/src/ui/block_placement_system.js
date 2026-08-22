@@ -58,11 +58,13 @@
 
             const size = (gameState.stage && gameState.stage.size) ? gameState.stage.size : (gameState.grid ? gameState.grid.length : 5);
 
+            const terrain = card.terrain || card;
+
             for (let r = 0; r < size; r++) {
                 for (let c = 0; c < size; c++) {
                     const check = (typeof gameState.canPlaceShape === "function") 
-                        ? gameState.canPlaceShape(r, c, shape) 
-                        : (gameState.gridEngine ? gameState.gridEngine.canPlaceShape(r, c, shape) : false);
+                        ? gameState.canPlaceShape(r, c, shape, terrain) 
+                        : (gameState.gridEngine ? gameState.gridEngine.canPlaceShape(r, c, shape, terrain) : false);
                     const canPlace = (typeof check === 'object' && check !== null) ? check.can : (check === true);
                     const targetEl = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
                     if (targetEl) {
@@ -94,7 +96,8 @@
             const shape = card.currentShape || (card.terrain ? card.terrain.shape : [[1]]);
             if (!shape || !Array.isArray(shape)) return;
 
-            const check = gameState.canPlaceShape(r, c, shape);
+            const terrain = card.terrain || card;
+            const check = gameState.canPlaceShape(r, c, shape, terrain);
             const isValid = (typeof check === 'object' && check !== null) ? check.can : check;
 
             const rows = shape.length;

@@ -87,11 +87,29 @@ export class BuffSystem {
     }
 
     /**
-     * 📋 UI表示用バフリストの取得（国家方針は除外）
+     * 📋 UI表示用バフリストの取得（環境バフ・試練告知・期限付きバフの自動統合）
      */
     getDisplayBuffs() {
         this.updateEnvironmentBuffs();
-        return [...this.buffs];
+        const displayList = [...this.buffs];
+
+        // ⚔️ 試練5ターン前接近アラートの自動バフ表示
+        if (this.state && typeof this.state.getTrialNotice === "function") {
+            const notice = this.state.getTrialNotice();
+            if (notice && notice.active) {
+                displayList.unshift({
+                    id: "TRIAL_ALERT_COUNTDOWN",
+                    name: `⚔️ 試練襲来まで あと ${notice.remaining} ターン`,
+                    shortName: `試練接近 (${notice.remaining}T)`,
+                    icon: "⚔️",
+                    description: `迫り来る大試練に備えて防衛力 (🛡️) を高めてください。`,
+                    badgeText: `残り ${notice.remaining}T`,
+                    category: "TRIAL_ALERT"
+                });
+            }
+        }
+
+        return displayList;
     }
 
     /**

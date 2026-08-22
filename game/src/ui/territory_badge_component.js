@@ -17,7 +17,10 @@ export class TerritoryBadgeComponent {
     /**
      * 🏗️ UIの初期構築 (サイズ20%拡大 ＆ アイコン＋数値のみのシンプル設計)
      */
-    mount(containerEl) {
+     mount(containerEl) {
+        if (!containerEl) {
+            containerEl = document.getElementById("territoryBadgeContainer") || document.querySelector(".grid-board-anchor");
+        }
         if (!containerEl) return;
         this.containerEl = containerEl;
         this.containerEl.innerHTML = "";
@@ -25,6 +28,7 @@ export class TerritoryBadgeComponent {
         this.badgeEl = document.createElement("div");
         this.badgeEl.className = "main-area-badge territory-grid-bottom-right";
         this.badgeEl.id = "mainTerritoryBadge";
+        this.badgeEl.title = "🏛️ 領土開墾進捗 (クリックで文明方針変更)";
         this.badgeEl.style.cssText = `
             display: inline-flex;
             align-items: center;
@@ -40,8 +44,14 @@ export class TerritoryBadgeComponent {
             backdrop-filter: blur(8px);
             transition: all 0.2s ease;
             user-select: none;
-            cursor: default;
+            cursor: pointer;
+            white-space: nowrap;
         `;
+        this.badgeEl.onclick = () => {
+            if (typeof window.openDirectiveModal === "function") {
+                window.openDirectiveModal();
+            }
+        };
 
         this.iconEl = document.createElement("span");
         this.iconEl.id = "lblMainBadgeIcon";
@@ -50,7 +60,7 @@ export class TerritoryBadgeComponent {
 
         this.countEl = document.createElement("span");
         this.countEl.id = "valPlacedCount";
-        this.countEl.style.cssText = "color: #ffffff; font-size: 16.5px; font-weight: bold; letter-spacing: 0.5px;";
+        this.countEl.style.cssText = "color: #ffffff; font-size: 16.5px; font-weight: bold; letter-spacing: 0.5px; margin-left: 2px;";
         this.countEl.innerText = "0/24";
 
         this.badgeEl.appendChild(this.iconEl);

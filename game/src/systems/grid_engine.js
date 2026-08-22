@@ -176,18 +176,21 @@ class GridEngine {
     }
 
     /**
-     * 🔍 形状配置可否チェック
+     * 🔍 形状配置可否チェック（地勢レベルGL隣接制限: GL0砂漠 と GL2+森林/山岳の直接隣接禁止）
      * @param {number} startR - 配置開始行
      * @param {number} startC - 配置開始列
      * @param {Array<Array<number>>} shapeMatrix - 形状マトリクス
+     * @param {Object} [terrain] - 配置対象の地勢データ (GL判定用)
      * @returns {{ can: boolean, reason?: string }}
      */
-    canPlaceShape(startR, startC, shapeMatrix) {
+    canPlaceShape(startR, startC, shapeMatrix, terrain = null) {
         if (!this.state || !this.state.grid) return { can: false, reason: "NO_GRID" };
 
         const rows = shapeMatrix.length;
         const cols = shapeMatrix[0].length;
         const size = (this.state.stage && this.state.stage.size) ? this.state.stage.size : 5;
+
+        const targetGL = terrain ? (terrain.gl !== undefined ? terrain.gl : (terrain.terrain ? terrain.terrain.gl : null)) : null;
 
         // 1. 盤外および既配置マスとの重複判定
         for (let dr = 0; dr < rows; dr++) {
@@ -201,7 +204,7 @@ class GridEngine {
             }
         }
 
-        // 2. 隣接接続判定: 形状のいずれか1マスが既存配置領域（本営含む）と上下左右で接していれば配置許可
+        // 2. 隣接接続判定 ＆ 地勢レベル(GL)不適合チェック
         let isAdjacent = false;
         for (let dr = 0; dr < rows; dr++) {
             for (let dc = 0; dc < cols; dc++) {
@@ -213,16 +216,22 @@ class GridEngine {
                     ];
                     for (let [nr, nc] of neighbors) {
                         if (nr >= 0 && nr < size && nc >= 0 && nc < size) {
-                            if (this.state.grid[nr][nc].placed) {
+                            const neighborCell = this.state.grid[nr][nc];
+                            if (neighborCell.placed) {
                                 isAdjacent = true;
-                                break;
+
+                                // 🛡️ 気候断絶ルール: 砂漠(GL0) と 森林/深林/山岳(GL2以上) は直接隣接不可 (本営HQは全地勢接続可能)
+                                if (targetGL !== null && !neighborCell.isHQ && neighborCell.terrain) {
+                                    const placedGL = neighborCell.terrain.gl !== undefined ? neighborCell.terrain.gl : 1;
+                                    if ((targetGL === 0 && placedGL >= 2) || (targetGL >= 2 && placedGL === 0)) {
+                                        return { can: false, reason: "INVALID_GL_NEIGHBOR" };
+                                    }
+                                }
                             }
                         }
                     }
-                    if (isAdjacent) break;
                 }
             }
-            if (isAdjacent) break;
         }
 
         if (!isAdjacent) return { can: false, reason: "NOT_ADJACENT" };
@@ -236,7 +245,7 @@ class GridEngine {
         if (!this.state) return { can: false, reason: "NO_STATE" };
         if (this.state.hasPickedThisTurn) return { can: false, reason: "ALREADY_PICKED_THIS_TURN" };
 
-        const check = this.canPlaceShape(startR, startC, shapeMatrix);
+        const check = this.canPlaceShape(startR, startC, shapeMatrix, terrain);
         if (!check.can) return check;
 
         const rows = shapeMatrix.length;
@@ -500,12 +509,14 @@ class GridEngine {
             }
 
             const earnedFood = bonus.food || 0;
-            const earnedWood = bonus.wood || 0;
+            const earnedMaterial = bonus.material !== undefined ? bonus.material : (bonus.wood || 0);
+            const earnedWood = earnedMaterial;
             const earnedMystic = bonus.mystic || 0;
 
-            if (earnedFood > 0 || earnedWood > 0 || earnedMystic > 0) {
+            if (earnedFood > 0 || earnedMaterial > 0 || earnedMystic > 0) {
                 this.state.food += earnedFood;
-                this.state.wood += earnedWood;
+                this.state.wood = (this.state.wood || 0) + earnedMaterial;
+                this.state.material = this.state.wood;
                 this.state.mystic += earnedMystic;
 
                 let textParts = [];

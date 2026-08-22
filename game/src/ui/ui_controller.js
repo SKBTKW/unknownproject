@@ -22,6 +22,7 @@ class UIController {
         this.undoSys = (engine && engine.undoSys) ? engine.undoSys : (UndoLandSystem && this.state ? new UndoLandSystem(this.state) : null);
         this.selectedCard = null;
         this.selectedCardIdx = -1;
+        this.selectedReserveIdx = -1;
         this.pinnedPreviewCard = null;
 
         if (typeof window !== "undefined" && this.undoSys) {
@@ -67,6 +68,7 @@ class UIController {
                     undoSys.undo();
                     this.selectedCard = null;
                     this.selectedCardIdx = -1;
+        this.selectedReserveIdx = -1;
                     if (focusLayerManager) focusLayerManager.onCardDeselect();
                     this.render();
                     this.highlightPlaceableCells();
@@ -96,6 +98,7 @@ class UIController {
         if (!this.selectedCard && this.selectedCardIdx === -1) return;
         this.selectedCard = null;
         this.selectedCardIdx = -1;
+        this.selectedReserveIdx = -1;
         if (focusLayerManager) focusLayerManager.onCardDeselect();
         this.clearCellPreviews();
         this.render();
@@ -152,9 +155,9 @@ class UIController {
             BuffPanelComponent.mount(buffContainer);
         }
 
-        const badgeContainer = document.getElementById("territoryBadgeContainer") || document.querySelector(".board-container-wrapper");
+        const badgeContainer = document.getElementById("territoryBadgeContainer") || document.querySelector(".grid-board-anchor");
         const badgeComp = (typeof TerritoryBadgeComponent !== "undefined" && TerritoryBadgeComponent) ? TerritoryBadgeComponent : (typeof window !== "undefined" ? window.TerritoryBadgeComponent : null);
-        if (badgeComp && badgeContainer && !badgeContainer.hasChildNodes()) {
+        if (badgeComp && badgeContainer) {
             if (typeof badgeComp.mount === "function") {
                 badgeComp.mount(badgeContainer);
             }
@@ -171,6 +174,12 @@ class UIController {
         const boardWrapperEl = document.querySelector(".board-container-wrapper") || document.getElementById("gridBoard");
         if (boardCameraSystem && typeof boardCameraSystem.mount === "function") {
             boardCameraSystem.mount(boardWrapperEl, boardEl);
+        }
+
+        // ⚙️ 環境設定モーダル ＆ ヘッダーボタン初期化
+        const settingsSys = (typeof settingsModalInstance !== "undefined" && settingsModalInstance) ? settingsModalInstance : (typeof window !== "undefined" ? window.settingsModalInstance : null);
+        if (settingsSys && typeof settingsSys.mount === "function") {
+            settingsSys.mount();
         }
     }
 
@@ -236,8 +245,13 @@ class UIController {
             
             const placedCount = (typeof this.state.countPlacedTiles === "function") ? this.state.countPlacedTiles() : 1;
             const badgeComp = (typeof TerritoryBadgeComponent !== "undefined" && TerritoryBadgeComponent) ? TerritoryBadgeComponent : (typeof window !== "undefined" ? window.TerritoryBadgeComponent : null);
-            if (badgeComp && typeof badgeComp.update === "function") {
-                badgeComp.update(placedCount, this.state);
+            if (badgeComp) {
+                if (!document.getElementById("mainTerritoryBadge") && typeof badgeComp.mount === "function") {
+                    badgeComp.mount();
+                }
+                if (typeof badgeComp.update === "function") {
+                    badgeComp.update(placedCount, this.state.stage ? this.state.stage.maxTiles : 24, this.state.stage ? this.state.stage.id : 1);
+                }
             } else {
                 this.setElementText("valPlacedCount", `${placedCount}/24`);
             }
@@ -456,15 +470,160 @@ class UIController {
             }
         }
 
+        // 🎯 盤面エリアへのドラッグオーバー ＆ コマンドカードドロップ受付
+        boardEl.ondragover = (e) => {
+            if (this.state.hasPickedThisTurn) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "move";
+        };
+        boardEl.ondrop = (e) => {
+            if (this.state.hasPickedThisTurn) return;
+            e.preventDefault();
+            const cat = e.dataTransfer.getData("application/card-category");
+            const rawIdx = e.dataTransfer.getData("text/plain");
+            if (cat !== "LAND") {
+                if (rawIdx === "reserve_0") {
+                    const resCard = this.state.reserveSlots ? this.state.reserveSlots[0] : null;
+                    if (resCard) this.triggerCommandCardPlay(resCard, -1, 0);
+                } else {
+                    const droppedIdx = parseInt(rawIdx);
+                    if (!isNaN(droppedIdx) && droppedIdx >= 0 && droppedIdx < this.state.handOffering.length) {
+                        const cCard = this.state.handOffering[droppedIdx];
+                        if (cCard) this.triggerCommandCardPlay(cCard, droppedIdx, -1);
+                    }
+                }
+            }
+        };
+
         if (this.selectedCard) {
             this.highlightPlaceableCells();
+        }
+
+        // 🏷️ 土地グリッド描画完了後、バッジが親アンカーに存在することを保証
+        const badgeComp = (typeof TerritoryBadgeComponent !== "undefined" && TerritoryBadgeComponent) ? TerritoryBadgeComponent : (typeof window !== "undefined" ? window.TerritoryBadgeComponent : null);
+        if (badgeComp) {
+            if (!document.getElementById("mainTerritoryBadge") && typeof badgeComp.mount === "function") {
+                badgeComp.mount();
+            }
+            if (typeof badgeComp.update === "function") {
+                const placedCount = (typeof this.state.countPlacedTiles === "function") ? this.state.countPlacedTiles() : 1;
+                badgeComp.update(placedCount, this.state.stage ? this.state.stage.maxTiles : 24, this.state.stage ? this.state.stage.id : 1);
+            }
+        }
+    }
+
+    renderOfferingHeader(I18n) {
+        const offeringSection = document.querySelector(".offering-section");
+        if (!offeringSection) return;
+
+        let headerEl = offeringSection.querySelector(".section-title-offering");
+        if (!headerEl) {
+            headerEl = document.createElement("div");
+            headerEl.className = "section-title-offering section-title-offering-header";
+            offeringSection.insertBefore(headerEl, offeringSection.firstChild);
+        }
+
+        const titleText = I18n ? (I18n.t("UI_OFFERING_TITLE") || "手札オファリング") : "手札オファリング";
+        const canMulligan = !this.state.hasPickedThisTurn && !this.state.hasMulliganedThisTurn && this.state.ember >= 1;
+
+        headerEl.innerHTML = `
+            <div class="offering-header-left">
+                <span id="lblOfferingTitle" class="offering-title-label">${titleText}</span>
+            </div>
+            <div class="offering-header-center">
+                <button class="btn-mulligan-compact btn-mulligan-compact-styled" id="btnMulligan" ${canMulligan ? "" : "disabled style='opacity:0.45; cursor:not-allowed; filter:grayscale(0.8);'"}>
+                    <span>🔄 マリガン</span> <span class="btn-mulligan-ember-cost">🔥-1</span>
+                </button>
+            </div>
+            <div class="offering-header-right">
+                <span id="lblRotateHint" class="rotate-hint-pill">
+                    <kbd class="rotate-hint-kbd">R</kbd> 回転
+                </span>
+            </div>
+        `;
+
+        const btnMulligan = headerEl.querySelector("#btnMulligan");
+        if (btnMulligan && canMulligan) {
+            btnMulligan.onclick = () => this.handleMulliganClick(btnMulligan);
+        }
+    }
+
+    handleMulliganClick(btnMulligan) {
+        const settings = (typeof window !== "undefined" && window.gameSettings) ? window.gameSettings : null;
+        const confirmRequired = settings ? settings.get("mulliganConfirm") : true;
+
+        if (!confirmRequired) {
+            if (typeof window.mulligan === "function") {
+                window.mulligan();
+            } else if (this.engine && typeof this.engine.mulligan === "function") {
+                this.engine.mulligan();
+            }
+            return;
+        }
+
+        // 手札直上にインライン吹き出し (Popover) を表示
+        const parent = btnMulligan.parentElement;
+        const existingPopover = document.getElementById("mulliganPopover");
+        if (existingPopover) {
+            existingPopover.remove();
+            return;
+        }
+
+        const popover = document.createElement("div");
+        popover.id = "mulliganPopover";
+        popover.className = "mulligan-popover-box";
+        popover.innerHTML = `
+            <div class="mulligan-popover-title">
+                <span>🔄</span> 手札を引き直しますか？
+            </div>
+            <div class="mulligan-popover-desc">
+                🔥 残り火を 1 消費して新カード 3 枚を引き直します。
+            </div>
+            <label class="mulligan-popover-checkbox-label">
+                <input type="checkbox" id="chkSkipMulliganConfirm" class="mulligan-popover-checkbox">
+                次回から確認しない
+            </label>
+            <div class="mulligan-popover-actions">
+                <button id="btnCancelMulliganPop" class="mulligan-popover-btn-cancel">キャンセル</button>
+                <button id="btnConfirmMulliganPop" class="mulligan-popover-btn-confirm">引き直す (🔥-1)</button>
+            </div>
+        `;
+
+        parent.style.position = "relative";
+        parent.appendChild(popover);
+
+        const btnCancel = popover.querySelector("#btnCancelMulliganPop");
+        const btnConfirm = popover.querySelector("#btnConfirmMulliganPop");
+
+        if (btnCancel) btnCancel.onclick = () => popover.remove();
+        if (btnConfirm) {
+            btnConfirm.onclick = () => {
+                const chk = popover.querySelector("#chkSkipMulliganConfirm");
+                if (chk && chk.checked && settings) {
+                    settings.set("mulliganConfirm", false);
+                }
+                popover.remove();
+                if (typeof window.mulligan === "function") {
+                    window.mulligan();
+                } else if (this.engine && typeof this.engine.mulligan === "function") {
+                    this.engine.mulligan();
+                }
+            };
         }
     }
 
     renderOfferingCards(I18n) {
+        this.renderOfferingHeader(I18n);
+
         const cardRowEl = document.getElementById("cardRow");
         if (!cardRowEl || !this.state.handOffering) return;
         cardRowEl.innerHTML = "";
+
+        const isReserveEmpty = (!this.state.reserveSlots || this.state.reserveSlots[0] === null);
+
+        // 🃏 1. 左側: 手札カードコンテナ (3枚)
+        const handContainer = document.createElement("div");
+        handContainer.className = "cards-hand-container";
 
         this.state.handOffering.forEach((card, idx) => {
             if (!card) return;
@@ -474,11 +633,11 @@ class UIController {
                 blankEl.className = "card-frame-tcg locked";
                 blankEl.style.cssText = "background:#11141d; border:2px dashed #7f8c8d; border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center;";
                 blankEl.innerHTML = `<div style="font-size:28px; color:#e74c3c; font-weight:bold;">✖</div>`;
-                cardRowEl.appendChild(blankEl);
+                handContainer.appendChild(blankEl);
                 return;
             }
 
-            const isSelected = (this.selectedCardIdx === idx);
+            const isSelected = (this.selectedCardIdx === idx && this.selectedReserveIdx === -1);
             const isLocked = this.state.hasPickedThisTurn;
             const tObj = card.terrain || card;
             const category = tObj.category || "LAND";
@@ -500,8 +659,39 @@ class UIController {
 
             const cardEl = document.createElement("div");
             cardEl.className = `card-frame-tcg ${rarityClass} ${categoryClass} ${isSelected ? 'selected' : ''} ${isLocked ? 'locked' : ''} ${!costMet ? 'cost-disabled' : ''}`;
+            cardEl.setAttribute("draggable", !isLocked ? "true" : "false");
+            
+            // 🖱️ D&D ドラッグ開始
+            cardEl.ondragstart = (e) => {
+                if (isLocked) {
+                    e.preventDefault();
+                    return;
+                }
+                e.dataTransfer.setData("text/plain", idx.toString());
+                e.dataTransfer.setData("application/card-category", category);
+                e.dataTransfer.effectAllowed = "move";
+                cardEl.classList.add("card-dragging");
+            };
+            cardEl.ondragend = (e) => {
+                cardEl.classList.remove("card-dragging");
+                
+                // 🚀 コマンドカードを手札トレイの外（上方向・盤面側）へドラッグ＆ドロップ（上フリック）した時の発動
+                if (category !== "LAND" && !this.state.hasPickedThisTurn) {
+                    const offeringEl = document.querySelector(".offering-section") || document.getElementById("cardRow");
+                    if (offeringEl) {
+                        const rect = offeringEl.getBoundingClientRect();
+                        // マウス位置が手札ゾーンの上端より上、または左右の外側であれば発動
+                        if (e.clientY < rect.top || e.clientX < rect.left || e.clientX > rect.right) {
+                            this.triggerCommandCardPlay(card, idx, -1);
+                        }
+                    }
+                }
+            };
+
+            // 👆 クリック選択
             cardEl.onclick = (e) => {
                 e.stopPropagation();
+                this.selectedReserveIdx = -1;
                 this.selectCard(idx);
             };
             cardEl.oncontextmenu = (e) => {
@@ -525,9 +715,6 @@ class UIController {
                     <div class="tcg-yield-strip" style="font-size:16px; font-weight:bold; text-align:left; justify-content:flex-start; padding:8px 12px; width:100%; box-sizing:border-box;">
                         <span>${costBadgeText ? I18n.t("UI_CARD_COST_PREFIX", { cost: costBadgeText }) : I18n.t("UI_CMD_INSTANT_LABEL")}</span>
                     </div>
-                    <div class="tcg-action-controls" style="display:none;">
-                        <button class="tcg-reserve-btn-wireframe" onclick="event.stopPropagation(); reserveCard(${idx})">${I18n.t("UI_RESERVE_BTN")}</button>
-                    </div>
                 `;
             } else {
                 const y = tObj.yields || { food: tObj.food || 0, wood: tObj.wood || 0, defense: tObj.def || tObj.defense || 0, mystic: tObj.mystic || 0 };
@@ -538,7 +725,6 @@ class UIController {
                 const totD = (y.defense || 0) * tileCount;
                 const totM = (y.mystic || 0) * tileCount;
 
-                // 🎨 地形IDに応じたプレビューブロック色とネオンオーラ (配置時の盤面色と完全一致)
                 const tid = tObj.terrainId || tObj.id || "";
                 let blockBg = "#1abc9c";
                 let blockBorder = "#16a085";
@@ -570,7 +756,6 @@ class UIController {
                 }
                 shapeHtml += `</div>`;
 
-                // 🌾 産出表示: 30%拡大 ＆ 「産出:」カラー統一 (純白) ＆ 0 は非表示
                 const yieldParts = [];
                 if (totF > 0) yieldParts.push(`<span>🌾${totF}</span>`);
                 if (totW > 0) yieldParts.push(`<span>🧱${totW}</span>`);
@@ -590,58 +775,187 @@ class UIController {
                     <div class="tcg-yield-strip" style="padding:8px 10px; display:flex; align-items:center; justify-content:center;">
                         ${yieldText}
                     </div>
-                    <div class="tcg-action-controls" style="display:none;">
-                        <button class="tcg-reserve-btn-wireframe" onclick="event.stopPropagation(); reserveCard(${idx})">${I18n.t("UI_RESERVE_BTN")}</button>
-                    </div>
                 `;
             }
-            cardRowEl.appendChild(cardEl);
+            handContainer.appendChild(cardEl);
         });
+
+        cardRowEl.appendChild(handContainer);
+
+        // ⚡ 2. 中央: 縦セパレーター
+        const separator = document.createElement("div");
+        separator.className = "offering-reserve-separator";
+        cardRowEl.appendChild(separator);
+
+        // 📦 3. 右側: 保留スロット (1枠固定)
+        const reserveContainer = document.createElement("div");
+        reserveContainer.className = "reserve-slot-single-box";
+
+        const reserveCard = (this.state.reserveSlots && this.state.reserveSlots.length > 0) ? this.state.reserveSlots[0] : null;
+
+        if (reserveCard) {
+            const isReserveSelected = (this.selectedReserveIdx === 0);
+            const isLocked = this.state.hasPickedThisTurn;
+            const tObj = reserveCard.terrain || reserveCard;
+            const rCode = tObj.rarity || "C";
+            const cName = tObj.nameKey ? I18n.t(tObj.nameKey) : (tObj.id || "Card");
+
+            const y = tObj.yields || { food: tObj.food || 0, wood: tObj.wood || 0, defense: tObj.def || tObj.defense || 0, mystic: tObj.mystic || 0 };
+            const shapeMat = reserveCard.currentShape || tObj.shape || [[1]];
+            const tileCount = shapeMat.reduce((acc, row) => acc + row.reduce((a, b) => a + b, 0), 0);
+            const totF = (y.food || 0) * tileCount;
+            const totW = (y.wood || 0) * tileCount;
+            const totD = (y.defense || 0) * tileCount;
+            const totM = (y.mystic || 0) * tileCount;
+
+            const yieldParts = [];
+            if (totF > 0) yieldParts.push(`<span>🌾${totF}</span>`);
+            if (totW > 0) yieldParts.push(`<span>🧱${totW}</span>`);
+            if (totD > 0) yieldParts.push(`<span>🛡️${totD}</span>`);
+            if (totM > 0) yieldParts.push(`<span>✨${totM}</span>`);
+            const yieldContent = yieldParts.length > 0 ? yieldParts.join(" ") : `<span>-</span>`;
+
+            const rCardEl = document.createElement("div");
+            rCardEl.className = `card-frame-tcg reserve-card-hold ${isReserveSelected ? 'selected' : ''} ${isLocked ? 'locked' : ''}`;
+            rCardEl.setAttribute("draggable", !isLocked ? "true" : "false");
+            rCardEl.ondragstart = (e) => {
+                if (isLocked) { e.preventDefault(); return; }
+                e.dataTransfer.setData("text/plain", "reserve_0");
+                e.dataTransfer.setData("application/card-category", reserveCard.category || (reserveCard.terrain ? reserveCard.terrain.category : "LAND") || "LAND");
+                e.dataTransfer.effectAllowed = "move";
+                rCardEl.classList.add("card-dragging");
+            };
+            rCardEl.ondragend = (e) => {
+                rCardEl.classList.remove("card-dragging");
+                const resCat = reserveCard.category || (reserveCard.terrain ? reserveCard.terrain.category : "LAND") || "LAND";
+                if (resCat !== "LAND" && !this.state.hasPickedThisTurn) {
+                    const offeringEl = document.querySelector(".offering-section") || document.getElementById("cardRow");
+                    if (offeringEl) {
+                        const rect = offeringEl.getBoundingClientRect();
+                        if (e.clientY < rect.top || e.clientX < rect.left || e.clientX > rect.right) {
+                            this.triggerCommandCardPlay(reserveCard, -1, 0);
+                        }
+                    }
+                }
+            };
+            rCardEl.title = "保管カード (クリックで直接盤面に配置)";
+            rCardEl.onclick = (e) => {
+                e.stopPropagation();
+                this.selectReserveCard(0);
+            };
+            rCardEl.oncontextmenu = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.rotateReserveCard(e, 0);
+            };
+
+            rCardEl.innerHTML = `
+                <div class="reserve-hold-badge">HOLD</div>
+                <button class="btn-reserve-return-corner" title="手札へ戻す" onclick="event.stopPropagation(); window.ui.returnReserveCard(0)">↩</button>
+                <div class="tcg-card-top-bar" style="padding:4px 8px; display:flex; align-items:center; justify-content:space-between; gap:6px;">
+                    <div class="tcg-title-pill" style="font-size:20px; font-weight:900; text-align:center; flex:1; letter-spacing:0.5px; color:#f39c12; border-color:#f39c12;">${cName}</div>
+                    <div class="tcg-rarity-badge" style="background:#f39c12; color:#000;">${rCode}</div>
+                </div>
+                <div class="tcg-shape-art-area" style="display:flex; align-items:center; justify-content:center; padding:12px; flex:1; background:#201a13; border-radius:6px; margin:4px 0;">
+                    <div style="font-size:18px; font-weight:bold; color:#f39c12; letter-spacing:1px;">HOLD</div>
+                </div>
+                <div class="tcg-yield-strip" style="padding:8px 10px; display:flex; align-items:center; justify-content:center; color:#f39c12;">
+                    <span style="font-size:16px; font-weight:900;">${yieldContent}</span>
+                </div>
+            `;
+            reserveContainer.appendChild(rCardEl);
+        } else {
+            const emptySlotEl = document.createElement("div");
+            const canDepositSelected = (this.selectedCardIdx !== -1 && !this.state.hasPickedThisTurn);
+            emptySlotEl.className = `reserve-slot-empty ${canDepositSelected ? 'reserve-slot-can-deposit' : ''}`;
+            
+            emptySlotEl.innerHTML = `
+                <div class="reserve-slot-empty-label">HOLD</div>
+                <div class="reserve-slot-empty-sub">${canDepositSelected ? 'クリックで保留' : 'D&D または<br>選択後にクリック'}</div>
+            `;
+
+            // 👆 手札選択後に空スロットクリックで保留
+            emptySlotEl.onclick = (e) => {
+                e.stopPropagation();
+                if (this.selectedCardIdx !== -1 && !this.state.hasPickedThisTurn) {
+                    this.reserveCard(this.selectedCardIdx);
+                }
+            };
+
+            // 🖱️ D&D ドロップ受け入れ
+            emptySlotEl.ondragover = (e) => {
+                if (this.state.hasPickedThisTurn) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+            };
+            emptySlotEl.ondragenter = (e) => {
+                if (this.state.hasPickedThisTurn) return;
+                e.preventDefault();
+                emptySlotEl.classList.add("reserve-slot-drop-hover");
+            };
+            emptySlotEl.ondragleave = () => {
+                emptySlotEl.classList.remove("reserve-slot-drop-hover");
+            };
+            emptySlotEl.ondrop = (e) => {
+                if (this.state.hasPickedThisTurn) return;
+                e.preventDefault();
+                emptySlotEl.classList.remove("reserve-slot-drop-hover");
+                const rawIdx = e.dataTransfer.getData("text/plain");
+                const droppedIdx = parseInt(rawIdx);
+                if (!isNaN(droppedIdx) && droppedIdx >= 0 && droppedIdx < this.state.handOffering.length) {
+                    this.reserveCard(droppedIdx);
+                }
+            };
+
+            reserveContainer.appendChild(emptySlotEl);
+        }
+
+        cardRowEl.appendChild(reserveContainer);
     }
 
     renderReserveSlots(I18n) {
-        const reserveRowEl = document.getElementById("reserveRow");
-        if (!reserveRowEl || !this.state.reserveSlots) return;
-        reserveRowEl.innerHTML = "";
+        // 右端へ統合済み
+    }
+    selectReserveCard(reserveIdx = 0) {
+        if (!this.state || this.state.hasPickedThisTurn) return;
+        if (!this.state.reserveSlots || !this.state.reserveSlots[reserveIdx]) return;
 
-        for (let i = 0; i < 3; i++) {
-            const card = this.state.reserveSlots[i];
-            if (card) {
-                const cName = I18n.t(card.terrain.nameKey);
-                const cardEl = document.createElement("div");
-                cardEl.className = "card-frame-tcg rarity-c";
-
-                const ry = card.terrain.yields || card.terrain;
-                const rParts = [];
-                if ((ry.food || 0) > 0) rParts.push(`<span>🌾: ${ry.food}</span>`);
-                if ((ry.wood || 0) > 0) rParts.push(`<span>🧱: ${ry.wood}</span>`);
-                if ((ry.defense || 0) > 0) rParts.push(`<span>🛡️: ${ry.defense}</span>`);
-                if ((ry.mystic || 0) > 0) rParts.push(`<span>✨: ${ry.mystic}</span>`);
-                const rYieldText = rParts.length > 0 ? rParts.join(" ") : `<span>-</span>`;
-
-                cardEl.innerHTML = `
-                    <div class="tcg-card-top-bar">
-                        <div class="tcg-title-pill" style="border-color:#d35400;">${cName}</div>
-                        <div class="tcg-rarity-code" style="color:#d35400;">C</div>
-                    </div>
-                    <div class="tcg-shape-art-area" style="background:#fff3e0;">
-                        <div style="width:12px;height:12px;background:#e67e22;border-radius:2px;"></div>
-                    </div>
-                    <div class="tcg-yield-strip" style="background:#fff3e0;">
-                        ${rYieldText}
-                    </div>
-                    <div class="tcg-action-controls">
-                        <button class="tcg-reserve-btn-wireframe" style="background:#e67e22;" onclick="event.stopPropagation(); returnReserveCard(${i})">${I18n.t("UI_RESERVE_RETURN_BTN")}</button>
-                    </div>
-                `;
-                reserveRowEl.appendChild(cardEl);
-            } else {
-                const emptySlotEl = document.createElement("div");
-                emptySlotEl.className = "reserve-slot";
-                emptySlotEl.style.cssText = "width:115px; height:172.5px; aspect-ratio:2/3; background:#12141c; border:2px dashed #34495e; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:11px; color:#7f8c8d; margin:0 auto;";
-                emptySlotEl.innerText = I18n.t("UI_RESERVE_EMPTY", { slot: i + 1 });
-                reserveRowEl.appendChild(emptySlotEl);
+        if (this.selectedReserveIdx === reserveIdx) {
+            const resCard = this.state.reserveSlots[reserveIdx];
+            const tObj = resCard.terrain || resCard;
+            const category = resCard.category || tObj.category || "LAND";
+            if (category !== "LAND") {
+                this.triggerCommandCardPlay(resCard, -1, reserveIdx);
+                return;
             }
+            this.selectedCard = null;
+            this.selectedCardIdx = -1;
+            this.selectedReserveIdx = -1;
+            if (focusLayerManager) focusLayerManager.onCardDeselect();
+            this.render();
+            this.highlightPlaceableCells();
+            return;
+        }
+
+        this.selectedCard = this.state.reserveSlots[reserveIdx];
+        this.selectedCardIdx = -1;
+        this.selectedReserveIdx = reserveIdx;
+        if (focusLayerManager) focusLayerManager.onCardSelect();
+        this.render();
+        this.highlightPlaceableCells();
+    }
+
+    rotateReserveCard(e, reserveIdx = 0) {
+        if (!this.state || this.state.hasPickedThisTurn) return;
+        const card = this.state.reserveSlots[reserveIdx];
+        if (!card) return;
+
+        const currentShape = card.currentShape || (card.terrain ? card.terrain.shape : [[1]]);
+        const rotated = rotateShapeMatrix(currentShape);
+        card.currentShape = rotated;
+        this.render();
+        if (this.selectedReserveIdx === reserveIdx) {
+            this.highlightPlaceableCells();
         }
     }
 
@@ -663,44 +977,25 @@ class UIController {
         }
     }
 
-    selectCard(idx) {
+    triggerCommandCardPlay(card, idx = -1, reserveIdx = -1) {
         if (!this.state || this.state.hasPickedThisTurn) return;
-        const card = this.state.handOffering[idx];
-        if (!card || card.isBlank) return;
+        const tObj = card.terrain || card;
+        const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
+        const cName = tObj.nameKey ? I18n.t(tObj.nameKey) : (tObj.id || "Card");
+        const cDesc = tObj.descriptionKey ? I18n.t(tObj.descriptionKey) : "";
 
-        if (this.selectedCardIdx === idx) {
-            this.selectedCard = null;
-            this.selectedCardIdx = -1;
-            if (focusLayerManager) focusLayerManager.onCardDeselect();
-            this.render();
-            this.highlightPlaceableCells();
-            return;
+        let costBadgeText = "";
+        if (tObj.cost) {
+            const c = tObj.cost;
+            const parts = [];
+            if (c.food) parts.push(`🌾-${c.food}`);
+            if (c.wood) parts.push(`🧱-${c.wood}`);
+            if (c.mystic) parts.push(`✨-${c.mystic}`);
+            if (c.ember) parts.push(`🔥-${c.ember}`);
+            costBadgeText = parts.join(" ");
         }
 
-        this.selectedCard = card;
-        this.selectedCardIdx = idx;
-        if (focusLayerManager) focusLayerManager.onCardSelect();
-        this.render();
-        this.highlightPlaceableCells();
-
-        const tObj = card.terrain || card;
-        const category = card.category || tObj.category || "LAND";
-        if (category !== "LAND" && typeof window !== "undefined" && window.ModalSystem) {
-            const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
-            const cName = tObj.nameKey ? I18n.t(tObj.nameKey) : (tObj.id || "Card");
-            const cDesc = tObj.descriptionKey ? I18n.t(tObj.descriptionKey) : "";
-
-            let costBadgeText = "";
-            if (tObj.cost) {
-                const c = tObj.cost;
-                const parts = [];
-                if (c.food) parts.push(`🌾-${c.food}`);
-                if (c.wood) parts.push(`🧱-${c.wood}`);
-                if (c.mystic) parts.push(`✨-${c.mystic}`);
-                if (c.ember) parts.push(`🔥-${c.ember}`);
-                costBadgeText = parts.join(" ");
-            }
-
+        if (typeof window !== "undefined" && window.ModalSystem) {
             window.ModalSystem.showConfirmDialog({
                 title: `📜 ${cName} を発動しますか？`,
                 descText: cDesc,
@@ -709,17 +1004,58 @@ class UIController {
                 cancelLabel: "✖ キャンセル",
                 onConfirm: () => {
                     this.playCommandCard(card, idx);
+                    if (reserveIdx !== -1 && this.state.reserveSlots) {
+                        this.state.reserveSlots[reserveIdx] = null;
+                    }
                     this.selectedCard = null;
                     this.selectedCardIdx = -1;
+                    this.selectedReserveIdx = -1;
+                    if (focusLayerManager) focusLayerManager.onCardDeselect();
                     this.render();
                 },
                 onCancel: () => {
                     this.selectedCard = null;
                     this.selectedCardIdx = -1;
+                    this.selectedReserveIdx = -1;
+                    if (focusLayerManager) focusLayerManager.onCardDeselect();
                     this.render();
+                    this.highlightPlaceableCells();
                 }
             });
         }
+    }
+
+    selectCard(idx) {
+        if (!this.state || this.state.hasPickedThisTurn) return;
+        const card = this.state.handOffering[idx];
+        if (!card || card.isBlank) return;
+
+        const tObj = card.terrain || card;
+        const category = card.category || tObj.category || "LAND";
+
+        // 🔄 選択中のカードを再度クリックした場合:
+        // コマンドカードなら発動確認ダイアログを開く、土地カードなら選択解除
+        if (this.selectedCardIdx === idx) {
+            if (category !== "LAND") {
+                this.triggerCommandCardPlay(card, idx, -1);
+                return;
+            }
+            this.selectedCard = null;
+            this.selectedCardIdx = -1;
+            this.selectedReserveIdx = -1;
+            if (focusLayerManager) focusLayerManager.onCardDeselect();
+            this.render();
+            this.highlightPlaceableCells();
+            return;
+        }
+
+        // 1回目のクリック: 純粋な選択状態にする (保留可能にする)
+        this.selectedCard = card;
+        this.selectedCardIdx = idx;
+        this.selectedReserveIdx = -1;
+        if (focusLayerManager) focusLayerManager.onCardSelect();
+        this.render();
+        this.highlightPlaceableCells();
     }
 
     rotateSelectedCard(e, idx) {
@@ -757,6 +1093,7 @@ class UIController {
             undoSys.undo();
             this.selectedCard = null;
             this.selectedCardIdx = -1;
+        this.selectedReserveIdx = -1;
             if (focusLayerManager) focusLayerManager.onCardDeselect();
             this.render();
             this.highlightPlaceableCells();
@@ -764,6 +1101,13 @@ class UIController {
         }
 
         if (!this.selectedCard || this.state.hasPickedThisTurn) return;
+
+        const tObjCheck = this.selectedCard.terrain || this.selectedCard;
+        const catCheck = this.selectedCard.category || tObjCheck.category || "LAND";
+        if (catCheck !== "LAND") {
+            this.triggerCommandCardPlay(this.selectedCard, this.selectedCardIdx, this.selectedReserveIdx);
+            return;
+        }
 
         const shape = this.selectedCard.currentShape || this.selectedCard.shape || [[1]];
         const terrain = this.selectedCard.terrain || this.selectedCard;
@@ -788,8 +1132,12 @@ class UIController {
         const res = (typeof this.state.placeShape === "function") ? this.state.placeShape(r, c, shape, terrain, currentIdx) : { can: false };
 
         if (res === true || (res && (res.can || res.success))) {
+            if (this.selectedReserveIdx !== -1 && this.state.reserveSlots) {
+                this.state.reserveSlots[this.selectedReserveIdx] = null;
+            }
             this.selectedCard = null;
             this.selectedCardIdx = -1;
+            this.selectedReserveIdx = -1;
             if (focusLayerManager) focusLayerManager.onCardDeselect();
             if (typeof this.state.checkMergePatterns === "function") {
                 this.state.checkMergePatterns();
@@ -871,6 +1219,21 @@ class UIController {
     }
 
     highlightPlaceableCells() {
+        if (!this.selectedCard) {
+            if (typeof window !== "undefined" && window.BlockPlacementSystem) {
+                window.BlockPlacementSystem.clearAllPreviews();
+            }
+            return;
+        }
+        const tObj = this.selectedCard.terrain || this.selectedCard;
+        const category = this.selectedCard.category || tObj.category || "LAND";
+        if (category !== "LAND") {
+            // 🛡️ コマンドカード選択時は土地配置ハイライトを完全停止
+            if (typeof window !== "undefined" && window.BlockPlacementSystem) {
+                window.BlockPlacementSystem.clearAllPreviews();
+            }
+            return;
+        }
         if (typeof window !== "undefined" && window.BlockPlacementSystem) {
             window.BlockPlacementSystem.highlightPlaceableCandidates(this.selectedCard, this.state);
         }
@@ -931,7 +1294,7 @@ class UIController {
             title = `🌱 ${tName} [${coordStr}]${placedTag}`;
 
             let tf = (t.food !== undefined) ? t.food : ((t.baseYieldsPerTile && t.baseYieldsPerTile.food) || (t.yields && t.yields.food) || 0);
-            let tw = (t.wood !== undefined) ? t.wood : ((t.baseYieldsPerTile && t.baseYieldsPerTile.wood) || (t.yields && t.yields.wood) || 0);
+            let tw = (t.material !== undefined) ? t.material : ((t.wood !== undefined) ? t.wood : ((t.baseYieldsPerTile && (t.baseYieldsPerTile.material || t.baseYieldsPerTile.wood)) || (t.yields && (t.yields.material || t.yields.wood)) || 0));
             let td = (t.defense !== undefined) ? t.defense : ((t.baseYieldsPerTile && t.baseYieldsPerTile.defense) || (t.yields && t.yields.defense) || 0);
             let tm = (t.mystic !== undefined) ? t.mystic : ((t.baseYieldsPerTile && t.baseYieldsPerTile.mystic) || (t.yields && t.yields.mystic) || 0);
 
@@ -941,7 +1304,7 @@ class UIController {
                 const s = cell.socketResource;
                 const sName = I18n.t(s.nameKey || "SOCKET_RESOURCE");
                 tf += s.bonusFood || 0;
-                tw += s.bonusWood || 0;
+                tw += (s.bonusMaterial !== undefined ? s.bonusMaterial : (s.bonusWood || 0));
                 td += s.bonusDefense || 0;
                 tm += s.bonusMystic || 0;
                 bonusParts.push(`★${sName}`);
@@ -998,50 +1361,58 @@ class UIController {
         if (this.state.hasPickedThisTurn || this.state.hasMulliganedThisTurn || this.state.ember < 1) return;
 
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
-        const modalSys = (typeof window !== "undefined" && window.ModalSystem) ? window.ModalSystem : (typeof ModalSystem !== "undefined" ? ModalSystem : null);
 
-        const executeMulligan = () => {
-            if (this.engine && typeof this.engine.mulligan === "function") {
-                const res = this.engine.mulligan();
-                if (res && res.success) {
-                    this.selectedCard = null;
-                    this.selectedCardIdx = -1;
-                    this.render();
-                }
-                return;
+        if (this.engine && typeof this.engine.mulligan === "function") {
+            const res = this.engine.mulligan();
+            if (res && res.success) {
+                this.selectedCard = null;
+                this.selectedCardIdx = -1;
+        this.selectedReserveIdx = -1;
+                this.render();
             }
-            this.state.ember -= 1;
-            this.state.hasMulliganedThisTurn = true;
-            if (this.drawSys) {
-                this.drawSys.generateOfferingCards();
-            }
-            this.selectedCard = null;
-            this.selectedCardIdx = -1;
-            if (typeof this.state.addLog === "function") {
-                this.state.addLog(I18n.t("LOG_MULLIGAN_EXECUTED") || "🎲 マリガン実行: 🔥 -1 を消費して手札を再抽選しました。");
-            }
-            this.render();
-        };
-
-        if (modalSys && typeof modalSys.showConfirmDialog === "function") {
-            modalSys.showConfirmDialog({
-                title: "🔄 マリガンを実行しますか？",
-                descText: "手札オファリングを全て引き直します。<br><small style='color:#a4b0be; font-size:12px;'>（1ターン内1度きり）</small>",
-                confirmLabel: "🔄 引き直す (🔥-1)",
-                cancelLabel: "✖ キャンセル",
-                onConfirm: executeMulligan,
-                onCancel: () => {}
-            });
-        } else {
-            executeMulligan();
+            return;
         }
+
+        this.state.ember -= 1;
+        this.state.hasMulliganedThisTurn = true;
+        if (this.drawSys) {
+            this.drawSys.generateOfferingCards();
+        }
+        this.selectedCard = null;
+        this.selectedCardIdx = -1;
+        this.selectedReserveIdx = -1;
+        if (typeof this.state.addLog === "function") {
+            this.state.addLog(I18n.t("LOG_MULLIGAN_EXECUTED") || "🎲 マリガン実行: 🔥 -1 を消費して手札を再抽選しました。");
+        }
+        this.render();
     }
 
     nextTurn() {
+        const settings = (typeof window !== "undefined" && window.gameSettings) ? window.gameSettings : null;
+        const warningRequired = settings ? settings.get("turnEndWarning") : true;
+
+        if (warningRequired && this.state && !this.state.hasPickedThisTurn) {
+            const modalSys = (typeof window !== "undefined" && window.ModalSystem) ? window.ModalSystem : null;
+            if (modalSys && typeof modalSys.showConfirmation === "function") {
+                modalSys.showConfirmation({
+                    title: "⚠️ 土地カードが未配置です",
+                    message: "今ターンはまだ土地カードを配置していません。このままターンを終了しますか？",
+                    confirmText: "ターン終了",
+                    cancelText: "戻る",
+                    onConfirm: () => this.executeNextTurn()
+                });
+                return;
+            }
+        }
+        this.executeNextTurn();
+    }
+
+    executeNextTurn() {
         if (this.engine && typeof this.engine.nextTurn === "function") {
             this.engine.nextTurn();
             this.selectedCard = null;
             this.selectedCardIdx = -1;
+        this.selectedReserveIdx = -1;
             this.render();
             return;
         }
@@ -1053,6 +1424,7 @@ class UIController {
         this.drawSys.generateOfferingCards();
         this.selectedCard = null;
         this.selectedCardIdx = -1;
+        this.selectedReserveIdx = -1;
 
         // 📜 初期ログと同一のダイレクトログ描画
         if (typeof window !== "undefined" && window.LogComponent) {
@@ -1067,6 +1439,7 @@ class UIController {
         if (typeof this.state.moveToReserve === "function" && this.state.moveToReserve(idx)) {
             this.selectedCard = null;
             this.selectedCardIdx = -1;
+        this.selectedReserveIdx = -1;
             this.render();
         }
     }
@@ -1076,18 +1449,32 @@ class UIController {
         if (typeof this.state.returnFromReserve === "function" && this.state.returnFromReserve(idx)) {
             this.selectedCard = null;
             this.selectedCardIdx = -1;
+        this.selectedReserveIdx = -1;
             this.render();
         }
     }
 
     playCommandCard(card, targetIdx) {
         if (!this.state || this.state.hasPickedThisTurn) return;
-        if (typeof this.state.playCommandCard === "function") {
-            this.state.playCommandCard(card.terrain || card);
-            let cardIdx = (typeof targetIdx === "number" && targetIdx >= 0) ? targetIdx : this.state.handOffering.indexOf(card);
-            if (cardIdx !== -1) this.state.handOffering[cardIdx] = null;
-            this.render();
+        const deckMgr = this.state.deckManager || (this.engine ? this.engine.deckManager : null);
+        const cardObj = card.terrain || card;
+        let cardIdx = (typeof targetIdx === "number" && targetIdx >= 0) ? targetIdx : (this.state.handOffering ? this.state.handOffering.indexOf(card) : -1);
+
+        if (deckMgr && typeof deckMgr.playCommandCard === "function") {
+            deckMgr.playCommandCard(cardObj, null, cardIdx, this.selectedReserveIdx);
+        } else if (typeof this.state.playCommandCard === "function") {
+            this.state.playCommandCard(cardObj, null, cardIdx, this.selectedReserveIdx);
         }
+
+        if (cardIdx !== -1 && this.state.handOffering) {
+            this.state.handOffering[cardIdx] = { isBlank: true, originalCard: card, id: `blank_${cardIdx}_${Date.now()}` };
+            this.state.hasPickedThisTurn = true;
+        }
+        if (this.selectedReserveIdx !== -1 && this.state.reserveSlots) {
+            this.state.reserveSlots[this.selectedReserveIdx] = null;
+            this.state.hasPickedThisTurn = true;
+        }
+        this.render();
     }
 
     toggleDirectiveModal() {

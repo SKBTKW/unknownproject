@@ -23,6 +23,7 @@ import { V2UIRenderer } from './ui/v2_ui_renderer.js';
 import { UIController } from './ui/ui_controller.js';
 import { FocusLayerManager, focusLayerManager } from './ui/focus_layer_system.js';
 import { BoardCameraSystem, boardCameraSystem } from './ui/board_camera_system.js';
+import { GameSettings, gameSettings, SettingsModalSystem, settingsModalInstance } from './ui/settings_modal_system.js';
 
 export {
     I18n,
@@ -51,7 +52,11 @@ export {
     FocusLayerManager,
     focusLayerManager,
     BoardCameraSystem,
-    boardCameraSystem
+    boardCameraSystem,
+    GameSettings,
+    gameSettings,
+    SettingsModalSystem,
+    settingsModalInstance
 };
 
 console.log('🎮 [App] Clean True ES Modules Master Entrypoint Loaded Successfully.');

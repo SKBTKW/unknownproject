@@ -326,41 +326,58 @@ class DeckManager {
     /**
      * 📜 コマンドカードの発動処理
      */
-    playCommandCard(cardObj, targetTile = null) {
+    playCommandCard(cardObj, targetTile = null, handIdx = -1, reserveIdx = -1) {
         if (!this.state || !cardObj || cardObj.category === "LAND") return { success: false, reason: "NOT_A_COMMAND_CARD" };
 
         const cost = cardObj.cost || {};
+        const matCost = cost.material !== undefined ? cost.material : (cost.wood || 0);
+        const curMat = this.state.material !== undefined ? this.state.material : (this.state.wood || 0);
+
         if (cost.food && this.state.food < cost.food) return { success: false, reason: "NOT_ENOUGH_FOOD" };
-        if (cost.wood && this.state.wood < cost.wood) return { success: false, reason: "NOT_ENOUGH_WOOD" };
+        if (matCost > 0 && curMat < matCost) return { success: false, reason: "NOT_ENOUGH_MATERIAL" };
         if (cost.mystic && this.state.mystic < cost.mystic) return { success: false, reason: "NOT_ENOUGH_MYSTIC" };
         if (cost.ember && this.state.ember < cost.ember) return { success: false, reason: "NOT_ENOUGH_EMBER" };
 
         if (cost.food) this.state.food -= cost.food;
-        if (cost.wood) this.state.wood -= cost.wood;
+        if (matCost > 0) {
+            this.state.wood = Math.max(0, (this.state.wood || 0) - matCost);
+            this.state.material = this.state.wood;
+        }
         if (cost.mystic) this.state.mystic -= cost.mystic;
         if (cost.ember) this.state.ember -= cost.ember;
 
         const cId = cardObj.id;
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' && window.I18n ? window.I18n : { t: k => k });
-        const cName = I18n.t(cardObj.nameKey) || cardObj.id;
+        const cName = I18n.t(cardObj.nameKey) || I18n.t(`${cardObj.id}_NAME`) || I18n.t(cardObj.id) || cardObj.id;
+
+        // 🎴 発動スロットの消費（手札の場合は空きスロット化、保留の場合は空スロット化）
+        if (handIdx >= 0 && this.state.handOffering && this.state.handOffering[handIdx]) {
+            this.state.handOffering[handIdx] = { isBlank: true, originalCard: cardObj, id: `blank_${handIdx}_${Date.now()}` };
+            this.state.hasPickedThisTurn = true;
+        } else if (reserveIdx >= 0 && this.state.reserveSlots) {
+            this.state.reserveSlots[reserveIdx] = null;
+            this.state.hasPickedThisTurn = true;
+        }
 
         if (cId === "CMD_AGRICULTURAL_POLICY") {
-            // 🌾 農地改革: コスト 🧱-20 (永続ステータス変更のみ、BuffSystemからは除外)
+            // 🌾 農地改革: コスト 🧱-20
             this.state.permanentPlainsFoodBonus = (this.state.permanentPlainsFoodBonus || 0) + 1;
-            this.state.addLog(`📜 農地改革を発動！ コスト (🧱-20) を支払い、全草原マスの産出を 🌾+1/T 永続加算！`);
+            this.state.addLog(`📜【${cName}】発動 (コスト: 🧱-20) ➔ 全ての草原マスの食料産出が 🌾+1/T 永続加算されました！`);
         } else if (cId === "CMD_BLACK_MARKET") {
+            // 💰 闇市場の一括売却: コスト 🌾-25
             this.state.wood += 35;
             this.state.mystic += 10;
-            this.state.addLog(I18n.t("LOG_CMD_BLACK_MARKET") || `📜 ${cName}を発動！ 🧱+35 ＆ ✨+10 を獲得！`);
+            this.state.addLog(`📜【${cName}】発動 (コスト: 🌾-25) ➔ 🧱+35 ＆ ✨+10 を一括獲得しました！`);
         } else if (cId === "CMD_IRON_RAMPART") {
-            // 🛡️ 鉄壁の防壁構築: 永続防衛力加算のみ、BuffSystemからは除外
+            // 🛡️ 鉄壁の防壁構築: コスト 🧱-20
             this.state.defense += 25;
             this.state.permanentVicinityDefenseBonus = (this.state.permanentVicinityDefenseBonus || 0) + 2;
-            this.state.addLog(I18n.t("LOG_CMD_IRON_RAMPART") || `🛡️ ${cName}を発動！ グローバル防衛力 🛡️+25 獲得！`);
+            this.state.addLog(`🛡️【${cName}】発動 (コスト: 🧱-20) ➔ 防衛力 🛡️+25 獲得 ＆ 本営近郊8マスの防衛力が 🛡️+2/T 永続加算されました！`);
         } else if (cId === "CMD_BALLISTA_SET") {
+            // 🏹 迎撃用弩砲陣地: コスト 🧱-30
             this.state.defense += 40;
             this.state.nextTrialDamageMitigation = 0.5;
-            this.state.activeBuffs.push({
+            this.state.addBuff({
                 id: cId,
                 name: "🏹 大型バリスタ配備",
                 shortName: "防衛+40/軽減50%",
@@ -369,11 +386,12 @@ class DeckManager {
                 badgeText: "試練対策",
                 category: "CARD_EFFECT"
             });
-            this.state.addLog(I18n.t("LOG_CMD_BALLISTA_SET") || `🛡️ ${cName}を発動！ 🛡️+40 ＆ 次試練被ダメ50%軽減！`);
+            this.state.addLog(`🏹【${cName}】発動 (コスト: 🧱-30) ➔ 防衛力 🛡️+40 獲得 ＆ 次回の試練被ダメージを 50% 軽減（半減無効化）！`);
         } else if (cId === "CMD_REKINDLE_EMBER") {
+            // ✨ 残り火の聖なる再燃: コスト ✨-10
             this.state.ember = Math.min(20, this.state.ember + 3);
             this.state.reserveFeeWaivedTurns = 3;
-            this.state.activeBuffs.push({
+            this.state.addBuff({
                 id: cId,
                 name: "✨ 残り火の再点火",
                 shortName: "保留費無料化",
@@ -383,28 +401,32 @@ class DeckManager {
                 category: "CARD_EFFECT",
                 remainingTurns: 3
             });
-            this.state.addLog(I18n.t("LOG_CMD_REKINDLE_EMBER") || `✨ ${cName}を発動！ 残り火 🔥+3 回復 ＆ 保留費3T無料化！`);
+            this.state.addLog(`✨【${cName}】発動 (コスト: ✨-10) ➔ 残り火 🔥+3 回復 ＆ 3ターンの間手札保留スロット利用料を無料化しました！`);
         } else if (cId === "CMD_TRANSMUTE_GOLDEN") {
+            // 💎 黄金秘境への変容: コスト ✨-20
             if (targetTile && targetTile.r !== undefined && targetTile.c !== undefined && this.state.grid) {
                 const cell = this.state.grid[targetTile.r][targetTile.c];
                 cell.socketResource = { nameKey: "SOCKET_SACRED_VEIN", bonusMystic: 5, bonusEmber: 1 };
-                this.state.addLog(I18n.t("LOG_CMD_TRANSMUTE_GOLDEN") || `✨ ${cName}を発動！ 土地を聖なる光脈 (✨+5 🔥+1/T) へ変容！`);
+                this.state.addLog(`💎【${cName}】発動 (コスト: ✨-20) ➔ 土地 (${targetTile.r}, ${targetTile.c}) を聖なる光脈 (✨+5 ＆ 🔥+1/T) へ変容しました！`);
             } else {
                 this.state.mystic += 10;
-                this.state.addLog(I18n.t("LOG_CMD_TRANSMUTE_GOLDEN") || `✨ ${cName}を発動！ ✨+10 獲得！`);
+                this.state.addLog(`💎【${cName}】発動 (コスト: ✨-20) ➔ ✨+10 を獲得しました！`);
             }
         } else if (cId === "FAC_GREAT_WINDMILL") {
+            // 🏛️ 大風車工房の建設: コスト 🧱-15
             if (!this.state.activeConstructionProjects) this.state.activeConstructionProjects = [];
             this.state.activeConstructionProjects.push({ name: "FAC_GREAT_WINDMILL", remainingTurns: 3, woodCostPerTurn: 4 });
-            this.state.addLog(I18n.t("LOG_FAC_GREAT_WINDMILL") || `🏛️ ${cName}の建設を開始！ 3T継続投資へ`);
+            this.state.addLog(`🏛️【${cName}】発動 (コスト: 🧱-15) ➔ 大風車の建設を開始しました (3ターン継続投資)！`);
         } else if (cId === "LGD_DESPERATE_PACT") {
+            // 📜 背水の盟約: コスト なし
             this.state.ember = Math.min(20, this.state.ember + 5);
             this.state.handOfferingSize = 4;
             this.state.nextTrialMultiplier = 1.5;
-            this.state.addLog(I18n.t("LOG_LGD_DESPERATE_PACT") || `📜 ${cName}を発動！ 🔥+5 ＆ 手札オファリング枠が永久に4枚へ拡張！`);
+            this.state.addLog(`🔥【${cName}】発動 ➔ 残り火 🔥+5 獲得 ＆ 手札オファリング枠が永久に4枚へ拡張されました！`);
         } else if (cId === "CMD_LAND_FOCUS") {
+            // 📜 土地探索重視: コスト 🌾-10 🧱-10
             this.state.activeDrawBias = { targetCategory: "LAND", type: "UNTIL_BLOCKS", untilValue: 6 };
-            this.state.activeBuffs.push({
+            this.state.addBuff({
                 id: cId,
                 name: "📜 土地探索注力",
                 shortName: "土地確率2倍",
@@ -413,10 +435,11 @@ class DeckManager {
                 badgeText: "ドロー制御",
                 category: "CARD_EFFECT"
             });
-            this.state.addLog(I18n.t("LOG_CMD_LAND_FOCUS") || `📜 ${cName}を発動！ 盤面6ブロック到達まで土地出現率2倍！`);
+            this.state.addLog(`📜【${cName}】発動 (コスト: 🌾-10 🧱-10) ➔ 盤面6ブロック到達まで土地出現率が 2倍 になりました！`);
         } else if (cId === "CMD_MILITARY_FOCUS") {
+            // ⚔️ 軍事重視: コスト 🧱-20
             this.state.activeDrawBias = { targetCategory: "MILITARY", type: "UNTIL_DEFENSE", untilValue: 20 };
-            this.state.activeBuffs.push({
+            this.state.addBuff({
                 id: cId,
                 name: "🛡️ 軍備強化注力",
                 shortName: "軍事確率2倍",
@@ -425,10 +448,11 @@ class DeckManager {
                 badgeText: "ドロー制御",
                 category: "CARD_EFFECT"
             });
-            this.state.addLog(I18n.t("LOG_CMD_MILITARY_FOCUS") || `🛡️ ${cName}を発動！ 防衛力20到達まで軍事出現率2倍！`);
+            this.state.addLog(`⚔️【${cName}】発動 (コスト: 🧱-20) ➔ 防衛力20到達まで軍事カード出現率が 2倍 になりました！`);
         } else if (cId === "CMD_MYSTIC_FOCUS") {
+            // ✨ 神秘重視: コスト 🔥-1
             this.state.activeDrawBias = { targetCategory: "MYSTIC", type: "TURNS", remainingTurns: 3 };
-            this.state.activeBuffs.push({
+            this.state.addBuff({
                 id: cId,
                 name: "✨ 神秘探求注力",
                 shortName: "神秘確率2倍",
@@ -438,7 +462,7 @@ class DeckManager {
                 category: "CARD_EFFECT",
                 remainingTurns: 3
             });
-            this.state.addLog(I18n.t("LOG_CMD_MYSTIC_FOCUS") || `✨ ${cName}を発動！ 3ターンの間神秘出現率2倍！`);
+            this.state.addLog(`✨【${cName}】発動 (コスト: 🔥-1) ➔ 3ターンの間、神秘カード出現率が 2倍 になりました！`);
         } else if (cId === "CMD_LAND_EXPLORATION") {
             const candidates = [];
             if (this.state.grid) {

@@ -26,14 +26,15 @@
                     if (cell.placed && !cell.isHQ && cell.terrain) {
                         const t = cell.terrain;
                         const tf = (t.food !== undefined) ? t.food : ((t.baseYieldsPerTile && t.baseYieldsPerTile.food) || (t.yields && t.yields.food) || 0);
-                        const tw = (t.wood !== undefined) ? t.wood : ((t.baseYieldsPerTile && t.baseYieldsPerTile.wood) || (t.yields && t.yields.wood) || 0);
+                        const tw = (t.material !== undefined) ? t.material : ((t.wood !== undefined) ? t.wood : ((t.baseYieldsPerTile && (t.baseYieldsPerTile.material || t.baseYieldsPerTile.wood)) || (t.yields && (t.yields.material || t.yields.wood)) || 0));
                         const tm = (t.mystic !== undefined) ? t.mystic : ((t.baseYieldsPerTile && t.baseYieldsPerTile.mystic) || (t.yields && t.yields.mystic) || 0);
 
                         if (cell.mergeGroupId) {
                             const gid = cell.mergeGroupId;
-                            if (!groupSums[gid]) groupSums[gid] = { food: 0, wood: 0, mystic: 0 };
+                            if (!groupSums[gid]) groupSums[gid] = { food: 0, wood: 0, material: 0, mystic: 0 };
                             groupSums[gid].food += tf;
                             groupSums[gid].wood += tw;
+                            groupSums[gid].material += tw;
                             groupSums[gid].mystic += tm;
                         } else {
                             foodTiles += tf;
@@ -43,7 +44,7 @@
 
                         if (cell.socketResource) {
                             foodSockets += cell.socketResource.bonusFood || 0;
-                            woodSockets += cell.socketResource.bonusWood || 0;
+                            woodSockets += (cell.socketResource.bonusMaterial !== undefined ? cell.socketResource.bonusMaterial : (cell.socketResource.bonusWood || 0));
                             mysticSockets += cell.socketResource.bonusMystic || 0;
                         }
 
@@ -103,9 +104,10 @@
 
             const totalFood = Math.floor((10 + foodTiles + foodSockets + foodVicinity + plainsBuffBonus) * foodMult * buffFoodMult);
             const totalWood = Math.floor((10 + woodTiles + woodSockets + woodVicinity) * woodMult * buffWoodMult);
+            const totalMaterial = totalWood;
             const totalMystic = Math.floor((1 + mysticTiles + mysticSockets + mysticVicinity + flatMysticBonus) * mysticMult * buffMysticMult);
 
-            return { totalFood, totalWood, totalMystic };
+            return { totalFood, totalWood, totalMaterial, totalMystic };
         }
 
         static calculateTotalDefense(state) {
@@ -143,15 +145,16 @@
                     if (cell.placed && !cell.isHQ && cell.terrain) {
                         const t = cell.terrain;
                         const tf = (t.food !== undefined) ? t.food : ((t.baseYieldsPerTile && t.baseYieldsPerTile.food) || (t.yields && t.yields.food) || 0);
-                        const tw = (t.wood !== undefined) ? t.wood : ((t.baseYieldsPerTile && t.baseYieldsPerTile.wood) || (t.yields && t.yields.wood) || 0);
+                        const tw = (t.material !== undefined) ? t.material : ((t.wood !== undefined) ? t.wood : ((t.baseYieldsPerTile && (t.baseYieldsPerTile.material || t.baseYieldsPerTile.wood)) || (t.yields && (t.yields.material || t.yields.wood)) || 0));
                         const td = (t.defense !== undefined) ? t.defense : ((t.baseYieldsPerTile && t.baseYieldsPerTile.defense) || (t.yields && t.yields.defense) || 0);
                         const tm = (t.mystic !== undefined) ? t.mystic : ((t.baseYieldsPerTile && t.baseYieldsPerTile.mystic) || (t.yields && t.yields.mystic) || 0);
 
                         if (cell.mergeGroupId) {
                             const gid = cell.mergeGroupId;
-                            if (!groupSums[gid]) groupSums[gid] = { food: 0, wood: 0, defense: 0, mystic: 0 };
+                            if (!groupSums[gid]) groupSums[gid] = { food: 0, wood: 0, material: 0, defense: 0, mystic: 0 };
                             groupSums[gid].food += tf;
                             groupSums[gid].wood += tw;
+                            groupSums[gid].material += tw;
                             groupSums[gid].defense += td;
                             groupSums[gid].mystic += tm;
                         } else {
@@ -163,7 +166,7 @@
 
                         if (cell.socketResource) {
                             foodSockets += cell.socketResource.bonusFood || 0;
-                            woodSockets += cell.socketResource.bonusWood || 0;
+                            woodSockets += (cell.socketResource.bonusMaterial !== undefined ? cell.socketResource.bonusMaterial : (cell.socketResource.bonusWood || 0));
                             defenseSockets += cell.socketResource.bonusDefense || 0;
                             mysticSockets += cell.socketResource.bonusMystic || 0;
                         }

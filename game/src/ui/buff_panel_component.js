@@ -71,7 +71,7 @@
                     <span id="buffSummaryCountText">✨ 発動中のバフ (0)</span>
                     <div class="buff-pills-preview" id="buffPillsPreview"></div>
                 </div>
-                <span class="buff-toggle-arrow" id="buffToggleArrow">▼</span>
+                <span class="buff-toggle-arrow" id="buffToggleArrow">△</span>
             `;
 
             this.masterEl.appendChild(this.dropupPanelEl);
@@ -171,7 +171,7 @@
             this.isOpen = !this.isOpen;
             this.dropupPanelEl.style.display = this.isOpen ? "flex" : "none";
             if (this.arrowEl) {
-                this.arrowEl.innerText = this.isOpen ? "▲" : "▼";
+                this.arrowEl.innerText = this.isOpen ? "▽" : "△";
             }
         }
     }

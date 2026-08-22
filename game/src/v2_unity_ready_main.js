@@ -10,7 +10,8 @@ class GameState {
         this.turn = dependencies.turn !== undefined ? dependencies.turn : 1;
         this.ember = dependencies.ember !== undefined ? dependencies.ember : 20;
         this.food = dependencies.food !== undefined ? dependencies.food : 30;
-        this.wood = dependencies.wood !== undefined ? dependencies.wood : 30;
+        this.wood = dependencies.material !== undefined ? dependencies.material : (dependencies.wood !== undefined ? dependencies.wood : 30);
+        this.material = this.wood;
         this.defense = dependencies.defense !== undefined ? dependencies.defense : 10;
         this.mystic = dependencies.mystic !== undefined ? dependencies.mystic : 0;
 
@@ -45,8 +46,8 @@ class GameState {
 
         this.grid = this.initGrid(5);
         this.handOffering = [];
-            this.reserveSlots = [null, null, null];
-            this.gameLogs = [];
+        this.reserveSlots = [null];
+        this.gameLogs = [];
             this.toastQueue = [];
             this.hasPickedThisTurn = false;
             this.hasMulliganedThisTurn = false;
@@ -179,8 +180,8 @@ class GameState {
             return count;
         }
 
-        canPlaceShape(startR, startC, shapeMatrix) {
-            if (this.gridEngine) return this.gridEngine.canPlaceShape(startR, startC, shapeMatrix);
+        canPlaceShape(startR, startC, shapeMatrix, terrain = null) {
+            if (this.gridEngine) return this.gridEngine.canPlaceShape(startR, startC, shapeMatrix, terrain);
             return { can: false, reason: "NO_GRID_ENGINE" };
         }
 
@@ -268,9 +269,45 @@ class GameState {
             return false;
         }
 
+        playCommandCard(cardObj, targetTile = null, handIdx = -1, reserveIdx = -1) {
+            if (this.deckManager) return this.deckManager.playCommandCard(cardObj, targetTile, handIdx, reserveIdx);
+            return { success: false, reason: "NO_DECK_MANAGER" };
+        }
+
         mulligan() {
             if (this.deckManager) return this.deckManager.mulligan();
             return { success: false, reason: "NO_DECK_MANAGER" };
+        }
+
+        addBuff(buffDef) {
+            if (this.buffSystem && typeof this.buffSystem.addBuff === "function") {
+                return this.buffSystem.addBuff(buffDef);
+            }
+            if (!this.activeBuffs) this.activeBuffs = [];
+            const idx = this.activeBuffs.findIndex(b => b.id === buffDef.id);
+            if (idx !== -1) {
+                this.activeBuffs[idx] = Object.assign({}, this.activeBuffs[idx], buffDef);
+            } else {
+                this.activeBuffs.push(Object.assign({}, buffDef));
+            }
+            return true;
+        }
+
+        removeBuff(buffId) {
+            if (this.buffSystem && typeof this.buffSystem.removeBuff === "function") {
+                return this.buffSystem.removeBuff(buffId);
+            }
+            if (!this.activeBuffs) return false;
+            const initLen = this.activeBuffs.length;
+            this.activeBuffs = this.activeBuffs.filter(b => b.id !== buffId);
+            return this.activeBuffs.length < initLen;
+        }
+
+        getAllBuffs() {
+            if (this.buffSystem && typeof this.buffSystem.getDisplayBuffs === "function") {
+                return this.buffSystem.getDisplayBuffs();
+            }
+            return this.activeBuffs || [];
         }
     }
 

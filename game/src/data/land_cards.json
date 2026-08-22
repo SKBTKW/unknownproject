@@ -6,8 +6,18 @@
     "category": "LAND",
     "gl": 1,
     "e": 1,
-    "yields": { "food": 4, "wood": 0, "defense": 0, "mystic": 0 },
-    "shape": [[1]],
+    "yields": {
+      "food": 4,
+      "wood": 0,
+      "defense": 0,
+      "mystic": 0,
+      "material": 0
+    },
+    "shape": [
+      [
+        1
+      ]
+    ],
     "minStage": 1,
     "reqE2": 0,
     "rarity": "C",
@@ -21,8 +31,19 @@
     "category": "LAND",
     "gl": 1,
     "e": 1,
-    "yields": { "food": 4, "wood": 0, "defense": 0, "mystic": 0 },
-    "shape": [[1, 1]],
+    "yields": {
+      "food": 4,
+      "wood": 0,
+      "defense": 0,
+      "mystic": 0,
+      "material": 0
+    },
+    "shape": [
+      [
+        1,
+        1
+      ]
+    ],
     "minStage": 1,
     "reqE2": 0,
     "rarity": "C",
@@ -36,8 +57,20 @@
     "category": "LAND",
     "gl": 1,
     "e": 1,
-    "yields": { "food": 4, "wood": 0, "defense": 0, "mystic": 0 },
-    "shape": [[1, 1, 1]],
+    "yields": {
+      "food": 4,
+      "wood": 0,
+      "defense": 0,
+      "mystic": 0,
+      "material": 0
+    },
+    "shape": [
+      [
+        1,
+        1,
+        1
+      ]
+    ],
     "minStage": 2,
     "reqE2": 0,
     "rarity": "R",
@@ -51,8 +84,23 @@
     "category": "LAND",
     "gl": 1,
     "e": 1,
-    "yields": { "food": 4, "wood": 0, "defense": 0, "mystic": 0 },
-    "shape": [[1, 0], [1, 1]],
+    "yields": {
+      "food": 4,
+      "wood": 0,
+      "defense": 0,
+      "mystic": 0,
+      "material": 0
+    },
+    "shape": [
+      [
+        1,
+        0
+      ],
+      [
+        1,
+        1
+      ]
+    ],
     "minStage": 2,
     "reqE2": 0,
     "rarity": "R",
@@ -66,8 +114,25 @@
     "category": "LAND",
     "gl": 1,
     "e": 1,
-    "yields": { "food": 4, "wood": 0, "defense": 0, "mystic": 0 },
-    "shape": [[0, 1, 0], [1, 1, 1]],
+    "yields": {
+      "food": 4,
+      "wood": 0,
+      "defense": 0,
+      "mystic": 0,
+      "material": 0
+    },
+    "shape": [
+      [
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        1,
+        1
+      ]
+    ],
     "minStage": 3,
     "reqE2": 0,
     "rarity": "R",
@@ -81,8 +146,25 @@
     "category": "LAND",
     "gl": 1,
     "e": 1,
-    "yields": { "food": 4, "wood": 0, "defense": 0, "mystic": 0 },
-    "shape": [[1, 0, 0], [1, 1, 1]],
+    "yields": {
+      "food": 4,
+      "wood": 0,
+      "defense": 0,
+      "mystic": 0,
+      "material": 0
+    },
+    "shape": [
+      [
+        1,
+        0,
+        0
+      ],
+      [
+        1,
+        1,
+        1
+      ]
+    ],
     "minStage": 3,
     "reqE2": 0,
     "rarity": "R",
@@ -96,8 +178,23 @@
     "category": "LAND",
     "gl": 1,
     "e": 1,
-    "yields": { "food": 4, "wood": 0, "defense": 0, "mystic": 0 },
-    "shape": [[1, 1], [1, 1]],
+    "yields": {
+      "food": 4,
+      "wood": 0,
+      "defense": 0,
+      "mystic": 0,
+      "material": 0
+    },
+    "shape": [
+      [
+        1,
+        1
+      ],
+      [
+        1,
+        1
+      ]
+    ],
     "minStage": 3,
     "reqE2": 0,
     "rarity": "UR",
@@ -111,8 +208,18 @@
     "category": "LAND",
     "gl": 2,
     "e": 1,
-    "yields": { "food": 2, "wood": 2, "defense": 2, "mystic": 0 },
-    "shape": [[1]],
+    "yields": {
+      "food": 2,
+      "wood": 2,
+      "defense": 2,
+      "mystic": 0,
+      "material": 2
+    },
+    "shape": [
+      [
+        1
+      ]
+    ],
     "minStage": 1,
     "reqE2": 0,
     "rarity": "C",
@@ -126,15 +233,25 @@
     "category": "LAND",
     "gl": 2,
     "e": 1,
-    "yields": { "food": 2, "wood": 2, "defense": 2, "mystic": 0 },
-    "shape": [[1, 1]],
+    "yields": {
+      "food": 2,
+      "wood": 2,
+      "defense": 2,
+      "mystic": 0,
+      "material": 2
+    },
+    "shape": [
+      [
+        1,
+        1
+      ]
+    ],
     "minStage": 1,
     "reqE2": 0,
     "rarity": "UC",
     "weight": 0.08,
     "descriptionKey": "CARD_DESC_FOREST_1X2"
   },
-
   {
     "id": "CARD_DEEP_FOREST_1X1",
     "terrainId": "GL3_DEEP_FOREST",
@@ -142,8 +259,18 @@
     "category": "LAND",
     "gl": 3,
     "e": 1,
-    "yields": { "food": 1, "wood": 3, "defense": 3, "mystic": 1 },
-    "shape": [[1]],
+    "yields": {
+      "food": 1,
+      "wood": 3,
+      "defense": 3,
+      "mystic": 1,
+      "material": 3
+    },
+    "shape": [
+      [
+        1
+      ]
+    ],
     "minStage": 1,
     "reqE2": 0,
     "rarity": "R",
@@ -157,8 +284,19 @@
     "category": "LAND",
     "gl": 3,
     "e": 1,
-    "yields": { "food": 1, "wood": 3, "defense": 3, "mystic": 1 },
-    "shape": [[1, 1]],
+    "yields": {
+      "food": 1,
+      "wood": 3,
+      "defense": 3,
+      "mystic": 1,
+      "material": 3
+    },
+    "shape": [
+      [
+        1,
+        1
+      ]
+    ],
     "minStage": 2,
     "reqE2": 0,
     "rarity": "R",
@@ -172,12 +310,22 @@
     "category": "LAND",
     "gl": 1,
     "e": 2,
-    "yields": { "food": 2, "wood": 1, "defense": 1, "mystic": 0 },
-    "shape": [[1]],
+    "yields": {
+      "food": 2,
+      "wood": 1,
+      "defense": 1,
+      "mystic": 0,
+      "material": 1
+    },
+    "shape": [
+      [
+        1
+      ]
+    ],
     "minStage": 1,
     "reqE2": 0,
     "rarity": "UC",
-    "weight": 0.50,
+    "weight": 0.5,
     "descriptionKey": "CARD_DESC_HILL_1X1"
   },
   {
@@ -187,8 +335,19 @@
     "category": "LAND",
     "gl": 1,
     "e": 2,
-    "yields": { "food": 2, "wood": 1, "defense": 1, "mystic": 0 },
-    "shape": [[1, 1]],
+    "yields": {
+      "food": 2,
+      "wood": 1,
+      "defense": 1,
+      "mystic": 0,
+      "material": 1
+    },
+    "shape": [
+      [
+        1,
+        1
+      ]
+    ],
     "minStage": 1,
     "reqE2": 0,
     "rarity": "UC",
@@ -202,8 +361,23 @@
     "category": "LAND",
     "gl": 1,
     "e": 2,
-    "yields": { "food": 2, "wood": 1, "defense": 1, "mystic": 0 },
-    "shape": [[1, 0], [1, 1]],
+    "yields": {
+      "food": 2,
+      "wood": 1,
+      "defense": 1,
+      "mystic": 0,
+      "material": 1
+    },
+    "shape": [
+      [
+        1,
+        0
+      ],
+      [
+        1,
+        1
+      ]
+    ],
     "minStage": 2,
     "reqE2": 0,
     "rarity": "R",
@@ -217,12 +391,22 @@
     "category": "LAND",
     "gl": 0,
     "e": 3,
-    "yields": { "food": 0, "wood": 3, "defense": 5, "mystic": 1 },
-    "shape": [[1]],
+    "yields": {
+      "food": 0,
+      "wood": 3,
+      "defense": 5,
+      "mystic": 1,
+      "material": 3
+    },
+    "shape": [
+      [
+        1
+      ]
+    ],
     "minStage": 2,
     "reqE2": 3,
     "rarity": "R",
-    "weight": 0.20,
+    "weight": 0.2,
     "descriptionKey": "CARD_DESC_MOUNTAIN_1X1"
   },
   {
@@ -232,8 +416,19 @@
     "category": "LAND",
     "gl": 0,
     "e": 3,
-    "yields": { "food": 0, "wood": 3, "defense": 5, "mystic": 1 },
-    "shape": [[1, 1]],
+    "yields": {
+      "food": 0,
+      "wood": 3,
+      "defense": 5,
+      "mystic": 1,
+      "material": 3
+    },
+    "shape": [
+      [
+        1,
+        1
+      ]
+    ],
     "minStage": 2,
     "reqE2": 3,
     "rarity": "R",
@@ -247,8 +442,20 @@
     "category": "LAND",
     "gl": 0,
     "e": 3,
-    "yields": { "food": 0, "wood": 3, "defense": 5, "mystic": 1 },
-    "shape": [[1, 1, 1]],
+    "yields": {
+      "food": 0,
+      "wood": 3,
+      "defense": 5,
+      "mystic": 1,
+      "material": 3
+    },
+    "shape": [
+      [
+        1,
+        1,
+        1
+      ]
+    ],
     "minStage": 2,
     "reqE2": 3,
     "rarity": "R",
@@ -262,8 +469,18 @@
     "category": "LAND",
     "gl": 0,
     "e": 1,
-    "yields": { "food": 0, "wood": 0, "defense": 0, "mystic": 5 },
-    "shape": [[1]],
+    "yields": {
+      "food": 0,
+      "wood": 0,
+      "defense": 0,
+      "mystic": 5,
+      "material": 0
+    },
+    "shape": [
+      [
+        1
+      ]
+    ],
     "minStage": 1,
     "reqE2": 0,
     "rarity": "R",
@@ -277,8 +494,19 @@
     "category": "LAND",
     "gl": 0,
     "e": 1,
-    "yields": { "food": 0, "wood": 0, "defense": 0, "mystic": 5 },
-    "shape": [[1, 1]],
+    "yields": {
+      "food": 0,
+      "wood": 0,
+      "defense": 0,
+      "mystic": 5,
+      "material": 0
+    },
+    "shape": [
+      [
+        1,
+        1
+      ]
+    ],
     "minStage": 2,
     "reqE2": 0,
     "rarity": "UR",
@@ -292,8 +520,19 @@
     "category": "LAND",
     "gl": 0,
     "e": 2,
-    "yields": { "food": 0, "wood": 1, "defense": 1, "mystic": 2 },
-    "shape": [[1, 1]],
+    "yields": {
+      "food": 0,
+      "wood": 1,
+      "defense": 1,
+      "mystic": 2,
+      "material": 1
+    },
+    "shape": [
+      [
+        1,
+        1
+      ]
+    ],
     "minStage": 2,
     "reqE2": 0,
     "rarity": "R",
@@ -307,12 +546,23 @@
     "category": "LAND",
     "gl": 2,
     "e": 2,
-    "yields": { "food": 1, "wood": 4, "defense": 4, "mystic": 0 },
-    "shape": [[1, 1]],
+    "yields": {
+      "food": 1,
+      "wood": 4,
+      "defense": 4,
+      "mystic": 0,
+      "material": 4
+    },
+    "shape": [
+      [
+        1,
+        1
+      ]
+    ],
     "minStage": 2,
     "reqE2": 0,
     "rarity": "R",
-    "weight": 0.10,
+    "weight": 0.1,
     "descriptionKey": "CARD_DESC_FOREST_HILL_1X2"
   },
   {
@@ -322,8 +572,19 @@
     "category": "LAND",
     "gl": 3,
     "e": 2,
-    "yields": { "food": 1, "wood": 5, "defense": 6, "mystic": 1 },
-    "shape": [[1, 1]],
+    "yields": {
+      "food": 1,
+      "wood": 5,
+      "defense": 6,
+      "mystic": 1,
+      "material": 5
+    },
+    "shape": [
+      [
+        1,
+        1
+      ]
+    ],
     "minStage": 2,
     "reqE2": 0,
     "rarity": "UR",
@@ -334,12 +595,14 @@
     "id": "CMD_AGRICULTURAL_POLICY",
     "nameKey": "CMD_AGRICULTURAL_POLICY_NAME",
     "category": "ECONOMY",
-    "cost": { "wood": 20 },
+    "cost": {
+      "wood": 20
+    },
     "reqWood": 20,
     "reqPlains": 1,
     "minStage": 1,
     "rarity": "R",
-    "weight": 0.20,
+    "weight": 0.2,
     "isUnique": true,
     "descriptionKey": "CMD_AGRICULTURAL_POLICY_DESC"
   },
@@ -347,7 +610,9 @@
     "id": "CMD_BLACK_MARKET",
     "nameKey": "CMD_BLACK_MARKET_NAME",
     "category": "ECONOMY",
-    "cost": { "food": 25 },
+    "cost": {
+      "food": 25
+    },
     "reqFood": 25,
     "minStage": 2,
     "rarity": "R",
@@ -359,11 +624,13 @@
     "id": "CMD_IRON_RAMPART",
     "nameKey": "CMD_IRON_RAMPART_NAME",
     "category": "MILITARY",
-    "cost": { "wood": 20 },
+    "cost": {
+      "wood": 20
+    },
     "reqWood": 20,
     "minStage": 2,
     "rarity": "UC",
-    "weight": 0.40,
+    "weight": 0.4,
     "isUnique": false,
     "descriptionKey": "CMD_IRON_RAMPART_DESC"
   },
@@ -371,7 +638,9 @@
     "id": "CMD_BALLISTA_SET",
     "nameKey": "CMD_BALLISTA_SET_NAME",
     "category": "MILITARY",
-    "cost": { "wood": 30 },
+    "cost": {
+      "wood": 30
+    },
     "reqWood": 30,
     "reqHillOrMountain": true,
     "minStage": 2,
@@ -384,12 +653,14 @@
     "id": "CMD_REKINDLE_EMBER",
     "nameKey": "CMD_REKINDLE_EMBER_NAME",
     "category": "MYSTIC",
-    "cost": { "mystic": 10 },
+    "cost": {
+      "mystic": 10
+    },
     "reqMystic": 10,
     "maxEmber": 5,
     "minStage": 1,
     "rarity": "UC",
-    "weight": 0.30,
+    "weight": 0.3,
     "isUnique": false,
     "descriptionKey": "CMD_REKINDLE_EMBER_DESC"
   },
@@ -397,7 +668,9 @@
     "id": "CMD_TRANSMUTE_GOLDEN",
     "nameKey": "CMD_TRANSMUTE_GOLDEN_NAME",
     "category": "MYSTIC",
-    "cost": { "mystic": 20 },
+    "cost": {
+      "mystic": 20
+    },
     "reqMystic": 20,
     "reqUnmergedDesertOrMountain": true,
     "minStage": 2,
@@ -410,9 +683,13 @@
     "id": "FAC_GREAT_WINDMILL",
     "nameKey": "FAC_GREAT_WINDMILL_NAME",
     "category": "FACILITY",
-    "cost": { "wood": 15 },
+    "cost": {
+      "wood": 15
+    },
     "reqWood": 15,
-    "costPerTurn": { "wood": 4 },
+    "costPerTurn": {
+      "wood": 4
+    },
     "duration": 3,
     "minStage": 2,
     "rarity": "R",
@@ -424,7 +701,9 @@
     "id": "LGD_DESPERATE_PACT",
     "nameKey": "LGD_DESPERATE_PACT_NAME",
     "category": "LEGEND",
-    "cost": { "mystic": 25 },
+    "cost": {
+      "mystic": 25
+    },
     "reqMystic": 25,
     "reqStage2End": true,
     "minStage": 2,
@@ -437,7 +716,10 @@
     "id": "CMD_LAND_FOCUS",
     "nameKey": "CMD_LAND_FOCUS_NAME",
     "category": "ECONOMY",
-    "cost": { "food": 10, "wood": 10 },
+    "cost": {
+      "food": 10,
+      "wood": 10
+    },
     "reqFood": 10,
     "reqWood": 10,
     "maxPlacedBlocks": 5,
@@ -445,7 +727,7 @@
     "biasUntilBlocks": 6,
     "minStage": 1,
     "rarity": "C",
-    "weight": 0.40,
+    "weight": 0.4,
     "isUnique": false,
     "descriptionKey": "CMD_LAND_FOCUS_DESC"
   },
@@ -453,14 +735,16 @@
     "id": "CMD_MILITARY_FOCUS",
     "nameKey": "CMD_MILITARY_FOCUS_NAME",
     "category": "MILITARY",
-    "cost": { "wood": 20 },
+    "cost": {
+      "wood": 20
+    },
     "reqWood": 20,
     "maxDefense": 20,
     "biasTarget": "MILITARY",
     "biasUntilDefense": 20,
     "minStage": 1,
     "rarity": "UC",
-    "weight": 0.30,
+    "weight": 0.3,
     "isUnique": false,
     "descriptionKey": "CMD_MILITARY_FOCUS_DESC"
   },
@@ -468,7 +752,9 @@
     "id": "CMD_MYSTIC_FOCUS",
     "nameKey": "CMD_MYSTIC_FOCUS_NAME",
     "category": "MYSTIC",
-    "cost": { "ember": 1 },
+    "cost": {
+      "ember": 1
+    },
     "maxMystic": 30,
     "biasTarget": "MYSTIC",
     "biasDurationTurns": 3,

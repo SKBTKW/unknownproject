@@ -70,7 +70,7 @@
                     <!-- ✨ 盤面直上: モジュール化 上方向トグル展開バフコンテナ -->
                     <div id="buffComponentContainer"></div>
 
-                    <!-- 🎯 土地グリッド専用アンカーラッパー (右下隅に領土バッジを吸着) -->
+                    <!-- 🎯 土地グリッド専用アンカーラッパー (グリッド板に100%追従) -->
                     <div class="grid-board-anchor grid-anchor-box">
                         <div id="gridBoard" class="grid-with-headers"></div>
                         <!-- 🏷️ 土地グリッド枠の右下隅に直接吸着・完全追従 -->
@@ -81,8 +81,19 @@
 
             <!-- 🃏 [Layer 3: Player Action Tray Area] 画面下部・浮遊操作トレイ層 (z-index: 500) -->
             <div id="layerPlayerTray" class="layer-player-tray layer-player-tray-anchor">
-                <!-- 🃏 画面左下隅: 手札ドローカード選択エリア (ヘッダー・マリガンはUIControllerが動的描画) -->
+                <!-- 🃏 画面左下隅: 手札ドローカード選択エリア (pointer-events: auto) -->
                 <div class="offering-section pointer-events-auto">
+                    <div class="section-title-offering section-title-offering-header">
+                        <div class="header-data-item">
+                            <span id="lblOfferingTitle" class="offering-title-label">手札オファリング</span>
+                            <span id="lblRotateHint" class="rotate-hint-pill">
+                                <kbd class="rotate-hint-kbd">R</kbd> 回転
+                            </span>
+                        </div>
+                        <button class="btn-mulligan-compact btn-mulligan-compact-styled" onclick="mulligan()" id="btnMulligan">
+                            <span>🔄 マリガン</span> <span class="btn-mulligan-ember-cost">🔥-1</span>
+                        </button>
+                    </div>
                     <div id="cardRow" class="cards-row-wrapper"></div>
                 </div>
 
@@ -141,7 +152,7 @@
 
     <!-- 🌐 True ES Module Single Entrypoint Bootstrap (Zero-Latency Instant Launch) -->
     <script type="module">
-        import { GameEngine, UIController, UndoLandSystem, BuffSystem, TerritoryBadgeComponent, ModalSystem, FocusLayerManager, BoardCameraSystem, SettingsModalSystem, settingsModalInstance, gameSettings } from './src/app.js?v=20260823_v94';
+        import { GameEngine, UIController, UndoLandSystem, BuffSystem, TerritoryBadgeComponent, ModalSystem, FocusLayerManager, BoardCameraSystem } from './src/app.js?v=20260822_v77';
 
         function bootstrap() {
             // 🎮 GameEngine ＆ UIController の完全モジュールマウント起動 (ゼロ遅延・即時起動 - Stage 1: 5x5 標準復元)
