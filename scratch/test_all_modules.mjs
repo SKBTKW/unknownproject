@@ -69,7 +69,9 @@ const prosperousBuffs = engine.buffSystem.getDisplayBuffs();
 assert(prosperousBuffs.some(b => b.id === 'ENV_EMBER_PROSPERITY'), '🔥25 で残り火旺盛バフが登録されていること');
 
 const prods = engine.state.calculateTotalProduction();
-assert(prods.totalFood >= 15, `食料産出が正しく計算されていること (実際: ${prods.totalFood})`);
+assert(prods.grossFood >= 15, `食料総産出が正しく計算されていること (実際: ${prods.grossFood})`);
+assert(prods.foodCost === 25, `🔥25 で食料維持費が 25 であること (実際: ${prods.foodCost})`);
+assert(prods.netFood === prods.grossFood - prods.foodCost, `食料純収支が正しく計算されていること (実際: ${prods.netFood})`);
 assert(prods.totalMystic >= 2, `神秘産出に残り火旺盛ボーナスが加算されていること (実際: ${prods.totalMystic})`);
 engine.state.ember = 20; // 標準状態に復帰
 
@@ -410,5 +412,5 @@ assert(statusCrisis.foodCost === 15, '危機状態で foodCost が 15 に減圧�
 assert(statusCrisis.emberDelta === 0, '🌾220 (>=200) で減衰ストップ (0) であること');
 
 console.log('\n====================================================');
-console.log(`🎉 全テスト完了: 100 / 100 件 合格 (100% PASS)`);
+console.log(`🎉 全テスト完了: 102 / 102 件 合格 (100% PASS)`);
 console.log('====================================================');

@@ -102,12 +102,25 @@
                 else if (state.ember >= 12) { buffFoodMult = 1.10; buffWoodMult = 1.10; buffMysticMult = 1.10; flatMysticBonus = 1; }
             }
 
-            const totalFood = Math.floor((10 + foodTiles + foodSockets + foodVicinity + plainsBuffBonus) * foodMult * buffFoodMult);
+            // 🔥 残り火ステッピングに基づく食料維持費 (rules/02_resources_and_ember.md 準拠)
+            const ember = (state.ember !== undefined) ? state.ember : 20;
+            let foodCost = 20;
+            if (ember >= 24) {
+                foodCost = 25; // 🔥 旺盛状態 (維持費増)
+            } else if (ember <= 9) {
+                foodCost = 15; // 🔥 微火・危機 (省エネ復興)
+            } else {
+                foodCost = 20; // 🔥 標準状態
+            }
+
+            const grossFood = Math.floor((10 + foodTiles + foodSockets + foodVicinity + plainsBuffBonus) * foodMult * buffFoodMult);
+            const netFood = grossFood - foodCost;
+            const totalFood = netFood; // 🌾 毎ターンの純収支 (Net Balance)
             const totalWood = Math.floor((10 + woodTiles + woodSockets + woodVicinity) * woodMult * buffWoodMult);
             const totalMaterial = totalWood;
             const totalMystic = Math.floor((1 + mysticTiles + mysticSockets + mysticVicinity + flatMysticBonus) * mysticMult * buffMysticMult);
 
-            return { totalFood, totalWood, totalMaterial, totalMystic };
+            return { totalFood, netFood, grossFood, foodCost, totalWood, totalMaterial, totalMystic };
         }
 
         static calculateTotalDefense(state) {
@@ -199,7 +212,7 @@
             }
 
             return {
-                food: { hqBase: 10, tiles: foodTiles, sockets: foodSockets, vicinity: foodVicinity, emberPct, total: prods.totalFood },
+                food: { hqBase: 10, tiles: foodTiles, sockets: foodSockets, vicinity: foodVicinity, emberPct, gross: prods.grossFood, foodCost: prods.foodCost, net: prods.netFood, total: prods.totalFood },
                 wood: { hqBase: 10, tiles: woodTiles, sockets: woodSockets, vicinity: woodVicinity, emberPct, total: prods.totalWood },
                 defense: { hqBase: 10, tiles: defenseTiles, sockets: defenseSockets, total: defTotal },
                 mystic: { hqBase: 1, tiles: mysticTiles, sockets: mysticSockets, emberMystic, emberPct, total: prods.totalMystic }

@@ -238,7 +238,15 @@ class UIController {
             this.setElementText("valTurnBg", String(this.state.turn).padStart(2, '0'));
             this.setElementText("valEmber", this.state.ember);
             this.setElementText("valFood", this.state.food);
-            this.setElementText("valFoodProd", `+${prods.totalFood}`);
+
+            // 🌾 毎ターンの食料純収支 (Net Food: 総産出 - 食料維持費)
+            const foodSign = prods.totalFood > 0 ? `+${prods.totalFood}` : `${prods.totalFood}`;
+            this.setElementText("valFoodProd", foodSign);
+            const foodProdEl = document.getElementById("valFoodProd");
+            if (foodProdEl) {
+                foodProdEl.style.color = (prods.totalFood < 0) ? "#ff6b6b" : "#2ecc71";
+            }
+
             this.setElementText("valWood", this.state.wood);
             this.setElementText("valWoodProd", `+${prods.totalWood}`);
             this.setElementText("valDefense", defTotal);
@@ -1528,7 +1536,12 @@ class UIController {
         if (!state) return;
 
         const bd = (typeof state.getResourceBreakdown === "function") ? state.getResourceBreakdown() : null;
-        const foodTotal = bd ? bd.food.total : 12;
+        const grossFood = bd ? (bd.food.gross !== undefined ? bd.food.gross : bd.food.total) : 10;
+        const foodCost = bd ? (bd.food.foodCost !== undefined ? bd.food.foodCost : 20) : 20;
+        const netFood = bd ? (bd.food.net !== undefined ? bd.food.net : (grossFood - foodCost)) : -10;
+        const netFoodSign = netFood > 0 ? `+${netFood}` : `${netFood}`;
+        const netFoodColor = netFood < 0 ? "#ff6b6b" : "#2ecc71";
+
         const foodTiles = bd ? bd.food.tiles : 0;
         const foodSockets = bd ? bd.food.sockets : 0;
         const foodVicinity = bd ? bd.food.vicinity : 0;
@@ -1559,10 +1572,11 @@ class UIController {
             <div style="background:rgba(24, 34, 50, 0.75); border:1px solid #2c3e50; border-radius:8px; padding:10px 12px; margin-bottom:8px;">
                 <div style="font-size:14.5px; font-weight:900; color:#ffffff; display:flex; justify-content:space-between; margin-bottom:4px;">
                     <span>🌾 食料 (現在在庫: ${state.food})</span>
-                    <span style="color:#2ecc71; font-size:15.5px;">+${foodTotal} /T</span>
+                    <span style="color:${netFoodColor}; font-size:15.5px;">${netFoodSign} /T (純収支)</span>
                 </div>
                 <div style="font-size:12px; color:#a4b0be; line-height:1.4;">
-                    本営基礎: +10 | 土地配置: +${foodTiles} | ソケット: +${foodSockets} | 本営近郊: +${foodVicinity}${emberStr}
+                    総産出: +${grossFood} (本営: +10 | 土地: +${foodTiles} | ★ソケット: +${foodSockets} | 近郊: +${foodVicinity}${emberStr})<br>
+                    <span style="color:#ff9f43; font-weight:bold;">🔥 食料維持費: -${foodCost} / T</span>
                 </div>
             </div>
 
