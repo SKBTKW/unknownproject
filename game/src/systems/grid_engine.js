@@ -191,6 +191,7 @@ class GridEngine {
         const size = (this.state.stage && this.state.stage.size) ? this.state.stage.size : 5;
 
         const targetGL = terrain ? (terrain.gl !== undefined ? terrain.gl : (terrain.terrain ? terrain.terrain.gl : null)) : null;
+        const targetE = terrain ? (terrain.e !== undefined ? terrain.e : (terrain.terrain ? terrain.terrain.e : 1)) : null;
 
         // 1. 盤外および既配置マスとの重複判定
         for (let dr = 0; dr < rows; dr++) {
@@ -204,7 +205,7 @@ class GridEngine {
             }
         }
 
-        // 2. 隣接接続判定 ＆ 地勢レベル(GL)不適合チェック
+        // 2. 隣接接続判定 ＆ 地勢レベル(GL) / 標高(E) 不適合チェック
         let isAdjacent = false;
         for (let dr = 0; dr < rows; dr++) {
             for (let dc = 0; dc < cols; dc++) {
@@ -220,11 +221,21 @@ class GridEngine {
                             if (neighborCell.placed) {
                                 isAdjacent = true;
 
-                                // 🛡️ 気候断絶ルール: 砂漠(GL0) と 森林/深林/山岳(GL2以上) は直接隣接不可 (本営HQは全地勢接続可能)
-                                if (targetGL !== null && !neighborCell.isHQ && neighborCell.terrain) {
-                                    const placedGL = neighborCell.terrain.gl !== undefined ? neighborCell.terrain.gl : 1;
-                                    if ((targetGL === 0 && placedGL >= 2) || (targetGL >= 2 && placedGL === 0)) {
-                                        return { can: false, reason: "INVALID_GL_NEIGHBOR" };
+                                if (!neighborCell.isHQ && neighborCell.terrain) {
+                                    // 🛡️ 気候断絶ルール: 砂漠(GL0) と 森林/深林/山岳(GL2以上) は直接隣接不可 (本営HQは全地勢接続可能)
+                                    if (targetGL !== null) {
+                                        const placedGL = neighborCell.terrain.gl !== undefined ? neighborCell.terrain.gl : 1;
+                                        if ((targetGL === 0 && placedGL >= 2) || (targetGL >= 2 && placedGL === 0)) {
+                                            return { can: false, reason: "INVALID_GL_NEIGHBOR" };
+                                        }
+                                    }
+
+                                    // ⛰️ 高度断絶ルール (断崖): 標高 E1 (平地/森/砂漠) と 標高 E3 (山岳/霊峰) は直接隣接不可 (|E差| >= 2 は禁止)
+                                    if (targetE !== null) {
+                                        const placedE = neighborCell.terrain.e !== undefined ? neighborCell.terrain.e : 1;
+                                        if (Math.abs(targetE - placedE) >= 2) {
+                                            return { can: false, reason: "INVALID_ELEVATION_NEIGHBOR" };
+                                        }
                                     }
                                 }
                             }

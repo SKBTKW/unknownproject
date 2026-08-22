@@ -289,6 +289,22 @@ assert(desertNextToBoth.can === false && desertNextToBoth.reason === 'INVALID_GL
 const desertNextToPlainsOnly = glEngine.gridEngine.canPlaceShape(2, 0, [[1]], desertTerrain);
 assert(desertNextToPlainsOnly.can === true, '平地(GL1)にのみ隣接する砂漠(GL0)の配置は許可されること');
 
+// ⛰️ 標高 (E) 隣接制限: E1 (平地/森) に隣接して E3 (山岳) を直接配置することは禁止されるべき
+const mountainTerrain = { id: 'E3_MOUNTAIN', gl: 2, e: 3, nameKey: 'TERRAIN_MOUNTAIN' };
+// 平地(2,1) の左 (2,0) に山岳(E3) を配置しようとする ➔ E1平地とE3山岳の隣接となり禁止される
+const mountainNextToPlains = glEngine.gridEngine.canPlaceShape(2, 0, [[1]], mountainTerrain);
+assert(mountainNextToPlains.can === false && mountainNextToPlains.reason === 'INVALID_ELEVATION_NEIGHBOR', '平地(E1)に隣接する山岳(E3)の配置は高度断絶(INVALID_ELEVATION_NEIGHBOR)で禁止されること');
+
+// 平地(2,1) の左 (2,0) に丘陵 (E2) を配置 ➔ E1 と E2 なので許可される
+const hillTerrain = { id: 'E2_HILL', gl: 1, e: 2, nameKey: 'TERRAIN_HILL' };
+const hillPlace = glEngine.gridEngine.placeShape(2, 0, [[1]], hillTerrain, 0);
+assert(hillPlace.can === true, '平地(E1)に隣接して丘陵(E2)を配置できること');
+
+// 丘陵(2,0) の上 (1,0) に山岳 (E3) を配置 ➔ 丘陵(E2)にのみ接するので許可される（E1->E2->E3 の階段地勢成立）
+glEngine.state.hasPickedThisTurn = false;
+const mountainNextToHill = glEngine.gridEngine.canPlaceShape(1, 0, [[1]], mountainTerrain);
+assert(mountainNextToHill.can === true, '丘陵(E2)にのみ隣接する山岳(E3)の配置は許可されること');
+
 // --- 15. コマンドカード発動時の空きスロット化 ＆ 詳細効果ログ記録 検問 ---
 console.log('\n📜 [15/15] コマンドカード使用後スロット空き化 ＆ 詳細ログ記録 検証');
 const cmdEngine = new GameEngine();
@@ -304,5 +320,5 @@ assert(cmdEngine.state.gameLogs.length > 0, 'ゲームログが記録されて�
 assert(cmdEngine.state.gameLogs[0].includes('農地改革') && cmdEngine.state.gameLogs[0].includes('🧱-20') && cmdEngine.state.gameLogs[0].includes('🌾+1/T'), 'ログにカード名・コスト・具体的効果内容が含まれていること');
 
 console.log('\n====================================================');
-console.log(`🎉 全テスト完了: 68 / 68 件 合格 (100% PASS)`);
+console.log(`🎉 全テスト完了: 71 / 71 件 合格 (100% PASS)`);
 console.log('====================================================');
