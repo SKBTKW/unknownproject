@@ -605,12 +605,13 @@ class GridEngine {
                         this.state.food += bonusFood;
                         this.state.wood += bonusWood;
                         this.state.mystic += bonusMystic;
-                        this.state.ember = Math.min(20, this.state.ember + 1);
+                        this.state.ember += 1; // 🔥 2x2 マージ成立ボーナス (キャップなし加算)
 
                         let textParts = [];
                         if (bonusFood > 0) textParts.push(`🌾+${bonusFood}`);
                         if (bonusWood > 0) textParts.push(`🧱+${bonusWood}`);
                         if (bonusMystic > 0) textParts.push(`✨+${bonusMystic}`);
+                        textParts.push(`🔥+1`);
                         const bText = textParts.join(" ");
 
                         const tName = I18n.t(c1.terrain.nameKey);

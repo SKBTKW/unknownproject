@@ -411,6 +411,21 @@ assert(statusCrisis.statusLevel === 'CRISIS', '🔥7 で statusLevel が CRISIS 
 assert(statusCrisis.foodCost === 15, '危機状態で foodCost が 15 に減圧されること');
 assert(statusCrisis.emberDelta === 0, '🌾220 (>=200) で減衰ストップ (0) であること');
 
+// --- 19. 2x2 正方形マージ 🔥+1 即時ボーナス給付 検問 ---
+console.log('\n🧩 [19/19] 2x2 正方形マージ 🔥+1 即時ボーナス給付検証');
+const mergeTestEngine = new GameEngine();
+mergeTestEngine.state.ember = 20;
+const plainsData = { id: 'PLAINS_1X1', terrainId: 'PLAINS_1X1', nameKey: 'TERRAIN_PLAINS_NAME', baseYieldsPerTile: { food: 1 } };
+mergeTestEngine.state.grid[0][0] = { r: 0, c: 0, placed: true, terrain: plainsData };
+mergeTestEngine.state.grid[0][1] = { r: 0, c: 1, placed: true, terrain: plainsData };
+mergeTestEngine.state.grid[1][0] = { r: 1, c: 0, placed: true, terrain: plainsData };
+mergeTestEngine.state.grid[1][1] = { r: 1, c: 1, placed: true, terrain: plainsData };
+
+const emberBeforeMerge = mergeTestEngine.state.ember;
+mergeTestEngine.state.checkMergePatterns();
+assert(mergeTestEngine.state.ember === emberBeforeMerge + 1, `2x2マージ成立で残り火が 🔥+1 加算されること (実際: ${mergeTestEngine.state.ember})`);
+assert(mergeTestEngine.state.grid[0][0].merged === true, '2x2マージフラグが true になること');
+
 console.log('\n====================================================');
-console.log(`🎉 全テスト完了: 102 / 102 件 合格 (100% PASS)`);
+console.log(`🎉 全テスト完了: 104 / 104 件 合格 (100% PASS)`);
 console.log('====================================================');

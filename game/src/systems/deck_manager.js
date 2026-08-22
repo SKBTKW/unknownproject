@@ -418,7 +418,7 @@ class DeckManager {
             this.state.addLog(`🏹【${cName}】発動 (コスト: 🧱-30) ➔ 防衛力 🛡️+40 獲得 ＆ 次回の試練被ダメージを 50% 軽減（半減無効化）！`);
         } else if (cId === "CMD_REKINDLE_EMBER") {
             // ✨ 残り火の聖なる再燃: コスト ✨-10
-            this.state.ember = Math.min(20, this.state.ember + 3);
+            this.state.ember = this.state.ember + 3;
             this.state.reserveFeeWaivedTurns = 3;
             this.state.addBuff({
                 id: cId,
@@ -448,7 +448,7 @@ class DeckManager {
             this.state.addLog(`🏛️【${cName}】発動 (コスト: 🧱-15) ➔ 大風車の建設を開始しました (3ターン継続投資)！`);
         } else if (cId === "LGD_DESPERATE_PACT") {
             // 📜 背水の盟約: コスト なし
-            this.state.ember = Math.min(20, this.state.ember + 5);
+            this.state.ember = this.state.ember + 5;
             this.state.handOfferingSize = 4;
             this.state.nextTrialMultiplier = 1.5;
             this.state.addLog(`🔥【${cName}】発動 ➔ 残り火 🔥+5 獲得 ＆ 手札オファリング枠が永久に4枚へ拡張されました！`);
