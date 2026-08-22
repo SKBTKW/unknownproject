@@ -9,7 +9,7 @@ class GameState {
         this.engine = dependencies.engine || null;
         this.turn = dependencies.turn !== undefined ? dependencies.turn : 1;
         this.ember = dependencies.ember !== undefined ? dependencies.ember : 20;
-        this.food = dependencies.food !== undefined ? dependencies.food : 30;
+        this.food = dependencies.food !== undefined ? dependencies.food : 50; // 🌾 初期食料 50 (戦略的猶予確保)
         this.wood = dependencies.material !== undefined ? dependencies.material : (dependencies.wood !== undefined ? dependencies.wood : 30);
         this.material = this.wood;
         this.defense = dependencies.defense !== undefined ? dependencies.defense : 10;

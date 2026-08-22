@@ -34,7 +34,7 @@ export class EmberStatusComponent {
         if (!state) {
             return {
                 ember: 20,
-                food: 30,
+                food: 50,
                 statusLevel: 'STANDARD',
                 statusTitle: '🔥 残り火標準',
                 statusBadgeClass: 'status-standard',

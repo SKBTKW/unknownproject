@@ -45,7 +45,7 @@ assert(!!engine.gridEngine, 'GridEngine が DI 注入されていること');
 assert(!!engine.deckManager, 'DeckManager が DI 注入されていること');
 assert(!!engine.buffSystem, 'BuffSystem が DI 注入されていること');
 assert(engine.state.ember === 20, '初期残り火が 20 であること');
-assert(engine.state.food === 30 && engine.state.wood === 30, '初期食料・資材が 30 であること');
+assert(engine.state.food === 50 && engine.state.wood === 30, '初期食料が 50、初期資材が 30 であること');
 
 // --- 2. GridEngine 土地配置 ＆ 近郊ボーナステスト ---
 console.log('\n🗺️ [2/6] GridEngine 土地配置・近郊ボーナス');
