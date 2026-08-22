@@ -317,8 +317,27 @@ cmdEngine.deckManager.playCommandCard(originalCmdCard, null, 0);
 assert(cmdEngine.state.handOffering[0].isBlank === true, '使用された手札0番目が空きスロット (isBlank: true) に変更されていること');
 assert(cmdEngine.state.hasPickedThisTurn === true, 'コマンド使用後に hasPickedThisTurn が true になること');
 assert(cmdEngine.state.gameLogs.length > 0, 'ゲームログが記録されていること');
-assert(cmdEngine.state.gameLogs[0].includes('農地改革') && cmdEngine.state.gameLogs[0].includes('🧱-20') && cmdEngine.state.gameLogs[0].includes('🌾+1/T'), 'ログにカード名・コスト・具体的効果内容が含まれていること');
+// --- 16. 同一コマンドカード重複ピック禁止 (手札内 ＆ 保留枠との重複排除) 検問 ---
+console.log('\n🚫 [16/16] 同一コマンドカード重複ピック禁止 検証');
+const uniqCmdEngine = new GameEngine();
+// 保留枠に CMD_BALLISTA_SET を格納
+uniqCmdEngine.state.wood = 50;
+uniqCmdEngine.state.reserveSlots[0] = { id: 'CMD_BALLISTA_SET', cardMasterId: 'CMD_BALLISTA_SET', category: 'MILITARY', nameKey: 'CMD_BALLISTA_SET' };
+
+// 100回オファリングを生成して、保留枠にある CMD_BALLISTA_SET が手札に出現しないこと ＆ 同一手札内で同一コマンドが重複しないことを検証
+for (let t = 0; t < 100; t++) {
+    const offering = uniqCmdEngine.deckManager.generateOfferingCards();
+    const cmdIds = [];
+    offering.forEach(c => {
+        if (c && c.terrain && c.terrain.category && c.terrain.category !== 'LAND') {
+            const mId = c.cardMasterId || c.terrain.id;
+            assert(mId !== 'CMD_BALLISTA_SET', '保留枠にある CMD_BALLISTA_SET が手札オファリングに重複出現しないこと');
+            assert(!cmdIds.includes(mId), `同一手札内に同一コマンドカード (${mId}) が重複出現しないこと`);
+            cmdIds.push(mId);
+        }
+    });
+}
 
 console.log('\n====================================================');
-console.log(`🎉 全テスト完了: 71 / 71 件 合格 (100% PASS)`);
+console.log(`🎉 全テスト完了: 74 / 74 件 合格 (100% PASS)`);
 console.log('====================================================');

@@ -175,14 +175,23 @@ class DeckManager {
 
     /**
      * 🎲 単一カードの重み付け抽選
+     * @param {Array<string>} [excludedCommandIds=[]] - 同一オファリング内・保留枠で重複排除するコマンドカードIDリスト
      */
-    drawSingleCard() {
+    drawSingleCard(excludedCommandIds = []) {
         const master = this.getLandCardMaster();
         const stageNum = (this.state && this.state.stage) ? (typeof this.state.stage === 'object' ? (this.state.stage.id || 1) : this.state.stage) : 1;
         const h2Count = (this.state && typeof this.state.countE2HillsOnBoard === 'function') ? this.state.countE2HillsOnBoard() : 0;
 
         let eligible = master.filter(c => this.isCardEligible(c, stageNum, h2Count));
-        if (eligible.length === 0) eligible = master.filter(c => (c.category === "LAND" || !c.category) && (c.minStage || 1) <= stageNum);
+
+        // 🛡️ 同一コマンドカード重複ピック禁止ガードレール
+        if (Array.isArray(excludedCommandIds) && excludedCommandIds.length > 0) {
+            eligible = eligible.filter(c => !(c.category && c.category !== "LAND" && excludedCommandIds.includes(c.id)));
+        }
+
+        if (eligible.length === 0) {
+            eligible = master.filter(c => (c.category === "LAND" || !c.category) && (c.minStage || 1) <= stageNum);
+        }
 
         const activeBiasCategory = (this.state && this.state.activeDrawBias) ? this.state.activeDrawBias.targetCategory : null;
 
@@ -233,13 +242,33 @@ class DeckManager {
     }
 
     /**
-     * 🃏 手札オファリングの生成 (標準 3 枚)
+     * 🃏 手札オファリングの生成 (標準 3 枚 ＆ 同一コマンドカード重複排除)
      */
     generateOfferingCards() {
         const offeringSize = (this.state && this.state.handOfferingSize) ? this.state.handOfferingSize : 3;
         const newCards = [];
+        const excludedCommandIds = [];
+
+        // 📥 保留スロットにあるコマンドカードも手札重複から除外
+        if (this.state && this.state.reserveSlots) {
+            this.state.reserveSlots.forEach(rc => {
+                if (rc && !rc.isBlank) {
+                    const tObj = rc.terrain || rc;
+                    if (tObj && tObj.category && tObj.category !== "LAND") {
+                        const mId = rc.cardMasterId || tObj.id || rc.id;
+                        if (mId) excludedCommandIds.push(mId);
+                    }
+                }
+            });
+        }
+
         for (let i = 0; i < offeringSize; i++) {
-            newCards.push(this.drawSingleCard());
+            const drawn = this.drawSingleCard(excludedCommandIds);
+            newCards.push(drawn);
+            if (drawn && drawn.terrain && drawn.terrain.category && drawn.terrain.category !== "LAND") {
+                const cId = drawn.cardMasterId || drawn.terrain.id;
+                if (cId) excludedCommandIds.push(cId);
+            }
         }
 
         if (this.state) {
