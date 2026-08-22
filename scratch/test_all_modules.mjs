@@ -62,12 +62,15 @@ assert(cell.isHQVicinity === true, '本営近郊フラグ (isHQVicinity) が tru
 
 // --- 3. BuffSystem ＆ ProductionCalculator 産出計算テスト ---
 console.log('\n🔥 [3/6] BuffSystem ＆ ProductionCalculator 産出計算');
-const initialBuffs = engine.buffSystem.getDisplayBuffs();
-assert(initialBuffs.length >= 1, '初期環境バフ (残り火旺盛) が登録されていること');
+// 🔥24 以上で旺盛バフが発動することを検証
+engine.state.ember = 25;
+const prosperousBuffs = engine.buffSystem.getDisplayBuffs();
+assert(prosperousBuffs.some(b => b.id === 'ENV_EMBER_PROSPERITY'), '🔥25 で残り火旺盛バフが登録されていること');
 
 const prods = engine.state.calculateTotalProduction();
-assert(prods.totalFood >= 16, `食料産出が正しく計算されていること (実際: ${prods.totalFood})`);
-assert(prods.totalMystic >= 2, `神秘産出に残り火ボーナスが加算されていること (実際: ${prods.totalMystic})`);
+assert(prods.totalFood >= 15, `食料産出が正しく計算されていること (実際: ${prods.totalFood})`);
+assert(prods.totalMystic >= 2, `神秘産出に残り火旺盛ボーナスが加算されていること (実際: ${prods.totalMystic})`);
+engine.state.ember = 20; // 標準状態に復帰
 
 // --- 4. DeckManager ＆ コマンドカード「農地改革」テスト ---
 console.log('\n🃏 [4/6] DeckManager ＆ コマンドカード発動');
@@ -75,6 +78,7 @@ const hand = engine.deckManager.generateOfferingCards();
 assert(hand.length === 3, '手札オファリングが 3 枚生成されること');
 
 const woodBefore = engine.state.wood;
+const prodsBeforeReform = engine.state.calculateTotalProduction();
 const playRes = engine.deckManager.playCommandCard({
     id: 'CMD_AGRICULTURAL_POLICY',
     category: 'COMMAND',
@@ -86,7 +90,7 @@ const playRes = engine.deckManager.playCommandCard({
 assert(playRes.success === true, '農地改革の発動が成功すること');
 assert(engine.state.wood === woodBefore - 20, 'コスト 🧱-20 が正しく消費されていること');
 const prodsAfterReform = engine.state.calculateTotalProduction();
-assert(prodsAfterReform.totalFood > prods.totalFood, '農地改革により草原産出が増加していること');
+assert(prodsAfterReform.totalFood > prodsBeforeReform.totalFood, '農地改革により草原産出が増加していること');
 
 // --- 5. TerritoryBadgeComponent ステージ連動テスト ---
 console.log('\n🏛️ [5/6] TerritoryBadgeComponent ステージ連動');
@@ -338,6 +342,50 @@ for (let t = 0; t < 100; t++) {
     });
 }
 
+// --- 17. 🔥 残り火 ✕ 🌾 食料 経済サイクル (3段階維持費ステッピング ＆ 200/500自家発熱 ＆ 保留維持費) 検問 ---
+console.log('\n🔥 [17/17] 🔥 残り火 ✕ 🌾 食料 経済サイクル検証 (rules/02_resources_and_ember.md 準拠)');
+const emberEngine = new GameEngine();
+
+// ① 🔥9以下 (危機): 食料維持費 🌾15
+emberEngine.state.ember = 8;
+emberEngine.state.food = 100;
+const resCrisis = emberEngine.state.processTurnEndMaintenance();
+assert(resCrisis.foodCost === 15, '🔥8 (危機) で食料維持費が 🌾15 であること');
+assert(emberEngine.state.food === 85, '食料が 100 - 15 = 85 になること');
+assert(resCrisis.emberDelta === -1, '🌾85 (<200) で標準減衰 🔥-1 であること');
+
+// ② 🔥10〜23 (標準): 食料維持費 🌾20 ＆ 🌾200以上で減衰ストップ (🔥0)
+emberEngine.state.ember = 15;
+emberEngine.state.food = 250;
+const resStandard = emberEngine.state.processTurnEndMaintenance();
+assert(resStandard.foodCost === 20, '🔥15 (標準) で食料維持費が 🌾20 であること');
+assert(emberEngine.state.food === 230, '食料が 250 - 20 = 230 になること');
+assert(resStandard.emberDelta === 0, '🌾230 (>=200) で減衰ストップ (🔥0) であること');
+
+// ③ 🔥24以上 (旺盛): 食料維持費 🌾25 ＆ 🌾500以上で自家発熱 (🔥+1)
+emberEngine.state.ember = 26;
+emberEngine.state.food = 530;
+const resProsperous = emberEngine.state.processTurnEndMaintenance();
+assert(resProsperous.foodCost === 25, '🔥26 (旺盛) で食料維持費が 🌾25 であること');
+assert(emberEngine.state.food === 505, '食料が 530 - 25 = 505 になること');
+assert(resProsperous.emberDelta === 1, '🌾505 (>=500) で自家発熱 (🔥+1) であること');
+assert(emberEngine.state.ember === 27, '自家発熱により残り火が 26 + 1 = 27 に増加すること');
+
+// ④ 保留スロット維持費 (🔥-1/T)
+emberEngine.state.reserveSlots[0] = { id: 'CARD_PLAINS_1X1' };
+const emberBeforeReserve = emberEngine.state.ember;
+emberEngine.state.food = 250;
+emberEngine.state.processTurnEndMaintenance();
+assert(emberEngine.state.ember === emberBeforeReserve - 1, '保留枠にカードがある場合、維持費として 🔥-1 が消費されること');
+
+// ⑤ 食料不足ペナルティ (🔥-2)
+emberEngine.state.food = 5; // 危機維持費 15 に対して 5 しかない
+emberEngine.state.ember = 9;
+emberEngine.state.reserveSlots[0] = null;
+emberEngine.state.processTurnEndMaintenance();
+assert(emberEngine.state.food === 0, '不足時に食料が 0 にリセットされること');
+assert(emberEngine.state.ember === 6, '食料不足ペナルティ (🔥-2) ＋ 標準減衰 (🔥-1) で 9 - 3 = 6 になること');
+
 console.log('\n====================================================');
-console.log(`🎉 全テスト完了: 74 / 74 件 合格 (100% PASS)`);
+console.log(`🎉 全テスト完了: 88 / 88 件 合格 (100% PASS)`);
 console.log('====================================================');

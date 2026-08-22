@@ -19,7 +19,7 @@ export class BuffSystem {
     }
 
     /**
-     * 🔥 残り火レベルに基づく環境バフの自動同期・更新
+     * 🔥 残り火レベルに基づく環境バフの自動同期・更新 (rules/02_resources_and_ember.md 準拠)
      */
     updateEnvironmentBuffs() {
         if (!this.state) return;
@@ -28,29 +28,29 @@ export class BuffSystem {
         // 既存の環境バフを一度除去
         this.buffs = this.buffs.filter(b => b.category !== "ENVIRONMENT");
 
-        if (ember >= 20) {
+        if (ember >= 24) {
+            // 🔥 旺盛状態 (24以上): 全産出 +10% ブースト ＆ ✨+2/T 自動ボーナス (維持費 🌾25/T)
             this.buffs.unshift({
                 id: "ENV_EMBER_PROSPERITY",
                 name: "🔥 残り火旺盛バフ",
-                shortName: "旺盛 (+20%)",
+                shortName: "旺盛 (+10%)",
                 icon: "🔥",
-                description: "残り火の加護により全リソース産出 +20% ＆ 自動✨+2/T",
-                badgeText: "環境バフ",
-                category: "ENVIRONMENT",
-                multiplier: 1.20,
-                mysticBonus: 2
-            });
-        } else if (ember >= 12) {
-            this.buffs.unshift({
-                id: "ENV_EMBER_STANDARD",
-                name: "🔥 残り火標準バフ",
-                shortName: "標準 (+10%)",
-                icon: "🔥",
-                description: "残り火の加護により全リソース産出 +10% ＆ 自動✨+1/T",
+                description: "残り火旺盛により全リソース産出 +10% ＆ 自動 ✨+2/T",
                 badgeText: "環境バフ",
                 category: "ENVIRONMENT",
                 multiplier: 1.10,
-                mysticBonus: 1
+                mysticBonus: 2
+            });
+        } else if (ember <= 9) {
+            // 🔥 微火・危機状態 (9以下): 省エネ復興 (維持費 🌾15/T 減圧)
+            this.buffs.unshift({
+                id: "ENV_EMBER_CRISIS",
+                name: "🔥 残り火微火・危機",
+                shortName: "微火 (維持費減)",
+                icon: "🔥",
+                description: "残り火危機により省エネ復興中 (食料維持費 🌾15/T へ減圧)",
+                badgeText: "環境バフ",
+                category: "ENVIRONMENT"
             });
         }
     }

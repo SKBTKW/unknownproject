@@ -232,10 +232,49 @@ class GameState {
         }
 
         processTurnEndMaintenance() {
-            const foodCost = 20;
+            // 1. 🔥 残り火ステッピングに基づく毎ターンの 🌾 食料維持費
+            let foodCost = 20;
+            if (this.ember >= 24) {
+                foodCost = 25; // 🔥 旺盛状態 (維持費増)
+            } else if (this.ember <= 9) {
+                foodCost = 15; // 🔥 微火・危機 (省エネ復興)
+            } else {
+                foodCost = 20; // 🔥 標準状態
+            }
+
             this.food -= foodCost;
             let isGameOver = false;
 
+            // 2. 🌾 食料不足時のペナルティ (🔥-2)
+            if (this.food < 0) {
+                this.food = 0;
+                this.ember -= 2;
+                this.addLog(`⚠️ 食料不足！ ペナルティとして残り火 🔥-2 (現在: 🔥${this.ember})`);
+            }
+
+            // 3. 🌾 食料蓄積量による 🔥 自動減衰・自家発熱ルール
+            let emberDelta = -1; // 🌾 < 200: 標準燃焼減衰 (-1 🔥/T)
+            if (this.food >= 500) {
+                emberDelta = 1;  // 🌾 >= 500: 自家発熱 (+1 🔥/T)
+                this.addLog(`🔥 食料大蓄積 (${this.food} >= 500)！ 自家発熱により残り火 🔥+1 回復！`);
+            } else if (this.food >= 200) {
+                emberDelta = 0;  // 🌾 200〜499: 燃焼減衰ストップ (0 🔥/T)
+                this.addLog(`🛡️ 食料蓄積 (${this.food} >= 200)！ 残り火の自然減衰がストップしました。`);
+            }
+            this.ember += emberDelta;
+
+            // 4. 📥 保留スロット維持費 (🔥-1/T, 免除ターン考慮)
+            const hasReservedCard = this.reserveSlots && this.reserveSlots.some(s => s !== null && !s.isBlank);
+            if (hasReservedCard) {
+                if (this.reserveFeeWaivedTurns && this.reserveFeeWaivedTurns > 0) {
+                    this.reserveFeeWaivedTurns -= 1;
+                } else {
+                    this.ember -= 1;
+                    this.addLog(`📥 保留スロット維持費: 残り火 🔥-1 (現在: 🔥${this.ember})`);
+                }
+            }
+
+            // 5. 🎯 ドロー偏向バフのターン経過
             if (this.activeDrawBias && this.activeDrawBias.type === "TURNS") {
                 this.activeDrawBias.remainingTurns -= 1;
                 if (this.activeDrawBias.remainingTurns <= 0) {
@@ -243,20 +282,14 @@ class GameState {
                 }
             }
 
-            if (this.food < 0) {
-                const deficit = Math.abs(this.food);
-                this.food = 0;
-                this.ember -= 2;
-                this.addLog(I18n.t("LOG_FOOD_DEFICIT_PENALTY", { ember: this.ember }));
-
-                if (this.ember <= 0) {
-                    this.ember = 0;
-                    isGameOver = true;
-                }
+            // 6. 💀 ゲームオーバー ＆ 🏆 クリア判定
+            if (this.ember <= 0) {
+                this.ember = 0;
+                isGameOver = true;
             }
 
             const isGameClear = (this.turn >= 50 && this.ember > 0);
-            return { foodCost, isGameOver, isGameClear };
+            return { foodCost, emberDelta, isGameOver, isGameClear };
         }
 
         moveToReserve(cardIdx) {
