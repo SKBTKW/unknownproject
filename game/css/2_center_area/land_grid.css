@@ -290,8 +290,8 @@
     border-color: #1abc9c !important;
 }
 .cell.terrain-deep-forest {
-    background: linear-gradient(135deg, #0d383b 0%, #051e20 100%) !important;
-    border-color: #16a085 !important;
+    background: linear-gradient(135deg, #115e59 0%, #063c38 100%) !important;
+    border-color: #1abc9c !important;
 }
 .cell.terrain-hill {
     background: linear-gradient(135deg, #4e3519 0%, #2e1d0c 100%) !important;
@@ -302,8 +302,8 @@
     border-color: #9b59b6 !important;
 }
 .cell.terrain-desert {
-    background: linear-gradient(135deg, #5c4314 0%, #36260a 100%) !important;
-    border-color: #f39c12 !important;
+    background: linear-gradient(135deg, #84723c 0%, #463b18 100%) !important;
+    border-color: #f7d794 !important;
 }
 
 /* 🌾 平地マージ (エメラルドグリーン) */
@@ -318,10 +318,10 @@
     box-shadow: 0 0 14px rgba(46, 204, 113, 0.6), inset 0 0 12px rgba(46, 204, 113, 0.3) !important;
 }
 
-/* 🌳 深い森マージ (バイオレットパープル) */
+/* 🌳 深い森マージ (鮮烈なティールエメラルド) */
 .cell.merged.merged-deep-forest {
-    border: 2.5px solid #9b59b6 !important;
-    box-shadow: 0 0 14px rgba(155, 89, 182, 0.6), inset 0 0 12px rgba(155, 89, 182, 0.3) !important;
+    border: 2.5px solid #1abc9c !important;
+    box-shadow: 0 0 16px rgba(26, 188, 156, 0.75), inset 0 0 12px rgba(26, 188, 156, 0.4) !important;
 }
 
 /* ⛰️ 丘陵マージ (アンバーオレンジ) */
@@ -336,10 +336,10 @@
     box-shadow: 0 0 14px rgba(52, 152, 219, 0.6), inset 0 0 12px rgba(52, 152, 219, 0.3) !important;
 }
 
-/* 🏜️ 砂漠マージ (サンセットゴールド) */
+/* 🏜️ 砂漠マージ (淡いペールサンドゴールド) */
 .cell.merged.merged-desert {
-    border: 2.5px solid #f1c40f !important;
-    box-shadow: 0 0 14px rgba(241, 196, 15, 0.6), inset 0 0 12px rgba(241, 196, 15, 0.3) !important;
+    border: 2.5px solid #f7d794 !important;
+    box-shadow: 0 0 16px rgba(247, 215, 148, 0.7), inset 0 0 12px rgba(247, 215, 148, 0.4) !important;
 }
 
 /* 🚫 マージ内側境界線打消し (1枚の繋がった統合大土地化) */
@@ -372,18 +372,18 @@
     box-shadow: 0 0 20px rgba(255, 215, 0, 0.75), inset 0 0 14px rgba(255, 215, 0, 0.4) !important;
 }
 
-/* 💡 マスホバーツールチップ (30% 拡大 ＆ 視認性大幅強化) */
+/* 💡 マスホバーツールチップ (30% 拡大 ＆ 視認性大幅強化 ＆ 純粋な情報表示) */
 .tile-tooltip {
     position: fixed;
     display: none;
     background: rgba(18, 22, 32, 0.98);
-    border: 1.5px solid #34495e;
-    border-radius: 8px;
+    border: 2px solid #2e384e;
+    border-radius: 12px;
     padding: 14px 18px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), 0 0 12px rgba(26, 188, 156, 0.2);
-    pointer-events: none;
-    z-index: 1000;
-    max-width: 320px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85), 0 0 16px rgba(26, 188, 156, 0.3);
+    pointer-events: none !important;
+    z-index: 2000;
+    max-width: 330px;
     font-size: 15.5px;
     line-height: 1.5;
     color: #e0e0e0;

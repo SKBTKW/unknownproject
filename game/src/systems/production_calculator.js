@@ -16,6 +16,7 @@
 
             let foodVicinity = 0;
             let woodVicinity = 0;
+            let mysticVicinity = 0;
 
             const groupSums = {};
 
@@ -102,7 +103,7 @@
 
             const totalFood = Math.floor((10 + foodTiles + foodSockets + foodVicinity + plainsBuffBonus) * foodMult * buffFoodMult);
             const totalWood = Math.floor((10 + woodTiles + woodSockets + woodVicinity) * woodMult * buffWoodMult);
-            const totalMystic = Math.floor((1 + mysticTiles + mysticSockets + flatMysticBonus) * mysticMult * buffMysticMult);
+            const totalMystic = Math.floor((1 + mysticTiles + mysticSockets + mysticVicinity + flatMysticBonus) * mysticMult * buffMysticMult);
 
             return { totalFood, totalWood, totalMystic };
         }

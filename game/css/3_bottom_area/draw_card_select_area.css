@@ -74,7 +74,7 @@
     gap: 18px;
 }
 
-/* 🃏 カードフレーム: 4.5px 超太枠フレーム ✕ 15% 拡大大型 276px x 402px */
+/* 🃏 カードフレーム基本定義: 4.5px 超太枠フレーム ✕ 15% 拡大大型 276px x 402px */
 .card-frame-tcg,
 .card-slot-box {
     width: 276px !important;
@@ -82,32 +82,141 @@
     min-width: 276px !important;
     min-height: 402px !important;
     background: #11141a;
-    border: 4.5px solid #1abc9c !important; /* 4.5px 超太枠フレーム */
+    border: 4.5px solid #1abc9c;
     border-radius: 16px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     padding: 14px;
     cursor: pointer;
-    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
     user-select: none;
     position: relative;
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
     box-sizing: border-box;
+    isolation: isolate; /* 🌟 カード同士のシャドウ・エフェクト多重干渉を完全遮断 */
+    contain: layout style;
+    will-change: transform, box-shadow;
 }
 
+/* =============================================================
+   💎 4大レアリティ表現枠 ＆ 光沢・オーラ階層化 (rules/04_card_system.md 準拠)
+   ============================================================= */
+
+/* 🥉 1. C (コモン / Common - Bronze ブロンズ) */
+.card-frame-tcg.rarity-c {
+    border-color: #cd7f32;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.75), inset 0 0 12px rgba(205, 127, 50, 0.25);
+}
+.card-frame-tcg.rarity-c .tcg-rarity-badge {
+    background: #cd7f32;
+    color: #ffffff;
+    border: 1px solid #e08b3e;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+/* 🥈 2. UC (アンコモン / Uncommon - Silver シルバー) */
+.card-frame-tcg.rarity-uc {
+    border-color: #dcdde1;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.8), 0 0 12px rgba(220, 221, 225, 0.4), inset 0 0 14px rgba(255, 255, 255, 0.25);
+}
+.card-frame-tcg.rarity-uc .tcg-rarity-badge {
+    background: linear-gradient(135deg, #f5f6fa 0%, #718093 100%);
+    color: #11141a;
+    border: 1px solid #ffffff;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+}
+
+/* 🥇 3. R (レア / Rare - Gold ゴールド: 安定60fps 独立GPUパルス) */
+@keyframes goldShimmer {
+    0% {
+        box-shadow: 0 6px 20px rgba(0,0,0,0.8), 0 0 10px rgba(241, 196, 15, 0.45), inset 0 0 12px rgba(241, 196, 15, 0.25);
+        border-color: #f1c40f;
+    }
+    50% {
+        box-shadow: 0 8px 25px rgba(0,0,0,0.85), 0 0 18px rgba(255, 215, 0, 0.8), inset 0 0 18px rgba(255, 215, 0, 0.45);
+        border-color: #ffeaa7;
+    }
+    100% {
+        box-shadow: 0 6px 20px rgba(0,0,0,0.8), 0 0 10px rgba(241, 196, 15, 0.45), inset 0 0 12px rgba(241, 196, 15, 0.25);
+        border-color: #f1c40f;
+    }
+}
+
+.card-frame-tcg.rarity-r {
+    border-color: #f1c40f;
+    animation: goldShimmer 2.8s infinite ease-in-out;
+}
+.card-frame-tcg.rarity-r .tcg-rarity-badge {
+    background: linear-gradient(135deg, #ffeaa7 0%, #f39c12 50%, #d35400 100%);
+    color: #000000;
+    font-weight: 900;
+    border: 1.5px solid #ffffff;
+    box-shadow: 0 0 10px rgba(241, 196, 15, 0.8);
+}
+
+/* 💎 4. L / UR (レジェンド / Legend - Platinum プラチナ・ホログラム虹彩) */
+@keyframes holoPrism {
+    0% {
+        border-color: #00d2d3;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.85), 0 0 18px rgba(0, 210, 211, 0.7), inset 0 0 16px rgba(0, 210, 211, 0.35);
+    }
+    33% {
+        border-color: #e056fd;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.85), 0 0 18px rgba(224, 86, 253, 0.7), inset 0 0 16px rgba(224, 86, 253, 0.35);
+    }
+    66% {
+        border-color: #f1c40f;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.85), 0 0 18px rgba(241, 196, 15, 0.7), inset 0 0 16px rgba(241, 196, 15, 0.35);
+    }
+    100% {
+        border-color: #00d2d3;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.85), 0 0 18px rgba(0, 210, 211, 0.7), inset 0 0 16px rgba(0, 210, 211, 0.35);
+    }
+}
+
+.card-frame-tcg.rarity-l,
+.card-frame-tcg.rarity-ur {
+    border-color: #00d2d3;
+    animation: holoPrism 3.5s infinite ease-in-out;
+}
+.card-frame-tcg.rarity-l .tcg-rarity-badge,
+.card-frame-tcg.rarity-ur .tcg-rarity-badge {
+    background: linear-gradient(135deg, #00d2d3 0%, #e056fd 50%, #f1c40f 100%);
+    color: #000000;
+    font-weight: 900;
+    border: 1.5px solid #ffffff;
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.9), 0 0 8px rgba(0, 210, 211, 0.8);
+}
+
+/* 🏷️ レアリティバッジ共通スタイル */
+.tcg-rarity-badge {
+    font-size: 11.5px;
+    font-weight: 900;
+    padding: 2px 7px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 🌟 ホバー・選択時はアニメーションをクリアして安定描画 */
 .card-frame-tcg:hover,
 .card-slot-box:hover {
+    animation: none !important;
     transform: scale(1.15) translateY(-16px) !important;
     border-color: #2ecc71 !important;
-    box-shadow: 0 16px 40px rgba(46, 204, 113, 0.7) !important;
+    box-shadow: 0 16px 35px rgba(0,0,0,0.8), 0 0 20px rgba(46, 204, 113, 0.8) !important;
+    filter: brightness(1.12) contrast(1.05) !important;
     z-index: 500 !important;
 }
 
 .card-frame-tcg.selected,
 .card-slot-box.selected {
-    border-color: #f1c40f !important;
-    box-shadow: 0 0 35px rgba(241, 196, 15, 0.9) !important;
+    animation: none !important;
+    border-color: #00d2d3 !important;
+    box-shadow: 0 0 35px rgba(0, 210, 211, 0.95), 0 12px 30px rgba(0,0,0,0.9) !important;
     transform: scale(1.12) translateY(-12px) !important;
     z-index: 400 !important;
 }

@@ -21,6 +21,7 @@
             const gridCopy = this.state.grid.map(row => 
                 row.map(cell => ({
                     ...cell,
+                    cachedSocketSeeds: cell.cachedSocketSeeds ? { ...cell.cachedSocketSeeds } : {},
                     terrain: cell.terrain ? { ...cell.terrain } : null,
                     socketResource: cell.socketResource ? { ...cell.socketResource } : null
                 }))
@@ -88,12 +89,16 @@
             this.state.defense = s.defense;
             this.state.mystic = s.mystic;
 
-            this.state.grid = s.grid.map(row => 
-                row.map(cell => ({
-                    ...cell,
-                    terrain: cell.terrain ? { ...cell.terrain } : null,
-                    socketResource: cell.socketResource ? { ...cell.socketResource } : null
-                }))
+            this.state.grid = s.grid.map((row, r) => 
+                row.map((cell, c) => {
+                    const currentCell = (this.state.grid && this.state.grid[r] && this.state.grid[r][c]) || {};
+                    return {
+                        ...cell,
+                        cachedSocketSeeds: currentCell.cachedSocketSeeds || cell.cachedSocketSeeds || {},
+                        terrain: cell.terrain ? { ...cell.terrain } : null,
+                        socketResource: cell.socketResource ? { ...cell.socketResource } : null
+                    };
+                })
             );
 
             this.state.grantedConnectionPairs = new Set(s.grantedConnectionPairs);

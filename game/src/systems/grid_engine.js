@@ -33,7 +33,8 @@ class GridEngine {
                     terrain: isHQ ? { id: "HQ", nameKey: "TERRAIN_HQ", food: 10, wood: 10, defense: 10, mystic: 1 } : null,
                     searched: false,
                     hasSocket: false,
-                    socketResource: null
+                    socketResource: null,
+                    cachedSocketSeeds: {}
                 });
             }
             grid.push(row);
@@ -104,16 +105,16 @@ class GridEngine {
     }
 
     /**
-     * ⛰️ 盤面上の丘陵 (H2_HILL) 数集計（可変グリッド対応）
+     * ⛰️ 盤面上の丘陵 (E2_HILL) 数集計（可変グリッド対応）
      */
-    countH2HillsOnBoard() {
+    countE2HillsOnBoard() {
         if (!this.state || !this.state.grid) return 0;
         const size = this.state.grid.length;
         let count = 0;
         for (let r = 0; r < size; r++) {
             for (let c = 0; c < size; c++) {
                 const cell = this.state.grid[r][c];
-                if (cell && cell.placed && cell.terrain && cell.terrain.id === "H2_HILL") {
+                if (cell && cell.placed && cell.terrain && cell.terrain.id === "E2_HILL") {
                     count++;
                 }
             }
@@ -263,32 +264,51 @@ class GridEngine {
                     cell.placementGroupId = pGroupId;
                     cell.isHQVicinity = (Math.abs(r - 2) <= 1 && Math.abs(c - 2) <= 1 && !(r === 2 && c === 2));
 
-                    // ★ ソケット開花判定
+                    // ★ ソケット開花判定 (決定論的固定化: アンドゥリセマラを完全根絶)
                     if (cell.hasSocket && !cell.socketResource) {
                         const baseTerrainId = terrain.terrainId || terrain.id;
+                        const is1x1 = (rows === 1 && cols === 1 && shapeMatrix[0][0] === 1);
+                        const seedKey = is1x1 ? `${baseTerrainId}_1X1` : baseTerrainId;
                         const sysMaster = (typeof globalThis !== 'undefined' && globalThis.LAND_SYSTEM_DATA && globalThis.LAND_SYSTEM_DATA.sockets) ? globalThis.LAND_SYSTEM_DATA.sockets : null;
                         
-                        let spawnedSocket = null;
-                        if (baseTerrainId === "GL0_DESERT") {
-                            if (Math.random() < 0.25) {
-                                spawnedSocket = { nameKey: "SOCKET_DATES", bonusFood: 1, bonusWood: 0, bonusMystic: 0 };
+                        if (!cell.cachedSocketSeeds) {
+                            cell.cachedSocketSeeds = {};
+                        }
+
+                        let spawnedSocket = cell.cachedSocketSeeds[seedKey] || null;
+
+                        if (!spawnedSocket) {
+                            // 🌊 水脈ソケット開花 ✕ 💧 清湖 (Lake) ＆ 🌴 オアシス (Oasis) 確定仕様 (1x1限定 25%確率)
+                            if (baseTerrainId === "GL1_PLAINS" && is1x1 && Math.random() < 0.25) {
+                                spawnedSocket = { id: "SOCKET_LAKE", nameKey: "SOCKET_LAKE", category: "水脈", icon: "💧", bonusFood: 2, bonusWood: 0, bonusDefense: 0, bonusMystic: 0 };
+                            } else if (baseTerrainId === "GL0_DESERT" && is1x1 && Math.random() < 0.25) {
+                                spawnedSocket = { id: "SOCKET_OASIS", nameKey: "SOCKET_OASIS", category: "水脈", icon: "🌴", bonusFood: 1, bonusWood: 0, bonusDefense: 0, bonusMystic: 0 };
+                            } else if (sysMaster && sysMaster[baseTerrainId]) {
+                                // 通常の特産品候補（非1x1、または25%抽選から外れた場合: 清湖・オアシスを除外した通常プールから均等抽選）
+                                const baseCandidates = sysMaster[baseTerrainId].filter(c => c.id !== "SOCKET_LAKE" && c.id !== "SOCKET_OASIS");
+                                const candidates = baseCandidates.length > 0 ? baseCandidates : sysMaster[baseTerrainId];
+                                const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+                                spawnedSocket = {
+                                    id: chosen.id,
+                                    nameKey: chosen.nameKey,
+                                    category: chosen.category,
+                                    icon: chosen.icon,
+                                    bonusFood: chosen.bonusYields.food || 0,
+                                    bonusWood: chosen.bonusYields.wood || 0,
+                                    bonusDefense: chosen.bonusYields.defense || 0,
+                                    bonusMystic: chosen.bonusYields.mystic || 0
+                                };
+                            } else {
+                                spawnedSocket = { id: "SOCKET_WILD_WHEAT", nameKey: "SOCKET_WILD_WHEAT", bonusFood: 3, bonusWood: 0, bonusDefense: 0, bonusMystic: 0 };
                             }
-                        } else if (sysMaster && sysMaster[baseTerrainId]) {
-                            const candidates = sysMaster[baseTerrainId];
-                            const chosen = candidates[Math.floor(Math.random() * candidates.length)];
-                            spawnedSocket = {
-                                nameKey: chosen.nameKey,
-                                bonusFood: chosen.bonusYields.food || 0,
-                                bonusWood: chosen.bonusYields.wood || 0,
-                                bonusDefense: chosen.bonusYields.defense || 0,
-                                bonusMystic: chosen.bonusYields.mystic || 0
-                            };
-                        } else {
-                            spawnedSocket = { nameKey: "SOCKET_WILD_WHEAT", bonusFood: 3, bonusWood: 0, bonusMystic: 0 };
+
+                            if (spawnedSocket) {
+                                cell.cachedSocketSeeds[seedKey] = spawnedSocket;
+                            }
                         }
 
                         if (spawnedSocket) {
-                            cell.socketResource = spawnedSocket;
+                            cell.socketResource = { ...spawnedSocket };
                             const posStr = `(${String.fromCharCode(65+c)}${r+1})`;
                             const sName = I18n.t(spawnedSocket.nameKey);
                             if (typeof this.state.addLog === 'function') {
@@ -357,12 +377,12 @@ class GridEngine {
             "GL1_PLAINS":      { food: 3, wood: 0, mystic: 0 },
             "GL2_FOREST":      { food: 1, wood: 1, mystic: 0 },
             "GL3_DEEP_FOREST": { food: 0, wood: 2, mystic: 1 },
-            "H2_DESERT":       { food: 0, wood: 1, mystic: 1 },
-            "H2_DESERT_HILL":  { food: 0, wood: 1, mystic: 1 },
-            "H2_HILL":         { food: 2, wood: 1, mystic: 0 },
-            "H2_FOREST_HILL":  { food: 0, wood: 3, mystic: 0 },
-            "H2_DEEP_HILL":    { food: 0, wood: 4, mystic: 1 },
-            "H3_MOUNTAIN":     { food: 0, wood: 4, mystic: 1 }
+            "E2_DESERT":       { food: 0, wood: 1, mystic: 1 },
+            "E2_DESERT_HILL":  { food: 0, wood: 1, mystic: 1 },
+            "E2_HILL":         { food: 2, wood: 1, mystic: 0 },
+            "E2_FOREST_HILL":  { food: 0, wood: 3, mystic: 0 },
+            "E2_DEEP_HILL":    { food: 0, wood: 4, mystic: 1 },
+            "E3_MOUNTAIN":     { food: 0, wood: 4, mystic: 1 }
         };
 
         const bonus1x3Table = {
@@ -370,12 +390,12 @@ class GridEngine {
             "GL1_PLAINS":      { food: 6, wood: 0, mystic: 0 },
             "GL2_FOREST":      { food: 3, wood: 3, mystic: 0 },
             "GL3_DEEP_FOREST": { food: 0, wood: 5, mystic: 3 },
-            "H2_DESERT":       { food: 0, wood: 3, mystic: 3 },
-            "H2_DESERT_HILL":  { food: 0, wood: 3, mystic: 3 },
-            "H2_HILL":         { food: 5, wood: 3, mystic: 0 },
-            "H2_FOREST_HILL":  { food: 2, wood: 6, mystic: 0 },
-            "H2_DEEP_HILL":    { food: 0, wood: 8, mystic: 3 },
-            "H3_MOUNTAIN":     { food: 0, wood: 8, mystic: 3 }
+            "E2_DESERT":       { food: 0, wood: 3, mystic: 3 },
+            "E2_DESERT_HILL":  { food: 0, wood: 3, mystic: 3 },
+            "E2_HILL":         { food: 5, wood: 3, mystic: 0 },
+            "E2_FOREST_HILL":  { food: 2, wood: 6, mystic: 0 },
+            "E2_DEEP_HILL":    { food: 0, wood: 8, mystic: 3 },
+            "E3_MOUNTAIN":     { food: 0, wood: 8, mystic: 3 }
         };
 
         const isMatch = (nr, nc) => {

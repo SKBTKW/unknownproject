@@ -62,7 +62,7 @@
             DIRECTIVE_PRAYER_DESC: "✨ 神秘 ＆ 🛡️ 防衛産出 +40% ＆ コスト半減 (トレードオフ: 🌾 食料 -20%)",
             LOG_DIRECTIVE_CHANGED: "🏛️ 文明方針発令: [{name}] を発令! (コスト: 🔥-{cost})",
 
-            // 開花ソケット資源名 (全17種)
+            // 開花ソケット資源名 (全19種)
             SOCKET_COW: "牛 🌾+3 🧱+1/T",
             SOCKET_SHEEP: "羊 🌾+2 🧱+1/T",
             SOCKET_DEER: "鹿・猪 🌾+2 🧱+1/T",
@@ -73,6 +73,8 @@
             SOCKET_BARLEY: "大麦 🌾+2/T",
             SOCKET_APPLES: "林檎 🌾+3/T",
             SOCKET_DATES: "デーツ 🌾+1/T",
+            SOCKET_LAKE: "💧 清湖 🌾+2/T",
+            SOCKET_OASIS: "🌴 オアシス 🌾+1/T",
             SOCKET_LIMESTONE: "石灰岩 🧱+3/T",
             SOCKET_HEMATITE: "赤鉄鉱 🛡️+2 🧱+1/T",
             SOCKET_GRANITE: "花崗岩 🛡️+3/T",
@@ -190,6 +192,8 @@
             SOCKET_QUARRY: "Quarry 🧱+3/T",
             SOCKET_IRON_DEPOSIT: "Ore Vein 🧱+2 ✨+1/T",
             SOCKET_DATES: "Dates 🌾+1/T",
+            SOCKET_LAKE: "Lake 🌾+2/T",
+            SOCKET_OASIS: "Oasis 🌾+1/T",
 
             UI_TITLE: "Trial of Ages : Last Ember",
             UI_ROLE_AVATAR: "Role Icon",

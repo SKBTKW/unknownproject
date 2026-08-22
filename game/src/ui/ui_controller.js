@@ -61,6 +61,17 @@ class UIController {
             window.toggleBoardLabelMode = (e) => this.toggleBoardLabelMode(e);
             window.showDataPanelTooltip = (e) => this.showDataPanelTooltip(e);
             window.hideDataPanelTooltip = () => this.hideDataPanelTooltip();
+            window.undoLandPlacement = () => {
+                const undoSys = this.undoSys || (typeof window !== "undefined" ? window.undoSys : null);
+                if (undoSys) {
+                    undoSys.undo();
+                    this.selectedCard = null;
+                    this.selectedCardIdx = -1;
+                    if (focusLayerManager) focusLayerManager.onCardDeselect();
+                    this.render();
+                    this.highlightPlaceableCells();
+                }
+            };
             window.render = () => this.render();
         }
     }
@@ -504,8 +515,9 @@ class UIController {
 
             if (category !== "LAND") {
                 cardEl.innerHTML = `
-                    <div class="tcg-card-top-bar" style="padding:4px 8px;">
-                        <div class="tcg-title-pill" style="font-size:21px; font-weight:900; text-align:center; width:100%; letter-spacing:0.5px;">${cName}</div>
+                    <div class="tcg-card-top-bar" style="padding:4px 8px; display:flex; align-items:center; justify-content:space-between; gap:6px;">
+                        <div class="tcg-title-pill" style="font-size:20px; font-weight:900; text-align:center; flex:1; letter-spacing:0.5px;">${cName}</div>
+                        <div class="tcg-rarity-badge">${rCode}</div>
                     </div>
                     <div class="tcg-shape-art-area" style="display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-start; background:#1c2536; padding:14px; text-align:left; overflow:hidden; flex:1; border-radius:6px; margin:4px 0;">
                         <div style="font-size:17.5px; color:#ffffff; line-height:1.45; font-weight:bold; text-align:left; width:100%;">${cDesc}</div>
@@ -541,7 +553,7 @@ class UIController {
                 } else if (tid.includes("MOUNTAIN")) {
                     blockBg = "#9b59b6"; blockBorder = "#8e44ad"; blockShadow = "rgba(155, 89, 182, 0.85)";
                 } else if (tid.includes("DESERT")) {
-                    blockBg = "#f39c12"; blockBorder = "#d68910"; blockShadow = "rgba(243, 156, 18, 0.85)";
+                    blockBg = "#f7d794"; blockBorder = "#f1c40f"; blockShadow = "rgba(247, 215, 148, 0.85)";
                 } else if (tid.includes("PLAINS")) {
                     blockBg = "#1abc9c"; blockBorder = "#16a085"; blockShadow = "rgba(26, 188, 156, 0.85)";
                 }
@@ -568,8 +580,9 @@ class UIController {
                 const yieldText = `<span style="font-size:16px; color:#ffffff; font-weight:bold; margin-right:6px;">産出:</span> <span style="font-size:19.5px; font-weight:900; letter-spacing:0.8px; color:#ffffff;">${yieldContent}</span>`;
 
                 cardEl.innerHTML = `
-                    <div class="tcg-card-top-bar" style="padding:4px 8px;">
-                        <div class="tcg-title-pill" style="font-size:21px; font-weight:900; text-align:center; width:100%; letter-spacing:0.5px;">${cName}</div>
+                    <div class="tcg-card-top-bar" style="padding:4px 8px; display:flex; align-items:center; justify-content:space-between; gap:6px;">
+                        <div class="tcg-title-pill" style="font-size:20px; font-weight:900; text-align:center; flex:1; letter-spacing:0.5px;">${cName}</div>
+                        <div class="tcg-rarity-badge">${rCode}</div>
                     </div>
                     <div class="tcg-shape-art-area" style="display:flex; align-items:center; justify-content:center; padding:12px; flex:1; background:#1c2536; border-radius:6px; margin:4px 0;">
                         ${shapeHtml}
@@ -803,7 +816,7 @@ class UIController {
 
             // 当該セルの DOM 座標を取得
             let targetX = window.innerWidth / 2;
-            let targetY = window.innerHeight / 2;
+            let targetY = window.innerElevation / 2;
 
             const cellEl = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`) || document.querySelector(`#cell_${r}_${c}`);
             if (cellEl) {
@@ -879,16 +892,10 @@ class UIController {
     onCellMouseMove(e, r, c) {
         if (!this.state) return;
         const undoSys = this.undoSys || (typeof window !== "undefined" ? window.undoSys : null);
-        if (undoSys && undoSys.isCellPlacedThisTurn(r, c)) {
-            undoSys.showHoverTooltip(e, r, c);
-            this.hideTileTooltip();
-            return;
-        } else if (undoSys) {
-            undoSys.hideHoverTooltip();
-        }
+        if (undoSys) undoSys.hideHoverTooltip();
 
         const cellData = this.state.grid[r][c];
-        this.showTileTooltip(e, r, c, cellData);
+        this.showTileTooltip(e, r, c, cellData, r, c);
     }
 
     showTileTooltip(e, r, c, cell) {
@@ -901,6 +908,9 @@ class UIController {
         }
 
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' && window.I18n ? window.I18n : { t: k => k });
+        const undoSys = this.undoSys || (typeof window !== "undefined" ? window.undoSys : null);
+        const isPlacedThisTurn = (undoSys && typeof undoSys.isCellPlacedThisTurn === "function") ? undoSys.isCellPlacedThisTurn(r, c) : false;
+
         const coordStr = `${String.fromCharCode(65 + c)}${r + 1}`;
         const isHQVic = (this.state && typeof this.state.isHQVicinity === "function") ? this.state.isHQVicinity(r, c) : false;
         let title = `土地 [${coordStr}]`;
@@ -911,10 +921,14 @@ class UIController {
         if (cell.isHQ) {
             title = `🏛️ 本営 HQ [${coordStr}]`;
             desc = "基礎産出: 🌾+10 🧱+10 🛡️10 ✨+1";
+        } else if (cell.hasSocket && !cell.placed) {
+            title = `★ 資源ソケット [${coordStr}]`;
+            desc = "<div style='color:#f1c40f; font-weight:900; font-size:16px; margin-bottom:4px;'>★ 土地ブロック配置時ボーナス資源発見</div><div style='color:#ced6e0; font-size:14px; line-height:1.4;'>このマスに土地を配置すると、地形に応じた固有の特産品（★）が開花し、毎ターン追加の持続ボーナスを獲得します。</div>";
         } else if (cell.placed && cell.terrain) {
             const t = cell.terrain;
             const tName = I18n.t(t.nameKey || t.id || "TERRAIN_PLAINS");
-            title = `🌱 ${tName} [${coordStr}]`;
+            const placedTag = isPlacedThisTurn ? ` <span style="font-size:12px; background:#e74c3c; color:#fff; padding:2px 6px; border-radius:4px; margin-left:6px; font-weight:bold;">当ターン配置</span>` : "";
+            title = `🌱 ${tName} [${coordStr}]${placedTag}`;
 
             let tf = (t.food !== undefined) ? t.food : ((t.baseYieldsPerTile && t.baseYieldsPerTile.food) || (t.yields && t.yields.food) || 0);
             let tw = (t.wood !== undefined) ? t.wood : ((t.baseYieldsPerTile && t.baseYieldsPerTile.wood) || (t.yields && t.yields.wood) || 0);
@@ -961,11 +975,21 @@ class UIController {
             const yieldStr = yieldParts.length > 0 ? yieldParts.join(" ") : "産出なし";
             const bonusStr = bonusParts.length > 0 ? ` <span style="color:#f1c40f;">(${bonusParts.join(", ")})</span>` : "";
             desc = `毎ターン産出: <strong>${yieldStr}</strong>${bonusStr}`;
+
+            // ↩️ 当ターン配置マスの場合は配置取り消し（置き直し）ガイドを明示
+            if (isPlacedThisTurn) {
+                desc += `
+                    <div style="margin-top:10px; padding:8px 10px; background:rgba(231,76,60,0.22); border:1.5px solid #ff4757; border-radius:6px; font-size:13px; color:#ff6b81; font-weight:bold; display:flex; align-items:center; gap:6px; line-height:1.4;">
+                        <span style="font-size:16px; color:#ff4757;">↩</span>
+                        <span><strong>このマスをクリック</strong>すると、配置を取り消して手札へ戻し置き直せます</span>
+                    </div>
+                `;
+            }
         }
 
         tt.innerHTML = `<div style="font-size:18px; font-weight:900; color:#1abc9c; margin-bottom:6px; letter-spacing:0.5px;">${title}</div><div style="font-size:15px; color:#e0e0e0; line-height:1.5;">${desc}</div>`;
-        tt.style.left = `${e.pageX + 12}px`;
-        tt.style.top = `${e.pageY + 12}px`;
+        tt.style.left = `${e.pageX + 14}px`;
+        tt.style.top = `${e.pageY + 14}px`;
         tt.style.display = "block";
     }
 

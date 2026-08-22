@@ -33,8 +33,8 @@ def verify_all_specs_against_code(rules_dir, game_dir):
     expected_yields = {
         'GL1_PLAINS':  {'food': 4, 'wood': 0, 'defense': 0, 'mystic': 0},
         'GL2_FOREST':  {'food': 2, 'wood': 2, 'defense': 2, 'mystic': 0},
-        'H2_HILL':     {'food': 2, 'wood': 1, 'defense': 1, 'mystic': 0},
-        'H3_MOUNTAIN': {'food': 0, 'wood': 3, 'defense': 5, 'mystic': 1}
+        'E2_HILL':     {'food': 2, 'wood': 1, 'defense': 1, 'mystic': 0},
+        'E3_MOUNTAIN': {'food': 0, 'wood': 3, 'defense': 5, 'mystic': 1}
     }
 
     for terrain_id, exp in expected_yields.items():

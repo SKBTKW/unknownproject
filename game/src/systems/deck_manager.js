@@ -31,22 +31,22 @@ class DeckManager {
 
         // rules/09_card_list.md 仕様書完全準拠のフォールバックデータ
         this._landCardMasterCache = [
-            { id: "CARD_PLAINS_1X1", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, h: 1, yields: { food: 4, wood: 0, defense: 0, mystic: 0 }, shape: [[1]], minStage: 1, reqH2: 0, rarity: "C", weight: 1.0 },
-            { id: "CARD_PLAINS_1X2", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, h: 1, yields: { food: 4, wood: 0, defense: 0, mystic: 0 }, shape: [[1, 1]], minStage: 1, reqH2: 0, rarity: "C", weight: 0.8 },
-            { id: "CARD_PLAINS_1X3_S", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, h: 1, yields: { food: 4, wood: 0, defense: 0, mystic: 0 }, shape: [[1, 1, 1]], minStage: 2, reqH2: 0, rarity: "R", weight: 0.18 },
-            { id: "CARD_PLAINS_1X3_L", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, h: 1, yields: { food: 4, wood: 0, defense: 0, mystic: 0 }, shape: [[1, 0], [1, 1]], minStage: 2, reqH2: 0, rarity: "R", weight: 0.14 },
-            { id: "CARD_FOREST_1X1", terrainId: "GL2_FOREST", nameKey: "TERRAIN_FOREST", gl: 2, h: 1, yields: { food: 2, wood: 2, defense: 2, mystic: 0 }, shape: [[1]], minStage: 1, reqH2: 0, rarity: "C", weight: 1.0 },
-            { id: "CARD_FOREST_1X2", terrainId: "GL2_FOREST", nameKey: "TERRAIN_FOREST", gl: 2, h: 1, yields: { food: 2, wood: 2, defense: 2, mystic: 0 }, shape: [[1, 1]], minStage: 1, reqH2: 0, rarity: "UC", weight: 0.6 },
-            { id: "CARD_DEEP_FOREST_1X1", terrainId: "GL3_DEEP_FOREST", nameKey: "TERRAIN_DEEP_FOREST", gl: 3, h: 1, yields: { food: 1, wood: 3, defense: 3, mystic: 1 }, shape: [[1]], minStage: 1, reqH2: 0, rarity: "R", weight: 0.15 },
-            { id: "CARD_DEEP_FOREST_1X2", terrainId: "GL3_DEEP_FOREST", nameKey: "TERRAIN_DEEP_FOREST", gl: 3, h: 1, yields: { food: 1, wood: 3, defense: 3, mystic: 1 }, shape: [[1, 1]], minStage: 2, reqH2: 0, rarity: "R", weight: 0.05 },
-            { id: "CARD_HILL_1X1", terrainId: "H2_HILL", nameKey: "TERRAIN_HILL", gl: 1, h: 2, yields: { food: 2, wood: 1, defense: 1, mystic: 0 }, shape: [[1]], minStage: 1, reqH2: 0, rarity: "UC", weight: 0.50 },
-            { id: "CARD_HILL_1X2", terrainId: "H2_HILL", nameKey: "TERRAIN_HILL", gl: 1, h: 2, yields: { food: 2, wood: 1, defense: 1, mystic: 0 }, shape: [[1, 1]], minStage: 1, reqH2: 0, rarity: "UC", weight: 0.35 },
-            { id: "CARD_HILL_1X3_L", terrainId: "H2_HILL", nameKey: "TERRAIN_HILL", gl: 1, h: 2, yields: { food: 2, wood: 1, defense: 1, mystic: 0 }, shape: [[1, 0], [1, 1]], minStage: 2, reqH2: 0, rarity: "R", weight: 0.12 },
-            { id: "CARD_MOUNTAIN_1X1", terrainId: "H3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", gl: 2, h: 3, yields: { food: 0, wood: 3, defense: 5, mystic: 1 }, shape: [[1]], minStage: 2, reqH2: 3, rarity: "R", weight: 0.20 },
-            { id: "CARD_MOUNTAIN_1X2", terrainId: "H3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", gl: 2, h: 3, yields: { food: 0, wood: 3, defense: 5, mystic: 1 }, shape: [[1, 1]], minStage: 2, reqH2: 3, rarity: "R", weight: 0.15 },
-            { id: "CARD_MOUNTAIN_1X3_S", terrainId: "H3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", gl: 2, h: 3, yields: { food: 0, wood: 3, defense: 5, mystic: 1 }, shape: [[1, 1, 1]], minStage: 2, reqH2: 3, rarity: "R", weight: 0.03 },
-            { id: "CARD_DESERT_1X1", terrainId: "GL0_DESERT", nameKey: "TERRAIN_DESERT", gl: 0, h: 1, yields: { food: 0, wood: 0, defense: 0, mystic: 5 }, shape: [[1]], minStage: 1, reqH2: 0, rarity: "R", weight: 0.15 },
-            { id: "CARD_DESERT_1X2", terrainId: "GL0_DESERT", nameKey: "TERRAIN_DESERT", gl: 0, h: 1, yields: { food: 0, wood: 0, defense: 0, mystic: 5 }, shape: [[1, 1]], minStage: 2, reqH2: 0, rarity: "UR", weight: 0.03 },
+            { id: "CARD_PLAINS_1X1", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, e: 1, yields: { food: 4, wood: 0, defense: 0, mystic: 0 }, shape: [[1]], minStage: 1, reqE2: 0, rarity: "C", weight: 1.0 },
+            { id: "CARD_PLAINS_1X2", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, e: 1, yields: { food: 4, wood: 0, defense: 0, mystic: 0 }, shape: [[1, 1]], minStage: 1, reqE2: 0, rarity: "C", weight: 0.8 },
+            { id: "CARD_PLAINS_1X3_S", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, e: 1, yields: { food: 4, wood: 0, defense: 0, mystic: 0 }, shape: [[1, 1, 1]], minStage: 2, reqE2: 0, rarity: "R", weight: 0.18 },
+            { id: "CARD_PLAINS_1X3_L", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, e: 1, yields: { food: 4, wood: 0, defense: 0, mystic: 0 }, shape: [[1, 0], [1, 1]], minStage: 2, reqE2: 0, rarity: "R", weight: 0.14 },
+            { id: "CARD_FOREST_1X1", terrainId: "GL2_FOREST", nameKey: "TERRAIN_FOREST", gl: 2, e: 1, yields: { food: 2, wood: 2, defense: 2, mystic: 0 }, shape: [[1]], minStage: 1, reqE2: 0, rarity: "C", weight: 1.0 },
+            { id: "CARD_FOREST_1X2", terrainId: "GL2_FOREST", nameKey: "TERRAIN_FOREST", gl: 2, e: 1, yields: { food: 2, wood: 2, defense: 2, mystic: 0 }, shape: [[1, 1]], minStage: 1, reqE2: 0, rarity: "UC", weight: 0.6 },
+            { id: "CARD_DEEP_FOREST_1X1", terrainId: "GL3_DEEP_FOREST", nameKey: "TERRAIN_DEEP_FOREST", gl: 3, e: 1, yields: { food: 1, wood: 3, defense: 3, mystic: 1 }, shape: [[1]], minStage: 1, reqE2: 0, rarity: "R", weight: 0.15 },
+            { id: "CARD_DEEP_FOREST_1X2", terrainId: "GL3_DEEP_FOREST", nameKey: "TERRAIN_DEEP_FOREST", gl: 3, e: 1, yields: { food: 1, wood: 3, defense: 3, mystic: 1 }, shape: [[1, 1]], minStage: 2, reqE2: 0, rarity: "R", weight: 0.05 },
+            { id: "CARD_HILL_1X1", terrainId: "E2_HILL", nameKey: "TERRAIN_HILL", gl: 1, e: 2, yields: { food: 2, wood: 1, defense: 1, mystic: 0 }, shape: [[1]], minStage: 1, reqE2: 0, rarity: "UC", weight: 0.50 },
+            { id: "CARD_HILL_1X2", terrainId: "E2_HILL", nameKey: "TERRAIN_HILL", gl: 1, e: 2, yields: { food: 2, wood: 1, defense: 1, mystic: 0 }, shape: [[1, 1]], minStage: 1, reqE2: 0, rarity: "UC", weight: 0.35 },
+            { id: "CARD_HILL_1X3_L", terrainId: "E2_HILL", nameKey: "TERRAIN_HILL", gl: 1, e: 2, yields: { food: 2, wood: 1, defense: 1, mystic: 0 }, shape: [[1, 0], [1, 1]], minStage: 2, reqE2: 0, rarity: "R", weight: 0.12 },
+            { id: "CARD_MOUNTAIN_1X1", terrainId: "E3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", gl: 2, e: 3, yields: { food: 0, wood: 3, defense: 5, mystic: 1 }, shape: [[1]], minStage: 2, reqE2: 3, rarity: "R", weight: 0.20 },
+            { id: "CARD_MOUNTAIN_1X2", terrainId: "E3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", gl: 2, e: 3, yields: { food: 0, wood: 3, defense: 5, mystic: 1 }, shape: [[1, 1]], minStage: 2, reqE2: 3, rarity: "R", weight: 0.15 },
+            { id: "CARD_MOUNTAIN_1X3_S", terrainId: "E3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", gl: 2, e: 3, yields: { food: 0, wood: 3, defense: 5, mystic: 1 }, shape: [[1, 1, 1]], minStage: 2, reqE2: 3, rarity: "R", weight: 0.03 },
+            { id: "CARD_DESERT_1X1", terrainId: "GL0_DESERT", nameKey: "TERRAIN_DESERT", gl: 0, e: 1, yields: { food: 0, wood: 0, defense: 0, mystic: 5 }, shape: [[1]], minStage: 1, reqE2: 0, rarity: "R", weight: 0.15 },
+            { id: "CARD_DESERT_1X2", terrainId: "GL0_DESERT", nameKey: "TERRAIN_DESERT", gl: 0, e: 1, yields: { food: 0, wood: 0, defense: 0, mystic: 5 }, shape: [[1, 1]], minStage: 2, reqE2: 0, rarity: "UR", weight: 0.03 },
 
             // コマンドカード 『土地探索』 (ドロー条件: 盤面にソケットが存在しない時)
             { id: "CMD_LAND_EXPLORATION", category: "COMMAND", nameKey: "CMD_LAND_EXPLORATION_NAME", descriptionKey: "CMD_LAND_EXPLORATION_DESC", cost: { food: 30, wood: 30, ember: 1 }, noSocketsOnBoard: true, minStage: 1, rarity: "R", weight: 0.40 }
@@ -69,7 +69,7 @@ class DeckManager {
             }
         }
 
-        if (c.reqH2HillsOnBoard && h2Count < c.reqH2HillsOnBoard) return false;
+        if (c.reqE2HillsOnBoard && h2Count < c.reqE2HillsOnBoard) return false;
 
         if (c.reqHillOrMountainAroundHQ && this.state && this.state.grid) {
             let found = false;
@@ -81,7 +81,7 @@ class DeckManager {
                     const cell = this.state.grid[r][cCol];
                     if (cell && cell.placed && cell.terrain) {
                         const tid = cell.terrain.terrainId || cell.terrain.id;
-                        if (tid === "H2_HILL" || tid === "H3_MOUNTAIN") { found = true; break; }
+                        if (tid === "E2_HILL" || tid === "E3_MOUNTAIN") { found = true; break; }
                     }
                 }
                 if (found) break;
@@ -99,7 +99,7 @@ class DeckManager {
                     const cell = this.state.grid[r][cCol];
                     if (cell && cell.placed && cell.terrain) {
                         const tid = cell.terrain.terrainId || cell.terrain.id;
-                        if (tid === "H2_HILL" || tid === "H3_MOUNTAIN") countHM++;
+                        if (tid === "E2_HILL" || tid === "E3_MOUNTAIN") countHM++;
                     }
                 }
             }
@@ -113,7 +113,7 @@ class DeckManager {
                     const cell = this.state.grid[r][cCol];
                     if (cell && cell.placed && !cell.merged && cell.terrain) {
                         const tid = cell.terrain.terrainId || cell.terrain.id;
-                        if (tid === "GL0_DESERT" || tid === "H3_MOUNTAIN") { found = true; break; }
+                        if (tid === "GL0_DESERT" || tid === "E3_MOUNTAIN") { found = true; break; }
                     }
                 }
             }
@@ -179,7 +179,7 @@ class DeckManager {
     drawSingleCard() {
         const master = this.getLandCardMaster();
         const stageNum = (this.state && this.state.stage) ? (typeof this.state.stage === 'object' ? (this.state.stage.id || 1) : this.state.stage) : 1;
-        const h2Count = (this.state && typeof this.state.countH2HillsOnBoard === 'function') ? this.state.countH2HillsOnBoard() : 0;
+        const h2Count = (this.state && typeof this.state.countE2HillsOnBoard === 'function') ? this.state.countE2HillsOnBoard() : 0;
 
         let eligible = master.filter(c => this.isCardEligible(c, stageNum, h2Count));
         if (eligible.length === 0) eligible = master.filter(c => (c.category === "LAND" || !c.category) && (c.minStage || 1) <= stageNum);
@@ -345,34 +345,17 @@ class DeckManager {
         const cName = I18n.t(cardObj.nameKey) || cardObj.id;
 
         if (cId === "CMD_AGRICULTURAL_POLICY") {
-            // 🌾 農地改革: コスト 🧱-20 (コスト消費は共通処理で wood: 20 実行済み)
+            // 🌾 農地改革: コスト 🧱-20 (永続ステータス変更のみ、BuffSystemからは除外)
             this.state.permanentPlainsFoodBonus = (this.state.permanentPlainsFoodBonus || 0) + 1;
-            this.state.addBuff({
-                id: cId,
-                name: "🌾 農地改革",
-                shortName: "草原産出+1/T",
-                icon: "🌾",
-                description: "全ての草原マスの産出を 🌾+1/T 永続加算",
-                badgeText: "永続バフ (R)",
-                category: "CARD_EFFECT"
-            });
             this.state.addLog(`📜 農地改革を発動！ コスト (🧱-20) を支払い、全草原マスの産出を 🌾+1/T 永続加算！`);
         } else if (cId === "CMD_BLACK_MARKET") {
             this.state.wood += 35;
             this.state.mystic += 10;
             this.state.addLog(I18n.t("LOG_CMD_BLACK_MARKET") || `📜 ${cName}を発動！ 🧱+35 ＆ ✨+10 を獲得！`);
         } else if (cId === "CMD_IRON_RAMPART") {
+            // 🛡️ 鉄壁の防壁構築: 永続防衛力加算のみ、BuffSystemからは除外
             this.state.defense += 25;
             this.state.permanentVicinityDefenseBonus = (this.state.permanentVicinityDefenseBonus || 0) + 2;
-            this.state.activeBuffs.push({
-                id: cId,
-                name: "🛡️ 鉄壁の防壁構築",
-                shortName: "防衛+25",
-                icon: "🛡️",
-                description: "グローバル防衛力 🛡️+25 ＆ 本営近郊 🛡️+2/T 永続加算",
-                badgeText: "永続バフ",
-                category: "CARD_EFFECT"
-            });
             this.state.addLog(I18n.t("LOG_CMD_IRON_RAMPART") || `🛡️ ${cName}を発動！ グローバル防衛力 🛡️+25 獲得！`);
         } else if (cId === "CMD_BALLISTA_SET") {
             this.state.defense += 40;
@@ -413,30 +396,11 @@ class DeckManager {
         } else if (cId === "FAC_GREAT_WINDMILL") {
             if (!this.state.activeConstructionProjects) this.state.activeConstructionProjects = [];
             this.state.activeConstructionProjects.push({ name: "FAC_GREAT_WINDMILL", remainingTurns: 3, woodCostPerTurn: 4 });
-            this.state.activeBuffs.push({
-                id: cId,
-                name: "🏛️ 大風車の建設",
-                shortName: "大風車 (3T)",
-                icon: "🏛️",
-                description: "毎ターン 🧱-4 投資中 (残り3Tで完成)",
-                badgeText: "建設中",
-                category: "CONSTRUCTION",
-                remainingTurns: 3
-            });
             this.state.addLog(I18n.t("LOG_FAC_GREAT_WINDMILL") || `🏛️ ${cName}の建設を開始！ 3T継続投資へ`);
         } else if (cId === "LGD_DESPERATE_PACT") {
             this.state.ember = Math.min(20, this.state.ember + 5);
             this.state.handOfferingSize = 4;
             this.state.nextTrialMultiplier = 1.5;
-            this.state.activeBuffs.push({
-                id: cId,
-                name: "🔥 背水の盟約",
-                shortName: "手札4枚拡張",
-                icon: "🔥",
-                description: "手札オファリング枠が永久に4枚へ拡張 ＆ 試練難度1.5倍",
-                badgeText: "レジェンド",
-                category: "CARD_EFFECT"
-            });
             this.state.addLog(I18n.t("LOG_LGD_DESPERATE_PACT") || `📜 ${cName}を発動！ 🔥+5 ＆ 手札オファリング枠が永久に4枚へ拡張！`);
         } else if (cId === "CMD_LAND_FOCUS") {
             this.state.activeDrawBias = { targetCategory: "LAND", type: "UNTIL_BLOCKS", untilValue: 6 };

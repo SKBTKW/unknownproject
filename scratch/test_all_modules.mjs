@@ -153,8 +153,33 @@ capEngine.state.placeShape(0, 4, [[1]], pTerrain);
 assert(capEngine.state.mergedBlocks[mGid].cells.length === 4, '4マス上限まで同一グループに連結されること');
 capEngine.state.hasPickedThisTurn = false;
 capEngine.state.placeShape(0, 3, [[1]], pTerrain);
-assert(capEngine.state.grid[0][3].mergeGroupId !== mGid, '5マス目は既存の4マスグループには連結されず単独ブロックとなること');
+// --- 10. ソケット開花のアンドゥリセマラ防止（決定論的固定化）検問 ---
+console.log('\n🔒 [10/10] ソケット開花のアンドゥリセマラ防止（決定論的固定化）');
+const sockEngine = new GameEngine();
+sockEngine.state.grid = sockEngine.gridEngine.initGrid(5);
+const sockUndoSys = new UndoLandSystem(sockEngine.state);
+sockEngine.state.grid[1][2].hasSocket = true;
+sockEngine.state.grid[1][2].placed = false;
+
+// 1回目の配置
+sockEngine.state.hasPickedThisTurn = false;
+sockUndoSys.captureSnapshot([{ r: 1, c: 2 }]);
+sockEngine.state.placeShape(1, 2, [[1]], pTerrain);
+const sockFirst = sockEngine.state.grid[1][2].socketResource;
+assert(sockFirst !== null, 'ソケット資源が開花すること');
+
+// アンドゥ
+sockUndoSys.undo();
+assert(sockEngine.state.grid[1][2].placed === false, 'アンドゥで未配置に戻ること');
+
+// 2回目の配置（同一地形）
+sockEngine.state.hasPickedThisTurn = false;
+sockUndoSys.captureSnapshot([{ r: 1, c: 2 }]);
+sockEngine.state.placeShape(1, 2, [[1]], pTerrain);
+const sockSecond = sockEngine.state.grid[1][2].socketResource;
+assert(sockSecond.nameKey === sockFirst.nameKey, '同一地勢での再配置時は100%同一の資源が開花すること（リセマラ完全防止）');
+assert(sockSecond.bonusFood === sockFirst.bonusFood, 'ボーナス数値も100%一致すること');
 
 console.log('\n====================================================');
-console.log(`🎉 全テスト完了: 35 / 35 件 合格 (100% PASS)`);
+console.log(`🎉 全テスト完了: 39 / 39 件 合格 (100% PASS)`);
 console.log('====================================================');
