@@ -10,6 +10,7 @@ import { ModalSystem } from './modal_system.js';
 import { focusLayerManager } from './focus_layer_system.js';
 import { boardCameraSystem } from './board_camera_system.js';
 import { UndoLandSystem } from '../systems/undo_land_system.js';
+import { EmberStatusComponent } from './ember_status_component.js';
 
 class UIController {
     /**
@@ -20,6 +21,7 @@ class UIController {
         this.state = (engine && engine.state) ? engine.state : engine;
         this.drawSys = (engine && engine.deckManager) ? engine.deckManager : (engine && engine.drawSys ? engine.drawSys : null);
         this.undoSys = (engine && engine.undoSys) ? engine.undoSys : (UndoLandSystem && this.state ? new UndoLandSystem(this.state) : null);
+        this.emberStatusComponent = (typeof document !== 'undefined') ? new EmberStatusComponent() : null;
         this.selectedCard = null;
         this.selectedCardIdx = -1;
         this.selectedReserveIdx = -1;
@@ -242,6 +244,11 @@ class UIController {
             this.setElementText("valDefense", defTotal);
             this.setElementText("valMystic", this.state.mystic);
             this.setElementText("valMysticProd", `+${prods.totalMystic || 1}`);
+
+            // 🔥 残り火ステータス・HUDコンポーネントのリアルタイム更新
+            if (this.emberStatusComponent && typeof this.emberStatusComponent.update === "function") {
+                this.emberStatusComponent.update(this.state);
+            }
             
             const placedCount = (typeof this.state.countPlacedTiles === "function") ? this.state.countPlacedTiles() : 1;
             const badgeComp = (typeof TerritoryBadgeComponent !== "undefined" && TerritoryBadgeComponent) ? TerritoryBadgeComponent : (typeof window !== "undefined" ? window.TerritoryBadgeComponent : null);

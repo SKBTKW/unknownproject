@@ -1078,11 +1078,12 @@ body {
             overflow: visible;
         }
 
-        /* 🔥 中央: 残り火 画面真中央センタリング (超巨大 & 発光) */
+        /* 🔥 中央: 残り火 画面真中央センタリング (超巨大 & 発光 & 完全中央固定) */
         .ember-center-box-master {
             position: absolute;
             left: 50%;
-            transform: translateX(-50%);
+            top: 50%;
+            transform: translate(-50%, -50%);
             display: flex;
             align-items: center;
             gap: 8px;
@@ -1693,4 +1694,164 @@ body {
     color: #ffffff !important;
     font-weight: 900;
 }
-    
+
+/* ==================================================================== */
+/* 🔥 EmberStatusComponent: 残り火詳細ステータス ツールチップ */
+/* ==================================================================== */
+
+.ember-detail-tooltip-container {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 280px;
+    z-index: 1000;
+    pointer-events: auto;
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+    visibility: visible;
+    opacity: 1;
+}
+
+.ember-detail-tooltip-container.ember-tooltip-hidden {
+    visibility: hidden;
+    opacity: 0;
+    transform: translateX(-50%) translateY(-6px);
+    pointer-events: none;
+}
+
+.ember-tooltip-card {
+    background: rgba(18, 22, 28, 0.96);
+    border: 1.5px solid rgba(255, 120, 40, 0.4);
+    border-radius: 10px;
+    padding: 12px 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 15px rgba(255, 100, 30, 0.2);
+    backdrop-filter: blur(8px);
+    color: #f1f2f6;
+    font-family: inherit;
+    font-size: 11px;
+    line-height: 1.4;
+    text-align: left;
+}
+
+.ember-tooltip-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.ember-tooltip-title {
+    font-size: 13px;
+    font-weight: 900;
+    color: #ffa502;
+    letter-spacing: 0.5px;
+}
+
+.ember-tooltip-badge {
+    font-size: 11px;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.ember-tooltip-badge.status-prosperous {
+    background: rgba(255, 165, 2, 0.25);
+    border: 1px solid #ffa502;
+    color: #ffa502;
+}
+
+.ember-tooltip-badge.status-standard {
+    background: rgba(46, 204, 113, 0.25);
+    border: 1px solid #2ecc71;
+    color: #2ecc71;
+}
+
+.ember-tooltip-badge.status-crisis {
+    background: rgba(231, 76, 60, 0.25);
+    border: 1px solid #e74c3c;
+    color: #ff6b6b;
+    animation: pulseCrisis 1.2s infinite alternate;
+}
+
+@keyframes pulseCrisis {
+    0% { transform: scale(1.0); }
+    100% { transform: scale(1.06); }
+}
+
+.ember-tooltip-effect {
+    font-size: 10px;
+    color: #a4b0be;
+    margin-bottom: 8px;
+}
+
+.ember-tooltip-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.12);
+    margin: 8px 0;
+}
+
+.ember-tooltip-section-title {
+    font-size: 10px;
+    font-weight: 800;
+    color: #ced6e0;
+    margin-bottom: 6px;
+    letter-spacing: 0.3px;
+}
+
+.ember-tooltip-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+    font-size: 11px;
+}
+
+.ember-tooltip-row .row-label {
+    color: #dfe4ea;
+}
+
+.ember-tooltip-row .row-val {
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.ember-tooltip-total {
+    margin-top: 4px;
+    padding-top: 2px;
+}
+
+.text-positive { color: #2ecc71 !important; }
+.text-neutral { color: #f1f2f6 !important; }
+.text-negative { color: #ff6b6b !important; }
+.text-warning { color: #ff9f43 !important; }
+.font-bold { font-weight: 800; }
+
+.ember-tooltip-milestone {
+    margin-top: 10px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.milestone-label {
+    font-size: 10px;
+    color: #ced6e0;
+    margin-bottom: 4px;
+    font-weight: bold;
+}
+
+.milestone-bar-bg {
+    width: 100%;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.milestone-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff9f43, #2ecc71);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}

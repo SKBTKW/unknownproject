@@ -24,6 +24,7 @@ import { UIController } from './ui/ui_controller.js';
 import { FocusLayerManager, focusLayerManager } from './ui/focus_layer_system.js';
 import { BoardCameraSystem, boardCameraSystem } from './ui/board_camera_system.js';
 import { GameSettings, gameSettings, SettingsModalSystem, settingsModalInstance } from './ui/settings_modal_system.js';
+import { EmberStatusComponent } from './ui/ember_status_component.js';
 
 export {
     I18n,
@@ -56,7 +57,8 @@ export {
     GameSettings,
     gameSettings,
     SettingsModalSystem,
-    settingsModalInstance
+    settingsModalInstance,
+    EmberStatusComponent
 };
 
 console.log('🎮 [App] Clean True ES Modules Master Entrypoint Loaded Successfully.');

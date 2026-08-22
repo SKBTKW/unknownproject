@@ -15,7 +15,8 @@ import {
     BuffSystem,
     GameState,
     GameEngine,
-    TerritoryBadgeComponent
+    TerritoryBadgeComponent,
+    EmberStatusComponent
 } from '../game/src/app.js';
 
 console.log('====================================================');
@@ -386,6 +387,28 @@ emberEngine.state.processTurnEndMaintenance();
 assert(emberEngine.state.food === 0, '不足時に食料が 0 にリセットされること');
 assert(emberEngine.state.ember === 6, '食料不足ペナルティ (🔥-2) ＋ 標準減衰 (🔥-1) で 9 - 3 = 6 になること');
 
+// --- 18. EmberStatusComponent 状態計算＆HUDデータ構造体 検問 ---
+console.log('\n🔥 [18/18] EmberStatusComponent HUDデータ計算 ＆ 状態解析検証');
+assert(typeof EmberStatusComponent.calculateStatus === 'function', 'EmberStatusComponent.calculateStatus 静的メソッドが存在すること');
+
+const statusStandard = EmberStatusComponent.calculateStatus({ ember: 15, food: 100, reserveSlots: [] });
+assert(statusStandard.statusLevel === 'STANDARD', '🔥15 で statusLevel が STANDARD であること');
+assert(statusStandard.foodCost === 20, '標準状態で foodCost が 20 であること');
+assert(statusStandard.emberDelta === -1, '🌾100 (<200) で emberDelta が -1 であること');
+assert(statusStandard.totalTurnDelta === -1, '保留枠なしで totalTurnDelta が -1 であること');
+
+const statusProsperous = EmberStatusComponent.calculateStatus({ ember: 25, food: 550, reserveSlots: [{ id: 'CARD_PLAINS_1X1' }] });
+assert(statusProsperous.statusLevel === 'PROSPEROUS', '🔥25 で statusLevel が PROSPEROUS であること');
+assert(statusProsperous.foodCost === 25, '旺盛状態で foodCost が 25 であること');
+assert(statusProsperous.emberDelta === 1, '🌾550 (>=500) で emberDelta が +1 (自家発熱) であること');
+assert(statusProsperous.reserveCost === -1, '保留枠ありで reserveCost が -1 であること');
+assert(statusProsperous.totalTurnDelta === 0, '自家発熱(+1)と保留維持費(-1)で totalTurnDelta が 0 になること');
+
+const statusCrisis = EmberStatusComponent.calculateStatus({ ember: 7, food: 220, reserveSlots: [] });
+assert(statusCrisis.statusLevel === 'CRISIS', '🔥7 で statusLevel が CRISIS であること');
+assert(statusCrisis.foodCost === 15, '危機状態で foodCost が 15 に減圧されること');
+assert(statusCrisis.emberDelta === 0, '🌾220 (>=200) で減衰ストップ (0) であること');
+
 console.log('\n====================================================');
-console.log(`🎉 全テスト完了: 88 / 88 件 合格 (100% PASS)`);
+console.log(`🎉 全テスト完了: 100 / 100 件 合格 (100% PASS)`);
 console.log('====================================================');
