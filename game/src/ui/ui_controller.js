@@ -5,7 +5,6 @@ import { TerritoryBadgeComponent } from './territory_badge_component.js';
 import { UILayoutConfig } from './layout_config.js';
 import { BlockPlacementSystem } from './block_placement_system.js';
 import { ProductionCalculator } from '../systems/production_calculator.js';
-import { V2UIRenderer } from './v2_ui_renderer.js';
 import { ModalSystem } from './modal_system.js';
 import { focusLayerManager } from './focus_layer_system.js';
 import { boardCameraSystem } from './board_camera_system.js';
@@ -277,7 +276,6 @@ class UIController {
 
             this.renderBoardGrid(I18n);
             this.renderOfferingCards(I18n);
-            this.renderReserveSlots(I18n);
             this.renderBuffPanel();
             this.updateMulliganButton();
 
@@ -928,9 +926,6 @@ class UIController {
         cardRowEl.appendChild(reserveContainer);
     }
 
-    renderReserveSlots(I18n) {
-        // 右端へ統合済み
-    }
     selectReserveCard(reserveIdx = 0) {
         if (!this.state || this.state.hasPickedThisTurn) return;
         if (!this.state.reserveSlots || !this.state.reserveSlots[reserveIdx]) return;

@@ -19,7 +19,6 @@ import { BuffPanelComponent } from './ui/buff_panel_component.js';
 import { territoryBadgeInstance as TerritoryBadgeComponent, TerritoryBadgeComponent as TerritoryBadgeComponentClass } from './ui/territory_badge_component.js';
 import { UILayoutConfig, UI_FEATURE_FLAGS } from './ui/layout_config.js';
 import { BlockPlacementSystem } from './ui/block_placement_system.js';
-import { V2UIRenderer } from './ui/v2_ui_renderer.js';
 import { UIController } from './ui/ui_controller.js';
 import { FocusLayerManager, focusLayerManager } from './ui/focus_layer_system.js';
 import { BoardCameraSystem, boardCameraSystem } from './ui/board_camera_system.js';
@@ -48,7 +47,6 @@ export {
     UILayoutConfig,
     UI_FEATURE_FLAGS,
     BlockPlacementSystem,
-    V2UIRenderer,
     UIController,
     FocusLayerManager,
     focusLayerManager,

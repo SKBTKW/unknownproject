@@ -546,38 +546,8 @@ body {
     from { opacity: 0; transform: translateY(-8px); }
     to { opacity: 1; transform: translateY(0); }
 }
-.log-dropdown-header-bar {
-    background: #19202c;
-    padding: 8px 12px;
-    font-size: 13px;
-    font-weight: bold;
-    color: #1abc9c;
-    border-bottom: 1px solid #2a2e3d;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.log-content-header {
-    padding: 8px 12px;
-    overflow-y: auto;
-    max-height: 210px;
-    font-size: 11.5px;
-    color: #dcdde1;
-}
-.header-data-item {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 12px;
-    font-weight: bold;
-    white-space: nowrap;
-}
-.header-data-item .label { color: #a4b0be; font-size: 11px; }
-.header-data-item .val { color: #ffffff; }
-.header-data-item .prod { color: #2ecc71; font-size: 10.5px; }
 
-
-        /* 残りCSS保持 */
+        /* ツールチップ定義 */
         .tile-tooltip {
             position: fixed;
             background: rgba(22, 25, 34, 0.95);
@@ -1162,17 +1132,6 @@ body {
             font-size: 11.5px;
             color: #dcdde1;
         }
-        .header-data-item {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 12px;
-            font-weight: bold;
-            white-space: nowrap;
-        }
-        .header-data-item .label { color: #a4b0be; font-size: 11px; }
-        .header-data-item .val { color: #ffffff; }
-        .header-data-item .prod { color: #2ecc71; font-size: 10.5px; }
 
 /* =============================================================
    🎯 index.html 専用セマンティック完全クラス化定義
