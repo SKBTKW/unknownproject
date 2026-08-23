@@ -65,7 +65,7 @@
             CMD_MEDITATION_NAME: "静かなる瞑想",
             CMD_MEDITATION_DESC: "今ターン土地を置かない場合、✨+3 を獲得し、次ターンの手札に土地カードを優先保証する。",
             CMD_VIGILANCE_NAME: "警戒態勢",
-            CMD_VIGILANCE_DESC: "2 ターンの間、一時防衛力 🛡️+10 を獲得する。",
+            CMD_VIGILANCE_DESC: "2 ターンの間、獲得する全ての 🛡️ に +3 の追加ボーナスを付与する。",
 
             // 📜 UIボタン・システムログ
             UI_UNDO_PLACEMENT_BTN: "配置を取り消す",
@@ -214,7 +214,7 @@
             CMD_MEDITATION_NAME: "Quiet Meditation",
             CMD_MEDITATION_DESC: "If no land is placed, gain ✨+3 and guarantee land cards in next hand.",
             CMD_VIGILANCE_NAME: "Vigilance",
-            CMD_VIGILANCE_DESC: "Grants temporary 🛡️+10 defense for 2 turns.",
+            CMD_VIGILANCE_DESC: "For 2 turns, grants +3 bonus to all 🛡️ defense gains.",
 
             SOCKET_WILD_WHEAT: "Wild Wheat 🌾+3/T",
             SOCKET_APPLES: "Apples 🌾+3/T",

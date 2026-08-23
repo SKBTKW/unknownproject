@@ -805,7 +805,7 @@ export const LAND_CARDS_MASTER = [
     "nameKey": "CMD_VIGILANCE_NAME",
     "category": "COMMAND",
     "cost": {
-      "wood": 3
+      "wood": 15
     },
     "reqTrialOrLowDefense": true,
     "minStage": 1,

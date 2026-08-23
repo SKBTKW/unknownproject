@@ -488,12 +488,16 @@ saveEngine.deckManager.playCommandCard({ id: 'CMD_MEDITATION', category: 'COMMAN
 assert(saveEngine.state.mystic === mysticBeforeMed + 3, '静かなる瞑想で ✨+3 獲得すること');
 assert(saveEngine.state.activeDrawBias && saveEngine.state.activeDrawBias.targetCategory === 'LAND', '静かなる瞑想で次ターン土地バイアスが付与されること');
 
-// ④ CMD_VIGILANCE (警戒態勢)
-saveEngine.state.wood = 10;
-saveEngine.deckManager.playCommandCard({ id: 'CMD_VIGILANCE', category: 'COMMAND', cost: { wood: 3 } }, null, 0);
-assert(saveEngine.state.temporaryDefense === 10, '警戒態勢で temporaryDefense が 10 になること');
-assert(saveEngine.state.temporaryDefenseTurns === 2, '警戒態勢で temporaryDefenseTurns が 2 になること');
+// ④ CMD_VIGILANCE (警戒態勢: コスト 🧱-15, 2ターンの間 全🛡️獲得+3)
+saveEngine.state.wood = 20;
+const initialDef = saveEngine.state.calculateTotalDefense();
+saveEngine.deckManager.playCommandCard({ id: 'CMD_VIGILANCE', category: 'COMMAND', cost: { wood: 15 } }, null, 0);
+assert(saveEngine.state.wood === 5, '警戒態勢で 🧱15 消費されて 20 - 15 = 5 になること');
+assert(saveEngine.state.vigilanceTurns === 2, '警戒態勢で vigilanceTurns が 2 になること');
+assert(saveEngine.state.calculateTotalDefense() === initialDef + 3, '警戒態勢により防衛力産出レートに +3 ボーナスが乗ること');
+const gained = saveEngine.state.gainDefense(10, 'テスト獲得');
+assert(gained === 13, '警戒態勢中に防衛力10獲得で +3 ボーナスが乗って 13 獲得できること');
 
 console.log('\n====================================================');
-console.log(`🎉 全テスト完了: 115 / 115 件 合格 (100% PASS)`);
+console.log(`🎉 全テスト完了: 117 / 117 件 合格 (100% PASS)`);
 console.log('====================================================');

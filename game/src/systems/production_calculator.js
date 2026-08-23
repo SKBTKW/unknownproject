@@ -140,6 +140,11 @@
             def += (state.permanentVicinityDefenseBonus || 0) * vicinityCount;
             if (state.defense) def += (state.defense - 10); // 直接加算された防衛力
 
+            // 🛡️ 警戒態勢バフ (2ターンの間、毎ターンの防衛力産出に+3ボーナス)
+            if (state.vigilanceTurns && state.vigilanceTurns > 0) {
+                def += 3;
+            }
+
             if (state.directiveSystem) {
                 def = Math.floor(def * state.directiveSystem.getResourceMultiplier("defense"));
             }

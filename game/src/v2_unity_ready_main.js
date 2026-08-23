@@ -83,7 +83,8 @@ class GameState {
             this.placedBlockCount = dependencies.placedBlockCount !== undefined ? dependencies.placedBlockCount : 0;
             this.emberConsumptionReducedTurns = 0; // 残火の節約 (次ターンの🔥消費-1軽減)
             this.foodCostHalvedTurns = 0;          // 節約配給 (食料維持費50%カット)
-            this.temporaryDefense = 0;             // 警戒態勢 (一時防衛力)
+            this.vigilanceTurns = 0;               // 警戒態勢 (2ターンの間、全🛡️獲得+3)
+            this.temporaryDefense = 0;             // 後方互換用
             this.temporaryDefenseTurns = 0;
         }
 
@@ -249,7 +250,26 @@ class GameState {
             if (ProductionCalculator && typeof ProductionCalculator.calculateTotalDefense === "function") {
                 return ProductionCalculator.calculateTotalDefense(this);
             }
-            return this.defense || 10;
+            let def = this.defense || 10;
+            if (this.vigilanceTurns && this.vigilanceTurns > 0) {
+                def += 3;
+            }
+            return def;
+        }
+
+        gainDefense(baseAmount, reason = "") {
+            if (baseAmount <= 0) return 0;
+            let finalAmount = baseAmount;
+            let bonusText = "";
+            if (this.vigilanceTurns && this.vigilanceTurns > 0) {
+                finalAmount += 3;
+                bonusText = " (🛡️警戒態勢ボーナス +3)";
+            }
+            this.defense = (this.defense || 10) + finalAmount;
+            if (reason) {
+                this.addLog(`🛡️ 防衛力獲得: +${finalAmount}${bonusText} [${reason}] (現在: 🛡️${this.calculateTotalDefense()})`);
+            }
+            return finalAmount;
         }
 
         getTrialNotice() {
@@ -324,12 +344,17 @@ class GameState {
                 }
             }
 
-            // 5. 🛡️ 一時防衛力バフのターン経過
+            // 5. 🛡️ 警戒態勢バフのターン経過 (全🛡️獲得+3)
+            if (this.vigilanceTurns && this.vigilanceTurns > 0) {
+                this.vigilanceTurns -= 1;
+                if (this.vigilanceTurns <= 0) {
+                    this.addLog(`🛡️ 警戒態勢の効果（全🛡️獲得+3ボーナス）が終了しました。`);
+                }
+            }
             if (this.temporaryDefenseTurns && this.temporaryDefenseTurns > 0) {
                 this.temporaryDefenseTurns -= 1;
                 if (this.temporaryDefenseTurns <= 0) {
                     this.temporaryDefense = 0;
-                    this.addLog(`🛡️ 警戒態勢の一時防衛力効果が終了しました。`);
                 }
             }
 

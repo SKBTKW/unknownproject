@@ -53,7 +53,7 @@ class DeckManager {
             { id: "CMD_CONSERVE_EMBER", category: "COMMAND", nameKey: "CMD_CONSERVE_EMBER_NAME", descriptionKey: "CMD_CONSERVE_EMBER_DESC", cost: {}, maxEmber: 18, minStage: 1, rarity: "C", weight: 0.40 },
             { id: "CMD_RATIONING", category: "COMMAND", nameKey: "CMD_RATIONING_NAME", descriptionKey: "CMD_RATIONING_DESC", cost: {}, maxFood: 40, minStage: 1, rarity: "C", weight: 0.40 },
             { id: "CMD_MEDITATION", category: "COMMAND", nameKey: "CMD_MEDITATION_NAME", descriptionKey: "CMD_MEDITATION_DESC", cost: {}, maxMystic: 20, minStage: 1, rarity: "UC", weight: 0.30 },
-            { id: "CMD_VIGILANCE", category: "COMMAND", nameKey: "CMD_VIGILANCE_NAME", descriptionKey: "CMD_VIGILANCE_DESC", cost: { wood: 3 }, reqTrialOrLowDefense: true, minStage: 1, rarity: "C", weight: 0.35 }
+            { id: "CMD_VIGILANCE", category: "COMMAND", nameKey: "CMD_VIGILANCE_NAME", descriptionKey: "CMD_VIGILANCE_DESC", cost: { wood: 15 }, reqTrialOrLowDefense: true, minStage: 1, rarity: "C", weight: 0.35 }
         ];
         return this._landCardMasterCache;
     }
@@ -551,20 +551,20 @@ class DeckManager {
             });
             this.state.addLog(`🧘【${cName}】発動 (コスト: 無料) ➔ ✨+3 を獲得し、次ターンの手札に土地カードを優先保証しました！`);
         } else if (cId === "CMD_VIGILANCE") {
-            // 🪵 警戒態勢: コスト 🧱-3
-            this.state.temporaryDefense = 10;
+            // 🛡️ 警戒態勢: コスト 🧱-15 (2ターンの間、獲得する全ての🛡️に+3ボーナス)
+            this.state.vigilanceTurns = 2;
             this.state.temporaryDefenseTurns = 2;
             this.state.addBuff({
                 id: cId,
                 name: "🛡️ 警戒態勢",
-                shortName: "一時防衛力+10",
+                shortName: "全🛡️獲得+3",
                 icon: "🛡️",
-                description: "2ターンの間、一時防衛力 🛡️+10 を付与",
+                description: "2ターンの間、獲得する全ての🛡️に+3ボーナス",
                 badgeText: "残り 2T",
                 category: "CARD_EFFECT",
                 remainingTurns: 2
             });
-            this.state.addLog(`🛡️【${cName}】発動 (コスト: 🧱-3) ➔ 2ターンの間、一時防衛力 🛡️+10 を獲得しました！`);
+            this.state.addLog(`🛡️【${cName}】発動 (コスト: 🧱-15) ➔ 2ターンの間、獲得する全ての 🛡️ に +3 の追加ボーナスが付与されます！`);
         } else if (cId === "CMD_LAND_EXPLORATION") {
             const candidates = [];
             if (this.state.grid) {
