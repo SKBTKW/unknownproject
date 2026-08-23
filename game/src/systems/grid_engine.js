@@ -356,17 +356,18 @@ class GridEngine {
             }
         }
 
-        // ⚠️ 全セルの配置と placementGroupId の割当が完了した後に、隣接およびマージ判定を一括実行！
+        const placedCoords = [];
         for (let dr = 0; dr < rows; dr++) {
             for (let dc = 0; dc < cols; dc++) {
                 if (shapeMatrix[dr][dc] === 1) {
                     const r = startR + dr;
                     const c = startC + dc;
+                    placedCoords.push({ r, c });
                     this.checkConnectionBonus(r, c, terrain);
                 }
             }
         }
-        this.checkMergePatterns();
+        this.checkMergePatterns(placedCoords);
 
         const placementCost = this.getPlacementEmberCost();
         if (placementCost > 0) {
@@ -567,11 +568,12 @@ class GridEngine {
     /**
      * 🎉 2x2 正方形マージ判定 ＆ 1.2倍産出グループ化
      */
-    checkMergePatterns() {
+    checkMergePatterns(placedCoords = []) {
         if (!this.state || !this.state.grid) return;
-        const size = 5;
+        const size = this.state.grid.length;
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' && window.I18n ? window.I18n : { t: k => k });
 
+        // 1. 2x2 正方形マージ判定（全地形共通）
         for (let r = 0; r < size - 1; r++) {
             for (let c = 0; c < size - 1; c++) {
                 const c1 = this.state.grid[r][c];
@@ -638,6 +640,159 @@ class GridEngine {
                         }
                         if (this.state.toastQueue) {
                             this.state.toastQueue.push({ r, c, text: toastMsg });
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. 🧱 丘陵（E2_HILL）限定：L字型 異形マージ判定（回転8パターン）
+        const lOffsets = [
+            // 2x3 横長パターン (4種)
+            [[0,0], [0,1], [0,2], [1,0]],
+            [[0,0], [0,1], [0,2], [1,2]],
+            [[1,0], [1,1], [1,2], [0,0]],
+            [[1,0], [1,1], [1,2], [0,2]],
+            // 3x2 縦長パターン (4種)
+            [[0,0], [1,0], [2,0], [0,1]],
+            [[0,0], [1,0], [2,0], [2,1]],
+            [[0,1], [1,1], [2,1], [0,0]],
+            [[0,1], [1,1], [2,1], [2,0]]
+        ];
+
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
+                for (let offsets of lOffsets) {
+                    const coords = offsets.map(([dr, dc]) => ({ r: r + dr, c: c + dc }));
+                    if (coords.some(pt => pt.r < 0 || pt.r >= size || pt.c < 0 || pt.c >= size)) continue;
+
+                    const cells = coords.map(pt => this.state.grid[pt.r][pt.c]);
+                    const allPlaced = cells.every(cell => cell.placed && !cell.isHQ && !cell.merged);
+                    if (allPlaced) {
+                        const isAllHill = cells.every(cell => cell.terrain && (cell.terrain.terrainId || cell.terrain.id || "").includes("HILL"));
+                        if (isAllHill) {
+                            const groupId = `merge_${this.state.mergeGroupCounter++}`;
+                            cells.forEach(cell => {
+                                cell.merged = true;
+                                cell.mergeGroupId = groupId;
+                                cell.mergeType = "L_SHAPE";
+                            });
+
+                            // 最後の1マスを特定（直前の配置マスに含まれるもの、または終端マス）
+                            const targetPt = coords.find(pt => placedCoords.some(p => p.r === pt.r && p.c === pt.c)) || coords[coords.length - 1];
+                            const lastCell = this.state.grid[targetPt.r][targetPt.c];
+                            lastCell.socketResource = {
+                                id: "SOCKET_HIDDEN_DEPOSIT",
+                                nameKey: "SOCKET_HIDDEN_DEPOSIT",
+                                icon: "★",
+                                bonusMaterial: 2,
+                                bonusWood: 2,
+                                bonusDefense: 1,
+                                bonusFood: 0,
+                                bonusMystic: 0,
+                                isAwakenedKeystone: true
+                            };
+
+                            if (!this.state.mergedBlocks) this.state.mergedBlocks = {};
+                            this.state.mergedBlocks[groupId] = {
+                                groupId: groupId,
+                                terrainId: "E2_HILL",
+                                nameKey: "TERRAIN_HILL",
+                                mergeType: "L_SHAPE",
+                                cells: coords,
+                                yieldMultiplier: 1.20,
+                                isInterceptionPoint: true,
+                                keystoneCoord: { r: targetPt.r, c: targetPt.c },
+                                createdTurn: this.state.turn
+                            };
+
+                            // 即時ボーナス: 🌾+4, 🧱+6, 🔥+1
+                            this.state.food += 4;
+                            this.state.wood += 6;
+                            this.state.ember += 1;
+
+                            const bText = "🌾+4 🧱+6 🔥+1";
+                            if (typeof this.state.addLog === 'function') {
+                                this.state.addLog(`🟨【丘陵】L字異形マージ完成！ (${bText}) ＆ 最後のマスが『★隠匿鉱床 (🧱+2 🛡️+1/T)』に覚醒！`);
+                            }
+                            if (this.state.toastQueue) {
+                                this.state.toastQueue.push({ r: coords[0].r, c: coords[0].c, text: `🟨 L字マージ覚醒! (${bText})` });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. 🛡️ 山岳（E3_MOUNTAIN）限定：凸字型 異形マージ判定（回転4パターン）
+        const tOffsets = [
+            // 横3 ＋ 中央上
+            [[0,1], [1,0], [1,1], [1,2]],
+            // 横3 ＋ 中央下
+            [[0,0], [0,1], [0,2], [1,1]],
+            // 縦3 ＋ 中央左
+            [[0,1], [1,0], [1,1], [2,1]],
+            // 縦3 ＋ 中央右
+            [[0,0], [1,0], [1,1], [2,0]]
+        ];
+
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
+                for (let offsets of tOffsets) {
+                    const coords = offsets.map(([dr, dc]) => ({ r: r + dr, c: c + dc }));
+                    if (coords.some(pt => pt.r < 0 || pt.r >= size || pt.c < 0 || pt.c >= size)) continue;
+
+                    const cells = coords.map(pt => this.state.grid[pt.r][pt.c]);
+                    const allPlaced = cells.every(cell => cell.placed && !cell.isHQ && !cell.merged);
+                    if (allPlaced) {
+                        const isAllMountain = cells.every(cell => cell.terrain && (cell.terrain.terrainId || cell.terrain.id || "").includes("MOUNTAIN"));
+                        if (isAllMountain) {
+                            const groupId = `merge_${this.state.mergeGroupCounter++}`;
+                            cells.forEach(cell => {
+                                cell.merged = true;
+                                cell.mergeGroupId = groupId;
+                                cell.mergeType = "T_SHAPE";
+                            });
+
+                            // 最後の1マスを特定
+                            const targetPt = coords.find(pt => placedCoords.some(p => p.r === pt.r && p.c === pt.c)) || coords[coords.length - 1];
+                            const lastCell = this.state.grid[targetPt.r][targetPt.c];
+                            lastCell.socketResource = {
+                                id: "SOCKET_SUMMIT_FORTRESS",
+                                nameKey: "SOCKET_SUMMIT_FORTRESS",
+                                icon: "★",
+                                bonusDefense: 3,
+                                bonusMystic: 2,
+                                bonusFood: 0,
+                                bonusWood: 0,
+                                isAwakenedKeystone: true
+                            };
+
+                            if (!this.state.mergedBlocks) this.state.mergedBlocks = {};
+                            this.state.mergedBlocks[groupId] = {
+                                groupId: groupId,
+                                terrainId: "E3_MOUNTAIN",
+                                nameKey: "TERRAIN_MOUNTAIN",
+                                mergeType: "T_SHAPE",
+                                cells: coords,
+                                yieldMultiplier: 1.20,
+                                isInterceptionPoint: true,
+                                keystoneCoord: { r: targetPt.r, c: targetPt.c },
+                                createdTurn: this.state.turn
+                            };
+
+                            // 即時ボーナス: 🧱+8, ✨+4, 🔥+1
+                            this.state.wood += 8;
+                            this.state.mystic += 4;
+                            this.state.ember += 1;
+
+                            const bText = "🧱+8 ✨+4 🔥+1";
+                            if (typeof this.state.addLog === 'function') {
+                                this.state.addLog(`🛡️【山岳】凸字異形マージ完成！ (${bText}) ＆ 最後のマスが『★主峰砦 (🛡️+3 ✨+2/T)』に覚醒！`);
+                            }
+                            if (this.state.toastQueue) {
+                                this.state.toastQueue.push({ r: coords[0].r, c: coords[0].c, text: `🛡️ 凸字マージ覚醒! (${bText})` });
+                            }
                         }
                     }
                 }

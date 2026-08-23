@@ -498,6 +498,65 @@ assert(saveEngine.state.calculateTotalDefense() === initialDef + 3, '警戒態�
 const gained = saveEngine.state.gainDefense(10, 'テスト獲得');
 assert(gained === 13, '警戒態勢中に防衛力10獲得で +3 ボーナスが乗って 13 獲得できること');
 
+// ====================================================
+// 22. 🟨 丘陵（L字）＆ 🛡️ 山岳（凸字）異形マージ ＆ ★覚醒ソケット検証
+// ====================================================
+console.log('\n🟨 [22/22] 丘陵(L字) ＆ 山岳(凸字) 異形マージ ＆ ★覚醒ソケット検証');
+
+// 1. 丘陵 L字マージテスト
+const hillEngine = new GameEngine();
+hillEngine.state.ember = 20;
+hillEngine.state.food = 100;
+hillEngine.state.wood = 100;
+const hillData = { id: 'E2_HILL', terrainId: 'E2_HILL', nameKey: 'TERRAIN_HILL', yields: { food: 2, wood: 1, defense: 1 } };
+
+// L字型 (0,0), (0,1), (0,2), (1,0) に丘陵を配置
+hillEngine.state.grid[0][0] = { r: 0, c: 0, placed: true, terrain: hillData };
+hillEngine.state.grid[0][1] = { r: 0, c: 1, placed: true, terrain: hillData };
+hillEngine.state.grid[0][2] = { r: 0, c: 2, placed: true, terrain: hillData };
+hillEngine.state.grid[1][0] = { r: 1, c: 0, placed: true, terrain: hillData };
+
+const initialHillEmber = hillEngine.state.ember;
+const initialHillFood = hillEngine.state.food;
+const initialHillWood = hillEngine.state.wood;
+
+// (1,0) を最後の配置マスとしてマージ判定を実行
+hillEngine.state.checkMergePatterns([{ r: 1, c: 0 }]);
+
+assert(hillEngine.state.ember === initialHillEmber + 1, '丘陵L字マージで 🔥+1 加算されること');
+assert(hillEngine.state.food === initialHillFood + 4, '丘陵L字マージで 🌾+4 獲得すること');
+assert(hillEngine.state.wood === initialHillWood + 6, '丘陵L字マージで 🧱+6 獲得すること');
+assert(hillEngine.state.grid[1][0].socketResource && hillEngine.state.grid[1][0].socketResource.id === 'SOCKET_HIDDEN_DEPOSIT', '最後のマス(1,0)に★隠匿鉱床が覚醒すること');
+assert(hillEngine.state.grid[1][0].socketResource.bonusMaterial === 2, '★隠匿鉱床で 🧱+2/T ボーナスが付くこと');
+assert(hillEngine.state.grid[1][0].socketResource.bonusDefense === 1, '★隠匿鉱床で 🛡️+1/T ボーナスが付くこと');
+
+// 2. 山岳 凸字マージテスト
+const mtnEngine = new GameEngine();
+mtnEngine.state.ember = 20;
+mtnEngine.state.wood = 100;
+mtnEngine.state.mystic = 50;
+const mtnData = { id: 'E3_MOUNTAIN', terrainId: 'E3_MOUNTAIN', nameKey: 'TERRAIN_MOUNTAIN', yields: { wood: 2, defense: 2, mystic: 1 } };
+
+// 凸字型 (0,1), (1,0), (1,1), (1,2) に山岳を配置
+mtnEngine.state.grid[0][1] = { r: 0, c: 1, placed: true, terrain: mtnData };
+mtnEngine.state.grid[1][0] = { r: 1, c: 0, placed: true, terrain: mtnData };
+mtnEngine.state.grid[1][1] = { r: 1, c: 1, placed: true, terrain: mtnData };
+mtnEngine.state.grid[1][2] = { r: 1, c: 2, placed: true, terrain: mtnData };
+
+const initialMtnEmber = mtnEngine.state.ember;
+const initialMtnWood = mtnEngine.state.wood;
+const initialMtnMystic = mtnEngine.state.mystic;
+
+// (0,1) を最後の配置マスとしてマージ判定を実行
+mtnEngine.state.checkMergePatterns([{ r: 0, c: 1 }]);
+
+assert(mtnEngine.state.ember === initialMtnEmber + 1, '山岳凸字マージで 🔥+1 加算されること');
+assert(mtnEngine.state.wood === initialMtnWood + 8, '山岳凸字マージで 🧱+8 獲得すること');
+assert(mtnEngine.state.mystic === initialMtnMystic + 4, '山岳凸字マージで ✨+4 獲得すること');
+assert(mtnEngine.state.grid[0][1].socketResource && mtnEngine.state.grid[0][1].socketResource.id === 'SOCKET_SUMMIT_FORTRESS', '最後のマス(0,1)に★主峰砦が覚醒すること');
+assert(mtnEngine.state.grid[0][1].socketResource.bonusDefense === 3, '★主峰砦で 🛡️+3/T ボーナスが付くこと');
+assert(mtnEngine.state.grid[0][1].socketResource.bonusMystic === 2, '★主峰砦で ✨+2/T ボーナスが付くこと');
+
 console.log('\n====================================================');
-console.log(`🎉 全テスト完了: 117 / 117 件 合格 (100% PASS)`);
+console.log(`🎉 全テスト完了: 129 / 129 件 合格 (100% PASS)`);
 console.log('====================================================');

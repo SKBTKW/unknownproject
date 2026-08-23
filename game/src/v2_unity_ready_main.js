@@ -225,8 +225,8 @@ class GameState {
             if (this.gridEngine) return this.gridEngine.checkConnectionBonus(r, c, terrain);
         }
 
-        checkMergePatterns() {
-            if (this.gridEngine) return this.gridEngine.checkMergePatterns();
+        checkMergePatterns(placedCoords = []) {
+            if (this.gridEngine) return this.gridEngine.checkMergePatterns(placedCoords);
         }
 
         playCommandCard(cardObj, targetTile = null) {

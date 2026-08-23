@@ -102,6 +102,8 @@
             SOCKET_NITER: "硝石 🧱+1 ✨+2/T",
             SOCKET_CEDAR: "杉・楢 🧱+3/T",
             SOCKET_GREAT_TREE: "巨木 🧱+2 ✨+1/T",
+            SOCKET_HIDDEN_DEPOSIT: "★隠匿鉱床 🧱+2 🛡️+1/T",
+            SOCKET_SUMMIT_FORTRESS: "★主峰砦 🛡️+3 ✨+2/T",
 
             // UIラベル
             UI_TITLE: "Trial of Ages : Last Ember",
@@ -223,6 +225,8 @@
             SOCKET_DATES: "Dates 🌾+1/T",
             SOCKET_LAKE: "Lake 🌾+2/T",
             SOCKET_OASIS: "Oasis 🌾+1/T",
+            SOCKET_HIDDEN_DEPOSIT: "★Hidden Deposit 🧱+2 🛡️+1/T",
+            SOCKET_SUMMIT_FORTRESS: "★Summit Fortress 🛡️+3 ✨+2/T",
 
             UI_TITLE: "Trial of Ages : Last Ember",
             UI_ROLE_AVATAR: "Role Icon",
