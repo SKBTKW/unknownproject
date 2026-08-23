@@ -10,10 +10,6 @@ import { focusLayerManager } from './focus_layer_system.js';
 import { boardCameraSystem } from './board_camera_system.js';
 import { UndoLandSystem } from '../systems/undo_land_system.js';
 import { EmberStatusComponent } from './ember_status_component.js';
-import { HandCardsComponent } from './hand_cards_component.js';
-import { ReserveSlotComponent } from './reserve_slot_component.js';
-import { TopHeaderComponent } from './top_header_component.js';
-import { BoardGridComponent } from './board_grid_component.js';
 
 class UIController {
     /**
@@ -25,10 +21,6 @@ class UIController {
         this.drawSys = (engine && engine.deckManager) ? engine.deckManager : (engine && engine.drawSys ? engine.drawSys : null);
         this.undoSys = (engine && engine.undoSys) ? engine.undoSys : (UndoLandSystem && this.state ? new UndoLandSystem(this.state) : null);
         this.emberStatusComponent = (typeof document !== 'undefined') ? new EmberStatusComponent() : null;
-        this.handCardsComponent = (typeof document !== 'undefined') ? new HandCardsComponent(this) : null;
-        this.reserveSlotComponent = (typeof document !== 'undefined') ? new ReserveSlotComponent(this) : null;
-        this.topHeaderComponent = (typeof document !== 'undefined') ? new TopHeaderComponent(this) : null;
-        this.boardGridComponent = (typeof document !== 'undefined') ? new BoardGridComponent(this) : null;
         this.selectedCard = null;
         this.selectedCardIdx = -1;
         this.selectedReserveIdx = -1;
@@ -251,15 +243,69 @@ class UIController {
         }
 
         try {
-            // 🏛️ 最上部HUDヘッダー (資源・残り火・ターン数・領土バッジ・試練予告) - TopHeaderComponent へ委譲
-            if (this.topHeaderComponent) {
-                this.topHeaderComponent.render(I18n);
+            const prods = (typeof this.state.calculateTotalProduction === "function") ? this.state.calculateTotalProduction() : { totalFood: 10, totalWood: 10, totalMystic: 1 };
+            const defTotal = (typeof this.state.calculateTotalDefense === "function") ? this.state.calculateTotalDefense() : (this.state.defense || 10);
+
+            this.setElementText("lblDataPanelTitle", I18n.t("UI_DATA_PANEL_TITLE"));
+            this.setElementText("valTurn", this.state.turn);
+            this.setElementText("valTurnBg", String(this.state.turn).padStart(2, '0'));
+            this.setElementText("valEmber", this.state.ember);
+            this.setElementText("valFood", this.state.food);
+
+            // 🌾 毎ターンの食料純収支 (Net Food: 総産出 - 食料維持費)
+            const foodSign = prods.totalFood > 0 ? `+${prods.totalFood}` : `${prods.totalFood}`;
+            this.setElementText("valFoodProd", foodSign);
+            const foodProdEl = document.getElementById("valFoodProd");
+            if (foodProdEl) {
+                foodProdEl.style.color = (prods.totalFood < 0) ? "#ff6b6b" : "#2ecc71";
+            }
+
+            this.setElementText("valWood", this.state.wood);
+            this.setElementText("valWoodProd", `+${prods.totalWood}`);
+            this.setElementText("valDefense", defTotal);
+            this.setElementText("valMystic", this.state.mystic);
+            this.setElementText("valMysticProd", `+${prods.totalMystic || 1}`);
+
+            // 🔥 残り火ステータス・HUDコンポーネントのリアルタイム更新
+            if (this.emberStatusComponent && typeof this.emberStatusComponent.update === "function") {
+                this.emberStatusComponent.update(this.state);
+            }
+            
+            const placedCount = (typeof this.state.countPlacedTiles === "function") ? this.state.countPlacedTiles() : 1;
+            const badgeComp = (typeof TerritoryBadgeComponent !== "undefined" && TerritoryBadgeComponent) ? TerritoryBadgeComponent : (typeof window !== "undefined" ? window.TerritoryBadgeComponent : null);
+            if (badgeComp) {
+                if (!document.getElementById("mainTerritoryBadge") && typeof badgeComp.mount === "function") {
+                    badgeComp.mount();
+                }
+                if (typeof badgeComp.update === "function") {
+                    badgeComp.update(placedCount, this.state.stage ? this.state.stage.maxTiles : 24, this.state.stage ? this.state.stage.id : 1);
+                }
+            } else {
+                this.setElementText("valPlacedCount", `${placedCount}/24`);
+            }
+
+            if (typeof window !== "undefined" && typeof window.renderDirectiveHeaderBadge === "function") {
+                window.renderDirectiveHeaderBadge();
             }
 
             this.renderBoardGrid(I18n);
             this.renderOfferingCards(I18n);
             this.renderBuffPanel();
             this.updateMulliganButton();
+
+            // ⚠️ 試練カウントダウンの動的表示 (予告期間中のみ点灯)
+            const trialBadge = document.getElementById("trialCountdownBadge");
+            if (trialBadge) {
+                const nextTrial = this.state.nextTrialTurn || (this.state.stage && this.state.stage.id ? this.state.stage.id * 20 : 20);
+                const turnsLeft = nextTrial - this.state.turn;
+                if (turnsLeft > 0 && turnsLeft <= 5) {
+                    trialBadge.style.display = "inline-flex";
+                    this.setElementText("valTrialCountdown", turnsLeft);
+                } else {
+                    trialBadge.style.display = "none";
+                }
+            }
+
         } catch (err) {
             console.error("UIController Render Error:", err);
         }
@@ -272,8 +318,224 @@ class UIController {
     }
 
     renderBoardGrid(I18n) {
-        if (this.boardGridComponent && typeof this.boardGridComponent.render === "function") {
-            this.boardGridComponent.render(I18n);
+        const boardEl = document.getElementById("gridBoard");
+        if (!boardEl || !this.state.grid) return;
+        boardEl.innerHTML = "";
+
+        const cornerCell = document.createElement("div");
+        cornerCell.className = "header-cell corner-toggle-cell";
+        cornerCell.style.display = "flex";
+        cornerCell.style.alignItems = "center";
+        cornerCell.style.justifyContent = "center";
+
+        const currentMode = (typeof window !== "undefined" && window.currentBoardMode) || 'hover';
+        let modeIcon = "🏷️";
+        if (currentMode === 'icon') modeIcon = "🌾";
+        else if (currentMode === 'always') modeIcon = "👁️";
+
+        cornerCell.title = "土地表示モード切替";
+        cornerCell.innerHTML = `<button onclick="toggleBoardLabelMode(event)" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; border-radius:4px; padding:2px 4px; font-size:12px; cursor:pointer;" title="土地表示モード切替">${modeIcon}</button>`;
+        boardEl.appendChild(cornerCell);
+
+        const size = this.state.grid.length;
+        // 🌟 2層レイヤー化により、7x7 でもセルサイズ 80px を維持して視認性を死守
+        const cellSize = (size >= 9) ? '70px' : '80px';
+        const headerSize = (size >= 9) ? '35px' : '40px';
+
+        boardEl.style.gridTemplateColumns = `${headerSize} repeat(${size}, ${cellSize})`;
+        boardEl.style.gridTemplateRows = `${headerSize} repeat(${size}, ${cellSize})`;
+        boardEl.style.setProperty('--board-size', size);
+        boardEl.style.setProperty('--cell-size', cellSize);
+        boardEl.style.setProperty('--header-size', headerSize);
+
+        for (let c = 0; c < size; c++) {
+            const hCell = document.createElement("div");
+            hCell.className = "header-cell";
+            hCell.innerText = String.fromCharCode(65 + c);
+            boardEl.appendChild(hCell);
+        }
+
+        for (let r = 0; r < size; r++) {
+            const vCell = document.createElement("div");
+            vCell.className = "header-cell";
+            vCell.innerText = r + 1;
+            boardEl.appendChild(vCell);
+
+            for (let c = 0; c < size; c++) {
+                const cellData = this.state.grid[r][c];
+                const cellEl = document.createElement("div");
+                cellEl.className = "cell";
+                cellEl.setAttribute("data-r", r);
+                cellEl.setAttribute("data-c", c);
+
+                const isHQVic = (typeof this.state.isHQVicinity === "function") ? this.state.isHQVicinity(r, c) : false;
+
+                if (cellData.isHQ) {
+                    cellEl.classList.add("hq");
+                    cellEl.innerHTML = I18n.t("TERRAIN_HQ");
+                } else if (cellData.placed && cellData.terrain) {
+                    cellEl.classList.add("placed");
+
+                    const tid = cellData.terrain ? (cellData.terrain.terrainId || cellData.terrain.id || "") : "";
+                    if (tid.includes("PLAINS")) cellEl.classList.add("terrain-plains");
+                    else if (tid.includes("DEEP_FOREST") || tid.includes("DEEP_HILL")) cellEl.classList.add("terrain-deep-forest");
+                    else if (tid.includes("FOREST")) cellEl.classList.add("terrain-forest");
+                    else if (tid.includes("HILL")) cellEl.classList.add("terrain-hill");
+                    else if (tid.includes("MOUNTAIN")) cellEl.classList.add("terrain-mountain");
+                    else if (tid.includes("DESERT")) cellEl.classList.add("terrain-desert");
+
+                    const tName = I18n.t(cellData.terrain.nameKey);
+                    const mergeId = cellData.mergeGroupId;
+                    const placeId = cellData.placementGroupId;
+                    const activeGroupId = mergeId || placeId;
+
+                    if (activeGroupId) {
+                        cellEl.setAttribute("data-group-id", activeGroupId);
+                        if (cellData.merged) {
+                            cellEl.classList.add("merged");
+                            if (tid.includes("PLAINS")) cellEl.classList.add("merged-plains");
+                            else if (tid.includes("DEEP_FOREST") || tid.includes("DEEP_HILL")) cellEl.classList.add("merged-deep-forest");
+                            else if (tid.includes("FOREST")) cellEl.classList.add("merged-forest");
+                            else if (tid.includes("HILL")) cellEl.classList.add("merged-hill");
+                            else if (tid.includes("MOUNTAIN")) cellEl.classList.add("merged-mountain");
+                            else if (tid.includes("DESERT")) cellEl.classList.add("merged-desert");
+
+                            cellEl.style.borderColor = "rgba(241, 196, 15, 0.4)";
+                            cellEl.style.borderStyle = "dashed";
+                        } else if (placeId) {
+                            const topSame = (r > 0 && this.state.grid[r-1][c].placementGroupId === placeId);
+                            const rightSame = (c < size - 1 && this.state.grid[r][c+1].placementGroupId === placeId);
+                            const bottomSame = (r < size - 1 && this.state.grid[r+1][c].placementGroupId === placeId);
+                            const leftSame = (c > 0 && this.state.grid[r][c-1].placementGroupId === placeId);
+
+                            if (topSame) {
+                                cellEl.classList.add("no-border-top", "no-radius-tl", "no-radius-tr");
+                                cellEl.style.setProperty("border-top", "none", "important");
+                                cellEl.style.marginTop = "-4px";
+                                cellEl.style.height = "calc(100% + 4px)";
+                            }
+                            if (rightSame) {
+                                cellEl.classList.add("no-border-right", "no-radius-tr", "no-radius-br");
+                                cellEl.style.setProperty("border-right", "none", "important");
+                                cellEl.style.width = "calc(100% + 4px)";
+                                cellEl.style.zIndex = "2";
+                            }
+                            if (bottomSame) {
+                                cellEl.classList.add("no-border-bottom", "no-radius-bl", "no-radius-br");
+                                cellEl.style.setProperty("border-bottom", "none", "important");
+                                cellEl.style.height = "calc(100% + 4px)";
+                                cellEl.style.zIndex = "2";
+                            }
+                            if (leftSame) {
+                                cellEl.classList.add("no-border-left", "no-radius-tl", "no-radius-bl");
+                                cellEl.style.setProperty("border-left", "none", "important");
+                                cellEl.style.marginLeft = "-4px";
+                                cellEl.style.width = "calc(100% + 4px)";
+                            }
+                        }
+
+                        const topGroupSame = (r > 0 && (this.state.grid[r-1][c].mergeGroupId === activeGroupId || this.state.grid[r-1][c].placementGroupId === activeGroupId));
+                        const leftGroupSame = (c > 0 && (this.state.grid[r][c-1].mergeGroupId === activeGroupId || this.state.grid[r][c-1].placementGroupId === activeGroupId));
+
+                        if (!topGroupSame && !leftGroupSame) {
+                            const socketText = cellData.socketResource ? `<br><small style="color:#f1c40f;">★${I18n.t(cellData.socketResource.nameKey)}</small>` : "";
+                            if (cellData.merged && cellData.mergeType === "2x2") {
+                                cellEl.innerHTML = `<span style="font-size:12px; color:#f1c40f; font-weight:bold; white-space:nowrap; z-index:5; text-shadow:0 0 6px rgba(0,0,0,0.9);">${I18n.t("UI_MERGE_2X2_LABEL", { name: tName })}${socketText}</span>`;
+                            } else {
+                                const hasRight = (c < 4 && this.state.grid[r][c+1].placementGroupId === placeId);
+                                const hasBottom = (r < 4 && this.state.grid[r+1][c].placementGroupId === placeId);
+                                let spanStyle = "font-size:13px; color:#fff; font-weight:bold; z-index:5; text-shadow:0 2px 4px rgba(0,0,0,0.8); pointer-events:none;";
+                                if (hasRight && !hasBottom) {
+                                    spanStyle += " position:absolute; left:0; width:200%; text-align:center;";
+                                } else if (hasBottom && !hasRight) {
+                                    spanStyle += " position:absolute; top:0; left:0; width:100%; height:200%; display:flex; align-items:center; justify-content:center;";
+                                }
+                                cellEl.innerHTML = `<span style="${spanStyle}">${tName}${socketText}</span>`;
+                            }
+                        } else {
+                            const socketBadge = cellData.socketResource ? `<small style="color:#f1c40f; font-size:10px;">★${I18n.t(cellData.socketResource.nameKey)}</small>` : "";
+                            cellEl.innerHTML = socketBadge;
+                        }
+                    } else {
+                        const socketBadge = cellData.socketResource ? `<br><small style="color:#f1c40f; font-size:10px;">★${I18n.t(cellData.socketResource.nameKey)}</small>` : "";
+                        const searchedBadge = cellData.searched ? `<span class="searched-badge">${I18n.t("UI_SEARCHED_BADGE")}</span>` : "";
+                        cellEl.innerHTML = `${tName}${socketBadge}${searchedBadge}`;
+                    }
+                } else if (cellData.hasSocket) {
+                    cellEl.classList.add("socket-unopened");
+                    if (isHQVic) cellEl.classList.add("hq-vicinity-unplaced");
+                    cellEl.innerHTML = `<span style="color:#f39c12;font-size:22px;filter:drop-shadow(0 0 4px #f39c12);">★</span>`;
+                } else {
+                    if (isHQVic) {
+                        cellEl.classList.add("hq-vicinity-unplaced");
+                    }
+                }
+
+                // ↩️ 当ターン配置マスの場合: キャンセルガイドバッジ (Undo Badge) を付与
+                const undoSys = this.undoSys || (typeof window !== "undefined" ? window.undoSys : null);
+                if (undoSys && typeof undoSys.isCellPlacedThisTurn === "function" && undoSys.isCellPlacedThisTurn(r, c)) {
+                    cellEl.classList.add("cell-placed-this-turn");
+                    const undoBadge = document.createElement("div");
+                    undoBadge.className = "undo-badge";
+                    undoBadge.title = "↩ クリックで配置を取り消す";
+                    undoBadge.innerHTML = "↩";
+                    cellEl.appendChild(undoBadge);
+                }
+
+                cellEl.onmouseenter = (e) => this.onCellMouseEnter(e, r, c);
+                cellEl.onmousemove = (e) => this.onCellMouseMove(e, r, c);
+                cellEl.onmouseleave = () => this.clearCellPreviews();
+                cellEl.onclick = () => this.onCellClick(r, c);
+                cellEl.oncontextmenu = (e) => {
+                    e.preventDefault();
+                    if (this.selectedCard) {
+                        const activeIdx = this.selectedCardIdx !== -1 ? this.selectedCardIdx : 0;
+                        this.rotateSelectedCard(e, activeIdx);
+                    }
+                };
+                boardEl.appendChild(cellEl);
+            }
+        }
+
+        // 🎯 盤面エリアへのドラッグオーバー ＆ コマンドカードドロップ受付
+        boardEl.ondragover = (e) => {
+            if (this.state.hasPickedThisTurn) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "move";
+        };
+        boardEl.ondrop = (e) => {
+            if (this.state.hasPickedThisTurn) return;
+            e.preventDefault();
+            const cat = e.dataTransfer.getData("application/card-category");
+            const rawIdx = e.dataTransfer.getData("text/plain");
+            if (cat !== "LAND") {
+                if (rawIdx === "reserve_0") {
+                    const resCard = this.state.reserveSlots ? this.state.reserveSlots[0] : null;
+                    if (resCard) this.triggerCommandCardPlay(resCard, -1, 0);
+                } else {
+                    const droppedIdx = parseInt(rawIdx);
+                    if (!isNaN(droppedIdx) && droppedIdx >= 0 && droppedIdx < this.state.handOffering.length) {
+                        const cCard = this.state.handOffering[droppedIdx];
+                        if (cCard) this.triggerCommandCardPlay(cCard, droppedIdx, -1);
+                    }
+                }
+            }
+        };
+
+        if (this.selectedCard) {
+            this.highlightPlaceableCells();
+        }
+
+        // 🏷️ 土地グリッド描画完了後、バッジが親アンカーに存在することを保証
+        const badgeComp = (typeof TerritoryBadgeComponent !== "undefined" && TerritoryBadgeComponent) ? TerritoryBadgeComponent : (typeof window !== "undefined" ? window.TerritoryBadgeComponent : null);
+        if (badgeComp) {
+            if (!document.getElementById("mainTerritoryBadge") && typeof badgeComp.mount === "function") {
+                badgeComp.mount();
+            }
+            if (typeof badgeComp.update === "function") {
+                const placedCount = (typeof this.state.countPlacedTiles === "function") ? this.state.countPlacedTiles() : 1;
+                badgeComp.update(placedCount, this.state.stage ? this.state.stage.maxTiles : 24, this.state.stage ? this.state.stage.id : 1);
+            }
         }
     }
 
@@ -393,8 +655,172 @@ class UIController {
 
         const isReserveEmpty = (!this.state.reserveSlots || this.state.reserveSlots[0] === null);
 
-        // 🃏 1. 左側: 手札カードコンテナ (3枚) - HandCardsComponent へ委譲
-        const handContainer = this.handCardsComponent ? this.handCardsComponent.render(I18n) : document.createElement("div");
+        // 🃏 1. 左側: 手札カードコンテナ (3枚)
+        const handContainer = document.createElement("div");
+        handContainer.className = "cards-hand-container";
+
+        this.state.handOffering.forEach((card, idx) => {
+            if (!card) return;
+
+            if (card.isBlank) {
+                const blankEl = document.createElement("div");
+                blankEl.className = "card-frame-tcg locked";
+                blankEl.style.cssText = "background:#11141d; border:2px dashed #7f8c8d; border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center;";
+                blankEl.innerHTML = `<div style="font-size:28px; color:#e74c3c; font-weight:bold;">✖</div>`;
+                handContainer.appendChild(blankEl);
+                return;
+            }
+
+            const isSelected = (this.selectedCardIdx === idx && this.selectedReserveIdx === -1);
+            const isLocked = this.state.hasPickedThisTurn;
+            const tObj = card.terrain || card;
+            const category = tObj.category || "LAND";
+            const rCode = tObj.rarity || "C";
+            const rarityClass = `rarity-${rCode.toLowerCase()}`;
+            const categoryClass = category !== "LAND" ? `category-${category.toLowerCase()}` : "";
+
+            let costMet = true;
+            let costBadgeText = "";
+            if (category !== "LAND" && tObj.cost) {
+                const c = tObj.cost;
+                const parts = [];
+                if (c.food) { parts.push(`🌾-${c.food}`); if (this.state.food < c.food) costMet = false; }
+                if (c.wood) { parts.push(`🧱-${c.wood}`); if (this.state.wood < c.wood) costMet = false; }
+                if (c.mystic) { parts.push(`✨-${c.mystic}`); if (this.state.mystic < c.mystic) costMet = false; }
+                if (c.ember) { parts.push(`🔥-${c.ember}`); if (this.state.ember < c.ember) costMet = false; }
+                costBadgeText = parts.join(" ");
+            }
+
+            const cardEl = document.createElement("div");
+            cardEl.className = `card-frame-tcg ${rarityClass} ${categoryClass} ${isSelected ? 'selected' : ''} ${isLocked ? 'locked' : ''} ${!costMet ? 'cost-disabled' : ''}`;
+            cardEl.setAttribute("draggable", !isLocked ? "true" : "false");
+            
+            // 🖱️ D&D ドラッグ開始
+            cardEl.ondragstart = (e) => {
+                if (isLocked) {
+                    e.preventDefault();
+                    return;
+                }
+                e.dataTransfer.setData("text/plain", idx.toString());
+                e.dataTransfer.setData("application/card-category", category);
+                e.dataTransfer.effectAllowed = "move";
+                cardEl.classList.add("card-dragging");
+            };
+            cardEl.ondragend = (e) => {
+                cardEl.classList.remove("card-dragging");
+                
+                // 🚀 コマンドカードを手札トレイの外（上方向・盤面側）へドラッグ＆ドロップ（上フリック）した時の発動
+                if (category !== "LAND" && !this.state.hasPickedThisTurn) {
+                    const offeringEl = document.querySelector(".offering-section") || document.getElementById("cardRow");
+                    if (offeringEl) {
+                        const rect = offeringEl.getBoundingClientRect();
+                        // マウス位置が手札ゾーンの上端より上、または左右の外側であれば発動
+                        if (e.clientY < rect.top || e.clientX < rect.left || e.clientX > rect.right) {
+                            this.triggerCommandCardPlay(card, idx, -1);
+                        }
+                    }
+                }
+            };
+
+            // 👆 クリック選択
+            cardEl.onclick = (e) => {
+                e.stopPropagation();
+                this.selectedReserveIdx = -1;
+                this.selectCard(idx);
+            };
+            cardEl.oncontextmenu = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (category === "LAND") this.rotateSelectedCard(e, idx);
+            };
+
+            const cName = tObj.nameKey ? I18n.t(tObj.nameKey) : (tObj.id || "Card");
+            const cDesc = tObj.descriptionKey ? I18n.t(tObj.descriptionKey) : (tObj.description || "");
+
+            let catIcon = "🌱";
+            let catTitle = "土地";
+            if (category === "ECONOMY" || category === "COMMAND") { catIcon = "📜"; catTitle = "経済・政策"; }
+            else if (category === "MILITARY") { catIcon = "⚔️"; catTitle = "軍事・防衛"; }
+            else if (category === "MYSTIC") { catIcon = "✨"; catTitle = "神秘・奇跡"; }
+            else if (category === "SOCIETY") { catIcon = "👥"; catTitle = "社会・士気"; }
+
+            if (category !== "LAND") {
+                cardEl.innerHTML = `
+                    <div class="tcg-card-top-bar" style="padding:4px 8px; display:flex; align-items:center; justify-content:space-between; gap:6px;">
+                        <div class="tcg-category-icon-pill" title="${catTitle}">${catIcon}</div>
+                        <div class="tcg-title-pill" style="font-size:19px; font-weight:900; text-align:center; flex:1; letter-spacing:0.5px;">${cName}</div>
+                    </div>
+                    <div class="tcg-shape-art-area" style="display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-start; background:#1c2536; padding:14px; text-align:left; overflow:hidden; flex:1; border-radius:6px; margin:4px 0;">
+                        <div style="font-size:17.5px; color:#ffffff; line-height:1.45; font-weight:bold; text-align:left; width:100%;">${cDesc}</div>
+                    </div>
+                    <div class="tcg-yield-strip" style="font-size:16px; font-weight:bold; text-align:left; justify-content:flex-start; padding:8px 12px; width:100%; box-sizing:border-box;">
+                        <span>${costBadgeText ? I18n.t("UI_CARD_COST_PREFIX", { cost: costBadgeText }) : I18n.t("UI_CMD_INSTANT_LABEL")}</span>
+                    </div>
+                `;
+            } else {
+                const y = tObj.yields || { food: tObj.food || 0, wood: tObj.wood || 0, defense: tObj.def || tObj.defense || 0, mystic: tObj.mystic || 0 };
+                const shapeMat = card.currentShape || tObj.shape || [[1]];
+                const tileCount = shapeMat.reduce((acc, row) => acc + row.reduce((a, b) => a + b, 0), 0);
+                const totF = (y.food || 0) * tileCount;
+                const totW = (y.wood || 0) * tileCount;
+                const totD = (y.defense || 0) * tileCount;
+                const totM = (y.mystic || 0) * tileCount;
+
+                const tid = tObj.terrainId || tObj.id || "";
+                let blockBg = "#1abc9c";
+                let blockBorder = "#16a085";
+                let blockShadow = "rgba(26, 188, 156, 0.8)";
+
+                if (tid.includes("DEEP_FOREST") || tid.includes("DEEP_HILL")) {
+                    blockBg = "#16a085"; blockBorder = "#117a65"; blockShadow = "rgba(22, 160, 133, 0.85)";
+                } else if (tid.includes("FOREST")) {
+                    blockBg = "#2ecc71"; blockBorder = "#27ae60"; blockShadow = "rgba(46, 204, 113, 0.85)";
+                } else if (tid.includes("HILL")) {
+                    blockBg = "#e67e22"; blockBorder = "#d35400"; blockShadow = "rgba(230, 126, 34, 0.85)";
+                } else if (tid.includes("MOUNTAIN")) {
+                    blockBg = "#9b59b6"; blockBorder = "#8e44ad"; blockShadow = "rgba(155, 89, 182, 0.85)";
+                } else if (tid.includes("DESERT")) {
+                    blockBg = "#f7d794"; blockBorder = "#f1c40f"; blockShadow = "rgba(247, 215, 148, 0.85)";
+                } else if (tid.includes("PLAINS")) {
+                    blockBg = "#1abc9c"; blockBorder = "#16a085"; blockShadow = "rgba(26, 188, 156, 0.85)";
+                }
+
+                let shapeHtml = `<div style="display:grid; grid-template-rows:repeat(${shapeMat.length}, 22px); grid-template-columns:repeat(${shapeMat[0].length}, 22px); gap:5px; background:rgba(0,0,0,0.55); padding:10px; border-radius:8px; border:1.5px solid rgba(255,255,255,0.18);">`;
+                for (let r = 0; r < shapeMat.length; r++) {
+                    for (let c = 0; c < shapeMat[0].length; c++) {
+                        if (shapeMat[r][c] === 1) {
+                            shapeHtml += `<div style="width:22px;height:22px;background:${blockBg};border:1.5px solid ${blockBorder};border-radius:4px;box-shadow:0 0 8px ${blockShadow};"></div>`;
+                        } else {
+                            shapeHtml += `<div style="width:22px;height:22px;background:transparent;"></div>`;
+                        }
+                    }
+                }
+                shapeHtml += `</div>`;
+
+                const yieldParts = [];
+                if (totF > 0) yieldParts.push(`<span>🌾${totF}</span>`);
+                if (totW > 0) yieldParts.push(`<span>🧱${totW}</span>`);
+                if (totD > 0) yieldParts.push(`<span>🛡️${totD}</span>`);
+                if (totM > 0) yieldParts.push(`<span>✨${totM}</span>`);
+                const yieldContent = yieldParts.length > 0 ? yieldParts.join(" ") : `<span>-</span>`;
+                const yieldText = `<span style="font-size:16px; color:#ffffff; font-weight:bold; margin-right:6px;">産出:</span> <span style="font-size:19.5px; font-weight:900; letter-spacing:0.8px; color:#ffffff;">${yieldContent}</span>`;
+
+                cardEl.innerHTML = `
+                    <div class="tcg-card-top-bar" style="padding:4px 8px; display:flex; align-items:center; justify-content:space-between; gap:6px;">
+                        <div class="tcg-category-icon-pill" title="${catTitle}">${catIcon}</div>
+                        <div class="tcg-title-pill" style="font-size:19px; font-weight:900; text-align:center; flex:1; letter-spacing:0.5px;">${cName}</div>
+                    </div>
+                    <div class="tcg-shape-art-area" style="display:flex; align-items:center; justify-content:center; padding:12px; flex:1; background:#1c2536; border-radius:6px; margin:4px 0;">
+                        ${shapeHtml}
+                    </div>
+                    <div class="tcg-yield-strip" style="padding:8px 10px; display:flex; align-items:center; justify-content:center;">
+                        ${yieldText}
+                    </div>
+                `;
+            }
+            handContainer.appendChild(cardEl);
+        });
+
         cardRowEl.appendChild(handContainer);
 
         // ⚡ 2. 中央: 縦セパレーター
@@ -402,8 +828,138 @@ class UIController {
         separator.className = "offering-reserve-separator";
         cardRowEl.appendChild(separator);
 
-        // 📦 3. 右側: 保留スロット (1枠固定) - ReserveSlotComponent へ委譲
-        const reserveContainer = this.reserveSlotComponent ? this.reserveSlotComponent.render(I18n) : document.createElement("div");
+        // 📦 3. 右側: 保留スロット (1枠固定)
+        const reserveContainer = document.createElement("div");
+        reserveContainer.className = "reserve-slot-single-box";
+
+        const reserveCard = (this.state.reserveSlots && this.state.reserveSlots.length > 0) ? this.state.reserveSlots[0] : null;
+
+        if (reserveCard) {
+            const isReserveSelected = (this.selectedReserveIdx === 0);
+            const isLocked = this.state.hasPickedThisTurn;
+            const tObj = reserveCard.terrain || reserveCard;
+            const rCode = tObj.rarity || "C";
+            const cName = tObj.nameKey ? I18n.t(tObj.nameKey) : (tObj.id || "Card");
+
+            const y = tObj.yields || { food: tObj.food || 0, wood: tObj.wood || 0, defense: tObj.def || tObj.defense || 0, mystic: tObj.mystic || 0 };
+            const shapeMat = reserveCard.currentShape || tObj.shape || [[1]];
+            const tileCount = shapeMat.reduce((acc, row) => acc + row.reduce((a, b) => a + b, 0), 0);
+            const totF = (y.food || 0) * tileCount;
+            const totW = (y.wood || 0) * tileCount;
+            const totD = (y.defense || 0) * tileCount;
+            const totM = (y.mystic || 0) * tileCount;
+
+            const yieldParts = [];
+            if (totF > 0) yieldParts.push(`<span>🌾${totF}</span>`);
+            if (totW > 0) yieldParts.push(`<span>🧱${totW}</span>`);
+            if (totD > 0) yieldParts.push(`<span>🛡️${totD}</span>`);
+            if (totM > 0) yieldParts.push(`<span>✨${totM}</span>`);
+            const yieldContent = yieldParts.length > 0 ? yieldParts.join(" ") : `<span>-</span>`;
+
+            const rCardEl = document.createElement("div");
+            rCardEl.className = `card-frame-tcg reserve-card-hold ${isReserveSelected ? 'selected' : ''} ${isLocked ? 'locked' : ''}`;
+            rCardEl.setAttribute("draggable", !isLocked ? "true" : "false");
+            rCardEl.ondragstart = (e) => {
+                if (isLocked) { e.preventDefault(); return; }
+                e.dataTransfer.setData("text/plain", "reserve_0");
+                e.dataTransfer.setData("application/card-category", reserveCard.category || (reserveCard.terrain ? reserveCard.terrain.category : "LAND") || "LAND");
+                e.dataTransfer.effectAllowed = "move";
+                rCardEl.classList.add("card-dragging");
+            };
+            rCardEl.ondragend = (e) => {
+                rCardEl.classList.remove("card-dragging");
+                const resCat = reserveCard.category || (reserveCard.terrain ? reserveCard.terrain.category : "LAND") || "LAND";
+                if (resCat !== "LAND" && !this.state.hasPickedThisTurn) {
+                    const offeringEl = document.querySelector(".offering-section") || document.getElementById("cardRow");
+                    if (offeringEl) {
+                        const rect = offeringEl.getBoundingClientRect();
+                        if (e.clientY < rect.top || e.clientX < rect.left || e.clientX > rect.right) {
+                            this.triggerCommandCardPlay(reserveCard, -1, 0);
+                        }
+                    }
+                }
+            };
+            rCardEl.title = "保管カード (クリックで直接盤面に配置)";
+            rCardEl.onclick = (e) => {
+                e.stopPropagation();
+                this.selectReserveCard(0);
+            };
+            rCardEl.oncontextmenu = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.rotateReserveCard(e, 0);
+            };
+
+            const resCategory = reserveCard.category || (reserveCard.terrain ? reserveCard.terrain.category : "LAND") || "LAND";
+            let resCatIcon = "🌱";
+            let resCatTitle = "土地";
+            if (resCategory === "ECONOMY" || resCategory === "COMMAND") { resCatIcon = "📜"; resCatTitle = "経済・政策"; }
+            else if (resCategory === "MILITARY") { resCatIcon = "⚔️"; resCatTitle = "軍事・防衛"; }
+            else if (resCategory === "MYSTIC") { resCatIcon = "✨"; resCatTitle = "神秘・奇跡"; }
+            else if (resCategory === "SOCIETY") { resCatIcon = "👥"; resCatTitle = "社会・士気"; }
+
+            rCardEl.innerHTML = `
+                <div class="reserve-hold-badge">HOLD</div>
+                <button class="btn-reserve-return-corner" title="手札へ戻す" onclick="event.stopPropagation(); window.ui.returnReserveCard(0)">↩</button>
+                <div class="tcg-card-top-bar" style="padding:4px 8px; display:flex; align-items:center; justify-content:space-between; gap:6px;">
+                    <div class="tcg-category-icon-pill" title="${resCatTitle}" style="background:rgba(243,156,18,0.25); border-color:#f39c12;">${resCatIcon}</div>
+                    <div class="tcg-title-pill" style="font-size:19px; font-weight:900; text-align:center; flex:1; letter-spacing:0.5px; color:#f39c12; border-color:#f39c12;">${cName}</div>
+                </div>
+                <div class="tcg-shape-art-area" style="display:flex; align-items:center; justify-content:center; padding:12px; flex:1; background:#201a13; border-radius:6px; margin:4px 0;">
+                    <div style="font-size:18px; font-weight:bold; color:#f39c12; letter-spacing:1px;">HOLD</div>
+                </div>
+                <div class="tcg-yield-strip" style="padding:8px 10px; display:flex; align-items:center; justify-content:center; color:#f39c12;">
+                    <span style="font-size:16px; font-weight:900;">${yieldContent}</span>
+                </div>
+            `;
+            reserveContainer.appendChild(rCardEl);
+        } else {
+            const emptySlotEl = document.createElement("div");
+            const canDepositSelected = (this.selectedCardIdx !== -1 && !this.state.hasPickedThisTurn);
+            emptySlotEl.className = `reserve-slot-empty ${canDepositSelected ? 'reserve-slot-can-deposit' : ''}`;
+            
+            emptySlotEl.innerHTML = `
+                <div class="reserve-slot-empty-label">HOLD</div>
+                <div class="reserve-slot-empty-sub">${canDepositSelected ? 'クリックで保留' : 'D&D または<br>選択後にクリック'}</div>
+            `;
+
+            // 👆 手札選択後に空スロットクリックで保留
+            emptySlotEl.onclick = (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                if (this.selectedCardIdx !== -1 && !this.state.hasPickedThisTurn) {
+                    this.reserveCard(this.selectedCardIdx);
+                }
+            };
+
+            // 🖱️ D&D ドロップ受け入れ
+            emptySlotEl.ondragover = (e) => {
+                if (this.state.hasPickedThisTurn) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+            };
+            emptySlotEl.ondragenter = (e) => {
+                if (this.state.hasPickedThisTurn) return;
+                e.preventDefault();
+                emptySlotEl.classList.add("reserve-slot-drop-hover");
+            };
+            emptySlotEl.ondragleave = () => {
+                emptySlotEl.classList.remove("reserve-slot-drop-hover");
+            };
+            emptySlotEl.ondrop = (e) => {
+                if (this.state.hasPickedThisTurn) return;
+                e.preventDefault();
+                emptySlotEl.classList.remove("reserve-slot-drop-hover");
+                const rawIdx = e.dataTransfer.getData("text/plain");
+                const droppedIdx = parseInt(rawIdx);
+                if (!isNaN(droppedIdx) && droppedIdx >= 0 && droppedIdx < this.state.handOffering.length) {
+                    this.reserveCard(droppedIdx);
+                }
+            };
+
+            reserveContainer.appendChild(emptySlotEl);
+        }
+
         cardRowEl.appendChild(reserveContainer);
     }
 

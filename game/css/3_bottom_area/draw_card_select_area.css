@@ -100,34 +100,62 @@
 }
 
 /* =============================================================
-   💎 4大レアリティ表現枠 ＆ 光沢・オーラ階層化 (rules/04_card_system.md 準拠)
+   💎 カードの「格 (Prestige)」表現枠 ＆ 光沢・オーラ階層化
    ============================================================= */
 
-/* 🥉 1. C (コモン / Common - Bronze ブロンズ) */
-.card-frame-tcg.rarity-c {
-    border-color: #cd7f32;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.75), inset 0 0 12px rgba(205, 127, 50, 0.25);
-}
-.card-frame-tcg.rarity-c .tcg-rarity-badge {
-    background: #cd7f32;
-    color: #ffffff;
-    border: 1px solid #e08b3e;
+/* 🏷️ カテゴリ判別アイコンピル (Top-Left) */
+.tcg-category-icon-pill {
+    font-size: 16px;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1.5px solid rgba(255, 255, 255, 0.25);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+    flex-shrink: 0;
+}
+.category-land .tcg-category-icon-pill {
+    background: rgba(26, 188, 156, 0.25);
+    border-color: #1abc9c;
+}
+.category-command .tcg-category-icon-pill,
+.category-economy .tcg-category-icon-pill {
+    background: rgba(243, 156, 18, 0.25);
+    border-color: #f39c12;
+}
+.category-military .tcg-category-icon-pill {
+    background: rgba(231, 76, 60, 0.25);
+    border-color: #e74c3c;
+}
+.category-mystic .tcg-category-icon-pill {
+    background: rgba(155, 89, 182, 0.25);
+    border-color: #9b59b6;
+}
+.category-society .tcg-category-icon-pill {
+    background: rgba(52, 152, 219, 0.25);
+    border-color: #3498db;
 }
 
-/* 🥈 2. UC (アンコモン / Uncommon - Silver シルバー) */
+/* 🥉 1. スタンダード (Standard / Common) - 落ち着いたスレート */
+.card-frame-tcg.rarity-c {
+    border-color: #5a6268;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.75), inset 0 0 8px rgba(0, 0, 0, 0.4);
+}
+
+/* 🥈 2. アドバンスド (Advanced / Uncommon) - プラチナシルバーの輝き */
 .card-frame-tcg.rarity-uc {
     border-color: #dcdde1;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.8), 0 0 12px rgba(220, 221, 225, 0.4), inset 0 0 14px rgba(255, 255, 255, 0.25);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.8), 0 0 12px rgba(220, 221, 225, 0.45), inset 0 0 14px rgba(255, 255, 255, 0.2);
 }
-.card-frame-tcg.rarity-uc .tcg-rarity-badge {
-    background: linear-gradient(135deg, #f5f6fa 0%, #718093 100%);
-    color: #11141a;
-    border: 1px solid #ffffff;
-    box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+.card-frame-tcg.rarity-uc .tcg-title-pill {
+    border-color: rgba(220, 221, 225, 0.4);
+    background: linear-gradient(135deg, rgba(220,221,225,0.15) 0%, rgba(30,41,59,0.85) 100%);
 }
 
-/* 🥇 3. R (レア / Rare - Gold ゴールド: 安定60fps 独立GPUパルス) */
+/* 🥇 3. エクシード (Exceed / Rare) - ゴールドメタリック ＆ 金色パルス */
 @keyframes goldShimmer {
     0% {
         box-shadow: 0 6px 20px rgba(0,0,0,0.8), 0 0 10px rgba(241, 196, 15, 0.45), inset 0 0 12px rgba(241, 196, 15, 0.25);
@@ -147,15 +175,14 @@
     border-color: #f1c40f;
     animation: goldShimmer 2.8s infinite ease-in-out;
 }
-.card-frame-tcg.rarity-r .tcg-rarity-badge {
-    background: linear-gradient(135deg, #ffeaa7 0%, #f39c12 50%, #d35400 100%);
-    color: #000000;
-    font-weight: 900;
-    border: 1.5px solid #ffffff;
-    box-shadow: 0 0 10px rgba(241, 196, 15, 0.8);
+.card-frame-tcg.rarity-r .tcg-title-pill {
+    border-color: #f1c40f;
+    color: #ffeaa7;
+    background: linear-gradient(135deg, rgba(241,196,15,0.2) 0%, rgba(44,62,80,0.9) 100%);
+    text-shadow: 0 0 8px rgba(241, 196, 15, 0.6);
 }
 
-/* 💎 4. L / UR (レジェンド / Legend - Platinum プラチナ・ホログラム虹彩) */
+/* 💎 4. レジェンド (Legend / Mythic) - プラチナ・ホログラム虹彩 */
 @keyframes holoPrism {
     0% {
         border-color: #00d2d3;
@@ -180,13 +207,12 @@
     border-color: #00d2d3;
     animation: holoPrism 3.5s infinite ease-in-out;
 }
-.card-frame-tcg.rarity-l .tcg-rarity-badge,
-.card-frame-tcg.rarity-ur .tcg-rarity-badge {
-    background: linear-gradient(135deg, #00d2d3 0%, #e056fd 50%, #f1c40f 100%);
-    color: #000000;
-    font-weight: 900;
-    border: 1.5px solid #ffffff;
-    box-shadow: 0 0 12px rgba(255, 255, 255, 0.9), 0 0 8px rgba(0, 210, 211, 0.8);
+.card-frame-tcg.rarity-l .tcg-title-pill,
+.card-frame-tcg.rarity-ur .tcg-title-pill {
+    border-color: #00d2d3;
+    color: #ffffff;
+    background: linear-gradient(135deg, rgba(0,210,211,0.25) 0%, rgba(224,86,253,0.25) 100%);
+    text-shadow: 0 0 10px rgba(0, 210, 211, 0.8);
 }
 
 /* 🏷️ レアリティバッジ共通スタイル */

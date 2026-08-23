@@ -24,6 +24,10 @@ import { FocusLayerManager, focusLayerManager } from './ui/focus_layer_system.js
 import { BoardCameraSystem, boardCameraSystem } from './ui/board_camera_system.js';
 import { GameSettings, gameSettings, SettingsModalSystem, settingsModalInstance } from './ui/settings_modal_system.js';
 import { EmberStatusComponent } from './ui/ember_status_component.js';
+import { HandCardsComponent } from './ui/hand_cards_component.js';
+import { ReserveSlotComponent } from './ui/reserve_slot_component.js';
+import { TopHeaderComponent } from './ui/top_header_component.js';
+import { BoardGridComponent } from './ui/board_grid_component.js';
 
 export {
     I18n,
@@ -56,7 +60,11 @@ export {
     gameSettings,
     SettingsModalSystem,
     settingsModalInstance,
-    EmberStatusComponent
+    EmberStatusComponent,
+    HandCardsComponent,
+    ReserveSlotComponent,
+    TopHeaderComponent,
+    BoardGridComponent
 };
 
 console.log('🎮 [App] Clean True ES Modules Master Entrypoint Loaded Successfully.');
