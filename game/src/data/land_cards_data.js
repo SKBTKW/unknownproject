@@ -769,6 +769,7 @@ export const LAND_CARDS_MASTER = [
     "nameKey": "CMD_CONSERVE_EMBER_NAME",
     "category": "COMMAND",
     "cost": {},
+    "maxEmber": 18,
     "minStage": 1,
     "rarity": "C",
     "weight": 0.4,
@@ -780,6 +781,7 @@ export const LAND_CARDS_MASTER = [
     "nameKey": "CMD_RATIONING_NAME",
     "category": "COMMAND",
     "cost": {},
+    "maxFood": 40,
     "minStage": 1,
     "rarity": "C",
     "weight": 0.4,
@@ -791,6 +793,7 @@ export const LAND_CARDS_MASTER = [
     "nameKey": "CMD_MEDITATION_NAME",
     "category": "COMMAND",
     "cost": {},
+    "maxMystic": 20,
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.3,
@@ -804,6 +807,7 @@ export const LAND_CARDS_MASTER = [
     "cost": {
       "wood": 3
     },
+    "reqTrialOrLowDefense": true,
     "minStage": 1,
     "rarity": "C",
     "weight": 0.35,

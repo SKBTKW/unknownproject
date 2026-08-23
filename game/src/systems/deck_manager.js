@@ -50,10 +50,10 @@ class DeckManager {
 
             // コマンドカード 『土地探索』 (ドロー条件: 盤面にソケットが存在しない時)
             { id: "CMD_LAND_EXPLORATION", category: "COMMAND", nameKey: "CMD_LAND_EXPLORATION_NAME", descriptionKey: "CMD_LAND_EXPLORATION_DESC", cost: { food: 30, wood: 30, ember: 1 }, noSocketsOnBoard: true, minStage: 1, rarity: "R", weight: 0.40 },
-            { id: "CMD_CONSERVE_EMBER", category: "COMMAND", nameKey: "CMD_CONSERVE_EMBER_NAME", descriptionKey: "CMD_CONSERVE_EMBER_DESC", cost: {}, minStage: 1, rarity: "C", weight: 0.40 },
-            { id: "CMD_RATIONING", category: "COMMAND", nameKey: "CMD_RATIONING_NAME", descriptionKey: "CMD_RATIONING_DESC", cost: {}, minStage: 1, rarity: "C", weight: 0.40 },
-            { id: "CMD_MEDITATION", category: "COMMAND", nameKey: "CMD_MEDITATION_NAME", descriptionKey: "CMD_MEDITATION_DESC", cost: {}, minStage: 1, rarity: "UC", weight: 0.30 },
-            { id: "CMD_VIGILANCE", category: "COMMAND", nameKey: "CMD_VIGILANCE_NAME", descriptionKey: "CMD_VIGILANCE_DESC", cost: { wood: 3 }, minStage: 1, rarity: "C", weight: 0.35 }
+            { id: "CMD_CONSERVE_EMBER", category: "COMMAND", nameKey: "CMD_CONSERVE_EMBER_NAME", descriptionKey: "CMD_CONSERVE_EMBER_DESC", cost: {}, maxEmber: 18, minStage: 1, rarity: "C", weight: 0.40 },
+            { id: "CMD_RATIONING", category: "COMMAND", nameKey: "CMD_RATIONING_NAME", descriptionKey: "CMD_RATIONING_DESC", cost: {}, maxFood: 40, minStage: 1, rarity: "C", weight: 0.40 },
+            { id: "CMD_MEDITATION", category: "COMMAND", nameKey: "CMD_MEDITATION_NAME", descriptionKey: "CMD_MEDITATION_DESC", cost: {}, maxMystic: 20, minStage: 1, rarity: "UC", weight: 0.30 },
+            { id: "CMD_VIGILANCE", category: "COMMAND", nameKey: "CMD_VIGILANCE_NAME", descriptionKey: "CMD_VIGILANCE_DESC", cost: { wood: 3 }, reqTrialOrLowDefense: true, minStage: 1, rarity: "C", weight: 0.35 }
         ];
         return this._landCardMasterCache;
     }
@@ -136,6 +136,17 @@ class DeckManager {
         }
         if (c.maxMystic !== undefined && this.state && this.state.mystic !== undefined) {
             if (this.state.mystic > c.maxMystic) return false;
+        }
+        if (c.maxFood !== undefined && this.state && this.state.food !== undefined) {
+            if (this.state.food > c.maxFood) return false;
+        }
+        if (c.maxEmber !== undefined && this.state && this.state.ember !== undefined) {
+            if (this.state.ember > c.maxEmber) return false;
+        }
+        if (c.reqTrialOrLowDefense && this.state) {
+            const notice = (typeof this.state.getTrialNotice === 'function') ? this.state.getTrialNotice() : { active: false };
+            const def = (typeof this.state.calculateTotalDefense === 'function') ? this.state.calculateTotalDefense() : (this.state.defense || 0);
+            if (!notice.active && def > 30) return false;
         }
 
         if (c.noSocketsOnBoard && this.state && this.state.grid) {
@@ -421,12 +432,12 @@ class DeckManager {
             });
             this.state.addLog(`🏹【${cName}】発動 (コスト: 🧱-30) ➔ 防衛力 🛡️+40 獲得 ＆ 次回の試練被ダメージを 50% 軽減（半減無効化）！`);
         } else if (cId === "CMD_REKINDLE_EMBER") {
-            // ✨ 残り火の聖なる再燃: コスト ✨-10
+            // ✨ 🔥の聖なる再燃: コスト ✨-10
             this.state.ember = this.state.ember + 3;
             this.state.reserveFeeWaivedTurns = 3;
             this.state.addBuff({
                 id: cId,
-                name: "✨ 残り火の再点火",
+                name: "✨ 🔥の再点火",
                 shortName: "保留費無料化",
                 icon: "✨",
                 description: "保留スロット利用料 3T無料化",
@@ -434,7 +445,7 @@ class DeckManager {
                 category: "CARD_EFFECT",
                 remainingTurns: 3
             });
-            this.state.addLog(`✨【${cName}】発動 (コスト: ✨-10) ➔ 残り火 🔥+3 回復 ＆ 3ターンの間手札保留スロット利用料を無料化しました！`);
+            this.state.addLog(`✨【${cName}】発動 (コスト: ✨-10) ➔ 🔥+3 回復 ＆ 3ターンの間手札保留スロット利用料を無料化しました！`);
         } else if (cId === "CMD_TRANSMUTE_GOLDEN") {
             // 💎 黄金秘境への変容: コスト ✨-20
             if (targetTile && targetTile.r !== undefined && targetTile.c !== undefined && this.state.grid) {
@@ -455,7 +466,7 @@ class DeckManager {
             this.state.ember = this.state.ember + 5;
             this.state.handOfferingSize = 4;
             this.state.nextTrialMultiplier = 1.5;
-            this.state.addLog(`🔥【${cName}】発動 ➔ 残り火 🔥+5 獲得 ＆ 手札オファリング枠が永久に4枚へ拡張されました！`);
+            this.state.addLog(`🔥【${cName}】発動 ➔ 🔥+5 獲得 ＆ 手札オファリング枠が永久に4枚へ拡張されました！`);
         } else if (cId === "CMD_LAND_FOCUS") {
             // 📜 土地探索重視: コスト 🌾-10 🧱-10
             this.state.activeDrawBias = { targetCategory: "LAND", type: "UNTIL_BLOCKS", untilValue: 6 };
@@ -503,12 +514,12 @@ class DeckManager {
                 name: "🔥 残火の節約",
                 shortName: "自然減衰-1軽減",
                 icon: "🔥",
-                description: "次ターンの残り火消費(自然減衰)を 1 軽減",
+                description: "次ターンの🔥消費(自然減衰)を 1 軽減",
                 badgeText: "残り 1T",
                 category: "CARD_EFFECT",
                 remainingTurns: 1
             });
-            this.state.addLog(`🔥【${cName}】発動 (コスト: 無料) ➔ 次ターンの残り火自然減衰を 1 軽減 (消費0) します！`);
+            this.state.addLog(`🔥【${cName}】発動 (コスト: 無料) ➔ 次ターンの🔥自然減衰を 1 軽減 (消費0) します！`);
         } else if (cId === "CMD_RATIONING") {
             // 🌾 節約配給: コスト 無料
             this.state.foodCostHalvedTurns = 1;

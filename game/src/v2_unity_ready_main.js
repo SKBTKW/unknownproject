@@ -286,7 +286,7 @@ class GameState {
             if (this.food < 0) {
                 this.food = 0;
                 this.ember -= 2;
-                this.addLog(`⚠️ 食料不足！ ペナルティとして残り火 🔥-2 (現在: 🔥${this.ember})`);
+                this.addLog(`⚠️ 食料不足！ ペナルティとして 🔥-2 (現在: 🔥${this.ember})`);
             }
 
             // 3. 🗺️ 領土マス数 ＆ Stage連動による 🔥 自動減衰・自家発熱ルール
@@ -296,13 +296,13 @@ class GameState {
 
             if (tileCount >= thresholds.autoHeat) {
                 emberDelta = 1;  // 自家発熱 (+1 🔥/T)
-                this.addLog(`🔥 領土大繁栄 (${tileCount} >= ${thresholds.autoHeat}マス)！ 自家発熱により残り火 🔥+1 回復！`);
+                this.addLog(`🔥 領土大繁栄 (${tileCount} >= ${thresholds.autoHeat}マス)！ 自家発熱により 🔥+1 回復！`);
             } else if (tileCount >= thresholds.decayStop) {
                 emberDelta = 0;  // 減衰ストップ (0 🔥/T)
-                this.addLog(`🛡️ 領土定着 (${tileCount} >= ${thresholds.decayStop}マス)！ 残り火の自然減衰がストップしました。`);
+                this.addLog(`🛡️ 領土定着 (${tileCount} >= ${thresholds.decayStop}マス)！ 🔥の自然減衰がストップしました。`);
             }
 
-            // 🔥 残火の節約 (次ターンの残り火消費を 1 軽減)
+            // 🔥 残火の節約 (次ターンの🔥消費を 1 軽減)
             if (this.emberConsumptionReducedTurns && this.emberConsumptionReducedTurns > 0) {
                 if (emberDelta < 0) {
                     emberDelta += 1; // -1 ➔ 0
@@ -320,7 +320,7 @@ class GameState {
                     this.reserveFeeWaivedTurns -= 1;
                 } else {
                     this.ember -= 1;
-                    this.addLog(`📥 保留スロット維持費: 残り火 🔥-1 (現在: 🔥${this.ember})`);
+                    this.addLog(`📥 保留スロット維持費: 🔥-1 (現在: 🔥${this.ember})`);
                 }
             }
 

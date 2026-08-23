@@ -32,10 +32,10 @@ export class BuffSystem {
             // 🔥 旺盛状態 (24以上): 全産出 +10% ブースト ＆ ✨+2/T 自動ボーナス (維持費 🌾25/T)
             this.buffs.unshift({
                 id: "ENV_EMBER_PROSPERITY",
-                name: "🔥 残り火旺盛バフ",
+                name: "🔥 旺盛バフ",
                 shortName: "旺盛 (+10%)",
                 icon: "🔥",
-                description: "残り火旺盛により全リソース産出 +10% ＆ 自動 ✨+2/T",
+                description: "🔥旺盛により全リソース産出 +10% ＆ 自動 ✨+2/T",
                 badgeText: "環境バフ",
                 category: "ENVIRONMENT",
                 multiplier: 1.10,
@@ -45,10 +45,10 @@ export class BuffSystem {
             // 🔥 微火・危機状態 (9以下): 省エネ復興 (維持費 🌾15/T 減圧)
             this.buffs.unshift({
                 id: "ENV_EMBER_CRISIS",
-                name: "🔥 残り火微火・危機",
+                name: "🔥 危機 (微火)",
                 shortName: "微火 (維持費減)",
                 icon: "🔥",
-                description: "残り火危機により省エネ復興中 (食料維持費 🌾15/T へ減圧)",
+                description: "🔥危機により省エネ復興中 (食料維持費 🌾15/T へ減圧)",
                 badgeText: "環境バフ",
                 category: "ENVIRONMENT"
             });

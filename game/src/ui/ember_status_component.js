@@ -36,7 +36,7 @@ export class EmberStatusComponent {
                 ember: 20,
                 food: 50,
                 statusLevel: 'STANDARD',
-                statusTitle: '🔥 残り火標準',
+                statusTitle: '🔥 標準',
                 statusBadgeClass: 'status-standard',
                 statusEffectText: '通常状態 (安定燃焼)',
                 foodCost: 20,
@@ -55,20 +55,20 @@ export class EmberStatusComponent {
 
         // 1. 🔥 状態ステッピング判定
         let statusLevel = 'STANDARD';
-        let statusTitle = '🔥 残り火標準';
+        let statusTitle = '🔥 標準';
         let statusBadgeClass = 'status-standard';
         let statusEffectText = '通常維持状態 (食料維持費 🌾20/T)';
         let foodCost = 20;
 
         if (ember >= 24) {
             statusLevel = 'PROSPEROUS';
-            statusTitle = '🔥 残り火旺盛';
+            statusTitle = '🔥 旺盛';
             statusBadgeClass = 'status-prosperous';
             statusEffectText = '全産出 +10% ブースト ＆ 毎ターン ✨+2/T';
             foodCost = 25;
         } else if (ember <= 9) {
             statusLevel = 'CRISIS';
-            statusTitle = '🔥 残り火危機 (微火)';
+            statusTitle = '🔥 危機 (微火)';
             statusBadgeClass = 'status-crisis';
             statusEffectText = '省エネ復興中 (食料維持費 🌾15/T 減圧)';
             foodCost = 15;
