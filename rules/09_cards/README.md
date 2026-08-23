@@ -14,13 +14,13 @@
 * **概要**: 領土を開墾し、毎ターンの基礎持続収入（🌾食料 / 🧱資材 / 🛡️防衛 / ✨神秘）を生み出すインフラカード群。
 
 ### 2. 📜 [02. 経済・政策カード仕様書 (02_economy_cards.md)](./02_economy_cards.md)
-* **対象**: `CMD_AGRICULTURAL_POLICY` (治水農具), `CMD_BLACK_MARKET` (闇市場), `CMD_LAND_FOCUS` (土地探索重視)
-* **概要**: 食料(`🌾`)や資材を一括消費し、資材獲得・農地改善・土地ドロー偏向をもたらす使い切りコマンド群。
+* **対象**: `CMD_CONSERVE_EMBER` (残火の節約), `CMD_RATIONING` (節約配給), `CMD_AGRICULTURAL_POLICY` (農地改革), `CMD_BLACK_MARKET` (闇市場), `CMD_LAND_FOCUS` (土地探索重視)
+* **概要**: 食料(`🌾`)や資材、維持費節約・自然減衰軽減をもたらす使い切り内政・経済コマンド群。
 
 ### 3. 🛡️ [03. 軍事・防衛カード仕様書 (03_military_cards.md)](./03_military_cards.md)
-* **対象**: `CMD_IRON_RAMPART` (鉄壁の防壁), `CMD_BALLISTA_SET` (迎撃用弩砲), `CMD_MILITARY_FOCUS` (軍事重視)
+* **対象**: `CMD_VIGILANCE` (警戒態勢), `CMD_IRON_RAMPART` (鉄壁の防壁), `CMD_BALLISTA_SET` (迎撃用弩砲), `CMD_MILITARY_FOCUS` (軍事重視)
 * **概要**: 資材(`🧱`)を一括消費し、グローバル防衛力(`🛡️`)や試練の被害無効化、軍事ドロー偏向をもたらすサバイバルコマンド群。
 
 ### 4. ✨ [04. 神秘・奇跡カード仕様書 (04_mystic_cards.md)](./04_mystic_cards.md)
-* **対象**: `CMD_REKINDLE_EMBER` (聖なる再燃), `CMD_TRANSMUTE_GOLDEN` (黄金秘境変容), `CMD_MYSTIC_FOCUS` (神秘重視)
-* **概要**: 神秘(`✨`)や残り火(🔥)を一括消費し、残り火回復・聖なる光脈変容・神秘ドロー偏向を起こす超常現象コマンド群。
+* **対象**: `CMD_MEDITATION` (静かなる瞑想), `CMD_REKINDLE_EMBER` (🔥の聖なる再燃), `CMD_TRANSMUTE_GOLDEN` (黄金秘境変容), `CMD_MYSTIC_FOCUS` (神秘重視)
+* **概要**: 神秘(`✨`)や **🔥** を活用し、🔥回復・聖なる光脈変容・神秘ドロー偏向を起こす超常現象コマンド群。
