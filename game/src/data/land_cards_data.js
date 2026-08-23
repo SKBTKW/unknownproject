@@ -763,6 +763,52 @@ export const LAND_CARDS_MASTER = [
     "weight": 0.15,
     "isUnique": true,
     "descriptionKey": "CMD_MYSTIC_FOCUS_DESC"
+  },
+  {
+    "id": "CMD_CONSERVE_EMBER",
+    "nameKey": "CMD_CONSERVE_EMBER_NAME",
+    "category": "COMMAND",
+    "cost": {},
+    "minStage": 1,
+    "rarity": "C",
+    "weight": 0.4,
+    "isUnique": false,
+    "descriptionKey": "CMD_CONSERVE_EMBER_DESC"
+  },
+  {
+    "id": "CMD_RATIONING",
+    "nameKey": "CMD_RATIONING_NAME",
+    "category": "COMMAND",
+    "cost": {},
+    "minStage": 1,
+    "rarity": "C",
+    "weight": 0.4,
+    "isUnique": false,
+    "descriptionKey": "CMD_RATIONING_DESC"
+  },
+  {
+    "id": "CMD_MEDITATION",
+    "nameKey": "CMD_MEDITATION_NAME",
+    "category": "COMMAND",
+    "cost": {},
+    "minStage": 1,
+    "rarity": "UC",
+    "weight": 0.3,
+    "isUnique": false,
+    "descriptionKey": "CMD_MEDITATION_DESC"
+  },
+  {
+    "id": "CMD_VIGILANCE",
+    "nameKey": "CMD_VIGILANCE_NAME",
+    "category": "COMMAND",
+    "cost": {
+      "wood": 3
+    },
+    "minStage": 1,
+    "rarity": "C",
+    "weight": 0.35,
+    "isUnique": false,
+    "descriptionKey": "CMD_VIGILANCE_DESC"
   }
 ];
 

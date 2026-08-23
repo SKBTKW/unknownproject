@@ -78,6 +78,36 @@ class GameState {
             this.permanentPlainsFoodBonus = 0;
             this.permanentVicinityDefenseBonus = 0;
             this.activeDrawBias = null;
+
+            // 📈 配置ブロック数カウンタ ＆ 守備的・節約コマンド用バフ管理
+            this.placedBlockCount = dependencies.placedBlockCount !== undefined ? dependencies.placedBlockCount : 0;
+            this.emberConsumptionReducedTurns = 0; // 残火の節約 (次ターンの🔥消費-1軽減)
+            this.foodCostHalvedTurns = 0;          // 節約配給 (食料維持費50%カット)
+            this.temporaryDefense = 0;             // 警戒態勢 (一時防衛力)
+            this.temporaryDefenseTurns = 0;
+        }
+
+        getTerritoryTileCount() {
+            if (this.gridEngine && typeof this.gridEngine.getPlacedTileCount === 'function') {
+                return this.gridEngine.getPlacedTileCount();
+            }
+            if (this.grid) {
+                let count = 0;
+                for (let r = 0; r < this.grid.length; r++) {
+                    for (let c = 0; c < this.grid[r].length; c++) {
+                        if (this.grid[r][c] && this.grid[r][c].placed) count++;
+                    }
+                }
+                return count;
+            }
+            return 0;
+        }
+
+        getStageEmberThresholds() {
+            const stageNum = (this.stage && this.stage.id) ? this.stage.id : 1;
+            if (stageNum === 1) return { decayStop: 8, autoHeat: 20 };
+            if (stageNum === 2) return { decayStop: 24, autoHeat: 40 };
+            return { decayStop: 48, autoHeat: 68 };
         }
 
         getAllBuffs() {
@@ -242,6 +272,13 @@ class GameState {
                 foodCost = 20; // 🔥 標準状態
             }
 
+            // 🌾 節約配給 (食料維持費 50% 軽減)
+            if (this.foodCostHalvedTurns && this.foodCostHalvedTurns > 0) {
+                foodCost = Math.floor(foodCost / 2);
+                this.foodCostHalvedTurns -= 1;
+                this.addLog(`🌾 節約配給適用中: 食料維持費が ${foodCost} に軽減されました。`);
+            }
+
             this.food -= foodCost;
             let isGameOver = false;
 
@@ -252,15 +289,28 @@ class GameState {
                 this.addLog(`⚠️ 食料不足！ ペナルティとして残り火 🔥-2 (現在: 🔥${this.ember})`);
             }
 
-            // 3. 🌾 食料蓄積量による 🔥 自動減衰・自家発熱ルール
-            let emberDelta = -1; // 🌾 < 200: 標準燃焼減衰 (-1 🔥/T)
-            if (this.food >= 500) {
-                emberDelta = 1;  // 🌾 >= 500: 自家発熱 (+1 🔥/T)
-                this.addLog(`🔥 食料大蓄積 (${this.food} >= 500)！ 自家発熱により残り火 🔥+1 回復！`);
-            } else if (this.food >= 200) {
-                emberDelta = 0;  // 🌾 200〜499: 燃焼減衰ストップ (0 🔥/T)
-                this.addLog(`🛡️ 食料蓄積 (${this.food} >= 200)！ 残り火の自然減衰がストップしました。`);
+            // 3. 🗺️ 領土マス数 ＆ Stage連動による 🔥 自動減衰・自家発熱ルール
+            const tileCount = this.getTerritoryTileCount();
+            const thresholds = this.getStageEmberThresholds();
+            let emberDelta = -1; // 領土不足時: 標準燃焼減衰 (-1 🔥/T)
+
+            if (tileCount >= thresholds.autoHeat) {
+                emberDelta = 1;  // 自家発熱 (+1 🔥/T)
+                this.addLog(`🔥 領土大繁栄 (${tileCount} >= ${thresholds.autoHeat}マス)！ 自家発熱により残り火 🔥+1 回復！`);
+            } else if (tileCount >= thresholds.decayStop) {
+                emberDelta = 0;  // 減衰ストップ (0 🔥/T)
+                this.addLog(`🛡️ 領土定着 (${tileCount} >= ${thresholds.decayStop}マス)！ 残り火の自然減衰がストップしました。`);
             }
+
+            // 🔥 残火の節約 (次ターンの残り火消費を 1 軽減)
+            if (this.emberConsumptionReducedTurns && this.emberConsumptionReducedTurns > 0) {
+                if (emberDelta < 0) {
+                    emberDelta += 1; // -1 ➔ 0
+                    this.addLog(`🔥 残火の節約適用中: 自然減衰が 1 軽減 (消費 0) されました。`);
+                }
+                this.emberConsumptionReducedTurns -= 1;
+            }
+
             this.ember += emberDelta;
 
             // 4. 📥 保留スロット維持費 (🔥-1/T, 免除ターン考慮)
@@ -271,6 +321,15 @@ class GameState {
                 } else {
                     this.ember -= 1;
                     this.addLog(`📥 保留スロット維持費: 残り火 🔥-1 (現在: 🔥${this.ember})`);
+                }
+            }
+
+            // 5. 🛡️ 一時防衛力バフのターン経過
+            if (this.temporaryDefenseTurns && this.temporaryDefenseTurns > 0) {
+                this.temporaryDefenseTurns -= 1;
+                if (this.temporaryDefenseTurns <= 0) {
+                    this.temporaryDefense = 0;
+                    this.addLog(`🛡️ 警戒態勢の一時防衛力効果が終了しました。`);
                 }
             }
 

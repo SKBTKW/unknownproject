@@ -58,6 +58,14 @@
             CMD_LAND_EXPLORATION: "土地探索",
             CMD_LAND_EXPLORATION_NAME: "土地探索",
             CMD_LAND_EXPLORATION_DESC: "支配地から資源を探す。2D6で判定を行い、運が良ければ資源を得る。",
+            CMD_CONSERVE_EMBER_NAME: "残火の節約",
+            CMD_CONSERVE_EMBER_DESC: "次ターンの残り火消費(自然減衰)を 1 軽減する。",
+            CMD_RATIONING_NAME: "節約配給",
+            CMD_RATIONING_DESC: "今ターンの食料維持費を 50% 軽減し、🌾+5 を緊急獲得する。",
+            CMD_MEDITATION_NAME: "静かなる瞑想",
+            CMD_MEDITATION_DESC: "今ターン土地を置かない場合、✨+3 を獲得し、次ターンの手札に土地カードを優先保証する。",
+            CMD_VIGILANCE_NAME: "警戒態勢",
+            CMD_VIGILANCE_DESC: "2 ターンの間、一時防衛力 🛡️+10 を獲得する。",
 
             // 📜 UIボタン・システムログ
             UI_UNDO_PLACEMENT_BTN: "配置を取り消す",
@@ -198,6 +206,15 @@
             TERRAIN_DESERT_HILL: "Desert Hill",
             TERRAIN_FOREST_HILL: "Forest Hill",
             TERRAIN_DEEP_HILL: "Deep Forest Hill",
+
+            CMD_CONSERVE_EMBER_NAME: "Conserve Ember",
+            CMD_CONSERVE_EMBER_DESC: "Reduces ember consumption (decay) by 1 on the next turn.",
+            CMD_RATIONING_NAME: "Rationing",
+            CMD_RATIONING_DESC: "Halves food upkeep this turn and grants 🌾+5 immediately.",
+            CMD_MEDITATION_NAME: "Quiet Meditation",
+            CMD_MEDITATION_DESC: "If no land is placed, gain ✨+3 and guarantee land cards in next hand.",
+            CMD_VIGILANCE_NAME: "Vigilance",
+            CMD_VIGILANCE_DESC: "Grants temporary 🛡️+10 defense for 2 turns.",
 
             SOCKET_WILD_WHEAT: "Wild Wheat 🌾+3/T",
             SOCKET_APPLES: "Apples 🌾+3/T",

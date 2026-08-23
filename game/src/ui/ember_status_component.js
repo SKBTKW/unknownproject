@@ -74,22 +74,25 @@ export class EmberStatusComponent {
             foodCost = 15;
         }
 
-        // 2. 🌾 食料蓄積量による燃焼減衰・自家発熱判定
+        // 2. 🗺️ 領土マス数 ＆ Stage連動による燃焼減衰・自家発熱判定
+        const tileCount = (state && typeof state.getTerritoryTileCount === 'function') ? state.getTerritoryTileCount() : 0;
+        const thresholds = (state && typeof state.getStageEmberThresholds === 'function') ? state.getStageEmberThresholds() : { decayStop: 8, autoHeat: 20 };
+
         let emberDelta = -1;
         let emberDeltaText = '標準燃焼 (-1 🔥/T)';
-        let nextMilestoneText = 'あと 🌾 ' + Math.max(0, 200 - food) + ' で減衰ストップ！';
-        let nextMilestoneProgress = Math.min(1.0, food / 200);
+        let nextMilestoneText = 'あと ' + Math.max(0, thresholds.decayStop - tileCount) + ' マスで減衰ストップ！';
+        let nextMilestoneProgress = Math.min(1.0, tileCount / thresholds.decayStop);
 
-        if (food >= 500) {
+        if (tileCount >= thresholds.autoHeat) {
             emberDelta = 1;
             emberDeltaText = '自家発熱 (+1 🔥/T 自動回復！)';
-            nextMilestoneText = '最高段階 (自家発熱中！)';
+            nextMilestoneText = '最高段階 (領土大繁栄中！)';
             nextMilestoneProgress = 1.0;
-        } else if (food >= 200) {
+        } else if (tileCount >= thresholds.decayStop) {
             emberDelta = 0;
             emberDeltaText = '減衰ストップ (0 🔥/T 維持)';
-            nextMilestoneText = 'あと 🌾 ' + Math.max(0, 500 - food) + ' で自家発熱 (+1 🔥/T)！';
-            nextMilestoneProgress = (food - 200) / 300;
+            nextMilestoneText = 'あと ' + Math.max(0, thresholds.autoHeat - tileCount) + ' マスで自家発熱 (+1 🔥/T)！';
+            nextMilestoneProgress = (tileCount - thresholds.decayStop) / (thresholds.autoHeat - thresholds.decayStop);
         }
 
         // 3. 📥 保留スロット維持費判定

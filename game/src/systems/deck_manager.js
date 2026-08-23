@@ -49,7 +49,11 @@ class DeckManager {
             { id: "CARD_DESERT_1X2", terrainId: "GL0_DESERT", nameKey: "TERRAIN_DESERT", gl: 0, e: 1, yields: { food: 0, wood: 0, defense: 0, mystic: 5 }, shape: [[1, 1]], minStage: 2, reqE2: 0, rarity: "UR", weight: 0.03 },
 
             // コマンドカード 『土地探索』 (ドロー条件: 盤面にソケットが存在しない時)
-            { id: "CMD_LAND_EXPLORATION", category: "COMMAND", nameKey: "CMD_LAND_EXPLORATION_NAME", descriptionKey: "CMD_LAND_EXPLORATION_DESC", cost: { food: 30, wood: 30, ember: 1 }, noSocketsOnBoard: true, minStage: 1, rarity: "R", weight: 0.40 }
+            { id: "CMD_LAND_EXPLORATION", category: "COMMAND", nameKey: "CMD_LAND_EXPLORATION_NAME", descriptionKey: "CMD_LAND_EXPLORATION_DESC", cost: { food: 30, wood: 30, ember: 1 }, noSocketsOnBoard: true, minStage: 1, rarity: "R", weight: 0.40 },
+            { id: "CMD_CONSERVE_EMBER", category: "COMMAND", nameKey: "CMD_CONSERVE_EMBER_NAME", descriptionKey: "CMD_CONSERVE_EMBER_DESC", cost: {}, minStage: 1, rarity: "C", weight: 0.40 },
+            { id: "CMD_RATIONING", category: "COMMAND", nameKey: "CMD_RATIONING_NAME", descriptionKey: "CMD_RATIONING_DESC", cost: {}, minStage: 1, rarity: "C", weight: 0.40 },
+            { id: "CMD_MEDITATION", category: "COMMAND", nameKey: "CMD_MEDITATION_NAME", descriptionKey: "CMD_MEDITATION_DESC", cost: {}, minStage: 1, rarity: "UC", weight: 0.30 },
+            { id: "CMD_VIGILANCE", category: "COMMAND", nameKey: "CMD_VIGILANCE_NAME", descriptionKey: "CMD_VIGILANCE_DESC", cost: { wood: 3 }, minStage: 1, rarity: "C", weight: 0.35 }
         ];
         return this._landCardMasterCache;
     }
@@ -491,7 +495,65 @@ class DeckManager {
                 category: "CARD_EFFECT",
                 remainingTurns: 3
             });
-            this.state.addLog(`✨【${cName}】発動 (コスト: 🔥-1) ➔ 3ターンの間、神秘カード出現率が 2倍 になりました！`);
+        } else if (cId === "CMD_CONSERVE_EMBER") {
+            // 🔥 残火の節約: コスト 無料
+            this.state.emberConsumptionReducedTurns = 1;
+            this.state.addBuff({
+                id: cId,
+                name: "🔥 残火の節約",
+                shortName: "自然減衰-1軽減",
+                icon: "🔥",
+                description: "次ターンの残り火消費(自然減衰)を 1 軽減",
+                badgeText: "残り 1T",
+                category: "CARD_EFFECT",
+                remainingTurns: 1
+            });
+            this.state.addLog(`🔥【${cName}】発動 (コスト: 無料) ➔ 次ターンの残り火自然減衰を 1 軽減 (消費0) します！`);
+        } else if (cId === "CMD_RATIONING") {
+            // 🌾 節約配給: コスト 無料
+            this.state.foodCostHalvedTurns = 1;
+            this.state.food += 5;
+            this.state.addBuff({
+                id: cId,
+                name: "🌾 節約配給",
+                shortName: "食料維持費50%減",
+                icon: "🌾",
+                description: "今ターンの食料維持費を50%軽減 ＆ 🌾+5 獲得",
+                badgeText: "残り 1T",
+                category: "CARD_EFFECT",
+                remainingTurns: 1
+            });
+            this.state.addLog(`🌾【${cName}】発動 (コスト: 無料) ➔ 今ターンの食料維持費を 50% 軽減し、🌾+5 を緊急獲得しました！`);
+        } else if (cId === "CMD_MEDITATION") {
+            // 🧘 静かなる瞑想: コスト 無料
+            this.state.mystic += 3;
+            this.state.activeDrawBias = { targetCategory: "LAND", type: "TURNS", remainingTurns: 1 };
+            this.state.addBuff({
+                id: cId,
+                name: "🧘 静かなる瞑想",
+                shortName: "✨+3 / 次T土地優先",
+                icon: "🧘",
+                description: "✨+3 獲得 ＆ 次ターンの土地出現を優先保証",
+                badgeText: "残り 1T",
+                category: "CARD_EFFECT",
+                remainingTurns: 1
+            });
+            this.state.addLog(`🧘【${cName}】発動 (コスト: 無料) ➔ ✨+3 を獲得し、次ターンの手札に土地カードを優先保証しました！`);
+        } else if (cId === "CMD_VIGILANCE") {
+            // 🪵 警戒態勢: コスト 🧱-3
+            this.state.temporaryDefense = 10;
+            this.state.temporaryDefenseTurns = 2;
+            this.state.addBuff({
+                id: cId,
+                name: "🛡️ 警戒態勢",
+                shortName: "一時防衛力+10",
+                icon: "🛡️",
+                description: "2ターンの間、一時防衛力 🛡️+10 を付与",
+                badgeText: "残り 2T",
+                category: "CARD_EFFECT",
+                remainingTurns: 2
+            });
+            this.state.addLog(`🛡️【${cName}】発動 (コスト: 🧱-3) ➔ 2ターンの間、一時防衛力 🛡️+10 を獲得しました！`);
         } else if (cId === "CMD_LAND_EXPLORATION") {
             const candidates = [];
             if (this.state.grid) {

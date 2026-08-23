@@ -105,6 +105,19 @@ class GridEngine {
     }
 
     /**
+     * 📈 配置ブロック数に応じた土地配置コスト (🔥) の取得
+     * 0〜5ブロック: 🔥0, 6〜15ブロック: 🔥1, 16〜30ブロック: 🔥2, 31ブロック〜: 🔥3
+     * @returns {number}
+     */
+    getPlacementEmberCost() {
+        const count = (this.state && this.state.placedBlockCount !== undefined) ? this.state.placedBlockCount : 0;
+        if (count < 6) return 0;   // 0〜5 ブロック: 🔥 0 (完全無料)
+        if (count < 16) return 1;  // 6〜15 ブロック: 🔥 1
+        if (count < 31) return 2;  // 16〜30 ブロック: 🔥 2
+        return 3;                  // 31 ブロック〜: 🔥 3
+    }
+
+    /**
      * ⛰️ 盤面上の丘陵 (E2_HILL) 数集計（可変グリッド対応）
      */
     countE2HillsOnBoard() {
@@ -355,7 +368,11 @@ class GridEngine {
         }
         this.checkMergePatterns();
 
-        this.state.ember = Math.max(0, this.state.ember - 1);
+        const placementCost = this.getPlacementEmberCost();
+        if (placementCost > 0) {
+            this.state.ember = Math.max(0, this.state.ember - placementCost);
+        }
+        this.state.placedBlockCount = (this.state.placedBlockCount || 0) + 1;
         this.state.hasPickedThisTurn = true;
 
         if (handIdx >= 0 && this.state.handOffering && handIdx < this.state.handOffering.length && this.state.handOffering[handIdx]) {

@@ -538,10 +538,17 @@ class UIController {
 
         const titleText = I18n ? (I18n.t("UI_OFFERING_TITLE") || "手札オファリング") : "手札オファリング";
         const canMulligan = !this.state.hasPickedThisTurn && !this.state.hasMulliganedThisTurn && this.state.ember >= 1;
+        const gridEng = this.engine ? this.engine.gridEngine : (this.state ? this.state.gridEngine : null);
+        const placementCost = gridEng && typeof gridEng.getPlacementEmberCost === 'function' ? gridEng.getPlacementEmberCost() : 0;
+        const placedBlocks = (this.state && this.state.placedBlockCount !== undefined) ? this.state.placedBlockCount : 0;
+        const costText = placementCost === 0 ? "🔥0 (無料)" : `🔥-${placementCost}`;
 
         headerEl.innerHTML = `
-            <div class="offering-header-left">
+            <div class="offering-header-left" style="display:flex; align-items:center; gap:8px;">
                 <span id="lblOfferingTitle" class="offering-title-label">${titleText}</span>
+                <span class="placement-cost-badge" style="background:rgba(26,188,156,0.2); border:1px solid #1abc9c; color:#1abc9c; border-radius:4px; padding:1px 6px; font-size:12px; font-weight:bold;">
+                    開拓コスト: ${costText} (${placedBlocks}区画)
+                </span>
             </div>
             <div class="offering-header-center">
                 <button class="btn-mulligan-compact btn-mulligan-compact-styled" id="btnMulligan" ${canMulligan ? "" : "disabled style='opacity:0.45; cursor:not-allowed; filter:grayscale(0.8);'"}>

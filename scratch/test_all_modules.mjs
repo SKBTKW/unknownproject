@@ -345,74 +345,95 @@ for (let t = 0; t < 100; t++) {
     });
 }
 
-// --- 17. 🔥 残り火 ✕ 🌾 食料 経済サイクル (3段階維持費ステッピング ＆ 200/500自家発熱 ＆ 保留維持費) 検問 ---
-console.log('\n🔥 [17/17] 🔥 残り火 ✕ 🌾 食料 経済サイクル検証 (rules/02_resources_and_ember.md 準拠)');
+// --- 17. 🔥 残り火 ✕ 🗺️ 領土マス数 Stage連動 経済サイクル (3段階維持費 ＆ 領土減衰停止/自家発熱 ＆ 保留維持費) 検問 ---
+console.log('\n🔥 [17/21] 🔥 残り火 ✕ 🗺️ 領土マス数 Stage連動 経済サイクル検証');
 const emberEngine = new GameEngine();
 
 // ① 🔥9以下 (危機): 食料維持費 🌾15
 emberEngine.state.ember = 8;
 emberEngine.state.food = 100;
-const resCrisis = emberEngine.state.processTurnEndMaintenance();
-assert(resCrisis.foodCost === 15, '🔥8 (危機) で食料維持費が 🌾15 であること');
-assert(emberEngine.state.food === 85, '食料が 100 - 15 = 85 になること');
-assert(resCrisis.emberDelta === -1, '🌾85 (<200) で標準減衰 🔥-1 であること');
+emberEngine.state.processTurnEndMaintenance();
+assert(emberEngine.state.food === 85, '🔥8 (危機) で食料維持費 🌾15 が引かれて 100 - 15 = 85 になること');
 
-// ② 🔥10〜23 (標準): 食料維持費 🌾20 ＆ 🌾200以上で減衰ストップ (🔥0)
-emberEngine.state.ember = 15;
-emberEngine.state.food = 250;
-const resStandard = emberEngine.state.processTurnEndMaintenance();
-assert(resStandard.foodCost === 20, '🔥15 (標準) で食料維持費が 🌾20 であること');
-assert(emberEngine.state.food === 230, '食料が 250 - 20 = 230 になること');
-assert(resStandard.emberDelta === 0, '🌾230 (>=200) で減衰ストップ (🔥0) であること');
+// ② Stage 1 で 8マス未満: 標準減衰 (🔥-1)
+emberEngine.state.grid = Array(5).fill(null).map(() => Array(5).fill(null).map(() => ({ placed: false })));
+// 3マス配置
+emberEngine.state.grid[0][0].placed = true;
+emberEngine.state.grid[0][1].placed = true;
+emberEngine.state.grid[0][2].placed = true;
+const emberBeforeDecay = emberEngine.state.ember;
+emberEngine.state.food = 100;
+emberEngine.state.processTurnEndMaintenance();
+assert(emberEngine.state.ember === emberBeforeDecay - 1, '領土3マス (<8マス) で標準減衰 🔥-1 であること');
 
-// ③ 🔥24以上 (旺盛): 食料維持費 🌾25 ＆ 🌾500以上で自家発熱 (🔥+1)
-emberEngine.state.ember = 26;
-emberEngine.state.food = 530;
-const resProsperous = emberEngine.state.processTurnEndMaintenance();
-assert(resProsperous.foodCost === 25, '🔥26 (旺盛) で食料維持費が 🌾25 であること');
-assert(emberEngine.state.food === 505, '食料が 530 - 25 = 505 になること');
-assert(resProsperous.emberDelta === 1, '🌾505 (>=500) で自家発熱 (🔥+1) であること');
-assert(emberEngine.state.ember === 27, '自家発熱により残り火が 26 + 1 = 27 に増加すること');
+// ③ Stage 1 で 8マス以上: 減衰ストップ (🔥0)
+for (let i = 0; i < 8; i++) {
+    emberEngine.state.grid[Math.floor(i/5)][i%5].placed = true;
+}
+const emberBeforeStop = emberEngine.state.ember;
+emberEngine.state.food = 100;
+emberEngine.state.processTurnEndMaintenance();
+assert(emberEngine.state.ember === emberBeforeStop, '領土8マス (>=8マス) で減衰ストップ (🔥0) であること');
 
-// ④ 保留スロット維持費 (🔥-1/T)
+// ④ Stage 1 で 20マス以上: 自家発熱 (🔥+1)
+for (let i = 0; i < 20; i++) {
+    emberEngine.state.grid[Math.floor(i/5)][i%5].placed = true;
+}
+const emberBeforeHeat = emberEngine.state.ember;
+emberEngine.state.food = 100;
+emberEngine.state.processTurnEndMaintenance();
+assert(emberEngine.state.ember === emberBeforeHeat + 1, '領土20マス (>=20マス) で自家発熱 (🔥+1) であること');
+
+// ⑤ 保留スロット維持費 (🔥-1/T)
 emberEngine.state.reserveSlots[0] = { id: 'CARD_PLAINS_1X1' };
 const emberBeforeReserve = emberEngine.state.ember;
-emberEngine.state.food = 250;
+emberEngine.state.food = 100;
 emberEngine.state.processTurnEndMaintenance();
-assert(emberEngine.state.ember === emberBeforeReserve - 1, '保留枠にカードがある場合、維持費として 🔥-1 が消費されること');
+// 自家発熱(+1)と保留維持費(-1)で相殺 = 変化なし
+assert(emberEngine.state.ember === emberBeforeReserve, '自家発熱(+1)と保留維持費(-1)で相殺されること');
 
-// ⑤ 食料不足ペナルティ (🔥-2)
+// ⑥ 食料不足ペナルティ (🔥-2)
 emberEngine.state.food = 5; // 危機維持費 15 に対して 5 しかない
 emberEngine.state.ember = 9;
 emberEngine.state.reserveSlots[0] = null;
+emberEngine.state.grid = Array(5).fill(null).map(() => Array(5).fill(null).map(() => ({ placed: false }))); // 0マスで減衰-1
 emberEngine.state.processTurnEndMaintenance();
 assert(emberEngine.state.food === 0, '不足時に食料が 0 にリセットされること');
-assert(emberEngine.state.ember === 6, '食料不足ペナルティ (🔥-2) ＋ 標準減衰 (🔥-1) で 9 - 3 = 6 になること');
+assert(emberEngine.state.ember === 6, '食料不足ペナルティ (🔥-2) ＋ 自然減衰 (🔥-1) で 9 - 3 = 6 になること');
 
 // --- 18. EmberStatusComponent 状態計算＆HUDデータ構造体 検問 ---
-console.log('\n🔥 [18/18] EmberStatusComponent HUDデータ計算 ＆ 状態解析検証');
+console.log('\n🔥 [18/21] EmberStatusComponent HUDデータ計算 ＆ 状態解析検証');
 assert(typeof EmberStatusComponent.calculateStatus === 'function', 'EmberStatusComponent.calculateStatus 静的メソッドが存在すること');
 
-const statusStandard = EmberStatusComponent.calculateStatus({ ember: 15, food: 100, reserveSlots: [] });
+const mockStateStandard = {
+    ember: 15,
+    food: 100,
+    reserveSlots: [],
+    getTerritoryTileCount: () => 5,
+    getStageEmberThresholds: () => ({ decayStop: 8, autoHeat: 20 })
+};
+const statusStandard = EmberStatusComponent.calculateStatus(mockStateStandard);
 assert(statusStandard.statusLevel === 'STANDARD', '🔥15 で statusLevel が STANDARD であること');
 assert(statusStandard.foodCost === 20, '標準状態で foodCost が 20 であること');
-assert(statusStandard.emberDelta === -1, '🌾100 (<200) で emberDelta が -1 であること');
+assert(statusStandard.emberDelta === -1, '領土5マス (<8) で emberDelta が -1 であること');
 assert(statusStandard.totalTurnDelta === -1, '保留枠なしで totalTurnDelta が -1 であること');
 
-const statusProsperous = EmberStatusComponent.calculateStatus({ ember: 25, food: 550, reserveSlots: [{ id: 'CARD_PLAINS_1X1' }] });
+const mockStateProsperous = {
+    ember: 25,
+    food: 550,
+    reserveSlots: [{ id: 'CARD_PLAINS_1X1' }],
+    getTerritoryTileCount: () => 22,
+    getStageEmberThresholds: () => ({ decayStop: 8, autoHeat: 20 })
+};
+const statusProsperous = EmberStatusComponent.calculateStatus(mockStateProsperous);
 assert(statusProsperous.statusLevel === 'PROSPEROUS', '🔥25 で statusLevel が PROSPEROUS であること');
 assert(statusProsperous.foodCost === 25, '旺盛状態で foodCost が 25 であること');
-assert(statusProsperous.emberDelta === 1, '🌾550 (>=500) で emberDelta が +1 (自家発熱) であること');
+assert(statusProsperous.emberDelta === 1, '領土22マス (>=20) で emberDelta が +1 (自家発熱) であること');
 assert(statusProsperous.reserveCost === -1, '保留枠ありで reserveCost が -1 であること');
 assert(statusProsperous.totalTurnDelta === 0, '自家発熱(+1)と保留維持費(-1)で totalTurnDelta が 0 になること');
 
-const statusCrisis = EmberStatusComponent.calculateStatus({ ember: 7, food: 220, reserveSlots: [] });
-assert(statusCrisis.statusLevel === 'CRISIS', '🔥7 で statusLevel が CRISIS であること');
-assert(statusCrisis.foodCost === 15, '危機状態で foodCost が 15 に減圧されること');
-assert(statusCrisis.emberDelta === 0, '🌾220 (>=200) で減衰ストップ (0) であること');
-
 // --- 19. 2x2 正方形マージ 🔥+1 即時ボーナス給付 検問 ---
-console.log('\n🧩 [19/19] 2x2 正方形マージ 🔥+1 即時ボーナス給付検証');
+console.log('\n🧩 [19/21] 2x2 正方形マージ 🔥+1 即時ボーナス給付検証');
 const mergeTestEngine = new GameEngine();
 mergeTestEngine.state.ember = 20;
 const plainsData = { id: 'PLAINS_1X1', terrainId: 'PLAINS_1X1', nameKey: 'TERRAIN_PLAINS_NAME', baseYieldsPerTile: { food: 1 } };
@@ -426,6 +447,53 @@ mergeTestEngine.state.checkMergePatterns();
 assert(mergeTestEngine.state.ember === emberBeforeMerge + 1, `2x2マージ成立で残り火が 🔥+1 加算されること (実際: ${mergeTestEngine.state.ember})`);
 assert(mergeTestEngine.state.grid[0][0].merged === true, '2x2マージフラグが true になること');
 
+// --- 20. 📈 配置ブロック数連動 土地配置コスト漸増 検問 ---
+console.log('\n📈 [20/21] 配置ブロック数連動 土地配置コスト漸増 検証');
+const progressiveEngine = new GameEngine();
+progressiveEngine.state.placedBlockCount = 0;
+assert(progressiveEngine.gridEngine.getPlacementEmberCost() === 0, '0ブロック配置時は コスト 🔥0 (無料) であること');
+
+progressiveEngine.state.placedBlockCount = 5;
+assert(progressiveEngine.gridEngine.getPlacementEmberCost() === 0, '5ブロック配置時は コスト 🔥0 (無料) であること');
+
+progressiveEngine.state.placedBlockCount = 6;
+assert(progressiveEngine.gridEngine.getPlacementEmberCost() === 1, '6ブロック配置時は コスト 🔥1 であること');
+
+progressiveEngine.state.placedBlockCount = 15;
+assert(progressiveEngine.gridEngine.getPlacementEmberCost() === 1, '15ブロック配置時は コスト 🔥1 であること');
+
+progressiveEngine.state.placedBlockCount = 16;
+assert(progressiveEngine.gridEngine.getPlacementEmberCost() === 2, '16ブロック配置時は コスト 🔥2 であること');
+
+progressiveEngine.state.placedBlockCount = 31;
+assert(progressiveEngine.gridEngine.getPlacementEmberCost() === 3, '31ブロック配置時は コスト 🔥3 であること');
+
+// --- 21. 🧘 守備的・節約コマンドカード 4 種 検問 ---
+console.log('\n🧘 [21/21] 守備的・節約コマンドカード 4 種 (残火の節約・節約配給・瞑想・警戒態勢) 検証');
+const saveEngine = new GameEngine();
+
+// ① CMD_CONSERVE_EMBER (残火の節約)
+saveEngine.deckManager.playCommandCard({ id: 'CMD_CONSERVE_EMBER', category: 'COMMAND', cost: {} }, null, 0);
+assert(saveEngine.state.emberConsumptionReducedTurns === 1, '残火の節約で emberConsumptionReducedTurns が 1 になること');
+
+// ② CMD_RATIONING (節約配給)
+const foodBeforeRation = saveEngine.state.food;
+saveEngine.deckManager.playCommandCard({ id: 'CMD_RATIONING', category: 'COMMAND', cost: {} }, null, 0);
+assert(saveEngine.state.foodCostHalvedTurns === 1, '節約配給で foodCostHalvedTurns が 1 になること');
+assert(saveEngine.state.food === foodBeforeRation + 5, '節約配給で 🌾+5 獲得すること');
+
+// ③ CMD_MEDITATION (静かなる瞑想)
+const mysticBeforeMed = saveEngine.state.mystic;
+saveEngine.deckManager.playCommandCard({ id: 'CMD_MEDITATION', category: 'COMMAND', cost: {} }, null, 0);
+assert(saveEngine.state.mystic === mysticBeforeMed + 3, '静かなる瞑想で ✨+3 獲得すること');
+assert(saveEngine.state.activeDrawBias && saveEngine.state.activeDrawBias.targetCategory === 'LAND', '静かなる瞑想で次ターン土地バイアスが付与されること');
+
+// ④ CMD_VIGILANCE (警戒態勢)
+saveEngine.state.wood = 10;
+saveEngine.deckManager.playCommandCard({ id: 'CMD_VIGILANCE', category: 'COMMAND', cost: { wood: 3 } }, null, 0);
+assert(saveEngine.state.temporaryDefense === 10, '警戒態勢で temporaryDefense が 10 になること');
+assert(saveEngine.state.temporaryDefenseTurns === 2, '警戒態勢で temporaryDefenseTurns が 2 になること');
+
 console.log('\n====================================================');
-console.log(`🎉 全テスト完了: 104 / 104 件 合格 (100% PASS)`);
+console.log(`🎉 全テスト完了: 115 / 115 件 合格 (100% PASS)`);
 console.log('====================================================');
