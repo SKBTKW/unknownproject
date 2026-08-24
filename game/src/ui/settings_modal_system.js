@@ -164,7 +164,7 @@ export class SettingsModalSystem {
                     <div class="setting-item-row" style="display: flex; justify-content: space-between; align-items: center; background: #1c2230; padding: 12px 16px; border-radius: 8px; border: 1px solid #2a3144;">
                         <div>
                             <div style="font-weight: bold; color: #ffffff; font-size: 14px;">🔄 マリガン確認ダイアログ</div>
-                            <div style="font-size: 11.5px; color: #a4b0be; margin-top: 2px;">手札引き直し時に手札直上で確認するか、即時引き直すかを選択</div>
+                            <div style="font-size: 12px; color: #a4b0be; margin-top: 2px;">手札引き直し時に手札直上で確認するか、即時引き直すかを選択</div>
                         </div>
                         <select id="optMulliganConfirm" class="setting-select-control" style="background: #2b3548; color: #1abc9c; border: 1px solid #3d4a63; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 13px; cursor: pointer;">
                             <option value="true">吹き出し確認あり</option>
@@ -176,7 +176,7 @@ export class SettingsModalSystem {
                     <div class="setting-item-row" style="display: flex; justify-content: space-between; align-items: center; background: #1c2230; padding: 12px 16px; border-radius: 8px; border: 1px solid #2a3144;">
                         <div>
                             <div style="font-weight: bold; color: #ffffff; font-size: 14px;">⚠️ 土地未配置時のターン終了警告</div>
-                            <div style="font-size: 11.5px; color: #a4b0be; margin-top: 2px;">当ターン土地を置かずにターン終了を押した際に警告を表示</div>
+                            <div style="font-size: 12px; color: #a4b0be; margin-top: 2px;">当ターン土地を置かずにターン終了を押した際に警告を表示</div>
                         </div>
                         <select id="optTurnEndWarning" class="setting-select-control" style="background: #2b3548; color: #1abc9c; border: 1px solid #3d4a63; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 13px; cursor: pointer;">
                             <option value="true">警告を出す (推奨)</option>
@@ -188,7 +188,7 @@ export class SettingsModalSystem {
                     <div class="setting-item-row" style="display: flex; justify-content: space-between; align-items: center; background: #1c2230; padding: 12px 16px; border-radius: 8px; border: 1px solid #2a3144;">
                         <div>
                             <div style="font-weight: bold; color: #ffffff; font-size: 14px;">🌓 2層フォーカス演出 (DoFボケ)</div>
-                            <div style="font-size: 11.5px; color: #a4b0be; margin-top: 2px;">土地カード選択中に手札をボカして盤面を際立たせる演出</div>
+                            <div style="font-size: 12px; color: #a4b0be; margin-top: 2px;">土地カード選択中に手札をボカして盤面を際立たせる演出</div>
                         </div>
                         <select id="optFocusDoFBlur" class="setting-select-control" style="background: #2b3548; color: #1abc9c; border: 1px solid #3d4a63; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 13px; cursor: pointer;">
                             <option value="true">ON (映画風演出)</option>

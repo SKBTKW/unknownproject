@@ -14,6 +14,7 @@ import { HandCardsComponent } from './hand_cards_component.js';
 import { ReserveSlotComponent } from './reserve_slot_component.js';
 import { TopHeaderComponent } from './top_header_component.js';
 import { BoardGridComponent } from './board_grid_component.js';
+import { tooltipSystemInstance } from './tooltip_system.js';
 
 class UIController {
     /**
@@ -32,6 +33,7 @@ class UIController {
         this.selectedCard = null;
         this.selectedCardIdx = -1;
         this.selectedReserveIdx = -1;
+        this.isReservePopoverOpen = false;
         this.pinnedPreviewCard = null;
 
         if (typeof window !== "undefined" && this.undoSys) {
@@ -64,6 +66,9 @@ class UIController {
             window.nextTurn = () => this.nextTurn();
             window.reserveCard = (idx) => this.reserveCard(idx);
             window.returnReserveCard = (idx) => this.returnReserveCard(idx);
+            window.playReserveCard = (idx) => this.playReserveCard(idx);
+            window.toggleReservePopover = (idx) => this.toggleReservePopover(idx);
+            window.closeReservePopover = () => this.closeReservePopover();
             window.playCommandCard = (card, idx) => this.playCommandCard(card, idx);
             window.toggleDirectiveModal = () => this.toggleDirectiveModal();
             window.closeDirectiveModal = () => this.closeDirectiveModal();
@@ -94,6 +99,9 @@ class UIController {
         this.initModularUIComponents();
         this.initStaticI18nLabels();
         this.initGlobalCancelListeners();
+        if (tooltipSystemInstance) {
+            tooltipSystemInstance.init(I18n);
+        }
         if (this.drawSys && (!this.state.handOffering || this.state.handOffering.length === 0)) {
             this.drawSys.generateOfferingCards();
         }
@@ -120,8 +128,12 @@ class UIController {
     initGlobalCancelListeners() {
         if (typeof document === "undefined") return;
 
-        // 1. 盤面外・背景クリックでキャンセル
+        // 1. 盤面外・背景クリックでキャンセル ＆ 保留ポップオーバー閉じ
         document.addEventListener("click", (e) => {
+            if (this.isReservePopoverOpen && !e.target.closest(".reserve-popover-menu") && !e.target.closest(".reserve-card-hold")) {
+                this.closeReservePopover();
+            }
+
             if (!this.selectedCard) return;
             // クリック先がマス目(.cell)、手札カード、保留枠、手札トレイ全体、マリガンボタン、モーダル内の場合は除外
             if (e.target.closest(".cell") || 
@@ -139,9 +151,12 @@ class UIController {
             this.deselectCard();
         });
 
-        // 2. Esc キーで即時キャンセル
+        // 2. Esc キーで即時キャンセル ＆ 保留ポップオーバー閉じ
         document.addEventListener("keydown", (e) => {
             if (e.key === "Escape" || e.key === "Esc") {
+                if (this.isReservePopoverOpen) {
+                    this.closeReservePopover();
+                }
                 if (this.selectedCard) {
                     this.deselectCard();
                 }
@@ -288,28 +303,19 @@ class UIController {
             offeringSection.insertBefore(headerEl, offeringSection.firstChild);
         }
 
-        const titleText = I18n ? (I18n.t("UI_OFFERING_TITLE") || "手札オファリング") : "手札オファリング";
         const canMulligan = !this.state.hasPickedThisTurn && !this.state.hasMulliganedThisTurn && this.state.ember >= 1;
-        const gridEng = this.engine ? this.engine.gridEngine : (this.state ? this.state.gridEngine : null);
-        const placementCost = gridEng && typeof gridEng.getPlacementEmberCost === 'function' ? gridEng.getPlacementEmberCost() : 0;
-        const placedBlocks = (this.state && this.state.placedBlockCount !== undefined) ? this.state.placedBlockCount : 0;
-        const costText = placementCost === 0 ? "🔥0 (無料)" : `🔥-${placementCost}`;
+        const reserveCostText = I18n ? (I18n.t("RESERVE_HEADER_COST") || "ターン終了時 🔥-1") : "ターン終了時 🔥-1";
 
         headerEl.innerHTML = `
-            <div class="offering-header-left" style="display:flex; align-items:center; gap:8px;">
-                <span id="lblOfferingTitle" class="offering-title-label">${titleText}</span>
-                <span class="placement-cost-badge" style="background:rgba(26,188,156,0.2); border:1px solid #1abc9c; color:#1abc9c; border-radius:4px; padding:1px 6px; font-size:12px; font-weight:bold;">
-                    開拓コスト: ${costText} (${placedBlocks}区画)
-                </span>
-            </div>
-            <div class="offering-header-center">
-                <button class="btn-mulligan-compact btn-mulligan-compact-styled" id="btnMulligan" ${canMulligan ? "" : "disabled style='opacity:0.45; cursor:not-allowed; filter:grayscale(0.8);'"}>
+            <div class="offering-header-hand-col">
+                <button class="btn-mulligan-compact" id="btnMulligan" ${canMulligan ? "" : "disabled style='opacity:0.45; cursor:not-allowed; filter:grayscale(0.8);'"}>
                     <span>🔄 マリガン</span> <span class="btn-mulligan-ember-cost">🔥-1</span>
                 </button>
             </div>
-            <div class="offering-header-right">
-                <span id="lblRotateHint" class="rotate-hint-pill">
-                    <kbd class="rotate-hint-kbd">R</kbd> 回転
+            <div class="offering-header-separator-space"></div>
+            <div class="offering-header-reserve-col">
+                <span class="reserve-header-cost-badge" title="保留枠にカードが存在するターン終了時、🔥-1 を消費します">
+                    ${reserveCostText}
                 </span>
             </div>
         `;
@@ -385,50 +391,97 @@ class UIController {
     }
 
     renderOfferingCards(I18n) {
-        this.renderOfferingHeader(I18n);
+        const offeringSection = document.querySelector(".offering-section");
+        if (offeringSection) {
+            // 既存の古い独立ヘッダーがあれば削除
+            const oldHeader = offeringSection.querySelector(".section-title-offering");
+            if (oldHeader) oldHeader.remove();
+
+            // 🚀 保留ポップオーバー展開時は手札トレイ全体を最前面化 (z-index: 2500)
+            offeringSection.classList.toggle("has-popover-open", !!this.isReservePopoverOpen);
+        }
 
         const cardRowEl = document.getElementById("cardRow");
         if (!cardRowEl || !this.state.handOffering) return;
         cardRowEl.innerHTML = "";
 
-        const isReserveEmpty = (!this.state.reserveSlots || this.state.reserveSlots[0] === null);
+        const canMulligan = !this.state.hasPickedThisTurn && !this.state.hasMulliganedThisTurn && this.state.ember >= 1;
+        const reserveCostText = I18n ? (I18n.t("RESERVE_HEADER_COST") || "ターン終了時 🔥-1") : "ターン終了時 🔥-1";
+        const reserveCostTooltip = I18n ? (I18n.t("RESERVE_HEADER_COST_TOOLTIP") || "⚠️ 保留枠にカードをキープしたままターンを終了すると、維持費として 🔥-1 を消費します") : "⚠️ 保留枠にカードをキープしたままターンを終了すると、維持費として 🔥-1 を消費します";
+        const mulliganTooltip = I18n ? (I18n.t("UI_MULLIGAN_HELP_TOOLTIP") || "🔥 残り火を 1 消費して手札 3 枚を破棄し、新たに 3 枚引き直します (1ターン1回のみ)") : "🔥 残り火を 1 消費して手札 3 枚を破棄し、新たに 3 枚引き直します (1ターン1回のみ)";
 
-        // 🃏 1. 左側: 手札カードコンテナ (3枚) - HandCardsComponent へ委譲
+        // 🃏 1. 左側: 手札グループ (ヘッダー ＋ 手札3枚)
+        const handGroup = document.createElement("div");
+        handGroup.className = "offering-hand-group";
+
+        const handHeader = document.createElement("div");
+        handHeader.className = "offering-header-hand-col";
+        handHeader.innerHTML = `
+            <button class="btn-mulligan-compact" id="btnMulligan" data-tooltip="UI_MULLIGAN_HELP_TOOLTIP" ${canMulligan ? "" : "disabled style='opacity:0.45; cursor:not-allowed; filter:grayscale(0.8);'"}>
+                <span>🔄 マリガン</span> <span class="btn-mulligan-ember-cost">🔥-1</span>
+            </button>
+        `;
+        const btnMulligan = handHeader.querySelector("#btnMulligan");
+        if (btnMulligan && canMulligan) {
+            btnMulligan.onclick = () => this.handleMulliganClick(btnMulligan);
+        }
+        handGroup.appendChild(handHeader);
+
         const handContainer = this.handCardsComponent ? this.handCardsComponent.render(I18n) : document.createElement("div");
-        cardRowEl.appendChild(handContainer);
+        handGroup.appendChild(handContainer);
+        cardRowEl.appendChild(handGroup);
 
-        // ⚡ 2. 中央: 縦セパレーター
+        // ⚡ 2. 中央: 縦セパレーター (上から下まで垂直貫通)
         const separator = document.createElement("div");
         separator.className = "offering-reserve-separator";
         cardRowEl.appendChild(separator);
 
-        // 📦 3. 右側: 保留スロット (1枠固定) - ReserveSlotComponent へ委譲
+        // 📦 3. 右側: 保留グループ (ヘッダー ＋ 保留スロット)
+        const reserveGroup = document.createElement("div");
+        reserveGroup.className = "offering-reserve-group";
+
+        const reserveHeader = document.createElement("div");
+        reserveHeader.className = "offering-header-reserve-col";
+        reserveHeader.innerHTML = `
+            <span class="reserve-header-cost-badge" data-tooltip="RESERVE_HEADER_COST_TOOLTIP">
+                ${reserveCostText}
+            </span>
+        `;
+        reserveGroup.appendChild(reserveHeader);
+
         const reserveContainer = this.reserveSlotComponent ? this.reserveSlotComponent.render(I18n) : document.createElement("div");
-        cardRowEl.appendChild(reserveContainer);
+        reserveGroup.appendChild(reserveContainer);
+        cardRowEl.appendChild(reserveGroup);
     }
 
     selectReserveCard(reserveIdx = 0) {
         if (!this.state || this.state.hasPickedThisTurn) return;
         if (!this.state.reserveSlots || !this.state.reserveSlots[reserveIdx]) return;
 
+        const resCard = this.state.reserveSlots[reserveIdx];
+        const tObj = resCard.terrain || resCard;
+        const category = resCard.category || tObj.category || "LAND";
+
+        // 🔄 選択中の保留カードを再度クリックした場合: 常に選択解除
         if (this.selectedReserveIdx === reserveIdx) {
-            const resCard = this.state.reserveSlots[reserveIdx];
-            const tObj = resCard.terrain || resCard;
-            const category = resCard.category || tObj.category || "LAND";
-            if (category !== "LAND") {
-                this.triggerCommandCardPlay(resCard, -1, reserveIdx);
-                return;
-            }
             this.selectedCard = null;
             this.selectedCardIdx = -1;
             this.selectedReserveIdx = -1;
             if (focusLayerManager) focusLayerManager.onCardDeselect();
+            this.clearCellPreviews();
             this.render();
             this.highlightPlaceableCells();
             return;
         }
 
-        this.selectedCard = this.state.reserveSlots[reserveIdx];
+        // ⚡ コマンドカードの場合: 発動確認ダイアログを開く
+        if (category !== "LAND") {
+            this.triggerCommandCardPlay(resCard, -1, reserveIdx);
+            return;
+        }
+
+        // 🌱 土地カードの場合: 選択状態にする (盤面ハイライト)
+        this.selectedCard = resCard;
         this.selectedCardIdx = -1;
         this.selectedReserveIdx = reserveIdx;
         if (focusLayerManager) focusLayerManager.onCardSelect();
@@ -925,13 +978,35 @@ class UIController {
         this.render();
     }
 
+    toggleReservePopover(idx = 0) {
+        if (!this.state || this.state.hasPickedThisTurn) return;
+        if (!this.state.reserveSlots || !this.state.reserveSlots[idx]) return;
+
+        this.isReservePopoverOpen = !this.isReservePopoverOpen;
+        this.render();
+    }
+
+    closeReservePopover() {
+        this.isReservePopoverOpen = false;
+        this.render();
+    }
+
+    playReserveCard(idx = 0) {
+        this.isReservePopoverOpen = false;
+        this.selectReserveCard(idx);
+    }
+
     reserveCard(idx) {
         if (!this.state) return;
         if (typeof this.state.moveToReserve === "function" && this.state.moveToReserve(idx)) {
             this.selectedCard = null;
             this.selectedCardIdx = -1;
-        this.selectedReserveIdx = -1;
+            this.selectedReserveIdx = -1;
+            this.isReservePopoverOpen = false;
+            if (focusLayerManager) focusLayerManager.onCardDeselect();
+            this.clearCellPreviews();
             this.render();
+            this.highlightPlaceableCells();
         }
     }
 
@@ -940,8 +1015,12 @@ class UIController {
         if (typeof this.state.returnFromReserve === "function" && this.state.returnFromReserve(idx)) {
             this.selectedCard = null;
             this.selectedCardIdx = -1;
-        this.selectedReserveIdx = -1;
+            this.selectedReserveIdx = -1;
+            this.isReservePopoverOpen = false;
+            if (focusLayerManager) focusLayerManager.onCardDeselect();
+            this.clearCellPreviews();
             this.render();
+            this.highlightPlaceableCells();
         }
     }
 
@@ -1040,15 +1119,15 @@ class UIController {
         const emberStr = emberPct > 0 ? ` | 🔥残り火加護: +${emberPct}%` : "";
 
         tt.innerHTML = `
-            <div style="font-size:17px; font-weight:900; color:#1abc9c; margin-bottom:10px; border-bottom:1.5px solid #2a2e3d; padding-bottom:6px; display:flex; align-items:center; gap:8px;">
+            <div style="font-size:17px; font-weight:900; color:#1abc9c; margin-bottom:10px; border-bottom:2px solid #2a2e3d; padding-bottom:6px; display:flex; align-items:center; gap:8px;">
                 <span>📊</span> 毎ターンの産出詳細内訳
             </div>
 
             <!-- 🌾 食料 -->
             <div style="background:rgba(24, 34, 50, 0.75); border:1px solid #2c3e50; border-radius:8px; padding:10px 12px; margin-bottom:8px;">
-                <div style="font-size:14.5px; font-weight:900; color:#ffffff; display:flex; justify-content:space-between; margin-bottom:4px;">
+                <div style="font-size:14px; font-weight:900; color:#ffffff; display:flex; justify-content:space-between; margin-bottom:4px;">
                     <span>🌾 食料 (現在在庫: ${state.food})</span>
-                    <span style="color:${netFoodColor}; font-size:15.5px;">${netFoodSign} /T (純収支)</span>
+                    <span style="color:${netFoodColor}; font-size:16px;">${netFoodSign} /T (純収支)</span>
                 </div>
                 <div style="font-size:12px; color:#a4b0be; line-height:1.4;">
                     総産出: +${grossFood} (本営: +10 | 土地: +${foodTiles} | ★ソケット: +${foodSockets} | 近郊: +${foodVicinity}${emberStr})<br>
@@ -1058,9 +1137,9 @@ class UIController {
 
             <!-- 🧱 資材 -->
             <div style="background:rgba(24, 34, 50, 0.75); border:1px solid #2c3e50; border-radius:8px; padding:10px 12px; margin-bottom:8px;">
-                <div style="font-size:14.5px; font-weight:900; color:#ffffff; display:flex; justify-content:space-between; margin-bottom:4px;">
+                <div style="font-size:14px; font-weight:900; color:#ffffff; display:flex; justify-content:space-between; margin-bottom:4px;">
                     <span>🧱 資材 (現在在庫: ${state.wood})</span>
-                    <span style="color:#2ecc71; font-size:15.5px;">+${woodTotal} /T</span>
+                    <span style="color:#2ecc71; font-size:16px;">+${woodTotal} /T</span>
                 </div>
                 <div style="font-size:12px; color:#a4b0be; line-height:1.4;">
                     本営基礎: +10 | 土地配置: +${woodTiles} | ソケット: +${woodSockets} | 本営近郊: +${woodVicinity}${emberStr}
@@ -1069,9 +1148,9 @@ class UIController {
 
             <!-- 🛡️ 防衛 -->
             <div style="background:rgba(24, 34, 50, 0.75); border:1px solid #2c3e50; border-radius:8px; padding:10px 12px; margin-bottom:8px;">
-                <div style="font-size:14.5px; font-weight:900; color:#ffffff; display:flex; justify-content:space-between; margin-bottom:4px;">
+                <div style="font-size:14px; font-weight:900; color:#ffffff; display:flex; justify-content:space-between; margin-bottom:4px;">
                     <span>🛡️ 防衛力 (試練対策)</span>
-                    <span style="color:#ffffff; font-size:15.5px;">${defTotal}</span>
+                    <span style="color:#ffffff; font-size:16px;">${defTotal}</span>
                 </div>
                 <div style="font-size:12px; color:#a4b0be; line-height:1.4;">
                     本営基礎: 10 | 土地配置: +${defTiles} | ソケット: +${defSockets}
@@ -1080,9 +1159,9 @@ class UIController {
 
             <!-- ✨ 神秘 -->
             <div style="background:rgba(24, 34, 50, 0.75); border:1px solid #2c3e50; border-radius:8px; padding:10px 12px;">
-                <div style="font-size:14.5px; font-weight:900; color:#ffffff; display:flex; justify-content:space-between; margin-bottom:4px;">
+                <div style="font-size:14px; font-weight:900; color:#ffffff; display:flex; justify-content:space-between; margin-bottom:4px;">
                     <span>✨ 神秘 (現在在庫: ${state.mystic})</span>
-                    <span style="color:#2ecc71; font-size:15.5px;">+${mysticTotal} /T</span>
+                    <span style="color:#2ecc71; font-size:16px;">+${mysticTotal} /T</span>
                 </div>
                 <div style="font-size:12px; color:#a4b0be; line-height:1.4;">
                     本営基礎: +1 | 土地配置: +${mysticTiles} | ソケット: +${mysticSockets} | 残り火自動付与: +${emberMystic}${emberStr}

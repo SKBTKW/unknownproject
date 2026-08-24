@@ -32,6 +32,9 @@
             const handOfferingCopy = (this.state.handOffering || []).map(c => 
                 c ? (c.isBlank ? { ...c, originalCard: c.originalCard ? { ...c.originalCard } : null } : { ...c }) : null
             );
+            const reserveSlotsCopy = (this.state.reserveSlots || []).map(c => 
+                c ? { ...c, currentShape: c.currentShape ? JSON.parse(JSON.stringify(c.currentShape)) : null } : null
+            );
 
             this.snapshot = {
                 turn: this.state.turn,
@@ -44,6 +47,7 @@
                 grantedConnectionPairs: connPairsCopy,
                 mergedBlocks: mergedBlocksCopy,
                 handOffering: handOfferingCopy,
+                reserveSlots: reserveSlotsCopy,
                 hasPickedThisTurn: this.state.hasPickedThisTurn,
                 mergeGroupCounter: this.state.mergeGroupCounter,
                 placementGroupCounter: this.state.placementGroupCounter
@@ -106,6 +110,11 @@
             this.state.handOffering = s.handOffering.map(c => 
                 c ? (c.isBlank ? { ...c, originalCard: c.originalCard ? { ...c.originalCard } : null } : { ...c }) : null
             );
+            if (s.reserveSlots) {
+                this.state.reserveSlots = s.reserveSlots.map(c => 
+                    c ? { ...c, currentShape: c.currentShape ? JSON.parse(JSON.stringify(c.currentShape)) : null } : null
+                );
+            }
 
             this.state.hasPickedThisTurn = s.hasPickedThisTurn;
             this.state.mergeGroupCounter = s.mergeGroupCounter;

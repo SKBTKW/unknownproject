@@ -58,41 +58,125 @@
     z-index: 15;
 }
 
-.section-title-offering {
-    font-size: 15px;
-    font-weight: bold;
-    color: #1abc9c;
+/* 🌟 保留ポップオーバー展開時は最前面 (z-index: 2500) */
+.offering-section.has-popover-open {
+    z-index: 2500 !important;
+}
+
+/* 🃏 手札グループ (ヘッダー ＋ 手札3枚) */
+.offering-hand-group {
     display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+}
+
+/* 📦 保留グループ (ヘッダー ＋ 保留スロット) */
+.offering-reserve-group {
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: space-between;
-    white-space: nowrap;
+    gap: 8px;
+    width: 276px;
+    min-width: 276px;
+    position: relative;
+}
+
+.offering-header-hand-col {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 36px;
+}
+
+.offering-header-reserve-col {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 36px;
+}
+
+.btn-mulligan-compact {
+    background: linear-gradient(135deg, #d63031, #b71540);
+    color: #ffffff;
+    border: 2px solid #ff7675;
+    border-radius: 8px;
+    padding: 6px 24px;
+    font-size: 16px;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(214, 48, 49, 0.45), 0 0 10px rgba(255, 118, 117, 0.3);
+    transition: transform 0.12s, box-shadow 0.12s, background 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    height: 38px;
+    box-sizing: border-box;
+}
+.btn-mulligan-compact:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(231, 76, 60, 0.7), 0 0 14px rgba(255, 118, 117, 0.5);
+    background: linear-gradient(135deg, #ff4757, #e84118);
+}
+.btn-mulligan-ember-cost {
+    font-size: 15px;
+    font-weight: 900;
+    color: #fffa65;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 250, 101, 0.5);
+    border-radius: 5px;
+    padding: 2px 8px;
     letter-spacing: 0.5px;
 }
+
+.reserve-header-cost-badge {
+    font-size: 15.5px;
+    font-weight: 900;
+    color: #ff6b81;
+    background: rgba(231, 76, 60, 0.22);
+    border: 2px solid #ff4757;
+    border-radius: 8px;
+    padding: 6px 22px;
+    letter-spacing: 0.8px;
+    text-shadow: 0 0 10px rgba(255, 71, 87, 0.8);
+    box-shadow: 0 0 12px rgba(231, 76, 60, 0.35);
+    user-select: none;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 38px;
+    box-sizing: border-box;
+    cursor: help;
+}
+
 .cards-row-wrapper {
     display: flex;
     align-items: center;
-    gap: 18px;
+    gap: 12px;
 }
 
-/* 🃏 カードフレーム基本定義: 4.5px 超太枠フレーム ✕ 15% 拡大大型 276px x 402px */
+/* 🃏 カードフレーム基本定義: 4px 太枠フレーム ✕ 完全 2:3 黄金比 260px x 390px */
 .card-frame-tcg,
 .card-slot-box {
-    width: 276px !important;
-    height: 402px !important;
-    min-width: 276px !important;
-    min-height: 402px !important;
+    width: 260px !important;
+    height: 390px !important;
+    min-width: 260px !important;
+    min-height: 390px !important;
     background: #11141a;
-    border: 4.5px solid #1abc9c;
-    border-radius: 16px;
+    border: 4px solid #1abc9c;
+    border-radius: 14px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 14px;
+    padding: 12px;
     cursor: pointer;
     transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
     user-select: none;
     position: relative;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
     box-sizing: border-box;
     isolation: isolate; /* 🌟 カード同士のシャドウ・エフェクト多重干渉を完全遮断 */
     contain: layout style;
@@ -113,7 +197,7 @@
     align-items: center;
     justify-content: center;
     background: rgba(0, 0, 0, 0.45);
-    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    border: 2px solid rgba(255, 255, 255, 0.25);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
     flex-shrink: 0;
 }
@@ -217,7 +301,7 @@
 
 /* 🏷️ レアリティバッジ共通スタイル */
 .tcg-rarity-badge {
-    font-size: 11.5px;
+    font-size: 12px;
     font-weight: 900;
     padding: 2px 7px;
     border-radius: 6px;
@@ -247,7 +331,7 @@
     z-index: 400 !important;
 }
 
-/* 🎮 メインエリア枠内 右下隅: 統合操作グループ (3.5px 太目枠) */
+/* 🎮 メインエリア枠内 右下隅: 統合操作グループ (4px 太目枠) */
 .footer-controls-partition {
     position: absolute;
     bottom: 16px;
@@ -255,7 +339,7 @@
     width: 276px;
     height: auto !important;
     background: #161922;
-    border: 3.5px solid #2e384e; /* 3.5px 太枠 */
+    border: 4px solid #2e384e; /* 4px 太枠 */
     border-radius: 14px;
     padding: 14px 16px;
     display: flex;
@@ -339,4 +423,242 @@
     box-shadow: 0 0 18px rgba(231, 76, 60, 0.9) !important;
     z-index: 100 !important;
     filter: blur(0px) brightness(1.25) !important;
+}
+
+/* 📦 保留スロット外枠コンテナ (手札カードと100%同一サイズ: 276px x 402px) */
+.reserve-slot-single-box {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 276px !important;
+    height: 402px !important;
+    min-width: 276px !important;
+    min-height: 402px !important;
+    box-sizing: border-box;
+    border-radius: 16px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+.reserve-header-cost-badge {
+    font-size: 13px;
+    font-weight: 900;
+    color: #ff6b81;
+    background: rgba(231, 76, 60, 0.18);
+    border: 1.5px solid #e74c3c;
+    border-radius: 6px;
+    padding: 5px 12px;
+    letter-spacing: 0.5px;
+    text-shadow: 0 0 8px rgba(231, 76, 60, 0.6);
+    user-select: none;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    box-sizing: border-box;
+}
+
+/* 📦 保留スロット（手札カードと100%同一規格 260x390px・完全 2:3 比率） */
+.reserve-slot-empty {
+    width: 260px !important;
+    max-width: 260px !important;
+    min-width: 260px !important;
+    height: 390px !important;
+    min-height: 390px !important;
+    background: #151d2a !important;
+    border: 3px dashed #64748b !important;
+    border-radius: 12px !important;
+    padding: 8px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    box-sizing: border-box !important;
+    cursor: pointer;
+    transition: border-color 0.18s, background 0.18s, box-shadow 0.18s, transform 0.15s;
+    user-select: none;
+}
+
+.reserve-slot-empty:hover,
+.reserve-slot-can-deposit {
+    border-color: #f39c12 !important;
+    box-shadow: 0 0 24px rgba(243, 156, 18, 0.45) !important;
+    transform: translateY(-2px);
+}
+
+.reserve-slot-drop-hover {
+    border-color: #f1c40f !important;
+    border-style: solid !important;
+    box-shadow: 0 0 30px rgba(241, 196, 15, 0.75) !important;
+    transform: scale(1.02);
+}
+
+/* ⚡ 縦セパレーター */
+.offering-reserve-separator {
+    width: 2px;
+    align-self: stretch;
+    background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.25) 15%, rgba(255, 255, 255, 0.25) 85%, transparent);
+    margin: 0 4px;
+    flex-shrink: 0;
+}
+
+/* 🚀 保留カード直上ポップオーバー・ダイアログ (カードに被らない上空展開 ＆ 盤面より最前面) */
+.reserve-popover-menu {
+    position: absolute;
+    bottom: calc(100% + 14px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 260px;
+    background: rgba(18, 22, 32, 0.98);
+    border: 2px solid #f39c12;
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9), 0 0 25px rgba(243, 156, 18, 0.5);
+    z-index: 3000 !important;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    animation: popoverFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    backdrop-filter: blur(8px);
+}
+
+/* 🔻 吹き出し下向き矢印アンカー */
+.reserve-popover-menu::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 8px 8px 0 8px;
+    border-style: solid;
+    border-color: #f39c12 transparent transparent transparent;
+}
+
+@keyframes popoverFadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(8px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) scale(1.0);
+    }
+}
+
+.reserve-popover-cost-warn {
+    font-size: 11.5px;
+    font-weight: bold;
+    color: #e74c3c;
+    background: rgba(231, 76, 60, 0.12);
+    border: 1px solid rgba(231, 76, 60, 0.4);
+    border-radius: 6px;
+    padding: 6px 8px;
+    text-align: center;
+    line-height: 1.35;
+}
+
+.reserve-popover-btn-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.btn-reserve-action-play {
+    background: linear-gradient(135deg, #1abc9c, #16a085);
+    color: #ffffff;
+    font-weight: 900;
+    font-size: 14px;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(26, 188, 156, 0.35);
+    transition: transform 0.12s, box-shadow 0.12s;
+}
+.btn-reserve-action-play:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(26, 188, 156, 0.55);
+}
+
+.btn-reserve-action-return {
+    background: linear-gradient(135deg, #34495e, #2c3e50);
+    color: #ecf0f1;
+    font-weight: bold;
+    font-size: 13px;
+    padding: 7px 12px;
+    border: 1px solid #7f8c8d;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.btn-reserve-action-return:hover {
+    background: #3d566e;
+    color: #ffffff;
+}
+
+.btn-reserve-action-close {
+    background: transparent;
+    color: #95a5a6;
+    font-size: 11.5px;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    text-align: center;
+    transition: color 0.15s;
+}
+.btn-reserve-action-close:hover {
+    color: #ecf0f1;
+}
+
+/* =============================================================
+   🌐 グローバル・リッチツールチップ (TooltipSystem)
+   ・文字サイズ 15px〜16px の極太・高コントラスト
+   ・GPUハードウェアアクセラレーション追従 (120fps)
+   ============================================================= */
+.global-rich-tooltip {
+    position: fixed;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 99999 !important;
+    background: rgba(14, 18, 26, 0.96);
+    border: 2px solid #1abc9c;
+    border-radius: 8px;
+    padding: 8px 14px;
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.45;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85), 0 0 14px rgba(26, 188, 156, 0.4);
+    max-width: 320px;
+    word-break: break-word;
+    will-change: transform;
+    opacity: 0;
+    transition: opacity 0.12s ease;
+    backdrop-filter: blur(8px);
+}
+
+.global-rich-tooltip.visible {
+    opacity: 1;
+}
+
+.global-tooltip-title {
+    font-size: 16px;
+    font-weight: 900;
+    color: #1abc9c;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: 0.5px;
+}
+
+.global-tooltip-desc {
+    font-size: 14px;
+    font-weight: 600;
+    color: #f1f5f9;
+    letter-spacing: 0.3px;
 }

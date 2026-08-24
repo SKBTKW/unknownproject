@@ -88,14 +88,14 @@
 
                 <!-- 🎮 画面右下隅: 統合操作グループ (大型 TURN END 専用ボタン / pointer-events: auto) -->
                 <div class="footer-controls-partition pointer-events-auto" id="footerControlsPartition">
-                    <button class="btn-turn-end" onclick="nextTurn()" id="btnTurnEnd"></button>
+                    <button class="btn-turn-end" onclick="nextTurn()" id="btnTurnEnd" data-tooltip="TOOLTIP_TURN_END"></button>
                 </div>
             </div>
 
             <!-- 🌌 [Layer 4: System Overlay Area] 四隅・最前面ポップアップ層 (z-index: 900) -->
             <div id="layerSystemOverlay" class="layer-system-overlay layer-system-overlay-anchor">
                 <!-- 📜 メインエリア左上隅: モジュール化 0.75x ログコンテナ (pointer-events: auto) -->
-                <div id="logComponentContainer" class="pointer-events-auto"></div>
+                <div id="logComponentContainer" class="pointer-events-auto" data-tooltip="TOOLTIP_LOG_PANEL"></div>
 
                 <!-- 🌌 メインエリア背景 ウォーターマーク ターン表示 ＆ 試練カウントダウン (右上) -->
                 <div id="bgTurnWatermark" class="bg-turn-watermark">
@@ -141,7 +141,7 @@
 
     <!-- 🌐 True ES Module Single Entrypoint Bootstrap (Zero-Latency Instant Launch) -->
     <script type="module">
-        import { GameEngine, UIController, UndoLandSystem, BuffSystem, TerritoryBadgeComponent, ModalSystem, FocusLayerManager, BoardCameraSystem, SettingsModalSystem, settingsModalInstance, gameSettings, EmberStatusComponent, HandCardsComponent, ReserveSlotComponent, TopHeaderComponent, BoardGridComponent } from './src/app.js?v=20260823_v117';
+        import { GameEngine, UIController, UndoLandSystem, BuffSystem, TerritoryBadgeComponent, ModalSystem, FocusLayerManager, BoardCameraSystem, SettingsModalSystem, settingsModalInstance, gameSettings, EmberStatusComponent, HandCardsComponent, ReserveSlotComponent, TopHeaderComponent, BoardGridComponent, TooltipSystem, tooltipSystemInstance } from './src/app.js?v=20260824_v130';
 
         function bootstrap() {
             // 🎮 GameEngine ＆ UIController の完全モジュールマウント起動 (ゼロ遅延・即時起動 - Stage 1: 5x5 標準復元)

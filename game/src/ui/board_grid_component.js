@@ -43,8 +43,7 @@ export class BoardGridComponent {
         if (currentMode === 'icon') modeIcon = "🌾";
         else if (currentMode === 'always') modeIcon = "👁️";
 
-        cornerCell.title = "土地表示モード切替";
-        cornerCell.innerHTML = `<button onclick="toggleBoardLabelMode(event)" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; border-radius:4px; padding:2px 4px; font-size:12px; cursor:pointer;" title="土地表示モード切替">${modeIcon}</button>`;
+        cornerCell.innerHTML = `<button onclick="toggleBoardLabelMode(event)" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; border-radius:4px; padding:2px 4px; font-size:12px; cursor:pointer;" data-tooltip="TOOLTIP_BOARD_LABEL_TOGGLE">${modeIcon}</button>`;
         boardEl.appendChild(cornerCell);
 
         const size = this.state.grid.length;

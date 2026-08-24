@@ -28,49 +28,38 @@ class FocusLayerManager {
         this.offeringSectionEl = offeringSectionEl || document.querySelector('.offering-section');
         this.boardGridEl = document.getElementById('gridBoard') || document.getElementById('board') || document.querySelector('.grid-with-headers') || this.boardContainerEl;
 
-        if (!this.offeringSectionEl || !this.boardContainerEl) return;
-
-        // 🌟 初期状態はマウスの初期位置に関わらず【手札・盤面を100%完全表示】に固定
+        // 🌟 初期状態は中立クリア表示
         this.resetToNeutral();
 
-        // ユーザーが初めて意図的にマウスを動かした時にフォーカス制御を活性化
-        const enableInteraction = () => {
-            this.hasUserInteracted = true;
-            document.removeEventListener('mousemove', enableInteraction);
-            document.removeEventListener('pointerdown', enableInteraction);
-        };
-        document.addEventListener('mousemove', enableInteraction, { passive: true });
-        document.addEventListener('pointerdown', enableInteraction, { passive: true });
+        // 🌐 グローバルイベント委譲で手札・盤面のホバーを100%確実に検知
+        document.addEventListener('mouseover', (e) => {
+            if (!e.target || typeof e.target.closest !== 'function') return;
 
-        // 🃏 1. 手札エリアへマウス侵入 ➔ 手札最優先・盤面ボケ
-        this.offeringSectionEl.addEventListener('mouseenter', () => {
-            if (!this.hasUserInteracted) return;
-            this.isHandHovered = true;
-            this.updateLayerStates();
-        });
+            // 🃏 1. 手札トレイ領域へのホバー
+            const isHand = !!e.target.closest('.offering-section') || !!e.target.closest('#layerPlayerTray') || !!e.target.closest('.card-frame-tcg') || !!e.target.closest('.reserve-slot-empty');
+            // 🗺️ 2. 盤面領域へのホバー
+            const isBoard = !isHand && (!!e.target.closest('#gridBoard') || !!e.target.closest('.board-container-wrapper') || !!e.target.closest('#layerWorldBoard') || !!e.target.closest('.grid-board-anchor'));
 
-        // 🃏 手札エリアからマウス退出
-        this.offeringSectionEl.addEventListener('mouseleave', () => {
-            if (!this.hasUserInteracted) return;
-            this.isHandHovered = false;
-            this.updateLayerStates();
-        });
-
-        // 🗺️ 2. 中央の土地グリッド盤面本体（余白を除く）へマウス侵入 ➔ 盤面最優先・手札ボケ
-        const boardHoverTarget = document.querySelector('.board-container-wrapper') || document.querySelector('.grid-board-anchor') || document.getElementById('gridBoard') || this.boardContainerEl;
-        
-        boardHoverTarget.addEventListener('mouseenter', () => {
-            if (!this.hasUserInteracted) return;
-            this.isBoardHovered = true;
-            this.updateLayerStates();
-        });
-
-        // 🗺️ 盤面本体からマウス退出（余白に出た時） ➔ 両方完全表示へ復帰
-        boardHoverTarget.addEventListener('mouseleave', () => {
-            if (!this.hasUserInteracted) return;
-            this.isBoardHovered = false;
-            this.updateLayerStates();
-        });
+            if (isHand) {
+                if (!this.isHandHovered) {
+                    this.isHandHovered = true;
+                    this.isBoardHovered = false;
+                    this.updateLayerStates();
+                }
+            } else if (isBoard) {
+                if (!this.isBoardHovered) {
+                    this.isBoardHovered = true;
+                    this.isHandHovered = false;
+                    this.updateLayerStates();
+                }
+            } else {
+                if (this.isHandHovered || this.isBoardHovered) {
+                    this.isHandHovered = false;
+                    this.isBoardHovered = false;
+                    this.updateLayerStates();
+                }
+            }
+        }, { passive: true });
     }
 
     getGridElement() {
@@ -147,8 +136,14 @@ class FocusLayerManager {
             this.boardContainerEl.style.zIndex = '700';
             if (gridEl) gridEl.classList.remove('board-dim-blur');
 
-            if (playerTray) playerTray.style.zIndex = '50';
-            if (this.offeringSectionEl) this.offeringSectionEl.style.zIndex = '50';
+            // 🌟 カード選択中であっても手札トレイ（保留スロット含む）のクリックを盤面で覆い隠さない (z-index: 800)
+            if (playerTray) playerTray.style.zIndex = '800';
+            if (this.offeringSectionEl) {
+                this.offeringSectionEl.style.zIndex = '800';
+                if (isBlurEnabled) {
+                    this.offeringSectionEl.classList.add('layer-dim-blur');
+                }
+            }
         } else {
             this.boardContainerEl.classList.remove('layer-active-front');
             if (isBlurEnabled) {
@@ -163,7 +158,7 @@ class FocusLayerManager {
     }
 
     /**
-     * 🃏 手札を最優先（最前面手前 z-index: 700）または下層ボケ（奥 z-index: 50）に設定
+     * 🃏 手札を最優先（最前面手前 z-index: 800）または下層ボケ（奥 z-index: 50）に設定
      */
     setHandFocus(isFront) {
         if (!this.offeringSectionEl) return;
@@ -174,8 +169,8 @@ class FocusLayerManager {
         if (isFront) {
             this.offeringSectionEl.classList.add('layer-active-front');
             this.offeringSectionEl.classList.remove('layer-dim-blur');
-            this.offeringSectionEl.style.zIndex = '700';
-            if (playerTray) playerTray.style.zIndex = '700';
+            this.offeringSectionEl.style.zIndex = '800';
+            if (playerTray) playerTray.style.zIndex = '800';
 
             if (this.boardContainerEl) this.boardContainerEl.style.zIndex = '50';
         } else {
@@ -185,8 +180,8 @@ class FocusLayerManager {
             } else {
                 this.offeringSectionEl.classList.remove('layer-dim-blur');
             }
-            this.offeringSectionEl.style.zIndex = '50';
-            if (playerTray) playerTray.style.zIndex = '50';
+            this.offeringSectionEl.style.zIndex = '500';
+            if (playerTray) playerTray.style.zIndex = '500';
         }
     }
 

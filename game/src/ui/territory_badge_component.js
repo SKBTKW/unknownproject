@@ -34,12 +34,12 @@ export class TerritoryBadgeComponent {
             align-items: center;
             gap: 7px;
             background: rgba(18, 24, 38, 0.95);
-            border: 1.8px solid #1abc9c;
+            border: 2px solid #1abc9c;
             color: #1abc9c;
             font-weight: 900;
             padding: 6px 16px;
             border-radius: 20px;
-            font-size: 15.5px;
+            font-size: 16px;
             box-shadow: 0 4px 14px rgba(0, 0, 0, 0.8), 0 0 12px rgba(26, 188, 156, 0.3);
             backdrop-filter: blur(8px);
             transition: all 0.2s ease;
@@ -60,7 +60,7 @@ export class TerritoryBadgeComponent {
 
         this.countEl = document.createElement("span");
         this.countEl.id = "valPlacedCount";
-        this.countEl.style.cssText = "color: #ffffff; font-size: 16.5px; font-weight: bold; letter-spacing: 0.5px; margin-left: 2px;";
+        this.countEl.style.cssText = "color: #ffffff; font-size: 16px; font-weight: bold; letter-spacing: 0.5px; margin-left: 2px;";
         this.countEl.innerText = "0/24";
 
         this.badgeEl.appendChild(this.iconEl);

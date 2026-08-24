@@ -39,10 +39,10 @@
             this.panelEl = document.createElement("div");
             this.panelEl.className = "log-dropdown-panel-header";
             this.panelEl.id = "logDropdownPanelHeader";
-            this.panelEl.style.cssText = "display: none; width: 700px !important; max-height: 400px !important; box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 16px rgba(26,188,156,0.35); border: 1.5px solid #1abc9c; border-radius: 10px; background: #11141d; overflow: hidden; z-index: 950;";
+            this.panelEl.style.cssText = "display: none; width: 700px !important; max-height: 400px !important; box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 16px rgba(26,188,156,0.35); border: 2px solid #1abc9c; border-radius: 10px; background: #11141d; overflow: hidden; z-index: 950;";
 
             this.panelEl.innerHTML = `
-                <div class="log-dropdown-header-bar" style="padding: 9px 16px !important; font-size: 13.5px !important; background: #19202c; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2a3547;">
+                <div class="log-dropdown-header-bar" style="padding: 9px 16px !important; font-size: 14px !important; background: #19202c; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2a3547;">
                     <span id="lblLogDropdownTitle" style="font-weight: bold; color: #1abc9c;">📜 システム・内政ログ</span>
                     <span style="cursor:pointer; font-size:16px !important; color: #a4b0be; font-weight: bold;" id="btnCloseLogPanel">✕</span>
                 </div>
@@ -144,7 +144,7 @@
             }
 
             targetEl.innerHTML = this.logs.map(log => `
-                <div class="log-item" style="border-bottom:1px solid rgba(44, 62, 80, 0.6); padding:4px 0; margin-bottom:4px; font-size:13.5px; line-height:1.45;">
+                <div class="log-item" style="border-bottom:1px solid rgba(44, 62, 80, 0.6); padding:4px 0; margin-bottom:4px; font-size:14px; line-height:1.45;">
                     <span style="color:#1abc9c; font-weight:bold; margin-right:6px;">[T${log.turn}]</span>
                     <span>${log.message}</span>
                 </div>

@@ -122,13 +122,16 @@ export class HandCardsComponent {
 
             if (category !== "LAND") {
                 // ⚡ コマンドカード
+                cardEl.setAttribute("data-tooltip-title", `📜 ${cName}`);
+                cardEl.setAttribute("data-tooltip", `コストを消費して効果を発動します<br>コスト: ${costBadgeText || "即時発動"}<br>効果: ${cDesc}`);
+
                 cardEl.innerHTML = `
                     <div class="tcg-card-top-bar" style="padding:4px 8px; display:flex; align-items:center; justify-content:space-between; gap:6px;">
-                        <div class="tcg-category-icon-pill" title="${catTitle}">${catIcon}</div>
-                        <div class="tcg-title-pill" style="font-size:19px; font-weight:900; text-align:center; flex:1; letter-spacing:0.5px;">${cName}</div>
+                        <div class="tcg-category-icon-pill">${catIcon}</div>
+                        <div class="tcg-title-pill" style="font-size:18px; font-weight:900; text-align:center; flex:1; letter-spacing:0.5px;">${cName}</div>
                     </div>
                     <div class="tcg-shape-art-area" style="display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-start; background:#1c2536; padding:14px; text-align:left; overflow:hidden; flex:1; border-radius:6px; margin:4px 0;">
-                        <div style="font-size:17.5px; color:#ffffff; line-height:1.45; font-weight:bold; text-align:left; width:100%;">${cDesc}</div>
+                        <div style="font-size:18px; color:#ffffff; line-height:1.45; font-weight:bold; text-align:left; width:100%;">${cDesc}</div>
                     </div>
                     <div class="tcg-yield-strip" style="font-size:16px; font-weight:bold; text-align:left; justify-content:flex-start; padding:8px 12px; width:100%; box-sizing:border-box;">
                         <span>${costBadgeText ? I18n.t("UI_CARD_COST_PREFIX", { cost: costBadgeText }) : I18n.t("UI_CMD_INSTANT_LABEL")}</span>
@@ -163,11 +166,11 @@ export class HandCardsComponent {
                     blockBg = "#1abc9c"; blockBorder = "#16a085"; blockShadow = "rgba(26, 188, 156, 0.85)";
                 }
 
-                let shapeHtml = `<div style="display:grid; grid-template-rows:repeat(${shapeMat.length}, 22px); grid-template-columns:repeat(${shapeMat[0].length}, 22px); gap:5px; background:rgba(0,0,0,0.55); padding:10px; border-radius:8px; border:1.5px solid rgba(255,255,255,0.18);">`;
+                let shapeHtml = `<div style="display:grid; grid-template-rows:repeat(${shapeMat.length}, 22px); grid-template-columns:repeat(${shapeMat[0].length}, 22px); gap:5px; background:rgba(0,0,0,0.55); padding:10px; border-radius:8px; border:2px solid rgba(255,255,255,0.18);">`;
                 for (let r = 0; r < shapeMat.length; r++) {
                     for (let c = 0; c < shapeMat[0].length; c++) {
                         if (shapeMat[r][c] === 1) {
-                            shapeHtml += `<div style="width:22px;height:22px;background:${blockBg};border:1.5px solid ${blockBorder};border-radius:4px;box-shadow:0 0 8px ${blockShadow};"></div>`;
+                            shapeHtml += `<div style="width:22px;height:22px;background:${blockBg};border:2px solid ${blockBorder};border-radius:4px;box-shadow:0 0 8px ${blockShadow};"></div>`;
                         } else {
                             shapeHtml += `<div style="width:22px;height:22px;background:transparent;"></div>`;
                         }
@@ -176,17 +179,29 @@ export class HandCardsComponent {
                 shapeHtml += `</div>`;
 
                 const yieldParts = [];
-                if (totF > 0) yieldParts.push(`<span>🌾${totF}</span>`);
-                if (totW > 0) yieldParts.push(`<span>🧱${totW}</span>`);
-                if (totD > 0) yieldParts.push(`<span>🛡️${totD}</span>`);
-                if (totM > 0) yieldParts.push(`<span>✨${totM}</span>`);
+                const yieldPlainParts = [];
+                if (totF > 0) { yieldParts.push(`<span>🌾${totF}</span>`); yieldPlainParts.push(`🌾${totF}`); }
+                if (totW > 0) { yieldParts.push(`<span>🧱${totW}</span>`); yieldPlainParts.push(`🧱${totW}`); }
+                if (totD > 0) { yieldParts.push(`<span>🛡️${totD}</span>`); yieldPlainParts.push(`🛡️${totD}`); }
+                if (totM > 0) { yieldParts.push(`<span>✨${totM}</span>`); yieldPlainParts.push(`✨${totM}`); }
                 const yieldContent = yieldParts.length > 0 ? yieldParts.join(" ") : `<span>-</span>`;
-                const yieldText = `<span style="font-size:16px; color:#ffffff; font-weight:bold; margin-right:6px;">産出:</span> <span style="font-size:19.5px; font-weight:900; letter-spacing:0.8px; color:#ffffff;">${yieldContent}</span>`;
+                const yieldPlainText = yieldPlainParts.length > 0 ? yieldPlainParts.join(" ") : "-";
+                const yieldText = `<span style="font-size:16px; color:#ffffff; font-weight:bold; margin-right:6px;">産出:</span> <span style="font-size:20px; font-weight:900; letter-spacing:0.8px; color:#ffffff;">${yieldContent}</span>`;
+
+                const placedCount = (this.state && this.state.placedBlockCount) || 0;
+                let placementCost = 0;
+                if (placedCount >= 31) placementCost = 3;
+                else if (placedCount >= 16) placementCost = 2;
+                else if (placedCount >= 6) placementCost = 1;
+                const costText = placementCost > 0 ? `🔥-${placementCost}` : `🔥0 (無料)`;
+
+                cardEl.setAttribute("data-tooltip-title", `🌱 ${cName}`);
+                cardEl.setAttribute("data-tooltip", `ブロックを土地グリッド内に配置します<br>${costText}、産出: ${yieldPlainText}<br><strong style="color:#f1c40f;">[ Rキー ] で回転</strong>`);
 
                 cardEl.innerHTML = `
                     <div class="tcg-card-top-bar" style="padding:4px 8px; display:flex; align-items:center; justify-content:space-between; gap:6px;">
-                        <div class="tcg-category-icon-pill" title="${catTitle}">${catIcon}</div>
-                        <div class="tcg-title-pill" style="font-size:19px; font-weight:900; text-align:center; flex:1; letter-spacing:0.5px;">${cName}</div>
+                        <div class="tcg-category-icon-pill">${catIcon}</div>
+                        <div class="tcg-title-pill" style="font-size:18px; font-weight:900; text-align:center; flex:1; letter-spacing:0.5px;">${cName}</div>
                     </div>
                     <div class="tcg-shape-art-area" style="display:flex; align-items:center; justify-content:center; padding:12px; flex:1; background:#1c2536; border-radius:6px; margin:4px 0;">
                         ${shapeHtml}

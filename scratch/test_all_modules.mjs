@@ -119,6 +119,32 @@ const undoRes = undoSys.undo();
 assert(undoRes === true, 'アンドゥが成功すること');
 assert(engine.state.grid[0][2].placed === false, 'アンドゥ後に (0,2) が未配置に戻っていること');
 
+// 保留枠から土地を配置 ➔ アンドゥで保留枠へ復帰するテスト
+const mockReserveCard = {
+    id: 'GL2_FOREST',
+    category: 'LAND',
+    terrain: { id: 'GL2_FOREST', nameKey: 'TERRAIN_FOREST' },
+    currentShape: [[1]]
+};
+engine.state.reserveSlots[0] = mockReserveCard;
+undoSys.captureSnapshot([{ r: 0, c: 2 }]);
+engine.state.reserveSlots[0] = null; // プレイで保留枠から消費
+engine.gridEngine.placeShape(0, 2, [[1]], mockReserveCard.terrain);
+assert(engine.state.reserveSlots[0] === null, 'プレイ後に保留枠が空になっていること');
+undoSys.undo();
+assert(engine.state.reserveSlots[0] !== null, 'アンドゥ後にカードが保留枠へ復帰していること');
+assert(engine.state.reserveSlots[0].id === 'GL2_FOREST', '保留枠に正しいカードが復元されていること');
+
+// 手札満杯時の returnFromReserve 安全性テスト (カード消失防止)
+engine.state.handOffering = [
+    { id: 'C1', isBlank: false },
+    { id: 'C2', isBlank: false },
+    { id: 'C3', isBlank: false }
+];
+const returnFailRes = engine.deckManager.returnFromReserve(0);
+assert(returnFailRes === false, '手札満杯時の保留解除は false を返すこと');
+assert(engine.state.reserveSlots[0] !== null, '手札満杯時に保留カードが消失せず保護されること');
+
 // --- 7. FocusLayerManager 2層レイヤー監視テスト ---
 console.log('\n🌟 [7/8] FocusLayerManager 2層レイヤー監視');
 import { FocusLayerManager, focusLayerManager } from '../game/src/ui/focus_layer_system.js';

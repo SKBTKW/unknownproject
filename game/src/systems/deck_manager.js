@@ -351,9 +351,17 @@ class DeckManager {
         const card = this.state.reserveSlots[reserveIdx];
         if (!card) return false;
 
+        // 手札に空きスロット (isBlank: true) が存在するか走査
+        let targetIdx = -1;
         const origIdx = card.originalHandIdx;
         if (origIdx !== undefined && this.state.handOffering[origIdx] && this.state.handOffering[origIdx].isBlank) {
-            this.state.handOffering[origIdx] = card;
+            targetIdx = origIdx;
+        } else {
+            targetIdx = this.state.handOffering.findIndex(c => c && c.isBlank);
+        }
+
+        if (targetIdx !== -1) {
+            this.state.handOffering[targetIdx] = card;
             delete card.originalHandIdx;
             this.state.reserveSlots[reserveIdx] = null;
 
@@ -364,6 +372,8 @@ class DeckManager {
             }
             return true;
         }
+
+        // 手札が満杯の場合は何もしない（カード消失防止）
         return false;
     }
 

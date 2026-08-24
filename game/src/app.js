@@ -28,6 +28,7 @@ import { HandCardsComponent } from './ui/hand_cards_component.js';
 import { ReserveSlotComponent } from './ui/reserve_slot_component.js';
 import { TopHeaderComponent } from './ui/top_header_component.js';
 import { BoardGridComponent } from './ui/board_grid_component.js';
+import { TooltipSystem, tooltipSystemInstance } from './ui/tooltip_system.js';
 
 export {
     I18n,
@@ -64,7 +65,9 @@ export {
     HandCardsComponent,
     ReserveSlotComponent,
     TopHeaderComponent,
-    BoardGridComponent
+    BoardGridComponent,
+    TooltipSystem,
+    tooltipSystemInstance
 };
 
 console.log('🎮 [App] Clean True ES Modules Master Entrypoint Loaded Successfully.');
