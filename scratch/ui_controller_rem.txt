@@ -1,0 +1,2 @@
+L508: <button class="btn-mulligan-compact" id="btnMulligan" data-tooltip-title="🔄 マリガン (手札引き直し)" data-tooltip="${mulliganTooltip}" ${canMulligan ? "" : "disabled style='opacity:0.45; cursor:not-allowed; filter:grayscale(0.8);'"}>
+L1071: window.LogComponent.addLog(`ターン ${this.state.turn} を開始しました。手札オファリングを補充しました。`, this.state.turn);
