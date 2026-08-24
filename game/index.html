@@ -103,7 +103,7 @@
                     <div class="bg-turn-label">TURN</div>
                     <div class="bg-turn-num"><span id="valTurnBg">01</span><small>/50</small></div>
                     <div id="trialCountdownBadge" class="trial-countdown-badge">
-                        <span>⚠️ 試練まで あと</span> <strong id="valTrialCountdown" class="trial-countdown-val">3</strong> <span>ターン</span>
+                        <span data-i18n="UI_TRIAL_COUNTDOWN_PREFIX">⚠️ 試練まで あと</span> <strong id="valTrialCountdown" class="trial-countdown-val">3</strong> <span data-i18n="UI_TRIAL_COUNTDOWN_SUFFIX">ターン</span>
                     </div>
                 </div>
 
@@ -123,24 +123,21 @@
         <div class="directive-modal-window">
             <div class="directive-modal-header">
                 <h3 class="directive-modal-title">
-                    <span>🏛️</span> 文明方針の発令・変更 (Four Directives)
+                    <span>🏛️</span> <span data-i18n="UI_DIRECTIVE_MODAL_TITLE"></span>
                 </h3>
                 <span class="directive-modal-close" onclick="closeDirectiveModal()">✕</span>
             </div>
-            <div class="directive-modal-desc">
-                現在の文明方針（ディレクティブ）を変更できます。<br>
-                国家方針に即したボーナスを獲得し、過酷な試練を乗り越えましょう。
-            </div>
+            <div class="directive-modal-desc" data-i18n="UI_DIRECTIVE_MODAL_DESC"></div>
             <div class="directive-options-container" id="directiveOptions"></div>
             <div class="directive-modal-footer">
-                <button class="directive-cancel-btn" onclick="closeDirectiveModal()">キャンセル</button>
+                <button class="directive-cancel-btn" onclick="closeDirectiveModal()" data-i18n="UI_CANCEL"></button>
             </div>
         </div>
     </div>
 
     <!-- 🌐 True ES Module Single Entrypoint Bootstrap (Zero-Latency Instant Launch) -->
     <script type="module">
-        import { GameEngine, UIController, UndoLandSystem, BuffSystem, TerritoryBadgeComponent, ModalSystem, FocusLayerManager, BoardCameraSystem, SettingsModalSystem, settingsModalInstance, gameSettings, EmberStatusComponent, HandCardsComponent, ReserveSlotComponent, TopHeaderComponent, BoardGridComponent, TooltipSystem, tooltipSystemInstance } from './src/app.js?v=20260824_v154';
+        import { GameEngine, UIController, UndoLandSystem, BuffSystem, TerritoryBadgeComponent, ModalSystem, FocusLayerManager, BoardCameraSystem, SettingsModalSystem, settingsModalInstance, gameSettings, EmberStatusComponent, HandCardsComponent, ReserveSlotComponent, TopHeaderComponent, BoardGridComponent, TooltipSystem, tooltipSystemInstance } from './src/app.js?v=20260825_v156';
 
         function bootstrap() {
             // 🎮 GameEngine ＆ UIController の完全モジュールマウント起動 (ゼロ遅延・即時起動 - Stage 1: 5x5 標準復元)

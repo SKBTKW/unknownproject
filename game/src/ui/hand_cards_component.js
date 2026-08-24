@@ -175,11 +175,11 @@ export class HandCardsComponent {
 
             // 🏷️ カテゴリ判別アイコン
             let catIcon = "🌱";
-            let catTitle = "土地";
-            if (category === "ECONOMY" || category === "COMMAND") { catIcon = "📜"; catTitle = "経済・政策"; }
-            else if (category === "MILITARY") { catIcon = "⚔️"; catTitle = "軍事・防衛"; }
-            else if (category === "MYSTIC") { catIcon = "✨"; catTitle = "神秘・奇跡"; }
-            else if (category === "SOCIETY") { catIcon = "👥"; catTitle = "社会・士気"; }
+            let catTitle = I18n.t("TOOLTIP_CAT_LAND") || "土地";
+            if (category === "ECONOMY" || category === "COMMAND") { catIcon = "📜"; catTitle = I18n.t("TOOLTIP_CAT_ECONOMY") || "経済・政策"; }
+            else if (category === "MILITARY") { catIcon = "⚔️"; catTitle = I18n.t("TOOLTIP_CAT_MILITARY") || "軍事・防衛"; }
+            else if (category === "MYSTIC") { catIcon = "✨"; catTitle = I18n.t("TOOLTIP_CAT_MYSTIC") || "神秘・奇跡"; }
+            else if (category === "SOCIETY") { catIcon = "👥"; catTitle = I18n.t("TOOLTIP_CAT_SOCIETY") || "社会・士気"; }
 
             if (category !== "LAND") {
                 // ⚡ コマンドカード (カード面自体のリッチテキストで完結・ツールチップ完全廃止)
@@ -193,7 +193,7 @@ export class HandCardsComponent {
                         <div class="tcg-card-desc-full" style="font-size:18px; color:#ffffff; line-height:1.45; font-weight:bold; text-align:left; width:100%;">${cDesc}</div>
                         <div class="tcg-minimal-name-label" style="display:none;">${cName}</div>
                     </div>
-                    <div class="tcg-yield-strip" style="font-size:16px; font-weight:bold; text-align:left; justify-content:flex-start; padding:8px 12px; width:100%; box-sizing:border-box;">
+                    <div class="tcg-yield-strip" style="font-size:16px; font-weight:bold; text-align:left; justify-content:flex-start; padding:8px 12px; width:100%; box-sizing:border-box; white-space:nowrap; overflow:hidden;">
                         <span>${costBadgeText ? I18n.t("UI_CARD_COST_PREFIX", { cost: costBadgeText }) : I18n.t("UI_CMD_INSTANT_LABEL")}</span>
                     </div>
                 `;
@@ -263,7 +263,8 @@ export class HandCardsComponent {
                 if (totM > 0) { yieldParts.push(`<span>✨${totM}</span>`); yieldPlainParts.push(`✨${totM}`); }
                 const yieldContent = yieldParts.length > 0 ? yieldParts.join(" ") : `<span>-</span>`;
                 const yieldPlainText = yieldPlainParts.length > 0 ? yieldPlainParts.join(" ") : "-";
-                const yieldText = `<span style="font-size:16px; color:#ffffff; font-weight:bold; margin-right:6px;">産出:</span> <span style="font-size:20px; font-weight:900; letter-spacing:0.8px; color:#ffffff;">${yieldContent}</span>`;
+                const yieldLabel = I18n.t("UI_YIELD_LABEL") || "産出:";
+                const yieldText = `<span style="font-size:15px; color:#ffffff; font-weight:bold; margin-right:4px; white-space:nowrap;">${yieldLabel}</span> <span style="font-size:17px; font-weight:900; letter-spacing:0.5px; color:#ffffff; white-space:nowrap; display:inline-flex; align-items:center; gap:5px;">${yieldContent}</span>`;
 
                 const fullInnerHtml = `
                     <div class="tcg-card-top-bar" style="padding:4px 8px; display:flex; align-items:center; justify-content:space-between; gap:6px;">
@@ -275,7 +276,7 @@ export class HandCardsComponent {
                         ${miniShapeHtml}
                         <div class="tcg-minimal-name-label" style="display:none;">${cName}</div>
                     </div>
-                    <div class="tcg-yield-strip" style="padding:8px 10px; display:flex; align-items:center; justify-content:center;">
+                    <div class="tcg-yield-strip" style="padding:8px 6px; display:flex; align-items:center; justify-content:center; white-space:nowrap; overflow:hidden;">
                         ${yieldText}
                     </div>
                 `;

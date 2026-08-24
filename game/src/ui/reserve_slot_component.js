@@ -59,11 +59,11 @@ export class ReserveSlotComponent {
 
             // 🏷️ カテゴリ判別アイコン
             let catIcon = "🌱";
-            let catTitle = "土地";
-            if (category === "ECONOMY" || category === "COMMAND") { catIcon = "📜"; catTitle = "経済・政策"; }
-            else if (category === "MILITARY") { catIcon = "⚔️"; catTitle = "軍事・防衛"; }
-            else if (category === "MYSTIC") { catIcon = "✨"; catTitle = "神秘・奇跡"; }
-            else if (category === "SOCIETY") { catIcon = "👥"; catTitle = "社会・士気"; }
+            let catTitle = I18n.t("TOOLTIP_CAT_LAND") || "土地";
+            if (category === "ECONOMY" || category === "COMMAND") { catIcon = "📜"; catTitle = I18n.t("TOOLTIP_CAT_ECONOMY") || "経済・政策"; }
+            else if (category === "MILITARY") { catIcon = "⚔️"; catTitle = I18n.t("TOOLTIP_CAT_MILITARY") || "軍事・防衛"; }
+            else if (category === "MYSTIC") { catIcon = "✨"; catTitle = I18n.t("TOOLTIP_CAT_MYSTIC") || "神秘・奇跡"; }
+            else if (category === "SOCIETY") { catIcon = "👥"; catTitle = I18n.t("TOOLTIP_CAT_SOCIETY") || "社会・士気"; }
 
             const rCardEl = document.createElement("div");
             rCardEl.className = `card-frame-tcg reserve-card-hold ${rarityClass} ${categoryClass} ${isReserveSelected ? 'selected' : ''} ${isLocked ? 'locked' : ''} ${!costMet ? 'cost-disabled' : ''}`;
@@ -132,7 +132,7 @@ export class ReserveSlotComponent {
                         <div class="tcg-card-desc-full" style="font-size:18px; color:#ffffff; line-height:1.45; font-weight:bold; text-align:left; width:100%;">${cDesc}</div>
                         <div class="tcg-minimal-name-label" style="display:none;">${cName}</div>
                     </div>
-                    <div class="tcg-yield-strip" style="font-size:16px; font-weight:bold; text-align:left; justify-content:flex-start; padding:8px 12px; width:100%; box-sizing:border-box;">
+                    <div class="tcg-yield-strip" style="font-size:16px; font-weight:bold; text-align:left; justify-content:flex-start; padding:8px 12px; width:100%; box-sizing:border-box; white-space:nowrap; overflow:hidden;">
                         <span>${costBadgeText ? I18n.t("UI_CARD_COST_PREFIX", { cost: costBadgeText }) : I18n.t("UI_CMD_INSTANT_LABEL")}</span>
                     </div>
                 `;
@@ -202,7 +202,8 @@ export class ReserveSlotComponent {
                 if (totM > 0) { yieldParts.push(`<span>✨${totM}</span>`); yieldPlainParts.push(`✨${totM}`); }
                 const yieldContent = yieldParts.length > 0 ? yieldParts.join(" ") : `<span>-</span>`;
                 const yieldPlainText = yieldPlainParts.length > 0 ? yieldPlainParts.join(" ") : "-";
-                const yieldText = `<span style="font-size:16px; color:#ffffff; font-weight:bold; margin-right:6px;">産出:</span> <span style="font-size:20px; font-weight:900; letter-spacing:0.8px; color:#ffffff;">${yieldContent}</span>`;
+                const yieldLabel = I18n.t("UI_YIELD_LABEL") || "産出:";
+                const yieldText = `<span style="font-size:15px; color:#ffffff; font-weight:bold; margin-right:4px; white-space:nowrap;">${yieldLabel}</span> <span style="font-size:17px; font-weight:900; letter-spacing:0.5px; color:#ffffff; white-space:nowrap; display:inline-flex; align-items:center; gap:5px;">${yieldContent}</span>`;
 
                 const fullInnerHtml = `
                     <div class="tcg-card-top-bar" style="padding:4px 8px; display:flex; align-items:center; justify-content:space-between; gap:6px;">
@@ -214,7 +215,7 @@ export class ReserveSlotComponent {
                         ${miniShapeHtml}
                         <div class="tcg-minimal-name-label" style="display:none;">${cName}</div>
                     </div>
-                    <div class="tcg-yield-strip" style="padding:8px 10px; display:flex; align-items:center; justify-content:center;">
+                    <div class="tcg-yield-strip" style="padding:8px 6px; display:flex; align-items:center; justify-content:center; white-space:nowrap; overflow:hidden;">
                         ${yieldText}
                     </div>
                 `;
@@ -250,18 +251,21 @@ export class ReserveSlotComponent {
             const canDepositSelected = (this.ui.selectedCardIdx !== -1 && !this.state.hasPickedThisTurn);
             emptySlotEl.className = `reserve-slot-empty ${canDepositSelected ? 'reserve-slot-can-deposit' : ''}`;
             if (!this.ui.isMinimalMode) {
-                emptySlotEl.setAttribute("data-tooltip-title", "📦 保留スロット (HOLD)");
-                emptySlotEl.setAttribute("data-tooltip", "手札カードを1枚キープできます<br>維持費: ターン終了時 🔥-1");
+                emptySlotEl.setAttribute("data-tooltip-title", I18n.t("UI_RESERVE_SLOT_EMPTY_TOOLTIP_TITLE") || "📦 保留スロット (HOLD)");
+                emptySlotEl.setAttribute("data-tooltip", I18n.t("UI_RESERVE_SLOT_EMPTY_TOOLTIP_DESC") || "手札カードを1枚キープできます<br>維持費: ターン終了時 🔥-1");
             }
             
             const holdLabel = I18n.t("RESERVE_LABEL_HOLD") || "保留";
-            const subText = canDepositSelected ? "手札を選択中: クリックで保留" : "手札を選択してクリック<br>またはドラッグでキープ";
+            const holdSlotTitle = I18n.t("RESERVE_SLOT_TITLE") || "保留スロット";
+            const emptyBoxLabel = I18n.t("RESERVE_EMPTY_BOX_LABEL") || "保留枠 (空き)";
+            const subText = canDepositSelected ? (I18n.t("RESERVE_EMPTY_SUB_SELECTED") || "手札を選択中: クリックで保留") : (I18n.t("RESERVE_EMPTY_SUB_DEFAULT") || "手札を選択してクリック<br>またはドラッグでキープ");
+            const upkeepCostLabel = I18n.t("RESERVE_UPKEEP_COST_LABEL") || "維持費: ターン終了時 🔥-1";
             
             const fullEmptyHtml = `
                 <!-- 1. 上部タイトルバー (手札と完全同一フォーマット) -->
                 <div class="tcg-card-top-bar" style="padding:4px 8px; display:flex; align-items:center; justify-content:space-between; gap:6px;">
                     <div class="tcg-category-icon-pill" style="background:#f39c12; color:#ffffff;">📦</div>
-                    <div class="tcg-title-pill" style="font-size:18px; font-weight:900; text-align:center; flex:1; letter-spacing:0.5px; color:#2c3e50;">${holdLabel}スロット</div>
+                    <div class="tcg-title-pill" style="font-size:18px; font-weight:900; text-align:center; flex:1; letter-spacing:0.5px; color:#2c3e50;">${holdSlotTitle}</div>
                 </div>
 
                 <!-- 2. 中央エリア (手札と同一背景・巨大アイコン・視認性抜群) -->
@@ -269,15 +273,15 @@ export class ReserveSlotComponent {
                     <div class="tcg-minimal-cmd-icon" style="display:none; font-size:24px;">📦</div>
                     <div class="tcg-card-desc-full" style="display:flex; flex-direction:column; align-items:center;">
                         <div style="font-size:46px; line-height:1; margin-bottom:10px; filter:drop-shadow(0 0 12px rgba(243,156,18,0.7));">📦</div>
-                        <div style="font-size:22px; font-weight:900; color:#f39c12; letter-spacing:1.5px; margin-bottom:8px; text-shadow:0 0 10px rgba(243,156,18,0.5);">${holdLabel}枠 (空き)</div>
+                        <div style="font-size:22px; font-weight:900; color:#f39c12; letter-spacing:1.5px; margin-bottom:8px; text-shadow:0 0 10px rgba(243,156,18,0.5);">${emptyBoxLabel}</div>
                         <div style="font-size:14px; color:#cbd5e1; font-weight:700; line-height:1.45;">${subText}</div>
                     </div>
                     <div class="tcg-minimal-name-label" style="display:none;">${holdLabel}</div>
                 </div>
 
                 <!-- 3. 下部ストリップ (手札と完全同一フォーマット) -->
-                <div class="tcg-yield-strip" style="font-size:15px; font-weight:900; text-align:center; justify-content:center; padding:8px 10px; width:100%; box-sizing:border-box; color:#f87171; background:#1e293b; border-radius:4px;">
-                    <span>維持費: ターン終了時 🔥-1</span>
+                <div class="tcg-yield-strip" style="font-size:15px; font-weight:900; text-align:center; justify-content:center; padding:8px 10px; width:100%; box-sizing:border-box; color:#f87171; background:#1e293b; border-radius:4px; white-space:nowrap; overflow:hidden;">
+                    <span>${upkeepCostLabel}</span>
                 </div>
             `;
 

@@ -246,6 +246,12 @@ class UIController {
         this.setElementText("btnLogToggle", "▼");
         this.setElementText("btnTurnEnd", I18n.t("UI_TURN_END_BTN"));
         this.setElementText("lblLogSub", I18n.t("UI_LOG_SUB_HINT"));
+
+        // 🌐 全 data-i18n 要素の自動多言語翻訳
+        document.querySelectorAll("[data-i18n]").forEach(el => {
+            const key = el.getAttribute("data-i18n");
+            if (key) el.innerHTML = I18n.t(key);
+        });
     }
 
     setElementText(id, text) {
@@ -309,16 +315,18 @@ class UIController {
 
         const canMulligan = !this.state.hasPickedThisTurn && !this.state.hasMulliganedThisTurn && this.state.ember >= 1;
         const reserveCostText = I18n ? (I18n.t("RESERVE_HEADER_COST") || "ターン終了時 🔥-1") : "ターン終了時 🔥-1";
+        const mulliganBtnLabel = I18n ? (I18n.t("UI_MULLIGAN_BTN_LABEL") || "🔄 マリガン") : "🔄 マリガン";
+        const reserveCostTooltip = I18n ? (I18n.t("RESERVE_HEADER_COST_TOOLTIP") || "⚠️ 保留枠にカードをキープしたままターンを終了すると、維持費として 🔥-1 を消費します") : "⚠️ 保留枠にカードをキープしたままターンを終了すると、維持費として 🔥-1 を消費します";
 
         headerEl.innerHTML = `
             <div class="offering-header-hand-col">
                 <button class="btn-mulligan-compact" id="btnMulligan" ${canMulligan ? "" : "disabled style='opacity:0.45; cursor:not-allowed; filter:grayscale(0.8);'"}>
-                    <span>🔄 マリガン</span> <span class="btn-mulligan-ember-cost">🔥-1</span>
+                    <span>${mulliganBtnLabel}</span> <span class="btn-mulligan-ember-cost">🔥-1</span>
                 </button>
             </div>
             <div class="offering-header-separator-space"></div>
             <div class="offering-header-reserve-col">
-                <span class="reserve-header-cost-badge" title="保留枠にカードが存在するターン終了時、🔥-1 を消費します">
+                <span class="reserve-header-cost-badge" data-tooltip="${reserveCostTooltip}">
                     ${reserveCostText}
                 </span>
             </div>
@@ -351,23 +359,30 @@ class UIController {
             return;
         }
 
+        const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
+        const dlgTitle = I18n ? I18n.t("UI_DIALOG_MULLIGAN_TITLE") : "手札を引き直しますか？";
+        const dlgDesc = I18n ? I18n.t("UI_DIALOG_MULLIGAN_DESC") : "🔥 残り火を 1 消費して新カード 3 枚を引き直します。";
+        const dlgConfirm = I18n ? I18n.t("UI_DIALOG_MULLIGAN_CONFIRM") : "引き直す (🔥 -1)";
+        const dlgCancel = I18n ? I18n.t("UI_DIALOG_MULLIGAN_CANCEL") : "やめる";
+        const dlgDontAsk = I18n ? I18n.t("UI_DIALOG_DONT_ASK_AGAIN") : "次回から確認しない";
+
         const popover = document.createElement("div");
         popover.id = "mulliganPopover";
         popover.className = "mulligan-popover-box";
         popover.innerHTML = `
             <div class="mulligan-popover-title">
-                <span>🔄</span> 手札を引き直しますか？
+                <span>🔄</span> ${dlgTitle}
             </div>
             <div class="mulligan-popover-desc">
-                🔥 残り火を 1 消費して新カード 3 枚を引き直します。
+                ${dlgDesc}
             </div>
             <label class="mulligan-popover-checkbox-label">
                 <input type="checkbox" id="chkSkipMulliganConfirm" class="mulligan-popover-checkbox">
-                次回から確認しない
+                ${dlgDontAsk}
             </label>
             <div class="mulligan-popover-actions">
-                <button id="btnCancelMulliganPop" class="mulligan-popover-btn-cancel">キャンセル</button>
-                <button id="btnConfirmMulliganPop" class="mulligan-popover-btn-confirm">引き直す (🔥-1)</button>
+                <button id="btnCancelMulliganPop" class="mulligan-popover-btn-cancel">${dlgCancel}</button>
+                <button id="btnConfirmMulliganPop" class="mulligan-popover-btn-confirm">${dlgConfirm}</button>
             </div>
         `;
 
@@ -403,8 +418,10 @@ class UIController {
             localStorage.setItem("toa_hand_minimal_mode", this.isMinimalMode ? "true" : "false");
         }
         this.render();
+        const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
         if (typeof window.showToast === "function") {
-            window.showToast(this.isMinimalMode ? "手札をミニマル表示（ホバー拡大）に切り替えました" : "手札を標準表示に切り替えました");
+            const toastMsg = this.isMinimalMode ? (I18n ? I18n.t("UI_TOAST_MINIMAL_MODE_ON") : "手札をミニマル表示（ホバー拡大）に切り替えました") : (I18n ? I18n.t("UI_TOAST_MINIMAL_MODE_OFF") : "手札を標準表示に切り替えました");
+            window.showToast(toastMsg);
         }
     }
 
@@ -429,7 +446,10 @@ class UIController {
         const reserveCostText = I18n ? (I18n.t("RESERVE_HEADER_COST") || "ターン終了時 🔥-1") : "ターン終了時 🔥-1";
         const reserveCostTooltip = I18n ? (I18n.t("RESERVE_HEADER_COST_TOOLTIP") || "⚠️ 保留枠にカードをキープしたままターンを終了すると、維持費として 🔥-1 を消費します") : "⚠️ 保留枠にカードをキープしたままターンを終了すると、維持費として 🔥-1 を消費します";
         const mulliganTooltip = I18n ? (I18n.t("UI_MULLIGAN_HELP_TOOLTIP") || "🔥 残り火を 1 消費して手札 3 枚を破棄し、新たに 3 枚引き直します (1ターン1回のみ)") : "🔥 残り火を 1 消費して手札 3 枚を破棄し、新たに 3 枚引き直します (1ターン1回のみ)";
-        const minimalModeTitle = this.isMinimalMode ? "標準サイズ表示に戻す" : "ミニマル表示に切り替える";
+        const mulliganTitle = I18n ? (I18n.t("UI_MULLIGAN_BTN_LABEL") || "🔄 マリガン") : "🔄 マリガン";
+        const mulliganBtnLabel = I18n ? (I18n.t("UI_MULLIGAN_BTN_LABEL") || "🔄 マリガン") : "🔄 マリガン";
+        const minimalToggleTitle = I18n ? (I18n.t("TOOLTIP_MINIMAL_TOGGLE_TITLE") || "📐 縮小表示切替") : "📐 縮小表示切替";
+        const minimalToggleDesc = I18n ? (I18n.t("TOOLTIP_MINIMAL_TOGGLE_DESC") || "手札の表示サイズ（標準 ⇄ 縮小）を切り替えます") : "手札の表示サイズ（標準 ⇄ 縮小）を切り替えます";
 
         // 🃏 ミニマルモード時のモックアップ完全準拠レイアウト (上段ヘッダー ＋ 下段スロット列)
         if (this.isMinimalMode) {
@@ -438,10 +458,10 @@ class UIController {
             trayHeader.className = "offering-tray-header";
             trayHeader.innerHTML = `
                 <div class="offering-tray-header-left">
-                    <button class="btn-minimal-toggle is-active" id="btnMinimalToggle" onclick="window.toggleHandMinimalMode()" data-tooltip-title="📐 縮小表示切替" data-tooltip="手札の表示サイズ（標準 ⇄ 縮小）を切り替えます" title="縮小表示切替">
+                    <button class="btn-minimal-toggle is-active" id="btnMinimalToggle" onclick="window.toggleHandMinimalMode()" data-tooltip-title="${minimalToggleTitle}" data-tooltip="${minimalToggleDesc}">
                         <span>📐</span>
                     </button>
-                    <button class="btn-minimal-mulligan" id="btnMulligan" data-tooltip-title="🔄 マリガン (手札引き直し)" data-tooltip="🔥 残り火を 1 消費して手札 3 枚を破棄し、新たに 3 枚引き直します (1ターン1回のみ)" ${canMulligan ? "" : "disabled style='opacity:0.45; cursor:not-allowed; filter:grayscale(0.8);'"}>
+                    <button class="btn-minimal-mulligan" id="btnMulligan" data-tooltip-title="${mulliganTitle}" data-tooltip="${mulliganTooltip}" ${canMulligan ? "" : "disabled style='opacity:0.45; cursor:not-allowed; filter:grayscale(0.8);'"}>
                         <span>🔄</span>
                     </button>
                 </div>
@@ -483,11 +503,11 @@ class UIController {
         handHeader.style.gap = "8px";
 
         handHeader.innerHTML = `
-            <button class="btn-minimal-toggle" id="btnMinimalToggle" onclick="window.toggleHandMinimalMode()" data-tooltip-title="📐 縮小表示切替" data-tooltip="手札の表示サイズ（標準 ⇄ 縮小）を切り替えます" title="縮小表示切替">
+            <button class="btn-minimal-toggle" id="btnMinimalToggle" onclick="window.toggleHandMinimalMode()" data-tooltip-title="${minimalToggleTitle}" data-tooltip="${minimalToggleDesc}">
                 <span>📐</span>
             </button>
-            <button class="btn-mulligan-compact" id="btnMulligan" data-tooltip-title="🔄 マリガン (手札引き直し)" data-tooltip="🔥 残り火を 1 消費して手札 3 枚を破棄し、新たに 3 枚引き直します (1ターン1回のみ)" ${canMulligan ? "" : "disabled style='opacity:0.45; cursor:not-allowed; filter:grayscale(0.8);'"}>
-                <span>🔄 マリガン</span> <span class="btn-mulligan-ember-cost">🔥-1</span>
+            <button class="btn-mulligan-compact" id="btnMulligan" data-tooltip-title="${mulliganTitle}" data-tooltip="${mulliganTooltip}" ${canMulligan ? "" : "disabled style='opacity:0.45; cursor:not-allowed; filter:grayscale(0.8);'"}>
+                <span>${mulliganBtnLabel}</span> <span class="btn-mulligan-ember-cost">🔥-1</span>
             </button>
         `;
         const btnMulligan = handHeader.querySelector("#btnMulligan");
@@ -609,12 +629,17 @@ class UIController {
         }
 
         if (typeof window !== "undefined" && window.ModalSystem) {
+            const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
+            const titleStr = I18n ? I18n.t("UI_CMD_CONFIRM_TITLE", { name: cName }) : `📜 ${cName}`;
+            const confirmStr = I18n ? I18n.t("UI_ACTIVATE_CMD") : "⚡ 発動する";
+            const cancelStr = I18n ? I18n.t("UI_CANCEL") : "✖ キャンセル";
+
             window.ModalSystem.showConfirmDialog({
-                title: `📜 ${cName} を発動しますか？`,
+                title: titleStr,
                 descText: cDesc,
                 costText: costBadgeText,
-                confirmLabel: "⚡ 発動する",
-                cancelLabel: "✖ キャンセル",
+                confirmLabel: confirmStr,
+                cancelLabel: cancelStr,
                 onConfirm: () => {
                     this.playCommandCard(card, idx);
                     if (reserveIdx !== -1 && this.state.reserveSlots) {
@@ -889,21 +914,21 @@ class UIController {
 
         const coordStr = `${String.fromCharCode(65 + c)}${r + 1}`;
         const isHQVic = (this.state && typeof this.state.isHQVicinity === "function") ? this.state.isHQVicinity(r, c) : false;
-        let title = `土地 [${coordStr}]`;
+        let title = `[${coordStr}]`;
         let desc = isHQVic 
-            ? "🏛️ <strong>本営近郊エリア</strong><br>本営に隣接する特別な地脈です。<br><span style='color:#1abc9c; font-weight:bold;'>ここに配置された土地が産出しているすべての数値（>0）にそれぞれ +1 ボーナス</span> が付与されます。<br><small style='color:#a4b0be;'>（例: 🌾2 ➔ 🌾3 / ✨5 ➔ ✨6、0の項目は0のまま）</small>" 
-            : "未開拓の土地";
+            ? (I18n ? I18n.t("UI_CELL_HQ_VICINITY_DESC") : "🏛️ 本営近郊エリア") 
+            : (I18n ? I18n.t("UI_CELL_UNCLAIMED") : "未開拓の土地");
 
         if (cell.isHQ) {
-            title = `🏛️ 本営 HQ [${coordStr}]`;
-            desc = "基礎産出: 🌾+10 🧱+10 🛡️10 ✨+1";
+            title = I18n ? I18n.t("UI_CELL_HQ_TITLE", { coord: coordStr }) : `🏛️ HQ [${coordStr}]`;
+            desc = I18n ? I18n.t("UI_CELL_HQ_DESC") : "🌾+10 🧱+10 🛡️10 ✨+1";
         } else if (cell.hasSocket && !cell.placed) {
-            title = `★ 資源ソケット [${coordStr}]`;
-            desc = "<div style='color:#f1c40f; font-weight:900; font-size:16px; margin-bottom:4px;'>★ 土地ブロック配置時ボーナス資源発見</div><div style='color:#ced6e0; font-size:14px; line-height:1.4;'>このマスに土地を配置すると、地形に応じた固有の特産品（★）が開花し、毎ターン追加の持続ボーナスを獲得します。</div>";
+            title = I18n ? I18n.t("UI_CELL_SOCKET_TITLE", { coord: coordStr }) : `★ [${coordStr}]`;
+            desc = I18n ? I18n.t("UI_CELL_SOCKET_DESC") : "★ 資源ソケット";
         } else if (cell.placed && cell.terrain) {
             const t = cell.terrain;
             const tName = I18n.t(t.nameKey || t.id || "TERRAIN_PLAINS");
-            const placedTag = isPlacedThisTurn ? ` <span style="font-size:12px; background:#e74c3c; color:#fff; padding:2px 6px; border-radius:4px; margin-left:6px; font-weight:bold;">当ターン配置</span>` : "";
+            const placedTag = isPlacedThisTurn ? ` <span style="font-size:12px; background:#e74c3c; color:#fff; padding:2px 6px; border-radius:4px; margin-left:6px; font-weight:bold;">${I18n ? I18n.t("UI_CELL_PLACED_TAG") : "当ターン配置"}</span>` : "";
             title = `🌱 ${tName} [${coordStr}]${placedTag}`;
 
             let tf = (t.food !== undefined) ? t.food : ((t.baseYieldsPerTile && t.baseYieldsPerTile.food) || (t.yields && t.yields.food) || 0);
@@ -931,7 +956,7 @@ class UIController {
                 if (td > 0) { td += 1; hqBonusCount++; }
                 if (tm > 0) { tm += 1; hqBonusCount++; }
                 if (hqBonusCount > 0) {
-                    bonusParts.push("本営近郊(+1)");
+                    bonusParts.push(I18n ? I18n.t("UI_CELL_BONUS_VICINITY") : "本営近郊(+1)");
                 }
             }
 
@@ -939,7 +964,7 @@ class UIController {
             const tid = t.terrainId || t.id || "";
             if (this.state && this.state.permanentPlainsFoodBonus && tid.includes("PLAINS")) {
                 tf += this.state.permanentPlainsFoodBonus;
-                bonusParts.push(`平地強化(+${this.state.permanentPlainsFoodBonus})`);
+                bonusParts.push(I18n ? I18n.t("UI_CELL_BONUS_PLAINS", { val: this.state.permanentPlainsFoodBonus }) : `平地強化(+${this.state.permanentPlainsFoodBonus})`);
             }
 
             const yieldParts = [];
@@ -948,16 +973,18 @@ class UIController {
             if (td > 0) yieldParts.push(`🛡️+${td}`);
             if (tm > 0) yieldParts.push(`✨+${tm}`);
 
-            const yieldStr = yieldParts.length > 0 ? yieldParts.join(" ") : "産出なし";
+            const yieldStr = yieldParts.length > 0 ? yieldParts.join(" ") : (I18n ? I18n.t("UI_CELL_YIELD_NONE") : "産出なし");
             const bonusStr = bonusParts.length > 0 ? ` <span style="color:#f1c40f;">(${bonusParts.join(", ")})</span>` : "";
-            desc = `毎ターン産出: <strong>${yieldStr}</strong>${bonusStr}`;
+            const perTurnLabel = I18n ? I18n.t("UI_CELL_PER_TURN_YIELD") : "毎ターン産出:";
+            desc = `${perTurnLabel} <strong>${yieldStr}</strong>${bonusStr}`;
 
             // ↩️ 当ターン配置マスの場合は配置取り消し（置き直し）ガイドを明示
             if (isPlacedThisTurn) {
+                const undoHint = I18n ? I18n.t("UI_CELL_UNDO_HINT") : "このマスをクリックすると配置を取り消せます";
                 desc += `
                     <div style="margin-top:10px; padding:8px 10px; background:rgba(231,76,60,0.22); border:1.5px solid #ff4757; border-radius:6px; font-size:13px; color:#ff6b81; font-weight:bold; display:flex; align-items:center; gap:6px; line-height:1.4;">
                         <span style="font-size:16px; color:#ff4757;">↩</span>
-                        <span><strong>このマスをクリック</strong>すると、配置を取り消して手札へ戻し置き直せます</span>
+                        <span>${undoHint}</span>
                     </div>
                 `;
             }
@@ -980,7 +1007,7 @@ class UIController {
             if (res && res.success) {
                 this.selectedCard = null;
                 this.selectedCardIdx = -1;
-        this.selectedReserveIdx = -1;
+                this.selectedReserveIdx = -1;
                 this.render();
             }
             return;
@@ -1006,12 +1033,13 @@ class UIController {
 
         if (warningRequired && this.state && !this.state.hasPickedThisTurn) {
             const modalSys = (typeof window !== "undefined" && window.ModalSystem) ? window.ModalSystem : null;
+            const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
             if (modalSys && typeof modalSys.showConfirmation === "function") {
                 modalSys.showConfirmation({
-                    title: "⚠️ 土地カードが未配置です",
-                    message: "今ターンはまだ土地カードを配置していません。このままターンを終了しますか？",
-                    confirmText: "ターン終了",
-                    cancelText: "戻る",
+                    title: I18n ? I18n.t("UI_CONFIRM_WARN_NO_LAND_TITLE") : "⚠️ 土地カードが未配置です",
+                    message: I18n ? I18n.t("UI_CONFIRM_WARN_NO_LAND_MSG") : "今ターンはまだ土地カードを配置していません。このままターンを終了しますか？",
+                    confirmText: I18n ? I18n.t("UI_TURN_END_BTN") : "ターン終了",
+                    cancelText: I18n ? I18n.t("UI_CANCEL") : "戻る",
                     onConfirm: () => this.executeNextTurn()
                 });
                 return;
@@ -1041,7 +1069,9 @@ class UIController {
 
         // 📜 初期ログと同一のダイレクトログ描画
         if (typeof window !== "undefined" && window.LogComponent) {
-            window.LogComponent.addLog(`ターン ${this.state.turn} を開始しました。手札オファリングを補充しました。`, this.state.turn);
+            const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
+            const logMsg = I18n ? I18n.t("LOG_TURN_START", { turn: this.state.turn }) : `Turn ${this.state.turn} started.`;
+            window.LogComponent.addLog(logMsg, this.state.turn);
         }
 
         this.render();
@@ -1185,55 +1215,66 @@ class UIController {
         const mysticSockets = bd ? bd.mystic.sockets : 0;
         const emberMystic = bd ? (bd.mystic.emberMystic || 0) : 2;
 
-        const emberStr = emberPct > 0 ? ` | 🔥残り火加護: +${emberPct}%` : "";
+        const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
+        const emberStr = emberPct > 0 ? (I18n ? I18n.t("UI_EMBER_BLESSING_TAG", { pct: emberPct }) : ` | 🔥残り火加護: +${emberPct}%`) : "";
+        const netTag = I18n ? I18n.t("UI_NET_BALANCE_TAG") : "(純収支)";
+        const defTrialTag = I18n ? I18n.t("UI_DEFENSE_TRIAL_TAG") : "(試練対策)";
+        const grossLabel = I18n ? I18n.t("UI_GROSS_YIELD_LABEL") : "総産出:";
+        const hqBaseLabel = I18n ? I18n.t("UI_HQ_BASE_LABEL") : "本営基礎:";
+        const tilesLabel = I18n ? I18n.t("UI_TILES_LABEL") : "土地配置:";
+        const socketsLabel = I18n ? I18n.t("UI_SOCKETS_LABEL") : "ソケット:";
+        const vicinityLabel = I18n ? I18n.t("UI_VICINITY_LABEL") : "本営近郊:";
+        const emberAutoLabel = I18n ? I18n.t("UI_EMBER_AUTO_GRANT") : "残り火自動付与:";
+        const foodMaintLabel = I18n ? I18n.t("UI_EMBER_ROW_FOOD_MAINT") : "🌾 食料維持費:";
+        const modalTitle = I18n ? I18n.t("UI_BREAKDOWN_MODAL_TITLE") : "📊 毎ターンの産出詳細内訳";
 
         tt.innerHTML = `
             <div style="font-size:17px; font-weight:900; color:#1abc9c; margin-bottom:10px; border-bottom:2px solid #2a2e3d; padding-bottom:6px; display:flex; align-items:center; gap:8px;">
-                <span>📊</span> 毎ターンの産出詳細内訳
+                <span>📊</span> ${modalTitle}
             </div>
 
             <!-- 🌾 食料 -->
             <div style="background:rgba(24, 34, 50, 0.75); border:1px solid #2c3e50; border-radius:8px; padding:10px 12px; margin-bottom:8px;">
                 <div style="font-size:14px; font-weight:900; color:#ffffff; display:flex; justify-content:space-between; margin-bottom:4px;">
-                    <span>🌾 食料 (現在在庫: ${state.food})</span>
-                    <span style="color:${netFoodColor}; font-size:16px;">${netFoodSign} /T (純収支)</span>
+                    <span>${I18n ? I18n.t("UI_FOOD") : "🌾 食料"} (${state.food})</span>
+                    <span style="color:${netFoodColor}; font-size:16px;">${netFoodSign} /T ${netTag}</span>
                 </div>
                 <div style="font-size:12px; color:#a4b0be; line-height:1.4;">
-                    総産出: +${grossFood} (本営: +10 | 土地: +${foodTiles} | ★ソケット: +${foodSockets} | 近郊: +${foodVicinity}${emberStr})<br>
-                    <span style="color:#ff9f43; font-weight:bold;">🔥 食料維持費: -${foodCost} / T</span>
+                    ${grossLabel} +${grossFood} (${hqBaseLabel} +10 | ${tilesLabel} +${foodTiles} | ★${socketsLabel} +${foodSockets} | ${vicinityLabel} +${foodVicinity}${emberStr})<br>
+                    <span style="color:#ff9f43; font-weight:bold;">🔥 ${foodMaintLabel} -${foodCost} / T</span>
                 </div>
             </div>
 
             <!-- 🧱 資材 -->
             <div style="background:rgba(24, 34, 50, 0.75); border:1px solid #2c3e50; border-radius:8px; padding:10px 12px; margin-bottom:8px;">
                 <div style="font-size:14px; font-weight:900; color:#ffffff; display:flex; justify-content:space-between; margin-bottom:4px;">
-                    <span>🧱 資材 (現在在庫: ${state.wood})</span>
+                    <span>${I18n ? I18n.t("UI_WOOD") : "🧱 資材"} (${state.wood})</span>
                     <span style="color:#2ecc71; font-size:16px;">+${woodTotal} /T</span>
                 </div>
                 <div style="font-size:12px; color:#a4b0be; line-height:1.4;">
-                    本営基礎: +10 | 土地配置: +${woodTiles} | ソケット: +${woodSockets} | 本営近郊: +${woodVicinity}${emberStr}
+                    ${hqBaseLabel} +10 | ${tilesLabel} +${woodTiles} | ${socketsLabel} +${woodSockets} | ${vicinityLabel} +${woodVicinity}${emberStr}
                 </div>
             </div>
 
             <!-- 🛡️ 防衛 -->
             <div style="background:rgba(24, 34, 50, 0.75); border:1px solid #2c3e50; border-radius:8px; padding:10px 12px; margin-bottom:8px;">
                 <div style="font-size:14px; font-weight:900; color:#ffffff; display:flex; justify-content:space-between; margin-bottom:4px;">
-                    <span>🛡️ 防衛力 (試練対策)</span>
+                    <span>${I18n ? I18n.t("UI_DEFENSE") : "🛡️ 防衛力"} ${defTrialTag}</span>
                     <span style="color:#ffffff; font-size:16px;">${defTotal}</span>
                 </div>
                 <div style="font-size:12px; color:#a4b0be; line-height:1.4;">
-                    本営基礎: 10 | 土地配置: +${defTiles} | ソケット: +${defSockets}
+                    ${hqBaseLabel} 10 | ${tilesLabel} +${defTiles} | ${socketsLabel} +${defSockets}
                 </div>
             </div>
 
             <!-- ✨ 神秘 -->
             <div style="background:rgba(24, 34, 50, 0.75); border:1px solid #2c3e50; border-radius:8px; padding:10px 12px;">
                 <div style="font-size:14px; font-weight:900; color:#ffffff; display:flex; justify-content:space-between; margin-bottom:4px;">
-                    <span>✨ 神秘 (現在在庫: ${state.mystic})</span>
+                    <span>${I18n ? I18n.t("UI_MYSTIC") : "✨ 神秘"} (${state.mystic})</span>
                     <span style="color:#2ecc71; font-size:16px;">+${mysticTotal} /T</span>
                 </div>
                 <div style="font-size:12px; color:#a4b0be; line-height:1.4;">
-                    本営基礎: +1 | 土地配置: +${mysticTiles} | ソケット: +${mysticSockets} | 残り火自動付与: +${emberMystic}${emberStr}
+                    ${hqBaseLabel} +1 | ${tilesLabel} +${mysticTiles} | ${socketsLabel} +${mysticSockets} | ${emberAutoLabel} +${emberMystic}${emberStr}
                 </div>
             </div>
         `;

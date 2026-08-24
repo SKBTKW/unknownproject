@@ -261,13 +261,14 @@ class GameState {
             if (baseAmount <= 0) return 0;
             let finalAmount = baseAmount;
             let bonusText = "";
+            const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
             if (this.vigilanceTurns && this.vigilanceTurns > 0) {
                 finalAmount += 3;
-                bonusText = " (🛡️警戒態勢ボーナス +3)";
+                bonusText = I18n ? I18n.t("LOG_VIGILANCE_BONUS") : " (+3)";
             }
             this.defense = (this.defense || 10) + finalAmount;
             if (reason) {
-                this.addLog(`🛡️ 防衛力獲得: +${finalAmount}${bonusText} [${reason}] (現在: 🛡️${this.calculateTotalDefense()})`);
+                this.addLog(I18n ? I18n.t("LOG_DEFENSE_GAINED", { amount: finalAmount, bonus: bonusText, reason: reason, total: this.calculateTotalDefense() }) : `🛡️ +${finalAmount}`);
             }
             return finalAmount;
         }
@@ -282,6 +283,8 @@ class GameState {
         }
 
         processTurnEndMaintenance() {
+            const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
+
             // 1. 🔥 残り火ステッピングに基づく毎ターンの 🌾 食料維持費
             let foodCost = 20;
             if (this.ember >= 24) {
@@ -296,7 +299,7 @@ class GameState {
             if (this.foodCostHalvedTurns && this.foodCostHalvedTurns > 0) {
                 foodCost = Math.floor(foodCost / 2);
                 this.foodCostHalvedTurns -= 1;
-                this.addLog(`🌾 節約配給適用中: 食料維持費が ${foodCost} に軽減されました。`);
+                this.addLog(I18n ? I18n.t("LOG_RATIONING_APPLIED", { cost: foodCost }) : `🌾 ${foodCost}`);
             }
 
             this.food -= foodCost;
@@ -306,7 +309,7 @@ class GameState {
             if (this.food < 0) {
                 this.food = 0;
                 this.ember -= 2;
-                this.addLog(`⚠️ 食料不足！ ペナルティとして 🔥-2 (現在: 🔥${this.ember})`);
+                this.addLog(I18n ? I18n.t("LOG_FOOD_DEFICIT_PENALTY", { ember: this.ember }) : `⚠️ -2`);
             }
 
             // 3. 🗺️ 領土マス数 ＆ Stage連動による 🔥 自動減衰・自家発熱ルール
@@ -316,17 +319,17 @@ class GameState {
 
             if (tileCount >= thresholds.autoHeat) {
                 emberDelta = 1;  // 自家発熱 (+1 🔥/T)
-                this.addLog(`🔥 領土大繁栄 (${tileCount} >= ${thresholds.autoHeat}マス)！ 自家発熱により 🔥+1 回復！`);
+                this.addLog(I18n ? I18n.t("LOG_TERRITORY_AUTO_HEAT", { count: tileCount, req: thresholds.autoHeat }) : `🔥 +1`);
             } else if (tileCount >= thresholds.decayStop) {
                 emberDelta = 0;  // 減衰ストップ (0 🔥/T)
-                this.addLog(`🛡️ 領土定着 (${tileCount} >= ${thresholds.decayStop}マス)！ 🔥の自然減衰がストップしました。`);
+                this.addLog(I18n ? I18n.t("LOG_TERRITORY_DECAY_STOP", { count: tileCount, req: thresholds.decayStop }) : `🛡️ 0`);
             }
 
             // 🔥 残火の節約 (次ターンの🔥消費を 1 軽減)
             if (this.emberConsumptionReducedTurns && this.emberConsumptionReducedTurns > 0) {
                 if (emberDelta < 0) {
                     emberDelta += 1; // -1 ➔ 0
-                    this.addLog(`🔥 残火の節約適用中: 自然減衰が 1 軽減 (消費 0) されました。`);
+                    this.addLog(I18n ? I18n.t("LOG_CONSERVE_EMBER_APPLIED") : `🔥 0`);
                 }
                 this.emberConsumptionReducedTurns -= 1;
             }
@@ -340,7 +343,7 @@ class GameState {
                     this.reserveFeeWaivedTurns -= 1;
                 } else {
                     this.ember -= 1;
-                    this.addLog(`📥 保留スロット維持費: 🔥-1 (現在: 🔥${this.ember})`);
+                    this.addLog(I18n ? I18n.t("LOG_RESERVE_UPKEEP_PENALTY", { ember: this.ember }) : `📥 -1`);
                 }
             }
 
@@ -348,7 +351,7 @@ class GameState {
             if (this.vigilanceTurns && this.vigilanceTurns > 0) {
                 this.vigilanceTurns -= 1;
                 if (this.vigilanceTurns <= 0) {
-                    this.addLog(`🛡️ 警戒態勢の効果（全🛡️獲得+3ボーナス）が終了しました。`);
+                    this.addLog(I18n ? I18n.t("LOG_VIGILANCE_EXPIRED") : `🛡️ End`);
                 }
             }
             if (this.temporaryDefenseTurns && this.temporaryDefenseTurns > 0) {

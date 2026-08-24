@@ -151,8 +151,8 @@ export class BoardGridComponent {
                             const socketText = cellData.socketResource ? `<br><small style="color:#f1c40f;">★${I18n.t(cellData.socketResource.nameKey)}</small>` : "";
                             if (cellData.merged) {
                                 let mergeLabel = I18n.t("UI_MERGE_2X2_LABEL", { name: tName });
-                                if (cellData.mergeType === "L_SHAPE") mergeLabel = `🟨 ${tName} (L字)`;
-                                else if (cellData.mergeType === "T_SHAPE") mergeLabel = `🛡️ ${tName} (凸字)`;
+                                if (cellData.mergeType === "L_SHAPE") mergeLabel = `🟨 ${tName} (L)`;
+                                else if (cellData.mergeType === "T_SHAPE") mergeLabel = `🛡️ ${tName} (T)`;
                                 cellEl.innerHTML = `<span style="font-size:12px; color:#f1c40f; font-weight:bold; white-space:nowrap; z-index:5; text-shadow:0 0 6px rgba(0,0,0,0.9);">${mergeLabel}${socketText}</span>`;
                             } else {
                                 const hasRight = (c < 4 && this.state.grid[r][c+1].placementGroupId === placeId);
@@ -190,7 +190,7 @@ export class BoardGridComponent {
                     cellEl.classList.add("cell-placed-this-turn");
                     const undoBadge = document.createElement("div");
                     undoBadge.className = "undo-badge";
-                    undoBadge.title = "↩ クリックで配置を取り消す";
+                    undoBadge.title = I18n.t("UI_UNDO_BADGE_TOOLTIP") || "↩ Click to undo";
                     undoBadge.innerHTML = "↩";
                     cellEl.appendChild(undoBadge);
                 }

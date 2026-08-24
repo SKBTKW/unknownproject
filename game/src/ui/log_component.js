@@ -28,12 +28,16 @@
             wrapper.className = "main-top-left-log-wrapper";
 
             // 0.75x (75%) スケール トグルボタン
+            const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
+            const logTitle = I18n ? I18n.t("UI_LOG_TITLE_HEADER") : "ログ";
+            const dropdownTitle = I18n ? I18n.t("UI_LOG_DROPDOWN_TITLE") : "📜 システム・内政ログ";
+
             this.btnEl = document.createElement("button");
             this.btnEl.className = "btn-log-toggle-header";
             this.btnEl.id = "btnLogToggleHeader";
             this.btnEl.onclick = (e) => this.toggle(e);
             this.btnEl.style.cssText = "font-size: 15px !important; padding: 7px 16px !important; white-space: nowrap !important; display: inline-flex !important; align-items: center !important; gap: 6px !important;";
-            this.btnEl.innerHTML = `📜 <span id="lblLogTitleHeader">ログ</span> <span id="logHeaderArrow" style="margin-left:4px; font-weight:900;">▽</span>`;
+            this.btnEl.innerHTML = `📜 <span id="lblLogTitleHeader">${logTitle}</span> <span id="logHeaderArrow" style="margin-left:4px; font-weight:900;">▽</span>`;
 
             // 700px x 400px ドロップダウンパネル (初期状態は display: none)
             this.panelEl = document.createElement("div");
@@ -43,7 +47,7 @@
 
             this.panelEl.innerHTML = `
                 <div class="log-dropdown-header-bar" style="padding: 9px 16px !important; font-size: 14px !important; background: #19202c; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2a3547;">
-                    <span id="lblLogDropdownTitle" style="font-weight: bold; color: #1abc9c;">📜 システム・内政ログ</span>
+                    <span id="lblLogDropdownTitle" style="font-weight: bold; color: #1abc9c;">${dropdownTitle}</span>
                     <span style="cursor:pointer; font-size:16px !important; color: #a4b0be; font-weight: bold;" id="btnCloseLogPanel">✕</span>
                 </div>
                 <div id="logContent" class="log-content-header" style="padding: 10px 16px !important; font-size: 13px !important; gap: 8px !important; max-height: 345px !important; overflow-y: auto !important; color: #dcdde1;">
@@ -124,10 +128,12 @@
          * 🏷️ トグルボタンのラベル・バッジ更新（閉じていても件数がわかる）
          */
         updateButtonLabel() {
+            const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
             const titleEl = this.btnEl ? this.btnEl.querySelector("#lblLogTitleHeader") : null;
             if (titleEl) {
                 const countText = this.logs.length > 0 ? ` (${this.logs.length})` : "";
-                titleEl.innerText = `ログ${countText}`;
+                const logLabel = I18n ? I18n.t("UI_LOG_TITLE_HEADER") : "ログ";
+                titleEl.innerText = `${logLabel}${countText}`;
             }
         }
 
@@ -135,11 +141,13 @@
          * 🔄 ログ一覧のレンダリング
          */
         renderLogs() {
+            const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
             const targetEl = this.contentEl || (typeof document !== "undefined" ? document.getElementById("logContent") : null);
             if (!targetEl) return;
 
             if (this.logs.length === 0) {
-                targetEl.innerHTML = `<div style="color:#7f8c8d; font-size:14px; padding:4px;">※内政・操作ログがここに記録されます。</div>`;
+                const placeholder = I18n ? I18n.t("UI_LOG_EMPTY_PLACEHOLDER") : "※内部・操作ログがここに記録されます。";
+                targetEl.innerHTML = `<div style="color:#7f8c8d; font-size:14px; padding:4px;">${placeholder}</div>`;
                 return;
             }
 

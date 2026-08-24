@@ -25,10 +25,11 @@ export class TerritoryBadgeComponent {
         this.containerEl = containerEl;
         this.containerEl.innerHTML = "";
 
+        const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
         this.badgeEl = document.createElement("div");
         this.badgeEl.className = "main-area-badge territory-grid-bottom-right";
         this.badgeEl.id = "mainTerritoryBadge";
-        this.badgeEl.title = "🏛️ 領土開墾進捗 (クリックで文明方針変更)";
+        this.badgeEl.title = I18n ? I18n.t("UI_TERRITORY_PROGRESS_TOOLTIP") : "🏛️ 領土開墾進捗 (クリックで国家方針変更)";
         this.badgeEl.style.cssText = `
             display: inline-flex;
             align-items: center;
@@ -106,7 +107,9 @@ export class TerritoryBadgeComponent {
         this.countEl.innerHTML = `<span style="color:#2ecc71;">${this.currentCount}</span><span style="color:#7f8c8d;">/${this.maxCount}</span> <small style="font-size:13px; color:#a4b0be; margin-left:5px; font-weight:normal;">(${pct}%)</small>`;
 
         if (this.badgeEl) {
-            this.badgeEl.title = `Stage ${this.stage} 支配地占有率: ${pct}% (開拓済み: ${this.currentCount}マス / 最大: ${this.maxCount}マス / 残り: ${this.maxCount - this.currentCount}マス)`;
+            const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
+            const remCount = this.maxCount - this.currentCount;
+            this.badgeEl.title = I18n ? I18n.t("UI_TERRITORY_STAGE_PROGRESS", { stage: this.stage, pct, current: this.currentCount, max: this.maxCount, rem: remCount }) : `Stage ${this.stage} : ${pct}%`;
             if (pct >= 80) {
                 this.badgeEl.style.borderColor = "#f1c40f";
                 this.badgeEl.style.boxShadow = "0 5px 16px rgba(0,0,0,0.75), 0 0 16px rgba(241, 196, 15, 0.5)";

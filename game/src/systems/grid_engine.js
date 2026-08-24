@@ -313,9 +313,9 @@ class GridEngine {
                         if (!spawnedSocket) {
                             // 🌊 水脈ソケット開花 ✕ 💧 清湖 (Lake) ＆ 🌴 オアシス (Oasis) 確定仕様 (1x1限定 25%確率)
                             if (baseTerrainId === "GL1_PLAINS" && is1x1 && Math.random() < 0.25) {
-                                spawnedSocket = { id: "SOCKET_LAKE", nameKey: "SOCKET_LAKE", category: "水脈", icon: "💧", bonusFood: 2, bonusWood: 0, bonusDefense: 0, bonusMystic: 0 };
+                                spawnedSocket = { id: "SOCKET_LAKE", nameKey: "SOCKET_LAKE", category: "WATER", icon: "💧", bonusFood: 2, bonusWood: 0, bonusDefense: 0, bonusMystic: 0 };
                             } else if (baseTerrainId === "GL0_DESERT" && is1x1 && Math.random() < 0.25) {
-                                spawnedSocket = { id: "SOCKET_OASIS", nameKey: "SOCKET_OASIS", category: "水脈", icon: "🌴", bonusFood: 1, bonusWood: 0, bonusDefense: 0, bonusMystic: 0 };
+                                spawnedSocket = { id: "SOCKET_OASIS", nameKey: "SOCKET_OASIS", category: "WATER", icon: "🌴", bonusFood: 1, bonusWood: 0, bonusDefense: 0, bonusMystic: 0 };
                             } else if (sysMaster && sysMaster[baseTerrainId]) {
                                 // 通常の特産品候補（非1x1、または25%抽選から外れた場合: 清湖・オアシスを除外した通常プールから均等抽選）
                                 const baseCandidates = sysMaster[baseTerrainId].filter(c => c.id !== "SOCKET_LAKE" && c.id !== "SOCKET_OASIS");
@@ -712,11 +712,14 @@ class GridEngine {
                             this.state.ember += 1;
 
                             const bText = "🌾+4 🧱+6 🔥+1";
+                            const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
                             if (typeof this.state.addLog === 'function') {
-                                this.state.addLog(`🟨【丘陵】L字異形マージ完成！ (${bText}) ＆ 最後のマスが『★隠匿鉱床 (🧱+2 🛡️+1/T)』に覚醒！`);
+                                const logMsg = I18n ? I18n.t("LOG_MERGE_L_COMPLETE", { bonus: bText }) : `🟨 L-Merge (${bText})`;
+                                this.state.addLog(logMsg);
                             }
                             if (this.state.toastQueue) {
-                                this.state.toastQueue.push({ r: coords[0].r, c: coords[0].c, text: `🟨 L字マージ覚醒! (${bText})` });
+                                const toastMsg = I18n ? I18n.t("TOAST_MERGE_L", { bonus: bText }) : `🟨 L-Merge (${bText})`;
+                                this.state.toastQueue.push({ r: coords[0].r, c: coords[0].c, text: toastMsg });
                             }
                         }
                     }
@@ -787,11 +790,14 @@ class GridEngine {
                             this.state.ember += 1;
 
                             const bText = "🧱+8 ✨+4 🔥+1";
+                            const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
                             if (typeof this.state.addLog === 'function') {
-                                this.state.addLog(`🛡️【山岳】凸字異形マージ完成！ (${bText}) ＆ 最後のマスが『★主峰砦 (🛡️+3 ✨+2/T)』に覚醒！`);
+                                const logMsg = I18n ? I18n.t("LOG_MERGE_T_COMPLETE", { bonus: bText }) : `🛡️ T-Merge (${bText})`;
+                                this.state.addLog(logMsg);
                             }
                             if (this.state.toastQueue) {
-                                this.state.toastQueue.push({ r: coords[0].r, c: coords[0].c, text: `🛡️ 凸字マージ覚醒! (${bText})` });
+                                const toastMsg = I18n ? I18n.t("TOAST_MERGE_T", { bonus: bText }) : `🛡️ T-Merge (${bText})`;
+                                this.state.toastQueue.push({ r: coords[0].r, c: coords[0].c, text: toastMsg });
                             }
                         }
                     }

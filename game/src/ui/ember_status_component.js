@@ -31,22 +31,24 @@ export class EmberStatusComponent {
      * @returns {Object} 詳細なステータス構造体
      */
     static calculateStatus(state) {
+        const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
+
         if (!state) {
             return {
                 ember: 20,
                 food: 50,
                 statusLevel: 'STANDARD',
-                statusTitle: '🔥 標準',
+                statusTitle: I18n ? I18n.t('UI_STATUS_TITLE_STANDARD') : '🔥 標準',
                 statusBadgeClass: 'status-standard',
-                statusEffectText: '通常状態 (安定燃焼)',
+                statusEffectText: I18n ? I18n.t('UI_STATUS_EFFECT_STANDARD') : '通常状態 (安定燃焼)',
                 foodCost: 20,
                 emberDelta: -1,
-                emberDeltaText: '標準燃焼 (-1 🔥/T)',
+                emberDeltaText: '-1 🔥/T',
                 reserveCost: 0,
-                reserveCostText: '保留枠 空 (0 🔥)',
+                reserveCostText: '0 🔥',
                 totalTurnDelta: -1,
-                nextMilestoneText: '食料 200 で減衰ストップ！',
-                nextMilestoneProgress: 30 / 200
+                nextMilestoneText: '',
+                nextMilestoneProgress: 0
             };
         }
 
@@ -55,22 +57,22 @@ export class EmberStatusComponent {
 
         // 1. 🔥 状態ステッピング判定
         let statusLevel = 'STANDARD';
-        let statusTitle = '🔥 標準';
+        let statusTitle = I18n ? I18n.t('UI_STATUS_TITLE_STANDARD') : '🔥 標準';
         let statusBadgeClass = 'status-standard';
-        let statusEffectText = '通常維持状態 (食料維持費 🌾20/T)';
+        let statusEffectText = I18n ? I18n.t('UI_STATUS_EFFECT_STANDARD') : '通常維持状態 (食料維持費 🌾20/T)';
         let foodCost = 20;
 
         if (ember >= 24) {
             statusLevel = 'PROSPEROUS';
-            statusTitle = '🔥 旺盛';
+            statusTitle = I18n ? I18n.t('UI_STATUS_TITLE_PROSPEROUS') : '🔥 旺盛';
             statusBadgeClass = 'status-prosperous';
-            statusEffectText = '全産出 +10% ブースト ＆ 毎ターン ✨+2/T';
+            statusEffectText = I18n ? I18n.t('UI_STATUS_EFFECT_PROSPEROUS') : '全産出 +10% ブースト ＆ 毎ターン ✨+2/T';
             foodCost = 25;
         } else if (ember <= 9) {
             statusLevel = 'CRISIS';
-            statusTitle = '🔥 危機 (微火)';
+            statusTitle = I18n ? I18n.t('UI_STATUS_TITLE_CRISIS') : '🔥 危機 (微火)';
             statusBadgeClass = 'status-crisis';
-            statusEffectText = '省エネ復興中 (食料維持費 🌾15/T 減圧)';
+            statusEffectText = I18n ? I18n.t('UI_STATUS_EFFECT_CRISIS') : '省エネ復興中 (食料維持費 🌾15/T 減圧)';
             foodCost = 15;
         }
 
@@ -79,33 +81,31 @@ export class EmberStatusComponent {
         const thresholds = (state && typeof state.getStageEmberThresholds === 'function') ? state.getStageEmberThresholds() : { decayStop: 8, autoHeat: 20 };
 
         let emberDelta = -1;
-        let emberDeltaText = '標準燃焼 (-1 🔥/T)';
-        let nextMilestoneText = 'あと ' + Math.max(0, thresholds.decayStop - tileCount) + ' マスで減衰ストップ！';
+        let emberDeltaText = '-1 🔥/T';
+        let nextMilestoneText = '';
         let nextMilestoneProgress = Math.min(1.0, tileCount / thresholds.decayStop);
 
         if (tileCount >= thresholds.autoHeat) {
             emberDelta = 1;
-            emberDeltaText = '自家発熱 (+1 🔥/T 自動回復！)';
-            nextMilestoneText = '最高段階 (領土大繁栄中！)';
+            emberDeltaText = '+1 🔥/T';
             nextMilestoneProgress = 1.0;
         } else if (tileCount >= thresholds.decayStop) {
             emberDelta = 0;
-            emberDeltaText = '減衰ストップ (0 🔥/T 維持)';
-            nextMilestoneText = 'あと ' + Math.max(0, thresholds.autoHeat - tileCount) + ' マスで自家発熱 (+1 🔥/T)！';
+            emberDeltaText = '0 🔥/T';
             nextMilestoneProgress = (tileCount - thresholds.decayStop) / (thresholds.autoHeat - thresholds.decayStop);
         }
 
         // 3. 📥 保留スロット維持費判定
         let reserveCost = 0;
-        let reserveCostText = '保留枠 空 (0 🔥)';
+        let reserveCostText = '0 🔥';
         const hasReserved = state.reserveSlots && state.reserveSlots.some(s => s !== null && !s.isBlank);
         if (hasReserved) {
             if (state.reserveFeeWaivedTurns && state.reserveFeeWaivedTurns > 0) {
                 reserveCost = 0;
-                reserveCostText = '免除中 (残り ' + state.reserveFeeWaivedTurns + 'T)';
+                reserveCostText = '0 🔥';
             } else {
                 reserveCost = -1;
-                reserveCostText = 'カード保留維持費 (-1 🔥/T)';
+                reserveCostText = '-1 🔥/T';
             }
         }
 
@@ -197,29 +197,29 @@ export class EmberStatusComponent {
 
                 <div class="ember-tooltip-divider"></div>
 
-                <div class="ember-tooltip-section-title">📊 毎ターンの維持 ＆ 収支内訳</div>
+                <div class="ember-tooltip-section-title">${I18n ? I18n.t("UI_EMBER_BREAKDOWN_TITLE") : "📊 毎ターンの維持 ＆ 収支内訳"}</div>
                 <div class="ember-tooltip-row">
-                    <span class="row-label">🌾 食料維持費:</span>
+                    <span class="row-label">${I18n ? I18n.t("UI_EMBER_ROW_FOOD_MAINT") : "🌾 食料維持費:"}</span>
                     <span class="row-val text-warning">-${info.foodCost} / T</span>
                 </div>
                 <div class="ember-tooltip-row">
-                    <span class="row-label">🔥 食料蓄積効果:</span>
+                    <span class="row-label">${I18n ? I18n.t("UI_EMBER_ROW_FOOD_ACCUM") : "🔥 食料蓄積効果:"}</span>
                     <span class="row-val">${info.emberDeltaText}</span>
                 </div>
                 <div class="ember-tooltip-row">
-                    <span class="row-label">📥 保留枠維持費:</span>
+                    <span class="row-label">${I18n ? I18n.t("UI_EMBER_ROW_RESERVE_MAINT") : "📥 保留枠維持費:"}</span>
                     <span class="row-val">${info.reserveCostText}</span>
                 </div>
 
                 <div class="ember-tooltip-divider"></div>
 
                 <div class="ember-tooltip-row ember-tooltip-total">
-                    <span class="row-label font-bold">🔥 ターン終了時 収支予測:</span>
+                    <span class="row-label font-bold">${I18n ? I18n.t("UI_EMBER_ROW_ESTIMATED") : "🔥 ターン終了時 収支予測:"}</span>
                     <span class="row-val ${deltaClass} font-bold">${deltaSign} 🔥 / T</span>
                 </div>
 
                 <div class="ember-tooltip-milestone">
-                    <div class="milestone-label">🌾 目標: ${info.nextMilestoneText}</div>
+                    <div class="milestone-label">${info.nextMilestoneText}</div>
                     <div class="milestone-bar-bg">
                         <div class="milestone-bar-fill" style="width: ${Math.round(info.nextMilestoneProgress * 100)}%;"></div>
                     </div>

@@ -47,14 +47,16 @@
 
             // ⬆️ 上方向トグル展開パネル (Dropup Panel)
             this.dropupPanelEl = document.createElement("div");
-            this.dropupPanelEl.className = "buff-dropup-panel";
-            this.dropupPanelEl.style.display = "none";
+            const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
+            const listTitle = I18n ? I18n.t("UI_BUFF_LIST_TITLE") : "✨ 発動中のバフ一覧";
+            const sortBtnText = I18n ? I18n.t("UI_BUFF_SORT_BTN") : "並び替え 獲得順 🔄";
+            const summaryTitle = I18n ? I18n.t("UI_BUFF_SUMMARY_TITLE", { count: 0 }) : "✨ 発動中のバフ (0)";
 
             this.dropupPanelEl.innerHTML = `
                 <div class="buff-dropup-header">
-                    <span id="buffDropupTitleText">✨ 発動中のバフ一覧</span>
+                    <span id="buffDropupTitleText">${listTitle}</span>
                     <div style="display:flex; align-items:center; gap:8px;">
-                        <button class="sort-select-btn" id="btnBuffSortToggle">並び替え: 獲得順 🔄</button>
+                        <button class="sort-select-btn" id="btnBuffSortToggle">${sortBtnText}</button>
                         <span style="cursor:pointer; font-size:16px;" id="btnCloseBuffDropup">✕</span>
                     </div>
                 </div>
@@ -68,7 +70,7 @@
 
             this.summaryBarEl.innerHTML = `
                 <div class="buff-summary-left">
-                    <span id="buffSummaryCountText">✨ 発動中のバフ (0)</span>
+                    <span id="buffSummaryCountText">${summaryTitle}</span>
                     <div class="buff-pills-preview" id="buffPillsPreview"></div>
                 </div>
                 <span class="buff-toggle-arrow" id="buffToggleArrow">△</span>
@@ -106,8 +108,9 @@
             this.masterEl.style.display = "block";
 
             // 1行サマリーバーの更新
+            const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
             const countText = this.summaryBarEl.querySelector("#buffSummaryCountText");
-            if (countText) countText.innerText = `✨ 発動中のバフ (${this.activeBuffs.length})`;
+            if (countText) countText.innerText = I18n ? I18n.t("UI_BUFF_SUMMARY_TITLE", { count: this.activeBuffs.length }) : `✨ 発動中のバフ (${this.activeBuffs.length})`;
 
             const pillsPreview = this.summaryBarEl.querySelector("#buffPillsPreview");
             if (pillsPreview) {
@@ -125,6 +128,7 @@
          */
         renderDropupList() {
             if (!this.stackListEl) return;
+            const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
 
             let displayList = [...this.activeBuffs];
             if (this.sortMode === "CATEGORY") {
@@ -143,7 +147,7 @@
                             <div class="buff-card-desc">${buff.description || ""}</div>
                         </div>
                     </div>
-                    <span class="buff-card-badge">${buff.badgeText || "パッシブ"}</span>
+                    <span class="buff-card-badge">${buff.badgeText || (I18n ? I18n.t("UI_CMD_INSTANT_LABEL") : "パッシブ")}</span>
                 </div>
             `).join("");
         }
@@ -154,9 +158,11 @@
         toggleSortMode(e) {
             if (e) e.stopPropagation();
             this.sortMode = (this.sortMode === "ACQUIRED") ? "CATEGORY" : "ACQUIRED";
+            const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
             const sortBtn = this.dropupPanelEl.querySelector("#btnBuffSortToggle");
             if (sortBtn) {
-                sortBtn.innerText = `並び替え: ${this.sortMode === "ACQUIRED" ? "獲得順 (新➔古)" : "カテゴリ順"} 🔄`;
+                const sortLabel = this.sortMode === "ACQUIRED" ? (I18n ? I18n.t("UI_BUFF_SORT_ACQUIRED") : "並び替え: 獲得順 (新➔古) 🔄") : (I18n ? I18n.t("UI_BUFF_SORT_CATEGORY") : "並び替え: カテゴリ順 🔄");
+                sortBtn.innerText = sortLabel;
             }
             this.renderDropupList();
         }

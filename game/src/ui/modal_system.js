@@ -184,9 +184,10 @@
             const overlay = document.getElementById("modalSystemOverlay");
             const content = document.getElementById("modalSystemContent");
 
+            const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
             const cText = costText ? `<div class="modal-system-cost-badge">${costText}</div>` : '';
-            const confirmBtnText = confirmLabel || "⚡ 発動する";
-            const cancelBtnText = cancelLabel || "✖ キャンセル";
+            const confirmBtnText = confirmLabel || (I18n ? I18n.t("UI_ACTIVATE_CMD") : "⚡ 発動する");
+            const cancelBtnText = cancelLabel || (I18n ? I18n.t("UI_CANCEL") : "✖ キャンセル");
 
             content.innerHTML = `
                 <div class="modal-system-strip-card">

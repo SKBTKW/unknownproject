@@ -28,15 +28,17 @@ export class BuffSystem {
         // 既存の環境バフを一度除去
         this.buffs = this.buffs.filter(b => b.category !== "ENVIRONMENT");
 
+        const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
+
         if (ember >= 24) {
             // 🔥 旺盛状態 (24以上): 全産出 +10% ブースト ＆ ✨+2/T 自動ボーナス (維持費 🌾25/T)
             this.buffs.unshift({
                 id: "ENV_EMBER_PROSPERITY",
-                name: "🔥 旺盛バフ",
-                shortName: "旺盛 (+10%)",
+                name: I18n ? I18n.t("BUFF_NAME_PROSPEROUS") : "🔥 旺盛バフ",
+                shortName: I18n ? I18n.t("BUFF_SHORT_PROSPEROUS") : "旺盛 (+10%)",
                 icon: "🔥",
-                description: "🔥旺盛により全リソース産出 +10% ＆ 自動 ✨+2/T",
-                badgeText: "環境バフ",
+                description: I18n ? I18n.t("BUFF_DESC_PROSPEROUS") : "🔥旺盛により全リソース産出 +10% ＆ 自動 ✨+2/T",
+                badgeText: I18n ? I18n.t("BUFF_BADGE_ENV") : "環境バフ",
                 category: "ENVIRONMENT",
                 multiplier: 1.10,
                 mysticBonus: 2
@@ -45,11 +47,11 @@ export class BuffSystem {
             // 🔥 微火・危機状態 (9以下): 省エネ復興 (維持費 🌾15/T 減圧)
             this.buffs.unshift({
                 id: "ENV_EMBER_CRISIS",
-                name: "🔥 危機 (微火)",
-                shortName: "微火 (維持費減)",
+                name: I18n ? I18n.t("BUFF_NAME_CRISIS") : "🔥 危機 (微火)",
+                shortName: I18n ? I18n.t("BUFF_SHORT_CRISIS") : "微火 (維持費減)",
                 icon: "🔥",
-                description: "🔥危機により省エネ復興中 (食料維持費 🌾15/T へ減圧)",
-                badgeText: "環境バフ",
+                description: I18n ? I18n.t("BUFF_DESC_CRISIS") : "🔥危機により省エネ復興中 (食料維持費 🌾15/T へ減圧)",
+                badgeText: I18n ? I18n.t("BUFF_BADGE_ENV") : "環境バフ",
                 category: "ENVIRONMENT"
             });
         }
@@ -97,13 +99,14 @@ export class BuffSystem {
         if (this.state && typeof this.state.getTrialNotice === "function") {
             const notice = this.state.getTrialNotice();
             if (notice && notice.active) {
+                const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
                 displayList.unshift({
                     id: "TRIAL_ALERT_COUNTDOWN",
-                    name: `⚔️ 試練襲来まで あと ${notice.remaining} ターン`,
-                    shortName: `試練接近 (${notice.remaining}T)`,
+                    name: I18n ? I18n.t("BUFF_TRIAL_ALERT_NAME", { rem: notice.remaining }) : `⚔️ 試練襲来まで あと ${notice.remaining} ターン`,
+                    shortName: I18n ? I18n.t("BUFF_TRIAL_ALERT_SHORT", { rem: notice.remaining }) : `試練接近 (${notice.remaining}T)`,
                     icon: "⚔️",
-                    description: `迫り来る大試練に備えて防衛力 (🛡️) を高めてください。`,
-                    badgeText: `残り ${notice.remaining}T`,
+                    description: I18n ? I18n.t("BUFF_TRIAL_ALERT_DESC") : "迫り来る大試練に備えて防衛力 (🛡️) を高めてください。",
+                    badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: notice.remaining }) : `残り ${notice.remaining}T`,
                     category: "TRIAL_ALERT"
                 });
             }
@@ -151,6 +154,7 @@ export class BuffSystem {
      * 🛡️ 防衛力バフボーナスの合算取得
      */
     getDefenseBonus() {
+        this.updateEnvironmentBuffs();
         let bonus = 0;
         for (const buff of this.buffs) {
             if (buff.defenseBonus) bonus += buff.defenseBonus;
@@ -163,11 +167,12 @@ export class BuffSystem {
      */
     tickTurn() {
         const expiredBuffs = [];
+        const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
         for (let i = this.buffs.length - 1; i >= 0; i--) {
             const buff = this.buffs[i];
             if (buff.remainingTurns !== undefined) {
                 buff.remainingTurns -= 1;
-                buff.badgeText = `残り ${buff.remainingTurns}T`;
+                buff.badgeText = I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: buff.remainingTurns }) : `残り ${buff.remainingTurns}T`;
                 if (buff.remainingTurns <= 0) {
                     expiredBuffs.push(buff);
                     this.buffs.splice(i, 1);

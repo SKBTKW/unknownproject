@@ -127,7 +127,8 @@ export class SettingsModalSystem {
         const btn = document.createElement("button");
         btn.id = "btnOpenSettings";
         btn.className = "btn-settings-header";
-        btn.title = "⚙️ 環境設定 (Esc)";
+        const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
+        btn.title = I18n ? I18n.t("UI_SETTINGS_BTN_TOOLTIP") : "⚙️ 環境設定 (Esc)";
         btn.innerHTML = "⚙️";
         btn.onclick = () => this.open();
 
@@ -141,65 +142,86 @@ export class SettingsModalSystem {
         let existing = document.getElementById("settingsModal");
         if (existing) existing.remove();
 
+        const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
         this.modalEl = document.createElement("div");
         this.modalEl.id = "settingsModal";
         this.modalEl.className = "directive-modal-overlay";
         this.modalEl.style.display = "none";
 
+        const titleText = I18n ? I18n.t("UI_SETTINGS_TITLE") : "⚙️ ゲーム環境設定 (Game Preferences)";
+        const descText = I18n ? I18n.t("UI_SETTINGS_DESC") : "プレイスタイルや好みに合わせて操作感や画面演出をカスタマイズします。設定はブラウザに自動保存されます。";
+        const mTitle = I18n ? I18n.t("UI_SETTINGS_MULLIGAN_TITLE") : "🔄 マリガン確認ダイアログ";
+        const mDesc = I18n ? I18n.t("UI_SETTINGS_MULLIGAN_DESC") : "手札引き直し時に手札直上で確認するか、即時引き直すかを選択";
+        const mOptTrue = I18n ? I18n.t("UI_SETTINGS_MULLIGAN_OPT_TRUE") : "吹き出し確認あり";
+        const mOptFalse = I18n ? I18n.t("UI_SETTINGS_MULLIGAN_OPT_FALSE") : "確認なし即時実行";
+
+        const wTitle = I18n ? I18n.t("UI_SETTINGS_WARN_TITLE") : "⚠️ 土地未配置時のターン終了警告";
+        const wDesc = I18n ? I18n.t("UI_SETTINGS_WARN_DESC") : "当ターン土地を置かずにターン終了を押した際に警告を表示";
+        const wOptTrue = I18n ? I18n.t("UI_SETTINGS_WARN_OPT_TRUE") : "警告を出す (推奨)";
+        const wOptFalse = I18n ? I18n.t("UI_SETTINGS_WARN_OPT_FALSE") : "即時ターン終了";
+
+        const fTitle = I18n ? I18n.t("UI_SETTINGS_FOCUS_TITLE") : "🌓 2層フォーカス演出 (DoFボケ)";
+        const fDesc = I18n ? I18n.t("UI_SETTINGS_FOCUS_DESC") : "土地カード選択中に手札をボカして盤面を際立たせる演出";
+        const fOptTrue = I18n ? I18n.t("UI_SETTINGS_FOCUS_OPT_TRUE") : "ON (演出あり)";
+        const fOptFalse = I18n ? I18n.t("UI_SETTINGS_FOCUS_OPT_FALSE") : "OFF (常時クッキリ)";
+
+        const resetBtnText = I18n ? I18n.t("UI_RESET_DEFAULT") : "初期設定に戻す";
+        const closeBtnText = I18n ? I18n.t("UI_CLOSE") : "閉じる";
+
         this.modalEl.innerHTML = `
             <div class="directive-modal-window" style="max-width: 540px;">
                 <div class="directive-modal-header">
                     <h3 class="directive-modal-title">
-                        <span>⚙️</span> ゲーム環境設定 (Game Preferences)
+                        <span>⚙️</span> ${titleText}
                     </h3>
                     <button class="directive-modal-close-btn" id="btnCloseSettings">✕</button>
                 </div>
                 
                 <div class="directive-modal-desc">
-                    プレイスタイルや好みに合わせて操作感や画面演出をカスタマイズします。設定はブラウザに自動保存されます。
+                    ${descText}
                 </div>
 
                 <div class="settings-options-list" style="display: flex; flex-direction: column; gap: 14px; margin-top: 8px;">
                     <!-- ① マリガン確認 -->
                     <div class="setting-item-row" style="display: flex; justify-content: space-between; align-items: center; background: #1c2230; padding: 12px 16px; border-radius: 8px; border: 1px solid #2a3144;">
                         <div>
-                            <div style="font-weight: bold; color: #ffffff; font-size: 14px;">🔄 マリガン確認ダイアログ</div>
-                            <div style="font-size: 12px; color: #a4b0be; margin-top: 2px;">手札引き直し時に手札直上で確認するか、即時引き直すかを選択</div>
+                            <div style="font-weight: bold; color: #ffffff; font-size: 14px;">${mTitle}</div>
+                            <div style="font-size: 12px; color: #a4b0be; margin-top: 2px;">${mDesc}</div>
                         </div>
                         <select id="optMulliganConfirm" class="setting-select-control" style="background: #2b3548; color: #1abc9c; border: 1px solid #3d4a63; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 13px; cursor: pointer;">
-                            <option value="true">吹き出し確認あり</option>
-                            <option value="false">確認なし即時実行</option>
+                            <option value="true">${mOptTrue}</option>
+                            <option value="false">${mOptFalse}</option>
                         </select>
                     </div>
 
                     <!-- ② 土地未配置ターン終了警告 -->
                     <div class="setting-item-row" style="display: flex; justify-content: space-between; align-items: center; background: #1c2230; padding: 12px 16px; border-radius: 8px; border: 1px solid #2a3144;">
                         <div>
-                            <div style="font-weight: bold; color: #ffffff; font-size: 14px;">⚠️ 土地未配置時のターン終了警告</div>
-                            <div style="font-size: 12px; color: #a4b0be; margin-top: 2px;">当ターン土地を置かずにターン終了を押した際に警告を表示</div>
+                            <div style="font-weight: bold; color: #ffffff; font-size: 14px;">${wTitle}</div>
+                            <div style="font-size: 12px; color: #a4b0be; margin-top: 2px;">${wDesc}</div>
                         </div>
                         <select id="optTurnEndWarning" class="setting-select-control" style="background: #2b3548; color: #1abc9c; border: 1px solid #3d4a63; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 13px; cursor: pointer;">
-                            <option value="true">警告を出す (推奨)</option>
-                            <option value="false">即時ターン終了</option>
+                            <option value="true">${wOptTrue}</option>
+                            <option value="false">${wOptFalse}</option>
                         </select>
                     </div>
 
                     <!-- ③ 2層DoFフォーカス演出 -->
                     <div class="setting-item-row" style="display: flex; justify-content: space-between; align-items: center; background: #1c2230; padding: 12px 16px; border-radius: 8px; border: 1px solid #2a3144;">
                         <div>
-                            <div style="font-weight: bold; color: #ffffff; font-size: 14px;">🌓 2層フォーカス演出 (DoFボケ)</div>
-                            <div style="font-size: 12px; color: #a4b0be; margin-top: 2px;">土地カード選択中に手札をボカして盤面を際立たせる演出</div>
+                            <div style="font-weight: bold; color: #ffffff; font-size: 14px;">${fTitle}</div>
+                            <div style="font-size: 12px; color: #a4b0be; margin-top: 2px;">${fDesc}</div>
                         </div>
                         <select id="optFocusDoFBlur" class="setting-select-control" style="background: #2b3548; color: #1abc9c; border: 1px solid #3d4a63; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 13px; cursor: pointer;">
-                            <option value="true">ON (映画風演出)</option>
-                            <option value="false">OFF (常時クッキリ)</option>
+                            <option value="true">${fOptTrue}</option>
+                            <option value="false">${fOptFalse}</option>
                         </select>
                     </div>
                 </div>
 
                 <div class="directive-modal-footer" style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
-                    <button id="btnResetSettings" style="background: transparent; color: #e74c3c; border: 1px solid #e74c3c; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;">初期設定に戻す</button>
-                    <button class="directive-modal-btn-close" id="btnSaveCloseSettings">閉じる</button>
+                    <button id="btnResetSettings" style="background: transparent; color: #e74c3c; border: 1px solid #e74c3c; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;">${resetBtnText}</button>
+                    <button class="directive-modal-btn-close" id="btnSaveCloseSettings">${closeBtnText}</button>
                 </div>
             </div>
         `;
