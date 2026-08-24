@@ -98,7 +98,9 @@ class GameEngine {
                     this.gridEngine.expandGrid(7);
                 }
                 if (this.state.addLog) {
-                    this.state.addLog(`⚔️ [第1試練 到達] テストモードにより試練をスキップし、Stage 2 (7×7 盤面 / 48マス) へ拡張しました！`);
+                    const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
+                    const logMsg = I18n ? I18n.t("LOG_STAGE_EXPAND", { stage: 2, size: 7 }) : `⚔️ Stage 2 (7x7)`;
+                    this.state.addLog(logMsg);
                 }
             } else if (this.state.stage && this.state.stage.id === 2 && currentTurn >= this.state.trialSchedule.trial2) {
                 // 第2試練 到達 ➔ Stage 3 (9x9) へ昇格
@@ -108,14 +110,18 @@ class GameEngine {
                     this.gridEngine.expandGrid(9);
                 }
                 if (this.state.addLog) {
-                    this.state.addLog(`⚔️ [第2試練 到達] テストモードにより試練をスキップし、Stage 3 (9×9 盤面 / 80マス) へ拡張しました！`);
+                    const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
+                    const logMsg = I18n ? I18n.t("LOG_STAGE_EXPAND", { stage: 3, size: 9 }) : `⚔️ Stage 3 (9x9)`;
+                    this.state.addLog(logMsg);
                 }
             }
         }
 
         // 5. ログ出力
         if (this.state && typeof this.state.addLog === 'function') {
-            this.state.addLog(`ターン ${this.state.turn} を開始しました。手札オファリングを補充しました。`);
+            const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
+            const logMsg = I18n ? I18n.t("LOG_TURN_START", { turn: this.state.turn }) : `Turn ${this.state.turn} started.`;
+            this.state.addLog(logMsg);
         }
 
         return this.state ? this.state.turn : 1;

@@ -47,18 +47,26 @@ def main():
     root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     game_dir = os.path.join(root_dir, "game")
 
-    target_files = [
-        os.path.join(game_dir, "src", "ui", "hand_cards_component.js"),
-        os.path.join(game_dir, "src", "ui", "reserve_slot_component.js"),
-        os.path.join(game_dir, "src", "ui", "tooltip_system.js"),
-        os.path.join(game_dir, "src", "ui", "ui_controller.js"),
-        os.path.join(game_dir, "src", "systems", "deck_manager.js"),
-        os.path.join(game_dir, "src", "v2_unity_ready_main.js"),
-        os.path.join(game_dir, "src", "app.js")
+    # 🛡️ 物理ガードレール: 全稼働中モジュール（ui, systems, core, app.js, v2_main, index.html）を完全自動走査
+    active_dirs = [
+        os.path.join(game_dir, "src", "ui"),
+        os.path.join(game_dir, "src", "systems"),
+        os.path.join(game_dir, "src", "core")
     ]
+    target_files = [
+        os.path.join(game_dir, "index.html"),
+        os.path.join(game_dir, "src", "app.js"),
+        os.path.join(game_dir, "src", "v2_unity_ready_main.js")
+    ]
+    for d in active_dirs:
+        if os.path.exists(d):
+            for f in os.listdir(d):
+                if f.endswith(".js") and "backup" not in f:
+                    target_files.append(os.path.join(d, f))
 
+    target_files.sort()
     total_violations = 0
-    print("=== AGENTS.md Automated Inspection & Spec Verification ===")
+    print(f"=== AGENTS.md Automated Full Inspection & Spec Verification ({len(target_files)} active files) ===")
 
     for filepath in target_files:
         rel_path = os.path.relpath(filepath, root_dir)
