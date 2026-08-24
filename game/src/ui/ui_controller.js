@@ -413,6 +413,9 @@ class UIController {
      * 📐 手札表示モード（標準 260x390px ⇄ ミニマル 64x80px + ホバー拡大）切替
      */
     toggleHandMinimalMode() {
+        if (typeof window !== "undefined" && window.tooltipSystemInstance && typeof window.tooltipSystemInstance.hide === "function") {
+            window.tooltipSystemInstance.hide();
+        }
         this.isMinimalMode = !this.isMinimalMode;
         if (typeof localStorage !== 'undefined') {
             localStorage.setItem("toa_hand_minimal_mode", this.isMinimalMode ? "true" : "false");
@@ -728,10 +731,11 @@ class UIController {
 
         // ↩️ 当ターン配置済みマスをクリックした場合は配置取り消し（Undo）
         if (undoSys && undoSys.isCellPlacedThisTurn(r, c)) {
+            this.hideTileTooltip();
             undoSys.undo();
             this.selectedCard = null;
             this.selectedCardIdx = -1;
-        this.selectedReserveIdx = -1;
+            this.selectedReserveIdx = -1;
             if (focusLayerManager) focusLayerManager.onCardDeselect();
             this.render();
             this.highlightPlaceableCells();
@@ -739,6 +743,7 @@ class UIController {
         }
 
         if (!this.selectedCard || this.state.hasPickedThisTurn) return;
+        this.hideTileTooltip();
 
         const tObjCheck = this.selectedCard.terrain || this.selectedCard;
         const catCheck = this.selectedCard.category || tObjCheck.category || "LAND";

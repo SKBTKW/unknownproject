@@ -18,6 +18,7 @@ export class TooltipSystem {
         this._onMouseOver = this._handleMouseOver.bind(this);
         this._onMouseOut = this._handleMouseOut.bind(this);
         this._onMouseMove = this._handleMouseMove.bind(this);
+        this._onClick = this._handleClick.bind(this);
     }
 
     /**
@@ -42,10 +43,26 @@ export class TooltipSystem {
         document.removeEventListener("mouseover", this._onMouseOver, true);
         document.removeEventListener("mouseout", this._onMouseOut, true);
         document.removeEventListener("mousemove", this._onMouseMove, true);
+        document.removeEventListener("click", this._onClick, true);
+        document.removeEventListener("dragstart", this._onClick, true);
+        document.removeEventListener("scroll", this._onClick, true);
 
         document.addEventListener("mouseover", this._onMouseOver, true);
         document.addEventListener("mouseout", this._onMouseOut, true);
         document.addEventListener("mousemove", this._onMouseMove, true);
+        document.addEventListener("click", this._onClick, true);
+        document.addEventListener("dragstart", this._onClick, true);
+        document.addEventListener("scroll", this._onClick, true);
+
+        if (typeof window !== "undefined") {
+            window.removeEventListener("blur", this._onClick);
+            window.addEventListener("blur", this._onClick);
+        }
+    }
+
+    _handleClick(e) {
+        // ボタンクリックやタップ時はツールチップを即時非表示にする
+        this.hide();
     }
 
     _handleMouseOver(e) {
@@ -83,6 +100,10 @@ export class TooltipSystem {
 
     _handleMouseOut(e) {
         if (!this.currentTarget) return;
+        if (!document.body.contains(this.currentTarget)) {
+            this.hide();
+            return;
+        }
         if (e.target && typeof e.target.closest === "function") {
             const target = e.target.closest("[data-tooltip]");
             if (target === this.currentTarget) {
@@ -99,6 +120,11 @@ export class TooltipSystem {
 
     _handleMouseMove(e) {
         if (!this.currentTarget || !this.tooltipEl || this.tooltipEl.style.display === "none") return;
+        // DOM再描画などで対象要素が消滅していた場合は即座に非表示
+        if (!document.body.contains(this.currentTarget)) {
+            this.hide();
+            return;
+        }
         this._updatePosition(e.clientX, e.clientY);
     }
 
