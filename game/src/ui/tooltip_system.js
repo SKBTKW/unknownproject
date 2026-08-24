@@ -55,6 +55,21 @@ export class TooltipSystem {
         const target = e.target.closest("[data-tooltip]");
         if (!target) return;
 
+        // 🃏 手札ミニマル表示時: 手札カード・保留スロットのマウスオーバーツールチップは不要 (真上の拡大カードと重複するため抑制)
+        const minimalRow = target.closest("#cardRow.is-minimal, .offering-section.is-minimal");
+        if (minimalRow) {
+            const isCardOrReserve = target.classList.contains("card-frame-tcg") || 
+                                    target.classList.contains("reserve-slot-single-box") || 
+                                    target.classList.contains("reserve-slot-empty") ||
+                                    target.classList.contains("reserve-slot-wrapper") ||
+                                    target.closest(".cards-hand-container") ||
+                                    target.closest(".reserve-slot-single-box");
+            if (isCardOrReserve) {
+                this.hide();
+                return;
+            }
+        }
+
         // カード大型プレビュー表示中はUIツールチップを抑制
         const previewModal = document.getElementById("cardHoverPreviewModal");
         if (previewModal && previewModal.classList.contains("active")) {

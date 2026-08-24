@@ -35,6 +35,7 @@ class UIController {
         this.selectedReserveIdx = -1;
         this.isReservePopoverOpen = false;
         this.pinnedPreviewCard = null;
+        this.isMinimalMode = (typeof localStorage !== 'undefined') ? (localStorage.getItem("toa_hand_minimal_mode") === "true") : false;
 
         if (typeof window !== "undefined" && this.undoSys) {
             window.undoSys = this.undoSys;
@@ -58,6 +59,7 @@ class UIController {
             window.selectCard = (idx) => this.selectCard(idx);
             window.deselectCard = () => this.deselectCard();
             window.rotateSelectedCard = (e, idx) => this.rotateSelectedCard(e, idx);
+            window.toggleHandMinimalMode = () => this.toggleHandMinimalMode();
             window.onCellClick = (r, c) => this.onCellClick(r, c);
             window.onCellMouseEnter = (e, r, c) => this.onCellMouseEnter(e, r, c);
             window.onCellMouseMove = (e, r, c) => this.onCellMouseMove(e, r, c);
@@ -82,7 +84,7 @@ class UIController {
                     undoSys.undo();
                     this.selectedCard = null;
                     this.selectedCardIdx = -1;
-        this.selectedReserveIdx = -1;
+                    this.selectedReserveIdx = -1;
                     if (focusLayerManager) focusLayerManager.onCardDeselect();
                     this.render();
                     this.highlightPlaceableCells();
@@ -120,6 +122,7 @@ class UIController {
         this.clearCellPreviews();
         this.render();
         this.highlightPlaceableCells();
+        this.updateFloatingPreview(null);
     }
 
     /**
@@ -275,6 +278,7 @@ class UIController {
             this.renderOfferingCards(I18n);
             this.renderBuffPanel();
             this.updateMulliganButton();
+            this.updateFloatingPreview(null);
         } catch (err) {
             console.error("UIController Render Error:", err);
         }
@@ -390,6 +394,20 @@ class UIController {
         }
     }
 
+    /**
+     * 📐 手札表示モード（標準 260x390px ⇄ ミニマル 64x80px + ホバー拡大）切替
+     */
+    toggleHandMinimalMode() {
+        this.isMinimalMode = !this.isMinimalMode;
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem("toa_hand_minimal_mode", this.isMinimalMode ? "true" : "false");
+        }
+        this.render();
+        if (typeof window.showToast === "function") {
+            window.showToast(this.isMinimalMode ? "手札をミニマル表示（ホバー拡大）に切り替えました" : "手札を標準表示に切り替えました");
+        }
+    }
+
     renderOfferingCards(I18n) {
         const offeringSection = document.querySelector(".offering-section");
         if (offeringSection) {
@@ -399,25 +417,76 @@ class UIController {
 
             // 🚀 保留ポップオーバー展開時は手札トレイ全体を最前面化 (z-index: 2500)
             offeringSection.classList.toggle("has-popover-open", !!this.isReservePopoverOpen);
+            offeringSection.classList.toggle("is-minimal", !!this.isMinimalMode);
         }
 
         const cardRowEl = document.getElementById("cardRow");
         if (!cardRowEl || !this.state.handOffering) return;
         cardRowEl.innerHTML = "";
+        cardRowEl.classList.toggle("is-minimal", !!this.isMinimalMode);
 
         const canMulligan = !this.state.hasPickedThisTurn && !this.state.hasMulliganedThisTurn && this.state.ember >= 1;
         const reserveCostText = I18n ? (I18n.t("RESERVE_HEADER_COST") || "ターン終了時 🔥-1") : "ターン終了時 🔥-1";
         const reserveCostTooltip = I18n ? (I18n.t("RESERVE_HEADER_COST_TOOLTIP") || "⚠️ 保留枠にカードをキープしたままターンを終了すると、維持費として 🔥-1 を消費します") : "⚠️ 保留枠にカードをキープしたままターンを終了すると、維持費として 🔥-1 を消費します";
         const mulliganTooltip = I18n ? (I18n.t("UI_MULLIGAN_HELP_TOOLTIP") || "🔥 残り火を 1 消費して手札 3 枚を破棄し、新たに 3 枚引き直します (1ターン1回のみ)") : "🔥 残り火を 1 消費して手札 3 枚を破棄し、新たに 3 枚引き直します (1ターン1回のみ)";
+        const minimalModeTitle = this.isMinimalMode ? "標準サイズ表示に戻す" : "ミニマル表示に切り替える";
 
+        // 🃏 ミニマルモード時のモックアップ完全準拠レイアウト (上段ヘッダー ＋ 下段スロット列)
+        if (this.isMinimalMode) {
+            // 1. 上段ヘッダー行 (左: [📐 縮小表示切替][🔄 マリガン] アイコンボタン)
+            const trayHeader = document.createElement("div");
+            trayHeader.className = "offering-tray-header";
+            trayHeader.innerHTML = `
+                <div class="offering-tray-header-left">
+                    <button class="btn-minimal-toggle is-active" id="btnMinimalToggle" onclick="window.toggleHandMinimalMode()" data-tooltip-title="📐 縮小表示切替" data-tooltip="手札の表示サイズ（標準 ⇄ 縮小）を切り替えます" title="縮小表示切替">
+                        <span>📐</span>
+                    </button>
+                    <button class="btn-minimal-mulligan" id="btnMulligan" data-tooltip-title="🔄 マリガン (手札引き直し)" data-tooltip="🔥 残り火を 1 消費して手札 3 枚を破棄し、新たに 3 枚引き直します (1ターン1回のみ)" ${canMulligan ? "" : "disabled style='opacity:0.45; cursor:not-allowed; filter:grayscale(0.8);'"}>
+                        <span>🔄</span>
+                    </button>
+                </div>
+            `;
+            const btnMulligan = trayHeader.querySelector("#btnMulligan");
+            if (btnMulligan && canMulligan) {
+                btnMulligan.onclick = () => this.handleMulliganClick(btnMulligan);
+            }
+            cardRowEl.appendChild(trayHeader);
+
+            // 2. 下段スロット行 (手札3枚 ＋ 縦仕切り ＋ 保留1枚)
+            const trayCardsRow = document.createElement("div");
+            trayCardsRow.className = "offering-tray-cards-row";
+
+            const handContainer = this.handCardsComponent ? this.handCardsComponent.render(I18n) : document.createElement("div");
+            trayCardsRow.appendChild(handContainer);
+
+            const separator = document.createElement("div");
+            separator.className = "offering-tray-separator";
+            trayCardsRow.appendChild(separator);
+
+            const reserveContainer = this.reserveSlotComponent ? this.reserveSlotComponent.render(I18n) : document.createElement("div");
+            trayCardsRow.appendChild(reserveContainer);
+
+            cardRowEl.appendChild(trayCardsRow);
+            return;
+        }
+
+        // 🃏 標準モード時 (260x390px 左右2グループ完全規格レイアウト)
         // 🃏 1. 左側: 手札グループ (ヘッダー ＋ 手札3枚)
         const handGroup = document.createElement("div");
         handGroup.className = "offering-hand-group";
 
         const handHeader = document.createElement("div");
         handHeader.className = "offering-header-hand-col";
+        handHeader.style.display = "flex";
+        handHeader.style.alignItems = "center";
+        handHeader.style.justifyContent = "flex-start";
+        handHeader.style.gap = "8px";
+
         handHeader.innerHTML = `
-            <button class="btn-mulligan-compact" id="btnMulligan" data-tooltip="UI_MULLIGAN_HELP_TOOLTIP" ${canMulligan ? "" : "disabled style='opacity:0.45; cursor:not-allowed; filter:grayscale(0.8);'"}>
+            <button class="btn-minimal-toggle" id="btnMinimalToggle" onclick="window.toggleHandMinimalMode()" data-tooltip-title="📐 縮小表示切替" data-tooltip="手札の表示サイズ（標準 ⇄ 縮小）を切り替えます" title="縮小表示切替">
+                <span>📐</span>
+            </button>
+            <button class="btn-mulligan-compact" id="btnMulligan" data-tooltip-title="🔄 マリガン (手札引き直し)" data-tooltip="🔥 残り火を 1 消費して手札 3 枚を破棄し、新たに 3 枚引き直します (1ターン1回のみ)" ${canMulligan ? "" : "disabled style='opacity:0.45; cursor:not-allowed; filter:grayscale(0.8);'"}>
                 <span>🔄 マリガン</span> <span class="btn-mulligan-ember-cost">🔥-1</span>
             </button>
         `;
@@ -1010,9 +1079,9 @@ class UIController {
         }
     }
 
-    returnReserveCard(idx) {
+    returnReserveCard(idx = 0, targetHandIdx = -1) {
         if (!this.state) return;
-        if (typeof this.state.returnFromReserve === "function" && this.state.returnFromReserve(idx)) {
+        if (typeof this.state.returnFromReserve === "function" && this.state.returnFromReserve(idx, targetHandIdx)) {
             this.selectedCard = null;
             this.selectedCardIdx = -1;
             this.selectedReserveIdx = -1;
@@ -1179,6 +1248,67 @@ class UIController {
         if (typeof document === "undefined") return;
         const tt = document.getElementById("dataPanelTooltipHuge");
         if (tt) tt.style.display = "none";
+    }
+
+    /**
+     * 🃏 ミニマルモード時の手札直上フローティング拡大プレビューの完全制御
+     * （トレイ実座標からのピクセル完全センタリング ＆ 選択中は常時表示維持）
+     * @param {HTMLElement|null} overrideCardEl ホバーされたカード要素 (nullの場合は選択中カードを参照)
+     */
+    updateFloatingPreview(overrideCardEl = null) {
+        if (typeof document === "undefined") return;
+        const previewEl = document.getElementById("cardFloatingPreview");
+        if (!previewEl) return;
+
+        // ミニマルモードでない場合は常に非表示
+        if (!this.isMinimalMode) {
+            previewEl.classList.remove("is-visible");
+            return;
+        }
+
+        let targetEl = overrideCardEl;
+
+        // ホバー対象がない場合、現在選択中のカード（手札または保留）があればそれを表示し続ける
+        if (!targetEl) {
+            if (this.selectedCardIdx !== -1) {
+                const cardElements = document.querySelectorAll(".cards-hand-container .card-frame-tcg");
+                if (cardElements && cardElements[this.selectedCardIdx]) {
+                    targetEl = cardElements[this.selectedCardIdx];
+                }
+            } else if (this.selectedReserveIdx !== -1) {
+                targetEl = document.querySelector(".reserve-slot-single-box .card-frame-tcg");
+            }
+        }
+
+        if (!targetEl) {
+            previewEl.classList.remove("is-visible");
+            return;
+        }
+
+        const fullHtml = targetEl.getAttribute("data-full-card-html") || targetEl.innerHTML;
+        const categoryClass = Array.from(targetEl.classList).find(c => c.startsWith("category-")) || "";
+        const isReserveEmpty = targetEl.classList.contains("reserve-slot-empty");
+
+        if (isReserveEmpty) {
+            previewEl.innerHTML = `
+                <div class="reserve-slot-empty" style="width:260px !important; height:390px !important; margin:0 !important; pointer-events:none; box-sizing:border-box;">
+                    ${fullHtml}
+                </div>
+            `;
+        } else {
+            previewEl.innerHTML = `
+                <div class="card-frame-tcg ${categoryClass}" style="width:260px !important; height:390px !important; margin:0 !important; pointer-events:none; box-sizing:border-box;">
+                    ${fullHtml}
+                </div>
+            `;
+        }
+
+        previewEl.classList.add("is-visible");
+    }
+
+    hideFloatingPreviewIfNotSelected() {
+        // 選択中のカードがなければプレビューを非表示、あれば選択中カードに戻す
+        this.updateFloatingPreview(null);
     }
 }
 

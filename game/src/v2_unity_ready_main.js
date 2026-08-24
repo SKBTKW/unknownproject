@@ -381,8 +381,8 @@ class GameState {
             return false;
         }
 
-        returnFromReserve(reserveIdx) {
-            if (this.deckManager) return this.deckManager.returnFromReserve(reserveIdx);
+        returnFromReserve(reserveIdx = 0, specificTargetIdx = -1) {
+            if (this.deckManager) return this.deckManager.returnFromReserve(reserveIdx, specificTargetIdx);
             return false;
         }
 

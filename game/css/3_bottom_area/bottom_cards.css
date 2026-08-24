@@ -88,20 +88,7 @@
     align-items: center;
     padding: 1px;
 }
-.tcg-title-pill {
-    background: #ffffff;
-    border: 1px solid #111111;
-    border-radius: 6px;
-    padding: 1px 4px;
-    font-size: 10px;
-    font-weight: bold;
-    color: #111111;
-    flex: 1;
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
+/* .tcg-title-pill is styled in draw_card_select_area.css with rich prestige gradients */
 .tcg-rarity-code {
     font-size: 12px;
     font-weight: 900;

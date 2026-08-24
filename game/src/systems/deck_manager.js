@@ -32,21 +32,21 @@ class DeckManager {
         // rules/09_card_list.md 仕様書完全準拠のフォールバックデータ
         this._landCardMasterCache = [
             { id: "CARD_PLAINS_1X1", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, e: 1, yields: { food: 4, wood: 0, defense: 0, mystic: 0 }, shape: [[1]], minStage: 1, reqE2: 0, rarity: "C", weight: 1.0 },
-            { id: "CARD_PLAINS_1X2", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, e: 1, yields: { food: 4, wood: 0, defense: 0, mystic: 0 }, shape: [[1, 1]], minStage: 1, reqE2: 0, rarity: "C", weight: 0.8 },
-            { id: "CARD_PLAINS_1X3_S", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, e: 1, yields: { food: 4, wood: 0, defense: 0, mystic: 0 }, shape: [[1, 1, 1]], minStage: 2, reqE2: 0, rarity: "R", weight: 0.18 },
+            { id: "CARD_PLAINS_1X2", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, e: 1, yields: { food: 4, wood: 0, defense: 0, mystic: 0 }, shape: [[1], [1]], minStage: 1, reqE2: 0, rarity: "C", weight: 0.8 },
+            { id: "CARD_PLAINS_1X3_S", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, e: 1, yields: { food: 4, wood: 0, defense: 0, mystic: 0 }, shape: [[1], [1], [1]], minStage: 2, reqE2: 0, rarity: "R", weight: 0.18 },
             { id: "CARD_PLAINS_1X3_L", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, e: 1, yields: { food: 4, wood: 0, defense: 0, mystic: 0 }, shape: [[1, 0], [1, 1]], minStage: 2, reqE2: 0, rarity: "R", weight: 0.14 },
             { id: "CARD_FOREST_1X1", terrainId: "GL2_FOREST", nameKey: "TERRAIN_FOREST", gl: 2, e: 1, yields: { food: 2, wood: 2, defense: 2, mystic: 0 }, shape: [[1]], minStage: 1, reqE2: 0, rarity: "C", weight: 1.0 },
-            { id: "CARD_FOREST_1X2", terrainId: "GL2_FOREST", nameKey: "TERRAIN_FOREST", gl: 2, e: 1, yields: { food: 2, wood: 2, defense: 2, mystic: 0 }, shape: [[1, 1]], minStage: 1, reqE2: 0, rarity: "UC", weight: 0.6 },
+            { id: "CARD_FOREST_1X2", terrainId: "GL2_FOREST", nameKey: "TERRAIN_FOREST", gl: 2, e: 1, yields: { food: 2, wood: 2, defense: 2, mystic: 0 }, shape: [[1], [1]], minStage: 1, reqE2: 0, rarity: "UC", weight: 0.6 },
             { id: "CARD_DEEP_FOREST_1X1", terrainId: "GL3_DEEP_FOREST", nameKey: "TERRAIN_DEEP_FOREST", gl: 3, e: 1, yields: { food: 1, wood: 3, defense: 3, mystic: 1 }, shape: [[1]], minStage: 1, reqE2: 0, rarity: "R", weight: 0.15 },
-            { id: "CARD_DEEP_FOREST_1X2", terrainId: "GL3_DEEP_FOREST", nameKey: "TERRAIN_DEEP_FOREST", gl: 3, e: 1, yields: { food: 1, wood: 3, defense: 3, mystic: 1 }, shape: [[1, 1]], minStage: 2, reqE2: 0, rarity: "R", weight: 0.05 },
+            { id: "CARD_DEEP_FOREST_1X2", terrainId: "GL3_DEEP_FOREST", nameKey: "TERRAIN_DEEP_FOREST", gl: 3, e: 1, yields: { food: 1, wood: 3, defense: 3, mystic: 1 }, shape: [[1], [1]], minStage: 2, reqE2: 0, rarity: "R", weight: 0.05 },
             { id: "CARD_HILL_1X1", terrainId: "E2_HILL", nameKey: "TERRAIN_HILL", gl: 1, e: 2, yields: { food: 2, wood: 1, defense: 1, mystic: 0 }, shape: [[1]], minStage: 1, reqE2: 0, rarity: "UC", weight: 0.50 },
-            { id: "CARD_HILL_1X2", terrainId: "E2_HILL", nameKey: "TERRAIN_HILL", gl: 1, e: 2, yields: { food: 2, wood: 1, defense: 1, mystic: 0 }, shape: [[1, 1]], minStage: 1, reqE2: 0, rarity: "UC", weight: 0.35 },
+            { id: "CARD_HILL_1X2", terrainId: "E2_HILL", nameKey: "TERRAIN_HILL", gl: 1, e: 2, yields: { food: 2, wood: 1, defense: 1, mystic: 0 }, shape: [[1], [1]], minStage: 1, reqE2: 0, rarity: "UC", weight: 0.35 },
             { id: "CARD_HILL_1X3_L", terrainId: "E2_HILL", nameKey: "TERRAIN_HILL", gl: 1, e: 2, yields: { food: 2, wood: 1, defense: 1, mystic: 0 }, shape: [[1, 0], [1, 1]], minStage: 2, reqE2: 0, rarity: "R", weight: 0.12 },
             { id: "CARD_MOUNTAIN_1X1", terrainId: "E3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", gl: 2, e: 3, yields: { food: 0, wood: 3, defense: 5, mystic: 1 }, shape: [[1]], minStage: 2, reqE2: 3, rarity: "R", weight: 0.20 },
-            { id: "CARD_MOUNTAIN_1X2", terrainId: "E3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", gl: 2, e: 3, yields: { food: 0, wood: 3, defense: 5, mystic: 1 }, shape: [[1, 1]], minStage: 2, reqE2: 3, rarity: "R", weight: 0.15 },
-            { id: "CARD_MOUNTAIN_1X3_S", terrainId: "E3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", gl: 2, e: 3, yields: { food: 0, wood: 3, defense: 5, mystic: 1 }, shape: [[1, 1, 1]], minStage: 2, reqE2: 3, rarity: "R", weight: 0.03 },
+            { id: "CARD_MOUNTAIN_1X2", terrainId: "E3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", gl: 2, e: 3, yields: { food: 0, wood: 3, defense: 5, mystic: 1 }, shape: [[1], [1]], minStage: 2, reqE2: 3, rarity: "R", weight: 0.15 },
+            { id: "CARD_MOUNTAIN_1X3_S", terrainId: "E3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", gl: 2, e: 3, yields: { food: 0, wood: 3, defense: 5, mystic: 1 }, shape: [[1], [1], [1]], minStage: 2, reqE2: 3, rarity: "R", weight: 0.03 },
             { id: "CARD_DESERT_1X1", terrainId: "GL0_DESERT", nameKey: "TERRAIN_DESERT", gl: 0, e: 1, yields: { food: 0, wood: 0, defense: 0, mystic: 5 }, shape: [[1]], minStage: 1, reqE2: 0, rarity: "R", weight: 0.15 },
-            { id: "CARD_DESERT_1X2", terrainId: "GL0_DESERT", nameKey: "TERRAIN_DESERT", gl: 0, e: 1, yields: { food: 0, wood: 0, defense: 0, mystic: 5 }, shape: [[1, 1]], minStage: 2, reqE2: 0, rarity: "UR", weight: 0.03 },
+            { id: "CARD_DESERT_1X2", terrainId: "GL0_DESERT", nameKey: "TERRAIN_DESERT", gl: 0, e: 1, yields: { food: 0, wood: 0, defense: 0, mystic: 5 }, shape: [[1], [1]], minStage: 2, reqE2: 0, rarity: "UR", weight: 0.03 },
 
             // コマンドカード 『土地探索』 (ドロー条件: 盤面にソケットが存在しない時)
             { id: "CMD_LAND_EXPLORATION", category: "COMMAND", nameKey: "CMD_LAND_EXPLORATION_NAME", descriptionKey: "CMD_LAND_EXPLORATION_DESC", cost: { food: 30, wood: 30, ember: 1 }, noSocketsOnBoard: true, minStage: 1, rarity: "R", weight: 0.40 },
@@ -346,18 +346,22 @@ class DeckManager {
     /**
      * 📤 保留スロット ➔ 手札への復元
      */
-    returnFromReserve(reserveIdx) {
+    returnFromReserve(reserveIdx, specificTargetIdx = -1) {
         if (!this.state || !this.state.handOffering || !this.state.reserveSlots) return false;
         const card = this.state.reserveSlots[reserveIdx];
         if (!card) return false;
 
         // 手札に空きスロット (isBlank: true) が存在するか走査
         let targetIdx = -1;
-        const origIdx = card.originalHandIdx;
-        if (origIdx !== undefined && this.state.handOffering[origIdx] && this.state.handOffering[origIdx].isBlank) {
-            targetIdx = origIdx;
+        if (typeof specificTargetIdx === "number" && specificTargetIdx >= 0 && specificTargetIdx < this.state.handOffering.length && this.state.handOffering[specificTargetIdx] && this.state.handOffering[specificTargetIdx].isBlank) {
+            targetIdx = specificTargetIdx;
         } else {
-            targetIdx = this.state.handOffering.findIndex(c => c && c.isBlank);
+            const origIdx = card.originalHandIdx;
+            if (origIdx !== undefined && this.state.handOffering[origIdx] && this.state.handOffering[origIdx].isBlank) {
+                targetIdx = origIdx;
+            } else {
+                targetIdx = this.state.handOffering.findIndex(c => c && c.isBlank);
+            }
         }
 
         if (targetIdx !== -1) {

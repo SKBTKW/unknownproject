@@ -40,7 +40,9 @@ export const LAND_CARDS_MASTER = [
     },
     "shape": [
       [
-        1,
+        1
+      ],
+      [
         1
       ]
     ],
@@ -66,8 +68,12 @@ export const LAND_CARDS_MASTER = [
     },
     "shape": [
       [
-        1,
-        1,
+        1
+      ],
+      [
+        1
+      ],
+      [
         1
       ]
     ],
@@ -123,20 +129,22 @@ export const LAND_CARDS_MASTER = [
     },
     "shape": [
       [
-        0,
         1,
         0
       ],
       [
         1,
-        1,
         1
+      ],
+      [
+        1,
+        0
       ]
     ],
     "minStage": 3,
     "reqE2": 0,
-    "rarity": "R",
-    "weight": 0.3,
+    "rarity": "SR",
+    "weight": 0.05,
     "descriptionKey": "CARD_DESC_PLAINS_1X4_T"
   },
   {
@@ -156,11 +164,13 @@ export const LAND_CARDS_MASTER = [
     "shape": [
       [
         1,
-        0,
         0
       ],
       [
         1,
+        0
+      ],
+      [
         1,
         1
       ]
@@ -223,7 +233,7 @@ export const LAND_CARDS_MASTER = [
     "minStage": 1,
     "reqE2": 0,
     "rarity": "C",
-    "weight": 1.0,
+    "weight": 1,
     "descriptionKey": "CARD_DESC_FOREST_1X1"
   },
   {
@@ -242,7 +252,9 @@ export const LAND_CARDS_MASTER = [
     },
     "shape": [
       [
-        1,
+        1
+      ],
+      [
         1
       ]
     ],
@@ -293,7 +305,9 @@ export const LAND_CARDS_MASTER = [
     },
     "shape": [
       [
-        1,
+        1
+      ],
+      [
         1
       ]
     ],
@@ -344,7 +358,9 @@ export const LAND_CARDS_MASTER = [
     },
     "shape": [
       [
-        1,
+        1
+      ],
+      [
         1
       ]
     ],
@@ -425,7 +441,9 @@ export const LAND_CARDS_MASTER = [
     },
     "shape": [
       [
-        1,
+        1
+      ],
+      [
         1
       ]
     ],
@@ -451,8 +469,12 @@ export const LAND_CARDS_MASTER = [
     },
     "shape": [
       [
-        1,
-        1,
+        1
+      ],
+      [
+        1
+      ],
+      [
         1
       ]
     ],
@@ -503,7 +525,9 @@ export const LAND_CARDS_MASTER = [
     },
     "shape": [
       [
-        1,
+        1
+      ],
+      [
         1
       ]
     ],
@@ -529,7 +553,9 @@ export const LAND_CARDS_MASTER = [
     },
     "shape": [
       [
-        1,
+        1
+      ],
+      [
         1
       ]
     ],
@@ -555,7 +581,9 @@ export const LAND_CARDS_MASTER = [
     },
     "shape": [
       [
-        1,
+        1
+      ],
+      [
         1
       ]
     ],
@@ -581,7 +609,9 @@ export const LAND_CARDS_MASTER = [
     },
     "shape": [
       [
-        1,
+        1
+      ],
+      [
         1
       ]
     ],
@@ -763,64 +793,5 @@ export const LAND_CARDS_MASTER = [
     "weight": 0.15,
     "isUnique": true,
     "descriptionKey": "CMD_MYSTIC_FOCUS_DESC"
-  },
-  {
-    "id": "CMD_CONSERVE_EMBER",
-    "nameKey": "CMD_CONSERVE_EMBER_NAME",
-    "category": "COMMAND",
-    "cost": {},
-    "maxEmber": 18,
-    "minStage": 1,
-    "rarity": "C",
-    "weight": 0.4,
-    "isUnique": false,
-    "descriptionKey": "CMD_CONSERVE_EMBER_DESC"
-  },
-  {
-    "id": "CMD_RATIONING",
-    "nameKey": "CMD_RATIONING_NAME",
-    "category": "COMMAND",
-    "cost": {},
-    "maxFood": 40,
-    "minStage": 1,
-    "rarity": "C",
-    "weight": 0.4,
-    "isUnique": false,
-    "descriptionKey": "CMD_RATIONING_DESC"
-  },
-  {
-    "id": "CMD_MEDITATION",
-    "nameKey": "CMD_MEDITATION_NAME",
-    "category": "COMMAND",
-    "cost": {},
-    "maxMystic": 20,
-    "minStage": 1,
-    "rarity": "UC",
-    "weight": 0.3,
-    "isUnique": false,
-    "descriptionKey": "CMD_MEDITATION_DESC"
-  },
-  {
-    "id": "CMD_VIGILANCE",
-    "nameKey": "CMD_VIGILANCE_NAME",
-    "category": "COMMAND",
-    "cost": {
-      "wood": 15
-    },
-    "reqTrialOrLowDefense": true,
-    "minStage": 1,
-    "rarity": "C",
-    "weight": 0.35,
-    "isUnique": false,
-    "descriptionKey": "CMD_VIGILANCE_DESC"
   }
 ];
-
-if (typeof window !== "undefined") {
-    window.LAND_CARDS_DATA = LAND_CARDS_MASTER;
-}
-if (typeof globalThis !== "undefined") {
-    globalThis.LAND_CARDS_DATA = LAND_CARDS_MASTER;
-}
-
-export default LAND_CARDS_MASTER;

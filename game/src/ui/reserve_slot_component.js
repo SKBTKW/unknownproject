@@ -103,23 +103,42 @@ export class ReserveSlotComponent {
                 if (category === "LAND") this.ui.rotateReserveCard(e, 0);
             };
 
-            if (category !== "LAND") {
-                // ⚡ コマンドカード (通常手札と100%同一描画・バッジなし)
-                rCardEl.setAttribute("data-tooltip-title", `📜 ${cName}`);
-                rCardEl.setAttribute("data-tooltip", `コストを消費して効果を発動します<br>コスト: ${costBadgeText || "即時発動"}<br>効果: ${cDesc}`);
+            // 🃏 ホバー時フローティング拡大プレビュー (ミニマルモード連動 ＆ 選択中常時表示対応)
+            rCardEl.addEventListener("mouseenter", () => {
+                if (this.ui && typeof this.ui.updateFloatingPreview === "function") {
+                    this.ui.updateFloatingPreview(rCardEl);
+                }
+            });
+            rCardEl.addEventListener("mouseleave", () => {
+                if (this.ui && typeof this.ui.hideFloatingPreviewIfNotSelected === "function") {
+                    this.ui.hideFloatingPreviewIfNotSelected();
+                }
+            });
+            rCardEl.addEventListener("dragstart", () => {
+                if (this.ui && typeof this.ui.hideFloatingPreviewIfNotSelected === "function") {
+                    this.ui.hideFloatingPreviewIfNotSelected();
+                }
+            });
 
-                rCardEl.innerHTML = `
+            if (category !== "LAND") {
+                // ⚡ コマンドカード (通常手札と100%同一描画・バッジなし・ツールチップ完全廃止)
+                const fullInnerHtml = `
                     <div class="tcg-card-top-bar" style="padding:4px 8px; display:flex; align-items:center; justify-content:space-between; gap:6px;">
                         <div class="tcg-category-icon-pill">${catIcon}</div>
-                        <div class="tcg-title-pill" style="font-size:18px; font-weight:900; text-align:center; flex:1; letter-spacing:0.5px;">${cName}</div>
+                        <div class="tcg-title-pill">${cName}</div>
                     </div>
                     <div class="tcg-shape-art-area" style="display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-start; background:#1c2536; padding:14px; text-align:left; overflow:hidden; flex:1; border-radius:6px; margin:4px 0;">
-                        <div style="font-size:18px; color:#ffffff; line-height:1.45; font-weight:bold; text-align:left; width:100%;">${cDesc}</div>
+                        <div class="tcg-minimal-cmd-icon" style="display:none;">${catIcon}</div>
+                        <div class="tcg-card-desc-full" style="font-size:18px; color:#ffffff; line-height:1.45; font-weight:bold; text-align:left; width:100%;">${cDesc}</div>
+                        <div class="tcg-minimal-name-label" style="display:none;">${cName}</div>
                     </div>
                     <div class="tcg-yield-strip" style="font-size:16px; font-weight:bold; text-align:left; justify-content:flex-start; padding:8px 12px; width:100%; box-sizing:border-box;">
                         <span>${costBadgeText ? I18n.t("UI_CARD_COST_PREFIX", { cost: costBadgeText }) : I18n.t("UI_CMD_INSTANT_LABEL")}</span>
                     </div>
                 `;
+
+                rCardEl.setAttribute("data-full-card-html", fullInnerHtml);
+                rCardEl.innerHTML = fullInnerHtml;
             } else {
                 // 🌱 土地カード (通常手札と100%同一描画・バッジなし)
                 const y = tObj.yields || { food: tObj.food || 0, wood: tObj.wood || 0, defense: tObj.def || tObj.defense || 0, mystic: tObj.mystic || 0 };
@@ -149,7 +168,8 @@ export class ReserveSlotComponent {
                     blockBg = "#1abc9c"; blockBorder = "#16a085"; blockShadow = "rgba(26, 188, 156, 0.85)";
                 }
 
-                let shapeHtml = `<div style="display:grid; grid-template-rows:repeat(${shapeMat.length}, 22px); grid-template-columns:repeat(${shapeMat[0].length}, 22px); gap:5px; background:rgba(0,0,0,0.55); padding:10px; border-radius:8px; border:2px solid rgba(255,255,255,0.18);">`;
+                // 標準用 22px 形状
+                let shapeHtml = `<div class="tcg-shape-grid-standard" style="display:grid; grid-template-rows:repeat(${shapeMat.length}, 22px); grid-template-columns:repeat(${shapeMat[0].length}, 22px); gap:5px; background:rgba(0,0,0,0.55); padding:10px; border-radius:8px; border:2px solid rgba(255,255,255,0.18);">`;
                 for (let r = 0; r < shapeMat.length; r++) {
                     for (let c = 0; c < shapeMat[0].length; c++) {
                         if (shapeMat[r][c] === 1) {
@@ -161,6 +181,19 @@ export class ReserveSlotComponent {
                 }
                 shapeHtml += `</div>`;
 
+                // ミニマル用 11px ミニ形状
+                let miniShapeHtml = `<div class="tcg-mini-shape-grid" style="display:none; grid-template-rows:repeat(${shapeMat.length}, 11px); grid-template-columns:repeat(${shapeMat[0].length}, 11px); gap:2px;">`;
+                for (let r = 0; r < shapeMat.length; r++) {
+                    for (let c = 0; c < shapeMat[0].length; c++) {
+                        if (shapeMat[r][c] === 1) {
+                            miniShapeHtml += `<div class="tcg-mini-shape-cell" style="background:${blockBg};border-color:${blockBorder};"></div>`;
+                        } else {
+                            miniShapeHtml += `<div style="width:11px;height:11px;background:transparent;"></div>`;
+                        }
+                    }
+                }
+                miniShapeHtml += `</div>`;
+
                 const yieldParts = [];
                 const yieldPlainParts = [];
                 if (totF > 0) { yieldParts.push(`<span>🌾${totF}</span>`); yieldPlainParts.push(`🌾${totF}`); }
@@ -171,28 +204,23 @@ export class ReserveSlotComponent {
                 const yieldPlainText = yieldPlainParts.length > 0 ? yieldPlainParts.join(" ") : "-";
                 const yieldText = `<span style="font-size:16px; color:#ffffff; font-weight:bold; margin-right:6px;">産出:</span> <span style="font-size:20px; font-weight:900; letter-spacing:0.8px; color:#ffffff;">${yieldContent}</span>`;
 
-                const placedCount = (this.state && this.state.placedBlockCount) || 0;
-                let placementCost = 0;
-                if (placedCount >= 31) placementCost = 3;
-                else if (placedCount >= 16) placementCost = 2;
-                else if (placedCount >= 6) placementCost = 1;
-                const costText = placementCost > 0 ? `🔥-${placementCost}` : `🔥0 (無料)`;
-
-                rCardEl.setAttribute("data-tooltip-title", `🌱 ${cName}`);
-                rCardEl.setAttribute("data-tooltip", `ブロックを土地グリッド内に配置します<br>${costText}、産出: ${yieldPlainText}<br><strong style="color:#f1c40f;">[ Rキー ] で回転</strong>`);
-
-                rCardEl.innerHTML = `
+                const fullInnerHtml = `
                     <div class="tcg-card-top-bar" style="padding:4px 8px; display:flex; align-items:center; justify-content:space-between; gap:6px;">
                         <div class="tcg-category-icon-pill">${catIcon}</div>
-                        <div class="tcg-title-pill" style="font-size:18px; font-weight:900; text-align:center; flex:1; letter-spacing:0.5px;">${cName}</div>
+                        <div class="tcg-title-pill">${cName}</div>
                     </div>
                     <div class="tcg-shape-art-area" style="display:flex; align-items:center; justify-content:center; padding:12px; flex:1; background:#1c2536; border-radius:6px; margin:4px 0;">
                         ${shapeHtml}
+                        ${miniShapeHtml}
+                        <div class="tcg-minimal-name-label" style="display:none;">${cName}</div>
                     </div>
                     <div class="tcg-yield-strip" style="padding:8px 10px; display:flex; align-items:center; justify-content:center;">
                         ${yieldText}
                     </div>
                 `;
+
+                rCardEl.setAttribute("data-full-card-html", fullInnerHtml);
+                rCardEl.innerHTML = fullInnerHtml;
             }
 
             reserveContainer.appendChild(rCardEl);
@@ -221,13 +249,15 @@ export class ReserveSlotComponent {
             const emptySlotEl = document.createElement("div");
             const canDepositSelected = (this.ui.selectedCardIdx !== -1 && !this.state.hasPickedThisTurn);
             emptySlotEl.className = `reserve-slot-empty ${canDepositSelected ? 'reserve-slot-can-deposit' : ''}`;
-            emptySlotEl.setAttribute("data-tooltip-title", "📦 保留スロット (HOLD)");
-            emptySlotEl.setAttribute("data-tooltip", "手札カードを1枚キープできます<br>維持費: ターン終了時 🔥-1");
+            if (!this.ui.isMinimalMode) {
+                emptySlotEl.setAttribute("data-tooltip-title", "📦 保留スロット (HOLD)");
+                emptySlotEl.setAttribute("data-tooltip", "手札カードを1枚キープできます<br>維持費: ターン終了時 🔥-1");
+            }
             
             const holdLabel = I18n.t("RESERVE_LABEL_HOLD") || "保留";
             const subText = canDepositSelected ? "手札を選択中: クリックで保留" : "手札を選択してクリック<br>またはドラッグでキープ";
             
-            emptySlotEl.innerHTML = `
+            const fullEmptyHtml = `
                 <!-- 1. 上部タイトルバー (手札と完全同一フォーマット) -->
                 <div class="tcg-card-top-bar" style="padding:4px 8px; display:flex; align-items:center; justify-content:space-between; gap:6px;">
                     <div class="tcg-category-icon-pill" style="background:#f39c12; color:#ffffff;">📦</div>
@@ -236,9 +266,13 @@ export class ReserveSlotComponent {
 
                 <!-- 2. 中央エリア (手札と同一背景・巨大アイコン・視認性抜群) -->
                 <div class="tcg-shape-art-area" style="display:flex; flex-direction:column; align-items:center; justify-content:center; background:#1c2536; padding:14px; text-align:center; overflow:hidden; flex:1; border-radius:6px; margin:4px 0; border:2px dashed rgba(243, 156, 18, 0.45);">
-                    <div style="font-size:46px; line-height:1; margin-bottom:10px; filter:drop-shadow(0 0 12px rgba(243,156,18,0.7));">📦</div>
-                    <div style="font-size:22px; font-weight:900; color:#f39c12; letter-spacing:1.5px; margin-bottom:8px; text-shadow:0 0 10px rgba(243,156,18,0.5);">${holdLabel}枠 (空き)</div>
-                    <div style="font-size:14px; color:#cbd5e1; font-weight:700; line-height:1.45;">${subText}</div>
+                    <div class="tcg-minimal-cmd-icon" style="display:none; font-size:24px;">📦</div>
+                    <div class="tcg-card-desc-full" style="display:flex; flex-direction:column; align-items:center;">
+                        <div style="font-size:46px; line-height:1; margin-bottom:10px; filter:drop-shadow(0 0 12px rgba(243,156,18,0.7));">📦</div>
+                        <div style="font-size:22px; font-weight:900; color:#f39c12; letter-spacing:1.5px; margin-bottom:8px; text-shadow:0 0 10px rgba(243,156,18,0.5);">${holdLabel}枠 (空き)</div>
+                        <div style="font-size:14px; color:#cbd5e1; font-weight:700; line-height:1.45;">${subText}</div>
+                    </div>
+                    <div class="tcg-minimal-name-label" style="display:none;">${holdLabel}</div>
                 </div>
 
                 <!-- 3. 下部ストリップ (手札と完全同一フォーマット) -->
@@ -246,6 +280,22 @@ export class ReserveSlotComponent {
                     <span>維持費: ターン終了時 🔥-1</span>
                 </div>
             `;
+
+            emptySlotEl.setAttribute("data-full-card-html", fullEmptyHtml);
+            emptySlotEl.innerHTML = fullEmptyHtml;
+
+            // 🃏 空保留枠ホバー時フローティング拡大プレビュー (ミニマルモード連動 ＆ 選択中常時表示対応)
+            emptySlotEl.addEventListener("mouseenter", () => {
+                if (this.ui && typeof this.ui.updateFloatingPreview === "function") {
+                    this.ui.updateFloatingPreview(emptySlotEl);
+                }
+            });
+
+            emptySlotEl.addEventListener("mouseleave", () => {
+                if (this.ui && typeof this.ui.hideFloatingPreviewIfNotSelected === "function") {
+                    this.ui.hideFloatingPreviewIfNotSelected();
+                }
+            });
 
             // 👆 手札選択後に空スロットクリックで保留
             emptySlotEl.onclick = (e) => {

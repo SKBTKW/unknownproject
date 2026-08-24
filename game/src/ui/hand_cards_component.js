@@ -34,12 +34,56 @@ export class HandCardsComponent {
         this.state.handOffering.forEach((card, idx) => {
             if (!card) return;
 
-            // 🔲 使用済み・空きスロット
+            // 🔲 使用済み・空きスロット (保留カードのD&Dドロップ受け入れ対応)
             if (card.isBlank) {
                 const blankEl = document.createElement("div");
-                blankEl.className = "card-frame-tcg locked";
-                blankEl.style.cssText = "background:#11141d; border:2px dashed #7f8c8d; border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center;";
-                blankEl.innerHTML = `<div style="font-size:28px; color:#e74c3c; font-weight:bold;">✖</div>`;
+                const hasReservedCard = (this.state.reserveSlots && this.state.reserveSlots[0] && !this.state.hasPickedThisTurn);
+                blankEl.className = `card-frame-tcg card-slot-blank ${hasReservedCard ? 'can-receive-reserve' : 'locked'}`;
+
+                const blankLabel = hasReservedCard ? (I18n ? I18n.t("UI_RESERVE_RETURN_LABEL") : "保留を戻す") : (I18n ? I18n.t("UI_CARD_USED_LABEL") : "使用済");
+
+                blankEl.innerHTML = `
+                    <div class="blank-slot-inner">
+                        <div class="blank-slot-icon">${hasReservedCard ? "↩" : "✖"}</div>
+                        <div class="blank-slot-text">${blankLabel}</div>
+                    </div>
+                `;
+
+                // 🖱️ D&D ドロップ受け入れ（保留カード ➔ 手札空きスロット）
+                blankEl.ondragover = (e) => {
+                    if (this.state.hasPickedThisTurn) return;
+                    if (!this.state.reserveSlots || !this.state.reserveSlots[0]) return;
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                };
+                blankEl.ondragenter = (e) => {
+                    if (this.state.hasPickedThisTurn) return;
+                    if (!this.state.reserveSlots || !this.state.reserveSlots[0]) return;
+                    e.preventDefault();
+                    blankEl.classList.add("blank-slot-drop-hover");
+                };
+                blankEl.ondragleave = () => {
+                    blankEl.classList.remove("blank-slot-drop-hover");
+                };
+                blankEl.ondrop = (e) => {
+                    if (this.state.hasPickedThisTurn) return;
+                    e.preventDefault();
+                    blankEl.classList.remove("blank-slot-drop-hover");
+                    const data = e.dataTransfer.getData("text/plain");
+                    if (data === "reserve_0" || (typeof data === "string" && data.startsWith("reserve_"))) {
+                        const reserveIdx = data.startsWith("reserve_") ? parseInt(data.replace("reserve_", ""), 10) : 0;
+                        this.ui.returnReserveCard(isNaN(reserveIdx) ? 0 : reserveIdx, idx);
+                    }
+                };
+
+                // 👆 保留カード選択中に空きスロットをクリックして手札復帰
+                blankEl.onclick = (e) => {
+                    e.stopPropagation();
+                    if (this.ui.selectedReserveIdx !== -1 && !this.state.hasPickedThisTurn) {
+                        this.ui.returnReserveCard(this.ui.selectedReserveIdx, idx);
+                    }
+                };
+
                 handContainer.appendChild(blankEl);
                 return;
             }
@@ -109,6 +153,23 @@ export class HandCardsComponent {
                 if (category === "LAND") this.ui.rotateSelectedCard(e, idx);
             };
 
+            // 🃏 ホバー時フローティング拡大プレビュー (ミニマルモード連動 ＆ 選択中常時表示対応)
+            cardEl.addEventListener("mouseenter", () => {
+                if (this.ui && typeof this.ui.updateFloatingPreview === "function") {
+                    this.ui.updateFloatingPreview(cardEl);
+                }
+            });
+            cardEl.addEventListener("mouseleave", () => {
+                if (this.ui && typeof this.ui.hideFloatingPreviewIfNotSelected === "function") {
+                    this.ui.hideFloatingPreviewIfNotSelected();
+                }
+            });
+            cardEl.addEventListener("dragstart", () => {
+                if (this.ui && typeof this.ui.hideFloatingPreviewIfNotSelected === "function") {
+                    this.ui.hideFloatingPreviewIfNotSelected();
+                }
+            });
+
             const cName = tObj.nameKey ? I18n.t(tObj.nameKey) : (tObj.id || "Card");
             const cDesc = tObj.descriptionKey ? I18n.t(tObj.descriptionKey) : (tObj.description || "");
 
@@ -121,22 +182,24 @@ export class HandCardsComponent {
             else if (category === "SOCIETY") { catIcon = "👥"; catTitle = "社会・士気"; }
 
             if (category !== "LAND") {
-                // ⚡ コマンドカード
-                cardEl.setAttribute("data-tooltip-title", `📜 ${cName}`);
-                cardEl.setAttribute("data-tooltip", `コストを消費して効果を発動します<br>コスト: ${costBadgeText || "即時発動"}<br>効果: ${cDesc}`);
-
-                cardEl.innerHTML = `
+                // ⚡ コマンドカード (カード面自体のリッチテキストで完結・ツールチップ完全廃止)
+                const fullInnerHtml = `
                     <div class="tcg-card-top-bar" style="padding:4px 8px; display:flex; align-items:center; justify-content:space-between; gap:6px;">
                         <div class="tcg-category-icon-pill">${catIcon}</div>
-                        <div class="tcg-title-pill" style="font-size:18px; font-weight:900; text-align:center; flex:1; letter-spacing:0.5px;">${cName}</div>
+                        <div class="tcg-title-pill">${cName}</div>
                     </div>
                     <div class="tcg-shape-art-area" style="display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-start; background:#1c2536; padding:14px; text-align:left; overflow:hidden; flex:1; border-radius:6px; margin:4px 0;">
-                        <div style="font-size:18px; color:#ffffff; line-height:1.45; font-weight:bold; text-align:left; width:100%;">${cDesc}</div>
+                        <div class="tcg-minimal-cmd-icon" style="display:none;">${catIcon}</div>
+                        <div class="tcg-card-desc-full" style="font-size:18px; color:#ffffff; line-height:1.45; font-weight:bold; text-align:left; width:100%;">${cDesc}</div>
+                        <div class="tcg-minimal-name-label" style="display:none;">${cName}</div>
                     </div>
                     <div class="tcg-yield-strip" style="font-size:16px; font-weight:bold; text-align:left; justify-content:flex-start; padding:8px 12px; width:100%; box-sizing:border-box;">
                         <span>${costBadgeText ? I18n.t("UI_CARD_COST_PREFIX", { cost: costBadgeText }) : I18n.t("UI_CMD_INSTANT_LABEL")}</span>
                     </div>
                 `;
+
+                cardEl.setAttribute("data-full-card-html", fullInnerHtml);
+                cardEl.innerHTML = fullInnerHtml;
             } else {
                 // 🌱 土地カード
                 const y = tObj.yields || { food: tObj.food || 0, wood: tObj.wood || 0, defense: tObj.def || tObj.defense || 0, mystic: tObj.mystic || 0 };
@@ -166,7 +229,8 @@ export class HandCardsComponent {
                     blockBg = "#1abc9c"; blockBorder = "#16a085"; blockShadow = "rgba(26, 188, 156, 0.85)";
                 }
 
-                let shapeHtml = `<div style="display:grid; grid-template-rows:repeat(${shapeMat.length}, 22px); grid-template-columns:repeat(${shapeMat[0].length}, 22px); gap:5px; background:rgba(0,0,0,0.55); padding:10px; border-radius:8px; border:2px solid rgba(255,255,255,0.18);">`;
+                // 標準用 22px 形状
+                let shapeHtml = `<div class="tcg-shape-grid-standard" style="display:grid; grid-template-rows:repeat(${shapeMat.length}, 22px); grid-template-columns:repeat(${shapeMat[0].length}, 22px); gap:5px; background:rgba(0,0,0,0.55); padding:10px; border-radius:8px; border:2px solid rgba(255,255,255,0.18);">`;
                 for (let r = 0; r < shapeMat.length; r++) {
                     for (let c = 0; c < shapeMat[0].length; c++) {
                         if (shapeMat[r][c] === 1) {
@@ -178,6 +242,19 @@ export class HandCardsComponent {
                 }
                 shapeHtml += `</div>`;
 
+                // ミニマル用 11px ミニ形状
+                let miniShapeHtml = `<div class="tcg-mini-shape-grid" style="display:none; grid-template-rows:repeat(${shapeMat.length}, 11px); grid-template-columns:repeat(${shapeMat[0].length}, 11px); gap:2px;">`;
+                for (let r = 0; r < shapeMat.length; r++) {
+                    for (let c = 0; c < shapeMat[0].length; c++) {
+                        if (shapeMat[r][c] === 1) {
+                            miniShapeHtml += `<div class="tcg-mini-shape-cell" style="background:${blockBg};border-color:${blockBorder};"></div>`;
+                        } else {
+                            miniShapeHtml += `<div style="width:11px;height:11px;background:transparent;"></div>`;
+                        }
+                    }
+                }
+                miniShapeHtml += `</div>`;
+
                 const yieldParts = [];
                 const yieldPlainParts = [];
                 if (totF > 0) { yieldParts.push(`<span>🌾${totF}</span>`); yieldPlainParts.push(`🌾${totF}`); }
@@ -188,28 +265,23 @@ export class HandCardsComponent {
                 const yieldPlainText = yieldPlainParts.length > 0 ? yieldPlainParts.join(" ") : "-";
                 const yieldText = `<span style="font-size:16px; color:#ffffff; font-weight:bold; margin-right:6px;">産出:</span> <span style="font-size:20px; font-weight:900; letter-spacing:0.8px; color:#ffffff;">${yieldContent}</span>`;
 
-                const placedCount = (this.state && this.state.placedBlockCount) || 0;
-                let placementCost = 0;
-                if (placedCount >= 31) placementCost = 3;
-                else if (placedCount >= 16) placementCost = 2;
-                else if (placedCount >= 6) placementCost = 1;
-                const costText = placementCost > 0 ? `🔥-${placementCost}` : `🔥0 (無料)`;
-
-                cardEl.setAttribute("data-tooltip-title", `🌱 ${cName}`);
-                cardEl.setAttribute("data-tooltip", `ブロックを土地グリッド内に配置します<br>${costText}、産出: ${yieldPlainText}<br><strong style="color:#f1c40f;">[ Rキー ] で回転</strong>`);
-
-                cardEl.innerHTML = `
+                const fullInnerHtml = `
                     <div class="tcg-card-top-bar" style="padding:4px 8px; display:flex; align-items:center; justify-content:space-between; gap:6px;">
                         <div class="tcg-category-icon-pill">${catIcon}</div>
-                        <div class="tcg-title-pill" style="font-size:18px; font-weight:900; text-align:center; flex:1; letter-spacing:0.5px;">${cName}</div>
+                        <div class="tcg-title-pill">${cName}</div>
                     </div>
                     <div class="tcg-shape-art-area" style="display:flex; align-items:center; justify-content:center; padding:12px; flex:1; background:#1c2536; border-radius:6px; margin:4px 0;">
                         ${shapeHtml}
+                        ${miniShapeHtml}
+                        <div class="tcg-minimal-name-label" style="display:none;">${cName}</div>
                     </div>
                     <div class="tcg-yield-strip" style="padding:8px 10px; display:flex; align-items:center; justify-content:center;">
                         ${yieldText}
                     </div>
                 `;
+
+                cardEl.setAttribute("data-full-card-html", fullInnerHtml);
+                cardEl.innerHTML = fullInnerHtml;
             }
 
             handContainer.appendChild(cardEl);

@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="css/0_global_common/base_layout.css">
     <link rel="stylesheet" href="css/1_top_header/top_header.css">
     <link rel="stylesheet" href="css/2_center_area/land_grid.css">
-    <link rel="stylesheet" href="css/3_bottom_area/bottom_cards.css">
     <link rel="stylesheet" href="css/3_bottom_area/draw_card_select_area.css">
     <link rel="stylesheet" href="css/4_right_sidebar/right_sidebar.css">
     <link rel="stylesheet" href="css/layout.css">
@@ -83,6 +82,8 @@
             <div id="layerPlayerTray" class="layer-player-tray layer-player-tray-anchor">
                 <!-- 🃏 画面左下隅: 手札ドローカード選択エリア (ヘッダー・マリガンはUIControllerが動的描画) -->
                 <div class="offering-section pointer-events-auto">
+                    <!-- 🃏 [手札真上] フローティング拡大プレビューコンテナ (トレイ真上・完全自動追従センタリング) -->
+                    <div id="cardFloatingPreview" class="card-floating-preview-container"></div>
                     <div id="cardRow" class="cards-row-wrapper"></div>
                 </div>
 
@@ -124,24 +125,22 @@
                 <h3 class="directive-modal-title">
                     <span>🏛️</span> 文明方針の発令・変更 (Four Directives)
                 </h3>
-                <button onclick="closeDirectiveModal()" class="directive-modal-close-btn">✕</button>
+                <span class="directive-modal-close" onclick="closeDirectiveModal()">✕</span>
             </div>
-            
             <div class="directive-modal-desc">
-                文明の注力方針を選択します。初回変更は <strong class="directive-cost-highlight-free">無料</strong>、2回目以降は変更コストとして <strong class="directive-cost-highlight-ember" id="directiveChangeCostVal">🔥 -1</strong> を消費します。（発令後 3 ターンは固定）
+                現在の文明方針（ディレクティブ）を変更できます。<br>
+                国家方針に即したボーナスを獲得し、過酷な試練を乗り越えましょう。
             </div>
-
-            <div id="directiveOptionsList" class="directive-modal-grid"></div>
-
+            <div class="directive-options-container" id="directiveOptions"></div>
             <div class="directive-modal-footer">
-                <button onclick="closeDirectiveModal()" class="directive-modal-btn-close">閉じる</button>
+                <button class="directive-cancel-btn" onclick="closeDirectiveModal()">キャンセル</button>
             </div>
         </div>
     </div>
 
     <!-- 🌐 True ES Module Single Entrypoint Bootstrap (Zero-Latency Instant Launch) -->
     <script type="module">
-        import { GameEngine, UIController, UndoLandSystem, BuffSystem, TerritoryBadgeComponent, ModalSystem, FocusLayerManager, BoardCameraSystem, SettingsModalSystem, settingsModalInstance, gameSettings, EmberStatusComponent, HandCardsComponent, ReserveSlotComponent, TopHeaderComponent, BoardGridComponent, TooltipSystem, tooltipSystemInstance } from './src/app.js?v=20260824_v130';
+        import { GameEngine, UIController, UndoLandSystem, BuffSystem, TerritoryBadgeComponent, ModalSystem, FocusLayerManager, BoardCameraSystem, SettingsModalSystem, settingsModalInstance, gameSettings, EmberStatusComponent, HandCardsComponent, ReserveSlotComponent, TopHeaderComponent, BoardGridComponent, TooltipSystem, tooltipSystemInstance } from './src/app.js?v=20260824_v154';
 
         function bootstrap() {
             // 🎮 GameEngine ＆ UIController の完全モジュールマウント起動 (ゼロ遅延・即時起動 - Stage 1: 5x5 標準復元)
