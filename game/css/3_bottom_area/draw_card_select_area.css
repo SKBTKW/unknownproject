@@ -1319,13 +1319,18 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
+    width: 100%;
+    height: 100%;
     pointer-events: none;
 }
 
 .card-frame-tcg.card-slot-blank .blank-slot-icon {
-    font-size: 38px;
+    font-size: 36px;
     color: #64748b;
     line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .card-frame-tcg.card-slot-blank.can-receive-reserve .blank-slot-icon {
@@ -1333,16 +1338,18 @@
 }
 
 .card-frame-tcg.card-slot-blank .blank-slot-text {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 800;
     color: #94a3b8;
+    text-align: center;
+    line-height: 1.2;
 }
 
 .card-frame-tcg.card-slot-blank.can-receive-reserve .blank-slot-text {
     color: #60a5fa;
 }
 
-/* 🔲 ミニマル時の空きスロット */
+/* 🔲 ミニマル時の空きスロット (完全中央揃え配置) */
 #cardRow.is-minimal .card-frame-tcg.card-slot-blank {
     border-radius: 8px;
 }
@@ -1353,21 +1360,24 @@
     left: 0;
     width: 100%;
     height: 100%;
-    display: block;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
 }
 
 #cardRow.is-minimal .card-frame-tcg.card-slot-blank .blank-slot-icon {
-    position: absolute;
-    top: 4px;
-    left: 4px;
-    right: 4px;
-    height: 76px;
+    position: static;
+    font-size: 26px;
+    height: auto;
+    width: auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 34px;
+    line-height: 1;
     color: #64748b;
-    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.7));
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.7));
 }
 
 #cardRow.is-minimal .card-frame-tcg.card-slot-blank.can-receive-reserve .blank-slot-icon {
@@ -1376,25 +1386,18 @@
 }
 
 #cardRow.is-minimal .card-frame-tcg.card-slot-blank .blank-slot-text {
-    position: absolute;
-    bottom: 5px;
-    left: 4px;
-    right: 4px;
-    height: 22px;
-    line-height: 22px;
-    font-size: 13.5px;
+    position: static;
+    font-size: 11px;
     font-weight: 900;
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    height: auto;
+    line-height: 1.2;
+    padding: 2px 6px;
     border-radius: 4px;
     background: rgba(30, 41, 59, 0.88);
     border: 1px solid rgba(255, 255, 255, 0.18);
     color: #94a3b8;
+    text-align: center;
+    white-space: nowrap;
     z-index: 5;
 }
 
@@ -1402,3 +1405,77 @@
     color: #60a5fa;
     border-color: rgba(96, 165, 250, 0.4);
 }
+
+/* 💬 縮小モード時のマリガンポップオーバー（画面外はみ出し完全防止 ＆ ボタン直上矢印吸着） */
+#cardRow.is-minimal .mulligan-popover-box {
+    left: 0;
+    transform: none;
+    width: 320px;
+    bottom: calc(100% + 14px);
+}
+
+#cardRow.is-minimal .mulligan-popover-box::after {
+    left: 20px;
+    transform: none;
+}
+
+/* 💡 マウスオーバー時のカード操作ガイドポップアップ (3大操作ヒント) */
+.card-action-hint-popover {
+    position: absolute;
+    bottom: calc(100% + 14px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, rgba(20, 30, 48, 0.96) 100%);
+    backdrop-filter: blur(12px);
+    border: 1.5px solid rgba(26, 188, 156, 0.8);
+    border-radius: 8px;
+    padding: 9px 14px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.9), 0 0 16px rgba(26, 188, 156, 0.4);
+    color: #f8fafc;
+    font-size: 12px;
+    line-height: 1.6;
+    white-space: nowrap;
+    z-index: 3000;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    animation: hintFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-action-hint-popover::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 6px;
+    border-style: solid;
+    border-color: rgba(26, 188, 156, 0.8) transparent transparent transparent;
+}
+
+.card-action-hint-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.card-action-hint-bullet {
+    color: #1abc9c;
+    font-size: 11px;
+    font-weight: 900;
+}
+
+@keyframes hintFadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 6px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+

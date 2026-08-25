@@ -103,15 +103,29 @@ export class ReserveSlotComponent {
                 if (category === "LAND") this.ui.rotateReserveCard(e, 0);
             };
 
-            // 🃏 ホバー時フローティング拡大プレビュー (ミニマルモード連動 ＆ 選択中常時表示対応)
+            // 🃏 ホバー時フローティング拡大プレビュー ＆ 未選択時盤面配置可能ガイド
             rCardEl.addEventListener("mouseenter", () => {
-                if (this.ui && typeof this.ui.updateFloatingPreview === "function") {
-                    this.ui.updateFloatingPreview(rCardEl);
+                if (this.ui) {
+                    if (typeof this.ui.updateFloatingPreview === "function") {
+                        this.ui.updateFloatingPreview(rCardEl);
+                    }
+                    if (this.ui.selectedCardIdx === -1 && this.ui.selectedReserveIdx === -1) {
+                        if (category === "LAND" && typeof window !== "undefined" && window.BlockPlacementSystem) {
+                            window.BlockPlacementSystem.highlightPlaceableCandidates(reserveCard, this.state);
+                        }
+                    }
                 }
             });
             rCardEl.addEventListener("mouseleave", () => {
-                if (this.ui && typeof this.ui.hideFloatingPreviewIfNotSelected === "function") {
-                    this.ui.hideFloatingPreviewIfNotSelected();
+                if (this.ui) {
+                    if (typeof this.ui.hideFloatingPreviewIfNotSelected === "function") {
+                        this.ui.hideFloatingPreviewIfNotSelected();
+                    }
+                    if (this.ui.selectedCardIdx === -1 && this.ui.selectedReserveIdx === -1) {
+                        if (typeof window !== "undefined" && window.BlockPlacementSystem) {
+                            window.BlockPlacementSystem.clearAllPreviews();
+                        }
+                    }
                 }
             });
             rCardEl.addEventListener("dragstart", () => {

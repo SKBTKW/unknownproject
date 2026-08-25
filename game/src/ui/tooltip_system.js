@@ -72,16 +72,16 @@ export class TooltipSystem {
         const target = e.target.closest("[data-tooltip]");
         if (!target) return;
 
-        // 🃏 手札ミニマル表示時: 手札カード・保留スロットのマウスオーバーツールチップは不要 (真上の拡大カードと重複するため抑制)
-        const minimalRow = target.closest("#cardRow.is-minimal, .offering-section.is-minimal");
-        if (minimalRow) {
-            const isCardOrReserve = target.classList.contains("card-frame-tcg") || 
-                                    target.classList.contains("reserve-slot-single-box") || 
-                                    target.classList.contains("reserve-slot-empty") ||
-                                    target.classList.contains("reserve-slot-wrapper") ||
-                                    target.closest(".cards-hand-container") ||
-                                    target.closest(".reserve-slot-single-box");
-            if (isCardOrReserve) {
+        // 🃏 手札ミニマル表示時: 手札トレイ・カード・保留エリア全般のマウスオーバーツールチップは完全にオフ
+        const isMinimalMode = (typeof window !== "undefined" && window.ui && window.ui.isMinimalMode) ||
+                              (typeof document !== "undefined" && (
+                                  document.body.classList.contains("is-minimal") ||
+                                  !!document.querySelector("#cardRow.is-minimal, .offering-section.is-minimal")
+                              ));
+
+        if (isMinimalMode) {
+            const inPlayerTray = target.closest("#layerPlayerTray, .offering-section, #cardRow, .cards-hand-container, .reserve-slot-container");
+            if (inPlayerTray) {
                 this.hide();
                 return;
             }

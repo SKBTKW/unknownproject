@@ -17,6 +17,21 @@
             let foodVicinity = 0;
             let woodVicinity = 0;
             let mysticVicinity = 0;
+            let foodLakeIrrigation = 0;
+
+            const lakeCoords = [];
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 5; c++) {
+                    const cell = state.grid[r][c];
+                    if (cell && cell.placed && cell.socketResource && (cell.socketResource.id === "SOCKET_LAKE" || cell.socketResource.nameKey === "SOCKET_LAKE")) {
+                        lakeCoords.push({ r, c });
+                    }
+                }
+            }
+
+            const isNearLake = (r, c) => {
+                return lakeCoords.some(l => Math.abs(l.r - r) <= 1 && Math.abs(l.c - c) <= 1 && !(l.r === r && l.c === c));
+            };
 
             const groupSums = {};
 
@@ -53,6 +68,11 @@
                             if (tw > 0) woodVicinity += 1;
                             if (tm > 0) mysticVicinity += 1;
                         }
+
+                        // 🌊 清湖 (Lake) 周囲8マスの灌漑バフ (+50% 食料産出ブースト)
+                        if (isNearLake(r, c) && tf > 0) {
+                            foodLakeIrrigation += Math.max(1, Math.floor(tf * 0.5));
+                        }
                     }
                 }
             }
@@ -78,7 +98,8 @@
                 }
             }
 
-            const plainsBuffBonus = (state.permanentPlainsFoodBonus || 0) * plainsCount;
+            const grandCultivationBonus = (state.grandCultivationTurns && state.grandCultivationTurns > 0) ? (1 * plainsCount) : 0;
+            const plainsBuffBonus = ((state.permanentPlainsFoodBonus || 0) * plainsCount) + grandCultivationBonus;
             const vicinityDefBonus = (state.permanentVicinityDefenseBonus || 0) * vicinityCount;
 
             let foodMult = 1.0, woodMult = 1.0, mysticMult = 1.0;
@@ -113,14 +134,14 @@
                 foodCost = 20; // 🔥 標準状態
             }
 
-            const grossFood = Math.floor((10 + foodTiles + foodSockets + foodVicinity + plainsBuffBonus) * foodMult * buffFoodMult);
+            const grossFood = Math.floor((10 + foodTiles + foodSockets + foodVicinity + foodLakeIrrigation + plainsBuffBonus) * foodMult * buffFoodMult);
             const netFood = grossFood - foodCost;
             const totalFood = netFood; // 🌾 毎ターンの純収支 (Net Balance)
             const totalWood = Math.floor((10 + woodTiles + woodSockets + woodVicinity) * woodMult * buffWoodMult);
             const totalMaterial = totalWood;
             const totalMystic = Math.floor((1 + mysticTiles + mysticSockets + mysticVicinity + flatMysticBonus) * mysticMult * buffMysticMult);
 
-            return { totalFood, netFood, grossFood, foodCost, totalWood, totalMaterial, totalMystic };
+            return { totalFood, netFood, grossFood, foodCost, totalWood, totalMaterial, totalMystic, foodLakeIrrigation };
         }
 
         static calculateTotalDefense(state) {
@@ -217,7 +238,7 @@
             }
 
             return {
-                food: { hqBase: 10, tiles: foodTiles, sockets: foodSockets, vicinity: foodVicinity, emberPct, gross: prods.grossFood, foodCost: prods.foodCost, net: prods.netFood, total: prods.totalFood },
+                food: { hqBase: 10, tiles: foodTiles, sockets: foodSockets, vicinity: foodVicinity, lakeIrrigation: prods.foodLakeIrrigation || 0, emberPct, gross: prods.grossFood, foodCost: prods.foodCost, net: prods.netFood, total: prods.totalFood },
                 wood: { hqBase: 10, tiles: woodTiles, sockets: woodSockets, vicinity: woodVicinity, emberPct, total: prods.totalWood },
                 defense: { hqBase: 10, tiles: defenseTiles, sockets: defenseSockets, total: defTotal },
                 mystic: { hqBase: 1, tiles: mysticTiles, sockets: mysticSockets, emberMystic, emberPct, total: prods.totalMystic }

@@ -16,11 +16,15 @@
 <body>
 
     <div class="app-wrapper">
+        <!-- 🌌 ゲーム背景ウォールペーパーアート (左側配置) -->
+        <div class="game-wallpaper-art" id="gameWallpaperArt">
+            <img src="assets/title_logo.png" alt="THE AGE OF TRIALS" class="wallpaper-logo-img">
+        </div>
+
         <!-- 1. Top Header Bar (🔥 True Center Position & Right Aligned Data Panel) -->
         <div class="top-bar">
-            <!-- 左: タイトルロゴ ＆ 30px右に配置されたロールアイコン -->
+            <!-- 左: ロールアイコン -->
             <div class="app-title-box">
-                <img src="assets/title_logo.png" alt="THE AGE OF TRIALS" id="imgTitleLogo" class="app-title-logo">
                 <div class="role-avatar-box role-avatar-box-custom" id="roleAvatarBox">
                     <img src="images/role_general.png" alt="Role Icon" id="imgRoleIcon" class="role-avatar-img">
                 </div>
@@ -102,8 +106,8 @@
                 <div id="bgTurnWatermark" class="bg-turn-watermark">
                     <div class="bg-turn-label">TURN</div>
                     <div class="bg-turn-num"><span id="valTurnBg">01</span><small>/50</small></div>
-                    <div id="trialCountdownBadge" class="trial-countdown-badge">
-                        <span data-i18n="UI_TRIAL_COUNTDOWN_PREFIX"></span> <strong id="valTrialCountdown" class="trial-countdown-val">3</strong> <span data-i18n="UI_TRIAL_COUNTDOWN_SUFFIX"></span>
+                    <div id="trialCountdownBadge" class="trial-countdown-badge" style="display:none;">
+                        <span data-i18n="UI_TRIAL_COUNTDOWN_PREFIX"></span> <strong id="valTrialCountdown" class="trial-countdown-val"></strong> <span data-i18n="UI_TRIAL_COUNTDOWN_SUFFIX"></span>
                     </div>
                 </div>
 

@@ -6,8 +6,10 @@ import { GameEngine, UIController, TooltipSystem, tooltipSystemInstance } from '
  */
 class MockElement {
     constructor(id = "", className = "", tagName = "div") {
-        this.id = id;
-        this.className = className;
+        this._id = id;
+        if (id) elementRegistry.set(id, this);
+        this._classes = new Set();
+        if (className) String(className).split(" ").filter(Boolean).forEach(c => this._classes.add(c));
         this.tagName = tagName.toUpperCase();
         this.children = [];
         this.style = {
@@ -32,6 +34,32 @@ class MockElement {
         this.ondrop = null;
         this._innerText = "";
         this._innerHTML = "";
+
+        const self = this;
+        this.classList = {
+            get _classes() { return self._classes; },
+            add: (...cls) => cls.forEach(c => self._classes.add(c)),
+            remove: (...cls) => cls.forEach(c => self._classes.delete(c)),
+            contains: (c) => self._classes.has(c),
+            toggle: (c, force) => {
+                if (force === true) { self._classes.add(c); return true; }
+                if (force === false) { self._classes.delete(c); return false; }
+                if (self._classes.has(c)) { self._classes.delete(c); return false; }
+                self._classes.add(c); return true;
+            }
+        };
+    }
+
+    get id() { return this._id || ""; }
+    set id(v) {
+        this._id = String(v);
+        if (this._id) elementRegistry.set(this._id, this);
+    }
+
+    get className() { return Array.from(this._classes).join(" "); }
+    set className(v) {
+        this._classes.clear();
+        if (v) String(v).split(" ").filter(Boolean).forEach(c => this._classes.add(c));
     }
 
     get innerText() { return this._innerText; }
@@ -40,13 +68,22 @@ class MockElement {
     get innerHTML() { return this._innerHTML; }
     set innerHTML(v) { 
         this._innerHTML = String(v);
-        // innerHTML が空文字でリセットされた場合は子要素もクリア
         if (v === "") this.children = [];
     }
 
-    setAttribute(k, v) { this.attributes[k] = v; }
+    setAttribute(k, v) { 
+        this.attributes[k] = String(v); 
+        if (k.startsWith("data-")) {
+            this.dataset[k.slice(5)] = String(v);
+        }
+    }
     getAttribute(k) { return this.attributes[k]; }
-    removeAttribute(k) { delete this.attributes[k]; }
+    removeAttribute(k) { 
+        delete this.attributes[k]; 
+        if (k.startsWith("data-")) {
+            delete this.dataset[k.slice(5)];
+        }
+    }
 
     appendChild(el) { 
         if (el) this.children.push(el); 
@@ -75,7 +112,7 @@ class MockElement {
             return null;
         } else if (sel.startsWith(".")) {
             const targetClass = sel.slice(1);
-            if (this.className && this.className.includes(targetClass)) return this;
+            if (this.classList.contains(targetClass)) return this;
             for (const child of this.children) {
                 if (child.querySelector) {
                     const found = child.querySelector(sel);
@@ -96,28 +133,6 @@ class MockElement {
             this.parentElement.removeChild(this);
         }
     }
-    classList = {
-        _classes: new Set(),
-        add: (...cls) => cls.forEach(c => this.classList._classes.add(c)),
-        remove: (...cls) => cls.forEach(c => this.classList._classes.delete(c)),
-        contains: (c) => this.classList._classes.has(c),
-        toggle: (c, force) => {
-            if (force === true) {
-                this.classList._classes.add(c);
-                return true;
-            } else if (force === false) {
-                this.classList._classes.delete(c);
-                return false;
-            }
-            if (this.classList._classes.has(c)) {
-                this.classList._classes.delete(c);
-                return false;
-            } else {
-                this.classList._classes.add(c);
-                return true;
-            }
-        }
-    };
     getBoundingClientRect() {
         return { top: 100, bottom: 300, left: 100, right: 400, width: 300, height: 200 };
     }
@@ -316,6 +331,140 @@ export async function runUILifecycleInspection() {
 
         tooltipSystemInstance.hide();
         assert("tooltipSystemInstance.hide() 実行後に visible クラスが除去されること", !globalTooltipEl.classList.contains("visible"));
+
+        // 手札縮小表示 (ミニマルモード) 時のツールチップ ＆ ガイドポップアップ完全オフ検問
+        ui.isMinimalMode = true;
+        mockDoc.body.classList.add("is-minimal");
+        const handMockCard = new MockElement("handCard0", "card-frame-tcg");
+        handMockCard.setAttribute("data-tooltip", "CARD_DESC");
+        tooltipSystemInstance._handleMouseOver({ target: handMockCard });
+        assert("手札ミニマル表示時に手札カードホバーでツールチップが表示されないこと (オフ確認)", !globalTooltipEl.classList.contains("visible"));
+        ui.showCardActionHintPopover(handMockCard, { terrain: { id: "PLAINS" } });
+        assert("手札ミニマル表示時にカード操作ガイドポップアップが起動しないこと (オフ確認)", !handMockCard.children || handMockCard.children.length === 0);
+        ui.isMinimalMode = false;
+        mockDoc.body.classList.remove("is-minimal");
+
+        // 支配地バッジのツールチップフォーマット統一検問 (ブラウザ標準title全廃 & data-tooltip完全統合)
+        const mainTerritoryBadgeEl = mockDoc.getElementById("mainTerritoryBadge");
+        assert("支配地バッジが存在すること", !!mainTerritoryBadgeEl);
+        assert("支配地バッジに data-tooltip が設定されていること", !!mainTerritoryBadgeEl && mainTerritoryBadgeEl.attributes["data-tooltip"] !== undefined);
+        assert("支配地バッジに data-tooltip-title が設定されていること", !!mainTerritoryBadgeEl && mainTerritoryBadgeEl.attributes["data-tooltip-title"] !== undefined);
+        assert("支配地バッジからブラウザ標準 title 属性が除去されていること", !mainTerritoryBadgeEl || !mainTerritoryBadgeEl.attributes["title"]);
+        assert("支配地バッジのツールチップに所有土地 (草原等) の内訳と占有率が含まれること", !!mainTerritoryBadgeEl && (mainTerritoryBadgeEl.attributes["data-tooltip"].includes("草原") || mainTerritoryBadgeEl.attributes["data-tooltip"].includes("Plains") || mainTerritoryBadgeEl.attributes["data-tooltip"].includes("未開墾") || mainTerritoryBadgeEl.attributes["data-tooltip"].includes("Unclaimed")));
+
+        // ヘッダー産出パネルのホバー表示検問
+        ui.showDataPanelTooltip({ currentTarget: mockDoc.getElementById("headerDataPanel") });
+        const headerTooltipEl = mockDoc.getElementById("dataPanelTooltipHuge");
+        assert("ヘッダー産出パネルホバー時に dataPanelTooltipHuge が生成されること", !!headerTooltipEl);
+        assert("ヘッダー産出パネルホバー時に display が block になること", !!headerTooltipEl && headerTooltipEl.style.display === "block");
+        assert("ヘッダー産出パネルホバー時に食料・資材・防衛・神秘の内訳が含まれること", !!headerTooltipEl && headerTooltipEl.innerHTML.includes("食料") || headerTooltipEl.innerHTML.includes("Food"));
+
+        ui.hideDataPanelTooltip();
+        assert("hideDataPanelTooltip 実行後に display が none になること", !!headerTooltipEl && headerTooltipEl.style.display === "none");
+
+        // 12. 🌾 盤面タイル産出フォーマット ＆ 資源ハイライト定量検問 (画像フォーマット準拠)
+        ui.state.hasPickedThisTurn = false;
+        const pTerrain = { id: "GL1_PLAINS", terrainId: "PLAINS", nameKey: "TERRAIN_PLAINS", yields: { food: 4 } };
+        ui.state.placeShape(1, 2, [[1]], pTerrain);
+        ui.render();
+
+        const gridBoardEl = mockDoc.getElementById("gridBoard");
+        const plainsCell = gridBoardEl.children.find(c => c.dataset && c.dataset.r === "1" && c.dataset.c === "2");
+        assert("1x1 平地配置後に has-resource-yield クラスが付与されること", !!plainsCell && plainsCell.classList.contains("has-resource-yield"));
+        assert("1x1 平地配置後に tile-yield-line が生成されること", !!plainsCell && plainsCell.innerHTML.includes("tile-yield-line"));
+        assert("1x1 平地配置後に '🌾' と ' : ' と '5' (近郊+1) が正しく描画されること", !!plainsCell && plainsCell.innerHTML.includes("🌾") && plainsCell.innerHTML.includes(" : ") && plainsCell.innerHTML.includes("5"));
+        assert("1x1 平地配置後に '2x2' 等の冗長文字が含まれないこと", !!plainsCell && !plainsCell.innerHTML.includes("2x2"));
+
+        // 1x2 森（同率主軸 🧱）配置検問: 本営左隣の空きマス (2,1) と (3,1)
+        ui.state.hasPickedThisTurn = false;
+        const fTerrain = { id: "F2_FOREST", terrainId: "FOREST", nameKey: "TERRAIN_FOREST", yields: { food: 2, wood: 2, defense: 2 } };
+        ui.state.placeShape(2, 1, [[1], [1]], fTerrain);
+        ui.render();
+
+        const forestHead = gridBoardEl.children.find(c => c.dataset && c.dataset.r === "2" && c.dataset.c === "1");
+        const forestTail = gridBoardEl.children.find(c => c.dataset && c.dataset.r === "3" && c.dataset.c === "1");
+        assert("1x2 森先頭マスに主軸資材 '🧱' と ' : ' と '6' (2マス分+近郊) が集約描画されること", !!forestHead && forestHead.innerHTML.includes("🧱") && forestHead.innerHTML.includes(" : ") && forestHead.innerHTML.includes("6"));
+        assert("1x2 森先頭マスに '2x2' 等の冗長文字が含まれないこと", !!forestHead && !forestHead.innerHTML.includes("2x2"));
+        assert("1x2 森後続マス (tail) の innerHTML が完全に空であること", !!forestTail && forestTail.innerHTML === "");
+
+        // 13. 🛡️ 2x2 正方形マージ (山岳4マス) 総産出集約 ＆ 冗長表記全廃検問
+        ui.state.hasPickedThisTurn = false;
+        const mTerrain = { id: "M2_MOUNTAIN", terrainId: "MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", yields: { food: 0, wood: 2, defense: 3, mystic: 1 } };
+        ui.state.placeShape(1, 3, [[1, 1], [1, 1]], mTerrain); // (1,3), (1,4), (2,3), (2,4)
+        ui.render();
+
+        const mHead = gridBoardEl.children.find(c => c.dataset && c.dataset.r === "1" && c.dataset.c === "3");
+        const mRight = gridBoardEl.children.find(c => c.dataset && c.dataset.r === "1" && c.dataset.c === "4");
+        assert("2x2 マージ先頭マスに最大産出 '🛡️' が集約描画されること", !!mHead && mHead.innerHTML.includes("🛡️") && mHead.innerHTML.includes(" : "));
+        assert("2x2 マージ先頭マスに '2x2' 等の冗長文字が含まれず純粋な土地名であること", !!mHead && !mHead.innerHTML.includes("2x2"));
+        assert("2x2 マージ先頭マスに has-resource-yield クラスが付与されること", !!mHead && mHead.classList.contains("has-resource-yield"));
+        assert("2x2 マージ先頭マスで右側境界線が打消されていること (no-border-right)", !!mHead && mHead.classList.contains("no-border-right"));
+        assert("2x2 マージ先頭マスで下側境界線が打消されていること (no-border-bottom)", !!mHead && mHead.classList.contains("no-border-bottom"));
+
+        // 14. 💎 マージブロック内の資源マス (★なし、資源名＋最大産出) 検問
+        // (2,4) のマスに資源ソケット（隠匿鉱床: 🧱+2, 🛡️+1）を付与して再描画
+        ui.state.grid[2][4].socketResource = { nameKey: "SOCKET_HIDDEN_ORE", bonusWood: 2, bonusDefense: 1 };
+        ui.render();
+
+        const mSocketCell = gridBoardEl.children.find(c => c.dataset && c.dataset.r === "2" && c.dataset.c === "4");
+        assert("マージブロック内の資源マスに資源名が表示されること", !!mSocketCell && (mSocketCell.innerHTML.includes("SOCKET_HIDDEN_ORE") || mSocketCell.innerHTML.includes("鉱床") || mSocketCell.innerHTML.includes("Ore") || mSocketCell.innerHTML.includes("隠匿")));
+        assert("マージブロック内の資源マスに最大産出 '🧱' と ' : ' と '2' が描画されること", !!mSocketCell && mSocketCell.innerHTML.includes("🧱") && mSocketCell.innerHTML.includes(" : ") && mSocketCell.innerHTML.includes("2"));
+        assert("マージブロック内の資源マスに '★' マークが含まれないこと (全廃確認)", !!mSocketCell && !mSocketCell.innerHTML.includes("★"));
+
+        // 15. 🎯 先頭マス自体に資源ソケットが存在する場合のスマートスライド配置検問
+        // (1,3) [先頭マス] に羊ソケットを付与
+        ui.state.grid[1][3].socketResource = { nameKey: "SOCKET_SHEEP", bonusFood: 2, bonusWood: 1 };
+        ui.render();
+
+        const mHeadSocket = gridBoardEl.children.findLast(c => c.dataset && c.dataset.r === "1" && c.dataset.c === "3");
+        const mSlideLand = gridBoardEl.children.findLast(c => c.dataset && c.dataset.r === "1" && c.dataset.c === "4");
+        const mFreeTail = gridBoardEl.children.findLast(c => c.dataset && c.dataset.r === "2" && c.dataset.c === "3");
+
+        assert("先頭マスに資源がある場合、先頭マスに資源名 (羊) と '🌾 : 2' が描画されること", !!mHeadSocket && (mHeadSocket.innerHTML.includes("羊") || mHeadSocket.innerHTML.includes("Sheep")) && mHeadSocket.innerHTML.includes("🌾") && mHeadSocket.innerHTML.includes("2"));
+        assert("先頭マスに資源がある場合、最初の空きマスに土地名 (山岳) と総産出が集約スライド描画されること", !!mSlideLand && (mSlideLand.innerHTML.includes("山岳") || mSlideLand.innerHTML.includes("Mountain")) && mSlideLand.innerHTML.includes("🛡️"));
+        assert("2番目以降の空きマス (2,3) の innerHTML が完全に空であること", !!mFreeTail && mFreeTail.innerHTML === "");
+
+        // 16. ⚡ 1x1 + 1x2 連結時の単一ブロック化検問 (4,1) に 1x1, (4,2)-(4,3) に 1x2
+        ui.state.hasPickedThisTurn = false;
+        ui.state.placeShape(4, 1, [[1]], pTerrain); // 1x1 平地 (4,1)
+        ui.state.hasPickedThisTurn = false;
+        ui.state.placeShape(4, 2, [[1, 1]], { id: "GL1_PLAINS_1X2", terrainId: "PLAINS", nameKey: "TERRAIN_PLAINS", yields: { food: 4 } }); // 1x2 平地 (4,2)-(4,3)
+        ui.render();
+
+        const cell41 = gridBoardEl.children.findLast(c => c.dataset && c.dataset.r === "4" && c.dataset.c === "1");
+        const cell42 = gridBoardEl.children.findLast(c => c.dataset && c.dataset.r === "4" && c.dataset.c === "2");
+        const cell43 = gridBoardEl.children.findLast(c => c.dataset && c.dataset.r === "4" && c.dataset.c === "3");
+
+        assert("1x1+1x2 連結で (4,1) の右境界線が打消されていること (no-border-right)", !!cell41 && cell41.classList.contains("no-border-right"));
+        assert("1x1+1x2 連結で (4,2) の左・右境界線が打消されていること (no-border-left & no-border-right)", !!cell42 && cell42.classList.contains("no-border-left") && cell42.classList.contains("no-border-right"));
+        assert("1x1+1x2 連結で (4,3) の左境界線が打消されていること (no-border-left)", !!cell43 && cell43.classList.contains("no-border-left"));
+
+        // 17. ⚡ 1x1 + 1x1 + 1x1 連結時の単一ブロック化検問 (1,2) ➔ (0,2) ➔ (0,1)
+        ui.state.hasPickedThisTurn = false;
+        ui.state.placeShape(0, 2, [[1]], pTerrain); // 1x1 (0,2) [ (1,2) に隣接 ]
+        ui.state.hasPickedThisTurn = false;
+        ui.state.placeShape(0, 1, [[1]], pTerrain); // 1x1 (0,1) [ (0,2) に隣接 ]
+        ui.render();
+
+        const cell12 = gridBoardEl.children.findLast(c => c.dataset && c.dataset.r === "1" && c.dataset.c === "2");
+        const cell02 = gridBoardEl.children.findLast(c => c.dataset && c.dataset.r === "0" && c.dataset.c === "2");
+        const cell01 = gridBoardEl.children.findLast(c => c.dataset && c.dataset.r === "0" && c.dataset.c === "1");
+
+        assert("1x1+1x1+1x1 連結で (1,2) の上境界線が打消されていること (no-border-top)", !!cell12 && cell12.classList.contains("no-border-top"));
+        assert("1x1+1x1+1x1 連結で (0,2) の下・左境界線が打消されていること (no-border-bottom & no-border-left)", !!cell02 && cell02.classList.contains("no-border-bottom") && cell02.classList.contains("no-border-left"));
+        assert("1x1+1x1+1x1 連結で (0,1) の右境界線が打消されていること (no-border-right)", !!cell01 && cell01.classList.contains("no-border-right"));
+
+        // 18. 🔥 平地 2x2 マージ成立で 🔥+2 加算検問 (checkMergePatterns)
+        const mergeEngine = new GameEngine();
+        mergeEngine.state.ember = 20;
+        const testPlains = { id: "GL1_PLAINS", terrainId: "PLAINS", nameKey: "TERRAIN_PLAINS" };
+        mergeEngine.state.grid[0][0] = { r: 0, c: 0, placed: true, terrain: testPlains };
+        mergeEngine.state.grid[0][1] = { r: 0, c: 1, placed: true, terrain: testPlains };
+        mergeEngine.state.grid[1][0] = { r: 1, c: 0, placed: true, terrain: testPlains };
+        mergeEngine.state.grid[1][1] = { r: 1, c: 1, placed: true, terrain: testPlains };
+        const emberBefore = mergeEngine.state.ember;
+        mergeEngine.state.checkMergePatterns();
+        assert("平地 2x2 マージ成立で 🔥+2 加算されること", mergeEngine.state.ember === emberBefore + 2);
 
     } catch (err) {
         console.error("  ❌ [FATAL] UIライフサイクル実行中に致命的例外が発生:", err);

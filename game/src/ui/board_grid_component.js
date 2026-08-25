@@ -80,6 +80,9 @@ export class BoardGridComponent {
 
                 const isHQVic = (typeof this.state.isHQVicinity === "function") ? this.state.isHQVicinity(r, c) : false;
 
+                let topGroupSame = false;
+                let leftGroupSame = false;
+
                 if (cellData.isHQ) {
                     cellEl.classList.add("hq");
                     cellEl.innerHTML = I18n.t("TERRAIN_HQ");
@@ -109,70 +112,50 @@ export class BoardGridComponent {
                             else if (tid.includes("HILL")) cellEl.classList.add("merged-hill");
                             else if (tid.includes("MOUNTAIN")) cellEl.classList.add("merged-mountain");
                             else if (tid.includes("DESERT")) cellEl.classList.add("merged-desert");
-
-                            cellEl.style.borderColor = "rgba(241, 196, 15, 0.4)";
-                            cellEl.style.borderStyle = "dashed";
-                        } else if (placeId) {
-                            const topSame = (r > 0 && this.state.grid[r-1][c].placementGroupId === placeId);
-                            const rightSame = (c < size - 1 && this.state.grid[r][c+1].placementGroupId === placeId);
-                            const bottomSame = (r < size - 1 && this.state.grid[r+1][c].placementGroupId === placeId);
-                            const leftSame = (c > 0 && this.state.grid[r][c-1].placementGroupId === placeId);
-
-                            if (topSame) {
-                                cellEl.classList.add("no-border-top", "no-radius-tl", "no-radius-tr");
-                                cellEl.style.setProperty("border-top", "none", "important");
-                                cellEl.style.marginTop = "-4px";
-                                cellEl.style.height = "calc(100% + 4px)";
-                            }
-                            if (rightSame) {
-                                cellEl.classList.add("no-border-right", "no-radius-tr", "no-radius-br");
-                                cellEl.style.setProperty("border-right", "none", "important");
-                                cellEl.style.width = "calc(100% + 4px)";
-                                cellEl.style.zIndex = "2";
-                            }
-                            if (bottomSame) {
-                                cellEl.classList.add("no-border-bottom", "no-radius-bl", "no-radius-br");
-                                cellEl.style.setProperty("border-bottom", "none", "important");
-                                cellEl.style.height = "calc(100% + 4px)";
-                                cellEl.style.zIndex = "2";
-                            }
-                            if (leftSame) {
-                                cellEl.classList.add("no-border-left", "no-radius-tl", "no-radius-bl");
-                                cellEl.style.setProperty("border-left", "none", "important");
-                                cellEl.style.marginLeft = "-4px";
-                                cellEl.style.width = "calc(100% + 4px)";
-                            }
                         }
 
-                        const topGroupSame = (r > 0 && (this.state.grid[r-1][c].mergeGroupId === activeGroupId || this.state.grid[r-1][c].placementGroupId === activeGroupId));
-                        const leftGroupSame = (c > 0 && (this.state.grid[r][c-1].mergeGroupId === activeGroupId || this.state.grid[r][c-1].placementGroupId === activeGroupId));
+                        // 🚫 内側境界線の完全打消し（マージ大土地・複数マスブロックの完全単一化）
+                        const topSame = (r > 0 && (this.state.grid[r-1][c].mergeGroupId === activeGroupId || this.state.grid[r-1][c].placementGroupId === activeGroupId));
+                        const rightSame = (c < size - 1 && (this.state.grid[r][c+1].mergeGroupId === activeGroupId || this.state.grid[r][c+1].placementGroupId === activeGroupId));
+                        const bottomSame = (r < size - 1 && (this.state.grid[r+1][c].mergeGroupId === activeGroupId || this.state.grid[r+1][c].placementGroupId === activeGroupId));
+                        const leftSame = (c > 0 && (this.state.grid[r][c-1].mergeGroupId === activeGroupId || this.state.grid[r][c-1].placementGroupId === activeGroupId));
 
-                        if (!topGroupSame && !leftGroupSame) {
-                            const socketText = cellData.socketResource ? `<br><small style="color:#f1c40f;">★${I18n.t(cellData.socketResource.nameKey)}</small>` : "";
-                            if (cellData.merged) {
-                                let mergeLabel = I18n.t("UI_MERGE_2X2_LABEL", { name: tName });
-                                if (cellData.mergeType === "L_SHAPE") mergeLabel = `🟨 ${tName} (L)`;
-                                else if (cellData.mergeType === "T_SHAPE") mergeLabel = `🛡️ ${tName} (T)`;
-                                cellEl.innerHTML = `<span style="font-size:12px; color:#f1c40f; font-weight:bold; white-space:nowrap; z-index:5; text-shadow:0 0 6px rgba(0,0,0,0.9);">${mergeLabel}${socketText}</span>`;
-                            } else {
-                                const hasRight = (c < 4 && this.state.grid[r][c+1].placementGroupId === placeId);
-                                const hasBottom = (r < 4 && this.state.grid[r+1][c].placementGroupId === placeId);
-                                let spanStyle = "font-size:13px; color:#fff; font-weight:bold; z-index:5; text-shadow:0 2px 4px rgba(0,0,0,0.8); pointer-events:none;";
-                                if (hasRight && !hasBottom) {
-                                    spanStyle += " position:absolute; left:0; width:200%; text-align:center;";
-                                } else if (hasBottom && !hasRight) {
-                                    spanStyle += " position:absolute; top:0; left:0; width:100%; height:200%; display:flex; align-items:center; justify-content:center;";
-                                }
-                                cellEl.innerHTML = `<span style="${spanStyle}">${tName}${socketText}</span>`;
-                            }
+                        if (topSame) cellEl.classList.add("no-border-top", "no-radius-tl", "no-radius-tr");
+                        if (rightSame) cellEl.classList.add("no-border-right", "no-radius-tr", "no-radius-br");
+                        if (bottomSame) cellEl.classList.add("no-border-bottom", "no-radius-bl", "no-radius-br");
+                        if (leftSame) cellEl.classList.add("no-border-left", "no-radius-tl", "no-radius-bl");
+
+                        topGroupSame = (r > 0 && (this.state.grid[r-1][c].mergeGroupId === activeGroupId || this.state.grid[r-1][c].placementGroupId === activeGroupId));
+                        leftGroupSame = (c > 0 && (this.state.grid[r][c-1].mergeGroupId === activeGroupId || this.state.grid[r][c-1].placementGroupId === activeGroupId));
+
+                        const yieldInfo = this.getPrimaryYieldInfo(cellData, isHQVic);
+                        if (yieldInfo && yieldInfo.val > 0) cellEl.classList.add("has-resource-yield");
+
+                        // 🎯 スマート役割判定（資源マス優先 ＆ 土地属性の空きマススライド配置）
+                        const role = this.getGroupCellRole(r, c, activeGroupId, cellData);
+
+                        if (role === "SOCKET") {
+                            // 🌟 資源マス: 没入感最優先で「上段: 資源名」「下段: 最大産出」
+                            const s = cellData.socketResource;
+                            const sName = I18n.t(s.nameKey || "SOCKET_RESOURCE");
+                            const sYield = this.getSocketPrimaryYieldInfo(s);
+                            const sYieldHtml = sYield ? `<div class="tile-yield-line"><span class="yield-icon">${sYield.icon}</span><span class="yield-colon"> : </span><span class="yield-val">${sYield.val}</span></div>` : "";
+                            cellEl.innerHTML = `<div class="tile-content-box"><div class="tile-title-line">${sName}</div>${sYieldHtml}</div>`;
+                        } else if (role === "LAND_PRIMARY") {
+                            // 🌟 土地名 ＆ 総産出（最初の空きマスへスマート配置）
+                            const yieldHtml = yieldInfo ? `<div class="tile-yield-line"><span class="yield-icon">${yieldInfo.icon}</span><span class="yield-colon"> : </span><span class="yield-val">${yieldInfo.val}</span></div>` : "";
+                            cellEl.innerHTML = `<div class="tile-content-box"><div class="tile-title-line">${tName}</div>${yieldHtml}</div>`;
                         } else {
-                            const socketBadge = cellData.socketResource ? `<small style="color:#f1c40f; font-size:10px;">★${I18n.t(cellData.socketResource.nameKey)}</small>` : "";
-                            cellEl.innerHTML = socketBadge;
+                            // 🌟 後続のクリーン背景
+                            cellEl.innerHTML = "";
                         }
                     } else {
-                        const socketBadge = cellData.socketResource ? `<br><small style="color:#f1c40f; font-size:10px;">★${I18n.t(cellData.socketResource.nameKey)}</small>` : "";
+                        const yieldInfo = this.getPrimaryYieldInfo(cellData, isHQVic);
+                        if (yieldInfo && yieldInfo.val > 0) cellEl.classList.add("has-resource-yield");
+
+                        const yieldHtml = yieldInfo ? `<div class="tile-yield-line"><span class="yield-icon">${yieldInfo.icon}</span><span class="yield-colon"> : </span><span class="yield-val">${yieldInfo.val}</span></div>` : "";
                         const searchedBadge = cellData.searched ? `<span class="searched-badge">${I18n.t("UI_SEARCHED_BADGE")}</span>` : "";
-                        cellEl.innerHTML = `${tName}${socketBadge}${searchedBadge}`;
+                        cellEl.innerHTML = `<div class="tile-content-box"><div class="tile-title-line">${tName}</div>${yieldHtml}${searchedBadge}</div>`;
                     }
                 } else if (cellData.hasSocket) {
                     cellEl.classList.add("socket-unopened");
@@ -184,15 +167,19 @@ export class BoardGridComponent {
                     }
                 }
 
-                // ↩️ 当ターン配置マスの場合: キャンセルガイドバッジ (Undo Badge) を付与
+                // ↩️ 当ターン配置マスの場合: キャンセルガイドバッジ (Undo Badge) を付与（先頭マスのみに1個表示）
                 const undoSys = this.ui.undoSys || (typeof window !== "undefined" ? window.undoSys : null);
                 if (undoSys && typeof undoSys.isCellPlacedThisTurn === "function" && undoSys.isCellPlacedThisTurn(r, c)) {
                     cellEl.classList.add("cell-placed-this-turn");
-                    const undoBadge = document.createElement("div");
-                    undoBadge.className = "undo-badge";
-                    undoBadge.title = I18n.t("UI_UNDO_BADGE_TOOLTIP") || "↩ Click to undo";
-                    undoBadge.innerHTML = "↩";
-                    cellEl.appendChild(undoBadge);
+                    const activeGroupId = cellData.mergeGroupId || cellData.placementGroupId;
+                    const isHeadCell = !activeGroupId || (!topGroupSame && !leftGroupSame);
+                    if (isHeadCell) {
+                        const undoBadge = document.createElement("div");
+                        undoBadge.className = "undo-badge";
+                        undoBadge.title = I18n.t("UI_UNDO_BADGE_TOOLTIP") || "↩ Click to undo";
+                        undoBadge.innerHTML = "↩";
+                        cellEl.appendChild(undoBadge);
+                    }
                 }
 
                 // 🖱️ セルイベントハンドラー
@@ -200,11 +187,45 @@ export class BoardGridComponent {
                 cellEl.onmousemove = (e) => this.ui.onCellMouseMove(e, r, c);
                 cellEl.onmouseleave = () => this.ui.clearCellPreviews();
                 cellEl.onclick = () => this.ui.onCellClick(r, c);
+                cellEl.ondragover = (e) => {
+                    if (this.state.hasPickedThisTurn) return;
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                    this.ui.onCellMouseEnter(e, r, c);
+                };
+                cellEl.ondrop = (e) => {
+                    if (this.state.hasPickedThisTurn) return;
+                    e.preventDefault();
+                    const cat = e.dataTransfer.getData("application/card-category");
+                    const rawIdx = e.dataTransfer.getData("text/plain");
+                    if (cat === "LAND") {
+                        const droppedIdx = parseInt(rawIdx, 10);
+                        if (!isNaN(droppedIdx)) {
+                            this.ui.selectCard(droppedIdx);
+                            this.ui.onCellClick(r, c);
+                        }
+                    } else {
+                        if (rawIdx === "reserve_0") {
+                            const resCard = this.state.reserveSlots ? this.state.reserveSlots[0] : null;
+                            if (resCard) this.ui.triggerCommandCardPlay(resCard, -1, 0);
+                        } else {
+                            const droppedIdx = parseInt(rawIdx, 10);
+                            if (!isNaN(droppedIdx) && droppedIdx >= 0 && droppedIdx < this.state.handOffering.length) {
+                                const cCard = this.state.handOffering[droppedIdx];
+                                if (cCard) this.ui.triggerCommandCardPlay(cCard, droppedIdx, -1);
+                            }
+                        }
+                    }
+                };
                 cellEl.oncontextmenu = (e) => {
                     e.preventDefault();
                     if (this.ui.selectedCard) {
-                        const activeIdx = this.ui.selectedCardIdx !== -1 ? this.ui.selectedCardIdx : 0;
-                        this.ui.rotateSelectedCard(e, activeIdx);
+                        if (this.ui.selectedReserveIdx !== -1) {
+                            this.ui.rotateReserveCard(e, this.ui.selectedReserveIdx);
+                        } else if (this.ui.selectedCardIdx !== -1) {
+                            this.ui.rotateSelectedCard(e, this.ui.selectedCardIdx);
+                        }
+                        this.ui.onCellMouseEnter(e, r, c);
                     }
                 };
 
@@ -257,5 +278,213 @@ export class BoardGridComponent {
         if (typeof boardCameraSystem !== "undefined" && boardCameraSystem && typeof boardCameraSystem.init === "function") {
             boardCameraSystem.init();
         }
+    }
+
+    /**
+     * 🌾 最大産出リソースの特定 ＆ 画像フォーマット用データ生成
+     * （同率タイの場合は各土地の主軸優先: 平地=🌾, 森=🧱, 山岳/丘陵=🛡️, 砂漠/遺跡=✨）
+     * （マージブロックの場合はブロック全体の総産出を集約）
+     */
+    getPrimaryYieldInfo(cellData, isHQVic) {
+        if (!cellData || !cellData.terrain) return null;
+
+        const t = cellData.terrain;
+        const tid = (t.terrainId || t.id || "").toUpperCase();
+
+        let f = 0, w = 0, d = 0, m = 0;
+
+        const activeGroupId = cellData.mergeGroupId || cellData.placementGroupId;
+
+        const isNearLake = (r, c) => {
+            if (!this.state || !this.state.grid) return false;
+            for (let lr = 0; lr < 5; lr++) {
+                for (let lc = 0; lc < 5; lc++) {
+                    const lcCell = this.state.grid[lr][lc];
+                    if (lcCell && lcCell.placed && lcCell.socketResource && (lcCell.socketResource.id === "SOCKET_LAKE" || lcCell.socketResource.nameKey === "SOCKET_LAKE")) {
+                        if (Math.abs(lr - r) <= 1 && Math.abs(lc - c) <= 1 && !(lr === r && lc === c)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        };
+
+        // 🧩 複数マスブロック（マージ大土地 または 1x2/1x3等の同一配置ブロック）の場合は土地総産出を集約
+        if (activeGroupId && this.state && this.state.grid) {
+            const isMerged = !!cellData.merged;
+            let multiplier = 1.0;
+            if (isMerged && this.state.mergedBlocks && this.state.mergedBlocks[cellData.mergeGroupId]) {
+                multiplier = this.state.mergedBlocks[cellData.mergeGroupId].yieldMultiplier || 1.20;
+            }
+
+            const size = this.state.grid.length;
+            for (let r = 0; r < size; r++) {
+                for (let c = 0; c < size; c++) {
+                    const cell = this.state.grid[r][c];
+                    if (cell && cell.placed && (cell.mergeGroupId === activeGroupId || cell.placementGroupId === activeGroupId) && cell.terrain) {
+                        const ct = cell.terrain;
+                        let cf = (ct.food !== undefined) ? ct.food : ((ct.baseYieldsPerTile && ct.baseYieldsPerTile.food) || (ct.yields && ct.yields.food) || 0);
+                        let cw = (ct.material !== undefined) ? ct.material : ((ct.wood !== undefined) ? ct.wood : ((ct.baseYieldsPerTile && (ct.baseYieldsPerTile.material || ct.baseYieldsPerTile.wood)) || (ct.yields && (ct.yields.material || ct.yields.wood)) || 0));
+                        let cd = (ct.defense !== undefined) ? ct.defense : ((ct.baseYieldsPerTile && ct.baseYieldsPerTile.defense) || (ct.yields && ct.yields.defense) || 0);
+                        let cm = (ct.mystic !== undefined) ? ct.mystic : ((ct.baseYieldsPerTile && ct.baseYieldsPerTile.mystic) || (ct.yields && ct.yields.mystic) || 0);
+
+                        // ⚠️ 資源ボーナスは資源マス（SOCKET）自体の表示に切り離すため、土地総産出には含めない（完全分離）
+
+                        // 本営近郊加算
+                        if (typeof this.state.isHQVicinity === "function" && this.state.isHQVicinity(r, c)) {
+                            if (cf > 0) cf += 1;
+                            if (cw > 0) cw += 1;
+                            if (cd > 0) cd += 1;
+                            if (cm > 0) cm += 1;
+                        }
+
+                        // 🌊 清湖 (Lake) 周囲8マスの灌漑バフ (+50% 食料産出ブースト)
+                        if (isNearLake(r, c) && cf > 0) {
+                            cf += Math.max(1, Math.floor(cf * 0.5));
+                        }
+
+                        if (this.state && this.state.permanentPlainsFoodBonus && (ct.terrainId || ct.id || "").toUpperCase().includes("PLAINS")) {
+                            cf += this.state.permanentPlainsFoodBonus;
+                        }
+
+                        f += cf;
+                        w += cw;
+                        d += cd;
+                        m += cm;
+                    }
+                }
+            }
+
+            f = Math.floor(f * multiplier);
+            w = Math.floor(w * multiplier);
+            d = Math.floor(d * multiplier);
+            m = Math.floor(m * multiplier);
+        } else {
+            // 単マス（1x1 配置）
+            f = (t.food !== undefined) ? t.food : ((t.baseYieldsPerTile && t.baseYieldsPerTile.food) || (t.yields && t.yields.food) || 0);
+            w = (t.material !== undefined) ? t.material : ((t.wood !== undefined) ? t.wood : ((t.baseYieldsPerTile && (t.baseYieldsPerTile.material || t.baseYieldsPerTile.wood)) || (t.yields && (t.yields.material || t.yields.wood)) || 0));
+            d = (t.defense !== undefined) ? t.defense : ((t.baseYieldsPerTile && t.baseYieldsPerTile.defense) || (t.yields && t.yields.defense) || 0);
+            m = (t.mystic !== undefined) ? t.mystic : ((t.baseYieldsPerTile && t.baseYieldsPerTile.mystic) || (t.yields && t.yields.mystic) || 0);
+
+            if (isHQVic) {
+                if (f > 0) f += 1;
+                if (w > 0) w += 1;
+                if (d > 0) d += 1;
+                if (m > 0) m += 1;
+            }
+
+            if (isNearLake(cellData.r !== undefined ? cellData.r : 0, cellData.c !== undefined ? cellData.c : 0) && f > 0) {
+                f += Math.max(1, Math.floor(f * 0.5));
+            }
+
+            if (this.state && this.state.permanentPlainsFoodBonus && tid.includes("PLAINS")) {
+                f += this.state.permanentPlainsFoodBonus;
+            }
+        }
+
+        const maxVal = Math.max(f, w, d, m);
+        if (maxVal <= 0) return null;
+
+        // 🏆 同率タイ判定（案 1: 主軸プライオリティ）
+        if (tid.includes("PLAINS")) {
+            if (f === maxVal) return { icon: "🌾", val: f };
+            if (w === maxVal) return { icon: "🧱", val: w };
+            if (d === maxVal) return { icon: "🛡️", val: d };
+            return { icon: "✨", val: m };
+        } else if (tid.includes("FOREST") || tid.includes("DEEP_FOREST")) {
+            if (w === maxVal) return { icon: "🧱", val: w };
+            if (f === maxVal) return { icon: "🌾", val: f };
+            if (d === maxVal) return { icon: "🛡️", val: d };
+            return { icon: "✨", val: m };
+        } else if (tid.includes("HILL") || tid.includes("MOUNTAIN")) {
+            if (d === maxVal) return { icon: "🛡️", val: d };
+            if (w === maxVal) return { icon: "🧱", val: w };
+            if (f === maxVal) return { icon: "🌾", val: f };
+            return { icon: "✨", val: m };
+        } else {
+            if (m === maxVal) return { icon: "✨", val: m };
+            if (f === maxVal) return { icon: "🌾", val: f };
+            if (w === maxVal) return { icon: "🧱", val: w };
+            return { icon: "🛡️", val: d };
+        }
+    }
+
+    /**
+     * 💎 資源ソケット単体の最大産出リソース判定（画像フォーマット準拠）
+     */
+    getSocketPrimaryYieldInfo(socket) {
+        if (!socket) return null;
+        const f = socket.bonusFood || 0;
+        const w = socket.bonusWood || socket.bonusMaterial || 0;
+        const d = socket.bonusDefense || 0;
+        const m = socket.bonusMystic || 0;
+
+        const maxVal = Math.max(f, w, d, m);
+        if (maxVal <= 0) return null;
+
+        // 同率時は資源の特性（名前キーなど）や汎用優先順位で決定
+        const sk = (socket.nameKey || socket.id || "").toUpperCase();
+        if (sk.includes("MINE") || sk.includes("ORE") || sk.includes("IRON") || sk.includes("HIDDEN")) {
+            if (w === maxVal) return { icon: "🧱", val: w };
+            if (d === maxVal) return { icon: "🛡️", val: d };
+            if (m === maxVal) return { icon: "✨", val: m };
+            return { icon: "🌾", val: f };
+        } else if (sk.includes("FORT") || sk.includes("PEAK") || sk.includes("GUARD")) {
+            if (d === maxVal) return { icon: "🛡️", val: d };
+            if (m === maxVal) return { icon: "✨", val: m };
+            if (w === maxVal) return { icon: "🧱", val: w };
+            return { icon: "🌾", val: f };
+        } else if (sk.includes("LAKE") || sk.includes("WHEAT") || sk.includes("CLEAR") || sk.includes("WILD")) {
+            if (f === maxVal) return { icon: "🌾", val: f };
+            if (w === maxVal) return { icon: "🧱", val: w };
+            if (d === maxVal) return { icon: "🛡️", val: d };
+            return { icon: "✨", val: m };
+        } else {
+            if (m === maxVal) return { icon: "✨", val: m };
+            if (w === maxVal) return { icon: "🧱", val: w };
+            if (d === maxVal) return { icon: "🛡️", val: d };
+            return { icon: "🌾", val: f };
+        }
+    }
+
+    /**
+     * 🧩 ブロック内における各セルの描画役割（Role）を判定（純粋な読み取り専用）
+     * - "SOCKET": 資源ソケットマス ➔ 資源名 ＆ 資源産出を描画
+     * - "LAND_PRIMARY": 土地名 ＆ 総産出を描画する代表マス（最初の空きマス、または先頭マス）
+     * - "CLEAN": クリーンな背景（余計なテキストなし）
+     */
+    getGroupCellRole(r, c, activeGroupId, cellData) {
+        if (!activeGroupId || !cellData) return "LAND_PRIMARY";
+
+        // 1. そのセル自体に資源ソケットがある場合 ➔ 没入感最優先で資源マス表示
+        if (cellData.socketResource) {
+            return "SOCKET";
+        }
+
+        // 2. このグループに属する全マスを走査（左上から順）
+        const size = (this.state && this.state.grid) ? this.state.grid.length : 5;
+        const freeCells = [];
+        for (let row = 0; row < size; row++) {
+            for (let col = 0; col < size; col++) {
+                const cell = this.state.grid[row][col];
+                if (cell) {
+                    const gId = cell.mergeGroupId || cell.placementGroupId;
+                    if (gId === activeGroupId) {
+                        if (!cell.socketResource) {
+                            freeCells.push({ r: row, c: col });
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. 最初の空きマス（freeCells[0]）であれば、土地名＆総産出を描画
+        if (freeCells.length > 0 && freeCells[0].r === r && freeCells[0].c === c) {
+            return "LAND_PRIMARY";
+        }
+
+        // 4. それ以外の後続空きマスはクリーン背景
+        return "CLEAN";
     }
 }

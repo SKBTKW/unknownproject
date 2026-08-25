@@ -17,7 +17,7 @@ export class TerritoryBadgeComponent {
     /**
      * 🏗️ UIの初期構築 (サイズ20%拡大 ＆ アイコン＋数値のみのシンプル設計)
      */
-     mount(containerEl) {
+    mount(containerEl) {
         if (!containerEl) {
             containerEl = document.getElementById("territoryBadgeContainer") || document.querySelector(".grid-board-anchor");
         }
@@ -29,7 +29,7 @@ export class TerritoryBadgeComponent {
         this.badgeEl = document.createElement("div");
         this.badgeEl.className = "main-area-badge territory-grid-bottom-right";
         this.badgeEl.id = "mainTerritoryBadge";
-        this.badgeEl.title = I18n ? I18n.t("UI_TERRITORY_PROGRESS_TOOLTIP") : "🏛️ 領土開墾進捗 (クリックで国家方針変更)";
+        this.badgeEl.setAttribute("data-tooltip-title", I18n ? I18n.t("UI_TERRITORY_PROGRESS_TOOLTIP") : "🏛️ Territory Reclamation");
         this.badgeEl.style.cssText = `
             display: inline-flex;
             align-items: center;
@@ -49,8 +49,8 @@ export class TerritoryBadgeComponent {
             white-space: nowrap;
         `;
         this.badgeEl.onclick = () => {
-            if (typeof window.openDirectiveModal === "function") {
-                window.openDirectiveModal();
+            if (typeof window.showBreakdownModal === "function") {
+                window.showBreakdownModal();
             }
         };
 
@@ -67,6 +67,8 @@ export class TerritoryBadgeComponent {
         this.badgeEl.appendChild(this.iconEl);
         this.badgeEl.appendChild(this.countEl);
         this.containerEl.appendChild(this.badgeEl);
+
+        this.update(this.currentCount, this.stage);
     }
 
     // 🎯 ステージ最大マス数の取得 (インスタンス・クラス両対応)
@@ -80,6 +82,12 @@ export class TerritoryBadgeComponent {
         return 24; // Stage 1 デフォルト
     }
 
+    static getStageEmberThresholds(stageNum = 1) {
+        if (stageNum === 3) return { decayStop: 48, autoHeat: 68 };
+        if (stageNum === 2) return { decayStop: 24, autoHeat: 40 };
+        return { decayStop: 8, autoHeat: 20 };
+    }
+
     /**
      * 🔄 占有数・ステージ最大マス数の更新
      */
@@ -91,7 +99,9 @@ export class TerritoryBadgeComponent {
             if (container) this.mount(container);
         }
 
+        let stateObj = null;
         if (typeof stageOrState === "object" && stageOrState !== null) {
+            stateObj = stageOrState;
             this.stage = stageOrState.stage || (stageOrState.turn ? Math.min(3, Math.floor((stageOrState.turn - 1) / 20) + 1) : 1);
         } else if (typeof stageOrState === "number") {
             this.stage = stageOrState;
@@ -108,8 +118,77 @@ export class TerritoryBadgeComponent {
 
         if (this.badgeEl) {
             const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
-            const remCount = this.maxCount - this.currentCount;
-            this.badgeEl.title = I18n ? I18n.t("UI_TERRITORY_STAGE_PROGRESS", { stage: this.stage, pct, current: this.currentCount, max: this.maxCount, rem: remCount }) : `Stage ${this.stage} : ${pct}%`;
+            const thresholds = (stateObj && typeof stateObj.getStageEmberThresholds === "function") 
+                ? stateObj.getStageEmberThresholds() 
+                : TerritoryBadgeComponent.getStageEmberThresholds(this.stage);
+
+            const decayDiff = thresholds.decayStop - this.currentCount;
+            const heatDiff = thresholds.autoHeat - this.currentCount;
+
+            const decayStatus = (decayDiff <= 0) 
+                ? (I18n ? I18n.t("UI_TERRITORY_STATUS_ACHIEVED") : "Achieved") 
+                : (I18n ? I18n.t("UI_TERRITORY_STATUS_REMAINING", { count: decayDiff }) : `${decayDiff} tiles left`);
+
+            const heatStatus = (heatDiff <= 0) 
+                ? (I18n ? I18n.t("UI_TERRITORY_STATUS_ACHIEVED") : "Achieved") 
+                : (I18n ? I18n.t("UI_TERRITORY_STATUS_REMAINING", { count: heatDiff }) : `${heatDiff} tiles left`);
+
+            const breakdown = (stateObj && typeof stateObj.getTerritoryBreakdown === "function")
+                ? stateObj.getTerritoryBreakdown()
+                : { plains: this.currentCount, forest: 0, deepForest: 0, hill: 0, mountain: 0, desert: 0 };
+
+            // 🗺️ 所有している土地属性のみを抽出し、占有率(%)とともに動的生成
+            const terrainItems = [];
+            const totalOwned = this.currentCount || 0;
+            const plainsCount = breakdown.plains || 0;
+            const forestCount = (breakdown.forest || 0) + (breakdown.deepForest || 0);
+            const hillCount = breakdown.hill || 0;
+            const mountainCount = breakdown.mountain || 0;
+            const desertCount = breakdown.desert || 0;
+
+            if (plainsCount > 0) {
+                const sharePct = totalOwned > 0 ? Math.round((plainsCount / totalOwned) * 100) : 0;
+                terrainItems.push(`・🌾 ${I18n ? I18n.t("TERRAIN_PLAINS") : "草原"}: ${plainsCount}マス (${sharePct}%)`);
+            }
+            if (forestCount > 0) {
+                const sharePct = totalOwned > 0 ? Math.round((forestCount / totalOwned) * 100) : 0;
+                terrainItems.push(`・🌲 ${I18n ? I18n.t("TERRAIN_FOREST") : "森"}: ${forestCount}マス (${sharePct}%)`);
+            }
+            if (hillCount > 0) {
+                const sharePct = totalOwned > 0 ? Math.round((hillCount / totalOwned) * 100) : 0;
+                terrainItems.push(`・⛰️ ${I18n ? I18n.t("TERRAIN_HILL") : "丘陵"}: ${hillCount}マス (${sharePct}%)`);
+            }
+            if (mountainCount > 0) {
+                const sharePct = totalOwned > 0 ? Math.round((mountainCount / totalOwned) * 100) : 0;
+                terrainItems.push(`・🏔️ ${I18n ? I18n.t("TERRAIN_MOUNTAIN") : "山岳"}: ${mountainCount}マス (${sharePct}%)`);
+            }
+            if (desertCount > 0) {
+                const sharePct = totalOwned > 0 ? Math.round((desertCount / totalOwned) * 100) : 0;
+                terrainItems.push(`・🏜️ ${I18n ? I18n.t("TERRAIN_DESERT") : "砂漠"}: ${desertCount}マス (${sharePct}%)`);
+            }
+
+            const headerText = I18n ? I18n.t("UI_TERRITORY_BREAKDOWN_HEADER") : "🗺️ 所有土地の占有内訳:";
+            const emptyText = I18n ? I18n.t("UI_TERRITORY_BREAKDOWN_EMPTY") : "・(未開墾)";
+            const breakdownContent = terrainItems.length > 0 ? terrainItems.join("<br>") : emptyText;
+            const breakdownSection = `${headerText}<br>${breakdownContent}`;
+
+            const titleText = I18n ? I18n.t("UI_TERRITORY_STAGE_PROGRESS_TITLE", { stage: this.stage }) : `Territory Reclamation (Stage ${this.stage})`;
+            const descHtml = I18n ? I18n.t("UI_TERRITORY_STAGE_PROGRESS_DESC", {
+                stage: this.stage,
+                current: this.currentCount,
+                max: this.maxCount,
+                pct,
+                breakdownSection,
+                decayReq: thresholds.decayStop,
+                decayStatus,
+                heatReq: thresholds.autoHeat,
+                heatStatus
+            }) : `Territory: ${this.currentCount}/${this.maxCount}`;
+
+            this.badgeEl.setAttribute("data-tooltip-title", titleText);
+            this.badgeEl.setAttribute("data-tooltip", descHtml);
+            this.badgeEl.removeAttribute("title");
+
             if (pct >= 80) {
                 this.badgeEl.style.borderColor = "#f1c40f";
                 this.badgeEl.style.boxShadow = "0 5px 16px rgba(0,0,0,0.75), 0 0 16px rgba(241, 196, 15, 0.5)";

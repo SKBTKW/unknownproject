@@ -458,8 +458,8 @@ assert(statusProsperous.emberDelta === 1, '領土22マス (>=20) で emberDelta 
 assert(statusProsperous.reserveCost === -1, '保留枠ありで reserveCost が -1 であること');
 assert(statusProsperous.totalTurnDelta === 0, '自家発熱(+1)と保留維持費(-1)で totalTurnDelta が 0 になること');
 
-// --- 19. 2x2 正方形マージ 🔥+1 即時ボーナス給付 検問 ---
-console.log('\n🧩 [19/21] 2x2 正方形マージ 🔥+1 即時ボーナス給付検証');
+// --- 19. 2x2 正方形マージ 🔥+2 (平地) / 🔥+1 (他地形) 即時ボーナス給付 検問 ---
+console.log('\n🧩 [19/21] 2x2 正方形マージ 🔥+2(平地)/🔥+1 即時ボーナス給付検証');
 const mergeTestEngine = new GameEngine();
 mergeTestEngine.state.ember = 20;
 const plainsData = { id: 'PLAINS_1X1', terrainId: 'PLAINS_1X1', nameKey: 'TERRAIN_PLAINS_NAME', baseYieldsPerTile: { food: 1 } };
@@ -470,7 +470,7 @@ mergeTestEngine.state.grid[1][1] = { r: 1, c: 1, placed: true, terrain: plainsDa
 
 const emberBeforeMerge = mergeTestEngine.state.ember;
 mergeTestEngine.state.checkMergePatterns();
-assert(mergeTestEngine.state.ember === emberBeforeMerge + 1, `2x2マージ成立で残り火が 🔥+1 加算されること (実際: ${mergeTestEngine.state.ember})`);
+assert(mergeTestEngine.state.ember === emberBeforeMerge + 2, `平地2x2マージ成立で残り火が 🔥+2 加算されること (実際: ${mergeTestEngine.state.ember})`);
 assert(mergeTestEngine.state.grid[0][0].merged === true, '2x2マージフラグが true になること');
 
 // --- 20. 📈 配置ブロック数連動 土地配置コスト漸増 検問 ---
@@ -523,6 +523,67 @@ assert(saveEngine.state.vigilanceTurns === 2, '警戒態勢で vigilanceTurns �
 assert(saveEngine.state.calculateTotalDefense() === initialDef + 3, '警戒態勢により防衛力産出レートに +3 ボーナスが乗ること');
 const gained = saveEngine.state.gainDefense(10, 'テスト獲得');
 assert(gained === 13, '警戒態勢中に防衛力10獲得で +3 ボーナスが乗って 13 獲得できること');
+
+// ⑤ CMD_GRAND_CULTIVATION (大規模耕作計画: コスト 🧱-35, 4ターンの間 平地産出 🌾+1/T)
+saveEngine.state.wood = 50;
+saveEngine.deckManager.playCommandCard({ id: 'CMD_GRAND_CULTIVATION', category: 'COMMAND', cost: { wood: 35 } }, null, 0);
+assert(saveEngine.state.wood === 15, '大規模耕作計画で 🧱35 消費されること');
+assert(saveEngine.state.grandCultivationTurns === 4, '大規模耕作計画で grandCultivationTurns が 4 になること');
+assert(saveEngine.state.buffSystem.hasBuff('CMD_GRAND_CULTIVATION'), 'バフマネージャーに CMD_GRAND_CULTIVATION が登録されること');
+
+// ⑥ CMD_EMERGENCY_LEVY (緊急徴発: コスト 🌾-20, 即座に 🧱+15, 次ターン食料維持費 +5)
+saveEngine.state.food = 30;
+saveEngine.state.wood = 10;
+saveEngine.deckManager.playCommandCard({ id: 'CMD_EMERGENCY_LEVY', category: 'COMMAND', cost: { food: 20 } }, null, 0);
+assert(saveEngine.state.food === 10, '緊急徴発で 🌾20 消費されること');
+assert(saveEngine.state.wood === 25, '緊急徴発で 🧱15 獲得されること');
+assert(saveEngine.state.emergencyLevyTurns === 1, '緊急徴発で emergencyLevyTurns が 1 になること');
+assert(saveEngine.state.buffSystem.hasBuff('CMD_EMERGENCY_LEVY'), 'バフマネージャーに CMD_EMERGENCY_LEVY が登録されること');
+
+// ⑦ CMD_MANIFEST_MIRACLE (奇跡の顕現: コスト ✨-10, 3ターンの間 補填レート緩和)
+saveEngine.state.mystic = 20;
+saveEngine.deckManager.playCommandCard({ id: 'CMD_MANIFEST_MIRACLE', category: 'COMMAND', cost: { mystic: 10 } }, null, 0);
+assert(saveEngine.state.mystic === 10, '奇跡の顕現で ✨10 消費されること');
+assert(saveEngine.state.manifestMiracleTurns === 3, '奇跡の顕現で manifestMiracleTurns が 3 になること');
+assert(saveEngine.state.buffSystem.hasBuff('CMD_MANIFEST_MIRACLE'), 'バフマネージャーに CMD_MANIFEST_MIRACLE が登録されること');
+
+// ⑧ CMD_FILL_THE_VOID (届かぬ資材を満たすもの: コスト 無料, 今ターンのみ補填可能)
+saveEngine.deckManager.playCommandCard({ id: 'CMD_FILL_THE_VOID', category: 'COMMAND', cost: {} }, null, 0);
+assert(saveEngine.state.fillTheVoidTurns === 1, '届かぬ資材を満たすもので fillTheVoidTurns が 1 になること');
+assert(saveEngine.state.buffSystem.hasBuff('CMD_FILL_THE_VOID'), 'バフマネージャーに CMD_FILL_THE_VOID が登録されること');
+
+// ⑨ CMD_SCORCHED_RETREAT (焦土退却: コスト 🌾-20, 3ターン土地産出低下)
+saveEngine.state.food = 30;
+saveEngine.deckManager.playCommandCard({ id: 'CMD_SCORCHED_RETREAT', category: 'COMMAND', cost: { food: 20 } }, null, 0);
+assert(saveEngine.state.food === 10, '焦土退却で 🌾20 消費されること');
+assert(saveEngine.state.scorchedRetreatTurns === 3, '焦土退却で scorchedRetreatTurns が 3 になること');
+assert(saveEngine.state.buffSystem.hasBuff('CMD_SCORCHED_RETREAT'), 'バフマネージャーに CMD_SCORCHED_RETREAT が登録されること');
+
+// ⑩ 条件達成型バフの自動解除検問 (CMD_LAND_FOCUS: 6ブロック達成で消滅 / CMD_MILITARY_FOCUS: 防衛力20達成で消滅)
+const condEngine = new GameEngine();
+condEngine.state.food = 100;
+condEngine.state.wood = 100;
+condEngine.state.defense = 0;
+condEngine.deckManager.playCommandCard({ id: 'CMD_LAND_FOCUS', category: 'COMMAND', cost: { food: 10, wood: 10 } }, null, 0);
+assert(condEngine.state.buffSystem.hasBuff('CMD_LAND_FOCUS'), '発動直後に CMD_LAND_FOCUS がバフ登録されていること');
+
+// 盤面に 6 ブロック配置して自動解除を検証
+for (let i = 0; i < 6; i++) {
+    const r = Math.floor(i / 5);
+    const c = i % 5;
+    condEngine.state.grid[r][c] = { placed: true, terrain: { id: 'GL1_PLAINS' }, blockId: `block_${i}` };
+}
+condEngine.state.checkConditionalBuffs();
+assert(!condEngine.state.buffSystem.hasBuff('CMD_LAND_FOCUS'), '盤面6ブロック達成で CMD_LAND_FOCUS が自動解除されること');
+assert(condEngine.state.activeDrawBias === null, 'CMD_LAND_FOCUS 解除後に activeDrawBias が null になること');
+
+// CMD_MILITARY_FOCUS の防衛力20達成による自動解除を検証
+condEngine.deckManager.playCommandCard({ id: 'CMD_MILITARY_FOCUS', category: 'COMMAND', cost: { wood: 20 } }, null, 0);
+assert(condEngine.state.buffSystem.hasBuff('CMD_MILITARY_FOCUS'), '発動直後に CMD_MILITARY_FOCUS がバフ登録されていること');
+condEngine.state.defense = 25;
+condEngine.state.checkConditionalBuffs();
+assert(!condEngine.state.buffSystem.hasBuff('CMD_MILITARY_FOCUS'), '防衛力20達成で CMD_MILITARY_FOCUS が自動解除されること');
+assert(condEngine.state.activeDrawBias === null, 'CMD_MILITARY_FOCUS 解除後に activeDrawBias が null になること');
 
 // ====================================================
 // 22. 🟨 丘陵（L字）＆ 🛡️ 山岳（凸字）異形マージ ＆ ★覚醒ソケット検証
@@ -582,6 +643,19 @@ assert(mtnEngine.state.mystic === initialMtnMystic + 4, '山岳凸字マージ�
 assert(mtnEngine.state.grid[0][1].socketResource && mtnEngine.state.grid[0][1].socketResource.id === 'SOCKET_SUMMIT_FORTRESS', '最後のマス(0,1)に★主峰砦が覚醒すること');
 assert(mtnEngine.state.grid[0][1].socketResource.bonusDefense === 3, '★主峰砦で 🛡️+3/T ボーナスが付くこと');
 assert(mtnEngine.state.grid[0][1].socketResource.bonusMystic === 2, '★主峰砦で ✨+2/T ボーナスが付くこと');
+
+// 3. 🌊 清湖 (Lake) 周囲8マスの灌漑バフ (+50% 食料産出ブースト) 検証
+const lakeEngine = new GameEngine();
+lakeEngine.state.ember = 20;
+// (0,0) に清湖ソケットを開花
+lakeEngine.state.grid[0][0] = { r: 0, c: 0, placed: true, terrain: { id: 'GL1_PLAINS', nameKey: 'TERRAIN_PLAINS', food: 4, wood: 0, defense: 0, mystic: 0 }, socketResource: { id: 'SOCKET_LAKE', nameKey: 'SOCKET_LAKE', bonusFood: 2 } };
+// (0,1) に隣接平地（食料4）を配置 ➔ 灌漑バフで +2 (50%) 獲得
+lakeEngine.state.grid[0][1] = { r: 0, c: 1, placed: true, terrain: { id: 'GL1_PLAINS', nameKey: 'TERRAIN_PLAINS', food: 4, wood: 0, defense: 0, mystic: 0 } };
+
+const lakeProds = lakeEngine.state.calculateTotalProduction();
+// 本営10 + 平地(4+4) + 湖ソケット2 + 灌漑バフ2(4*0.5) = 22, 維持費20 ➔ net +2
+assert(lakeProds.foodLakeIrrigation === 2, '湖の隣接平地(食料4)に灌漑バフ +2 (50%) が加算されること');
+assert(lakeProds.grossFood === 22, '食料総産出(gross)に湖の灌漑バフが含まれること');
 
 console.log('\n====================================================');
 console.log(`🎉 全テスト完了: 129 / 129 件 合格 (100% PASS)`);

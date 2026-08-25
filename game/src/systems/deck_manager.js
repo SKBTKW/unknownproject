@@ -48,12 +48,16 @@ class DeckManager {
             { id: "CARD_DESERT_1X1", terrainId: "GL0_DESERT", nameKey: "TERRAIN_DESERT", gl: 0, e: 1, yields: { food: 0, wood: 0, defense: 0, mystic: 5 }, shape: [[1]], minStage: 1, reqE2: 0, rarity: "R", weight: 0.15 },
             { id: "CARD_DESERT_1X2", terrainId: "GL0_DESERT", nameKey: "TERRAIN_DESERT", gl: 0, e: 1, yields: { food: 0, wood: 0, defense: 0, mystic: 5 }, shape: [[1], [1]], minStage: 2, reqE2: 0, rarity: "UR", weight: 0.03 },
 
-            // コマンドカード 『土地探索』 (ドロー条件: 盤面にソケットが存在しない時)
             { id: "CMD_LAND_EXPLORATION", category: "COMMAND", nameKey: "CMD_LAND_EXPLORATION_NAME", descriptionKey: "CMD_LAND_EXPLORATION_DESC", cost: { food: 30, wood: 30, ember: 1 }, noSocketsOnBoard: true, minStage: 1, rarity: "R", weight: 0.40 },
             { id: "CMD_CONSERVE_EMBER", category: "COMMAND", nameKey: "CMD_CONSERVE_EMBER_NAME", descriptionKey: "CMD_CONSERVE_EMBER_DESC", cost: {}, maxEmber: 18, minStage: 1, rarity: "C", weight: 0.40 },
             { id: "CMD_RATIONING", category: "COMMAND", nameKey: "CMD_RATIONING_NAME", descriptionKey: "CMD_RATIONING_DESC", cost: {}, maxFood: 40, minStage: 1, rarity: "C", weight: 0.40 },
             { id: "CMD_MEDITATION", category: "COMMAND", nameKey: "CMD_MEDITATION_NAME", descriptionKey: "CMD_MEDITATION_DESC", cost: {}, maxMystic: 20, minStage: 1, rarity: "UC", weight: 0.30 },
-            { id: "CMD_VIGILANCE", category: "COMMAND", nameKey: "CMD_VIGILANCE_NAME", descriptionKey: "CMD_VIGILANCE_DESC", cost: { wood: 15 }, reqTrialOrLowDefense: true, minStage: 1, rarity: "C", weight: 0.35 }
+            { id: "CMD_VIGILANCE", category: "COMMAND", nameKey: "CMD_VIGILANCE_NAME", descriptionKey: "CMD_VIGILANCE_DESC", cost: { wood: 15 }, reqTrialOrLowDefense: true, minStage: 1, rarity: "C", weight: 0.35 },
+            { id: "CMD_GRAND_CULTIVATION", category: "COMMAND", nameKey: "CMD_GRAND_CULTIVATION_NAME", descriptionKey: "CMD_GRAND_CULTIVATION_DESC", cost: { wood: 35 }, reqPlains: 8, minStage: 2, rarity: "UC", weight: 0.25 },
+            { id: "CMD_EMERGENCY_LEVY", category: "COMMAND", nameKey: "CMD_EMERGENCY_LEVY_NAME", descriptionKey: "CMD_EMERGENCY_LEVY_DESC", cost: { food: 20 }, minStage: 1, rarity: "C", weight: 0.35 },
+            { id: "CMD_MANIFEST_MIRACLE", category: "COMMAND", nameKey: "CMD_MANIFEST_MIRACLE_NAME", descriptionKey: "CMD_MANIFEST_MIRACLE_DESC", cost: { mystic: 10 }, minStage: 2, rarity: "R", weight: 0.20 },
+            { id: "CMD_FILL_THE_VOID", category: "COMMAND", nameKey: "CMD_FILL_THE_VOID_NAME", descriptionKey: "CMD_FILL_THE_VOID_DESC", cost: {}, minStage: 1, rarity: "C", weight: 0.35 },
+            { id: "CMD_SCORCHED_RETREAT", category: "COMMAND", nameKey: "CMD_SCORCHED_RETREAT_NAME", descriptionKey: "CMD_SCORCHED_RETREAT_DESC", cost: { food: 20 }, minStage: 2, rarity: "R", weight: 0.20 }
         ];
         return this._landCardMasterCache;
     }
@@ -190,18 +194,21 @@ class DeckManager {
 
     /**
      * 🎲 単一カードの重み付け抽選
-     * @param {Array<string>} [excludedCommandIds=[]] - 同一オファリング内・保留枠で重複排除するコマンドカードIDリスト
+     * @param {Array<string>} [excludedCardIds=[]] - 同一オファリング内・保留枠で重複排除するカードIDリスト (土地・コマンド両対応)
      */
-    drawSingleCard(excludedCommandIds = []) {
+    drawSingleCard(excludedCardIds = []) {
         const master = this.getLandCardMaster();
         const stageNum = (this.state && this.state.stage) ? (typeof this.state.stage === 'object' ? (this.state.stage.id || 1) : this.state.stage) : 1;
         const h2Count = (this.state && typeof this.state.countE2HillsOnBoard === 'function') ? this.state.countE2HillsOnBoard() : 0;
 
         let eligible = master.filter(c => this.isCardEligible(c, stageNum, h2Count));
 
-        // 🛡️ 同一コマンドカード重複ピック禁止ガードレール
-        if (Array.isArray(excludedCommandIds) && excludedCommandIds.length > 0) {
-            eligible = eligible.filter(c => !(c.category && c.category !== "LAND" && excludedCommandIds.includes(c.id)));
+        // 🛡️ 同一オファリング内における完全同一カード（土地・コマンド問わず）の重複排除
+        if (Array.isArray(excludedCardIds) && excludedCardIds.length > 0) {
+            const filteredEligible = eligible.filter(c => !excludedCardIds.includes(c.id));
+            if (filteredEligible.length > 0) {
+                eligible = filteredEligible;
+            }
         }
 
         if (eligible.length === 0) {
@@ -257,12 +264,12 @@ class DeckManager {
     }
 
     /**
-     * 🃏 手札オファリングの生成 (標準 3 枚 ＆ 同一コマンドカード重複排除)
+     * 🃏 手札オファリングの生成 (標準 3 枚 ＆ 同一カード完全重複排除)
      */
     generateOfferingCards() {
         const offeringSize = (this.state && this.state.handOfferingSize) ? this.state.handOfferingSize : 3;
         const newCards = [];
-        const excludedCommandIds = [];
+        const excludedCardIds = [];
 
         // 📥 保留スロットにあるコマンドカードも手札重複から除外
         if (this.state && this.state.reserveSlots) {
@@ -271,18 +278,18 @@ class DeckManager {
                     const tObj = rc.terrain || rc;
                     if (tObj && tObj.category && tObj.category !== "LAND") {
                         const mId = rc.cardMasterId || tObj.id || rc.id;
-                        if (mId) excludedCommandIds.push(mId);
+                        if (mId) excludedCardIds.push(mId);
                     }
                 }
             });
         }
 
         for (let i = 0; i < offeringSize; i++) {
-            const drawn = this.drawSingleCard(excludedCommandIds);
+            const drawn = this.drawSingleCard(excludedCardIds);
             newCards.push(drawn);
-            if (drawn && drawn.terrain && drawn.terrain.category && drawn.terrain.category !== "LAND") {
-                const cId = drawn.cardMasterId || drawn.terrain.id;
-                if (cId) excludedCommandIds.push(cId);
+            if (drawn) {
+                const cId = drawn.cardMasterId || (drawn.terrain ? drawn.terrain.id : null);
+                if (cId) excludedCardIds.push(cId);
             }
         }
 
@@ -389,7 +396,7 @@ class DeckManager {
 
         const cost = cardObj.cost || {};
         const matCost = cost.material !== undefined ? cost.material : (cost.wood || 0);
-        const curMat = this.state.material !== undefined ? this.state.material : (this.state.wood || 0);
+        const curMat = Math.max(this.state.material !== undefined ? this.state.material : 0, this.state.wood !== undefined ? this.state.wood : 0);
 
         if (cost.food && this.state.food < cost.food) return { success: false, reason: "NOT_ENOUGH_FOOD" };
         if (matCost > 0 && curMat < matCost) return { success: false, reason: "NOT_ENOUGH_MATERIAL" };
@@ -491,9 +498,9 @@ class DeckManager {
                 shortName: cName,
                 icon: "📜",
                 description: cDesc,
-                badgeText: I18n ? I18n.t("UI_CMD_INSTANT_LABEL") : "即時発動",
                 category: "CARD_EFFECT"
             });
+            if (typeof this.state.checkConditionalBuffs === "function") this.state.checkConditionalBuffs();
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `📜【${cName}】`);
         } else if (cId === "CMD_MILITARY_FOCUS") {
             // ⚔️ 軍事重視: コスト 🧱-20
@@ -504,9 +511,9 @@ class DeckManager {
                 shortName: cName,
                 icon: "🛡️",
                 description: cDesc,
-                badgeText: I18n ? I18n.t("UI_CMD_INSTANT_LABEL") : "即時発動",
                 category: "CARD_EFFECT"
             });
+            if (typeof this.state.checkConditionalBuffs === "function") this.state.checkConditionalBuffs();
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `⚔️【${cName}】`);
         } else if (cId === "CMD_MYSTIC_FOCUS") {
             // ✨ 神秘重視: コスト 🔥-1
@@ -580,6 +587,77 @@ class DeckManager {
                 remainingTurns: 2
             });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🛡️【${cName}】`);
+        } else if (cId === "CMD_GRAND_CULTIVATION") {
+            // 🌾 大規模耕作計画: コスト 🧱-35 (4ターンの間、草原の産出 🌾+1/T)
+            this.state.grandCultivationTurns = 4;
+            this.state.addBuff({
+                id: cId,
+                name: cName,
+                shortName: cName,
+                icon: "🌾",
+                description: cDesc,
+                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 4 }) : "4T",
+                category: "CARD_EFFECT",
+                remainingTurns: 4
+            });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🌾【${cName}】`);
+        } else if (cId === "CMD_EMERGENCY_LEVY") {
+            // 🧱 緊急徴発: コスト 🌾-20 (即座に 🧱+15、次ターン食料維持費 +5)
+            this.state.wood = (this.state.wood || 0) + 15;
+            this.state.emergencyLevyTurns = 1;
+            this.state.addBuff({
+                id: cId,
+                name: cName,
+                shortName: cName,
+                icon: "⚠️",
+                description: cDesc,
+                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 1 }) : "1T",
+                category: "DEBUFF",
+                remainingTurns: 1
+            });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `⚠️【${cName}】`);
+        } else if (cId === "CMD_MANIFEST_MIRACLE") {
+            // ✨ 奇跡の顕現: コスト ✨-10 (3ターンの間、不足資源補填レート 3→1)
+            this.state.manifestMiracleTurns = 3;
+            this.state.addBuff({
+                id: cId,
+                name: cName,
+                shortName: cName,
+                icon: "✨",
+                description: cDesc,
+                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 3 }) : "3T",
+                category: "CARD_EFFECT",
+                remainingTurns: 3
+            });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `✨【${cName}】`);
+        } else if (cId === "CMD_FILL_THE_VOID") {
+            // ✨ 届かぬ資材を満たすもの: コスト 無料 (今ターンのみ不足資源補填可能)
+            this.state.fillTheVoidTurns = 1;
+            this.state.addBuff({
+                id: cId,
+                name: cName,
+                shortName: cName,
+                icon: "✨",
+                description: cDesc,
+                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 1 }) : "1T",
+                category: "CARD_EFFECT",
+                remainingTurns: 1
+            });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `✨【${cName}】`);
+        } else if (cId === "CMD_SCORCHED_RETREAT") {
+            // 🔥 焦土退却: コスト 🌾-20 (試練後3ターン土地産出 -1/T)
+            this.state.scorchedRetreatTurns = 3;
+            this.state.addBuff({
+                id: cId,
+                name: cName,
+                shortName: cName,
+                icon: "🔥",
+                description: cDesc,
+                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 3 }) : "3T",
+                category: "DEBUFF",
+                remainingTurns: 3
+            });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🔥【${cName}】`);
         } else if (cId === "CMD_LAND_EXPLORATION") {
             const candidates = [];
             if (this.state.grid) {

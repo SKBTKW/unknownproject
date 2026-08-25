@@ -118,17 +118,33 @@ const UILayoutConfig = {
         pointerEvents: "auto"
     },
 
-    // 🎮 7. 画面右下隅: 統合操作グループ (TURN END 専用ボタン)
+    // 🎛️ 7. 画面右下隅 ターン終了 ＆ ギブアップ 操作エリア
     rightBottomControls: {
         position: "absolute",
-        bottom: "16px",
-        right: "20px",
-        width: "160px",
-        zIndex: 500,
-        pointerEvents: "auto"
+        bottom: "0px",
+        right: "0px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "10px",
+        alignItems: "flex-end",
+        zIndex: 600
     },
 
-    // 🌌 8. メインエリア背景 ウォーターマーク ターン表示 (AAA級スタイリッシュ演出)
+    // 🌌 8. 背景ウォールペーパーアート (300% 拡大 ＆ 試練アナウンス下部完全クリアランス)
+    gameWallpaperArt: {
+        position: "absolute",
+        top: "200px",
+        right: "-20px",
+        left: "auto",
+        transform: "none",
+        width: "1100px",
+        maxWidth: "68vw",
+        zIndex: 0,
+        pointerEvents: "none",
+        opacity: "0.88"
+    },
+
+    // 🌌 9. メインエリア背景 ウォーターマーク ターン表示 (AAA級スタイリッシュ演出)
     bgTurnWatermark: {
         position: "absolute",
         top: "20px",
@@ -162,6 +178,11 @@ UILayoutConfig.applyLayout = function() {
     const bgTurn = document.getElementById("bgTurnWatermark");
     if (bgTurn) {
         Object.assign(bgTurn.style, this.bgTurnWatermark);
+    }
+
+    const wallpaper = document.getElementById("gameWallpaperArt");
+    if (wallpaper && this.gameWallpaperArt) {
+        Object.assign(wallpaper.style, this.gameWallpaperArt);
     }
 
     const offeringSec = document.querySelector(".offering-section");

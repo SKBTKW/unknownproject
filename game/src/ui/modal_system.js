@@ -82,6 +82,24 @@
             margin: 6px auto 0 auto;
         }
 
+        .modal-system-checkbox-label {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 12.5px;
+            color: #1abc9c;
+            cursor: pointer;
+            margin: 12px auto 16px auto;
+            user-select: none;
+        }
+        .modal-system-checkbox {
+            cursor: pointer;
+            accent-color: #1abc9c;
+            width: 15px;
+            height: 15px;
+        }
+
         .modal-system-actions {
             display: flex;
             justify-content: center;
@@ -179,13 +197,19 @@
         /**
          * 📜 1. コマンドカード発動確認ダイアログ
          */
-        static showConfirmDialog({ title, costText, descText, confirmLabel, cancelLabel, onConfirm, onCancel }) {
+        static showConfirmDialog({ title, costText, descText, checkboxLabel, confirmLabel, cancelLabel, onConfirm, onCancel }) {
             this.init();
             const overlay = document.getElementById("modalSystemOverlay");
             const content = document.getElementById("modalSystemContent");
 
             const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
             const cText = costText ? `<div class="modal-system-cost-badge">${costText}</div>` : '';
+            const chkHtml = checkboxLabel ? `
+                <label class="modal-system-checkbox-label">
+                    <input type="checkbox" id="modalSysCheckbox" class="modal-system-checkbox">
+                    <span>${checkboxLabel}</span>
+                </label>
+            ` : '';
             const confirmBtnText = confirmLabel || (I18n ? I18n.t("UI_ACTIVATE_CMD") : "⚡ 発動する");
             const cancelBtnText = cancelLabel || (I18n ? I18n.t("UI_CANCEL") : "✖ キャンセル");
 
@@ -198,6 +222,7 @@
                         ${descText || ''}
                         ${cText}
                     </div>
+                    ${chkHtml}
                     <div class="modal-system-actions">
                         <button id="modalSysBtnCancel" class="modal-system-btn modal-system-btn-cancel">${cancelBtnText}</button>
                         <button id="modalSysBtnConfirm" class="modal-system-btn modal-system-btn-confirm">${confirmBtnText}</button>
@@ -213,8 +238,10 @@
             };
 
             document.getElementById("modalSysBtnConfirm").onclick = () => {
+                const chk = document.getElementById("modalSysCheckbox");
+                const isChecked = chk ? chk.checked : false;
                 close();
-                if (typeof onConfirm === "function") onConfirm();
+                if (typeof onConfirm === "function") onConfirm(isChecked);
             };
 
             document.getElementById("modalSysBtnCancel").onclick = () => {

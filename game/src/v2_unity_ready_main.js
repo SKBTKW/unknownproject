@@ -114,10 +114,11 @@ class GameState {
         initGrid(size = 5) {
             if (this.gridEngine) return this.gridEngine.initGrid(size);
             const grid = [];
+            const center = Math.floor(size / 2);
             for (let r = 0; r < size; r++) {
                 const row = [];
                 for (let c = 0; c < size; c++) {
-                    const isHQ = (r === 2 && c === 2);
+                    const isHQ = (r === center && c === center);
                     row.push({
                         r, c,
                         placed: isHQ,
@@ -129,11 +130,45 @@ class GameState {
                         terrain: isHQ ? { id: "HQ", nameKey: "TERRAIN_HQ", food: 10, wood: 10, defense: 10, mystic: 1 } : null,
                         searched: false,
                         hasSocket: false,
-                        socketResource: null
+                        socketResource: null,
+                        cachedSocketSeeds: {}
                     });
                 }
                 grid.push(row);
             }
+
+            // 🎲 ソケット位置の選定（本営周囲を除く外周候補から非隣接 3 マス選定）
+            const candidates = [];
+            for (let r = 0; r < size; r++) {
+                for (let c = 0; c < size; c++) {
+                    const isHQ = (r === center && c === center);
+                    const isNearHQ = (Math.abs(r - center) <= 1 && Math.abs(c - center) <= 1);
+                    if (!isHQ && !isNearHQ) {
+                        candidates.push({ r, c });
+                    }
+                }
+            }
+
+            for (let i = candidates.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+            }
+
+            const selectedSockets = [];
+            for (let candidate of candidates) {
+                if (selectedSockets.length >= 3) break;
+                const isAdjacent = selectedSockets.some(s =>
+                    Math.abs(s.r - candidate.r) <= 1 && Math.abs(s.c - candidate.c) <= 1
+                );
+                if (!isAdjacent) {
+                    selectedSockets.push(candidate);
+                }
+            }
+
+            for (let pos of selectedSockets) {
+                grid[pos.r][pos.c].hasSocket = true;
+            }
+
             return grid;
         }
 
@@ -169,11 +204,79 @@ class GameState {
             return count;
         }
 
+        getTerritoryBreakdown() {
+            if (this.gridEngine && typeof this.gridEngine.getTerritoryBreakdown === "function") {
+                return this.gridEngine.getTerritoryBreakdown();
+            }
+            const breakdown = { plains: 0, forest: 0, deepForest: 0, hill: 0, mountain: 0, desert: 0, total: 0 };
+            if (!this.grid) return breakdown;
+            const size = this.grid.length;
+            for (let r = 0; r < size; r++) {
+                for (let c = 0; c < size; c++) {
+                    const cell = this.grid[r][c];
+                    if (cell.placed && !cell.isHQ && cell.terrain) {
+                        breakdown.total++;
+                        const tid = (cell.terrain.terrainId || cell.terrain.id || "").toUpperCase();
+                        if (tid.includes("PLAINS")) breakdown.plains++;
+                        else if (tid.includes("DEEP_FOREST") || tid.includes("DEEP_HILL")) breakdown.deepForest++;
+                        else if (tid.includes("FOREST")) breakdown.forest++;
+                        else if (tid.includes("HILL")) breakdown.hill++;
+                        else if (tid.includes("MOUNTAIN")) breakdown.mountain++;
+                        else if (tid.includes("DESERT")) breakdown.desert++;
+                        else breakdown.plains++;
+                    }
+                }
+            }
+            return breakdown;
+        }
+
         getResourceBreakdown() {
             if (ProductionCalculator && typeof ProductionCalculator.getResourceBreakdown === "function") {
                 return ProductionCalculator.getResourceBreakdown(this);
             }
             return null;
+        }
+
+        countPlacedBlocks() {
+            if (this.gridEngine && typeof this.gridEngine.getPlacedBlockCount === "function") {
+                return this.gridEngine.getPlacedBlockCount();
+            }
+            if (!this.grid) return 0;
+            const seenBlocks = new Set();
+            let count = 0;
+            for (let r = 0; r < this.grid.length; r++) {
+                for (let c = 0; c < this.grid[r].length; c++) {
+                    const cell = this.grid[r][c];
+                    if (cell.placed && !cell.isHQ && cell.terrain) {
+                        const bId = cell.blockId || `${r}_${c}`;
+                        if (!seenBlocks.has(bId)) {
+                            seenBlocks.add(bId);
+                            count++;
+                        }
+                    }
+                }
+            }
+            return count;
+        }
+
+        checkConditionalBuffs() {
+            // 1. 📜 CMD_LAND_FOCUS: 盤面ブロック数 >= 6 で自動解除
+            if (this.activeDrawBias && this.activeDrawBias.type === "UNTIL_BLOCKS") {
+                const blocks = this.countPlacedBlocks();
+                if (blocks >= (this.activeDrawBias.untilValue || 6)) {
+                    this.activeDrawBias = null;
+                    this.removeBuff("CMD_LAND_FOCUS");
+                }
+            }
+
+            // 2. 🛡️ CMD_MILITARY_FOCUS: 防衛力 🛡️ >= 20 で自動解除
+            if (this.activeDrawBias && this.activeDrawBias.type === "UNTIL_DEFENSE") {
+                const totalDef = (typeof this.calculateTotalDefense === "function") ? this.calculateTotalDefense() : (this.defense || 0);
+                if (totalDef >= (this.activeDrawBias.untilValue || 20)) {
+                    this.activeDrawBias = null;
+                    this.removeBuff("CMD_MILITARY_FOCUS");
+                }
+            }
         }
 
         countH2HillsOnBoard() {
@@ -281,10 +384,15 @@ class GameState {
                 this.addLog(I18n ? I18n.t("LOG_RATIONING_APPLIED", { cost: foodCost }) : `🌾 ${foodCost}`);
             }
 
+            // ⚠️ 緊急徴発 (次ターンの食料維持費 +5)
+            if (this.emergencyLevyTurns && this.emergencyLevyTurns > 0) {
+                foodCost += 5;
+            }
+
             this.food -= foodCost;
             let isGameOver = false;
 
-            // 2. 🌾 食料不足時のペナルティ (🔥-2)
+            // 2. ⚠️ 食料不足ペナルティ (生命力 🔥 -2 ダメージ)
             if (this.food < 0) {
                 this.food = 0;
                 this.ember -= 2;
@@ -340,7 +448,7 @@ class GameState {
                 }
             }
 
-            // 5. 🎯 ドロー偏向バフのターン経過
+            // 6. 🎯 ドロー偏向バフのターン経過
             if (this.activeDrawBias && this.activeDrawBias.type === "TURNS") {
                 this.activeDrawBias.remainingTurns -= 1;
                 if (this.activeDrawBias.remainingTurns <= 0) {
@@ -348,7 +456,36 @@ class GameState {
                 }
             }
 
-            // 6. 💀 ゲームオーバー ＆ 🏆 クリア判定
+            // 7. ⏳ 新規持続バフのターン経過 ＆ 満了処理
+            if (this.grandCultivationTurns && this.grandCultivationTurns > 0) {
+                this.grandCultivationTurns -= 1;
+                if (this.grandCultivationTurns <= 0) {
+                    const bd = (typeof this.getTerritoryBreakdown === "function") ? this.getTerritoryBreakdown() : { plains: 0 };
+                    if (bd.plains >= 12) {
+                        this.ember += 1;
+                        this.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: "大規模耕作計画達成", desc: "🔥+1" }) : `🌾 🔥+1`);
+                    }
+                }
+            }
+            if (this.emergencyLevyTurns && this.emergencyLevyTurns > 0) {
+                this.emergencyLevyTurns -= 1;
+            }
+            if (this.manifestMiracleTurns && this.manifestMiracleTurns > 0) {
+                this.manifestMiracleTurns -= 1;
+            }
+            if (this.fillTheVoidTurns && this.fillTheVoidTurns > 0) {
+                this.fillTheVoidTurns -= 1;
+            }
+            if (this.scorchedRetreatTurns && this.scorchedRetreatTurns > 0) {
+                this.scorchedRetreatTurns -= 1;
+            }
+
+            // 8. ⏳ バフマネージャーのターン減衰同期
+            if (this.buffSystem && typeof this.buffSystem.tickTurn === "function") {
+                this.buffSystem.tickTurn();
+            }
+
+            // 9. 💀 ゲームオーバー ＆ 🏆 クリア判定
             if (this.ember <= 0) {
                 this.ember = 0;
                 isGameOver = true;
@@ -403,6 +540,7 @@ class GameState {
         }
 
         getAllBuffs() {
+            this.checkConditionalBuffs();
             if (this.buffSystem && typeof this.buffSystem.getDisplayBuffs === "function") {
                 return this.buffSystem.getDisplayBuffs();
             }

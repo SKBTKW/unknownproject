@@ -395,6 +395,9 @@ class GridEngine {
         if (typeof this.state.addLog === 'function') {
             this.state.addLog(I18n.t("LOG_LAND_PLACED", { pos: posStr, name: logTerrainName }));
         }
+        if (typeof this.state.checkConditionalBuffs === 'function') {
+            this.state.checkConditionalBuffs();
+        }
         return { can: true, success: true };
     }
 
@@ -505,23 +508,53 @@ class GridEngine {
 
         if (matchingNeighbors.length > 0) {
             const currentCell = this.state.grid[r][c];
-            const groupId = existingGroupId || currentCell.mergeGroupId || `merge_${this.state.mergeGroupCounter++}`;
+            const currPlaceId = currentCell.placementGroupId;
+            const targetGroupId = existingGroupId || currentCell.mergeGroupId || `merge_${this.state.mergeGroupCounter++}`;
+            const oldGroupIds = new Set();
+            if (currentCell.mergeGroupId && currentCell.mergeGroupId !== targetGroupId) {
+                oldGroupIds.add(currentCell.mergeGroupId);
+            }
 
-            currentCell.merged = true;
-            currentCell.mergeGroupId = groupId;
-            currentCell.mergeType = is1x3 ? "1x3" : "1x2";
+            const size = this.state.grid.length;
 
+            // 1. 新規配置カードの全マス（同 placementGroupId）に targetGroupId を伝播
+            for (let row = 0; row < size; row++) {
+                for (let col = 0; col < size; col++) {
+                    const cell = this.state.grid[row][col];
+                    if (cell && currPlaceId && cell.placementGroupId === currPlaceId) {
+                        cell.mergeGroupId = targetGroupId;
+                        cell.mergeType = is1x3 ? "1x3" : "1x2";
+                    }
+                }
+            }
+
+            // 2. マッチした隣接マスおよび所属旧グループを収集
             for (let [nr, nc] of matchingNeighbors) {
                 const adjCell = this.state.grid[nr][nc];
-                adjCell.merged = true;
-                adjCell.mergeGroupId = groupId;
+                if (adjCell.mergeGroupId && adjCell.mergeGroupId !== targetGroupId) {
+                    oldGroupIds.add(adjCell.mergeGroupId);
+                }
+                adjCell.mergeGroupId = targetGroupId;
                 adjCell.mergeType = is1x3 ? "1x3" : "1x2";
             }
 
+            // 3. 旧グループに属していた全マスを targetGroupId に一括合流・統合
+            if (oldGroupIds.size > 0) {
+                for (let row = 0; row < size; row++) {
+                    for (let col = 0; col < size; col++) {
+                        const cell = this.state.grid[row][col];
+                        if (cell && cell.mergeGroupId && oldGroupIds.has(cell.mergeGroupId)) {
+                            cell.mergeGroupId = targetGroupId;
+                            cell.mergeType = is1x3 ? "1x3" : "1x2";
+                        }
+                    }
+                }
+            }
+
             if (!this.state.mergedBlocks) this.state.mergedBlocks = {};
-            if (!this.state.mergedBlocks[groupId]) {
-                this.state.mergedBlocks[groupId] = {
-                    groupId: groupId,
+            if (!this.state.mergedBlocks[targetGroupId]) {
+                this.state.mergedBlocks[targetGroupId] = {
+                    groupId: targetGroupId,
                     terrainId: baseTerrainId,
                     nameKey: terrain.nameKey,
                     mergeType: is1x3 ? "1x3" : "1x2",
@@ -530,7 +563,7 @@ class GridEngine {
                     createdTurn: this.state.turn
                 };
             } else {
-                const blockObj = this.state.mergedBlocks[groupId];
+                const blockObj = this.state.mergedBlocks[targetGroupId];
                 blockObj.mergeType = is1x3 ? "1x3" : blockObj.mergeType;
                 if (!blockObj.cells.some(cell => cell.r === r && cell.c === c) && blockObj.cells.length < 4) {
                     blockObj.cells.push({ r, c });
@@ -607,30 +640,34 @@ class GridEngine {
                         };
 
                         const tid = firstBaseId.toUpperCase();
-                        let bonusFood = 0, bonusWood = 0, bonusMystic = 0;
+                        let bonusFood = 0, bonusWood = 0, bonusMystic = 0, bonusEmber = 1;
 
                         if (tid.includes("PLAINS")) {
                             bonusFood = 10;
+                            bonusEmber = 2; // 🔥 平地 2x2 マージ成立ボーナス: 🔥+2
                         } else if (tid.includes("HILL")) {
                             bonusWood = 8;
                             bonusFood = 4;
+                            bonusEmber = 1;
                         } else if (tid.includes("MOUNTAIN")) {
                             bonusWood = 10;
                             bonusMystic = 5;
+                            bonusEmber = 1;
                         } else {
                             bonusFood = 5;
+                            bonusEmber = 1;
                         }
 
                         this.state.food += bonusFood;
                         this.state.wood += bonusWood;
                         this.state.mystic += bonusMystic;
-                        this.state.ember += 1; // 🔥 2x2 マージ成立ボーナス (キャップなし加算)
+                        this.state.ember += bonusEmber; // 🔥 2x2 マージ成立ボーナス (キャップなし加算)
 
                         let textParts = [];
                         if (bonusFood > 0) textParts.push(`🌾+${bonusFood}`);
                         if (bonusWood > 0) textParts.push(`🧱+${bonusWood}`);
                         if (bonusMystic > 0) textParts.push(`✨+${bonusMystic}`);
-                        textParts.push(`🔥+1`);
+                        textParts.push(`🔥+${bonusEmber}`);
                         const bText = textParts.join(" ");
 
                         const tName = I18n.t(c1.terrain.nameKey);
@@ -804,6 +841,32 @@ class GridEngine {
                 }
             }
         }
+    }
+
+    /**
+     * 🗺️ 盤面上に開墾された土地属性ごとのマス数内訳を取得
+     */
+    getTerritoryBreakdown() {
+        const breakdown = { plains: 0, forest: 0, deepForest: 0, hill: 0, mountain: 0, desert: 0, total: 0 };
+        if (!this.state || !this.state.grid) return breakdown;
+        const size = this.state.grid.length;
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
+                const cell = this.state.grid[r][c];
+                if (cell.placed && !cell.isHQ && cell.terrain) {
+                    breakdown.total++;
+                    const tid = (cell.terrain.terrainId || cell.terrain.id || "").toUpperCase();
+                    if (tid.includes("PLAINS")) breakdown.plains++;
+                    else if (tid.includes("DEEP_FOREST") || tid.includes("DEEP_HILL")) breakdown.deepForest++;
+                    else if (tid.includes("FOREST")) breakdown.forest++;
+                    else if (tid.includes("HILL")) breakdown.hill++;
+                    else if (tid.includes("MOUNTAIN")) breakdown.mountain++;
+                    else if (tid.includes("DESERT")) breakdown.desert++;
+                    else breakdown.plains++; // フォールバック
+                }
+            }
+        }
+        return breakdown;
     }
 }
 

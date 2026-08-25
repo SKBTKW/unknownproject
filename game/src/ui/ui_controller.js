@@ -101,6 +101,12 @@ class UIController {
                 }
             };
             window.render = () => this.render();
+
+            const dataPanelEl = document.getElementById("headerDataPanel");
+            if (dataPanelEl) {
+                dataPanelEl.addEventListener("mouseenter", (e) => this.showDataPanelTooltip(e));
+                dataPanelEl.addEventListener("mouseleave", () => this.hideDataPanelTooltip());
+            }
         }
     }
 
@@ -187,6 +193,12 @@ class UIController {
                 e.preventDefault();
                 this.deselectCard();
             }
+        });
+
+        // 4. 🖱️ ドラッグ中の禁止カーソル (赤丸斜線 🚫) 抑止
+        document.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
         });
     }
 
@@ -352,20 +364,16 @@ class UIController {
         const settings = (typeof window !== "undefined" && window.gameSettings) ? window.gameSettings : null;
         const confirmRequired = settings ? settings.get("mulliganConfirm") : true;
 
-        if (!confirmRequired) {
+        const executeMulligan = () => {
             if (typeof window.mulligan === "function") {
                 window.mulligan();
             } else if (this.engine && typeof this.engine.mulligan === "function") {
                 this.engine.mulligan();
             }
-            return;
-        }
+        };
 
-        // 手札直上にインライン吹き出し (Popover) を表示
-        const parent = btnMulligan.parentElement;
-        const existingPopover = document.getElementById("mulliganPopover");
-        if (existingPopover) {
-            existingPopover.remove();
+        if (!confirmRequired) {
+            executeMulligan();
             return;
         }
 
@@ -376,47 +384,26 @@ class UIController {
         const dlgCancel = I18n ? I18n.t("UI_DIALOG_MULLIGAN_CANCEL") : "やめる";
         const dlgDontAsk = I18n ? I18n.t("UI_DIALOG_DONT_ASK_AGAIN") : "次回から確認しない";
 
-        const popover = document.createElement("div");
-        popover.id = "mulliganPopover";
-        popover.className = "mulligan-popover-box";
-        popover.innerHTML = `
-            <div class="mulligan-popover-title">
-                <span>🔄</span> ${dlgTitle}
-            </div>
-            <div class="mulligan-popover-desc">
-                ${dlgDesc}
-            </div>
-            <label class="mulligan-popover-checkbox-label">
-                <input type="checkbox" id="chkSkipMulliganConfirm" class="mulligan-popover-checkbox">
-                ${dlgDontAsk}
-            </label>
-            <div class="mulligan-popover-actions">
-                <button id="btnCancelMulliganPop" class="mulligan-popover-btn-cancel">${dlgCancel}</button>
-                <button id="btnConfirmMulliganPop" class="mulligan-popover-btn-confirm">${dlgConfirm}</button>
-            </div>
-        `;
-
-        parent.style.position = "relative";
-        parent.appendChild(popover);
-
-        const btnCancel = popover.querySelector("#btnCancelMulliganPop");
-        const btnConfirm = popover.querySelector("#btnConfirmMulliganPop");
-
-        if (btnCancel) btnCancel.onclick = () => popover.remove();
-        if (btnConfirm) {
-            btnConfirm.onclick = () => {
-                const chk = popover.querySelector("#chkSkipMulliganConfirm");
-                if (chk && chk.checked && settings) {
-                    settings.set("mulliganConfirm", false);
+        if (typeof ModalSystem !== "undefined" && typeof ModalSystem.showConfirmDialog === "function") {
+            ModalSystem.showConfirmDialog({
+                title: `🔄 ${dlgTitle}`,
+                descText: dlgDesc,
+                costText: "🔥 -1",
+                checkboxLabel: dlgDontAsk,
+                confirmLabel: dlgConfirm,
+                cancelLabel: dlgCancel,
+                onConfirm: (dontAskAgain) => {
+                    if (dontAskAgain && settings) {
+                        settings.set("mulliganConfirm", false);
+                    }
+                    executeMulligan();
                 }
-                popover.remove();
-                if (typeof window.mulligan === "function") {
-                    window.mulligan();
-                } else if (this.engine && typeof this.engine.mulligan === "function") {
-                    this.engine.mulligan();
-                }
-            };
+            });
+            return;
         }
+
+        // フォールバック
+        executeMulligan();
     }
 
     /**
@@ -711,25 +698,31 @@ class UIController {
 
     rotateSelectedCard(e, idx) {
         if (e && typeof e.stopPropagation === "function") e.stopPropagation();
+        if (e && typeof e.preventDefault === "function") e.preventDefault();
         if (!this.state || !this.state.handOffering) return;
         const card = this.state.handOffering[idx];
-        if (!card || card.isBlank || !card.currentShape) return;
+        if (!card || card.isBlank) return;
 
-        const oldShape = card.currentShape;
-        const rows = oldShape.length;
-        const cols = oldShape[0].length;
+        const currentShape = card.currentShape || (card.terrain ? card.terrain.shape : (card.shape || [[1]]));
+        const rows = currentShape.length;
+        const cols = currentShape[0].length;
         const newShape = [];
         for (let c = 0; c < cols; c++) {
             const newRow = [];
             for (let r = rows - 1; r >= 0; r--) {
-                newRow.push(oldShape[r][c]);
+                newRow.push(currentShape[r][c]);
             }
             newShape.push(newRow);
         }
         card.currentShape = newShape;
 
+        // 選択中カードと同期
+        if (this.selectedCard && (this.selectedCardIdx === idx || this.selectedCard === card)) {
+            this.selectedCard.currentShape = newShape;
+        }
+
         this.render();
-        if (this.selectedCardIdx === idx) {
+        if (this.selectedCardIdx === idx || (this.selectedCard && this.selectedCard === card)) {
             this.highlightPlaceableCells();
         }
     }
@@ -811,34 +804,41 @@ class UIController {
         if (!this.state || !this.state.toastQueue || this.state.toastQueue.length === 0) return;
         if (typeof document === "undefined") return;
 
-        while (this.state.toastQueue.length > 0) {
-            const toast = this.state.toastQueue.shift();
+        const toasts = [...this.state.toastQueue];
+        this.state.toastQueue = [];
+
+        toasts.forEach((toast, idx) => {
             const { r, c, text } = toast;
 
-            // 当該セルの DOM 座標を取得
-            let targetX = window.innerWidth / 2;
-            let targetY = window.innerElevation / 2;
-
-            const cellEl = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`) || document.querySelector(`#cell_${r}_${c}`);
-            if (cellEl) {
-                const rect = cellEl.getBoundingClientRect();
-                targetX = rect.left + rect.width / 2;
-                targetY = rect.top + rect.height / 2;
-            }
-
-            // フロートポップアップ要素の生成
-            const popup = document.createElement("div");
-            popup.className = "float-toast-bonus";
-            popup.innerHTML = text;
-            popup.style.left = `${targetX}px`;
-            popup.style.top = `${targetY}px`;
-            document.body.appendChild(popup);
-
-            // アニメーション完了後に DOM から自動削除
             setTimeout(() => {
-                if (popup.parentNode) popup.parentNode.removeChild(popup);
-            }, 1700);
-        }
+                // 当該セルの DOM 座標を取得
+                let targetX = (typeof window !== "undefined" ? window.innerWidth / 2 : 200);
+                let targetY = (typeof window !== "undefined" ? window.innerHeight / 2 : 200);
+
+                const cellEl = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`) || document.querySelector(`#cell_${r}_${c}`);
+                if (cellEl && typeof cellEl.getBoundingClientRect === "function") {
+                    const rect = cellEl.getBoundingClientRect();
+                    targetX = rect.left + rect.width / 2;
+                    targetY = rect.top + rect.height / 2;
+                }
+
+                // 垂直オフセット（重なり防止スタック: 1個ごとに -32px 上方へシフト）
+                const offsetY = idx * 32;
+
+                // フロートポップアップ要素の生成
+                const popup = document.createElement("div");
+                popup.className = "float-toast-bonus";
+                popup.innerHTML = text;
+                popup.style.left = `${targetX}px`;
+                popup.style.top = `${targetY - offsetY}px`;
+                document.body.appendChild(popup);
+
+                // アニメーション完了後に DOM から自動削除
+                setTimeout(() => {
+                    if (popup.parentNode) popup.parentNode.removeChild(popup);
+                }, 1700);
+            }, idx * 160);
+        });
     }
 
     clearCellPreviews() {
@@ -1294,11 +1294,17 @@ class UIController {
                 </div>
             </div>
         `;
-        const rect = e.currentTarget.getBoundingClientRect();
+
+        const targetEl = (e && e.currentTarget) ? e.currentTarget : (document.getElementById("headerDataPanel") || document.querySelector(".header-resource-data-panel"));
+        const rect = targetEl ? targetEl.getBoundingClientRect() : { bottom: 60, right: 300, left: 100 };
+        const winWidth = (typeof window !== "undefined") ? window.innerWidth : 1920;
+
         tt.style.position = "fixed";
         tt.style.top = `${rect.bottom + 8}px`;
-        tt.style.right = `${window.innerWidth - rect.right}px`;
+        tt.style.left = "auto";
+        tt.style.right = `${Math.max(16, winWidth - rect.right)}px`;
         tt.style.display = "block";
+        tt.style.zIndex = "100000";
     }
 
     hideDataPanelTooltip() {
@@ -1366,6 +1372,64 @@ class UIController {
     hideFloatingPreviewIfNotSelected() {
         // 選択中のカードがなければプレビューを非表示、あれば選択中カードに戻す
         this.updateFloatingPreview(null);
+    }
+
+    /**
+     * 💡 マウスオーバー時のカード操作ガイドポップアップ表示 (3大操作ヒント)
+     * @param {HTMLElement} targetCardEl 
+     * @param {Object} card 
+     */
+    showCardActionHintPopover(targetCardEl, card) {
+        if (this.isMinimalMode || (typeof document !== "undefined" && (document.body.classList.contains("is-minimal") || !!document.querySelector("#cardRow.is-minimal, .offering-section.is-minimal")))) return;
+        if (typeof document === "undefined" || !targetCardEl || !card || card.isBlank) return;
+        this.hideCardActionHintPopover();
+
+        const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' && window.I18n ? window.I18n : { t: k => k });
+        const tObj = card.terrain || card;
+        const category = card.category || tObj.category || "LAND";
+
+        const popover = document.createElement("div");
+        popover.id = "cardActionHintPopover";
+        popover.className = "card-action-hint-popover";
+
+        if (category === "LAND") {
+            popover.innerHTML = `
+                <div class="card-action-hint-item">
+                    <span class="card-action-hint-bullet">&bull;</span>
+                    <span>${I18n.t("UI_CARD_HINT_PLACE_LAND")}</span>
+                </div>
+                <div class="card-action-hint-item">
+                    <span class="card-action-hint-bullet">&bull;</span>
+                    <span>${I18n.t("UI_CARD_HINT_ROTATE")}</span>
+                </div>
+                <div class="card-action-hint-item">
+                    <span class="card-action-hint-bullet">&bull;</span>
+                    <span>${I18n.t("UI_CARD_HINT_RESERVE")}</span>
+                </div>
+            `;
+        } else {
+            popover.innerHTML = `
+                <div class="card-action-hint-item">
+                    <span class="card-action-hint-bullet">&bull;</span>
+                    <span>${I18n.t("UI_CARD_HINT_PLAY_CMD")}</span>
+                </div>
+                <div class="card-action-hint-item">
+                    <span class="card-action-hint-bullet">&bull;</span>
+                    <span>${I18n.t("UI_CARD_HINT_RESERVE")}</span>
+                </div>
+            `;
+        }
+
+        targetCardEl.style.position = "relative";
+        targetCardEl.appendChild(popover);
+    }
+
+    hideCardActionHintPopover() {
+        if (typeof document === "undefined") return;
+        const existing = document.getElementById("cardActionHintPopover");
+        if (existing && existing.parentNode) {
+            existing.parentNode.removeChild(existing);
+        }
     }
 }
 

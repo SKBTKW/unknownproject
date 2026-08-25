@@ -89,30 +89,11 @@ export class BuffSystem {
     }
 
     /**
-     * 📋 UI表示用バフリストの取得（環境バフ・試練告知・期限付きバフの自動統合）
+     * 📋 UI表示用バフリストの取得（環境バフ・期限付きバフの自動統合）
      */
     getDisplayBuffs() {
         this.updateEnvironmentBuffs();
-        const displayList = [...this.buffs];
-
-        // ⚔️ 試練5ターン前接近アラートの自動バフ表示
-        if (this.state && typeof this.state.getTrialNotice === "function") {
-            const notice = this.state.getTrialNotice();
-            if (notice && notice.active) {
-                const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
-                displayList.unshift({
-                    id: "TRIAL_ALERT_COUNTDOWN",
-                    name: I18n ? I18n.t("BUFF_TRIAL_ALERT_NAME", { rem: notice.remaining }) : `⚔️ 試練襲来まで あと ${notice.remaining} ターン`,
-                    shortName: I18n ? I18n.t("BUFF_TRIAL_ALERT_SHORT", { rem: notice.remaining }) : `試練接近 (${notice.remaining}T)`,
-                    icon: "⚔️",
-                    description: I18n ? I18n.t("BUFF_TRIAL_ALERT_DESC") : "迫り来る大試練に備えて防衛力 (🛡️) を高めてください。",
-                    badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: notice.remaining }) : `残り ${notice.remaining}T`,
-                    category: "TRIAL_ALERT"
-                });
-            }
-        }
-
-        return displayList;
+        return [...this.buffs];
     }
 
     /**

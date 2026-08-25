@@ -47,6 +47,8 @@
 
             // ⬆️ 上方向トグル展開パネル (Dropup Panel)
             this.dropupPanelEl = document.createElement("div");
+            this.dropupPanelEl.className = "buff-dropup-panel";
+            this.dropupPanelEl.style.display = "none";
             const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
             const listTitle = I18n ? I18n.t("UI_BUFF_LIST_TITLE") : "✨ 発動中のバフ一覧";
             const sortBtnText = I18n ? I18n.t("UI_BUFF_SORT_BTN") : "並び替え 獲得順 🔄";
@@ -138,18 +140,23 @@
                 displayList.reverse();
             }
 
-            this.stackListEl.innerHTML = displayList.map(buff => `
-                <div class="buff-card-item">
-                    <div class="buff-card-left">
-                        <span class="buff-card-icon">${buff.icon || "✨"}</span>
-                        <div>
-                            <div class="buff-card-title">${buff.name}</div>
-                            <div class="buff-card-desc">${buff.description || ""}</div>
+            this.stackListEl.innerHTML = displayList.map(buff => {
+                const instantText = I18n ? I18n.t("UI_CMD_INSTANT_LABEL") : "Instant";
+                const isInstant = !buff.badgeText || buff.badgeText === instantText || buff.badgeText === "Instant";
+                const badgeHtml = (!isInstant && buff.badgeText) ? `<span class="buff-card-badge">${buff.badgeText}</span>` : "";
+                return `
+                    <div class="buff-card-item">
+                        <div class="buff-card-left">
+                            <span class="buff-card-icon">${buff.icon || "✨"}</span>
+                            <div>
+                                <div class="buff-card-title">${buff.name}</div>
+                                <div class="buff-card-desc">${buff.description || ""}</div>
+                            </div>
                         </div>
+                        ${badgeHtml}
                     </div>
-                    <span class="buff-card-badge">${buff.badgeText || (I18n ? I18n.t("UI_CMD_INSTANT_LABEL") : "パッシブ")}</span>
-                </div>
-            `).join("");
+                `;
+            }).join("");
         }
 
         /**

@@ -284,10 +284,10 @@
     z-index: 50 !important;
 }
 
-/* ✨ 統合単一マージブロック 地勢属性別カラー枠線・オーラスタイル (rules/03_merge_system.md 準拠) */
+/* ✨ 統合単一マージブロック 地勢属性別カラー枠線・オーラスタイル (各土地のテーマカラーを100%最優先維持) */
 .cell.merged {
-    border: 2px solid #f1c40f !important;
-    box-shadow: 0 0 12px rgba(241, 196, 15, 0.4), inset 0 0 10px rgba(241, 196, 15, 0.2) !important;
+    border-width: 3px !important;
+    border-style: solid !important;
 }
 
 /* 🌾 各土地属性の独立カラーパターン定義 (専用CSS管理) */
@@ -309,54 +309,72 @@
 }
 .cell.terrain-mountain {
     background: linear-gradient(135deg, #383a54 0%, #202236 100%) !important;
-    border-color: #9b59b6 !important;
+    border-color: #3498db !important;
 }
 .cell.terrain-desert {
     background: linear-gradient(135deg, #84723c 0%, #463b18 100%) !important;
     border-color: #f7d794 !important;
 }
 
-/* 🌾 平地マージ (エメラルドグリーン) */
+/* 🌾 平地マージ (フレッシュグリーン大枠 ＆ 豊潤な緑グラデーション) */
 .cell.merged.merged-plains {
-    border: 3px solid #1abc9c !important;
-    box-shadow: 0 0 14px rgba(26, 188, 156, 0.6), inset 0 0 12px rgba(26, 188, 156, 0.3) !important;
+    background: linear-gradient(135deg, #1b4d2e 0%, #0d2918 100%) !important;
+    border-color: #2ecc71 !important;
+    box-shadow: 0 0 16px rgba(46, 204, 113, 0.75), inset 0 0 14px rgba(46, 204, 113, 0.35) !important;
 }
 
-/* 🌲 森マージ (ブライトグリーン) */
+/* 🌲 森マージ (エメラルドグリーン大枠 ＆ 深緑グラデーション) */
 .cell.merged.merged-forest {
-    border: 3px solid #2ecc71 !important;
-    box-shadow: 0 0 14px rgba(46, 204, 113, 0.6), inset 0 0 12px rgba(46, 204, 113, 0.3) !important;
+    background: linear-gradient(135deg, #0e3d32 0%, #06241d 100%) !important;
+    border-color: #1abc9c !important;
+    box-shadow: 0 0 16px rgba(26, 188, 156, 0.75), inset 0 0 14px rgba(26, 188, 156, 0.35) !important;
 }
 
-/* 🌳 深い森マージ (鮮烈なティールエメラルド) */
+/* 🌳 深い森マージ (鮮烈なディープエメラルド大枠 ＆ 密林グラデーション) */
 .cell.merged.merged-deep-forest {
-    border: 3px solid #1abc9c !important;
-    box-shadow: 0 0 16px rgba(26, 188, 156, 0.75), inset 0 0 12px rgba(26, 188, 156, 0.4) !important;
+    background: linear-gradient(135deg, #0f4c47 0%, #052b27 100%) !important;
+    border-color: #16a085 !important;
+    box-shadow: 0 0 18px rgba(22, 160, 133, 0.8), inset 0 0 14px rgba(22, 160, 133, 0.4) !important;
 }
 
-/* ⛰️ 丘陵マージ (アンバーオレンジ) */
+/* ⛰️ 丘陵マージ (アースアンバーオレンジ大枠 ＆ 褐土グラデーション) */
 .cell.merged.merged-hill {
-    border: 3px solid #e67e22 !important;
-    box-shadow: 0 0 14px rgba(230, 126, 34, 0.6), inset 0 0 12px rgba(230, 126, 34, 0.3) !important;
+    background: linear-gradient(135deg, #543714 0%, #2e1c08 100%) !important;
+    border-color: #e67e22 !important;
+    box-shadow: 0 0 16px rgba(230, 126, 34, 0.75), inset 0 0 14px rgba(230, 126, 34, 0.35) !important;
 }
 
-/* 🏔️ 山岳マージ (シアンブルー) */
+/* 🏔️ 山岳マージ (スレートブルー・アイアン大枠 ＆ 鉱山グラデーション) */
 .cell.merged.merged-mountain {
-    border: 3px solid #3498db !important;
-    box-shadow: 0 0 14px rgba(52, 152, 219, 0.6), inset 0 0 12px rgba(52, 152, 219, 0.3) !important;
+    background: linear-gradient(135deg, #2c3e50 0%, #1a252f 100%) !important;
+    border-color: #3498db !important;
+    box-shadow: 0 0 16px rgba(52, 152, 219, 0.75), inset 0 0 14px rgba(52, 152, 219, 0.35) !important;
 }
 
-/* 🏜️ 砂漠マージ (淡いペールサンドゴールド) */
+/* 🏜️ 砂漠マージ (サンセットゴールド大枠 ＆ 黄金砂グラデーション) */
 .cell.merged.merged-desert {
-    border: 3px solid #f7d794 !important;
-    box-shadow: 0 0 16px rgba(247, 215, 148, 0.7), inset 0 0 12px rgba(247, 215, 148, 0.4) !important;
+    background: linear-gradient(135deg, #7a5e20 0%, #3d2f0d 100%) !important;
+    border-color: #f1c40f !important;
+    box-shadow: 0 0 16px rgba(241, 196, 15, 0.75), inset 0 0 14px rgba(241, 196, 15, 0.35) !important;
 }
 
-/* 🚫 マージ内側境界線打消し (1枚の繋がった統合大土地化) */
+/* 🚫 マージ・複数マス内側境界線打消し ＆ シームレス完全単一ブロック化 */
 .cell.no-border-top, .cell.merged.no-border-top { border-top: none !important; }
-.cell.no-border-right, .cell.merged.no-border-right { border-right: none !important; }
-.cell.no-border-bottom, .cell.merged.no-border-bottom { border-bottom: none !important; }
 .cell.no-border-left, .cell.merged.no-border-left { border-left: none !important; }
+
+.cell.no-border-right, .cell.merged.no-border-right {
+    border-right: none !important;
+    margin-right: -4px !important;
+    width: calc(var(--cell-size, 80px) + 4px) !important;
+    z-index: 2 !important;
+}
+
+.cell.no-border-bottom, .cell.merged.no-border-bottom {
+    border-bottom: none !important;
+    margin-bottom: -4px !important;
+    height: calc(var(--cell-size, 80px) + 4px) !important;
+    z-index: 2 !important;
+}
 
 /* ✨ マージグループ連動ホバーライトアップハイライト */
 .cell.merge-hover-highlight {
@@ -399,32 +417,21 @@
     color: #e0e0e0;
 }
 
-/* ↩️ 当ターン配置マス専用のアンドゥガイド＆アニメーション */
-@keyframes placedPulse {
-    0% { box-shadow: inset 0 0 10px rgba(231, 76, 60, 0.4), 0 0 8px rgba(231, 76, 60, 0.5); }
-    50% { box-shadow: inset 0 0 16px rgba(231, 76, 60, 0.8), 0 0 18px rgba(231, 76, 60, 0.8); }
-    100% { box-shadow: inset 0 0 10px rgba(231, 76, 60, 0.4), 0 0 8px rgba(231, 76, 60, 0.5); }
-}
-
+/* ↩️ 当ターン配置マスのスタイル (赤ハイライト全廃・クリーンな土地境界を維持) */
 .cell.cell-placed-this-turn {
     cursor: pointer !important;
-    border-color: #e74c3c !important;
-    animation: placedPulse 2s infinite ease-in-out;
 }
 
 .cell.cell-placed-this-turn:hover {
-    filter: brightness(1.25) contrast(1.1) !important;
-    border-color: #ff4757 !important;
-    box-shadow: 0 0 20px rgba(255, 71, 87, 0.9) !important;
-    transform: scale(1.03);
-    z-index: 30 !important;
+    filter: brightness(1.15) !important;
 }
 
 .undo-badge {
     position: absolute;
     top: 4px;
     right: 4px;
-    background: #e74c3c;
+    background: rgba(30, 41, 59, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.4);
     color: #ffffff;
     font-size: 11px;
     font-weight: 900;
@@ -434,15 +441,16 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.6), 0 0 8px rgba(231,76,60,0.8);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
     pointer-events: none;
     z-index: 20;
-    transition: transform 0.15s ease;
+    transition: transform 0.15s ease, background-color 0.15s ease;
 }
 
 .cell.cell-placed-this-turn:hover .undo-badge {
-    transform: scale(1.2) rotate(-20deg);
-    background: #ff4757;
+    transform: scale(1.18);
+    background: #1abc9c;
+    border-color: #16a085;
 }
 
 /* 🌟 連結即時ボーナス・フロート上昇ポップアップ演出 */
@@ -460,13 +468,129 @@
     z-index: 100000;
     background: linear-gradient(135deg, #f1c40f, #e67e22);
     color: #111111;
-    font-size: 13px;
+    font-size: 23px; /* 🌟 175% 拡大 (13px * 1.75 = 23px) */
     font-weight: 900;
-    padding: 6px 14px;
-    border-radius: 20px;
-    border: 2px solid #ffffff;
-    box-shadow: 0 4px 20px rgba(241, 196, 15, 0.85), 0 0 15px rgba(255, 255, 255, 0.6);
+    padding: 10px 24px; /* 🌟 175% 拡大 */
+    border-radius: 30px;
+    border: 3px solid #ffffff;
+    box-shadow: 0 8px 30px rgba(241, 196, 15, 0.95), 0 0 24px rgba(255, 255, 255, 0.8);
     white-space: nowrap;
     text-shadow: 0 1px 2px rgba(255,255,255,0.4);
-    animation: floatToastUp 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: floatToastUp 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* 🌾 資源産出ブロック専用コンテナ（画像フォーマット準拠: 中央配置 ＆ 内部左揃え） */
+.tile-content-box {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 5;
+    user-select: none;
+}
+
+.tile-title-line {
+    font-size: 13px;
+    font-weight: 900;
+    color: #ffffff;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+    letter-spacing: 0.5px;
+    line-height: 1.2;
+    margin-bottom: 2px;
+}
+
+.tile-yield-line {
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 900;
+    color: #f1c40f;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+    line-height: 1.2;
+}
+
+.tile-yield-line .yield-icon {
+    font-size: 12px;
+    margin-right: 2px;
+}
+
+.tile-yield-line .yield-colon {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.85);
+    margin: 0 2px;
+}
+
+.tile-yield-line .yield-val {
+    font-size: 13px;
+    font-weight: 900;
+    color: #ffffff;
+}
+
+.tile-socket-badge {
+    font-size: 10px;
+    color: #f39c12;
+    font-weight: bold;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+    margin-top: 2px;
+}
+
+/* ✨ 資源産出ブロック 土地属性別イメージカラー連動ハイライト */
+.cell.has-resource-yield {
+    border-color: rgba(26, 188, 156, 0.75) !important;
+    box-shadow: inset 0 0 10px rgba(26, 188, 156, 0.22), 0 0 6px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* 1. 草原・平地: フレッシュグリーン光彩 */
+.cell.terrain-plains.has-resource-yield {
+    border-color: rgba(46, 204, 113, 0.85) !important;
+    box-shadow: inset 0 0 12px rgba(46, 204, 113, 0.30), 0 0 8px rgba(46, 204, 113, 0.4) !important;
+}
+.cell.terrain-plains.has-resource-yield:hover {
+    border-color: #2ecc71 !important;
+    box-shadow: inset 0 0 16px rgba(46, 204, 113, 0.45), 0 0 14px rgba(46, 204, 113, 0.6) !important;
+}
+
+/* 2. 森・深い森: エメラルドディープフォレスト光彩 */
+.cell.terrain-forest.has-resource-yield,
+.cell.terrain-deep-forest.has-resource-yield {
+    border-color: rgba(26, 188, 156, 0.85) !important;
+    box-shadow: inset 0 0 12px rgba(26, 188, 156, 0.30), 0 0 8px rgba(26, 188, 156, 0.4) !important;
+}
+.cell.terrain-forest.has-resource-yield:hover,
+.cell.terrain-deep-forest.has-resource-yield:hover {
+    border-color: #1abc9c !important;
+    box-shadow: inset 0 0 16px rgba(26, 188, 156, 0.45), 0 0 14px rgba(26, 188, 156, 0.6) !important;
+}
+
+/* 3. 丘陵・深い丘陵: アースオレンジ・アンバー光彩 */
+.cell.terrain-hill.has-resource-yield,
+.cell.terrain-deep-hill.has-resource-yield {
+    border-color: rgba(230, 126, 34, 0.85) !important;
+    box-shadow: inset 0 0 12px rgba(230, 126, 34, 0.30), 0 0 8px rgba(230, 126, 34, 0.4) !important;
+}
+.cell.terrain-hill.has-resource-yield:hover,
+.cell.terrain-deep-hill.has-resource-yield:hover {
+    border-color: #e67e22 !important;
+    box-shadow: inset 0 0 16px rgba(230, 126, 34, 0.45), 0 0 14px rgba(230, 126, 34, 0.6) !important;
+}
+
+/* 4. 山岳: スレートブルー・アイアンシルバー光彩 */
+.cell.terrain-mountain.has-resource-yield {
+    border-color: rgba(52, 152, 219, 0.85) !important;
+    box-shadow: inset 0 0 12px rgba(52, 152, 219, 0.30), 0 0 8px rgba(52, 152, 219, 0.4) !important;
+}
+.cell.terrain-mountain.has-resource-yield:hover {
+    border-color: #3498db !important;
+    box-shadow: inset 0 0 16px rgba(52, 152, 219, 0.45), 0 0 14px rgba(52, 152, 219, 0.6) !important;
+}
+
+/* 5. 砂漠・遺跡: サンセットゴールド光彩 */
+.cell.terrain-desert.has-resource-yield {
+    border-color: rgba(241, 196, 15, 0.85) !important;
+    box-shadow: inset 0 0 12px rgba(241, 196, 15, 0.30), 0 0 8px rgba(241, 196, 15, 0.4) !important;
+}
+.cell.terrain-desert.has-resource-yield:hover {
+    border-color: #f1c40f !important;
+    box-shadow: inset 0 0 16px rgba(241, 196, 15, 0.45), 0 0 14px rgba(241, 196, 15, 0.6) !important;
 }
