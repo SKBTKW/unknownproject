@@ -17,32 +17,11 @@ class GameState {
 
         this.stage = dependencies.stage || { id: 1, name: "Stage 1", size: 5, bonusMultiplier: 1.0 };
         
-        // 🧩 GridEngine の初期化と委譲 (DI対応 ＆ 直接参照)
-        if (dependencies.gridEngine) {
-            this.gridEngine = dependencies.gridEngine;
-        } else if (GridEngine) {
-            this.gridEngine = new GridEngine(this, this.engine);
-        } else {
-            this.gridEngine = null;
-        }
-
-        // 🎴 DeckManager の初期化と委譲 (DI対応 ＆ 直接参照)
-        if (dependencies.deckManager) {
-            this.deckManager = dependencies.deckManager;
-        } else if (DeckManager) {
-            this.deckManager = new DeckManager(this, this.engine);
-        } else {
-            this.deckManager = null;
-        }
-
-        // 🏛️ DirectiveSystem の初期化 (DI対応 ＆ 直接参照)
-        if (dependencies.directiveSystem) {
-            this.directiveSystem = dependencies.directiveSystem;
-        } else if (DirectiveSystem) {
-            this.directiveSystem = new DirectiveSystem(this, this.engine);
-        } else {
-            this.directiveSystem = null;
-        }
+        // 🛑 サブシステムの new 生成を 100% 撤廃 (GameEngine に一元化)
+        this._gridEngine = dependencies.gridEngine || null;
+        this._deckManager = dependencies.deckManager || null;
+        this._directiveSystem = dependencies.directiveSystem || null;
+        this._buffSystem = dependencies.buffSystem || null;
 
         this.grid = this.initGrid(5);
         this.handOffering = [];
@@ -429,6 +408,16 @@ class GameState {
             }
             return this.activeBuffs || [];
         }
+
+        // 🔗 下位互換 ＆ 透過的サブシステム参照アクセサ (GameState自体は生成責任を持たない)
+        get gridEngine() { return this._gridEngine || (this.engine ? this.engine.gridEngine : null); }
+        set gridEngine(v) { this._gridEngine = v; }
+        get deckManager() { return this._deckManager || (this.engine ? this.engine.deckManager : null); }
+        set deckManager(v) { this._deckManager = v; }
+        get directiveSystem() { return this._directiveSystem || (this.engine ? this.engine.directiveSystem : null); }
+        set directiveSystem(v) { this._directiveSystem = v; }
+        get buffSystem() { return this._buffSystem || (this.engine ? this.engine.buffSystem : null); }
+        set buffSystem(v) { this._buffSystem = v; }
     }
 
     // 🎴 Step1DrawSystem 互換エイリアス

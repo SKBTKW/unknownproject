@@ -41,7 +41,7 @@ export class ReserveSlotComponent {
             const rarityClass = `rarity-${rCode.toLowerCase()}`;
             const categoryClass = category !== "LAND" ? `category-${category.toLowerCase()}` : "";
 
-            const cName = tObj.nameKey ? I18n.t(tObj.nameKey) : (tObj.id || "Card");
+            const cName = tObj.nameKey ? I18n.t(tObj.nameKey) : (tObj.name || tObj.id || "Card");
             const cDesc = tObj.descriptionKey ? I18n.t(tObj.descriptionKey) : (tObj.description || "");
 
             // 💰 コマンドカード発動コスト判定
@@ -123,18 +123,18 @@ export class ReserveSlotComponent {
             if (category !== "LAND") {
                 // ⚡ コマンドカード (通常手札と100%同一描画・バッジなし・ツールチップ完全廃止)
                 const fullInnerHtml = `
-                    <div class="tcg-card-top-bar" style="padding:4px 8px; display:flex; align-items:center; justify-content:space-between; gap:6px;">
+                    <div class="tcg-card-top-bar">
                         <div class="tcg-category-icon-pill">${catIcon}</div>
                         <div class="tcg-title-pill">${cName}</div>
                     </div>
-                    <div class="tcg-shape-art-area" style="display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-start; background:#1c2536; padding:14px; text-align:left; overflow:hidden; flex:1; border-radius:6px; margin:4px 0;">
-                        <div class="tcg-minimal-cmd-icon" style="display:none;">${catIcon}</div>
-                        <div class="tcg-card-desc-full" style="font-size:18px; color:#ffffff; line-height:1.45; font-weight:bold; text-align:left; width:100%;">${cDesc}</div>
-                        <div class="tcg-minimal-name-label" style="display:none;">${cName}</div>
+                    <div class="tcg-shape-art-area">
+                        <div class="tcg-minimal-cmd-icon">${catIcon}</div>
+                        <div class="tcg-card-desc-full">${cDesc}</div>
                     </div>
-                    <div class="tcg-yield-strip" style="font-size:16px; font-weight:bold; text-align:left; justify-content:flex-start; padding:8px 12px; width:100%; box-sizing:border-box; white-space:nowrap; overflow:hidden;">
+                    <div class="tcg-yield-strip">
                         <span>${costBadgeText ? I18n.t("UI_CARD_COST_PREFIX", { cost: costBadgeText }) : I18n.t("UI_CMD_INSTANT_LABEL")}</span>
                     </div>
+                    <div class="tcg-minimal-name-label">${cName}</div>
                 `;
 
                 rCardEl.setAttribute("data-full-card-html", fullInnerHtml);
@@ -168,8 +168,8 @@ export class ReserveSlotComponent {
                     blockBg = "#1abc9c"; blockBorder = "#16a085"; blockShadow = "rgba(26, 188, 156, 0.85)";
                 }
 
-                // 標準用 22px 形状
-                let shapeHtml = `<div class="tcg-shape-grid-standard" style="display:grid; grid-template-rows:repeat(${shapeMat.length}, 22px); grid-template-columns:repeat(${shapeMat[0].length}, 22px); gap:5px; background:rgba(0,0,0,0.55); padding:10px; border-radius:8px; border:2px solid rgba(255,255,255,0.18);">`;
+                // 標準用 22px 形状 (インライン display:grid を全廃し CSS で制御)
+                let shapeHtml = `<div class="tcg-shape-grid-standard" style="grid-template-rows:repeat(${shapeMat.length}, 22px); grid-template-columns:repeat(${shapeMat[0].length}, 22px); gap:5px; background:rgba(0,0,0,0.55); padding:10px; border-radius:8px; border:2px solid rgba(255,255,255,0.18);">`;
                 for (let r = 0; r < shapeMat.length; r++) {
                     for (let c = 0; c < shapeMat[0].length; c++) {
                         if (shapeMat[r][c] === 1) {
@@ -181,14 +181,14 @@ export class ReserveSlotComponent {
                 }
                 shapeHtml += `</div>`;
 
-                // ミニマル用 11px ミニ形状
-                let miniShapeHtml = `<div class="tcg-mini-shape-grid" style="display:none; grid-template-rows:repeat(${shapeMat.length}, 11px); grid-template-columns:repeat(${shapeMat[0].length}, 11px); gap:2px;">`;
+                // ミニマル用 14px ミニ形状 (縦4マス・横4マス完全収容 ＆ 下部ラベル非干渉)
+                let miniShapeHtml = `<div class="tcg-mini-shape-grid" style="grid-template-rows:repeat(${shapeMat.length}, 14px); grid-template-columns:repeat(${shapeMat[0].length}, 14px); gap:2.5px;">`;
                 for (let r = 0; r < shapeMat.length; r++) {
                     for (let c = 0; c < shapeMat[0].length; c++) {
                         if (shapeMat[r][c] === 1) {
                             miniShapeHtml += `<div class="tcg-mini-shape-cell" style="background:${blockBg};border-color:${blockBorder};"></div>`;
                         } else {
-                            miniShapeHtml += `<div style="width:11px;height:11px;background:transparent;"></div>`;
+                            miniShapeHtml += `<div style="width:14px;height:14px;background:transparent;"></div>`;
                         }
                     }
                 }
@@ -206,18 +206,18 @@ export class ReserveSlotComponent {
                 const yieldText = `<span style="font-size:15px; color:#ffffff; font-weight:bold; margin-right:4px; white-space:nowrap;">${yieldLabel}</span> <span style="font-size:17px; font-weight:900; letter-spacing:0.5px; color:#ffffff; white-space:nowrap; display:inline-flex; align-items:center; gap:5px;">${yieldContent}</span>`;
 
                 const fullInnerHtml = `
-                    <div class="tcg-card-top-bar" style="padding:4px 8px; display:flex; align-items:center; justify-content:space-between; gap:6px;">
+                    <div class="tcg-card-top-bar">
                         <div class="tcg-category-icon-pill">${catIcon}</div>
                         <div class="tcg-title-pill">${cName}</div>
                     </div>
-                    <div class="tcg-shape-art-area" style="display:flex; align-items:center; justify-content:center; padding:12px; flex:1; background:#1c2536; border-radius:6px; margin:4px 0;">
+                    <div class="tcg-shape-art-area">
                         ${shapeHtml}
                         ${miniShapeHtml}
-                        <div class="tcg-minimal-name-label" style="display:none;">${cName}</div>
                     </div>
-                    <div class="tcg-yield-strip" style="padding:8px 6px; display:flex; align-items:center; justify-content:center; white-space:nowrap; overflow:hidden;">
+                    <div class="tcg-yield-strip">
                         ${yieldText}
                     </div>
+                    <div class="tcg-minimal-name-label">${cName}</div>
                 `;
 
                 rCardEl.setAttribute("data-full-card-html", fullInnerHtml);
@@ -263,26 +263,26 @@ export class ReserveSlotComponent {
             
             const fullEmptyHtml = `
                 <!-- 1. 上部タイトルバー (手札と完全同一フォーマット) -->
-                <div class="tcg-card-top-bar" style="padding:4px 8px; display:flex; align-items:center; justify-content:space-between; gap:6px;">
+                <div class="tcg-card-top-bar">
                     <div class="tcg-category-icon-pill" style="background:#f39c12; color:#ffffff;">📦</div>
                     <div class="tcg-title-pill" style="font-size:18px; font-weight:900; text-align:center; flex:1; letter-spacing:0.5px; color:#2c3e50;">${holdSlotTitle}</div>
                 </div>
 
                 <!-- 2. 中央エリア (手札と同一背景・巨大アイコン・視認性抜群) -->
-                <div class="tcg-shape-art-area" style="display:flex; flex-direction:column; align-items:center; justify-content:center; background:#1c2536; padding:14px; text-align:center; overflow:hidden; flex:1; border-radius:6px; margin:4px 0; border:2px dashed rgba(243, 156, 18, 0.45);">
-                    <div class="tcg-minimal-cmd-icon" style="display:none; font-size:24px;">📦</div>
-                    <div class="tcg-card-desc-full" style="display:flex; flex-direction:column; align-items:center;">
-                        <div style="font-size:46px; line-height:1; margin-bottom:10px; filter:drop-shadow(0 0 12px rgba(243,156,18,0.7));">📦</div>
-                        <div style="font-size:22px; font-weight:900; color:#f39c12; letter-spacing:1.5px; margin-bottom:8px; text-shadow:0 0 10px rgba(243,156,18,0.5);">${emptyBoxLabel}</div>
-                        <div style="font-size:14px; color:#cbd5e1; font-weight:700; line-height:1.45;">${subText}</div>
+                <div class="tcg-shape-art-area">
+                    <div class="tcg-minimal-cmd-icon">📦</div>
+                    <div class="tcg-card-desc-full">
+                        <div class="reserve-empty-large-icon">📦</div>
+                        <div class="reserve-empty-title-text">${emptyBoxLabel}</div>
+                        <div class="reserve-empty-sub-text">${subText}</div>
                     </div>
-                    <div class="tcg-minimal-name-label" style="display:none;">${holdLabel}</div>
                 </div>
 
                 <!-- 3. 下部ストリップ (手札と完全同一フォーマット) -->
-                <div class="tcg-yield-strip" style="font-size:15px; font-weight:900; text-align:center; justify-content:center; padding:8px 10px; width:100%; box-sizing:border-box; color:#f87171; background:#1e293b; border-radius:4px; white-space:nowrap; overflow:hidden;">
+                <div class="tcg-yield-strip">
                     <span>${upkeepCostLabel}</span>
                 </div>
+                <div class="tcg-minimal-name-label">${holdLabel}</div>
             `;
 
             emptySlotEl.setAttribute("data-full-card-html", fullEmptyHtml);

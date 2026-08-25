@@ -383,38 +383,9 @@ body {
     box-shadow: 0 -4px 15px rgba(0,0,0,0.4);
     flex-shrink: 0;
     position: relative;
-    display: grid;
-    grid-template-columns: 1fr 280px;
-    gap: 14px;
-    align-items: center;
-    transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
-.bottom-card-container.card-container-active-focus {
-    border-color: #1abc9c;
-    box-shadow: 0 0 25px rgba(26, 188, 156, 0.4), 0 -4px 20px rgba(0,0,0,0.6);
-}
-
-.offering-section {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    min-width: 0;
-}
-.section-title-offering {
-    font-size: 12px;
-    font-weight: bold;
-    color: #1abc9c;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-.cards-row-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-}
+/* 🃏 手札トレイ関連のレイアウトスタイルは css/3_bottom_area/draw_card_select_area.css で一元管理 */
 
 .card-slot-box {
     width: 120px;

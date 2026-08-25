@@ -35,7 +35,17 @@ class UIController {
         this.selectedReserveIdx = -1;
         this.isReservePopoverOpen = false;
         this.pinnedPreviewCard = null;
-        this.isMinimalMode = (typeof localStorage !== 'undefined') ? (localStorage.getItem("toa_hand_minimal_mode") === "true") : false;
+
+        let initialMinimal = false;
+        if (typeof localStorage !== 'undefined') {
+            const saved = localStorage.getItem("toa_hand_minimal_mode");
+            if (saved !== null) {
+                initialMinimal = (saved === "true");
+            } else if (typeof window !== 'undefined' && window.gameSettings) {
+                initialMinimal = (window.gameSettings.get("defaultHandMode") === "minimal");
+            }
+        }
+        this.isMinimalMode = initialMinimal;
 
         if (typeof window !== "undefined" && this.undoSys) {
             window.undoSys = this.undoSys;
@@ -454,42 +464,42 @@ class UIController {
         const minimalToggleTitle = I18n ? (I18n.t("TOOLTIP_MINIMAL_TOGGLE_TITLE") || "📐 縮小表示切替") : "📐 縮小表示切替";
         const minimalToggleDesc = I18n ? (I18n.t("TOOLTIP_MINIMAL_TOGGLE_DESC") || "手札の表示サイズ（標準 ⇄ 縮小）を切り替えます") : "手札の表示サイズ（標準 ⇄ 縮小）を切り替えます";
 
-        // 🃏 ミニマルモード時のモックアップ完全準拠レイアウト (上段ヘッダー ＋ 下段スロット列)
+        // 🃏 ミニマルモード時 (完全1段 3ブロック・センタリング構造)
         if (this.isMinimalMode) {
-            // 1. 上段ヘッダー行 (左: [📐 縮小表示切替][🔄 マリガン] アイコンボタン)
-            const trayHeader = document.createElement("div");
-            trayHeader.className = "offering-tray-header";
-            trayHeader.innerHTML = `
-                <div class="offering-tray-header-left">
-                    <button class="btn-minimal-toggle is-active" id="btnMinimalToggle" onclick="window.toggleHandMinimalMode()" data-tooltip-title="${minimalToggleTitle}" data-tooltip="${minimalToggleDesc}">
-                        <span>📐</span>
-                    </button>
-                    <button class="btn-minimal-mulligan" id="btnMulligan" data-tooltip-title="${mulliganTitle}" data-tooltip="${mulliganTooltip}" ${canMulligan ? "" : "disabled style='opacity:0.45; cursor:not-allowed; filter:grayscale(0.8);'"}>
-                        <span>🔄</span>
-                    </button>
-                </div>
+            // 1. 左端: 正方形ボタングループ (46×46px 2段)
+            const btnGroup = document.createElement("div");
+            btnGroup.className = "minimal-btn-group";
+            btnGroup.innerHTML = `
+                <button class="btn-minimal-toggle is-active" id="btnMinimalToggle" onclick="window.toggleHandMinimalMode()" data-tooltip-title="${minimalToggleTitle}" data-tooltip="${minimalToggleDesc}">
+                    <span>⤢</span>
+                </button>
+                <button class="btn-minimal-mulligan" id="btnMulligan" data-tooltip-title="${mulliganTitle}" data-tooltip="${mulliganTooltip}" ${canMulligan ? "" : "disabled style='opacity:0.45; cursor:not-allowed; filter:grayscale(0.8);'"}>
+                    <span>🔄</span>
+                </button>
             `;
-            const btnMulligan = trayHeader.querySelector("#btnMulligan");
+            const btnMulligan = btnGroup.querySelector("#btnMulligan");
             if (btnMulligan && canMulligan) {
                 btnMulligan.onclick = () => this.handleMulliganClick(btnMulligan);
             }
-            cardRowEl.appendChild(trayHeader);
+            cardRowEl.appendChild(btnGroup);
 
-            // 2. 下段スロット行 (手札3枚 ＋ 縦仕切り ＋ 保留1枚)
-            const trayCardsRow = document.createElement("div");
-            trayCardsRow.className = "offering-tray-cards-row";
+            // 2. 第1セパレーター (ボタンと手札を区切る縦線)
+            const separator1 = document.createElement("div");
+            separator1.className = "offering-tray-separator";
+            cardRowEl.appendChild(separator1);
 
+            // 3. 中央: 手札カード 3枚 (各 80×120px)
             const handContainer = this.handCardsComponent ? this.handCardsComponent.render(I18n) : document.createElement("div");
-            trayCardsRow.appendChild(handContainer);
+            cardRowEl.appendChild(handContainer);
 
-            const separator = document.createElement("div");
-            separator.className = "offering-tray-separator";
-            trayCardsRow.appendChild(separator);
+            // 4. 第2セパレーター (手札と保留を区切る縦線)
+            const separator2 = document.createElement("div");
+            separator2.className = "offering-tray-separator";
+            cardRowEl.appendChild(separator2);
 
+            // 5. 右端: 保留スロット (80×120px / 手札と完全同一サイズ)
             const reserveContainer = this.reserveSlotComponent ? this.reserveSlotComponent.render(I18n) : document.createElement("div");
-            trayCardsRow.appendChild(reserveContainer);
-
-            cardRowEl.appendChild(trayCardsRow);
+            cardRowEl.appendChild(reserveContainer);
             return;
         }
 
@@ -507,7 +517,7 @@ class UIController {
 
         handHeader.innerHTML = `
             <button class="btn-minimal-toggle" id="btnMinimalToggle" onclick="window.toggleHandMinimalMode()" data-tooltip-title="${minimalToggleTitle}" data-tooltip="${minimalToggleDesc}">
-                <span>📐</span>
+                <span>⤢</span>
             </button>
             <button class="btn-mulligan-compact" id="btnMulligan" data-tooltip-title="${mulliganTitle}" data-tooltip="${mulliganTooltip}" ${canMulligan ? "" : "disabled style='opacity:0.45; cursor:not-allowed; filter:grayscale(0.8);'"}>
                 <span>${mulliganBtnLabel}</span> <span class="btn-mulligan-ember-cost">🔥-1</span>
@@ -1130,7 +1140,7 @@ class UIController {
 
     playCommandCard(card, targetIdx) {
         if (!this.state || this.state.hasPickedThisTurn) return;
-        const deckMgr = this.state.deckManager || (this.engine ? this.engine.deckManager : null);
+        const deckMgr = (this.engine && this.engine.deckManager) ? this.engine.deckManager : this.state.deckManager;
         const cardObj = card.terrain || card;
         let cardIdx = (typeof targetIdx === "number" && targetIdx >= 0) ? targetIdx : (this.state.handOffering ? this.state.handOffering.indexOf(card) : -1);
 
@@ -1165,8 +1175,9 @@ class UIController {
     }
 
     selectDirective(id) {
-        if (this.state && this.state.directiveSystem) {
-            this.state.directiveSystem.setDirective(id);
+        const dirSys = (this.engine && this.engine.directiveSystem) ? this.engine.directiveSystem : this.state.directiveSystem;
+        if (dirSys) {
+            dirSys.setDirective(id);
             this.closeDirectiveModal();
             this.render();
         }
@@ -1337,13 +1348,13 @@ class UIController {
 
         if (isReserveEmpty) {
             previewEl.innerHTML = `
-                <div class="reserve-slot-empty" style="width:260px !important; height:390px !important; margin:0 !important; pointer-events:none; box-sizing:border-box;">
+                <div class="reserve-slot-empty">
                     ${fullHtml}
                 </div>
             `;
         } else {
             previewEl.innerHTML = `
-                <div class="card-frame-tcg ${categoryClass}" style="width:260px !important; height:390px !important; margin:0 !important; pointer-events:none; box-sizing:border-box;">
+                <div class="card-frame-tcg ${categoryClass}">
                     ${fullHtml}
                 </div>
             `;
