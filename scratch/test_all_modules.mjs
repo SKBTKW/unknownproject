@@ -657,6 +657,104 @@ const lakeProds = lakeEngine.state.calculateTotalProduction();
 assert(lakeProds.foodLakeIrrigation === 2, '湖の隣接平地(食料4)に灌漑バフ +2 (50%) が加算されること');
 assert(lakeProds.grossFood === 22, '食料総産出(gross)に湖の灌漑バフが含まれること');
 
+console.log('\n🌟 [23/23] 新規登録バフ 8 種 (人口移住令・大防塁・前哨塔・誘導防衛・高地布陣・騎馬軍・天啓・二つの未来) 検証');
+
+const newBuffEngine = new GameEngine();
+newBuffEngine.state.food = 500;
+newBuffEngine.state.wood = 500;
+newBuffEngine.state.mystic = 500;
+newBuffEngine.state.ember = 20;
+
+// 1. 人口移住令 (CMD_RESETTLEMENT)
+const resRes = newBuffEngine.deckManager.playCommandCard({ id: 'CMD_RESETTLEMENT', category: 'COMMAND', cost: { food: 15, wood: 10 } });
+assert(resRes.success === true, '人口移住令が正常に発動すること');
+assert(newBuffEngine.state.buffSystem.hasBuff('CMD_RESETTLEMENT'), 'バフマネージャーに CMD_RESETTLEMENT が登録されること');
+assert(newBuffEngine.state.resettlementFoodBonus === 2, '人口移住令で食料ボーナス +2 が設定されること');
+
+// 2. 特別プロジェクト：大防塁 (CMD_GREAT_RAMPART_PROJECT)
+const rampRes = newBuffEngine.deckManager.playCommandCard({ id: 'CMD_GREAT_RAMPART_PROJECT', category: 'COMMAND', cost: { wood: 45 } });
+assert(rampRes.success === true, '大防塁が正常に発動すること');
+assert(newBuffEngine.state.buffSystem.hasBuff('CMD_GREAT_RAMPART_PROJECT'), 'バフマネージャーに CMD_GREAT_RAMPART_PROJECT が登録されること');
+assert(newBuffEngine.state.greatRampartTurns === 4, '大防塁の継続ターンが 4 になること');
+
+// 3. 前哨塔 (CMD_OUTPOST)
+const outRes = newBuffEngine.deckManager.playCommandCard({ id: 'CMD_OUTPOST', category: 'COMMAND', cost: { wood: 25 } });
+assert(outRes.success === true, '前哨塔が正常に発動すること');
+assert(newBuffEngine.state.buffSystem.hasBuff('CMD_OUTPOST'), 'バフマネージャーに CMD_OUTPOST が登録されること');
+assert(newBuffEngine.state.hasOutpost === true, '前哨塔フラグが true になること');
+
+// 4. 誘導防衛 (CMD_GUIDED_DEFENSE)
+const gdRes = newBuffEngine.deckManager.playCommandCard({ id: 'CMD_GUIDED_DEFENSE', category: 'COMMAND', cost: { wood: 20 } });
+assert(gdRes.success === true, '誘導防衛が正常に発動すること');
+assert(newBuffEngine.state.buffSystem.hasBuff('CMD_GUIDED_DEFENSE'), 'バフマネージャーに CMD_GUIDED_DEFENSE が登録されること');
+assert(newBuffEngine.state.guidedDefenseActive === true, '誘導防衛フラグが true になること');
+
+// 5. 高地布陣 (CMD_HIGH_GROUND_FORMATION)
+const hgRes = newBuffEngine.deckManager.playCommandCard({ id: 'CMD_HIGH_GROUND_FORMATION', category: 'COMMAND', cost: { wood: 10 } });
+assert(hgRes.success === true, '高地布陣が正常に発動すること');
+assert(newBuffEngine.state.buffSystem.hasBuff('CMD_HIGH_GROUND_FORMATION'), 'バフマネージャーに CMD_HIGH_GROUND_FORMATION が登録されること');
+assert(newBuffEngine.state.highGroundFormationActive === true, '高地布陣フラグが true になること');
+
+// 6. 騎馬軍編成 (CMD_CAVALRY_HOST)
+const cavRes = newBuffEngine.deckManager.playCommandCard({ id: 'CMD_CAVALRY_HOST', category: 'COMMAND', cost: { food: 30, wood: 20 } });
+assert(cavRes.success === true, '騎馬軍編成が正常に発動すること');
+assert(newBuffEngine.state.buffSystem.hasBuff('CMD_CAVALRY_HOST'), 'バフマネージャーに CMD_CAVALRY_HOST が登録されること');
+assert(newBuffEngine.state.cavalryHostActive === true, '騎馬軍フラグが true になること');
+
+// 7. 天啓の選択 (CMD_REVELATION_CHOICE)
+const revRes = newBuffEngine.deckManager.playCommandCard({ id: 'CMD_REVELATION_CHOICE', category: 'COMMAND', cost: { mystic: 15 } });
+assert(revRes.success === true, '天啓の選択が正常に発動すること');
+assert(newBuffEngine.state.buffSystem.hasBuff('CMD_REVELATION_CHOICE'), 'バフマネージャーに CMD_REVELATION_CHOICE が登録されること');
+assert(newBuffEngine.state.revelationChoiceTurns === 1, '天啓の選択持続ターンが 1 になること');
+
+// 8. 二つの未来 (CMD_TWO_FUTURES)
+const tfRes = newBuffEngine.deckManager.playCommandCard({ id: 'CMD_TWO_FUTURES', category: 'COMMAND', cost: { mystic: 20 } });
+assert(tfRes.success === true, '二つの未来が正常に発動すること');
+assert(newBuffEngine.state.buffSystem.hasBuff('CMD_TWO_FUTURES'), 'バフマネージャーに CMD_TWO_FUTURES が登録されること');
+assert(newBuffEngine.state.twoFuturesTurns === 1, '二つの未来持続ターンが 1 になること');
+
+// 9. 放牧地の拡大 (CMD_PASTORAL_EXPANSION)
+const pasRes = newBuffEngine.deckManager.playCommandCard({ id: 'CMD_PASTORAL_EXPANSION', category: 'COMMAND', cost: { wood: 10 } });
+assert(pasRes.success === true, '放牧地の拡大が正常に発動すること');
+assert(newBuffEngine.state.buffSystem.hasBuff('CMD_PASTORAL_EXPANSION'), 'バフマネージャーに CMD_PASTORAL_EXPANSION が登録されること');
+assert(newBuffEngine.state.pastoralExpansionActive === true, '放牧地の拡大フラグが true になること');
+
+// 10. 石灰焼成 (CMD_LIME_CONSTRUCTION)
+const limeRes = newBuffEngine.deckManager.playCommandCard({ id: 'CMD_LIME_CONSTRUCTION', category: 'COMMAND', cost: { food: 10 } });
+assert(limeRes.success === true, '石灰焼成が正常に発動すること');
+assert(newBuffEngine.state.buffSystem.hasBuff('CMD_LIME_CONSTRUCTION'), 'バフマネージャーに CMD_LIME_CONSTRUCTION が登録されること');
+assert(newBuffEngine.state.limeConstructionActive === true, '石灰焼成フラグが true になること');
+
+// 11. 騎馬斥候隊 (CMD_CAVALRY_SCOUTS)
+const scoutRes = newBuffEngine.deckManager.playCommandCard({ id: 'CMD_CAVALRY_SCOUTS', category: 'COMMAND', cost: { food: 10 } });
+assert(scoutRes.success === true, '騎馬斥候隊が正常に発動すること');
+assert(newBuffEngine.state.buffSystem.hasBuff('CMD_CAVALRY_SCOUTS'), 'バフマネージャーに CMD_CAVALRY_SCOUTS が登録されること');
+assert(newBuffEngine.state.cavalryScoutsActive === true, '騎馬斥候隊フラグが true になること');
+
+// 12. 在地鉄器武装 (CMD_LOCAL_IRON_ARMAMENT)
+const ironRes = newBuffEngine.deckManager.playCommandCard({ id: 'CMD_LOCAL_IRON_ARMAMENT', category: 'COMMAND', cost: { wood: 15 } });
+assert(ironRes.success === true, '在地鉄器武装が正常に発動すること');
+assert(newBuffEngine.state.buffSystem.hasBuff('CMD_LOCAL_IRON_ARMAMENT'), 'バフマネージャーに CMD_LOCAL_IRON_ARMAMENT が登録されること');
+assert(newBuffEngine.state.localIronArmamentActive === true, '在地鉄器武装フラグが true になること');
+
+// 13. 石造陣地 (CMD_STONE_STRONGPOINT)
+const stoneRes = newBuffEngine.deckManager.playCommandCard({ id: 'CMD_STONE_STRONGPOINT', category: 'COMMAND', cost: { wood: 20 } });
+assert(stoneRes.success === true, '石造陣地が正常に発動すること');
+assert(newBuffEngine.state.buffSystem.hasBuff('CMD_STONE_STRONGPOINT'), 'バフマネージャーに CMD_STONE_STRONGPOINT が登録されること');
+assert(newBuffEngine.state.stoneStrongpointActive === true, '石造陣地フラグが true になること');
+
+// 14. 地脈の共鳴 (CMD_LEYLINE_RESONANCE)
+const leyRes = newBuffEngine.deckManager.playCommandCard({ id: 'CMD_LEYLINE_RESONANCE', category: 'COMMAND', cost: { mystic: 8 } });
+assert(leyRes.success === true, '地脈の共鳴が正常に発動すること');
+assert(newBuffEngine.state.buffSystem.hasBuff('CMD_LEYLINE_RESONANCE'), 'バフマネージャーに CMD_LEYLINE_RESONANCE が登録されること');
+assert(newBuffEngine.state.leylineResonanceActive === true, '地脈の共鳴フラグが true になること');
+
+// 15. 大地の囁き (CMD_VOICE_BENEATH_EARTH)
+const voiceRes = newBuffEngine.deckManager.playCommandCard({ id: 'CMD_VOICE_BENEATH_EARTH', category: 'COMMAND', cost: { mystic: 5 } });
+assert(voiceRes.success === true, '大地の囁きが正常に発動すること');
+assert(newBuffEngine.state.buffSystem.hasBuff('CMD_VOICE_BENEATH_EARTH'), 'バフマネージャーに CMD_VOICE_BENEATH_EARTH が登録されること');
+assert(newBuffEngine.state.voiceBeneathEarthTurns === 1, '大地の囁き持続ターンが 1 になること');
+
 console.log('\n====================================================');
-console.log(`🎉 全テスト完了: 129 / 129 件 合格 (100% PASS)`);
+console.log(`🎉 全テスト完了: 174 / 174 件 合格 (100% PASS)`);
 console.log('====================================================');

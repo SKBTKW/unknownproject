@@ -57,7 +57,22 @@ class DeckManager {
             { id: "CMD_EMERGENCY_LEVY", category: "COMMAND", nameKey: "CMD_EMERGENCY_LEVY_NAME", descriptionKey: "CMD_EMERGENCY_LEVY_DESC", cost: { food: 20 }, minStage: 1, rarity: "C", weight: 0.35 },
             { id: "CMD_MANIFEST_MIRACLE", category: "COMMAND", nameKey: "CMD_MANIFEST_MIRACLE_NAME", descriptionKey: "CMD_MANIFEST_MIRACLE_DESC", cost: { mystic: 10 }, minStage: 2, rarity: "R", weight: 0.20 },
             { id: "CMD_FILL_THE_VOID", category: "COMMAND", nameKey: "CMD_FILL_THE_VOID_NAME", descriptionKey: "CMD_FILL_THE_VOID_DESC", cost: {}, minStage: 1, rarity: "C", weight: 0.35 },
-            { id: "CMD_SCORCHED_RETREAT", category: "COMMAND", nameKey: "CMD_SCORCHED_RETREAT_NAME", descriptionKey: "CMD_SCORCHED_RETREAT_DESC", cost: { food: 20 }, minStage: 2, rarity: "R", weight: 0.20 }
+            { id: "CMD_SCORCHED_RETREAT", category: "COMMAND", nameKey: "CMD_SCORCHED_RETREAT_NAME", descriptionKey: "CMD_SCORCHED_RETREAT_DESC", cost: { food: 20 }, minStage: 2, rarity: "R", weight: 0.20 },
+            { id: "CMD_RESETTLEMENT", category: "COMMAND", nameKey: "CMD_RESETTLEMENT_NAME", descriptionKey: "CMD_RESETTLEMENT_DESC", cost: { food: 15, wood: 10 }, minStage: 2, rarity: "R", weight: 0.20 },
+            { id: "CMD_GREAT_RAMPART_PROJECT", category: "COMMAND", nameKey: "CMD_GREAT_RAMPART_PROJECT_NAME", descriptionKey: "CMD_GREAT_RAMPART_PROJECT_DESC", cost: { wood: 45 }, isUnique: true, minStage: 3, rarity: "UR", weight: 0.10 },
+            { id: "CMD_OUTPOST", category: "COMMAND", nameKey: "CMD_OUTPOST_NAME", descriptionKey: "CMD_OUTPOST_DESC", cost: { wood: 25 }, minStage: 2, rarity: "UC", weight: 0.25 },
+            { id: "CMD_GUIDED_DEFENSE", category: "COMMAND", nameKey: "CMD_GUIDED_DEFENSE_NAME", descriptionKey: "CMD_GUIDED_DEFENSE_DESC", cost: { wood: 20 }, minStage: 2, rarity: "C", weight: 0.35 },
+            { id: "CMD_HIGH_GROUND_FORMATION", category: "COMMAND", nameKey: "CMD_HIGH_GROUND_FORMATION_NAME", descriptionKey: "CMD_HIGH_GROUND_FORMATION_DESC", cost: { wood: 10 }, minStage: 1, rarity: "C", weight: 0.35 },
+            { id: "CMD_CAVALRY_HOST", category: "COMMAND", nameKey: "CMD_CAVALRY_HOST_NAME", descriptionKey: "CMD_CAVALRY_HOST_DESC", cost: { food: 30, wood: 20 }, minStage: 2, rarity: "R", weight: 0.20 },
+            { id: "CMD_REVELATION_CHOICE", category: "COMMAND", nameKey: "CMD_REVELATION_CHOICE_NAME", descriptionKey: "CMD_REVELATION_CHOICE_DESC", cost: { mystic: 15 }, minStage: 2, rarity: "R", weight: 0.20 },
+            { id: "CMD_TWO_FUTURES", category: "COMMAND", nameKey: "CMD_TWO_FUTURES_NAME", descriptionKey: "CMD_TWO_FUTURES_DESC", cost: { mystic: 20 }, isUnique: true, minStage: 3, rarity: "UR", weight: 0.10 },
+            { id: "CMD_PASTORAL_EXPANSION", category: "COMMAND", nameKey: "CMD_PASTORAL_EXPANSION_NAME", descriptionKey: "CMD_PASTORAL_EXPANSION_DESC", cost: { wood: 10 }, minStage: 1, rarity: "C", weight: 0.35 },
+            { id: "CMD_LIME_CONSTRUCTION", category: "COMMAND", nameKey: "CMD_LIME_CONSTRUCTION_NAME", descriptionKey: "CMD_LIME_CONSTRUCTION_DESC", cost: { food: 10 }, minStage: 2, rarity: "UC", weight: 0.25 },
+            { id: "CMD_CAVALRY_SCOUTS", category: "COMMAND", nameKey: "CMD_CAVALRY_SCOUTS_NAME", descriptionKey: "CMD_CAVALRY_SCOUTS_DESC", cost: { food: 10 }, minStage: 1, rarity: "C", weight: 0.35 },
+            { id: "CMD_LOCAL_IRON_ARMAMENT", category: "COMMAND", nameKey: "CMD_LOCAL_IRON_ARMAMENT_NAME", descriptionKey: "CMD_LOCAL_IRON_ARMAMENT_DESC", cost: { wood: 15 }, minStage: 2, rarity: "UC", weight: 0.25 },
+            { id: "CMD_STONE_STRONGPOINT", category: "COMMAND", nameKey: "CMD_STONE_STRONGPOINT_NAME", descriptionKey: "CMD_STONE_STRONGPOINT_DESC", cost: { wood: 20 }, minStage: 2, rarity: "C", weight: 0.35 },
+            { id: "CMD_LEYLINE_RESONANCE", category: "COMMAND", nameKey: "CMD_LEYLINE_RESONANCE_NAME", descriptionKey: "CMD_LEYLINE_RESONANCE_DESC", cost: { mystic: 8 }, minStage: 2, rarity: "C", weight: 0.35 },
+            { id: "CMD_VOICE_BENEATH_EARTH", category: "COMMAND", nameKey: "CMD_VOICE_BENEATH_EARTH_NAME", descriptionKey: "CMD_VOICE_BENEATH_EARTH_DESC", cost: { mystic: 5 }, minStage: 1, rarity: "UC", weight: 0.25 }
         ];
         return this._landCardMasterCache;
     }
@@ -658,6 +673,195 @@ class DeckManager {
                 remainingTurns: 3
             });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🔥【${cName}】`);
+        } else if (cId === "CMD_RESETTLEMENT") {
+            // 👥 人口移住令: コスト 🌾-15 🧱-10 (平地2x2マージ指定 🔥+2 ＆ 🌾+2/T永続)
+            this.state.ember = Math.min(30, (this.state.ember || 20) + 2);
+            this.state.resettlementFoodBonus = (this.state.resettlementFoodBonus || 0) + 2;
+            this.state.addBuff({
+                id: cId,
+                name: cName,
+                shortName: cName,
+                icon: "👥",
+                description: cDesc,
+                category: "PERMANENT"
+            });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `👥【${cName}】`);
+        } else if (cId === "CMD_GREAT_RAMPART_PROJECT") {
+            // 🏯 特別プロジェクト：大防塁 (4T継続投資 🧱-45/T ＆ 試練進軍効率大幅低下)
+            this.state.greatRampartTurns = 4;
+            this.state.addBuff({
+                id: cId,
+                name: cName,
+                shortName: cName,
+                icon: "🏯",
+                description: cDesc,
+                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 4 }) : "4T",
+                category: "PROJECT",
+                remainingTurns: 4
+            });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🏯【${cName}】`);
+        } else if (cId === "CMD_OUTPOST") {
+            // 🗼 前哨塔: コスト 🧱-25 (試練侵攻情報を3T早く取得)
+            this.state.hasOutpost = true;
+            this.state.addBuff({
+                id: cId,
+                name: cName,
+                shortName: cName,
+                icon: "🗼",
+                description: cDesc,
+                category: "PERMANENT"
+            });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🗼【${cName}】`);
+        } else if (cId === "CMD_GUIDED_DEFENSE") {
+            // 🚧 誘導防衛: コスト 🧱-20 (試練時敵移動コスト+1)
+            this.state.guidedDefenseActive = true;
+            this.state.addBuff({
+                id: cId,
+                name: cName,
+                shortName: cName,
+                icon: "🚧",
+                description: cDesc,
+                category: "TACTICAL"
+            });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🚧【${cName}】`);
+        } else if (cId === "CMD_HIGH_GROUND_FORMATION") {
+            // ⛰️ 高地布陣: コスト 🧱-10 (試練時高地戦術補正強化)
+            this.state.highGroundFormationActive = true;
+            this.state.addBuff({
+                id: cId,
+                name: cName,
+                shortName: cName,
+                icon: "⛰️",
+                description: cDesc,
+                category: "TACTICAL"
+            });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `⛰️【${cName}】`);
+        } else if (cId === "CMD_CAVALRY_HOST") {
+            // 🐎 騎馬軍編成: コスト 🌾-30 🧱-20 (試練時平地機動補正)
+            this.state.cavalryHostActive = true;
+            this.state.addBuff({
+                id: cId,
+                name: cName,
+                shortName: cName,
+                icon: "🐎",
+                description: cDesc,
+                category: "TACTICAL"
+            });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🐎【${cName}】`);
+        } else if (cId === "CMD_REVELATION_CHOICE") {
+            // ✨ 天啓の選択: コスト ✨-15 (次ターン指定カテゴリ枠確定)
+            this.state.revelationChoiceTurns = 1;
+            this.state.addBuff({
+                id: cId,
+                name: cName,
+                shortName: cName,
+                icon: "✨",
+                description: cDesc,
+                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 1 }) : "1T",
+                category: "CARD_EFFECT",
+                remainingTurns: 1
+            });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `✨【${cName}】`);
+        } else if (cId === "CMD_TWO_FUTURES") {
+            // 🔮 二つの未来: コスト ✨-20 (次ターン2組手札オファリング)
+            this.state.twoFuturesTurns = 1;
+            this.state.addBuff({
+                id: cId,
+                name: cName,
+                shortName: cName,
+                icon: "🔮",
+                description: cDesc,
+                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 1 }) : "1T",
+                category: "CARD_EFFECT",
+                remainingTurns: 1
+            });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🔮【${cName}】`);
+        } else if (cId === "CMD_PASTORAL_EXPANSION") {
+            // 🐑 放牧地の拡大: コスト 🧱-10 (次回同属性接続ボーナス強化)
+            this.state.pastoralExpansionActive = true;
+            this.state.addBuff({
+                id: cId,
+                name: cName,
+                shortName: cName,
+                icon: "🐑",
+                description: cDesc,
+                category: "CARD_EFFECT"
+            });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🐑【${cName}】`);
+        } else if (cId === "CMD_LIME_CONSTRUCTION") {
+            // 🧱 石灰焼成: コスト 🌾-10 (次回高コスト建築軽減)
+            this.state.limeConstructionActive = true;
+            this.state.addBuff({
+                id: cId,
+                name: cName,
+                shortName: cName,
+                icon: "🧱",
+                description: cDesc,
+                category: "CARD_EFFECT"
+            });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🧱【${cName}】`);
+        } else if (cId === "CMD_CAVALRY_SCOUTS") {
+            // 🐎 騎馬斥候隊: コスト 🌾-10 (試練時平地迎撃/増援コスト軽減)
+            this.state.cavalryScoutsActive = true;
+            this.state.addBuff({
+                id: cId,
+                name: cName,
+                shortName: cName,
+                icon: "🐎",
+                description: cDesc,
+                category: "TACTICAL"
+            });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🐎【${cName}】`);
+        } else if (cId === "CMD_LOCAL_IRON_ARMAMENT") {
+            // ⚔️ 在地鉄器武装: コスト 🧱-15 (赤鉄鉱丘陵の迎撃高地補正強化)
+            this.state.localIronArmamentActive = true;
+            this.state.addBuff({
+                id: cId,
+                name: cName,
+                shortName: cName,
+                icon: "⚔️",
+                description: cDesc,
+                category: "TACTICAL"
+            });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `⚔️【${cName}】`);
+        } else if (cId === "CMD_STONE_STRONGPOINT") {
+            // 🏰 石造陣地: コスト 🧱-20 (石材地形の初期地形減衰強化)
+            this.state.stoneStrongpointActive = true;
+            this.state.addBuff({
+                id: cId,
+                name: cName,
+                shortName: cName,
+                icon: "🏰",
+                description: cDesc,
+                category: "TACTICAL"
+            });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🏰【${cName}】`);
+        } else if (cId === "CMD_LEYLINE_RESONANCE") {
+            // ✨ 地脈の共鳴: コスト ✨-8 (次回✨不足補填枠拡大)
+            this.state.leylineResonanceActive = true;
+            this.state.addBuff({
+                id: cId,
+                name: cName,
+                shortName: cName,
+                icon: "✨",
+                description: cDesc,
+                category: "CARD_EFFECT"
+            });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `✨【${cName}】`);
+        } else if (cId === "CMD_VOICE_BENEATH_EARTH") {
+            // 🔮 大地の囁き: コスト ✨-5 (次ターン発見資源連動オファリング)
+            this.state.voiceBeneathEarthTurns = 1;
+            this.state.addBuff({
+                id: cId,
+                name: cName,
+                shortName: cName,
+                icon: "🔮",
+                description: cDesc,
+                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 1 }) : "1T",
+                category: "CARD_EFFECT",
+                remainingTurns: 1
+            });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🔮【${cName}】`);
         } else if (cId === "CMD_LAND_EXPLORATION") {
             const candidates = [];
             if (this.state.grid) {
