@@ -11,17 +11,49 @@
 
 export class EmberStatusComponent {
     /**
-     * @param {HTMLElement} [anchorElement=null] - ツールチップを吸着させるアンカー要素 (#emberCenterBoxMaster)
+     * @param {HTMLElement} [anchorElement=null] - ツールチップを吸着させるアンカー要素 (HQ【C3】マス: #hqEmberCellAnchor)
      */
     constructor(anchorElement = null) {
-        this.anchorElement = anchorElement || (typeof document !== 'undefined' ? document.getElementById('emberCenterBoxMaster') : null);
+        this.anchorElement = anchorElement || (typeof document !== 'undefined' ? (document.getElementById('hqEmberCellAnchor') || document.querySelector('.cell.hq')) : null);
         this.tooltipElement = null;
         this.isOpen = false;
         this.hoverTimer = null;
+        this.latestState = null;
+        this._boundMouseEnter = () => {
+            clearTimeout(this.hoverTimer);
+            this.hoverTimer = setTimeout(() => this.show(), 120);
+        };
+        this._boundMouseLeave = () => {
+            clearTimeout(this.hoverTimer);
+            this.hoverTimer = setTimeout(() => this.hide(), 180);
+        };
+        this._boundClick = (e) => {
+            e.stopPropagation();
+            this.toggle();
+        };
 
         if (typeof document !== 'undefined') {
             this.initDOM();
             this.bindEvents();
+        }
+    }
+
+    /**
+     * 🔗 新しいアンカー要素（HQマス等）に再バインド
+     * @param {HTMLElement} newAnchor
+     */
+    bindToAnchor(newAnchor) {
+        if (!newAnchor || typeof document === 'undefined') return;
+        if (this.anchorElement && this.anchorElement !== newAnchor) {
+            this.anchorElement.removeEventListener('mouseenter', this._boundMouseEnter);
+            this.anchorElement.removeEventListener('mouseleave', this._boundMouseLeave);
+            this.anchorElement.removeEventListener('click', this._boundClick);
+        }
+        this.anchorElement = newAnchor;
+        this.initDOM();
+        this.bindEvents();
+        if (this.latestState) {
+            this.update(this.latestState);
         }
     }
 
@@ -154,26 +186,18 @@ export class EmberStatusComponent {
     bindEvents() {
         if (!this.anchorElement) return;
 
-        this.anchorElement.addEventListener('mouseenter', () => {
-            clearTimeout(this.hoverTimer);
-            this.hoverTimer = setTimeout(() => this.show(), 150);
-        });
+        this.anchorElement.addEventListener('mouseenter', this._boundMouseEnter);
+        this.anchorElement.addEventListener('mouseleave', this._boundMouseLeave);
+        this.anchorElement.addEventListener('click', this._boundClick);
 
-        this.anchorElement.addEventListener('mouseleave', () => {
-            clearTimeout(this.hoverTimer);
-            this.hoverTimer = setTimeout(() => this.hide(), 200);
-        });
-
-        this.anchorElement.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.toggle();
-        });
-
-        document.addEventListener('click', (e) => {
-            if (this.isOpen && !this.anchorElement.contains(e.target)) {
-                this.hide();
-            }
-        });
+        if (!this._globalClickBound) {
+            document.addEventListener('click', (e) => {
+                if (this.isOpen && this.anchorElement && !this.anchorElement.contains(e.target)) {
+                    this.hide();
+                }
+            });
+            this._globalClickBound = true;
+        }
     }
 
     /**
@@ -181,6 +205,11 @@ export class EmberStatusComponent {
      * @param {Object} state - GameState オブジェクト
      */
     update(state) {
+        this.latestState = state;
+        if (this.anchorElement) {
+            const b = this.anchorElement.querySelector('.hq-ember-val-badge') || document.getElementById('hqEmberValBadge');
+            if (b) b.innerText = (state && state.ember !== undefined ? state.ember : 20);
+        }
         if (!this.tooltipElement) return;
         const info = EmberStatusComponent.calculateStatus(state);
 

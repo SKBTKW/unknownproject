@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trial of Ages : Last Ember</title>
-    <link rel="stylesheet" href="css/0_global_common/global_animations.css">
-    <link rel="stylesheet" href="css/0_global_common/typography_theme.css">
-    <link rel="stylesheet" href="css/0_global_common/base_layout.css">
-    <link rel="stylesheet" href="css/1_top_header/top_header.css">
-    <link rel="stylesheet" href="css/2_center_area/land_grid.css">
-    <link rel="stylesheet" href="css/3_bottom_area/draw_card_select_area.css">
-    <link rel="stylesheet" href="css/4_right_sidebar/right_sidebar.css">
-    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/0_global_common/global_animations.css?v=20260827_v33">
+    <link rel="stylesheet" href="css/0_global_common/typography_theme.css?v=20260827_v33">
+    <link rel="stylesheet" href="css/0_global_common/base_layout.css?v=20260827_v33">
+    <link rel="stylesheet" href="css/1_top_header/top_header.css?v=20260827_v33">
+    <link rel="stylesheet" href="css/2_center_area/land_grid.css?v=20260827_v33">
+    <link rel="stylesheet" href="css/3_bottom_area/draw_card_select_area.css?v=20260827_v33">
+    <link rel="stylesheet" href="css/4_right_sidebar/right_sidebar.css?v=20260827_v33">
+    <link rel="stylesheet" href="css/layout.css?v=20260827_v33">
 </head>
 <body>
 
@@ -30,12 +30,6 @@
                 </div>
             </div>
             
-            <!-- 🔥 画面真中央: 目立つサイズでセンタリング -->
-            <div class="ember-center-box-master" id="emberCenterBoxMaster">
-                <span class="ember-icon ember-icon-lg">🔥</span>
-                <span>: <span id="valEmber">20</span></span>
-            </div>
-
             <!-- 📊 ヘッダー右端: 各種データ表示パネル -->
             <div class="header-resource-data-panel" id="headerDataPanel" onmouseenter="showDataPanelTooltip(event)" onmouseleave="hideDataPanelTooltip()">
                 <div class="header-data-item">
@@ -73,11 +67,9 @@
                     <!-- ✨ 盤面直上: モジュール化 上方向トグル展開バフコンテナ -->
                     <div id="buffComponentContainer"></div>
 
-                    <!-- 🎯 土地グリッド専用アンカーラッパー (右下隅に領土バッジを吸着) -->
+                    <!-- 🎯 土地グリッド専用アンカーラッパー (底面フッターに領土バッジ ＆ ターンエンドボタンを完全統合) -->
                     <div class="grid-board-anchor grid-anchor-box">
                         <div id="gridBoard" class="grid-with-headers"></div>
-                        <!-- 🏷️ 土地グリッド枠の右下隅に直接吸着・完全追従 -->
-                        <div id="territoryBadgeContainer" class="territory-badge-anchor"></div>
                     </div>
                 </div>
             </div>
@@ -89,11 +81,6 @@
                     <!-- 🃏 [手札真上] フローティング拡大プレビューコンテナ (トレイ真上・完全自動追従センタリング) -->
                     <div id="cardFloatingPreview" class="card-floating-preview-container"></div>
                     <div id="cardRow" class="cards-row-wrapper"></div>
-                </div>
-
-                <!-- 🎮 画面右下隅: 統合操作グループ (大型 TURN END 専用ボタン / pointer-events: auto) -->
-                <div class="footer-controls-partition pointer-events-auto" id="footerControlsPartition">
-                    <button class="btn-turn-end" onclick="nextTurn()" id="btnTurnEnd" data-tooltip="TOOLTIP_TURN_END"></button>
                 </div>
             </div>
 
@@ -141,21 +128,29 @@
 
     <!-- 🌐 True ES Module Single Entrypoint Bootstrap (Zero-Latency Instant Launch) -->
     <script type="module">
-        import { GameEngine, UIController, UndoLandSystem, BuffSystem, TerritoryBadgeComponent, ModalSystem, FocusLayerManager, BoardCameraSystem, SettingsModalSystem, settingsModalInstance, gameSettings, EmberStatusComponent, HandCardsComponent, ReserveSlotComponent, TopHeaderComponent, BoardGridComponent, TooltipSystem, tooltipSystemInstance } from './src/app.js?v=20260825_v156';
+        import { GameEngine, UIController, UndoLandSystem, BuffSystem, TerritoryBadgeComponent, ModalSystem, FocusLayerManager, BoardCameraSystem, SettingsModalSystem, settingsModalInstance, gameSettings, EmberStatusComponent, HandCardsComponent, ReserveSlotComponent, TopHeaderComponent, BoardGridComponent, HqComponent, TooltipSystem, tooltipSystemInstance } from './src/app.js?v=20260827_v33';
 
         function bootstrap() {
-            // 🎮 GameEngine ＆ UIController の完全モジュールマウント起動 (ゼロ遅延・即時起動 - Stage 1: 5x5 標準復元)
-            const engine = GameEngine.createGame();
-            const ui = new UIController(engine);
+            try {
+                // 🎮 GameEngine ＆ UIController の完全モジュールマウント起動 (ゼロ遅延・即時起動 - Stage 1: 5x5 標準復元)
+                const engine = GameEngine.createGame();
+                const ui = new UIController(engine);
 
-            window.gameEngine = engine;
-            window.ui = ui;
+                window.gameEngine = engine;
+                window.ui = ui;
 
-            if (UndoLandSystem && ui.state) {
-                window.undoSys = new UndoLandSystem(ui.state);
+                if (UndoLandSystem && ui.state) {
+                    window.undoSys = new UndoLandSystem(ui.state);
+                }
+
+                ui.init();
+            } catch (err) {
+                console.error("🔥 [Bootstrap Error]", err);
+                const errBox = document.createElement("div");
+                errBox.style.cssText = "position:fixed; top:20px; left:20px; z-index:99999; background:rgba(180,0,0,0.9); color:#fff; padding:16px; border-radius:8px; font-family:monospace; font-size:14px; max-width:80%;";
+                errBox.innerHTML = `<strong>Launch Error:</strong><br>${err.message}<br><pre style="white-space:pre-wrap; font-size:12px; margin-top:8px;">${err.stack}</pre>`;
+                document.body.appendChild(errBox);
             }
-
-            ui.init();
         }
 
         if (document.readyState === "loading") {

@@ -39,38 +39,6 @@
     font-weight: bold;
 }
 
-/* 🔥 残り火表示: 画面真中央に物理固定 */
-.ember-center-box {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 14px;
-    font-size: 38px; /* 残り火数値を大幅拡大 */
-    font-weight: 900;
-    color: #ffffff;
-    text-shadow: 0 0 10px rgba(255, 118, 117, 0.8), 0 0 20px rgba(231, 76, 60, 0.5);
-    height: 100%;
-    z-index: 2;
-    pointer-events: none;
-}
-
-.ember-icon {
-    font-size: 48px;
-    line-height: 1;
-    display: inline-block;
-    filter: drop-shadow(0 0 12px #ff7675) drop-shadow(0 0 20px #d63031);
-    animation: emberPulse 2s infinite ease-in-out;
-    transform-origin: center;
-}
-
-@keyframes emberPulse {
-    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 12px #ff7675); }
-    50% { transform: scale(1.08); filter: drop-shadow(0 0 20px #e74c3c) drop-shadow(0 0 30px #ff7675); }
-}
-
 /* 🌾 ヘッダーリソース数値・アイコンの全体的拡大 ＆ 視認性大幅向上 */
 .header-data-item {
     display: flex;

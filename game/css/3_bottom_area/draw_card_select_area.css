@@ -3,12 +3,26 @@
    パターンA: メインエリア枠内包 ✕ 太枠フレーム (4px~5px)
    ============================================================= */
 
-/* 🃏 メインエリア枠内 左下隅: ドローカード選択エリア (Layer 3: プレイヤートレイ層 - 15% 全体拡大) */
-/* 🃏 メインエリア枠内 左下隅: ドローカード選択エリア基本定義 */
-.offering-section {
+/* 🃏 メインエリア枠内 画面下部中央: ドローカード選択エリア (Layer 3: プレイヤートレイ層) */
+.layer-player-tray {
     position: absolute;
-    bottom: 12px;
-    left: 16px;
+    bottom: 16px;
+    left: 0;
+    right: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    z-index: 500;
+    pointer-events: none;
+}
+
+/* 🃏 ドローカード選択エリア本体 (中央自動センタリング) */
+.offering-section {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    margin: 0 auto;
     z-index: 500;
     border-radius: 16px;
     box-shadow: 0 6px 30px rgba(0, 0, 0, 0.85);
@@ -632,6 +646,11 @@
     border-style: solid;
     box-shadow: 0 0 30px rgba(241, 196, 15, 0.75);
     transform: scale(1.02);
+}
+
+.reserve-slot-empty .tcg-title-pill {
+    color: #ffffff !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 }
 
 /* 📦 大判空保留スロット内コンテンツ定義 */

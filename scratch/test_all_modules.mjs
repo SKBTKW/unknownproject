@@ -16,7 +16,13 @@ import {
     GameState,
     GameEngine,
     TerritoryBadgeComponent,
-    EmberStatusComponent
+    EmberStatusComponent,
+    HqComponent,
+    ConditionEvaluator,
+    EffectResolver,
+    ChronicleSystem,
+    GlobalEventManager,
+    GLOBAL_EVENTS_MASTER
 } from '../game/src/app.js';
 
 console.log('====================================================');
@@ -163,7 +169,7 @@ assert(!!boardCameraSystem, 'boardCameraSystem シングルトンが存在する
 boardCameraSystem.setZoom(1.25);
 assert(boardCameraSystem.currentZoom === 1.25, 'ズーム倍率が 1.25x に設定されること');
 boardCameraSystem.resetZoom();
-assert(boardCameraSystem.currentZoom === 1.0, 'ズームリセットで 1.0x に復帰すること');
+assert(boardCameraSystem.currentZoom === 1.0, 'ズームリセットで初期倍率 1.0x に復帰すること');
 
 // --- 9. 1x1ブロック連結4マス上限 ＆ 即時ボーナストースト検問 ---
 console.log('\n⚡ [9/9] 1x1ブロック連結4マス上限 ＆ 即時ボーナストースト');
@@ -755,6 +761,91 @@ assert(voiceRes.success === true, '大地の囁きが正常に発動すること
 assert(newBuffEngine.state.buffSystem.hasBuff('CMD_VOICE_BENEATH_EARTH'), 'バフマネージャーに CMD_VOICE_BENEATH_EARTH が登録されること');
 assert(newBuffEngine.state.voiceBeneathEarthTurns === 1, '大地の囁き持続ターンが 1 になること');
 
+console.log('\n🌍 [24/24] ConditionEvaluator ＆ EffectResolver ＆ ChronicleSystem ＆ GlobalEvent (寒波テストケース) 検証');
+
+// 1. ConditionEvaluator テスト
+const testContext = {
+    state: {
+        turn: 5,
+        nextTrialTurn: 20,
+        food: 100,
+        stage: { id: 1 },
+        grid: [
+            [{ placed: true, terrain: { terrainId: 'GL1_PLAINS' } }, { placed: true, terrain: { terrainId: 'GL1_PLAINS' } }],
+            [{ placed: true, terrain: { terrainId: 'GL1_PLAINS' } }, { placed: true, terrain: { terrainId: 'GL1_PLAINS' } }]
+        ]
+    }
+};
+assert(ConditionEvaluator.evaluate({ type: 'TERRAIN_COUNT_AT_LEAST', terrain: 'PLAINS', value: 4 }, testContext) === true, '平地4マス条件がtrueと判定されること');
+assert(ConditionEvaluator.evaluate({ type: 'TERRAIN_COUNT_AT_LEAST', terrain: 'PLAINS', value: 5 }, testContext) === false, '平地5マス条件がfalseと判定されること');
+assert(ConditionEvaluator.evaluate({ type: 'RESOURCE_AT_LEAST', resource: 'food', value: 80 }, testContext) === true, '食料80以上条件がtrueと判定されること');
+assert(ConditionEvaluator.evaluate({ type: 'TRIAL_DISTANCE_ABOVE', value: 5 }, testContext) === true, '試練まで残り15ターン(>5)がtrueと判定されること');
+
+// 2. ChronicleSystem 3層重要度テスト
+const chron = new ChronicleSystem();
+chron.record({ turn: 1, type: 'MERGE', id: 'MERGE_1', importance: 'MINOR' });
+chron.record({ turn: 5, type: 'GLOBAL_EVENT', id: 'EVENT_COLD_WAVE', importance: 'MAJOR' });
+chron.record({ turn: 20, type: 'TRIAL', id: 'TRIAL_1', importance: 'HISTORIC' });
+
+assert(chron.getAllEvents().length === 3, '全年代記イベントが3件記録されていること');
+assert(chron.getChronicle('MAJOR').length === 2, 'MAJOR以上でフィルタした年表が2件(MAJOR, HISTORIC)であること');
+assert(chron.getChronicle('HISTORIC').length === 1, 'HISTORICでフィルタした年表が1件(第1試練)であること');
+
+// 3. 実戦テストケース: 寒波 (EVENT_COLD_WAVE) ライフサイクル検証
+const eventEngine = new GameEngine();
+eventEngine.state.ember = 15; // 標準状態 (倍率 1.0x, 維持費 20)
+// 平地4マスを配置 (0,0), (0,1), (1,0), (1,1) (各マス食料4 ➔ 計16, (1,1)は本営近郊+1)
+for (let r = 0; r < 2; r++) {
+    for (let c = 0; c < 2; c++) {
+        eventEngine.state.grid[r][c] = { r, c, placed: true, terrain: { id: 'GL1_PLAINS', nameKey: 'TERRAIN_PLAINS', food: 4 } };
+    }
+}
+
+// 通常時の産出: 本営10 + 平地16 + 近郊1 = 27, 維持費20 ➔ net +7
+const normalProds = eventEngine.state.calculateTotalProduction();
+assert(normalProds.grossFood === 27, '寒波発動前の平地食料総産出が27であること');
+
+// 寒波を手動トリガー
+const coldWaveInst = eventEngine.globalEventManager.triggerEvent('EVENT_COLD_WAVE');
+assert(coldWaveInst !== null, '寒波イベントが正常に発動すること');
+assert(eventEngine.state.activeGlobalEvents.length === 1, 'アクティブイベントに寒波が登録されること');
+assert(eventEngine.state.buffSystem.hasBuff('EVENT_COLD_WAVE'), 'BuffSystemに寒波の表示用Proxyが登録されること');
+
+// 寒波中の産出: 平地食料 16 * 0.75 = 12 ➔ 本営10 + 平地12 + 近郊1 = 23, 維持費20 ➔ net +3
+const coldProds = eventEngine.state.calculateTotalProduction();
+assert(coldProds.grossFood === 23, '寒波中の平地食料産出が-25%され総産出が23になること');
+
+// 3ターン経過させて寒波の自然失効を検証
+eventEngine.globalEventManager.tickTurn(); // 3 -> 2
+assert(eventEngine.state.activeGlobalEvents[0].remainingTurns === 2, '1ターン経過で残り2Tになること');
+eventEngine.globalEventManager.tickTurn(); // 2 -> 1
+assert(eventEngine.state.activeGlobalEvents[0].remainingTurns === 1, '2ターン経過で残り1Tになること');
+eventEngine.globalEventManager.tickTurn(); // 1 -> 0 (失効)
+assert(eventEngine.state.activeGlobalEvents.length === 0, '3ターン経過で寒波が自然失効すること');
+assert(!eventEngine.state.buffSystem.hasBuff('EVENT_COLD_WAVE'), '失効後にBuffSystemの表示用Proxyが自動除去されること');
+
+// 失効後の産出復帰: 本営10 + 平地16 + 近郊1 = 27
+const restoredProds = eventEngine.state.calculateTotalProduction();
+assert(restoredProds.grossFood === 27, '寒波失効後に平地食料産出が通常値(27)に完全復帰すること');
+
+// 年表記録の検証
+const eventChron = eventEngine.state.chronicleSystem.getChronicle('MAJOR');
+assert(eventChron.some(e => e.id === 'EVENT_COLD_WAVE'), '年代記に寒波イベントがMAJOR重要度で記録されていること');
+
+// --- 7. HqComponent 本営モジュールテスト ---
+console.log('\n🏰 [7/7] HqComponent 本営専用モジュール');
+const hqComp = new HqComponent({ state: engine.state });
+assert(typeof hqComp.renderCell === 'function', 'HqComponent.renderCell メソッドが存在すること');
+assert(typeof hqComp.updateEmberValue === 'function', 'HqComponent.updateEmberValue メソッドが存在すること');
+assert(typeof hqComp.showDeltaPopup === 'function', 'HqComponent.showDeltaPopup メソッドが存在すること');
+assert(typeof hqComp.checkAndTriggerDeltaPopup === 'function', 'HqComponent.checkAndTriggerDeltaPopup メソッドが存在すること');
+
 console.log('\n====================================================');
-console.log(`🎉 全テスト完了: 174 / 174 件 合格 (100% PASS)`);
+console.log(`🎉 全テスト完了: ${passedTests} / ${totalTests} 件 合格 (100% PASS)`);
 console.log('====================================================');
+
+if (passedTests === totalTests && totalTests > 0) {
+    process.exit(0);
+} else {
+    process.exit(1);
+}

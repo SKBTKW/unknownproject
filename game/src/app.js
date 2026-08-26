@@ -28,7 +28,13 @@ import { HandCardsComponent } from './ui/hand_cards_component.js';
 import { ReserveSlotComponent } from './ui/reserve_slot_component.js';
 import { TopHeaderComponent } from './ui/top_header_component.js';
 import { BoardGridComponent } from './ui/board_grid_component.js';
+import { HqComponent } from './ui/hq_component.js';
 import { TooltipSystem, tooltipSystemInstance } from './ui/tooltip_system.js';
+import { ConditionEvaluator } from './core/condition_evaluator.js';
+import { EffectResolver } from './core/effect_resolver.js';
+import { ChronicleSystem, CHRONICLE_IMPORTANCE } from './systems/chronicle_system.js';
+import { GlobalEventManager, GlobalEventDirector, GlobalEventSelector } from './systems/global_event_system.js';
+import { GLOBAL_EVENTS_MASTER } from './data/global_events.js';
 
 export {
     I18n,
@@ -66,8 +72,17 @@ export {
     ReserveSlotComponent,
     TopHeaderComponent,
     BoardGridComponent,
+    HqComponent,
     TooltipSystem,
-    tooltipSystemInstance
+    tooltipSystemInstance,
+    ConditionEvaluator,
+    EffectResolver,
+    ChronicleSystem,
+    CHRONICLE_IMPORTANCE,
+    GlobalEventManager,
+    GlobalEventDirector,
+    GlobalEventSelector,
+    GLOBAL_EVENTS_MASTER
 };
 
 console.log('🎮 [App] Clean True ES Modules Master Entrypoint Loaded Successfully.');

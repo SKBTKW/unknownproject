@@ -6,6 +6,8 @@ import { ProductionCalculator } from '../systems/production_calculator.js';
 import { UndoLandSystem } from '../systems/undo_land_system.js';
 import { GridEngine } from '../systems/grid_engine.js';
 import { BuffSystem } from '../systems/buff_system.js';
+import { ChronicleSystem } from '../systems/chronicle_system.js';
+import { GlobalEventManager } from '../systems/global_event_system.js';
 import { GameState } from '../v2_unity_ready_main.js';
 
 class GameEngine {
@@ -42,6 +44,12 @@ class GameEngine {
         const UndoLandSystemClass = dependencies.UndoLandSystemClass || UndoLandSystem;
         this.undoSystem = dependencies.undoSystem || (UndoLandSystemClass ? new UndoLandSystemClass(this.state) : null);
 
+        const ChronicleSystemClass = dependencies.ChronicleSystemClass || ChronicleSystem;
+        this.chronicleSystem = dependencies.chronicleSystem || (ChronicleSystemClass ? new ChronicleSystemClass(this.state) : null);
+
+        const GlobalEventManagerClass = dependencies.GlobalEventManagerClass || GlobalEventManager;
+        this.globalEventManager = dependencies.globalEventManager || (GlobalEventManagerClass ? new GlobalEventManagerClass(this.state, this) : null);
+
         // 4. GameState への双方向リンク確立
         if (this.state) {
             this.state.engine = this;
@@ -49,6 +57,8 @@ class GameEngine {
             if (this.deckManager) this.state.deckManager = this.deckManager;
             if (this.directiveSystem) this.state.directiveSystem = this.directiveSystem;
             if (this.buffSystem) this.state.buffSystem = this.buffSystem;
+            if (this.chronicleSystem) this.state.chronicleSystem = this.chronicleSystem;
+            if (this.globalEventManager) this.state.globalEventManager = this.globalEventManager;
         }
     }
 
@@ -78,6 +88,11 @@ class GameEngine {
             this.state.processTurnEndMaintenance();
         }
 
+        // 🌍 2.5. グローバルイベントのターン経過処理 (持続減衰・失効)
+        if (this.globalEventManager) {
+            this.globalEventManager.tickTurn();
+        }
+
         // 3. 手札オファリング再生成 ＆ マリガン権回復
         if (this.deckManager) {
             this.deckManager.onNextTurn();
@@ -85,6 +100,11 @@ class GameEngine {
             this.state.turn++;
             this.state.hasPickedThisTurn = false;
             this.state.hasMulliganedThisTurn = false;
+        }
+
+        // 🌍 3.5. 新ターン開始時のグローバルイベント発生判定
+        if (this.globalEventManager) {
+            this.globalEventManager.onTurnStart();
         }
 
         // ⚔️ 4. 試練到達チェック ＆ テスト用自動ステージ昇格（5x5 ➔ 7x7 拡大）

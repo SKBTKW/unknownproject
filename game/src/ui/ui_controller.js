@@ -14,6 +14,7 @@ import { HandCardsComponent } from './hand_cards_component.js';
 import { ReserveSlotComponent } from './reserve_slot_component.js';
 import { TopHeaderComponent } from './top_header_component.js';
 import { BoardGridComponent } from './board_grid_component.js';
+import { HqComponent } from './hq_component.js';
 import { tooltipSystemInstance } from './tooltip_system.js';
 
 class UIController {
@@ -26,6 +27,7 @@ class UIController {
         this.drawSys = (engine && engine.deckManager) ? engine.deckManager : (engine && engine.drawSys ? engine.drawSys : null);
         this.undoSys = (engine && engine.undoSys) ? engine.undoSys : (UndoLandSystem && this.state ? new UndoLandSystem(this.state) : null);
         this.emberStatusComponent = (typeof document !== 'undefined') ? new EmberStatusComponent() : null;
+        this.hqComponent = (typeof document !== 'undefined') ? new HqComponent(this) : null;
         this.handCardsComponent = (typeof document !== 'undefined') ? new HandCardsComponent(this) : null;
         this.reserveSlotComponent = (typeof document !== 'undefined') ? new ReserveSlotComponent(this) : null;
         this.topHeaderComponent = (typeof document !== 'undefined') ? new TopHeaderComponent(this) : null;
@@ -218,7 +220,7 @@ class UIController {
             BuffPanelComponent.mount(buffContainer);
         }
 
-        const badgeContainer = document.getElementById("territoryBadgeContainer") || document.querySelector(".grid-board-anchor");
+        const badgeContainer = document.getElementById("territoryBadgeFooterSlot") || document.getElementById("territoryBadgeContainer");
         const badgeComp = (typeof TerritoryBadgeComponent !== "undefined" && TerritoryBadgeComponent) ? TerritoryBadgeComponent : (typeof window !== "undefined" ? window.TerritoryBadgeComponent : null);
         if (badgeComp && badgeContainer) {
             if (typeof badgeComp.mount === "function") {
@@ -297,12 +299,19 @@ class UIController {
         }
 
         try {
-            // 🏛️ 最上部HUDヘッダー (資源・残り火・ターン数・領土バッジ・試練予告) - TopHeaderComponent へ委譲
+            // 🏛️ 最上部HUDヘッダー (資源・ターン数・領土バッジ・試練予告) - TopHeaderComponent へ委譲
             if (this.topHeaderComponent) {
                 this.topHeaderComponent.render(I18n);
             }
 
+            // 🗺️ 盤面グリッド描画 (本営C3セル含む)
             this.renderBoardGrid(I18n);
+
+            // 🔥 本営 (C3) 残り火変動差分検知 ＆ フロートポップアップ演出 (盤面描画直後に実行することでDOM消失を完全防止)
+            if (this.hqComponent && typeof this.hqComponent.checkAndTriggerDeltaPopup === "function") {
+                this.hqComponent.checkAndTriggerDeltaPopup(this.state.ember);
+            }
+
             this.renderOfferingCards(I18n);
             this.renderBuffPanel();
             this.updateMulliganButton();

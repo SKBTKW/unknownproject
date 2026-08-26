@@ -279,7 +279,7 @@ export class ReserveSlotComponent {
                 <!-- 1. 上部タイトルバー (手札と完全同一フォーマット) -->
                 <div class="tcg-card-top-bar">
                     <div class="tcg-category-icon-pill" style="background:#f39c12; color:#ffffff;">📦</div>
-                    <div class="tcg-title-pill" style="font-size:18px; font-weight:900; text-align:center; flex:1; letter-spacing:0.5px; color:#2c3e50;">${holdSlotTitle}</div>
+                    <div class="tcg-title-pill" style="font-size:18px; font-weight:900; text-align:center; flex:1; letter-spacing:0.5px; color:#ffffff;">${holdSlotTitle}</div>
                 </div>
 
                 <!-- 2. 中央エリア (手札と同一背景・巨大アイコン・視認性抜群) -->

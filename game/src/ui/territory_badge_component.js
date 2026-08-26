@@ -19,7 +19,7 @@ export class TerritoryBadgeComponent {
      */
     mount(containerEl) {
         if (!containerEl) {
-            containerEl = document.getElementById("territoryBadgeContainer") || document.querySelector(".grid-board-anchor");
+            containerEl = document.getElementById("territoryBadgeFooterSlot") || document.getElementById("territoryBadgeContainer");
         }
         if (!containerEl) return;
         this.containerEl = containerEl;
@@ -27,27 +27,9 @@ export class TerritoryBadgeComponent {
 
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
         this.badgeEl = document.createElement("div");
-        this.badgeEl.className = "main-area-badge territory-grid-bottom-right";
+        this.badgeEl.className = "territory-badge-pill";
         this.badgeEl.id = "mainTerritoryBadge";
         this.badgeEl.setAttribute("data-tooltip-title", I18n ? I18n.t("UI_TERRITORY_PROGRESS_TOOLTIP") : "🏛️ Territory Reclamation");
-        this.badgeEl.style.cssText = `
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            background: rgba(18, 24, 38, 0.95);
-            border: 2px solid #1abc9c;
-            color: #1abc9c;
-            font-weight: 900;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 16px;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.8), 0 0 12px rgba(26, 188, 156, 0.3);
-            backdrop-filter: blur(8px);
-            transition: all 0.2s ease;
-            user-select: none;
-            cursor: pointer;
-            white-space: nowrap;
-        `;
         this.badgeEl.onclick = () => {
             if (typeof window.showBreakdownModal === "function") {
                 window.showBreakdownModal();
@@ -95,7 +77,7 @@ export class TerritoryBadgeComponent {
         this.currentCount = placedCount;
 
         if (!this.countEl && typeof document !== "undefined") {
-            const container = document.getElementById("territoryBadgeContainer") || document.querySelector(".board-container-wrapper");
+            const container = document.getElementById("territoryBadgeFooterSlot") || document.getElementById("territoryBadgeContainer");
             if (container) this.mount(container);
         }
 

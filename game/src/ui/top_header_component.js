@@ -15,6 +15,7 @@ export class TopHeaderComponent {
     constructor(uiController) {
         this.ui = uiController;
         this.emberStatusComponent = (typeof document !== 'undefined') ? new EmberStatusComponent() : null;
+        this.lastEmberValue = null;
     }
 
     get state() {
@@ -49,8 +50,7 @@ export class TopHeaderComponent {
         this.setElementText("valTurn", this.state.turn);
         this.setElementText("valTurnBg", String(this.state.turn).padStart(2, '0'));
 
-        // 2. 🔥 残り火 ＆ EmberStatusComponent
-        this.setElementText("valEmber", this.state.ember);
+        // 2. 🔥 残り火ステータスコンポーネント (EmberStatusComponent) 連動
         if (this.emberStatusComponent && typeof this.emberStatusComponent.update === "function") {
             this.emberStatusComponent.update(this.state);
         }

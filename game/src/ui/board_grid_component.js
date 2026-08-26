@@ -47,11 +47,11 @@ export class BoardGridComponent {
         boardEl.appendChild(cornerCell);
 
         const size = this.state.grid.length;
-        const cellSize = (size >= 9) ? '70px' : '80px';
-        const headerSize = (size >= 9) ? '35px' : '40px';
+        const cellSize = (size >= 9) ? '80px' : '104px'; // 🛡️ 隙間がなくなる直前までマス目を拡大 (104px)
+        const headerSize = (size >= 9) ? '38px' : '44px';
 
         boardEl.style.gridTemplateColumns = `${headerSize} repeat(${size}, ${cellSize})`;
-        boardEl.style.gridTemplateRows = `${headerSize} repeat(${size}, ${cellSize})`;
+        boardEl.style.gridTemplateRows = `${headerSize} repeat(${size}, ${cellSize}) ${headerSize}`;
         boardEl.style.setProperty('--board-size', size);
         boardEl.style.setProperty('--cell-size', cellSize);
         boardEl.style.setProperty('--header-size', headerSize);
@@ -61,6 +61,8 @@ export class BoardGridComponent {
             const hCell = document.createElement("div");
             hCell.className = "header-cell";
             hCell.innerText = String.fromCharCode(65 + c);
+            hCell.setAttribute("data-tooltip", "TOOLTIP_BOARD_CAMERA_BODY");
+            hCell.setAttribute("data-tooltip-title", "TOOLTIP_BOARD_CAMERA_TITLE");
             boardEl.appendChild(hCell);
         }
 
@@ -69,6 +71,8 @@ export class BoardGridComponent {
             const vCell = document.createElement("div");
             vCell.className = "header-cell";
             vCell.innerText = r + 1;
+            vCell.setAttribute("data-tooltip", "TOOLTIP_BOARD_CAMERA_BODY");
+            vCell.setAttribute("data-tooltip-title", "TOOLTIP_BOARD_CAMERA_TITLE");
             boardEl.appendChild(vCell);
 
             for (let c = 0; c < size; c++) {
@@ -84,8 +88,13 @@ export class BoardGridComponent {
                 let leftGroupSame = false;
 
                 if (cellData.isHQ) {
-                    cellEl.classList.add("hq");
-                    cellEl.innerHTML = I18n.t("TERRAIN_HQ");
+                    if (this.ui && this.ui.hqComponent && typeof this.ui.hqComponent.renderCell === "function") {
+                        this.ui.hqComponent.renderCell(cellEl, this.state, I18n);
+                    } else {
+                        cellEl.id = "hqEmberCellAnchor";
+                        cellEl.classList.add("hq");
+                        cellEl.innerHTML = `<img src="assets/campfire_background.png" class="hq-bg-img" alt="${I18n.t("TERRAIN_HQ")}" /><div class="hq-campfire-sprite"></div><span id="hqEmberValBadge" class="hq-ember-val-badge">${this.state.ember}</span>`;
+                    }
                 } else if (cellData.placed && cellData.terrain) {
                     cellEl.classList.add("placed");
 
@@ -159,11 +168,17 @@ export class BoardGridComponent {
                     }
                 } else if (cellData.hasSocket) {
                     cellEl.classList.add("socket-unopened");
-                    if (isHQVic) cellEl.classList.add("hq-vicinity-unplaced");
-                    cellEl.innerHTML = `<span style="color:#f39c12;font-size:22px;filter:drop-shadow(0 0 4px #f39c12);">★</span>`;
+                    if (isHQVic) {
+                        cellEl.classList.add("hq-vicinity-unplaced");
+                        const dirClass = this.getHQDirectionClass(r, c);
+                        if (dirClass) cellEl.classList.add(dirClass);
+                    }
+                    cellEl.innerHTML = `<span class="socket-star-icon">★</span>`;
                 } else {
                     if (isHQVic) {
                         cellEl.classList.add("hq-vicinity-unplaced");
+                        const dirClass = this.getHQDirectionClass(r, c);
+                        if (dirClass) cellEl.classList.add(dirClass);
                     }
                 }
 
@@ -233,6 +248,45 @@ export class BoardGridComponent {
             }
         }
 
+        // 🏁 底部フッター行 (全幅結合セル: 左端に占領率バッジ ✕ 右端にTURN ENDボタン)
+        const footerBar = document.createElement("div");
+        footerBar.className = "header-cell footer-cell footer-bar-cell";
+        footerBar.style.gridColumn = `1 / span ${size + 1}`;
+        footerBar.setAttribute("data-tooltip", "TOOLTIP_BOARD_CAMERA_BODY");
+        footerBar.setAttribute("data-tooltip-title", "TOOLTIP_BOARD_CAMERA_TITLE");
+
+        // 左端スロット: 占領率バッジ
+        const badgeSlot = document.createElement("div");
+        badgeSlot.id = "territoryBadgeFooterSlot";
+        badgeSlot.className = "footer-left-slot";
+        footerBar.appendChild(badgeSlot);
+
+        // 中央余白 (D&Dグラブ領域)
+        const centerSpacer = document.createElement("div");
+        centerSpacer.className = "footer-center-spacer";
+        footerBar.appendChild(centerSpacer);
+
+        // 右端スロット: ターンエンドボタン
+        const turnEndSlot = document.createElement("div");
+        turnEndSlot.className = "footer-right-slot";
+
+        const btnTurnEnd = document.createElement("button");
+        btnTurnEnd.className = "btn-turn-end footer-btn-turn-end";
+        btnTurnEnd.id = "btnTurnEnd";
+        btnTurnEnd.setAttribute("data-tooltip", "TOOLTIP_TURN_END");
+        btnTurnEnd.innerHTML = `<span>TURN END</span> <span class="arrow-icon">➔</span>`;
+        btnTurnEnd.onclick = () => {
+            if (typeof window.nextTurn === "function") {
+                window.nextTurn();
+            } else if (this.ui && typeof this.ui.onTurnEndClick === "function") {
+                this.ui.onTurnEndClick();
+            }
+        };
+        turnEndSlot.appendChild(btnTurnEnd);
+        footerBar.appendChild(turnEndSlot);
+
+        boardEl.appendChild(footerBar);
+
         // 🎯 盤面エリアへのドラッグオーバー ＆ コマンドカードドロップ受付
         boardEl.ondragover = (e) => {
             if (this.state.hasPickedThisTurn) return;
@@ -262,11 +316,12 @@ export class BoardGridComponent {
             this.ui.highlightPlaceableCells();
         }
 
-        // 🏷️ 土地グリッド描画完了後、バッジが親アンカーに存在することを保証
+        // 🏷️ 土地グリッド描画完了後、バッジを底部左端スロットにマウント
         const badgeComp = (typeof TerritoryBadgeComponent !== "undefined" && TerritoryBadgeComponent) ? TerritoryBadgeComponent : (typeof window !== "undefined" ? window.TerritoryBadgeComponent : null);
         if (badgeComp) {
-            if (!document.getElementById("mainTerritoryBadge") && typeof badgeComp.mount === "function") {
-                badgeComp.mount();
+            const badgeSlot = document.getElementById("territoryBadgeFooterSlot");
+            if (badgeSlot && typeof badgeComp.mount === "function") {
+                badgeComp.mount(badgeSlot);
             }
             if (typeof badgeComp.update === "function") {
                 const placedCount = (typeof this.state.countPlacedTiles === "function") ? this.state.countPlacedTiles() : 1;
@@ -274,9 +329,29 @@ export class BoardGridComponent {
             }
         }
 
+        // 🔥 本営マス(C3)への残り火詳細ステータスコンポーネント連携
+        const emberComp = (this.ui && this.ui.emberStatusComponent) ? this.ui.emberStatusComponent : (typeof window !== "undefined" && window.uiController ? window.uiController.emberStatusComponent : null);
+        if (emberComp && typeof emberComp.bindToAnchor === "function") {
+            const hqEl = document.getElementById("hqEmberCellAnchor") || document.querySelector(".cell.hq");
+            if (hqEl) {
+                emberComp.bindToAnchor(hqEl);
+                emberComp.update(this.state);
+            }
+        }
+
         // 📷 盤面カメラ連携
         if (typeof boardCameraSystem !== "undefined" && boardCameraSystem && typeof boardCameraSystem.init === "function") {
             boardCameraSystem.init();
+        }
+    }
+
+    /**
+     * 🔥 C3マス（本営）での残り火増減フロートポップアップ演出 (HqComponent への委譲)
+     * @param {number} delta - 残り火の増減差分 (+X または -X)
+     */
+    showHqEmberDeltaPopup(delta) {
+        if (this.ui && this.ui.hqComponent && typeof this.ui.hqComponent.showDeltaPopup === "function") {
+            this.ui.hqComponent.showDeltaPopup(delta);
         }
     }
 
@@ -486,5 +561,39 @@ export class BoardGridComponent {
 
         // 4. それ以外の後続空きマスはクリーン背景
         return "CLEAN";
+    }
+
+    /**
+     * 🧭 本営（HQ）から見た周囲8マスの相対方位クラスを取得
+     * @param {number} r - 行
+     * @param {number} c - 列
+     * @returns {string} 方位クラス名 ("hq-dir-n", "hq-dir-ne", etc.)
+     */
+    getHQDirectionClass(r, c) {
+        let hqR = 2;
+        let hqC = 2;
+        if (this.state && this.state.grid) {
+            for (let row = 0; row < this.state.grid.length; row++) {
+                for (let col = 0; col < this.state.grid[row].length; col++) {
+                    if (this.state.grid[row][col] && this.state.grid[row][col].isHQ) {
+                        hqR = row;
+                        hqC = col;
+                        break;
+                    }
+                }
+            }
+        }
+        const dr = r - hqR;
+        const dc = c - hqC;
+
+        if (dr === -1 && dc === 0) return "hq-dir-n";
+        if (dr === -1 && dc === 1) return "hq-dir-ne";
+        if (dr === 0 && dc === 1) return "hq-dir-e";
+        if (dr === 1 && dc === 1) return "hq-dir-se";
+        if (dr === 1 && dc === 0) return "hq-dir-s";
+        if (dr === 1 && dc === -1) return "hq-dir-sw";
+        if (dr === 0 && dc === -1) return "hq-dir-w";
+        if (dr === -1 && dc === -1) return "hq-dir-nw";
+        return "";
     }
 }

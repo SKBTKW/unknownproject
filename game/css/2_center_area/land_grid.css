@@ -39,18 +39,24 @@
     filter: brightness(0.65) blur(2px) !important;
 }
 
-/* 🌌 メインエリア背景 ウォーターマーク ターン表示 (AAA級スタイリッシュ演出 - opacity: 1.0 完全鮮明) */
+/* 🌌 メインエリア背景 ウォーターマーク ターン表示 (最前面HUDプレート - 背後盤面通過時も100%鮮明) */
 .bg-turn-watermark {
     position: absolute;
-    top: 20px;
-    right: 28px;
+    top: 16px;
+    right: 24px;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
     pointer-events: none;
     user-select: none;
-    z-index: 2;
+    z-index: 950;
     opacity: 1.0;
+    background: rgba(14, 17, 24, 0.78);
+    backdrop-filter: blur(8px);
+    padding: 6px 14px 10px 18px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
     transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
@@ -122,19 +128,43 @@
     border-radius: 4px;
 }
 
-/* 🏁 可変サイズ対応グリッドボード (5x5, 7x7, 9x9 等のステージ拡大に完全自動追従) */
-.grid-with-headers {
-    --cell-size: 80px;
-    --header-size: 40px;
-    display: grid;
-    grid-template-columns: var(--header-size, 40px) repeat(var(--board-size, 5), var(--cell-size, 80px));
-    grid-template-rows: var(--header-size, 40px) repeat(var(--board-size, 5), var(--cell-size, 80px));
-    gap: 4px;
-    background: #151924;
-    padding: 8px;
-    border-radius: 10px;
-    border: 2px solid #2a3144;
+/* 🧩 盤面中央エリアコンテナ (パン移動 ＆ ズーム対応: D&D操作受付範囲 grab/grabbing カーソル) */
+.layer-world-board {
+    cursor: grab;
+}
+.board-container-wrapper {
+    cursor: grab;
     user-select: none;
+    will-change: transform;
+}
+.header-cell {
+    cursor: grab;
+}
+.layer-world-board.is-camera-dragging,
+.board-container-wrapper.is-camera-dragging,
+body.is-camera-dragging-global,
+body.is-camera-dragging-global * {
+    cursor: grabbing !important;
+}
+
+/* 🏁 可変サイズ対応グリッドボード (行・列・外枠の完全等間隔 4px ＆ 独立角丸タイル吸着) */
+.grid-with-headers {
+    --cell-size: 104px;
+    --header-size: 44px;
+    display: grid;
+    grid-template-columns: var(--header-size, 44px) repeat(var(--board-size, 5), var(--cell-size, 104px));
+    grid-template-rows: var(--header-size, 44px) repeat(var(--board-size, 5), var(--cell-size, 104px));
+    gap: 4px; /* 行間・列間を 4px に統一 */
+    row-gap: 4px;
+    column-gap: 4px;
+    background: #11141d;
+    padding: 4px; /* 外枠パディング 4px */
+    border-radius: 10px;
+    border: 2px solid #232838;
+    user-select: none;
+    place-items: center;
+    justify-items: center;
+    align-items: center;
     transition: filter 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease;
 }
 
@@ -151,28 +181,140 @@
     box-shadow: 0 0 35px rgba(0, 210, 211, 0.50), 0 10px 40px rgba(0, 0, 0, 0.9) !important;
 }
 
-/* 🅰️ 行・列ヘッダーセル (A-I, 1-9) */
+/* 🅰️ 行・列ヘッダーセル (A-I, 1-9: 等間隔角丸タイル) */
 .header-cell {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
+    text-align: center;
+    font-size: 13px;
     font-weight: 900;
-    color: #7f8c8d;
-    background: #11141d;
+    color: #8395a7;
+    background: #161b26;
+    border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 4px;
+    box-sizing: border-box;
     width: 100%;
     height: 100%;
 }
 
-/* 🟩 土地セル基本定義 (動的サイズ対応) */
+/* 🏁 底部フッター行 (全幅結合セル: 左端占領率バッジ ✕ 中央余白 ✕ 右端TURN ENDボタン) */
+.grid-with-headers .header-cell.footer-cell.footer-bar-cell {
+    background: #141824;
+    padding: 3px 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.grid-with-headers .footer-left-slot {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    min-width: 130px;
+}
+
+.grid-with-headers .footer-left-slot .territory-badge-pill {
+    position: relative;
+    height: 100%;
+    border-radius: 4px;
+    border: 1px solid #1abc9c;
+    background: rgba(18, 24, 38, 0.95);
+    box-shadow: none;
+    padding: 0 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 900;
+    color: #1abc9c;
+    box-sizing: border-box;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s ease;
+}
+
+.grid-with-headers .footer-left-slot .territory-badge-pill:hover {
+    background: rgba(26, 188, 156, 0.18);
+    border-color: #00ff88;
+}
+
+.grid-with-headers .footer-center-spacer {
+    flex: 1;
+    height: 100%;
+    cursor: grab;
+}
+
+.grid-with-headers .footer-center-spacer:active {
+    cursor: grabbing;
+}
+
+.grid-with-headers .footer-right-slot {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    height: 100%;
+    min-width: 110px;
+}
+
+.grid-with-headers .footer-btn-turn-end {
+    min-width: 110px;
+    width: 110px;
+    height: 100%;
+    border-radius: 4px;
+    border: none;
+    background: linear-gradient(135deg, #1abc9c 0%, #16a085 100%);
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 10px;
+    box-sizing: border-box;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 2px 6px rgba(0, 0, 0, 0.4);
+    transition: all 0.15s ease;
+}
+
+.grid-with-headers .footer-btn-turn-end:hover {
+    filter: brightness(1.15);
+    box-shadow: 0 0 12px rgba(26, 188, 156, 0.7);
+    transform: scale(0.98);
+}
+
+.grid-with-headers .footer-btn-turn-end:active {
+    transform: scale(0.95);
+}
+
+.grid-with-headers .footer-btn-turn-end .arrow-icon {
+    font-size: 13px;
+    line-height: 1;
+    display: inline-block;
+    transition: transform 0.15s ease;
+}
+
+.grid-with-headers .footer-btn-turn-end:hover .arrow-icon {
+    transform: translateX(2px);
+}
+
+/* 🟩 土地セル基本定義 (等間隔角丸タイル・ピクセル完全吸着) */
 .cell {
     position: relative;
-    width: var(--cell-size, 80px);
-    height: var(--cell-size, 80px);
-    background: #1c202c;
-    border: 1px solid #2e3547;
-    border-radius: 6px;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 1 / 1;
+    background: #1c212e;
+    border: 1px solid #2b3345;
+    border-radius: 4px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -189,37 +331,186 @@
     background: #252d3e;
 }
 
-/* 👑 本営 (HQ) マス (黄金ネオンオーラ) */
-.cell.hq {
-    background: linear-gradient(135deg, #d35400 0%, #e67e22 100%) !important;
-    border: 2px solid #f1c40f !important;
-    box-shadow: 0 0 15px rgba(241, 196, 15, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.4) !important;
-    color: #ffffff;
-    font-weight: 900;
+/* 👑 本営 (HQ) マス (公式リリース仕様: 2レイヤー 100x100 8fps/125ms 篝火アニメーション) */
+@keyframes campfireAnimation {
+    0%, 12.49%   { background-image: url('../../assets/campfire_flame_01.png'); }
+    12.5%, 24.99% { background-image: url('../../assets/campfire_flame_02.png'); }
+    25%, 37.49%   { background-image: url('../../assets/campfire_flame_03.png'); }
+    37.5%, 49.99% { background-image: url('../../assets/campfire_flame_04.png'); }
+    50%, 62.49%   { background-image: url('../../assets/campfire_flame_05.png'); }
+    62.5%, 74.99% { background-image: url('../../assets/campfire_flame_06.png'); }
+    75%, 87.49%   { background-image: url('../../assets/campfire_flame_07.png'); }
+    87.5%, 100%   { background-image: url('../../assets/campfire_flame_08.png'); }
 }
 
-/* ✨ 本営周囲8マス (拠点近郊) うっすら神秘的に輝くオーラエフェクト */
-@keyframes vicinityGlow {
-    0% {
-        border-color: rgba(26, 188, 156, 0.4);
-        background: radial-gradient(circle, rgba(26, 188, 156, 0.18) 0%, rgba(20, 24, 34, 0.6) 80%);
-        box-shadow: inset 0 0 14px rgba(26, 188, 156, 0.25), 0 0 8px rgba(26, 188, 156, 0.2);
+@keyframes campfirePulse {
+    0%, 100% {
+        filter: drop-shadow(0 0 6px rgba(255, 107, 0, 0.85)) drop-shadow(0 0 14px rgba(255, 215, 0, 0.6));
     }
     50% {
-        border-color: rgba(26, 188, 156, 0.75);
-        background: radial-gradient(circle, rgba(26, 188, 156, 0.32) 0%, rgba(20, 24, 34, 0.4) 80%);
-        box-shadow: inset 0 0 20px rgba(26, 188, 156, 0.45), 0 0 16px rgba(26, 188, 156, 0.35);
+        filter: drop-shadow(0 0 12px rgba(255, 70, 0, 1.0)) drop-shadow(0 0 22px rgba(255, 230, 80, 0.9));
     }
-    100% {
-        border-color: rgba(26, 188, 156, 0.4);
-        background: radial-gradient(circle, rgba(26, 188, 156, 0.18) 0%, rgba(20, 24, 34, 0.6) 80%);
-        box-shadow: inset 0 0 14px rgba(26, 188, 156, 0.25), 0 0 8px rgba(26, 188, 156, 0.2);
+}
+
+.cell.hq {
+    background: #0d0f14;
+    border: 2px solid #f39c12;
+    box-shadow: 0 0 16px rgba(243, 156, 18, 0.75), inset 0 0 10px rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    overflow: visible;
+    position: relative;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.cell.hq .hq-bg-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    pointer-events: none;
+    z-index: 1;
+    border-radius: 3px;
+}
+
+/* 🔥 本営マス(C3) 上部右端 残り火残量バッジ (白枠 1px ✕ 中オレンジ 20pt) */
+.cell.hq .hq-ember-val-badge {
+    position: absolute;
+    top: 4px;
+    right: 8px;
+    color: #ff6b00;
+    -webkit-text-stroke: 1px #ffffff;
+    paint-order: stroke fill;
+    font-size: 20pt;
+    font-weight: 900;
+    line-height: 1;
+    z-index: 5;
+    pointer-events: none;
+    user-select: none;
+    text-shadow:
+        -1px -1px 0 #ffffff,
+         1px -1px 0 #ffffff,
+        -1px  1px 0 #ffffff,
+         1px  1px 0 #ffffff,
+         0px -1px 0 #ffffff,
+         0px  1px 0 #ffffff,
+        -1px 0px 0 #ffffff,
+         1px 0px 0 #ffffff;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.95));
+    letter-spacing: -0.5px;
+}
+
+/* 🔥 本営マス(C3)直上に展開される残り火詳細ツールチップ */
+.cell.hq .ember-detail-tooltip-container {
+    position: absolute;
+    bottom: calc(100% + 14px);
+    top: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 364px;
+    z-index: 1000;
+    pointer-events: auto;
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+    visibility: visible;
+    opacity: 1;
+}
+
+.cell.hq .ember-detail-tooltip-container.ember-tooltip-hidden {
+    visibility: hidden;
+    opacity: 0;
+    transform: translateX(-50%) translateY(6px);
+    pointer-events: none;
+}
+
+.cell.hq .hq-campfire-sprite {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-position: 0 0;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    animation: campfireAnimation 1.0s infinite steps(1), campfirePulse 2.4s infinite ease-in-out;
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* 🔥 本営近郊マスの明るく温かみのあるアンバーゴールド微熱パルスアニメーション */
+@keyframes vicinityFlamePulse {
+    0%, 100% {
+        opacity: 0.85;
+        box-shadow: inset 0 0 10px rgba(255, 180, 50, 0.14), 0 0 6px rgba(255, 200, 80, 0.14);
+    }
+    50% {
+        opacity: 1.0;
+        box-shadow: inset 0 0 16px rgba(255, 195, 70, 0.26), 0 0 12px rgba(255, 215, 100, 0.26);
     }
 }
 
 .cell.hq-vicinity-unplaced {
-    border: 2px solid rgba(26, 188, 156, 0.5) !important;
-    animation: vicinityGlow 3.5s infinite ease-in-out !important;
+    border: 1px solid rgba(243, 180, 50, 0.35);
+    animation: vicinityFlamePulse 3.6s infinite ease-in-out;
+}
+
+/* N (北/上マス): 本営は真下 ➔ 下から上へ減衰 */
+.cell.hq-vicinity-unplaced.hq-dir-n {
+    background: linear-gradient(to top, rgba(255, 175, 45, 0.22) 0%, rgba(255, 150, 20, 0.08) 45%, rgba(28, 34, 48, 0.75) 100%);
+    border-bottom: 1.5px solid rgba(255, 210, 100, 0.70);
+}
+
+/* NE (北東/右上マス): 本営は左下 ➔ 左下から右上へ減衰 */
+.cell.hq-vicinity-unplaced.hq-dir-ne {
+    background: linear-gradient(to top right, rgba(255, 175, 45, 0.25) 0%, rgba(255, 150, 20, 0.09) 50%, rgba(28, 34, 48, 0.75) 100%);
+    border-bottom: 1.5px solid rgba(255, 210, 100, 0.70);
+    border-left: 1.5px solid rgba(255, 210, 100, 0.70);
+}
+
+/* E (東/右マス): 本営は真左 ➔ 左から右へ減衰 */
+.cell.hq-vicinity-unplaced.hq-dir-e {
+    background: linear-gradient(to right, rgba(255, 175, 45, 0.22) 0%, rgba(255, 150, 20, 0.08) 45%, rgba(28, 34, 48, 0.75) 100%);
+    border-left: 1.5px solid rgba(255, 210, 100, 0.70);
+}
+
+/* SE (南東/右下マス): 本営は左上 ➔ 左上から右下へ減衰 */
+.cell.hq-vicinity-unplaced.hq-dir-se {
+    background: linear-gradient(to bottom right, rgba(255, 175, 45, 0.25) 0%, rgba(255, 150, 20, 0.09) 50%, rgba(28, 34, 48, 0.75) 100%);
+    border-top: 1.5px solid rgba(255, 210, 100, 0.70);
+    border-left: 1.5px solid rgba(255, 210, 100, 0.70);
+}
+
+/* S (南/下マス): 本営は真上 ➔ 上から下へ減衰 */
+.cell.hq-vicinity-unplaced.hq-dir-s {
+    background: linear-gradient(to bottom, rgba(255, 175, 45, 0.22) 0%, rgba(255, 150, 20, 0.08) 45%, rgba(28, 34, 48, 0.75) 100%);
+    border-top: 1.5px solid rgba(255, 210, 100, 0.70);
+}
+
+/* SW (南西/左下マス): 本営は右上 ➔ 右上から左下へ減衰 */
+.cell.hq-vicinity-unplaced.hq-dir-sw {
+    background: linear-gradient(to bottom left, rgba(255, 175, 45, 0.25) 0%, rgba(255, 150, 20, 0.09) 50%, rgba(28, 34, 48, 0.75) 100%);
+    border-top: 1.5px solid rgba(255, 210, 100, 0.70);
+    border-right: 1.5px solid rgba(255, 210, 100, 0.70);
+}
+
+/* W (西/左マス): 本営は真右 ➔ 右から左へ減衰 */
+.cell.hq-vicinity-unplaced.hq-dir-w {
+    background: linear-gradient(to left, rgba(255, 175, 45, 0.22) 0%, rgba(255, 150, 20, 0.08) 45%, rgba(28, 34, 48, 0.75) 100%);
+    border-right: 1.5px solid rgba(255, 210, 100, 0.70);
+}
+
+/* NW (北西/左上マス): 本営は右下 ➔ 右下から左上へ減衰 */
+.cell.hq-vicinity-unplaced.hq-dir-nw {
+    background: linear-gradient(to top left, rgba(255, 175, 45, 0.25) 0%, rgba(255, 150, 20, 0.09) 50%, rgba(28, 34, 48, 0.75) 100%);
+    border-bottom: 1.5px solid rgba(255, 210, 100, 0.70);
+    border-right: 1.5px solid rgba(255, 210, 100, 0.70);
 }
 
 /* ✨ 配置可能候補マスの強烈なパルス発光ハイライト (土地カード選択時に一目でわかるネオン発光) */
@@ -400,6 +691,40 @@
     box-shadow: 0 0 20px rgba(255, 215, 0, 0.75), inset 0 0 14px rgba(255, 215, 0, 0.4) !important;
 }
 
+/* 💎 未発見資源 (ソケット) マス: 発光ライトグリーン点線枠 ＆ 2.5倍ネオンスター */
+.cell.socket-unopened {
+    border: 2px dashed #2ecc71 !important;
+    background: rgba(18, 40, 28, 0.45) !important;
+    box-shadow: inset 0 0 14px rgba(46, 204, 113, 0.30), 0 0 10px rgba(46, 204, 113, 0.25) !important;
+    animation: socketGlowPulse 2.4s ease-in-out infinite alternate;
+}
+
+@keyframes socketGlowPulse {
+    0% {
+        border-color: #2ecc71;
+        box-shadow: inset 0 0 10px rgba(46, 204, 113, 0.25), 0 0 8px rgba(46, 204, 113, 0.20);
+    }
+    100% {
+        border-color: #00ff88;
+        box-shadow: inset 0 0 18px rgba(0, 255, 136, 0.45), 0 0 16px rgba(0, 255, 136, 0.40);
+    }
+}
+
+.socket-star-icon {
+    font-size: 55px; /* 🛡️ 2.5倍拡大 (22px ➔ 55px) */
+    line-height: 1;
+    color: #2ecc71;
+    filter: drop-shadow(0 0 8px #00ff88) drop-shadow(0 0 18px rgba(46, 204, 113, 0.7));
+    pointer-events: none;
+    user-select: none;
+    transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.cell.socket-unopened:hover .socket-star-icon {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 12px #00ff88) drop-shadow(0 0 24px rgba(0, 255, 136, 0.9));
+}
+
 /* 💡 マスホバーツールチップ (30% 拡大 ＆ 視認性大幅強化 ＆ 純粋な情報表示) */
 .tile-tooltip {
     position: fixed;
@@ -491,10 +816,10 @@
 }
 
 .tile-title-line {
-    font-size: 13px;
+    font-size: 14pt;
     font-weight: 900;
     color: #ffffff;
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95);
     letter-spacing: 0.5px;
     line-height: 1.2;
     margin-bottom: 2px;
@@ -503,26 +828,26 @@
 .tile-yield-line {
     display: flex;
     align-items: center;
-    font-size: 12px;
+    font-size: 13pt;
     font-weight: 900;
     color: #f1c40f;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
     line-height: 1.2;
 }
 
 .tile-yield-line .yield-icon {
-    font-size: 12px;
-    margin-right: 2px;
+    font-size: 13pt;
+    margin-right: 3px;
 }
 
 .tile-yield-line .yield-colon {
-    font-size: 11px;
+    font-size: 12pt;
     color: rgba(255, 255, 255, 0.85);
     margin: 0 2px;
 }
 
 .tile-yield-line .yield-val {
-    font-size: 13px;
+    font-size: 14pt;
     font-weight: 900;
     color: #ffffff;
 }
@@ -593,4 +918,96 @@
 .cell.terrain-desert.has-resource-yield:hover {
     border-color: #f1c40f !important;
     box-shadow: inset 0 0 16px rgba(241, 196, 15, 0.45), 0 0 14px rgba(241, 196, 15, 0.6) !important;
+}
+
+/* ==================================================================== */
+/* 🔥 本営マス(C3) 残り火増減フロートポップアップ演出 (Pure 60fps GPU Acceleration) */
+/* ==================================================================== */
+
+/* +X: 上昇フロート（湧き上がり・スムーズアップ） */
+@keyframes hqEmberFloatAnim {
+    0% {
+        opacity: 0;
+        transform: translate3d(-50%, 6px, 0) scale(0.85);
+    }
+    14% {
+        opacity: 1;
+        transform: translate3d(-50%, -10px, 0) scale(1.05);
+    }
+    75% {
+        opacity: 1;
+        transform: translate3d(-50%, -42px, 0) scale(1.0);
+    }
+    100% {
+        opacity: 0;
+        transform: translate3d(-50%, -58px, 0) scale(0.95);
+    }
+}
+
+/* -X: 下降フロート（沈み込み・スムーズドロップ） */
+@keyframes hqEmberSinkAnim {
+    0% {
+        opacity: 0;
+        transform: translate3d(-50%, -6px, 0) scale(0.85);
+    }
+    14% {
+        opacity: 1;
+        transform: translate3d(-50%, 10px, 0) scale(1.05);
+    }
+    75% {
+        opacity: 1;
+        transform: translate3d(-50%, 42px, 0) scale(1.0);
+    }
+    100% {
+        opacity: 0;
+        transform: translate3d(-50%, 58px, 0) scale(0.95);
+    }
+}
+
+.hq-ember-delta-popup {
+    position: absolute;
+    top: 30%;
+    left: 50%;
+    transform: translate3d(-50%, 0, 0);
+    font-weight: 900;
+    line-height: 1;
+    z-index: 999999;
+    pointer-events: none;
+    user-select: none;
+    white-space: nowrap;
+    letter-spacing: -0.5px;
+    backface-visibility: hidden;
+    will-change: transform, opacity;
+}
+
+/* +X: 暖色系（オレンジ ✕ 白枠 ✕ 上昇浮遊） */
+.hq-ember-delta-popup.is-plus {
+    color: #ff6b00;
+    animation: hqEmberFloatAnim 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    text-shadow:
+        -1.5px -1.5px 0 #ffffff,
+         1.5px -1.5px 0 #ffffff,
+        -1.5px  1.5px 0 #ffffff,
+         1.5px  1.5px 0 #ffffff,
+         0px -1.5px 0 #ffffff,
+         0px  1.5px 0 #ffffff,
+        -1.5px 0px 0 #ffffff,
+         1.5px 0px 0 #ffffff;
+    filter: drop-shadow(0 4px 10px rgba(255, 107, 0, 0.85));
+}
+
+/* -X: 寒色系（薄青 ✕ 白枠 ✕ 下降沈下） */
+.hq-ember-delta-popup.is-minus {
+    color: #4bcffa;
+    animation: hqEmberSinkAnim 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    text-shadow:
+        -1.5px -1.5px 0 #ffffff,
+         1.5px -1.5px 0 #ffffff,
+        -1.5px  1.5px 0 #ffffff,
+         1.5px  1.5px 0 #ffffff,
+         0px -1.5px 0 #ffffff,
+         0px  1.5px 0 #ffffff,
+        -1.5px 0px 0 #ffffff,
+         1.5px 0px 0 #ffffff;
+    filter: drop-shadow(0 4px 10px rgba(75, 207, 250, 0.9));
 }

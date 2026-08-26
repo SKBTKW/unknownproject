@@ -123,6 +123,16 @@
                 else if (state.ember >= 12) { buffFoodMult = 1.10; buffWoodMult = 1.10; buffMysticMult = 1.10; flatMysticBonus = 1; }
             }
 
+            // 🌍 グローバルイベントによる産出補正の適用 (寒波・旱魃・豊穣など)
+            let plainsFoodMultiplier = 1.0;
+            if (state.globalEventManager && typeof state.globalEventManager.applyProductionEffects === "function") {
+                const prodsContext = { multipliers: {} };
+                state.globalEventManager.applyProductionEffects(prodsContext);
+                if (prodsContext.multipliers["PLAINS_FOOD"]) {
+                    plainsFoodMultiplier = prodsContext.multipliers["PLAINS_FOOD"];
+                }
+            }
+
             // 🔥 残り火ステッピングに基づく食料維持費 (rules/02_resources_and_ember.md 準拠)
             const ember = (state.ember !== undefined) ? state.ember : 20;
             let foodCost = 20;
@@ -134,7 +144,8 @@
                 foodCost = 20; // 🔥 標準状態
             }
 
-            const grossFood = Math.floor((10 + foodTiles + foodSockets + foodVicinity + foodLakeIrrigation + plainsBuffBonus) * foodMult * buffFoodMult);
+            const adjustedPlainsFood = Math.floor((foodTiles + plainsBuffBonus) * plainsFoodMultiplier);
+            const grossFood = Math.floor((10 + adjustedPlainsFood + foodSockets + foodVicinity + foodLakeIrrigation) * foodMult * buffFoodMult);
             const netFood = grossFood - foodCost;
             const totalFood = netFood; // 🌾 毎ターンの純収支 (Net Balance)
             const totalWood = Math.floor((10 + woodTiles + woodSockets + woodVicinity) * woodMult * buffWoodMult);
