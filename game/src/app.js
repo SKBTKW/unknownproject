@@ -4,7 +4,7 @@
    ============================================================= */
 
 import { I18n } from './i18n.js';
-import { LAND_SYSTEM_DATA } from './data/land_system.js';
+import { LAND_SYSTEM_DATA, TERRAIN_MATRIX, TerrainParameterEngine } from './data/land_system.js';
 import { DIRECTIVES, DirectiveSystem } from './systems/directive_system.js';
 import { DeckManager, Step1DrawSystem } from './systems/deck_manager.js';
 import { ProductionCalculator } from './systems/production_calculator.js';
@@ -39,6 +39,8 @@ import { GLOBAL_EVENTS_MASTER } from './data/global_events.js';
 export {
     I18n,
     LAND_SYSTEM_DATA,
+    TERRAIN_MATRIX,
+    TerrainParameterEngine,
     DIRECTIVES,
     DirectiveSystem,
     DeckManager,

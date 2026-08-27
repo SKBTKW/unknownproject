@@ -1,5 +1,19 @@
 {
   "terrains": {
+    "E0_WETLAND": {
+      "id": "E0_WETLAND",
+      "nameKey": "TERRAIN_WETLAND",
+      "gl": 1,
+      "e": 0,
+      "baseYieldsPerTile": {
+        "food": 2,
+        "material": 0,
+        "wood": 0,
+        "defense": 1,
+        "mystic": 0
+      },
+      "category": "BASE"
+    },
     "GL0_DESERT": {
       "id": "GL0_DESERT",
       "nameKey": "TERRAIN_DESERT",

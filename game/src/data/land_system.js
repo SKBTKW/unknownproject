@@ -1,6 +1,9 @@
 // 🗺️ 全地勢パラメータ中央集中マトリクス (Single Source of Truth)
 export const TERRAIN_MATRIX = {
-  1: { // ─── E1: 低地帯 ───
+  0: { // ─── E0: 低地帯 (現行はGL1湿原のみ自然生成) ───
+    1: { id: "E0_WETLAND",      nameKey: "TERRAIN_WETLAND",     gl: 1, e: 0, food: 2, material: 0, wood: 0, defense: 1, mystic: 0, category: "BASE" }
+  },
+  1: { // ─── E1: 平地帯 ───
     0: { id: "GL0_DESERT",      nameKey: "TERRAIN_DESERT",      gl: 0, e: 1, food: 0, material: 0, wood: 0, defense: 0, mystic: 2, category: "BASE" },
     1: { id: "GL1_PLAINS",      nameKey: "TERRAIN_PLAINS",      gl: 1, e: 1, food: 4, material: 0, wood: 0, defense: 0, mystic: 0, category: "BASE" },
     2: { id: "GL2_FOREST",      nameKey: "TERRAIN_FOREST",      gl: 2, e: 1, food: 2, material: 2, wood: 2, defense: 2, mystic: 0, category: "BASE" },
@@ -17,8 +20,22 @@ export const TERRAIN_MATRIX = {
   }
 };
 
-// 🧮 2次元パラメータ決定エンジン (Parameter Derivation Engine)
+// 🧮 2変数合成モデル決定エンジン (E × GL Parameter Derivation Engine)
 export class TerrainParameterEngine {
+  /**
+   * GL (繁茂度) の基礎産出ベクトル B(GL) を取得
+   */
+  static getBaseVector(gl) {
+    const glNum = Number(gl);
+    switch (glNum) {
+      case 0: return { food: 0, material: 0, wood: 0, defense: 0, mystic: 2 };
+      case 1: return { food: 4, material: 0, wood: 0, defense: 0, mystic: 0 };
+      case 2: return { food: 2, material: 2, wood: 2, defense: 2, mystic: 0 };
+      case 3: return { food: 1, material: 3, wood: 3, defense: 3, mystic: 1 };
+      default: return { food: 4, material: 0, wood: 0, defense: 0, mystic: 0 };
+    }
+  }
+
   /**
    * (e, gl) の組み合わせから地形定義オブジェクトを取得
    */
@@ -34,23 +51,58 @@ export class TerrainParameterEngine {
       };
     }
     // 安全なフォールバック
+    if (eNum === 0) return this.getTerrain(0, 1);
     if (eNum === 3) return this.getTerrain(3, 0);
     if (eNum === 2) return this.getTerrain(2, 1);
     return this.getTerrain(1, 1);
   }
 
   /**
-   * (e, gl) の組み合わせから 1マス基礎産出を取得
+   * 2変数合成モデル T_E(B(GL), GL) に基づいて 1マス基礎産出を取得
    */
   static getYields(e, gl) {
-    const t = this.getTerrain(e, gl);
-    return {
-      food: t.food,
-      material: t.material,
-      wood: t.material, // 下位互換用エイリアス
-      defense: t.defense,
-      mystic: t.mystic
-    };
+    const eNum = Number(e);
+    const glNum = Number(gl);
+
+    // E3: 山岳 Override
+    if (eNum === 3) {
+      return { food: 0, material: 3, wood: 3, defense: 5, mystic: 1 };
+    }
+
+    const B = this.getBaseVector(glNum);
+
+    // E0: 低湿地変換 (GL1)
+    if (eNum === 0) {
+      return {
+        food: Math.floor(B.food * 0.5),
+        material: B.material,
+        wood: B.material,
+        defense: B.defense + 1,
+        mystic: B.mystic
+      };
+    }
+
+    // E1: 基準面
+    if (eNum === 1) {
+      return {
+        food: B.food,
+        material: B.material,
+        wood: B.material,
+        defense: B.defense,
+        mystic: B.mystic
+      };
+    }
+
+    // E2: 丘陵変換
+    if (eNum === 2) {
+      const food = (glNum === 0) ? 0 : Math.max(1, Math.floor(B.food * 0.5));
+      const material = B.material + 1 + Math.floor(glNum / 2);
+      const defense = B.defense + Math.max(1, glNum);
+      const mystic = B.mystic;
+      return { food, material, wood: material, defense, mystic };
+    }
+
+    return { food: B.food, material: B.material, wood: B.material, defense: B.defense, mystic: B.mystic };
   }
 
   /**

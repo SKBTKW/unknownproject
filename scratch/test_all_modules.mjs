@@ -6,6 +6,7 @@
 import {
     I18n,
     LAND_SYSTEM_DATA,
+    TerrainParameterEngine,
     DIRECTIVES,
     DirectiveSystem,
     DeckManager,
@@ -909,6 +910,38 @@ assert(totalSockets === 7, `ソケットが既存3個+追加4個の計7個配置
 // 4. 支配地バッジの分母が 48 になり、支配率が再計算されること
 TerritoryBadgeComponent.update(12, stageEngine.state);
 assert(TerritoryBadgeComponent.maxCount === 48, '支配地バッジの最大マス数が 48 であること');
+
+// --- 10. E × GL 2変数合成モデル完全検証 ---
+console.log('\n📐 [10/10] E × GL 2変数合成モデル (TerrainParameterEngine) 検証');
+const yWetland = TerrainParameterEngine.getYields(0, 1);
+assert(yWetland.food === 2 && yWetland.material === 0 && yWetland.defense === 1 && yWetland.mystic === 0, 'E0+GL1 湿原の産出が [2, 0, 1, 0] であること');
+
+const yDesert = TerrainParameterEngine.getYields(1, 0);
+assert(yDesert.food === 0 && yDesert.material === 0 && yDesert.defense === 0 && yDesert.mystic === 2, 'E1+GL0 砂漠の産出が [0, 0, 0, 2] であること');
+
+const yPlains = TerrainParameterEngine.getYields(1, 1);
+assert(yPlains.food === 4 && yPlains.material === 0 && yPlains.defense === 0 && yPlains.mystic === 0, 'E1+GL1 草原の産出が [4, 0, 0, 0] であること');
+
+const yForest = TerrainParameterEngine.getYields(1, 2);
+assert(yForest.food === 2 && yForest.material === 2 && yForest.defense === 2 && yForest.mystic === 0, 'E1+GL2 森の産出が [2, 2, 2, 0] であること');
+
+const yDeepForest = TerrainParameterEngine.getYields(1, 3);
+assert(yDeepForest.food === 1 && yDeepForest.material === 3 && yDeepForest.defense === 3 && yDeepForest.mystic === 1, 'E1+GL3 深い森の産出が [1, 3, 3, 1] であること');
+
+const yBadlands = TerrainParameterEngine.getYields(2, 0);
+assert(yBadlands.food === 0 && yBadlands.material === 1 && yBadlands.defense === 1 && yBadlands.mystic === 2, 'E2+GL0 荒野の産出が [0, 1, 1, 2] であること');
+
+const yHills = TerrainParameterEngine.getYields(2, 1);
+assert(yHills.food === 2 && yHills.material === 1 && yHills.defense === 1 && yHills.mystic === 0, 'E2+GL1 丘陵の産出が [2, 1, 1, 0] であること');
+
+const yWoodedHills = TerrainParameterEngine.getYields(2, 2);
+assert(yWoodedHills.food === 1 && yWoodedHills.material === 4 && yWoodedHills.defense === 4 && yWoodedHills.mystic === 0, 'E2+GL2 森丘陵の産出が [1, 4, 4, 0] であること');
+
+const yDeepHills = TerrainParameterEngine.getYields(2, 3);
+assert(yDeepHills.food === 1 && yDeepHills.material === 5 && yDeepHills.defense === 6 && yDeepHills.mystic === 1, 'E2+GL3 森林丘陵の産出が [1, 5, 6, 1] であること');
+
+const yMountain = TerrainParameterEngine.getYields(3, 0);
+assert(yMountain.food === 0 && yMountain.material === 3 && yMountain.defense === 5 && yMountain.mystic === 1, 'E3 山岳の産出が [0, 3, 5, 1] であること');
 
 console.log('\n====================================================');
 console.log(`🎉 全テスト完了: ${passedTests} / ${totalTests} 件 合格 (100% PASS)`);
