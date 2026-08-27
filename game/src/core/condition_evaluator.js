@@ -101,6 +101,51 @@ const CONDITION_HANDLERS = {
             return !!(context.state.lastTrialDamageTaken && context.state.lastTrialDamageTaken > 0);
         }
         return true;
+    },
+
+    // ⛰️ 本営周囲に丘陵・山岳が1個以上ある判定
+    HILL_OR_MOUNTAIN_AROUND_HQ: (params, context) => {
+        if (!context || !context.state || !context.state.grid) return false;
+        const size = context.state.grid.length;
+        const center = Math.floor(size / 2);
+        for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+                if (dr === 0 && dc === 0) continue;
+                const r = center + dr;
+                const cCol = center + dc;
+                if (r >= 0 && r < size && cCol >= 0 && cCol < size) {
+                    const cell = context.state.grid[r][cCol];
+                    if (cell && cell.placed && cell.terrain) {
+                        const tid = cell.terrain.terrainId || cell.terrain.id;
+                        if (tid === "E2_HILL" || tid === "E3_MOUNTAIN") return true;
+                    }
+                }
+            }
+        }
+        return false;
+    },
+
+    // 🛡️ 本営周囲に丘陵・山岳が「0個」である判定 (否定条件)
+    NO_HILL_OR_MOUNTAIN_AROUND_HQ: (params, context) => {
+        if (!context || !context.state || !context.state.grid) return true;
+        const size = context.state.grid.length;
+        const center = Math.floor(size / 2);
+        let countHM = 0;
+        for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+                if (dr === 0 && dc === 0) continue;
+                const r = center + dr;
+                const cCol = center + dc;
+                if (r >= 0 && r < size && cCol >= 0 && cCol < size) {
+                    const cell = context.state.grid[r][cCol];
+                    if (cell && cell.placed && cell.terrain) {
+                        const tid = cell.terrain.terrainId || cell.terrain.id;
+                        if (tid === "E2_HILL" || tid === "E3_MOUNTAIN") countHM++;
+                    }
+                }
+            }
+        }
+        return countHM === 0;
     }
 };
 
@@ -130,6 +175,24 @@ export class ConditionEvaluator {
     static evaluateAll(conditions, context) {
         if (!Array.isArray(conditions) || conditions.length === 0) return true;
         return conditions.every(c => ConditionEvaluator.evaluate(c, context));
+    }
+
+    /**
+     * ⛰️ 本営周囲に丘陵・山岳が「ない（0個）」か判定するヘルパー
+     * @param {Object} state - gameState
+     * @returns {boolean}
+     */
+    static checkNoHillOrMountainAroundHQ(state) {
+        return CONDITION_HANDLERS.NO_HILL_OR_MOUNTAIN_AROUND_HQ({}, { state });
+    }
+
+    /**
+     * ⛰️ 本営周囲に丘陵・山岳が「1個以上ある」か判定するヘルパー
+     * @param {Object} state - gameState
+     * @returns {boolean}
+     */
+    static checkHillOrMountainAroundHQ(state) {
+        return CONDITION_HANDLERS.HILL_OR_MOUNTAIN_AROUND_HQ({}, { state });
     }
 
     /**

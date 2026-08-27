@@ -82,10 +82,11 @@ export class TopHeaderComponent {
                 badgeComp.mount();
             }
             if (typeof badgeComp.update === "function") {
-                badgeComp.update(placedCount, this.state.stage ? this.state.stage.maxTiles : 24, this.state.stage ? this.state.stage.id : 1);
+                badgeComp.update(placedCount, this.state);
             }
         } else {
-            this.setElementText("valPlacedCount", `${placedCount}/24`);
+            const maxT = (this.state.stage && this.state.stage.maxTiles) ? this.state.stage.maxTiles : 24;
+            this.setElementText("valPlacedCount", `${placedCount}/${maxT}`);
         }
 
         // 6. 🏛️ 方針バッジ連携

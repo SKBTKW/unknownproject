@@ -2,6 +2,7 @@ import { I18n } from '../i18n.js';
 import { LAND_SYSTEM_DATA } from '../data/land_system.js';
 import { DIRECTIVES } from './directive_system.js';
 import { LAND_CARDS_MASTER } from '../data/land_cards_data.js';
+import { ConditionEvaluator } from '../core/condition_evaluator.js';
 
 class DeckManager {
     constructor(gameState, engine = null) {
@@ -94,51 +95,28 @@ class DeckManager {
 
         if (c.reqE2HillsOnBoard && h2Count < c.reqE2HillsOnBoard) return false;
 
-        if (c.reqHillOrMountainAroundHQ && this.state && this.state.grid) {
-            let found = false;
-            for (let dr = -1; dr <= 1; dr++) {
-                for (let dc = -1; dc <= 1; dc++) {
-                    if (dr === 0 && dc === 0) continue;
-                    const r = 2 + dr;
-                    const cCol = 2 + dc;
-                    const cell = this.state.grid[r][cCol];
-                    if (cell && cell.placed && cell.terrain) {
-                        const tid = cell.terrain.terrainId || cell.terrain.id;
-                        if (tid === "E2_HILL" || tid === "E3_MOUNTAIN") { found = true; break; }
-                    }
-                }
-                if (found) break;
-            }
-            if (!found) return false;
+        // ⛰️ 本営周囲に丘陵・山岳が1個以上あることを要求
+        if (c.reqHillOrMountainAroundHQ && this.state) {
+            if (!ConditionEvaluator.checkHillOrMountainAroundHQ(this.state)) return false;
         }
 
-        if (c.reqNoHillOrMountainAroundHQ && this.state && this.state.grid) {
-            let countHM = 0;
-            for (let dr = -1; dr <= 1; dr++) {
-                for (let dc = -1; dc <= 1; dc++) {
-                    if (dr === 0 && dc === 0) continue;
-                    const r = 2 + dr;
-                    const cCol = 2 + dc;
-                    const cell = this.state.grid[r][cCol];
-                    if (cell && cell.placed && cell.terrain) {
-                        const tid = cell.terrain.terrainId || cell.terrain.id;
-                        if (tid === "E2_HILL" || tid === "E3_MOUNTAIN") countHM++;
-                    }
-                }
-            }
-            if (countHM === 0) return false;
+        // 🛡️ 本営周囲に丘陵・山岳が「0個」であることを要求 (否定条件)
+        if (c.reqNoHillOrMountainAroundHQ && this.state) {
+            if (!ConditionEvaluator.checkNoHillOrMountainAroundHQ(this.state)) return false;
         }
 
         if (c.reqUnmergedDesertOrMountain && this.state && this.state.grid) {
+            const size = this.state.grid.length;
             let found = false;
-            for (let r = 0; r < 5; r++) {
-                for (let cCol = 0; cCol < 5; cCol++) {
+            for (let r = 0; r < size; r++) {
+                for (let cCol = 0; cCol < size; cCol++) {
                     const cell = this.state.grid[r][cCol];
                     if (cell && cell.placed && !cell.merged && cell.terrain) {
                         const tid = cell.terrain.terrainId || cell.terrain.id;
                         if (tid === "GL0_DESERT" || tid === "E3_MOUNTAIN") { found = true; break; }
                     }
                 }
+                if (found) break;
             }
             if (!found) return false;
         }
@@ -169,9 +147,10 @@ class DeckManager {
         }
 
         if (c.noSocketsOnBoard && this.state && this.state.grid) {
+            const size = this.state.grid.length;
             let hasSocket = false;
-            for (let r = 0; r < 5; r++) {
-                for (let cCol = 0; cCol < 5; cCol++) {
+            for (let r = 0; r < size; r++) {
+                for (let cCol = 0; cCol < size; cCol++) {
                     const cell = this.state.grid[r][cCol];
                     if (cell && cell.socketResource) {
                         hasSocket = true;
@@ -187,9 +166,10 @@ class DeckManager {
         if (c.reqFood !== undefined && this.state && this.state.food < c.reqFood) return false;
 
         if (c.reqPlains !== undefined && this.state && this.state.grid) {
+            const size = this.state.grid.length;
             let plainsCount = 0;
-            for (let r = 0; r < 5; r++) {
-                for (let cCol = 0; cCol < 5; cCol++) {
+            for (let r = 0; r < size; r++) {
+                for (let cCol = 0; cCol < size; cCol++) {
                     const cell = this.state.grid[r][cCol];
                     if (cell && cell.placed && !cell.isHQ && cell.terrain) {
                         const tid = cell.terrain.terrainId || cell.terrain.id || "";

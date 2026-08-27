@@ -49,6 +49,7 @@
                 handOffering: handOfferingCopy,
                 reserveSlots: reserveSlotsCopy,
                 hasPickedThisTurn: this.state.hasPickedThisTurn,
+                placedBlockCount: this.state.placedBlockCount || 0,
                 mergeGroupCounter: this.state.mergeGroupCounter,
                 placementGroupCounter: this.state.placementGroupCounter
             };
@@ -117,6 +118,7 @@
             }
 
             this.state.hasPickedThisTurn = s.hasPickedThisTurn;
+            this.state.placedBlockCount = s.placedBlockCount || 0;
             this.state.mergeGroupCounter = s.mergeGroupCounter;
             this.state.placementGroupCounter = s.placementGroupCounter;
 

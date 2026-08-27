@@ -185,6 +185,90 @@ class GridEngine {
         }
 
         this.state.grid = newGrid;
+
+        // 🏰 1. 本営 (HQ) 産出の 1.4 倍強化 (Stage 2: 🌾14, 🧱14, 🛡️14, ✨2)
+        if (newGrid[newCenter] && newGrid[newCenter][newCenter] && newGrid[newCenter][newCenter].isHQ) {
+            newGrid[newCenter][newCenter].terrain = {
+                id: "HQ",
+                nameKey: "TERRAIN_HQ",
+                food: 14,
+                wood: 14,
+                defense: 14,
+                mystic: 2
+            };
+        }
+
+        // 🎲 2. 資源ソケットの追加配置 (+4個: 最外周3マス + 全域未配置1マス)
+        const existingSockets = [];
+        for (let r = 0; r < newSize; r++) {
+            for (let c = 0; c < newSize; c++) {
+                if (newGrid[r][c].hasSocket) {
+                    existingSockets.push({ r, c });
+                }
+            }
+        }
+
+        const isAdjacentToAnySocket = (r, c, socketList) => {
+            return socketList.some(s => Math.abs(s.r - r) <= 1 && Math.abs(s.c - c) <= 1);
+        };
+
+        // (a) 最外周ブロックから 3 個抽出
+        const perimeterCandidates = [];
+        for (let r = 0; r < newSize; r++) {
+            for (let c = 0; c < newSize; c++) {
+                const isPerimeter = (r === 0 || r === newSize - 1 || c === 0 || c === newSize - 1);
+                if (isPerimeter && !newGrid[r][c].placed && !newGrid[r][c].hasSocket) {
+                    perimeterCandidates.push({ r, c });
+                }
+            }
+        }
+
+        // Fisher-Yates シャッフル
+        for (let i = perimeterCandidates.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [perimeterCandidates[i], perimeterCandidates[j]] = [perimeterCandidates[j], perimeterCandidates[i]];
+        }
+
+        const addedSockets = [];
+        for (const cand of perimeterCandidates) {
+            if (addedSockets.length >= 3) break;
+            if (!isAdjacentToAnySocket(cand.r, cand.c, existingSockets) &&
+                !isAdjacentToAnySocket(cand.r, cand.c, addedSockets)) {
+                addedSockets.push(cand);
+            }
+        }
+
+        // (b) 全グリッド未配置ブロックからランダム 1 個抽出
+        const allCandidates = [];
+        for (let r = 0; r < newSize; r++) {
+            for (let c = 0; c < newSize; c++) {
+                const cell = newGrid[r][c];
+                const isHQ = (r === newCenter && c === newCenter);
+                const isNearHQ = (Math.abs(r - newCenter) <= 1 && Math.abs(c - newCenter) <= 1);
+                if (!cell.placed && !isHQ && !isNearHQ && !cell.hasSocket) {
+                    allCandidates.push({ r, c });
+                }
+            }
+        }
+
+        for (let i = allCandidates.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [allCandidates[i], allCandidates[j]] = [allCandidates[j], allCandidates[i]];
+        }
+
+        for (const cand of allCandidates) {
+            if (addedSockets.length >= 4) break;
+            if (!isAdjacentToAnySocket(cand.r, cand.c, existingSockets) &&
+                !isAdjacentToAnySocket(cand.r, cand.c, addedSockets)) {
+                addedSockets.push(cand);
+            }
+        }
+
+        // ソケット配置の確定
+        for (const pos of addedSockets) {
+            newGrid[pos.r][pos.c].hasSocket = true;
+        }
+
         return newGrid;
     }
 

@@ -19,9 +19,11 @@
             let mysticVicinity = 0;
             let foodLakeIrrigation = 0;
 
+            const size = (state && state.grid && state.grid.length) ? state.grid.length : 5;
+
             const lakeCoords = [];
-            for (let r = 0; r < 5; r++) {
-                for (let c = 0; c < 5; c++) {
+            for (let r = 0; r < size; r++) {
+                for (let c = 0; c < size; c++) {
                     const cell = state.grid[r][c];
                     if (cell && cell.placed && cell.socketResource && (cell.socketResource.id === "SOCKET_LAKE" || cell.socketResource.nameKey === "SOCKET_LAKE")) {
                         lakeCoords.push({ r, c });
@@ -35,10 +37,10 @@
 
             const groupSums = {};
 
-            for (let r = 0; r < 5; r++) {
-                for (let c = 0; c < 5; c++) {
+            for (let r = 0; r < size; r++) {
+                for (let c = 0; c < size; c++) {
                     const cell = state.grid[r][c];
-                    if (cell.placed && !cell.isHQ && cell.terrain) {
+                    if (cell && cell.placed && !cell.isHQ && cell.terrain) {
                         const t = cell.terrain;
                         const tf = (t.food !== undefined) ? t.food : ((t.baseYieldsPerTile && t.baseYieldsPerTile.food) || (t.yields && t.yields.food) || 0);
                         const tw = (t.material !== undefined) ? t.material : ((t.wood !== undefined) ? t.wood : ((t.baseYieldsPerTile && (t.baseYieldsPerTile.material || t.baseYieldsPerTile.wood)) || (t.yields && (t.yields.material || t.yields.wood)) || 0));
@@ -87,10 +89,10 @@
             // 📜 コマンドカード・バフ効果加算
             let plainsCount = 0;
             let vicinityCount = 0;
-            for (let r = 0; r < 5; r++) {
-                for (let c = 0; c < 5; c++) {
+            for (let r = 0; r < size; r++) {
+                for (let c = 0; c < size; c++) {
                     const cell = state.grid[r][c];
-                    if (cell.placed && !cell.isHQ && cell.terrain) {
+                    if (cell && cell.placed && !cell.isHQ && cell.terrain) {
                         const tid = cell.terrain.terrainId || cell.terrain.id || "";
                         if (tid.includes("PLAINS")) plainsCount++;
                         if (state.isHQVicinity(r, c)) vicinityCount++;
@@ -144,24 +146,40 @@
                 foodCost = 20; // 🔥 標準状態
             }
 
+            // 🏰 本営 (HQ) 基礎産出の動的解決 (Stage 1: 10/10/10/1, Stage 2: 14/14/14/2)
+            const center = Math.floor(size / 2);
+            const hqTerrain = (state.grid && state.grid[center] && state.grid[center][center] && state.grid[center][center].terrain) 
+                ? state.grid[center][center].terrain 
+                : { food: 10, wood: 10, defense: 10, mystic: 1 };
+            const hqFood = (hqTerrain.food !== undefined) ? hqTerrain.food : 10;
+            const hqWood = (hqTerrain.wood !== undefined) ? (hqTerrain.material !== undefined ? hqTerrain.material : hqTerrain.wood) : 10;
+            const hqMystic = (hqTerrain.mystic !== undefined) ? hqTerrain.mystic : 1;
+
             const adjustedPlainsFood = Math.floor((foodTiles + plainsBuffBonus) * plainsFoodMultiplier);
-            const grossFood = Math.floor((10 + adjustedPlainsFood + foodSockets + foodVicinity + foodLakeIrrigation) * foodMult * buffFoodMult);
+            const grossFood = Math.floor((hqFood + adjustedPlainsFood + foodSockets + foodVicinity + foodLakeIrrigation) * foodMult * buffFoodMult);
             const netFood = grossFood - foodCost;
             const totalFood = netFood; // 🌾 毎ターンの純収支 (Net Balance)
-            const totalWood = Math.floor((10 + woodTiles + woodSockets + woodVicinity) * woodMult * buffWoodMult);
+            const totalWood = Math.floor((hqWood + woodTiles + woodSockets + woodVicinity) * woodMult * buffWoodMult);
             const totalMaterial = totalWood;
-            const totalMystic = Math.floor((1 + mysticTiles + mysticSockets + mysticVicinity + flatMysticBonus) * mysticMult * buffMysticMult);
+            const totalMystic = Math.floor((hqMystic + mysticTiles + mysticSockets + mysticVicinity + flatMysticBonus) * mysticMult * buffMysticMult);
 
-            return { totalFood, netFood, grossFood, foodCost, totalWood, totalMaterial, totalMystic, foodLakeIrrigation };
+            return { totalFood, netFood, grossFood, foodCost, totalWood, totalMaterial, totalMystic, foodLakeIrrigation, hqFood, hqWood, hqMystic };
         }
 
         static calculateTotalDefense(state) {
-            let def = 10;
+            const size = (state && state.grid && state.grid.length) ? state.grid.length : 5;
+            const center = Math.floor(size / 2);
+            const hqTerrain = (state.grid && state.grid[center] && state.grid[center][center] && state.grid[center][center].terrain) 
+                ? state.grid[center][center].terrain 
+                : { food: 10, wood: 10, defense: 10, mystic: 1 };
+            const hqDef = (hqTerrain.defense !== undefined) ? hqTerrain.defense : 10;
+
+            let def = hqDef;
             let vicinityCount = 0;
-            for (let r = 0; r < 5; r++) {
-                for (let c = 0; c < 5; c++) {
+            for (let r = 0; r < size; r++) {
+                for (let c = 0; c < size; c++) {
                     const cell = state.grid[r][c];
-                    if (cell.placed && !cell.isHQ && cell.terrain) {
+                    if (cell && cell.placed && !cell.isHQ && cell.terrain) {
                         const t = cell.terrain;
                         const td = (t.defense !== undefined) ? t.defense : ((t.baseYieldsPerTile && t.baseYieldsPerTile.defense) || (t.yields && t.yields.defense) || 0);
                         def += td;
@@ -188,11 +206,20 @@
             let foodSockets = 0, woodSockets = 0, defenseSockets = 0, mysticSockets = 0;
             let foodVicinity = 0, woodVicinity = 0;
             const groupSums = {};
+            const size = (state && state.grid && state.grid.length) ? state.grid.length : 5;
+            const center = Math.floor(size / 2);
+            const hqTerrain = (state.grid && state.grid[center] && state.grid[center][center] && state.grid[center][center].terrain) 
+                ? state.grid[center][center].terrain 
+                : { food: 10, wood: 10, defense: 10, mystic: 1 };
+            const hqFood = (hqTerrain.food !== undefined) ? hqTerrain.food : 10;
+            const hqWood = (hqTerrain.wood !== undefined) ? (hqTerrain.material !== undefined ? hqTerrain.material : hqTerrain.wood) : 10;
+            const hqDefense = (hqTerrain.defense !== undefined) ? hqTerrain.defense : 10;
+            const hqMystic = (hqTerrain.mystic !== undefined) ? hqTerrain.mystic : 1;
 
-            for (let r = 0; r < 5; r++) {
-                for (let c = 0; c < 5; c++) {
+            for (let r = 0; r < size; r++) {
+                for (let c = 0; c < size; c++) {
                     const cell = state.grid[r][c];
-                    if (cell.placed && !cell.isHQ && cell.terrain) {
+                    if (cell && cell.placed && !cell.isHQ && cell.terrain) {
                         const t = cell.terrain;
                         const tf = (t.food !== undefined) ? t.food : ((t.baseYieldsPerTile && t.baseYieldsPerTile.food) || (t.yields && t.yields.food) || 0);
                         const tw = (t.material !== undefined) ? t.material : ((t.wood !== undefined) ? t.wood : ((t.baseYieldsPerTile && (t.baseYieldsPerTile.material || t.baseYieldsPerTile.wood)) || (t.yields && (t.yields.material || t.yields.wood)) || 0));
@@ -249,10 +276,10 @@
             }
 
             return {
-                food: { hqBase: 10, tiles: foodTiles, sockets: foodSockets, vicinity: foodVicinity, lakeIrrigation: prods.foodLakeIrrigation || 0, emberPct, gross: prods.grossFood, foodCost: prods.foodCost, net: prods.netFood, total: prods.totalFood },
-                wood: { hqBase: 10, tiles: woodTiles, sockets: woodSockets, vicinity: woodVicinity, emberPct, total: prods.totalWood },
-                defense: { hqBase: 10, tiles: defenseTiles, sockets: defenseSockets, total: defTotal },
-                mystic: { hqBase: 1, tiles: mysticTiles, sockets: mysticSockets, emberMystic, emberPct, total: prods.totalMystic }
+                food: { hqBase: hqFood, tiles: foodTiles, sockets: foodSockets, vicinity: foodVicinity, lakeIrrigation: prods.foodLakeIrrigation || 0, emberPct, gross: prods.grossFood, foodCost: prods.foodCost, net: prods.netFood, total: prods.totalFood },
+                wood: { hqBase: hqWood, tiles: woodTiles, sockets: woodSockets, vicinity: woodVicinity, emberPct, total: prods.totalWood },
+                defense: { hqBase: hqDefense, tiles: defenseTiles, sockets: defenseSockets, total: defTotal },
+                mystic: { hqBase: hqMystic, tiles: mysticTiles, sockets: mysticSockets, emberMystic, emberPct, total: prods.totalMystic }
             };
         }
     }

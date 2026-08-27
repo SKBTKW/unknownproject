@@ -372,8 +372,9 @@ export class BoardGridComponent {
 
         const isNearLake = (r, c) => {
             if (!this.state || !this.state.grid) return false;
-            for (let lr = 0; lr < 5; lr++) {
-                for (let lc = 0; lc < 5; lc++) {
+            const size = this.state.grid.length;
+            for (let lr = 0; lr < size; lr++) {
+                for (let lc = 0; lc < size; lc++) {
                     const lcCell = this.state.grid[lr][lc];
                     if (lcCell && lcCell.placed && lcCell.socketResource && (lcCell.socketResource.id === "SOCKET_LAKE" || lcCell.socketResource.nameKey === "SOCKET_LAKE")) {
                         if (Math.abs(lr - r) <= 1 && Math.abs(lc - c) <= 1 && !(lr === r && lc === c)) {

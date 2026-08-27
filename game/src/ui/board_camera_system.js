@@ -113,13 +113,36 @@ class BoardCameraSystem {
             }
         });
 
-        // 🎯 盤面ダブルクリックで位置(0,0)と倍率(1.0x)を中央デフォルトへスムーズ復帰
-        this.containerEl.addEventListener('dblclick', (e) => {
-            // 手札トレイ、操作ボタン、保留スロットなどのUIコントロール要素以外であればセル上含め即座にリセット
-            if (e.target.closest('.offering-section') || e.target.closest('.footer-controls-partition') || e.target.closest('#logComponentContainer') || e.target.closest('button')) {
+        // 🎯 盤面背景・画面全体の余白ダブルクリックで位置(0,0)と倍率(1.0x)を中央デフォルトへスムーズ復帰
+        window.addEventListener('dblclick', (e) => {
+            // 手札トレイ、操作ボタン、保留スロット、ログコンテナ、モーダルなどのUIコントロール要素上の場合は無視
+            if (e.target.closest('.offering-section') || 
+                e.target.closest('.footer-controls-partition') || 
+                e.target.closest('#logComponentContainer') || 
+                e.target.closest('.modal-overlay') || 
+                e.target.closest('.modal-content') || 
+                e.target.closest('button') || 
+                e.target.closest('input') || 
+                e.target.closest('select')) {
                 return;
             }
+            e.preventDefault();
             this.resetCamera();
+        });
+
+        // ⌨️ 'R' / 'r' キー押下による視点・配置リセットショートカット
+        window.addEventListener('keydown', (e) => {
+            // テキスト入力中は無視
+            if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) {
+                return;
+            }
+            // モーダル表示中などは無視
+            if (document.querySelector('.modal-overlay:not(.hidden):not([style*="display: none"])')) {
+                return;
+            }
+            if (e.key === 'r' || e.key === 'R') {
+                this.resetCamera();
+            }
         });
 
         this.isInitialized = true;

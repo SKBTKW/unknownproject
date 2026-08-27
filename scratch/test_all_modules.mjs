@@ -114,6 +114,7 @@ engine.state.hasPickedThisTurn = false;
 undoSys.captureSnapshot([{ r: 0, c: 2 }]);
 
 // 新たに森 (0,2) を配置
+const initialBlockCount = engine.state.placedBlockCount || 0;
 engine.gridEngine.placeShape(0, 2, [[1]], {
     id: 'GL2_FOREST',
     terrainId: 'GL2_FOREST',
@@ -121,9 +122,11 @@ engine.gridEngine.placeShape(0, 2, [[1]], {
     baseYieldsPerTile: { food: 2, wood: 2, defense: 2, mystic: 0 }
 });
 assert(engine.state.grid[0][2].placed === true, '森の配置が成功していること');
+assert(engine.state.placedBlockCount === initialBlockCount + 1, '配置後に placedBlockCount が +1 されること');
 const undoRes = undoSys.undo();
 assert(undoRes === true, 'アンドゥが成功すること');
 assert(engine.state.grid[0][2].placed === false, 'アンドゥ後に (0,2) が未配置に戻っていること');
+assert(engine.state.placedBlockCount === initialBlockCount, 'アンドゥ後に placedBlockCount が初期値に完全巻き戻し復帰すること');
 
 // 保留枠から土地を配置 ➔ アンドゥで保留枠へ復帰するテスト
 const mockReserveCard = {
@@ -833,12 +836,79 @@ const eventChron = eventEngine.state.chronicleSystem.getChronicle('MAJOR');
 assert(eventChron.some(e => e.id === 'EVENT_COLD_WAVE'), '年代記に寒波イベントがMAJOR重要度で記録されていること');
 
 // --- 7. HqComponent 本営モジュールテスト ---
-console.log('\n🏰 [7/7] HqComponent 本営専用モジュール');
+console.log('\n🏰 [7/8] HqComponent 本営専用モジュール');
 const hqComp = new HqComponent({ state: engine.state });
 assert(typeof hqComp.renderCell === 'function', 'HqComponent.renderCell メソッドが存在すること');
 assert(typeof hqComp.updateEmberValue === 'function', 'HqComponent.updateEmberValue メソッドが存在すること');
 assert(typeof hqComp.showDeltaPopup === 'function', 'HqComponent.showDeltaPopup メソッドが存在すること');
 assert(typeof hqComp.checkAndTriggerDeltaPopup === 'function', 'HqComponent.checkAndTriggerDeltaPopup メソッドが存在すること');
+
+// --- 8. 否定・肯定条件（reqNoHillOrMountainAroundHQ）4パターン厳密テスト ---
+console.log('\n⛰️ [8/8] 否定・肯定条件（reqNoHillOrMountainAroundHQ）4パターン厳密テスト');
+const testCardNoHM = { id: 'TEST_NO_HM', reqNoHillOrMountainAroundHQ: true, minStage: 1 };
+
+// ケース 1: 丘陵・山岳 0個 ➔ true
+const testEngine1 = GameEngine.createGame();
+assert(testEngine1.deckManager.isCardEligible(testCardNoHM, 1, 0) === true, 'ケース1: 本営周囲に丘陵・山岳0個の時、reqNoHillOrMountainAroundHQ が true (合致) であること');
+
+// ケース 2: 丘陵 1個 ➔ false
+const testEngine2 = GameEngine.createGame();
+testEngine2.state.grid[1][2] = { r: 1, c: 2, placed: true, terrain: { id: 'E2_HILL', nameKey: 'TERRAIN_HILL' } };
+assert(testEngine2.deckManager.isCardEligible(testCardNoHM, 1, 0) === false, 'ケース2: 本営周囲に丘陵1個の時、reqNoHillOrMountainAroundHQ が false (除外) であること');
+
+// ケース 3: 山岳 1個 ➔ false
+const testEngine3 = GameEngine.createGame();
+testEngine3.state.grid[2][3] = { r: 2, c: 3, placed: true, terrain: { id: 'E3_MOUNTAIN', nameKey: 'TERRAIN_MOUNTAIN' } };
+assert(testEngine3.deckManager.isCardEligible(testCardNoHM, 1, 0) === false, 'ケース3: 本営周囲に山岳1個の時、reqNoHillOrMountainAroundHQ が false (除外) であること');
+
+// ケース 4: 丘陵 + 山岳 ➔ false
+const testEngine4 = GameEngine.createGame();
+testEngine4.state.grid[1][2] = { r: 1, c: 2, placed: true, terrain: { id: 'E2_HILL', nameKey: 'TERRAIN_HILL' } };
+testEngine4.state.grid[3][2] = { r: 3, c: 2, placed: true, terrain: { id: 'E3_MOUNTAIN', nameKey: 'TERRAIN_MOUNTAIN' } };
+assert(testEngine4.deckManager.isCardEligible(testCardNoHM, 1, 0) === false, 'ケース4: 本営周囲に丘陵+山岳の時、reqNoHillOrMountainAroundHQ が false (除外) であること');
+
+// 肯定条件 reqHillOrMountainAroundHQ の検証
+const testCardHasHM = { id: 'TEST_HAS_HM', reqHillOrMountainAroundHQ: true, minStage: 1 };
+assert(testEngine1.deckManager.isCardEligible(testCardHasHM, 1, 0) === false, '肯定条件: 丘陵・山岳0個の時、reqHillOrMountainAroundHQ が false であること');
+assert(testEngine2.deckManager.isCardEligible(testCardHasHM, 1, 0) === true, '肯定条件: 丘陵1個の時、reqHillOrMountainAroundHQ が true であること');
+assert(testEngine3.deckManager.isCardEligible(testCardHasHM, 1, 0) === true, '肯定条件: 山岳1個の時、reqHillOrMountainAroundHQ が true であること');
+
+// --- 9. Stage 2 盤面拡大（7x7）＆ 4大処理テスト ---
+console.log('\n🗺️ [9/9] Stage 2 盤面拡大（7x7）＆ 4大処理');
+const stageEngine = GameEngine.createGame();
+
+// Stage 2 へ拡大実行
+stageEngine.state.stage = { id: 2, name: 'Stage 2', size: 7, maxTiles: 48 };
+stageEngine.gridEngine.expandGrid(7);
+
+// 1. グリッドサイズが 7x7
+assert(stageEngine.state.grid.length === 7, '盤面行数が 7 であること');
+assert(stageEngine.state.grid[0].length === 7, '盤面列数が 7 であること');
+
+// 2. 本営産出が 1.4倍 (14/14/14/2)
+const stageProds = stageEngine.state.calculateTotalProduction();
+const stageDef = stageEngine.state.calculateTotalDefense();
+assert(stageEngine.state.grid[3][3].terrain.food === 14, '本営食料基礎産出が 14 (1.4倍) であること');
+assert(stageEngine.state.grid[3][3].terrain.wood === 14, '本営資材基礎産出が 14 (1.4倍) であること');
+assert(stageEngine.state.grid[3][3].terrain.defense === 14, '本営防衛基礎産出が 14 (1.4倍) であること');
+assert(stageEngine.state.grid[3][3].terrain.mystic === 2, '本営神秘基礎産出が 2 (1.4倍切上) であること');
+assert(stageProds.grossFood === 14, 'Stage 2 初期食料総産出が 14 であること');
+assert(stageProds.totalWood === 14, 'Stage 2 初期資材総産出が 14 であること');
+assert(stageDef === 14, 'Stage 2 初期防衛力が 14 であること');
+assert(stageProds.totalMystic === 2, 'Stage 2 初期神秘産出が 2 であること');
+
+// 3. 資源ソケットが +4 個追加（計 7 個）
+let totalSockets = 0;
+for (let r = 0; r < 7; r++) {
+    for (let c = 0; c < 7; c++) {
+        if (stageEngine.state.grid[r][c].hasSocket) totalSockets++;
+    }
+}
+assert(totalSockets === 7, `ソケットが既存3個+追加4個の計7個配置されていること (実際: ${totalSockets})`);
+
+// 4. 支配地バッジの分母が 48 になり、支配率が再計算されること
+TerritoryBadgeComponent.update(12, stageEngine.state);
+assert(TerritoryBadgeComponent.maxCount === 48, '支配地バッジの最大マス数が 48 であること');
 
 console.log('\n====================================================');
 console.log(`🎉 全テスト完了: ${passedTests} / ${totalTests} 件 合格 (100% PASS)`);

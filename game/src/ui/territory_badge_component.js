@@ -84,7 +84,15 @@ export class TerritoryBadgeComponent {
         let stateObj = null;
         if (typeof stageOrState === "object" && stageOrState !== null) {
             stateObj = stageOrState;
-            this.stage = stageOrState.stage || (stageOrState.turn ? Math.min(3, Math.floor((stageOrState.turn - 1) / 20) + 1) : 1);
+            if (stageOrState.stage) {
+                this.stage = (typeof stageOrState.stage === 'object' && stageOrState.stage !== null) 
+                    ? (stageOrState.stage.id || 1) 
+                    : stageOrState.stage;
+            } else if (stageOrState.turn) {
+                this.stage = Math.min(3, Math.floor((stageOrState.turn - 1) / 20) + 1);
+            } else {
+                this.stage = 1;
+            }
         } else if (typeof stageOrState === "number") {
             this.stage = stageOrState;
         } else {
