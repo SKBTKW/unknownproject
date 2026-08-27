@@ -350,7 +350,7 @@
             UI_CELL_UNDO_HINT: "<strong>このマスをクリック</strong>すると、配置を取り消して手札へ戻し置き直せます",
             UI_EMBER_BLESSING_TAG: " | 🔥残り火加護: +{pct}%",
             UI_NET_BALANCE_TAG: "(純収支)",
-            UI_DEFENSE_TRIAL_TAG: "(試練対策)",
+            UI_DEFENSE_TRIAL_TAG: "(脅威に対する抵抗力)",
             UI_EMBER_AUTO_GRANT: "残り火自動付与:",
             UI_GROSS_YIELD_LABEL: "総産出:",
             UI_HQ_BASE_LABEL: "本営基礎:",
