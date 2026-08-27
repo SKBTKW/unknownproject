@@ -161,6 +161,41 @@ const UILayoutConfig = {
 };
 
 /**
+ * 🎨 地形IDに応じたブロック形状（Tetrisブロック）のテーマカラー定義 (Single Source of Truth)
+ * @param {string} terrainId 
+ * @returns {{ bg: string, border: string, shadow: string }}
+ */
+UILayoutConfig.getBlockThemeColor = function(terrainId) {
+    const tid = String(terrainId || "");
+    // 🐸 湿原: 濃い青緑 (Deep Teal)
+    if (tid.includes("WETLAND")) {
+        return { bg: "#0f766e", border: "#14b8a6", shadow: "rgba(20, 184, 166, 0.85)" };
+    }
+    // 🌲 深い森 / 森林丘陵: 深緑・ティール
+    if (tid.includes("DEEP_FOREST") || tid.includes("DEEP_HILL")) {
+        return { bg: "#16a085", border: "#117a65", shadow: "rgba(22, 160, 133, 0.85)" };
+    }
+    // 🌲 森: エメラルドグリーン
+    if (tid.includes("FOREST")) {
+        return { bg: "#2ecc71", border: "#27ae60", shadow: "rgba(46, 204, 113, 0.85)" };
+    }
+    // ⛰️ 丘陵: アースオレンジ
+    if (tid.includes("HILL")) {
+        return { bg: "#e67e22", border: "#d35400", shadow: "rgba(230, 126, 34, 0.85)" };
+    }
+    // 🏔️ 山岳: パープル
+    if (tid.includes("MOUNTAIN")) {
+        return { bg: "#9b59b6", border: "#8e44ad", shadow: "rgba(155, 89, 182, 0.85)" };
+    }
+    // 🏜️ 砂漠: サンドゴールド
+    if (tid.includes("DESERT")) {
+        return { bg: "#f7d794", border: "#f1c40f", shadow: "rgba(247, 215, 148, 0.85)" };
+    }
+    // 🌾 草原: フレッシュグリーン
+    return { bg: "#1abc9c", border: "#16a085", shadow: "rgba(26, 188, 156, 0.85)" };
+};
+
+/**
  * DOM要素にレイアウト設定を一括適用し、フォーカスイベントを初期化するヘルパー関数
  */
 UILayoutConfig.applyLayout = function() {

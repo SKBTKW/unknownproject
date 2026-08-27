@@ -395,8 +395,10 @@ class GridEngine {
                         let spawnedSocket = cell.cachedSocketSeeds[seedKey] || null;
 
                         if (!spawnedSocket) {
-                            // 🌊 水脈ソケット開花 ✕ 💧 清湖 (Lake) ＆ 🌴 オアシス (Oasis) 確定仕様 (1x1限定 25%確率)
-                            if (baseTerrainId === "GL1_PLAINS" && is1x1 && Math.random() < 0.25) {
+                            // 🌊 水脈ソケット開花 ✕ 💧 清湖 (Lake: 湿原60%, 草原25%) ＆ 🌴 オアシス (Oasis: 砂漠25%) 確定仕様
+                            if ((baseTerrainId === "E0_WETLAND" || baseTerrainId.includes("WETLAND")) && Math.random() < 0.60) {
+                                spawnedSocket = { id: "SOCKET_LAKE", nameKey: "SOCKET_LAKE", category: "WATER", icon: "💧", bonusFood: 2, bonusWood: 0, bonusDefense: 0, bonusMystic: 0 };
+                            } else if (baseTerrainId === "GL1_PLAINS" && is1x1 && Math.random() < 0.25) {
                                 spawnedSocket = { id: "SOCKET_LAKE", nameKey: "SOCKET_LAKE", category: "WATER", icon: "💧", bonusFood: 2, bonusWood: 0, bonusDefense: 0, bonusMystic: 0 };
                             } else if (baseTerrainId === "GL0_DESERT" && is1x1 && Math.random() < 0.25) {
                                 spawnedSocket = { id: "SOCKET_OASIS", nameKey: "SOCKET_OASIS", category: "WATER", icon: "🌴", bonusFood: 1, bonusWood: 0, bonusDefense: 0, bonusMystic: 0 };

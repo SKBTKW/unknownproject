@@ -142,6 +142,34 @@
     }
   },
   "sockets": {
+    "E0_WETLAND": [
+      {
+        "id": "SOCKET_LAKE",
+        "nameKey": "SOCKET_LAKE",
+        "category": "水脈",
+        "icon": "💧",
+        "bonusYields": {
+          "food": 2,
+          "material": 0,
+          "wood": 0,
+          "defense": 0,
+          "mystic": 0
+        }
+      },
+      {
+        "id": "SOCKET_WILD_WHEAT",
+        "nameKey": "SOCKET_WILD_WHEAT",
+        "category": "穀物",
+        "icon": "🍎",
+        "bonusYields": {
+          "food": 3,
+          "material": 0,
+          "wood": 0,
+          "defense": 0,
+          "mystic": 0
+        }
+      }
+    ],
     "GL1_PLAINS": [
       {
         "id": "SOCKET_COW",

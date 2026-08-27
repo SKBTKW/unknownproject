@@ -1,3 +1,5 @@
+import { UILayoutConfig } from './layout_config.js';
+
 /**
  * 🃏 HandCardsComponent (手札オファリング ＆ カードフレーム描画・操作専門コンポーネント)
  * 
@@ -239,23 +241,10 @@ export class HandCardsComponent {
                 const totM = (y.mystic || 0) * tileCount;
 
                 const tid = tObj.terrainId || tObj.id || "";
-                let blockBg = "#1abc9c";
-                let blockBorder = "#16a085";
-                let blockShadow = "rgba(26, 188, 156, 0.8)";
-
-                if (tid.includes("DEEP_FOREST") || tid.includes("DEEP_HILL")) {
-                    blockBg = "#16a085"; blockBorder = "#117a65"; blockShadow = "rgba(22, 160, 133, 0.85)";
-                } else if (tid.includes("FOREST")) {
-                    blockBg = "#2ecc71"; blockBorder = "#27ae60"; blockShadow = "rgba(46, 204, 113, 0.85)";
-                } else if (tid.includes("HILL")) {
-                    blockBg = "#e67e22"; blockBorder = "#d35400"; blockShadow = "rgba(230, 126, 34, 0.85)";
-                } else if (tid.includes("MOUNTAIN")) {
-                    blockBg = "#9b59b6"; blockBorder = "#8e44ad"; blockShadow = "rgba(155, 89, 182, 0.85)";
-                } else if (tid.includes("DESERT")) {
-                    blockBg = "#f7d794"; blockBorder = "#f1c40f"; blockShadow = "rgba(247, 215, 148, 0.85)";
-                } else if (tid.includes("PLAINS")) {
-                    blockBg = "#1abc9c"; blockBorder = "#16a085"; blockShadow = "rgba(26, 188, 156, 0.85)";
-                }
+                const blockTheme = UILayoutConfig.getBlockThemeColor(tid);
+                const blockBg = blockTheme.bg;
+                const blockBorder = blockTheme.border;
+                const blockShadow = blockTheme.shadow;
 
                 // 標準用 22px 形状 (インライン display:grid を全廃し CSS で制御)
                 let shapeHtml = `<div class="tcg-shape-grid-standard" style="grid-template-rows:repeat(${shapeMat.length}, 22px); grid-template-columns:repeat(${shapeMat[0].length}, 22px); gap:5px; background:rgba(0,0,0,0.55); padding:10px; border-radius:8px; border:2px solid rgba(255,255,255,0.18);">`;

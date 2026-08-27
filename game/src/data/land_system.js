@@ -136,6 +136,10 @@ const LAND_SYSTEM_DATA = {
     "E3_MOUNTAIN":     { id: "E3_MOUNTAIN",     nameKey: "TERRAIN_MOUNTAIN",    gl: 0, e: 3, baseYieldsPerTile: { food: 0, material: 3, wood: 3, defense: 5, mystic: 1 }, category: "BASE" }
   },
   "sockets": {
+    "E0_WETLAND": [
+      { id: "SOCKET_LAKE", nameKey: "SOCKET_LAKE", category: "水脈", icon: "💧", bonusYields: { food: 2, material: 0, wood: 0, defense: 0, mystic: 0 } },
+      { id: "SOCKET_WILD_WHEAT", nameKey: "SOCKET_WILD_WHEAT", category: "穀物", icon: "🍎", bonusYields: { food: 3, material: 0, wood: 0, defense: 0, mystic: 0 } }
+    ],
     "GL1_PLAINS": [
       { id: "SOCKET_COW", nameKey: "SOCKET_COW", category: "家畜", icon: "🍎", bonusYields: { food: 3, material: 1, wood: 1, defense: 0, mystic: 0 } },
       { id: "SOCKET_SHEEP", nameKey: "SOCKET_SHEEP", category: "家畜", icon: "🍎", bonusYields: { food: 2, material: 1, wood: 1, defense: 0, mystic: 0 } },
