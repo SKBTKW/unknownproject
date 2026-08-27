@@ -582,6 +582,10 @@ body.is-camera-dragging-global * {
 }
 
 /* 🌾 各土地属性の独立カラーパターン定義 (専用CSS管理) */
+.cell.terrain-wetland {
+    background: linear-gradient(135deg, #0d4a4d 0%, #062b2e 100%) !important;
+    border-color: #14b8a6 !important;
+}
 .cell.terrain-plains {
     background: linear-gradient(135deg, #1e4a26 0%, #122e17 100%) !important;
     border-color: #2e7d32 !important;
@@ -864,6 +868,16 @@ body.is-camera-dragging-global * {
 .cell.has-resource-yield {
     border-color: rgba(26, 188, 156, 0.75) !important;
     box-shadow: inset 0 0 10px rgba(26, 188, 156, 0.22), 0 0 6px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* 0. 湿原: ティール・シアン光彩 */
+.cell.terrain-wetland.has-resource-yield {
+    border-color: rgba(20, 184, 166, 0.85) !important;
+    box-shadow: inset 0 0 12px rgba(20, 184, 166, 0.30), 0 0 8px rgba(20, 184, 166, 0.4) !important;
+}
+.cell.terrain-wetland.has-resource-yield:hover {
+    border-color: #14b8a6 !important;
+    box-shadow: inset 0 0 16px rgba(20, 184, 166, 0.45), 0 0 14px rgba(20, 184, 166, 0.6) !important;
 }
 
 /* 1. 草原・平地: フレッシュグリーン光彩 */
