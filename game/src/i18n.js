@@ -5,6 +5,7 @@
         ja: {
             // 地形・リソース名
             TERRAIN_HQ: "本営",
+            TERRAIN_WETLAND: "湿原",
             TERRAIN_PLAINS: "草原",
             TERRAIN_FOREST: "森",
             TERRAIN_DEEP_FOREST: "深い森",
@@ -17,6 +18,7 @@
             TERRAIN_DESERT_HILL: "荒野",
             TERRAIN_FOREST_HILL: "森丘陵",
             TERRAIN_DEEP_HILL: "森林丘陵",
+            CARD_DESC_WETLAND_1X1: "水分が集まる低湿地帯。マージはできないがぬかるみで敵を阻み、水脈や干拓の母体となる。",
             CARD_DESC_DESERT_1X1: "極度に乾燥した広大な砂地。命の恵みは得られないが古代の神秘を漂わせる。",
             CARD_DESC_DESERT_1X2: "広大な砂の流砂地帯。足場は劣悪だが非常に強い神秘を秘めたUR地勢。",
             CARD_DESC_DESERT_HILL_1X2: "岩石と乾燥した大地が広がる荒野。資材と防衛力に加え、古代の神秘が宿る。",
@@ -425,6 +427,7 @@
         },
         en: {
             TERRAIN_HQ: "Headquarters",
+            TERRAIN_WETLAND: "Wetland",
             TERRAIN_PLAINS: "Plains",
             TERRAIN_FOREST: "Forest",
             TERRAIN_DEEP_FOREST: "Deep Forest",
@@ -437,6 +440,7 @@
             TERRAIN_DESERT_HILL: "Desert Hill",
             TERRAIN_FOREST_HILL: "Forest Hill",
             TERRAIN_DEEP_HILL: "Deep Forest Hill",
+            CARD_DESC_WETLAND_1X1: "Lowland collecting moisture. Cannot merge, but hinders foes with mud and serves as a cradle for water sources and reclamation.",
 
             CMD_CONSERVE_EMBER_NAME: "Conserve Ember",
             CMD_CONSERVE_EMBER_DESC: "Reduces ember consumption (decay) by 1 on the next turn.",
