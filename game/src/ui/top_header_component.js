@@ -16,6 +16,28 @@ export class TopHeaderComponent {
         this.ui = uiController;
         this.emberStatusComponent = (typeof document !== 'undefined') ? new EmberStatusComponent() : null;
         this.lastEmberValue = null;
+        this.initHeaderEvents();
+    }
+
+    /**
+     * 📊 ヘッダー産出パネルのマウスオーバー・ホバーイベントを確実にバインド
+     */
+    initHeaderEvents() {
+        if (typeof document === "undefined") return;
+        const dataPanelEl = document.getElementById("headerDataPanel");
+        if (dataPanelEl && !dataPanelEl._hasHoverBound) {
+            dataPanelEl._hasHoverBound = true;
+            dataPanelEl.addEventListener("mouseenter", (e) => {
+                if (this.ui && typeof this.ui.showDataPanelTooltip === "function") {
+                    this.ui.showDataPanelTooltip(e);
+                }
+            });
+            dataPanelEl.addEventListener("mouseleave", () => {
+                if (this.ui && typeof this.ui.hideDataPanelTooltip === "function") {
+                    this.ui.hideDataPanelTooltip();
+                }
+            });
+        }
     }
 
     get state() {

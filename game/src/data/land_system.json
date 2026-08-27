@@ -143,304 +143,80 @@
   },
   "sockets": {
     "E0_WETLAND": [
-      {
-        "id": "SOCKET_LAKE",
-        "nameKey": "SOCKET_LAKE",
-        "category": "水脈",
-        "icon": "💧",
-        "bonusYields": {
-          "food": 2,
-          "material": 0,
-          "wood": 0,
-          "defense": 0,
-          "mystic": 0
-        }
-      },
-      {
-        "id": "SOCKET_WILD_WHEAT",
-        "nameKey": "SOCKET_WILD_WHEAT",
-        "category": "穀物",
-        "icon": "🍎",
-        "bonusYields": {
-          "food": 3,
-          "material": 0,
-          "wood": 0,
-          "defense": 0,
-          "mystic": 0
-        }
-      }
-    ],
-    "GL1_PLAINS": [
-      {
-        "id": "SOCKET_COW",
-        "nameKey": "SOCKET_COW",
-        "category": "家畜",
-        "icon": "🍎",
-        "bonusYields": {
-          "food": 3,
-          "material": 1,
-          "wood": 1,
-          "defense": 0,
-          "mystic": 0
-        }
-      },
-      {
-        "id": "SOCKET_SHEEP",
-        "nameKey": "SOCKET_SHEEP",
-        "category": "家畜",
-        "icon": "🍎",
-        "bonusYields": {
-          "food": 2,
-          "material": 1,
-          "wood": 1,
-          "defense": 0,
-          "mystic": 0
-        }
-      },
-      {
-        "id": "SOCKET_WILD_WHEAT",
-        "nameKey": "SOCKET_WILD_WHEAT",
-        "category": "穀物",
-        "icon": "🍎",
-        "bonusYields": {
-          "food": 3,
-          "material": 0,
-          "wood": 0,
-          "defense": 0,
-          "mystic": 0
-        }
-      },
-      {
-        "id": "SOCKET_LAKE",
-        "nameKey": "SOCKET_LAKE",
-        "category": "水脈",
-        "icon": "💧",
-        "bonusYields": {
-          "food": 2,
-          "material": 0,
-          "wood": 0,
-          "defense": 0,
-          "mystic": 0
-        }
-      }
-    ],
-    "GL2_FOREST": [
-      {
-        "id": "SOCKET_DEER",
-        "nameKey": "SOCKET_DEER",
-        "category": "家畜",
-        "icon": "🍎",
-        "bonusYields": {
-          "food": 2,
-          "material": 1,
-          "wood": 1,
-          "defense": 0,
-          "mystic": 0
-        }
-      },
-      {
-        "id": "SOCKET_APPLES",
-        "nameKey": "SOCKET_APPLES",
-        "category": "果実",
-        "icon": "🍎",
-        "bonusYields": {
-          "food": 3,
-          "material": 0,
-          "wood": 0,
-          "defense": 0,
-          "mystic": 0
-        }
-      },
-      {
-        "id": "SOCKET_CEDAR",
-        "nameKey": "SOCKET_CEDAR",
-        "category": "木材",
-        "icon": "⛏️",
-        "bonusYields": {
-          "food": 0,
-          "material": 3,
-          "wood": 3,
-          "defense": 0,
-          "mystic": 0
-        }
-      }
-    ],
-    "GL3_DEEP_FOREST": [
-      {
-        "id": "SOCKET_GREAT_TREE",
-        "nameKey": "SOCKET_GREAT_TREE",
-        "category": "木材",
-        "icon": "⛏️",
-        "bonusYields": {
-          "food": 0,
-          "material": 2,
-          "wood": 2,
-          "defense": 0,
-          "mystic": 1
-        }
-      },
-      {
-        "id": "SOCKET_APPLES",
-        "nameKey": "SOCKET_APPLES",
-        "category": "果実",
-        "icon": "🍎",
-        "bonusYields": {
-          "food": 3,
-          "material": 0,
-          "wood": 0,
-          "defense": 0,
-          "mystic": 0
-        }
-      }
-    ],
-    "E2_HILL": [
-      {
-        "id": "SOCKET_HORSE",
-        "nameKey": "SOCKET_HORSE",
-        "category": "家畜",
-        "icon": "🛡️",
-        "bonusYields": {
-          "food": 0,
-          "material": 0,
-          "wood": 0,
-          "defense": 2,
-          "mystic": 0
-        }
-      },
-      {
-        "id": "SOCKET_GOAT",
-        "nameKey": "SOCKET_GOAT",
-        "category": "家畜",
-        "icon": "🍎",
-        "bonusYields": {
-          "food": 2,
-          "material": 1,
-          "wood": 1,
-          "defense": 0,
-          "mystic": 0
-        }
-      },
-      {
-        "id": "SOCKET_BARLEY",
-        "nameKey": "SOCKET_BARLEY",
-        "category": "穀物",
-        "icon": "🍎",
-        "bonusYields": {
-          "food": 2,
-          "material": 0,
-          "wood": 0,
-          "defense": 0,
-          "mystic": 0
-        }
-      },
-      {
-        "id": "SOCKET_LIMESTONE",
-        "nameKey": "SOCKET_LIMESTONE",
-        "category": "鉱物",
-        "icon": "⛏️",
-        "bonusYields": {
-          "food": 0,
-          "material": 3,
-          "wood": 3,
-          "defense": 0,
-          "mystic": 0
-        }
-      },
-      {
-        "id": "SOCKET_HEMATITE",
-        "nameKey": "SOCKET_HEMATITE",
-        "category": "鉱物",
-        "icon": "🛡️",
-        "bonusYields": {
-          "food": 0,
-          "material": 1,
-          "wood": 1,
-          "defense": 2,
-          "mystic": 0
-        }
-      }
-    ],
-    "E3_MOUNTAIN": [
-      {
-        "id": "SOCKET_GRANITE",
-        "nameKey": "SOCKET_GRANITE",
-        "category": "鉱物",
-        "icon": "🛡️",
-        "bonusYields": {
-          "food": 0,
-          "material": 0,
-          "wood": 0,
-          "defense": 3,
-          "mystic": 0
-        }
-      },
-      {
-        "id": "SOCKET_IRON_DEPOSIT",
-        "nameKey": "SOCKET_IRON_DEPOSIT",
-        "category": "鉱物",
-        "icon": "⛏️",
-        "bonusYields": {
-          "food": 0,
-          "material": 2,
-          "wood": 2,
-          "defense": 0,
-          "mystic": 1
-        }
-      }
+      { "id": "SOCKET_WILD_RICE", "nameKey": "SOCKET_WILD_RICE", "category": "CAT_GRAIN", "icon": "🌾", "weight": 100, "bonusYields": { "food": 3, "material": 0, "wood": 0, "defense": 0, "mystic": 0 } },
+      { "id": "SOCKET_WATER_DROPWORT", "nameKey": "SOCKET_WATER_DROPWORT", "category": "CAT_GATHERING", "icon": "🍎", "weight": 80, "bonusYields": { "food": 1, "material": 0, "wood": 0, "defense": 0, "mystic": 0 } },
+      { "id": "SOCKET_HERB", "nameKey": "SOCKET_HERB", "category": "CAT_USEFUL_PLANT", "icon": "🌿", "weight": 55, "bonusYields": { "food": 0, "material": 0, "wood": 0, "defense": 0, "mystic": 1 } },
+      { "id": "SOCKET_LAKE", "nameKey": "SOCKET_LAKE", "category": "CAT_WATER", "icon": "💧", "weight": 0, "isSpecialWater": true, "lakeRate": 0.60, "bonusYields": { "food": 2, "material": 0, "wood": 0, "defense": 0, "mystic": 0 } },
+      { "id": "SOCKET_SALT", "nameKey": "SOCKET_SALT", "category": "CAT_SALT", "icon": "🧂", "weight": 20, "bonusYields": { "food": 1, "material": 1, "wood": 1, "defense": 0, "mystic": 0 } }
     ],
     "GL0_DESERT": [
-      {
-        "id": "SOCKET_CAMEL",
-        "nameKey": "SOCKET_CAMEL",
-        "category": "家畜",
-        "icon": "🐪",
-        "bonusYields": {
-          "food": 1,
-          "material": 1,
-          "wood": 1,
-          "defense": 0,
-          "mystic": 0
-        }
-      },
-      {
-        "id": "SOCKET_DATES",
-        "nameKey": "SOCKET_DATES",
-        "category": "果実",
-        "icon": "🍎",
-        "bonusYields": {
-          "food": 1,
-          "material": 0,
-          "wood": 0,
-          "defense": 0,
-          "mystic": 0
-        }
-      },
-      {
-        "id": "SOCKET_NITER",
-        "nameKey": "SOCKET_NITER",
-        "category": "鉱物",
-        "icon": "⛏️",
-        "bonusYields": {
-          "food": 0,
-          "material": 1,
-          "wood": 1,
-          "defense": 0,
-          "mystic": 2
-        }
-      },
-      {
-        "id": "SOCKET_OASIS",
-        "nameKey": "SOCKET_OASIS",
-        "category": "水脈",
-        "icon": "🌴",
-        "bonusYields": {
-          "food": 1,
-          "material": 0,
-          "wood": 0,
-          "defense": 0,
-          "mystic": 0
-        }
-      }
+      { "id": "SOCKET_CAMEL", "nameKey": "SOCKET_CAMEL", "category": "CAT_LIVESTOCK", "icon": "🐄", "weight": 70, "bonusYields": { "food": 1, "material": 1, "wood": 1, "defense": 0, "mystic": 0 } },
+      { "id": "SOCKET_DATES", "nameKey": "SOCKET_DATES", "category": "CAT_GATHERING", "icon": "🍎", "weight": 90, "bonusYields": { "food": 2, "material": 0, "wood": 0, "defense": 0, "mystic": 0 } },
+      { "id": "SOCKET_SALT", "nameKey": "SOCKET_SALT", "category": "CAT_SALT", "icon": "🧂", "weight": 80, "bonusYields": { "food": 1, "material": 1, "wood": 1, "defense": 0, "mystic": 0 } },
+      { "id": "SOCKET_NITER", "nameKey": "SOCKET_NITER", "category": "CAT_STRATEGIC_MINERAL", "icon": "⛏️", "weight": 35, "bonusYields": { "food": 0, "material": 1, "wood": 1, "defense": 1, "mystic": 0 } },
+      { "id": "SOCKET_OASIS", "nameKey": "SOCKET_OASIS", "category": "CAT_WATER", "icon": "💧", "weight": 0, "isSpecialWater": true, "oasisRate": 0.25, "bonusYields": { "food": 1, "material": 0, "wood": 0, "defense": 0, "mystic": 0 } }
+    ],
+    "GL1_PLAINS": [
+      { "id": "SOCKET_COW", "nameKey": "SOCKET_COW", "category": "CAT_LIVESTOCK", "icon": "🐄", "weight": 70, "bonusYields": { "food": 3, "material": 1, "wood": 1, "defense": 0, "mystic": 0 } },
+      { "id": "SOCKET_SHEEP", "nameKey": "SOCKET_SHEEP", "category": "CAT_LIVESTOCK", "icon": "🐄", "weight": 90, "bonusYields": { "food": 2, "material": 1, "wood": 1, "defense": 0, "mystic": 0 } },
+      { "id": "SOCKET_WILD_WHEAT", "nameKey": "SOCKET_WILD_WHEAT", "category": "CAT_GRAIN", "icon": "🌾", "weight": 100, "bonusYields": { "food": 3, "material": 0, "wood": 0, "defense": 0, "mystic": 0 } },
+      { "id": "SOCKET_WILD_GRAPE", "nameKey": "SOCKET_WILD_GRAPE", "category": "CAT_GATHERING", "icon": "🍎", "weight": 60, "bonusYields": { "food": 2, "material": 0, "wood": 0, "defense": 0, "mystic": 0 } },
+      { "id": "SOCKET_HERB", "nameKey": "SOCKET_HERB", "category": "CAT_USEFUL_PLANT", "icon": "🌿", "weight": 50, "bonusYields": { "food": 0, "material": 0, "wood": 0, "defense": 0, "mystic": 1 } },
+      { "id": "SOCKET_LAKE", "nameKey": "SOCKET_LAKE", "category": "CAT_WATER", "icon": "💧", "weight": 0, "isSpecialWater": true, "lakeRate": 0.25, "bonusYields": { "food": 2, "material": 0, "wood": 0, "defense": 0, "mystic": 0 } }
+    ],
+    "GL2_FOREST": [
+      { "id": "SOCKET_DEER", "nameKey": "SOCKET_DEER", "category": "CAT_HUNTING", "icon": "🐾", "weight": 90, "bonusYields": { "food": 2, "material": 0, "wood": 0, "defense": 0, "mystic": 0 } },
+      { "id": "SOCKET_BOAR", "nameKey": "SOCKET_BOAR", "category": "CAT_HUNTING", "icon": "🐾", "weight": 70, "bonusYields": { "food": 2, "material": 1, "wood": 1, "defense": 0, "mystic": 0 } },
+      { "id": "SOCKET_APPLES", "nameKey": "SOCKET_APPLES", "category": "CAT_GATHERING", "icon": "🍎", "weight": 70, "bonusYields": { "food": 2, "material": 0, "wood": 0, "defense": 0, "mystic": 0 } },
+      { "id": "SOCKET_WILD_BERRIES", "nameKey": "SOCKET_WILD_BERRIES", "category": "CAT_GATHERING", "icon": "🍎", "weight": 100, "bonusYields": { "food": 1, "material": 0, "wood": 0, "defense": 0, "mystic": 0 } },
+      { "id": "SOCKET_CEDAR", "nameKey": "SOCKET_CEDAR", "category": "CAT_WOOD", "icon": "🌳", "weight": 70, "bonusYields": { "food": 0, "material": 3, "wood": 3, "defense": 0, "mystic": 0 } },
+      { "id": "SOCKET_OAK", "nameKey": "SOCKET_OAK", "category": "CAT_WOOD", "icon": "🌳", "weight": 70, "bonusYields": { "food": 1, "material": 2, "wood": 2, "defense": 0, "mystic": 0 } }
+    ],
+    "GL3_DEEP_FOREST": [
+      { "id": "SOCKET_GREAT_TREE", "nameKey": "SOCKET_GREAT_TREE", "category": "CAT_WOOD", "icon": "🌳", "weight": 55, "bonusYields": { "food": 0, "material": 2, "wood": 2, "defense": 0, "mystic": 1 } },
+      { "id": "SOCKET_TREE_NUTS", "nameKey": "SOCKET_TREE_NUTS", "category": "CAT_GATHERING", "icon": "🍎", "weight": 100, "bonusYields": { "food": 2, "material": 0, "wood": 0, "defense": 0, "mystic": 0 } },
+      { "id": "SOCKET_MEDICINAL_MUSHROOM", "nameKey": "SOCKET_MEDICINAL_MUSHROOM", "category": "CAT_FUNGI", "icon": "🍄", "weight": 65, "bonusYields": { "food": 1, "material": 0, "wood": 0, "defense": 0, "mystic": 1 } },
+      { "id": "SOCKET_ELK", "nameKey": "SOCKET_ELK", "category": "CAT_HUNTING", "icon": "🐾", "weight": 50, "bonusYields": { "food": 2, "material": 0, "wood": 0, "defense": 1, mystic: 0 } },
+      { "id": "SOCKET_SACRED_TREE", "nameKey": "SOCKET_SACRED_TREE", "category": "CAT_SPECIAL_NATURE", "icon": "💎", "weight": 25, "bonusYields": { "food": 0, "material": 0, "wood": 0, "defense": 0, "mystic": 2 } }
+    ],
+    "E2_WASTELAND": [
+      { "id": "SOCKET_LIMESTONE", "nameKey": "SOCKET_LIMESTONE", "category": "CAT_STONE", "icon": "🪨", "weight": 100, "bonusYields": { "food": 0, "material": 3, "wood": 3, "defense": 0, "mystic": 0 } },
+      { "id": "SOCKET_HEMATITE", "nameKey": "SOCKET_HEMATITE", "category": "CAT_STRATEGIC_MINERAL", "icon": "⛏️", "weight": 55, "bonusYields": { "food": 0, "material": 1, "wood": 1, "defense": 2, "mystic": 0 } },
+      { "id": "SOCKET_SLATE", "nameKey": "SOCKET_SLATE", "category": "CAT_STONE", "icon": "🪨", "weight": 80, "bonusYields": { "food": 0, "material": 2, "wood": 2, "defense": 0, "mystic": 0 } },
+      { "id": "SOCKET_SULFUR", "nameKey": "SOCKET_SULFUR", "category": "CAT_STRATEGIC_MINERAL", "icon": "⛏️", "weight": 40, "bonusYields": { "food": 0, "material": 1, "wood": 1, "defense": 1, "mystic": 0 } },
+      { "id": "SOCKET_DRIED_HERB", "nameKey": "SOCKET_DRIED_HERB", "category": "CAT_USEFUL_PLANT", "icon": "🌿", "weight": 55, "bonusYields": { "food": 0, "material": 0, "wood": 0, "defense": 0, "mystic": 1 } }
+    ],
+    "E2_HILL": [
+      { "id": "SOCKET_HORSE", "nameKey": "SOCKET_HORSE", "category": "CAT_STRATEGIC_LIVESTOCK", "icon": "🐎", "weight": 40, "bonusYields": { "food": 0, "material": 0, "wood": 0, "defense": 2, "mystic": 0 } },
+      { "id": "SOCKET_GOAT", "nameKey": "SOCKET_GOAT", "category": "CAT_LIVESTOCK", "icon": "🐄", "weight": 90, "bonusYields": { "food": 2, "material": 1, "wood": 1, "defense": 0, "mystic": 0 } },
+      { "id": "SOCKET_BARLEY", "nameKey": "SOCKET_BARLEY", "category": "CAT_GRAIN", "icon": "🌾", "weight": 100, "bonusYields": { "food": 2, "material": 0, "wood": 0, "defense": 0, "mystic": 0 } },
+      { "id": "SOCKET_RYE", "nameKey": "SOCKET_RYE", "category": "CAT_GRAIN", "icon": "🌾", "weight": 80, "bonusYields": { "food": 2, "material": 0, "wood": 0, "defense": 0, "mystic": 0 } },
+      { "id": "SOCKET_GRAPE", "nameKey": "SOCKET_GRAPE", "category": "CAT_GATHERING", "icon": "🍎", "weight": 60, "bonusYields": { "food": 2, "material": 0, "wood": 0, "defense": 0, "mystic": 0 } },
+      { "id": "SOCKET_SANDSTONE", "nameKey": "SOCKET_SANDSTONE", "category": "CAT_STONE", "icon": "🪨", "weight": 70, "bonusYields": { "food": 0, "material": 2, "wood": 2, "defense": 0, "mystic": 0 } }
+    ],
+    "E2_FOREST_HILL": [
+      { "id": "SOCKET_BEECH", "nameKey": "SOCKET_BEECH", "category": "CAT_WOOD", "icon": "🌳", "weight": 90, "bonusYields": { "food": 0, "material": 3, "wood": 3, "defense": 0, "mystic": 0 } },
+      { "id": "SOCKET_CHESTNUT", "nameKey": "SOCKET_CHESTNUT", "category": "CAT_WOOD", "icon": "🌳", "weight": 80, "bonusYields": { "food": 1, "material": 2, "wood": 2, "defense": 0, "mystic": 0 } },
+      { "id": "SOCKET_SEROW", "nameKey": "SOCKET_SEROW", "category": "CAT_HUNTING", "icon": "🐾", "weight": 55, "bonusYields": { "food": 2, "material": 0, "wood": 0, "defense": 1, "mystic": 0 } },
+      { "id": "SOCKET_WILD_VEGETABLES", "nameKey": "SOCKET_WILD_VEGETABLES", "category": "CAT_GATHERING", "icon": "🍎", "weight": 100, "bonusYields": { "food": 2, "material": 0, "wood": 0, "defense": 0, "mystic": 0 } },
+      { "id": "SOCKET_COPPER_VEIN", "nameKey": "SOCKET_COPPER_VEIN", "category": "CAT_STRATEGIC_MINERAL", "icon": "⛏️", "weight": 50, "bonusYields": { "food": 0, "material": 1, "wood": 1, "defense": 1, "mystic": 0 } },
+      { "id": "SOCKET_MOUNTAIN_HERB", "nameKey": "SOCKET_MOUNTAIN_HERB", "category": "CAT_USEFUL_PLANT", "icon": "🌿", "weight": 65, "bonusYields": { "food": 0, "material": 0, "wood": 0, "defense": 0, "mystic": 1 } }
+    ],
+    "E2_DEEP_FOREST_HILL": [
+      { "id": "SOCKET_FIR", "nameKey": "SOCKET_FIR", "category": "CAT_WOOD", "icon": "🌳", "weight": 90, "bonusYields": { "food": 0, "material": 3, "wood": 3, "defense": 0, "mystic": 0 } },
+      { "id": "SOCKET_HARDWOOD", "nameKey": "SOCKET_HARDWOOD", "category": "CAT_WOOD", "icon": "🌳", "weight": 55, "bonusYields": { "food": 0, "material": 2, "wood": 2, "defense": 0, "mystic": 1 } },
+      { "id": "SOCKET_BEAR", "nameKey": "SOCKET_BEAR", "category": "CAT_HUNTING", "icon": "🐾", "weight": 50, "bonusYields": { "food": 2, "material": 0, "wood": 0, "defense": 1, "mystic": 0 } },
+      { "id": "SOCKET_SPIRIT_MUSHROOM", "nameKey": "SOCKET_SPIRIT_MUSHROOM", "category": "CAT_FUNGI", "icon": "🍄", "weight": 40, "bonusYields": { "food": 1, "material": 0, "wood": 0, "defense": 0, "mystic": 1 } },
+      { "id": "SOCKET_SPIRIT_TREE", "nameKey": "SOCKET_SPIRIT_TREE", "category": "CAT_SPECIAL_NATURE", "icon": "💎", "weight": 30, "bonusYields": { "food": 0, "material": 0, "wood": 0, "defense": 0, "mystic": 2 } },
+      { "id": "SOCKET_SILVER_VEIN", "nameKey": "SOCKET_SILVER_VEIN", "category": "CAT_PRECIOUS_METAL", "icon": "🪙", "weight": 25, "bonusYields": { "food": 0, "material": 1, "wood": 1, "defense": 0, "mystic": 2 } }
+    ],
+    "E3_MOUNTAIN": [
+      { "id": "SOCKET_GRANITE", "nameKey": "SOCKET_GRANITE", "category": "CAT_STONE", "icon": "🪨", "weight": 100, "bonusYields": { "food": 0, "material": 3, "wood": 3, "defense": 1, "mystic": 0 } },
+      { "id": "SOCKET_IRON_VEIN", "nameKey": "SOCKET_IRON_VEIN", "category": "CAT_STRATEGIC_MINERAL", "icon": "⛏️", "weight": 75, "bonusYields": { "food": 0, "material": 1, "wood": 1, "defense": 2, "mystic": 0 } },
+      { "id": "SOCKET_GOLD_VEIN", "nameKey": "SOCKET_GOLD_VEIN", "category": "CAT_PRECIOUS_METAL", "icon": "🪙", "weight": 20, "bonusYields": { "food": 0, "material": 2, "wood": 2, "defense": 0, "mystic": 2 } },
+      { "id": "SOCKET_CRYSTAL", "nameKey": "SOCKET_CRYSTAL", "category": "CAT_SPECIAL_MINERAL", "icon": "💎", "weight": 35, "bonusYields": { "food": 0, "material": 0, "wood": 0, "defense": 0, "mystic": 3 } },
+      { "id": "SOCKET_OBSIDIAN", "nameKey": "SOCKET_OBSIDIAN", "category": "CAT_SPECIAL_MINERAL", "icon": "💎", "weight": 45, "bonusYields": { "food": 0, "material": 0, "wood": 0, "defense": 2, "mystic": 1 } },
+      { "id": "SOCKET_ALPINE_FLOWER", "nameKey": "SOCKET_ALPINE_FLOWER", "category": "CAT_USEFUL_PLANT", "icon": "🌿", "weight": 60, "bonusYields": { "food": 1, "material": 0, "wood": 0, "defense": 0, "mystic": 1 } }
     ]
   },
   "mergeRules": {

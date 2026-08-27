@@ -72,7 +72,7 @@ export class TooltipSystem {
         const target = e.target.closest("[data-tooltip]");
         if (!target) return;
 
-        // 🃏 手札ミニマル表示時: 手札トレイ・カード・保留エリア全般のマウスオーバーツールチップは完全にオフ
+        // 🃏 手札ミニマル表示時: カード本体や保留枠のツールチップはオフにするが、操作ボタン類（縮小切替・マリガン・保留アクション等）は許可
         const isMinimalMode = (typeof window !== "undefined" && window.ui && window.ui.isMinimalMode) ||
                               (typeof document !== "undefined" && (
                                   document.body.classList.contains("is-minimal") ||
@@ -80,8 +80,9 @@ export class TooltipSystem {
                               ));
 
         if (isMinimalMode) {
-            const inPlayerTray = target.closest("#layerPlayerTray, .offering-section, #cardRow, .cards-hand-container, .reserve-slot-container");
-            if (inPlayerTray) {
+            const isCardOrSlot = target.closest(".card-frame-tcg, .card-unified, .reserve-slot-single-box, .cards-hand-container");
+            const isButtonOrControl = target.closest("button, .btn-minimal-toggle, .btn-minimal-mulligan, .reserve-header-badge, .btn-reserve-action-play, .btn-reserve-action-return");
+            if (isCardOrSlot && !isButtonOrControl) {
                 this.hide();
                 return;
             }

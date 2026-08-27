@@ -184,16 +184,28 @@ class UIController {
             }
         });
 
-        // 3. 盤面外右クリックでキャンセル
+        // 3. 右クリックによる選択解除（土地カードはセル・カード上回転/盤面外キャンセル、コマンドカードはどこでも右クリック即時キャンセル）
         document.addEventListener("contextmenu", (e) => {
-            if (this.selectedCard && 
-                !e.target.closest(".cell") && 
-                !e.target.closest(".card-frame-tcg") && 
-                !e.target.closest(".reserve-slot-empty") && 
-                !e.target.closest(".reserve-slot-single-box") && 
-                !e.target.closest(".offering-section")) {
-                e.preventDefault();
-                this.deselectCard();
+            if (this.selectedCard) {
+                const tObj = this.selectedCard.terrain || this.selectedCard;
+                const category = this.selectedCard.category || tObj.category || "LAND";
+                
+                // コマンドカードの場合は、盤面内外を問わず右クリックで即座にキャンセル
+                if (category !== "LAND") {
+                    e.preventDefault();
+                    this.deselectCard();
+                    return;
+                }
+
+                // 土地カードの場合は、盤面セル・カード・保留・手札枠以外をクリックでキャンセル
+                if (!e.target.closest(".cell") && 
+                    !e.target.closest(".card-frame-tcg") && 
+                    !e.target.closest(".reserve-slot-empty") && 
+                    !e.target.closest(".reserve-slot-single-box") && 
+                    !e.target.closest(".offering-section")) {
+                    e.preventDefault();
+                    this.deselectCard();
+                }
             }
         });
 
@@ -1305,13 +1317,16 @@ class UIController {
         `;
 
         const targetEl = (e && e.currentTarget) ? e.currentTarget : (document.getElementById("headerDataPanel") || document.querySelector(".header-resource-data-panel"));
-        const rect = targetEl ? targetEl.getBoundingClientRect() : { bottom: 60, right: 300, left: 100 };
+        let rect = targetEl ? targetEl.getBoundingClientRect() : null;
+        if (!rect || (rect.top === 0 && rect.bottom === 0)) {
+            rect = { top: 10, bottom: 74, right: (typeof window !== "undefined" ? window.innerWidth - 16 : 1900), left: 100 };
+        }
         const winWidth = (typeof window !== "undefined") ? window.innerWidth : 1920;
 
         tt.style.position = "fixed";
-        tt.style.top = `${rect.bottom + 8}px`;
+        tt.style.top = `${Math.max(10, rect.bottom + 8)}px`;
         tt.style.left = "auto";
-        tt.style.right = `${Math.max(16, winWidth - rect.right)}px`;
+        tt.style.right = `${Math.max(16, winWidth - (rect.right || winWidth - 16))}px`;
         tt.style.display = "block";
         tt.style.zIndex = "100000";
     }

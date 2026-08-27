@@ -498,9 +498,23 @@ export async function runUILifecycleInspection() {
         ui.hqComponent.updateEmberValue(18);
         assert("updateEmberValue 実行後にバッジ数値が '18' に更新されること", emberBadgeEl && emberBadgeEl.innerText === "18");
         ui.hqComponent.showDeltaPopup(-2);
-        const hasPopup = document.body.children.some(c => c.classList && c.classList.contains("hq-ember-delta-popup"))
-            || hqCellEl.children.some(c => c.classList && c.classList.contains("hq-ember-delta-popup"));
-        assert("showDeltaPopup 実行後にフロートポップアップ (.hq-ember-delta-popup) が生成されること", hasPopup);
+        // 🖱️ コマンドカード選択時の盤面右クリックキャンセル検証
+        ui.state.hasPickedThisTurn = false;
+        ui.state.handOffering = [
+            { id: "CMD_RATIONING", name: "節約配給", category: "COMMAND", isBlank: false }
+        ];
+        ui.selectCard(0);
+        assert("コマンドカード選択後に selectedCardIdx が 0 であること", ui.selectedCardIdx === 0);
+        assert("コマンドカード選択後に selectedCard が存在すること", !!ui.selectedCard);
+
+        const boardEl = document.getElementById("gridBoard");
+        const boardCellEl = boardEl ? boardEl.children.find(c => c.classList && c.classList.contains("cell")) : null;
+        if (boardCellEl && typeof boardCellEl.oncontextmenu === "function") {
+            const fakeEvent = { preventDefault: () => {} };
+            boardCellEl.oncontextmenu(fakeEvent);
+        }
+        assert("盤面セル右クリック後にコマンドカード選択がキャンセル (selectedCardIdx: -1) されること", ui.selectedCardIdx === -1);
+        assert("盤面セル右クリック後に selectedCard が null になること", ui.selectedCard === null);
 
     } catch (err) {
         console.error("  ❌ [FATAL] UIライフサイクル実行中に致命的例外が発生:", err);

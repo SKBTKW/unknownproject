@@ -381,7 +381,7 @@ class GridEngine {
                     cell.placementGroupId = pGroupId;
                     cell.isHQVicinity = (Math.abs(r - 2) <= 1 && Math.abs(c - 2) <= 1 && !(r === 2 && c === 2));
 
-                    // ★ ソケット開花判定 (決定論的固定化: アンドゥリセマラを完全根絶)
+                    // ★ ソケット開花判定 (決定論的固定化 ✕ 相対 Weight 自然地理抽選: アンドゥリセマラを完全根絶)
                     if (cell.hasSocket && !cell.socketResource) {
                         const baseTerrainId = terrain.terrainId || terrain.id;
                         const is1x1 = (rows === 1 && cols === 1 && shapeMatrix[0][0] === 1);
@@ -395,30 +395,67 @@ class GridEngine {
                         let spawnedSocket = cell.cachedSocketSeeds[seedKey] || null;
 
                         if (!spawnedSocket) {
-                            // 🌊 水脈ソケット開花 ✕ 💧 清湖 (Lake: 湿原60%, 草原25%) ＆ 🌴 オアシス (Oasis: 砂漠25%) 確定仕様
-                            if ((baseTerrainId === "E0_WETLAND" || baseTerrainId.includes("WETLAND")) && Math.random() < 0.60) {
-                                spawnedSocket = { id: "SOCKET_LAKE", nameKey: "SOCKET_LAKE", category: "WATER", icon: "💧", bonusFood: 2, bonusWood: 0, bonusDefense: 0, bonusMystic: 0 };
-                            } else if (baseTerrainId === "GL1_PLAINS" && is1x1 && Math.random() < 0.25) {
-                                spawnedSocket = { id: "SOCKET_LAKE", nameKey: "SOCKET_LAKE", category: "WATER", icon: "💧", bonusFood: 2, bonusWood: 0, bonusDefense: 0, bonusMystic: 0 };
-                            } else if (baseTerrainId === "GL0_DESERT" && is1x1 && Math.random() < 0.25) {
-                                spawnedSocket = { id: "SOCKET_OASIS", nameKey: "SOCKET_OASIS", category: "WATER", icon: "🌴", bonusFood: 1, bonusWood: 0, bonusDefense: 0, bonusMystic: 0 };
-                            } else if (sysMaster && sysMaster[baseTerrainId]) {
-                                // 通常の特産品候補（非1x1、または25%抽選から外れた場合: 清湖・オアシスを除外した通常プールから均等抽選）
-                                const baseCandidates = sysMaster[baseTerrainId].filter(c => c.id !== "SOCKET_LAKE" && c.id !== "SOCKET_OASIS");
-                                const candidates = baseCandidates.length > 0 ? baseCandidates : sysMaster[baseTerrainId];
-                                const chosen = candidates[Math.floor(Math.random() * candidates.length)];
-                                spawnedSocket = {
-                                    id: chosen.id,
-                                    nameKey: chosen.nameKey,
-                                    category: chosen.category,
-                                    icon: chosen.icon,
-                                    bonusFood: chosen.bonusYields.food || 0,
-                                    bonusWood: chosen.bonusYields.wood || 0,
-                                    bonusDefense: chosen.bonusYields.defense || 0,
-                                    bonusMystic: chosen.bonusYields.mystic || 0
-                                };
+                            const pool = (sysMaster && sysMaster[baseTerrainId]) ? sysMaster[baseTerrainId] : null;
+
+                            if (pool && pool.length > 0) {
+                                // 🌊 1. 特殊水系判定 (湿原60%清湖, 草原1x1 25%清湖, 砂漠1x1 25%オアシス)
+                                if ((baseTerrainId === "E0_WETLAND" || baseTerrainId.includes("WETLAND")) && Math.random() < 0.60) {
+                                    const lake = pool.find(s => s.id === "SOCKET_LAKE");
+                                    if (lake) {
+                                        spawnedSocket = {
+                                            id: lake.id, nameKey: lake.nameKey, category: lake.category, icon: lake.icon,
+                                            bonusFood: lake.bonusYields.food || 0, bonusWood: lake.bonusYields.wood || 0,
+                                            bonusDefense: lake.bonusYields.defense || 0, bonusMystic: lake.bonusYields.mystic || 0
+                                        };
+                                    }
+                                } else if (baseTerrainId === "GL1_PLAINS" && is1x1 && Math.random() < 0.25) {
+                                    const lake = pool.find(s => s.id === "SOCKET_LAKE");
+                                    if (lake) {
+                                        spawnedSocket = {
+                                            id: lake.id, nameKey: lake.nameKey, category: lake.category, icon: lake.icon,
+                                            bonusFood: lake.bonusYields.food || 0, bonusWood: lake.bonusYields.wood || 0,
+                                            bonusDefense: lake.bonusYields.defense || 0, bonusMystic: lake.bonusYields.mystic || 0
+                                        };
+                                    }
+                                } else if (baseTerrainId === "GL0_DESERT" && is1x1 && Math.random() < 0.25) {
+                                    const oasis = pool.find(s => s.id === "SOCKET_OASIS");
+                                    if (oasis) {
+                                        spawnedSocket = {
+                                            id: oasis.id, nameKey: oasis.nameKey, category: oasis.category, icon: oasis.icon,
+                                            bonusFood: oasis.bonusYields.food || 0, bonusWood: oasis.bonusYields.wood || 0,
+                                            bonusDefense: oasis.bonusYields.defense || 0, bonusMystic: oasis.bonusYields.mystic || 0
+                                        };
+                                    }
+                                }
+
+                                // 🎲 2. 相対 Weight 重み付き自然地理抽選（特殊水系非当選時）
+                                if (!spawnedSocket) {
+                                    const candidates = pool.filter(s => !s.isSpecialWater && (s.weight || 0) > 0);
+                                    const validPool = candidates.length > 0 ? candidates : pool;
+                                    const totalWeight = validPool.reduce((sum, s) => sum + (s.weight || 1), 0);
+                                    let rand = Math.random() * totalWeight;
+                                    let chosen = validPool[0];
+                                    for (const s of validPool) {
+                                        const w = s.weight || 1;
+                                        if (rand < w) {
+                                            chosen = s;
+                                            break;
+                                        }
+                                        rand -= w;
+                                    }
+                                    spawnedSocket = {
+                                        id: chosen.id,
+                                        nameKey: chosen.nameKey,
+                                        category: chosen.category,
+                                        icon: chosen.icon,
+                                        bonusFood: (chosen.bonusYields && chosen.bonusYields.food) || 0,
+                                        bonusWood: (chosen.bonusYields && (chosen.bonusYields.material !== undefined ? chosen.bonusYields.material : chosen.bonusYields.wood)) || 0,
+                                        bonusDefense: (chosen.bonusYields && chosen.bonusYields.defense) || 0,
+                                        bonusMystic: (chosen.bonusYields && chosen.bonusYields.mystic) || 0
+                                    };
+                                }
                             } else {
-                                spawnedSocket = { id: "SOCKET_WILD_WHEAT", nameKey: "SOCKET_WILD_WHEAT", bonusFood: 3, bonusWood: 0, bonusDefense: 0, bonusMystic: 0 };
+                                spawnedSocket = { id: "SOCKET_WILD_WHEAT", nameKey: "SOCKET_WILD_WHEAT", category: "CAT_GRAIN", icon: "🌾", bonusFood: 3, bonusWood: 0, bonusDefense: 0, bonusMystic: 0 };
                             }
 
                             if (spawnedSocket) {

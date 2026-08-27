@@ -183,6 +183,9 @@
                         const t = cell.terrain;
                         const td = (t.defense !== undefined) ? t.defense : ((t.baseYieldsPerTile && t.baseYieldsPerTile.defense) || (t.yields && t.yields.defense) || 0);
                         def += td;
+                        if (cell.socketResource) {
+                            def += cell.socketResource.bonusDefense || 0;
+                        }
                         if (state.isHQVicinity(r, c)) vicinityCount++;
                     }
                 }

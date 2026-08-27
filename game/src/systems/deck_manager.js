@@ -899,17 +899,45 @@ class DeckManager {
                 let socketDef = null;
 
                 if (sysMaster && sysMaster[baseTerrainId]) {
-                    const candidates = sysMaster[baseTerrainId];
-                    const chosen = candidates[Math.floor(Math.random() * candidates.length)];
-                    socketDef = {
-                        nameKey: chosen.nameKey,
-                        bonusFood: chosen.bonusYields.food || 0,
-                        bonusWood: chosen.bonusYields.wood || 0,
-                        bonusDefense: chosen.bonusYields.defense || 0,
-                        bonusMystic: chosen.bonusYields.mystic || 0
-                    };
+                    const pool = sysMaster[baseTerrainId];
+                    // 🌊 特殊水系判定
+                    if ((baseTerrainId === "E0_WETLAND" || baseTerrainId.includes("WETLAND")) && Math.random() < 0.60) {
+                        const lake = pool.find(s => s.id === "SOCKET_LAKE");
+                        if (lake) {
+                            socketDef = {
+                                id: lake.id, nameKey: lake.nameKey, category: lake.category, icon: lake.icon,
+                                bonusFood: lake.bonusYields.food || 0, bonusWood: lake.bonusYields.wood || 0,
+                                bonusDefense: lake.bonusYields.defense || 0, bonusMystic: lake.bonusYields.mystic || 0
+                            };
+                        }
+                    }
+                    if (!socketDef) {
+                        const candidates = pool.filter(s => !s.isSpecialWater && (s.weight || 0) > 0);
+                        const validPool = candidates.length > 0 ? candidates : pool;
+                        const totalWeight = validPool.reduce((sum, s) => sum + (s.weight || 1), 0);
+                        let rand = Math.random() * totalWeight;
+                        let chosen = validPool[0];
+                        for (const s of validPool) {
+                            const w = s.weight || 1;
+                            if (rand < w) {
+                                chosen = s;
+                                break;
+                            }
+                            rand -= w;
+                        }
+                        socketDef = {
+                            id: chosen.id,
+                            nameKey: chosen.nameKey,
+                            category: chosen.category,
+                            icon: chosen.icon,
+                            bonusFood: (chosen.bonusYields && chosen.bonusYields.food) || 0,
+                            bonusWood: (chosen.bonusYields && (chosen.bonusYields.material !== undefined ? chosen.bonusYields.material : chosen.bonusYields.wood)) || 0,
+                            bonusDefense: (chosen.bonusYields && chosen.bonusYields.defense) || 0,
+                            bonusMystic: (chosen.bonusYields && chosen.bonusYields.mystic) || 0
+                        };
+                    }
                 } else {
-                    socketDef = { nameKey: "SOCKET_WILD_WHEAT", bonusFood: 3, bonusWood: 0, bonusMystic: 0 };
+                    socketDef = { id: "SOCKET_WILD_WHEAT", nameKey: "SOCKET_WILD_WHEAT", category: "CAT_GRAIN", icon: "🌾", bonusFood: 3, bonusWood: 0, bonusDefense: 0, bonusMystic: 0 };
                 }
 
                 cell.socketResource = socketDef;

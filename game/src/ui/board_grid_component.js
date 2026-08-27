@@ -236,12 +236,19 @@ export class BoardGridComponent {
                 cellEl.oncontextmenu = (e) => {
                     e.preventDefault();
                     if (this.ui.selectedCard) {
-                        if (this.ui.selectedReserveIdx !== -1) {
-                            this.ui.rotateReserveCard(e, this.ui.selectedReserveIdx);
-                        } else if (this.ui.selectedCardIdx !== -1) {
-                            this.ui.rotateSelectedCard(e, this.ui.selectedCardIdx);
+                        const tObj = this.ui.selectedCard.terrain || this.ui.selectedCard;
+                        const category = this.ui.selectedCard.category || tObj.category || "LAND";
+                        if (category === "LAND") {
+                            if (this.ui.selectedReserveIdx !== -1) {
+                                this.ui.rotateReserveCard(e, this.ui.selectedReserveIdx);
+                            } else if (this.ui.selectedCardIdx !== -1) {
+                                this.ui.rotateSelectedCard(e, this.ui.selectedCardIdx);
+                            }
+                            this.ui.onCellMouseEnter(e, r, c);
+                        } else {
+                            // 📜 コマンドカード選択時は、盤面上の右クリックで即座に選択解除（キャンセル）
+                            this.ui.deselectCard();
                         }
-                        this.ui.onCellMouseEnter(e, r, c);
                     }
                 };
 
