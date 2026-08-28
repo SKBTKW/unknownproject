@@ -205,6 +205,27 @@ export class TooltipSystem {
     }
 
     /**
+     * 🎯 カスタム座標・HTMLによる直接ツールチップ表示
+     */
+    showCustom(mouseX, mouseY, titleText, descHtml) {
+        if (!this.tooltipEl) return;
+
+        let titleHtml = "";
+        if (titleText) {
+            titleHtml = `<div class="global-tooltip-title">${titleText}</div>`;
+        }
+
+        this.tooltipEl.innerHTML = `
+            ${titleHtml}
+            <div class="global-tooltip-desc">${descHtml}</div>
+        `;
+
+        this.tooltipEl.style.display = "block";
+        this.tooltipEl.classList.add("visible");
+        this._updatePosition(mouseX, mouseY);
+    }
+
+    /**
      * 🙈 ツールチップの非表示
      */
     hide() {
@@ -217,3 +238,9 @@ export class TooltipSystem {
 
 // 🌐 アプリ全体で共有するシングルトンインスタンス
 export const tooltipSystemInstance = new TooltipSystem();
+if (typeof window !== "undefined") {
+    window.tooltipSystemInstance = tooltipSystemInstance;
+}
+if (typeof globalThis !== "undefined") {
+    globalThis.tooltipSystemInstance = tooltipSystemInstance;
+}

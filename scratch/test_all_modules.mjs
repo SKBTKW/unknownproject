@@ -348,6 +348,41 @@ glEngine.state.hasPickedThisTurn = false;
 const mountainNextToHill = glEngine.gridEngine.canPlaceShape(1, 0, [[1]], mountainTerrain);
 assert(mountainNextToHill.can === true, '丘陵(E2)にのみ隣接する山岳(E3)の配置は許可されること');
 
+// ⛰️ 本営周囲8マスへの山岳配置禁止ルール検証 (1,3 は本営 2,2 の北東近郊・未配置)
+const mountainNearHQ = glEngine.gridEngine.canPlaceShape(1, 3, [[1]], mountainTerrain);
+assert(mountainNearHQ.can === false && mountainNearHQ.reason === 'MOUNTAIN_NEAR_HQ_FORBIDDEN', '本営周囲8マスへの山岳配置は MOUNTAIN_NEAR_HQ_FORBIDDEN で禁止されること');
+
+// ⛰️ 湿原(E0) に隣接して 山岳(E3) を配置しようとする ➔ WETLAND_MOUNTAIN_NEIGHBOR で禁止されること
+const wetlandEngine = new GameEngine();
+const wetlandTerrain = { id: 'E0_WETLAND', gl: 1, e: 0, nameKey: 'TERRAIN_WETLAND' };
+wetlandEngine.gridEngine.placeShape(1, 2, [[1]], wetlandTerrain, 0); // 本営(2,2)の北隣に湿原を配置
+wetlandEngine.state.hasPickedThisTurn = false;
+const mtnNextToWetland = wetlandEngine.gridEngine.canPlaceShape(0, 2, [[1]], mountainTerrain); // (0,2) [非本営近郊] に山岳を配置試行
+assert(mtnNextToWetland.can === false && mtnNextToWetland.reasons.includes('WETLAND_MOUNTAIN_NEIGHBOR'), '湿原(E0)に隣接する山岳(E3)の配置は WETLAND_MOUNTAIN_NEIGHBOR で禁止されること');
+
+// 🔒 同属性 2×2 マージ直接面隣接禁止ルール検証 (ユーザー盤面図ケース: 7x7 Stage 2 盤面)
+const mergeAdjEngine = new GameEngine();
+mergeAdjEngine.gridEngine.expandGrid(7); // 7x7 盤面へ昇格 (本営は 3,3)
+const pTerrainForMerge = { id: 'GL1_PLAINS', gl: 1, e: 1, nameKey: 'TERRAIN_PLAINS' };
+// B4(3,1), C4(3,2), B5(4,1), C5(4,2) に 2x2 草原マージを構築
+mergeAdjEngine.gridEngine.placeShape(3, 1, [[1, 1], [1, 1]], pTerrainForMerge, 0);
+mergeAdjEngine.state.hasPickedThisTurn = false;
+// B2(1,1), C2(1,2) に草原を配置
+mergeAdjEngine.gridEngine.placeShape(1, 1, [[1, 1]], pTerrainForMerge, 0);
+mergeAdjEngine.state.hasPickedThisTurn = false;
+
+// B3(2,1) に草原を配置試行 ➔ 未マージ単体のため許可されること (can: true)
+const b3Check = mergeAdjEngine.gridEngine.canPlaceShape(2, 1, [[1]], pTerrainForMerge);
+assert(b3Check.can === true, '既存マージ北隣のB3への草原配置は未マージ単体のため許可されること');
+
+// B3(2,1) に実際に草原を配置
+mergeAdjEngine.gridEngine.placeShape(2, 1, [[1]], pTerrainForMerge, 0);
+mergeAdjEngine.state.hasPickedThisTurn = false;
+
+// C3(2,2) に草原を配置試行 ➔ 2BC+3BC で新2x2マージが成立し、南の既存2x2マージと面隣接するため禁止されること
+const c3Check = mergeAdjEngine.gridEngine.canPlaceShape(2, 2, [[1]], pTerrainForMerge);
+assert(c3Check.can === false && c3Check.reasons.includes('SAME_TERRAIN_MERGED_NEIGHBOR_FORBIDDEN'), 'C3への配置は同属性2x2マージ同士の面隣接(SAME_TERRAIN_MERGED_NEIGHBOR_FORBIDDEN)で禁止されること');
+
 // --- 15. コマンドカード発動時の空きスロット化 ＆ 詳細効果ログ記録 検問 ---
 console.log('\n📜 [15/15] コマンドカード使用後スロット空き化 ＆ 詳細ログ記録 検証');
 const cmdEngine = new GameEngine();
@@ -666,6 +701,15 @@ const lakeProds = lakeEngine.state.calculateTotalProduction();
 // 本営10 + 平地(4+4) + 湖ソケット2 + 灌漑バフ2(4*0.5) = 22, 維持費20 ➔ net +2
 assert(lakeProds.foodLakeIrrigation === 2, '湖の隣接平地(食料4)に灌漑バフ +2 (50%) が加算されること');
 assert(lakeProds.grossFood === 22, '食料総産出(gross)に湖の灌漑バフが含まれること');
+
+// 🌴 オアシス (Oasis) 周囲8マスの灌漑バフ検証
+const oasisEngine = new GameEngine();
+oasisEngine.state.ember = 20;
+oasisEngine.state.grid[0][0] = { r: 0, c: 0, placed: true, terrain: { id: 'GL0_DESERT', nameKey: 'TERRAIN_DESERT', food: 0, wood: 0, defense: 0, mystic: 2 }, socketResource: { id: 'SOCKET_OASIS', nameKey: 'SOCKET_OASIS', bonusFood: 1 } };
+oasisEngine.state.grid[0][1] = { r: 0, c: 1, placed: true, terrain: { id: 'GL1_PLAINS', nameKey: 'TERRAIN_PLAINS', food: 4, wood: 0, defense: 0, mystic: 0 } };
+const oasisProds = oasisEngine.state.calculateTotalProduction();
+assert(oasisProds.foodLakeIrrigation === 2, 'オアシスの隣接平地(食料4)に灌漑バフ +2 (50%) が加算されること');
+assert(oasisProds.grossFood === 17, '食料総産出(gross)にオアシスの灌漑バフが含まれること');
 
 console.log('\n🌟 [23/23] 新規登録バフ 8 種 (人口移住令・大防塁・前哨塔・誘導防衛・高地布陣・騎馬軍・天啓・二つの未来) 検証');
 

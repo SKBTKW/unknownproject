@@ -356,10 +356,10 @@ class GameState {
         }
 
         getTrialNotice() {
-            const nextTrialTurn = 15;
+            const nextTrialTurn = this.nextTrialTurn || (this.trialSchedule ? this.trialSchedule.trial1 : 15);
             const remaining = nextTrialTurn - this.turn;
             return {
-                active: remaining <= 5 && remaining >= 0,
+                active: remaining <= (this.trialSchedule ? this.trialSchedule.warningDuration : 5) && remaining >= 0,
                 remaining
             };
         }

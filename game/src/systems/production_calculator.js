@@ -25,8 +25,11 @@
             for (let r = 0; r < size; r++) {
                 for (let c = 0; c < size; c++) {
                     const cell = state.grid[r][c];
-                    if (cell && cell.placed && cell.socketResource && (cell.socketResource.id === "SOCKET_LAKE" || cell.socketResource.nameKey === "SOCKET_LAKE")) {
-                        lakeCoords.push({ r, c });
+                    if (cell && cell.placed && cell.socketResource) {
+                        const sid = cell.socketResource.id || cell.socketResource.nameKey || "";
+                        if (sid === "SOCKET_LAKE" || sid === "SOCKET_OASIS") {
+                            lakeCoords.push({ r, c });
+                        }
                     }
                 }
             }

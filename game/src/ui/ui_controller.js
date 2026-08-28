@@ -737,14 +737,20 @@ class UIController {
         }
         card.currentShape = newShape;
 
-        // 選択中カードと同期
-        if (this.selectedCard && (this.selectedCardIdx === idx || this.selectedCard === card)) {
-            this.selectedCard.currentShape = newShape;
-        }
-
         this.render();
         if (this.selectedCardIdx === idx || (this.selectedCard && this.selectedCard === card)) {
             this.highlightPlaceableCells();
+        } else if (this.selectedCardIdx === -1 && this.selectedReserveIdx === -1) {
+            // 未選択時の手札ホバー中回転 ➔ 盤面候補ハイライトとヒントポップオーバーを即時更新
+            if (typeof window !== "undefined" && window.BlockPlacementSystem) {
+                window.BlockPlacementSystem.highlightPlaceableCandidates(card, this.state);
+            }
+            if (typeof document !== "undefined") {
+                const cardElements = document.querySelectorAll(".cards-hand-container .card-frame-tcg");
+                if (cardElements && cardElements[idx]) {
+                    this.showCardActionHintPopover(cardElements[idx], card);
+                }
+            }
         }
     }
 
@@ -1001,6 +1007,35 @@ class UIController {
             if (this.state && this.state.permanentPlainsFoodBonus && tid.includes("PLAINS")) {
                 tf += this.state.permanentPlainsFoodBonus;
                 bonusParts.push(I18n ? I18n.t("UI_CELL_BONUS_PLAINS", { val: this.state.permanentPlainsFoodBonus }) : `平地強化(+${this.state.permanentPlainsFoodBonus})`);
+            }
+
+            // 🌊 清湖 (Lake) / オアシス (Oasis) 周囲8マスの灌漑バフ (+50% 食料産出ブースト)
+            let nearWaterType = null;
+            const checkNearWater = (tr, tc) => {
+                if (!this.state || !this.state.grid) return null;
+                const size = this.state.grid.length;
+                for (let lr = 0; lr < size; lr++) {
+                    for (let lc = 0; lc < size; lc++) {
+                        const lcCell = this.state.grid[lr][lc];
+                        if (lcCell && lcCell.placed && lcCell.socketResource) {
+                            const sid = lcCell.socketResource.id || lcCell.socketResource.nameKey || "";
+                            if (sid === "SOCKET_LAKE" || sid === "SOCKET_OASIS") {
+                                if (Math.abs(lr - tr) <= 1 && Math.abs(lc - tc) <= 1 && !(lr === tr && lc === tc)) {
+                                    return sid === "SOCKET_OASIS" ? "OASIS" : "LAKE";
+                                }
+                            }
+                        }
+                    }
+                }
+                return null;
+            };
+            nearWaterType = checkNearWater(r, c);
+            if (nearWaterType && tf > 0) {
+                const baseFoodForWater = (t.food !== undefined) ? t.food : ((t.baseYieldsPerTile && t.baseYieldsPerTile.food) || (t.yields && t.yields.food) || 0);
+                const waterBonus = Math.max(1, Math.floor(baseFoodForWater * 0.5));
+                tf += waterBonus;
+                const i18nKey = nearWaterType === "OASIS" ? "UI_CELL_BONUS_OASIS_IRRIGATION" : "UI_CELL_BONUS_LAKE_IRRIGATION";
+                bonusParts.push(I18n ? I18n.t(i18nKey, { val: waterBonus }) : (nearWaterType === "OASIS" ? `オアシス灌漑(+${waterBonus})` : `清湖灌漑(+${waterBonus})`));
             }
 
             const yieldParts = [];

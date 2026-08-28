@@ -38,6 +38,9 @@
             cells.forEach(cell => {
                 cell.classList.remove("preview-valid", "preview-invalid", "merge-hover-highlight");
             });
+            if (typeof window !== "undefined" && window.tooltipSystemInstance && typeof window.tooltipSystemInstance.hide === "function") {
+                window.tooltipSystemInstance.hide();
+            }
         }
 
         /**
@@ -79,7 +82,7 @@
         }
 
         /**
-         * 3. セルホバー時の配置プレビュー
+         * 3. セルホバー時の配置プレビュー ＆ 配置不可理由ポップアップ
          */
         updateHoverPreview(e, r, c, card, gameState) {
             if (!gameState) return;
@@ -117,6 +120,29 @@
                         }
                     }
                 }
+            }
+
+            // ⚠️ 配置不可マスの場合、理由一覧をツールチップポップアップ表示
+            if (!isValid && typeof window !== "undefined" && window.tooltipSystemInstance && typeof window.tooltipSystemInstance.showCustom === "function") {
+                const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' && window.I18n ? window.I18n : { t: k => k });
+                const reasons = (check && Array.isArray(check.reasons) && check.reasons.length > 0) 
+                    ? check.reasons 
+                    : (check && check.reason ? [check.reason] : ["NOT_ADJACENT"]);
+
+                const titleText = I18n.t("TOOLTIP_CANNOT_PLACE_TITLE");
+                const itemsHtml = reasons.map(reasonKey => {
+                    const i18nKey = "ERR_" + reasonKey;
+                    const msg = I18n.t(i18nKey);
+                    const displayMsg = (msg && msg !== i18nKey) ? msg : I18n.t(reasonKey);
+                    return `<div style="display:flex;align-items:center;gap:4px;margin-top:2px;"><span style="color:#e74c3c;">•</span> <span>${displayMsg}</span></div>`;
+                }).join("");
+
+                const descHtml = `<div class="cannot-place-reasons-box" style="font-size:12px;line-height:1.45;color:#e2e8f0;">${itemsHtml}</div>`;
+                const clientX = e ? e.clientX : 0;
+                const clientY = e ? e.clientY : 0;
+                window.tooltipSystemInstance.showCustom(clientX, clientY, titleText, descHtml);
+            } else if (isValid && typeof window !== "undefined" && window.tooltipSystemInstance && typeof window.tooltipSystemInstance.hide === "function") {
+                window.tooltipSystemInstance.hide();
             }
         }
     }

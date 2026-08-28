@@ -513,6 +513,75 @@ body.is-camera-dragging-global * {
     border-right: 1.5px solid rgba(255, 210, 100, 0.70);
 }
 
+/* 🌊 清湖近郊マスの穏やかで清涼な湿原ティール水脈パルスアニメーション */
+@keyframes lakeVicinityPulse {
+    0%, 100% {
+        opacity: 0.85;
+        box-shadow: inset 0 0 10px rgba(20, 184, 166, 0.16), 0 0 6px rgba(20, 184, 166, 0.16);
+    }
+    50% {
+        opacity: 1.0;
+        box-shadow: inset 0 0 16px rgba(20, 184, 166, 0.28), 0 0 12px rgba(45, 212, 191, 0.28);
+    }
+}
+
+.cell.lake-vicinity-unplaced {
+    border: 1px solid rgba(20, 184, 166, 0.35);
+    animation: lakeVicinityPulse 3.6s infinite ease-in-out;
+}
+
+/* N (北/上マス): 湖は真下 ➔ 下から上へ減衰 */
+.cell.lake-vicinity-unplaced.lake-dir-n {
+    background: linear-gradient(to top, rgba(20, 184, 166, 0.25) 0%, rgba(13, 74, 77, 0.09) 45%, rgba(28, 34, 48, 0.75) 100%);
+    border-bottom: 1.5px solid rgba(45, 212, 191, 0.75);
+}
+
+/* NE (北東/右上マス): 湖は左下 ➔ 左下から右上へ減衰 */
+.cell.lake-vicinity-unplaced.lake-dir-ne {
+    background: linear-gradient(to top right, rgba(20, 184, 166, 0.28) 0%, rgba(13, 74, 77, 0.10) 50%, rgba(28, 34, 48, 0.75) 100%);
+    border-bottom: 1.5px solid rgba(45, 212, 191, 0.75);
+    border-left: 1.5px solid rgba(45, 212, 191, 0.75);
+}
+
+/* E (東/右マス): 湖は真左 ➔ 左から右へ減衰 */
+.cell.lake-vicinity-unplaced.lake-dir-e {
+    background: linear-gradient(to right, rgba(20, 184, 166, 0.25) 0%, rgba(13, 74, 77, 0.09) 45%, rgba(28, 34, 48, 0.75) 100%);
+    border-left: 1.5px solid rgba(45, 212, 191, 0.75);
+}
+
+/* SE (南東/右下マス): 湖は左上 ➔ 左上から右下へ減衰 */
+.cell.lake-vicinity-unplaced.lake-dir-se {
+    background: linear-gradient(to bottom right, rgba(20, 184, 166, 0.28) 0%, rgba(13, 74, 77, 0.10) 50%, rgba(28, 34, 48, 0.75) 100%);
+    border-top: 1.5px solid rgba(45, 212, 191, 0.75);
+    border-left: 1.5px solid rgba(45, 212, 191, 0.75);
+}
+
+/* S (南/下マス): 湖は真上 ➔ 上から下へ減衰 */
+.cell.lake-vicinity-unplaced.lake-dir-s {
+    background: linear-gradient(to bottom, rgba(20, 184, 166, 0.25) 0%, rgba(13, 74, 77, 0.09) 45%, rgba(28, 34, 48, 0.75) 100%);
+    border-top: 1.5px solid rgba(45, 212, 191, 0.75);
+}
+
+/* SW (南西/左下マス): 湖は右上 ➔ 右上から左下へ減衰 */
+.cell.lake-vicinity-unplaced.lake-dir-sw {
+    background: linear-gradient(to bottom left, rgba(20, 184, 166, 0.28) 0%, rgba(13, 74, 77, 0.10) 50%, rgba(28, 34, 48, 0.75) 100%);
+    border-top: 1.5px solid rgba(45, 212, 191, 0.75);
+    border-right: 1.5px solid rgba(45, 212, 191, 0.75);
+}
+
+/* W (西/左マス): 湖は真右 ➔ 右から左へ減衰 */
+.cell.lake-vicinity-unplaced.lake-dir-w {
+    background: linear-gradient(to left, rgba(20, 184, 166, 0.25) 0%, rgba(13, 74, 77, 0.09) 45%, rgba(28, 34, 48, 0.75) 100%);
+    border-right: 1.5px solid rgba(45, 212, 191, 0.75);
+}
+
+/* NW (北西/左上マス): 湖は右下 ➔ 右下から左上へ減衰 */
+.cell.lake-vicinity-unplaced.lake-dir-nw {
+    background: linear-gradient(to top left, rgba(20, 184, 166, 0.28) 0%, rgba(13, 74, 77, 0.10) 50%, rgba(28, 34, 48, 0.75) 100%);
+    border-bottom: 1.5px solid rgba(45, 212, 191, 0.75);
+    border-right: 1.5px solid rgba(45, 212, 191, 0.75);
+}
+
 /* ✨ 配置可能候補マスの強烈なパルス発光ハイライト (土地カード選択時に一目でわかるネオン発光) */
 @keyframes placeablePulse {
     0% {

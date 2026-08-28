@@ -352,6 +352,14 @@ export async function runUILifecycleInspection() {
         assert("支配地バッジからブラウザ標準 title 属性が除去されていること", !mainTerritoryBadgeEl || !mainTerritoryBadgeEl.attributes["title"]);
         assert("支配地バッジのツールチップに所有土地 (草原等) の内訳と占有率が含まれること", !!mainTerritoryBadgeEl && (mainTerritoryBadgeEl.attributes["data-tooltip"].includes("草原") || mainTerritoryBadgeEl.attributes["data-tooltip"].includes("Plains") || mainTerritoryBadgeEl.attributes["data-tooltip"].includes("未開墾") || mainTerritoryBadgeEl.attributes["data-tooltip"].includes("Unclaimed")));
 
+        // Stage 2 昇格時の領土バッジ分母が 48 に更新されることの検問
+        ui.state.stage = { id: 2, name: "Stage 2", size: 7, maxTiles: 48 };
+        ui.render();
+        const badgeCountEl = mockDoc.getElementById("valPlacedCount");
+        assert("Stage 2 昇格後に支配地バッジの分母が '/48' に更新されること", !!badgeCountEl && badgeCountEl.innerHTML.includes("/48"));
+        ui.state.stage = { id: 1, name: "Stage 1", size: 5, maxTiles: 24 };
+        ui.render();
+
         // ヘッダー産出パネルのホバー表示検問
         ui.showDataPanelTooltip({ currentTarget: mockDoc.getElementById("headerDataPanel") });
         const headerTooltipEl = mockDoc.getElementById("dataPanelTooltipHuge");
@@ -387,15 +395,15 @@ export async function runUILifecycleInspection() {
         assert("1x2 森先頭マスに '2x2' 等の冗長文字が含まれないこと", !!forestHead && !forestHead.innerHTML.includes("2x2"));
         assert("1x2 森後続マス (tail) の innerHTML が完全に空であること", !!forestTail && forestTail.innerHTML === "");
 
-        // 13. 🛡️ 2x2 正方形マージ (山岳4マス) 総産出集約 ＆ 冗長表記全廃検問
+        // 13. 🛡️ 2x2 正方形マージ (丘陵4マス) 総産出集約 ＆ 冗長表記全廃検問
         ui.state.hasPickedThisTurn = false;
-        const mTerrain = { id: "M2_MOUNTAIN", terrainId: "MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", yields: { food: 0, wood: 2, defense: 3, mystic: 1 } };
-        ui.state.placeShape(1, 3, [[1, 1], [1, 1]], mTerrain); // (1,3), (1,4), (2,3), (2,4)
+        const hTerrain = { id: "E2_HILL", terrainId: "HILL", nameKey: "TERRAIN_HILL", yields: { food: 2, wood: 1, defense: 1, mystic: 0 } };
+        ui.state.placeShape(1, 3, [[1, 1], [1, 1]], hTerrain); // (1,3), (1,4), (2,3), (2,4)
         ui.render();
 
         const mHead = gridBoardEl.children.find(c => c.dataset && c.dataset.r === "1" && c.dataset.c === "3");
         const mRight = gridBoardEl.children.find(c => c.dataset && c.dataset.r === "1" && c.dataset.c === "4");
-        assert("2x2 マージ先頭マスに最大産出 '🛡️' が集約描画されること", !!mHead && mHead.innerHTML.includes("🛡️") && mHead.innerHTML.includes(" : "));
+        assert("2x2 マージ先頭マスに最大産出 '🌾' が集約描画されること", !!mHead && mHead.innerHTML.includes("🌾") && mHead.innerHTML.includes(" : "));
         assert("2x2 マージ先頭マスに '2x2' 等の冗長文字が含まれず純粋な土地名であること", !!mHead && !mHead.innerHTML.includes("2x2"));
         assert("2x2 マージ先頭マスに has-resource-yield クラスが付与されること", !!mHead && mHead.classList.contains("has-resource-yield"));
         assert("2x2 マージ先頭マスで右側境界線が打消されていること (no-border-right)", !!mHead && mHead.classList.contains("no-border-right"));
@@ -422,7 +430,7 @@ export async function runUILifecycleInspection() {
         const mFreeTail = getBoardCell(2, 4) || getBoardCell(2, 3);
 
         assert("先頭マスに資源がある場合、先頭マスに資源名 (羊) と '🌾 : 2' が描画されること", !!mHeadSocket && (mHeadSocket.innerHTML.includes("羊") || mHeadSocket.innerHTML.includes("Sheep")) && mHeadSocket.innerHTML.includes("🌾") && mHeadSocket.innerHTML.includes("2"));
-        assert("先頭マスに資源がある場合、最初の空きマスに土地名 (山岳) と総産出が集約スライド描画されること", (!!mSlideLand && (mSlideLand.innerHTML.includes("山岳") || mSlideLand.innerHTML.includes("Mountain")) && mSlideLand.innerHTML.includes("🛡️")) || (!!mHeadSocket && mHeadSocket.innerHTML.includes("羊")));
+        assert("先頭マスに資源がある場合、最初の空きマスに土地名 (丘陵) と総産出が集約スライド描画されること", (!!mSlideLand && (mSlideLand.innerHTML.includes("丘陵") || mSlideLand.innerHTML.includes("Hill")) && mSlideLand.innerHTML.includes("🌾")) || (!!mHeadSocket && mHeadSocket.innerHTML.includes("羊")));
         assert("2番目以降の空きマス (2,3) の innerHTML が完全に空であること", true);
 
         // 16. ⚡ 1x1 + 1x2 連結時の単一ブロック化検問 (4,1) に 1x1, (4,2)-(4,3) に 1x2
@@ -515,6 +523,112 @@ export async function runUILifecycleInspection() {
         }
         assert("盤面セル右クリック後にコマンドカード選択がキャンセル (selectedCardIdx: -1) されること", ui.selectedCardIdx === -1);
         assert("盤面セル右クリック後に selectedCard が null になること", ui.selectedCard === null);
+
+        // 🌊 湖(Lake)の周囲8マス外見エフェクト (lake-vicinity-unplaced & 方位クラス) 検証
+        ui.state.grid[0][0] = {
+            r: 0, c: 0, placed: true, isHQ: false,
+            terrain: { id: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", yields: { food: 4 } },
+            socketResource: { id: "SOCKET_LAKE", nameKey: "SOCKET_LAKE", bonusFood: 2 }
+        };
+        ui.state.grid[0][1] = { r: 0, c: 1, placed: false, isHQ: false };
+        ui.state.grid[1][0] = { r: 1, c: 0, placed: false, isHQ: false };
+        ui.state.grid[1][1] = { r: 1, c: 1, placed: false, isHQ: false };
+        ui.render();
+        const lakeAdjacentEast = boardEl.children.find(c => c.dataset && c.dataset.r === "0" && c.dataset.c === "1");
+        const lakeAdjacentSouth = boardEl.children.find(c => c.dataset && c.dataset.r === "1" && c.dataset.c === "0");
+        const lakeAdjacentSE = boardEl.children.find(c => c.dataset && c.dataset.r === "1" && c.dataset.c === "1");
+
+        assert("湖の東隣マス (0,1) に lake-vicinity-unplaced クラスが付与されること", !!lakeAdjacentEast && lakeAdjacentEast.classList.contains("lake-vicinity-unplaced"));
+        assert("湖の東隣マス (0,1) に lake-dir-e クラスが付与されること", !!lakeAdjacentEast && lakeAdjacentEast.classList.contains("lake-dir-e"));
+        assert("湖の南隣マス (1,0) に lake-dir-s クラスが付与されること", !!lakeAdjacentSouth && lakeAdjacentSouth.classList.contains("lake-dir-s"));
+        assert("湖の南東隣マス (1,1) に lake-dir-se クラスが付与されること", !!lakeAdjacentSE && lakeAdjacentSE.classList.contains("lake-dir-se"));
+
+        // 🌴 オアシス (Oasis) 開花時の周囲8マス水脈エフェクト検証
+        ui.state.grid[0][0] = {
+            r: 0, c: 0, placed: true, isHQ: false,
+            terrain: { id: "GL0_DESERT", nameKey: "TERRAIN_DESERT", yields: { mystic: 2 } },
+            socketResource: { id: "SOCKET_OASIS", nameKey: "SOCKET_OASIS", bonusFood: 1 }
+        };
+        ui.render();
+        const oasisAdjacentEast = boardEl.children.find(c => c.dataset && c.dataset.r === "0" && c.dataset.c === "1");
+        assert("オアシスの東隣マス (0,1) に lake-vicinity-unplaced クラスが付与されること", !!oasisAdjacentEast && oasisAdjacentEast.classList.contains("lake-vicinity-unplaced"));
+        assert("オアシスの東隣マス (0,1) に lake-dir-e クラスが付与されること", !!oasisAdjacentEast && oasisAdjacentEast.classList.contains("lake-dir-e"));
+
+        // ⛰️ 本営周囲8マスへの山岳配置禁止ルール検証 (3,2 は本営 2,2 の真南近郊・未配置)
+        const mtnCard = { id: "CARD_MOUNTAIN_1X1", currentShape: [[1]], terrain: { id: "E3_MOUNTAIN", e: 3, nameKey: "TERRAIN_MOUNTAIN" } };
+        const checkMtnNearHQ = ui.state.canPlaceShape(3, 2, [[1]], mtnCard.terrain);
+        assert("本営南隣 (3,2) への山岳配置が canPlaceShape で禁止されること", checkMtnNearHQ.can === false && checkMtnNearHQ.reason === "MOUNTAIN_NEAR_HQ_FORBIDDEN");
+
+        // 🚨 配置不可理由一覧 (reasons配列) ＆ ツールチップポップアップ検証
+        const doubleErrMtn = ui.state.canPlaceShape(4, 4, [[1]], mtnCard.terrain);
+        assert("平地隣接マスへの山岳配置で INVALID_ELEVATION_NEIGHBOR が収集されること", doubleErrMtn.can === false && doubleErrMtn.reasons.includes("INVALID_ELEVATION_NEIGHBOR"));
+
+        // ツールチップ表示検証
+        BlockPlacementSystem.updateHoverPreview({ clientX: 100, clientY: 200 }, 4, 4, mtnCard, ui.state);
+        const ttEl = document.getElementById("globalTooltip");
+        assert("配置不可ホバー時にグローバルツールチップが visible になること", !!ttEl && ttEl.classList.contains("visible"));
+        assert("ツールチップ内に配置不可タイトルが含まれること", !!ttEl && (ttEl.innerHTML.includes("配置不可") || ttEl.innerHTML.includes("Cannot Place")));
+        assert("ツールチップ内にエラー理由 (高度断絶/山岳) が含まれること", !!ttEl && (ttEl.innerHTML.includes("山岳") || ttEl.innerHTML.includes("高度") || ttEl.innerHTML.includes("Elevation")));
+
+        // ホバー解除でツールチップが非表示になること
+        BlockPlacementSystem.clearHoverPreviews();
+        assert("ホバー解除後にツールチップが非表示になること", !!ttEl && ttEl.style.display === "none");
+
+        // ⛰️ 湿原(E0) に隣接する山岳(E3) のエラーメッセージ検証
+        ui.state.grid[0][0] = {
+            r: 0, c: 0, placed: true, isHQ: false,
+            terrain: { id: "E0_WETLAND", terrainId: "WETLAND", gl: 1, e: 0, nameKey: "TERRAIN_WETLAND", yields: { food: 2, defense: 1 } }
+        };
+        const mtnAtWetlandNeighbor = ui.state.canPlaceShape(0, 1, [[1]], mtnCard.terrain);
+        assert("湿原隣接マスへの山岳配置で WETLAND_MOUNTAIN_NEIGHBOR が収集されること", mtnAtWetlandNeighbor.can === false && mtnAtWetlandNeighbor.reasons.includes("WETLAND_MOUNTAIN_NEIGHBOR"));
+
+        // ツールチップ表示で「湿地と山岳は隣接できません」が表示されること
+        BlockPlacementSystem.updateHoverPreview({ clientX: 100, clientY: 200 }, 0, 1, mtnCard, ui.state);
+        assert("湿原隣接山岳ホバー時にツールチップに『湿地と山岳』が含まれること", !!ttEl && (ttEl.innerHTML.includes("湿地と山岳") || ttEl.innerHTML.includes("Wetlands and Mountains")));
+        BlockPlacementSystem.clearHoverPreviews();
+
+        // 🔒 同属性 2×2 マージ直接面隣接禁止 ＆ ツールチップ表示検証
+        const pLand = { id: "GL1_PLAINS", terrainId: "PLAINS", gl: 1, e: 1, nameKey: "TERRAIN_PLAINS", yields: { food: 4 } };
+        ui.state.grid[3][1] = { r: 3, c: 1, placed: true, isHQ: false, terrain: pLand, mergeGroupId: "test_merge_p1", merged: true };
+        ui.state.grid[3][2] = { r: 3, c: 2, placed: true, isHQ: false, terrain: pLand, mergeGroupId: "test_merge_p1", merged: true };
+        ui.state.grid[4][1] = { r: 4, c: 1, placed: true, isHQ: false, terrain: pLand, mergeGroupId: "test_merge_p1", merged: true };
+        ui.state.grid[4][2] = { r: 4, c: 2, placed: true, isHQ: false, terrain: pLand, mergeGroupId: "test_merge_p1", merged: true };
+        if (!ui.state.mergedBlocks) ui.state.mergedBlocks = {};
+        ui.state.mergedBlocks["test_merge_p1"] = { cells: [[3,1],[3,2],[4,1],[4,2]], terrainId: "GL1_PLAINS" };
+
+        ui.state.grid[1][1] = { r: 1, c: 1, placed: true, isHQ: false, terrain: pLand };
+        ui.state.grid[1][2] = { r: 1, c: 2, placed: true, isHQ: false, terrain: pLand };
+        ui.state.grid[2][1] = { r: 2, c: 1, placed: true, isHQ: false, terrain: pLand };
+        ui.state.grid[2][2] = { r: 2, c: 2, placed: false, isHQ: false };
+
+        const plainsCard = { id: "CARD_PLAINS_1X1", currentShape: [[1]], terrain: pLand };
+        const c3HoverCheck = ui.state.canPlaceShape(2, 2, [[1]], plainsCard.terrain);
+        assert("C3への草原配置が同属性2x2マージ隣接禁止で can: false になること", c3HoverCheck.can === false && c3HoverCheck.reasons.includes("SAME_TERRAIN_MERGED_NEIGHBOR_FORBIDDEN"));
+
+        // ツールチップ表示検証
+        BlockPlacementSystem.updateHoverPreview({ clientX: 100, clientY: 200 }, 2, 2, plainsCard, ui.state);
+        assert("C3ホバー時にツールチップに『2×2マージ同士』が含まれること", !!ttEl && (ttEl.innerHTML.includes("2×2マージ同士") || ttEl.innerHTML.includes("2x2 merged territory")));
+        BlockPlacementSystem.clearHoverPreviews();
+
+        // 🔄 手札通常表示時の右クリック回転検証
+        const landCard1x2 = { id: "CARD_FOREST_1X2", currentShape: [[1, 1]], terrain: { id: "GL2_FOREST", gl: 2, e: 1, nameKey: "TERRAIN_FOREST" } };
+        ui.state.handOffering[0] = landCard1x2;
+        ui.selectedCardIdx = 0;
+        ui.selectedCard = landCard1x2;
+        ui.render();
+
+        // 0番目を右クリック回転
+        ui.rotateSelectedCard({ preventDefault: () => {}, stopPropagation: () => {} }, 0);
+        assert("1x2カード回転後に形状が縦 [[1],[1]] (2行1列) になること", landCard1x2.currentShape.length === 2 && landCard1x2.currentShape[0].length === 1);
+
+        // 盤面上のセル右クリック回転で updateHoverPreview が正常実行されること
+        const dummyEvt = { preventDefault: () => {}, clientX: 100, clientY: 100 };
+        const testCell = boardEl.children.find(c => c.dataset && c.dataset.r === "0" && c.dataset.c === "2");
+        assert("盤面セル要素が存在すること", !!testCell);
+        if (testCell && testCell.oncontextmenu) {
+            testCell.oncontextmenu(dummyEvt);
+            assert("盤面セル右クリック回転後に形状が横 [[1,1]] (1行2列) に戻ること", landCard1x2.currentShape.length === 1 && landCard1x2.currentShape[0].length === 2);
+        }
 
     } catch (err) {
         console.error("  ❌ [FATAL] UIライフサイクル実行中に致命的例外が発生:", err);

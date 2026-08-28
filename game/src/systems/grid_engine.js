@@ -273,15 +273,15 @@ class GridEngine {
     }
 
     /**
-     * 🔍 形状配置可否チェック（地勢レベルGL隣接制限: GL0砂漠 と GL2+森林/山岳の直接隣接禁止）
+     * 🔍 形状配置可否チェック（地勢レベルGL/標高E/本営近郊/全理由配列reasons収集対応）
      * @param {number} startR - 配置開始行
      * @param {number} startC - 配置開始列
      * @param {Array<Array<number>>} shapeMatrix - 形状マトリクス
-     * @param {Object} [terrain] - 配置対象の地勢データ (GL判定用)
-     * @returns {{ can: boolean, reason?: string }}
+     * @param {Object} [terrain] - 配置対象の地勢データ (GL/E判定用)
+     * @returns {{ can: boolean, reason?: string, reasons: Array<string> }}
      */
     canPlaceShape(startR, startC, shapeMatrix, terrain = null) {
-        if (!this.state || !this.state.grid) return { can: false, reason: "NO_GRID" };
+        if (!this.state || !this.state.grid) return { can: false, reason: "NO_GRID", reasons: ["NO_GRID"] };
 
         const rows = shapeMatrix.length;
         const cols = shapeMatrix[0].length;
@@ -289,49 +289,79 @@ class GridEngine {
 
         const targetGL = terrain ? (terrain.gl !== undefined ? terrain.gl : (terrain.terrain ? terrain.terrain.gl : null)) : null;
         const targetE = terrain ? (terrain.e !== undefined ? terrain.e : (terrain.terrain ? terrain.terrain.e : 1)) : null;
+        const targetTid = terrain ? (terrain.terrainId || terrain.id || "") : "";
+        const isMountain = targetE === 3 || targetTid.includes("MOUNTAIN");
 
-        // 1. 盤外および既配置マスとの重複判定
+        const reasons = [];
+
+        let isOutOfBounds = false;
+        let isAlreadyPlaced = false;
+        let isMountainNearHQ = false;
+        let isAdjacent = false;
+        let hasInvalidGL = false;
+        const elevationReasons = new Set();
+
+        // 1. 盤外および既配置マスとの重複判定 ＆ 本営周囲山岳判定
         for (let dr = 0; dr < rows; dr++) {
             for (let dc = 0; dc < cols; dc++) {
                 if (shapeMatrix[dr][dc] === 1) {
                     const r = startR + dr;
                     const c = startC + dc;
-                    if (r < 0 || r >= size || c < 0 || c >= size) return { can: false, reason: "OUT_OF_BOUNDS" };
-                    if (this.state.grid[r][c].placed) return { can: false, reason: "ALREADY_PLACED" };
+                    if (r < 0 || r >= size || c < 0 || c >= size) {
+                        isOutOfBounds = true;
+                    } else {
+                        if (this.state.grid[r][c].placed) {
+                            isAlreadyPlaced = true;
+                        }
+                        if (isMountain && this.isHQVicinity(r, c)) {
+                            isMountainNearHQ = true;
+                        }
+                    }
                 }
             }
         }
 
+        if (isOutOfBounds) reasons.push("OUT_OF_BOUNDS");
+        if (isAlreadyPlaced) reasons.push("ALREADY_PLACED");
+        if (isMountainNearHQ) reasons.push("MOUNTAIN_NEAR_HQ_FORBIDDEN");
+
         // 2. 隣接接続判定 ＆ 地勢レベル(GL) / 標高(E) 不適合チェック
-        let isAdjacent = false;
-        for (let dr = 0; dr < rows; dr++) {
-            for (let dc = 0; dc < cols; dc++) {
-                if (shapeMatrix[dr][dc] === 1) {
-                    const r = startR + dr;
-                    const c = startC + dc;
-                    const neighbors = [
-                        [r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]
-                    ];
-                    for (let [nr, nc] of neighbors) {
-                        if (nr >= 0 && nr < size && nc >= 0 && nc < size) {
-                            const neighborCell = this.state.grid[nr][nc];
-                            if (neighborCell.placed) {
-                                isAdjacent = true;
+        if (!isOutOfBounds) {
+            for (let dr = 0; dr < rows; dr++) {
+                for (let dc = 0; dc < cols; dc++) {
+                    if (shapeMatrix[dr][dc] === 1) {
+                        const r = startR + dr;
+                        const c = startC + dc;
+                        const neighbors = [
+                            [r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]
+                        ];
+                        for (let [nr, nc] of neighbors) {
+                            if (nr >= 0 && nr < size && nc >= 0 && nc < size) {
+                                const neighborCell = this.state.grid[nr][nc];
+                                if (neighborCell.placed) {
+                                    isAdjacent = true;
 
-                                if (!neighborCell.isHQ && neighborCell.terrain) {
-                                    // 🛡️ 気候断絶ルール: 砂漠(GL0) と 森林/深林/山岳(GL2以上) は直接隣接不可 (本営HQは全地勢接続可能)
-                                    if (targetGL !== null) {
-                                        const placedGL = neighborCell.terrain.gl !== undefined ? neighborCell.terrain.gl : 1;
-                                        if ((targetGL === 0 && placedGL >= 2) || (targetGL >= 2 && placedGL === 0)) {
-                                            return { can: false, reason: "INVALID_GL_NEIGHBOR" };
+                                    if (!neighborCell.isHQ && neighborCell.terrain) {
+                                        // 🛡️ 気候断絶ルール: 砂漠(GL0) と 森林/深林/山岳(GL2以上) は直接隣接不可 (本営HQは全地勢接続可能)
+                                        if (targetGL !== null) {
+                                            const placedGL = neighborCell.terrain.gl !== undefined ? neighborCell.terrain.gl : 1;
+                                            if ((targetGL === 0 && placedGL >= 2) || (targetGL >= 2 && placedGL === 0)) {
+                                                hasInvalidGL = true;
+                                            }
                                         }
-                                    }
 
-                                    // ⛰️ 高度断絶ルール (断崖): 標高 E1 (平地/森/砂漠) と 標高 E3 (山岳/霊峰) は直接隣接不可 (|E差| >= 2 は禁止)
-                                    if (targetE !== null) {
-                                        const placedE = neighborCell.terrain.e !== undefined ? neighborCell.terrain.e : 1;
-                                        if (Math.abs(targetE - placedE) >= 2) {
-                                            return { can: false, reason: "INVALID_ELEVATION_NEIGHBOR" };
+                                        // ⛰️ 高度断絶ルール (断崖): 標高 E0(湿原)/E1(平地) と 標高 E3(山岳) は直接隣接不可 (|E差| >= 2 は禁止)
+                                        if (targetE !== null) {
+                                            const placedE = neighborCell.terrain.e !== undefined ? neighborCell.terrain.e : 1;
+                                            if (Math.abs(targetE - placedE) >= 2) {
+                                                if ((targetE === 0 && placedE === 3) || (targetE === 3 && placedE === 0)) {
+                                                    elevationReasons.add("WETLAND_MOUNTAIN_NEIGHBOR");
+                                                } else if ((targetE === 0 && placedE === 2) || (targetE === 2 && placedE === 0)) {
+                                                    elevationReasons.add("WETLAND_HILL_NEIGHBOR");
+                                                } else {
+                                                    elevationReasons.add("INVALID_ELEVATION_NEIGHBOR");
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -340,10 +370,98 @@ class GridEngine {
                     }
                 }
             }
+
+            if (!isAdjacent && !isAlreadyPlaced) {
+                reasons.push("NOT_ADJACENT");
+            }
+            if (hasInvalidGL) {
+                reasons.push("INVALID_GL_NEIGHBOR");
+            }
+            if (elevationReasons.size > 0) {
+                elevationReasons.forEach(rKey => reasons.push(rKey));
+            }
+
+            // 🔒 3. 同属性 2×2 マージ直接面隣接禁止ルール
+            if (!isOutOfBounds && !isAlreadyPlaced) {
+                const targetTid = terrain ? (terrain.terrainId || terrain.id) : null;
+                const placingCells = [];
+                for (let dr = 0; dr < rows; dr++) {
+                    for (let dc = 0; dc < cols; dc++) {
+                        if (shapeMatrix[dr][dc] === 1) {
+                            placingCells.push({ r: startR + dr, c: startC + dc });
+                        }
+                    }
+                }
+
+                const getVirtualCell = (vr, vc) => {
+                    if (vr < 0 || vr >= size || vc < 0 || vc >= size) return null;
+                    const isPlacing = placingCells.some(p => p.r === vr && p.c === vc);
+                    if (isPlacing) {
+                        return { placed: true, isHQ: false, terrainId: targetTid, isVirtualPlacing: true };
+                    }
+                    const realCell = this.state.grid[vr][vc];
+                    if (realCell && realCell.placed && !realCell.isHQ && realCell.terrain) {
+                        const tid = realCell.terrain.terrainId || realCell.terrain.id;
+                        const isMerged = !!(realCell.merged || (realCell.mergeGroupId && this.state.mergedBlocks && this.state.mergedBlocks[realCell.mergeGroupId] && this.state.mergedBlocks[realCell.mergeGroupId].cells.length >= 4));
+                        return { placed: true, isHQ: false, terrainId: tid, isMerged, mergeGroupId: realCell.mergeGroupId };
+                    }
+                    return null;
+                };
+
+                let hasMergedAdjacencyConflict = false;
+                for (let topR = 0; topR < size - 1; topR++) {
+                    for (let leftC = 0; leftC < size - 1; leftC++) {
+                        const c00 = getVirtualCell(topR, leftC);
+                        const c01 = getVirtualCell(topR, leftC + 1);
+                        const c10 = getVirtualCell(topR + 1, leftC);
+                        const c11 = getVirtualCell(topR + 1, leftC + 1);
+
+                        if (c00 && c01 && c10 && c11 &&
+                            c00.terrainId === targetTid &&
+                            c01.terrainId === targetTid &&
+                            c10.terrainId === targetTid &&
+                            c11.terrainId === targetTid) {
+                            
+                            const includesNewPlacing = (c00.isVirtualPlacing || c01.isVirtualPlacing || c10.isVirtualPlacing || c11.isVirtualPlacing);
+                            if (includesNewPlacing) {
+                                const perimeterNeighbors = [
+                                    [topR - 1, leftC], [topR - 1, leftC + 1],
+                                    [topR + 2, leftC], [topR + 2, leftC + 1],
+                                    [topR, leftC - 1], [topR + 1, leftC - 1],
+                                    [topR, leftC + 2], [topR + 1, leftC + 2]
+                                ];
+
+                                for (let [pr, pc] of perimeterNeighbors) {
+                                    if (pr >= 0 && pr < size && pc >= 0 && pc < size) {
+                                        const realNeighbor = this.state.grid[pr][pc];
+                                        if (realNeighbor && realNeighbor.placed && !realNeighbor.isHQ && realNeighbor.terrain) {
+                                            const nTid = realNeighbor.terrain.terrainId || realNeighbor.terrain.id;
+                                            const isNeighborMerged = !!(realNeighbor.merged || (realNeighbor.mergeGroupId && this.state.mergedBlocks && this.state.mergedBlocks[realNeighbor.mergeGroupId] && this.state.mergedBlocks[realNeighbor.mergeGroupId].cells.length >= 4));
+                                            
+                                            if (nTid === targetTid && isNeighborMerged) {
+                                                hasMergedAdjacencyConflict = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if (hasMergedAdjacencyConflict) break;
+                    }
+                    if (hasMergedAdjacencyConflict) break;
+                }
+
+                if (hasMergedAdjacencyConflict) {
+                    reasons.push("SAME_TERRAIN_MERGED_NEIGHBOR_FORBIDDEN");
+                }
+            }
         }
 
-        if (!isAdjacent) return { can: false, reason: "NOT_ADJACENT" };
-        return { can: true };
+        if (reasons.length > 0) {
+            return { can: false, reason: reasons[0], reasons: reasons };
+        }
+        return { can: true, reasons: [] };
     }
 
     /**

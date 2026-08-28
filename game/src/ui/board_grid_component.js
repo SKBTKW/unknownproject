@@ -56,6 +56,20 @@ export class BoardGridComponent {
         boardEl.style.setProperty('--cell-size', cellSize);
         boardEl.style.setProperty('--header-size', headerSize);
 
+        // 🌊 開花した清湖・オアシスの座標リストを事前収集 (周囲8マスのティール水脈エフェクト用)
+        const lakeCoords = [];
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
+                const cell = this.state.grid[r][c];
+                if (cell && cell.placed && cell.socketResource) {
+                    const sid = cell.socketResource.id || cell.socketResource.nameKey || "";
+                    if (sid === "SOCKET_LAKE" || sid === "SOCKET_OASIS") {
+                        lakeCoords.push({ r, c });
+                    }
+                }
+            }
+        }
+
         // 🔤 横ヘッダー (A, B, C, D, E...)
         for (let c = 0; c < size; c++) {
             const hCell = document.createElement("div");
@@ -83,6 +97,8 @@ export class BoardGridComponent {
                 cellEl.setAttribute("data-c", c);
 
                 const isHQVic = (typeof this.state.isHQVicinity === "function") ? this.state.isHQVicinity(r, c) : false;
+                const lakeDirClass = this.getLakeDirectionClass(r, c, lakeCoords);
+                const isLakeVic = !!lakeDirClass;
 
                 let topGroupSame = false;
                 let leftGroupSame = false;
@@ -174,12 +190,20 @@ export class BoardGridComponent {
                         const dirClass = this.getHQDirectionClass(r, c);
                         if (dirClass) cellEl.classList.add(dirClass);
                     }
+                    if (isLakeVic) {
+                        cellEl.classList.add("lake-vicinity-unplaced");
+                        cellEl.classList.add(lakeDirClass);
+                    }
                     cellEl.innerHTML = `<span class="socket-star-icon">★</span>`;
                 } else {
                     if (isHQVic) {
                         cellEl.classList.add("hq-vicinity-unplaced");
                         const dirClass = this.getHQDirectionClass(r, c);
                         if (dirClass) cellEl.classList.add(dirClass);
+                    }
+                    if (isLakeVic) {
+                        cellEl.classList.add("lake-vicinity-unplaced");
+                        cellEl.classList.add(lakeDirClass);
                     }
                 }
 
@@ -244,7 +268,9 @@ export class BoardGridComponent {
                             } else if (this.ui.selectedCardIdx !== -1) {
                                 this.ui.rotateSelectedCard(e, this.ui.selectedCardIdx);
                             }
-                            this.ui.onCellMouseEnter(e, r, c);
+                            if (typeof window !== "undefined" && window.BlockPlacementSystem) {
+                                window.BlockPlacementSystem.updateHoverPreview(e, r, c, this.ui.selectedCard, this.state);
+                            }
                         } else {
                             // 📜 コマンドカード選択時は、盤面上の右クリックで即座に選択解除（キャンセル）
                             this.ui.deselectCard();
@@ -333,7 +359,7 @@ export class BoardGridComponent {
             }
             if (typeof badgeComp.update === "function") {
                 const placedCount = (typeof this.state.countPlacedTiles === "function") ? this.state.countPlacedTiles() : 1;
-                badgeComp.update(placedCount, this.state.stage ? this.state.stage.maxTiles : 24, this.state.stage ? this.state.stage.id : 1);
+                badgeComp.update(placedCount, this.state);
             }
         }
 
@@ -384,9 +410,12 @@ export class BoardGridComponent {
             for (let lr = 0; lr < size; lr++) {
                 for (let lc = 0; lc < size; lc++) {
                     const lcCell = this.state.grid[lr][lc];
-                    if (lcCell && lcCell.placed && lcCell.socketResource && (lcCell.socketResource.id === "SOCKET_LAKE" || lcCell.socketResource.nameKey === "SOCKET_LAKE")) {
-                        if (Math.abs(lr - r) <= 1 && Math.abs(lc - c) <= 1 && !(lr === r && lc === c)) {
-                            return true;
+                    if (lcCell && lcCell.placed && lcCell.socketResource) {
+                        const sid = lcCell.socketResource.id || lcCell.socketResource.nameKey || "";
+                        if (sid === "SOCKET_LAKE" || sid === "SOCKET_OASIS") {
+                            if (Math.abs(lr - r) <= 1 && Math.abs(lc - c) <= 1 && !(lr === r && lc === c)) {
+                                return true;
+                            }
                         }
                     }
                 }
@@ -603,6 +632,32 @@ export class BoardGridComponent {
         if (dr === 1 && dc === -1) return "hq-dir-sw";
         if (dr === 0 && dc === -1) return "hq-dir-w";
         if (dr === -1 && dc === -1) return "hq-dir-nw";
+        return "";
+    }
+
+    /**
+     * 🌊 湖(Lake)の中心からの8方位クラス名の算出
+     * @param {number} r - 行
+     * @param {number} c - 列
+     * @param {Array<Object>} lakeCoords - 盤面上の湖座標リスト
+     * @returns {string} 方位クラス名 ("lake-dir-n", "lake-dir-ne", etc.)
+     */
+    getLakeDirectionClass(r, c, lakeCoords) {
+        if (!Array.isArray(lakeCoords) || lakeCoords.length === 0) return "";
+        for (let lake of lakeCoords) {
+            const dr = r - lake.r;
+            const dc = c - lake.c;
+            if (Math.abs(dr) <= 1 && Math.abs(dc) <= 1 && !(dr === 0 && dc === 0)) {
+                if (dr === -1 && dc === 0) return "lake-dir-n";
+                if (dr === -1 && dc === 1) return "lake-dir-ne";
+                if (dr === 0 && dc === 1) return "lake-dir-e";
+                if (dr === 1 && dc === 1) return "lake-dir-se";
+                if (dr === 1 && dc === 0) return "lake-dir-s";
+                if (dr === 1 && dc === -1) return "lake-dir-sw";
+                if (dr === 0 && dc === -1) return "lake-dir-w";
+                if (dr === -1 && dc === -1) return "lake-dir-nw";
+            }
+        }
         return "";
     }
 }

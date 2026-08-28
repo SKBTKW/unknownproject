@@ -59,14 +59,15 @@ export class TerritoryBadgeComponent {
     }
 
     static getMaxTilesForStage(stageNum = 1) {
-        if (stageNum === 3) return 80;
-        if (stageNum === 2) return 48;
+        if (stageNum === 80 || stageNum === 3) return 80;
+        if (stageNum === 48 || stageNum === 2) return 48;
         return 24; // Stage 1 デフォルト
     }
 
     static getStageEmberThresholds(stageNum = 1) {
-        if (stageNum === 3) return { decayStop: 48, autoHeat: 68 };
-        if (stageNum === 2) return { decayStop: 24, autoHeat: 40 };
+        const normStage = (stageNum === 80 || stageNum === 3) ? 3 : ((stageNum === 48 || stageNum === 2) ? 2 : 1);
+        if (normStage === 3) return { decayStop: 48, autoHeat: 68 };
+        if (normStage === 2) return { decayStop: 24, autoHeat: 40 };
         return { decayStop: 8, autoHeat: 20 };
     }
 
@@ -94,7 +95,10 @@ export class TerritoryBadgeComponent {
                 this.stage = 1;
             }
         } else if (typeof stageOrState === "number") {
-            this.stage = stageOrState;
+            if (stageOrState === 48) this.stage = 2;
+            else if (stageOrState === 80) this.stage = 3;
+            else if (stageOrState === 24) this.stage = 1;
+            else this.stage = stageOrState;
         } else {
             this.stage = 1;
         }
