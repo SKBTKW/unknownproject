@@ -13,7 +13,7 @@ const UI_TILE_TEXT_PRESETS = {
 const UI_FEATURE_FLAGS = {
     enableBottomFocusBlur: true,  // 🌟 2層レイヤー構造（手札ホバー時の盤面暗転ブラー）有効化
     enableReserveArea: false,
-    tileTextStyle: UI_TILE_TEXT_PRESETS.DEFAULT // デフォルトは現行仕様
+    tileTextStyle: UI_TILE_TEXT_PRESETS.SYMBOLIC_BOARD // 🎨 デフォルトを「4. 新アイコン配置(右上産出+左下属性)」に設定
 };
 
 const UILayoutConfig = {

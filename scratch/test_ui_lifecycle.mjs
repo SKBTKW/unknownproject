@@ -162,9 +162,13 @@ const requiredHtmlElementIds = [
     "territoryBadgeContainer", "mainTerritoryBadge", "layerWorldBoard", "lblDataPanelTitle",
     "valTurn", "valTurnBg", "valFood", "valFoodProd", "valWood", "valWoodProd",
     "valDefense", "valMystic", "valMysticProd", "valPlacedCount", "trialCountdownBadge",
-    "valTrialCountdown", "btnMulligan", "btnTurnEnd", "btnSettingsModal", "directiveModal"
+    "valTrialCountdown", "btnMulligan", "btnTurnEnd", "btnSettingsModal", "directiveModal",
+    "headerDataPanel"
 ];
 requiredHtmlElementIds.forEach(id => getOrCreateElement(id));
+const headerDataPanelInit = getOrCreateElement("headerDataPanel");
+headerDataPanelInit.setAttribute("data-tooltip", "DATA_PANEL_BREAKDOWN");
+headerDataPanelInit.setAttribute("data-tooltip-title", "UI_BREAKDOWN_MODAL_TITLE");
 
 const mockDoc = {
     getElementById: (id) => getOrCreateElement(id),
@@ -374,12 +378,15 @@ export async function runUILifecycleInspection() {
         ui.state.stage = { id: 1, name: "Stage 1", size: 5, maxTiles: 24 };
         ui.render();
 
-        // ヘッダー産出パネルのホバー表示検問
-        ui.showDataPanelTooltip({ currentTarget: mockDoc.getElementById("headerDataPanel") });
-        const headerTooltipEl = mockDoc.getElementById("dataPanelTooltipHuge");
-        assert("ヘッダー産出パネルホバー時に dataPanelTooltipHuge が生成されること", !!headerTooltipEl);
+        // ヘッダー産出パネルのホバー表示検問 (TooltipSystem統合)
+        const headerDataPanelEl = mockDoc.getElementById("headerDataPanel");
+        assert("ヘッダーデータパネルに data-tooltip='DATA_PANEL_BREAKDOWN' が設定されていること", !!headerDataPanelEl && headerDataPanelEl.getAttribute("data-tooltip") === "DATA_PANEL_BREAKDOWN");
+        
+        ui.showDataPanelTooltip({ currentTarget: headerDataPanelEl });
+        const headerTooltipEl = mockDoc.getElementById("globalTooltip") || mockDoc.getElementById("dataPanelTooltipHuge");
+        assert("ヘッダー産出パネルホバー時にツールチップ要素が存在すること", !!headerTooltipEl);
         assert("ヘッダー産出パネルホバー時に display が block になること", !!headerTooltipEl && headerTooltipEl.style.display === "block");
-        assert("ヘッダー産出パネルホバー時に食料・資材・防衛・神秘の内訳が含まれること", !!headerTooltipEl && headerTooltipEl.innerHTML.includes("食料") || headerTooltipEl.innerHTML.includes("Food"));
+        assert("ヘッダー産出パネルホバー時に食料・資材・防衛・神秘の内訳が含まれること", !!headerTooltipEl && (headerTooltipEl.innerHTML.includes("食料") || headerTooltipEl.innerHTML.includes("Food")));
 
         ui.hideDataPanelTooltip();
         assert("hideDataPanelTooltip 実行後に display が none になること", !!headerTooltipEl && headerTooltipEl.style.display === "none");

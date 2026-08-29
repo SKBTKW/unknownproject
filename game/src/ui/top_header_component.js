@@ -20,24 +20,10 @@ export class TopHeaderComponent {
     }
 
     /**
-     * 📊 ヘッダー産出パネルのマウスオーバー・ホバーイベントを確実にバインド
+     * 📊 ヘッダー各種イベントの初期化 (TooltipSystemへの一本化により個別リスナー不要)
      */
     initHeaderEvents() {
-        if (typeof document === "undefined") return;
-        const dataPanelEl = document.getElementById("headerDataPanel");
-        if (dataPanelEl && !dataPanelEl._hasHoverBound) {
-            dataPanelEl._hasHoverBound = true;
-            dataPanelEl.addEventListener("mouseenter", (e) => {
-                if (this.ui && typeof this.ui.showDataPanelTooltip === "function") {
-                    this.ui.showDataPanelTooltip(e);
-                }
-            });
-            dataPanelEl.addEventListener("mouseleave", () => {
-                if (this.ui && typeof this.ui.hideDataPanelTooltip === "function") {
-                    this.ui.hideDataPanelTooltip();
-                }
-            });
-        }
+        // TooltipSystem が data-tooltip="DATA_PANEL_BREAKDOWN" を自動委譲処理
     }
 
     get state() {

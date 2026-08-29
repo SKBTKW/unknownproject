@@ -56,8 +56,11 @@ export class BoardGridComponent {
         boardEl.style.gridTemplateRows = `${headerSize} repeat(${size}, ${cellSize}) ${headerSize}`;
         boardEl.style.setProperty('--board-size', size);
         boardEl.style.setProperty('--cell-size', cellSize);
-        boardEl.style.setProperty('--header-size', headerSize);
-        boardEl.setAttribute("data-tile-style", this.getTileTextStyle());
+        const currentTileStyle = this.getTileTextStyle();
+        boardEl.setAttribute("data-tile-style", currentTileStyle);
+        if (typeof document !== "undefined" && document.body) {
+            document.body.setAttribute("data-tile-style", currentTileStyle);
+        }
 
         // 🌊 開花した湖・オアシスの座標リストを事前収集 (周囲8マスのティール水脈エフェクト用)
         const lakeCoords = [];

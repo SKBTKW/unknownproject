@@ -105,12 +105,6 @@ class UIController {
                 }
             };
             window.render = () => this.render();
-
-            const dataPanelEl = document.getElementById("headerDataPanel");
-            if (dataPanelEl) {
-                dataPanelEl.addEventListener("mouseenter", (e) => this.showDataPanelTooltip(e));
-                dataPanelEl.addEventListener("mouseleave", () => this.hideDataPanelTooltip());
-            }
         }
     }
 
@@ -122,6 +116,8 @@ class UIController {
         this.initStaticI18nLabels();
         this.initGlobalCancelListeners();
         if (tooltipSystemInstance) {
+            tooltipSystemInstance.state = this.state;
+            tooltipSystemInstance.stateProvider = () => this.state;
             tooltipSystemInstance.init(I18n);
         }
         if (this.drawSys && (!this.state.handOffering || this.state.handOffering.length === 0)) {
@@ -1354,127 +1350,22 @@ class UIController {
         this.toggleTileTextStyle(e);
     }
 
+    /**
+     * 📊 ヘッダーデータパネルのホバー表示 (TooltipSystemへの統一委譲・Single Source of Truth)
+     */
     showDataPanelTooltip(e) {
-        if (typeof document === "undefined") return;
-        let tt = document.getElementById("dataPanelTooltipHuge");
-        if (!tt) {
-            tt = document.createElement("div");
-            tt.id = "dataPanelTooltipHuge";
-            tt.className = "large-directive-tooltip";
-            document.body.appendChild(tt);
-        }
-        const state = this.state;
-        if (!state) return;
-
-        const bd = (typeof state.getResourceBreakdown === "function") ? state.getResourceBreakdown() : null;
-        const grossFood = bd ? (bd.food.gross !== undefined ? bd.food.gross : bd.food.total) : 10;
-        const foodCost = bd ? (bd.food.foodCost !== undefined ? bd.food.foodCost : 20) : 20;
-        const netFood = bd ? (bd.food.net !== undefined ? bd.food.net : (grossFood - foodCost)) : -10;
-        const netFoodSign = netFood > 0 ? `+${netFood}` : `${netFood}`;
-        const netFoodColor = netFood < 0 ? "#ff6b6b" : "#2ecc71";
-
-        const foodTiles = bd ? bd.food.tiles : 0;
-        const foodSockets = bd ? bd.food.sockets : 0;
-        const foodVicinity = bd ? bd.food.vicinity : 0;
-        const emberPct = bd ? (bd.food.emberPct || 0) : 20;
-
-        const woodTotal = bd ? bd.wood.total : 12;
-        const woodTiles = bd ? bd.wood.tiles : 0;
-        const woodSockets = bd ? bd.wood.sockets : 0;
-        const woodVicinity = bd ? bd.wood.vicinity : 0;
-
-        const defTotal = bd ? bd.defense.total : 10;
-        const defTiles = bd ? bd.defense.tiles : 0;
-        const defSockets = bd ? bd.defense.sockets : 0;
-
-        const mysticTotal = bd ? bd.mystic.total : 3;
-        const mysticTiles = bd ? bd.mystic.tiles : 0;
-        const mysticSockets = bd ? bd.mystic.sockets : 0;
-        const emberMystic = bd ? (bd.mystic.emberMystic || 0) : 2;
-
-        const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
-        const emberStr = emberPct > 0 ? (I18n ? I18n.t("UI_EMBER_BLESSING_TAG", { pct: emberPct }) : ` | 🔥残り火加護: +${emberPct}%`) : "";
-        const netTag = I18n ? I18n.t("UI_NET_BALANCE_TAG") : "(純収支)";
-        const defTrialTag = I18n ? I18n.t("UI_DEFENSE_TRIAL_TAG") : "(試練対策)";
-        const grossLabel = I18n ? I18n.t("UI_GROSS_YIELD_LABEL") : "総産出:";
-        const hqBaseLabel = I18n ? I18n.t("UI_HQ_BASE_LABEL") : "本営基礎:";
-        const tilesLabel = I18n ? I18n.t("UI_TILES_LABEL") : "土地配置:";
-        const socketsLabel = I18n ? I18n.t("UI_SOCKETS_LABEL") : "ソケット:";
-        const vicinityLabel = I18n ? I18n.t("UI_VICINITY_LABEL") : "本営近郊:";
-        const emberAutoLabel = I18n ? I18n.t("UI_EMBER_AUTO_GRANT") : "残り火自動付与:";
-        const foodMaintLabel = I18n ? I18n.t("UI_EMBER_ROW_FOOD_MAINT") : "🌾 食料維持費:";
-        const modalTitle = I18n ? I18n.t("UI_BREAKDOWN_MODAL_TITLE") : "📊 毎ターンの産出詳細内訳";
-
-        tt.innerHTML = `
-            <div style="font-size:17px; font-weight:900; color:#1abc9c; margin-bottom:10px; border-bottom:2px solid #2a2e3d; padding-bottom:6px; display:flex; align-items:center; gap:8px;">
-                <span>📊</span> ${modalTitle}
-            </div>
-
-            <!-- 🌾 食料 -->
-            <div style="background:rgba(24, 34, 50, 0.75); border:1px solid #2c3e50; border-radius:8px; padding:10px 12px; margin-bottom:8px;">
-                <div style="font-size:14px; font-weight:900; color:#ffffff; display:flex; justify-content:space-between; margin-bottom:4px;">
-                    <span>${I18n ? I18n.t("UI_FOOD") : "🌾 食料"} (${state.food})</span>
-                    <span style="color:${netFoodColor}; font-size:16px;">${netFoodSign} /T ${netTag}</span>
-                </div>
-                <div style="font-size:12px; color:#a4b0be; line-height:1.4;">
-                    ${grossLabel} +${grossFood} (${hqBaseLabel} +10 | ${tilesLabel} +${foodTiles} | ★${socketsLabel} +${foodSockets} | ${vicinityLabel} +${foodVicinity}${emberStr})<br>
-                    <span style="color:#ff9f43; font-weight:bold;">🔥 ${foodMaintLabel} -${foodCost} / T</span>
-                </div>
-            </div>
-
-            <!-- 🧱 資材 -->
-            <div style="background:rgba(24, 34, 50, 0.75); border:1px solid #2c3e50; border-radius:8px; padding:10px 12px; margin-bottom:8px;">
-                <div style="font-size:14px; font-weight:900; color:#ffffff; display:flex; justify-content:space-between; margin-bottom:4px;">
-                    <span>${I18n ? I18n.t("UI_WOOD") : "🧱 資材"} (${state.wood})</span>
-                    <span style="color:#2ecc71; font-size:16px;">+${woodTotal} /T</span>
-                </div>
-                <div style="font-size:12px; color:#a4b0be; line-height:1.4;">
-                    ${hqBaseLabel} +10 | ${tilesLabel} +${woodTiles} | ${socketsLabel} +${woodSockets} | ${vicinityLabel} +${woodVicinity}${emberStr}
-                </div>
-            </div>
-
-            <!-- 🛡️ 防衛 -->
-            <div style="background:rgba(24, 34, 50, 0.75); border:1px solid #2c3e50; border-radius:8px; padding:10px 12px; margin-bottom:8px;">
-                <div style="font-size:14px; font-weight:900; color:#ffffff; display:flex; justify-content:space-between; margin-bottom:4px;">
-                    <span>${I18n ? I18n.t("UI_DEFENSE") : "🛡️ 防衛力"} ${defTrialTag}</span>
-                    <span style="color:#ffffff; font-size:16px;">${defTotal}</span>
-                </div>
-                <div style="font-size:12px; color:#a4b0be; line-height:1.4;">
-                    ${hqBaseLabel} 10 | ${tilesLabel} +${defTiles} | ${socketsLabel} +${defSockets}
-                </div>
-            </div>
-
-            <!-- ✨ 神秘 -->
-            <div style="background:rgba(24, 34, 50, 0.75); border:1px solid #2c3e50; border-radius:8px; padding:10px 12px;">
-                <div style="font-size:14px; font-weight:900; color:#ffffff; display:flex; justify-content:space-between; margin-bottom:4px;">
-                    <span>${I18n ? I18n.t("UI_MYSTIC") : "✨ 神秘"} (${state.mystic})</span>
-                    <span style="color:#2ecc71; font-size:16px;">+${mysticTotal} /T</span>
-                </div>
-                <div style="font-size:12px; color:#a4b0be; line-height:1.4;">
-                    ${hqBaseLabel} +1 | ${tilesLabel} +${mysticTiles} | ${socketsLabel} +${mysticSockets} | ${emberAutoLabel} +${emberMystic}${emberStr}
-                </div>
-            </div>
-        `;
-
         const targetEl = (e && e.currentTarget) ? e.currentTarget : (document.getElementById("headerDataPanel") || document.querySelector(".header-resource-data-panel"));
-        let rect = targetEl ? targetEl.getBoundingClientRect() : null;
-        if (!rect || (rect.top === 0 && rect.bottom === 0)) {
-            rect = { top: 10, bottom: 74, right: (typeof window !== "undefined" ? window.innerWidth - 16 : 1900), left: 100 };
+        if (targetEl && tooltipSystemInstance) {
+            tooltipSystemInstance.state = this.state;
+            tooltipSystemInstance.stateProvider = () => this.state;
+            tooltipSystemInstance.show(targetEl, e);
         }
-        const winWidth = (typeof window !== "undefined") ? window.innerWidth : 1920;
-
-        tt.style.position = "fixed";
-        tt.style.top = `${Math.max(10, rect.bottom + 8)}px`;
-        tt.style.left = "auto";
-        tt.style.right = `${Math.max(16, winWidth - (rect.right || winWidth - 16))}px`;
-        tt.style.display = "block";
-        tt.style.zIndex = "100000";
     }
 
     hideDataPanelTooltip() {
-        if (typeof document === "undefined") return;
-        const tt = document.getElementById("dataPanelTooltipHuge");
-        if (tt) tt.style.display = "none";
+        if (tooltipSystemInstance) {
+            tooltipSystemInstance.hide();
+        }
     }
 
     /**

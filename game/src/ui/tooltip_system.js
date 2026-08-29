@@ -140,12 +140,23 @@ export class TooltipSystem {
 
         const titleKeyOrText = target.getAttribute("data-tooltip-title");
 
+        let isDataPanelBreakdown = (tooltipKeyOrText === "DATA_PANEL_BREAKDOWN");
+
         // 🌐 多言語解決
         let descText = tooltipKeyOrText;
-        if (this.I18n && typeof this.I18n.t === "function") {
-            const translated = this.I18n.t(tooltipKeyOrText);
-            if (translated && translated !== tooltipKeyOrText) {
-                descText = translated;
+        if (isDataPanelBreakdown) {
+            const state = (this.stateProvider && typeof this.stateProvider === 'function') 
+                ? this.stateProvider() 
+                : (this.state || (typeof window !== 'undefined' && window.ui ? window.ui.state : null) || (typeof window !== 'undefined' && window.gameEngine ? window.gameEngine.state : null));
+            descText = this.renderDataPanelBreakdown(state);
+            this.tooltipEl.classList.add("tooltip-data-panel-breakdown");
+        } else {
+            this.tooltipEl.classList.remove("tooltip-data-panel-breakdown");
+            if (this.I18n && typeof this.I18n.t === "function") {
+                const translated = this.I18n.t(tooltipKeyOrText);
+                if (translated && translated !== tooltipKeyOrText) {
+                    descText = translated;
+                }
             }
         }
 
@@ -169,7 +180,15 @@ export class TooltipSystem {
         this.tooltipEl.style.display = "block";
         this.tooltipEl.classList.add("visible");
 
-        if (e) {
+        if (isDataPanelBreakdown) {
+            // 📊 ヘッダーデータパネル直下に右揃えでエレガントに吸着
+            const rect = target.getBoundingClientRect();
+            const ttWidth = this.tooltipEl.offsetWidth || 400;
+            const winWidth = (typeof window !== "undefined") ? window.innerWidth : 1920;
+            const targetX = Math.max(16, Math.min(winWidth - ttWidth - 16, rect.right - ttWidth));
+            const targetY = rect.bottom + 10;
+            this.tooltipEl.style.transform = `translate3d(${targetX}px, ${targetY}px, 0)`;
+        } else if (e) {
             this._updatePosition(e.clientX, e.clientY);
         }
     }
@@ -233,6 +252,102 @@ export class TooltipSystem {
         this.currentTarget = null;
         this.tooltipEl.style.display = "none";
         this.tooltipEl.classList.remove("visible");
+        this.tooltipEl.classList.remove("tooltip-data-panel-breakdown");
+    }
+
+    /**
+     * 📊 ヘッダー各種データパネル（食料・資材・防衛・神秘）のリアルタイム詳細内訳HTMLを生成
+     * @param {Object} state 
+     * @returns {string}
+     */
+    renderDataPanelBreakdown(state) {
+        if (!state) return "";
+        const bd = (typeof state.getResourceBreakdown === "function") ? state.getResourceBreakdown() : null;
+        const grossFood = bd ? (bd.food.gross !== undefined ? bd.food.gross : bd.food.total) : 10;
+        const foodCost = bd ? (bd.food.foodCost !== undefined ? bd.food.foodCost : 20) : 20;
+        const netFood = bd ? (bd.food.net !== undefined ? bd.food.net : (grossFood - foodCost)) : -10;
+        const netFoodSign = netFood > 0 ? `+${netFood}` : `${netFood}`;
+        const netFoodColor = netFood < 0 ? "#ff6b6b" : "#2ecc71";
+
+        const foodTiles = bd ? bd.food.tiles : 0;
+        const foodSockets = bd ? bd.food.sockets : 0;
+        const foodVicinity = bd ? bd.food.vicinity : 0;
+        const emberPct = bd ? (bd.food.emberPct || 0) : 20;
+
+        const woodTotal = bd ? bd.wood.total : 12;
+        const woodTiles = bd ? bd.wood.tiles : 0;
+        const woodSockets = bd ? bd.wood.sockets : 0;
+        const woodVicinity = bd ? bd.wood.vicinity : 0;
+
+        const defTotal = bd ? bd.defense.total : 10;
+        const defTiles = bd ? bd.defense.tiles : 0;
+        const defSockets = bd ? bd.defense.sockets : 0;
+
+        const mysticTotal = bd ? bd.mystic.total : 3;
+        const mysticTiles = bd ? bd.mystic.tiles : 0;
+        const mysticSockets = bd ? bd.mystic.sockets : 0;
+        const emberMystic = bd ? (bd.mystic.emberMystic || 0) : 2;
+
+        const I18n = this.I18n || ((typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k }));
+        const emberStr = emberPct > 0 ? (I18n ? I18n.t("UI_EMBER_BLESSING_TAG", { pct: emberPct }) : ` | 🔥残り火加護: +${emberPct}%`) : "";
+        const netTag = I18n ? I18n.t("UI_NET_BALANCE_TAG") : "(純収支)";
+        const defTrialTag = I18n ? I18n.t("UI_DEFENSE_TRIAL_TAG") : "(試練対策)";
+        const grossLabel = I18n ? I18n.t("UI_GROSS_YIELD_LABEL") : "総産出:";
+        const hqBaseLabel = I18n ? I18n.t("UI_HQ_BASE_LABEL") : "本営基礎:";
+        const tilesLabel = I18n ? I18n.t("UI_TILES_LABEL") : "土地配置:";
+        const socketsLabel = I18n ? I18n.t("UI_SOCKETS_LABEL") : "ソケット:";
+        const vicinityLabel = I18n ? I18n.t("UI_VICINITY_LABEL") : "本営近郊:";
+        const emberAutoLabel = I18n ? I18n.t("UI_EMBER_AUTO_GRANT") : "残り火自動付与:";
+        const foodMaintLabel = I18n ? I18n.t("UI_EMBER_ROW_FOOD_MAINT") : "🌾 食料維持費:";
+
+        return `
+            <div style="display:flex; flex-direction:column; gap:8px; width:100%; min-width:340px; max-width:440px;">
+                <!-- 🌾 食料 -->
+                <div style="background:rgba(24, 34, 50, 0.75); border:1px solid #2c3e50; border-radius:8px; padding:8px 10px;">
+                    <div style="font-size:13px; font-weight:900; color:#ffffff; display:flex; justify-content:space-between; margin-bottom:3px;">
+                        <span>${I18n ? I18n.t("UI_FOOD") : "🌾 食料"} (${state.food})</span>
+                        <span style="color:${netFoodColor}; font-size:15px;">${netFoodSign} /T ${netTag}</span>
+                    </div>
+                    <div style="font-size:11.5px; color:#a4b0be; line-height:1.4;">
+                        ${grossLabel} +${grossFood} (${hqBaseLabel} +10 | ${tilesLabel} +${foodTiles} | ★${socketsLabel} +${foodSockets} | ${vicinityLabel} +${foodVicinity}${emberStr})<br>
+                        <span style="color:#ff9f43; font-weight:bold;">🔥 ${foodMaintLabel} -${foodCost} / T</span>
+                    </div>
+                </div>
+
+                <!-- 🧱 資材 -->
+                <div style="background:rgba(24, 34, 50, 0.75); border:1px solid #2c3e50; border-radius:8px; padding:8px 10px;">
+                    <div style="font-size:13px; font-weight:900; color:#ffffff; display:flex; justify-content:space-between; margin-bottom:3px;">
+                        <span>${I18n ? I18n.t("UI_WOOD") : "🧱 資材"} (${state.wood})</span>
+                        <span style="color:#2ecc71; font-size:15px;">+${woodTotal} /T</span>
+                    </div>
+                    <div style="font-size:11.5px; color:#a4b0be; line-height:1.4;">
+                        ${hqBaseLabel} +10 | ${tilesLabel} +${woodTiles} | ${socketsLabel} +${woodSockets} | ${vicinityLabel} +${woodVicinity}${emberStr}
+                    </div>
+                </div>
+
+                <!-- 🛡️ 防衛 -->
+                <div style="background:rgba(24, 34, 50, 0.75); border:1px solid #2c3e50; border-radius:8px; padding:8px 10px;">
+                    <div style="font-size:13px; font-weight:900; color:#ffffff; display:flex; justify-content:space-between; margin-bottom:3px;">
+                        <span>${I18n ? I18n.t("UI_DEFENSE") : "🛡️ 防衛力"} ${defTrialTag}</span>
+                        <span style="color:#ffffff; font-size:15px;">${defTotal}</span>
+                    </div>
+                    <div style="font-size:11.5px; color:#a4b0be; line-height:1.4;">
+                        ${hqBaseLabel} 10 | ${tilesLabel} +${defTiles} | ${socketsLabel} +${defSockets}
+                    </div>
+                </div>
+
+                <!-- ✨ 神秘 -->
+                <div style="background:rgba(24, 34, 50, 0.75); border:1px solid #2c3e50; border-radius:8px; padding:8px 10px;">
+                    <div style="font-size:13px; font-weight:900; color:#ffffff; display:flex; justify-content:space-between; margin-bottom:3px;">
+                        <span>${I18n ? I18n.t("UI_MYSTIC") : "✨ 神秘"} (${state.mystic})</span>
+                        <span style="color:#2ecc71; font-size:15px;">+${mysticTotal} /T</span>
+                    </div>
+                    <div style="font-size:11.5px; color:#a4b0be; line-height:1.4;">
+                        ${hqBaseLabel} +1 | ${tilesLabel} +${mysticTiles} | ${socketsLabel} +${mysticSockets} | ${emberAutoLabel} +${emberMystic}${emberStr}
+                    </div>
+                </div>
+            </div>
+        `;
     }
 }
 
