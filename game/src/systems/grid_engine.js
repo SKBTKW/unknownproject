@@ -612,7 +612,11 @@ class GridEngine {
 
         const placementCost = this.getPlacementEmberCost();
         if (placementCost > 0) {
-            this.state.ember = Math.max(0, this.state.ember - placementCost);
+            if (this.state.emberSystem && typeof this.state.emberSystem.consume === 'function') {
+                this.state.emberSystem.consume(placementCost);
+            } else {
+                this.state.ember = Math.max(0, this.state.ember - placementCost);
+            }
         }
         this.state.placedBlockCount = (this.state.placedBlockCount || 0) + 1;
         this.state.hasPickedThisTurn = true;
@@ -902,7 +906,13 @@ class GridEngine {
                         this.state.food += bonusFood;
                         this.state.wood += bonusWood;
                         this.state.mystic += bonusMystic;
-                        this.state.ember += bonusEmber; // 🔥 2x2 マージ成立ボーナス (キャップなし加算)
+                        if (this.state.emberSystem && typeof this.state.emberSystem.addBonus === 'function') {
+                            this.state.emberSystem.addBonus(bonusEmber);
+                        } else if (this.state.emberSystem && typeof this.state.emberSystem.recoverInstant === 'function') {
+                            this.state.emberSystem.recoverInstant(bonusEmber, true);
+                        } else {
+                            this.state.ember += bonusEmber;
+                        }
 
                         let textParts = [];
                         if (bonusFood > 0) textParts.push(`🌾+${bonusFood}`);
@@ -987,7 +997,13 @@ class GridEngine {
                             // 即時ボーナス: 🌾+4, 🧱+6, 🔥+1
                             this.state.food += 4;
                             this.state.wood += 6;
-                            this.state.ember += 1;
+                            if (this.state.emberSystem && typeof this.state.emberSystem.addBonus === 'function') {
+                                this.state.emberSystem.addBonus(1);
+                            } else if (this.state.emberSystem && typeof this.state.emberSystem.recoverInstant === 'function') {
+                                this.state.emberSystem.recoverInstant(1, true);
+                            } else {
+                                this.state.ember += 1;
+                            }
 
                             const bText = "🌾+4 🧱+6 🔥+1";
                             const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
@@ -1065,7 +1081,13 @@ class GridEngine {
                             // 即時ボーナス: 🧱+8, ✨+4, 🔥+1
                             this.state.wood += 8;
                             this.state.mystic += 4;
-                            this.state.ember += 1;
+                            if (this.state.emberSystem && typeof this.state.emberSystem.addBonus === 'function') {
+                                this.state.emberSystem.addBonus(1);
+                            } else if (this.state.emberSystem && typeof this.state.emberSystem.recoverInstant === 'function') {
+                                this.state.emberSystem.recoverInstant(1, true);
+                            } else {
+                                this.state.ember += 1;
+                            }
 
                             const bText = "🧱+8 ✨+4 🔥+1";
                             const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });

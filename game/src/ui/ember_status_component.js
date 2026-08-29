@@ -63,6 +63,10 @@ export class EmberStatusComponent {
      * @returns {Object} 詳細なステータス構造体
      */
     static calculateStatus(state) {
+        if (state && state.emberSystem && typeof state.emberSystem.calculateTurnBalance === 'function') {
+            return state.emberSystem.calculateTurnBalance();
+        }
+
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
 
         if (!state) {

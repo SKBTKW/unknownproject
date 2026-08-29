@@ -369,7 +369,9 @@ class GameState {
 
             // 1. 🔥 残り火ステッピングに基づく毎ターンの 🌾 食料維持費
             let foodCost = 20;
-            if (this.ember >= 24) {
+            if (this.emberSystem && typeof this.emberSystem.getFoodMaintenanceCost === 'function') {
+                foodCost = this.emberSystem.getFoodMaintenanceCost();
+            } else if (this.ember >= 24) {
                 foodCost = 25; // 🔥 旺盛状態 (維持費増)
             } else if (this.ember <= 9) {
                 foodCost = 15; // 🔥 微火・危機 (省エネ復興)
@@ -395,7 +397,11 @@ class GameState {
             // 2. ⚠️ 食料不足ペナルティ (生命力 🔥 -2 ダメージ)
             if (this.food < 0) {
                 this.food = 0;
-                this.ember -= 2;
+                if (this.emberSystem && typeof this.emberSystem.applyDamage === 'function') {
+                    this.emberSystem.applyDamage(2);
+                } else {
+                    this.ember -= 2;
+                }
                 this.addLog(I18n ? I18n.t("LOG_FOOD_DEFICIT_PENALTY", { ember: this.ember }) : `⚠️ -2`);
             }
 
@@ -421,7 +427,15 @@ class GameState {
                 this.emberConsumptionReducedTurns -= 1;
             }
 
-            this.ember += emberDelta;
+            if (this.emberSystem && typeof this.emberSystem.getPassiveRegenTotal === 'function') {
+                emberDelta += this.emberSystem.getPassiveRegenTotal();
+            }
+
+            if (this.emberSystem) {
+                this.ember = Math.min(this.emberSystem.max, Math.max(0, this.ember + emberDelta));
+            } else {
+                this.ember += emberDelta;
+            }
 
             // 4. 📥 保留スロット維持費 (🔥-1/T, 免除ターン考慮)
             const hasReservedCard = this.reserveSlots && this.reserveSlots.some(s => s !== null && !s.isBlank);

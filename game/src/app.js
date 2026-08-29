@@ -35,6 +35,7 @@ import { EffectResolver } from './core/effect_resolver.js';
 import { ChronicleSystem, CHRONICLE_IMPORTANCE } from './systems/chronicle_system.js';
 import { GlobalEventManager, GlobalEventDirector, GlobalEventSelector } from './systems/global_event_system.js';
 import { GLOBAL_EVENTS_MASTER } from './data/global_events.js';
+import { EmberSystem } from './systems/ember_system.js';
 
 export {
     I18n,
@@ -84,7 +85,8 @@ export {
     GlobalEventManager,
     GlobalEventDirector,
     GlobalEventSelector,
-    GLOBAL_EVENTS_MASTER
+    GLOBAL_EVENTS_MASTER,
+    EmberSystem
 };
 
 console.log('🎮 [App] Clean True ES Modules Master Entrypoint Loaded Successfully.');

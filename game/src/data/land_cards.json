@@ -1,5 +1,30 @@
 [
   {
+    "id": "CARD_WETLAND_1X1",
+    "terrainId": "E0_WETLAND",
+    "nameKey": "TERRAIN_WETLAND",
+    "category": "LAND",
+    "gl": 1,
+    "e": 0,
+    "yields": {
+      "food": 2,
+      "wood": 0,
+      "defense": 1,
+      "mystic": 0,
+      "material": 0
+    },
+    "shape": [
+      [
+        1
+      ]
+    ],
+    "minStage": 1,
+    "reqE2": 0,
+    "rarity": "C",
+    "weight": 0.2,
+    "descriptionKey": "CARD_DESC_WETLAND_1X1"
+  },
+  {
     "id": "CARD_PLAINS_1X1",
     "terrainId": "GL1_PLAINS",
     "nameKey": "TERRAIN_PLAINS",

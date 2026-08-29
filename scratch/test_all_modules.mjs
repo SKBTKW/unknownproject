@@ -23,7 +23,8 @@ import {
     EffectResolver,
     ChronicleSystem,
     GlobalEventManager,
-    GLOBAL_EVENTS_MASTER
+    GLOBAL_EVENTS_MASTER,
+    EmberSystem
 } from '../game/src/app.js';
 
 console.log('====================================================');
@@ -986,6 +987,58 @@ assert(yDeepHills.food === 1 && yDeepHills.material === 5 && yDeepHills.defense 
 
 const yMountain = TerrainParameterEngine.getYields(3, 0);
 assert(yMountain.food === 0 && yMountain.material === 3 && yMountain.defense === 5 && yMountain.mystic === 1, 'E3 山岳の産出が [0, 3, 5, 1] であること');
+
+// --- 11. EmberSystem 残り火統合モジュール ＆ 3大パラダイム検証 ---
+console.log('\n🔥 [11/11] EmberSystem 3大パラダイム (即時回復・恒常回復・最大値上昇) 検証');
+const eSysEngine = new GameEngine();
+assert(eSysEngine.emberSystem !== null && eSysEngine.emberSystem !== undefined, 'GameEngine に emberSystem が DI 注入されていること');
+assert(eSysEngine.state.emberSystem === eSysEngine.emberSystem, 'state.emberSystem が engine.emberSystem と双方向リンクしていること');
+assert(eSysEngine.emberSystem.current === 20, '初期残り火が 20 であること');
+assert(eSysEngine.emberSystem.max === 20, '初期最大上限値が 20 であること');
+
+// ① コスト消費 ＆ 即時回復 (recoverInstant) 上限クランプ検証
+eSysEngine.emberSystem.consume(5);
+assert(eSysEngine.emberSystem.current === 15, 'consume(5) で残り火が 15 になること');
+assert(eSysEngine.state.ember === 15, 'state.ember も 15 に同期されること');
+
+const healed1 = eSysEngine.emberSystem.recoverInstant(3);
+assert(healed1 === 3 && eSysEngine.emberSystem.current === 18, 'recoverInstant(3) で 18 に回復し、戻り値が 3 であること');
+
+const healed2 = eSysEngine.emberSystem.recoverInstant(5);
+assert(healed2 === 2 && eSysEngine.emberSystem.current === 20, '上限 20 を超える回復はクランプされ、実回復量 2 が返ること');
+
+// ② 恒常回復 (registerPassiveRegen) 検証
+eSysEngine.emberSystem.registerPassiveRegen('SANCTUARY', 2);
+eSysEngine.emberSystem.registerPassiveRegen('RELIC', 1);
+assert(eSysEngine.emberSystem.getPassiveRegenTotal() === 3, '恒常回復の合算値が +3 であること');
+eSysEngine.emberSystem.unregisterPassiveRegen('RELIC');
+assert(eSysEngine.emberSystem.getPassiveRegenTotal() === 2, '解除後に恒常回復合算値が +2 になること');
+
+// ③ 最大値上昇 (expandMaxCapacity) 検証
+const newMax = eSysEngine.emberSystem.expandMaxCapacity(5);
+assert(newMax === 25 && eSysEngine.emberSystem.max === 25, 'expandMaxCapacity(5) で最大上限が 25 に拡張されること');
+assert(eSysEngine.state.maxEmber === 25, 'state.maxEmber も 25 に同期されること');
+
+const healedOver = eSysEngine.emberSystem.recoverInstant(10);
+assert(healedOver === 5 && eSysEngine.emberSystem.current === 25, '拡張された上限 25 まで即時回復できること');
+
+// 📊 ステータス判定 ＆ 食料維持費ステッピング検証
+assert(eSysEngine.emberSystem.getStatus() === 'PROSPEROUS', '25 でステータスが PROSPEROUS (旺盛) であること');
+assert(eSysEngine.emberSystem.getFoodMaintenanceCost() === 25, 'PROSPEROUS で食料維持費が 25 であること');
+
+eSysEngine.emberSystem.current = 15;
+assert(eSysEngine.emberSystem.getStatus() === 'STANDARD', '15 でステータスが STANDARD (標準) であること');
+assert(eSysEngine.emberSystem.getFoodMaintenanceCost() === 20, 'STANDARD で食料維持費が 20 であること');
+
+eSysEngine.emberSystem.current = 8;
+assert(eSysEngine.emberSystem.getStatus() === 'CRISIS', '8 でステータスが CRISIS (危機) であること');
+assert(eSysEngine.emberSystem.getFoodMaintenanceCost() === 15, 'CRISIS で食料維持費が 15 に減圧されること');
+
+// 🧮 calculateTurnBalance 検証
+const balance = eSysEngine.emberSystem.calculateTurnBalance();
+assert(balance.ember === 8 && balance.maxEmber === 25, 'calculateTurnBalance で現在値と最大値が正しく返ること');
+assert(balance.statusLevel === 'CRISIS', 'calculateTurnBalance でステータスレベルが正しく返ること');
+assert(balance.foodCost === 15, 'calculateTurnBalance で食料維持費が正しく返ること');
 
 console.log('\n====================================================');
 console.log(`🎉 全テスト完了: ${passedTests} / ${totalTests} 件 合格 (100% PASS)`);

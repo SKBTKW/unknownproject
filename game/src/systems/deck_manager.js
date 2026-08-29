@@ -4,6 +4,54 @@ import { DIRECTIVES } from './directive_system.js';
 import { LAND_CARDS_MASTER } from '../data/land_cards_data.js';
 import { ConditionEvaluator } from '../core/condition_evaluator.js';
 
+const COMMAND_CARDS_MASTER = [
+    // 📜 経済・政策カード
+    { id: "CMD_CONSERVE_EMBER", category: "COMMAND", nameKey: "CMD_CONSERVE_EMBER_NAME", descriptionKey: "CMD_CONSERVE_EMBER_DESC", cost: {}, maxEmber: 18, minStage: 1, rarity: "C", weight: 0.40 },
+    { id: "CMD_RATIONING", category: "COMMAND", nameKey: "CMD_RATIONING_NAME", descriptionKey: "CMD_RATIONING_DESC", cost: {}, maxFood: 40, minStage: 1, rarity: "C", weight: 0.40 },
+    { id: "CMD_SINGLE_CLEARING", category: "COMMAND", nameKey: "CMD_SINGLE_CLEARING_NAME", descriptionKey: "CMD_SINGLE_CLEARING_DESC", cost: { ember: 1 }, reqForestOrHillForest: 1, minStage: 1, rarity: "C", weight: 0.35 },
+    { id: "CMD_WETLAND_RECLAMATION", category: "COMMAND", nameKey: "CMD_WETLAND_RECLAMATION_NAME", descriptionKey: "CMD_WETLAND_RECLAMATION_DESC", cost: { wood: 15, ember: 1 }, reqWetland: 1, reqWood: 15, minStage: 1, rarity: "UC", weight: 0.25 },
+    { id: "CMD_SYSTEMATIC_LOGGING", category: "COMMAND", nameKey: "CMD_SYSTEMATIC_LOGGING_NAME", descriptionKey: "CMD_SYSTEMATIC_LOGGING_DESC", cost: { food: 10 }, reqForestOrHillForest: 2, minStage: 2, rarity: "UC", weight: 0.25 },
+    { id: "CMD_AGRICULTURAL_POLICY", category: "ECONOMY", nameKey: "CMD_AGRICULTURAL_POLICY_NAME", descriptionKey: "CMD_AGRICULTURAL_POLICY_DESC", cost: { wood: 20 }, reqPlains: 1, reqWood: 20, isUnique: true, minStage: 1, rarity: "R", weight: 0.20 },
+    { id: "CMD_LAND_FOCUS", category: "ECONOMY", nameKey: "CMD_LAND_FOCUS_NAME", descriptionKey: "CMD_LAND_FOCUS_DESC", cost: { food: 10, wood: 10 }, maxPlacedBlocks: 5, minStage: 1, rarity: "C", weight: 0.40 },
+    { id: "CMD_EMERGENCY_LEVY", category: "COMMAND", nameKey: "CMD_EMERGENCY_LEVY_NAME", descriptionKey: "CMD_EMERGENCY_LEVY_DESC", cost: { food: 20 }, reqTrialWithin: 6, reqFood: 20, minStage: 1, rarity: "C", weight: 0.35 },
+    { id: "CMD_PASTORAL_EXPANSION", category: "COMMAND", nameKey: "CMD_PASTORAL_EXPANSION_NAME", descriptionKey: "CMD_PASTORAL_EXPANSION_DESC", cost: { wood: 10 }, reqDiscoveredResourceTag: "LIVESTOCK", minStage: 1, rarity: "C", weight: 0.35 },
+    { id: "CMD_ABANDONED_SETTLEMENT", category: "COMMAND", nameKey: "CMD_ABANDONED_SETTLEMENT_NAME", descriptionKey: "CMD_ABANDONED_SETTLEMENT_DESC", cost: { ember: 1 }, reqEmptyCells: 8, minStage: 1, rarity: "UC", weight: 0.25 },
+    { id: "CMD_BLACK_MARKET", category: "ECONOMY", nameKey: "CMD_BLACK_MARKET_NAME", descriptionKey: "CMD_BLACK_MARKET_DESC", cost: { food: 25 }, reqFood: 25, isUnique: true, minStage: 2, rarity: "R", weight: 0.20 },
+    { id: "CMD_GRAND_CULTIVATION", category: "COMMAND", nameKey: "CMD_GRAND_CULTIVATION_NAME", descriptionKey: "CMD_GRAND_CULTIVATION_DESC", cost: { wood: 35 }, reqConnectedPlains: 8, minStage: 2, rarity: "UC", weight: 0.25 },
+    { id: "CMD_RESETTLEMENT", category: "COMMAND", nameKey: "CMD_RESETTLEMENT_NAME", descriptionKey: "CMD_RESETTLEMENT_DESC", cost: { food: 15, wood: 10 }, reqPlains: 6, maxEmber: 12, minStage: 2, rarity: "R", weight: 0.20 },
+    { id: "CMD_LIME_CONSTRUCTION", category: "COMMAND", nameKey: "CMD_LIME_CONSTRUCTION_NAME", descriptionKey: "CMD_LIME_CONSTRUCTION_DESC", cost: { food: 10 }, reqDiscoveredResourceTags: ["STONE", "WOOD"], minStage: 2, rarity: "UC", weight: 0.25 },
+    { id: "CMD_GREAT_RAMPART_PROJECT", category: "COMMAND", nameKey: "CMD_GREAT_RAMPART_PROJECT_NAME", descriptionKey: "CMD_GREAT_RAMPART_PROJECT_DESC", cost: { wood: 70 }, reqConnectedPlains: 12, reqTrialWithin: 10, isUnique: true, minStage: 3, rarity: "UR", weight: 0.10 },
+
+    // 🛡️ 軍事・防衛カード
+    { id: "CMD_VIGILANCE", category: "COMMAND", nameKey: "CMD_VIGILANCE_NAME", descriptionKey: "CMD_VIGILANCE_DESC", cost: { wood: 15 }, reqTrialOrLowDefense: true, minStage: 1, rarity: "C", weight: 0.35 },
+    { id: "CMD_MUD_OBSTACLE", category: "COMMAND", nameKey: "CMD_MUD_OBSTACLE_NAME", descriptionKey: "CMD_MUD_OBSTACLE_DESC", cost: { wood: 15 }, reqWetlandOrLake: true, reqTrialNotice: true, minStage: 1, rarity: "C", weight: 0.35 },
+    { id: "CMD_HIGH_GROUND_FORMATION", category: "COMMAND", nameKey: "CMD_HIGH_GROUND_FORMATION_NAME", descriptionKey: "CMD_HIGH_GROUND_FORMATION_DESC", cost: { wood: 10 }, reqHillOrMountain: true, reqTrialNotice: true, minStage: 1, rarity: "C", weight: 0.35 },
+    { id: "CMD_MILITARY_FOCUS", category: "MILITARY", nameKey: "CMD_MILITARY_FOCUS_NAME", descriptionKey: "CMD_MILITARY_FOCUS_DESC", cost: { wood: 20 }, maxDefense: 20, minStage: 1, rarity: "UC", weight: 0.30 },
+    { id: "CMD_CAVALRY_SCOUTS", category: "COMMAND", nameKey: "CMD_CAVALRY_SCOUTS_NAME", descriptionKey: "CMD_CAVALRY_SCOUTS_DESC", cost: { food: 30, wood: 20 }, reqDiscoveredResourceTag: "HORSE", reqPlains: 6, reqTrialNotice: true, minStage: 1, rarity: "C", weight: 0.35 },
+    { id: "CMD_OUTPOST_SIGNAL", category: "COMMAND", nameKey: "CMD_OUTPOST_SIGNAL_NAME", descriptionKey: "CMD_OUTPOST_SIGNAL_DESC", cost: { wood: 15 }, reqOutpostOrHighGround: true, minStage: 2, rarity: "UC", weight: 0.25 },
+    { id: "CMD_IRON_RAMPART", category: "MILITARY", nameKey: "CMD_IRON_RAMPART_NAME", descriptionKey: "CMD_IRON_RAMPART_DESC", cost: { wood: 20 }, reqWood: 20, minStage: 2, rarity: "UC", weight: 0.30 },
+    { id: "CMD_BALLISTA_SET", category: "MILITARY", nameKey: "CMD_BALLISTA_SET_NAME", descriptionKey: "CMD_BALLISTA_SET_DESC", cost: { wood: 30 }, reqWood: 30, reqHillOrMountain: true, isUnique: true, minStage: 2, rarity: "R", weight: 0.20 },
+    { id: "CMD_GUIDED_DEFENSE", category: "COMMAND", nameKey: "CMD_GUIDED_DEFENSE_NAME", descriptionKey: "CMD_GUIDED_DEFENSE_DESC", cost: { wood: 20 }, reqConnectedHillOrForest: 3, minStage: 2, rarity: "C", weight: 0.35 },
+    { id: "CMD_SCOUT_ENEMY", category: "COMMAND", nameKey: "CMD_SCOUT_ENEMY_NAME", descriptionKey: "CMD_SCOUT_ENEMY_DESC", cost: { food: 5 }, reqTrialNotice: true, minStage: 2, rarity: "C", weight: 0.35 },
+    { id: "CMD_SCORCHED_RETREAT", category: "COMMAND", nameKey: "CMD_SCORCHED_RETREAT_NAME", descriptionKey: "CMD_SCORCHED_RETREAT_DESC", cost: { food: 20 }, reqTrialWithin: 3, minStage: 2, rarity: "R", weight: 0.20 },
+    { id: "CMD_CAVALRY_HOST", category: "COMMAND", nameKey: "CMD_CAVALRY_HOST_NAME", descriptionKey: "CMD_CAVALRY_HOST_DESC", cost: { food: 30, wood: 20 }, reqConnectedPlains: 12, reqFood: 40, minStage: 2, rarity: "R", weight: 0.20 },
+    { id: "CMD_LOCAL_IRON_ARMAMENT", category: "COMMAND", nameKey: "CMD_LOCAL_IRON_ARMAMENT_NAME", descriptionKey: "CMD_LOCAL_IRON_ARMAMENT_DESC", cost: { wood: 15 }, reqDiscoveredResourceTag: "IRON", reqTrialWithin: 6, minStage: 2, rarity: "UC", weight: 0.25 },
+    { id: "CMD_STONE_STRONGPOINT", category: "COMMAND", nameKey: "CMD_STONE_STRONGPOINT_NAME", descriptionKey: "CMD_STONE_STRONGPOINT_DESC", cost: { wood: 20 }, reqDiscoveredResourceTag: "STONE", minStage: 2, rarity: "C", weight: 0.35 },
+
+    // ✨ 神秘・奇跡カード
+    { id: "CMD_MEDITATION", category: "COMMAND", nameKey: "CMD_MEDITATION_NAME", descriptionKey: "CMD_MEDITATION_DESC", cost: {}, maxMystic: 20, minStage: 1, rarity: "UC", weight: 0.30 },
+    { id: "CMD_FILL_THE_VOID", category: "COMMAND", nameKey: "CMD_FILL_THE_VOID_NAME", descriptionKey: "CMD_FILL_THE_VOID_DESC", cost: {}, reqMystic: 5, minStage: 1, rarity: "C", weight: 0.35 },
+    { id: "CMD_VOICE_BENEATH_EARTH", category: "COMMAND", nameKey: "CMD_VOICE_BENEATH_EARTH_NAME", descriptionKey: "CMD_VOICE_BENEATH_EARTH_DESC", cost: { mystic: 5 }, reqDiscoveredResourcesCount: 2, minStage: 1, rarity: "UC", weight: 0.25 },
+    { id: "CMD_OMEN_DREAM", category: "COMMAND", nameKey: "CMD_OMEN_DREAM_NAME", descriptionKey: "CMD_OMEN_DREAM_DESC", cost: { mystic: 5 }, reqTrialWithin: 10, minStage: 1, rarity: "UC", weight: 0.25 },
+    { id: "CMD_REKINDLE_EMBER", category: "MYSTIC", nameKey: "CMD_REKINDLE_EMBER_NAME", descriptionKey: "CMD_REKINDLE_EMBER_DESC", cost: { mystic: 10 }, reqMystic: 10, maxEmber: 5, minStage: 1, rarity: "UC", weight: 0.25 },
+    { id: "CMD_MYSTIC_FOCUS", category: "MYSTIC", nameKey: "CMD_MYSTIC_FOCUS_NAME", descriptionKey: "CMD_MYSTIC_FOCUS_DESC", cost: { mystic: 10 }, maxMystic: 30, isUnique: true, minStage: 1, rarity: "R", weight: 0.15 },
+    { id: "CMD_MANIFEST_MIRACLE", category: "COMMAND", nameKey: "CMD_MANIFEST_MIRACLE_NAME", descriptionKey: "CMD_MANIFEST_MIRACLE_DESC", cost: { mystic: 10 }, reqMystic: 10, minStage: 2, rarity: "R", weight: 0.20 },
+    { id: "CMD_TRANSMUTE_GOLDEN", category: "MYSTIC", nameKey: "CMD_TRANSMUTE_GOLDEN_NAME", descriptionKey: "CMD_TRANSMUTE_GOLDEN_DESC", cost: { mystic: 20 }, reqMystic: 20, reqUnmergedDesertOrMountain: true, isUnique: true, minStage: 2, rarity: "R", weight: 0.20 },
+    { id: "CMD_REVELATION_CHOICE", category: "COMMAND", nameKey: "CMD_REVELATION_CHOICE_NAME", descriptionKey: "CMD_REVELATION_CHOICE_DESC", cost: { mystic: 15 }, reqMystic: 15, minStage: 2, rarity: "R", weight: 0.20 },
+    { id: "CMD_LEYLINE_RESONANCE", category: "COMMAND", nameKey: "CMD_LEYLINE_RESONANCE_NAME", descriptionKey: "CMD_LEYLINE_RESONANCE_DESC", cost: { mystic: 8 }, reqDiscoveredMysticResourcesCount: 2, minStage: 2, rarity: "C", weight: 0.35 },
+    { id: "CMD_TWO_FUTURES", category: "COMMAND", nameKey: "CMD_TWO_FUTURES_NAME", descriptionKey: "CMD_TWO_FUTURES_DESC", cost: { mystic: 20 }, reqMystic: 25, isUnique: true, minStage: 3, rarity: "UR", weight: 0.10 }
+];
+
 class DeckManager {
     constructor(gameState, engine = null) {
         this.state = gameState;
@@ -19,62 +67,25 @@ class DeckManager {
             return this._landCardMasterCache;
         }
 
+        let baseList = [];
         if (Array.isArray(LAND_CARDS_MASTER) && LAND_CARDS_MASTER.length > 0) {
-            this._landCardMasterCache = LAND_CARDS_MASTER;
-            return this._landCardMasterCache;
+            baseList = LAND_CARDS_MASTER;
+        } else {
+            const globalData = (typeof globalThis !== 'undefined' && globalThis.LAND_CARDS_DATA) ? globalThis.LAND_CARDS_DATA : (typeof window !== 'undefined' ? window.LAND_CARDS_DATA : null);
+            if (Array.isArray(globalData) && globalData.length > 0) {
+                baseList = globalData;
+            }
         }
 
-        const globalData = (typeof globalThis !== 'undefined' && globalThis.LAND_CARDS_DATA) ? globalThis.LAND_CARDS_DATA : (typeof window !== 'undefined' ? window.LAND_CARDS_DATA : null);
-        if (Array.isArray(globalData) && globalData.length > 0) {
-            this._landCardMasterCache = globalData;
-            return this._landCardMasterCache;
+        // 土地カードマスターに全コマンドカードをマージ（重複排除）
+        const map = new Map();
+        for (const c of baseList) {
+            if (c && c.id) map.set(c.id, c);
         }
-
-        // rules/09_card_list.md 仕様書完全準拠のフォールバックデータ
-        this._landCardMasterCache = [
-            { id: "CARD_PLAINS_1X1", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, e: 1, yields: { food: 4, wood: 0, defense: 0, mystic: 0 }, shape: [[1]], minStage: 1, reqE2: 0, rarity: "C", weight: 1.0 },
-            { id: "CARD_PLAINS_1X2", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, e: 1, yields: { food: 4, wood: 0, defense: 0, mystic: 0 }, shape: [[1], [1]], minStage: 1, reqE2: 0, rarity: "C", weight: 0.8 },
-            { id: "CARD_PLAINS_1X3_S", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, e: 1, yields: { food: 4, wood: 0, defense: 0, mystic: 0 }, shape: [[1], [1], [1]], minStage: 2, reqE2: 0, rarity: "R", weight: 0.18 },
-            { id: "CARD_PLAINS_1X3_L", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, e: 1, yields: { food: 4, wood: 0, defense: 0, mystic: 0 }, shape: [[1, 0], [1, 1]], minStage: 2, reqE2: 0, rarity: "R", weight: 0.14 },
-            { id: "CARD_FOREST_1X1", terrainId: "GL2_FOREST", nameKey: "TERRAIN_FOREST", gl: 2, e: 1, yields: { food: 2, wood: 2, defense: 2, mystic: 0 }, shape: [[1]], minStage: 1, reqE2: 0, rarity: "C", weight: 1.0 },
-            { id: "CARD_FOREST_1X2", terrainId: "GL2_FOREST", nameKey: "TERRAIN_FOREST", gl: 2, e: 1, yields: { food: 2, wood: 2, defense: 2, mystic: 0 }, shape: [[1], [1]], minStage: 1, reqE2: 0, rarity: "UC", weight: 0.6 },
-            { id: "CARD_DEEP_FOREST_1X1", terrainId: "GL3_DEEP_FOREST", nameKey: "TERRAIN_DEEP_FOREST", gl: 3, e: 1, yields: { food: 1, wood: 3, defense: 3, mystic: 1 }, shape: [[1]], minStage: 1, reqE2: 0, rarity: "R", weight: 0.15 },
-            { id: "CARD_DEEP_FOREST_1X2", terrainId: "GL3_DEEP_FOREST", nameKey: "TERRAIN_DEEP_FOREST", gl: 3, e: 1, yields: { food: 1, wood: 3, defense: 3, mystic: 1 }, shape: [[1], [1]], minStage: 2, reqE2: 0, rarity: "R", weight: 0.05 },
-            { id: "CARD_HILL_1X1", terrainId: "E2_HILL", nameKey: "TERRAIN_HILL", gl: 1, e: 2, yields: { food: 2, wood: 1, defense: 1, mystic: 0 }, shape: [[1]], minStage: 1, reqE2: 0, rarity: "UC", weight: 0.50 },
-            { id: "CARD_HILL_1X2", terrainId: "E2_HILL", nameKey: "TERRAIN_HILL", gl: 1, e: 2, yields: { food: 2, wood: 1, defense: 1, mystic: 0 }, shape: [[1], [1]], minStage: 1, reqE2: 0, rarity: "UC", weight: 0.35 },
-            { id: "CARD_HILL_1X3_L", terrainId: "E2_HILL", nameKey: "TERRAIN_HILL", gl: 1, e: 2, yields: { food: 2, wood: 1, defense: 1, mystic: 0 }, shape: [[1, 0], [1, 1]], minStage: 2, reqE2: 0, rarity: "R", weight: 0.12 },
-            { id: "CARD_MOUNTAIN_1X1", terrainId: "E3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", gl: 2, e: 3, yields: { food: 0, wood: 3, defense: 5, mystic: 1 }, shape: [[1]], minStage: 2, reqE2: 3, rarity: "R", weight: 0.20 },
-            { id: "CARD_MOUNTAIN_1X2", terrainId: "E3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", gl: 2, e: 3, yields: { food: 0, wood: 3, defense: 5, mystic: 1 }, shape: [[1], [1]], minStage: 2, reqE2: 3, rarity: "R", weight: 0.15 },
-            { id: "CARD_MOUNTAIN_1X3_S", terrainId: "E3_MOUNTAIN", nameKey: "TERRAIN_MOUNTAIN", gl: 2, e: 3, yields: { food: 0, wood: 3, defense: 5, mystic: 1 }, shape: [[1], [1], [1]], minStage: 2, reqE2: 3, rarity: "R", weight: 0.03 },
-            { id: "CARD_DESERT_1X1", terrainId: "GL0_DESERT", nameKey: "TERRAIN_DESERT", gl: 0, e: 1, yields: { food: 0, wood: 0, defense: 0, mystic: 5 }, shape: [[1]], minStage: 1, reqE2: 0, rarity: "R", weight: 0.15 },
-            { id: "CARD_DESERT_1X2", terrainId: "GL0_DESERT", nameKey: "TERRAIN_DESERT", gl: 0, e: 1, yields: { food: 0, wood: 0, defense: 0, mystic: 5 }, shape: [[1], [1]], minStage: 2, reqE2: 0, rarity: "UR", weight: 0.03 },
-
-            { id: "CMD_LAND_EXPLORATION", category: "COMMAND", nameKey: "CMD_LAND_EXPLORATION_NAME", descriptionKey: "CMD_LAND_EXPLORATION_DESC", cost: { food: 30, wood: 30, ember: 1 }, noSocketsOnBoard: true, minStage: 1, rarity: "R", weight: 0.40 },
-            { id: "CMD_CONSERVE_EMBER", category: "COMMAND", nameKey: "CMD_CONSERVE_EMBER_NAME", descriptionKey: "CMD_CONSERVE_EMBER_DESC", cost: {}, maxEmber: 18, minStage: 1, rarity: "C", weight: 0.40 },
-            { id: "CMD_RATIONING", category: "COMMAND", nameKey: "CMD_RATIONING_NAME", descriptionKey: "CMD_RATIONING_DESC", cost: {}, maxFood: 40, minStage: 1, rarity: "C", weight: 0.40 },
-            { id: "CMD_MEDITATION", category: "COMMAND", nameKey: "CMD_MEDITATION_NAME", descriptionKey: "CMD_MEDITATION_DESC", cost: {}, maxMystic: 20, minStage: 1, rarity: "UC", weight: 0.30 },
-            { id: "CMD_VIGILANCE", category: "COMMAND", nameKey: "CMD_VIGILANCE_NAME", descriptionKey: "CMD_VIGILANCE_DESC", cost: { wood: 15 }, reqTrialOrLowDefense: true, minStage: 1, rarity: "C", weight: 0.35 },
-            { id: "CMD_GRAND_CULTIVATION", category: "COMMAND", nameKey: "CMD_GRAND_CULTIVATION_NAME", descriptionKey: "CMD_GRAND_CULTIVATION_DESC", cost: { wood: 35 }, reqPlains: 8, minStage: 2, rarity: "UC", weight: 0.25 },
-            { id: "CMD_EMERGENCY_LEVY", category: "COMMAND", nameKey: "CMD_EMERGENCY_LEVY_NAME", descriptionKey: "CMD_EMERGENCY_LEVY_DESC", cost: { food: 20 }, minStage: 1, rarity: "C", weight: 0.35 },
-            { id: "CMD_MANIFEST_MIRACLE", category: "COMMAND", nameKey: "CMD_MANIFEST_MIRACLE_NAME", descriptionKey: "CMD_MANIFEST_MIRACLE_DESC", cost: { mystic: 10 }, minStage: 2, rarity: "R", weight: 0.20 },
-            { id: "CMD_FILL_THE_VOID", category: "COMMAND", nameKey: "CMD_FILL_THE_VOID_NAME", descriptionKey: "CMD_FILL_THE_VOID_DESC", cost: {}, minStage: 1, rarity: "C", weight: 0.35 },
-            { id: "CMD_SCORCHED_RETREAT", category: "COMMAND", nameKey: "CMD_SCORCHED_RETREAT_NAME", descriptionKey: "CMD_SCORCHED_RETREAT_DESC", cost: { food: 20 }, minStage: 2, rarity: "R", weight: 0.20 },
-            { id: "CMD_RESETTLEMENT", category: "COMMAND", nameKey: "CMD_RESETTLEMENT_NAME", descriptionKey: "CMD_RESETTLEMENT_DESC", cost: { food: 15, wood: 10 }, minStage: 2, rarity: "R", weight: 0.20 },
-            { id: "CMD_GREAT_RAMPART_PROJECT", category: "COMMAND", nameKey: "CMD_GREAT_RAMPART_PROJECT_NAME", descriptionKey: "CMD_GREAT_RAMPART_PROJECT_DESC", cost: { wood: 45 }, isUnique: true, minStage: 3, rarity: "UR", weight: 0.10 },
-            { id: "CMD_OUTPOST", category: "COMMAND", nameKey: "CMD_OUTPOST_NAME", descriptionKey: "CMD_OUTPOST_DESC", cost: { wood: 25 }, minStage: 2, rarity: "UC", weight: 0.25 },
-            { id: "CMD_GUIDED_DEFENSE", category: "COMMAND", nameKey: "CMD_GUIDED_DEFENSE_NAME", descriptionKey: "CMD_GUIDED_DEFENSE_DESC", cost: { wood: 20 }, minStage: 2, rarity: "C", weight: 0.35 },
-            { id: "CMD_HIGH_GROUND_FORMATION", category: "COMMAND", nameKey: "CMD_HIGH_GROUND_FORMATION_NAME", descriptionKey: "CMD_HIGH_GROUND_FORMATION_DESC", cost: { wood: 10 }, minStage: 1, rarity: "C", weight: 0.35 },
-            { id: "CMD_CAVALRY_HOST", category: "COMMAND", nameKey: "CMD_CAVALRY_HOST_NAME", descriptionKey: "CMD_CAVALRY_HOST_DESC", cost: { food: 30, wood: 20 }, minStage: 2, rarity: "R", weight: 0.20 },
-            { id: "CMD_REVELATION_CHOICE", category: "COMMAND", nameKey: "CMD_REVELATION_CHOICE_NAME", descriptionKey: "CMD_REVELATION_CHOICE_DESC", cost: { mystic: 15 }, minStage: 2, rarity: "R", weight: 0.20 },
-            { id: "CMD_TWO_FUTURES", category: "COMMAND", nameKey: "CMD_TWO_FUTURES_NAME", descriptionKey: "CMD_TWO_FUTURES_DESC", cost: { mystic: 20 }, isUnique: true, minStage: 3, rarity: "UR", weight: 0.10 },
-            { id: "CMD_PASTORAL_EXPANSION", category: "COMMAND", nameKey: "CMD_PASTORAL_EXPANSION_NAME", descriptionKey: "CMD_PASTORAL_EXPANSION_DESC", cost: { wood: 10 }, minStage: 1, rarity: "C", weight: 0.35 },
-            { id: "CMD_LIME_CONSTRUCTION", category: "COMMAND", nameKey: "CMD_LIME_CONSTRUCTION_NAME", descriptionKey: "CMD_LIME_CONSTRUCTION_DESC", cost: { food: 10 }, minStage: 2, rarity: "UC", weight: 0.25 },
-            { id: "CMD_CAVALRY_SCOUTS", category: "COMMAND", nameKey: "CMD_CAVALRY_SCOUTS_NAME", descriptionKey: "CMD_CAVALRY_SCOUTS_DESC", cost: { food: 10 }, minStage: 1, rarity: "C", weight: 0.35 },
-            { id: "CMD_LOCAL_IRON_ARMAMENT", category: "COMMAND", nameKey: "CMD_LOCAL_IRON_ARMAMENT_NAME", descriptionKey: "CMD_LOCAL_IRON_ARMAMENT_DESC", cost: { wood: 15 }, minStage: 2, rarity: "UC", weight: 0.25 },
-            { id: "CMD_STONE_STRONGPOINT", category: "COMMAND", nameKey: "CMD_STONE_STRONGPOINT_NAME", descriptionKey: "CMD_STONE_STRONGPOINT_DESC", cost: { wood: 20 }, minStage: 2, rarity: "C", weight: 0.35 },
-            { id: "CMD_LEYLINE_RESONANCE", category: "COMMAND", nameKey: "CMD_LEYLINE_RESONANCE_NAME", descriptionKey: "CMD_LEYLINE_RESONANCE_DESC", cost: { mystic: 8 }, minStage: 2, rarity: "C", weight: 0.35 },
-            { id: "CMD_VOICE_BENEATH_EARTH", category: "COMMAND", nameKey: "CMD_VOICE_BENEATH_EARTH_NAME", descriptionKey: "CMD_VOICE_BENEATH_EARTH_DESC", cost: { mystic: 5 }, minStage: 1, rarity: "UC", weight: 0.25 }
-        ];
+        for (const c of COMMAND_CARDS_MASTER) {
+            if (c && c.id) map.set(c.id, c);
+        }
+        this._landCardMasterCache = Array.from(map.values());
         return this._landCardMasterCache;
     }
 
@@ -179,6 +190,102 @@ class DeckManager {
             }
             if (plainsCount < c.reqPlains) return false;
         }
+
+        if (c.reqMystic !== undefined && this.state && (this.state.mystic || 0) < c.reqMystic) return false;
+
+        // ⚠️ 試練予告中 (残り5T以内または notice.active)
+        if (c.reqTrialNotice && this.state) {
+            const notice = (typeof this.state.getTrialNotice === 'function') ? this.state.getTrialNotice() : { active: false };
+            const nextTrialTurn = this.state.nextTrialTurn || 20;
+            const currentTurn = this.state.turn || 1;
+            const isNotice = (notice && notice.active) || (nextTrialTurn - currentTurn <= 5);
+            if (!isNotice) return false;
+        }
+
+        // ⏳ 試練までの残りターン数判定 (<= N)
+        if (c.reqTrialWithin !== undefined && this.state) {
+            const nextTrialTurn = this.state.nextTrialTurn || 20;
+            const currentTurn = this.state.turn || 1;
+            if ((nextTrialTurn - currentTurn) > c.reqTrialWithin) return false;
+        }
+
+        // 🗺️ 盤面に丘陵または山岳が存在すること
+        if (c.reqHillOrMountain && this.state) {
+            if (!ConditionEvaluator.evaluate({ type: "HAS_HILL_OR_MOUNTAIN" }, { state: this.state })) return false;
+        }
+
+        // 💧 盤面に湿原または湖が存在すること
+        if (c.reqWetlandOrLake && this.state) {
+            if (!ConditionEvaluator.evaluate({ type: "HAS_WETLAND_OR_LAKE" }, { state: this.state })) return false;
+        }
+
+        // 🌲 盤面に森が指定数以上存在すること
+        if (c.reqForest !== undefined && this.state) {
+            if (!ConditionEvaluator.evaluate({ type: "HAS_FOREST", value: c.reqForest }, { state: this.state })) return false;
+        }
+
+        // 💎 発見済みソケット資源タグ判定 (単一: reqDiscoveredResourceTag / 複数配列: reqDiscoveredResourceTags)
+        if (c.reqDiscoveredResourceTag && this.state) {
+            if (!ConditionEvaluator.evaluate({ type: "SOCKET_FOUND", category: c.reqDiscoveredResourceTag }, { state: this.state })) return false;
+        }
+        if (c.reqDiscoveredResourceTags && Array.isArray(c.reqDiscoveredResourceTags) && this.state) {
+            for (const tag of c.reqDiscoveredResourceTags) {
+                if (!ConditionEvaluator.evaluate({ type: "SOCKET_FOUND", category: tag }, { state: this.state })) return false;
+            }
+        }
+
+        // 💎 発見済みユニーク資源数判定
+        if (c.reqDiscoveredResourcesCount !== undefined && this.state) {
+            if (!ConditionEvaluator.evaluate({ type: "DISCOVERED_RESOURCES_COUNT", value: c.reqDiscoveredResourcesCount }, { state: this.state })) return false;
+        }
+
+        // ✨ 発見済み神秘系資源数判定
+        if (c.reqDiscoveredMysticResourcesCount !== undefined && this.state) {
+            if (!ConditionEvaluator.evaluate({ type: "DISCOVERED_MYSTIC_RESOURCES_COUNT", value: c.reqDiscoveredMysticResourcesCount }, { state: this.state })) return false;
+        }
+
+        // 🔗 連結した指定地形の最大マス数判定
+        if (c.reqConnectedPlains !== undefined && this.state) {
+            if (!ConditionEvaluator.evaluate({ type: "CONNECTED_TERRAIN_AT_LEAST", terrainType: "PLAINS", value: c.reqConnectedPlains }, { state: this.state })) return false;
+        }
+        if (c.reqConnectedHillOrForest !== undefined && this.state) {
+            if (!ConditionEvaluator.evaluate({ type: "CONNECTED_TERRAIN_AT_LEAST", terrainType: "HILL_OR_FOREST", value: c.reqConnectedHillOrForest }, { state: this.state })) return false;
+        }
+        // 🌲 盤面に森または森丘陵が指定数以上存在すること
+        if (c.reqForestOrHillForest !== undefined && this.state) {
+            if (!ConditionEvaluator.evaluate({ type: "HAS_FOREST_OR_HILL_FOREST", value: c.reqForestOrHillForest }, { state: this.state })) return false;
+        }
+
+        // 💧 盤面に湿原が指定数以上存在すること
+        if (c.reqWetland !== undefined && this.state) {
+            if (!ConditionEvaluator.evaluate({ type: "HAS_WETLAND", value: c.reqWetland }, { state: this.state })) return false;
+        }
+
+        // 🔲 盤面の空きマス数判定
+        if (c.reqEmptyCells !== undefined && this.state) {
+            if (!ConditionEvaluator.evaluate({ type: "EMPTY_CELLS_AT_LEAST", value: c.reqEmptyCells }, { state: this.state })) return false;
+        }
+
+        // 🏜️ 未マージの砂漠または山岳が存在すること
+        if (c.reqUnmergedDesertOrMountain && this.state) {
+            if (!ConditionEvaluator.evaluate({ type: "HAS_UNMERGED_DESERT_OR_MOUNTAIN" }, { state: this.state })) return false;
+        }
+
+        // 🗼 前哨塔または丘陵/山岳が存在すること
+        if (c.reqOutpostOrHighGround && this.state) {
+            if (!ConditionEvaluator.evaluate({ type: "HAS_OUTPOST_OR_HIGH_GROUND" }, { state: this.state })) return false;
+        }
+
+        // 📦 盤面に配置済みのブロック数上限
+        if (c.maxPlacedBlocks !== undefined && this.state) {
+            if (!ConditionEvaluator.evaluate({ type: "PLACED_BLOCKS_AT_MOST", value: c.maxPlacedBlocks }, { state: this.state })) return false;
+        }
+
+        // 🛡️ 防衛力の上限
+        if (c.maxDefense !== undefined && this.state && (this.state.defense || 0) > c.maxDefense) return false;
+
+        // 🧱 資材保有量判定
+        if (c.reqWood !== undefined && this.state && (this.state.wood || 0) < c.reqWood) return false;
 
         if (c.isUnique && this.state && this.state.usedUniqueCards && this.state.usedUniqueCards.includes(c.id)) {
             return false;
@@ -304,7 +411,11 @@ class DeckManager {
         if (this.state.hasMulliganedThisTurn) return { success: false, reason: "ALREADY_MULLIGANED_THIS_TURN" };
         if (this.state.ember < 1) return { success: false, reason: "INSUFFICIENT_EMBER" };
 
-        this.state.ember -= 1;
+        if (this.state.emberSystem && typeof this.state.emberSystem.consume === 'function') {
+            this.state.emberSystem.consume(1);
+        } else {
+            this.state.ember -= 1;
+        }
         this.state.hasMulliganedThisTurn = true;
         this.generateOfferingCards();
 
@@ -841,6 +952,102 @@ class DeckManager {
                 category: "CARD_EFFECT",
                 remainingTurns: 1
             });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🔮【${cName}】`);
+        } else if (cId === "CMD_SINGLE_CLEARING") {
+            // 🪓 伐採: コスト 🔥-1 (森1マス伐採・平地化、🧱+20, 🌾+3)
+            let cleared = false;
+            if (this.state.grid) {
+                for (let r = 0; r < this.state.grid.length && !cleared; r++) {
+                    for (let c = 0; c < this.state.grid[r].length && !cleared; c++) {
+                        const cell = this.state.grid[r][c];
+                        if (cell && cell.placed && !cell.isHQ && cell.terrain) {
+                            const tid = cell.terrain.terrainId || cell.terrain.id || "";
+                            if (tid.includes("FOREST")) {
+                                cell.terrain = { id: "GL1_PLAINS", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, e: 1, food: 4, wood: 0, defense: 0, mystic: 0, category: "BASE" };
+                                cleared = true;
+                            }
+                        }
+                    }
+                }
+            }
+            this.state.wood = (this.state.wood || 0) + 20;
+            this.state.food = (this.state.food || 0) + 3;
+            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🪓", description: cDesc, category: "CARD_EFFECT" });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🪓【${cName}】`);
+        } else if (cId === "CMD_WETLAND_RECLAMATION") {
+            // 🌾 干拓: コスト 🧱-15, 🔥-1 (湿原1マスを平地転換)
+            let reclaimed = false;
+            if (this.state.grid) {
+                for (let r = 0; r < this.state.grid.length && !reclaimed; r++) {
+                    for (let c = 0; c < this.state.grid[r].length && !reclaimed; c++) {
+                        const cell = this.state.grid[r][c];
+                        if (cell && cell.placed && !cell.isHQ && cell.terrain) {
+                            const tid = cell.terrain.terrainId || cell.terrain.id || "";
+                            if (tid.includes("WETLAND")) {
+                                cell.terrain = { id: "GL1_PLAINS", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, e: 1, food: 4, wood: 0, defense: 0, mystic: 0, category: "BASE" };
+                                reclaimed = true;
+                            }
+                        }
+                    }
+                }
+            }
+            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🌾", description: cDesc, category: "CARD_EFFECT" });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🌾【${cName}】`);
+        } else if (cId === "CMD_SYSTEMATIC_LOGGING") {
+            // 🌲 計画伐採: コスト 🌾-10 (森林マス数×🧱+6、3T森産出🧱-1/T)
+            let forestCount = 0;
+            if (this.state.grid) {
+                for (let r = 0; r < this.state.grid.length; r++) {
+                    for (let c = 0; c < this.state.grid[r].length; c++) {
+                        const cell = this.state.grid[r][c];
+                        if (cell && cell.placed && cell.terrain) {
+                            const tid = cell.terrain.terrainId || cell.terrain.id || "";
+                            if (tid.includes("FOREST")) forestCount++;
+                        }
+                    }
+                }
+            }
+            this.state.wood = (this.state.wood || 0) + (forestCount * 6);
+            this.state.systematicLoggingTurns = 3;
+            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🌲", description: cDesc, badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 3 }) : "3T", category: "DEBUFF", remainingTurns: 3 });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🌲【${cName}】`);
+        } else if (cId === "CMD_ABANDONED_SETTLEMENT") {
+            // 🎲 領土探索: コスト 🔥-1 (2D6判定)
+            const d1 = Math.floor(Math.random() * 6) + 1;
+            const d2 = Math.floor(Math.random() * 6) + 1;
+            const roll = d1 + d2;
+            if (roll <= 5) {
+                this.state.food = (this.state.food || 0) + 15;
+            } else if (roll <= 8) {
+                this.state.wood = (this.state.wood || 0) + 15;
+            } else if (roll <= 11) {
+                this.state.mystic = (this.state.mystic || 0) + 10;
+            } else {
+                this.state.food = (this.state.food || 0) + 20;
+                this.state.wood = (this.state.wood || 0) + 20;
+                this.state.mystic = (this.state.mystic || 0) + 15;
+            }
+            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🎲", description: cDesc, category: "CARD_EFFECT" });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🎲【${cName}】`);
+        } else if (cId === "CMD_MUD_OBSTACLE") {
+            // 🛡️ 泥濘陣地: コスト 🧱-15 (試練時湿原/清湖敵制圧力-15%)
+            this.state.mudObstacleActive = true;
+            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🛡️", description: cDesc, category: "TACTICAL" });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🛡️【${cName}】`);
+        } else if (cId === "CMD_OUTPOST_SIGNAL") {
+            // 🗼 狼煙: コスト 🧱-15 (侵攻情報2T早く取得 & 迎撃戦術補正+15%)
+            this.state.outpostSignalActive = true;
+            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🗼", description: cDesc, category: "TACTICAL" });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🗼【${cName}】`);
+        } else if (cId === "CMD_SCOUT_ENEMY") {
+            // 🔍 敵情偵察: コスト 🌾-5 (試練敵情先行公開)
+            this.state.scoutEnemyActive = true;
+            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🔍", description: cDesc, category: "TACTICAL" });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🔍【${cName}】`);
+        } else if (cId === "CMD_OMEN_DREAM") {
+            // 🔮 予兆: コスト ✨-5 (試練先行情報公開)
+            this.state.omenDreamActive = true;
+            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🔮", description: cDesc, category: "CARD_EFFECT" });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🔮【${cName}】`);
         } else if (cId === "CMD_LAND_EXPLORATION") {
             const candidates = [];

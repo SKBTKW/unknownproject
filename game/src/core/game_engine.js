@@ -8,6 +8,7 @@ import { GridEngine } from '../systems/grid_engine.js';
 import { BuffSystem } from '../systems/buff_system.js';
 import { ChronicleSystem } from '../systems/chronicle_system.js';
 import { GlobalEventManager } from '../systems/global_event_system.js';
+import { EmberSystem } from '../systems/ember_system.js';
 import { GameState } from '../v2_unity_ready_main.js';
 
 class GameEngine {
@@ -50,6 +51,9 @@ class GameEngine {
         const GlobalEventManagerClass = dependencies.GlobalEventManagerClass || GlobalEventManager;
         this.globalEventManager = dependencies.globalEventManager || (GlobalEventManagerClass ? new GlobalEventManagerClass(this.state, this) : null);
 
+        const EmberSystemClass = dependencies.EmberSystemClass || EmberSystem;
+        this.emberSystem = dependencies.emberSystem || (EmberSystemClass ? new EmberSystemClass(this.state, this) : null);
+
         // 4. GameState への双方向リンク確立
         if (this.state) {
             this.state.engine = this;
@@ -59,6 +63,7 @@ class GameEngine {
             if (this.buffSystem) this.state.buffSystem = this.buffSystem;
             if (this.chronicleSystem) this.state.chronicleSystem = this.chronicleSystem;
             if (this.globalEventManager) this.state.globalEventManager = this.globalEventManager;
+            if (this.emberSystem) this.state.emberSystem = this.emberSystem;
         }
     }
 

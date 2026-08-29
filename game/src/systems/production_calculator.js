@@ -139,14 +139,18 @@
             }
 
             // 🔥 残り火ステッピングに基づく食料維持費 (rules/02_resources_and_ember.md 準拠)
-            const ember = (state.ember !== undefined) ? state.ember : 20;
             let foodCost = 20;
-            if (ember >= 24) {
-                foodCost = 25; // 🔥 旺盛状態 (維持費増)
-            } else if (ember <= 9) {
-                foodCost = 15; // 🔥 微火・危機 (省エネ復興)
+            if (state.emberSystem && typeof state.emberSystem.getFoodMaintenanceCost === 'function') {
+                foodCost = state.emberSystem.getFoodMaintenanceCost();
             } else {
-                foodCost = 20; // 🔥 標準状態
+                const ember = (state.ember !== undefined) ? state.ember : 20;
+                if (ember >= 24) {
+                    foodCost = 25; // 🔥 旺盛状態 (維持費増)
+                } else if (ember <= 9) {
+                    foodCost = 15; // 🔥 微火・危機 (省エネ復興)
+                } else {
+                    foodCost = 20; // 🔥 標準状態
+                }
             }
 
             // 🏰 本営 (HQ) 基礎産出の動的解決 (Stage 1: 10/10/10/1, Stage 2: 14/14/14/2)
