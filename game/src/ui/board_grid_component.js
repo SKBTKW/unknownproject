@@ -55,6 +55,7 @@ export class BoardGridComponent {
         boardEl.style.setProperty('--board-size', size);
         boardEl.style.setProperty('--cell-size', cellSize);
         boardEl.style.setProperty('--header-size', headerSize);
+        boardEl.setAttribute("data-tile-style", this.getTileTextStyle());
 
         // 🌊 開花した清湖・オアシスの座標リストを事前収集 (周囲8マスのティール水脈エフェクト用)
         const lakeCoords = [];
@@ -169,11 +170,14 @@ export class BoardGridComponent {
                             const resIcon = this.getSocketResourceIcon(s);
                             const primaryYield = this.getSocketPrimaryYieldInfo(s) || yieldInfo;
                             const sYieldHtml = primaryYield ? `<div class="socket-yield-line"><span class="yield-icon">${primaryYield.icon}</span><span class="yield-colon"> : </span><span class="yield-val">${primaryYield.val}</span></div>` : "";
-                            cellEl.innerHTML = `<div class="socket-tile-content-box"><div class="socket-resource-line">${resIcon} : ${sName}</div>${sYieldHtml}</div>`;
+                            const symbolicHtml = this.createSymbolicTileHtml(cellData, primaryYield);
+                            cellEl.innerHTML = `<div class="socket-tile-content-box"><div class="socket-resource-line">${resIcon} : ${sName}</div>${sYieldHtml}</div>${symbolicHtml}`;
                         } else if (role === "LAND_PRIMARY") {
                             // 🌟 土地名 ＆ 総産出（最初の空きマスへスマート配置）
+                            const catIcon = this.getTerrainCategoryIcon(cellData);
                             const yieldHtml = yieldInfo ? `<div class="tile-yield-line"><span class="yield-icon">${yieldInfo.icon}</span><span class="yield-colon"> : </span><span class="yield-val">${yieldInfo.val}</span></div>` : "";
-                            cellEl.innerHTML = `<div class="tile-content-box"><div class="tile-title-line">${tName}</div>${yieldHtml}</div>`;
+                            const symbolicHtml = this.createSymbolicTileHtml(cellData, yieldInfo);
+                            cellEl.innerHTML = `<div class="tile-content-box"><div class="tile-title-line"><span class="tile-category-icon">${catIcon}</span><span class="tile-name-text">${tName}</span></div>${yieldHtml}</div>${symbolicHtml}`;
                         } else {
                             // 🌟 後続のクリーン背景
                             cellEl.innerHTML = "";
@@ -190,11 +194,14 @@ export class BoardGridComponent {
                             const primaryYield = this.getSocketPrimaryYieldInfo(s) || yieldInfo;
                             const sYieldHtml = primaryYield ? `<div class="socket-yield-line"><span class="yield-icon">${primaryYield.icon}</span><span class="yield-colon"> : </span><span class="yield-val">${primaryYield.val}</span></div>` : "";
                             const searchedBadge = cellData.searched ? `<span class="searched-badge">${I18n.t("UI_SEARCHED_BADGE")}</span>` : "";
-                            cellEl.innerHTML = `<div class="socket-tile-content-box"><div class="socket-resource-line">${resIcon} : ${sName}</div>${sYieldHtml}${searchedBadge}</div>`;
+                            const symbolicHtml = this.createSymbolicTileHtml(cellData, primaryYield);
+                            cellEl.innerHTML = `<div class="socket-tile-content-box"><div class="socket-resource-line">${resIcon} : ${sName}</div>${sYieldHtml}${searchedBadge}</div>${symbolicHtml}`;
                         } else {
+                            const catIcon = this.getTerrainCategoryIcon(cellData);
                             const yieldHtml = yieldInfo ? `<div class="tile-yield-line"><span class="yield-icon">${yieldInfo.icon}</span><span class="yield-colon"> : </span><span class="yield-val">${yieldInfo.val}</span></div>` : "";
                             const searchedBadge = cellData.searched ? `<span class="searched-badge">${I18n.t("UI_SEARCHED_BADGE")}</span>` : "";
-                            cellEl.innerHTML = `<div class="tile-content-box"><div class="tile-title-line">${tName}</div>${yieldHtml}${searchedBadge}</div>`;
+                            const symbolicHtml = this.createSymbolicTileHtml(cellData, yieldInfo);
+                            cellEl.innerHTML = `<div class="tile-content-box"><div class="tile-title-line"><span class="tile-category-icon">${catIcon}</span><span class="tile-name-text">${tName}</span></div>${yieldHtml}${searchedBadge}</div>${symbolicHtml}`;
                         }
                     }
                 } else if (cellData.hasSocket) {
@@ -221,19 +228,10 @@ export class BoardGridComponent {
                     }
                 }
 
-                // ↩️ 当ターン配置マスの場合: キャンセルガイドバッジ (Undo Badge) を付与（先頭マスのみに1個表示）
+                // ↩️ 当ターン配置マスの場合: cell-placed-this-turn クラス付与（常時バッジは消去しマウスオーバー案内へ移行）
                 const undoSys = this.ui.undoSys || (typeof window !== "undefined" ? window.undoSys : null);
                 if (undoSys && typeof undoSys.isCellPlacedThisTurn === "function" && undoSys.isCellPlacedThisTurn(r, c)) {
                     cellEl.classList.add("cell-placed-this-turn");
-                    const activeGroupId = cellData.mergeGroupId || cellData.placementGroupId;
-                    const isHeadCell = !activeGroupId || (!topGroupSame && !leftGroupSame);
-                    if (isHeadCell) {
-                        const undoBadge = document.createElement("div");
-                        undoBadge.className = "undo-badge";
-                        undoBadge.title = I18n.t("UI_UNDO_BADGE_TOOLTIP") || "↩ Click to undo";
-                        undoBadge.innerHTML = "↩";
-                        cellEl.appendChild(undoBadge);
-                    }
                 }
 
                 // 🖱️ セルイベントハンドラー
@@ -701,5 +699,103 @@ export class BoardGridComponent {
             }
         }
         return "";
+    }
+
+    /**
+     * 🎨 現在選択されているタイルテキスト表示スタイルを取得
+     */
+    getTileTextStyle() {
+        if (typeof UI_FEATURE_FLAGS !== "undefined" && UI_FEATURE_FLAGS.tileTextStyle) {
+            return UI_FEATURE_FLAGS.tileTextStyle;
+        }
+        return "DEFAULT";
+    }
+
+    /**
+     * 🌲 地形カテゴリを象徴する代表アイコンの取得
+     */
+    getTerrainCategoryIcon(cellData) {
+        if (!cellData || !cellData.terrain) return "🗺️";
+        const tid = cellData.terrain.terrainId || cellData.terrain.id || "";
+        if (tid.includes("FOREST")) return "🌲";
+        if (tid.includes("PLAINS")) return "🌾";
+        if (tid.includes("WETLAND")) return "🌿";
+        if (tid.includes("HILL")) return "⛰️";
+        if (tid.includes("MOUNTAIN")) return "🏔️";
+        if (tid.includes("DESERT")) return "🏜️";
+        if (tid.includes("WASTELAND")) return "🪨";
+        return "🌱";
+    }
+
+    /**
+     * 🗺️ 土地属性アイコン列の取得 (高度 E × 地勢 GL ＋ 資源アイコン)
+     */
+    getTerrainAttributeIcons(cellData) {
+        if (!cellData || !cellData.terrain) return [];
+        const tid = cellData.terrain.terrainId || cellData.terrain.id || "";
+        const icons = [];
+
+        // 1. 丘陵系 (E2)
+        if (tid.includes("HILL")) {
+            icons.push("⛰️");
+            if (tid.includes("DEEP_FOREST") || tid.includes("GL3") || tid.includes("DEEP")) {
+                icons.push("🌳"); // 森林丘陵 (丘陵+深い森): ⛰️ 🌳
+            } else if (tid.includes("FOREST") || tid.includes("GL2")) {
+                icons.push("🌲"); // 森丘陵 (丘陵+森): ⛰️ 🌲
+            } else if (tid.includes("DESERT") || tid.includes("WASTELAND") || tid.includes("GL0")) {
+                icons.push("🏜️"); // 荒野 (丘陵+砂漠): ⛰️ 🏜️
+            }
+        }
+        // 2. 山岳 (E3)
+        else if (tid.includes("MOUNTAIN")) {
+            icons.push("🏔️");
+        }
+        // 3. 湿原 (E0)
+        else if (tid.includes("WETLAND")) {
+            icons.push("🌿");
+        }
+        // 4. 砂漠 (E1 GL0)
+        else if (tid.includes("DESERT")) {
+            icons.push("🏜️");
+        }
+        // 5. 荒野 (E2 GL0)
+        else if (tid.includes("WASTELAND")) {
+            icons.push("⛰️");
+            icons.push("🏜️");
+        }
+        // 6. 森系 (E1 GL2 / GL3)
+        else if (tid.includes("FOREST")) {
+            if (tid.includes("GL3") || tid.includes("DEEP")) {
+                icons.push("🌳"); // 深い森: 🌳
+            } else {
+                icons.push("🌲"); // 森: 🌲
+            }
+        }
+        // 7. 平地 (E1 GL1)
+        else if (tid.includes("PLAINS")) {
+            icons.push("🌱");
+        } else {
+            icons.push("🌱");
+        }
+
+        // 8. 資源がある場合、末尾に資源アイコンを追加
+        if (cellData.socketResource) {
+            const sIcon = this.getSocketResourceIcon(cellData.socketResource);
+            if (sIcon) icons.push(sIcon);
+        }
+
+        return icons;
+    }
+
+    /**
+     * 🎨 新パターン (SYMBOLIC_BOARD) 用のセルHTML生成 (右上産出 + 左下属性＆資源)
+     */
+    createSymbolicTileHtml(cellData, yieldInfo) {
+        if (!cellData || !cellData.terrain) return "";
+        const activeYield = yieldInfo || { icon: "🌾", val: 0 };
+        const attrIcons = this.getTerrainAttributeIcons(cellData);
+        const iconsHtml = attrIcons.map(icon => `<span class="symbolic-attr-icon">${icon}</span>`).join("");
+        
+        return `<div class="symbolic-tile-container"><div class="symbolic-yield-badge"><span class="symbolic-yield-icon">${activeYield.icon}</span><span class="symbolic-yield-val">${activeYield.val}</span></div><div class="symbolic-icons-tray">${iconsHtml}</div></div>`;
     }
 }

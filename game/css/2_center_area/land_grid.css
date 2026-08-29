@@ -379,7 +379,7 @@ body.is-camera-dragging-global * {
     border-radius: 3px;
 }
 
-/* 🔥 本営マス(C3) 上部右端 残り火残量バッジ (白枠 1px ✕ 中オレンジ 20pt) */
+/* 🔥 本営マス(C3) 上部右端 残り火残量バッジ (白枠 1px ✕ 中オレンジ 24pt: 20%拡大) */
 .cell.hq .hq-ember-val-badge {
     position: absolute;
     top: 4px;
@@ -387,7 +387,7 @@ body.is-camera-dragging-global * {
     color: #ff6b00;
     -webkit-text-stroke: 1px #ffffff;
     paint-order: stroke fill;
-    font-size: 20pt;
+    font-size: 24pt;
     font-weight: 900;
     line-height: 1;
     z-index: 5;
@@ -821,34 +821,9 @@ body.is-camera-dragging-global * {
 }
 
 .cell.cell-placed-this-turn:hover {
-    filter: brightness(1.15) !important;
-}
-
-.undo-badge {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    background: rgba(30, 41, 59, 0.9);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    color: #ffffff;
-    font-size: 11px;
-    font-weight: 900;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
-    pointer-events: none;
-    z-index: 20;
-    transition: transform 0.15s ease, background-color 0.15s ease;
-}
-
-.cell.cell-placed-this-turn:hover .undo-badge {
-    transform: scale(1.18);
-    background: #1abc9c;
-    border-color: #16a085;
+    filter: brightness(1.15);
+    outline: 2px dashed rgba(255, 107, 129, 0.85);
+    outline-offset: -2px;
 }
 
 /* 🌟 連結即時ボーナス・フロート上昇ポップアップ演出 */
@@ -965,6 +940,187 @@ body.is-camera-dragging-global * {
     font-weight: bold;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
     margin-top: 2px;
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   🎨 タイルテキストスタイル・プリセット体系 (可逆的テーマシステム)
+   ═════════════════════════════════════════════════════════════════ */
+
+/* 0. DEFAULT (現行スタイル: 100%完全同一・即時復元用) */
+.tile-category-icon {
+    display: none;
+    margin-right: 3px;
+}
+.symbolic-tile-container {
+    display: none;
+}
+
+/* 1. PILL_BADGE (アイデアA: 上品な半透明カプセルUI) */
+[data-tile-style="PILL_BADGE"] .tile-content-box,
+[data-tile-style="PILL_BADGE"] .socket-tile-content-box {
+    background: rgba(10, 14, 22, 0.68);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 6px;
+    padding: 3px 6px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.50);
+}
+[data-tile-style="PILL_BADGE"] .tile-title-line,
+[data-tile-style="PILL_BADGE"] .socket-resource-line {
+    font-size: 11.5pt;
+    letter-spacing: 0.5px;
+    margin-bottom: 1px;
+}
+[data-tile-style="PILL_BADGE"] .tile-yield-line,
+[data-tile-style="PILL_BADGE"] .socket-yield-line {
+    font-size: 11.5pt;
+}
+
+/* 2. ICON_SYMMETRIC (アイデアB: アイコン完全対称・シンプル) */
+[data-tile-style="ICON_SYMMETRIC"] .tile-category-icon {
+    display: inline-block;
+}
+[data-tile-style="ICON_SYMMETRIC"] .tile-yield-line .yield-colon,
+[data-tile-style="ICON_SYMMETRIC"] .socket-yield-line .yield-colon {
+    display: none;
+}
+[data-tile-style="ICON_SYMMETRIC"] .tile-yield-line .yield-icon,
+[data-tile-style="ICON_SYMMETRIC"] .socket-yield-line .yield-icon {
+    margin-right: 4px;
+}
+
+/* 3. MODERN_BOARD (アイデアC+A+B統合: 最高峰ボードゲーム風モダンUI) */
+[data-tile-style="MODERN_BOARD"] .tile-content-box,
+[data-tile-style="MODERN_BOARD"] .socket-tile-content-box {
+    background: linear-gradient(180deg, rgba(20, 26, 36, 0.82) 0%, rgba(10, 14, 20, 0.90) 100%);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    border: 1px solid rgba(241, 196, 15, 0.35);
+    border-radius: 6px;
+    padding: 3px 7px;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.60), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+[data-tile-style="MODERN_BOARD"] .tile-category-icon {
+    display: inline-block;
+    font-size: 11pt;
+    margin-right: 3px;
+}
+[data-tile-style="MODERN_BOARD"] .tile-title-line,
+[data-tile-style="MODERN_BOARD"] .socket-resource-line {
+    font-size: 10.5pt;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.92);
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+}
+[data-tile-style="MODERN_BOARD"] .tile-yield-line .yield-colon,
+[data-tile-style="MODERN_BOARD"] .socket-yield-line .yield-colon {
+    display: none;
+}
+[data-tile-style="MODERN_BOARD"] .tile-yield-line,
+[data-tile-style="MODERN_BOARD"] .socket-yield-line {
+    font-size: 12.5pt;
+    font-weight: 900;
+}
+[data-tile-style="MODERN_BOARD"] .tile-yield-line .yield-val,
+[data-tile-style="MODERN_BOARD"] .socket-yield-line .yield-val {
+    font-size: 13.5pt;
+    font-weight: 900;
+    color: #ffd700;
+    margin-left: 2px;
+}
+
+/* 4. SYMBOLIC_BOARD (新パターン: 右上産出 + 左下属性＆資源 + 上下左右2pxマージン) */
+[data-tile-style="SYMBOLIC_BOARD"] .cell {
+    margin: 2px;
+}
+[data-tile-style="SYMBOLIC_BOARD"] .tile-content-box,
+[data-tile-style="SYMBOLIC_BOARD"] .socket-tile-content-box {
+    display: none;
+}
+[data-tile-style="SYMBOLIC_BOARD"] .symbolic-tile-container {
+    display: block;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    user-select: none;
+}
+[data-tile-style="SYMBOLIC_BOARD"] .symbolic-yield-badge {
+    position: absolute;
+    top: 4px;
+    right: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    text-shadow: 0 2px 5px rgba(0, 0, 0, 0.95);
+}
+[data-tile-style="SYMBOLIC_BOARD"] .symbolic-yield-icon {
+    font-size: 26pt;
+    line-height: 1;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.9));
+}
+[data-tile-style="SYMBOLIC_BOARD"] .symbolic-yield-val {
+    font-size: 28pt;
+    font-weight: 900;
+    color: #ffffff;
+    line-height: 1;
+    letter-spacing: -0.5px;
+}
+[data-tile-style="SYMBOLIC_BOARD"] .symbolic-icons-tray {
+    position: absolute;
+    bottom: 4px;
+    left: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 0;
+}
+[data-tile-style="SYMBOLIC_BOARD"] .symbolic-attr-icon {
+    font-size: 16pt;
+    line-height: 1;
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.9));
+}
+
+/* 🎨 盤面スタイル切替フロートボタン (画面左下・邪魔にならないデザイン) */
+.tile-style-switcher-widget {
+    position: fixed;
+    bottom: 14px;
+    left: 14px;
+    z-index: 850;
+    pointer-events: auto;
+}
+
+.tile-style-switcher-btn {
+    background: rgba(18, 24, 34, 0.88);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: 1px solid rgba(241, 196, 15, 0.45);
+    border-radius: 20px;
+    padding: 6px 14px;
+    color: #ffd700;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+    transition: all 0.18s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+}
+
+.tile-style-switcher-btn:hover {
+    background: rgba(30, 40, 56, 0.95);
+    border-color: rgba(241, 196, 15, 0.85);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.65);
+}
+
+.tile-style-switcher-btn:active {
+    transform: translateY(0);
 }
 
 /* ✨ 資源産出ブロック 土地属性別イメージカラー連動ハイライト */

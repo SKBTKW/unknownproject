@@ -2,9 +2,18 @@
  * 📐 UILayoutConfig
  * ゲーム全UI要素の絶対レイアウト・位置座標・2層レイヤー構造・重ね順(z-index)を一括集中管理する設定ファイル
  */
+const UI_TILE_TEXT_PRESETS = {
+    DEFAULT: "DEFAULT",               // 0. 現行スタイル (100%完全保持・即時復元用)
+    PILL_BADGE: "PILL_BADGE",         // 1. アイデアA: 上品な半透明カプセルUI
+    ICON_SYMMETRIC: "ICON_SYMMETRIC", // 2. アイデアB: アイコン完全対称・シンプル
+    MODERN_BOARD: "MODERN_BOARD",     // 3. ハイブリッド: ボードゲーム風モダン階層UI
+    SYMBOLIC_BOARD: "SYMBOLIC_BOARD"  // 4. 新パターン: 右上産出 + 左下属性＆資源 (マージン2px)
+};
+
 const UI_FEATURE_FLAGS = {
     enableBottomFocusBlur: true,  // 🌟 2層レイヤー構造（手札ホバー時の盤面暗転ブラー）有効化
-    enableReserveArea: false
+    enableReserveArea: false,
+    tileTextStyle: UI_TILE_TEXT_PRESETS.DEFAULT // デフォルトは現行仕様
 };
 
 const UILayoutConfig = {
@@ -263,12 +272,14 @@ UILayoutConfig.applyLayout = function() {
 if (typeof window !== "undefined") {
     window.UILayoutConfig = UILayoutConfig;
     window.UI_FEATURE_FLAGS = UI_FEATURE_FLAGS;
+    window.UI_TILE_TEXT_PRESETS = UI_TILE_TEXT_PRESETS;
 }
 if (typeof globalThis !== "undefined") {
     globalThis.UILayoutConfig = UILayoutConfig;
     globalThis.UI_FEATURE_FLAGS = UI_FEATURE_FLAGS;
+    globalThis.UI_TILE_TEXT_PRESETS = UI_TILE_TEXT_PRESETS;
 }
 
-export { UI_FEATURE_FLAGS, UILayoutConfig };
+export { UI_FEATURE_FLAGS, UI_TILE_TEXT_PRESETS, UILayoutConfig };
 export default UILayoutConfig;
 

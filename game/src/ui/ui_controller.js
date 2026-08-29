@@ -258,6 +258,9 @@ class UIController {
         if (settingsSys && typeof settingsSys.mount === "function") {
             settingsSys.mount();
         }
+
+        // 🎨 盤面テキストスタイル切替スイッチャー（即時検証＆完全復元用）
+        this.initTileTextStyleSwitcher();
     }
 
     initStaticI18nLabels() {
@@ -294,6 +297,65 @@ class UIController {
         if (typeof document === "undefined") return;
         const el = document.getElementById(id);
         if (el) el.innerText = text;
+    }
+
+    /**
+     * 🎨 盤面テキストスタイル切替スイッチャー（リアルタイム比較 ＆ 即時復元）
+     */
+    initTileTextStyleSwitcher() {
+        if (typeof document === "undefined") return;
+        if (document.getElementById("tileStyleSwitcherWidget")) return;
+
+        const getPresets = () => [
+            { id: "DEFAULT", labelKey: "UI_TILE_STYLE_LABEL_DEFAULT" },
+            { id: "PILL_BADGE", labelKey: "UI_TILE_STYLE_LABEL_PILL" },
+            { id: "ICON_SYMMETRIC", labelKey: "UI_TILE_STYLE_LABEL_SYMMETRIC" },
+            { id: "MODERN_BOARD", labelKey: "UI_TILE_STYLE_LABEL_MODERN" },
+            { id: "SYMBOLIC_BOARD", labelKey: "UI_TILE_STYLE_LABEL_SYMBOLIC" }
+        ];
+        const presets = getPresets();
+
+        let currentIdx = 0;
+        const currentStyle = (typeof UI_FEATURE_FLAGS !== "undefined" && UI_FEATURE_FLAGS.tileTextStyle) ? UI_FEATURE_FLAGS.tileTextStyle : "DEFAULT";
+        const foundIdx = presets.findIndex(p => p.id === currentStyle);
+        if (foundIdx >= 0) currentIdx = foundIdx;
+
+        const widget = document.createElement("div");
+        widget.id = "tileStyleSwitcherWidget";
+        widget.className = "tile-style-switcher-widget";
+
+        const getBtnText = () => {
+            const prefix = I18n ? I18n.t("UI_TILE_STYLE_BTN_PREFIX") : "Style: ";
+            const label = I18n ? I18n.t(presets[currentIdx].labelKey) : presets[currentIdx].id;
+            return `<span class="switcher-icon">🎨</span> ${prefix}${label}`;
+        };
+
+        const btn = document.createElement("button");
+        btn.className = "tile-style-switcher-btn";
+        btn.innerHTML = getBtnText();
+        btn.title = I18n ? I18n.t("UI_TILE_STYLE_BTN_TITLE") : "";
+
+        const applyStyle = (styleId) => {
+            if (typeof UI_FEATURE_FLAGS !== "undefined") {
+                UI_FEATURE_FLAGS.tileTextStyle = styleId;
+            }
+            const boardEl = document.getElementById("gridBoard");
+            if (boardEl) {
+                boardEl.setAttribute("data-tile-style", styleId);
+            }
+            if (document.body) {
+                document.body.setAttribute("data-tile-style", styleId);
+            }
+            btn.innerHTML = getBtnText();
+        };
+
+        btn.addEventListener("click", () => {
+            currentIdx = (currentIdx + 1) % presets.length;
+            applyStyle(presets[currentIdx].id);
+        });
+
+        widget.appendChild(btn);
+        document.body.appendChild(widget);
     }
 
     /**
@@ -959,10 +1021,39 @@ class UIController {
 
         const coordStr = `${String.fromCharCode(65 + c)}${r + 1}`;
         const isHQVic = (this.state && typeof this.state.isHQVicinity === "function") ? this.state.isHQVicinity(r, c) : false;
+
+        // 🌊 清湖 (Lake) / オアシス (Oasis) 周囲8マスの水脈判定
+        let nearWaterType = null;
+        if (this.state && this.state.grid) {
+            const size = this.state.grid.length;
+            for (let lr = 0; lr < size; lr++) {
+                for (let lc = 0; lc < size; lc++) {
+                    const lcCell = this.state.grid[lr][lc];
+                    if (lcCell && lcCell.placed && lcCell.socketResource) {
+                        const sid = lcCell.socketResource.id || lcCell.socketResource.nameKey || "";
+                        if (sid === "SOCKET_LAKE" || sid === "SOCKET_OASIS") {
+                            if (Math.abs(lr - r) <= 1 && Math.abs(lc - c) <= 1 && !(lr === r && lc === c)) {
+                                nearWaterType = sid === "SOCKET_OASIS" ? "OASIS" : "LAKE";
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (nearWaterType) break;
+            }
+        }
+
         let title = `[${coordStr}]`;
         let desc = isHQVic 
             ? (I18n ? I18n.t("UI_CELL_HQ_VICINITY_DESC") : "🏛️ 本営近郊エリア") 
             : (I18n ? I18n.t("UI_CELL_UNCLAIMED") : "未開拓の土地");
+
+        if (nearWaterType && !cell.placed) {
+            const waterTitle = I18n ? I18n.t(nearWaterType === "OASIS" ? "UI_OASIS_VICINITY_TITLE" : "UI_LAKE_VICINITY_TITLE") : "🌊 水脈エリア";
+            title = `[${coordStr}] ${waterTitle}`;
+            const waterDesc = I18n ? I18n.t(nearWaterType === "OASIS" ? "UI_OASIS_VICINITY_UNPLACED_DESC" : "UI_LAKE_VICINITY_UNPLACED_DESC") : "";
+            desc = `${desc}<div style="margin-top:8px;">${waterDesc}</div>`;
+        }
 
         if (cell.isHQ) {
             title = I18n ? I18n.t("UI_CELL_HQ_TITLE", { coord: coordStr }) : `🏛️ HQ [${coordStr}]`;
@@ -982,6 +1073,7 @@ class UIController {
             let tm = (t.mystic !== undefined) ? t.mystic : ((t.baseYieldsPerTile && t.baseYieldsPerTile.mystic) || (t.yields && t.yields.mystic) || 0);
 
             const bonusParts = [];
+            let sourceWaterDesc = "";
             // ソケット資源
             if (cell.socketResource) {
                 const s = cell.socketResource;
@@ -994,6 +1086,11 @@ class UIController {
                     ? this.boardGrid.getSocketResourceIcon(s)
                     : (s.icon || "💎");
                 bonusParts.push(`${resIcon} : ${sName}`);
+
+                const sid = s.id || s.nameKey || "";
+                if (sid === "SOCKET_LAKE" || sid === "SOCKET_OASIS") {
+                    sourceWaterDesc = I18n ? I18n.t(sid === "SOCKET_OASIS" ? "UI_OASIS_SOURCE_DESC" : "UI_LAKE_SOURCE_DESC") : "";
+                }
             }
 
             // 本営近郊ボーナス（産出している数値すべてに+1）
@@ -1016,26 +1113,6 @@ class UIController {
             }
 
             // 🌊 清湖 (Lake) / オアシス (Oasis) 周囲8マスの灌漑バフ (+50% 食料産出ブースト)
-            let nearWaterType = null;
-            const checkNearWater = (tr, tc) => {
-                if (!this.state || !this.state.grid) return null;
-                const size = this.state.grid.length;
-                for (let lr = 0; lr < size; lr++) {
-                    for (let lc = 0; lc < size; lc++) {
-                        const lcCell = this.state.grid[lr][lc];
-                        if (lcCell && lcCell.placed && lcCell.socketResource) {
-                            const sid = lcCell.socketResource.id || lcCell.socketResource.nameKey || "";
-                            if (sid === "SOCKET_LAKE" || sid === "SOCKET_OASIS") {
-                                if (Math.abs(lr - tr) <= 1 && Math.abs(lc - tc) <= 1 && !(lr === tr && lc === tc)) {
-                                    return sid === "SOCKET_OASIS" ? "OASIS" : "LAKE";
-                                }
-                            }
-                        }
-                    }
-                }
-                return null;
-            };
-            nearWaterType = checkNearWater(r, c);
             if (nearWaterType && tf > 0) {
                 const baseFoodForWater = (t.food !== undefined) ? t.food : ((t.baseYieldsPerTile && t.baseYieldsPerTile.food) || (t.yields && t.yields.food) || 0);
                 const waterBonus = Math.max(1, Math.floor(baseFoodForWater * 0.5));
@@ -1054,6 +1131,9 @@ class UIController {
             const bonusStr = bonusParts.length > 0 ? ` <span style="color:#f1c40f;">(${bonusParts.join(", ")})</span>` : "";
             const perTurnLabel = I18n ? I18n.t("UI_CELL_PER_TURN_YIELD") : "毎ターン産出:";
             desc = `${perTurnLabel} <strong>${yieldStr}</strong>${bonusStr}`;
+            if (sourceWaterDesc) {
+                desc += sourceWaterDesc;
+            }
 
             // ↩️ 当ターン配置マスの場合は配置取り消し（置き直し）ガイドを明示
             if (isPlacedThisTurn) {
