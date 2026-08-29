@@ -622,6 +622,12 @@ class GridEngine {
         this.state.placedBlockCount = (this.state.placedBlockCount || 0) + 1;
         this.state.hasPickedThisTurn = true;
 
+        if (this.engine && this.engine.deckManager) {
+            this.engine.deckManager.consumeCardIfUnique(terrain);
+        } else if (this.state && this.state.deckManager) {
+            this.state.deckManager.consumeCardIfUnique(terrain);
+        }
+
         if (handIdx >= 0 && this.state.handOffering && handIdx < this.state.handOffering.length && this.state.handOffering[handIdx]) {
             this.state.handOffering[handIdx] = { isBlank: true };
         }

@@ -680,6 +680,25 @@ export async function runUILifecycleInspection() {
             assert("盤面セル右クリック回転後に形状が横 [[1,1]] (1行2列) に戻ること", landCard1x2.currentShape.length === 1 && landCard1x2.currentShape[0].length === 2);
         }
 
+        // 🌟 トーストキューのスタッガーディレイ ＆ 垂直クリアランス（被り防止）検証
+        engine.state.toastQueue = [
+            { r: 0, c: 0, text: "⚡ 連結ボーナス!" },
+            { r: 0, c: 0, text: "🎉 2x2大土地完成!" }
+        ];
+        ui.processToastQueue();
+        await new Promise(r => setTimeout(r, 50));
+        const firstPopups = mockDoc.body.children.filter(el => el.classList && el.classList.contains("float-toast-bonus"));
+        assert("1つ目のトーストが即時DOM生成されること", firstPopups.length === 1);
+
+        await new Promise(r => setTimeout(r, 320));
+        const secondPopups = mockDoc.body.children.filter(el => el.classList && el.classList.contains("float-toast-bonus"));
+        assert("2つ目のトーストがスタッガーディレイ(280ms)後に生成されること", secondPopups.length === 2);
+
+        const top1 = parseFloat(secondPopups[0].style.top);
+        const top2 = parseFloat(secondPopups[1].style.top);
+        const verticalDiff = Math.abs(top1 - top2);
+        assert("複数トーストの垂直スタック間隔が54px確保され文字が被らないこと", verticalDiff >= 54);
+
     } catch (err) {
         console.error("  ❌ [FATAL] UIライフサイクル実行中に致命的例外が発生:", err);
         failCount++;

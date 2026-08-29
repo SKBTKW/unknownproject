@@ -3,53 +3,54 @@ import { LAND_SYSTEM_DATA } from '../data/land_system.js';
 import { DIRECTIVES } from './directive_system.js';
 import { LAND_CARDS_MASTER } from '../data/land_cards_data.js';
 import { ConditionEvaluator } from '../core/condition_evaluator.js';
+import { CardCycleSystem, CYCLE_POLICIES } from './card_cycle_system.js';
 
 const COMMAND_CARDS_MASTER = [
     // 📜 経済・政策カード
-    { id: "CMD_CONSERVE_EMBER", category: "COMMAND", nameKey: "CMD_CONSERVE_EMBER_NAME", descriptionKey: "CMD_CONSERVE_EMBER_DESC", cost: {}, maxEmber: 18, minStage: 1, rarity: "C", weight: 0.40 },
-    { id: "CMD_RATIONING", category: "COMMAND", nameKey: "CMD_RATIONING_NAME", descriptionKey: "CMD_RATIONING_DESC", cost: {}, maxFood: 40, minStage: 1, rarity: "C", weight: 0.40 },
-    { id: "CMD_SINGLE_CLEARING", category: "COMMAND", nameKey: "CMD_SINGLE_CLEARING_NAME", descriptionKey: "CMD_SINGLE_CLEARING_DESC", cost: { ember: 1 }, reqForestOrHillForest: 1, minStage: 1, rarity: "C", weight: 0.35 },
-    { id: "CMD_WETLAND_RECLAMATION", category: "COMMAND", nameKey: "CMD_WETLAND_RECLAMATION_NAME", descriptionKey: "CMD_WETLAND_RECLAMATION_DESC", cost: { wood: 15, ember: 1 }, reqWetland: 1, reqWood: 15, minStage: 1, rarity: "UC", weight: 0.25 },
-    { id: "CMD_SYSTEMATIC_LOGGING", category: "COMMAND", nameKey: "CMD_SYSTEMATIC_LOGGING_NAME", descriptionKey: "CMD_SYSTEMATIC_LOGGING_DESC", cost: { food: 10 }, reqForestOrHillForest: 2, minStage: 2, rarity: "UC", weight: 0.25 },
-    { id: "CMD_AGRICULTURAL_POLICY", category: "ECONOMY", nameKey: "CMD_AGRICULTURAL_POLICY_NAME", descriptionKey: "CMD_AGRICULTURAL_POLICY_DESC", cost: { wood: 20 }, reqPlains: 1, reqWood: 20, isUnique: true, minStage: 1, rarity: "R", weight: 0.20 },
-    { id: "CMD_LAND_FOCUS", category: "ECONOMY", nameKey: "CMD_LAND_FOCUS_NAME", descriptionKey: "CMD_LAND_FOCUS_DESC", cost: { food: 10, wood: 10 }, maxPlacedBlocks: 5, minStage: 1, rarity: "C", weight: 0.40 },
-    { id: "CMD_EMERGENCY_LEVY", category: "COMMAND", nameKey: "CMD_EMERGENCY_LEVY_NAME", descriptionKey: "CMD_EMERGENCY_LEVY_DESC", cost: { food: 20 }, reqTrialWithin: 6, reqFood: 20, minStage: 1, rarity: "C", weight: 0.35 },
-    { id: "CMD_PASTORAL_EXPANSION", category: "COMMAND", nameKey: "CMD_PASTORAL_EXPANSION_NAME", descriptionKey: "CMD_PASTORAL_EXPANSION_DESC", cost: { wood: 10 }, reqDiscoveredResourceTag: "LIVESTOCK", minStage: 1, rarity: "C", weight: 0.35 },
-    { id: "CMD_ABANDONED_SETTLEMENT", category: "COMMAND", nameKey: "CMD_ABANDONED_SETTLEMENT_NAME", descriptionKey: "CMD_ABANDONED_SETTLEMENT_DESC", cost: { ember: 1 }, reqEmptyCells: 8, minStage: 1, rarity: "UC", weight: 0.25 },
-    { id: "CMD_BLACK_MARKET", category: "ECONOMY", nameKey: "CMD_BLACK_MARKET_NAME", descriptionKey: "CMD_BLACK_MARKET_DESC", cost: { food: 25 }, reqFood: 25, isUnique: true, minStage: 2, rarity: "R", weight: 0.20 },
-    { id: "CMD_GRAND_CULTIVATION", category: "COMMAND", nameKey: "CMD_GRAND_CULTIVATION_NAME", descriptionKey: "CMD_GRAND_CULTIVATION_DESC", cost: { wood: 35 }, reqConnectedPlains: 8, minStage: 2, rarity: "UC", weight: 0.25 },
-    { id: "CMD_RESETTLEMENT", category: "COMMAND", nameKey: "CMD_RESETTLEMENT_NAME", descriptionKey: "CMD_RESETTLEMENT_DESC", cost: { food: 15, wood: 10 }, reqPlains: 6, maxEmber: 12, minStage: 2, rarity: "R", weight: 0.20 },
-    { id: "CMD_LIME_CONSTRUCTION", category: "COMMAND", nameKey: "CMD_LIME_CONSTRUCTION_NAME", descriptionKey: "CMD_LIME_CONSTRUCTION_DESC", cost: { food: 10 }, reqDiscoveredResourceTags: ["STONE", "WOOD"], minStage: 2, rarity: "UC", weight: 0.25 },
-    { id: "CMD_GREAT_RAMPART_PROJECT", category: "COMMAND", nameKey: "CMD_GREAT_RAMPART_PROJECT_NAME", descriptionKey: "CMD_GREAT_RAMPART_PROJECT_DESC", cost: { wood: 70 }, reqConnectedPlains: 12, reqTrialWithin: 10, isUnique: true, minStage: 3, rarity: "UR", weight: 0.10 },
+    { id: "CMD_CONSERVE_EMBER", category: "COMMAND", nameKey: "CMD_CONSERVE_EMBER_NAME", descriptionKey: "CMD_CONSERVE_EMBER_DESC", cost: {}, maxEmber: 18, minStage: 1, rarity: "C", weight: 0.40, cyclePolicy: "RARITY" },
+    { id: "CMD_RATIONING", category: "COMMAND", nameKey: "CMD_RATIONING_NAME", descriptionKey: "CMD_RATIONING_DESC", cost: {}, maxFood: 40, minStage: 1, rarity: "C", weight: 0.40, cyclePolicy: "RARITY" },
+    { id: "CMD_SINGLE_CLEARING", category: "COMMAND", nameKey: "CMD_SINGLE_CLEARING_NAME", descriptionKey: "CMD_SINGLE_CLEARING_DESC", cost: { ember: 1 }, reqForestOrHillForest: 1, minStage: 1, rarity: "C", weight: 0.35, cyclePolicy: "RARITY" },
+    { id: "CMD_WETLAND_RECLAMATION", category: "COMMAND", nameKey: "CMD_WETLAND_RECLAMATION_NAME", descriptionKey: "CMD_WETLAND_RECLAMATION_DESC", cost: { wood: 15, ember: 1 }, reqWetland: 1, reqWood: 15, minStage: 1, rarity: "UC", weight: 0.25, cyclePolicy: "RARITY" },
+    { id: "CMD_SYSTEMATIC_LOGGING", category: "COMMAND", nameKey: "CMD_SYSTEMATIC_LOGGING_NAME", descriptionKey: "CMD_SYSTEMATIC_LOGGING_DESC", cost: { food: 10 }, reqForestOrHillForest: 2, minStage: 2, rarity: "UC", weight: 0.25, cyclePolicy: "RARITY" },
+    { id: "CMD_AGRICULTURAL_POLICY", category: "ECONOMY", nameKey: "CMD_AGRICULTURAL_POLICY_NAME", descriptionKey: "CMD_AGRICULTURAL_POLICY_DESC", cost: { wood: 20 }, reqPlains: 1, reqWood: 20, cyclePolicy: "UNIQUE", minStage: 1, rarity: "R", weight: 0.20 },
+    { id: "CMD_LAND_FOCUS", category: "ECONOMY", nameKey: "CMD_LAND_FOCUS_NAME", descriptionKey: "CMD_LAND_FOCUS_DESC", cost: { food: 10, wood: 10 }, maxPlacedBlocks: 5, minStage: 1, rarity: "C", weight: 0.40, cyclePolicy: "RARITY" },
+    { id: "CMD_EMERGENCY_LEVY", category: "COMMAND", nameKey: "CMD_EMERGENCY_LEVY_NAME", descriptionKey: "CMD_EMERGENCY_LEVY_DESC", cost: { food: 20 }, reqTrialWithin: 6, reqFood: 20, minStage: 1, rarity: "C", weight: 0.35, cyclePolicy: "RARITY" },
+    { id: "CMD_PASTORAL_EXPANSION", category: "COMMAND", nameKey: "CMD_PASTORAL_EXPANSION_NAME", descriptionKey: "CMD_PASTORAL_EXPANSION_DESC", cost: { wood: 10 }, reqDiscoveredResourceTag: "LIVESTOCK", minStage: 1, rarity: "C", weight: 0.35, cyclePolicy: "RARITY" },
+    { id: "CMD_ABANDONED_SETTLEMENT", category: "COMMAND", nameKey: "CMD_ABANDONED_SETTLEMENT_NAME", descriptionKey: "CMD_ABANDONED_SETTLEMENT_DESC", cost: { ember: 1 }, reqEmptyCells: 8, minStage: 1, rarity: "UC", weight: 0.25, cyclePolicy: "RARITY" },
+    { id: "CMD_BLACK_MARKET", category: "ECONOMY", nameKey: "CMD_BLACK_MARKET_NAME", descriptionKey: "CMD_BLACK_MARKET_DESC", cost: { food: 25 }, reqFood: 25, cyclePolicy: "UNIQUE", minStage: 2, rarity: "R", weight: 0.20 },
+    { id: "CMD_GRAND_CULTIVATION", category: "COMMAND", nameKey: "CMD_GRAND_CULTIVATION_NAME", descriptionKey: "CMD_GRAND_CULTIVATION_DESC", cost: { wood: 35 }, reqConnectedPlains: 8, minStage: 2, rarity: "UC", weight: 0.25, cyclePolicy: "RARITY" },
+    { id: "CMD_RESETTLEMENT", category: "COMMAND", nameKey: "CMD_RESETTLEMENT_NAME", descriptionKey: "CMD_RESETTLEMENT_DESC", cost: { food: 15, wood: 10 }, reqPlains: 6, maxEmber: 12, minStage: 2, rarity: "R", weight: 0.20, cyclePolicy: "RARITY" },
+    { id: "CMD_LIME_CONSTRUCTION", category: "COMMAND", nameKey: "CMD_LIME_CONSTRUCTION_NAME", descriptionKey: "CMD_LIME_CONSTRUCTION_DESC", cost: { food: 10 }, reqDiscoveredResourceTags: ["STONE", "WOOD"], minStage: 2, rarity: "UC", weight: 0.25, cyclePolicy: "RARITY" },
+    { id: "CMD_GREAT_RAMPART_PROJECT", category: "COMMAND", nameKey: "CMD_GREAT_RAMPART_PROJECT_NAME", descriptionKey: "CMD_GREAT_RAMPART_PROJECT_DESC", cost: { wood: 70 }, reqConnectedPlains: 12, reqTrialWithin: 10, cyclePolicy: "UNIQUE", minStage: 3, rarity: "UR", weight: 0.10 },
 
     // 🛡️ 軍事・防衛カード
-    { id: "CMD_VIGILANCE", category: "COMMAND", nameKey: "CMD_VIGILANCE_NAME", descriptionKey: "CMD_VIGILANCE_DESC", cost: { wood: 15 }, reqTrialOrLowDefense: true, minStage: 1, rarity: "C", weight: 0.35 },
-    { id: "CMD_MUD_OBSTACLE", category: "COMMAND", nameKey: "CMD_MUD_OBSTACLE_NAME", descriptionKey: "CMD_MUD_OBSTACLE_DESC", cost: { wood: 15 }, reqWetlandOrLake: true, reqTrialNotice: true, minStage: 1, rarity: "C", weight: 0.35 },
-    { id: "CMD_HIGH_GROUND_FORMATION", category: "COMMAND", nameKey: "CMD_HIGH_GROUND_FORMATION_NAME", descriptionKey: "CMD_HIGH_GROUND_FORMATION_DESC", cost: { wood: 10 }, reqHillOrMountain: true, reqTrialNotice: true, minStage: 1, rarity: "C", weight: 0.35 },
-    { id: "CMD_MILITARY_FOCUS", category: "MILITARY", nameKey: "CMD_MILITARY_FOCUS_NAME", descriptionKey: "CMD_MILITARY_FOCUS_DESC", cost: { wood: 20 }, maxDefense: 20, minStage: 1, rarity: "UC", weight: 0.30 },
-    { id: "CMD_CAVALRY_SCOUTS", category: "COMMAND", nameKey: "CMD_CAVALRY_SCOUTS_NAME", descriptionKey: "CMD_CAVALRY_SCOUTS_DESC", cost: { food: 30, wood: 20 }, reqDiscoveredResourceTag: "HORSE", reqPlains: 6, reqTrialNotice: true, minStage: 1, rarity: "C", weight: 0.35 },
-    { id: "CMD_OUTPOST_SIGNAL", category: "COMMAND", nameKey: "CMD_OUTPOST_SIGNAL_NAME", descriptionKey: "CMD_OUTPOST_SIGNAL_DESC", cost: { wood: 15 }, reqOutpostOrHighGround: true, minStage: 2, rarity: "UC", weight: 0.25 },
-    { id: "CMD_IRON_RAMPART", category: "MILITARY", nameKey: "CMD_IRON_RAMPART_NAME", descriptionKey: "CMD_IRON_RAMPART_DESC", cost: { wood: 20 }, reqWood: 20, minStage: 2, rarity: "UC", weight: 0.30 },
-    { id: "CMD_BALLISTA_SET", category: "MILITARY", nameKey: "CMD_BALLISTA_SET_NAME", descriptionKey: "CMD_BALLISTA_SET_DESC", cost: { wood: 30 }, reqWood: 30, reqHillOrMountain: true, isUnique: true, minStage: 2, rarity: "R", weight: 0.20 },
-    { id: "CMD_GUIDED_DEFENSE", category: "COMMAND", nameKey: "CMD_GUIDED_DEFENSE_NAME", descriptionKey: "CMD_GUIDED_DEFENSE_DESC", cost: { wood: 20 }, reqConnectedHillOrForest: 3, minStage: 2, rarity: "C", weight: 0.35 },
-    { id: "CMD_SCOUT_ENEMY", category: "COMMAND", nameKey: "CMD_SCOUT_ENEMY_NAME", descriptionKey: "CMD_SCOUT_ENEMY_DESC", cost: { food: 5 }, reqTrialNotice: true, minStage: 2, rarity: "C", weight: 0.35 },
-    { id: "CMD_SCORCHED_RETREAT", category: "COMMAND", nameKey: "CMD_SCORCHED_RETREAT_NAME", descriptionKey: "CMD_SCORCHED_RETREAT_DESC", cost: { food: 20 }, reqTrialWithin: 3, minStage: 2, rarity: "R", weight: 0.20 },
-    { id: "CMD_CAVALRY_HOST", category: "COMMAND", nameKey: "CMD_CAVALRY_HOST_NAME", descriptionKey: "CMD_CAVALRY_HOST_DESC", cost: { food: 30, wood: 20 }, reqConnectedPlains: 12, reqFood: 40, minStage: 2, rarity: "R", weight: 0.20 },
-    { id: "CMD_LOCAL_IRON_ARMAMENT", category: "COMMAND", nameKey: "CMD_LOCAL_IRON_ARMAMENT_NAME", descriptionKey: "CMD_LOCAL_IRON_ARMAMENT_DESC", cost: { wood: 15 }, reqDiscoveredResourceTag: "IRON", reqTrialWithin: 6, minStage: 2, rarity: "UC", weight: 0.25 },
-    { id: "CMD_STONE_STRONGPOINT", category: "COMMAND", nameKey: "CMD_STONE_STRONGPOINT_NAME", descriptionKey: "CMD_STONE_STRONGPOINT_DESC", cost: { wood: 20 }, reqDiscoveredResourceTag: "STONE", minStage: 2, rarity: "C", weight: 0.35 },
+    { id: "CMD_VIGILANCE", category: "COMMAND", nameKey: "CMD_VIGILANCE_NAME", descriptionKey: "CMD_VIGILANCE_DESC", cost: { wood: 15 }, reqTrialOrLowDefense: true, minStage: 1, rarity: "C", weight: 0.35, cyclePolicy: "RARITY" },
+    { id: "CMD_MUD_OBSTACLE", category: "COMMAND", nameKey: "CMD_MUD_OBSTACLE_NAME", descriptionKey: "CMD_MUD_OBSTACLE_DESC", cost: { wood: 15 }, reqWetlandOrLake: true, reqTrialNotice: true, minStage: 1, rarity: "C", weight: 0.35, cyclePolicy: "RARITY" },
+    { id: "CMD_HIGH_GROUND_FORMATION", category: "COMMAND", nameKey: "CMD_HIGH_GROUND_FORMATION_NAME", descriptionKey: "CMD_HIGH_GROUND_FORMATION_DESC", cost: { wood: 10 }, reqHillOrMountain: true, reqTrialNotice: true, minStage: 1, rarity: "C", weight: 0.35, cyclePolicy: "RARITY" },
+    { id: "CMD_MILITARY_FOCUS", category: "MILITARY", nameKey: "CMD_MILITARY_FOCUS_NAME", descriptionKey: "CMD_MILITARY_FOCUS_DESC", cost: { wood: 20 }, maxDefense: 20, minStage: 1, rarity: "UC", weight: 0.30, cyclePolicy: "RARITY" },
+    { id: "CMD_CAVALRY_SCOUTS", category: "COMMAND", nameKey: "CMD_CAVALRY_SCOUTS_NAME", descriptionKey: "CMD_CAVALRY_SCOUTS_DESC", cost: { food: 30, wood: 20 }, reqDiscoveredResourceTag: "HORSE", reqPlains: 6, reqTrialNotice: true, minStage: 1, rarity: "C", weight: 0.35, cyclePolicy: "RARITY" },
+    { id: "CMD_OUTPOST_SIGNAL", category: "COMMAND", nameKey: "CMD_OUTPOST_SIGNAL_NAME", descriptionKey: "CMD_OUTPOST_SIGNAL_DESC", cost: { wood: 15 }, reqOutpostOrHighGround: true, minStage: 2, rarity: "UC", weight: 0.25, cyclePolicy: "RARITY" },
+    { id: "CMD_IRON_RAMPART", category: "MILITARY", nameKey: "CMD_IRON_RAMPART_NAME", descriptionKey: "CMD_IRON_RAMPART_DESC", cost: { wood: 20 }, reqWood: 20, minStage: 2, rarity: "UC", weight: 0.30, cyclePolicy: "RARITY" },
+    { id: "CMD_BALLISTA_SET", category: "MILITARY", nameKey: "CMD_BALLISTA_SET_NAME", descriptionKey: "CMD_BALLISTA_SET_DESC", cost: { wood: 30 }, reqWood: 30, reqHillOrMountain: true, cyclePolicy: "UNIQUE", minStage: 2, rarity: "R", weight: 0.20 },
+    { id: "CMD_GUIDED_DEFENSE", category: "COMMAND", nameKey: "CMD_GUIDED_DEFENSE_NAME", descriptionKey: "CMD_GUIDED_DEFENSE_DESC", cost: { wood: 20 }, reqConnectedHillOrForest: 3, minStage: 2, rarity: "C", weight: 0.35, cyclePolicy: "RARITY" },
+    { id: "CMD_SCOUT_ENEMY", category: "COMMAND", nameKey: "CMD_SCOUT_ENEMY_NAME", descriptionKey: "CMD_SCOUT_ENEMY_DESC", cost: { food: 5 }, reqTrialNotice: true, minStage: 2, rarity: "C", weight: 0.35, cyclePolicy: "RARITY" },
+    { id: "CMD_SCORCHED_RETREAT", category: "COMMAND", nameKey: "CMD_SCORCHED_RETREAT_NAME", descriptionKey: "CMD_SCORCHED_RETREAT_DESC", cost: { food: 20 }, reqTrialWithin: 3, minStage: 2, rarity: "R", weight: 0.20, cyclePolicy: "RARITY" },
+    { id: "CMD_CAVALRY_HOST", category: "COMMAND", nameKey: "CMD_CAVALRY_HOST_NAME", descriptionKey: "CMD_CAVALRY_HOST_DESC", cost: { food: 30, wood: 20 }, reqConnectedPlains: 12, reqFood: 40, minStage: 2, rarity: "R", weight: 0.20, cyclePolicy: "RARITY" },
+    { id: "CMD_LOCAL_IRON_ARMAMENT", category: "COMMAND", nameKey: "CMD_LOCAL_IRON_ARMAMENT_NAME", descriptionKey: "CMD_LOCAL_IRON_ARMAMENT_DESC", cost: { wood: 15 }, reqDiscoveredResourceTag: "IRON", reqTrialWithin: 6, minStage: 2, rarity: "UC", weight: 0.25, cyclePolicy: "RARITY" },
+    { id: "CMD_STONE_STRONGPOINT", category: "COMMAND", nameKey: "CMD_STONE_STRONGPOINT_NAME", descriptionKey: "CMD_STONE_STRONGPOINT_DESC", cost: { wood: 20 }, reqDiscoveredResourceTag: "STONE", minStage: 2, rarity: "C", weight: 0.35, cyclePolicy: "RARITY" },
 
     // ✨ 神秘・奇跡カード
-    { id: "CMD_MEDITATION", category: "COMMAND", nameKey: "CMD_MEDITATION_NAME", descriptionKey: "CMD_MEDITATION_DESC", cost: {}, maxMystic: 20, minStage: 1, rarity: "UC", weight: 0.30 },
-    { id: "CMD_FILL_THE_VOID", category: "COMMAND", nameKey: "CMD_FILL_THE_VOID_NAME", descriptionKey: "CMD_FILL_THE_VOID_DESC", cost: {}, reqMystic: 5, minStage: 1, rarity: "C", weight: 0.35 },
-    { id: "CMD_VOICE_BENEATH_EARTH", category: "COMMAND", nameKey: "CMD_VOICE_BENEATH_EARTH_NAME", descriptionKey: "CMD_VOICE_BENEATH_EARTH_DESC", cost: { mystic: 5 }, reqDiscoveredResourcesCount: 2, minStage: 1, rarity: "UC", weight: 0.25 },
-    { id: "CMD_OMEN_DREAM", category: "COMMAND", nameKey: "CMD_OMEN_DREAM_NAME", descriptionKey: "CMD_OMEN_DREAM_DESC", cost: { mystic: 5 }, reqTrialWithin: 10, minStage: 1, rarity: "UC", weight: 0.25 },
-    { id: "CMD_REKINDLE_EMBER", category: "MYSTIC", nameKey: "CMD_REKINDLE_EMBER_NAME", descriptionKey: "CMD_REKINDLE_EMBER_DESC", cost: { mystic: 10 }, reqMystic: 10, maxEmber: 5, minStage: 1, rarity: "UC", weight: 0.25 },
-    { id: "CMD_MYSTIC_FOCUS", category: "MYSTIC", nameKey: "CMD_MYSTIC_FOCUS_NAME", descriptionKey: "CMD_MYSTIC_FOCUS_DESC", cost: { mystic: 10 }, maxMystic: 30, isUnique: true, minStage: 1, rarity: "R", weight: 0.15 },
-    { id: "CMD_MANIFEST_MIRACLE", category: "COMMAND", nameKey: "CMD_MANIFEST_MIRACLE_NAME", descriptionKey: "CMD_MANIFEST_MIRACLE_DESC", cost: { mystic: 10 }, reqMystic: 10, minStage: 2, rarity: "R", weight: 0.20 },
-    { id: "CMD_TRANSMUTE_GOLDEN", category: "MYSTIC", nameKey: "CMD_TRANSMUTE_GOLDEN_NAME", descriptionKey: "CMD_TRANSMUTE_GOLDEN_DESC", cost: { mystic: 20 }, reqMystic: 20, reqUnmergedDesertOrMountain: true, isUnique: true, minStage: 2, rarity: "R", weight: 0.20 },
-    { id: "CMD_REVELATION_CHOICE", category: "COMMAND", nameKey: "CMD_REVELATION_CHOICE_NAME", descriptionKey: "CMD_REVELATION_CHOICE_DESC", cost: { mystic: 15 }, reqMystic: 15, minStage: 2, rarity: "R", weight: 0.20 },
-    { id: "CMD_LEYLINE_RESONANCE", category: "COMMAND", nameKey: "CMD_LEYLINE_RESONANCE_NAME", descriptionKey: "CMD_LEYLINE_RESONANCE_DESC", cost: { mystic: 8 }, reqDiscoveredMysticResourcesCount: 2, minStage: 2, rarity: "C", weight: 0.35 },
-    { id: "CMD_TWO_FUTURES", category: "COMMAND", nameKey: "CMD_TWO_FUTURES_NAME", descriptionKey: "CMD_TWO_FUTURES_DESC", cost: { mystic: 20 }, reqMystic: 25, isUnique: true, minStage: 3, rarity: "UR", weight: 0.10 }
+    { id: "CMD_MEDITATION", category: "COMMAND", nameKey: "CMD_MEDITATION_NAME", descriptionKey: "CMD_MEDITATION_DESC", cost: {}, maxMystic: 20, minStage: 1, rarity: "UC", weight: 0.30, cyclePolicy: "RARITY" },
+    { id: "CMD_FILL_THE_VOID", category: "COMMAND", nameKey: "CMD_FILL_THE_VOID_NAME", descriptionKey: "CMD_FILL_THE_VOID_DESC", cost: {}, reqMystic: 5, minStage: 1, rarity: "C", weight: 0.35, cyclePolicy: "RARITY" },
+    { id: "CMD_VOICE_BENEATH_EARTH", category: "COMMAND", nameKey: "CMD_VOICE_BENEATH_EARTH_NAME", descriptionKey: "CMD_VOICE_BENEATH_EARTH_DESC", cost: { mystic: 5 }, reqDiscoveredResourcesCount: 2, minStage: 1, rarity: "UC", weight: 0.25, cyclePolicy: "RARITY" },
+    { id: "CMD_OMEN_DREAM", category: "COMMAND", nameKey: "CMD_OMEN_DREAM_NAME", descriptionKey: "CMD_OMEN_DREAM_DESC", cost: { mystic: 5 }, reqTrialWithin: 10, minStage: 1, rarity: "UC", weight: 0.25, cyclePolicy: "RARITY" },
+    { id: "CMD_REKINDLE_EMBER", category: "MYSTIC", nameKey: "CMD_REKINDLE_EMBER_NAME", descriptionKey: "CMD_REKINDLE_EMBER_DESC", cost: { mystic: 10 }, reqMystic: 10, maxEmber: 5, minStage: 1, rarity: "UC", weight: 0.25, cyclePolicy: "RARITY" },
+    { id: "CMD_MYSTIC_FOCUS", category: "MYSTIC", nameKey: "CMD_MYSTIC_FOCUS_NAME", descriptionKey: "CMD_MYSTIC_FOCUS_DESC", cost: { mystic: 10 }, maxMystic: 30, cyclePolicy: "UNIQUE", minStage: 1, rarity: "R", weight: 0.15 },
+    { id: "CMD_MANIFEST_MIRACLE", category: "COMMAND", nameKey: "CMD_MANIFEST_MIRACLE_NAME", descriptionKey: "CMD_MANIFEST_MIRACLE_DESC", cost: { mystic: 10 }, reqMystic: 10, minStage: 2, rarity: "R", weight: 0.20, cyclePolicy: "RARITY" },
+    { id: "CMD_TRANSMUTE_GOLDEN", category: "MYSTIC", nameKey: "CMD_TRANSMUTE_GOLDEN_NAME", descriptionKey: "CMD_TRANSMUTE_GOLDEN_DESC", cost: { mystic: 20 }, reqMystic: 20, reqUnmergedDesertOrMountain: true, cyclePolicy: "UNIQUE", minStage: 2, rarity: "R", weight: 0.20 },
+    { id: "CMD_REVELATION_CHOICE", category: "COMMAND", nameKey: "CMD_REVELATION_CHOICE_NAME", descriptionKey: "CMD_REVELATION_CHOICE_DESC", cost: { mystic: 15 }, reqMystic: 15, minStage: 2, rarity: "R", weight: 0.20, cyclePolicy: "RARITY" },
+    { id: "CMD_LEYLINE_RESONANCE", category: "COMMAND", nameKey: "CMD_LEYLINE_RESONANCE_NAME", descriptionKey: "CMD_LEYLINE_RESONANCE_DESC", cost: { mystic: 8 }, reqDiscoveredMysticResourcesCount: 2, minStage: 2, rarity: "C", weight: 0.35, cyclePolicy: "RARITY" },
+    { id: "CMD_TWO_FUTURES", category: "COMMAND", nameKey: "CMD_TWO_FUTURES_NAME", descriptionKey: "CMD_TWO_FUTURES_DESC", cost: { mystic: 20 }, reqMystic: 25, cyclePolicy: "UNIQUE", minStage: 3, rarity: "UR", weight: 0.10 }
 ];
 
 class DeckManager {
@@ -57,6 +58,7 @@ class DeckManager {
         this.state = gameState;
         this.engine = engine;
         this._landCardMasterCache = null;
+        this.cycleSystem = new CardCycleSystem(this.state, this.engine);
     }
 
     /**
@@ -80,7 +82,9 @@ class DeckManager {
         // 土地カードマスターに全コマンドカードをマージ（重複排除）
         const map = new Map();
         for (const c of baseList) {
-            if (c && c.id) map.set(c.id, c);
+            if (c && c.id) {
+                map.set(c.id, { ...c, cyclePolicy: c.cyclePolicy || CYCLE_POLICIES.LAND_STANDARD });
+            }
         }
         for (const c of COMMAND_CARDS_MASTER) {
             if (c && c.id) map.set(c.id, c);
@@ -90,13 +94,58 @@ class DeckManager {
     }
 
     /**
-     * 🔍 カード抽選適格性判定
+     * 📥 指定カードが現在保留スロット（HOLD）に存在するか判定
+     * @param {string} cardId 
+     * @returns {boolean}
      */
-    isCardEligible(c, stageNum, h2Count) {
+    isInHold(cardId) {
+        if (!this.state || !Array.isArray(this.state.reserveSlots)) return false;
+        return this.state.reserveSlots.some(rc => {
+            if (!rc || rc.isBlank) return false;
+            const tObj = rc.terrain || rc;
+            const mId = rc.cardMasterId || tObj.id || rc.id;
+            return mId === cardId;
+        });
+    }
+
+    /**
+     * 🔍 カード抽選適格性判定 (Universal ＆ Card-specific 2層分離)
+     * @param {Object} c - カード定義
+     * @param {number} stageNum - 現在のステージ番号
+     * @param {number} h2Count - 盤面の丘陵数
+     * @param {Object} [options={}] - フォールバック等の一時制御フラグ
+     * @param {boolean} [options.ignoreCooldown=false] - Cooldown除外を無視するか
+     * @param {boolean} [options.ignoreHold=false] - Hold除外を無視するか
+     */
+    isCardEligible(c, stageNum, h2Count, options = {}) {
         if (!c) return false;
         const cardStage = c.minStage || 1;
         if (cardStage > stageNum) return false;
 
+        const currentTurn = (this.state && this.state.turn) ? this.state.turn : 1;
+
+        // 🌐 1. Universal Eligibility (共通ゲート)
+        // 🔄 転生 Cooldown 判定 (availableTurn 未満なら除外)
+        if (!options.ignoreCooldown && this.cycleSystem && this.cycleSystem.isInCooldown(c.id, currentTurn)) {
+            return false;
+        }
+
+        // ⭐ UNIQUE カードの選択済み判定 (consumedUniqueCards に存在すれば永久除外)
+        if (c.cyclePolicy === CYCLE_POLICIES.UNIQUE || c.cyclePolicy === "UNIQUE") {
+            if (this.state && Array.isArray(this.state.consumedUniqueCards) && this.state.consumedUniqueCards.includes(c.id)) {
+                return false;
+            }
+            if (this.state && Array.isArray(this.state.usedUniqueCards) && this.state.usedUniqueCards.includes(c.id)) {
+                return false;
+            }
+        }
+
+        // 📥 保留スロットにあるカードの重複除外
+        if (!options.ignoreHold && this.isInHold(c.id)) {
+            return false;
+        }
+
+        // 🌐 2. Card-specific Eligibility (カード固有ゲート)
         // 🚫 確定ルール: 発動しているバフと同じカードはオファリングされない
         if (this.state) {
             const allBuffs = (typeof this.state.getAllBuffs === "function")
@@ -298,28 +347,37 @@ class DeckManager {
         // 🛡️ 防衛力の上限
         if (c.maxDefense !== undefined && this.state && (this.state.defense || 0) > c.maxDefense) return false;
 
-        // 🧱 資材保有量判定
-        if (c.reqWood !== undefined && this.state && (this.state.wood || 0) < c.reqWood) return false;
-
-        if (c.isUnique && this.state && this.state.usedUniqueCards && this.state.usedUniqueCards.includes(c.id)) {
-            return false;
-        }
-
         return true;
     }
 
     /**
-     * 🎲 単一カードの重み付け抽選
-     * @param {Array<string>} [excludedCardIds=[]] - 同一オファリング内・保留枠で重複排除するカードIDリスト (土地・コマンド両対応)
+     * 🃏 カードインスタンス構造体の生成ヘルパー
+     * @private
      */
-    drawSingleCard(excludedCardIds = []) {
+    _wrapCardInstance(picked) {
+        if (!picked) return null;
+        return {
+            id: `card_${(this.state ? this.state.turn : 1)}_${Date.now()}_${Math.random()}`,
+            cardMasterId: picked.id,
+            nameKey: picked.nameKey,
+            terrain: picked,
+            currentShape: picked.shape || [[1]]
+        };
+    }
+
+    /**
+     * 🎲 単一カードの重み付け抽選
+     * @param {Array<string>} [excludedCardIds=[]] - 同一オファリング内・保留枠で重複排除するカードIDリスト
+     * @param {Object} [options={}] - フォールバック等の一時制御フラグ
+     */
+    drawSingleCard(excludedCardIds = [], options = {}) {
         const master = this.getLandCardMaster();
         const stageNum = (this.state && this.state.stage) ? (typeof this.state.stage === 'object' ? (this.state.stage.id || 1) : this.state.stage) : 1;
         const h2Count = (this.state && typeof this.state.countE2HillsOnBoard === 'function') ? this.state.countE2HillsOnBoard() : 0;
 
-        let eligible = master.filter(c => this.isCardEligible(c, stageNum, h2Count));
+        let eligible = master.filter(c => this.isCardEligible(c, stageNum, h2Count, options));
 
-        // 🛡️ 同一オファリング内における完全同一カード（土地・コマンド問わず）の重複排除
+        // 🛡️ 同一オファリング内における完全同一カードの重複排除
         if (Array.isArray(excludedCardIds) && excludedCardIds.length > 0) {
             const filteredEligible = eligible.filter(c => !excludedCardIds.includes(c.id));
             if (filteredEligible.length > 0) {
@@ -328,7 +386,7 @@ class DeckManager {
         }
 
         if (eligible.length === 0) {
-            eligible = master.filter(c => (c.category === "LAND" || !c.category) && (c.minStage || 1) <= stageNum);
+            return null; // 制約緩和フォールバックへ委ねる
         }
 
         const activeBiasCategory = (this.state && this.state.activeDrawBias) ? this.state.activeDrawBias.targetCategory : null;
@@ -370,17 +428,11 @@ class DeckManager {
         }
 
         const picked = chosen || eligible[0] || master[0];
-        return {
-            id: `card_${(this.state ? this.state.turn : 1)}_${Date.now()}_${Math.random()}`,
-            cardMasterId: picked.id,
-            nameKey: picked.nameKey,
-            terrain: picked,
-            currentShape: picked.shape || [[1]]
-        };
+        return this._wrapCardInstance(picked);
     }
 
     /**
-     * 🃏 手札オファリングの生成 (標準 3 枚 ＆ 同一カード完全重複排除)
+     * 🃏 手札オファリングの生成 (3段階制約緩和フォールバック ＆ 確定3枚の転生CD登録)
      */
     generateOfferingCards() {
         if (this.state) {
@@ -392,29 +444,76 @@ class DeckManager {
             }
         }
         const offeringSize = (this.state && this.state.handOfferingSize) ? this.state.handOfferingSize : 3;
+        const currentTurn = (this.state && this.state.turn) ? this.state.turn : 1;
+        const master = this.getLandCardMaster();
+        const stageNum = (this.state && this.state.stage) ? (typeof this.state.stage === 'object' ? (this.state.stage.id || 1) : this.state.stage) : 1;
+        const h2Count = (this.state && typeof this.state.countE2HillsOnBoard === 'function') ? this.state.countE2HillsOnBoard() : 0;
+
         const newCards = [];
         const excludedCardIds = [];
 
-        // 📥 保留スロットにあるコマンドカードも手札重複から除外
+        // 📥 保留スロットにあるカードを手札重複から除外
         if (this.state && this.state.reserveSlots) {
             this.state.reserveSlots.forEach(rc => {
                 if (rc && !rc.isBlank) {
                     const tObj = rc.terrain || rc;
-                    if (tObj && tObj.category && tObj.category !== "LAND") {
-                        const mId = rc.cardMasterId || tObj.id || rc.id;
-                        if (mId) excludedCardIds.push(mId);
-                    }
+                    const mId = rc.cardMasterId || tObj.id || rc.id;
+                    if (mId) excludedCardIds.push(mId);
                 }
             });
         }
 
+        // 段階 1: 通常抽選 (Universal ＆ Card-specific 適合 ＆ 非CD ＆ 非Hold)
         for (let i = 0; i < offeringSize; i++) {
             const drawn = this.drawSingleCard(excludedCardIds);
-            newCards.push(drawn);
             if (drawn) {
+                newCards.push(drawn);
                 const cId = drawn.cardMasterId || (drawn.terrain ? drawn.terrain.id : null);
                 if (cId) excludedCardIds.push(cId);
             }
+        }
+
+        // 段階 2 フォールバック: 不足時、Cooldown 中の適格カードから availableTurn 最小のものを一時解禁
+        if (newCards.length < offeringSize && this.cycleSystem) {
+            const cdCandidates = master.filter(c => {
+                if (excludedCardIds.includes(c.id)) return false;
+                return this.isCardEligible(c, stageNum, h2Count, { ignoreCooldown: true });
+            });
+
+            while (newCards.length < offeringSize && cdCandidates.length > 0) {
+                const minCard = this.cycleSystem.findMinAvailableTurnCard(cdCandidates);
+                if (!minCard) break;
+                const drawn = this._wrapCardInstance(minCard);
+                newCards.push(drawn);
+                excludedCardIds.push(minCard.id);
+                const idx = cdCandidates.indexOf(minCard);
+                if (idx !== -1) cdCandidates.splice(idx, 1);
+            }
+        }
+
+        // 段階 3 フォールバック: それでも不足時、Stage適格な既存基本土地プールから CD無視で補充
+        if (newCards.length < offeringSize) {
+            const baseLandPool = master.filter(c => {
+                if (excludedCardIds.includes(c.id)) return false;
+                const policy = c.cyclePolicy || (c.category === "LAND" ? CYCLE_POLICIES.LAND_STANDARD : CYCLE_POLICIES.RARITY);
+                return (policy === CYCLE_POLICIES.LAND_STANDARD || c.category === "LAND") && (c.minStage || 1) <= stageNum;
+            });
+
+            while (newCards.length < offeringSize && baseLandPool.length > 0) {
+                const picked = baseLandPool.shift();
+                const drawn = this._wrapCardInstance(picked);
+                newCards.push(drawn);
+                excludedCardIds.push(picked.id);
+            }
+        }
+
+        if (newCards.length < offeringSize) {
+            console.warn(`[DeckManager] Critical: Offering cards insufficient (${newCards.length}/${offeringSize})`);
+        }
+
+        // ⭐ 確定した手札 3 枚に対して転生 Cooldown を登録 (フォールバックで救済されたカードもここで新CD再登録)
+        if (this.cycleSystem) {
+            this.cycleSystem.registerOffering(newCards, currentTurn);
         }
 
         if (this.state) {
@@ -450,6 +549,33 @@ class DeckManager {
     }
 
     /**
+     * ⭐ カード選択・採用時の共通フック (UNIQUE 消費の一元管理・冪等性保証)
+     * @param {Object} card 
+     */
+    consumeCardIfUnique(card) {
+        if (!card) return;
+        const tObj = card.terrain || card;
+        const policy = tObj.cyclePolicy || (tObj.isUnique ? "UNIQUE" : null);
+        if (policy === "UNIQUE" || policy === CYCLE_POLICIES.UNIQUE) {
+            const cardId = card.cardMasterId || tObj.id || card.id;
+            if (this.cycleSystem && cardId) {
+                this.cycleSystem.consumeUnique(cardId);
+            }
+            if (this.state && Array.isArray(this.state.consumedUniqueCards) && cardId) {
+                if (!this.state.consumedUniqueCards.includes(cardId)) {
+                    this.state.consumedUniqueCards.push(cardId);
+                }
+            }
+            // 後方互換用
+            if (this.state && Array.isArray(this.state.usedUniqueCards) && cardId) {
+                if (!this.state.usedUniqueCards.includes(cardId)) {
+                    this.state.usedUniqueCards.push(cardId);
+                }
+            }
+        }
+    }
+
+    /**
      * 📥 手札 ➔ 保留スロットへの移動 (最大3枠)
      */
     moveToReserve(cardIdx) {
@@ -460,6 +586,9 @@ class DeckManager {
 
         const emptyIdx = this.state.reserveSlots.findIndex(slot => slot === null);
         if (emptyIdx === -1) return false;
+
+        // ⭐ 選択時消費: UNIQUE カードなら consumedUniqueCards へ登録
+        this.consumeCardIfUnique(card);
 
         card.originalHandIdx = cardIdx;
         card.reservedThisTurn = true; // 今ターン預け入れフラグ
@@ -575,6 +704,9 @@ class DeckManager {
             this.state.reserveSlots[reserveIdx] = null;
             this.state.hasPickedThisTurn = true;
         }
+
+        // ⭐ 選択時消費: UNIQUE カードなら consumedUniqueCards へ登録
+        this.consumeCardIfUnique(cardObj);
 
         if (cId === "CMD_AGRICULTURAL_POLICY") {
             // 🌾 農地改革: コスト 🧱-20

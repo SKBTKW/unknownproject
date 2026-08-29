@@ -831,6 +831,9 @@ class UIController {
 
     /**
      * 🌟 連結即時ボーナス・ソケット開花トーストキューの画面フロートポップアップ消費
+     * - シーケンシャル・スタッガーディレイ (280ms) によるテンポ良い連鎖演出
+     * - 垂直スタッククリアランス (54px) による物理的重なり・被りの完全根絶
+     * - ビューポート安全クランプ (ヘッダー被り・画面外突き抜け防止)
      */
     processToastQueue() {
         if (!this.state || !this.state.toastQueue || this.state.toastQueue.length === 0) return;
@@ -839,13 +842,16 @@ class UIController {
         const toasts = [...this.state.toastQueue];
         this.state.toastQueue = [];
 
+        const viewportWidth = (typeof window !== "undefined" ? window.innerWidth : 800);
+        const viewportHeight = (typeof window !== "undefined" ? window.innerHeight : 600);
+
         toasts.forEach((toast, idx) => {
             const { r, c, text } = toast;
 
             setTimeout(() => {
                 // 当該セルの DOM 座標を取得
-                let targetX = (typeof window !== "undefined" ? window.innerWidth / 2 : 200);
-                let targetY = (typeof window !== "undefined" ? window.innerHeight / 2 : 200);
+                let targetX = viewportWidth / 2;
+                let targetY = viewportHeight / 2;
 
                 const cellEl = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`) || document.querySelector(`#cell_${r}_${c}`);
                 if (cellEl && typeof cellEl.getBoundingClientRect === "function") {
@@ -854,22 +860,31 @@ class UIController {
                     targetY = rect.top + rect.height / 2;
                 }
 
-                // 垂直オフセット（重なり防止スタック: 1個ごとに -32px 上方へシフト）
-                const offsetY = idx * 32;
+                // 垂直オフセット（重なり防止スタック: 高さ48pxに対して 54px 上方へシフト）
+                const offsetY = idx * 54;
+                let finalY = targetY - offsetY;
+
+                // 画面上部（ヘッダー 70px）に突き抜ける場合の安全クランプ
+                if (finalY < 80) {
+                    finalY = 80 + (idx * 54);
+                }
+
+                // 画面左右の安全クランプ
+                const clampedX = Math.max(120, Math.min(viewportWidth - 120, targetX));
 
                 // フロートポップアップ要素の生成
                 const popup = document.createElement("div");
                 popup.className = "float-toast-bonus";
                 popup.innerHTML = text;
-                popup.style.left = `${targetX}px`;
-                popup.style.top = `${targetY - offsetY}px`;
+                popup.style.left = `${clampedX}px`;
+                popup.style.top = `${finalY}px`;
                 document.body.appendChild(popup);
 
                 // アニメーション完了後に DOM から自動削除
                 setTimeout(() => {
                     if (popup.parentNode) popup.parentNode.removeChild(popup);
-                }, 1700);
-            }, idx * 160);
+                }, 1800);
+            }, idx * 280);
         });
     }
 

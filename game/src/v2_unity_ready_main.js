@@ -50,6 +50,8 @@ class GameState {
             this.nextTrialTurn = this.trialSchedule.trial1;
 
             this.usedUniqueCards = [];
+            this.consumedUniqueCards = []; // ⭐ 選択時消費された UNIQUE カード
+            this.cardCooldowns = {};       // 🔄 転生サイクル: { [cardId]: availableTurn }
             this.handOfferingSize = 3;
             this.nextTrialDamageMitigation = 1.0;
             this.nextTrialMultiplier = 1.0;

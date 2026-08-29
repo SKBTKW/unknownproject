@@ -36,6 +36,7 @@ import { ChronicleSystem, CHRONICLE_IMPORTANCE } from './systems/chronicle_syste
 import { GlobalEventManager, GlobalEventDirector, GlobalEventSelector } from './systems/global_event_system.js';
 import { GLOBAL_EVENTS_MASTER } from './data/global_events.js';
 import { EmberSystem } from './systems/ember_system.js';
+import { CardCycleSystem, CYCLE_POLICIES } from './systems/card_cycle_system.js';
 
 export {
     I18n,
@@ -86,7 +87,9 @@ export {
     GlobalEventDirector,
     GlobalEventSelector,
     GLOBAL_EVENTS_MASTER,
-    EmberSystem
+    EmberSystem,
+    CardCycleSystem,
+    CYCLE_POLICIES
 };
 
 console.log('🎮 [App] Clean True ES Modules Master Entrypoint Loaded Successfully.');

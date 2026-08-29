@@ -48,6 +48,8 @@
                 mergedBlocks: mergedBlocksCopy,
                 handOffering: handOfferingCopy,
                 reserveSlots: reserveSlotsCopy,
+                cardCooldowns: JSON.parse(JSON.stringify(this.state.cardCooldowns || {})),
+                consumedUniqueCards: Array.from(this.state.consumedUniqueCards || []),
                 hasPickedThisTurn: this.state.hasPickedThisTurn,
                 hasReservedThisTurn: this.state.hasReservedThisTurn,
                 placedBlockCount: this.state.placedBlockCount || 0,
@@ -116,6 +118,13 @@
                 this.state.reserveSlots = s.reserveSlots.map(c => 
                     c ? { ...c, currentShape: c.currentShape ? JSON.parse(JSON.stringify(c.currentShape)) : null } : null
                 );
+            }
+
+            if (s.cardCooldowns) {
+                this.state.cardCooldowns = JSON.parse(JSON.stringify(s.cardCooldowns));
+            }
+            if (s.consumedUniqueCards) {
+                this.state.consumedUniqueCards = Array.from(s.consumedUniqueCards);
             }
 
             this.state.hasPickedThisTurn = s.hasPickedThisTurn;
