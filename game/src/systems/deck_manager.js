@@ -1149,9 +1149,10 @@ class DeckManager {
 
                 cell.socketResource = socketDef;
                 const sName = I18n.t(socketDef.nameKey);
-                resultMsg = `🎲 Roll ${totalRoll}: ★ ${sName}`;
+                const sIcon = socketDef.icon || "💎";
+                resultMsg = `🎲 Roll ${totalRoll}: ${sIcon} : ${sName}`;
                 if (this.state.toastQueue) {
-                    this.state.toastQueue.push({ r, c, text: I18n.t("TOAST_SOCKET_SPAWNED", { name: sName }) });
+                    this.state.toastQueue.push({ r, c, text: I18n.t("TOAST_SOCKET_SPAWNED", { name: sName, icon: sIcon }) });
                 }
             } else {
                 this.state.food += 3;

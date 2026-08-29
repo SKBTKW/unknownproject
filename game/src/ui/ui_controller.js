@@ -736,6 +736,9 @@ class UIController {
             newShape.push(newRow);
         }
         card.currentShape = newShape;
+        if (this.selectedCard && (this.selectedCardIdx === idx || this.selectedCard === card)) {
+            this.selectedCard.currentShape = newShape;
+        }
 
         this.render();
         if (this.selectedCardIdx === idx || (this.selectedCard && this.selectedCard === card)) {
@@ -987,7 +990,10 @@ class UIController {
                 tw += (s.bonusMaterial !== undefined ? s.bonusMaterial : (s.bonusWood || 0));
                 td += s.bonusDefense || 0;
                 tm += s.bonusMystic || 0;
-                bonusParts.push(`★${sName}`);
+                const resIcon = (this.boardGrid && typeof this.boardGrid.getSocketResourceIcon === "function")
+                    ? this.boardGrid.getSocketResourceIcon(s)
+                    : (s.icon || "💎");
+                bonusParts.push(`${resIcon} : ${sName}`);
             }
 
             // 本営近郊ボーナス（産出している数値すべてに+1）

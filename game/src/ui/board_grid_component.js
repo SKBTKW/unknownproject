@@ -161,12 +161,15 @@ export class BoardGridComponent {
                         const role = this.getGroupCellRole(r, c, activeGroupId, cellData);
 
                         if (role === "SOCKET") {
-                            // 🌟 資源マス: 没入感最優先で「上段: 資源名」「下段: 最大産出」
+                            // 🌟 資源マス: 画像仕様準拠（中央配置・各行左揃え 2段構成: 資源名 / 最大産出）
+                            // 1行目: 資源カテゴリ/個別アイコン : 資源名
+                            // 2行目: ブロック内最大出力リソース : 数値
                             const s = cellData.socketResource;
                             const sName = I18n.t(s.nameKey || "SOCKET_RESOURCE");
-                            const sYield = this.getSocketPrimaryYieldInfo(s);
-                            const sYieldHtml = sYield ? `<div class="tile-yield-line"><span class="yield-icon">${sYield.icon}</span><span class="yield-colon"> : </span><span class="yield-val">${sYield.val}</span></div>` : "";
-                            cellEl.innerHTML = `<div class="tile-content-box"><div class="tile-title-line">${sName}</div>${sYieldHtml}</div>`;
+                            const resIcon = this.getSocketResourceIcon(s);
+                            const primaryYield = this.getSocketPrimaryYieldInfo(s) || yieldInfo;
+                            const sYieldHtml = primaryYield ? `<div class="socket-yield-line"><span class="yield-icon">${primaryYield.icon}</span><span class="yield-colon"> : </span><span class="yield-val">${primaryYield.val}</span></div>` : "";
+                            cellEl.innerHTML = `<div class="socket-tile-content-box"><div class="socket-resource-line">${resIcon} : ${sName}</div>${sYieldHtml}</div>`;
                         } else if (role === "LAND_PRIMARY") {
                             // 🌟 土地名 ＆ 総産出（最初の空きマスへスマート配置）
                             const yieldHtml = yieldInfo ? `<div class="tile-yield-line"><span class="yield-icon">${yieldInfo.icon}</span><span class="yield-colon"> : </span><span class="yield-val">${yieldInfo.val}</span></div>` : "";
@@ -179,9 +182,20 @@ export class BoardGridComponent {
                         const yieldInfo = this.getPrimaryYieldInfo(cellData, isHQVic);
                         if (yieldInfo && yieldInfo.val > 0) cellEl.classList.add("has-resource-yield");
 
-                        const yieldHtml = yieldInfo ? `<div class="tile-yield-line"><span class="yield-icon">${yieldInfo.icon}</span><span class="yield-colon"> : </span><span class="yield-val">${yieldInfo.val}</span></div>` : "";
-                        const searchedBadge = cellData.searched ? `<span class="searched-badge">${I18n.t("UI_SEARCHED_BADGE")}</span>` : "";
-                        cellEl.innerHTML = `<div class="tile-content-box"><div class="tile-title-line">${tName}</div>${yieldHtml}${searchedBadge}</div>`;
+                        if (cellData.socketResource) {
+                            // 🌟 単独資源マス: 画像仕様準拠（中央配置・各行左揃え 2段構成: 資源名 / 最大産出）
+                            const s = cellData.socketResource;
+                            const sName = I18n.t(s.nameKey || "SOCKET_RESOURCE");
+                            const resIcon = this.getSocketResourceIcon(s);
+                            const primaryYield = this.getSocketPrimaryYieldInfo(s) || yieldInfo;
+                            const sYieldHtml = primaryYield ? `<div class="socket-yield-line"><span class="yield-icon">${primaryYield.icon}</span><span class="yield-colon"> : </span><span class="yield-val">${primaryYield.val}</span></div>` : "";
+                            const searchedBadge = cellData.searched ? `<span class="searched-badge">${I18n.t("UI_SEARCHED_BADGE")}</span>` : "";
+                            cellEl.innerHTML = `<div class="socket-tile-content-box"><div class="socket-resource-line">${resIcon} : ${sName}</div>${sYieldHtml}${searchedBadge}</div>`;
+                        } else {
+                            const yieldHtml = yieldInfo ? `<div class="tile-yield-line"><span class="yield-icon">${yieldInfo.icon}</span><span class="yield-colon"> : </span><span class="yield-val">${yieldInfo.val}</span></div>` : "";
+                            const searchedBadge = cellData.searched ? `<span class="searched-badge">${I18n.t("UI_SEARCHED_BADGE")}</span>` : "";
+                            cellEl.innerHTML = `<div class="tile-content-box"><div class="tile-title-line">${tName}</div>${yieldHtml}${searchedBadge}</div>`;
+                        }
                     }
                 } else if (cellData.hasSocket) {
                     cellEl.classList.add("socket-unopened");
@@ -521,6 +535,34 @@ export class BoardGridComponent {
             if (w === maxVal) return { icon: "🧱", val: w };
             return { icon: "🛡️", val: d };
         }
+    }
+
+    /**
+     * 💎 資源ソケットのカテゴリ・個別アイコン取得
+     */
+    getSocketResourceIcon(s) {
+        if (!s) return "💎";
+        if (s.icon) return s.icon;
+        const id = (s.id || s.nameKey || "").toUpperCase();
+        if (id.includes("HORSE")) return "🐎";
+        if (id.includes("COW") || id.includes("CATTLE")) return "🐄";
+        if (id.includes("SHEEP")) return "🐑";
+        if (id.includes("GOAT")) return "🐐";
+        if (id.includes("WHEAT") || id.includes("GRAIN")) return "🌾";
+        if (id.includes("LAKE") || id.includes("WATER") || id.includes("SPRING") || id.includes("OASIS")) return "💧";
+        if (id.includes("IRON") || id.includes("HEMATITE")) return "⛏️";
+        if (id.includes("STONE") || id.includes("GRANITE") || id.includes("LIMESTONE") || id.includes("SLATE") || id.includes("SANDSTONE")) return "🪨";
+        if (id.includes("WOOD") || id.includes("OAK") || id.includes("CEDAR") || id.includes("PINE")) return "🌲";
+        if (id.includes("GOLD") || id.includes("SILVER")) return "🪙";
+        if (id.includes("CRYSTAL") || id.includes("GEM") || id.includes("SACRED")) return "💎";
+        if (id.includes("HERB") || id.includes("MUSHROOM")) return "🍄";
+        const cat = (s.category || "").toUpperCase();
+        if (cat.includes("LIVESTOCK") || cat.includes("ANIMAL")) return "🐄";
+        if (cat.includes("MINERAL") || cat.includes("ORE")) return "⛏️";
+        if (cat.includes("STONE")) return "🪨";
+        if (cat.includes("WOOD") || cat.includes("FOREST")) return "🌲";
+        if (cat.includes("MYSTIC") || cat.includes("GEM")) return "✨";
+        return "💎";
     }
 
     /**

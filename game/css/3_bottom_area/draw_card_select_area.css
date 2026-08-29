@@ -309,6 +309,13 @@
     box-sizing: border-box;
 }
 
+.offering-section:not(.is-minimal) .tcg-shape-grid-standard,
+.reserve-slot-single-box:not(.is-minimal) .tcg-shape-grid-standard {
+    display: grid;
+    justify-content: center;
+    align-content: center;
+}
+
 .offering-section:not(.is-minimal) .tcg-card-desc-full {
     font-size: 18px;
     color: #ffffff;
@@ -329,13 +336,10 @@
     overflow: hidden;
 }
 
-/* 🙈 標準モードおよび拡大プレビュー時はミニマル用要素を非表示 */
+/* 🙈 標準モード時はミニマル用要素を非表示 */
 .offering-section:not(.is-minimal) .tcg-minimal-cmd-icon,
 .offering-section:not(.is-minimal) .tcg-mini-shape-grid,
-.offering-section:not(.is-minimal) .tcg-minimal-name-label,
-.card-floating-preview-container .tcg-minimal-cmd-icon,
-.card-floating-preview-container .tcg-mini-shape-grid,
-.card-floating-preview-container .tcg-minimal-name-label {
+.offering-section:not(.is-minimal) .tcg-minimal-name-label {
     display: none;
 }
 
@@ -1064,7 +1068,7 @@
     z-index: 12;
 }
 
-/* 🚫 #cardRow 配下の標準要素非表示 */
+/* 🚫 #cardRow 配下の標準要素非表示 (ミニマルモード時は標準要素を100%遮断) */
 #cardRow.is-minimal .tcg-card-top-bar,
 #cardRow.is-minimal .tcg-shape-grid-standard,
 #cardRow.is-minimal .tcg-card-desc-full,
@@ -1131,21 +1135,19 @@
     left: 4px;
     right: 4px;
     height: 22px;
-    line-height: 22px;
-    font-size: 13.5px;
+    line-height: 20px;
+    font-size: 11.5px;
     font-weight: 900;
     color: #ffffff;
     text-align: center;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    padding: 0 2px;
+    padding: 0 4px;
     box-sizing: border-box;
     letter-spacing: 0.1px;
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: block;
     background: rgba(30, 41, 59, 0.88);
     border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: 4px;
@@ -1270,16 +1272,18 @@
 
 /* プレビュー内の標準要素を完全表示 */
 .card-floating-preview-container .tcg-card-top-bar {
-    display: flex !important;
+    display: flex;
 }
 .card-floating-preview-container .tcg-shape-grid-standard {
-    display: grid !important;
+    display: grid;
+    justify-content: center;
+    align-content: center;
 }
 .card-floating-preview-container .tcg-card-desc-full {
-    display: block !important;
+    display: block;
 }
 .card-floating-preview-container .tcg-yield-strip {
-    display: flex !important;
+    display: flex;
 }
 
 .card-floating-preview-container .tcg-shape-art-area {
@@ -1302,7 +1306,7 @@
 .card-floating-preview-container .tcg-minimal-cmd-icon,
 .card-floating-preview-container .tcg-mini-shape-grid,
 .card-floating-preview-container .tcg-minimal-name-label {
-    display: none !important;
+    display: none;
 }
 
 /* 🔲 空きスロット（使用済み / 保留復元受け入れ可能） */

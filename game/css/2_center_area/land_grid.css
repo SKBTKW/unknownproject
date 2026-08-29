@@ -925,6 +925,40 @@ body.is-camera-dragging-global * {
     color: #ffffff;
 }
 
+/* 💎 資源発生ブロック専用コンテナ（中央配置 ＆ 各行左揃え ＆ 2段構成: 資源名 / 最大産出） */
+.socket-tile-content-box {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    text-align: left;
+    pointer-events: none;
+    z-index: 5;
+    user-select: none;
+    line-height: 1.25;
+}
+
+.socket-resource-line {
+    display: flex;
+    align-items: center;
+    font-size: 13pt;
+    font-weight: 900;
+    color: #ffffff;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95);
+    white-space: nowrap;
+    margin-bottom: 2px;
+}
+
+.socket-yield-line {
+    display: flex;
+    align-items: center;
+    font-size: 13pt;
+    font-weight: 900;
+    color: #f1c40f;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
+    white-space: nowrap;
+}
+
 .tile-socket-badge {
     font-size: 10px;
     color: #f39c12;

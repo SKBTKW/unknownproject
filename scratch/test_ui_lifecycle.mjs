@@ -610,16 +610,52 @@ export async function runUILifecycleInspection() {
         assert("C3ホバー時にツールチップに『2×2マージ同士』が含まれること", !!ttEl && (ttEl.innerHTML.includes("2×2マージ同士") || ttEl.innerHTML.includes("2x2 merged territory")));
         BlockPlacementSystem.clearHoverPreviews();
 
-        // 🔄 手札通常表示時の右クリック回転検証
-        const landCard1x2 = { id: "CARD_FOREST_1X2", currentShape: [[1, 1]], terrain: { id: "GL2_FOREST", gl: 2, e: 1, nameKey: "TERRAIN_FOREST" } };
+        // 🔄 手札通常表示時の右クリック回転検証 (1x2以上のブロックで実機検証)
+        const landCard1x2 = { id: "CARD_FOREST_1X2", currentShape: [[1, 1]], terrain: { id: "GL2_FOREST", category: "LAND", gl: 2, e: 1, nameKey: "TERRAIN_FOREST", shape: [[1, 1]] } };
         ui.state.handOffering[0] = landCard1x2;
-        ui.selectedCardIdx = 0;
-        ui.selectedCard = landCard1x2;
+        ui.selectedCardIdx = -1;
+        ui.selectedCard = null;
+        ui.isMinimalMode = false;
         ui.render();
 
-        // 0番目を右クリック回転
-        ui.rotateSelectedCard({ preventDefault: () => {}, stopPropagation: () => {} }, 0);
-        assert("1x2カード回転後に形状が縦 [[1],[1]] (2行1列) になること", landCard1x2.currentShape.length === 2 && landCard1x2.currentShape[0].length === 1);
+        // 手札カード要素の取得
+        const cardRowEl = mockDoc.getElementById("cardRow");
+        const handGroupEl = cardRowEl.children[0];
+        const handContainerEl = handGroupEl.children[1];
+        const handCardEl = handContainerEl?.children?.[0];
+        assert("手札エリアに通常表示カード要素が存在すること", !!handCardEl);
+        assert("手札カードに oncontextmenu ハンドラが登録されていること", !!handCardEl && typeof handCardEl.oncontextmenu === "function");
+
+        // 手札カード要素を右クリックして回転
+        if (handCardEl && handCardEl.oncontextmenu) {
+            handCardEl.oncontextmenu({ preventDefault: () => {}, stopPropagation: () => {} });
+        }
+        assert("手札カード右クリック後に1x2カードが縦 [[1],[1]] (2行1列) に回転すること", landCard1x2.currentShape.length === 2 && landCard1x2.currentShape[0].length === 1);
+        assert("手札カード右クリック後にカードが自動選択状態 (selectedCardIdx: 0) になること", ui.selectedCardIdx === 0);
+
+        // 再描画された手札カードの形状グリッド (22px) 検証
+        const updatedCardRowEl = mockDoc.getElementById("cardRow");
+        const updatedHandGroupEl = updatedCardRowEl.children[0];
+        const updatedHandContainerEl = updatedHandGroupEl.children[1];
+        const rotatedHandCardEl = updatedHandContainerEl?.children?.[0];
+        assert("手札カード内に tcg-shape-grid-standard が存在すること", !!rotatedHandCardEl && rotatedHandCardEl.innerHTML.includes("tcg-shape-grid-standard"));
+        assert("手札カードの tcg-shape-grid-standard が 2行 (grid-template-rows:repeat(2, 22px)) を持つこと", !!rotatedHandCardEl && rotatedHandCardEl.innerHTML.includes("grid-template-rows:repeat(2, 22px)"));
+
+        // 🖼️ 手札縮小表示 (ミニマルモード) 切り替え時の検証
+        ui.isMinimalMode = true;
+        ui.render();
+        const minimalCardRow = mockDoc.getElementById("cardRow");
+        assert("ミニマルモード切り替え後に #cardRow に is-minimal クラスが付与されること", minimalCardRow.classList.contains("is-minimal"));
+
+        // 手札カードホバーでフローティング拡大プレビューが起動し、ブロック形状が表示されること
+        const minHandCardEl = minimalCardRow.children[0]?.children?.[1]?.children?.[0];
+        const previewEl = mockDoc.getElementById("cardFloatingPreview");
+        assert("フローティングプレビュー要素 #cardFloatingPreview が存在すること", !!previewEl);
+        if (minHandCardEl) {
+            ui.updateFloatingPreview(minHandCardEl);
+            assert("手札カードホバー後に #cardFloatingPreview が is-visible を持つこと", previewEl.classList.contains("is-visible"));
+            assert("プレビュー内に標準ブロック形状 tcg-shape-grid-standard が描画されていること", previewEl.innerHTML.includes("tcg-shape-grid-standard"));
+        }
 
         // 盤面上のセル右クリック回転で updateHoverPreview が正常実行されること
         const dummyEvt = { preventDefault: () => {}, clientX: 100, clientY: 100 };

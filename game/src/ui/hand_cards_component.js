@@ -155,7 +155,12 @@ export class HandCardsComponent {
             cardEl.oncontextmenu = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (category === "LAND") this.ui.rotateSelectedCard(e, idx);
+                if (category === "LAND") {
+                    this.ui.selectedReserveIdx = -1;
+                    this.ui.selectedCard = card;
+                    this.ui.selectedCardIdx = idx;
+                    this.ui.rotateSelectedCard(e, idx);
+                }
             };
 
             // 🃏 ホバー時フローティング拡大プレビュー ＆ 操作ガイドポップアップ ＆ 未選択時盤面配置可能ガイド

@@ -585,11 +585,12 @@ class GridEngine {
                             cell.socketResource = { ...spawnedSocket };
                             const posStr = `(${String.fromCharCode(65+c)}${r+1})`;
                             const sName = I18n.t(spawnedSocket.nameKey);
+                            const sIcon = spawnedSocket.icon || "💎";
                             if (typeof this.state.addLog === 'function') {
-                                this.state.addLog(I18n.t("LOG_SOCKET_SPAWNED", { pos: posStr, terrainName, socketName: sName }));
+                                this.state.addLog(I18n.t("LOG_SOCKET_SPAWNED", { pos: posStr, terrainName, socketName: sName, icon: sIcon }));
                             }
                             if (this.state.toastQueue) {
-                                this.state.toastQueue.push({ r, c, text: I18n.t("TOAST_SOCKET_SPAWNED", { name: sName }) });
+                                this.state.toastQueue.push({ r, c, text: I18n.t("TOAST_SOCKET_SPAWNED", { name: sName, icon: sIcon }) });
                             }
                         }
                     }
@@ -972,7 +973,7 @@ class GridEngine {
                             lastCell.socketResource = {
                                 id: "SOCKET_HIDDEN_DEPOSIT",
                                 nameKey: "SOCKET_HIDDEN_DEPOSIT",
-                                icon: "★",
+                                icon: "⛏️",
                                 bonusMaterial: 2,
                                 bonusWood: 2,
                                 bonusDefense: 1,
@@ -1057,7 +1058,7 @@ class GridEngine {
                             lastCell.socketResource = {
                                 id: "SOCKET_SUMMIT_FORTRESS",
                                 nameKey: "SOCKET_SUMMIT_FORTRESS",
-                                icon: "★",
+                                icon: "🗼",
                                 bonusDefense: 3,
                                 bonusMystic: 2,
                                 bonusFood: 0,
