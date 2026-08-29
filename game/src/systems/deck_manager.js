@@ -97,10 +97,24 @@ class DeckManager {
         const cardStage = c.minStage || 1;
         if (cardStage > stageNum) return false;
 
-        // 🚫 バフ発動中は同系統バイアス付与カードの重複提示を遮断
-        if (c.biasTarget || c.id === "CMD_LAND_FOCUS" || c.id === "CMD_MILITARY_FOCUS" || c.id === "CMD_MYSTIC_FOCUS") {
-            if (this.state && (this.state.activeDrawBias || this.state.drawBias)) {
+        // 🚫 確定ルール: 発動しているバフと同じカードはオファリングされない
+        if (this.state) {
+            const allBuffs = (typeof this.state.getAllBuffs === "function")
+                ? this.state.getAllBuffs()
+                : (this.state.activeBuffs || []);
+            const isBuffActive = allBuffs.some(b => b && (b.id === c.id || b.sourceCardId === c.id));
+            if (isBuffActive) return false;
+
+            // 建設中プロジェクト（大風車など）の重複提示も遮断
+            if (this.state.activeConstructionProjects && this.state.activeConstructionProjects.some(p => p.name === c.id)) {
                 return false;
+            }
+
+            // バイアスカードの重複提示も遮断
+            if (c.biasTarget || c.id === "CMD_LAND_FOCUS" || c.id === "CMD_MILITARY_FOCUS" || c.id === "CMD_MYSTIC_FOCUS") {
+                if (this.state.activeDrawBias || this.state.drawBias) {
+                    return false;
+                }
             }
         }
 
@@ -369,6 +383,14 @@ class DeckManager {
      * 🃏 手札オファリングの生成 (標準 3 枚 ＆ 同一カード完全重複排除)
      */
     generateOfferingCards() {
+        if (this.state) {
+            this.state.hasReservedThisTurn = false;
+            if (this.state.reserveSlots) {
+                this.state.reserveSlots.forEach(rc => {
+                    if (rc) delete rc.reservedThisTurn;
+                });
+            }
+        }
         const offeringSize = (this.state && this.state.handOfferingSize) ? this.state.handOfferingSize : 3;
         const newCards = [];
         const excludedCardIds = [];
@@ -432,6 +454,7 @@ class DeckManager {
      */
     moveToReserve(cardIdx) {
         if (!this.state || !this.state.handOffering || !this.state.reserveSlots) return false;
+        if (this.state.hasReservedThisTurn) return false; // 1ターン1回制限
         const card = this.state.handOffering[cardIdx];
         if (!card || card.isBlank) return false;
 
@@ -439,7 +462,9 @@ class DeckManager {
         if (emptyIdx === -1) return false;
 
         card.originalHandIdx = cardIdx;
+        card.reservedThisTurn = true; // 今ターン預け入れフラグ
         this.state.reserveSlots[emptyIdx] = card;
+        this.state.hasReservedThisTurn = true; // 1ターン1回消費フラグ
 
         // 手札の抜け部分はカード裏表示 (isBlank: true)
         this.state.handOffering[cardIdx] = {
@@ -492,6 +517,26 @@ class DeckManager {
 
         // 手札が満杯の場合は何もしない（カード消失防止）
         return false;
+    }
+
+    /**
+     * 🗑️ 保留スロットのカードを破棄 (ディスカード)
+     */
+    discardFromReserve(reserveIdx = 0) {
+        if (!this.state || !this.state.reserveSlots) return false;
+        const card = this.state.reserveSlots[reserveIdx];
+        if (!card) return false;
+        if (card.reservedThisTurn) return false; // 今ターン預け入れたカードは即破棄不可 (手札へ戻すこと)
+
+        this.state.reserveSlots[reserveIdx] = null;
+
+        const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' && window.I18n ? window.I18n : { t: k => k });
+        const tObj = card.terrain || card;
+        const cName = tObj.nameKey ? I18n.t(tObj.nameKey) : (tObj.name || tObj.id || "Card");
+        if (typeof this.state.addLog === 'function') {
+            this.state.addLog(I18n.t("LOG_RESERVE_DISCARDED", { name: cName }) || `🗑️ [保留破棄] ${cName} を破棄しました。`);
+        }
+        return true;
     }
 
     /**
@@ -1046,7 +1091,7 @@ class DeckManager {
             this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🎲", description: cDesc, category: "CARD_EFFECT" });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🎲【${cName}】`);
         } else if (cId === "CMD_MUD_OBSTACLE") {
-            // 🛡️ 泥濘陣地: コスト 🧱-15 (試練時湿原/清湖敵制圧力-15%)
+            // 🛡️ 泥濘陣地: コスト 🧱-15 (試練時湿原/湖敵制圧力-15%)
             this.state.mudObstacleActive = true;
             this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🛡️", description: cDesc, category: "TACTICAL" });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🛡️【${cName}】`);
@@ -1205,6 +1250,7 @@ class DeckManager {
         if (!this.state) return;
         this.state.turn++;
         this.state.hasPickedThisTurn = false;
+        this.state.hasReservedThisTurn = false;
         this.state.hasMulliganedThisTurn = false;
         this.generateOfferingCards();
     }

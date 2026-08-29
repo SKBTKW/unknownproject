@@ -1,0 +1,1524 @@
+/* =============================================================
+   game/css/3_bottom_area/draw_card_select_area.css
+   パターンA: メインエリア枠内包 ✕ 太枠フレーム (4px~5px)
+   ============================================================= */
+
+/* 🃏 メインエリア枠内 画面下部中央: ドローカード選択エリア (Layer 3: プレイヤートレイ層) */
+.layer-player-tray {
+    position: absolute;
+    bottom: 16px;
+    left: 0;
+    right: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    z-index: 500;
+    pointer-events: none;
+}
+
+/* 🃏 ドローカード選択エリア本体 (中央自動センタリング) */
+.offering-section {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    margin: 0 auto;
+    z-index: 500;
+    border-radius: 16px;
+    box-shadow: 0 6px 30px rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(4px);
+    transition: filter 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease, z-index 0.15s ease;
+    pointer-events: auto;
+    opacity: 1.0;
+    filter: none;
+    box-sizing: border-box;
+}
+
+/* 🃏 標準手札トレイ (260x390px 4枚収容) */
+.offering-section:not(.is-minimal) {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 16px;
+    background: rgba(19, 22, 31, 0.96);
+    border: 3px solid #2e384e;
+    width: auto;
+    height: auto;
+}
+
+/* 🃏 縮小手札トレイ (80x120px 4枚収容・完全1段 420px ✕ 136px) */
+.offering-section.is-minimal {
+    width: 420px;
+    height: 136px;
+    min-width: 420px;
+    max-width: 420px;
+    min-height: 136px;
+    max-height: 136px;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    background: rgba(15, 18, 26, 0.96);
+    border: 3px solid #2e384e;
+}
+
+/* 🌟 [最優先レイヤー] 手札完全フォーカス ＆ 最前面 (z-index: 700) ＆ 発光 */
+.offering-section.layer-active-front,
+.offering-section:hover {
+    z-index: 700 !important;
+    opacity: 1.0 !important;
+    filter: none !important;
+    border-color: #1abc9c !important;
+    box-shadow: 0 0 35px rgba(26, 188, 156, 0.6), 0 8px 35px rgba(0,0,0,0.9) !important;
+}
+
+/* 🎬 [下層レイヤー] 手札被写界深度ボケ (盤面優先時は奥に下がる: z-index: 50 で盤面が手前に乗る) */
+.offering-section.layer-dim-blur {
+    z-index: 50 !important;
+    opacity: 1.0 !important;
+    filter: brightness(0.70) blur(2.5px) !important;
+    border-color: #2e384e !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* 🃏 カード単体ホバー時の自然な浮き上がり (Hearthstone / Slay the Spire スタイル) */
+.offering-section .card-frame-tcg:hover:not(.locked) {
+    transform: translateY(-8px) scale(1.04) !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.8), 0 0 20px rgba(26,188,156,0.6) !important;
+    z-index: 10;
+}
+
+/* 🎯 土地カード選択時: 選択中カードの発光強調 */
+.offering-section .card-frame-tcg.selected {
+    border-color: #00d2d3 !important;
+    transform: translateY(-10px) scale(1.05) !important;
+    box-shadow: 0 0 30px rgba(0, 210, 211, 0.9), 0 12px 30px rgba(0,0,0,0.9) !important;
+    z-index: 15;
+}
+
+/* 🌟 保留ポップオーバー展開時は最前面 (z-index: 2500) */
+.offering-section.has-popover-open {
+    z-index: 2500 !important;
+}
+
+/* 🃏 手札グループ (ヘッダー ＋ 手札3枚) */
+.offering-hand-group {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+}
+
+/* 📦 保留グループ (ヘッダー ＋ 保留スロット) */
+.offering-reserve-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 276px;
+    min-width: 276px;
+    position: relative;
+}
+
+.offering-header-hand-col {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 36px;
+}
+
+.offering-header-reserve-col {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 36px;
+}
+
+.btn-mulligan-compact {
+    background: linear-gradient(135deg, #d63031, #b71540);
+    color: #ffffff;
+    border: 2px solid #ff7675;
+    border-radius: 8px;
+    padding: 6px 24px;
+    font-size: 16px;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(214, 48, 49, 0.45), 0 0 10px rgba(255, 118, 117, 0.3);
+    transition: transform 0.12s, box-shadow 0.12s, background 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    height: 38px;
+    box-sizing: border-box;
+}
+.btn-mulligan-compact:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(231, 76, 60, 0.7), 0 0 14px rgba(255, 118, 117, 0.5);
+    background: linear-gradient(135deg, #ff4757, #e84118);
+}
+.btn-mulligan-ember-cost {
+    font-size: 15px;
+    font-weight: 900;
+    color: #fffa65;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 250, 101, 0.5);
+    border-radius: 5px;
+    padding: 2px 8px;
+    letter-spacing: 0.5px;
+}
+
+.reserve-header-cost-badge {
+    font-size: 15.5px;
+    font-weight: 900;
+    color: #ff6b81;
+    background: rgba(231, 76, 60, 0.22);
+    border: 2px solid #ff4757;
+    border-radius: 8px;
+    padding: 6px 22px;
+    letter-spacing: 0.8px;
+    text-shadow: 0 0 10px rgba(255, 71, 87, 0.8);
+    box-shadow: 0 0 12px rgba(231, 76, 60, 0.35);
+    user-select: none;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 38px;
+    box-sizing: border-box;
+    cursor: help;
+}
+
+.cards-row-wrapper:not(.is-minimal) {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* 🃏 カードフレーム基本定義: 4px 太枠フレーム ✕ 完全 2:3 黄金比 260px x 390px */
+.offering-section:not(.is-minimal) .card-frame-tcg,
+.offering-section:not(.is-minimal) .card-slot-box,
+.card-floating-preview-container .card-frame-tcg,
+.card-floating-preview-container .card-slot-box {
+    width: 260px;
+    height: 390px;
+    min-width: 260px;
+    min-height: 390px;
+    background: #11141a;
+    border: 4px solid #1abc9c;
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 12px;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+    user-select: none;
+    position: relative;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    box-sizing: border-box;
+    isolation: isolate; /* 🌟 カード同士のシャドウ・エフェクト多重干渉を完全遮断 */
+    contain: layout style;
+    will-change: transform, box-shadow;
+}
+
+/* =============================================================
+   💎 カードの「格 (Prestige)」表現枠 ＆ 光沢・オーラ階層化
+   ============================================================= */
+
+/* 🏷️ カテゴリ判別アイコンピル (Top-Left) */
+.tcg-category-icon-pill {
+    font-size: 16px;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.45);
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+    flex-shrink: 0;
+}
+.category-land .tcg-category-icon-pill {
+    background: rgba(26, 188, 156, 0.25);
+    border-color: #1abc9c;
+}
+.category-command .tcg-category-icon-pill,
+.category-economy .tcg-category-icon-pill {
+    background: rgba(243, 156, 18, 0.25);
+    border-color: #f39c12;
+}
+.category-military .tcg-category-icon-pill {
+    background: rgba(231, 76, 60, 0.25);
+    border-color: #e74c3c;
+}
+.category-mystic .tcg-category-icon-pill {
+    background: rgba(155, 89, 182, 0.25);
+    border-color: #9b59b6;
+}
+.category-society .tcg-category-icon-pill {
+    background: rgba(52, 152, 219, 0.25);
+    border-color: #3498db;
+}
+
+/* 🏷️ タイトルピル共通基本定義 (TCG大判カード & 拡大プレビュー) */
+.tcg-title-pill {
+    background: rgba(30, 41, 59, 0.85);
+    border: 1.5px solid rgba(255, 255, 255, 0.22);
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 18px;
+    font-weight: 900;
+    color: #ffffff;
+    flex: 1;
+    text-align: center;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.1), 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+/* 🃏 標準モード時のTCG 3段レイアウト定義 */
+.offering-section:not(.is-minimal) .tcg-card-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 4px 8px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.offering-section:not(.is-minimal) .tcg-shape-art-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #1c2536;
+    border-radius: 6px;
+    padding: 12px;
+    margin: 4px 0;
+    flex: 1;
+    overflow: hidden;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.offering-section:not(.is-minimal) .tcg-shape-grid-standard,
+.reserve-slot-single-box:not(.is-minimal) .tcg-shape-grid-standard {
+    display: grid;
+    justify-content: center;
+    align-content: center;
+}
+
+.offering-section:not(.is-minimal) .tcg-card-desc-full {
+    font-size: 18px;
+    color: #ffffff;
+    line-height: 1.45;
+    font-weight: bold;
+    text-align: left;
+    width: 100%;
+}
+
+.offering-section:not(.is-minimal) .tcg-yield-strip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 6px;
+    width: 100%;
+    box-sizing: border-box;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+/* 🙈 標準モード時はミニマル用要素を非表示 */
+.offering-section:not(.is-minimal) .tcg-minimal-cmd-icon,
+.offering-section:not(.is-minimal) .tcg-mini-shape-grid,
+.offering-section:not(.is-minimal) .tcg-minimal-name-label {
+    display: none;
+}
+
+/* 🥉 1. スタンダード (Standard / Common) - 落ち着いたスレート ＆ 深みのあるダークピル */
+.card-frame-tcg.rarity-c {
+    border-color: #475569;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.75), inset 0 0 8px rgba(0, 0, 0, 0.4);
+}
+.card-frame-tcg.rarity-c .tcg-title-pill {
+    border-color: rgba(148, 163, 184, 0.3);
+    background: linear-gradient(135deg, rgba(51, 65, 85, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+    color: #e2e8f0;
+}
+
+/* 🥈 2. アドバンスド (Advanced / Uncommon) - プラチナシルバーの輝き */
+.card-frame-tcg.rarity-uc {
+    border-color: #dcdde1;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.8), 0 0 12px rgba(220, 221, 225, 0.45), inset 0 0 14px rgba(255, 255, 255, 0.2);
+}
+.card-frame-tcg.rarity-uc .tcg-title-pill {
+    border-color: rgba(220, 221, 225, 0.6);
+    background: linear-gradient(135deg, rgba(220, 221, 225, 0.25) 0%, rgba(30, 41, 59, 0.92) 100%);
+    color: #ffffff;
+    text-shadow: 0 0 8px rgba(220, 221, 225, 0.7);
+}
+
+/* 🥇 3. エクシード (Exceed / Rare) - ゴールドメタリック ＆ 金色パルス */
+@keyframes goldShimmer {
+    0% {
+        box-shadow: 0 6px 20px rgba(0,0,0,0.8), 0 0 10px rgba(241, 196, 15, 0.45), inset 0 0 12px rgba(241, 196, 15, 0.25);
+        border-color: #f1c40f;
+    }
+    50% {
+        box-shadow: 0 8px 25px rgba(0,0,0,0.85), 0 0 18px rgba(255, 215, 0, 0.8), inset 0 0 18px rgba(255, 215, 0, 0.45);
+        border-color: #ffeaa7;
+    }
+    100% {
+        box-shadow: 0 6px 20px rgba(0,0,0,0.8), 0 0 10px rgba(241, 196, 15, 0.45), inset 0 0 12px rgba(241, 196, 15, 0.25);
+        border-color: #f1c40f;
+    }
+}
+
+.card-frame-tcg.rarity-r {
+    border-color: #f1c40f;
+    animation: goldShimmer 2.8s infinite ease-in-out;
+}
+.card-frame-tcg.rarity-r .tcg-title-pill {
+    border-color: #f1c40f;
+    color: #ffeaa7;
+    background: linear-gradient(135deg, rgba(241, 196, 15, 0.35) 0%, rgba(44, 62, 80, 0.95) 100%);
+    text-shadow: 0 0 10px rgba(241, 196, 15, 0.8);
+    box-shadow: inset 0 1px 4px rgba(255, 234, 167, 0.3), 0 2px 8px rgba(241, 196, 15, 0.4);
+}
+
+/* 💎 4. レジェンド (Legend / Mythic) - プラチナ・ホログラム虹彩 */
+@keyframes holoPrism {
+    0% {
+        border-color: #00d2d3;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.85), 0 0 18px rgba(0, 210, 211, 0.7), inset 0 0 16px rgba(0, 210, 211, 0.35);
+    }
+    33% {
+        border-color: #e056fd;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.85), 0 0 18px rgba(224, 86, 253, 0.7), inset 0 0 16px rgba(224, 86, 253, 0.35);
+    }
+    66% {
+        border-color: #f1c40f;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.85), 0 0 18px rgba(241, 196, 15, 0.7), inset 0 0 16px rgba(241, 196, 15, 0.35);
+    }
+    100% {
+        border-color: #00d2d3;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.85), 0 0 18px rgba(0, 210, 211, 0.7), inset 0 0 16px rgba(0, 210, 211, 0.35);
+    }
+}
+
+.card-frame-tcg.rarity-l,
+.card-frame-tcg.rarity-ur {
+    border-color: #00d2d3;
+    animation: holoPrism 3.5s infinite ease-in-out;
+}
+.card-frame-tcg.rarity-l .tcg-title-pill,
+.card-frame-tcg.rarity-ur .tcg-title-pill {
+    border-color: #00d2d3;
+    color: #ffffff;
+    background: linear-gradient(135deg, rgba(0, 210, 211, 0.35) 0%, rgba(224, 86, 253, 0.35) 100%);
+    text-shadow: 0 0 12px rgba(0, 210, 211, 0.9), 0 0 20px rgba(224, 86, 253, 0.7);
+    box-shadow: inset 0 1px 4px rgba(255, 255, 255, 0.4), 0 2px 10px rgba(0, 210, 211, 0.5);
+}
+
+/* 🏷️ レアリティバッジ共通スタイル */
+.tcg-rarity-badge {
+    font-size: 12px;
+    font-weight: 900;
+    padding: 2px 7px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 🌟 ホバー・選択時はアニメーションをクリアして安定描画 */
+.card-frame-tcg:hover,
+.card-slot-box:hover {
+    animation: none !important;
+    transform: scale(1.15) translateY(-16px) !important;
+    border-color: #2ecc71 !important;
+    box-shadow: 0 16px 35px rgba(0,0,0,0.8), 0 0 20px rgba(46, 204, 113, 0.8) !important;
+    filter: brightness(1.12) contrast(1.05) !important;
+    z-index: 500 !important;
+}
+
+.card-frame-tcg.selected,
+.card-slot-box.selected {
+    animation: none !important;
+    border-color: #00d2d3 !important;
+    box-shadow: 0 0 35px rgba(0, 210, 211, 0.95), 0 12px 30px rgba(0,0,0,0.9) !important;
+    transform: scale(1.12) translateY(-12px) !important;
+    z-index: 400 !important;
+}
+
+/* 🎮 メインエリア枠内 右下隅: 統合操作グループ (4px 太目枠) */
+.footer-controls-partition {
+    position: absolute;
+    bottom: 16px;
+    right: 20px;
+    width: 276px;
+    height: auto !important;
+    background: #161922;
+    border: 4px solid #2e384e; /* 4px 太枠 */
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 12px;
+    box-sizing: border-box;
+    z-index: 100;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+}
+
+.turn-box-inside {
+    background: rgba(24, 34, 50, 0.6);
+    border: 2px solid #2c3e50;
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.btn-mulligan {
+    background: #e74c3c;
+    color: #fff;
+    border: none;
+    padding: 10px;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.15s;
+    width: 100%;
+}
+.btn-mulligan:hover {
+    background: #c0392b;
+    transform: translateY(-1px);
+}
+
+.btn-turn-end {
+    background: #1abc9c;
+    color: #0d0f14;
+    border: none;
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(26,188,156,0.3);
+    transition: transform 0.15s, background 0.15s;
+    width: 100%;
+}
+.btn-turn-end:hover {
+    background: #16a085;
+    color: #ffffff;
+    transform: translateY(-2px);
+}
+
+/* 🌀 左下カードエリアホバー時：土地盤面グリッドのみが奥へボヤける */
+.board-container-wrapper {
+    transition: filter 0.25s ease, opacity 0.25s ease;
+}
+.board-blur-focus .board-container-wrapper {
+    filter: blur(3px) brightness(0.68) !important;
+}
+
+/* 🎯 配置ブロックプレビューハイライト (.preview-valid / .preview-invalid)
+   近郊マス(.hq-vicinity-unplaced)やソケットマスの上であっても、緑/赤枠プレビューが確実に最前面に美しく表示される */
+.cell.preview-valid {
+    background: rgba(26, 188, 156, 0.55) !important;
+    border: 2.5px solid #1abc9c !important;
+    box-shadow: 0 0 18px rgba(26, 188, 156, 0.9) !important;
+    z-index: 100 !important;
+    filter: blur(0px) brightness(1.25) !important;
+}
+
+.cell.preview-invalid {
+    background: rgba(231, 76, 60, 0.55) !important;
+    border: 2.5px solid #e74c3c !important;
+    box-shadow: 0 0 18px rgba(231, 76, 60, 0.9) !important;
+    z-index: 100 !important;
+    filter: blur(0px) brightness(1.25) !important;
+}
+
+/* 📦 保留スロット外枠コンテナ (手札カードと100%同一サイズ: 276px x 402px) */
+.offering-section:not(.is-minimal) .reserve-slot-single-box {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 276px;
+    height: 402px;
+    min-width: 276px;
+    min-height: 402px;
+    box-sizing: border-box;
+    border-radius: 16px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+.reserve-header-cost-badge {
+    font-size: 13px;
+    font-weight: 900;
+    color: #ff6b81;
+    background: rgba(231, 76, 60, 0.18);
+    border: 1.5px solid #e74c3c;
+    border-radius: 6px;
+    padding: 5px 12px;
+    letter-spacing: 0.5px;
+    text-shadow: 0 0 8px rgba(231, 76, 60, 0.6);
+    user-select: none;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    box-sizing: border-box;
+}
+
+/* 📐 標準モード時の縮小トグルボタン (マリガンボタンと並ぶ洗練された正方形ボタン) */
+.offering-section:not(.is-minimal) .btn-minimal-toggle {
+    background: linear-gradient(135deg, rgba(26, 188, 156, 0.2), rgba(22, 160, 133, 0.35));
+    color: #1abc9c;
+    border: 2px solid #1abc9c;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: 900;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(26, 188, 156, 0.4);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.offering-section:not(.is-minimal) .btn-minimal-toggle:hover {
+    background: #1abc9c;
+    color: #11141a;
+    transform: scale(1.05);
+    box-shadow: 0 0 16px rgba(26, 188, 156, 0.8);
+}
+
+/* 📦 保留スロット（手札カードと100%同一規格 260x390px・完全 2:3 比率） */
+.offering-section:not(.is-minimal) .reserve-slot-empty,
+.card-floating-preview-container .reserve-slot-empty {
+    width: 260px;
+    max-width: 260px;
+    min-width: 260px;
+    height: 390px;
+    min-height: 390px;
+    background: #151d2a;
+    border: 3px dashed #64748b;
+    border-radius: 12px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    cursor: pointer;
+    transition: border-color 0.18s, background 0.18s, box-shadow 0.18s, transform 0.15s;
+    user-select: none;
+}
+
+.offering-section:not(.is-minimal) .reserve-slot-empty:hover,
+.offering-section:not(.is-minimal) .reserve-slot-empty.reserve-slot-can-deposit {
+    border-color: #f39c12;
+    box-shadow: 0 0 24px rgba(243, 156, 18, 0.45);
+    transform: translateY(-2px);
+}
+
+.offering-section:not(.is-minimal) .reserve-slot-empty.reserve-slot-drop-hover {
+    border-color: #f1c40f;
+    border-style: solid;
+    box-shadow: 0 0 30px rgba(241, 196, 15, 0.75);
+    transform: scale(1.02);
+}
+
+.reserve-slot-empty .tcg-title-pill {
+    color: #ffffff !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+/* 📦 大判空保留スロット内コンテンツ定義 */
+.offering-section:not(.is-minimal) .reserve-slot-empty .tcg-card-desc-full,
+.card-floating-preview-container .reserve-slot-empty .tcg-card-desc-full {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+.reserve-empty-large-icon {
+    font-size: 46px;
+    line-height: 1;
+    margin-bottom: 10px;
+    filter: drop-shadow(0 0 12px rgba(243, 156, 18, 0.7));
+}
+.reserve-empty-title-text {
+    font-size: 22px;
+    font-weight: 900;
+    color: #f39c12;
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+    text-shadow: 0 0 10px rgba(243, 156, 18, 0.5);
+    text-align: center;
+}
+.reserve-empty-sub-text {
+    font-size: 14px;
+    color: #cbd5e1;
+    font-weight: 700;
+    line-height: 1.45;
+    text-align: center;
+}
+.offering-section:not(.is-minimal) .reserve-slot-empty .tcg-yield-strip,
+.card-floating-preview-container .reserve-slot-empty .tcg-yield-strip {
+    font-size: 15px;
+    font-weight: 900;
+    text-align: center;
+    justify-content: center;
+    padding: 8px 10px;
+    width: 100%;
+    box-sizing: border-box;
+    color: #f87171;
+    background: #1e293b;
+    border-radius: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+/* ⚡ 縦セパレーター */
+.offering-reserve-separator {
+    width: 2px;
+    align-self: stretch;
+    background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.25) 15%, rgba(255, 255, 255, 0.25) 85%, transparent);
+    margin: 0 4px;
+    flex-shrink: 0;
+}
+
+/* 🚀 保留カード直上ポップオーバー・ダイアログ (カードに被らない上空展開 ＆ 盤面より最前面) */
+.reserve-popover-menu {
+    position: absolute;
+    bottom: calc(100% + 14px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 260px;
+    background: rgba(18, 22, 32, 0.98);
+    border: 2px solid #f39c12;
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9), 0 0 25px rgba(243, 156, 18, 0.5);
+    z-index: 3000 !important;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    animation: popoverFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    backdrop-filter: blur(8px);
+}
+
+/* 🔻 吹き出し下向き矢印アンカー */
+.reserve-popover-menu::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 8px 8px 0 8px;
+    border-style: solid;
+    border-color: #f39c12 transparent transparent transparent;
+}
+
+@keyframes popoverFadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(8px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) scale(1.0);
+    }
+}
+
+.reserve-popover-cost-warn {
+    font-size: 11.5px;
+    font-weight: bold;
+    color: #e74c3c;
+    background: rgba(231, 76, 60, 0.12);
+    border: 1px solid rgba(231, 76, 60, 0.4);
+    border-radius: 6px;
+    padding: 6px 8px;
+    text-align: center;
+    line-height: 1.35;
+}
+
+.reserve-popover-btn-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.btn-reserve-action-play {
+    background: linear-gradient(135deg, #1abc9c, #16a085);
+    color: #ffffff;
+    font-weight: 900;
+    font-size: 14px;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(26, 188, 156, 0.35);
+    transition: transform 0.12s, box-shadow 0.12s;
+}
+.btn-reserve-action-play:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(26, 188, 156, 0.55);
+}
+
+.btn-reserve-action-return {
+    background: linear-gradient(135deg, #34495e, #2c3e50);
+    color: #ecf0f1;
+    font-weight: bold;
+    font-size: 13px;
+    padding: 7px 12px;
+    border: 1px solid #7f8c8d;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.btn-reserve-action-return:hover {
+    background: #3d566e;
+    color: #ffffff;
+}
+
+.btn-reserve-action-discard {
+    background: linear-gradient(135deg, rgba(192, 57, 43, 0.85), rgba(150, 40, 27, 0.9));
+    color: #ffd2d2;
+    font-weight: bold;
+    font-size: 13px;
+    padding: 7px 12px;
+    border: 1px solid rgba(231, 76, 60, 0.55);
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(192, 57, 43, 0.3);
+    transition: all 0.15s ease;
+}
+.btn-reserve-action-discard:hover {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: #ffffff;
+    border-color: #e74c3c;
+    box-shadow: 0 4px 10px rgba(231, 76, 60, 0.5);
+    transform: translateY(-1px);
+}
+
+.btn-reserve-action-close {
+    background: transparent;
+    color: #95a5a6;
+    font-size: 11.5px;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    text-align: center;
+    transition: color 0.15s;
+}
+.btn-reserve-action-close:hover {
+    color: #ecf0f1;
+}
+
+/* =============================================================
+   🌐 グローバル・リッチツールチップ (TooltipSystem)
+   ・文字サイズ 15px〜16px の極太・高コントラスト
+   ・GPUハードウェアアクセラレーション追従 (120fps)
+   ============================================================= */
+.global-rich-tooltip {
+    position: fixed;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 99999 !important;
+    background: rgba(14, 18, 26, 0.96);
+    border: 2px solid #1abc9c;
+    border-radius: 8px;
+    padding: 8px 14px;
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.45;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85), 0 0 14px rgba(26, 188, 156, 0.4);
+    max-width: 320px;
+    word-break: break-word;
+    will-change: transform;
+    opacity: 0;
+    transition: opacity 0.12s ease;
+    backdrop-filter: blur(8px);
+}
+
+.global-rich-tooltip.visible {
+    opacity: 1;
+}
+
+.global-tooltip-title {
+    font-size: 16px;
+    font-weight: 900;
+    color: #1abc9c;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: 0.5px;
+}
+
+.global-tooltip-desc {
+    font-size: 14px;
+    font-weight: 600;
+    color: #f1f5f9;
+    letter-spacing: 0.3px;
+}
+
+/* =============================================================
+   📐 [Step 1] 手札ミニマル表示モード (.is-minimal) スコープ限定CSS
+   標準表示（260x390px）には 1px も干渉しない完全隔離設計
+   ============================================================= */
+
+/* =============================================================
+   📐 [Step 1] 手札ミニマル表示モード (.is-minimal) スコープ限定CSS
+   ユーザー様モックアップ (media_1787573988126.png) 完全一致設計
+   ============================================================= */
+/* =============================================================
+   🃏 縮小表示モード (.offering-section.is-minimal)
+   完全1段 3ブロック・センタリング設計 (幅 420px ✕ 高さ 136px)
+   ============================================================= */
+.offering-section.is-minimal {
+    width: 420px;
+    height: 136px;
+    min-width: 420px;
+    max-width: 420px;
+    min-height: 136px;
+    max-height: 136px;
+    padding: 8px 10px;
+    margin: 0;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 18, 26, 0.96);
+    border: 3px solid #2e384e;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.9);
+    backdrop-filter: blur(4px);
+    transition: all 0.2s ease;
+    overflow: visible;
+    position: relative;
+}
+
+/* 🌟 ミニマルトレイ ホバー時のエメラルドグリーングロー */
+.offering-section.is-minimal:hover {
+    border-color: #1abc9c;
+    box-shadow: 0 0 30px rgba(26, 188, 156, 0.6), 0 8px 30px rgba(0, 0, 0, 0.9);
+}
+
+#cardRow.cards-row-wrapper.is-minimal {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+/* 1. 左端: 正方形ボタングループ (40×40px 2段) */
+#cardRow.is-minimal .minimal-btn-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 40px;
+    height: 114px;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+#cardRow.is-minimal .btn-minimal-toggle {
+    background: #1abc9c;
+    color: #11141a;
+    border: 1.5px solid #1abc9c;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: 900;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(26, 188, 156, 0.5);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+#cardRow.is-minimal .btn-minimal-toggle:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 16px rgba(26, 188, 156, 0.8);
+}
+
+#cardRow.is-minimal .btn-minimal-mulligan {
+    background: linear-gradient(135deg, rgba(231, 76, 60, 0.25), rgba(192, 57, 43, 0.35));
+    border: 1.5px solid #e74c3c;
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 18px;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(231, 76, 60, 0.4);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+#cardRow.is-minimal .btn-minimal-mulligan:hover:not(:disabled) {
+    background: #e74c3c;
+    box-shadow: 0 0 14px rgba(231, 76, 60, 0.8);
+    transform: scale(1.05);
+}
+
+/* 2. 縦セパレーター (カードと同じ高さ 114px) */
+#cardRow.is-minimal .offering-tray-separator {
+    width: 2px;
+    height: 114px;
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 1px;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+/* 3. 中央: 手札コンテナ (76px ✕ 114px 3枚) */
+#cardRow.is-minimal .cards-hand-container {
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    height: 114px;
+    flex-shrink: 0;
+}
+
+/* 4. 右端: 保留スロットコンテナ (76px ✕ 114px) */
+#cardRow.is-minimal .reserve-slot-single-box {
+    width: 76px;
+    min-width: 76px;
+    max-width: 76px;
+    height: 114px;
+    min-height: 114px;
+    max-height: 114px;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+}
+
+/* 🔲 ミニマルカード枠 (76px ✕ 114px - 厳密な 2 : 3 整数黄金比率) - #cardRow 直下限定 */
+#cardRow.is-minimal .card-frame-tcg,
+#cardRow.is-minimal .card-slot-box,
+#cardRow.is-minimal .reserve-slot-empty {
+    width: 76px;
+    min-width: 76px;
+    max-width: 76px;
+    height: 114px;
+    min-height: 114px;
+    max-height: 114px;
+    background: #11141a;
+    border-width: 2px;
+    border-style: solid;
+    border-color: #2c3e50;
+    border-radius: 8px;
+    padding: 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+    box-sizing: border-box;
+    position: relative;
+    display: block;
+    cursor: pointer;
+    transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+/* 🌟 ミニマルカード ホバー時 (エメラルドグリーン発光) */
+#cardRow.is-minimal .card-frame-tcg:hover:not(.locked):not(.selected),
+#cardRow.is-minimal .reserve-slot-empty:hover {
+    border-color: #2ecc71;
+    box-shadow: 0 0 16px rgba(46, 204, 113, 0.85), 0 0 24px rgba(26, 188, 156, 0.6), 0 4px 12px rgba(0,0,0,0.8);
+    transform: translateY(-4px) scale(1.02);
+    z-index: 10;
+}
+
+/* 🎯 ミニマルカード 選択時 */
+#cardRow.is-minimal .card-frame-tcg.selected {
+    border-color: #00d2d3;
+    box-shadow: 0 0 20px rgba(0, 210, 211, 0.95), 0 4px 12px rgba(0, 0, 0, 0.8);
+    transform: translateY(-4px) scale(1.03);
+    z-index: 12;
+}
+
+/* 🚫 #cardRow 配下の標準要素非表示 (ミニマルモード時は標準要素を100%遮断) */
+#cardRow.is-minimal .tcg-card-top-bar,
+#cardRow.is-minimal .tcg-shape-grid-standard,
+#cardRow.is-minimal .tcg-card-desc-full,
+#cardRow.is-minimal .tcg-yield-strip,
+#cardRow.is-minimal .reserve-slot-desc-text,
+#cardRow.is-minimal .reserve-empty-icon,
+#cardRow.is-minimal .reserve-slot-title-text,
+#cardRow.is-minimal .reserve-slot-hold-label,
+#cardRow.is-minimal .reserve-slot-hint {
+    display: none;
+}
+
+/* 🖼️ ミニマル時の中央エリア (第1層: 上部 76px にブロック・アイコンをセンタリング収容) */
+#cardRow.is-minimal .tcg-shape-art-area {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    right: 4px;
+    height: 76px;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    z-index: 1;
+}
+
+/* 🧩 ミニマルブロック形状 (14px セル - 縦4マス・横4マス完全収容) */
+#cardRow.is-minimal .tcg-mini-shape-grid {
+    display: grid;
+    align-items: center;
+    justify-content: center;
+}
+
+#cardRow.is-minimal .tcg-mini-shape-cell {
+    width: 14px;
+    height: 14px;
+    border-radius: 2.5px;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    box-sizing: border-box;
+}
+
+/* 📜 ミニマル時のコマンド/保留カテゴリアイコン */
+#cardRow.is-minimal .tcg-minimal-cmd-icon {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 76px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 34px;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.7));
+}
+
+/* 🏷️ ミニマルカード下部のカード名ラベル (第2層: 枠内最下部に固定配置・ブロックサイズに完全非干渉) */
+#cardRow.is-minimal .tcg-minimal-name-label {
+    position: absolute;
+    bottom: 5px;
+    left: 4px;
+    right: 4px;
+    height: 22px;
+    line-height: 20px;
+    font-size: 13px;
+    font-weight: 900;
+    color: #ffffff;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0 2px;
+    box-sizing: border-box;
+    letter-spacing: 0.1px;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95);
+    display: block;
+    background: rgba(30, 41, 59, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 4px;
+    z-index: 5;
+}
+
+/* 🥉 ミニマル: スタンダード (Common) */
+#cardRow.is-minimal .card-frame-tcg.rarity-c .tcg-minimal-name-label {
+    background: rgba(30, 41, 59, 0.85);
+    border-color: rgba(148, 163, 184, 0.25);
+    color: #cbd5e1;
+}
+
+/* 🥈 ミニマル: アドバンスド (Uncommon) */
+#cardRow.is-minimal .card-frame-tcg.rarity-uc {
+    border-color: #dcdde1;
+}
+#cardRow.is-minimal .card-frame-tcg.rarity-uc .tcg-minimal-name-label {
+    background: linear-gradient(135deg, rgba(220, 221, 225, 0.25) 0%, rgba(30, 41, 59, 0.9) 100%);
+    border-color: rgba(220, 221, 225, 0.5);
+    color: #ffffff;
+    text-shadow: 0 0 6px rgba(220, 221, 225, 0.6);
+}
+
+/* 🥇 ミニマル: エクシード (Rare) */
+#cardRow.is-minimal .card-frame-tcg.rarity-r {
+    border-color: #f1c40f;
+}
+#cardRow.is-minimal .card-frame-tcg.rarity-r .tcg-minimal-name-label {
+    background: linear-gradient(135deg, rgba(241, 196, 15, 0.3) 0%, rgba(44, 62, 80, 0.95) 100%);
+    border-color: #f1c40f;
+    color: #ffeaa7;
+    text-shadow: 0 0 6px rgba(241, 196, 15, 0.8);
+}
+
+/* 💎 ミニマル: レジェンド (Legend / Mythic) */
+#cardRow.is-minimal .card-frame-tcg.rarity-l,
+#cardRow.is-minimal .card-frame-tcg.rarity-ur {
+    border-color: #00d2d3;
+}
+#cardRow.is-minimal .card-frame-tcg.rarity-l .tcg-minimal-name-label,
+#cardRow.is-minimal .card-frame-tcg.rarity-ur .tcg-minimal-name-label {
+    background: linear-gradient(135deg, rgba(0, 210, 211, 0.3) 0%, rgba(224, 86, 253, 0.3) 100%);
+    border-color: #00d2d3;
+    color: #ffffff;
+    text-shadow: 0 0 8px rgba(0, 210, 211, 0.9);
+}
+
+/* 📦 ミニマル時の空保留スロット */
+#cardRow.is-minimal .reserve-slot-empty {
+    border-style: dashed;
+    border-color: #64748b;
+    background: #11141a;
+}
+#cardRow.is-minimal .reserve-slot-empty:hover,
+#cardRow.is-minimal .reserve-slot-empty.reserve-slot-can-deposit {
+    border-color: #f39c12;
+    box-shadow: 0 0 16px rgba(243, 156, 18, 0.6), 0 4px 12px rgba(0, 0, 0, 0.8);
+    transform: translateY(-2px);
+}
+#cardRow.is-minimal .reserve-slot-empty.reserve-slot-drop-hover {
+    border-color: #f1c40f;
+    border-style: solid;
+    box-shadow: 0 0 24px rgba(241, 196, 15, 0.85);
+}
+#cardRow.is-minimal .reserve-slot-empty .tcg-minimal-cmd-icon {
+    font-size: 32px;
+}
+#cardRow.is-minimal .reserve-slot-empty .tcg-minimal-name-label {
+    background: rgba(30, 41, 59, 0.88);
+    border-color: rgba(243, 156, 18, 0.4);
+    color: #f39c12;
+}
+
+/* =============================================================
+   🃏 [手札真上] フローティング拡大プレビューコンテナ
+   トレイ枠基準の完全自動センタリング (260px ✕ 390px)
+   ============================================================= */
+.card-floating-preview-container {
+    position: absolute;
+    bottom: calc(100% + 16px);
+    left: 50%;
+    transform: translateX(-50%) translateY(6px);
+    width: 260px;
+    height: 390px;
+    z-index: 2500;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.12s ease, transform 0.12s ease;
+    display: none;
+    background: transparent;
+}
+
+.card-floating-preview-container.is-visible {
+    display: block;
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* 🃏 拡大プレビュー内のカードは大判標準（260px ✕ 390px）で完璧描画 */
+.card-floating-preview-container .card-frame-tcg,
+.card-floating-preview-container .card-slot-box,
+.card-floating-preview-container .reserve-slot-empty {
+    width: 260px;
+    min-width: 260px;
+    max-width: 260px;
+    height: 390px;
+    min-height: 390px;
+    max-height: 390px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 12px;
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.95), 0 0 20px rgba(26, 188, 156, 0.5);
+    background: #11141a;
+    border-radius: 14px;
+    box-sizing: border-box;
+    border-width: 4px;
+    border-style: solid;
+    position: relative;
+}
+
+/* プレビュー内の標準要素を完全表示 */
+.card-floating-preview-container .tcg-card-top-bar {
+    display: flex;
+}
+.card-floating-preview-container .tcg-shape-grid-standard {
+    display: grid;
+    justify-content: center;
+    align-content: center;
+}
+.card-floating-preview-container .tcg-card-desc-full {
+    display: block;
+}
+.card-floating-preview-container .tcg-yield-strip {
+    display: flex;
+}
+
+.card-floating-preview-container .tcg-shape-art-area {
+    position: relative;
+    top: auto;
+    left: auto;
+    right: auto;
+    height: auto;
+    flex: 1;
+    background: #1c2536;
+    border-radius: 6px;
+    margin: 4px 0;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* プレビュー内のミニマル要素を非表示 */
+.card-floating-preview-container .tcg-minimal-cmd-icon,
+.card-floating-preview-container .tcg-mini-shape-grid,
+.card-floating-preview-container .tcg-minimal-name-label {
+    display: none;
+}
+
+/* 🔲 空きスロット（使用済み / 保留復元受け入れ可能） */
+.card-frame-tcg.card-slot-blank {
+    background: #11141d;
+    border: 2px dashed #475569;
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+    transition: all 0.15s ease;
+}
+
+.card-frame-tcg.card-slot-blank.can-receive-reserve {
+    border-color: #3b82f6;
+    border-style: dashed;
+    cursor: pointer;
+}
+
+.card-frame-tcg.card-slot-blank.can-receive-reserve:hover,
+.card-frame-tcg.card-slot-blank.blank-slot-drop-hover {
+    border-color: #10b981 !important;
+    background: rgba(16, 185, 129, 0.15) !important;
+    box-shadow: 0 0 22px rgba(16, 185, 129, 0.7) !important;
+    transform: scale(1.03);
+}
+
+.card-frame-tcg.card-slot-blank .blank-slot-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.card-frame-tcg.card-slot-blank .blank-slot-icon {
+    font-size: 36px;
+    color: #64748b;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.card-frame-tcg.card-slot-blank.can-receive-reserve .blank-slot-icon {
+    color: #3b82f6;
+}
+
+.card-frame-tcg.card-slot-blank .blank-slot-text {
+    font-size: 14px;
+    font-weight: 800;
+    color: #94a3b8;
+    text-align: center;
+    line-height: 1.2;
+}
+
+.card-frame-tcg.card-slot-blank.can-receive-reserve .blank-slot-text {
+    color: #60a5fa;
+}
+
+/* 🔲 ミニマル時の空きスロット (完全中央揃え配置) */
+#cardRow.is-minimal .card-frame-tcg.card-slot-blank {
+    border-radius: 8px;
+}
+
+#cardRow.is-minimal .card-frame-tcg.card-slot-blank .blank-slot-inner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+#cardRow.is-minimal .card-frame-tcg.card-slot-blank .blank-slot-icon {
+    position: static;
+    font-size: 26px;
+    height: auto;
+    width: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    color: #64748b;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.7));
+}
+
+#cardRow.is-minimal .card-frame-tcg.card-slot-blank.can-receive-reserve .blank-slot-icon {
+    color: #60a5fa;
+    filter: drop-shadow(0 0 10px rgba(96, 165, 250, 0.6));
+}
+
+#cardRow.is-minimal .card-frame-tcg.card-slot-blank .blank-slot-text {
+    position: static;
+    font-size: 11px;
+    font-weight: 900;
+    height: auto;
+    line-height: 1.2;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(30, 41, 59, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: #94a3b8;
+    text-align: center;
+    white-space: nowrap;
+    z-index: 5;
+}
+
+#cardRow.is-minimal .card-frame-tcg.card-slot-blank.can-receive-reserve .blank-slot-text {
+    color: #60a5fa;
+    border-color: rgba(96, 165, 250, 0.4);
+}
+
+/* 💬 縮小モード時のマリガンポップオーバー（画面外はみ出し完全防止 ＆ ボタン直上矢印吸着） */
+#cardRow.is-minimal .mulligan-popover-box {
+    left: 0;
+    transform: none;
+    width: 320px;
+    bottom: calc(100% + 14px);
+}
+
+#cardRow.is-minimal .mulligan-popover-box::after {
+    left: 20px;
+    transform: none;
+}
+
+/* 💡 マウスオーバー時のカード操作ガイドポップアップ (3大操作ヒント) */
+.card-action-hint-popover {
+    position: absolute;
+    bottom: calc(100% + 14px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, rgba(20, 30, 48, 0.96) 100%);
+    backdrop-filter: blur(12px);
+    border: 1.5px solid rgba(26, 188, 156, 0.8);
+    border-radius: 8px;
+    padding: 9px 14px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.9), 0 0 16px rgba(26, 188, 156, 0.4);
+    color: #f8fafc;
+    font-size: 12px;
+    line-height: 1.6;
+    white-space: nowrap;
+    z-index: 3000;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    animation: hintFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-action-hint-popover::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 6px;
+    border-style: solid;
+    border-color: rgba(26, 188, 156, 0.8) transparent transparent transparent;
+}
+
+.card-action-hint-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.card-action-hint-bullet {
+    color: #1abc9c;
+    font-size: 11px;
+    font-weight: 900;
+}
+
+@keyframes hintFadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 6px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+

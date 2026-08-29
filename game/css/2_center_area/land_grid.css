@@ -513,7 +513,7 @@ body.is-camera-dragging-global * {
     border-right: 1.5px solid rgba(255, 210, 100, 0.70);
 }
 
-/* 🌊 清湖近郊マスの穏やかで清涼な湿原ティール水脈パルスアニメーション */
+/* 🌊 湖近郊マスの穏やかで清涼な湿原ティール水脈パルスアニメーション */
 @keyframes lakeVicinityPulse {
     0%, 100% {
         opacity: 0.85;
@@ -798,22 +798,6 @@ body.is-camera-dragging-global * {
     filter: drop-shadow(0 0 12px #00ff88) drop-shadow(0 0 24px rgba(0, 255, 136, 0.9));
 }
 
-/* 💡 マスホバーツールチップ (30% 拡大 ＆ 視認性大幅強化 ＆ 純粋な情報表示) */
-.tile-tooltip {
-    position: fixed;
-    display: none;
-    background: rgba(18, 22, 32, 0.98);
-    border: 2px solid #2e384e;
-    border-radius: 12px;
-    padding: 14px 18px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85), 0 0 16px rgba(26, 188, 156, 0.3);
-    pointer-events: none !important;
-    z-index: 2000;
-    max-width: 330px;
-    font-size: 16px;
-    line-height: 1.5;
-    color: #e0e0e0;
-}
 
 /* ↩️ 当ターン配置マスのスタイル (赤ハイライト全廃・クリーンな土地境界を維持) */
 .cell.cell-placed-this-turn {
@@ -1084,43 +1068,11 @@ body.is-camera-dragging-global * {
     filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.9));
 }
 
-/* 🎨 盤面スタイル切替フロートボタン (画面左下・邪魔にならないデザイン) */
-.tile-style-switcher-widget {
-    position: fixed;
-    bottom: 14px;
-    left: 14px;
-    z-index: 850;
-    pointer-events: auto;
-}
-
-.tile-style-switcher-btn {
-    background: rgba(18, 24, 34, 0.88);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    border: 1px solid rgba(241, 196, 15, 0.45);
-    border-radius: 20px;
-    padding: 6px 14px;
-    color: #ffd700;
-    font-size: 11px;
-    font-weight: 700;
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
-    transition: all 0.18s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    user-select: none;
-}
-
-.tile-style-switcher-btn:hover {
-    background: rgba(30, 40, 56, 0.95);
-    border-color: rgba(241, 196, 15, 0.85);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.65);
-}
-
-.tile-style-switcher-btn:active {
-    transform: translateY(0);
+/* 🏷️ 盤面左上角のスタイル切替ボタン ホバー効果 */
+.corner-toggle-cell #cornerTileStyleToggleBtn:hover {
+    background: rgba(255, 255, 255, 0.28);
+    border-color: rgba(241, 196, 15, 0.8);
+    transform: scale(1.08);
 }
 
 /* ✨ 資源産出ブロック 土地属性別イメージカラー連動ハイライト */

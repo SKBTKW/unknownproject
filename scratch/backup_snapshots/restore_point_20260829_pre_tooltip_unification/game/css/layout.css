@@ -1,0 +1,1599 @@
+/* =============================================================
+   game/css/layout.css
+   index_v2.html から完全に分離・抽出された統合レイアウトスタイルシート
+   ============================================================= */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #0d0f14;
+    color: #e0e0e0;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.app-wrapper {
+    max-width: 2100px;
+    margin: 0 auto;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: relative;
+}
+
+/* 1. 最上部ヘッダー (高さ 80px ✕ 🔥 100% 画面中央固定) */
+.top-bar {
+    background: #161922;
+    border: 1px solid #2a2e3d;
+    border-radius: 10px;
+    padding: 0 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    flex-shrink: 0;
+    height: 80px;
+    position: relative;
+    overflow: visible;
+}
+
+.app-title-box {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-weight: bold;
+    font-size: 16px;
+    z-index: 2;
+}
+
+.role-avatar-box {
+    background: #1abc9c;
+    color: #0b0d11;
+    padding: 6px 12px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* 🔥 残り火表示: 画面真中央に物理固定 */
+.ember-center-box {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    font-size: 34px;
+    font-weight: 900;
+    color: #ffffff;
+    text-shadow: 0 0 10px rgba(255, 118, 117, 0.8), 0 0 20px rgba(231, 76, 60, 0.5);
+    height: 100%;
+    z-index: 2;
+    pointer-events: none;
+}
+.ember-icon {
+    font-size: 44px;
+    line-height: 1;
+    display: inline-block;
+    filter: drop-shadow(0 0 12px #ff7675) drop-shadow(0 0 20px #d63031);
+    animation: emberPulse 2s infinite ease-in-out;
+    transform-origin: center;
+}
+@keyframes emberPulse {
+    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 12px #ff7675); }
+    50% { transform: scale(1.08); filter: drop-shadow(0 0 20px #e74c3c) drop-shadow(0 0 30px #ff7675); }
+}
+
+.trial-announcement {
+    background: #1f2430;
+    border: 1px dashed #e67e22;
+    padding: 6px 14px;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 11px;
+    color: #f39c12;
+    font-weight: bold;
+    display: none;
+}
+
+/* 右端 280px ターン表示 */
+.turn-box-header-wrapper {
+    width: 280px;
+    height: 100%;
+    margin-right: -16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+}
+.turn-box {
+    background: #1abc9c;
+    color: #0b0d11;
+    text-align: center;
+    font-weight: bold;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+.turn-box .turn-num {
+    font-size: 20px;
+    display: block;
+}
+
+/* 2. 中間レイアウト構造 */
+.middle-layout {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    overflow: visible !important;
+}
+
+/* 🎯 中央盤面エリア (画面全幅のメインエリア枠 ✕ 3.5px太枠フレーム) */
+.board-container {
+    background: #13161f;
+    border: 3.5px solid #2e384e; /* 3.5px 太枠フレーム */
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 16px;
+    box-shadow: inset 0 0 25px rgba(0,0,0,0.6);
+    width: 100% !important;
+    height: 100% !important;
+    flex: 1;
+    overflow: visible !important;
+}
+
+/* 🌀 下部カードエリアフォーカス時の親要素ボケを廃止し、クリアな視認性を維持 */
+.board-container.board-blur-focus {
+    filter: none !important;
+}
+
+.offering-section .card-visual {
+    transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease !important;
+    cursor: pointer;
+}
+
+.offering-section .card-visual:hover {
+    transform: translateY(-8px) scale(1.04) !important;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.9), 0 0 16px rgba(26, 188, 156, 0.8) !important;
+    z-index: 500 !important;
+}
+
+
+
+/* 盤面グリッド（正本は 2_center_area/land_grid.css に一元集約） */
+.searched-badge {
+    position: absolute;
+    bottom: 3px;
+    right: 4px;
+    font-size: 9px;
+    color: #2ecc71;
+    font-weight: bold;
+}
+.tile-bonus-toast {
+    position: absolute;
+    top: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(46, 204, 113, 0.95);
+    color: #111;
+    font-weight: bold;
+    font-size: 13px;
+    padding: 3px 10px;
+    border-radius: 8px;
+    white-space: nowrap;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.7);
+    animation: floatUp 2.0s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    pointer-events: none;
+    z-index: 30;
+}
+@keyframes floatUp {
+    0% { opacity: 1; transform: translate(-50%, 0); }
+    100% { opacity: 0; transform: translate(-50%, -26px); }
+}
+.tile-tooltip {
+    position: fixed;
+    background: rgba(22, 25, 34, 0.95);
+    border: 1px solid #1abc9c;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: #ecf0f1;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.7);
+    pointer-events: none !important;
+    z-index: 100;
+    display: none;
+}
+.card-rotate-cursor-tooltip {
+    position: fixed;
+    pointer-events: none !important;
+    z-index: 100000;
+    background: rgba(10, 14, 23, 0.92);
+    border: 1.5px solid #1abc9c;
+    color: #1abc9c;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 3px 8px;
+    border-radius: 4px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8), 0 0 10px rgba(26, 188, 156, 0.4);
+    white-space: nowrap;
+    display: none;
+}
+
+/* 👉 右サイドバー */
+.right-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+    width: 280px;
+}
+
+.data-panel {
+    background: #1a1e2b;
+    color: #ffffff;
+    border: 1px solid #2e3547;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 12px;
+}
+
+/* 3. 下部カードエリア */
+.bottom-card-container {
+    background: #13161f;
+    border: 1px solid #252a38;
+    border-radius: 10px;
+    padding: 10px 14px;
+    box-shadow: 0 -4px 15px rgba(0,0,0,0.4);
+    flex-shrink: 0;
+    position: relative;
+}
+
+/* 🃏 手札トレイ関連のレイアウトスタイルは css/3_bottom_area/draw_card_select_area.css で一元管理 */
+
+.card-slot-box {
+    width: 120px;
+    height: 172px;
+    background: #1c2230;
+    border: 2px solid #2e384e;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 6px;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+    user-select: none;
+    position: relative;
+}
+.card-slot-box:hover {
+    transform: translateY(-4px);
+    border-color: #1abc9c;
+    box-shadow: 0 6px 16px rgba(26, 188, 156, 0.3);
+}
+.card-slot-box.selected {
+    border-color: #f1c40f !important;
+    box-shadow: 0 0 15px rgba(241, 196, 15, 0.6) !important;
+    transform: translateY(-6px);
+}
+
+.reserve-partition {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border-left: 1px solid #2c354a;
+    padding-left: 14px;
+}
+.reserve-slots-row {
+    display: flex;
+    gap: 10px;
+}
+.reserve-card-slot {
+    width: 110px;
+    height: 160px;
+    border: 1px dashed #3a465e;
+    border-radius: 8px;
+    background: rgba(18, 22, 31, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: #5a6b8c;
+}
+
+.footer-controls-partition {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    justify-content: center;
+    height: 100%;
+}
+
+.btn-mulligan {
+    background: #e74c3c;
+    color: #fff;
+    border: none;
+    padding: 10px;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.btn-mulligan:hover {
+    background: #c0392b;
+}
+
+.btn-turn-end {
+    background: #1abc9c;
+    color: #0d0f14;
+    border: none;
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(26,188,156,0.3);
+    transition: transform 0.15s, background 0.15s;
+}
+.btn-turn-end:hover {
+    background: #16a085;
+    color: #ffffff;
+    transform: translateY(-2px);
+}
+
+.btn-log-toggle-header {
+    background: rgba(26, 188, 156, 0.15);
+    border: 1.5px solid #1abc9c;
+    color: #1abc9c;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12.5px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+.btn-log-toggle-header:hover {
+    background: #1abc9c;
+    color: #0d0f14;
+    box-shadow: 0 0 12px rgba(26,188,156,0.6);
+}
+.log-dropdown-panel-header {
+    position: absolute;
+    top: 45px;
+    left: 0;
+    width: 480px;
+    background: #11141d;
+    border: 2px solid #1abc9c;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 15px rgba(26,188,156,0.25);
+    z-index: 850;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: fadeInDown 0.2s ease forwards;
+}
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+        /* ツールチップ定義 */
+        .tile-tooltip {
+            position: fixed;
+            background: rgba(22, 25, 34, 0.95);
+            border: 1px solid #1abc9c;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 12px;
+            color: #ecf0f1;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.7);
+            pointer-events: none !important;
+            z-index: 100;
+            display: none;
+        }
+        .card-rotate-cursor-tooltip {
+            position: fixed;
+            pointer-events: none !important;
+            z-index: 100000;
+            background: rgba(10, 14, 23, 0.92);
+            border: 1.5px solid #1abc9c;
+            color: #1abc9c;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 4px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8), 0 0 10px rgba(26, 188, 156, 0.4);
+            white-space: nowrap;
+            display: none;
+        }
+
+        /* 👉 右サイドバー (幅 280px ピクセル一致) */
+        .right-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 0;
+            width: 280px;
+        }
+
+        .data-panel {
+            background: #1a1e2b;
+            color: #ffffff;
+            border: 1px solid #2e3547;
+            border-radius: 8px;
+            padding: 10px 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+        .data-panel h4 {
+            text-align: left;
+            font-size: 13px;
+            font-weight: bold;
+            color: #1abc9c;
+            margin-bottom: 6px;
+            border-bottom: 1px solid #2e3547;
+            padding-bottom: 4px;
+        }
+        .resource-list {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        /* 👇 最下部ドローオファリング ＆ 保留エリア (限界まで広げる幅大開放デザイン) */
+        .bottom-card-container {
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 10px;
+            height: 225px;
+            flex-shrink: 0;
+        }
+
+        .cards-flex-box {
+            background: #161922;
+            border: 1px solid #2a2e3d;
+            border-radius: 10px;
+            padding: 8px 16px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .offering-subgroup, .reserve-subgroup {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            height: 100%;
+        }
+
+        .subgroup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            font-weight: bold;
+            color: #1abc9c;
+            border-bottom: 1px solid #2a2e3d;
+            padding-bottom: 2px;
+        }
+
+        .subgroup-cards-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            flex: 1;
+            align-items: center;
+            justify-items: center;
+        }
+
+        .tcg-action-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2px;
+        }
+        .tcg-reserve-btn-wireframe {
+            background: #0097a7;
+            color: #ffffff;
+            border: none;
+            border-radius: 3px;
+            font-size: 8px;
+            font-weight: bold;
+            padding: 2px 4px;
+            cursor: pointer;
+            flex: 1;
+            text-align: center;
+        }
+        .tcg-rotate-btn-wireframe {
+            background: transparent;
+            color: #111111;
+            border: none;
+            font-size: 9px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 1px;
+            cursor: pointer;
+        }
+
+        .bottom-controls-box {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            justify-content: center;
+        }
+        .mulligan-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .turn-end-btn {
+            background: #1abc9c;
+            color: #0b0d11;
+            border: none;
+            padding: 14px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        /* 🏛️ 方針表示バッジ (🔥残り火アイコンの真下に配置) */
+        .directive-pill {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.25);
+            line-height: 1.2;
+        }
+        .directive-pill:hover {
+            transform: translateY(-2px) scale(1.04);
+            box-shadow: 0 4px 14px rgba(26,188,156,0.6);
+            border-color: #1abc9c;
+        }
+        .directive-development { background: linear-gradient(135deg, #1e4a26 0%, #112e16 100%); color: #2ecc71; border-color: #2ecc71; }
+        .directive-production { background: linear-gradient(135deg, #5c4314 0%, #36260a 100%); color: #f39c12; border-color: #f39c12; }
+        .directive-military { background: linear-gradient(135deg, #1f3a52 0%, #0f2130 100%); color: #3498db; border-color: #3498db; }
+        .directive-prayer { background: linear-gradient(135deg, #3c245c 0%, #201133 100%); color: #9b59b6; border-color: #9b59b6; }
+
+        .directive-option-card {
+            background: #1d222e;
+            border: 1px solid #2e3547;
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 8px;
+            transition: all 0.15s ease;
+        }
+        .directive-option-card:hover:not(.disabled) {
+            border-color: #1abc9c;
+            background: #252c3c;
+        }
+        .directive-option-card.active {
+            border: 2px solid #2ecc71 !important;
+            background: rgba(46, 204, 113, 0.1) !important;
+        }
+        .directive-option-card.disabled {
+            opacity: 0.5;
+            filter: grayscale(60%);
+        }
+        .directive-card-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .directive-card-desc {
+            font-size: 11px;
+            color: #bdc3c7;
+            line-height: 1.4;
+        }
+        .directive-select-btn {
+            background: #1abc9c;
+            color: #0b0d11;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
+        .directive-select-btn:hover {
+            background: #16a085;
+        }
+        .directive-active-badge {
+            color: #2ecc71;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .directive-locked-badge {
+            color: #e74c3c;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        /* 🔍 マウスオーバー（ホバー）時の巨大化・超高視認性専用ポップアップツールチップ */
+        .large-directive-tooltip {
+            background: rgba(18, 22, 32, 0.96);
+            border: 2px solid #1abc9c;
+            border-radius: 12px;
+            padding: 16px 20px;
+            width: 380px;
+            max-width: 90vw;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.95), 0 0 20px rgba(26, 188, 156, 0.4);
+            pointer-events: none !important;
+            z-index: 100000;
+            display: none;
+            backdrop-filter: blur(8px);
+            animation: directivePopIn 0.15s ease-out forwards;
+        }
+        @keyframes directivePopIn {
+            0% { opacity: 0; transform: translateY(-4px) scale(0.96); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        /* 📜 メインエリア左上隅: 2倍拡大ログパネル ＆ トグルボタン */
+        .main-top-left-log-wrapper {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            z-index: 850;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        /* ✨ 盤面直上: 上方向トグル展開バフ表示パネル CSS */
+        .buff-display-master-container {
+            position: relative;
+            width: 520px;
+            margin-top: 6px;
+            margin-bottom: 8px;
+            z-index: 800;
+        }
+        .buff-summary-bar {
+            background: rgba(24, 34, 50, 0.95);
+            border: 1.5px solid #1abc9c;
+            border-radius: 8px;
+            padding: 6px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        .buff-summary-bar:hover {
+            border-color: #2ecc71;
+            box-shadow: 0 6px 18px rgba(26,188,156,0.5);
+        }
+        .buff-summary-left { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: bold; color: #1abc9c; }
+        .buff-pills-preview { display: flex; gap: 6px; }
+        .buff-pill-mini { background: rgba(26, 188, 156, 0.15); border: 1px solid #1abc9c; border-radius: 4px; padding: 2px 8px; font-size: 12px; color: #ffffff; }
+        .buff-toggle-arrow { font-size: 14px; font-weight: 900; color: #1abc9c; }
+
+        .buff-dropup-panel {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            width: 100%;
+            margin-bottom: 8px;
+            background: rgba(15, 20, 29, 0.98);
+            border: 2px solid #1abc9c;
+            border-radius: 10px;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.9), 0 0 20px rgba(26,188,156,0.3);
+            backdrop-filter: blur(12px);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 900;
+        }
+        .buff-dropup-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2a2e3d; padding-bottom: 6px; font-size: 13px; font-weight: bold; color: #1abc9c; }
+        .sort-select-btn { background: #161a24; color: #a4b0be; border: 1px solid #2c3e50; border-radius: 4px; padding: 2px 8px; font-size: 11px; cursor: pointer; }
+
+        .buff-stack-list { display: flex; flex-direction: column; gap: 8px; }
+        .buff-card-item {
+            background: linear-gradient(135deg, rgba(41, 128, 185, 0.4) 0%, rgba(22, 160, 133, 0.3) 100%);
+            border: 1.5px solid #1abc9c;
+            border-radius: 6px;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+        .buff-card-left { display: flex; align-items: center; gap: 10px; }
+        .buff-card-icon { font-size: 20px; }
+        .buff-card-title { font-size: 14px; font-weight: bold; }
+        .buff-card-desc { font-size: 12px; color: #dcdde1; }
+        .buff-card-badge { background: rgba(0,0,0,0.4); border: 1px solid #1abc9c; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; color: #2ecc71; }
+
+        .btn-log-toggle-header {
+            background: rgba(24, 34, 50, 0.95);
+            color: #1abc9c;
+            border: 2px solid #1abc9c;
+            border-radius: 8px;
+            padding: 10px 22px;
+            font-size: 20px;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            user-select: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-log-toggle-header:hover {
+            background: #1abc9c;
+            color: #0b0e14;
+            border-color: #1abc9c;
+            box-shadow: 0 6px 20px rgba(26,188,156,0.6);
+        }
+
+        .log-dropdown-panel-header {
+            margin-top: 8px;
+            width: 680px;
+            max-width: 85vw;
+            max-height: 480px;
+            background: rgba(15, 20, 29, 0.98);
+            border: 2.5px solid #1abc9c;
+            box-shadow: 0 14px 40px rgba(0,0,0,0.95), 0 0 25px rgba(26,188,156,0.3);
+            border-radius: 12px;
+            z-index: 99999;
+            backdrop-filter: blur(12px);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: dropdownFadeIn 0.15s ease-out forwards;
+        }
+        @keyframes dropdownFadeIn {
+            0% { opacity: 0; transform: translateY(-6px) scale(0.97); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        /* 1. 最上部ヘッダー (高さ 84px ✕ 🔥 超巨大センタリング ✕ 📊 右端拡大データ) */
+        .top-bar {
+            background: #161922;
+            border: 1px solid #2a2e3d;
+            border-radius: 10px;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+            flex-shrink: 0;
+            height: 84px;
+            position: relative;
+            overflow: visible;
+        }
+
+        /* 📊 右端: 各種データ表示パネル (限界超大型拡大 ✕ テキスト排除 ✕ アイコン数値特大) */
+        .header-resource-data-panel {
+            margin-left: auto;
+            background: rgba(24, 34, 50, 0.95);
+            border: 2px solid #2c3e50;
+            border-radius: 10px;
+            padding: 8px 18px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.6);
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+        .header-resource-data-panel:hover {
+            border-color: #1abc9c;
+            box-shadow: 0 6px 24px rgba(26,188,156,0.5);
+            background: rgba(30, 42, 62, 0.98);
+        }
+
+        .header-data-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        .header-data-item .icon { font-size: 26px; line-height: 1; }
+        .header-data-item .val { font-size: 22px; font-weight: 900; color: #ffffff; }
+        .header-data-item .prod { font-size: 14px; font-weight: 900; color: #2ecc71; }
+        .header-data-item .label { display: none !important; }
+
+        /* 🔍 マウスオーバー（ホバー）時: 超大スケール詳細ブレイクダウンツールチップ (見出し20px / 本文16px) */
+        .large-directive-tooltip {
+            background: rgba(15, 20, 29, 0.98);
+            border: 2px solid #1abc9c;
+            border-radius: 12px;
+            padding: 20px;
+            width: 440px;
+            max-width: 90vw;
+            box-shadow: 0 14px 40px rgba(0,0,0,0.95), 0 0 25px rgba(26,188,156,0.4);
+            pointer-events: none !important;
+            z-index: 100000;
+            display: none;
+            backdrop-filter: blur(12px);
+            animation: directivePopIn 0.15s ease-out forwards;
+        }
+
+        .log-dropdown-header-bar {
+            background: #161a24;
+            padding: 7px 12px;
+            font-size: 11.5px;
+            font-weight: bold;
+            color: #1abc9c;
+            border-bottom: 1px solid #2a2e3d;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .log-content-header {
+            padding: 8px 12px;
+            overflow-y: auto;
+            max-height: 210px;
+            font-size: 11.5px;
+            color: #dcdde1;
+        }
+
+/* =============================================================
+   🎯 index.html 専用セマンティック完全クラス化定義
+   ============================================================= */
+
+/* ─── ブロック A: ヘッダー ─── */
+/* 🌌 ゲーム背景ウォールペーパーアート (300% 拡大 ＆ 試練アナウンス下部クリアランス) */
+.game-wallpaper-art {
+    position: absolute;
+    top: 200px;
+    right: -20px;
+    left: auto;
+    transform: none;
+    width: 1100px;
+    max-width: 68vw;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.88;
+    filter: drop-shadow(0 8px 32px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 30px rgba(230, 126, 34, 0.2));
+    transition: opacity 0.3s ease;
+}
+
+.game-wallpaper-art .wallpaper-logo-img {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    display: block;
+}
+
+.role-avatar-box-custom {
+    margin-left: 0;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+.role-avatar-img {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    border: 2px solid #1abc9c;
+    box-shadow: 0 0 12px rgba(26, 188, 156, 0.6);
+    transition: transform 0.15s ease;
+}
+.role-avatar-img:hover {
+    transform: scale(1.08);
+}
+.ember-icon-lg {
+    font-size: 44px;
+}
+.header-data-divider {
+    width: 1.5px;
+    height: 24px;
+    background: #2c3e50;
+}
+
+/* ─── ブロック B: ワールド盤面エリア ─── */
+.layer-world-board-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    pointer-events: none; /* 🌟 盤面外の透明領域はクリックを透過 */
+}
+.board-wrapper-anchor {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.grid-anchor-box {
+    position: relative;
+    display: inline-block;
+    width: fit-content;
+}
+.territory-badge-anchor {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    z-index: 25;
+    pointer-events: auto;
+}
+
+/* ─── ブロック C: プレイヤー操作トレイ ─── */
+.layer-player-tray-anchor {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 0;
+    z-index: 500;
+    pointer-events: none;
+}
+.pointer-events-auto {
+    pointer-events: auto !important;
+}
+.section-title-offering-header {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 8px;
+}
+.offering-header-left {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+.offering-header-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+.offering-header-right {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+.offering-title-label {
+    font-weight: bold;
+    color: #1abc9c;
+    font-size: 13px;
+}
+.rotate-hint-pill {
+    background: rgba(26, 188, 156, 0.15);
+    border: 1px solid rgba(26, 188, 156, 0.4);
+    color: #1abc9c;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: bold;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    letter-spacing: 0.5px;
+}
+.rotate-hint-kbd {
+    background: #1f2430;
+    border: 1px solid #3d4455;
+    border-radius: 3px;
+    padding: 0 4px;
+    font-weight: bold;
+    font-size: 10px;
+    color: #fff;
+}
+.btn-mulligan-compact-styled {
+    background: #d35400;
+    border: 1px solid #e67e22;
+    color: #fff;
+    padding: 3px 12px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    transition: all 0.15s ease;
+}
+.btn-mulligan-compact-styled:hover {
+    background: #e67e22;
+    transform: translateY(-1px);
+}
+.btn-mulligan-ember-cost {
+    font-size: 10.5px;
+    opacity: 0.9;
+}
+
+/* ─── ブロック D: システムオーバーレイ ＆ 文明方針モーダル ─── */
+.layer-system-overlay-anchor {
+    position: absolute;
+    inset: 0;
+    z-index: 900;
+    pointer-events: none;
+}
+.trial-countdown-val {
+    color: #ffffff;
+    font-size: 15px;
+    margin: 0 2px;
+}
+.card-hover-preview-modal-box {
+    display: none;
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    width: 260px;
+    height: 390px;
+    z-index: 900;
+    pointer-events: none;
+    box-shadow: 0 14px 40px rgba(0,0,0,0.9), 0 0 25px rgba(26,188,156,0.85);
+    border-radius: 14px;
+    border: 3px solid #1abc9c;
+    background: #11141a;
+    padding: 10px;
+    transition: opacity 0.15s ease;
+}
+.card-hover-preview-content-box {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+.directive-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.75);
+    z-index: 99999;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+}
+.directive-modal-window {
+    background: #161922;
+    border: 2px solid #1abc9c;
+    border-radius: 12px;
+    width: 680px;
+    max-width: 92vw;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.9);
+    color: #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.directive-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #2a2e3d;
+    padding-bottom: 10px;
+}
+.directive-modal-title {
+    margin: 0;
+    font-size: 18px;
+    color: #1abc9c;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.directive-modal-close-btn {
+    background: none;
+    border: none;
+    color: #a0a0a0;
+    font-size: 20px;
+    cursor: pointer;
+    font-weight: bold;
+}
+.directive-modal-desc {
+    font-size: 12px;
+    color: #a0a0a0;
+    line-height: 1.4;
+}
+.directive-cost-highlight-free {
+    color: #1abc9c;
+}
+.directive-cost-highlight-ember {
+    color: #e74c3c;
+}
+.directive-modal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 4px;
+}
+.directive-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    border-top: 1px solid #2a2e3d;
+    padding-top: 12px;
+}
+.directive-modal-btn-close {
+    background: #2c3e50;
+    color: #fff;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* ─── ⚙️ ヘッダー環境設定ボタン ─── */
+.btn-settings-header {
+    background: rgba(30, 39, 56, 0.85);
+    border: 1.5px solid #3d4a63;
+    color: #a4b0be;
+    font-size: 18px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-left: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+.btn-settings-header:hover {
+    background: #2b3548;
+    color: #1abc9c;
+    border-color: #1abc9c;
+    transform: scale(1.08);
+}
+
+/* ─── 💬 手札直上 マリガンインライン確認吹き出し (画面外はみ出し完全防止) ─── */
+.mulligan-popover-box {
+    position: absolute;
+    bottom: calc(100% + 14px);
+    left: 0;
+    transform: none;
+    background: rgba(18, 24, 38, 0.98);
+    border: 1.8px solid #1abc9c;
+    border-radius: 12px;
+    padding: 14px 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.92), 0 0 16px rgba(26, 188, 156, 0.35);
+    backdrop-filter: blur(10px);
+    z-index: 800;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    width: 320px;
+    animation: popoverFadeInCenter 0.16s ease-out;
+}
+.mulligan-popover-box::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 20px;
+    transform: none;
+    border-width: 7px;
+    border-style: solid;
+    border-color: #1abc9c transparent transparent transparent;
+}
+.mulligan-popover-title {
+    font-size: 14.5px;
+    font-weight: 900;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: 0.3px;
+}
+.mulligan-popover-desc {
+    font-size: 12px;
+    color: #b2bec3;
+    line-height: 1.45;
+}
+.mulligan-popover-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: #1abc9c;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 2px;
+    user-select: none;
+}
+.mulligan-popover-checkbox {
+    cursor: pointer;
+    accent-color: #1abc9c;
+    width: 14px;
+    height: 14px;
+}
+.mulligan-popover-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    margin-top: 4px;
+}
+.mulligan-popover-btn-cancel {
+    background: #2b3548;
+    color: #a4b0be;
+    border: 1px solid #3d4a63;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.mulligan-popover-btn-cancel:hover {
+    background: #354259;
+    color: #ffffff;
+}
+.mulligan-popover-btn-confirm {
+    background: #1abc9c;
+    color: #000000;
+    font-weight: 900;
+    border: none;
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-size: 12.5px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: 0 2px 8px rgba(26, 188, 156, 0.4);
+}
+.mulligan-popover-btn-confirm:hover {
+    background: #1dd1a1;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(26, 188, 156, 0.6);
+}
+@keyframes popoverFadeInCenter {
+    from { opacity: 0; transform: translate(-50%, 6px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* ─── 📦 右端保留スロット (HOLD) ＆ 縦セパレーター ─── */
+.cards-row-wrapper {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+}
+.cards-hand-container {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+}
+.card-frame-tcg {
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.card-frame-tcg:hover:not(.locked) {
+    transform: translateY(-8px) scale(1.04);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.85), 0 0 20px rgba(26, 188, 156, 0.7);
+    border-color: #1abc9c;
+    z-index: 100;
+}
+.offering-reserve-separator {
+    width: 2px;
+    background: linear-gradient(to bottom, transparent, rgba(26, 188, 156, 0.45), rgba(243, 156, 18, 0.6), transparent);
+    border-radius: 2px;
+    margin: 0 4px;
+    box-shadow: 0 0 8px rgba(243, 156, 18, 0.3);
+}
+.reserve-slot-single-box {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.reserve-card-hold {
+    border: 2px solid #f39c12 !important;
+    background: linear-gradient(135deg, #181d29 0%, #201a13 100%) !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.8), 0 0 14px rgba(243, 156, 18, 0.35) !important;
+    position: relative;
+}
+.reserve-card-hold:hover {
+    transform: translateY(-6px) scale(1.03) !important;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.9), 0 0 20px rgba(243, 156, 18, 0.6) !important;
+}
+.reserve-hold-badge {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #f39c12;
+    color: #000000;
+    font-size: 10.5px;
+    font-weight: 900;
+    padding: 2px 8px;
+    border-radius: 10px;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+    white-space: nowrap;
+    z-index: 10;
+}
+.reserve-slot-empty {
+    width: 145px;
+    min-height: 175px;
+    border: 2px dashed rgba(243, 156, 18, 0.4);
+    background: rgba(18, 22, 32, 0.6);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: #a4b0be;
+    padding: 12px;
+    text-align: center;
+    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.7);
+    transition: all 0.2s ease;
+    user-select: none;
+}
+.reserve-slot-empty-label {
+    font-size: 13px;
+    font-weight: 900;
+    color: #f39c12;
+    letter-spacing: 0.8px;
+}
+.reserve-slot-empty-sub {
+    font-size: 11px;
+    color: #a4b0be;
+    line-height: 1.35;
+}
+
+/* 🖱️ D&D ドラッグ中カードスタイル */
+.card-frame-tcg.card-dragging {
+    opacity: 0.45;
+    transform: scale(0.95);
+    cursor: grabbing !important;
+}
+
+/* 🌟 手札選択時の保留可能スロット (ゴールド点滅) */
+.reserve-slot-can-deposit {
+    border-color: #f39c12 !important;
+    background: rgba(243, 156, 18, 0.12) !important;
+    cursor: pointer !important;
+    animation: depositPulse 1.4s infinite alternate ease-in-out;
+}
+.reserve-slot-can-deposit .reserve-slot-empty-sub {
+    color: #f1c40f !important;
+    font-weight: bold;
+}
+@keyframes depositPulse {
+    0% {
+        box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.7), 0 0 4px rgba(243, 156, 18, 0.3);
+        transform: scale(1.0);
+    }
+    100% {
+        box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.7), 0 0 16px rgba(243, 156, 18, 0.8);
+        transform: scale(1.03);
+    }
+}
+
+/* 🎯 D&D ホバー時のドロップ吸着発光 (エメラルドグリーン) */
+.reserve-slot-drop-hover {
+    border-color: #2ecc71 !important;
+    background: rgba(46, 204, 113, 0.22) !important;
+    transform: scale(1.06) !important;
+    box-shadow: 0 0 22px rgba(46, 204, 113, 0.75), inset 0 0 12px rgba(46, 204, 113, 0.4) !important;
+}
+.reserve-slot-drop-hover .reserve-slot-empty-label {
+    color: #2ecc71 !important;
+}
+.reserve-slot-drop-hover .reserve-slot-empty-sub {
+    color: #ffffff !important;
+    font-weight: 900;
+}
+
+/* ==================================================================== */
+/* 🔥 EmberStatusComponent: 残り火詳細ステータス ツールチップ (30% 拡大版) */
+/* ==================================================================== */
+
+.ember-detail-tooltip-container {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 364px;
+    z-index: 1000;
+    pointer-events: auto;
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+    visibility: visible;
+    opacity: 1;
+}
+
+.ember-detail-tooltip-container.ember-tooltip-hidden {
+    visibility: hidden;
+    opacity: 0;
+    transform: translateX(-50%) translateY(-6px);
+    pointer-events: none;
+}
+
+.ember-tooltip-card {
+    background: rgba(18, 22, 28, 0.97);
+    border: 2px solid rgba(255, 120, 40, 0.5);
+    border-radius: 12px;
+    padding: 16px 18px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.85), 0 0 20px rgba(255, 100, 30, 0.25);
+    backdrop-filter: blur(10px);
+    color: #f1f2f6;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.45;
+    text-align: left;
+}
+
+.ember-tooltip-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.ember-tooltip-title {
+    font-size: 17px;
+    font-weight: 900;
+    color: #ffa502;
+    letter-spacing: 0.5px;
+}
+
+.ember-tooltip-badge {
+    font-size: 14px;
+    font-weight: bold;
+    padding: 3px 10px;
+    border-radius: 14px;
+}
+
+.ember-tooltip-badge.status-prosperous {
+    background: rgba(255, 165, 2, 0.25);
+    border: 1.5px solid #ffa502;
+    color: #ffa502;
+}
+
+.ember-tooltip-badge.status-standard {
+    background: rgba(46, 204, 113, 0.25);
+    border: 1.5px solid #2ecc71;
+    color: #2ecc71;
+}
+
+.ember-tooltip-badge.status-crisis {
+    background: rgba(231, 76, 60, 0.25);
+    border: 1.5px solid #e74c3c;
+    color: #ff6b6b;
+    animation: pulseCrisis 1.2s infinite alternate;
+}
+
+@keyframes pulseCrisis {
+    0% { transform: scale(1.0); }
+    100% { transform: scale(1.06); }
+}
+
+.ember-tooltip-effect {
+    font-size: 13px;
+    color: #a4b0be;
+    margin-bottom: 10px;
+}
+
+.ember-tooltip-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.14);
+    margin: 10px 0;
+}
+
+.ember-tooltip-section-title {
+    font-size: 13px;
+    font-weight: 800;
+    color: #ced6e0;
+    margin-bottom: 8px;
+    letter-spacing: 0.3px;
+}
+
+.ember-tooltip-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+.ember-tooltip-row .row-label {
+    color: #dfe4ea;
+}
+
+.ember-tooltip-row .row-val {
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.ember-tooltip-total {
+    margin-top: 6px;
+    padding-top: 4px;
+    font-size: 15px;
+}
+
+.text-positive { color: #2ecc71 !important; }
+.text-neutral { color: #f1f2f6 !important; }
+.text-negative { color: #ff6b6b !important; }
+.text-warning { color: #ff9f43 !important; }
+.font-bold { font-weight: 800; }
+
+.ember-tooltip-milestone {
+    margin-top: 12px;
+    background: rgba(0, 0, 0, 0.35);
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.milestone-label {
+    font-size: 12.5px;
+    color: #ced6e0;
+    margin-bottom: 6px;
+    font-weight: bold;
+}
+
+.milestone-bar-bg {
+    width: 100%;
+    height: 7px;
+    background: rgba(255, 255, 255, 0.14);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.milestone-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff9f43, #2ecc71);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}

@@ -25,8 +25,8 @@
                     "merge-hover-highlight"
                 );
             });
-            if (typeof window.hideTileTooltip === "function") {
-                window.hideTileTooltip();
+            if (typeof window !== "undefined" && window.tooltipSystemInstance && typeof window.tooltipSystemInstance.hide === "function") {
+                window.tooltipSystemInstance.hide();
             }
         }
 
@@ -88,8 +88,8 @@
             if (!gameState) return;
 
             if (!card || gameState.hasPickedThisTurn) {
-                if (typeof window.showTileTooltip === "function") {
-                    window.showTileTooltip(e, r, c, gameState.grid[r][c]);
+                if (typeof window !== "undefined" && window.ui && typeof window.ui.showTileTooltip === "function") {
+                    window.ui.showTileTooltip(e, r, c, gameState.grid[r][c]);
                 }
                 return;
             }

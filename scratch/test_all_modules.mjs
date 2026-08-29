@@ -466,14 +466,14 @@ emberEngine.state.processTurnEndMaintenance();
 // 自家発熱(+1)と保留維持費(-1)で相殺 = 変化なし
 assert(emberEngine.state.ember === emberBeforeReserve, '自家発熱(+1)と保留維持費(-1)で相殺されること');
 
-// ⑥ 食料不足ペナルティ (🔥-2)
+// ⑥ 食料不足ペナルティ (🔥-1)
 emberEngine.state.food = 5; // 危機維持費 15 に対して 5 しかない
 emberEngine.state.ember = 9;
 emberEngine.state.reserveSlots[0] = null;
 emberEngine.state.grid = Array(5).fill(null).map(() => Array(5).fill(null).map(() => ({ placed: false }))); // 0マスで減衰-1
 emberEngine.state.processTurnEndMaintenance();
 assert(emberEngine.state.food === 0, '不足時に食料が 0 にリセットされること');
-assert(emberEngine.state.ember === 6, '食料不足ペナルティ (🔥-2) ＋ 自然減衰 (🔥-1) で 9 - 3 = 6 になること');
+assert(emberEngine.state.ember === 7, '食料不足ペナルティ (🔥-1) ＋ 自然減衰 (🔥-1) で 9 - 2 = 7 になること');
 
 // --- 18. EmberStatusComponent 状態計算＆HUDデータ構造体 検問 ---
 console.log('\n🔥 [18/21] EmberStatusComponent HUDデータ計算 ＆ 状態解析検証');
@@ -702,10 +702,10 @@ assert(mtnEngine.state.grid[0][1].socketResource && mtnEngine.state.grid[0][1].s
 assert(mtnEngine.state.grid[0][1].socketResource.bonusDefense === 3, '★主峰砦で 🛡️+3/T ボーナスが付くこと');
 assert(mtnEngine.state.grid[0][1].socketResource.bonusMystic === 2, '★主峰砦で ✨+2/T ボーナスが付くこと');
 
-// 3. 🌊 清湖 (Lake) 周囲8マスの灌漑バフ (+50% 食料産出ブースト) 検証
+// 3. 🌊 湖 (Lake) 周囲8マスの灌漑バフ (+50% 食料産出ブースト) 検証
 const lakeEngine = new GameEngine();
 lakeEngine.state.ember = 20;
-// (0,0) に清湖ソケットを開花
+// (0,0) に湖ソケットを開花
 lakeEngine.state.grid[0][0] = { r: 0, c: 0, placed: true, terrain: { id: 'GL1_PLAINS', nameKey: 'TERRAIN_PLAINS', food: 4, wood: 0, defense: 0, mystic: 0 }, socketResource: { id: 'SOCKET_LAKE', nameKey: 'SOCKET_LAKE', bonusFood: 2 } };
 // (0,1) に隣接平地（食料4）を配置 ➔ 灌漑バフで +2 (50%) 獲得
 lakeEngine.state.grid[0][1] = { r: 0, c: 1, placed: true, terrain: { id: 'GL1_PLAINS', nameKey: 'TERRAIN_PLAINS', food: 4, wood: 0, defense: 0, mystic: 0 } };

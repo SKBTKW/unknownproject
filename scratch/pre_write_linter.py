@@ -43,6 +43,28 @@ def scan_file_for_hardcoded_japanese(filepath):
 
     return violations
 
+def scan_for_tooltip_architecture_violations(root_dir):
+    violations = []
+    game_dir = os.path.join(root_dir, "game")
+    
+    # 1. index.html に tileTooltip が存在しないこと
+    index_html = os.path.join(game_dir, "index.html")
+    if os.path.exists(index_html):
+        with open(index_html, 'r', encoding='utf-8') as f:
+            content = f.read()
+            if 'id="tileTooltip"' in content or 'class="tile-tooltip"' in content:
+                violations.append("game/index.html にレガシー独自DOM 'tileTooltip' が残存しています。TooltipSystem へ一本化してください。")
+
+    # 2. i18n.js 内のツールチップ文字列にインライン style= が含まれていないこと
+    i18n_file = os.path.join(game_dir, "src", "i18n.js")
+    if os.path.exists(i18n_file):
+        with open(i18n_file, 'r', encoding='utf-8') as f:
+            for idx, line in enumerate(f.readlines(), 1):
+                if ("TOOLTIP_" in line or "_DESC:" in line or "_TITLE:" in line) and "style=" in line:
+                    violations.append(f"game/src/i18n.js:{idx} ツールチップ文面にインライン style= が含まれています。共通クラスを使用してください: {line.strip()[:60]}")
+
+    return violations
+
 def main():
     root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     game_dir = os.path.join(root_dir, "game")
@@ -81,6 +103,16 @@ def main():
             total_violations += len(violations)
         else:
             print(f"[PASSED]: [{rel_path}] zero hardcoded Japanese text.")
+
+    # 🛡️ ツールチップ・ポップアップ統一アーキテクチャ検問
+    tt_violations = scan_for_tooltip_architecture_violations(root_dir)
+    if tt_violations:
+        print(f"\n[VIOLATIONS FOUND] Tooltip Architecture Violations:")
+        for v in tt_violations:
+            print(f"  ❌ {v}")
+        total_violations += len(tt_violations)
+    else:
+        print("[PASSED]: ツールチップ統一アーキテクチャ検問 ALL PASS (独自DOM排除 & インラインCSSゼロ確認)。")
 
     print("\n=== Running Master Spec Verification ===")
     node_res = subprocess.run(["node", os.path.join(root_dir, "scratch", "run_full_inspection.mjs")], capture_output=True, text=True, encoding='utf-8')

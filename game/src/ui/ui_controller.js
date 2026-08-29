@@ -80,6 +80,7 @@ class UIController {
             window.nextTurn = () => this.nextTurn();
             window.reserveCard = (idx) => this.reserveCard(idx);
             window.returnReserveCard = (idx) => this.returnReserveCard(idx);
+            window.discardReserveCard = (idx) => this.discardReserveCard(idx);
             window.playReserveCard = (idx) => this.playReserveCard(idx);
             window.toggleReservePopover = (idx) => this.toggleReservePopover(idx);
             window.closeReservePopover = () => this.closeReservePopover();
@@ -87,7 +88,8 @@ class UIController {
             window.toggleDirectiveModal = () => this.toggleDirectiveModal();
             window.closeDirectiveModal = () => this.closeDirectiveModal();
             window.selectDirective = (id) => this.selectDirective(id);
-            window.toggleBoardLabelMode = (e) => this.toggleBoardLabelMode(e);
+            window.toggleTileTextStyle = (e) => this.toggleTileTextStyle(e);
+            window.toggleBoardLabelMode = (e) => this.toggleTileTextStyle(e);
             window.showDataPanelTooltip = (e) => this.showDataPanelTooltip(e);
             window.hideDataPanelTooltip = () => this.hideDataPanelTooltip();
             window.undoLandPlacement = () => {
@@ -258,9 +260,6 @@ class UIController {
         if (settingsSys && typeof settingsSys.mount === "function") {
             settingsSys.mount();
         }
-
-        // 🎨 盤面テキストスタイル切替スイッチャー（即時検証＆完全復元用）
-        this.initTileTextStyleSwitcher();
     }
 
     initStaticI18nLabels() {
@@ -297,65 +296,6 @@ class UIController {
         if (typeof document === "undefined") return;
         const el = document.getElementById(id);
         if (el) el.innerText = text;
-    }
-
-    /**
-     * 🎨 盤面テキストスタイル切替スイッチャー（リアルタイム比較 ＆ 即時復元）
-     */
-    initTileTextStyleSwitcher() {
-        if (typeof document === "undefined") return;
-        if (document.getElementById("tileStyleSwitcherWidget")) return;
-
-        const getPresets = () => [
-            { id: "DEFAULT", labelKey: "UI_TILE_STYLE_LABEL_DEFAULT" },
-            { id: "PILL_BADGE", labelKey: "UI_TILE_STYLE_LABEL_PILL" },
-            { id: "ICON_SYMMETRIC", labelKey: "UI_TILE_STYLE_LABEL_SYMMETRIC" },
-            { id: "MODERN_BOARD", labelKey: "UI_TILE_STYLE_LABEL_MODERN" },
-            { id: "SYMBOLIC_BOARD", labelKey: "UI_TILE_STYLE_LABEL_SYMBOLIC" }
-        ];
-        const presets = getPresets();
-
-        let currentIdx = 0;
-        const currentStyle = (typeof UI_FEATURE_FLAGS !== "undefined" && UI_FEATURE_FLAGS.tileTextStyle) ? UI_FEATURE_FLAGS.tileTextStyle : "DEFAULT";
-        const foundIdx = presets.findIndex(p => p.id === currentStyle);
-        if (foundIdx >= 0) currentIdx = foundIdx;
-
-        const widget = document.createElement("div");
-        widget.id = "tileStyleSwitcherWidget";
-        widget.className = "tile-style-switcher-widget";
-
-        const getBtnText = () => {
-            const prefix = I18n ? I18n.t("UI_TILE_STYLE_BTN_PREFIX") : "Style: ";
-            const label = I18n ? I18n.t(presets[currentIdx].labelKey) : presets[currentIdx].id;
-            return `<span class="switcher-icon">🎨</span> ${prefix}${label}`;
-        };
-
-        const btn = document.createElement("button");
-        btn.className = "tile-style-switcher-btn";
-        btn.innerHTML = getBtnText();
-        btn.title = I18n ? I18n.t("UI_TILE_STYLE_BTN_TITLE") : "";
-
-        const applyStyle = (styleId) => {
-            if (typeof UI_FEATURE_FLAGS !== "undefined") {
-                UI_FEATURE_FLAGS.tileTextStyle = styleId;
-            }
-            const boardEl = document.getElementById("gridBoard");
-            if (boardEl) {
-                boardEl.setAttribute("data-tile-style", styleId);
-            }
-            if (document.body) {
-                document.body.setAttribute("data-tile-style", styleId);
-            }
-            btn.innerHTML = getBtnText();
-        };
-
-        btn.addEventListener("click", () => {
-            currentIdx = (currentIdx + 1) % presets.length;
-            applyStyle(presets[currentIdx].id);
-        });
-
-        widget.appendChild(btn);
-        document.body.appendChild(widget);
     }
 
     /**
@@ -826,7 +766,7 @@ class UIController {
 
         // ↩️ 当ターン配置済みマスをクリックした場合は配置取り消し（Undo）
         if (undoSys && undoSys.isCellPlacedThisTurn(r, c)) {
-            this.hideTileTooltip();
+            this.hideCellTooltip();
             undoSys.undo();
             this.selectedCard = null;
             this.selectedCardIdx = -1;
@@ -838,7 +778,7 @@ class UIController {
         }
 
         if (!this.selectedCard || this.state.hasPickedThisTurn) return;
-        this.hideTileTooltip();
+        this.hideCellTooltip();
 
         const tObjCheck = this.selectedCard.terrain || this.selectedCard;
         const catCheck = this.selectedCard.category || tObjCheck.category || "LAND";
@@ -955,12 +895,13 @@ class UIController {
         }
     }
 
-    hideTileTooltip() {
-        if (typeof document === "undefined") return;
-        const tt = document.getElementById("tileTooltip");
-        if (tt) {
-            tt.style.display = "none";
+    hideCellTooltip() {
+        if (typeof window !== "undefined" && window.tooltipSystemInstance && typeof window.tooltipSystemInstance.hide === "function") {
+            window.tooltipSystemInstance.hide();
         }
+    }
+    hideTileTooltip() {
+        this.hideCellTooltip();
     }
 
     highlightPlaceableCells() {
@@ -1003,15 +944,29 @@ class UIController {
         if (undoSys) undoSys.hideHoverTooltip();
 
         const cellData = this.state.grid[r][c];
-        this.showTileTooltip(e, r, c, cellData, r, c);
+        this.showCellTooltip(e, r, c, cellData);
     }
 
     showTileTooltip(e, r, c, cell) {
+        this.showCellTooltip(e, r, c, cell);
+    }
+
+    showCellTooltip(e, r, c, cell) {
         if (typeof document === "undefined") return;
-        let tt = document.getElementById("tileTooltip");
-        if (!tt) return;
         if (!cell) {
-            tt.style.display = "none";
+            this.hideCellTooltip();
+            return;
+        }
+
+        // 🛑 排他制御: カード選択中（配置プレビュー中）かつ未配置マスの場合は通常セルツールチップを抑制し、配置プレビュー/不可理由警告に100%委譲
+        if (this.selectedCard && !cell.placed) {
+            return;
+        }
+
+        // 🃏 カード大型プレビューモーダル表示中はスリープ
+        const previewModal = document.getElementById("cardHoverPreviewModal");
+        if (previewModal && previewModal.classList.contains("active")) {
+            this.hideCellTooltip();
             return;
         }
 
@@ -1022,7 +977,7 @@ class UIController {
         const coordStr = `${String.fromCharCode(65 + c)}${r + 1}`;
         const isHQVic = (this.state && typeof this.state.isHQVicinity === "function") ? this.state.isHQVicinity(r, c) : false;
 
-        // 🌊 清湖 (Lake) / オアシス (Oasis) 周囲8マスの水脈判定
+        // 🌊 湖 (Lake) / オアシス (Oasis) 周囲8マスの水脈判定
         let nearWaterType = null;
         if (this.state && this.state.grid) {
             const size = this.state.grid.length;
@@ -1052,7 +1007,7 @@ class UIController {
             const waterTitle = I18n ? I18n.t(nearWaterType === "OASIS" ? "UI_OASIS_VICINITY_TITLE" : "UI_LAKE_VICINITY_TITLE") : "🌊 水脈エリア";
             title = `[${coordStr}] ${waterTitle}`;
             const waterDesc = I18n ? I18n.t(nearWaterType === "OASIS" ? "UI_OASIS_VICINITY_UNPLACED_DESC" : "UI_LAKE_VICINITY_UNPLACED_DESC") : "";
-            desc = `${desc}<div style="margin-top:8px;">${waterDesc}</div>`;
+            desc = `${desc}<div style="margin-top:6px;">${waterDesc}</div>`;
         }
 
         if (cell.isHQ) {
@@ -1112,13 +1067,13 @@ class UIController {
                 bonusParts.push(I18n ? I18n.t("UI_CELL_BONUS_PLAINS", { val: this.state.permanentPlainsFoodBonus }) : `平地強化(+${this.state.permanentPlainsFoodBonus})`);
             }
 
-            // 🌊 清湖 (Lake) / オアシス (Oasis) 周囲8マスの灌漑バフ (+50% 食料産出ブースト)
+            // 🌊 湖 (Lake) / オアシス (Oasis) 周囲8マスの灌漑バフ (+50% 食料産出ブースト)
             if (nearWaterType && tf > 0) {
                 const baseFoodForWater = (t.food !== undefined) ? t.food : ((t.baseYieldsPerTile && t.baseYieldsPerTile.food) || (t.yields && t.yields.food) || 0);
                 const waterBonus = Math.max(1, Math.floor(baseFoodForWater * 0.5));
                 tf += waterBonus;
                 const i18nKey = nearWaterType === "OASIS" ? "UI_CELL_BONUS_OASIS_IRRIGATION" : "UI_CELL_BONUS_LAKE_IRRIGATION";
-                bonusParts.push(I18n ? I18n.t(i18nKey, { val: waterBonus }) : (nearWaterType === "OASIS" ? `オアシス灌漑(+${waterBonus})` : `清湖灌漑(+${waterBonus})`));
+                bonusParts.push(I18n ? I18n.t(i18nKey, { val: waterBonus }) : (nearWaterType === "OASIS" ? `オアシス灌漑(+${waterBonus})` : `湖灌漑(+${waterBonus})`));
             }
 
             const yieldParts = [];
@@ -1139,18 +1094,19 @@ class UIController {
             if (isPlacedThisTurn) {
                 const undoHint = I18n ? I18n.t("UI_CELL_UNDO_HINT") : "このマスをクリックすると配置を取り消せます";
                 desc += `
-                    <div style="margin-top:10px; padding:8px 10px; background:rgba(231,76,60,0.22); border:1.5px solid #ff4757; border-radius:6px; font-size:13px; color:#ff6b81; font-weight:bold; display:flex; align-items:center; gap:6px; line-height:1.4;">
-                        <span style="font-size:16px; color:#ff4757;">↩</span>
+                    <div class="tooltip-undo-hint-box">
+                        <span class="undo-icon">↩</span>
                         <span>${undoHint}</span>
                     </div>
                 `;
             }
         }
 
-        tt.innerHTML = `<div style="font-size:18px; font-weight:900; color:#1abc9c; margin-bottom:6px; letter-spacing:0.5px;">${title}</div><div style="font-size:15px; color:#e0e0e0; line-height:1.5;">${desc}</div>`;
-        tt.style.left = `${e.pageX + 14}px`;
-        tt.style.top = `${e.pageY + 14}px`;
-        tt.style.display = "block";
+        if (typeof window !== "undefined" && window.tooltipSystemInstance && typeof window.tooltipSystemInstance.showCustom === "function") {
+            const clientX = e ? (e.clientX !== undefined ? e.clientX : (e.pageX || 0)) : 0;
+            const clientY = e ? (e.clientY !== undefined ? e.clientY : (e.pageY || 0)) : 0;
+            window.tooltipSystemInstance.showCustom(clientX, clientY, title, desc);
+        }
     }
 
     mulligan() {
@@ -1218,6 +1174,7 @@ class UIController {
         if (typeof window !== "undefined" && window.undoSys) window.undoSys.clearSnapshot();
         this.state.turn++;
         this.state.hasPickedThisTurn = false;
+        this.state.hasReservedThisTurn = false;
         this.state.hasMulliganedThisTurn = false;
         this.drawSys.generateOfferingCards();
         this.selectedCard = null;
@@ -1280,6 +1237,20 @@ class UIController {
         }
     }
 
+    discardReserveCard(idx = 0) {
+        if (!this.state) return;
+        if (typeof this.state.discardFromReserve === "function" && this.state.discardFromReserve(idx)) {
+            this.selectedCard = null;
+            this.selectedCardIdx = -1;
+            this.selectedReserveIdx = -1;
+            this.isReservePopoverOpen = false;
+            if (focusLayerManager) focusLayerManager.onCardDeselect();
+            this.clearCellPreviews();
+            this.render();
+            this.highlightPlaceableCells();
+        }
+    }
+
     playCommandCard(card, targetIdx) {
         if (!this.state || this.state.hasPickedThisTurn) return;
         const deckMgr = (this.engine && this.engine.deckManager) ? this.engine.deckManager : this.state.deckManager;
@@ -1325,14 +1296,47 @@ class UIController {
         }
     }
 
-    toggleBoardLabelMode(e) {
+    /**
+     * 🎨 盤面テキストスタイル切替 (盤面左上角のボタンクリックでトリガー)
+     */
+    toggleTileTextStyle(e) {
         if (e && typeof e.stopPropagation === "function") e.stopPropagation();
-        if (typeof window === "undefined") return;
-        const modes = ['hover', 'always', 'icon'];
-        const currentMode = window.currentBoardMode || 'hover';
-        const nextIdx = (modes.indexOf(currentMode) + 1) % modes.length;
-        window.currentBoardMode = modes[nextIdx];
-        this.render();
+        const presets = [
+            { id: "DEFAULT", icon: "🏷️", labelKey: "UI_TILE_STYLE_LABEL_DEFAULT" },
+            { id: "PILL_BADGE", icon: "💊", labelKey: "UI_TILE_STYLE_LABEL_PILL" },
+            { id: "ICON_SYMMETRIC", icon: "🌾", labelKey: "UI_TILE_STYLE_LABEL_SYMMETRIC" },
+            { id: "MODERN_BOARD", icon: "✨", labelKey: "UI_TILE_STYLE_LABEL_MODERN" },
+            { id: "SYMBOLIC_BOARD", icon: "🎨", labelKey: "UI_TILE_STYLE_LABEL_SYMBOLIC" }
+        ];
+
+        let currentStyle = (typeof UI_FEATURE_FLAGS !== "undefined" && UI_FEATURE_FLAGS.tileTextStyle) ? UI_FEATURE_FLAGS.tileTextStyle : "DEFAULT";
+        let currentIdx = presets.findIndex(p => p.id === currentStyle);
+        if (currentIdx < 0) currentIdx = 0;
+        const nextIdx = (currentIdx + 1) % presets.length;
+        const nextPreset = presets[nextIdx];
+
+        if (typeof UI_FEATURE_FLAGS !== "undefined") {
+            UI_FEATURE_FLAGS.tileTextStyle = nextPreset.id;
+        }
+        const boardEl = document.getElementById("gridBoard");
+        if (boardEl) {
+            boardEl.setAttribute("data-tile-style", nextPreset.id);
+        }
+        if (typeof document !== "undefined" && document.body) {
+            document.body.setAttribute("data-tile-style", nextPreset.id);
+        }
+
+        const btn = document.getElementById("cornerTileStyleToggleBtn");
+        if (btn) {
+            btn.innerText = nextPreset.icon;
+            const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : null);
+            const label = I18n ? I18n.t(nextPreset.labelKey) : nextPreset.id;
+            btn.title = label;
+        }
+    }
+
+    toggleBoardLabelMode(e) {
+        this.toggleTileTextStyle(e);
     }
 
     showDataPanelTooltip(e) {

@@ -29,6 +29,7 @@ class GameState {
         this.gameLogs = [];
             this.toastQueue = [];
             this.hasPickedThisTurn = false;
+            this.hasReservedThisTurn = false;
             this.hasMulliganedThisTurn = false;
             this.mergeGroupCounter = 1;
             this.placementGroupCounter = 1;
@@ -410,15 +411,15 @@ class GameState {
             this.food -= foodCost;
             let isGameOver = false;
 
-            // 2. ⚠️ 食料不足ペナルティ (生命力 🔥 -2 ダメージ)
+            // 2. ⚠️ 食料不足ペナルティ (生命力 🔥 -1 ダメージ)
             if (this.food < 0) {
                 this.food = 0;
                 if (this.emberSystem && typeof this.emberSystem.applyDamage === 'function') {
-                    this.emberSystem.applyDamage(2);
+                    this.emberSystem.applyDamage(1);
                 } else {
-                    this.ember -= 2;
+                    this.ember -= 1;
                 }
-                this.addLog(I18n ? I18n.t("LOG_FOOD_DEFICIT_PENALTY", { ember: this.ember }) : `⚠️ -2`);
+                this.addLog(I18n ? I18n.t("LOG_FOOD_DEFICIT_PENALTY", { ember: this.ember }) : `⚠️ -1`);
             }
 
             // 3. 🗺️ 領土マス数 ＆ Stage連動による 🔥 自動減衰・自家発熱ルール
@@ -560,6 +561,11 @@ class GameState {
 
         returnFromReserve(reserveIdx = 0, specificTargetIdx = -1) {
             if (this.deckManager) return this.deckManager.returnFromReserve(reserveIdx, specificTargetIdx);
+            return false;
+        }
+
+        discardFromReserve(reserveIdx = 0) {
+            if (this.deckManager) return this.deckManager.discardFromReserve(reserveIdx);
             return false;
         }
 

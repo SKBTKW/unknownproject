@@ -185,6 +185,7 @@ globalThis.document = mockDoc;
 globalThis.window = {
     I18n: { t: (k, params) => k },
     document: mockDoc,
+    tooltipSystemInstance: tooltipSystemInstance,
     addEventListener: () => {},
     removeEventListener: () => {},
     localStorage: { getItem: () => null, setItem: () => {} }
@@ -331,6 +332,19 @@ export async function runUILifecycleInspection() {
 
         tooltipSystemInstance.hide();
         assert("tooltipSystemInstance.hide() 実行後に visible クラスが除去されること", !globalTooltipEl.classList.contains("visible"));
+
+        // 盤面セルホバー時の TooltipSystem 統合検問
+        ui.showCellTooltip({ clientX: 120, clientY: 180 }, 0, 0, ui.state.grid[0][0]);
+        assert("showCellTooltip 実行後に #globalTooltip が visible になること", globalTooltipEl.classList.contains("visible"));
+        assert("セルツールチップのタイトルに座標 [A1] が含まれること", globalTooltipEl.innerHTML.includes("[A1]"));
+        ui.hideCellTooltip();
+        assert("hideCellTooltip 実行後に #globalTooltip が非表示になること", !globalTooltipEl.classList.contains("visible"));
+
+        // カード選択中（配置モード）時の排他制御検問: 未配置マスホバーで通常セル情報が抑制されること
+        ui.selectedCard = { category: "LAND", shape: [[1]] };
+        ui.showCellTooltip({ clientX: 120, clientY: 180 }, 0, 0, ui.state.grid[0][0]);
+        assert("カード選択中は未配置マスの通常セルツールチップが排他抑制 (非表示) されること", !globalTooltipEl.classList.contains("visible"));
+        ui.selectedCard = null;
 
         // 手札縮小表示 (ミニマルモード) 時のツールチップ ＆ ガイドポップアップ完全オフ検問
         ui.isMinimalMode = true;
