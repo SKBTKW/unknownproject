@@ -297,11 +297,13 @@ const landFocusCard = { id: 'CMD_LAND_FOCUS', category: 'ECONOMY', cost: { food:
 buffEngine.deckManager.playCommandCard(landFocusCard);
 assert(buffEngine.buffSystem.hasBuff('CMD_LAND_FOCUS') === true, 'CMD_LAND_FOCUS が BuffSystem に登録されていること');
 
-// ④ ターン経過 (tickTurn) による期限バフの失効
-buffEngine.buffSystem.tickTurn(); // 残り 2T
-buffEngine.buffSystem.tickTurn(); // 残り 1T
-buffEngine.buffSystem.tickTurn(); // 残り 0T (失効)
-assert(buffEngine.buffSystem.hasBuff('CMD_REKINDLE_EMBER') === false, '3ターン経過後に CMD_REKINDLE_EMBER が自動失効すること');
+// ④ ターン経過 (tickTurn) による期限バフの失効 (次のターンから3ターンの完全サイクル)
+buffEngine.buffSystem.tickTurn(); // 発動ターン終了: startsNextTurn 解除 (残り 3T 維持)
+assert(buffEngine.buffSystem.hasBuff('CMD_REKINDLE_EMBER') === true, '発動ターン終了時も残り3Tを維持すること');
+buffEngine.buffSystem.tickTurn(); // 次ターン終了: 残り 2T
+buffEngine.buffSystem.tickTurn(); // 翌々ターン終了: 残り 1T
+buffEngine.buffSystem.tickTurn(); // 満了ターン終了: 残り 0T (失効)
+assert(buffEngine.buffSystem.hasBuff('CMD_REKINDLE_EMBER') === false, '次ターンから丸々3ターン経過後に CMD_REKINDLE_EMBER が自動失効すること');
 
 // --- 14. 地勢GL隣接制限 (GL0砂漠 ✕ GL1平地/丘陵は可、GL0 ✕ GL2+森林/山岳は禁止) 検問 ---
 console.log('\n🗺️ [14/15] 地勢レベル(GL)隣接制限 (GL0-GL1可 / GL0-GL2不可) 検証');
@@ -560,37 +562,47 @@ saveEngine.deckManager.playCommandCard({ id: 'CMD_MEDITATION', category: 'COMMAN
 assert(saveEngine.state.mystic === mysticBeforeMed + 3, '静かなる瞑想で ✨+3 獲得すること');
 assert(saveEngine.state.activeDrawBias && saveEngine.state.activeDrawBias.targetCategory === 'LAND', '静かなる瞑想で次ターン土地バイアスが付与されること');
 
-// ④ CMD_VIGILANCE (警戒態勢: コスト 🧱-15, 2ターンの間 全🛡️獲得+3)
+// ④ CMD_VIGILANCE (警戒: コスト 🧱-15, 次のターンから2ターンの間 全🛡️獲得+3)
 saveEngine.state.wood = 20;
 const initialDef = saveEngine.state.calculateTotalDefense();
 saveEngine.deckManager.playCommandCard({ id: 'CMD_VIGILANCE', category: 'COMMAND', cost: { wood: 15 } }, null, 0);
-assert(saveEngine.state.wood === 5, '警戒態勢で 🧱15 消費されて 20 - 15 = 5 になること');
-assert(saveEngine.state.vigilanceTurns === 2, '警戒態勢で vigilanceTurns が 2 になること');
-assert(saveEngine.state.calculateTotalDefense() === initialDef + 3, '警戒態勢により防衛力産出レートに +3 ボーナスが乗ること');
-const gained = saveEngine.state.gainDefense(10, 'テスト獲得');
-assert(gained === 13, '警戒態勢中に防衛力10獲得で +3 ボーナスが乗って 13 獲得できること');
+assert(saveEngine.state.wood === 5, '警戒で 🧱15 消費されて 20 - 15 = 5 になること');
+assert(saveEngine.state.vigilanceTurns === 2, '警戒で vigilanceTurns が 2 になること');
+assert(saveEngine.state.vigilanceStartsNextTurn === true, '警戒発動時は vigilanceStartsNextTurn が true であること');
+assert(saveEngine.state.calculateTotalDefense() === initialDef, '警戒の発動ターン中は防衛力ボーナスが乗らないこと(次ターン開始待ち)');
 
-// ⑤ CMD_GRAND_CULTIVATION (大規模耕作計画: コスト 🧱-35, 4ターンの間 平地産出 🌾+1/T)
+// ターン終了処理で次ターン開始待ちが解除され、次ターンからボーナス適用
+saveEngine.state.processTurnEndMaintenance();
+assert(saveEngine.state.vigilanceStartsNextTurn === false, 'ターン終了後に vigilanceStartsNextTurn が false になること');
+assert(saveEngine.state.vigilanceTurns === 2, '発動ターン終了時も vigilanceTurns が 2 を維持すること');
+assert(saveEngine.state.calculateTotalDefense() === initialDef + 3, '次のターンから警戒により防衛力産出レートに +3 ボーナスが乗ること');
+const gained = saveEngine.state.gainDefense(10, 'テスト獲得');
+assert(gained === 13, '次ターンの警戒適用中に防衛力10獲得で +3 ボーナスが乗って 13 獲得できること');
+
+// ⑤ CMD_GRAND_CULTIVATION (耕作計画: コスト 🧱-35, 次のターンから4ターンの間 平地産出 🌾+1/T)
 saveEngine.state.wood = 50;
 saveEngine.deckManager.playCommandCard({ id: 'CMD_GRAND_CULTIVATION', category: 'COMMAND', cost: { wood: 35 } }, null, 0);
-assert(saveEngine.state.wood === 15, '大規模耕作計画で 🧱35 消費されること');
-assert(saveEngine.state.grandCultivationTurns === 4, '大規模耕作計画で grandCultivationTurns が 4 になること');
+assert(saveEngine.state.wood === 15, '耕作計画で 🧱35 消費されること');
+assert(saveEngine.state.grandCultivationTurns === 4, '耕作計画で grandCultivationTurns が 4 になること');
+assert(saveEngine.state.grandCultivationStartsNextTurn === true, '耕作計画発動時は grandCultivationStartsNextTurn が true であること');
 assert(saveEngine.state.buffSystem.hasBuff('CMD_GRAND_CULTIVATION'), 'バフマネージャーに CMD_GRAND_CULTIVATION が登録されること');
 
-// ⑥ CMD_EMERGENCY_LEVY (緊急徴発: コスト 🌾-20, 即座に 🧱+15, 次ターン食料維持費 +5)
+// ⑥ CMD_EMERGENCY_LEVY (緊急徴発: コスト 🌾-20, 即座に 🧱+15, 次のターンの食料維持費 +5)
 saveEngine.state.food = 30;
 saveEngine.state.wood = 10;
 saveEngine.deckManager.playCommandCard({ id: 'CMD_EMERGENCY_LEVY', category: 'COMMAND', cost: { food: 20 } }, null, 0);
 assert(saveEngine.state.food === 10, '緊急徴発で 🌾20 消費されること');
 assert(saveEngine.state.wood === 25, '緊急徴発で 🧱15 獲得されること');
 assert(saveEngine.state.emergencyLevyTurns === 1, '緊急徴発で emergencyLevyTurns が 1 になること');
+assert(saveEngine.state.emergencyLevyStartsNextTurn === true, '緊急徴発発動時は emergencyLevyStartsNextTurn が true であること');
 assert(saveEngine.state.buffSystem.hasBuff('CMD_EMERGENCY_LEVY'), 'バフマネージャーに CMD_EMERGENCY_LEVY が登録されること');
 
-// ⑦ CMD_MANIFEST_MIRACLE (奇跡の顕現: コスト ✨-10, 3ターンの間 補填レート緩和)
+// ⑦ CMD_MANIFEST_MIRACLE (顕現: コスト ✨-10, 次のターンから3ターンの間 補填レート緩和)
 saveEngine.state.mystic = 20;
 saveEngine.deckManager.playCommandCard({ id: 'CMD_MANIFEST_MIRACLE', category: 'COMMAND', cost: { mystic: 10 } }, null, 0);
-assert(saveEngine.state.mystic === 10, '奇跡の顕現で ✨10 消費されること');
-assert(saveEngine.state.manifestMiracleTurns === 3, '奇跡の顕現で manifestMiracleTurns が 3 になること');
+assert(saveEngine.state.mystic === 10, '顕現で ✨10 消費されること');
+assert(saveEngine.state.manifestMiracleTurns === 3, '顕現で manifestMiracleTurns が 3 になること');
+assert(saveEngine.state.manifestMiracleStartsNextTurn === true, '顕現発動時は manifestMiracleStartsNextTurn が true であること');
 assert(saveEngine.state.buffSystem.hasBuff('CMD_MANIFEST_MIRACLE'), 'バフマネージャーに CMD_MANIFEST_MIRACLE が登録されること');
 
 // ⑧ CMD_FILL_THE_VOID (届かぬ資材を満たすもの: コスト 無料, 今ターンのみ補填可能)

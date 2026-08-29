@@ -152,11 +152,16 @@ export class BuffSystem {
         for (let i = this.buffs.length - 1; i >= 0; i--) {
             const buff = this.buffs[i];
             if (buff.remainingTurns !== undefined) {
-                buff.remainingTurns -= 1;
-                buff.badgeText = I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: buff.remainingTurns }) : `残り ${buff.remainingTurns}T`;
-                if (buff.remainingTurns <= 0) {
-                    expiredBuffs.push(buff);
-                    this.buffs.splice(i, 1);
+                if (buff.startsNextTurn) {
+                    buff.startsNextTurn = false;
+                    buff.badgeText = I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: buff.remainingTurns }) : `残り ${buff.remainingTurns}T`;
+                } else {
+                    buff.remainingTurns -= 1;
+                    buff.badgeText = I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: buff.remainingTurns }) : `残り ${buff.remainingTurns}T`;
+                    if (buff.remainingTurns <= 0) {
+                        expiredBuffs.push(buff);
+                        this.buffs.splice(i, 1);
+                    }
                 }
             }
         }

@@ -60,9 +60,20 @@ class GameState {
 
             // 📈 配置ブロック数カウンタ ＆ 守備的・節約コマンド用バフ管理
             this.placedBlockCount = dependencies.placedBlockCount !== undefined ? dependencies.placedBlockCount : 0;
-            this.emberConsumptionReducedTurns = 0; // 残火の節約 (次ターンの🔥消費-1軽減)
-            this.foodCostHalvedTurns = 0;          // 節約配給 (食料維持費50%カット)
-            this.vigilanceTurns = 0;               // 警戒態勢 (2ターンの間、全🛡️獲得+3)
+            this.emberConsumptionReducedTurns = 0; // 節約 (次ターンの🔥消費-1軽減)
+            this.emberConsumptionStartsNextTurn = false;
+            this.vigilanceTurns = 0;               // 警戒 (次のターンから2ターンの間、全🛡️獲得+3)
+            this.vigilanceStartsNextTurn = false;  // 発動ターンは次ターン開始待ち
+            this.grandCultivationTurns = 0;        // 耕作計画 (次のターンから4ターンの間、平地産出🌾+1/T)
+            this.grandCultivationStartsNextTurn = false;
+            this.systematicLoggingTurns = 0;       // 計画伐採 (次のターンから3ターンの間、森産出🧱-1/T)
+            this.systematicLoggingStartsNextTurn = false;
+            this.emergencyLevyTurns = 0;           // 緊急徴発 (次のターンの食料維持費+5)
+            this.emergencyLevyStartsNextTurn = false;
+            this.manifestMiracleTurns = 0;         // 顕現 (次のターンから3ターンの間、補填レート3→1)
+            this.manifestMiracleStartsNextTurn = false;
+            this.reserveFeeWaivedTurns = 0;        // 再燃 (次のターンから3ターンの間、手札保留維持費無料)
+            this.reserveFeeWaivedStartsNextTurn = false;
             this.temporaryDefense = 0;             // 後方互換用
             this.temporaryDefenseTurns = 0;
         }
@@ -333,7 +344,7 @@ class GameState {
                 return ProductionCalculator.calculateTotalDefense(this);
             }
             let def = this.defense || 10;
-            if (this.vigilanceTurns && this.vigilanceTurns > 0) {
+            if (this.vigilanceTurns && this.vigilanceTurns > 0 && !this.vigilanceStartsNextTurn) {
                 def += 3;
             }
             return def;
@@ -344,7 +355,7 @@ class GameState {
             let finalAmount = baseAmount;
             let bonusText = "";
             const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
-            if (this.vigilanceTurns && this.vigilanceTurns > 0) {
+            if (this.vigilanceTurns && this.vigilanceTurns > 0 && !this.vigilanceStartsNextTurn) {
                 finalAmount += 3;
                 bonusText = I18n ? I18n.t("LOG_VIGILANCE_BONUS") : " (+3)";
             }
@@ -388,7 +399,12 @@ class GameState {
 
             // ⚠️ 緊急徴発 (次ターンの食料維持費 +5)
             if (this.emergencyLevyTurns && this.emergencyLevyTurns > 0) {
-                foodCost += 5;
+                if (this.emergencyLevyStartsNextTurn) {
+                    this.emergencyLevyStartsNextTurn = false; // 発動ターン終了時はスキップ
+                } else {
+                    foodCost += 5; // 次のターンの終了時に +5
+                    this.emergencyLevyTurns -= 1;
+                }
             }
 
             this.food -= foodCost;
@@ -418,13 +434,17 @@ class GameState {
                 this.addLog(I18n ? I18n.t("LOG_TERRITORY_DECAY_STOP", { count: tileCount, req: thresholds.decayStop }) : `🛡️ 0`);
             }
 
-            // 🔥 残火の節約 (次ターンの🔥消費を 1 軽減)
+            // 🔥 節約 (次ターンの🔥消費を 1 軽減)
             if (this.emberConsumptionReducedTurns && this.emberConsumptionReducedTurns > 0) {
-                if (emberDelta < 0) {
-                    emberDelta += 1; // -1 ➔ 0
-                    this.addLog(I18n ? I18n.t("LOG_CONSERVE_EMBER_APPLIED") : `🔥 0`);
+                if (this.emberConsumptionStartsNextTurn) {
+                    this.emberConsumptionStartsNextTurn = false; // 発動ターン終了時はスキップ
+                } else {
+                    if (emberDelta < 0) {
+                        emberDelta += 1; // -1 ➔ 0
+                        this.addLog(I18n ? I18n.t("LOG_CONSERVE_EMBER_APPLIED") : `🔥 0`);
+                    }
+                    this.emberConsumptionReducedTurns -= 1;
                 }
-                this.emberConsumptionReducedTurns -= 1;
             }
 
             if (this.emberSystem && typeof this.emberSystem.getPassiveRegenTotal === 'function') {
@@ -441,18 +461,26 @@ class GameState {
             const hasReservedCard = this.reserveSlots && this.reserveSlots.some(s => s !== null && !s.isBlank);
             if (hasReservedCard) {
                 if (this.reserveFeeWaivedTurns && this.reserveFeeWaivedTurns > 0) {
-                    this.reserveFeeWaivedTurns -= 1;
+                    if (this.reserveFeeWaivedStartsNextTurn) {
+                        this.reserveFeeWaivedStartsNextTurn = false; // 発動ターン終了時は免除しつつ減算スキップ
+                    } else {
+                        this.reserveFeeWaivedTurns -= 1;
+                    }
                 } else {
                     this.ember -= 1;
                     this.addLog(I18n ? I18n.t("LOG_RESERVE_UPKEEP_PENALTY", { ember: this.ember }) : `📥 -1`);
                 }
             }
 
-            // 5. 🛡️ 警戒態勢バフのターン経過 (全🛡️獲得+3)
+            // 5. 🛡️ 警戒バフのターン経過 (次のターンから2ターンの間、全🛡️獲得+3)
             if (this.vigilanceTurns && this.vigilanceTurns > 0) {
-                this.vigilanceTurns -= 1;
-                if (this.vigilanceTurns <= 0) {
-                    this.addLog(I18n ? I18n.t("LOG_VIGILANCE_EXPIRED") : `🛡️ End`);
+                if (this.vigilanceStartsNextTurn) {
+                    this.vigilanceStartsNextTurn = false; // 発動ターン終了: 次ターン開始時から2ターン有効
+                } else {
+                    this.vigilanceTurns -= 1;
+                    if (this.vigilanceTurns <= 0) {
+                        this.addLog(I18n ? I18n.t("LOG_VIGILANCE_EXPIRED") : `🛡️ End`);
+                    }
                 }
             }
             if (this.temporaryDefenseTurns && this.temporaryDefenseTurns > 0) {
@@ -462,30 +490,46 @@ class GameState {
                 }
             }
 
-            // 6. 🎯 ドロー偏向バフのターン経過
+            // 6. 🎯 ドロー偏向バフのターン経過 (次ターン開始待ち考慮)
             if (this.activeDrawBias && this.activeDrawBias.type === "TURNS") {
-                this.activeDrawBias.remainingTurns -= 1;
-                if (this.activeDrawBias.remainingTurns <= 0) {
-                    this.activeDrawBias = null;
-                }
-            }
-
-            // 7. ⏳ 新規持続バフのターン経過 ＆ 満了処理
-            if (this.grandCultivationTurns && this.grandCultivationTurns > 0) {
-                this.grandCultivationTurns -= 1;
-                if (this.grandCultivationTurns <= 0) {
-                    const bd = (typeof this.getTerritoryBreakdown === "function") ? this.getTerritoryBreakdown() : { plains: 0 };
-                    if (bd.plains >= 12) {
-                        this.ember += 1;
-                        this.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: "大規模耕作計画達成", desc: "🔥+1" }) : `🌾 🔥+1`);
+                if (this.activeDrawBias.startsNextTurn) {
+                    this.activeDrawBias.startsNextTurn = false; // 発動ターン終了時はスキップし次ターン開始時にドロー保証
+                } else {
+                    this.activeDrawBias.remainingTurns -= 1;
+                    if (this.activeDrawBias.remainingTurns <= 0) {
+                        this.activeDrawBias = null;
                     }
                 }
             }
-            if (this.emergencyLevyTurns && this.emergencyLevyTurns > 0) {
-                this.emergencyLevyTurns -= 1;
+
+            // 7. ⏳ 新規持続バフのターン経過 ＆ 満了処理 (次のターンから開始待ち考慮)
+            if (this.grandCultivationTurns && this.grandCultivationTurns > 0) {
+                if (this.grandCultivationStartsNextTurn) {
+                    this.grandCultivationStartsNextTurn = false; // 発動ターン終了時はスキップ
+                } else {
+                    this.grandCultivationTurns -= 1;
+                    if (this.grandCultivationTurns <= 0) {
+                        const bd = (typeof this.getTerritoryBreakdown === "function") ? this.getTerritoryBreakdown() : { plains: 0 };
+                        if (bd.plains >= 12) {
+                            this.ember += 1;
+                            this.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: "耕作計画達成", desc: "🔥+1" }) : `🌾 🔥+1`);
+                        }
+                    }
+                }
+            }
+            if (this.systematicLoggingTurns && this.systematicLoggingTurns > 0) {
+                if (this.systematicLoggingStartsNextTurn) {
+                    this.systematicLoggingStartsNextTurn = false;
+                } else {
+                    this.systematicLoggingTurns -= 1;
+                }
             }
             if (this.manifestMiracleTurns && this.manifestMiracleTurns > 0) {
-                this.manifestMiracleTurns -= 1;
+                if (this.manifestMiracleStartsNextTurn) {
+                    this.manifestMiracleStartsNextTurn = false;
+                } else {
+                    this.manifestMiracleTurns -= 1;
+                }
             }
             if (this.fillTheVoidTurns && this.fillTheVoidTurns > 0) {
                 this.fillTheVoidTurns -= 1;

@@ -91,6 +91,7 @@
 
             // 📜 コマンドカード・バフ効果加算
             let plainsCount = 0;
+            let forestCount = 0;
             let vicinityCount = 0;
             for (let r = 0; r < size; r++) {
                 for (let c = 0; c < size; c++) {
@@ -98,12 +99,14 @@
                     if (cell && cell.placed && !cell.isHQ && cell.terrain) {
                         const tid = cell.terrain.terrainId || cell.terrain.id || "";
                         if (tid.includes("PLAINS")) plainsCount++;
+                        if (tid.includes("FOREST")) forestCount++;
                         if (state.isHQVicinity(r, c)) vicinityCount++;
                     }
                 }
             }
 
-            const grandCultivationBonus = (state.grandCultivationTurns && state.grandCultivationTurns > 0) ? (1 * plainsCount) : 0;
+            const grandCultivationBonus = (state.grandCultivationTurns && state.grandCultivationTurns > 0 && !state.grandCultivationStartsNextTurn) ? (1 * plainsCount) : 0;
+            const systematicLoggingPenalty = (state.systematicLoggingTurns && state.systematicLoggingTurns > 0 && !state.systematicLoggingStartsNextTurn) ? (1 * forestCount) : 0;
             const plainsBuffBonus = ((state.permanentPlainsFoodBonus || 0) * plainsCount) + grandCultivationBonus;
             const vicinityDefBonus = (state.permanentVicinityDefenseBonus || 0) * vicinityCount;
 
@@ -166,7 +169,7 @@
             const grossFood = Math.floor((hqFood + adjustedPlainsFood + foodSockets + foodVicinity + foodLakeIrrigation) * foodMult * buffFoodMult);
             const netFood = grossFood - foodCost;
             const totalFood = netFood; // 🌾 毎ターンの純収支 (Net Balance)
-            const totalWood = Math.floor((hqWood + woodTiles + woodSockets + woodVicinity) * woodMult * buffWoodMult);
+            const totalWood = Math.max(0, Math.floor((hqWood + woodTiles + woodSockets + woodVicinity - systematicLoggingPenalty) * woodMult * buffWoodMult));
             const totalMaterial = totalWood;
             const totalMystic = Math.floor((hqMystic + mysticTiles + mysticSockets + mysticVicinity + flatMysticBonus) * mysticMult * buffMysticMult);
 
@@ -200,8 +203,8 @@
             def += (state.permanentVicinityDefenseBonus || 0) * vicinityCount;
             if (state.defense) def += (state.defense - 10); // 直接加算された防衛力
 
-            // 🛡️ 警戒態勢バフ (2ターンの間、毎ターンの防衛力産出に+3ボーナス)
-            if (state.vigilanceTurns && state.vigilanceTurns > 0) {
+            // 🛡️ 警戒バフ (次のターンから2ターンの間、毎ターンの防衛力産出に+3ボーナス)
+            if (state.vigilanceTurns && state.vigilanceTurns > 0 && !state.vigilanceStartsNextTurn) {
                 def += 3;
             }
 
