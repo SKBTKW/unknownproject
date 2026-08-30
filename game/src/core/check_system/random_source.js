@@ -4,7 +4,7 @@
  * 責務:
  * 1. シード値に基づく決定論的疑似乱数（Mulberry32 PRNG）の生成。
  * 2. 状態（seed, state, callCount）の完全な直列化・復元 (getState / setState)。
- * 3. setState での厳格な型検証（壊れたデータのサイレント復元を禁止）。
+ * 3. nextInt(min, max) および setState での厳格な型検証（壊れた入力・データのサイレント受け入れを禁止）。
  */
 
 export class RandomSource {
@@ -35,11 +35,21 @@ export class RandomSource {
 
     /**
      * 🎯 min 以上 max 以下の整数の生成 (ダイス目用: 1〜sides)
-     * @param {number} min - 最小値 (inclusive)
-     * @param {number} max - 最大値 (inclusive)
+     * @param {number} min - 最小値 (inclusive, integer)
+     * @param {number} max - 最大値 (inclusive, integer, max >= min)
      * @returns {number}
      */
     nextInt(min, max) {
+        if (!Number.isInteger(min)) {
+            throw new Error(`[RandomSource] nextInt failed: min must be an integer (received: ${min}).`);
+        }
+        if (!Number.isInteger(max)) {
+            throw new Error(`[RandomSource] nextInt failed: max must be an integer (received: ${max}).`);
+        }
+        if (min > max) {
+            throw new Error(`[RandomSource] nextInt failed: min (${min}) cannot be greater than max (${max}).`);
+        }
+
         const f = this.nextFloat();
         return Math.floor(f * (max - min + 1)) + min;
     }
@@ -57,7 +67,7 @@ export class RandomSource {
     }
 
     /**
-     * ↩️ 内部状態の厳格な完全復元 (Undo / Replay 用)
+     * ↩️ 内部状態の厳格な完全復元 (Undo / Replay 用: Fail-Fast)
      * @param {Object} savedState
      */
     setState(savedState) {

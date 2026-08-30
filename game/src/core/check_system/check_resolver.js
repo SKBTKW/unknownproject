@@ -56,7 +56,7 @@ export class CheckResolver {
         const appliedModifiers = [];
 
         for (const mod of modifiers) {
-            const op = mod.operation;
+            const op = mod.operation ?? "add";
             const val = Number(mod.value);
 
             if (!Number.isFinite(val)) {
@@ -91,7 +91,7 @@ export class CheckResolver {
         }
 
         if (!matchedOutcome) {
-            matchedOutcome = { id: "unknown", nameKey: "CHECK_OUTCOME_UNKNOWN" };
+            throw new Error(`[CheckResolver] No outcome matched finalTotal ${finalTotal} in checkDef "${checkDef.id}". Outcomes must completely cover (-∞, +∞).`);
         }
 
         const afterState = rng.debugRngTrace ? rng.getState() : null;

@@ -3,156 +3,133 @@ import { CheckSystem, CheckModifier, RandomSource, DicePool, CheckResolver } fro
 import { validateCheckDefinitions } from "../game/src/core/check_system/check_validator.js";
 
 console.log("============================================================");
-console.log("🧪 [Hardening Test: Fail-Fast & Validation Enforcement]");
+console.log("🧪 [Hardening Test: Comprehensive Negative Tests & Fail-Fast]");
 console.log("============================================================");
 
 const dummyRng = new RandomSource(12345);
 
-// 1. 🛡️ DicePool 不正 keep ルール検知検問 (Fail-Fast)
-console.log("🔍 [H-1] DicePool 不正 keep ルール検問...");
-// タイプミス "higest_2"
-assert.throws(() => {
-    DicePool.roll({ count: 2, sides: 6, keep: "higest_2" }, dummyRng);
-}, /Unknown keep rule/, "higest_2 などのタイプミスは即座に例外を投げること");
+// 1. 🛡️ RandomSource.nextInt 引数検証 (Negative Tests)
+console.log("🔍 [NEG-1] RandomSource.nextInt 引数検証...");
+assert.throws(() => dummyRng.nextInt(10, 2), /min \(10\) cannot be greater than max \(2\)/, "min > max で例外");
+assert.throws(() => dummyRng.nextInt(NaN, 6), /min must be an integer/, "min が NaN で例外");
+assert.throws(() => dummyRng.nextInt(1, NaN), /max must be an integer/, "max が NaN で例外");
+assert.throws(() => dummyRng.nextInt(1.5, 6), /min must be an integer/, "min が小数の場合例外");
+assert.throws(() => dummyRng.nextInt(1, 5.5), /max must be an integer/, "max が小数の場合例外");
+console.log("  ✅ PASS: nextInt(min, max) 厳格型検証確認 (min > max, NaN, 小数を完全遮断)");
 
-// count 超過 "highest_99"
-assert.throws(() => {
-    DicePool.roll({ count: 2, sides: 6, keep: "highest_99" }, dummyRng);
-}, /must be 1 <= N <= count|N must be an integer between 1 and count/, "count を超える N は即座に例外を投げること");
+// 2. 🛡️ DicePool keep ルール (Negative Tests)
+console.log("\n🔍 [NEG-2] DicePool keep ルール異常系...");
+assert.throws(() => DicePool.roll({ count: 2, sides: 6, keep: "higest_2" }, dummyRng), /Unknown keep rule/, "higest_2 で例外");
+assert.throws(() => DicePool.roll({ count: 2, sides: 6, keep: "highest_99" }, dummyRng), /N must be an integer between 1 and count/, "highest_99 (count超過) で例外");
+assert.throws(() => DicePool.roll({ count: 2, sides: 6, keep: "highest_0" }, dummyRng), /N must be an integer between 1 and count/, "highest_0 (0以下) で例外");
+assert.throws(() => DicePool.roll({ count: 2, sides: 6, keep: "highest_02" }, dummyRng), /N must be an integer between 1 and count/, "highest_02 (曖昧指定) で例外");
+assert.throws(() => DicePool.roll({ count: 0, sides: 6 }, dummyRng), /dice count/, "count < 1 で例外");
+assert.throws(() => DicePool.roll({ count: 2, sides: 1 }, dummyRng), /dice sides/, "sides < 2 で例外");
+console.log("  ✅ PASS: DicePool 不正 keep ルール・ダイス数遮断確認");
 
-// 0以下の N
-assert.throws(() => {
-    DicePool.roll({ count: 2, sides: 6, keep: "highest_0" }, dummyRng);
-}, /N must be an integer between 1 and count/, "0 以下の N は即座に例外を投げること");
-
-console.log("  ✅ PASS: 不正 keep ルール (タイプミス / 範囲外) の遮断確認");
-
-// 2. 🛡️ CheckResolver 未知 operation 検知 ＆ checkSequence: 0 保持検問
-console.log("\n🔍 [H-2] CheckResolver 未知 operation 検知 ＆ checkSequence 検問...");
-const checkDef = {
+// 3. 🛡️ CheckResolver 修正値＆Plain Object 仕様統一検問
+console.log("\n🔍 [NEG-3] CheckResolver 修正値仕様検問 (Negative & Plain Object)...");
+const validCheckDef = {
     id: "test",
     dice: { count: 2, sides: 6, keep: "all" },
     outcomes: [{ max: 5, id: "f" }, { min: 6, id: "s" }]
 };
 
-// タイプミス "ad"
+// タイプミス "ad" で例外
 assert.throws(() => {
     CheckResolver.resolve({
-        checkDef,
+        checkDef: validCheckDef,
         rng: dummyRng,
         modifiers: [{ source: "test", operation: "ad", value: 1 }]
     });
-}, /Unsupported modifier operation: "ad"/, 'operation: "ad" は黙殺されず即座に例外を投げること');
+}, /Unsupported modifier operation: "ad"/, 'operation: "ad" は例外');
 
-// checkSequence: 0 が 1 に化けず正しく 0 として保持されること
-const seqZeroRes = CheckResolver.resolve({
-    checkDef,
+// NaN / Infinity 修正値で例外
+assert.throws(() => {
+    CheckResolver.resolve({
+        checkDef: validCheckDef,
+        rng: dummyRng,
+        modifiers: [{ source: "test", value: NaN }]
+    });
+}, /Invalid modifier value/, "value: NaN は例外");
+
+assert.throws(() => {
+    CheckResolver.resolve({
+        checkDef: validCheckDef,
+        rng: dummyRng,
+        modifiers: [{ source: "test", value: Infinity }]
+    });
+}, /Invalid modifier value/, "value: Infinity は例外");
+
+// 🌟 Plain Object ({ source: "hill", value: 2 }) がデフォルトで add として正常動作すること
+const plainObjRes = CheckResolver.resolve({
+    checkDef: validCheckDef,
     rng: dummyRng,
-    checkSequence: 0
+    modifiers: [{ source: "hill", value: 2 }]
 });
-assert.strictEqual(seqZeroRes.checkSequence, 0, "checkSequence: 0 が 1 に化けず正しく 0 として保持されること");
+assert.strictEqual(plainObjRes.modifierTotal, 2, "Plain Object の operation 未指定はデフォルトで add (+2) として処理されること");
+console.log("  ✅ PASS: 修正値異常系遮断 ＆ Plain Object デフォルト add 動作確認");
 
-console.log("  ✅ PASS: 未知 operation 即時例外 ＆ checkSequence: 0 保持確認");
-
-// 3. 🛡️ CheckSystem.setState ＆ RandomSource.setState 厳格型検問
-console.log("\n🔍 [H-3] CheckSystem.setState ＆ RandomSource.setState 厳格型検問...");
-const checkSys = new CheckSystem({ seed: 999 });
-
-// savedState が null
-assert.throws(() => {
-    checkSys.setState(null);
-}, /savedState must be an object/, "savedState: null は例外を投げること");
-
-// savedState.rng が欠落
-assert.throws(() => {
-    checkSys.setState({});
-}, /savedState\.rng is missing or invalid/, "savedState.rng 欠落は例外を投げること");
-
-// savedState.rng.seed が非整数
-assert.throws(() => {
-    checkSys.setState({ rng: { seed: "invalid", state: 111, callCount: 0 } });
-}, /savedState\.seed must be an integer/, "seed 非整数は例外を投げること");
-
-console.log("  ✅ PASS: CheckSystem.setState Fail-Fast 厳格型検証確認");
-
-// 4. 🛡️ CheckDefinition 数学的区間バリデータ検問
-console.log("\n🔍 [H-4] CheckDefinition 数学的区間バリデータ検問...");
-
-// 下限が -Infinity から始まっていない (負の出目に穴)
-const noLowerInfDef = {
-    bad_lower: {
-        id: "bad_lower",
-        dice: { count: 2, sides: 6, keep: "all" },
-        outcomes: [
-            { min: 2, max: 8, id: "failure" },
-            { min: 9, id: "success" }
-        ]
-    }
+// 4. 🛡️ CheckResolver outcome 未マッチ時 Fail-Fast
+console.log("\n🔍 [NEG-4] CheckResolver outcome 未マッチ時 Fail-Fast 検問...");
+const brokenOutcomeDef = {
+    id: "broken",
+    dice: { count: 2, sides: 6, keep: "all" },
+    outcomes: [{ max: 5, id: "f" }, { min: 8, id: "s" }] // 6, 7 が抜けている (validator 未通過データ)
 };
+// 出目 6 のときに例外が飛ぶこと
+const forcedRng = { nextInt: () => 3 }; // 3 + 3 = 6
 assert.throws(() => {
-    validateCheckDefinitions(noLowerInfDef);
-}, /Lowest outcome "failure" must have no min/, "下限が -Infinity でない定義は例外になること");
+    CheckResolver.resolve({ checkDef: brokenOutcomeDef, rng: forcedRng });
+}, /No outcome matched finalTotal 6/, "未マッチ時は unknown に逃げず即座に例外を投げること");
+console.log("  ✅ PASS: outcome 未特定時の Fail-Fast 即時例外確認");
 
-// 上限が +Infinity で終わっていない (極大出目に穴)
-const noUpperInfDef = {
-    bad_upper: {
-        id: "bad_upper",
-        dice: { count: 2, sides: 6, keep: "all" },
-        outcomes: [
-            { max: 8, id: "failure" },
-            { min: 9, max: 12, id: "success" }
-        ]
-    }
-};
+// 5. 🛡️ CheckSystem.resolve 未知 checkId 検問
+console.log("\n🔍 [NEG-5] CheckSystem.resolve 未知 checkId 検問...");
+const checkSys = new CheckSystem({ seed: 888 });
 assert.throws(() => {
-    validateCheckDefinitions(noUpperInfDef);
-}, /Highest outcome "success" must have no max/, "上限が +Infinity でない定義は例外になること");
+    checkSys.resolve({ checkId: "unknown_check_id" });
+}, /Unknown checkId: unknown_check_id/, "未登録の checkId は即座に例外");
+console.log("  ✅ PASS: 未知 checkId の即時例外確認");
 
-// 出目重複 (7〜8 が 2 つの outcome に被る)
-const overlappingDef = {
-    bad_overlap: {
-        id: "bad_overlap",
-        dice: { count: 2, sides: 6, keep: "all" },
-        outcomes: [
-            { max: 8, id: "failure" },
-            { min: 7, id: "success" }
-        ]
-    }
-};
+// 6. 🛡️ setState 不正データ検知 (RandomSource ＆ CheckSystem)
+console.log("\n🔍 [NEG-6] setState 不正データ検問...");
+assert.throws(() => checkSys.setState(null), /savedState must be an object/, "CheckSystem.setState(null) は例外");
+assert.throws(() => checkSys.setState({}), /savedState\.rng is missing/, "CheckSystem.setState({}) は例外");
+assert.throws(() => checkSys.setState({ rng: { seed: "abc", state: 1, callCount: 0 } }), /seed must be an integer/, "seed 文字列は例外");
+assert.throws(() => checkSys.setState({ rng: { seed: 1, callCount: 0 } }), /state must be an integer/, "state 欠落は例外");
+assert.throws(() => checkSys.setState({ rng: { seed: 1, state: 1, callCount: -1 } }), /callCount must be a non-negative integer/, "callCount 負数は例外");
+console.log("  ✅ PASS: setState 不正データ遮断確認");
+
+// 7. 🛡️ CheckDefinition 区間バリデータ異常系 (Negative Tests)
+console.log("\n🔍 [NEG-7] CheckDefinition 区間バリデータ異常系...");
+// 下限穴
 assert.throws(() => {
-    validateCheckDefinitions(overlappingDef);
-}, /Overlapping outcomes detected/, "区間重複はバリデータで検知され例外になること");
+    validateCheckDefinitions({ bad: { id: "bad", dice: { count: 2, sides: 6 }, outcomes: [{ min: 2, max: 6, id: "a" }, { min: 7, id: "b" }] } });
+}, /Lowest outcome "a" must have no min/, "下限が -Infinity でない場合は例外");
 
-// 空白帯 (出目 8 が抜けている)
-const gapDef = {
-    bad_gap: {
-        id: "bad_gap",
-        dice: { count: 2, sides: 6, keep: "all" },
-        outcomes: [
-            { max: 7, id: "failure" },
-            { min: 9, id: "success" }
-        ]
-    }
-};
+// 上限穴
 assert.throws(() => {
-    validateCheckDefinitions(gapDef);
-}, /Gap detected between "failure" .* and "success"/, "区間空白帯 (穴) はバリデータで検知され例外になること");
+    validateCheckDefinitions({ bad: { id: "bad", dice: { count: 2, sides: 6 }, outcomes: [{ max: 6, id: "a" }, { min: 7, max: 12, id: "b" }] } });
+}, /Highest outcome "b" must have no max/, "上限が +Infinity でない場合は例外");
 
-console.log("  ✅ PASS: 数学的区間バリデータ検問合格 ((-∞, +∞) 完全排他連続性を実証)");
+// 重複
+assert.throws(() => {
+    validateCheckDefinitions({ bad: { id: "bad", dice: { count: 2, sides: 6 }, outcomes: [{ max: 6, id: "a" }, { min: 6, id: "b" }] } });
+}, /Overlapping outcomes detected/, "区間重複は例外");
 
-// 5. 🌟 正常 CheckSystem の初期化 ＆ 動作確認
-console.log("\n🔍 [H-5] 硬化後 CheckSystem 正常初期化 ＆ 動作確認...");
-const checkSysValid = new CheckSystem({ seed: 777 });
-const res = checkSysValid.resolve({
-    checkId: "standard_2d6",
-    actionId: "act_test",
-    checkSequence: 0,
-    modifiers: [new CheckModifier({ source: "tactics", operation: "add", value: 1 })]
-});
-assert.strictEqual(res.checkSequence, 0, "checkSequence: 0 が保持されていること");
-assert.ok(res.outcome.id, "正常定義から outcome が取得できること");
-console.log("  ✅ PASS: CheckSystem 正常稼働確認");
+// 穴 (Gap)
+assert.throws(() => {
+    validateCheckDefinitions({ bad: { id: "bad", dice: { count: 2, sides: 6 }, outcomes: [{ max: 6, id: "a" }, { min: 8, id: "b" }] } });
+}, /Gap detected between "a" .* and "b"/, "区間の穴は例外");
+
+// min > max
+assert.throws(() => {
+    validateCheckDefinitions({ bad: { id: "bad", dice: { count: 2, sides: 6 }, outcomes: [{ min: 5, max: 2, id: "a" }] } });
+}, /min \(5\) > max \(2\)/, "min > max は例外");
+
+console.log("  ✅ PASS: CheckDefinition 区間バリデータ全異常系遮断確認");
 
 console.log("\n============================================================");
-console.log("🎉 [Hardening Test: Fail-Fast & Validation Enforcement] ALL PASS");
+console.log("🎉 [Hardening Test: Comprehensive Negative Tests & Fail-Fast] ALL PASS");
 console.log("============================================================");
