@@ -65,12 +65,17 @@ export class CheckSystem {
 
     /**
      * ↩️ 状態復元 (Undo / Replay 用)
+     * ↩️ 状態復元 (Undo / Replay 用: Fail-Fast)
      * @param {Object} savedState
      */
     setState(savedState) {
-        if (savedState && savedState.rng) {
-            this.rng.setState(savedState.rng);
+        if (!savedState || typeof savedState !== "object") {
+            throw new Error("[CheckSystem] setState failed: savedState must be an object.");
         }
+        if (!savedState.rng || typeof savedState.rng !== "object") {
+            throw new Error("[CheckSystem] setState failed: savedState.rng is missing or invalid.");
+        }
+        this.rng.setState(savedState.rng);
     }
 }
 

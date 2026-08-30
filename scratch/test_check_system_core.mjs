@@ -50,7 +50,7 @@ for (let val = 2; val <= 12; val++) {
     console.log(`     出目 ${val.toString().padStart(2)}: 実測 ${(actualRatio * 100).toFixed(2)}% | 理論 ${(theoRatio * 100).toFixed(2)}% | 差分 ${(diff * 100).toFixed(3)}%`);
     assert.ok(diff < maxAllowedError, `出目 ${val} の誤差 ${(diff * 100).toFixed(3)}% は許容幅 ${(maxAllowedError * 100).toFixed(2)}% 未満であること`);
 }
-console.log("  ✅ PASS: 100,000回 2D6 分布検問 ALL GREEN (数学的三角分布に完全に合致)");
+console.log("  ✅ PASS: 100,000回 2D6 分布検問 (理論三角分布から許容誤差 ±0.40% 以内に収束)");
 
 // 2. 🔁 シード固定による 100% 同一出目シーケンス再現検問
 console.log("\n🔍 [Core-2] シード固定による 100% 同一出目シーケンス再現検問...");

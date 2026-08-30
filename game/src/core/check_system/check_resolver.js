@@ -109,7 +109,7 @@ export class CheckResolver {
         return {
             checkId: checkDef.id,
             actionId: actionId !== undefined ? actionId : null,
-            checkSequence: checkSequence || 1,
+            checkSequence: Number.isInteger(checkSequence) ? checkSequence : 1,
             dice: {
                 rolled: diceResult.rolled,
                 kept: diceResult.kept,
