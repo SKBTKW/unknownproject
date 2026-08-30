@@ -70,6 +70,54 @@ const UILayoutConfig = {
         }
     },
 
+    // 🎲 画面右下隅ダイストレイ HUD (完全受動 / pointer-events: none)
+    diceWidget: {
+        desktop: {
+            position: "fixed",
+            right: "24px",
+            bottom: "135px",
+            width: "180px",
+            diceSize: "32px",
+            zIndex: 850,
+            pointerEvents: "none"
+        },
+        mobile: {
+            position: "fixed",
+            right: "12px",
+            bottom: "95px",
+            width: "140px",
+            diceSize: "26px",
+            zIndex: 850,
+            pointerEvents: "none"
+        },
+        importanceThemes: {
+            NORMAL: {
+                rollDurationMs: 650,
+                displayDurationMs: 1000,
+                borderColor: "#64748b",
+                badgeBg: "#1e293b",
+                badgeColor: "#f8fafc",
+                glowShadow: "0 0 10px rgba(100, 116, 139, 0.3)"
+            },
+            TACTICAL: {
+                rollDurationMs: 700,
+                displayDurationMs: 1200,
+                borderColor: "#3b82f6",
+                badgeBg: "#1e3a8a",
+                badgeColor: "#60a5fa",
+                glowShadow: "0 0 15px rgba(59, 130, 246, 0.45)"
+            },
+            CRITICAL: {
+                rollDurationMs: 800,
+                displayDurationMs: 1600,
+                borderColor: "#f59e0b",
+                badgeBg: "#78350f",
+                badgeColor: "#fbbf24",
+                glowShadow: "0 0 22px rgba(245, 158, 11, 0.6)"
+            }
+        }
+    },
+
     // 🎯 1. 中央土地盤面エリア (画面の真中央へ100%完全自動固定)
     boardContainer: {
         display: "flex",

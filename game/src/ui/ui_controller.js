@@ -18,6 +18,8 @@ import { HqComponent } from './hq_component.js';
 import { tooltipSystemInstance } from './tooltip_system.js';
 import { UIInteractionState } from './ui_interaction_state.js';
 import { attachLegacyUIBridge } from './legacy_ui_bridge.js';
+import { DiceWidgetComponent } from './dice_widget_component.js';
+import { DiceDisplayQueue } from './dice_display_queue.js';
 
 class UIController {
     /**
@@ -47,6 +49,8 @@ class UIController {
         this.reserveSlotComponent = (typeof document !== 'undefined') ? new ReserveSlotComponent(this) : null;
         this.topHeaderComponent = (typeof document !== 'undefined') ? new TopHeaderComponent(this) : null;
         this.boardGridComponent = (typeof document !== 'undefined') ? new BoardGridComponent(this) : null;
+        this.diceWidget = (typeof document !== 'undefined') ? new DiceWidgetComponent() : null;
+        this.diceQueue = new DiceDisplayQueue(this.diceWidget);
         
         // 🎛️ UI セッション状態モデル (Single Source of Truth)
         this.interactionState = new UIInteractionState();
@@ -317,6 +321,16 @@ class UIController {
     showHqDeltaPopup(delta) {
         if (this.hqComponent && typeof this.hqComponent.showDeltaPopup === "function") {
             return this.hqComponent.showDeltaPopup(delta);
+        }
+    }
+
+    /**
+     * 🎲 CheckResolvedEvent の受動キューイング演出 (画面右下隅 HUD)
+     * @param {Object} event - { result, context, feedback }
+     */
+    showDiceCheck(event) {
+        if (this.diceQueue && typeof this.diceQueue.enqueue === "function") {
+            this.diceQueue.enqueue(event);
         }
     }
 

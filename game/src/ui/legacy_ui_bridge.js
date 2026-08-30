@@ -68,6 +68,7 @@ export function attachLegacyUIBridge(ui) {
     window.toggleBoardLabelMode = (e) => ui.toggleTileTextStyle(e);
     window.showDataPanelTooltip = (e) => ui.showDataPanelTooltip(e);
     window.hideDataPanelTooltip = () => ui.hideDataPanelTooltip();
+    window.showDiceCheck = (event) => ui.showDiceCheck(event);
     window.render = () => ui.render();
 
     window.undoLandPlacement = () => {
