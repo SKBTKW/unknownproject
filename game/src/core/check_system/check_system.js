@@ -12,6 +12,7 @@ import { RandomSource } from './random_source.js';
 import { DicePool } from './dice_pool.js';
 import { CHECK_DEFINITIONS } from './check_definitions.js';
 import { CheckResolver, CheckModifier } from './check_resolver.js';
+import { TargetBuilder } from './target_builder.js';
 import { validateCheckDefinitions } from './check_validator.js';
 
 export class CheckSystem {
@@ -36,9 +37,10 @@ export class CheckSystem {
      * @param {Array<CheckModifier|Object>} [params.modifiers=[]] - 修正値リスト
      * @param {string|number|null} [params.actionId=null] - Action 識別子
      * @param {number} [params.checkSequence=1] - Action 内連番
+     * @param {Object|null} [params.target=null] - 動的目標値設定 ({ successAt, greatSuccessAt, mixedAt, comparison })
      * @returns {Object} CheckResult
      */
-    resolve({ checkId = "standard_2d6", modifiers = [], actionId = null, checkSequence = 1 } = {}) {
+    resolve({ checkId = "standard_2d6", modifiers = [], actionId = null, checkSequence = 1, target = null } = {}) {
         const checkDef = this.definitions[checkId];
         if (!checkDef) {
             throw new Error(`[CheckSystem] Unknown checkId: ${checkId}`);
@@ -49,7 +51,8 @@ export class CheckSystem {
             rng: this.rng,
             modifiers,
             actionId,
-            checkSequence
+            checkSequence,
+            target
         });
     }
 
@@ -78,7 +81,7 @@ export class CheckSystem {
     }
 }
 
-export { RandomSource, DicePool, CHECK_DEFINITIONS, CheckResolver, CheckModifier };
+export { RandomSource, DicePool, CHECK_DEFINITIONS, CheckResolver, CheckModifier, TargetBuilder };
 
 if (typeof window !== "undefined") {
     window.CheckSystem = CheckSystem;

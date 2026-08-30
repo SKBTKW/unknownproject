@@ -8,6 +8,7 @@
  */
 
 import { DicePool } from './dice_pool.js';
+import { TargetBuilder } from './target_builder.js';
 
 export class CheckModifier {
     /**
@@ -37,7 +38,7 @@ export class CheckResolver {
      * @param {number} [params.checkSequence=1] - Action 内の連番
      * @returns {Object} CheckResult
      */
-    static resolve({ checkDef, rng, modifiers = [], actionId = null, checkSequence = 1 }) {
+    static resolve({ checkDef, rng, modifiers = [], actionId = null, checkSequence = 1, target = null }) {
         if (!checkDef || typeof checkDef !== "object") {
             throw new Error("[CheckResolver] resolve failed: checkDef must be an object.");
         }
@@ -45,10 +46,13 @@ export class CheckResolver {
             throw new Error("[CheckResolver] resolve failed: rng must be a valid RandomSource instance.");
         }
 
+        // 🎯 動的目標値 (target) が指定されている場合は安全に動的定義を構築
+        const activeDef = target ? TargetBuilder.build(checkDef, target) : checkDef;
+
         const beforeState = rng.debugRngTrace ? rng.getState() : null;
 
         // 1. 🎲 ダイスロール (DicePool)
-        const diceResult = DicePool.roll(checkDef.dice, rng);
+        const diceResult = DicePool.roll(activeDef.dice, rng);
         const rawTotal = diceResult.kept.reduce((acc, v) => acc + v, 0);
 
         // 2. ➕ Modifier パイプラインの適用 (厳格検証)
@@ -79,8 +83,8 @@ export class CheckResolver {
 
         // 3. 🎯 結果帯 (Outcome) の特定
         let matchedOutcome = null;
-        if (Array.isArray(checkDef.outcomes)) {
-            for (const outcome of checkDef.outcomes) {
+        if (Array.isArray(activeDef.outcomes)) {
+            for (const outcome of activeDef.outcomes) {
                 const passMin = outcome.min === undefined || finalTotal >= outcome.min;
                 const passMax = outcome.max === undefined || finalTotal <= outcome.max;
                 if (passMin && passMax) {
@@ -91,7 +95,7 @@ export class CheckResolver {
         }
 
         if (!matchedOutcome) {
-            throw new Error(`[CheckResolver] No outcome matched finalTotal ${finalTotal} in checkDef "${checkDef.id}". Outcomes must completely cover (-∞, +∞).`);
+            throw new Error(`[CheckResolver] No outcome matched finalTotal ${finalTotal} in checkDef "${activeDef.id}". Outcomes must completely cover (-∞, +∞).`);
         }
 
         const afterState = rng.debugRngTrace ? rng.getState() : null;

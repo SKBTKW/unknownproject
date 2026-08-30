@@ -1,5 +1,5 @@
 import assert from "assert";
-import { CheckSystem, CheckModifier, RandomSource, DicePool, CheckResolver } from "../game/src/core/check_system/check_system.js";
+import { CheckSystem, CheckModifier, RandomSource, DicePool, CheckResolver, TargetBuilder } from "../game/src/core/check_system/check_system.js";
 import { validateCheckDefinitions } from "../game/src/core/check_system/check_validator.js";
 
 console.log("============================================================");
@@ -171,6 +171,48 @@ assert.throws(() => validateCheckDefinitions({ bad: { id: "bad", dice: { count: 
 assert.throws(() => validateCheckDefinitions({ bad: { id: "bad", dice: { count: 2, sides: 6 }, outcomes: [{ max: 6, id: "a" }, { min: 8, id: "b" }] } }), /Gap detected between "a" .* and "b"/, "区間空白帯で例外");
 
 console.log("  ✅ PASS: 全異常系 (不正keep/op/NaN/破損state/未知id/重複/穴) の確実な例外遮断を確認");
+
+// 7. 🎯 動的目標値 (TargetBuilder) ＆ 以上・以下・バリデーション検問
+console.log("\n🔍 [Core-7] 動的目標値 (TargetBuilder) ＆ 以上・以下・自己検問...");
+const targetSys = new CheckSystem({ seed: 8888 });
+
+// 7-A. 「以上」判定: 8以上成功 (8-10成功, 11+大成功, 7以下失敗)
+const baseDef = checkSys.definitions["standard_2d6"];
+const gteDef = TargetBuilder.build(baseDef, { successAt: 8, greatSuccessAt: 11 });
+assert.strictEqual(gteDef.outcomes.length, 3);
+assert.deepStrictEqual(gteDef.outcomes[0], { id: "failure", min: null, max: 7, nameKey: "CHECK_OUTCOME_FAILURE" });
+assert.deepStrictEqual(gteDef.outcomes[1], { id: "success", min: 8, max: 10, nameKey: "CHECK_OUTCOME_SUCCESS" });
+assert.deepStrictEqual(gteDef.outcomes[2], { id: "great_success", min: 11, max: null, nameKey: "CHECK_OUTCOME_GREAT_SUCCESS" });
+
+// 7-B. 「以下」判定: 5以下成功 (3以下大成功, 4-5成功, 6以上失敗)
+const lteDef = TargetBuilder.build(baseDef, { comparison: "<=", successAt: 5, greatSuccessAt: 3 });
+assert.strictEqual(lteDef.outcomes.length, 3);
+assert.deepStrictEqual(lteDef.outcomes[0], { id: "great_success", min: null, max: 3, nameKey: "CHECK_OUTCOME_GREAT_SUCCESS" });
+assert.deepStrictEqual(lteDef.outcomes[1], { id: "success", min: 4, max: 5, nameKey: "CHECK_OUTCOME_SUCCESS" });
+assert.deepStrictEqual(lteDef.outcomes[2], { id: "failure", min: 6, max: null, nameKey: "CHECK_OUTCOME_FAILURE" });
+
+// 7-C. resolve 経由での動的判定実行 ＆ 決定論的検証
+const dynRes = targetSys.resolve({
+    checkId: "standard_2d6",
+    actionId: "test_dynamic",
+    target: { successAt: 8, greatSuccessAt: 11 }
+});
+assert.ok(dynRes.finalTotal >= 2 && dynRes.finalTotal <= 12);
+if (dynRes.finalTotal >= 11) {
+    assert.strictEqual(dynRes.outcome.id, "great_success");
+} else if (dynRes.finalTotal >= 8) {
+    assert.strictEqual(dynRes.outcome.id, "success");
+} else {
+    assert.strictEqual(dynRes.outcome.id, "failure");
+}
+
+// 7-D. 異常系: successAt が整数でない / 不正な順序
+assert.throws(() => TargetBuilder.build(baseDef, { successAt: NaN }), /target\.successAt must be an integer/);
+assert.throws(() => TargetBuilder.build(baseDef, { comparison: ">=", successAt: 8, greatSuccessAt: 7 }), /greatSuccessAt .* must be greater than successAt/);
+assert.throws(() => TargetBuilder.build(baseDef, { comparison: "<=", successAt: 5, greatSuccessAt: 6 }), /greatSuccessAt .* must be less than successAt/);
+assert.throws(() => TargetBuilder.build(baseDef, { comparison: "!=" }), /Unsupported comparison/);
+
+console.log("  ✅ PASS: TargetBuilder 動的目標値 (>=, <=, 自己区間検問, Fail-Fast) 正常確認");
 
 console.log("\n============================================================");
 console.log("🎉 [Phase 2: CheckSystem Core Verification Test] ALL PASS");
