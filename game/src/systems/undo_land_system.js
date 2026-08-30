@@ -60,6 +60,10 @@
             this.placedCellCoords = placedCoords;
         }
 
+        recordSnapshot(placedCoords = []) {
+            return this.captureSnapshot(placedCoords);
+        }
+
         /**
          * 🔍 マウスオーバー位置が「当ターンで置いたばかりの土地」か判定
          */

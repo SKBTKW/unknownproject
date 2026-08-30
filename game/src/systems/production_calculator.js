@@ -295,6 +295,120 @@
                 mystic: { hqBase: hqMystic, tiles: mysticTiles, sockets: mysticSockets, emberMystic, emberPct, total: prods.totalMystic }
             };
         }
+
+        /**
+         * 🔬 単一マスの正式な産出・補正内訳 (Single Source of Truth)
+         * @param {Object} state - GameState
+         * @param {number} r - 行
+         * @param {number} c - 列
+         * @returns {Object} { baseYields, modifiers, totalYields }
+         */
+        static calculateCellYieldBreakdown(state, r, c) {
+            const emptyResult = {
+                baseYields: { food: 0, wood: 0, defense: 0, mystic: 0 },
+                modifiers: [],
+                totalYields: { food: 0, wood: 0, defense: 0, mystic: 0 }
+            };
+            if (!state || !state.grid || !state.grid[r] || !state.grid[r][c]) {
+                return emptyResult;
+            }
+
+            const cell = state.grid[r][c];
+            if (!cell || !cell.placed) return emptyResult;
+
+            // 1. 本営マスの場合
+            if (cell.isHQ) {
+                const hqTerrain = cell.terrain || { food: 10, wood: 10, defense: 10, mystic: 1 };
+                const hqFood = (hqTerrain.food !== undefined) ? hqTerrain.food : 10;
+                const hqWood = (hqTerrain.wood !== undefined) ? (hqTerrain.material !== undefined ? hqTerrain.material : hqTerrain.wood) : 10;
+                const hqDefense = (hqTerrain.defense !== undefined) ? hqTerrain.defense : 10;
+                const hqMystic = (hqTerrain.mystic !== undefined) ? hqTerrain.mystic : 1;
+                return {
+                    baseYields: { food: hqFood, wood: hqWood, defense: hqDefense, mystic: hqMystic },
+                    modifiers: [],
+                    totalYields: { food: hqFood, wood: hqWood, defense: hqDefense, mystic: hqMystic }
+                };
+            }
+
+            // 2. 通常配置土地の場合
+            const t = cell.terrain;
+            if (!t) return emptyResult;
+
+            const baseFood = (t.food !== undefined) ? t.food : ((t.baseYieldsPerTile && t.baseYieldsPerTile.food) || (t.yields && t.yields.food) || 0);
+            const baseWood = (t.material !== undefined) ? t.material : ((t.wood !== undefined) ? t.wood : ((t.baseYieldsPerTile && (t.baseYieldsPerTile.material || t.baseYieldsPerTile.wood)) || (t.yields && (t.yields.material || t.yields.wood)) || 0));
+            const baseDefense = (t.defense !== undefined) ? t.defense : ((t.baseYieldsPerTile && t.baseYieldsPerTile.defense) || (t.yields && t.yields.defense) || 0);
+            const baseMystic = (t.mystic !== undefined) ? t.mystic : ((t.baseYieldsPerTile && t.baseYieldsPerTile.mystic) || (t.yields && t.yields.mystic) || 0);
+
+            const baseYields = { food: baseFood, wood: baseWood, defense: baseDefense, mystic: baseMystic };
+            const modifiers = [];
+            let totalFood = baseFood;
+            let totalWood = baseWood;
+            let totalDefense = baseDefense;
+            let totalMystic = baseMystic;
+
+            // ① ソケット資源ボーナス
+            if (cell.socketResource) {
+                const s = cell.socketResource;
+                const sf = s.bonusFood || 0;
+                const sw = (s.bonusMaterial !== undefined ? s.bonusMaterial : (s.bonusWood || 0));
+                const sd = s.bonusDefense || 0;
+                const sm = s.bonusMystic || 0;
+                if (sf > 0) { modifiers.push({ type: "SOCKET", resource: "food", amount: sf }); totalFood += sf; }
+                if (sw > 0) { modifiers.push({ type: "SOCKET", resource: "wood", amount: sw }); totalWood += sw; }
+                if (sd > 0) { modifiers.push({ type: "SOCKET", resource: "defense", amount: sd }); totalDefense += sd; }
+                if (sm > 0) { modifiers.push({ type: "SOCKET", resource: "mystic", amount: sm }); totalMystic += sm; }
+            }
+
+            // ② 本営近郊ボーナス (HQ Vicinity: 基礎産出がある資源に+1)
+            const isHQVic = (typeof state.isHQVicinity === "function") ? state.isHQVicinity(r, c) : false;
+            if (isHQVic) {
+                if (baseFood > 0) { modifiers.push({ type: "HQ_VICINITY", resource: "food", amount: 1 }); totalFood += 1; }
+                if (baseWood > 0) { modifiers.push({ type: "HQ_VICINITY", resource: "wood", amount: 1 }); totalWood += 1; }
+                if (baseMystic > 0) { modifiers.push({ type: "HQ_VICINITY", resource: "mystic", amount: 1 }); totalMystic += 1; }
+            }
+
+            // ③ 湖/オアシス灌漑ボーナス (+50% 食料、最低+1)
+            const size = state.grid.length;
+            let isNearLake = false;
+            for (let lr = Math.max(0, r - 1); lr <= Math.min(size - 1, r + 1); lr++) {
+                for (let lc = Math.max(0, c - 1); lc <= Math.min(size - 1, c + 1); lc++) {
+                    if (lr === r && lc === c) continue;
+                    const neighbor = state.grid[lr][lc];
+                    if (neighbor && neighbor.placed && neighbor.socketResource) {
+                        const sid = neighbor.socketResource.id || neighbor.socketResource.nameKey || "";
+                        if (sid === "SOCKET_LAKE" || sid === "SOCKET_OASIS") {
+                            isNearLake = true;
+                            break;
+                        }
+                    }
+                }
+                if (isNearLake) break;
+            }
+            if (isNearLake && baseFood > 0) {
+                const lakeIrrigation = Math.max(1, Math.floor(baseFood * 0.5));
+                modifiers.push({ type: "LAKE_IRRIGATION", resource: "food", amount: lakeIrrigation });
+                totalFood += lakeIrrigation;
+            }
+
+            // ④ 永続平地強化バフ
+            const tid = t.terrainId || t.id || "";
+            if (state.permanentPlainsFoodBonus && tid.includes("PLAINS")) {
+                modifiers.push({ type: "PERMANENT_PLAINS", resource: "food", amount: state.permanentPlainsFoodBonus });
+                totalFood += state.permanentPlainsFoodBonus;
+            }
+
+            // ⑤ 永続近郊防衛バフ
+            if (state.permanentVicinityDefenseBonus && isHQVic) {
+                modifiers.push({ type: "PERMANENT_VICINITY_DEFENSE", resource: "defense", amount: state.permanentVicinityDefenseBonus });
+                totalDefense += state.permanentVicinityDefenseBonus;
+            }
+
+            return {
+                baseYields,
+                modifiers,
+                totalYields: { food: totalFood, wood: totalWood, defense: totalDefense, mystic: totalMystic }
+            };
+        }
     }
 
     if (typeof window !== "undefined") {

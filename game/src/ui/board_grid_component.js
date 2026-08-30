@@ -110,8 +110,8 @@ export class BoardGridComponent {
                 let leftGroupSame = false;
 
                 if (cellData.isHQ) {
-                    if (this.ui && this.ui.hqComponent && typeof this.ui.hqComponent.renderCell === "function") {
-                        this.ui.hqComponent.renderCell(cellEl, this.state, I18n);
+                    if (this.ui && typeof this.ui.renderHqCell === "function") {
+                        this.ui.renderHqCell(cellEl, this.state, I18n);
                     } else {
                         cellEl.id = "hqEmberCellAnchor";
                         cellEl.classList.add("hq");
@@ -401,8 +401,8 @@ export class BoardGridComponent {
      * @param {number} delta - 残り火の増減差分 (+X または -X)
      */
     showHqEmberDeltaPopup(delta) {
-        if (this.ui && this.ui.hqComponent && typeof this.ui.hqComponent.showDeltaPopup === "function") {
-            this.ui.hqComponent.showDeltaPopup(delta);
+        if (this.ui && typeof this.ui.showHqDeltaPopup === "function") {
+            this.ui.showHqDeltaPopup(delta);
         }
     }
 
@@ -414,31 +414,11 @@ export class BoardGridComponent {
     getPrimaryYieldInfo(cellData, isHQVic) {
         if (!cellData || !cellData.terrain) return null;
 
-        const t = cellData.terrain;
-        const tid = (t.terrainId || t.id || "").toUpperCase();
+        const engine = this.ui ? this.ui.engine : null;
+        const activeGroupId = cellData.mergeGroupId || cellData.placementGroupId;
+        const tid = (cellData.terrain.terrainId || cellData.terrain.id || "").toUpperCase();
 
         let f = 0, w = 0, d = 0, m = 0;
-
-        const activeGroupId = cellData.mergeGroupId || cellData.placementGroupId;
-
-        const isNearLake = (r, c) => {
-            if (!this.state || !this.state.grid) return false;
-            const size = this.state.grid.length;
-            for (let lr = 0; lr < size; lr++) {
-                for (let lc = 0; lc < size; lc++) {
-                    const lcCell = this.state.grid[lr][lc];
-                    if (lcCell && lcCell.placed && lcCell.socketResource) {
-                        const sid = lcCell.socketResource.id || lcCell.socketResource.nameKey || "";
-                        if (sid === "SOCKET_LAKE" || sid === "SOCKET_OASIS") {
-                            if (Math.abs(lr - r) <= 1 && Math.abs(lc - c) <= 1 && !(lr === r && lc === c)) {
-                                return true;
-                            }
-                        }
-                    }
-                }
-            }
-            return false;
-        };
 
         // 🧩 複数マスブロック（マージ大土地 または 1x2/1x3等の同一配置ブロック）の場合は土地総産出を集約
         if (activeGroupId && this.state && this.state.grid) {
@@ -452,36 +432,29 @@ export class BoardGridComponent {
             for (let r = 0; r < size; r++) {
                 for (let c = 0; c < size; c++) {
                     const cell = this.state.grid[r][c];
-                    if (cell && cell.placed && (cell.mergeGroupId === activeGroupId || cell.placementGroupId === activeGroupId) && cell.terrain) {
-                        const ct = cell.terrain;
-                        let cf = (ct.food !== undefined) ? ct.food : ((ct.baseYieldsPerTile && ct.baseYieldsPerTile.food) || (ct.yields && ct.yields.food) || 0);
-                        let cw = (ct.material !== undefined) ? ct.material : ((ct.wood !== undefined) ? ct.wood : ((ct.baseYieldsPerTile && (ct.baseYieldsPerTile.material || ct.baseYieldsPerTile.wood)) || (ct.yields && (ct.yields.material || ct.yields.wood)) || 0));
-                        let cd = (ct.defense !== undefined) ? ct.defense : ((ct.baseYieldsPerTile && ct.baseYieldsPerTile.defense) || (ct.yields && ct.yields.defense) || 0);
-                        let cm = (ct.mystic !== undefined) ? ct.mystic : ((ct.baseYieldsPerTile && ct.baseYieldsPerTile.mystic) || (ct.yields && ct.yields.mystic) || 0);
-
-                        // ⚠️ 資源ボーナスは資源マス（SOCKET）自体の表示に切り離すため、土地総産出には含めない（完全分離）
-
-                        // 本営近郊加算
-                        if (typeof this.state.isHQVicinity === "function" && this.state.isHQVicinity(r, c)) {
-                            if (cf > 0) cf += 1;
-                            if (cw > 0) cw += 1;
-                            if (cd > 0) cd += 1;
-                            if (cm > 0) cm += 1;
+                    if (cell && cell.placed && (cell.mergeGroupId === activeGroupId || cell.placementGroupId === activeGroupId)) {
+                        const viewData = engine ? engine.getCellViewData(r, c) : null;
+                        if (viewData) {
+                            const base = viewData.baseYields || {};
+                            let cf = base.food || 0;
+                            let cw = base.wood || 0;
+                            let cd = base.defense || 0;
+                            let cm = base.mystic || 0;
+                            if (Array.isArray(viewData.modifiers)) {
+                                for (const mod of viewData.modifiers) {
+                                    if (mod.type !== "SOCKET") {
+                                        if (mod.resource === "food") cf += mod.amount;
+                                        if (mod.resource === "wood") cw += mod.amount;
+                                        if (mod.resource === "defense") cd += mod.amount;
+                                        if (mod.resource === "mystic") cm += mod.amount;
+                                    }
+                                }
+                            }
+                            f += cf;
+                            w += cw;
+                            d += cd;
+                            m += cm;
                         }
-
-                        // 🌊 湖 (Lake) 周囲8マスの灌漑バフ (+50% 食料産出ブースト)
-                        if (isNearLake(r, c) && cf > 0) {
-                            cf += Math.max(1, Math.floor(cf * 0.5));
-                        }
-
-                        if (this.state && this.state.permanentPlainsFoodBonus && (ct.terrainId || ct.id || "").toUpperCase().includes("PLAINS")) {
-                            cf += this.state.permanentPlainsFoodBonus;
-                        }
-
-                        f += cf;
-                        w += cw;
-                        d += cd;
-                        m += cm;
                     }
                 }
             }
@@ -492,24 +465,25 @@ export class BoardGridComponent {
             m = Math.floor(m * multiplier);
         } else {
             // 単マス（1x1 配置）
-            f = (t.food !== undefined) ? t.food : ((t.baseYieldsPerTile && t.baseYieldsPerTile.food) || (t.yields && t.yields.food) || 0);
-            w = (t.material !== undefined) ? t.material : ((t.wood !== undefined) ? t.wood : ((t.baseYieldsPerTile && (t.baseYieldsPerTile.material || t.baseYieldsPerTile.wood)) || (t.yields && (t.yields.material || t.yields.wood)) || 0));
-            d = (t.defense !== undefined) ? t.defense : ((t.baseYieldsPerTile && t.baseYieldsPerTile.defense) || (t.yields && t.yields.defense) || 0);
-            m = (t.mystic !== undefined) ? t.mystic : ((t.baseYieldsPerTile && t.baseYieldsPerTile.mystic) || (t.yields && t.yields.mystic) || 0);
-
-            if (isHQVic) {
-                if (f > 0) f += 1;
-                if (w > 0) w += 1;
-                if (d > 0) d += 1;
-                if (m > 0) m += 1;
-            }
-
-            if (isNearLake(cellData.r !== undefined ? cellData.r : 0, cellData.c !== undefined ? cellData.c : 0) && f > 0) {
-                f += Math.max(1, Math.floor(f * 0.5));
-            }
-
-            if (this.state && this.state.permanentPlainsFoodBonus && tid.includes("PLAINS")) {
-                f += this.state.permanentPlainsFoodBonus;
+            const r = cellData.r !== undefined ? cellData.r : 0;
+            const c = cellData.c !== undefined ? cellData.c : 0;
+            const viewData = engine ? engine.getCellViewData(r, c) : null;
+            if (viewData) {
+                const base = viewData.baseYields || {};
+                f = base.food || 0;
+                w = base.wood || 0;
+                d = base.defense || 0;
+                m = base.mystic || 0;
+                if (Array.isArray(viewData.modifiers)) {
+                    for (const mod of viewData.modifiers) {
+                        if (mod.type !== "SOCKET") {
+                            if (mod.resource === "food") f += mod.amount;
+                            if (mod.resource === "wood") w += mod.amount;
+                            if (mod.resource === "defense") d += mod.amount;
+                            if (mod.resource === "mystic") m += mod.amount;
+                        }
+                    }
+                }
             }
         }
 

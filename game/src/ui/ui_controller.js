@@ -16,27 +16,40 @@ import { TopHeaderComponent } from './top_header_component.js';
 import { BoardGridComponent } from './board_grid_component.js';
 import { HqComponent } from './hq_component.js';
 import { tooltipSystemInstance } from './tooltip_system.js';
+import { UIInteractionState } from './ui_interaction_state.js';
+import { attachLegacyUIBridge } from './legacy_ui_bridge.js';
 
 class UIController {
     /**
      * @param {GameEngine|Object} engine - ゲームエンジンまたはGameState
      */
     constructor(engine) {
-        this.engine = engine;
-        this.state = (engine && engine.state) ? engine.state : engine;
-        this.drawSys = (engine && engine.deckManager) ? engine.deckManager : (engine && engine.drawSys ? engine.drawSys : null);
-        this.undoSys = (engine && engine.undoSys) ? engine.undoSys : (UndoLandSystem && this.state ? new UndoLandSystem(this.state) : null);
+        if (!engine) {
+            throw new Error("UIController requires a GameEngine instance.");
+        }
+        if (typeof engine.nextTurn === "function") {
+            this.engine = engine;
+            this.state = engine.state;
+        } else if (engine.engine && typeof engine.engine.nextTurn === "function") {
+            this.engine = engine.engine;
+            this.state = engine;
+        } else {
+            // テスト等で GameState が直接渡された場合の保護ラッパー (Engine必須化)
+            const GameEngineClass = (typeof globalThis !== 'undefined' && globalThis.GameEngine) ? globalThis.GameEngine : null;
+            this.engine = GameEngineClass ? new GameEngineClass({ state: engine }) : engine;
+            this.state = this.engine.state || engine;
+        }
+        this.drawSys = (this.engine && this.engine.deckManager) ? this.engine.deckManager : null;
+        this.undoSys = (this.engine && this.engine.undoSystem) ? this.engine.undoSystem : (UndoLandSystem && this.state ? new UndoLandSystem(this.state) : null);
         this.emberStatusComponent = (typeof document !== 'undefined') ? new EmberStatusComponent() : null;
         this.hqComponent = (typeof document !== 'undefined') ? new HqComponent(this) : null;
         this.handCardsComponent = (typeof document !== 'undefined') ? new HandCardsComponent(this) : null;
         this.reserveSlotComponent = (typeof document !== 'undefined') ? new ReserveSlotComponent(this) : null;
         this.topHeaderComponent = (typeof document !== 'undefined') ? new TopHeaderComponent(this) : null;
         this.boardGridComponent = (typeof document !== 'undefined') ? new BoardGridComponent(this) : null;
-        this.selectedCard = null;
-        this.selectedCardIdx = -1;
-        this.selectedReserveIdx = -1;
-        this.isReservePopoverOpen = false;
-        this.pinnedPreviewCard = null;
+        
+        // 🎛️ UI セッション状態モデル (Single Source of Truth)
+        this.interactionState = new UIInteractionState();
 
         let initialMinimal = false;
         if (typeof localStorage !== 'undefined') {
@@ -49,64 +62,25 @@ class UIController {
         }
         this.isMinimalMode = initialMinimal;
 
-        if (typeof window !== "undefined" && this.undoSys) {
-            window.undoSys = this.undoSys;
-        }
-
-        // グローバル参照および後方互換用プロキシバインド
-        if (typeof window !== "undefined") {
-            window.uiController = this;
-            window.state = this.state;
-            window.drawSys = this.drawSys;
-            window.selectedCard = this.selectedCard;
-            window.selectedCardIdx = this.selectedCardIdx;
-            window.I18n = I18n;
-            window.LogComponent = LogComponent;
-            window.BuffPanelComponent = BuffPanelComponent;
-            window.TerritoryBadgeComponent = TerritoryBadgeComponent;
-            window.UILayoutConfig = UILayoutConfig;
-            window.BlockPlacementSystem = BlockPlacementSystem;
-
-            // HTML 内のインラインイベント用プロキシ
-            window.selectCard = (idx) => this.selectCard(idx);
-            window.deselectCard = () => this.deselectCard();
-            window.rotateSelectedCard = (e, idx) => this.rotateSelectedCard(e, idx);
-            window.toggleHandMinimalMode = () => this.toggleHandMinimalMode();
-            window.onCellClick = (r, c) => this.onCellClick(r, c);
-            window.onCellMouseEnter = (e, r, c) => this.onCellMouseEnter(e, r, c);
-            window.onCellMouseMove = (e, r, c) => this.onCellMouseMove(e, r, c);
-            window.clearCellPreviews = () => this.clearCellPreviews();
-            window.mulligan = () => this.mulligan();
-            window.nextTurn = () => this.nextTurn();
-            window.reserveCard = (idx) => this.reserveCard(idx);
-            window.returnReserveCard = (idx) => this.returnReserveCard(idx);
-            window.discardReserveCard = (idx) => this.discardReserveCard(idx);
-            window.playReserveCard = (idx) => this.playReserveCard(idx);
-            window.toggleReservePopover = (idx) => this.toggleReservePopover(idx);
-            window.closeReservePopover = () => this.closeReservePopover();
-            window.playCommandCard = (card, idx) => this.playCommandCard(card, idx);
-            window.toggleDirectiveModal = () => this.toggleDirectiveModal();
-            window.closeDirectiveModal = () => this.closeDirectiveModal();
-            window.selectDirective = (id) => this.selectDirective(id);
-            window.toggleTileTextStyle = (e) => this.toggleTileTextStyle(e);
-            window.toggleBoardLabelMode = (e) => this.toggleTileTextStyle(e);
-            window.showDataPanelTooltip = (e) => this.showDataPanelTooltip(e);
-            window.hideDataPanelTooltip = () => this.hideDataPanelTooltip();
-            window.undoLandPlacement = () => {
-                const undoSys = this.undoSys || (typeof window !== "undefined" ? window.undoSys : null);
-                if (undoSys) {
-                    undoSys.undo();
-                    this.selectedCard = null;
-                    this.selectedCardIdx = -1;
-                    this.selectedReserveIdx = -1;
-                    if (focusLayerManager) focusLayerManager.onCardDeselect();
-                    this.render();
-                    this.highlightPlaceableCells();
-                }
-            };
-            window.render = () => this.render();
-        }
+        // 🌉 レガシー HTML / グローバル互換境界の接続 (UIController 本体の純粋化)
+        attachLegacyUIBridge(this);
     }
+
+    // 🎛️ UIInteractionState プロキシゲッター/セッター (100% 後方互換性保証)
+    get selectedCard() { return this.interactionState.selectedCard; }
+    set selectedCard(v) { this.interactionState.selectedCard = v; }
+
+    get selectedCardIdx() { return this.interactionState.selectedCardIdx; }
+    set selectedCardIdx(v) { this.interactionState.selectedCardIdx = v; }
+
+    get selectedReserveIdx() { return this.interactionState.selectedReserveIdx; }
+    set selectedReserveIdx(v) { this.interactionState.selectedReserveIdx = v; }
+
+    get isReservePopoverOpen() { return this.interactionState.isReservePopoverOpen; }
+    set isReservePopoverOpen(v) { this.interactionState.isReservePopoverOpen = v; }
+
+    get pinnedPreviewCard() { return this.interactionState.pinnedPreviewCard; }
+    set pinnedPreviewCard(v) { this.interactionState.pinnedPreviewCard = v; }
 
     /**
      * 🚀 UI の初期化とマウント
@@ -119,9 +93,6 @@ class UIController {
             tooltipSystemInstance.state = this.state;
             tooltipSystemInstance.stateProvider = () => this.state;
             tooltipSystemInstance.init(I18n);
-        }
-        if (this.drawSys && (!this.state.handOffering || this.state.handOffering.length === 0)) {
-            this.drawSys.generateOfferingCards();
         }
         this.render();
     }
@@ -328,6 +299,24 @@ class UIController {
             this.updateFloatingPreview(null);
         } catch (err) {
             console.error("UIController Render Error:", err);
+        }
+    }
+
+    /**
+     * 🏛️ 親メディエーター: 本営セルの描画委譲 (コンポーネント間直接参照の遮断)
+     */
+    renderHqCell(cellEl, state, I18n) {
+        if (this.hqComponent && typeof this.hqComponent.renderCell === "function") {
+            return this.hqComponent.renderCell(cellEl, state, I18n);
+        }
+    }
+
+    /**
+     * 🔥 親メディエーター: 本営変動差分ポップアップ委譲 (コンポーネント間直接参照の遮断)
+     */
+    showHqDeltaPopup(delta) {
+        if (this.hqComponent && typeof this.hqComponent.showDeltaPopup === "function") {
+            return this.hqComponent.showDeltaPopup(delta);
         }
     }
 
@@ -661,9 +650,6 @@ class UIController {
                 cancelLabel: cancelStr,
                 onConfirm: () => {
                     this.playCommandCard(card, idx);
-                    if (reserveIdx !== -1 && this.state.reserveSlots) {
-                        this.state.reserveSlots[reserveIdx] = null;
-                    }
                     this.selectedCard = null;
                     this.selectedCardIdx = -1;
                     this.selectedReserveIdx = -1;
@@ -761,9 +747,13 @@ class UIController {
         const undoSys = this.undoSys || (typeof window !== "undefined" ? window.undoSys : null);
 
         // ↩️ 当ターン配置済みマスをクリックした場合は配置取り消し（Undo）
-        if (undoSys && undoSys.isCellPlacedThisTurn(r, c)) {
+        if (undoSys && typeof undoSys.isCellPlacedThisTurn === "function" && undoSys.isCellPlacedThisTurn(r, c)) {
             this.hideCellTooltip();
-            undoSys.undo();
+            if (this.engine && typeof this.engine.undoLastAction === "function") {
+                this.engine.undoLastAction();
+            } else if (undoSys) {
+                undoSys.undo();
+            }
             this.selectedCard = null;
             this.selectedCardIdx = -1;
             this.selectedReserveIdx = -1;
@@ -783,44 +773,23 @@ class UIController {
             return;
         }
 
-        const shape = this.selectedCard.currentShape || this.selectedCard.shape || [[1]];
-        const terrain = this.selectedCard.terrain || this.selectedCard;
+        const currentIdx = this.selectedCardIdx !== -1 ? this.selectedCardIdx : (this.state.handOffering ? this.state.handOffering.indexOf(this.selectedCard) : -1);
+        const source = this.selectedReserveIdx !== -1
+            ? { type: "RESERVE", index: this.selectedReserveIdx }
+            : { type: "OFFERING", index: currentIdx };
 
-        if (undoSys) {
-            const placedCoords = [];
-            if (shape && Array.isArray(shape)) {
-                for (let dr = 0; dr < shape.length; dr++) {
-                    for (let dc = 0; dc < shape[dr].length; dc++) {
-                        if (shape[dr][dc] === 1) {
-                            placedCoords.push({ r: r + dr, c: c + dc });
-                        }
-                    }
-                }
-            } else {
-                placedCoords.push({ r, c });
-            }
-            undoSys.captureSnapshot(placedCoords);
-        }
+        const actionRes = (this.engine && typeof this.engine.placeLand === "function")
+            ? this.engine.placeLand(r, c, this.selectedCard, 0, source)
+            : { success: false, reason: "NO_ENGINE" };
 
-        const currentIdx = this.selectedCardIdx !== -1 ? this.selectedCardIdx : this.state.handOffering.indexOf(this.selectedCard);
-        const res = (typeof this.state.placeShape === "function") ? this.state.placeShape(r, c, shape, terrain, currentIdx) : { can: false };
-
-        if (res === true || (res && (res.can || res.success))) {
-            if (this.selectedReserveIdx !== -1 && this.state.reserveSlots) {
-                this.state.reserveSlots[this.selectedReserveIdx] = null;
-            }
+        if (actionRes && actionRes.success) {
             this.selectedCard = null;
             this.selectedCardIdx = -1;
             this.selectedReserveIdx = -1;
             if (focusLayerManager) focusLayerManager.onCardDeselect();
-            if (typeof this.state.checkMergePatterns === "function") {
-                this.state.checkMergePatterns();
-            }
-
             this.render();
             this.processToastQueue();
         } else {
-            if (undoSys) undoSys.clearSnapshot();
             if (typeof alert === "function") alert(I18n.t("ALERT_CANNOT_PLACE"));
         }
     }
@@ -832,11 +801,11 @@ class UIController {
      * - ビューポート安全クランプ (ヘッダー被り・画面外突き抜け防止)
      */
     processToastQueue() {
-        if (!this.state || !this.state.toastQueue || this.state.toastQueue.length === 0) return;
         if (typeof document === "undefined") return;
-
-        const toasts = [...this.state.toastQueue];
-        this.state.toastQueue = [];
+        const toasts = (this.engine && typeof this.engine.drainToasts === "function")
+            ? this.engine.drainToasts()
+            : [];
+        if (toasts.length === 0) return;
 
         const viewportWidth = (typeof window !== "undefined" ? window.innerWidth : 800);
         const viewportHeight = (typeof window !== "undefined" ? window.innerHeight : 600);
@@ -1033,23 +1002,21 @@ class UIController {
             const placedTag = isPlacedThisTurn ? ` <span style="font-size:12px; background:#e74c3c; color:#fff; padding:2px 6px; border-radius:4px; margin-left:6px; font-weight:bold;">${I18n ? I18n.t("UI_CELL_PLACED_TAG") : "当ターン配置"}</span>` : "";
             title = `🌱 ${tName} [${coordStr}]${placedTag}`;
 
-            let tf = (t.food !== undefined) ? t.food : ((t.baseYieldsPerTile && t.baseYieldsPerTile.food) || (t.yields && t.yields.food) || 0);
-            let tw = (t.material !== undefined) ? t.material : ((t.wood !== undefined) ? t.wood : ((t.baseYieldsPerTile && (t.baseYieldsPerTile.material || t.baseYieldsPerTile.wood)) || (t.yields && (t.yields.material || t.yields.wood)) || 0));
-            let td = (t.defense !== undefined) ? t.defense : ((t.baseYieldsPerTile && t.baseYieldsPerTile.defense) || (t.yields && t.yields.defense) || 0);
-            let tm = (t.mystic !== undefined) ? t.mystic : ((t.baseYieldsPerTile && t.baseYieldsPerTile.mystic) || (t.yields && t.yields.mystic) || 0);
+            const viewData = this.engine ? this.engine.getCellViewData(r, c) : null;
+            const y = (viewData && viewData.yields) ? viewData.yields : { food: 0, wood: 0, defense: 0, mystic: 0 };
+            const tf = y.food || 0;
+            const tw = y.wood || 0;
+            const td = y.defense || 0;
+            const tm = y.mystic || 0;
 
             const bonusParts = [];
             let sourceWaterDesc = "";
-            // ソケット資源
+
             if (cell.socketResource) {
                 const s = cell.socketResource;
                 const sName = I18n.t(s.nameKey || "SOCKET_RESOURCE");
-                tf += s.bonusFood || 0;
-                tw += (s.bonusMaterial !== undefined ? s.bonusMaterial : (s.bonusWood || 0));
-                td += s.bonusDefense || 0;
-                tm += s.bonusMystic || 0;
-                const resIcon = (this.boardGrid && typeof this.boardGrid.getSocketResourceIcon === "function")
-                    ? this.boardGrid.getSocketResourceIcon(s)
+                const resIcon = (this.boardGridComponent && typeof this.boardGridComponent.getSocketResourceIcon === "function")
+                    ? this.boardGridComponent.getSocketResourceIcon(s)
                     : (s.icon || "💎");
                 bonusParts.push(`${resIcon} : ${sName}`);
 
@@ -1059,32 +1026,19 @@ class UIController {
                 }
             }
 
-            // 本営近郊ボーナス（産出している数値すべてに+1）
-            if (this.state && typeof this.state.isHQVicinity === "function" && this.state.isHQVicinity(r, c)) {
-                let hqBonusCount = 0;
-                if (tf > 0) { tf += 1; hqBonusCount++; }
-                if (tw > 0) { tw += 1; hqBonusCount++; }
-                if (td > 0) { td += 1; hqBonusCount++; }
-                if (tm > 0) { tm += 1; hqBonusCount++; }
-                if (hqBonusCount > 0) {
-                    bonusParts.push(I18n ? I18n.t("UI_CELL_BONUS_VICINITY") : "本営近郊(+1)");
+            if (viewData && Array.isArray(viewData.modifiers)) {
+                let hqVicinityReported = false;
+                for (const mod of viewData.modifiers) {
+                    if (mod.type === "HQ_VICINITY" && !hqVicinityReported) {
+                        bonusParts.push(I18n ? I18n.t("UI_CELL_BONUS_VICINITY") : "本営近郊(+1)");
+                        hqVicinityReported = true;
+                    } else if (mod.type === "LAKE_IRRIGATION") {
+                        const i18nKey = nearWaterType === "OASIS" ? "UI_CELL_BONUS_OASIS_IRRIGATION" : "UI_CELL_BONUS_LAKE_IRRIGATION";
+                        bonusParts.push(I18n ? I18n.t(i18nKey, { val: mod.amount }) : `灌漑(+${mod.amount})`);
+                    } else if (mod.type === "PERMANENT_PLAINS") {
+                        bonusParts.push(I18n ? I18n.t("UI_CELL_BONUS_PLAINS", { val: mod.amount }) : `平地強化(+${mod.amount})`);
+                    }
                 }
-            }
-
-            // 平地バフ
-            const tid = t.terrainId || t.id || "";
-            if (this.state && this.state.permanentPlainsFoodBonus && tid.includes("PLAINS")) {
-                tf += this.state.permanentPlainsFoodBonus;
-                bonusParts.push(I18n ? I18n.t("UI_CELL_BONUS_PLAINS", { val: this.state.permanentPlainsFoodBonus }) : `平地強化(+${this.state.permanentPlainsFoodBonus})`);
-            }
-
-            // 🌊 湖 (Lake) / オアシス (Oasis) 周囲8マスの灌漑バフ (+50% 食料産出ブースト)
-            if (nearWaterType && tf > 0) {
-                const baseFoodForWater = (t.food !== undefined) ? t.food : ((t.baseYieldsPerTile && t.baseYieldsPerTile.food) || (t.yields && t.yields.food) || 0);
-                const waterBonus = Math.max(1, Math.floor(baseFoodForWater * 0.5));
-                tf += waterBonus;
-                const i18nKey = nearWaterType === "OASIS" ? "UI_CELL_BONUS_OASIS_IRRIGATION" : "UI_CELL_BONUS_LAKE_IRRIGATION";
-                bonusParts.push(I18n ? I18n.t(i18nKey, { val: waterBonus }) : (nearWaterType === "OASIS" ? `オアシス灌漑(+${waterBonus})` : `湖灌漑(+${waterBonus})`));
             }
 
             const yieldParts = [];
@@ -1121,34 +1075,14 @@ class UIController {
     }
 
     mulligan() {
-        if (!this.state) return;
-        if (this.state.hasPickedThisTurn || this.state.hasMulliganedThisTurn || this.state.ember < 1) return;
-
-        const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
-
-        if (this.engine && typeof this.engine.mulligan === "function") {
-            const res = this.engine.mulligan();
-            if (res && res.success) {
-                this.selectedCard = null;
-                this.selectedCardIdx = -1;
-                this.selectedReserveIdx = -1;
-                this.render();
-            }
-            return;
+        if (!this.engine || typeof this.engine.mulligan !== "function") return;
+        const res = this.engine.mulligan();
+        if (res && res.success) {
+            this.selectedCard = null;
+            this.selectedCardIdx = -1;
+            this.selectedReserveIdx = -1;
+            this.render();
         }
-
-        this.state.ember -= 1;
-        this.state.hasMulliganedThisTurn = true;
-        if (this.drawSys) {
-            this.drawSys.generateOfferingCards();
-        }
-        this.selectedCard = null;
-        this.selectedCardIdx = -1;
-        this.selectedReserveIdx = -1;
-        if (typeof this.state.addLog === "function") {
-            this.state.addLog(I18n.t("LOG_MULLIGAN_EXECUTED") || "🎲 マリガン実行: 🔥 -1 を消費して手札を再抽選しました。");
-        }
-        this.render();
     }
 
     nextTurn() {
@@ -1177,29 +1111,9 @@ class UIController {
             this.engine.nextTurn();
             this.selectedCard = null;
             this.selectedCardIdx = -1;
-        this.selectedReserveIdx = -1;
+            this.selectedReserveIdx = -1;
             this.render();
-            return;
         }
-        if (!this.state || !this.drawSys) return;
-        if (typeof window !== "undefined" && window.undoSys) window.undoSys.clearSnapshot();
-        this.state.turn++;
-        this.state.hasPickedThisTurn = false;
-        this.state.hasReservedThisTurn = false;
-        this.state.hasMulliganedThisTurn = false;
-        this.drawSys.generateOfferingCards();
-        this.selectedCard = null;
-        this.selectedCardIdx = -1;
-        this.selectedReserveIdx = -1;
-
-        // 📜 初期ログと同一のダイレクトログ描画
-        if (typeof window !== "undefined" && window.LogComponent) {
-            const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
-            const logMsg = I18n ? I18n.t("LOG_TURN_START", { turn: this.state.turn }) : `Turn ${this.state.turn} started.`;
-            window.LogComponent.addLog(logMsg, this.state.turn);
-        }
-
-        this.render();
     }
 
     toggleReservePopover(idx = 0) {
@@ -1221,8 +1135,9 @@ class UIController {
     }
 
     reserveCard(idx) {
-        if (!this.state) return;
-        if (typeof this.state.moveToReserve === "function" && this.state.moveToReserve(idx)) {
+        if (!this.engine || typeof this.engine.reserveOfferingCard !== "function") return;
+        const res = this.engine.reserveOfferingCard(idx);
+        if (res && res.success) {
             this.selectedCard = null;
             this.selectedCardIdx = -1;
             this.selectedReserveIdx = -1;
@@ -1235,8 +1150,9 @@ class UIController {
     }
 
     returnReserveCard(idx = 0, targetHandIdx = -1) {
-        if (!this.state) return;
-        if (typeof this.state.returnFromReserve === "function" && this.state.returnFromReserve(idx, targetHandIdx)) {
+        if (!this.engine || typeof this.engine.returnReservedCard !== "function") return;
+        const res = this.engine.returnReservedCard(idx);
+        if (res && res.success) {
             this.selectedCard = null;
             this.selectedCardIdx = -1;
             this.selectedReserveIdx = -1;
@@ -1249,8 +1165,9 @@ class UIController {
     }
 
     discardReserveCard(idx = 0) {
-        if (!this.state) return;
-        if (typeof this.state.discardFromReserve === "function" && this.state.discardFromReserve(idx)) {
+        if (!this.engine || typeof this.engine.discardReservedCard !== "function") return;
+        const res = this.engine.discardReservedCard(idx);
+        if (res && res.success) {
             this.selectedCard = null;
             this.selectedCardIdx = -1;
             this.selectedReserveIdx = -1;
@@ -1263,26 +1180,20 @@ class UIController {
     }
 
     playCommandCard(card, targetIdx) {
-        if (!this.state || this.state.hasPickedThisTurn) return;
-        const deckMgr = (this.engine && this.engine.deckManager) ? this.engine.deckManager : this.state.deckManager;
-        const cardObj = card.terrain || card;
-        let cardIdx = (typeof targetIdx === "number" && targetIdx >= 0) ? targetIdx : (this.state.handOffering ? this.state.handOffering.indexOf(card) : -1);
+        if (!this.engine || typeof this.engine.playCommandCard !== "function") return;
+        let cardIdx = (typeof targetIdx === "number" && targetIdx >= 0) ? targetIdx : (this.state && this.state.handOffering ? this.state.handOffering.indexOf(card) : -1);
+        const source = this.selectedReserveIdx !== -1
+            ? { type: "RESERVE", index: this.selectedReserveIdx }
+            : { type: "OFFERING", index: cardIdx };
 
-        if (deckMgr && typeof deckMgr.playCommandCard === "function") {
-            deckMgr.playCommandCard(cardObj, null, cardIdx, this.selectedReserveIdx);
-        } else if (typeof this.state.playCommandCard === "function") {
-            this.state.playCommandCard(cardObj, null, cardIdx, this.selectedReserveIdx);
+        const res = this.engine.playCommandCard(card, source);
+        if (res && res.success) {
+            this.selectedCard = null;
+            this.selectedCardIdx = -1;
+            this.selectedReserveIdx = -1;
+            if (focusLayerManager) focusLayerManager.onCardDeselect();
+            this.render();
         }
-
-        if (cardIdx !== -1 && this.state.handOffering) {
-            this.state.handOffering[cardIdx] = { isBlank: true, originalCard: card, id: `blank_${cardIdx}_${Date.now()}` };
-            this.state.hasPickedThisTurn = true;
-        }
-        if (this.selectedReserveIdx !== -1 && this.state.reserveSlots) {
-            this.state.reserveSlots[this.selectedReserveIdx] = null;
-            this.state.hasPickedThisTurn = true;
-        }
-        this.render();
     }
 
     toggleDirectiveModal() {
