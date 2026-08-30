@@ -108,12 +108,14 @@ export class DiceWidgetComponent {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 15px;
-                font-weight: bold;
+                font-size: 16px;
+                font-weight: 800;
                 color: #0f172a;
                 box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.15);
+                backface-visibility: hidden;
+                -webkit-backface-visibility: hidden;
             }
-            .dice-face-1 { transform: translateZ(16px); }
+            .dice-face-1 { transform: rotateY(0deg) translateZ(16px); }
             .dice-face-6 { transform: rotateY(180deg) translateZ(16px); }
             .dice-face-3 { transform: rotateX(90deg) translateZ(16px); }
             .dice-face-4 { transform: rotateX(-90deg) translateZ(16px); }
@@ -192,9 +194,23 @@ export class DiceWidgetComponent {
             checkTitle = (context && context.tacticNameKey) || result.checkId || "CHECK";
         }
 
-        const outcomeLabel = I18n && typeof I18n.t === "function" && result.outcome && result.outcome.nameKey
-            ? I18n.t(result.outcome.nameKey)
-            : ((result.outcome && result.outcome.id) || "RESULT");
+        // 📜 結果ナラティブテキストの動的解決 (将来の個別戦術テキスト用フック ＆ デフォルトフォールバック)
+        let outcomeLabel = (result.outcome && result.outcome.id) || "RESULT";
+        if (I18n && typeof I18n.t === "function") {
+            const rawSourceId = context && (context.sourceId || context.sourceType);
+            const outcomeId = result.outcome && result.outcome.id;
+            const narrativeKey = rawSourceId && outcomeId
+                ? `CHECK_NARRATIVE_${String(rawSourceId).toUpperCase()}_${String(outcomeId).toUpperCase()}`
+                : null;
+
+            if (narrativeKey && typeof I18n.has === "function" && I18n.has(narrativeKey)) {
+                // 1. 専用ナラティブキーが辞書に登録されていれば最優先採用
+                outcomeLabel = I18n.t(narrativeKey);
+            } else if (result.outcome && result.outcome.nameKey) {
+                // 2. 登録がなければデフォルトの汎用結果ラベル (大成功 / 成功 / 部分成功 / 失敗)
+                outcomeLabel = I18n.t(result.outcome.nameKey);
+            }
+        }
 
         const modStr = result.modifierTotal > 0 ? `+${result.modifierTotal}` : (result.modifierTotal < 0 ? `${result.modifierTotal}` : "");
 
@@ -228,14 +244,21 @@ export class DiceWidgetComponent {
         this.containerEl.style.opacity = "1";
         this.containerEl.style.transform = "translateY(0px) scale(1.0)";
 
-        // 3. 小気味よい 3D タンブリング回転
+        // 3. 小気味よい 3D タンブリング回転 (ブラウザ描画フレーム待機後に発火)
         const rollDuration = theme.rollDurationMs || 650;
+        if (typeof requestAnimationFrame !== "undefined") {
+            await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        } else {
+            await new Promise(resolve => setTimeout(resolve, 16));
+        }
+
         keptDice.forEach((val, idx) => {
             const cube = document.getElementById(`diceCube_${idx}`);
             if (cube) {
                 const faceRot = this.getFaceRotation(val);
-                // 激しい予備回転 (720deg) ＋ 目標面の角度
-                cube.style.transform = `rotateX(${faceRot.x + 720}deg) rotateY(${faceRot.y + 720}deg)`;
+                // 必ず 360度の完全倍数 (1個目: 720deg, 2個目: 1080deg) で回転
+                const turns = 720 + (idx * 360);
+                cube.style.transform = `rotateX(${faceRot.x + turns}deg) rotateY(${faceRot.y + turns}deg)`;
             }
         });
 
@@ -244,7 +267,9 @@ export class DiceWidgetComponent {
 
         const footer = document.getElementById("diceWidgetFooter");
         if (footer) {
-            footer.innerHTML = `<span>★ ${outcomeLabel} (${result.finalTotal})</span>`;
+            const diceSumStr = keptDice.join(" + ");
+            const modLabel = modStr ? ` ${modStr}` : "";
+            footer.innerHTML = `<span>🎲 ${diceSumStr}${modLabel} = <b>${result.finalTotal}</b> ★ ${outcomeLabel}</span>`;
         }
 
         // 5. 結果表示待機 ➔ 自動フェードアウト

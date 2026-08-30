@@ -53,6 +53,10 @@
             CHECK_OUTCOME_MIXED: "部分成功",
             CHECK_OUTCOME_SUCCESS: "成功",
             CHECK_OUTCOME_GREAT_SUCCESS: "大成功",
+            DEV_TEST_HUD_TITLE: "判定テスト",
+            DEV_BTN_CAVALRY: "騎馬突撃",
+            DEV_BTN_INTERCEPT: "迎撃戦術",
+            DEV_BTN_LIVE_ROLL: "実ダイス判定",
 
             CMD_AGRICULTURAL_POLICY_DESC: "全ての草原、干拓マスの産出を 🌾+1/T 永続加算。(1度きり)",
             CMD_LAND_FOCUS: "探索重視",
@@ -613,6 +617,10 @@
             CHECK_OUTCOME_MIXED: "Mixed Success",
             CHECK_OUTCOME_SUCCESS: "Success",
             CHECK_OUTCOME_GREAT_SUCCESS: "Great Success",
+            DEV_TEST_HUD_TITLE: "Dice Test",
+            DEV_BTN_CAVALRY: "Cavalry Charge",
+            DEV_BTN_INTERCEPT: "Intercept",
+            DEV_BTN_LIVE_ROLL: "Live Roll",
 
             CMD_AGRICULTURAL_POLICY: "Agrarian Reform",
             CMD_AGRICULTURAL_POLICY_NAME: "Agrarian Reform",
@@ -1145,9 +1153,15 @@
         return val;
     }
 
+    function has(key) {
+        const dict = dictionaries[currentLang] || dictionaries["ja"];
+        return Boolean((dict && dict[key]) || (dictionaries["ja"] && dictionaries["ja"][key]));
+    }
+
     const I18n = {
         setLanguage,
         getLanguage,
+        has,
         t
     };
 

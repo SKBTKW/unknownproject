@@ -20,6 +20,7 @@ import { UIInteractionState } from './ui_interaction_state.js';
 import { attachLegacyUIBridge } from './legacy_ui_bridge.js';
 import { DiceWidgetComponent } from './dice_widget_component.js';
 import { DiceDisplayQueue } from './dice_display_queue.js';
+import { DevDiceControlsComponent } from './dev_dice_controls_component.js';
 
 class UIController {
     /**
@@ -51,6 +52,7 @@ class UIController {
         this.boardGridComponent = (typeof document !== 'undefined') ? new BoardGridComponent(this) : null;
         this.diceWidget = (typeof document !== 'undefined') ? new DiceWidgetComponent() : null;
         this.diceQueue = new DiceDisplayQueue(this.diceWidget);
+        this.devDiceControls = (typeof document !== 'undefined') ? new DevDiceControlsComponent(this) : null;
         
         // 🎛️ UI セッション状態モデル (Single Source of Truth)
         this.interactionState = new UIInteractionState();

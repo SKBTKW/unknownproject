@@ -118,6 +118,24 @@ const UILayoutConfig = {
         }
     },
 
+    // 🧪 テスト用ダイス判定 HUD (画面左下・コンパクト)
+    devDiceControls: {
+        desktop: {
+            position: "fixed",
+            left: "24px",
+            bottom: "24px",
+            zIndex: 700,
+            pointerEvents: "auto"
+        },
+        mobile: {
+            position: "fixed",
+            left: "12px",
+            bottom: "12px",
+            zIndex: 700,
+            pointerEvents: "auto"
+        }
+    },
+
     // 🎯 1. 中央土地盤面エリア (画面の真中央へ100%完全自動固定)
     boardContainer: {
         display: "flex",
