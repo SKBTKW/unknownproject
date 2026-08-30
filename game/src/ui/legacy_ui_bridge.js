@@ -69,6 +69,41 @@ export function attachLegacyUIBridge(ui) {
     window.showDataPanelTooltip = (e) => ui.showDataPanelTooltip(e);
     window.hideDataPanelTooltip = () => ui.hideDataPanelTooltip();
     window.showDiceCheck = (event) => ui.showDiceCheck(event);
+
+    // 🏇 Cavalry Charge Demo (5 + 6 -> 11)
+    window.demoCavalryCharge = () => {
+        ui.showDiceCheck({
+            result: {
+                checkId: "trial_intercept",
+                checkSequence: 1,
+                dice: { rolled: [5, 6], kept: [5, 6] },
+                rawTotal: 11,
+                modifierTotal: 0,
+                finalTotal: 11,
+                outcome: { id: "great_success", nameKey: "CHECK_OUTCOME_GREAT_SUCCESS" }
+            },
+            context: { sourceType: "TRIAL_TACTIC", sourceId: "cavalry_charge", tacticNameKey: "TACTIC_CAVALRY_CHARGE_NAME" },
+            feedback: { importance: "CRITICAL" }
+        });
+    };
+
+    // ⚔️ Intercept Tactic Demo (3 + 5 + 2 -> 10)
+    window.demoTrialIntercept = () => {
+        ui.showDiceCheck({
+            result: {
+                checkId: "trial_intercept",
+                checkSequence: 1,
+                dice: { rolled: [3, 5], kept: [3, 5] },
+                rawTotal: 8,
+                modifierTotal: 2,
+                finalTotal: 10,
+                outcome: { id: "success", nameKey: "CHECK_OUTCOME_SUCCESS" }
+            },
+            context: { sourceType: "TRIAL_TACTIC", sourceId: "defensive_barricade", tacticNameKey: "TACTIC_INTERCEPT_NAME" },
+            feedback: { importance: "TACTICAL" }
+        });
+    };
+
     window.render = () => ui.render();
 
     window.undoLandPlacement = () => {

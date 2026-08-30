@@ -64,7 +64,6 @@ export class CheckSystem {
     }
 
     /**
-     * ↩️ 状態復元 (Undo / Replay 用)
      * ↩️ 状態復元 (Undo / Replay 用: Fail-Fast)
      * @param {Object} savedState
      */

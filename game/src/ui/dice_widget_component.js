@@ -180,10 +180,17 @@ export class DiceWidgetComponent {
             glowShadow: "none"
         };
 
-        // タイトルテキストの解決 (I18n)
-        const checkTitle = I18n && typeof I18n.t === "function"
-            ? I18n.t(`CHECK_${(result.checkId || "").toUpperCase()}_NAME`)
-            : (result.checkId || "CHECK");
+        // タイトルテキストの解決 (I18n 辞書経由)
+        let checkTitle = "CHECK";
+        if (I18n && typeof I18n.t === "function") {
+            if (context && context.tacticNameKey) {
+                checkTitle = I18n.t(context.tacticNameKey);
+            } else {
+                checkTitle = I18n.t(`CHECK_${(result.checkId || "").toUpperCase()}_NAME`);
+            }
+        } else {
+            checkTitle = (context && context.tacticNameKey) || result.checkId || "CHECK";
+        }
 
         const outcomeLabel = I18n && typeof I18n.t === "function" && result.outcome && result.outcome.nameKey
             ? I18n.t(result.outcome.nameKey)
