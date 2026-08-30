@@ -9,8 +9,10 @@
  */
 
 import { RandomSource } from './random_source.js';
+import { DicePool } from './dice_pool.js';
 import { CHECK_DEFINITIONS } from './check_definitions.js';
 import { CheckResolver, CheckModifier } from './check_resolver.js';
+import { validateCheckDefinitions } from './check_validator.js';
 
 export class CheckSystem {
     /**
@@ -22,6 +24,9 @@ export class CheckSystem {
     constructor(options = {}) {
         this.rng = new RandomSource(options.seed, { debugRngTrace: options.debugRngTrace });
         this.definitions = { ...CHECK_DEFINITIONS, ...(options.customDefinitions || {}) };
+
+        // 🛡️ 初期化時の定義整合性完全検証 (不正定義・重複・穴の即時検出)
+        validateCheckDefinitions(this.definitions);
     }
 
     /**
@@ -69,7 +74,7 @@ export class CheckSystem {
     }
 }
 
-export { RandomSource, CHECK_DEFINITIONS, CheckResolver, CheckModifier };
+export { RandomSource, DicePool, CHECK_DEFINITIONS, CheckResolver, CheckModifier };
 
 if (typeof window !== "undefined") {
     window.CheckSystem = CheckSystem;

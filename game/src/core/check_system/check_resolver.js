@@ -3,8 +3,8 @@
  * 
  * 責務:
  * 1. 判定定義 (checkDef) と Modifier パイプラインを解釈し、最終合計値と結果帯 (outcome) を算出する。
- * 2. 決定論的かつ純粋な事実データ CheckResult を生成する。
- * 3. リアル時刻 (timestamp) や UI 固有の表示プロパティを含めず、Unity Ready なデータ構造を保つ。
+ * 2. 未知の operation (タイプミス "ad" 等) や不正な数値を黙殺せず即時例外 (Fail-Fast)。
+ * 3. 決定論的かつ純粋な事実データ CheckResult を生成する。
  */
 
 import { DicePool } from './dice_pool.js';
@@ -13,13 +13,16 @@ export class CheckModifier {
     /**
      * @param {Object} params
      * @param {string} params.source - 修正源 ("terrain", "intel", etc.)
-     * @param {string} [params.operation="add"] - "add" | "subtract" 等
-     * @param {number} [params.value=0] - 修正値
+     * @param {string} [params.operation="add"] - "add" | "subtract"
+     * @param {number} [params.value=0] - 修正値 (有限数値)
      */
     constructor({ source, operation = "add", value = 0 }) {
         this.source = source || "unknown";
         this.operation = operation;
-        this.value = Number(value) || 0;
+        this.value = Number(value);
+        if (!Number.isFinite(this.value)) {
+            throw new Error(`[CheckModifier] Invalid value: ${value}. Must be a finite number.`);
+        }
     }
 }
 
@@ -35,11 +38,11 @@ export class CheckResolver {
      * @returns {Object} CheckResult
      */
     static resolve({ checkDef, rng, modifiers = [], actionId = null, checkSequence = 1 }) {
-        if (!checkDef) {
-            throw new Error("CheckResolver.resolve requires a valid checkDef");
+        if (!checkDef || typeof checkDef !== "object") {
+            throw new Error("[CheckResolver] resolve failed: checkDef must be an object.");
         }
-        if (!rng) {
-            throw new Error("CheckResolver.resolve requires a RandomSource instance");
+        if (!rng || typeof rng.nextInt !== "function") {
+            throw new Error("[CheckResolver] resolve failed: rng must be a valid RandomSource instance.");
         }
 
         const beforeState = rng.debugRngTrace ? rng.getState() : null;
@@ -48,13 +51,17 @@ export class CheckResolver {
         const diceResult = DicePool.roll(checkDef.dice, rng);
         const rawTotal = diceResult.kept.reduce((acc, v) => acc + v, 0);
 
-        // 2. ➕ Modifier パイプラインの適用
+        // 2. ➕ Modifier パイプラインの適用 (厳格検証)
         let modifierTotal = 0;
         const appliedModifiers = [];
 
         for (const mod of modifiers) {
-            const op = mod.operation || "add";
-            const val = Number(mod.value) || 0;
+            const op = mod.operation;
+            const val = Number(mod.value);
+
+            if (!Number.isFinite(val)) {
+                throw new Error(`[CheckResolver] Invalid modifier value for source "${mod.source}": ${mod.value}.`);
+            }
 
             if (op === "add") {
                 modifierTotal += val;
@@ -63,8 +70,8 @@ export class CheckResolver {
                 modifierTotal -= val;
                 appliedModifiers.push({ source: mod.source, operation: "subtract", value: val, applied: -val });
             } else {
-                // 将来の拡張操作フック (reroll / cap 等)
-                appliedModifiers.push({ source: mod.source, operation: op, value: val, applied: 0 });
+                // ⚠️ 未知の operation (タイプミス "ad" 等) は黙殺せず即例外
+                throw new Error(`[CheckResolver] Unsupported modifier operation: "${op}" from source "${mod.source}". Supported operations are "add" and "subtract".`);
             }
         }
 
@@ -119,13 +126,4 @@ export class CheckResolver {
             rng: rngRecord
         };
     }
-}
-
-if (typeof window !== "undefined") {
-    window.CheckModifier = CheckModifier;
-    window.CheckResolver = CheckResolver;
-}
-if (typeof globalThis !== "undefined") {
-    globalThis.CheckModifier = CheckModifier;
-    globalThis.CheckResolver = CheckResolver;
 }

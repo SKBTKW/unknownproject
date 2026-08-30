@@ -4,7 +4,7 @@
  * 責務:
  * 1. シード値に基づく決定論的疑似乱数（Mulberry32 PRNG）の生成。
  * 2. 状態（seed, state, callCount）の完全な直列化・復元 (getState / setState)。
- * 3. debugRngTrace が有効な場合のみ、直前状態 beforeState をトレース可能にする。
+ * 3. setState での厳格な型検証（壊れたデータのサイレント復元を禁止）。
  */
 
 export class RandomSource {
@@ -14,7 +14,8 @@ export class RandomSource {
      * @param {boolean} [options.debugRngTrace=false] - 開発環境用詳細トレースフラグ
      */
     constructor(seed = 12345678, options = {}) {
-        this.initialSeed = (seed !== undefined ? seed : 12345678) >>> 0;
+        const parsedSeed = Number.isInteger(seed) ? seed : 12345678;
+        this.initialSeed = parsedSeed >>> 0;
         this.state = this.initialSeed;
         this.callCount = 0;
         this.debugRngTrace = !!options.debugRngTrace;
@@ -56,20 +57,25 @@ export class RandomSource {
     }
 
     /**
-     * ↩️ 内部状態の完全復元 (Undo / Replay 用)
+     * ↩️ 内部状態の厳格な完全復元 (Undo / Replay 用)
      * @param {Object} savedState
      */
     setState(savedState) {
-        if (!savedState) return;
+        if (!savedState || typeof savedState !== "object") {
+            throw new Error("[RandomSource] setState failed: savedState must be an object.");
+        }
+        if (!Number.isInteger(savedState.seed)) {
+            throw new Error(`[RandomSource] setState failed: savedState.seed must be an integer (received: ${savedState.seed}).`);
+        }
+        if (!Number.isInteger(savedState.state)) {
+            throw new Error(`[RandomSource] setState failed: savedState.state must be an integer (received: ${savedState.state}).`);
+        }
+        if (!Number.isInteger(savedState.callCount) || savedState.callCount < 0) {
+            throw new Error(`[RandomSource] setState failed: savedState.callCount must be a non-negative integer (received: ${savedState.callCount}).`);
+        }
+
         this.initialSeed = savedState.seed >>> 0;
         this.state = savedState.state >>> 0;
-        this.callCount = savedState.callCount || 0;
+        this.callCount = savedState.callCount;
     }
-}
-
-if (typeof window !== "undefined") {
-    window.RandomSource = RandomSource;
-}
-if (typeof globalThis !== "undefined") {
-    globalThis.RandomSource = RandomSource;
 }
