@@ -197,7 +197,10 @@ class GameEngine {
     placeLand(r, c, card, rotation = 0, source = { type: "OFFERING", index: 0 }) {
         if (!card) return { success: false, reason: "NO_CARD" };
 
-        const shape = card.shape || (card.terrain && card.terrain.shape) || [[1]];
+        const shape = card.currentShape
+            || card.shape
+            || (card.terrain && card.terrain.shape)
+            || [[1]];
         const terrain = card.terrain || card;
         const currentIdx = source.type === "OFFERING" ? source.index : -1;
 
