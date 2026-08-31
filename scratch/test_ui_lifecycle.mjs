@@ -1,4 +1,4 @@
-import { GameEngine, UIController, TooltipSystem, tooltipSystemInstance } from 'file:///k:/マイドライブ/AG_ToA/game/src/app.js';
+import { GameEngine, UIController, TooltipSystem, tooltipSystemInstance } from '../game/src/app.js';
 
 /**
  * 🧪 Mock DOM 環境の構築

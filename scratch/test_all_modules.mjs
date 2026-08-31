@@ -69,6 +69,35 @@ assert(engine.state.countPlacedTiles() === 1, '配置済みタイル数が 1 マ
 const cell = engine.state.grid[1][2];
 assert(cell.isHQVicinity === true, '本営近郊フラグ (isHQVicinity) が true であること');
 
+// 回転後の currentShape がプレビューだけでなく配置判定・確定配置にも使用されることを検証
+const rotatedPlacementEngine = GameEngine.createGame();
+const rotatedLandCard = {
+    id: 'CARD_FOREST_1X2_ROTATED',
+    currentShape: [[1], [1]],
+    terrain: {
+        id: 'GL2_FOREST',
+        terrainId: 'GL2_FOREST',
+        category: 'LAND',
+        gl: 2,
+        e: 1,
+        nameKey: 'TERRAIN_FOREST',
+        shape: [[1, 1]],
+        baseYieldsPerTile: { food: 2, wood: 2, defense: 2, mystic: 0 }
+    }
+};
+rotatedPlacementEngine.state.handOffering[0] = rotatedLandCard;
+const rotatedPlaceRes = rotatedPlacementEngine.placeLand(
+    1,
+    1,
+    rotatedLandCard,
+    0,
+    { type: 'OFFERING', index: 0 }
+);
+assert(rotatedPlaceRes.success === true, '回転後の縦1x2土地配置が成功すること');
+assert(rotatedPlacementEngine.state.grid[1][1].placed === true, '回転後形状の始点 (1,1) が配置されること');
+assert(rotatedPlacementEngine.state.grid[2][1].placed === true, 'currentShape に従って縦方向 (2,1) が配置されること');
+assert(rotatedPlacementEngine.state.grid[1][2].placed === false, '元の横形状方向 (1,2) には配置されないこと');
+
 // --- 3. BuffSystem ＆ ProductionCalculator 産出計算テスト ---
 console.log('\n🔥 [3/6] BuffSystem ＆ ProductionCalculator 産出計算');
 // 🔥24 以上で旺盛バフが発動することを検証
