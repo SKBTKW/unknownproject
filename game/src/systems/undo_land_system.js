@@ -28,6 +28,7 @@
             );
 
             const connPairsCopy = Array.from(this.state.grantedConnectionPairs || []);
+            const mergeLinksCopy = Array.from(this.state.mergeLinks || []);
             const mergedBlocksCopy = JSON.parse(JSON.stringify(this.state.mergedBlocks || {}));
             const handOfferingCopy = (this.state.handOffering || []).map(c => 
                 c ? (c.isBlank ? { ...c, originalCard: c.originalCard ? { ...c.originalCard } : null } : { ...c }) : null
@@ -39,16 +40,21 @@
                     currentAnchor: c.currentAnchor ? { ...c.currentAnchor } : null
                 } : null
             );
+            const checkSystemState = this.state.checkSystem && typeof this.state.checkSystem.getState === "function"
+                ? JSON.parse(JSON.stringify(this.state.checkSystem.getState()))
+                : null;
 
             this.snapshot = {
                 turn: this.state.turn,
                 ember: this.state.ember,
+                maxEmber: this.state.maxEmber,
                 food: this.state.food,
                 wood: this.state.wood,
                 defense: this.state.defense,
                 mystic: this.state.mystic,
                 grid: gridCopy,
                 grantedConnectionPairs: connPairsCopy,
+                mergeLinks: mergeLinksCopy,
                 mergedBlocks: mergedBlocksCopy,
                 handOffering: handOfferingCopy,
                 reserveSlots: reserveSlotsCopy,
@@ -58,7 +64,8 @@
                 hasReservedThisTurn: this.state.hasReservedThisTurn,
                 placedBlockCount: this.state.placedBlockCount || 0,
                 mergeGroupCounter: this.state.mergeGroupCounter,
-                placementGroupCounter: this.state.placementGroupCounter
+                placementGroupCounter: this.state.placementGroupCounter,
+                checkSystemState
             };
 
             this.placedCellCoords = placedCoords;
@@ -100,6 +107,7 @@
 
             this.state.turn = s.turn;
             this.state.ember = s.ember;
+            this.state.maxEmber = s.maxEmber;
             this.state.food = s.food;
             this.state.wood = s.wood;
             this.state.defense = s.defense;
@@ -118,6 +126,7 @@
             );
 
             this.state.grantedConnectionPairs = new Set(s.grantedConnectionPairs);
+            this.state.mergeLinks = new Set(s.mergeLinks || []);
             this.state.mergedBlocks = JSON.parse(JSON.stringify(s.mergedBlocks));
             this.state.handOffering = s.handOffering.map(c => 
                 c ? (c.isBlank ? { ...c, originalCard: c.originalCard ? { ...c.originalCard } : null } : { ...c }) : null
@@ -144,6 +153,9 @@
             this.state.placedBlockCount = s.placedBlockCount || 0;
             this.state.mergeGroupCounter = s.mergeGroupCounter;
             this.state.placementGroupCounter = s.placementGroupCounter;
+            if (s.checkSystemState && this.state.checkSystem && typeof this.state.checkSystem.setState === "function") {
+                this.state.checkSystem.setState(JSON.parse(JSON.stringify(s.checkSystemState)));
+            }
 
             const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' && window.I18n ? window.I18n : null);
             const logMsg = (I18n && typeof I18n.t === 'function' && I18n.t("LOG_UNDO_LAND") !== "LOG_UNDO_LAND") ? I18n.t("LOG_UNDO_LAND") : "↩ 土地の配置を取り消しました。";
@@ -249,5 +261,4 @@
 const UndoLandSystem = (typeof globalThis !== "undefined" && globalThis.UndoLandSystem) ? globalThis.UndoLandSystem : null;
 export { UndoLandSystem };
 export default UndoLandSystem;
-
 

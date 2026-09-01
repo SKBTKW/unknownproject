@@ -13,7 +13,22 @@ import { CardCycleSystem } from '../systems/card_cycle_system.js';
 import { CellViewDataService } from '../services/cell_view_data_service.js';
 import { ActionTransactionManager } from './transaction_manager.js';
 import { resolvePlacementGeometry } from './placement_geometry.js';
+import { CheckSystem } from './check_system/check_system.js';
 import { GameState } from '../v2_unity_ready_main.js';
+
+function normalizeRunSeed(seed) {
+    if (!Number.isFinite(seed)) return null;
+    return Math.trunc(seed) >>> 0;
+}
+
+function createRunSeed() {
+    if (typeof globalThis !== "undefined" && globalThis.crypto && typeof globalThis.crypto.getRandomValues === "function") {
+        const values = new Uint32Array(1);
+        globalThis.crypto.getRandomValues(values);
+        return values[0] >>> 0;
+    }
+    return (Date.now() ^ Math.floor(Math.random() * 0x100000000)) >>> 0;
+}
 
 class GameEngine {
     /**
@@ -26,6 +41,17 @@ class GameEngine {
         this.landData = dependencies.landData || LAND_SYSTEM_DATA;
         this.cellViewDataService = dependencies.cellViewDataService || new CellViewDataService(this.productionCalculator);
         this.transactionManager = dependencies.transactionManager || new ActionTransactionManager(this);
+
+        const injectedCheckSystem = dependencies.checkSystem || dependencies.state?.checkSystem || null;
+        const injectedRngState = injectedCheckSystem && typeof injectedCheckSystem.getState === "function"
+            ? injectedCheckSystem.getState()?.rng
+            : null;
+        this.runSeed = normalizeRunSeed(dependencies.runSeed)
+            ?? normalizeRunSeed(dependencies.state?.runSeed)
+            ?? normalizeRunSeed(injectedRngState?.seed)
+            ?? createRunSeed();
+        const CheckSystemClass = dependencies.CheckSystemClass || CheckSystem;
+        this.checkSystem = injectedCheckSystem || new CheckSystemClass({ seed: this.runSeed });
 
         // 2. GameState (データストア) の初期化
         if (dependencies.state) {
@@ -66,6 +92,8 @@ class GameEngine {
         // 4. GameState への双方向リンク確立
         if (this.state) {
             this.state.engine = this;
+            this.state.runSeed = this.runSeed;
+            this.state.checkSystem = this.checkSystem;
             if (this.gridEngine) this.state.gridEngine = this.gridEngine;
             if (this.deckManager) this.state.deckManager = this.deckManager;
             if (this.directiveSystem) this.state.directiveSystem = this.directiveSystem;
@@ -304,7 +332,7 @@ class GameEngine {
                 const ok = this.deckManager.playCommandCard(cardObj, null, offeringIdx, reserveIdx);
                 const isSuccess = (ok && typeof ok === "object") ? ok.success !== false : ok !== false;
                 const diceCheck = (ok && typeof ok === "object") ? ok.diceCheck : null;
-                return { success: isSuccess, card, diceCheck };
+                return { success: isSuccess, card, diceCheck, reason: isSuccess ? null : ok?.reason };
             }
             if (typeof this.state.playCommandCard === "function") {
                 const cardObj = card.terrain || card;
@@ -313,7 +341,7 @@ class GameEngine {
                 const ok = this.state.playCommandCard(cardObj, null, offeringIdx, reserveIdx);
                 const isSuccess = (ok && typeof ok === "object") ? ok.success !== false : ok !== false;
                 const diceCheck = (ok && typeof ok === "object") ? ok.diceCheck : null;
-                return { success: isSuccess, card, diceCheck };
+                return { success: isSuccess, card, diceCheck, reason: isSuccess ? null : ok?.reason };
             }
             return { success: false, reason: "NO_COMMAND_LOGIC" };
         });

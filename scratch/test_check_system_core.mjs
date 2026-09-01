@@ -53,23 +53,32 @@ for (let val = 2; val <= 12; val++) {
 }
 console.log("  ✅ PASS: 100,000回 2D6 分布検問 (理論三角分布から許容誤差 ±0.40% 以内に収束)");
 
-// 2. 🔁 シード固定による 100% 同一出目シーケンス再現検問
-console.log("\n🔍 [Core-2] シード固定による 100% 同一出目シーケンス再現検問...");
+// 2. 🔁 シード固定による同一出目シーケンス再現検問
+console.log("\n🔍 [Core-2] シード固定による同一出目シーケンス再現検問...");
 const fixedSeed = 424242;
 const runA = new CheckSystem({ seed: fixedSeed });
 const resultsA = [];
-for (let i = 0; i < 10; i++) {
+for (let i = 0; i < 24; i++) {
     resultsA.push(runA.resolve({ checkId: "standard_2d6", actionId: 100, checkSequence: i }));
 }
 
 const runB = new CheckSystem({ seed: fixedSeed });
 const resultsB = [];
-for (let i = 0; i < 10; i++) {
+for (let i = 0; i < 24; i++) {
     resultsB.push(runB.resolve({ checkId: "standard_2d6", actionId: 100, checkSequence: i }));
 }
 
-assert.deepStrictEqual(resultsB, resultsA, "同一シード値から生成された全10個の CheckResult は 100% Deep Equal であること");
-console.log("  ✅ PASS: シード固定完全再現 (100% Snapshot Deep Equal)");
+assert.deepStrictEqual(resultsB, resultsA, "同一シード値から生成された全24個の CheckResult が一致すること");
+for (const result of resultsA) {
+    assert.strictEqual(result.dice.kept.length, 2, "2D6の採用出目が2要素であること");
+    assert.ok(result.dice.kept.every(value => Number.isInteger(value) && value >= 1 && value <= 6), "各出目が1〜6であること");
+    assert.strictEqual(result.finalTotal, result.dice.kept[0] + result.dice.kept[1], "finalTotalが採用出目の合計であること");
+    assert.ok(result.finalTotal >= 2 && result.finalTotal <= 12, "finalTotalが2〜12であること");
+}
+const distinctRolls = new Set(resultsA.map(result => result.dice.kept.join(",")));
+assert.ok(distinctRolls.size > 1, "同一インスタンスの24連続ロールがすべて同一でないこと");
+assert.strictEqual(runA.getState().rng.callCount, 48, "24回の2D6で同じRNGのcallCountが48まで進むこと");
+console.log("  ✅ PASS: 固定seed再現、出目構造、同一インスタンス連続ロールを確認");
 
 // 3. ↩️ getState / setState による Undo 途中復元検問
 console.log("\n🔍 [Core-3] getState / setState による Undo 途中復元検問...");

@@ -59,6 +59,7 @@ const { GameEngine, UIController } = await import("../game/src/app.js");
 const { DiceDisplayQueue } = await import("../game/src/ui/dice_display_queue.js");
 const { DiceWidgetComponent } = await import("../game/src/ui/dice_widget_component.js");
 const { UILayoutConfig } = await import("../game/src/ui/layout_config.js");
+const { FloatingFeedbackService } = await import("../game/src/ui/floating_feedback_service.js");
 
 console.log("============================================================");
 console.log("🧪 [Phase 3: CheckSystem UI & DisplayQueue Verification Test]");
@@ -124,6 +125,57 @@ ui.showDiceCheck(testEvent);
 assert.strictEqual(ui.diceQueue.isPlaying, true, "showDiceCheck 呼び出し後にキューが再生中になること");
 console.log("  ✅ PASS: UIController ↔ DiceQueue 連携正常確認");
 
+// 5. 🎴 実カード経路での連続2D6伝達
+console.log("\n🔍 [UI-5] CMD_ABANDONED_SETTLEMENT 連続実行のUI伝達検問...");
+const commandEngine = GameEngine.createGame({ runSeed: 12345678 });
+const commandUi = new UIController(commandEngine);
+const forwardedChecks = [];
+commandUi.showDiceCheck = event => forwardedChecks.push(event);
+commandUi.render = () => {};
+
+const commandCard = {
+    id: "CMD_ABANDONED_SETTLEMENT",
+    category: "COMMAND",
+    nameKey: "CMD_ABANDONED_SETTLEMENT_NAME",
+    descriptionKey: "CMD_ABANDONED_SETTLEMENT_DESC",
+    cost: { ember: 1 }
+};
+
+commandEngine.state.ember = 100;
+for (let i = 0; i < 24; i++) {
+    commandEngine.state.hasPickedThisTurn = false;
+    commandEngine.state.handOffering[0] = commandCard;
+    commandUi.playCommandCard(commandCard, 0);
+}
+
+assert.strictEqual(commandEngine.checkSystem, commandEngine.state.checkSystem, "EngineとStateが同じCheckSystemを参照すること");
+assert.strictEqual(forwardedChecks.length, 24, "24回すべてのdiceCheckがUIのshowDiceCheckへ渡ること");
+assert.strictEqual(commandEngine.checkSystem.getState().rng.callCount, 48, "24回の2D6が同一RNGを48回進めること");
+const forwardedTotals = forwardedChecks.map(event => event.result.finalTotal);
+assert.ok(new Set(forwardedTotals).size > 1, "連続結果が単一値へ固定されないこと");
+assert.ok(forwardedTotals.some(total => total !== 8), "CMD_ABANDONED_SETTLEMENTが毎回8にならないこと");
+for (const event of forwardedChecks) {
+    const kept = event.result.dice.kept;
+    assert.strictEqual(kept.length, 2, "UIへ渡すdice.keptが2要素であること");
+    assert.strictEqual(event.result.finalTotal, kept[0] + kept[1], "UIへ渡すfinalTotalがdice.keptの合計であること");
+}
+console.log("  ✅ PASS: 同一CheckSystemの連続ロールとUI伝達を確認");
+
+// 6. 📊 FloatingFeedbackServiceの既存増減表示
+console.log("\n🔍 [UI-6] FloatingFeedbackService 増減表示検問...");
+const feedbackTarget = new MockElement("feedbackTarget");
+feedbackTarget.getBoundingClientRect = () => ({ left: 100, top: 40, width: 60, height: 20 });
+const bodyChildCountBefore = document.body.children.length;
+FloatingFeedbackService.spawnOnElement(feedbackTarget, 5, { durationMs: 1 });
+FloatingFeedbackService.spawnOnElement(feedbackTarget, -3, { durationMs: 1 });
+const feedbackPopups = document.body.children.slice(bodyChildCountBefore);
+assert.strictEqual(feedbackPopups.length, 2, "増加・減少の2要素が生成されること");
+assert.strictEqual(feedbackPopups[0].textContent, "+5", "増加量が+5表記になること");
+assert.ok(feedbackPopups[0].className.includes("is-plus"), "増加用classが付くこと");
+assert.strictEqual(feedbackPopups[1].textContent, "-3", "減少量が-3表記になること");
+assert.ok(feedbackPopups[1].className.includes("is-minus"), "減少用classが付くこと");
+console.log("  ✅ PASS: 既存の増加・減少フロート生成を確認");
+
 console.log("\n============================================================");
-console.log("🎉 [Phase 3: CheckSystem UI & DisplayQueue Verification Test] ALL PASS (100%)");
+console.log("🎉 [Phase 3: CheckSystem UI & DisplayQueue Verification Test] ALL PASS");
 console.log("============================================================");

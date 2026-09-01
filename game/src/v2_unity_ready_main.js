@@ -10,6 +10,7 @@ class GameState {
         this.engine = dependencies.engine || null;
         this.turn = dependencies.turn !== undefined ? dependencies.turn : 1;
         this.ember = dependencies.ember !== undefined ? dependencies.ember : 20;
+        this.maxEmber = dependencies.maxEmber !== undefined ? dependencies.maxEmber : 20;
         this.food = dependencies.food !== undefined ? dependencies.food : 50; // 🌾 初期食料 50 (戦略的猶予確保)
         this.wood = dependencies.material !== undefined ? dependencies.material : (dependencies.wood !== undefined ? dependencies.wood : 30);
         this.material = this.wood;
@@ -35,6 +36,7 @@ class GameState {
             this.mergeGroupCounter = 1;
             this.placementGroupCounter = 1;
             this.mergedBlocks = {};
+            this.mergeLinks = new Set(dependencies.mergeLinks || []);
             this.grantedConnectionPairs = new Set();
 
             this.stage = { id: 1, name: "Stage 1", size: 5, maxTiles: 24 };
@@ -324,6 +326,15 @@ class GameState {
 
         checkMergePatterns(placedCoords = []) {
             if (this.gridEngine) return this.gridEngine.checkMergePatterns(placedCoords);
+        }
+
+        checkNewMergeLinks() {
+            if (this.gridEngine) return this.gridEngine.checkNewMergeLinks();
+            return { count: 0, links: [] };
+        }
+
+        getMergeLinkCount() {
+            return this.mergeLinks instanceof Set ? this.mergeLinks.size : 0;
         }
 
         playCommandCard(cardObj, targetTile = null) {

@@ -61,7 +61,7 @@ export class RandomSource {
     getState() {
         return {
             seed: this.initialSeed,
-            state: this.state,
+            state: this.state >>> 0,
             callCount: this.callCount
         };
     }

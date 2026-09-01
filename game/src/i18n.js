@@ -526,6 +526,8 @@
             LOG_MERGE_2X2_COMPLETE: "🎉 2x2 マージ大土地完成! ({name}) {bonus} 即時獲得!",
             LOG_MERGE_L_COMPLETE: "🟨【丘陵】L字異形マージ完成！ ({bonus}) ＆ 最後のマスが『⛏️ : 隠匿鉱床 (🧱+2 🛡️+1/T)』に覚醒！",
             LOG_MERGE_T_COMPLETE: "🛡️【山岳】凸字異形マージ完成！ ({bonus}) ＆ 最後のマスが『🗼 : 主峰砦 (🛡️+3 ✨+2/T)』に覚醒！",
+            LOG_MERGE_LINK_COMPLETE: "🔗 地域LINK成立: 🔥+1 / 最大🔥+1",
+            LOG_MERGE_LINKS_COMPLETE: "🔗 {count}地域LINK成立: 🔥+{bonus} / 最大🔥+{bonus}",
             TOAST_MERGE_L: "🟨 L字マージ覚醒! ({bonus})",
             TOAST_MERGE_T: "🛡️ 凸字マージ覚醒! ({bonus})",
             LOG_SOCKET_SPAWNED: "✨ 資源発見: {pos} に {terrainName} を配置し [{icon} : {socketName}] を獲得!",
@@ -1009,6 +1011,8 @@
             LOG_MERGE_2X2_COMPLETE: "🎉 2x2 Territory Merged! ({name}) {bonus} Earned!",
             LOG_MERGE_L_COMPLETE: "🟨 [Hills] L-Shape Merge Complete! ({bonus}) & Awakened Keystone Socket!",
             LOG_MERGE_T_COMPLETE: "🛡️ [Mountains] T-Shape Merge Complete! ({bonus}) & Awakened Fortress Socket!",
+            LOG_MERGE_LINK_COMPLETE: "🔗 Territory LINK formed: 🔥+1 / Max 🔥+1",
+            LOG_MERGE_LINKS_COMPLETE: "🔗 {count} Territory LINKs formed: 🔥+{bonus} / Max 🔥+{bonus}",
             TOAST_MERGE_L: "🟨 L-Shape Merge Awakened! ({bonus})",
             TOAST_MERGE_T: "🛡️ T-Shape Merge Awakened! ({bonus})",
             LOG_SOCKET_SPAWNED: "✨ Resource Found: Placed {terrainName} on {pos}, [{icon} : {socketName}] active!",
@@ -1177,6 +1181,5 @@
 const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : null;
 export { I18n };
 export default I18n;
-
 
 

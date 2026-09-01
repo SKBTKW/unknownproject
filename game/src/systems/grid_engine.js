@@ -3,6 +3,12 @@
    盤面初期化・ソケット配置・配置検証・マージ判定専用独立ドメインモジュール
    ============================================================= */
 
+import {
+    getMergeLinkKey,
+    haveDifferentMergeTerrainAttributes,
+    isTrueMergedCell
+} from '../core/merge_rules.js';
+
 class GridEngine {
     constructor(gameState, engine = null) {
         this.state = gameState;
@@ -402,7 +408,7 @@ class GridEngine {
                     const realCell = this.state.grid[vr][vc];
                     if (realCell && realCell.placed && !realCell.isHQ && realCell.terrain) {
                         const tid = realCell.terrain.terrainId || realCell.terrain.id;
-                        const isMerged = !!(realCell.merged || (realCell.mergeGroupId && this.state.mergedBlocks && this.state.mergedBlocks[realCell.mergeGroupId] && this.state.mergedBlocks[realCell.mergeGroupId].cells.length >= 4));
+                        const isMerged = isTrueMergedCell(this.state, realCell);
                         return { placed: true, isHQ: false, terrainId: tid, isMerged, mergeGroupId: realCell.mergeGroupId };
                     }
                     return null;
@@ -436,7 +442,7 @@ class GridEngine {
                                         const realNeighbor = this.state.grid[pr][pc];
                                         if (realNeighbor && realNeighbor.placed && !realNeighbor.isHQ && realNeighbor.terrain) {
                                             const nTid = realNeighbor.terrain.terrainId || realNeighbor.terrain.id;
-                                            const isNeighborMerged = !!(realNeighbor.merged || (realNeighbor.mergeGroupId && this.state.mergedBlocks && this.state.mergedBlocks[realNeighbor.mergeGroupId] && this.state.mergedBlocks[realNeighbor.mergeGroupId].cells.length >= 4));
+                                            const isNeighborMerged = isTrueMergedCell(this.state, realNeighbor);
                                             
                                             if (nTid === targetTid && isNeighborMerged) {
                                                 hasMergedAdjacencyConflict = true;
@@ -610,6 +616,7 @@ class GridEngine {
             }
         }
         this.checkMergePatterns(placedCoords);
+        this.checkNewMergeLinks();
 
         const placementCost = this.getPlacementEmberCost();
         if (placementCost > 0) {
@@ -1114,6 +1121,82 @@ class GridEngine {
     }
 
     /**
+     * 🔗 異属性の真のMERGE同士が面隣接した新規LINKを登録する
+     */
+    checkNewMergeLinks() {
+        if (!this.state || !this.state.grid) return { count: 0, links: [] };
+        if (!(this.state.mergeLinks instanceof Set)) {
+            this.state.mergeLinks = new Set(this.state.mergeLinks || []);
+        }
+
+        const size = this.state.grid.length;
+        const newLinks = [];
+        const directions = [[0, 1], [1, 0]];
+
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
+                const cell = this.state.grid[r][c];
+                if (!isTrueMergedCell(this.state, cell)) continue;
+
+                for (const [dr, dc] of directions) {
+                    const nr = r + dr;
+                    const nc = c + dc;
+                    if (nr >= size || nc >= size) continue;
+
+                    const neighbor = this.state.grid[nr][nc];
+                    if (!isTrueMergedCell(this.state, neighbor)) continue;
+                    if (cell.mergeGroupId === neighbor.mergeGroupId) continue;
+                    if (!haveDifferentMergeTerrainAttributes(
+                        this.state,
+                        cell.mergeGroupId,
+                        neighbor.mergeGroupId,
+                        cell,
+                        neighbor
+                    )) continue;
+
+                    const linkKey = getMergeLinkKey(cell.mergeGroupId, neighbor.mergeGroupId);
+                    if (this.state.mergeLinks.has(linkKey)) continue;
+
+                    this.state.mergeLinks.add(linkKey);
+                    newLinks.push(linkKey);
+                }
+            }
+        }
+
+        const newLinkCount = newLinks.length;
+        if (newLinkCount > 0) {
+            const emberSystem = this.state.emberSystem;
+            if (emberSystem && typeof emberSystem.expandMaxCapacity === 'function') {
+                emberSystem.expandMaxCapacity(newLinkCount);
+            } else {
+                this.state.maxEmber = (this.state.maxEmber || 20) + newLinkCount;
+            }
+
+            if (emberSystem && typeof emberSystem.recoverInstant === 'function') {
+                emberSystem.recoverInstant(newLinkCount);
+            } else {
+                this.state.ember = Math.min(this.state.maxEmber, (this.state.ember || 0) + newLinkCount);
+            }
+
+            const I18n = (this.engine && this.engine.i18n)
+                || ((typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : null)
+                || ((typeof window !== 'undefined' && window.I18n) ? window.I18n : null);
+            if (typeof this.state.addLog === 'function' && I18n && typeof I18n.t === 'function') {
+                const logKey = newLinkCount === 1 ? "LOG_MERGE_LINK_COMPLETE" : "LOG_MERGE_LINKS_COMPLETE";
+                this.state.addLog(I18n.t(logKey, { count: newLinkCount, bonus: newLinkCount }));
+            }
+        }
+
+        return { count: newLinkCount, links: newLinks };
+    }
+
+    getMergeLinkCount() {
+        return this.state && this.state.mergeLinks instanceof Set
+            ? this.state.mergeLinks.size
+            : 0;
+    }
+
+    /**
      * 🗺️ 盤面上に開墾された土地属性ごとのマス数内訳を取得
      */
     getTerritoryBreakdown() {
@@ -1149,4 +1232,3 @@ if (typeof globalThis !== "undefined") {
 
 export { GridEngine };
 export default GridEngine;
-

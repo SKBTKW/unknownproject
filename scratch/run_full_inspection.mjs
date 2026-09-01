@@ -33,7 +33,7 @@ async function main() {
         process.exit(1);
     }
 
-    // 🎮 Step 2: ゲームロジック・経済・カード効果検問 (115件)
+    // 🎮 Step 2: ゲームロジック・経済・カード効果検問
     console.log("\n🧪 [STEP 2/3] ゲームロジック ＆ 経済サイクル全自動検問 (Node.js)...");
     const step2Ok = await runCommand("node", ["scratch/test_all_modules.mjs"]);
     if (!step2Ok) {
@@ -51,10 +51,10 @@ async function main() {
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
     console.log("\n============================================================");
-    console.log(`🎉 【全自動マスター統合検問: ALL GREEN】(所要時間: ${elapsed}s)`);
-    console.log("   ✅ 全21仕様書突合: 100% 一致 (0 mismatches)");
-    console.log("   ✅ ゲームロジック: 115/115 件 PASS");
-    console.log("   ✅ UIライフサイクル: 12/12 項目 PASS (DOM正常構築確認)");
+    console.log(`✅ マスター統合検問 PASS (所要時間: ${elapsed}s)`);
+    console.log("   ✅ 仕様書検証コマンド PASS");
+    console.log("   ✅ ゲームロジック検証コマンド PASS");
+    console.log("   ✅ UIライフサイクル検証コマンド PASS");
     console.log("============================================================\n");
     process.exit(0);
 }

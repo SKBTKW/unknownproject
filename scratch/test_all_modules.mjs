@@ -1184,6 +1184,213 @@ assert(balance.ember === 8 && balance.maxEmber === 25, 'calculateTurnBalance で
 assert(balance.statusLevel === 'CRISIS', 'calculateTurnBalance でステータスレベルが正しく返ること');
 assert(balance.foodCost === 15, 'calculateTurnBalance で食料維持費が正しく返ること');
 
+// --- 12. 異属性MERGE LINK暫定実装 ＆ MERGE済み土地属性保護 ---
+console.log('\n🔗 [12/12] 異属性MERGE LINK・属性保護・Undo・盤面拡張');
+
+const linkPlains = { id: 'GL1_PLAINS', terrainId: 'GL1_PLAINS', gl: 1, e: 1, nameKey: 'TERRAIN_PLAINS' };
+const linkForest = { id: 'GL2_FOREST', terrainId: 'GL2_FOREST', gl: 2, e: 1, nameKey: 'TERRAIN_FOREST' };
+const linkForestHill = { id: 'E2_FOREST_HILL', terrainId: 'E2_FOREST_HILL', gl: 2, e: 2, nameKey: 'TERRAIN_FOREST_HILL' };
+const linkHill = { id: 'E2_HILL', terrainId: 'E2_HILL', gl: 1, e: 2, nameKey: 'TERRAIN_HILL' };
+
+function installTrueMergeGroup(testEngine, groupId, terrain, coords) {
+    testEngine.state.mergedBlocks[groupId] = {
+        groupId,
+        terrainId: terrain.terrainId || terrain.id,
+        nameKey: terrain.nameKey,
+        mergeType: '2x2',
+        cells: coords.map(({ r, c }) => ({ r, c })),
+        yieldMultiplier: 1.20,
+        createdTurn: testEngine.state.turn
+    };
+
+    for (const { r, c } of coords) {
+        Object.assign(testEngine.state.grid[r][c], {
+            placed: true,
+            isHQ: false,
+            terrain,
+            merged: true,
+            mergeGroupId: groupId,
+            mergeType: '2x2'
+        });
+    }
+}
+
+function installConnectionOnlyGroup(testEngine, groupId, terrain, coords) {
+    testEngine.state.mergedBlocks[groupId] = {
+        groupId,
+        terrainId: terrain.terrainId || terrain.id,
+        nameKey: terrain.nameKey,
+        mergeType: '1x3',
+        cells: coords.map(({ r, c }) => ({ r, c })),
+        yieldMultiplier: 1.0,
+        createdTurn: testEngine.state.turn
+    };
+
+    for (const { r, c } of coords) {
+        Object.assign(testEngine.state.grid[r][c], {
+            placed: true,
+            isHQ: false,
+            terrain,
+            merged: false,
+            mergeGroupId: groupId,
+            mergeType: '1x3'
+        });
+    }
+}
+
+const mergeACells = [{ r: 1, c: 3 }, { r: 1, c: 4 }, { r: 2, c: 3 }, { r: 2, c: 4 }];
+const mergeBCells = [{ r: 1, c: 1 }, { r: 1, c: 2 }, { r: 2, c: 1 }, { r: 2, c: 2 }];
+const mergeCCells = [{ r: 1, c: 5 }, { r: 1, c: 6 }, { r: 2, c: 5 }, { r: 2, c: 6 }];
+
+// 1〜3. 異属性MERGE A/Bの複数辺接触、重複防止、🔥現在値・最大値の付与
+const pairLinkEngine = new GameEngine();
+pairLinkEngine.gridEngine.expandGrid(9);
+pairLinkEngine.state.ember = 10;
+pairLinkEngine.state.maxEmber = 20;
+installTrueMergeGroup(pairLinkEngine, 'MERGE_A', linkPlains, mergeACells);
+installTrueMergeGroup(pairLinkEngine, 'MERGE_B', linkForest, mergeBCells);
+const firstPairLink = pairLinkEngine.gridEngine.checkNewMergeLinks();
+assert(firstPairLink.count === 1 && pairLinkEngine.state.getMergeLinkCount() === 1, '異属性MERGE A/Bが2辺接触しても初回LINKは1本だけ成立すること');
+assert(pairLinkEngine.state.maxEmber === 21, '新規LINK 1本で最大🔥が 20 から 21 へ増えること');
+assert(pairLinkEngine.state.ember === 11, '最大値拡張後に現在🔥が 10 から 11 へ増えること');
+assert(pairLinkEngine.state.gameLogs.some(log => log.includes('LINK')), 'LINK成立ログがI18N経由で記録されること');
+assert(pairLinkEngine.emberSystem.calculateTurnBalance().maxEmber === 21, 'UI用Ember状態が固定値ではなくstate.maxEmberの21を返すこと');
+const repeatPairEmber = pairLinkEngine.state.ember;
+const repeatPairMax = pairLinkEngine.state.maxEmber;
+const repeatedPairLink = pairLinkEngine.gridEngine.checkNewMergeLinks();
+assert(repeatedPairLink.count === 0 && pairLinkEngine.state.getMergeLinkCount() === 1, '同じMERGE A/Bの再判定ではLINKが重複登録されないこと');
+assert(pairLinkEngine.state.ember === repeatPairEmber && pairLinkEngine.state.maxEmber === repeatPairMax, 'LINK再判定で🔥ボーナスが再付与されないこと');
+
+// 4. MERGE AがB/Cへ接続した場合は2LINK・各+2
+const doubleLinkEngine = new GameEngine();
+doubleLinkEngine.gridEngine.expandGrid(9);
+doubleLinkEngine.state.ember = 10;
+doubleLinkEngine.state.maxEmber = 20;
+installTrueMergeGroup(doubleLinkEngine, 'MERGE_A', linkPlains, mergeACells);
+installTrueMergeGroup(doubleLinkEngine, 'MERGE_B', linkForest, mergeBCells);
+installTrueMergeGroup(doubleLinkEngine, 'MERGE_C', linkHill, mergeCCells);
+const doubleLinkResult = doubleLinkEngine.gridEngine.checkNewMergeLinks();
+assert(doubleLinkResult.count === 2 && doubleLinkEngine.state.getMergeLinkCount() === 2, 'MERGE A-B/A-CでLINKが2本成立すること');
+assert(doubleLinkEngine.state.maxEmber === 22 && doubleLinkEngine.state.ember === 12, '新規LINK 2本で最大🔥+2・現在🔥+2だけが付与されること');
+
+function createSimultaneousLinkPlacementEngine() {
+    const testEngine = new GameEngine();
+    testEngine.gridEngine.expandGrid(9);
+    testEngine.state.ember = 8;
+    testEngine.state.maxEmber = 20;
+    testEngine.state.mergeLinks = new Set();
+    testEngine.state.hasPickedThisTurn = false;
+    installTrueMergeGroup(testEngine, 'MERGE_B', linkForest, mergeBCells);
+    installTrueMergeGroup(testEngine, 'MERGE_C', linkHill, mergeCCells);
+    for (const { r, c } of mergeACells.slice(0, 3)) {
+        Object.assign(testEngine.state.grid[r][c], {
+            placed: true,
+            isHQ: false,
+            terrain: linkPlains,
+            merged: false,
+            mergeGroupId: null,
+            mergeType: null
+        });
+    }
+    return testEngine;
+}
+
+// 5. 1回の実配置で新MERGEがB/Cへ同時接触し、2LINKだけ成立
+const simultaneousLinkEngine = createSimultaneousLinkPlacementEngine();
+const completingCard = {
+    id: 'CARD_COMPLETE_LINK_MERGE',
+    category: 'LAND',
+    currentShape: [[1]],
+    currentAnchor: { r: 0, c: 0 },
+    terrain: linkPlains
+};
+simultaneousLinkEngine.state.handOffering[0] = completingCard;
+const simultaneousPlacement = simultaneousLinkEngine.placeLand(2, 4, completingCard, 0, { type: 'OFFERING', index: 0 });
+assert(simultaneousPlacement.success === true, '最後の1セル配置で新しい2x2MERGEが成立すること');
+assert(simultaneousLinkEngine.state.getMergeLinkCount() === 2, '1回の土地配置で異属性LINKが2本とも登録されること');
+assert(simultaneousLinkEngine.state.maxEmber === 22, '同時2LINKで最大🔥は追加ボーナスなしの+2になること');
+assert(simultaneousLinkEngine.state.ember === 12, '平地MERGE祝儀+2とLINK+2を分離し、現在🔥が8から12になること');
+
+// 6. 同属性MERGE同士は配置段階で拒否され、LINKも成立しない
+const sameTerrainEngine = new GameEngine();
+sameTerrainEngine.gridEngine.expandGrid(7);
+installTrueMergeGroup(sameTerrainEngine, 'PLAINS_EXISTING', linkPlains, [
+    { r: 1, c: 1 }, { r: 1, c: 2 }, { r: 2, c: 1 }, { r: 2, c: 2 }
+]);
+const sameTerrainPlacement = sameTerrainEngine.gridEngine.canPlaceShape(1, 3, [[1, 1], [1, 1]], linkPlains);
+assert(sameTerrainPlacement.can === false && sameTerrainPlacement.reasons.includes('SAME_TERRAIN_MERGED_NEIGHBOR_FORBIDDEN'), '同属性MERGE同士の面隣接配置は現行ルールどおり拒否されること');
+assert(sameTerrainEngine.gridEngine.checkNewMergeLinks().count === 0, '同属性MERGEからLINKは成立しないこと');
+
+// 7. 真のMERGEと未MERGE／4セル連結グループの接触ではLINKなし
+const incompleteLinkEngine = new GameEngine();
+incompleteLinkEngine.gridEngine.expandGrid(9);
+installTrueMergeGroup(incompleteLinkEngine, 'TRUE_MERGE', linkPlains, mergeACells);
+installConnectionOnlyGroup(incompleteLinkEngine, 'CONNECTION_ONLY', linkForest, mergeBCells);
+assert(incompleteLinkEngine.gridEngine.checkNewMergeLinks().count === 0 && incompleteLinkEngine.state.getMergeLinkCount() === 0, '4セルあっても1x3連結グループは真のMERGEではなくLINK対象外になること');
+
+// 8. 未MERGE森林は伐採対象（mergeGroupId流用中でも保護しない）
+const unmergedClearingEngine = new GameEngine();
+installConnectionOnlyGroup(unmergedClearingEngine, 'FOREST_CONNECTION', linkForest, [
+    { r: 0, c: 0 }, { r: 0, c: 1 }, { r: 1, c: 0 }, { r: 2, c: 0 }
+]);
+unmergedClearingEngine.deckManager.playCommandCard({ id: 'CMD_SINGLE_CLEARING', nameKey: 'CMD_SINGLE_CLEARING_NAME', category: 'COMMAND', cost: {} });
+assert(unmergedClearingEngine.state.grid[0][0].terrain.terrainId === 'GL1_PLAINS', '未MERGE森林はmergeGroupIdがあってもCMD_SINGLE_CLEARINGの対象になること');
+
+// 9〜10. 真のMERGE済み森林・森丘陵は恒久GL変更対象外
+const mergedForestClearingEngine = new GameEngine();
+installTrueMergeGroup(mergedForestClearingEngine, 'FOREST_MERGE', linkForest, [
+    { r: 0, c: 0 }, { r: 0, c: 1 }, { r: 1, c: 0 }, { r: 1, c: 1 }
+]);
+mergedForestClearingEngine.deckManager.playCommandCard({ id: 'CMD_SINGLE_CLEARING', nameKey: 'CMD_SINGLE_CLEARING_NAME', category: 'COMMAND', cost: {} });
+assert(mergedForestClearingEngine.state.grid[0][0].terrain.terrainId === 'GL2_FOREST', 'MERGE済み森林はCMD_SINGLE_CLEARINGの対象外になること');
+
+const mergedForestHillClearingEngine = new GameEngine();
+installTrueMergeGroup(mergedForestHillClearingEngine, 'FOREST_HILL_MERGE', linkForestHill, [
+    { r: 0, c: 0 }, { r: 0, c: 1 }, { r: 1, c: 0 }, { r: 1, c: 1 }
+]);
+mergedForestHillClearingEngine.deckManager.playCommandCard({ id: 'CMD_SINGLE_CLEARING', nameKey: 'CMD_SINGLE_CLEARING_NAME', category: 'COMMAND', cost: {} });
+assert(mergedForestHillClearingEngine.state.grid[0][0].terrain.terrainId === 'E2_FOREST_HILL', 'MERGE済み森丘陵はCMD_SINGLE_CLEARINGの対象外になること');
+
+// 11. 一時的産出効果の計画伐採はMERGE済み森林にも従来どおり作用
+const systematicLoggingMergeEngine = new GameEngine();
+systematicLoggingMergeEngine.state.wood = 0;
+installTrueMergeGroup(systematicLoggingMergeEngine, 'LOGGING_FOREST_MERGE', linkForest, [
+    { r: 0, c: 0 }, { r: 0, c: 1 }, { r: 1, c: 0 }, { r: 1, c: 1 }
+]);
+systematicLoggingMergeEngine.deckManager.playCommandCard({ id: 'CMD_SYSTEMATIC_LOGGING', nameKey: 'CMD_SYSTEMATIC_LOGGING_NAME', category: 'COMMAND', cost: {} });
+assert(systematicLoggingMergeEngine.state.wood === 24, 'CMD_SYSTEMATIC_LOGGINGはMERGE済み森林4セルにも従来どおり🧱+24を付与すること');
+assert(systematicLoggingMergeEngine.state.systematicLoggingTurns === 3, 'CMD_SYSTEMATIC_LOGGINGの3ターン効果が維持されること');
+
+// 12. UndoでLINK集合・LINK数・最大🔥・現在🔥を配置前へ復元
+const undoLinkEngine = createSimultaneousLinkPlacementEngine();
+undoLinkEngine.state.handOffering[0] = completingCard;
+const undoLinkPlacement = undoLinkEngine.placeLand(2, 4, completingCard, 0, { type: 'OFFERING', index: 0 });
+assert(undoLinkPlacement.success === true && undoLinkEngine.state.getMergeLinkCount() === 2, 'Undo前に実配置由来の2LINKが成立していること');
+const undoLinkResult = undoLinkEngine.transactionManager.undo();
+assert(undoLinkResult.success === true, 'LINK成立を伴う土地配置のUndoが成功すること');
+assert(undoLinkEngine.state.mergeLinks instanceof Set && undoLinkEngine.state.getMergeLinkCount() === 0, 'UndoでmergeLinksとLINK数が配置前へ戻ること');
+assert(undoLinkEngine.state.maxEmber === 20 && undoLinkEngine.state.ember === 8, 'Undoで最大🔥と現在🔥が配置前へ戻ること');
+
+// 13. 5x5→7x7→9x9拡張後もLINK状態とボーナス値を維持
+const expandingLinkEngine = new GameEngine();
+expandingLinkEngine.state.ember = 10;
+expandingLinkEngine.state.maxEmber = 20;
+installTrueMergeGroup(expandingLinkEngine, 'EXPAND_A', linkPlains, [
+    { r: 0, c: 0 }, { r: 0, c: 1 }, { r: 1, c: 0 }, { r: 1, c: 1 }
+]);
+installTrueMergeGroup(expandingLinkEngine, 'EXPAND_B', linkForest, [
+    { r: 0, c: 2 }, { r: 0, c: 3 }, { r: 1, c: 2 }, { r: 1, c: 3 }
+]);
+expandingLinkEngine.gridEngine.checkNewMergeLinks();
+const expandingLinkKey = Array.from(expandingLinkEngine.state.mergeLinks)[0];
+expandingLinkEngine.gridEngine.expandGrid(7);
+const linkAfter7 = expandingLinkEngine.gridEngine.checkNewMergeLinks();
+expandingLinkEngine.gridEngine.expandGrid(9);
+const linkAfter9 = expandingLinkEngine.gridEngine.checkNewMergeLinks();
+assert(expandingLinkEngine.state.mergeLinks.has(expandingLinkKey) && expandingLinkEngine.state.getMergeLinkCount() === 1, '5x5→7x7→9x9拡張後も既存LINK集合が維持されること');
+assert(linkAfter7.count === 0 && linkAfter9.count === 0, '盤面拡張後の再判定で既存LINKボーナスが重複しないこと');
+assert(expandingLinkEngine.state.maxEmber === 21 && expandingLinkEngine.state.ember === 11, '盤面拡張後もLINK由来の最大🔥・現在🔥が維持されること');
+
 console.log('\n====================================================');
 console.log(`🎉 全テスト完了: ${passedTests} / ${totalTests} 件 合格 (100% PASS)`);
 console.log('====================================================');
