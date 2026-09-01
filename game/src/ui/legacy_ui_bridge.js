@@ -104,6 +104,32 @@ export function attachLegacyUIBridge(ui) {
         });
     };
 
+    // 🌾🧱 Resource Delta Popup Demo (-5 Food, +10 Material)
+    window.demoResourceDelta = () => {
+        const FloatingFeedbackService = (typeof window !== "undefined" && window.FloatingFeedbackService) ? window.FloatingFeedbackService : null;
+        if (FloatingFeedbackService) {
+            FloatingFeedbackService.spawnOnElement("#valFood", -5);
+            FloatingFeedbackService.spawnOnElement("#valWood", 10);
+        }
+    };
+
+    // 🎲 Test Play Command Card: CMD_ABANDONED_SETTLEMENT (Expedition 2D6 roll)
+    window.testPlayAbandonedSettlement = () => {
+        if (!ui || !ui.engine) return;
+        const testCard = {
+            id: "CMD_ABANDONED_SETTLEMENT",
+            category: "COMMAND",
+            nameKey: "CMD_ABANDONED_SETTLEMENT_NAME",
+            descriptionKey: "CMD_ABANDONED_SETTLEMENT_DESC",
+            cost: { ember: 1 }
+        };
+        // Ensure at least 1 ember is available for test
+        if (ui.state && (ui.state.ember === undefined || ui.state.ember < 1)) {
+            ui.state.ember = 20;
+        }
+        ui.playCommandCard(testCard, -1);
+    };
+
     window.render = () => ui.render();
 
     window.undoLandPlacement = () => {

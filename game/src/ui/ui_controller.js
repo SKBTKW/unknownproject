@@ -1207,6 +1207,10 @@ class UIController {
 
         const res = this.engine.playCommandCard(card, source);
         if (res && res.success) {
+            const diceCheck = res.diceCheck || (res.result && res.result.diceCheck);
+            if (diceCheck && typeof this.showDiceCheck === "function") {
+                this.showDiceCheck(diceCheck);
+            }
             this.selectedCard = null;
             this.selectedCardIdx = -1;
             this.selectedReserveIdx = -1;

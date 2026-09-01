@@ -1,5 +1,6 @@
 import { TerritoryBadgeComponent } from './territory_badge_component.js';
 import { EmberStatusComponent } from './ember_status_component.js';
+import { FloatingFeedbackService } from './floating_feedback_service.js';
 
 /**
  * 🏛️ TopHeaderComponent (最上部HUD・リソースバー・ステータス表示専門コンポーネント)
@@ -10,12 +11,17 @@ import { EmberStatusComponent } from './ember_status_component.js';
  * 3. 🔥残り火表示および EmberStatusComponent の更新統括
  * 4. 領土マスバッジ (TerritoryBadgeComponent) の更新
  * 5. ⚠️ 試練カウントダウンバッジの点灯・予告制御
+ * 6. 資源数値の増減差分を検知し、FloatingFeedbackService で即座にトースト演出を発火
  */
 export class TopHeaderComponent {
     constructor(uiController) {
         this.ui = uiController;
         this.emberStatusComponent = (typeof document !== 'undefined') ? new EmberStatusComponent() : null;
         this.lastEmberValue = null;
+        this.lastFood = null;
+        this.lastWood = null;
+        this.lastDefense = null;
+        this.lastMystic = null;
         this.initHeaderEvents();
     }
 
@@ -65,6 +71,11 @@ export class TopHeaderComponent {
 
         // 3. 🌾 食料 ＆ 純収支
         this.setElementText("valFood", this.state.food);
+        if (this.lastFood !== null && this.state.food !== this.lastFood) {
+            FloatingFeedbackService.spawnOnElement("#valFood", this.state.food - this.lastFood);
+        }
+        this.lastFood = this.state.food;
+
         const foodSign = prods.totalFood > 0 ? `+${prods.totalFood}` : `${prods.totalFood}`;
         this.setElementText("valFoodProd", foodSign);
         const foodProdEl = document.getElementById("valFoodProd");
@@ -74,9 +85,23 @@ export class TopHeaderComponent {
 
         // 4. 🧱 資材 ＆ 🛡️ 防衛力 ＆ ✨ 神秘
         this.setElementText("valWood", this.state.wood);
+        if (this.lastWood !== null && this.state.wood !== this.lastWood) {
+            FloatingFeedbackService.spawnOnElement("#valWood", this.state.wood - this.lastWood);
+        }
+        this.lastWood = this.state.wood;
         this.setElementText("valWoodProd", `+${prods.totalWood}`);
+
         this.setElementText("valDefense", defTotal);
+        if (this.lastDefense !== null && defTotal !== this.lastDefense) {
+            FloatingFeedbackService.spawnOnElement("#valDefense", defTotal - this.lastDefense);
+        }
+        this.lastDefense = defTotal;
+
         this.setElementText("valMystic", this.state.mystic);
+        if (this.lastMystic !== null && this.state.mystic !== this.lastMystic) {
+            FloatingFeedbackService.spawnOnElement("#valMystic", this.state.mystic - this.lastMystic);
+        }
+        this.lastMystic = this.state.mystic;
         this.setElementText("valMysticProd", `+${prods.totalMystic || 1}`);
 
         // 5. 🗺️ 領土バッジ (TerritoryBadgeComponent)

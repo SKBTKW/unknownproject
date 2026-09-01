@@ -5,6 +5,7 @@ import { LAND_CARDS_MASTER } from '../data/land_cards_data.js';
 import { ConditionEvaluator } from '../core/condition_evaluator.js';
 import { CardCycleSystem, CYCLE_POLICIES } from './card_cycle_system.js';
 import { normalizePlacementAnchor } from '../core/placement_geometry.js';
+import { CheckSystem } from '../core/check_system/check_system.js';
 
 const COMMAND_CARDS_MASTER = [
     // 📜 経済・政策カード
@@ -1207,10 +1208,15 @@ class DeckManager {
             this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🌲", description: cDesc, badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 3 }) : "3T", category: "DEBUFF", remainingTurns: 3, startsNextTurn: true });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🌲【${cName}】`);
         } else if (cId === "CMD_ABANDONED_SETTLEMENT") {
-            // 🎲 領土探索: コスト 🔥-1 (2D6判定)
-            const d1 = Math.floor(Math.random() * 6) + 1;
-            const d2 = Math.floor(Math.random() * 6) + 1;
-            const roll = d1 + d2;
+            // 🎲 領土探索: コスト 🔥-1 (CheckSystem 2D6 リアルタイム判定)
+            const checkSys = this.state.checkSystem || (typeof window !== "undefined" && window.checkSystem) || new CheckSystem();
+            const actionId = `expedition_${Date.now()}`;
+            const checkResult = checkSys.resolve({
+                checkId: "standard_2d6",
+                actionId,
+                checkSequence: 1
+            });
+            const roll = checkResult.finalTotal;
             if (roll <= 5) {
                 this.state.food = (this.state.food || 0) + 15;
             } else if (roll <= 8) {
@@ -1224,6 +1230,21 @@ class DeckManager {
             }
             this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🎲", description: cDesc, category: "CARD_EFFECT" });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🎲【${cName}】`);
+
+            return {
+                success: true,
+                diceCheck: {
+                    result: checkResult,
+                    context: {
+                        sourceType: "CARD_CHECK",
+                        sourceId: "abandoned_settlement",
+                        tacticNameKey: "CMD_ABANDONED_SETTLEMENT_NAME"
+                    },
+                    feedback: {
+                        importance: roll >= 11 ? "CRITICAL" : "TACTICAL"
+                    }
+                }
+            };
         } else if (cId === "CMD_MUD_OBSTACLE") {
             // 🛡️ 泥濘陣地: コスト 🧱-15 (試練時湿原/湖敵制圧力-15%)
             this.state.mudObstacleActive = true;
@@ -1235,10 +1256,32 @@ class DeckManager {
             this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🗼", description: cDesc, category: "TACTICAL" });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🗼【${cName}】`);
         } else if (cId === "CMD_SCOUT_ENEMY") {
-            // 🔍 敵情偵察: コスト 🌾-5 (試練敵情先行公開)
+            // 🔍 敵情偵察: コスト 🌾-5 (CheckSystem 2D6 リアルタイム判定)
+            const checkSys = this.state.checkSystem || (typeof window !== "undefined" && window.checkSystem) || new CheckSystem();
+            const actionId = `scout_${Date.now()}`;
+            const checkResult = checkSys.resolve({
+                checkId: "standard_2d6",
+                actionId,
+                checkSequence: 1
+            });
             this.state.scoutEnemyActive = true;
             this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🔍", description: cDesc, category: "TACTICAL" });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🔍【${cName}】`);
+
+            return {
+                success: true,
+                diceCheck: {
+                    result: checkResult,
+                    context: {
+                        sourceType: "CARD_CHECK",
+                        sourceId: "scout_enemy",
+                        tacticNameKey: "CMD_SCOUT_ENEMY_NAME"
+                    },
+                    feedback: {
+                        importance: checkResult.finalTotal >= 11 ? "CRITICAL" : "TACTICAL"
+                    }
+                }
+            };
         } else if (cId === "CMD_OMEN_DREAM") {
             // 🔮 予兆: コスト ✨-5 (試練先行情報公開)
             this.state.omenDreamActive = true;

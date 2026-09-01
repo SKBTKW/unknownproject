@@ -180,7 +180,11 @@ class GameEngine {
 
         if (this.transactionManager && typeof this.transactionManager.execute === "function") {
             const p = typeof pipeline === "function" ? { execute: pipeline } : pipeline;
-            return this.transactionManager.execute(actionType, p, payload);
+            const res = this.transactionManager.execute(actionType, p, payload);
+            if (res && res.result && typeof res.result === "object" && res.result.diceCheck) {
+                res.diceCheck = res.result.diceCheck;
+            }
+            return res;
         }
 
         // フォールバック
@@ -298,14 +302,18 @@ class GameEngine {
                 const offeringIdx = source.type === "OFFERING" ? source.index : -1;
                 const reserveIdx = source.type === "RESERVE" ? source.index : -1;
                 const ok = this.deckManager.playCommandCard(cardObj, null, offeringIdx, reserveIdx);
-                return { success: ok !== false, card };
+                const isSuccess = (ok && typeof ok === "object") ? ok.success !== false : ok !== false;
+                const diceCheck = (ok && typeof ok === "object") ? ok.diceCheck : null;
+                return { success: isSuccess, card, diceCheck };
             }
             if (typeof this.state.playCommandCard === "function") {
                 const cardObj = card.terrain || card;
                 const offeringIdx = source.type === "OFFERING" ? source.index : -1;
                 const reserveIdx = source.type === "RESERVE" ? source.index : -1;
                 const ok = this.state.playCommandCard(cardObj, null, offeringIdx, reserveIdx);
-                return { success: ok !== false, card };
+                const isSuccess = (ok && typeof ok === "object") ? ok.success !== false : ok !== false;
+                const diceCheck = (ok && typeof ok === "object") ? ok.diceCheck : null;
+                return { success: isSuccess, card, diceCheck };
             }
             return { success: false, reason: "NO_COMMAND_LOGIC" };
         });
