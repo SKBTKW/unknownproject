@@ -46,6 +46,7 @@ import {
     rotatePlacementClockwise
 } from './core/placement_geometry.js';
 import { ElevationVisualService } from './ui/elevation_visual_service.js';
+import { AreaInfluenceVisualService } from './ui/area_influence_visual_service.js';
 
 export {
     I18n,
@@ -87,6 +88,7 @@ export {
     BoardGridComponent,
     HqComponent,
     ElevationVisualService,
+    AreaInfluenceVisualService,
     TooltipSystem,
     tooltipSystemInstance,
     ConditionEvaluator,

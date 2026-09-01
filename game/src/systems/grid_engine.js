@@ -8,6 +8,10 @@ import {
     haveDifferentMergeTerrainAttributes,
     isTrueMergedCell
 } from '../core/merge_rules.js';
+import {
+    countPlacedLakes,
+    getLakeSpawnRateMultiplier
+} from '../core/lake_rules.js';
 
 class GridEngine {
     constructor(gameState, engine = null) {
@@ -522,8 +526,11 @@ class GridEngine {
                             const pool = (sysMaster && sysMaster[baseTerrainId]) ? sysMaster[baseTerrainId] : null;
 
                             if (pool && pool.length > 0) {
-                                // 🌊 1. 特殊水系判定 (湿原60%湖, 草原1x1 25%湖, 砂漠1x1 25%オアシス)
-                                if ((baseTerrainId === "E0_WETLAND" || baseTerrainId.includes("WETLAND")) && Math.random() < 0.60) {
+                                const placedLakeCount = countPlacedLakes(this.state);
+                                const lakeRateMult = getLakeSpawnRateMultiplier(placedLakeCount);
+
+                                // 🌊 1. 特殊水系判定 (湿原60%*mult 湖, 草原1x1 25%*mult 湖, 砂漠1x1 25% オアシス)
+                                if ((baseTerrainId === "E0_WETLAND" || baseTerrainId.includes("WETLAND")) && Math.random() < (0.60 * lakeRateMult)) {
                                     const lake = pool.find(s => s.id === "SOCKET_LAKE");
                                     if (lake) {
                                         spawnedSocket = {
@@ -532,7 +539,7 @@ class GridEngine {
                                             bonusDefense: lake.bonusYields.defense || 0, bonusMystic: lake.bonusYields.mystic || 0
                                         };
                                     }
-                                } else if (baseTerrainId === "GL1_PLAINS" && is1x1 && Math.random() < 0.25) {
+                                } else if (baseTerrainId === "GL1_PLAINS" && is1x1 && Math.random() < (0.25 * lakeRateMult)) {
                                     const lake = pool.find(s => s.id === "SOCKET_LAKE");
                                     if (lake) {
                                         spawnedSocket = {

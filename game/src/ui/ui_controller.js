@@ -1074,6 +1074,18 @@ class UIController {
                 desc += sourceWaterDesc;
             }
 
+            // 🌐 範囲効果（湖水源バフ・本営近郊バフ）の影響圏ガイド
+            const influenceNotes = [];
+            if (nearWaterType) {
+                influenceNotes.push(I18n ? I18n.t("TOOLTIP_INFLUENCE_LAKE") : "💧 Lake Influence");
+            }
+            if (isHQVic) {
+                influenceNotes.push(I18n ? I18n.t("TOOLTIP_INFLUENCE_HQ") : "🏘 HQ Vicinity");
+            }
+            if (influenceNotes.length > 0) {
+                desc += `<div class="tooltip-influence-note"><small>${influenceNotes.join("<br>")}</small></div>`;
+            }
+
             // ↩️ 当ターン配置マスの場合は配置取り消し（置き直し）ガイドを明示
             if (isPlacedThisTurn) {
                 const undoHint = I18n ? I18n.t("UI_CELL_UNDO_HINT") : "このマスをクリックすると配置を取り消せます";

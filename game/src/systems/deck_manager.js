@@ -6,6 +6,7 @@ import { ConditionEvaluator } from '../core/condition_evaluator.js';
 import { CardCycleSystem, CYCLE_POLICIES } from './card_cycle_system.js';
 import { normalizePlacementAnchor } from '../core/placement_geometry.js';
 import { isTrueMergedCell } from '../core/merge_rules.js';
+import { countPlacedLakes, getLakeSpawnRateMultiplier } from '../core/lake_rules.js';
 
 const COMMAND_CARDS_MASTER = [
     // 📜 経済・政策カード
@@ -1327,8 +1328,10 @@ class DeckManager {
 
                 if (sysMaster && sysMaster[baseTerrainId]) {
                     const pool = sysMaster[baseTerrainId];
-                    // 🌊 特殊水系判定
-                    if ((baseTerrainId === "E0_WETLAND" || baseTerrainId.includes("WETLAND")) && Math.random() < 0.60) {
+                    // 🌊 特殊水系判定 (湖発見確率逓減を適用)
+                    const placedLakeCount = countPlacedLakes(this.state);
+                    const lakeRateMult = getLakeSpawnRateMultiplier(placedLakeCount);
+                    if ((baseTerrainId === "E0_WETLAND" || baseTerrainId.includes("WETLAND")) && Math.random() < (0.60 * lakeRateMult)) {
                         const lake = pool.find(s => s.id === "SOCKET_LAKE");
                         if (lake) {
                             socketDef = {
