@@ -209,8 +209,10 @@ class GameEngine {
         if (this.transactionManager && typeof this.transactionManager.execute === "function") {
             const p = typeof pipeline === "function" ? { execute: pipeline } : pipeline;
             const res = this.transactionManager.execute(actionType, p, payload);
-            if (res && res.result && typeof res.result === "object" && res.result.diceCheck) {
-                res.diceCheck = res.result.diceCheck;
+            if (res && res.result && typeof res.result === "object") {
+                if (res.result.diceCheck) res.diceCheck = res.result.diceCheck;
+                if (res.result.placementOutcome) res.placementOutcome = res.result.placementOutcome;
+                else if (res.result.result && res.result.result.placementOutcome) res.placementOutcome = res.result.result.placementOutcome;
             }
             return res;
         }

@@ -47,6 +47,9 @@ import {
 } from './core/placement_geometry.js';
 import { ElevationVisualService } from './ui/elevation_visual_service.js';
 import { AreaInfluenceVisualService } from './ui/area_influence_visual_service.js';
+import { SFX } from './audio/sfx_manifest.js';
+import { sfxManager } from './audio/sfx_manager.js';
+import { resolveLandSelectSfx } from './audio/land_sfx_resolver.js';
 
 export {
     I18n,
@@ -89,6 +92,9 @@ export {
     HqComponent,
     ElevationVisualService,
     AreaInfluenceVisualService,
+    SFX,
+    sfxManager,
+    resolveLandSelectSfx,
     TooltipSystem,
     tooltipSystemInstance,
     ConditionEvaluator,

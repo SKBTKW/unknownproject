@@ -498,6 +498,7 @@ class GridEngine {
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' && window.I18n ? window.I18n : { t: k => k });
         const terrainName = I18n.t((terrain && (terrain.nameKey || terrain.id)) || "TERRAIN_PLAINS");
 
+        let spawnedAnySocket = false;
         for (let dr = 0; dr < rows; dr++) {
             for (let dc = 0; dc < cols; dc++) {
                 if (shapeMatrix[dr][dc] === 1) {
@@ -511,69 +512,43 @@ class GridEngine {
 
                     // ★ ソケット開花判定 (決定論的固定化 ✕ 相対 Weight 自然地理抽選: アンドゥリセマラを完全根絶)
                     if (cell.hasSocket && !cell.socketResource) {
-                        const baseTerrainId = terrain.terrainId || terrain.id;
-                        const is1x1 = (rows === 1 && cols === 1 && shapeMatrix[0][0] === 1);
-                        const seedKey = is1x1 ? `${baseTerrainId}_1X1` : baseTerrainId;
-                        const sysMaster = (typeof globalThis !== 'undefined' && globalThis.LAND_SYSTEM_DATA && globalThis.LAND_SYSTEM_DATA.sockets) ? globalThis.LAND_SYSTEM_DATA.sockets : null;
-                        
-                        if (!cell.cachedSocketSeeds) {
-                            cell.cachedSocketSeeds = {};
-                        }
+                        const seedKey = `${r}_${c}`;
+                        let spawnedSocket = null;
 
-                        let spawnedSocket = cell.cachedSocketSeeds[seedKey] || null;
+                        if (cell.cachedSocketSeeds && cell.cachedSocketSeeds[seedKey]) {
+                            spawnedSocket = cell.cachedSocketSeeds[seedKey];
+                        } else {
+                            if (!cell.cachedSocketSeeds) cell.cachedSocketSeeds = {};
+                            const baseTid = terrain.terrainId || terrain.id || "";
+                            const getRng = () => (this.state && typeof this.state.rng === "function") ? this.state.rng() : Math.random();
 
-                        if (!spawnedSocket) {
-                            const pool = (sysMaster && sysMaster[baseTerrainId]) ? sysMaster[baseTerrainId] : null;
-
-                            if (pool && pool.length > 0) {
-                                const placedLakeCount = countPlacedLakes(this.state);
-                                const lakeRateMult = getLakeSpawnRateMultiplier(placedLakeCount);
-
-                                // 🌊 1. 特殊水系判定 (湿原60%*mult 湖, 草原1x1 25%*mult 湖, 砂漠1x1 25% オアシス)
-                                if ((baseTerrainId === "E0_WETLAND" || baseTerrainId.includes("WETLAND")) && Math.random() < (0.60 * lakeRateMult)) {
-                                    const lake = pool.find(s => s.id === "SOCKET_LAKE");
-                                    if (lake) {
-                                        spawnedSocket = {
-                                            id: lake.id, nameKey: lake.nameKey, category: lake.category, icon: lake.icon,
-                                            bonusFood: lake.bonusYields.food || 0, bonusWood: lake.bonusYields.wood || 0,
-                                            bonusDefense: lake.bonusYields.defense || 0, bonusMystic: lake.bonusYields.mystic || 0
-                                        };
-                                    }
-                                } else if (baseTerrainId === "GL1_PLAINS" && is1x1 && Math.random() < (0.25 * lakeRateMult)) {
-                                    const lake = pool.find(s => s.id === "SOCKET_LAKE");
-                                    if (lake) {
-                                        spawnedSocket = {
-                                            id: lake.id, nameKey: lake.nameKey, category: lake.category, icon: lake.icon,
-                                            bonusFood: lake.bonusYields.food || 0, bonusWood: lake.bonusYields.wood || 0,
-                                            bonusDefense: lake.bonusYields.defense || 0, bonusMystic: lake.bonusYields.mystic || 0
-                                        };
-                                    }
-                                } else if (baseTerrainId === "GL0_DESERT" && is1x1 && Math.random() < 0.25) {
-                                    const oasis = pool.find(s => s.id === "SOCKET_OASIS");
-                                    if (oasis) {
-                                        spawnedSocket = {
-                                            id: oasis.id, nameKey: oasis.nameKey, category: oasis.category, icon: oasis.icon,
-                                            bonusFood: oasis.bonusYields.food || 0, bonusWood: oasis.bonusYields.wood || 0,
-                                            bonusDefense: oasis.bonusYields.defense || 0, bonusMystic: oasis.bonusYields.mystic || 0
-                                        };
-                                    }
+                            // 1. 湿原: 湖 (60% * 逓減倍率)
+                            if (baseTid.includes("WETLAND")) {
+                                const currentLakeCount = countPlacedLakes(this.state);
+                                const lakeRateMult = getLakeSpawnRateMultiplier(currentLakeCount);
+                                if (getRng() < (0.60 * lakeRateMult)) {
+                                    spawnedSocket = { id: "SOCKET_LAKE", nameKey: "SOCKET_LAKE", category: "CAT_WATER", icon: "💧", bonusFood: 2, bonusWood: 0, bonusDefense: 0, bonusMystic: 1, isLake: true };
                                 }
+                            }
+                            // 2. 砂漠: オアシス (25%) ※オアシスは湖逓減の影響を受けない
+                            else if (baseTid.includes("DESERT") && getRng() < 0.25) {
+                                spawnedSocket = { id: "SOCKET_OASIS", nameKey: "SOCKET_OASIS", category: "CAT_WATER", icon: "🏝️", bonusFood: 1, bonusWood: 0, bonusDefense: 0, bonusMystic: 2, isLake: true };
+                            }
+                            // 3. 草原 1x1: 湖 (25% * 逓減倍率)
+                            else if (baseTid.includes("PLAINS") && activeCellCount === 1) {
+                                const currentLakeCount = countPlacedLakes(this.state);
+                                const lakeRateMult = getLakeSpawnRateMultiplier(currentLakeCount);
+                                if (getRng() < (0.25 * lakeRateMult)) {
+                                    spawnedSocket = { id: "SOCKET_LAKE", nameKey: "SOCKET_LAKE", category: "CAT_WATER", icon: "💧", bonusFood: 2, bonusWood: 0, bonusDefense: 0, bonusMystic: 1, isLake: true };
+                                }
+                            }
 
-                                // 🎲 2. 相対 Weight 重み付き自然地理抽選（特殊水系非当選時）
-                                if (!spawnedSocket) {
-                                    const candidates = pool.filter(s => !s.isSpecialWater && (s.weight || 0) > 0);
-                                    const validPool = candidates.length > 0 ? candidates : pool;
-                                    const totalWeight = validPool.reduce((sum, s) => sum + (s.weight || 1), 0);
-                                    let rand = Math.random() * totalWeight;
-                                    let chosen = validPool[0];
-                                    for (const s of validPool) {
-                                        const w = s.weight || 1;
-                                        if (rand < w) {
-                                            chosen = s;
-                                            break;
-                                        }
-                                        rand -= w;
-                                    }
+                            // 4. 一般資源プール抽選 (湖/オアシス非当選時)
+                            const socketMaster = (typeof globalThis !== "undefined" && globalThis.SOCKET_RESOURCE_MASTER) ? globalThis.SOCKET_RESOURCE_MASTER : (typeof window !== "undefined" ? window.SOCKET_RESOURCE_MASTER : null);
+                            if (!spawnedSocket && socketMaster) {
+                                const pool = socketMaster.filter(s => s.reqTerrains && s.reqTerrains.some(t => baseTid.includes(t)));
+                                if (pool.length > 0) {
+                                    const chosen = pool[Math.floor(getRng() * pool.length)];
                                     spawnedSocket = {
                                         id: chosen.id,
                                         nameKey: chosen.nameKey,
@@ -585,17 +560,16 @@ class GridEngine {
                                         bonusMystic: (chosen.bonusYields && chosen.bonusYields.mystic) || 0
                                     };
                                 }
-                            } else {
+                            }
+                            if (!spawnedSocket) {
                                 spawnedSocket = { id: "SOCKET_WILD_WHEAT", nameKey: "SOCKET_WILD_WHEAT", category: "CAT_GRAIN", icon: "🌾", bonusFood: 3, bonusWood: 0, bonusDefense: 0, bonusMystic: 0 };
                             }
-
-                            if (spawnedSocket) {
-                                cell.cachedSocketSeeds[seedKey] = spawnedSocket;
-                            }
+                            if (spawnedSocket) cell.cachedSocketSeeds[seedKey] = spawnedSocket;
                         }
 
                         if (spawnedSocket) {
                             cell.socketResource = { ...spawnedSocket };
+                            spawnedAnySocket = true;
                             const posStr = `(${String.fromCharCode(65+c)}${r+1})`;
                             const sName = I18n.t(spawnedSocket.nameKey);
                             const sIcon = spawnedSocket.icon || "💎";
@@ -611,6 +585,13 @@ class GridEngine {
             }
         }
 
+        const placementOutcome = {
+            socketSpawned: spawnedAnySocket,
+            connection1x2: false,
+            connection1x3: false,
+            merge2x2: false
+        };
+
         const placedCoords = [];
         for (let dr = 0; dr < rows; dr++) {
             for (let dc = 0; dc < cols; dc++) {
@@ -618,11 +599,16 @@ class GridEngine {
                     const r = startR + dr;
                     const c = startC + dc;
                     placedCoords.push({ r, c });
-                    this.checkConnectionBonus(r, c, terrain);
+                    const connRes = this.checkConnectionBonus(r, c, terrain);
+                    if (connRes && connRes.connection1x3) placementOutcome.connection1x3 = true;
+                    else if (connRes && connRes.connection1x2) placementOutcome.connection1x2 = true;
                 }
             }
         }
-        this.checkMergePatterns(placedCoords);
+        const mergeRes = this.checkMergePatterns(placedCoords);
+        if (mergeRes && mergeRes.merge2x2) {
+            placementOutcome.merge2x2 = true;
+        }
         this.checkNewMergeLinks();
 
         const placementCost = this.getPlacementEmberCost();
@@ -664,7 +650,7 @@ class GridEngine {
         if (typeof this.state.checkConditionalBuffs === 'function') {
             this.state.checkConditionalBuffs();
         }
-        return { can: true, success: true };
+        return { can: true, success: true, placementOutcome };
     }
 
     /**
@@ -860,15 +846,18 @@ class GridEngine {
                 if (this.state.toastQueue) {
                     this.state.toastQueue.push({ r, c, text: toastText });
                 }
+                return { connected: true, connection1x2: !is1x3, connection1x3: !!is1x3 };
             }
         }
+        return { connected: false };
     }
 
     /**
      * 🎉 2x2 正方形マージ判定 ＆ 1.2倍産出グループ化
      */
     checkMergePatterns(placedCoords = []) {
-        if (!this.state || !this.state.grid) return;
+        if (!this.state || !this.state.grid) return { merge2x2: false };
+        let formedMerge2x2 = false;
         const size = this.state.grid.length;
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' && window.I18n ? window.I18n : { t: k => k });
 
@@ -948,6 +937,7 @@ class GridEngine {
                             this.state.addLog(I18n.t("LOG_MERGE_2X2_COMPLETE", { name: tName, bonus: bText }));
                         }
                         if (this.state.toastQueue) {
+                            formedMerge2x2 = true;
                             this.state.toastQueue.push({
                                 type: "MERGE_2X2",
                                 r,
@@ -1044,6 +1034,7 @@ class GridEngine {
                                 this.state.addLog(logMsg);
                             }
                             if (this.state.toastQueue) {
+                                formedMerge2x2 = true;
                                 const toastMsg = I18n ? I18n.t("TOAST_MERGE_L", { bonus: bText }) : `🟨 L-Merge (${bText})`;
                                 this.state.toastQueue.push({ r: coords[0].r, c: coords[0].c, text: toastMsg });
                             }
@@ -1059,24 +1050,26 @@ class GridEngine {
             [[0,1], [1,0], [1,1], [1,2]],
             // 横3 ＋ 中央下
             [[0,0], [0,1], [0,2], [1,1]],
-            // 縦3 ＋ 中央左
-            [[0,1], [1,0], [1,1], [2,1]],
             // 縦3 ＋ 中央右
-            [[0,0], [1,0], [1,1], [2,0]]
+            [[0,0], [1,0], [2,0], [1,1]],
+            // 縦3 ＋ 中央左
+            [[0,1], [1,1], [2,1], [1,0]]
         ];
 
-        for (let r = 0; r < size; r++) {
-            for (let c = 0; c < size; c++) {
-                for (let offsets of tOffsets) {
+        for (let r = 0; r < size - 2; r++) {
+            for (let c = 0; c < size - 2; c++) {
+                for (const offsets of tOffsets) {
                     const coords = offsets.map(([dr, dc]) => ({ r: r + dr, c: c + dc }));
-                    if (coords.some(pt => pt.r < 0 || pt.r >= size || pt.c < 0 || pt.c >= size)) continue;
-
                     const cells = coords.map(pt => this.state.grid[pt.r][pt.c]);
-                    const allPlaced = cells.every(cell => cell.placed && !cell.isHQ && !cell.merged);
+                    const allPlaced = cells.every(cell => cell.placed && !cell.isHQ && (!cell.merged || cell.mergeType !== "T_SHAPE"));
                     if (allPlaced) {
-                        const isAllMountain = cells.every(cell => cell.terrain && (cell.terrain.terrainId || cell.terrain.id || "").includes("MOUNTAIN"));
-                        if (isAllMountain) {
-                            const groupId = `merge_${this.state.mergeGroupCounter++}`;
+                        const allMountain = cells.every(cell => {
+                            const tid = cell.terrain ? (cell.terrain.terrainId || cell.terrain.id) : null;
+                            return tid && (tid === "E3_MOUNTAIN" || tid.includes("MOUNTAIN"));
+                        });
+
+                        if (allMountain) {
+                            const groupId = `merge_t_${this.state.mergeGroupCounter++}`;
                             cells.forEach(cell => {
                                 cell.merged = true;
                                 cell.mergeGroupId = groupId;
@@ -1136,6 +1129,7 @@ class GridEngine {
                 }
             }
         }
+        return { merge2x2: formedMerge2x2 };
     }
 
     /**

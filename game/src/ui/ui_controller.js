@@ -26,6 +26,8 @@ import {
     resolvePlacementShape,
     rotatePlacementClockwise
 } from '../core/placement_geometry.js';
+import { sfxManager } from '../audio/sfx_manager.js';
+import { resolveLandSelectSfx } from '../audio/land_sfx_resolver.js';
 
 class UIController {
     /**
@@ -121,6 +123,7 @@ class UIController {
         this.render();
         this.highlightPlaceableCells();
         this.updateFloatingPreview(null);
+        sfxManager.play("UI_CARD_CANCEL");
     }
 
     /**
@@ -582,13 +585,7 @@ class UIController {
 
         // 🔄 選択中の保留カードを再度クリックした場合: 常に選択解除
         if (this.selectedReserveIdx === reserveIdx) {
-            this.selectedCard = null;
-            this.selectedCardIdx = -1;
-            this.selectedReserveIdx = -1;
-            if (focusLayerManager) focusLayerManager.onCardDeselect();
-            this.clearCellPreviews();
-            this.render();
-            this.highlightPlaceableCells();
+            this.deselectCard();
             return;
         }
 
@@ -605,6 +602,7 @@ class UIController {
         if (focusLayerManager) focusLayerManager.onCardSelect();
         this.render();
         this.highlightPlaceableCells();
+        sfxManager.play(resolveLandSelectSfx(resCard));
     }
 
     rotateReserveCard(e, reserveIdx = 0) {
@@ -624,8 +622,19 @@ class UIController {
         const currentShape = resolvePlacementShape(card);
         const currentAnchor = resolvePlacementAnchor(card, currentShape);
         const rotated = rotatePlacementClockwise(currentShape, currentAnchor);
+
+        // 🔄 実際に形状・向き・アンカーが変化したかを厳密判定（点対称1x1等では鳴らさない）
+        const shapeChanged = currentShape.length !== rotated.shape.length ||
+            currentShape[0].length !== rotated.shape[0].length ||
+            currentAnchor.r !== rotated.anchor.r ||
+            currentAnchor.c !== rotated.anchor.c;
+
         card.currentShape = rotated.shape;
         card.currentAnchor = rotated.anchor;
+
+        if (shapeChanged) {
+            sfxManager.play("LAND_ROTATE");
+        }
         return rotated;
     }
 
@@ -712,12 +721,7 @@ class UIController {
                 this.triggerCommandCardPlay(card, idx, -1);
                 return;
             }
-            this.selectedCard = null;
-            this.selectedCardIdx = -1;
-            this.selectedReserveIdx = -1;
-            if (focusLayerManager) focusLayerManager.onCardDeselect();
-            this.render();
-            this.highlightPlaceableCells();
+            this.deselectCard();
             return;
         }
 
@@ -728,6 +732,13 @@ class UIController {
         if (focusLayerManager) focusLayerManager.onCardSelect();
         this.render();
         this.highlightPlaceableCells();
+
+        // 🎵 SFX: 土地カードは地形固有音、コマンドカード等は共通カード選択音（二重再生を完全防止）
+        if (category === "LAND") {
+            sfxManager.play(resolveLandSelectSfx(card));
+        } else {
+            sfxManager.play("UI_CARD_SELECT");
+        }
     }
 
     rotateSelectedCard(e, idx) {
@@ -768,10 +779,15 @@ class UIController {
         // ↩️ 当ターン配置済みマスをクリックした場合は配置取り消し（Undo）
         if (undoSys && typeof undoSys.isCellPlacedThisTurn === "function" && undoSys.isCellPlacedThisTurn(r, c)) {
             this.hideCellTooltip();
+            let undoRes = null;
             if (this.engine && typeof this.engine.undoLastAction === "function") {
-                this.engine.undoLastAction();
+                undoRes = this.engine.undoLastAction();
             } else if (undoSys) {
-                undoSys.undo();
+                const ok = undoSys.undo();
+                undoRes = typeof ok === "object" ? ok : { success: !!ok };
+            }
+            if (undoRes && undoRes.success) {
+                sfxManager.play("LAND_UNDO");
             }
             this.selectedCard = null;
             this.selectedCardIdx = -1;
@@ -808,6 +824,7 @@ class UIController {
             if (focusLayerManager) focusLayerManager.onCardDeselect();
             this.render();
             this.processToastQueue();
+            sfxManager.resolveAndPlayPlacementOutcome(actionRes.placementOutcome || {});
         } else {
             if (typeof alert === "function") alert(I18n.t("ALERT_CANNOT_PLACE"));
         }
@@ -1219,6 +1236,7 @@ class UIController {
 
         const res = this.engine.playCommandCard(card, source);
         if (res && res.success) {
+            sfxManager.play("COMMAND_EXECUTE");
             const diceCheck = res.diceCheck || (res.result && res.result.diceCheck);
             if (diceCheck && typeof this.showDiceCheck === "function") {
                 this.showDiceCheck(diceCheck);
