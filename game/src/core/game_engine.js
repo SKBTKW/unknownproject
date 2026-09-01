@@ -12,6 +12,7 @@ import { EmberSystem } from '../systems/ember_system.js';
 import { CardCycleSystem } from '../systems/card_cycle_system.js';
 import { CellViewDataService } from '../services/cell_view_data_service.js';
 import { ActionTransactionManager } from './transaction_manager.js';
+import { resolvePlacementGeometry } from './placement_geometry.js';
 import { GameState } from '../v2_unity_ready_main.js';
 
 class GameEngine {
@@ -188,8 +189,8 @@ class GameEngine {
 
     /**
      * 🗺️ 土地配置 Action API (トランザクションパイプライン)
-     * @param {number} r - 行
-     * @param {number} c - 列
+     * @param {number} r - Anchorを置くクリック行
+     * @param {number} c - Anchorを置くクリック列
      * @param {Object} card - カードオブジェクト
      * @param {number} [rotation=0] - 回転角度
      * @param {Object} [source={ type: "OFFERING", index: 0 }] - 出現元情報
@@ -197,25 +198,11 @@ class GameEngine {
     placeLand(r, c, card, rotation = 0, source = { type: "OFFERING", index: 0 }) {
         if (!card) return { success: false, reason: "NO_CARD" };
 
-        const shape = card.currentShape
-            || card.shape
-            || (card.terrain && card.terrain.shape)
-            || [[1]];
+        const placement = resolvePlacementGeometry(card, r, c);
+        const { shape, startR, startC } = placement;
         const terrain = card.terrain || card;
         const currentIdx = source.type === "OFFERING" ? source.index : -1;
-
-        const placedCoords = [];
-        if (shape && Array.isArray(shape)) {
-            for (let dr = 0; dr < shape.length; dr++) {
-                for (let dc = 0; dc < shape[dr].length; dc++) {
-                    if (shape[dr][dc] === 1) {
-                        placedCoords.push({ r: r + dr, c: c + dc });
-                    }
-                }
-            }
-        } else {
-            placedCoords.push({ r, c });
-        }
+        const placedCoords = placement.cells;
 
         return this.executeAction("PLACE_LAND", {
             // 1. 🔍 Validate (事前バリデーション: 失敗時は一切ステートに触れず拒絶)
@@ -223,7 +210,7 @@ class GameEngine {
                 if (!state) return { can: false, reason: "NO_STATE" };
                 if (state.hasPickedThisTurn) return { can: false, reason: "ALREADY_PICKED" };
                 if (typeof state.canPlaceShape === "function") {
-                    const check = state.canPlaceShape(r, c, shape);
+                    const check = state.canPlaceShape(startR, startC, shape, terrain);
                     if (!check || !check.can) return check || { can: false, reason: "CANNOT_PLACE" };
                 }
                 return { can: true };
@@ -231,7 +218,7 @@ class GameEngine {
             // 2. ⚙️ Execute (コア変更: 土地配置と保留枠消化)
             execute: (state) => {
                 const res = (typeof state.placeShape === "function")
-                    ? state.placeShape(r, c, shape, terrain, currentIdx)
+                    ? state.placeShape(startR, startC, shape, terrain, currentIdx)
                     : { can: false };
 
                 if (!res || (!res.can && !res.success)) {
@@ -254,7 +241,7 @@ class GameEngine {
                 }
                 return { success: true };
             }
-        }, { r, c, card, shape, rotation, source, placedCoords });
+        }, { r, c, startR, startC, card, shape, anchor: placement.anchor, rotation, source, placedCoords });
     }
 
     /**
@@ -409,4 +396,3 @@ if (typeof globalThis !== "undefined") {
 
 export { GameEngine };
 export default GameEngine;
-

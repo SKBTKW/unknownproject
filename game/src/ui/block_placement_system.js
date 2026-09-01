@@ -1,3 +1,5 @@
+import { resolvePlacementGeometry } from '../core/placement_geometry.js';
+
 /* =============================================================
    game/src/ui/block_placement_system.js
    ブロック配置・プレビュー・ルール検証一元管理モジュール (余計なエフェクト一切なしの純粋復元)
@@ -56,18 +58,16 @@
 
             this.clearHoverPreviews();
 
-            const shape = card.currentShape || (card.terrain ? card.terrain.shape : (card.shape || [[1]]));
-            if (!shape || !Array.isArray(shape)) return;
-
             const size = (gameState.stage && gameState.stage.size) ? gameState.stage.size : (gameState.grid ? gameState.grid.length : 5);
 
             const terrain = card.terrain || card;
 
             for (let r = 0; r < size; r++) {
                 for (let c = 0; c < size; c++) {
-                    const check = (typeof gameState.canPlaceShape === "function") 
-                        ? gameState.canPlaceShape(r, c, shape, terrain) 
-                        : (gameState.gridEngine ? gameState.gridEngine.canPlaceShape(r, c, shape, terrain) : false);
+                    const placement = resolvePlacementGeometry(card, r, c);
+                    const check = (typeof gameState.canPlaceShape === "function")
+                        ? gameState.canPlaceShape(placement.startR, placement.startC, placement.shape, terrain)
+                        : (gameState.gridEngine ? gameState.gridEngine.canPlaceShape(placement.startR, placement.startC, placement.shape, terrain) : false);
                     const canPlace = (typeof check === 'object' && check !== null) ? check.can : (check === true);
                     const targetEl = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
                     if (targetEl) {
@@ -96,28 +96,18 @@
 
             this.clearHoverPreviews();
 
-            const shape = card.currentShape || (card.terrain ? card.terrain.shape : [[1]]);
-            if (!shape || !Array.isArray(shape)) return;
-
             const terrain = card.terrain || card;
-            const check = gameState.canPlaceShape(r, c, shape, terrain);
+            const placement = resolvePlacementGeometry(card, r, c);
+            const check = gameState.canPlaceShape(placement.startR, placement.startC, placement.shape, terrain);
             const isValid = (typeof check === 'object' && check !== null) ? check.can : check;
 
-            const rows = shape.length;
-            const cols = shape[0].length;
             const size = (gameState.stage && gameState.stage.size) ? gameState.stage.size : 5;
 
-            for (let dr = 0; dr < rows; dr++) {
-                for (let dc = 0; dc < cols; dc++) {
-                    if (shape[dr][dc] === 1) {
-                        const tr = r + dr;
-                        const tc = c + dc;
-                        if (tr >= 0 && tr < size && tc >= 0 && tc < size) {
-                            const targetEl = document.querySelector(`.cell[data-r="${tr}"][data-c="${tc}"]`);
-                            if (targetEl) {
-                                targetEl.classList.add(isValid ? "preview-valid" : "preview-invalid");
-                            }
-                        }
+            for (const cell of placement.cells) {
+                if (cell.r >= 0 && cell.r < size && cell.c >= 0 && cell.c < size) {
+                    const targetEl = document.querySelector(`.cell[data-r="${cell.r}"][data-c="${cell.c}"]`);
+                    if (targetEl) {
+                        targetEl.classList.add(isValid ? "preview-valid" : "preview-invalid");
                     }
                 }
             }
@@ -160,6 +150,4 @@
 const BlockPlacementSystem = (typeof globalThis !== "undefined" && globalThis.BlockPlacementSystem) ? globalThis.BlockPlacementSystem : null;
 export { BlockPlacementSystem };
 export default BlockPlacementSystem;
-
-
 

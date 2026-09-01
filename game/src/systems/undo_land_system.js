@@ -33,7 +33,11 @@
                 c ? (c.isBlank ? { ...c, originalCard: c.originalCard ? { ...c.originalCard } : null } : { ...c }) : null
             );
             const reserveSlotsCopy = (this.state.reserveSlots || []).map(c => 
-                c ? { ...c, currentShape: c.currentShape ? JSON.parse(JSON.stringify(c.currentShape)) : null } : null
+                c ? {
+                    ...c,
+                    currentShape: c.currentShape ? JSON.parse(JSON.stringify(c.currentShape)) : null,
+                    currentAnchor: c.currentAnchor ? { ...c.currentAnchor } : null
+                } : null
             );
 
             this.snapshot = {
@@ -120,7 +124,11 @@
             );
             if (s.reserveSlots) {
                 this.state.reserveSlots = s.reserveSlots.map(c => 
-                    c ? { ...c, currentShape: c.currentShape ? JSON.parse(JSON.stringify(c.currentShape)) : null } : null
+                    c ? {
+                        ...c,
+                        currentShape: c.currentShape ? JSON.parse(JSON.stringify(c.currentShape)) : null,
+                        currentAnchor: c.currentAnchor ? { ...c.currentAnchor } : null
+                    } : null
                 );
             }
 
@@ -241,6 +249,5 @@
 const UndoLandSystem = (typeof globalThis !== "undefined" && globalThis.UndoLandSystem) ? globalThis.UndoLandSystem : null;
 export { UndoLandSystem };
 export default UndoLandSystem;
-
 
 

@@ -21,6 +21,11 @@ import { attachLegacyUIBridge } from './legacy_ui_bridge.js';
 import { DiceWidgetComponent } from './dice_widget_component.js';
 import { DiceDisplayQueue } from './dice_display_queue.js';
 import { DevDiceControlsComponent } from './dev_dice_controls_component.js';
+import {
+    resolvePlacementAnchor,
+    resolvePlacementShape,
+    rotatePlacementClockwise
+} from '../core/placement_geometry.js';
 
 class UIController {
     /**
@@ -607,13 +612,21 @@ class UIController {
         const card = this.state.reserveSlots[reserveIdx];
         if (!card) return;
 
-        const currentShape = card.currentShape || (card.terrain ? card.terrain.shape : [[1]]);
-        const rotated = rotateShapeMatrix(currentShape);
-        card.currentShape = rotated;
+        this.rotateLandCardPlacement(card);
         this.render();
         if (this.selectedReserveIdx === reserveIdx) {
             this.highlightPlaceableCells();
         }
+    }
+
+    rotateLandCardPlacement(card) {
+        if (!card) return null;
+        const currentShape = resolvePlacementShape(card);
+        const currentAnchor = resolvePlacementAnchor(card, currentShape);
+        const rotated = rotatePlacementClockwise(currentShape, currentAnchor);
+        card.currentShape = rotated.shape;
+        card.currentAnchor = rotated.anchor;
+        return rotated;
     }
 
     renderBuffPanel() {
@@ -724,20 +737,10 @@ class UIController {
         const card = this.state.handOffering[idx];
         if (!card || card.isBlank) return;
 
-        const currentShape = card.currentShape || (card.terrain ? card.terrain.shape : (card.shape || [[1]]));
-        const rows = currentShape.length;
-        const cols = currentShape[0].length;
-        const newShape = [];
-        for (let c = 0; c < cols; c++) {
-            const newRow = [];
-            for (let r = rows - 1; r >= 0; r--) {
-                newRow.push(currentShape[r][c]);
-            }
-            newShape.push(newRow);
-        }
-        card.currentShape = newShape;
+        const rotated = this.rotateLandCardPlacement(card);
         if (this.selectedCard && (this.selectedCardIdx === idx || this.selectedCard === card)) {
-            this.selectedCard.currentShape = newShape;
+            this.selectedCard.currentShape = rotated.shape;
+            this.selectedCard.currentAnchor = rotated.anchor;
         }
 
         this.render();
@@ -1424,4 +1427,3 @@ if (typeof globalThis !== "undefined") {
 
 export { UIController };
 export default UIController;
-
