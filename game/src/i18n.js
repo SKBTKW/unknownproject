@@ -542,7 +542,9 @@
             LOG_RESERVE_DISCARDED: "🗑️ [保留破棄] {name} を破棄しました。",
 
             TOAST_CONNECTION_BONUS: "⚡ 連結ボーナス! {text}",
-            TOAST_MERGE_2X2: "🎉 2x2大土地完成! {text} 🔥+1",
+            TOAST_MERGE_2X2: "🎉 2x2大土地完成! {text}",
+            TOAST_MERGE_LINK_COMPLETE: "🔗 地域LINK成立! 🔥+1 / 最大🔥+1",
+            TOAST_MERGE_LINKS_COMPLETE: "🔗 {count}地域LINK成立! 🔥+{bonus} / 最大🔥+{bonus}",
             TOAST_SOCKET_SPAWNED: "✨ {icon} : {name}",
             TOAST_EXPLORATION_SUCCESS: "発掘! 🌾🧱+3",
             TOAST_EXPLORATION_MED: "成果 🌾+2",
@@ -1027,7 +1029,9 @@
             LOG_RESERVE_DISCARDED: "🗑️ [Reserve Discarded] Discarded {name}.",
 
             TOAST_CONNECTION_BONUS: "⚡ Connection Bonus! {text}",
-            TOAST_MERGE_2X2: "🎉 2x2 Merged! {text} 🔥+1",
+            TOAST_MERGE_2X2: "🎉 2x2 Merged! {text}",
+            TOAST_MERGE_LINK_COMPLETE: "🔗 Territory LINK formed! 🔥+1 / Max 🔥+1",
+            TOAST_MERGE_LINKS_COMPLETE: "🔗 {count} Territory LINKs formed! 🔥+{bonus} / Max 🔥+{bonus}",
             TOAST_SOCKET_SPAWNED: "✨ {icon} : {name}",
             TOAST_EXPLORATION_SUCCESS: "Discovered! 🌾🧱+3",
             TOAST_EXPLORATION_MED: "Result 🌾+2",

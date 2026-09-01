@@ -941,7 +941,18 @@ class GridEngine {
                             this.state.addLog(I18n.t("LOG_MERGE_2X2_COMPLETE", { name: tName, bonus: bText }));
                         }
                         if (this.state.toastQueue) {
-                            this.state.toastQueue.push({ r, c, text: toastMsg });
+                            this.state.toastQueue.push({
+                                type: "MERGE_2X2",
+                                r,
+                                c,
+                                text: toastMsg,
+                                rewards: {
+                                    food: bonusFood,
+                                    wood: bonusWood,
+                                    mystic: bonusMystic,
+                                    ember: bonusEmber
+                                }
+                            });
                         }
                     }
                 }
@@ -1131,6 +1142,7 @@ class GridEngine {
 
         const size = this.state.grid.length;
         const newLinks = [];
+        const newLinkCoords = [];
         const directions = [[0, 1], [1, 0]];
 
         for (let r = 0; r < size; r++) {
@@ -1159,6 +1171,7 @@ class GridEngine {
 
                     this.state.mergeLinks.add(linkKey);
                     newLinks.push(linkKey);
+                    newLinkCoords.push({ r, c, neighborR: nr, neighborC: nc });
                 }
             }
         }
@@ -1184,6 +1197,25 @@ class GridEngine {
             if (typeof this.state.addLog === 'function' && I18n && typeof I18n.t === 'function') {
                 const logKey = newLinkCount === 1 ? "LOG_MERGE_LINK_COMPLETE" : "LOG_MERGE_LINKS_COMPLETE";
                 this.state.addLog(I18n.t(logKey, { count: newLinkCount, bonus: newLinkCount }));
+            }
+
+            // 🌟 LINK成立専用 Toast (瞬間イベント通知 - 実際の接触辺セルをアンカーに発火)
+            if (this.state.toastQueue && newLinkCoords.length > 0) {
+                const anchor = newLinkCoords[0];
+                const toastKey = newLinkCount === 1 ? "TOAST_MERGE_LINK_COMPLETE" : "TOAST_MERGE_LINKS_COMPLETE";
+                const toastMsg = I18n && typeof I18n.t === 'function'
+                    ? I18n.t(toastKey, { count: newLinkCount, bonus: newLinkCount })
+                    : (newLinkCount === 1 ? "LINK (+1)" : `LINKs (+${newLinkCount})`);
+                this.state.toastQueue.push({
+                    type: "LINK_COMPLETE",
+                    r: anchor.r,
+                    c: anchor.c,
+                    text: toastMsg,
+                    rewards: {
+                        ember: newLinkCount,
+                        maxEmber: newLinkCount
+                    }
+                });
             }
         }
 

@@ -1,18 +1,35 @@
 /**
- * 🌟 FloatingFeedbackService (汎用フローティング演出サービス)
+ * 🌟 FloatingFeedbackService (UIフィードバック分類: Popup専用サービス)
+ * 
+ * 📜 【UIフィードバック3大分類の責務定義】
+ * 1. Popup  : 数値変化を瞬間的に伝えるもの (本営🔥増減 / データパネル🌾🧱🛡️✨増減)
+ *             ※イベント説明・文章は表示しない。数値差分 (+10, -5) 専用。
+ * 2. Toast  : ゲームイベントの成立内容を短く伝えるもの (MERGE成立 / LINK成立 / 資源発見)
+ *             ※toastQueue 経由で UIController がスタッガー・安全クランプ描画。
+ * 3. Tooltip: ユーザーがホバー/タップした時に詳細を表示するもの (EmberStatus / TooltipSystem)
  * 
  * 責務:
- * 1. ヘッダーリソース数値・本営残り火・マージボーナス・将来の市民の声 (Barks) の
- *    フロート演出を一元的に生成・制御・自動破棄する。
- * 2. 増加 (+X: 橙✕白枠 ✕ 上昇) と 減少 (-X: 青✕白枠 ✕ 下降) を厳格に統一。
- * 3. アニメーション完了後に DOM から即座に削除し、メモリリーク・ゴースト要素を 100% 防止する。
+ * 1. データパネルの資源数値差分 (+10, -5) ポップアップ描画
+ * 2. 将来の PopupService 統合を見据えた純粋な数値差分 View レイヤー
  */
 
 export class FloatingFeedbackService {
     /**
-     * 🎯 指定された DOM 要素の真ん中手前にポップアップをドンッと出現させる
+     * 📊 数値差分Popup表示 (統一インターフェース)
+     * @param {Object} param
+     * @param {string} param.resource - "FOOD" | "WOOD" | "DEFENSE" | "MYSTIC" | "EMBER"
+     * @param {number} param.delta - 増減数値
+     * @param {HTMLElement|string} param.target - マウント要素またはセレクタ
+     */
+    static showResourcePopup({ resource, delta, target }) {
+        if (!delta) return;
+        this.spawnOnElement(target, delta);
+    }
+
+    /**
+     * 🎯 指定された DOM 要素の真ん中手前にポップアップを出現させる (数値差分専用)
      * @param {HTMLElement|string} target - ターゲット要素またはセレクタ
-     * @param {number|string} deltaOrText - 表示する数値 (+10, -5) またはテキスト
+     * @param {number|string} deltaOrText - 表示する数値 (+10, -5)
      * @param {Object} [options={}]
      * @param {boolean} [options.isPlus=null] - プラス判定 (省略時は数値から自動判定)
      * @param {number} [options.durationMs=1100] - 表示時間 (ms)
