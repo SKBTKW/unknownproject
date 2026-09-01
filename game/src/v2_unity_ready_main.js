@@ -3,6 +3,7 @@ import { GridEngine } from './systems/grid_engine.js';
 import { DeckManager } from './systems/deck_manager.js';
 import { DirectiveSystem } from './systems/directive_system.js';
 import { ProductionCalculator } from './systems/production_calculator.js';
+import { rotateShapeMatrix } from './core/placement_geometry.js';
 
 class GameState {
     constructor(dependencies = {}) {
@@ -630,20 +631,6 @@ class GameState {
         generateOfferingCards() { return (this.state && this.state.deckManager) ? this.state.deckManager.generateOfferingCards() : []; }
         drawSingleCard() { return (this.state && this.state.deckManager) ? this.state.deckManager.drawSingleCard() : null; }
     });
-
-    function rotateShapeMatrix(matrix) {
-        const rows = matrix.length;
-        const cols = matrix[0].length;
-        const rotated = [];
-        for (let c = 0; c < cols; c++) {
-            const newRow = [];
-            for (let r = rows - 1; r >= 0; r--) {
-                newRow.push(matrix[r][c]);
-            }
-            rotated.push(newRow);
-        }
-        return rotated;
-    }
 
     const engineExports = {
         GameState,

@@ -37,6 +37,14 @@ import { GlobalEventManager, GlobalEventDirector, GlobalEventSelector } from './
 import { GLOBAL_EVENTS_MASTER } from './data/global_events.js';
 import { EmberSystem } from './systems/ember_system.js';
 import { CardCycleSystem, CYCLE_POLICIES } from './systems/card_cycle_system.js';
+import {
+    DEFAULT_PLACEMENT_ANCHOR,
+    normalizePlacementAnchor,
+    resolvePlacementAnchor,
+    resolvePlacementGeometry,
+    resolvePlacementShape,
+    rotatePlacementClockwise
+} from './core/placement_geometry.js';
 
 export {
     I18n,
@@ -89,7 +97,13 @@ export {
     GLOBAL_EVENTS_MASTER,
     EmberSystem,
     CardCycleSystem,
-    CYCLE_POLICIES
+    CYCLE_POLICIES,
+    DEFAULT_PLACEMENT_ANCHOR,
+    normalizePlacementAnchor,
+    resolvePlacementAnchor,
+    resolvePlacementGeometry,
+    resolvePlacementShape,
+    rotatePlacementClockwise
 };
 
 console.log('🎮 [App] Clean True ES Modules Master Entrypoint Loaded Successfully.');

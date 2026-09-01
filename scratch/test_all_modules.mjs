@@ -24,7 +24,10 @@ import {
     ChronicleSystem,
     GlobalEventManager,
     GLOBAL_EVENTS_MASTER,
-    EmberSystem
+    EmberSystem,
+    BlockPlacementSystem,
+    resolvePlacementGeometry,
+    rotatePlacementClockwise
 } from '../game/src/app.js';
 
 console.log('====================================================');
@@ -69,11 +72,13 @@ assert(engine.state.countPlacedTiles() === 1, '配置済みタイル数が 1 マ
 const cell = engine.state.grid[1][2];
 assert(cell.isHQVicinity === true, '本営近郊フラグ (isHQVicinity) が true であること');
 
-// 回転後の currentShape がプレビューだけでなく配置判定・確定配置にも使用されることを検証
+// 回転後のShape・Anchorがプレビューと確定配置で同じ座標へ解決されることを検証
 const rotatedPlacementEngine = GameEngine.createGame();
+const horizontalPlacement = rotatePlacementClockwise([[1, 1]], { r: 0, c: 1 });
 const rotatedLandCard = {
     id: 'CARD_FOREST_1X2_ROTATED',
-    currentShape: [[1], [1]],
+    currentShape: horizontalPlacement.shape,
+    currentAnchor: horizontalPlacement.anchor,
     terrain: {
         id: 'GL2_FOREST',
         terrainId: 'GL2_FOREST',
@@ -86,17 +91,115 @@ const rotatedLandCard = {
     }
 };
 rotatedPlacementEngine.state.handOffering[0] = rotatedLandCard;
+
+const previousDocument = globalThis.document;
+const previewCells = new Map();
+for (let r = 0; r < 5; r++) {
+    for (let c = 0; c < 5; c++) {
+        const classes = new Set(['cell']);
+        previewCells.set(`${r},${c}`, {
+            dataset: { r: String(r), c: String(c) },
+            classList: {
+                add: (...names) => names.forEach(name => classes.add(name)),
+                remove: (...names) => names.forEach(name => classes.delete(name)),
+                contains: name => classes.has(name)
+            }
+        });
+    }
+}
+globalThis.document = {
+    querySelectorAll: selector => selector === '.cell' ? Array.from(previewCells.values()) : [],
+    querySelector: selector => {
+        const match = selector.match(/data-r="(-?\d+)"\]\[data-c="(-?\d+)"/);
+        return match ? previewCells.get(`${match[1]},${match[2]}`) || null : null;
+    }
+};
+
+BlockPlacementSystem.updateHoverPreview(null, 1, 2, rotatedLandCard, rotatedPlacementEngine.state);
+assert(previewCells.get('0,2').classList.contains('preview-valid'), '回転後1x2の上側セル (0,2) が配置プレビューされること');
+assert(previewCells.get('1,2').classList.contains('preview-valid'), '回転後Anchorセル (1,2) が配置プレビューされること');
+assert(!previewCells.get('1,3').classList.contains('preview-valid'), '回転前の横方向 (1,3) は配置プレビューされないこと');
+
+BlockPlacementSystem.highlightPlaceableCandidates(rotatedLandCard, rotatedPlacementEngine.state);
+assert(previewCells.get('1,2').classList.contains('placeable-candidate'), 'candidate highlightがクリックするAnchor座標 (1,2) に表示されること');
+
+if (previousDocument === undefined) {
+    delete globalThis.document;
+} else {
+    globalThis.document = previousDocument;
+}
+
 const rotatedPlaceRes = rotatedPlacementEngine.placeLand(
     1,
-    1,
+    2,
     rotatedLandCard,
     0,
     { type: 'OFFERING', index: 0 }
 );
 assert(rotatedPlaceRes.success === true, '回転後の縦1x2土地配置が成功すること');
-assert(rotatedPlacementEngine.state.grid[1][1].placed === true, '回転後形状の始点 (1,1) が配置されること');
-assert(rotatedPlacementEngine.state.grid[2][1].placed === true, 'currentShape に従って縦方向 (2,1) が配置されること');
-assert(rotatedPlacementEngine.state.grid[1][2].placed === false, '元の横形状方向 (1,2) には配置されないこと');
+assert(rotatedPlacementEngine.state.grid[0][2].placed === true, 'プレビューと同じ回転後上側セル (0,2) が配置されること');
+assert(rotatedPlacementEngine.state.grid[1][2].placed === true, 'プレビューと同じAnchorセル (1,2) が配置されること');
+assert(rotatedPlacementEngine.state.grid[1][3].placed === false, '元の横形状方向 (1,3) には配置されないこと');
+
+// L字3セルのShapeとAnchorが90度時計回りに同じ基準で回転することを検証
+const lRotation = rotatePlacementClockwise([[1, 0], [1, 1]], { r: 1, c: 1 });
+assert(JSON.stringify(lRotation.shape) === JSON.stringify([[1, 1], [1, 0]]), 'L字3セルShapeが90度時計回りに回転すること');
+assert(lRotation.anchor.r === 1 && lRotation.anchor.c === 0, 'L字3セルAnchorが新座標 {r:1,c:0} へ回転すること');
+const lGeometry = resolvePlacementGeometry({ currentShape: lRotation.shape, currentAnchor: lRotation.anchor }, 3, 3);
+assert(lGeometry.startR === 2 && lGeometry.startC === 3, '回転後L字のクリック座標から開始座標が一意に解決されること');
+assert(lGeometry.cells.some(c => c.r === 3 && c.c === 3), '回転後L字でもAnchor構成セルがクリック座標に一致すること');
+
+// Anchor以外の構成セルだけが既存領土に接続する場合も合法になることを検証
+const nonAnchorConnectionEngine = GameEngine.createGame();
+const anchorPlainsTerrain = { id: 'GL1_PLAINS', terrainId: 'GL1_PLAINS', gl: 1, e: 1, nameKey: 'TERRAIN_PLAINS' };
+nonAnchorConnectionEngine.state.grid[1][1].placed = true;
+nonAnchorConnectionEngine.state.grid[1][1].isHQ = false;
+nonAnchorConnectionEngine.state.grid[1][1].terrain = anchorPlainsTerrain;
+const nonAnchorConnection = nonAnchorConnectionEngine.gridEngine.canPlaceShape(0, 0, [[1, 1], [1, 0]], anchorPlainsTerrain);
+assert(nonAnchorConnection.can === true, 'Anchor (0,0) が孤立していても他の構成セルの合法接続で配置可能になること');
+
+// 合法接続とE2/E0違反が同時に存在する場合はALL(adjacency)により拒否されることを検証
+const mixedAdjacencyEngine = GameEngine.createGame();
+const anchorHillTerrain = { id: 'E2_HILL', terrainId: 'E2_HILL', gl: 1, e: 2, nameKey: 'TERRAIN_HILL', shape: [[1, 1], [1, 0]] };
+const anchorWetlandTerrain = { id: 'E0_WETLAND', terrainId: 'E0_WETLAND', gl: 1, e: 0, nameKey: 'TERRAIN_WETLAND' };
+mixedAdjacencyEngine.state.grid[2][1].placed = true; // B3 = E1
+mixedAdjacencyEngine.state.grid[2][1].isHQ = false;
+mixedAdjacencyEngine.state.grid[2][1].terrain = anchorPlainsTerrain;
+mixedAdjacencyEngine.state.grid[1][2].placed = true; // C2 = E0
+mixedAdjacencyEngine.state.grid[1][2].isHQ = false;
+mixedAdjacencyEngine.state.grid[1][2].terrain = anchorWetlandTerrain;
+const mixedCard = {
+    id: 'CARD_HILL_L_ANCHORED',
+    currentShape: [[1, 1], [1, 0]],
+    currentAnchor: { r: 1, c: 0 },
+    terrain: anchorHillTerrain
+};
+mixedAdjacencyEngine.state.handOffering[0] = mixedCard;
+const mixedCheck = mixedAdjacencyEngine.gridEngine.canPlaceShape(0, 1, mixedCard.currentShape, mixedCard.terrain);
+assert(mixedCheck.can === false && mixedCheck.reasons.includes('WETLAND_HILL_NEIGHBOR'), 'B2-B3合法接続があってもC1-C2のE2/E0違反で配置不可になること');
+assert(!mixedCheck.reasons.includes('NOT_ADJACENT'), '合法な既存接続自体は全構成セル走査で検出されていること');
+const originalMixedCanPlaceShape = mixedAdjacencyEngine.state.canPlaceShape.bind(mixedAdjacencyEngine.state);
+let validateTerrain = null;
+mixedAdjacencyEngine.state.canPlaceShape = (startR, startC, shape, terrain) => {
+    validateTerrain = terrain;
+    return originalMixedCanPlaceShape(startR, startC, shape, terrain);
+};
+const mixedPlace = mixedAdjacencyEngine.placeLand(1, 1, mixedCard, 0, { type: 'OFFERING', index: 0 });
+assert(validateTerrain === mixedCard.terrain, 'GameEngine ValidateがcanPlaceShapeへterrainを渡すこと');
+assert(mixedPlace.success === false, 'GameEngine Validateもterrain込み全セル隣接違反を拒否すること');
+assert(mixedAdjacencyEngine.state.grid[0][1].placed === false, 'Validate失敗時はL字構成セルを一切配置しないこと');
+
+// Anchorは盤面内でも、変換後Shapeの一部が盤外ならOUT_OF_BOUNDSになることを検証
+const outOfBoundsEngine = GameEngine.createGame();
+const outOfBoundsCard = { currentShape: [[1, 1]], currentAnchor: { r: 0, c: 1 }, terrain: anchorPlainsTerrain };
+const outOfBoundsGeometry = resolvePlacementGeometry(outOfBoundsCard, 0, 0);
+const outOfBoundsCheck = outOfBoundsEngine.gridEngine.canPlaceShape(
+    outOfBoundsGeometry.startR,
+    outOfBoundsGeometry.startC,
+    outOfBoundsGeometry.shape,
+    outOfBoundsCard.terrain
+);
+assert(outOfBoundsCheck.can === false && outOfBoundsCheck.reasons.includes('OUT_OF_BOUNDS'), 'Anchorが盤面内でもShape一部が盤外ならOUT_OF_BOUNDSになること');
 
 // --- 3. BuffSystem ＆ ProductionCalculator 産出計算テスト ---
 console.log('\n🔥 [3/6] BuffSystem ＆ ProductionCalculator 産出計算');

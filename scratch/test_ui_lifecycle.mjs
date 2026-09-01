@@ -632,7 +632,7 @@ export async function runUILifecycleInspection() {
         BlockPlacementSystem.clearHoverPreviews();
 
         // 🔄 手札通常表示時の右クリック回転検証 (1x2以上のブロックで実機検証)
-        const landCard1x2 = { id: "CARD_FOREST_1X2", currentShape: [[1, 1]], terrain: { id: "GL2_FOREST", category: "LAND", gl: 2, e: 1, nameKey: "TERRAIN_FOREST", shape: [[1, 1]] } };
+        const landCard1x2 = { id: "CARD_FOREST_1X2", currentShape: [[1, 1]], currentAnchor: { r: 0, c: 1 }, terrain: { id: "GL2_FOREST", category: "LAND", gl: 2, e: 1, nameKey: "TERRAIN_FOREST", shape: [[1, 1]] } };
         ui.state.handOffering[0] = landCard1x2;
         ui.selectedCardIdx = -1;
         ui.selectedCard = null;
@@ -652,6 +652,7 @@ export async function runUILifecycleInspection() {
             handCardEl.oncontextmenu({ preventDefault: () => {}, stopPropagation: () => {} });
         }
         assert("手札カード右クリック後に1x2カードが縦 [[1],[1]] (2行1列) に回転すること", landCard1x2.currentShape.length === 2 && landCard1x2.currentShape[0].length === 1);
+        assert("手札カード右クリック後にAnchorが縦Shape下側 {r:1,c:0} へ回転すること", landCard1x2.currentAnchor.r === 1 && landCard1x2.currentAnchor.c === 0);
         assert("手札カード右クリック後にカードが自動選択状態 (selectedCardIdx: 0) になること", ui.selectedCardIdx === 0);
 
         // 再描画された手札カードの形状グリッド (22px) 検証
@@ -685,6 +686,7 @@ export async function runUILifecycleInspection() {
         if (testCell && testCell.oncontextmenu) {
             testCell.oncontextmenu(dummyEvt);
             assert("盤面セル右クリック回転後に形状が横 [[1,1]] (1行2列) に戻ること", landCard1x2.currentShape.length === 1 && landCard1x2.currentShape[0].length === 2);
+            assert("盤面セル右クリック回転後にAnchorも横Shape左側 {r:0,c:0} へ回転すること", landCard1x2.currentAnchor.r === 0 && landCard1x2.currentAnchor.c === 0);
         }
 
         // 🌟 トーストキューのスタッガーディレイ ＆ 垂直クリアランス（被り防止）検証

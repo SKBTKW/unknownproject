@@ -4,6 +4,7 @@ import { DIRECTIVES } from './directive_system.js';
 import { LAND_CARDS_MASTER } from '../data/land_cards_data.js';
 import { ConditionEvaluator } from '../core/condition_evaluator.js';
 import { CardCycleSystem, CYCLE_POLICIES } from './card_cycle_system.js';
+import { normalizePlacementAnchor } from '../core/placement_geometry.js';
 
 const COMMAND_CARDS_MASTER = [
     // 📜 経済・政策カード
@@ -361,7 +362,8 @@ class DeckManager {
             cardMasterId: picked.id,
             nameKey: picked.nameKey,
             terrain: picked,
-            currentShape: picked.shape || [[1]]
+            currentShape: picked.shape || [[1]],
+            currentAnchor: normalizePlacementAnchor(picked.anchor, picked.shape || [[1]])
         };
     }
 
@@ -1400,4 +1402,3 @@ if (typeof globalThis !== "undefined") {
 const Step1DrawSystem = DeckManager;
 export { DeckManager, Step1DrawSystem };
 export default DeckManager;
-
