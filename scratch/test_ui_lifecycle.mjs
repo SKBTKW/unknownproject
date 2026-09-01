@@ -708,6 +708,38 @@ export async function runUILifecycleInspection() {
         const verticalDiff = Math.abs(top1 - top2);
         assert("複数トーストの垂直スタック間隔が54px確保され文字が被らないこと", verticalDiff >= 54);
 
+        // 🏔️ Phase 1: GL表層ベース色 ＆ E高度オーバーレイ分離検問 (10ケース全検証)
+        const phase1Cases = [
+            { label: "1. E1 + GL0 (砂漠)", terrain: { id: "T_DESERT", terrainId: "GL0_DESERT", gl: 0, e: 1, nameKey: "TERRAIN_DESERT" }, expectedE: "e-1", expectedGL: "gl-0", hasOverlay: false },
+            { label: "2. E1 + GL1 (草原)", terrain: { id: "T_PLAINS", terrainId: "GL1_PLAINS", gl: 1, e: 1, nameKey: "TERRAIN_PLAINS" }, expectedE: "e-1", expectedGL: "gl-1", hasOverlay: false },
+            { label: "3. E1 + GL2 (森)",   terrain: { id: "T_FOREST", terrainId: "GL2_FOREST", gl: 2, e: 1, nameKey: "TERRAIN_FOREST" }, expectedE: "e-1", expectedGL: "gl-2", hasOverlay: false },
+            { label: "4. E1 + GL3 (深森)", terrain: { id: "T_DEEP",   terrainId: "GL3_DEEP_FOREST", gl: 3, e: 1, nameKey: "TERRAIN_DEEP_FOREST" }, expectedE: "e-1", expectedGL: "gl-3", hasOverlay: false },
+            { label: "5. E2 + GL0 (荒野)", terrain: { id: "T_WASTE", terrainId: "E2_WASTELAND", gl: 0, e: 2, nameKey: "TERRAIN_WASTELAND" }, expectedE: "e-2", expectedGL: "gl-0", hasOverlay: true, overlaySvg: "e-svg-hill" },
+            { label: "6. E2 + GL1 (丘陵)", terrain: { id: "T_HILL",   terrainId: "E2_HILL", gl: 1, e: 2, nameKey: "TERRAIN_HILL" }, expectedE: "e-2", expectedGL: "gl-1", hasOverlay: true, overlaySvg: "e-svg-hill" },
+            { label: "7. E2 + GL2 (森丘陵)", terrain: { id: "T_FHILL", terrainId: "E2_FOREST_HILL", gl: 2, e: 2, nameKey: "TERRAIN_FOREST_HILL" }, expectedE: "e-2", expectedGL: "gl-2", hasOverlay: true, overlaySvg: "e-svg-hill" },
+            { label: "8. E2 + GL3 (森林丘陵)", terrain: { id: "T_DHILL", terrainId: "E2_DEEP_HILL", gl: 3, e: 2, nameKey: "TERRAIN_DEEP_HILL" }, expectedE: "e-2", expectedGL: "gl-3", hasOverlay: true, overlaySvg: "e-svg-hill" },
+            { label: "9. E0 + GL1 (湿原)", terrain: { id: "T_WET",    terrainId: "E0_WETLAND", gl: 1, e: 0, nameKey: "TERRAIN_WETLAND" }, expectedE: "e-0", expectedGL: "gl-1", hasOverlay: true, overlaySvg: "e-svg-wetland" },
+            { label: "10. E3 (山岳)",      terrain: { id: "T_MOUNT",  terrainId: "E3_MOUNTAIN", gl: 0, e: 3, nameKey: "TERRAIN_MOUNTAIN" }, expectedE: "e-3", expectedGL: null, hasOverlay: true, overlaySvg: "e-svg-mountain" }
+        ];
+
+        for (const tc of phase1Cases) {
+            engine.state.grid[0][0] = { placed: true, terrain: tc.terrain };
+            ui.boardGridComponent.render(I18n);
+            const gridBoardEl = mockDoc.getElementById("gridBoard");
+            const c00 = gridBoardEl.children.find(c => c.dataset && c.dataset.r === "0" && c.dataset.c === "0");
+            assert(`${tc.label} にクラス ${tc.expectedE} が付与されること`, c00 && c00.classList.contains(tc.expectedE));
+            if (tc.expectedGL) {
+                assert(`${tc.label} にクラス ${tc.expectedGL} が付与されること`, c00 && c00.classList.contains(tc.expectedGL));
+            } else {
+                assert(`${tc.label} に gl-0 が付与されないこと (E3山岳GL除外)`, c00 && !c00.classList.contains("gl-0"));
+            }
+            if (tc.hasOverlay) {
+                assert(`${tc.label} に高度オーバーレイ (${tc.overlaySvg}) が描画されること`, c00 && c00.innerHTML.includes("elevation-overlay") && c00.innerHTML.includes(tc.overlaySvg));
+            } else {
+                assert(`${tc.label} に高度オーバーレイが描画されないこと (E1平坦)`, c00 && !c00.innerHTML.includes("elevation-overlay"));
+            }
+        }
+
     } catch (err) {
         console.error("  ❌ [FATAL] UIライフサイクル実行中に致命的例外が発生:", err);
         failCount++;

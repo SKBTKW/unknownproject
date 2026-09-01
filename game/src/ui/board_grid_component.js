@@ -1,4 +1,5 @@
 import { boardCameraSystem } from './board_camera_system.js';
+import { ElevationVisualService } from './elevation_visual_service.js';
 
 /**
  * 🗺️ BoardGridComponent (盤面グリッド ＆ セル描画・配置プレビュー・マージ演出専門コンポーネント)
@@ -120,6 +121,15 @@ export class BoardGridComponent {
                 } else if (cellData.placed && cellData.terrain) {
                     cellEl.classList.add("placed");
 
+                    // 🏔️ Phase 1: GL表層ベース色 ＆ E高度のクラス付与 ＆ 高度オーバーレイ生成
+                    const e = Number.isInteger(cellData.terrain?.e) ? cellData.terrain.e : 1;
+                    const gl = Number.isInteger(cellData.terrain?.gl) ? cellData.terrain.gl : 1;
+                    cellEl.classList.add(ElevationVisualService.getElevationClass(e));
+                    const glCls = ElevationVisualService.getGlClass(gl, e);
+                    if (glCls) cellEl.classList.add(glCls);
+
+                    const overlayHtml = ElevationVisualService.createElevationOverlay(e);
+
                     const tid = cellData.terrain ? (cellData.terrain.terrainId || cellData.terrain.id || "") : "";
                     if (tid.includes("WETLAND")) cellEl.classList.add("terrain-wetland");
                     else if (tid.includes("PLAINS")) cellEl.classList.add("terrain-plains");
@@ -176,16 +186,16 @@ export class BoardGridComponent {
                             const primaryYield = this.getSocketPrimaryYieldInfo(s) || yieldInfo;
                             const sYieldHtml = primaryYield ? `<div class="socket-yield-line"><span class="yield-icon">${primaryYield.icon}</span><span class="yield-colon"> : </span><span class="yield-val">${primaryYield.val}</span></div>` : "";
                             const symbolicHtml = this.createSymbolicTileHtml(cellData, primaryYield);
-                            cellEl.innerHTML = `<div class="socket-tile-content-box"><div class="socket-resource-line">${resIcon} : ${sName}</div>${sYieldHtml}</div>${symbolicHtml}`;
+                            cellEl.innerHTML = `${overlayHtml}<div class="socket-tile-content-box"><div class="socket-resource-line">${resIcon} : ${sName}</div>${sYieldHtml}</div>${symbolicHtml}`;
                         } else if (role === "LAND_PRIMARY") {
                             // 🌟 土地名 ＆ 総産出（最初の空きマスへスマート配置）
                             const catIcon = this.getTerrainCategoryIcon(cellData);
                             const yieldHtml = yieldInfo ? `<div class="tile-yield-line"><span class="yield-icon">${yieldInfo.icon}</span><span class="yield-colon"> : </span><span class="yield-val">${yieldInfo.val}</span></div>` : "";
                             const symbolicHtml = this.createSymbolicTileHtml(cellData, yieldInfo);
-                            cellEl.innerHTML = `<div class="tile-content-box"><div class="tile-title-line"><span class="tile-category-icon">${catIcon}</span><span class="tile-name-text">${tName}</span></div>${yieldHtml}</div>${symbolicHtml}`;
+                            cellEl.innerHTML = `${overlayHtml}<div class="tile-content-box"><div class="tile-title-line"><span class="tile-category-icon">${catIcon}</span><span class="tile-name-text">${tName}</span></div>${yieldHtml}</div>${symbolicHtml}`;
                         } else {
-                            // 🌟 後続のクリーン背景
-                            cellEl.innerHTML = "";
+                            // 🌟 後続のクリーン背景 (高度オーバーレイは維持)
+                            cellEl.innerHTML = overlayHtml;
                         }
                     } else {
                         const yieldInfo = this.getPrimaryYieldInfo(cellData, isHQVic);
@@ -200,13 +210,13 @@ export class BoardGridComponent {
                             const sYieldHtml = primaryYield ? `<div class="socket-yield-line"><span class="yield-icon">${primaryYield.icon}</span><span class="yield-colon"> : </span><span class="yield-val">${primaryYield.val}</span></div>` : "";
                             const searchedBadge = cellData.searched ? `<span class="searched-badge">${I18n.t("UI_SEARCHED_BADGE")}</span>` : "";
                             const symbolicHtml = this.createSymbolicTileHtml(cellData, primaryYield);
-                            cellEl.innerHTML = `<div class="socket-tile-content-box"><div class="socket-resource-line">${resIcon} : ${sName}</div>${sYieldHtml}${searchedBadge}</div>${symbolicHtml}`;
+                            cellEl.innerHTML = `${overlayHtml}<div class="socket-tile-content-box"><div class="socket-resource-line">${resIcon} : ${sName}</div>${sYieldHtml}${searchedBadge}</div>${symbolicHtml}`;
                         } else {
                             const catIcon = this.getTerrainCategoryIcon(cellData);
                             const yieldHtml = yieldInfo ? `<div class="tile-yield-line"><span class="yield-icon">${yieldInfo.icon}</span><span class="yield-colon"> : </span><span class="yield-val">${yieldInfo.val}</span></div>` : "";
                             const searchedBadge = cellData.searched ? `<span class="searched-badge">${I18n.t("UI_SEARCHED_BADGE")}</span>` : "";
                             const symbolicHtml = this.createSymbolicTileHtml(cellData, yieldInfo);
-                            cellEl.innerHTML = `<div class="tile-content-box"><div class="tile-title-line"><span class="tile-category-icon">${catIcon}</span><span class="tile-name-text">${tName}</span></div>${yieldHtml}${searchedBadge}</div>${symbolicHtml}`;
+                            cellEl.innerHTML = `${overlayHtml}<div class="tile-content-box"><div class="tile-title-line"><span class="tile-category-icon">${catIcon}</span><span class="tile-name-text">${tName}</span></div>${yieldHtml}${searchedBadge}</div>${symbolicHtml}`;
                         }
                     }
                 } else if (cellData.hasSocket) {

@@ -45,6 +45,7 @@ import {
     resolvePlacementShape,
     rotatePlacementClockwise
 } from './core/placement_geometry.js';
+import { ElevationVisualService } from './ui/elevation_visual_service.js';
 
 export {
     I18n,
@@ -85,6 +86,7 @@ export {
     TopHeaderComponent,
     BoardGridComponent,
     HqComponent,
+    ElevationVisualService,
     TooltipSystem,
     tooltipSystemInstance,
     ConditionEvaluator,

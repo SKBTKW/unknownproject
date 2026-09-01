@@ -680,6 +680,67 @@ body.is-camera-dragging-global * {
     border-color: #f7d794 !important;
 }
 
+/* 🏔️ Phase 1 互換移行用: GL表層ベース色 ＆ E高度オーバーレイ (2層表現) */
+/* GL0: 砂 / 乾燥色 (砂漠・砂漠丘陵の共通ベース) */
+.cell.placed.gl-0 {
+    background: linear-gradient(135deg, #84723c 0%, #463b18 100%) !important;
+    border-color: #f7d794 !important;
+}
+
+/* GL1: 草原 / 明るめ緑 (草原・丘陵・湿原の共通ベース) */
+.cell.placed.gl-1 {
+    background: linear-gradient(135deg, #1e4a26 0%, #122e17 100%) !important;
+    border-color: #2e7d32 !important;
+}
+
+/* GL2: 森 / 中緑 (森・森丘陵の共通ベース) */
+.cell.placed.gl-2 {
+    background: linear-gradient(135deg, #134236 0%, #0a261f 100%) !important;
+    border-color: #1abc9c !important;
+}
+
+/* GL3: 深い森 / 濃緑 (深い森・森林丘陵の共通ベース) */
+.cell.placed.gl-3 {
+    background: linear-gradient(135deg, #115e59 0%, #063c38 100%) !important;
+    border-color: #16a085 !important;
+}
+
+/* E0 低湿地: 水脈ティール枠線 */
+.cell.placed.e-0 {
+    border-color: #14b8a6 !important;
+}
+
+/* E3 山岳: GLを持たない特例 (専用surface & 山岳ブルー枠) */
+.cell.placed.e-3 {
+    background: linear-gradient(135deg, #383a54 0%, #202236 100%) !important;
+    border-color: #3498db !important;
+}
+
+/* 🏔️ E高度オーバーレイ (中間視覚レイヤー) */
+.cell .elevation-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    overflow: hidden;
+    border-radius: inherit;
+}
+
+.cell .elevation-overlay .e-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* 前面テキスト・UI要素の z-index 確保 (最前面表示) */
+.cell .tile-content-box,
+.cell .socket-tile-content-box,
+.cell .symbolic-tile-container,
+.cell .searched-badge {
+    position: relative;
+    z-index: 2;
+}
+
 /* 🌾 平地マージ (フレッシュグリーン大枠 ＆ 豊潤な緑グラデーション) */
 .cell.merged.merged-plains {
     background: linear-gradient(135deg, #1b4d2e 0%, #0d2918 100%) !important;
