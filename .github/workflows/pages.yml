@@ -3,7 +3,7 @@ name: Deploy game to GitHub Pages
 on:
   push:
     branches:
-      - Testplay
+      - "AGtest*"
   workflow_dispatch:
 
 permissions:
@@ -29,6 +29,25 @@ jobs:
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
+
+      - name: Generate build identity
+        env:
+          TOA_BRANCH_NAME: ${{ github.ref_name }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          identity = {
+              "mode": "development",
+              "branchName": os.environ["TOA_BRANCH_NAME"],
+          }
+          Path("game/__toa_build_identity__.json").write_text(
+              json.dumps(identity, ensure_ascii=False),
+              encoding="utf-8",
+          )
+          PY
 
       - name: Upload game
         uses: actions/upload-pages-artifact@v3
