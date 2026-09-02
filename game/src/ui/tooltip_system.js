@@ -301,7 +301,7 @@ export class TooltipSystem {
         const defTrialTag = I18n ? I18n.t("UI_DEFENSE_TRIAL_TAG") : "(試練対策)";
         const grossLabel = I18n ? I18n.t("UI_GROSS_YIELD_LABEL") : "総産出:";
         const hqBaseLabel = I18n ? I18n.t("UI_HQ_BASE_LABEL") : "本営基礎:";
-        const tilesLabel = I18n ? I18n.t("UI_TILES_LABEL") : "土地配置:";
+        const tilesLabel = I18n ? I18n.t("UI_TILES_LABEL") : "開発した土地:";
         const socketsLabel = I18n ? I18n.t("UI_SOCKETS_LABEL") : "ソケット:";
         const vicinityLabel = I18n ? I18n.t("UI_VICINITY_LABEL") : "本営近郊:";
         const emberAutoLabel = I18n ? I18n.t("UI_EMBER_AUTO_GRANT") : "残り火自動付与:";

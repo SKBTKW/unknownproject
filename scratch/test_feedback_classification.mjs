@@ -93,7 +93,7 @@ assert.strictEqual(engine2.state.toastQueue.length, 1, "LINK Toast が 1 件生�
 const linkToast = engine2.state.toastQueue[0];
 console.log("  生成された LINK Toast:", JSON.stringify(linkToast));
 assert.strictEqual(linkToast.type, "LINK_COMPLETE", "type が LINK_COMPLETE であること");
-assert(linkToast.text.includes("地域LINK成立") || linkToast.text.includes("Territory LINK"), "Toast に LINK 成立文言が含まれること");
+assert(linkToast.text.includes("地域連携成立") || linkToast.text.includes("Regional Cooperation"), "Toast に連携成立文言が含まれること");
 assert(linkToast.text.includes("🔥+1"), "Toast に 🔥+1 が含まれること");
 assert(linkToast.text.includes("最大🔥+1") || linkToast.text.includes("Max 🔥+1"), "Toast に 最大🔥+1 が含まれること");
 assert.strictEqual(linkToast.r, 0, "実際の接触点 r=0 がアンカー座標であること");

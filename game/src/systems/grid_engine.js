@@ -1,665 +1,6 @@
-/* =============================================================
-   game/src/systems/grid_engine.js
-   ç›¤é¢åˆæœŸåŒ–ãƒ»ã‚½ã‚±ãƒƒãƒˆé…ç½®ãƒ»é…ç½®æ¤œè¨¼ãƒ»ãƒãƒ¼ã‚¸åˆ¤å®šå°‚ç”¨ç‹¬ç«‹ãƒ‰ãƒ¡ã‚¤ãƒ³ãƒ¢ã‚¸ãƒ¥ãƒ¼ãƒ«
-   ============================================================= */
-
-import {
-    getMergeLinkKey,
-    haveDifferentMergeTerrainAttributes,
-    isTrueMergedCell
-} from '../core/merge_rules.js';
-import {
-    countPlacedLakes,
-    getLakeSpawnRateMultiplier
-} from '../core/lake_rules.js';
-
-class GridEngine {
-    constructor(gameState, engine = null) {
-        this.state = gameState;
-        this.engine = engine;
-    }
-
-    /**
-     * ğŸŒ ç›¤é¢ã‚°ãƒªãƒƒãƒ‰åˆæœŸåŒ–ï¼ˆæœ¬å–¶ä¸­å¤®é…ç½® ï¼† ã‚½ã‚±ãƒƒãƒˆééš£æ¥ãƒ©ãƒ³ãƒ€ãƒ é…ç½®ï¼‰
-     * @param {number} size - ã‚°ãƒªãƒƒãƒ‰ã‚µã‚¤ã‚ºï¼ˆãƒ‡ãƒ•ã‚©ãƒ«ãƒˆ 5ï¼‰
-     * @returns {Array<Array<Object>>}
-     */
-    initGrid(size = 5) {
-        const grid = [];
-        const center = Math.floor(size / 2); // 5x5 ã®å ´åˆã¯ (2, 2)
-
-        for (let r = 0; r < size; r++) {
-            const row = [];
-            for (let c = 0; c < size; c++) {
-                const isHQ = (r === center && c === center);
-                row.push({
-                    r, c,
-                    placed: isHQ,
-                    isHQ: isHQ,
-                    merged: false,
-                    mergeGroupId: null,
-                    mergeType: null,
-                    placementGroupId: null,
-                    terrain: isHQ ? { id: "HQ", nameKey: "TERRAIN_HQ", food: 10, wood: 10, defense: 10, mystic: 1 } : null,
-                    searched: false,
-                    hasSocket: false,
-                    socketResource: null,
-                    cachedSocketSeeds: {}
-                });
-            }
-            grid.push(row);
-        }
-
-        // ğŸ² ã‚½ã‚±ãƒƒãƒˆä½ç½®ã®ãƒ©ãƒ³ãƒ€ãƒ é¸å®šï¼ˆæœ¬å–¶ãŠã‚ˆã³ç›´è¿‘å‘¨å›²ã‚’é™¤ãå¤–å‘¨å€™è£œã‹ã‚‰3ãƒã‚¹æŠ½å‡ºï¼‰
-        const candidates = [];
-        for (let r = 0; r < size; r++) {
-            for (let c = 0; c < size; c++) {
-                const isHQ = (r === center && c === center);
-                const isNearHQ = (Math.abs(r - center) <= 1 && Math.abs(c - center) <= 1);
-                if (!isHQ && !isNearHQ) {
-                    candidates.push({ r, c });
-                }
-            }
-        }
-
-        // Fisher-Yates ã‚·ãƒ£ãƒƒãƒ•ãƒ«
-        for (let i = candidates.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
-        }
-
-        // ğŸš« ã‚½ã‚±ãƒƒãƒˆåŒå£«ã®éš£æ¥ç¦æ­¢ãƒ«ãƒ¼ãƒ«ï¼ˆç¸¦ãƒ»æ¨ªãƒ»æ–œã‚ã§æ¥ã—ãªã„ãƒã‚¹ã‚’é †æ¬¡é¸å®šï¼‰
-        const selectedSockets = [];
-        for (let candidate of candidates) {
-            if (selectedSockets.length >= 3) break;
-            const isAdjacent = selectedSockets.some(s =>
-                Math.abs(s.r - candidate.r) <= 1 && Math.abs(s.c - candidate.c) <= 1
-            );
-            if (!isAdjacent) {
-                selectedSockets.push(candidate);
-            }
-        }
-
-        for (let pos of selectedSockets) {
-            grid[pos.r][pos.c].hasSocket = true;
-        }
-
-        return grid;
-    }
-
-    /**
-     * ğŸ° æœ¬å–¶è¿‘éƒŠåˆ¤å®šï¼ˆæœ¬å–¶å‘¨å›²8ãƒã‚¹ãƒ»å¯å¤‰ã‚°ãƒªãƒƒãƒ‰å¯¾å¿œï¼‰
-     */
-    isHQVicinity(r, c) {
-        if (!this.state || !this.state.grid) return false;
-        const size = this.state.grid.length;
-        const center = Math.floor(size / 2);
-        if (r === center && c === center) return false;
-        return Math.abs(r - center) <= 1 && Math.abs(c - center) <= 1;
-    }
-
-    /**
-     * ğŸ“Š ç›¤é¢ä¸Šã®é…ç½®æ¸ˆã¿åœŸåœ°æ•°é›†è¨ˆï¼ˆæœ¬å–¶é™¤ããƒ»å¯å¤‰ã‚°ãƒªãƒƒãƒ‰å¯¾å¿œï¼‰
-     */
-    countPlacedTiles() {
-        if (!this.state || !this.state.grid) return 0;
-        const size = this.state.grid.length;
-        let count = 0;
-        for (let r = 0; r < size; r++) {
-            for (let c = 0; c < size; c++) {
-                const cell = this.state.grid[r][c];
-                if (cell && cell.placed && !cell.isHQ) count++;
-            }
-        }
-        return count;
-    }
-
-    /**
-     * ğŸ“ˆ é…ç½®ãƒ–ãƒ­ãƒƒã‚¯æ•°ã«å¿œã˜ãŸåœŸåœ°é…ç½®ã‚³ã‚¹ãƒˆ (ğŸ”¥) ã®å–å¾—
-     * 0ã€œ5ãƒ–ãƒ­ãƒƒã‚¯: ğŸ”¥0, 6ã€œ15ãƒ–ãƒ­ãƒƒã‚¯: ğŸ”¥1, 16ã€œ30ãƒ–ãƒ­ãƒƒã‚¯: ğŸ”¥2, 31ãƒ–ãƒ­ãƒƒã‚¯ã€œ: ğŸ”¥3
-     * @returns {number}
-     */
-    getPlacementEmberCost() {
-        const count = (this.state && this.state.placedBlockCount !== undefined) ? this.state.placedBlockCount : 0;
-        if (count < 6) return 0;   // 0ã€œ5 ãƒ–ãƒ­ãƒƒã‚¯: ğŸ”¥ 0 (å®Œå…¨ç„¡æ–™)
-        if (count < 16) return 1;  // 6ã€œ15 ãƒ–ãƒ­ãƒƒã‚¯: ğŸ”¥ 1
-        if (count < 31) return 2;  // 16ã€œ30 ãƒ–ãƒ­ãƒƒã‚¯: ğŸ”¥ 2
-        return 3;                  // 31 ãƒ–ãƒ­ãƒƒã‚¯ã€œ: ğŸ”¥ 3
-    }
-
-    /**
-     * â›°ï¸ ç›¤é¢ä¸Šã®ä¸˜é™µ (E2_HILL) æ•°é›†è¨ˆï¼ˆå¯å¤‰ã‚°ãƒªãƒƒãƒ‰å¯¾å¿œï¼‰
-     */
-    countE2HillsOnBoard() {
-        if (!this.state || !this.state.grid) return 0;
-        const size = this.state.grid.length;
-        let count = 0;
-        for (let r = 0; r < size; r++) {
-            for (let c = 0; c < size; c++) {
-                const cell = this.state.grid[r][c];
-                if (cell && cell.placed && cell.terrain && cell.terrain.id === "E2_HILL") {
-                    count++;
-                }
-            }
-        }
-        return count;
-    }
-
-    /**
-     * ğŸ—ºï¸ ç›¤é¢æ‹¡å¼µï¼ˆ5x5 â” 7x7 â” 9x9ï¼‰
-     * æ—¢å­˜ã®é…ç½®çŠ¶æ…‹ï¼ˆæœ¬å–¶ãƒ»é…ç½®æ¸ˆã¿åœŸåœ°ãƒ»ã‚½ã‚±ãƒƒãƒˆï¼‰ã‚’ä¸­å¿ƒã¸ä¿æŒã—ãŸã¾ã¾å¤–å‘¨ã‚’å‡ç­‰æ‹¡å¤§
-     * @param {number} newSize - æ‹¡å¼µå¾Œã®ç›¤é¢ã‚µã‚¤ã‚ºï¼ˆ7 ã¾ãŸã¯ 9ï¼‰
-     * @returns {Array<Array<Object>>}
-     */
-    expandGrid(newSize = 7) {
-        if (!this.state || !this.state.grid) {
-            return this.initGrid(newSize);
-        }
-        const oldGrid = this.state.grid;
-        const oldSize = oldGrid.length;
-        if (newSize <= oldSize) return oldGrid;
-
-        const offset = Math.floor((newSize - oldSize) / 2); // 5x5 -> 7x7 ã®å ´åˆ offset = 1
-        const newGrid = [];
-        const newCenter = Math.floor(newSize / 2);
-
-        for (let r = 0; r < newSize; r++) {
-            const row = [];
-            for (let c = 0; c < newSize; c++) {
-                const oldR = r - offset;
-                const oldC = c - offset;
-                if (oldR >= 0 && oldR < oldSize && oldC >= 0 && oldC < oldSize) {
-                    const oldCell = oldGrid[oldR][oldC];
-                    row.push({
-                        ...oldCell,
-                        r, c
-                    });
-                } else {
-                    // æ–°è¨­å¤–å‘¨ãƒã‚¹ï¼ˆæœªé…ç½®ãƒ»ã‚½ã‚±ãƒƒãƒˆãªã—ï¼‰
-                    row.push({
-                        r, c,
-                        placed: false,
-                        isHQ: false,
-                        merged: false,
-                        mergeGroupId: null,
-                        mergeType: null,
-                        placementGroupId: null,
-                        terrain: null,
-                        searched: false,
-                        hasSocket: false,
-                        socketResource: null
-                    });
-                }
-            }
-            newGrid.push(row);
-        }
-
-        this.state.grid = newGrid;
-
-        // ğŸ° 1. æœ¬å–¶ (HQ) ç”£å‡ºã® 1.4 å€å¼·åŒ– (Stage 2: ğŸŒ¾14, ğŸ§±14, ğŸ›¡ï¸14, âœ¨2)
-        if (newGrid[newCenter] && newGrid[newCenter][newCenter] && newGrid[newCenter][newCenter].isHQ) {
-            newGrid[newCenter][newCenter].terrain = {
-                id: "HQ",
-                nameKey: "TERRAIN_HQ",
-                food: 14,
-                wood: 14,
-                defense: 14,
-                mystic: 2
-            };
-        }
-
-        // ğŸ² 2. è³‡æºã‚½ã‚±ãƒƒãƒˆã®è¿½åŠ é…ç½® (+4å€‹: æœ€å¤–å‘¨3ãƒã‚¹ + å…¨åŸŸæœªé…ç½®1ãƒã‚¹)
-        const existingSockets = [];
-        for (let r = 0; r < newSize; r++) {
-            for (let c = 0; c < newSize; c++) {
-                if (newGrid[r][c].hasSocket) {
-                    existingSockets.push({ r, c });
-                }
-            }
-        }
-
-        const isAdjacentToAnySocket = (r, c, socketList) => {
-            return socketList.some(s => Math.abs(s.r - r) <= 1 && Math.abs(s.c - c) <= 1);
-        };
-
-        // (a) æœ€å¤–å‘¨ãƒ–ãƒ­ãƒƒã‚¯ã‹ã‚‰ 3 å€‹æŠ½å‡º
-        const perimeterCandidates = [];
-        for (let r = 0; r < newSize; r++) {
-            for (let c = 0; c < newSize; c++) {
-                const isPerimeter = (r === 0 || r === newSize - 1 || c === 0 || c === newSize - 1);
-                if (isPerimeter && !newGrid[r][c].placed && !newGrid[r][c].hasSocket) {
-                    perimeterCandidates.push({ r, c });
-                }
-            }
-        }
-
-        // Fisher-Yates ã‚·ãƒ£ãƒƒãƒ•ãƒ«
-        for (let i = perimeterCandidates.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [perimeterCandidates[i], perimeterCandidates[j]] = [perimeterCandidates[j], perimeterCandidates[i]];
-        }
-
-        const addedSockets = [];
-        for (const cand of perimeterCandidates) {
-            if (addedSockets.length >= 3) break;
-            if (!isAdjacentToAnySocket(cand.r, cand.c, existingSockets) &&
-                !isAdjacentToAnySocket(cand.r, cand.c, addedSockets)) {
-                addedSockets.push(cand);
-            }
-        }
-
-        // (b) å…¨ã‚°ãƒªãƒƒãƒ‰æœªé…ç½®ãƒ–ãƒ­ãƒƒã‚¯ã‹ã‚‰ãƒ©ãƒ³ãƒ€ãƒ  1 å€‹æŠ½å‡º
-        const allCandidates = [];
-        for (let r = 0; r < newSize; r++) {
-            for (let c = 0; c < newSize; c++) {
-                const cell = newGrid[r][c];
-                const isHQ = (r === newCenter && c === newCenter);
-                const isNearHQ = (Math.abs(r - newCenter) <= 1 && Math.abs(c - newCenter) <= 1);
-                if (!cell.placed && !isHQ && !isNearHQ && !cell.hasSocket) {
-                    allCandidates.push({ r, c });
-                }
-            }
-        }
-
-        for (let i = allCandidates.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [allCandidates[i], allCandidates[j]] = [allCandidates[j], allCandidates[i]];
-        }
-
-        for (const cand of allCandidates) {
-            if (addedSockets.length >= 4) break;
-            if (!isAdjacentToAnySocket(cand.r, cand.c, existingSockets) &&
-                !isAdjacentToAnySocket(cand.r, cand.c, addedSockets)) {
-                addedSockets.push(cand);
-            }
-        }
-
-        // ã‚½ã‚±ãƒƒãƒˆé…ç½®ã®ç¢ºå®š
-        for (const pos of addedSockets) {
-            newGrid[pos.r][pos.c].hasSocket = true;
-        }
-
-        return newGrid;
-    }
-
-    /**
-     * ğŸ” å½¢çŠ¶é…ç½®å¯å¦ãƒã‚§ãƒƒã‚¯ï¼ˆåœ°å‹¢ãƒ¬ãƒ™ãƒ«GL/æ¨™é«˜E/æœ¬å–¶è¿‘éƒŠ/å…¨ç†ç”±é…åˆ—reasonsåé›†å¯¾å¿œï¼‰
-     * @param {number} startR - é…ç½®é–‹å§‹è¡Œ
-     * @param {number} startC - é…ç½®é–‹å§‹åˆ—
-     * @param {Array<Array<number>>} shapeMatrix - å½¢çŠ¶ãƒãƒˆãƒªã‚¯ã‚¹
-     * @param {Object} [terrain] - é…ç½®å¯¾è±¡ã®åœ°å‹¢ãƒ‡ãƒ¼ã‚¿ (GL/Eåˆ¤å®šç”¨)
-     * @returns {{ can: boolean, reason?: string, reasons: Array<string> }}
-     */
-    canPlaceShape(startR, startC, shapeMatrix, terrain = null) {
-        if (!this.state || !this.state.grid) return { can: false, reason: "NO_GRID", reasons: ["NO_GRID"] };
-
-        const rows = shapeMatrix.length;
-        const cols = shapeMatrix[0].length;
-        const size = (this.state.stage && this.state.stage.size) ? this.state.stage.size : 5;
-
-        const targetGL = terrain ? (terrain.gl !== undefined ? terrain.gl : (terrain.terrain ? terrain.terrain.gl : null)) : null;
-        const targetE = terrain ? (terrain.e !== undefined ? terrain.e : (terrain.terrain ? terrain.terrain.e : 1)) : null;
-        const targetTid = terrain ? (terrain.terrainId || terrain.id || "") : "";
-        const isMountain = targetE === 3 || targetTid.includes("MOUNTAIN");
-
-        const reasons = [];
-
-        let isOutOfBounds = false;
-        let isAlreadyPlaced = false;
-        let isMountainNearHQ = false;
-        let isAdjacent = false;
-        let hasInvalidGL = false;
-        const elevationReasons = new Set();
-
-        // 1. ç›¤å¤–ãŠã‚ˆã³æ—¢é…ç½®ãƒã‚¹ã¨ã®é‡è¤‡åˆ¤å®š ï¼† æœ¬å–¶å‘¨å›²å±±å²³åˆ¤å®š
-        for (let dr = 0; dr < rows; dr++) {
-            for (let dc = 0; dc < cols; dc++) {
-                if (shapeMatrix[dr][dc] === 1) {
-                    const r = startR + dr;
-                    const c = startC + dc;
-                    if (r < 0 || r >= size || c < 0 || c >= size) {
-                        isOutOfBounds = true;
-                    } else {
-                        if (this.state.grid[r][c].placed) {
-                            isAlreadyPlaced = true;
-                        }
-                        if (isMountain && this.isHQVicinity(r, c)) {
-                            isMountainNearHQ = true;
-                        }
-                    }
-                }
-            }
-        }
-
-        if (isOutOfBounds) reasons.push("OUT_OF_BOUNDS");
-        if (isAlreadyPlaced) reasons.push("ALREADY_PLACED");
-        if (isMountainNearHQ) reasons.push("MOUNTAIN_NEAR_HQ_FORBIDDEN");
-
-        // 2. éš£æ¥æ¥ç¶šåˆ¤å®š ï¼† åœ°å‹¢ãƒ¬ãƒ™ãƒ«(GL) / æ¨™é«˜(E) ä¸é©åˆãƒã‚§ãƒƒã‚¯
-        if (!isOutOfBounds) {
-            for (let dr = 0; dr < rows; dr++) {
-                for (let dc = 0; dc < cols; dc++) {
-                    if (shapeMatrix[dr][dc] === 1) {
-                        const r = startR + dr;
-                        const c = startC + dc;
-                        const neighbors = [
-                            [r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]
-                        ];
-                        for (let [nr, nc] of neighbors) {
-                            if (nr >= 0 && nr < size && nc >= 0 && nc < size) {
-                                const neighborCell = this.state.grid[nr][nc];
-                                if (neighborCell.placed) {
-                                    isAdjacent = true;
-
-                                    if (!neighborCell.isHQ && neighborCell.terrain) {
-                                        // ğŸ›¡ï¸ æ°—å€™æ–­çµ¶ãƒ«ãƒ¼ãƒ«: ç ‚æ¼ (GL0) ã¨ æ£®æ—/æ·±æ—/å±±å²³(GL2ä»¥ä¸Š) ã¯ç›´æ¥éš£æ¥ä¸å¯ (æœ¬å–¶HQã¯å…¨åœ°å‹¢æ¥ç¶šå¯èƒ½)
-                                        if (targetGL !== null) {
-                                            const placedGL = neighborCell.terrain.gl !== undefined ? neighborCell.terrain.gl : 1;
-                                            if ((targetGL === 0 && placedGL >= 2) || (targetGL >= 2 && placedGL === 0)) {
-                                                hasInvalidGL = true;
-                                            }
-                                        }
-
-                                        // â›°ï¸ é«˜åº¦æ–­çµ¶ãƒ«ãƒ¼ãƒ« (æ–­å´–): æ¨™é«˜ E0(æ¹¿åŸ)/E1(å¹³åœ°) ã¨ æ¨™é«˜ E3(å±±å²³) ã¯ç›´æ¥éš£æ¥ä¸å¯ (|Eå·®| >= 2 ã¯ç¦æ­¢)
-                                        if (targetE !== null) {
-                                            const placedE = neighborCell.terrain.e !== undefined ? neighborCell.terrain.e : 1;
-                                            if (Math.abs(targetE - placedE) >= 2) {
-                                                if ((targetE === 0 && placedE === 3) || (targetE === 3 && placedE === 0)) {
-                                                    elevationReasons.add("WETLAND_MOUNTAIN_NEIGHBOR");
-                                                } else if ((targetE === 0 && placedE === 2) || (targetE === 2 && placedE === 0)) {
-                                                    elevationReasons.add("WETLAND_HILL_NEIGHBOR");
-                                                } else {
-                                                    elevationReasons.add("INVALID_ELEVATION_NEIGHBOR");
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (!isAdjacent && !isAlreadyPlaced) {
-                reasons.push("NOT_ADJACENT");
-            }
-            if (hasInvalidGL) {
-                reasons.push("INVALID_GL_NEIGHBOR");
-            }
-            if (elevationReasons.size > 0) {
-                elevationReasons.forEach(rKey => reasons.push(rKey));
-            }
-
-            // ğŸ”’ 3. åŒå±æ€§ 2Ã—2 ãƒãƒ¼ã‚¸ç›´æ¥é¢éš£æ¥ç¦æ­¢ãƒ«ãƒ¼ãƒ«
-            if (!isOutOfBounds && !isAlreadyPlaced) {
-                const targetTid = terrain ? (terrain.terrainId || terrain.id) : null;
-                const placingCells = [];
-                for (let dr = 0; dr < rows; dr++) {
-                    for (let dc = 0; dc < cols; dc++) {
-                        if (shapeMatrix[dr][dc] === 1) {
-                            placingCells.push({ r: startR + dr, c: startC + dc });
-                        }
-                    }
-                }
-
-                const getVirtualCell = (vr, vc) => {
-                    if (vr < 0 || vr >= size || vc < 0 || vc >= size) return null;
-                    const isPlacing = placingCells.some(p => p.r === vr && p.c === vc);
-                    if (isPlacing) {
-                        return { placed: true, isHQ: false, terrainId: targetTid, isVirtualPlacing: true };
-                    }
-                    const realCell = this.state.grid[vr][vc];
-                    if (realCell && realCell.placed && !realCell.isHQ && realCell.terrain) {
-                        const tid = realCell.terrain.terrainId || realCell.terrain.id;
-                        const isMerged = isTrueMergedCell(this.state, realCell);
-                        return { placed: true, isHQ: false, terrainId: tid, isMerged, mergeGroupId: realCell.mergeGroupId };
-                    }
-                    return null;
-                };
-
-                let hasMergedAdjacencyConflict = false;
-                for (let topR = 0; topR < size - 1; topR++) {
-                    for (let leftC = 0; leftC < size - 1; leftC++) {
-                        const c00 = getVirtualCell(topR, leftC);
-                        const c01 = getVirtualCell(topR, leftC + 1);
-                        const c10 = getVirtualCell(topR + 1, leftC);
-                        const c11 = getVirtualCell(topR + 1, leftC + 1);
-
-                        if (c00 && c01 && c10 && c11 &&
-                            c00.terrainId === targetTid &&
-                            c01.terrainId === targetTid &&
-                            c10.terrainId === targetTid &&
-                            c11.terrainId === targetTid) {
-                            
-                            const includesNewPlacing = (c00.isVirtualPlacing || c01.isVirtualPlacing || c10.isVirtualPlacing || c11.isVirtualPlacing);
-                            if (includesNewPlacing) {
-                                const perimeterNeighbors = [
-                                    [topR - 1, leftC], [topR - 1, leftC + 1],
-                                    [topR + 2, leftC], [topR + 2, leftC + 1],
-                                    [topR, leftC - 1], [topR + 1, leftC - 1],
-                                    [topR, leftC + 2], [topR + 1, leftC + 2]
-                                ];
-
-                                for (let [pr, pc] of perimeterNeighbors) {
-                                    if (pr >= 0 && pr < size && pc >= 0 && pc < size) {
-                                        const realNeighbor = this.state.grid[pr][pc];
-                                        if (realNeighbor && realNeighbor.placed && !realNeighbor.isHQ && realNeighbor.terrain) {
-                                            const nTid = realNeighbor.terrain.terrainId || realNeighbor.terrain.id;
-                                            const isNeighborMerged = isTrueMergedCell(this.state, realNeighbor);
-                                            
-                                            if (nTid === targetTid && isNeighborMerged) {
-                                                hasMergedAdjacencyConflict = true;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        if (hasMergedAdjacencyConflict) break;
-                    }
-                    if (hasMergedAdjacencyConflict) break;
-                }
-
-                if (hasMergedAdjacencyConflict) {
-                    reasons.push("SAME_TERRAIN_MERGED_NEIGHBOR_FORBIDDEN");
-                }
-            }
-        }
-
-        if (reasons.length > 0) {
-            return { can: false, reason: reasons[0], reasons: reasons };
-        }
-        return { can: true, reasons: [] };
-    }
-
-    /**
-     * ğŸ§© åœŸåœ°ãƒ–ãƒ­ãƒƒã‚¯ã®é…ç½®å®Ÿè¡Œ
-     */
-    placeShape(startR, startC, shapeMatrix, terrain, handIdx = -1) {
-        if (!this.state) return { can: false, reason: "NO_STATE" };
-        if (this.state.hasPickedThisTurn) return { can: false, reason: "ALREADY_PICKED_THIS_TURN" };
-
-        const check = this.canPlaceShape(startR, startC, shapeMatrix, terrain);
-        if (!check.can) return check;
-
-        const rows = shapeMatrix.length;
-        const cols = shapeMatrix[0].length;
-        const pGroupId = `place_${this.state.placementGroupCounter++}`;
-
-        let activeCellCount = 0;
-        for (let dr = 0; dr < rows; dr++) {
-            for (let dc = 0; dc < cols; dc++) {
-                if (shapeMatrix[dr][dc] === 1) activeCellCount++;
-            }
-        }
-
-        const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' && window.I18n ? window.I18n : { t: k => k });
-        const terrainName = I18n.t((terrain && (terrain.nameKey || terrain.id)) || "TERRAIN_PLAINS");
-
-        let spawnedAnySocket = false;
-        for (let dr = 0; dr < rows; dr++) {
-            for (let dc = 0; dc < cols; dc++) {
-                if (shapeMatrix[dr][dc] === 1) {
-                    const r = startR + dr;
-                    const c = startC + dc;
-                    const cell = this.state.grid[r][c];
-                    cell.placed = true;
-                    cell.terrain = terrain;
-                    cell.placementGroupId = pGroupId;
-                    cell.isHQVicinity = (Math.abs(r - 2) <= 1 && Math.abs(c - 2) <= 1 && !(r === 2 && c === 2));
-
-                    // â˜… ã‚½ã‚±ãƒƒãƒˆé–‹èŠ±åˆ¤å®š (æ±ºå®šè«–çš„å›ºå®šåŒ– âœ• ç›¸å¯¾ Weight è‡ªç„¶åœ°ç†æŠ½é¸: ã‚¢ãƒ³ãƒ‰ã‚¥ãƒªã‚»ãƒãƒ©ã‚’å®Œå…¨æ ¹çµ¶)
-                    if (cell.hasSocket && !cell.socketResource) {
-                        const seedKey = `${r}_${c}`;
-                        let spawnedSocket = null;
-
-                        if (cell.cachedSocketSeeds && cell.cachedSocketSeeds[seedKey]) {
-                            spawnedSocket = cell.cachedSocketSeeds[seedKey];
-                        } else {
-                            if (!cell.cachedSocketSeeds) cell.cachedSocketSeeds = {};
-                            const baseTid = terrain.terrainId || terrain.id || "";
-                            const getRng = () => (this.state && typeof this.state.rng === "function") ? this.state.rng() : Math.random();
-
-                            // 1. æ¹¿åŸ: æ¹– (60% * é€“æ¸›å€ç‡)
-                            if (baseTid.includes("WETLAND")) {
-                                const currentLakeCount = countPlacedLakes(this.state);
-                                const lakeRateMult = getLakeSpawnRateMultiplier(currentLakeCount);
-                                if (getRng() < (0.60 * lakeRateMult)) {
-                                    spawnedSocket = { id: "SOCKET_LAKE", nameKey: "SOCKET_LAKE", category: "CAT_WATER", icon: "ğŸ’§", bonusFood: 2, bonusWood: 0, bonusDefense: 0, bonusMystic: 1, isLake: true };
-                                }
-                            }
-                            // 2. ç ‚æ¼ : ã‚ªã‚¢ã‚·ã‚¹ (25%) â€»ã‚ªã‚¢ã‚·ã‚¹ã¯æ¹–é€“æ¸›ã®å½±éŸ¿ã‚’å—ã‘ãªã„
-                            else if (baseTid.includes("DESERT") && getRng() < 0.25) {
-                                spawnedSocket = { id: "SOCKET_OASIS", nameKey: "SOCKET_OASIS", category: "CAT_WATER", icon: "ğŸï¸", bonusFood: 1, bonusWood: 0, bonusDefense: 0, bonusMystic: 2, isLake: true };
-                            }
-                            // 3. è‰åŸ 1x1: æ¹– (25% * é€“æ¸›å€ç‡)
-                            else if (baseTid.includes("PLAINS") && activeCellCount === 1) {
-                                const currentLakeCount = countPlacedLakes(this.state);
-                                const lakeRateMult = getLakeSpawnRateMultiplier(currentLakeCount);
-                                if (getRng() < (0.25 * lakeRateMult)) {
-                                    spawnedSocket = { id: "SOCKET_LAKE", nameKey: "SOCKET_LAKE", category: "CAT_WATER", icon: "ğŸ’§", bonusFood: 2, bonusWood: 0, bonusDefense: 0, bonusMystic: 1, isLake: true };
-                                }
-                            }
-
-                            // 4. ä¸€èˆ¬è³‡æºãƒ—ãƒ¼ãƒ«æŠ½é¸ (æ¹–/ã‚ªã‚¢ã‚·ã‚¹éå½“é¸æ™‚)
-                            const socketMaster = (typeof globalThis !== "undefined" && globalThis.SOCKET_RESOURCE_MASTER) ? globalThis.SOCKET_RESOURCE_MASTER : (typeof window !== "undefined" ? window.SOCKET_RESOURCE_MASTER : null);
-                            if (!spawnedSocket && socketMaster) {
-                                const pool = socketMaster.filter(s => s.reqTerrains && s.reqTerrains.some(t => baseTid.includes(t)));
-                                if (pool.length > 0) {
-                                    const chosen = pool[Math.floor(getRng() * pool.length)];
-                                    spawnedSocket = {
-                                        id: chosen.id,
-                                        nameKey: chosen.nameKey,
-                                        category: chosen.category,
-                                        icon: chosen.icon,
-                                        bonusFood: (chosen.bonusYields && chosen.bonusYields.food) || 0,
-                                        bonusWood: (chosen.bonusYields && (chosen.bonusYields.material !== undefined ? chosen.bonusYields.material : chosen.bonusYields.wood)) || 0,
-                                        bonusDefense: (chosen.bonusYields && chosen.bonusYields.defense) || 0,
-                                        bonusMystic: (chosen.bonusYields && chosen.bonusYields.mystic) || 0
-                                    };
-                                }
-                            }
-                            if (!spawnedSocket) {
-                                spawnedSocket = { id: "SOCKET_WILD_WHEAT", nameKey: "SOCKET_WILD_WHEAT", category: "CAT_GRAIN", icon: "ğŸŒ¾", bonusFood: 3, bonusWood: 0, bonusDefense: 0, bonusMystic: 0 };
-                            }
-                            if (spawnedSocket) cell.cachedSocketSeeds[seedKey] = spawnedSocket;
-                        }
-
-                        if (spawnedSocket) {
-                            cell.socketResource = { ...spawnedSocket };
-                            spawnedAnySocket = true;
-                            const posStr = `(${String.fromCharCode(65+c)}${r+1})`;
-                            const sName = I18n.t(spawnedSocket.nameKey);
-                            const sIcon = spawnedSocket.icon || "ğŸ’";
-                            if (typeof this.state.addLog === 'function') {
-                                this.state.addLog(I18n.t("LOG_SOCKET_SPAWNED", { pos: posStr, terrainName, socketName: sName, icon: sIcon }));
-                            }
-                            if (this.state.toastQueue) {
-                                this.state.toastQueue.push({ r, c, text: I18n.t("TOAST_SOCKET_SPAWNED", { name: sName, icon: sIcon }) });
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        const placementOutcome = {
-            socketSpawned: spawnedAnySocket,
-            connection1x2: false,
-            connection1x3: false,
-            merge2x2: false
-        };
-
-        const placedCoords = [];
-        for (let dr = 0; dr < rows; dr++) {
-            for (let dc = 0; dc < cols; dc++) {
-                if (shapeMatrix[dr][dc] === 1) {
-                    const r = startR + dr;
-                    const c = startC + dc;
-                    placedCoords.push({ r, c });
-                    const connRes = this.checkConnectionBonus(r, c, terrain);
-                    if (connRes && connRes.connection1x3) placementOutcome.connection1x3 = true;
-                    else if (connRes && connRes.connection1x2) placementOutcome.connection1x2 = true;
-                }
-            }
-        }
-        const mergeRes = this.checkMergePatterns(placedCoords);
-        if (mergeRes && mergeRes.merge2x2) {
-            placementOutcome.merge2x2 = true;
-        }
-        this.checkNewMergeLinks();
-
-        const placementCost = this.getPlacementEmberCost();
-        if (placementCost > 0) {
-            if (this.state.emberSystem && typeof this.state.emberSystem.consume === 'function') {
-                this.state.emberSystem.consume(placementCost);
-            } else {
-                this.state.ember = Math.max(0, this.state.ember - placementCost);
-            }
-        }
-        this.state.placedBlockCount = (this.state.placedBlockCount || 0) + 1;
-        this.state.hasPickedThisTurn = true;
-
-        if (this.engine && this.engine.deckManager) {
-            this.engine.deckManager.consumeCardIfUnique(terrain);
-        } else if (this.state && this.state.deckManager) {
-            this.state.deckManager.consumeCardIfUnique(terrain);
-        }
-
-        if (handIdx >= 0 && this.state.handOffering && handIdx < this.state.handOffering.length && this.state.handOffering[handIdx]) {
-            this.state.handOffering[handIdx] = { isBlank: true };
-        }
-
-        const posStr = `(${String.fromCharCode(65+startC)}${startR+1})`;
-        let dimSuffix = "";
-        if (rows > 1 || cols > 1) {
-            const totalCells = activeCellCount;
-            if (rows === 1 || cols === 1) {
-                dimSuffix = ` (1x${totalCells})`;
-            } else {
-                dimSuffix = ` (${cols}x${rows})`;
-            }
-        }
-        const logTerrainName = `${terrainName}${dimSuffix}`;
-
-        if (typeof this.state.addLog === 'function') {
-            this.state.addLog(I18n.t("LOG_LAND_PLACED", { pos: posStr, name: logTerrainName }));
-        }
-        if (typeof this.state.checkConditionalBuffs === 'function') {
-            this.state.checkConditionalBuffs();
-        }
-        return { can: true, success: true, placementOutcome };
-    }
-
-    /**
-     * âš¡ 1x2 / 1x3 é€£çµå³æ™‚ãƒœãƒ¼ãƒŠã‚¹åˆ¤å®š ï¼† ãƒãƒ¼ã‚¸ã‚°ãƒ«ãƒ¼ãƒ—çµ±åˆ
-     */
-    checkConnectionBonus(r, c, terrain) {
-        if (!this.state || !this.state.grid) return;
-        const baseTerrainId = terrain.terrainId || terrain.id;
-        const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' && window.I18n ? window.I18n : { t: k => k });
+YªçŠx-®éÜj×¢ëiºÚ+Š§j[h‘éÜ¢éíÛN;á:-jZ.¶›­–)Ş³Rò¢ÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓĞ¢vÖR÷7&2÷7—7FV×2öw&–EöVæv–æRæ§0¢yºN™Ú.X‰ŞiÉşXÉn8;¾8+Ş8+88>88˜XŞ{Úî8;¾˜XŞ{ÚîjIÎŠ‹Î8;¾89î8;Î8+XŠNZé®[.yJxºÎz¸¾888:8*N8;>8:.8+8:^8;Î8:°¢ÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÓÒ¢ğ ¦–×÷'B°¢vWDÖW&vTÆ–æ´¶W’À¢†fTF–ffW&VçDÖW&vUFW'&–äGG&–'WFW2À¢—5G'VTÖW&vVD6VÆÀ§Òg&öÒrââö6÷&RöÖW&vU÷'VÆW2æ§2s°¦–×÷'B°¢6÷VçEÆ6VDÆ¶W2À¢vWDÆ¶U7vå&FT×VÇF—Æ–W §Òg&öÒrââö6÷&RöÆ¶U÷'VÆW2æ§2s° ¦6Æ72w&–DVæv–æR°¢6öç7G'V7F÷"†vÖU7FFRÂVæv–æRÒçVÆÂ’°¢F†—2ç7FFRÒvÖU7FFS°¢F†—2æVæv–æRÒVæv–æS°¢Ğ ¢ò¢ ¢¢	øÉyºN™Ú.8+8:®88>88X‰ŞiÉşXÉnûÈiÊÎYknKŠŞZJî˜XŞ{ÚâûÈb8+Ş8+88>88™Ùî™ª>hê^8:8;>888:˜XŞ{ÚîûÈ¢¢&Ò¶çVÖ&W'Ò6—¦RÒ8+8:®88>888+^8*N8+®ûÈ88~89^8*8:¾88‚^ûÈ¢¢&WGW&ç2´'&“Ä'&“Äö&¦V7CãçĞ¢¢ğ¢–æ—Dw&–B‡6—¦RÒR’°¢6öç7Bw&–BÒµÓ°¢6öç7B6VçFW"ÒÖF‚æfÆö÷"‡6—¦Rò"“²òòWƒR8îZNY8òƒ"Â" ¢f÷"†ÆWB"Ò²"Â6—¦S²"²²’°¢6öç7B&÷rÒµÓ°¢f÷"†ÆWB2Ò²2Â6—¦S²2²²’°¢6öç7B—4…Ò‡"ÓÓÒ6VçFW"bb2ÓÓÒ6VçFW"“°¢&÷rçW6‚‡°¢"Â2À¢Æ6VC¢—4…À¢—4…¢—4…À¢ÖW&vVC¢fÇ6RÀ¢ÖW&vTw&÷W–C¢çVÆÂÀ¢ÖW&vUG—S¢çVÆÂÀ¢Æ6VÖVçDw&÷W–C¢çVÆÂÀ¢FW'&–ã¢—4…ò²–C¢$…"ÂæÖT¶W“¢%DU%$”åô…"ÂfööC¢ÂvööC¢ÂFVfVç6S¢Â×—7F–3¢Ò¢çVÆÂÀ¢6V&6†VC¢fÇ6RÀ¢†56ö6¶WC¢fÇ6RÀ¢6ö6¶WE&W6÷W&6S¢çVÆÂÀ¢66†VE6ö6¶WE6VVG3¢·Ğ¢Ò“°¢Ğ¢w&–BçW6‚‡&÷r“°¢Ğ ¢òò	øë"8+Ş8+88>88KØŞ{Úî8î8:8;>888:˜Zé®ûÈiÊÎYkn8®8(8>y»N‹ùYY».8).™šN8şZInYX	Š9Î8¾8(“>89î8+h«ŞX{®ûÈ¢6öç7B6æF–FFW2ÒµÓ°¢f÷"†ÆWB"Ò²"Â6—¦S²"²²’°¢f÷"†ÆWB2Ò²2Â6—¦S²2²²’°¢6öç7B—4…Ò‡"ÓÓÒ6VçFW"bb2ÓÓÒ6VçFW"“°¢6öç7B—4æV$…Ò„ÖF‚æ'2‡"Ò6VçFW"’ÃÒbbÖF‚æ'2†2Ò6VçFW"’ÃÒ“°¢–b‚—4…bb—4æV$…’°¢6æF–FFW2çW6‚‡²"Â2Ò“°¢Ğ¢Ğ¢Ğ ¢òòf—6†W"Õ–FW28+~8:>88>89^8:°¢f÷"†ÆWB’Ò6æF–FFW2æÆVæwF‚Ò²’â²’ÒÒ’°¢6öç7B¢ÒÖF‚æfÆö÷"„ÖF‚ç&æFöÒ‚’¢†’²’“°¢¶6æF–FFW5¶•ÒÂ6æF–FFW5¶¥ÕÒÒ¶6æF–FFW5¶¥ÒÂ6æF–FFW5¶•ÕÓ°¢Ğ ¢òò	ùª²8+Ş8+88>88YÎZ:¾8î™ª>hê^zhjÚ.8:¾8;Î8:¾ûÈ{Šn8;¾jŠ®8;¾iiÎ8(8~hê^8~8®8N89î8+8).šnjÊ˜Zé®ûÈ¢6öç7B6VÆV7FVE6ö6¶WG2ÒµÓ°¢f÷"†ÆWB6æF–FFRöb6æF–FFW2’°¢–b‡6VÆV7FVE6ö6¶WG2æÆVæwF‚ãÒ2’'&V³°¢6öç7B—4F¦6VçBÒ6VÆV7FVE6ö6¶WG2ç6öÖR‡2Óà¢ÖF‚æ'2‡2ç"Ò6æF–FFRç"’ÃÒbbÖF‚æ'2‡2æ2Ò6æF–FFRæ2’ÃÒ¢“°¢–b‚—4F¦6VçB’°¢6VÆV7FVE6ö6¶WG2çW6‚†6æF–FFR“°¢Ğ¢Ğ ¢f÷"†ÆWB÷2öb6VÆV7FVE6ö6¶WG2’°¢w&–E·÷2ç%Õ·÷2æ5Òæ†56ö6¶WBÒG'VS°¢Ğ ¢&WGW&âw&–C°¢Ğ ¢ò¢ ¢¢	øûiÊÎYkn‹ù˜8®XŠNZé®ûÈiÊÎYknYY»#89î8+8;¾XúşZH8+8:®88>88Zûî[ùÎûÈ¢¢ğ¢—4…f–6–æ—G’‡"Â2’°¢–b‚F†—2ç7FFRÇÂF†—2ç7FFRæw&–B’&WGW&âfÇ6S°¢6öç7B6—¦RÒF†—2ç7FFRæw&–BæÆVæwFƒ°¢6öç7B6VçFW"ÒÖF‚æfÆö÷"‡6—¦Rò"“°¢–b‡"ÓÓÒ6VçFW"bb2ÓÓÒ6VçFW"’&WGW&âfÇ6S°¢&WGW&âÖF‚æ'2‡"Ò6VçFW"’ÃÒbbÖF‚æ'2†2Ò6VçFW"’ÃÒ°¢Ğ ¢ò¢ ¢¢	ù8¢yºN™Ú.Kˆ®8î˜XŞ{Úîkˆ8şYÉşYËi[™¸nŠˆûÈiÊÎYkn™šN8ş8;¾XúşZH8+8:®88>88Zûî[ùÎûÈ¢¢ğ¢6÷VçEÆ6VEF–ÆW2‚’°¢–b‚F†—2ç7FFRÇÂF†—2ç7FFRæw&–B’&WGW&â°¢6öç7B6—¦RÒF†—2ç7FFRæw&–BæÆVæwFƒ°¢ÆWB6÷VçBÒ°¢f÷"†ÆWB"Ò²"Â6—¦S²"²²’°¢f÷"†ÆWB2Ò²2Â6—¦S²2²²’°¢6öç7B6VÆÂÒF†—2ç7FFRæw&–E·%Õ¶5Ó°¢–b†6VÆÂbb6VÆÂçÆ6VBbb6VÆÂæ—4…’6÷VçB²³°¢Ğ¢Ğ¢&WGW&â6÷VçC°¢Ğ ¢ò¢ ¢¢	ù8‚˜XŞ{Úî89n8:Ş88>8*şi[8¾[ùÎ88şYÉşYË˜XŞ{Úî8+>8+88‚	ùJR’8îXùn[ép¢¢8	Ã^89n8:Ş88>8*ó¢	ùJSÂn8	Ã^89n8:Ş88>8*ó¢	ùJSÂn8	Ã389n8:Ş88>8*ó¢	ùJS"Â389n8:Ş88>8*ş8	Ã¢	ùJS0¢¢&WGW&ç2¶çVÖ&W'Ğ¢¢ğ¢vWEÆ6VÖVçDVÖ&W$6÷7B‚’°¢6öç7B6÷VçBÒ‡F†—2ç7FFRbbF†—2ç7FFRçÆ6VD&Æö6´6÷VçBÓÒVæFVf–æVB’òF†—2ç7FFRçÆ6VD&Æö6´6÷VçB¢°¢–b†6÷VçBÂb’&WGW&â²òò8	ÃR89n8:Ş88>8*ó¢	ùJRZèÎXZxJii’¢–b†6÷VçBÂb’&WGW&â²òòn8	ÃR89n8:Ş88>8*ó¢	ùJR¢–b†6÷VçBÂ3’&WGW&â#²òòn8	Ã389n8:Ş88>8*ó¢	ùJR ¢&WGW&â3²òò389n8:Ş88>8*ş8	Ã¢	ùJR0¢Ğ ¢ò¢ ¢¢)»ûˆòyºN™Ú.Kˆ®8îK‰™›R„S%ô„”ÄÂ’i[™¸nŠˆûÈXúşZH8+8:®88>88Zûî[ùÎûÈ¢¢ğ¢6÷VçDS$†–ÆÇ4öä&ö&B‚’°¢–b‚F†—2ç7FFRÇÂF†—2ç7FFRæw&–B’&WGW&â°¢6öç7B6—¦RÒF†—2ç7FFRæw&–BæÆVæwFƒ°¢ÆWB6÷VçBÒ°¢f÷"†ÆWB"Ò²"Â6—¦S²"²²’°¢f÷"†ÆWB2Ò²2Â6—¦S²2²²’°¢6öç7B6VÆÂÒF†—2ç7FFRæw&–E·%Õ¶5Ó°¢–b†6VÆÂbb6VÆÂçÆ6VBbb6VÆÂçFW'&–âbb6VÆÂçFW'&–âæ–BÓÓÒ$S%ô„”ÄÂ"’°¢6÷VçB²³°¢Ğ¢Ğ¢Ğ¢&WGW&â6÷VçC°¢Ğ ¢ò¢ ¢¢	ù{®ûˆòyºN™Ú.hº[Ë^ûÈƒWƒR)éBwƒr)éB—ƒûÈ¢¢iz.ZÙ8î˜XŞ{Úîx«nhX¾ûÈiÊÎYkn8;¾˜XŞ{Úîkˆ8şYÉşYË8;¾8+Ş8+88>88ûÈ8).KŠŞ[ø>8KùŞhÈ8~8ş8î8îZInY8).YØ~zØhºZJp¢¢&Ò¶çVÖ&W'ÒæWu6—¦RÒhº[Ë^[èÎ8îyºN™Ú.8+^8*N8+®ûÈƒr8î8ş8òûÈ¢¢&WGW&ç2´'&“Ä'&“Äö&¦V7CãçĞ¢¢ğ¢W‡æDw&–B†æWu6—¦RÒr’°¢–b‚F†—2ç7FFRÇÂF†—2ç7FFRæw&–B’°¢&WGW&âF†—2æ–æ—Dw&–B†æWu6—¦R“°¢Ğ¢6öç7BöÆDw&–BÒF†—2ç7FFRæw&–C°¢6öç7BöÆE6—¦RÒöÆDw&–BæÆVæwFƒ°¢–b†æWu6—¦RÃÒöÆE6—¦R’&WGW&âöÆDw&–C° ¢6öç7Böfg6WBÒÖF‚æfÆö÷"‚†æWu6—¦RÒöÆE6—¦R’ò"“²òòWƒRÓâwƒr8îZNY‚öfg6WBÒ¢6öç7BæWtw&–BÒµÓ°¢6öç7BæWt6VçFW"ÒÖF‚æfÆö÷"†æWu6—¦Rò"“° ¢f÷"†ÆWB"Ò²"ÂæWu6—¦S²"²²’°¢6öç7B&÷rÒµÓ°¢f÷"†ÆWB2Ò²2ÂæWu6—¦S²2²²’°¢6öç7BöÆE"Ò"Òöfg6WC°¢6öç7BöÆD2Ò2Òöfg6WC°¢–b†öÆE"ãÒbböÆE"ÂöÆE6—¦RbböÆD2ãÒbböÆD2ÂöÆE6—¦R’°¢6öç7BöÆD6VÆÂÒöÆDw&–E¶öÆE%Õ¶öÆD5Ó°¢&÷rçW6‚‡°¢ââæöÆD6VÆÂÀ¢"Â0¢Ò“°¢ÒVÇ6R°¢òòikŠŠŞZInY89î8+ûÈiÊ®˜XŞ{Úî8;¾8+Ş8+88>888®8~ûÈ¢&÷rçW6‚‡°¢"Â2À¢Æ6VC¢fÇ6RÀ¢—4…¢fÇ6RÀ¢ÖW&vVC¢fÇ6RÀ¢ÖW&vTw&÷W–C¢çVÆÂÀ¢ÖW&vUG—S¢çVÆÂÀ¢Æ6VÖVçDw&÷W–C¢çVÆÂÀ¢FW'&–ã¢çVÆÂÀ¢6V&6†VC¢fÇ6RÀ¢†56ö6¶WC¢fÇ6RÀ¢6ö6¶WE&W6÷W&6S¢çVÆÀ¢Ò“°¢Ğ¢Ğ¢æWtw&–BçW6‚‡&÷r“°¢Ğ ¢F†—2ç7FFRæw&–BÒæWtw&–C° ¢òò	øûâiÊÎYkb„…’yJ>X{®8âãBXŞ[Ë~XÉb…7FvR#¢	øËãBÂ	ú{BÂ	ùºûˆóBÂ)Êƒ"¢–b†æWtw&–E¶æWt6VçFW%ÒbbæWtw&–E¶æWt6VçFW%Õ¶æWt6VçFW%ÒbbæWtw&–E¶æWt6VçFW%Õ¶æWt6VçFW%Òæ—4…’°¢æWtw&–E¶æWt6VçFW%Õ¶æWt6VçFW%ÒçFW'&–âÒ°¢–C¢$…"À¢æÖT¶W“¢%DU%$”åô…"À¢fööC¢BÀ¢vööC¢BÀ¢FVfVç6S¢BÀ¢×—7F–3¢ ¢Ó°¢Ğ ¢òò	øë""â‹8~k©8+Ş8+88>888î‹ûŞXª˜XŞ{Úâ‚³NX³¢iÈZInYƒ>89î8+’²XZYùşiÊ®˜XŞ{Úã89î8+’¢6öç7BW†—7F–æu6ö6¶WG2ÒµÓ°¢f÷"†ÆWB"Ò²"ÂæWu6—¦S²"²²’°¢f÷"†ÆWB2Ò²2ÂæWu6—¦S²2²²’°¢–b†æWtw&–E·%Õ¶5Òæ†56ö6¶WB’°¢W†—7F–æu6ö6¶WG2çW6‚‡²"Â2Ò“°¢Ğ¢Ğ¢Ğ ¢6öç7B—4F¦6VçEFôç•6ö6¶WBÒ‡"Â2Â6ö6¶WDÆ—7B’Óâ°¢&WGW&â6ö6¶WDÆ—7Bç6öÖR‡2ÓâÖF‚æ'2‡2ç"Ò"’ÃÒbbÖF‚æ'2‡2æ2Ò2’ÃÒ“°¢Ó° ¢òò†’iÈZInY89n8:Ş88>8*ş8¾8(’2X¾h«ŞX{ ¢6öç7BW&–ÖWFW$6æF–FFW2ÒµÓ°¢f÷"†ÆWB"Ò²"ÂæWu6—¦S²"²²’°¢f÷"†ÆWB2Ò²2ÂæWu6—¦S²2²²’°¢6öç7B—5W&–ÖWFW"Ò‡"ÓÓÒÇÂ"ÓÓÒæWu6—¦RÒÇÂ2ÓÓÒÇÂ2ÓÓÒæWu6—¦RÒ“°¢–b†—5W&–ÖWFW"bbæWtw&–E·%Õ¶5ÒçÆ6VBbbæWtw&–E·%Õ¶5Òæ†56ö6¶WB’°¢W&–ÖWFW$6æF–FFW2çW6‚‡²"Â2Ò“°¢Ğ¢Ğ¢Ğ ¢òòf—6†W"Õ–FW28+~8:>88>89^8:°¢f÷"†ÆWB’ÒW&–ÖWFW$6æF–FFW2æÆVæwF‚Ò²’â²’ÒÒ’°¢6öç7B¢ÒÖF‚æfÆö÷"„ÖF‚ç&æFöÒ‚’¢†’²’“°¢·W&–ÖWFW$6æF–FFW5¶•ÒÂW&–ÖWFW$6æF–FFW5¶¥ÕÒÒ·W&–ÖWFW$6æF–FFW5¶¥ÒÂW&–ÖWFW$6æF–FFW5¶•ÕÓ°¢Ğ ¢6öç7BFFVE6ö6¶WG2ÒµÓ°¢f÷"†6öç7B6æBöbW&–ÖWFW$6æF–FFW2’°¢–b†FFVE6ö6¶WG2æÆVæwF‚ãÒ2’'&V³°¢–b‚—4F¦6VçEFôç•6ö6¶WB†6æBç"Â6æBæ2ÂW†—7F–æu6ö6¶WG2’b`¢—4F¦6VçEFôç•6ö6¶WB†6æBç"Â6æBæ2ÂFFVE6ö6¶WG2’’°¢FFVE6ö6¶WG2çW6‚†6æB“°¢Ğ¢Ğ ¢òò†"’XZ8+8:®88>88iÊ®˜XŞ{Úî89n8:Ş88>8*ş8¾8(8:8;>888:X¾h«ŞX{ ¢6öç7BÆÄ6æF–FFW2ÒµÓ°¢f÷"†ÆWB"Ò²"ÂæWu6—¦S²"²²’°¢f÷"†ÆWB2Ò²2ÂæWu6—¦S²2²²’°¢6öç7B6VÆÂÒæWtw&–E·%Õ¶5Ó°¢6öç7B—4…Ò‡"ÓÓÒæWt6VçFW"bb2ÓÓÒæWt6VçFW"“°¢6öç7B—4æV$…Ò„ÖF‚æ'2‡"ÒæWt6VçFW"’ÃÒbbÖF‚æ'2†2ÒæWt6VçFW"’ÃÒ“°¢–b‚6VÆÂçÆ6VBbb—4…bb—4æV$…bb6VÆÂæ†56ö6¶WB’°¢ÆÄ6æF–FFW2çW6‚‡²"Â2Ò“°¢Ğ¢Ğ¢Ğ ¢f÷"†ÆWB’ÒÆÄ6æF–FFW2æÆVæwF‚Ò²’â²’ÒÒ’°¢6öç7B¢ÒÖF‚æfÆö÷"„ÖF‚ç&æFöÒ‚’¢†’²’“°¢¶ÆÄ6æF–FFW5¶•ÒÂÆÄ6æF–FFW5¶¥ÕÒÒ¶ÆÄ6æF–FFW5¶¥ÒÂÆÄ6æF–FFW5¶•ÕÓ°¢Ğ ¢f÷"†6öç7B6æBöbÆÄ6æF–FFW2’°¢–b†FFVE6ö6¶WG2æÆVæwF‚ãÒB’'&V³°¢–b‚—4F¦6VçEFôç•6ö6¶WB†6æBç"Â6æBæ2ÂW†—7F–æu6ö6¶WG2’b`¢—4F¦6VçEFôç•6ö6¶WB†6æBç"Â6æBæ2ÂFFVE6ö6¶WG2’’°¢FFVE6ö6¶WG2çW6‚†6æB“°¢Ğ¢Ğ ¢òò8+Ş8+88>88˜XŞ{Úî8îz+®Zé ¢f÷"†6öç7B÷2öbFFVE6ö6¶WG2’°¢æWtw&–E·÷2ç%Õ·÷2æ5Òæ†56ö6¶WBÒG'VS°¢Ğ ¢&WGW&âæWtw&–C°¢Ğ ¢ò¢ ¢¢	ùHÒ[Ú.x«n˜XŞ{ÚîXúşY
+n888*~88>8*şûÈYËXº.8:Î898:´tÂşj‰š¹„RşiÊÎYkn‹ù˜8¢şXZynyK˜XŞX‰w&V6öç>Xøî™¸nZûî[ùÎûÈ¢¢&Ò¶çVÖ&W'Ò7F'E"Ò˜XŞ{Úî™h¾Zx¾ŠÀ¢¢&Ò¶çVÖ&W'Ò7F'D2Ò˜XŞ{Úî™h¾Zx¾X‰p¢¢&Ò´'&“Ä'&“ÆçVÖ&W#ãçÒ6†TÖG&—‚Ò[Ú.x«n89î888:®8*ş8+¢¢&Ò´ö&¦V7GÒ·FW'&–åÒÒ˜XŞ{ÚîZûî‹8îYËXº.88~8;Î8+ò„tÂô^XŠNZé®yJ‚¢¢&WGW&ç2·²6ã¢&ööÆVâÂ&V6öãó¢7G&–ærÂ&V6öç3¢'&“Ç7G&–æsâ×Ğ¢¢ğ¢6åÆ6U6†R‡7F'E"Â7F'D2Â6†TÖG&—‚ÂFW'&–âÒçVÆÂ’°¢–b‚F†—2ç7FFRÇÂF†—2ç7FFRæw&–B’&WGW&â²6ã¢fÇ6RÂ&V6öã¢$äõôu$”B"Â&V6öç3¢²$äõôu$”B%ÒÓ° ¢6öç7B&÷w2Ò6†TÖG&—‚æÆVæwFƒ°¢6öç7B6öÇ2Ò6†TÖG&—…³ÒæÆVæwFƒ°¢6öç7B6—¦RÒ‡F†—2ç7FFRç7FvRbbF†—2ç7FFRç7FvRç6—¦R’òF†—2ç7FFRç7FvRç6—¦R¢S° ¢6öç7BF&vWDtÂÒFW'&–âò‡FW'&–âævÂÓÒVæFVf–æVBòFW'&–âævÂ¢‡FW'&–âçFW'&–âòFW'&–âçFW'&–âævÂ¢çVÆÂ’’¢çVÆÃ°¢6öç7BF&vWDRÒFW'&–âò‡FW'&–âæRÓÒVæFVf–æVBòFW'&–âæR¢‡FW'&–âçFW'&–âòFW'&–âçFW'&–âæR¢’’¢çVÆÃ°¢6öç7BF&vWEF–BÒFW'&–âò‡FW'&–âçFW'&–ä–BÇÂFW'&–âæ–BÇÂ""’¢"#°¢6öç7B—4Ö÷VçF–âÒF&vWDRÓÓÒ2ÇÂF&vWEF–Bæ–æ6ÇVFW2‚$ÔõTåD”â"“° ¢6öç7B&V6öç2ÒµÓ° ¢ÆWB—4÷WDöd&÷VæG2ÒfÇ6S°¢ÆWB—4Ç&VG•Æ6VBÒfÇ6S°¢ÆWB—4Ö÷VçF–äæV$…ÒfÇ6S°¢ÆWB—4F¦6VçBÒfÇ6S°¢ÆWB†4–çfÆ–DtÂÒfÇ6S°¢6öç7BVÆWfF–öå&V6öç2ÒæWr6WB‚“° ¢òòâyºNZIn8®8(8>iz.˜XŞ{Úî89î8+88î˜xŞŠH~XŠNZé¢ûÈbiÊÎYknYY».[[+>XŠNZé ¢f÷"†ÆWBG"Ò²G"Â&÷w3²G"²²’°¢f÷"†ÆWBF2Ò²F2Â6öÇ3²F2²²’°¢–b‡6†TÖG&—…¶G%Õ¶F5ÒÓÓÒ’°¢6öç7B"Ò7F'E"²G#°¢6öç7B2Ò7F'D2²F3°¢–b‡"ÂÇÂ"ãÒ6—¦RÇÂ2ÂÇÂ2ãÒ6—¦R’°¢—4÷WDöd&÷VæG2ÒG'VS°¢ÒVÇ6R°¢–b‡F†—2ç7FFRæw&–E·%Õ¶5ÒçÆ6VB’°¢—4Ç&VG•Æ6VBÒG'VS°¢Ğ¢–b†—4Ö÷VçF–âbbF†—2æ—4…f–6–æ—G’‡"Â2’’°¢—4Ö÷VçF–äæV$…ÒG'VS°¢Ğ¢Ğ¢Ğ¢Ğ¢Ğ ¢–b†—4÷WDöd&÷VæG2’&V6öç2çW6‚‚$õUEôôeô$õTäE2"“°¢–b†—4Ç&VG•Æ6VB’&V6öç2çW6‚‚$Å$TE•õÄ4TB"“°¢–b†—4Ö÷VçF–äæV$…’&V6öç2çW6‚‚$ÔõTåD”åôäT%ô…ôdõ$$”DDTâ"“° ¢òò"â™ª>hê^hê^{i®XŠNZé¢ûÈbYËXº.8:Î898:²„tÂ’òj‰š¹‚„R’KˆŞ˜Y888*~88>8*ğ¢–b‚—4÷WDöd&÷VæG2’°¢f÷"†ÆWBG"Ò²G"Â&÷w3²G"²²’°¢f÷"†ÆWBF2Ò²F2Â6öÇ3²F2²²’°¢–b‡6†TÖG&—…¶G%Õ¶F5ÒÓÓÒ’°¢6öç7B"Ò7F'E"²G#°¢6öç7B2Ò7F'D2²F3°¢6öç7BæV–v†&÷'2Ò°¢·"ÒÂ5ÒÂ·"²Â5ÒÂ·"Â2ÒÒÂ·"Â2²Ğ¢Ó°¢f÷"†ÆWB¶ç"Âæ5ÒöbæV–v†&÷'2’°¢–b†ç"ãÒbbç"Â6—¦Rbbæ2ãÒbbæ2Â6—¦R’°¢6öç7BæV–v†&÷$6VÆÂÒF†—2ç7FFRæw&–E¶ç%Õ¶æ5Ó°¢–b†æV–v†&÷$6VÆÂçÆ6VB’°¢—4F¦6VçBÒG'VS° ¢–b‚æV–v†&÷$6VÆÂæ—4…bbæV–v†&÷$6VÆÂçFW'&–â’°¢òò	ùºûˆòk	~X	ijŞ{[n8:¾8;Î8:³¢z.kÊ„tÃ’8‚j:îiérşk{iérş[[+2„tÃ.Kº^Kˆ¢’8şy»Nhê^™ª>hê^KˆŞXúòiÊÎYkd…8şXZYËXº.hê^{i®Xúşˆ;Ò¢–b‡F&vWDtÂÓÒçVÆÂ’°¢6öç7BÆ6VDtÂÒæV–v†&÷$6VÆÂçFW'&–âævÂÓÒVæFVf–æVBòæV–v†&÷$6VÆÂçFW'&–âævÂ¢°¢–b‚‡F&vWDtÂÓÓÒbbÆ6VDtÂãÒ"’ÇÂ‡F&vWDtÂãÒ"bbÆ6VDtÂÓÓÒ’’°¢†4–çfÆ–DtÂÒG'VS°¢Ğ¢Ğ ¢òò)»ûˆòš¹[ªnijŞ{[n8:¾8;Î8:²ijŞ[Ib“¢j‰š¹‚Sk›şXéò’ôS[›>YË’8‚j‰š¹‚S2[[+2’8şy»Nhê^™ª>hê^KˆŞXúò‡Ä^[zçÂãÒ"8şzhjÚ"¢–b‡F&vWDRÓÒçVÆÂ’°¢6öç7BÆ6VDRÒæV–v†&÷$6VÆÂçFW'&–âæRÓÒVæFVf–æVBòæV–v†&÷$6VÆÂçFW'&–âæR¢°¢–b„ÖF‚æ'2‡F&vWDRÒÆ6VDR’ãÒ"’°¢–b‚‡F&vWDRÓÓÒbbÆ6VDRÓÓÒ2’ÇÂ‡F&vWDRÓÓÒ2bbÆ6VDRÓÓÒ’’°¢VÆWfF–öå&V6öç2æFB‚%tUDÄäEôÔõTåD”åôäT”t„$õ""“°¢ÒVÇ6R–b‚‡F&vWDRÓÓÒbbÆ6VDRÓÓÒ"’ÇÂ‡F&vWDRÓÓÒ"bbÆ6VDRÓÓÒ’’°¢VÆWfF–öå&V6öç2æFB‚%tUDÄäEô„”ÄÅôäT”t„$õ""“°¢ÒVÇ6R°¢VÆWfF–öå&V6öç2æFB‚$”ådÄ”EôTÄUdD”ôåôäT”t„$õ""“°¢Ğ¢Ğ¢Ğ¢Ğ¢Ğ¢Ğ¢Ğ¢Ğ¢Ğ¢Ğ ¢–b‚—4F¦6VçBbb—4Ç&VG•Æ6VB’°¢&V6öç2çW6‚‚$äõEôD¤4TåB"“°¢Ğ¢–b††4–çfÆ–DtÂ’°¢&V6öç2çW6‚‚$”ådÄ”EôtÅôäT”t„$õ""“°¢Ğ¢–b†VÆWfF–öå&V6öç2ç6—¦Râ’°¢VÆWfF–öå&V6öç2æf÷$V6‚‡$¶W’Óâ&V6öç2çW6‚‡$¶W’’“°¢Ğ ¢òò	ùI"2âYÎ[îh
+r,9s"89î8;Î8+y»Nhê^™Ú.™ª>hê^zhjÚ.8:¾8;Î8:°¢–b‚—4÷WDöd&÷VæG2bb—4Ç&VG•Æ6VB’°¢6öç7BF&vWEF–BÒFW'&–âò‡FW'&–âçFW'&–ä–BÇÂFW'&–âæ–B’¢çVÆÃ°¢6öç7BÆ6–æt6VÆÇ2ÒµÓ°¢f÷"†ÆWBG"Ò²G"Â&÷w3²G"²²’°¢f÷"†ÆWBF2Ò²F2Â6öÇ3²F2²²’°¢–b‡6†TÖG&—…¶G%Õ¶F5ÒÓÓÒ’°¢Æ6–æt6VÆÇ2çW6‚‡²#¢7F'E"²G"Â3¢7F'D2²F2Ò“°¢Ğ¢Ğ¢Ğ ¢6öç7BvWEf—'GVÄ6VÆÂÒ‡g"Âf2’Óâ°¢–b‡g"ÂÇÂg"ãÒ6—¦RÇÂf2ÂÇÂf2ãÒ6—¦R’&WGW&âçVÆÃ°¢6öç7B—5Æ6–ærÒÆ6–æt6VÆÇ2ç6öÖR‡Óâç"ÓÓÒg"bbæ2ÓÓÒf2“°¢–b†—5Æ6–ær’°¢&WGW&â²Æ6VC¢G'VRÂ—4…¢fÇ6RÂFW'&–ä–C¢F&vWEF–BÂ—5f—'GVÅÆ6–æs¢G'VRÓ°¢Ğ¢6öç7B&VÄ6VÆÂÒF†—2ç7FFRæw&–E·g%Õ·f5Ó°¢–b‡&VÄ6VÆÂbb&VÄ6VÆÂçÆ6VBbb&VÄ6VÆÂæ—4…bb&VÄ6VÆÂçFW'&–â’°¢6öç7BF–BÒ&VÄ6VÆÂçFW'&–âçFW'&–ä–BÇÂ&VÄ6VÆÂçFW'&–âæ–C°¢6öç7B—4ÖW&vVBÒ—5G'VTÖW&vVD6VÆÂ‡F†—2ç7FFRÂ&VÄ6VÆÂ“°¢&WGW&â²Æ6VC¢G'VRÂ—4…¢fÇ6RÂFW'&–ä–C¢F–BÂ—4ÖW&vVBÂÖW&vTw&÷W–C¢&VÄ6VÆÂæÖW&vTw&÷W–BÓ°¢Ğ¢&WGW&âçVÆÃ°¢Ó° ¢ÆWB†4ÖW&vVDF¦6Væ7”6öæfÆ–7BÒfÇ6S°¢f÷"†ÆWBF÷"Ò²F÷"Â6—¦RÒ²F÷"²²’°¢f÷"†ÆWBÆVgD2Ò²ÆVgD2Â6—¦RÒ²ÆVgD2²²’°¢6öç7B3ÒvWEf—'GVÄ6VÆÂ‡F÷"ÂÆVgD2“°¢6öç7B3ÒvWEf—'GVÄ6VÆÂ‡F÷"ÂÆVgD2²“°¢6öç7B3ÒvWEf—'GVÄ6VÆÂ‡F÷"²ÂÆVgD2“°¢6öç7B3ÒvWEf—'GVÄ6VÆÂ‡F÷"²ÂÆVgD2²“° ¢–b†3bb3bb3bb3b`¢3çFW'&–ä–BÓÓÒF&vWEF–Bb`¢3çFW'&–ä–BÓÓÒF&vWEF–Bb`¢3çFW'&–ä–BÓÓÒF&vWEF–Bb`¢3çFW'&–ä–BÓÓÒF&vWEF–B’°¢ ¢6öç7B–æ6ÇVFW4æWuÆ6–ærÒ†3æ—5f—'GVÅÆ6–ærÇÂ3æ—5f—'GVÅÆ6–ærÇÂ3æ—5f—'GVÅÆ6–ærÇÂ3æ—5f—'GVÅÆ6–ær“°¢–b†–æ6ÇVFW4æWuÆ6–ær’°¢6öç7BW&–ÖWFW$æV–v†&÷'2Ò°¢·F÷"ÒÂÆVgD5ÒÂ·F÷"ÒÂÆVgD2²ÒÀ¢·F÷"²"ÂÆVgD5ÒÂ·F÷"²"ÂÆVgD2²ÒÀ¢·F÷"ÂÆVgD2ÒÒÂ·F÷"²ÂÆVgD2ÒÒÀ¢·F÷"ÂÆVgD2²%ÒÂ·F÷"²ÂÆVgD2²%Ğ¢Ó° ¢f÷"†ÆWB·"Â5ÒöbW&–ÖWFW$æV–v†&÷'2’°¢–b‡"ãÒbb"Â6—¦Rbb2ãÒbb2Â6—¦R’°¢6öç7B&VÄæV–v†&÷"ÒF†—2ç7FFRæw&–E·%Õ·5Ó°¢–b‡&VÄæV–v†&÷"bb&VÄæV–v†&÷"çÆ6VBbb&VÄæV–v†&÷"æ—4…bb&VÄæV–v†&÷"çFW'&–â’°¢6öç7BåF–BÒ&VÄæV–v†&÷"çFW'&–âçFW'&–ä–BÇÂ&VÄæV–v†&÷"çFW'&–âæ–C°¢6öç7B—4æV–v†&÷$ÖW&vVBÒ—5G'VTÖW&vVD6VÆÂ‡F†—2ç7FFRÂ&VÄæV–v†&÷"“°¢ ¢–b†åF–BÓÓÒF&vWEF–Bbb—4æV–v†&÷$ÖW&vVB’°¢†4ÖW&vVDF¦6Væ7”6öæfÆ–7BÒG'VS°¢'&V³°¢Ğ¢Ğ¢Ğ¢Ğ¢Ğ¢Ğ¢–b††4ÖW&vVDF¦6Væ7”6öæfÆ–7B’'&V³°¢Ğ¢–b††4ÖW&vVDF¦6Væ7”6öæfÆ–7B’'&V³°¢Ğ ¢–b††4ÖW&vVDF¦6Væ7”6öæfÆ–7B’°¢&V6öç2çW6‚‚%4ÔUõDU%$”åôÔU$tTEôäT”t„$õ%ôdõ$$”DDTâ"“°¢Ğ¢Ğ¢Ğ ¢–b‡&V6öç2æÆVæwF‚â’°¢&WGW&â²6ã¢fÇ6RÂ&V6öã¢&V6öç5³ÒÂ&V6öç3¢&V6öç2Ó°¢Ğ¢&WGW&â²6ã¢G'VRÂ&V6öç3¢µÒÓ°¢Ğ ¢ò¢ ¢¢	úz’YÉşYË89n8:Ş88>8*ş8î˜XŞ{ÚîZéşŠÀ¢¢ğ¢Æ6U6†R‡7F'E"Â7F'D2Â6†TÖG&—‚ÂFW'&–âÂ†æD–G‚ÒÓ’°¢–b‚F†—2ç7FFR’&WGW&â²6ã¢fÇ6RÂ&V6öã¢$äõõ5DDR"Ó°¢–b‡F†—2ç7FFRæ†5–6¶VEF†—5GW&â’&WGW&â²6ã¢fÇ6RÂ&V6öã¢$Å$TE•õ”4´TEõD„•5õEU$â"Ó° ¢6öç7B6†V6²ÒF†—2æ6åÆ6U6†R‡7F'E"Â7F'D2Â6†TÖG&—‚ÂFW'&–â“°¢–b‚6†V6²æ6â’&WGW&â6†V6³° ¢6öç7B&÷w2Ò6†TÖG&—‚æÆVæwFƒ°¢6öç7B6öÇ2Ò6†TÖG&—…³ÒæÆVæwFƒ°¢6öç7Bw&÷W–BÒÆ6UòG·F†—2ç7FFRçÆ6VÖVçDw&÷W6÷VçFW"²·Ö° ¢ÆWB7F—fT6VÆÄ6÷VçBÒ°¢f÷"†ÆWBG"Ò²G"Â&÷w3²G"²²’°¢f÷"†ÆWBF2Ò²F2Â6öÇ3²F2²²’°¢–b‡6†TÖG&—…¶G%Õ¶F5ÒÓÓÒ’7F—fT6VÆÄ6÷VçB²³°¢Ğ¢Ğ ¢6öç7B“†âÒ‡G—VöbvÆö&ÅF†—2ÓÒwVæFVf–æVBrbbvÆö&ÅF†—2ä“†â’òvÆö&ÅF†—2ä“†â¢‡G—Vöbv–æF÷rÓÒwVæFVf–æVBrbbv–æF÷rä“†âòv–æF÷rä“†â¢²C¢²Óâ²Ò“°¢6öç7BFW'&–äæÖRÒ“†âçB‚‡FW'&–âbb‡FW'&–âææÖT¶W’ÇÂFW'&–âæ–B’’ÇÂ%DU%$”åõÄ”å2"“° ¢ÆWB7væVDç•6ö6¶WBÒfÇ6S°¢f÷"†ÆWBG"Ò²G"Â&÷w3²G"²²’°¢f÷"†ÆWBF2Ò²F2Â6öÇ3²F2²²’°¢–b‡6†TÖG&—…¶G%Õ¶F5ÒÓÓÒ’°¢6öç7B"Ò7F'E"²G#°¢6öç7B2Ò7F'D2²F3°¢6öç7B6VÆÂÒF†—2ç7FFRæw&–E·%Õ¶5Ó°¢6VÆÂçÆ6VBÒG'VS°¢6VÆÂçFW'&–âÒFW'&–ã°¢6VÆÂçÆ6VÖVçDw&÷W–BÒw&÷W–C°¢6VÆÂæ—4…f–6–æ—G’Ò„ÖF‚æ'2‡"Ò"’ÃÒbbÖF‚æ'2†2Ò"’ÃÒbb‡"ÓÓÒ"bb2ÓÓÒ"’“° ¢òò)ˆR8+Ş8+88>88™h¾ˆ«XŠNZé¢k®Zé®Š¹ny¨NY»®Zé®XÉb)ÉRy»ZûâvV–v‡Bˆz®xKnYËynh«Ş˜ƒ¢8*.8;>888*^8:®8+¾89î8:8).ZèÎXZj{[b¢–b†6VÆÂæ†56ö6¶WBbb6VÆÂç6ö6¶WE&W6÷W&6R’°¢6öç7B6VVD¶W’ÒG·'ÕòG¶7Ö°¢ÆWB7væVE6ö6¶WBÒçVÆÃ° ¢–b†6VÆÂæ66†VE6ö6¶WE6VVG2bb6VÆÂæ66†VE6ö6¶WE6VVG5·6VVD¶W•Ò’°¢7væVE6ö6¶WBÒ6VÆÂæ66†VE6ö6¶WE6VVG5·6VVD¶W•Ó°¢ÒVÇ6R°¢–b‚6VÆÂæ66†VE6ö6¶WE6VVG2’6VÆÂæ66†VE6ö6¶WE6VVG2Ò·Ó°¢6öç7B&6UF–BÒFW'&–âçFW'&–ä–BÇÂFW'&–âæ–BÇÂ"#°¢6öç7BvWE&ærÒ‚’Óâ‡F†—2ç7FFRbbG—VöbF†—2ç7FFRç&ærÓÓÒ&gVæ7F–öâ"’òF†—2ç7FFRç&ær‚’¢ÖF‚ç&æFöÒ‚“° ¢òòâk›şXéó¢k™bƒcR¢˜	>k‰¾XŞxèr¢–b†&6UF–Bæ–æ6ÇVFW2‚%tUDÄäB"’’°¢6öç7B7W'&VçDÆ¶T6÷VçBÒ6÷VçEÆ6VDÆ¶W2‡F†—2ç7FFR“°¢6öç7BÆ¶U&FT×VÇBÒvWDÆ¶U7vå&FT×VÇF—Æ–W"†7W'&VçDÆ¶T6÷VçB“°¢–b†vWE&ær‚’Âƒãc¢Æ¶U&FT×VÇB’’°¢7væVE6ö6¶WBÒ²–C¢%4ô4´UEôÄ´R"ÂæÖT¶W“¢%4ô4´UEôÄ´R"Â6FVv÷'“¢$4EõtDU""Â–6öã¢/	ù*r"Â&öçW4fööC¢"Â&öçW5vööC¢Â&öçW4FVfVç6S¢Â&öçW4×—7F–3¢Â—4Æ¶S¢G'VRÓ°¢Ğ¢Ğ¢òò"âz.kÊ¢8*®8*.8+~8+’ƒ#RR’(¾8*®8*.8+~8+8şk™n˜	>k‰¾8î[Û™ûş8).Xù~88®8@¢VÇ6R–b†&6UF–Bæ–æ6ÇVFW2‚$DU4U%B"’bbvWE&ær‚’Âã#R’°¢7væVE6ö6¶WBÒ²–C¢%4ô4´UEôô4•2"ÂæÖT¶W“¢%4ô4´UEôô4•2"Â6FVv÷'“¢$4EõtDU""Â–6öã¢/	øùŞûˆò"Â&öçW4fööC¢Â&öçW5vööC¢Â&öçW4FVfVç6S¢Â&öçW4×—7F–3¢"Â—4Æ¶S¢G'VRÓ°¢Ğ¢òò2âˆØXéòƒ¢k™bƒ#RR¢˜	>k‰¾XŞxèr¢VÇ6R–b†&6UF–Bæ–æ6ÇVFW2‚%Ä”å2"’bb7F—fT6VÆÄ6÷VçBÓÓÒ’°¢6öç7B7W'&VçDÆ¶T6÷VçBÒ6÷VçEÆ6VDÆ¶W2‡F†—2ç7FFR“°¢6öç7BÆ¶U&FT×VÇBÒvWDÆ¶U7vå&FT×VÇF—Æ–W"†7W'&VçDÆ¶T6÷VçB“°¢–b†vWE&ær‚’Âƒã#R¢Æ¶U&FT×VÇB’’°¢7væVE6ö6¶WBÒ²–C¢%4ô4´UEôÄ´R"ÂæÖT¶W“¢%4ô4´UEôÄ´R"Â6FVv÷'“¢$4EõtDU""Â–6öã¢/	ù*r"Â&öçW4fööC¢"Â&öçW5vööC¢Â&öçW4FVfVç6S¢Â&öçW4×—7F–3¢Â—4Æ¶S¢G'VRÓ°¢Ğ¢Ğ ¢òòBâKˆˆŠÎ‹8~k©89~8;Î8:¾h«Ş˜‚k™bş8*®8*.8+~8+™Ùî[Ù>˜i˜"¢6öç7B6ö6¶WDÖ7FW"Ò‡G—VöbvÆö&ÅF†—2ÓÒ'VæFVf–æVB"bbvÆö&ÅF†—2å4ô4´UEõ$U4õU$4UôÔ5DU"’òvÆö&ÅF†—2å4ô4´UEõ$U4õU$4UôÔ5DU"¢‡G—Vöbv–æF÷rÓÒ'VæFVf–æVB"òv–æF÷rå4ô4´UEõ$U4õU$4UôÔ5DU"¢çVÆÂ“°¢–b‚7væVE6ö6¶WBbb6ö6¶WDÖ7FW"’°¢6öç7BööÂÒ6ö6¶WDÖ7FW"æf–ÇFW"‡2Óâ2ç&WFW'&–ç2bb2ç&WFW'&–ç2ç6öÖR‡BÓâ&6UF–Bæ–æ6ÇVFW2‡B’’“°¢–b‡ööÂæÆVæwF‚â’°¢6öç7B6†÷6VâÒööÅ´ÖF‚æfÆö÷"†vWE&ær‚’¢ööÂæÆVæwF‚•Ó°¢7væVE6ö6¶WBÒ°¢–C¢6†÷6Vâæ–BÀ¢æÖT¶W“¢6†÷6VâææÖT¶W’À¢6FVv÷'“¢6†÷6Vâæ6FVv÷'’À¢–6öã¢6†÷6Vâæ–6öâÀ¢&öçW4fööC¢†6†÷6Vâæ&öçW5––VÆG2bb6†÷6Vâæ&öçW5––VÆG2æfööB’ÇÂÀ¢&öçW5vööC¢†6†÷6Vâæ&öçW5––VÆG2bb†6†÷6Vâæ&öçW5––VÆG2æÖFW&–ÂÓÒVæFVf–æVBò6†÷6Vâæ&öçW5––VÆG2æÖFW&–Â¢6†÷6Vâæ&öçW5––VÆG2çvööB’’ÇÂÀ¢&öçW4FVfVç6S¢†6†÷6Vâæ&öçW5––VÆG2bb6†÷6Vâæ&öçW5––VÆG2æFVfVç6R’ÇÂÀ¢&öçW4×—7F–3¢†6†÷6Vâæ&öçW5––VÆG2bb6†÷6Vâæ&öçW5––VÆG2æ×—7F–2’ÇÂ ¢Ó°¢Ğ¢Ğ¢–b‚7væVE6ö6¶WB’°¢7væVE6ö6¶WBÒ²–C¢%4ô4´UEõt”ÄEõt„TB"ÂæÖT¶W“¢%4ô4´UEõt”ÄEõt„TB"Â6FVv÷'“¢$4Eôu$”â"Â–6öã¢/	øËâ"Â&öçW4fööC¢2Â&öçW5vööC¢Â&öçW4FVfVç6S¢Â&öçW4×—7F–3¢Ó°¢Ğ¢–b‡7væVE6ö6¶WB’6VÆÂæ66†VE6ö6¶WE6VVG5·6VVD¶W•ÒÒ7væVE6ö6¶WC°¢Ğ ¢–b‡7væVE6ö6¶WB’°¢6VÆÂç6ö6¶WE&W6÷W&6RÒ²ââç7væVE6ö6¶WBÓ°¢7væVDç•6ö6¶WBÒG'VS°¢6öç7B÷57G"Ò‚Gµ7G&–æræg&öÔ6†$6öFRƒcR¶2—ÒG·"³Ò–°¢6öç7B4æÖRÒ“†âçB‡7væVE6ö6¶WBææÖT¶W’“°¢6öç7B4–6öâÒ7væVE6ö6¶WBæ–6öâÇÂ/	ù(â#°¢–b‡G—VöbF†—2ç7FFRæFDÆörÓÓÒvgVæ7F–öâr’°¢F†—2ç7FFRæFDÆör„“†âçB‚$Äôuõ4ô4´UEõ5täTB"Â²÷3¢÷57G"ÂFW'&–äæÖRÂ6ö6¶WDæÖS¢4æÖRÂ–6öã¢4–6öâÒ’“°¢Ğ¢–b‡F†—2ç7FFRçFö7EVWVR’°¢F†—2ç7FFRçFö7EVWVRçW6‚‡²"Â2ÂFW‡C¢“†âçB‚%Dô5Eõ4ô4´UEõ5täTB"Â²æÖS¢4æÖRÂ–6öã¢4–6öâÒ’Ò“°¢Ğ¢Ğ¢Ğ¢Ğ¢Ğ¢Ğ ¢6öç7BÆ6VÖVçD÷WF6öÖRÒ°¢6ö6¶WE7væVC¢7væVDç•6ö6¶WBÀ¢6öææV7F–öãƒ#¢fÇ6RÀ¢6öææV7F–öãƒ3¢fÇ6RÀ¢ÖW&vS'ƒ#¢fÇ6P¢Ó° ¢6öç7BÆ6VD6ö÷&G2ÒµÓ°¢f÷"†ÆWBG"Ò²G"Â&÷w3²G"²²’°¢f÷"†ÆWBF2Ò²F2Â6öÇ3²F2²²’°¢–b‡6†TÖG&—…¶G%Õ¶F5ÒÓÓÒ’°¢6öç7B"Ò7F'E"²G#°¢6öç7B2Ò7F'D2²F3°¢Æ6VD6ö÷&G2çW6‚‡²"Â2Ò“°¢6öç7B6öæå&W2ÒF†—2æ6†V6´6öææV7F–öä&öçW2‡"Â2ÂFW'&–â“°¢–b†6öæå&W2bb6öæå&W2æ6öææV7F–öãƒ2’Æ6VÖVçD÷WF6öÖRæ6öææV7F–öãƒ2ÒG'VS°¢VÇ6R–b†6öæå&W2bb6öæå&W2æ6öææV7F–öãƒ"’Æ6VÖVçD÷WF6öÖRæ6öææV7F–öãƒ"ÒG'VS°¢Ğ¢Ğ¢Ğ¢6öç7BÖW&vU&W2ÒF†—2æ6†V6´ÖW&vUGFW&ç2‡Æ6VD6ö÷&G2“°¢–b†ÖW&vU&W2bbÖW&vU&W2æÖW&vS'ƒ"’°¢Æ6VÖVçD÷WF6öÖRæÖW&vS'ƒ"ÒG'VS°¢Ğ¢F†—2æ6†V6´æWtÖW&vTÆ–æ·2‚“° ¢6öç7BÆ6VÖVçD6÷7BÒF†—2ævWEÆ6VÖVçDVÖ&W$6÷7B‚“°¢–b‡Æ6VÖVçD6÷7Bâ’°¢–b‡F†—2ç7FFRæVÖ&W%7—7FVÒbbG—VöbF†—2ç7FFRæVÖ&W%7—7FVÒæ6öç7VÖRÓÓÒvgVæ7F–öâr’°¢F†—2ç7FFRæVÖ&W%7—7FVÒæ6öç7VÖR‡Æ6VÖVçD6÷7B“°¢ÒVÇ6R°¢F†—2ç7FFRæVÖ&W"ÒÖF‚æÖ‚ƒÂF†—2ç7FFRæVÖ&W"ÒÆ6VÖVçD6÷7B“°¢Ğ¢Ğ¢F†—2ç7FFRçÆ6VD&Æö6´6÷VçBÒ‡F†—2ç7FFRçÆ6VD&Æö6´6÷VçBÇÂ’²°¢F†—2ç7FFRæ†5–6¶VEF†—5GW&âÒG'VS° ¢–b‡F†—2æVæv–æRbbF†—2æVæv–æRæFV6´ÖævW"’°¢F†—2æVæv–æRæFV6´ÖævW"æ6öç7VÖT6&D–eVæ—VR‡FW'&–â“°¢ÒVÇ6R–b‡F†—2ç7FFRbbF†—2ç7FFRæFV6´ÖævW"’°¢F†—2ç7FFRæFV6´ÖævW"æ6öç7VÖT6&D–eVæ—VR‡FW'&–â“°¢Ğ ¢;âÚ$z{-®éÜj× { t: k => k });
         const terrainName = I18n.t(terrain.nameKey);
         const neighbors = [
             [r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]
@@ -1030,12 +371,12 @@ class GridEngine {
                             const bText = "ğŸŒ¾+4 ğŸ§±+6 ğŸ”¥+1";
                             const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
                             if (typeof this.state.addLog === 'function') {
-                                const logMsg = I18n ? I18n.t("LOG_MERGE_L_COMPLETE", { bonus: bText }) : `ğŸŸ¨ L-Merge (${bText})`;
+                                const logMsg = I18n ? I18n.t("LOG_MERGE_L_COMPLETE", { bonus: bText }) : `ğŸŸ¨ L-Shape Zone Formed (${bText})`;
                                 this.state.addLog(logMsg);
                             }
                             if (this.state.toastQueue) {
                                 formedMerge2x2 = true;
-                                const toastMsg = I18n ? I18n.t("TOAST_MERGE_L", { bonus: bText }) : `ğŸŸ¨ L-Merge (${bText})`;
+                                const toastMsg = I18n ? I18n.t("TOAST_MERGE_L", { bonus: bText }) : `ğŸŸ¨ L-Shape Zone Formed (${bText})`;
                                 this.state.toastQueue.push({ r: coords[0].r, c: coords[0].c, text: toastMsg });
                             }
                         }
@@ -1117,11 +458,11 @@ class GridEngine {
                             const bText = "ğŸ§±+8 âœ¨+4 ğŸ”¥+1";
                             const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
                             if (typeof this.state.addLog === 'function') {
-                                const logMsg = I18n ? I18n.t("LOG_MERGE_T_COMPLETE", { bonus: bText }) : `ğŸ›¡ï¸ T-Merge (${bText})`;
+                                const logMsg = I18n ? I18n.t("LOG_MERGE_T_COMPLETE", { bonus: bText }) : `ğŸ›¡ï¸ T-Shape Zone Formed (${bText})`;
                                 this.state.addLog(logMsg);
                             }
                             if (this.state.toastQueue) {
-                                const toastMsg = I18n ? I18n.t("TOAST_MERGE_T", { bonus: bText }) : `ğŸ›¡ï¸ T-Merge (${bText})`;
+                                const toastMsg = I18n ? I18n.t("TOAST_MERGE_T", { bonus: bText }) : `ğŸ›¡ï¸ T-Shape Zone Formed (${bText})`;
                                 this.state.toastQueue.push({ r: coords[0].r, c: coords[0].c, text: toastMsg });
                             }
                         }
@@ -1206,7 +547,7 @@ class GridEngine {
                 const toastKey = newLinkCount === 1 ? "TOAST_MERGE_LINK_COMPLETE" : "TOAST_MERGE_LINKS_COMPLETE";
                 const toastMsg = I18n && typeof I18n.t === 'function'
                     ? I18n.t(toastKey, { count: newLinkCount, bonus: newLinkCount })
-                    : (newLinkCount === 1 ? "LINK (+1)" : `LINKs (+${newLinkCount})`);
+                    : (newLinkCount === 1 ? "Cooperation (+1)" : `Cooperations (+${newLinkCount})`);
                 this.state.toastQueue.push({
                     type: "LINK_COMPLETE",
                     r: anchor.r,

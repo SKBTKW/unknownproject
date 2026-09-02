@@ -580,15 +580,15 @@ export async function runUILifecycleInspection() {
         const checkMtnNearHQ = ui.state.canPlaceShape(3, 2, [[1]], mtnCard.terrain);
         assert("本営南隣 (3,2) への山岳配置が canPlaceShape で禁止されること", checkMtnNearHQ.can === false && checkMtnNearHQ.reason === "MOUNTAIN_NEAR_HQ_FORBIDDEN");
 
-        // 🚨 配置不可理由一覧 (reasons配列) ＆ ツールチップポップアップ検証
+        // 🚨 開発不可理由一覧 (reasons配列) ＆ ツールチップポップアップ検証
         const doubleErrMtn = ui.state.canPlaceShape(4, 4, [[1]], mtnCard.terrain);
         assert("平地隣接マスへの山岳配置で INVALID_ELEVATION_NEIGHBOR が収集されること", doubleErrMtn.can === false && doubleErrMtn.reasons.includes("INVALID_ELEVATION_NEIGHBOR"));
 
         // ツールチップ表示検証
         BlockPlacementSystem.updateHoverPreview({ clientX: 100, clientY: 200 }, 4, 4, mtnCard, ui.state);
         const ttEl = document.getElementById("globalTooltip");
-        assert("配置不可ホバー時にグローバルツールチップが visible になること", !!ttEl && ttEl.classList.contains("visible"));
-        assert("ツールチップ内に配置不可タイトルが含まれること", !!ttEl && (ttEl.innerHTML.includes("配置不可") || ttEl.innerHTML.includes("Cannot Place")));
+        assert("開発不可ホバー時にグローバルツールチップが visible になること", !!ttEl && ttEl.classList.contains("visible"));
+        assert("ツールチップ内に開発不可タイトルが含まれること", !!ttEl && (ttEl.innerHTML.includes("開発不可") || ttEl.innerHTML.includes("Cannot Develop")));
         assert("ツールチップ内にエラー理由 (高度断絶/山岳) が含まれること", !!ttEl && (ttEl.innerHTML.includes("山岳") || ttEl.innerHTML.includes("高度") || ttEl.innerHTML.includes("Elevation")));
 
         // ホバー解除でツールチップが非表示になること
@@ -628,7 +628,7 @@ export async function runUILifecycleInspection() {
 
         // ツールチップ表示検証
         BlockPlacementSystem.updateHoverPreview({ clientX: 100, clientY: 200 }, 2, 2, plainsCard, ui.state);
-        assert("C3ホバー時にツールチップに『2×2マージ同士』が含まれること", !!ttEl && (ttEl.innerHTML.includes("2×2マージ同士") || ttEl.innerHTML.includes("2x2 merged territory")));
+        assert("C3ホバー時にツールチップに『2×2地帯同士』が含まれること", !!ttEl && (ttEl.innerHTML.includes("2×2地帯同士") || ttEl.innerHTML.includes("2x2 zone")));
         BlockPlacementSystem.clearHoverPreviews();
 
         // 🔄 手札通常表示時の右クリック回転検証 (1x2以上のブロックで実機検証)

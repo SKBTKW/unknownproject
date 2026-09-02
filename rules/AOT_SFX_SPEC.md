@@ -3,7 +3,7 @@
 ## 基本方針
 AoTのSEは木・石・金属・土・風・水を中心とした短く乾いた手触りを基本とする。
 派手なスマホゲーム音を避け、中世的で暗い世界観を壊さない。
-操作SEは短く、MERGEのみ少し厚い低域と短い金属共鳴を許可する。
+操作SEは短く、地帯成立音のみ少し厚い低域と短い金属共鳴を許可する。
 
 ## ディレクトリ
 ```text
@@ -43,9 +43,9 @@ game/assets/audio/sfx/
 | グリッド配置 | LAND_PLACE | land/action/land_place.wav |
 | Undo | LAND_UNDO | land/action/land_undo.wav |
 | 資源ソケット配置 | LAND_PLACE_SOCKET | land/action/land_place_socket.wav |
-| 1x2マージ | MERGE_1X2 | merge/merge_1x2.wav |
-| 1x3マージ | MERGE_1X3 | merge/merge_1x3.wav |
-| 2x2マージ | MERGE_2X2 | merge/merge_2x2.wav |
+| 1x2連結 | `MERGE_1X2` | `merge/merge_1x2.wav` |
+| 1x3連結 | `MERGE_1X3` | `merge/merge_1x3.wav` |
+| 2x2地帯成立 | `MERGE_2X2` | `merge/merge_2x2.wav` |
 | コマンド実行 | COMMAND_EXECUTE | command/command_execute.wav |
 
 ## 音響言語

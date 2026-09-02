@@ -20,7 +20,7 @@
 1. **特殊ブロック配置 (Special Block)**: 土地の上に新たな文明施設を建設し、周囲の地勢やソケットから継続的な利益・産業価値を引き出す。
 2. **土地改良 (Land Improvement)**: 湿原を干拓して人工農地へ変換したり、水源を引き込んで乾いた土地を潤す不可逆な地形変換。
 3. **産業化 (Industrialization)**: 原材料（木材・石材・鉱石・家畜）の抽出・加工・流通ラインを立ち上げ、資材や特定カードのコスト軽減をもたらす。
-4. **地域開発 (Regional Development)**: 連結された農地やマージされた居住地域を指定し、面としての産出を永続的に引き上げる。
+4. **地域開発 (Regional Development)**: 連結された農地や地帯化した居住地域を指定し、面としての産出を永続的に引き上げる。
 5. **緊急政策 (Emergency Policy)**: 飢饉や資材枯渇などの危機に直面した際、一時的なコストと引き換えに破綻を回避する即効性の施策。
 6. **大規模事業 (Civil Works / Project)**: Stage 3で解禁される、国家規模のインフラ整備・防壁建設・産業集積。
 
@@ -49,8 +49,8 @@
 | | `ORE` | 鉱物・金属資源 |
 | | `WATER` | 水源（湖、オアシス、河川） |
 | | `MYSTIC` | 神秘・儀礼 |
-| **システム (System)** | `LINK` | 資源ソケット接続・流通網 |
-| | `MERGE` | 2×2等の土地マージ領域 |
+| **システム (System)** | `LINK` | プレイヤー向け「連携」。内部互換用タグ |
+| | `MERGE` | プレイヤー向け「地帯 / 地帯化」。内部互換用タグ |
 | | `ROAD` | 街道・インフラ接続 |
 | | `CONSTRUCTION` | 建設・建築関連 |
 | | `MOBILITY` | 機動力・騎兵関連 |
@@ -95,10 +95,10 @@
 | `CMD_MINE` | **鉱山** | 特殊ブロック | **R** | **`🧱 25`** | `HILL`, `MOUNTAIN`, `ORE`, `MATERIAL`, `MYSTIC`, `EXTRACTION`, `SPECIAL_BLOCK` | 鉱物系ソケット発見済み | 対象の鉱物系ソケットの持続産出を **`× 1.5`** に増幅。 |
 | `CMD_STABLE` | **厩舎** | 特殊ブロック | **R** | **`🧱 20`** | `PLAINS`, `LIVESTOCK`, `MOBILITY`, `INDUSTRY`, `SPECIAL_BLOCK` | 馬資源発見済み ＆ 開放平地6マス以上 | 平地1マスに厩舎を建設。<br>・`CAVALRY`タグを持つカードのOffering Weight上昇。<br>・騎馬系カードの🧱コストを **`-5`** 軽減。 |
 | `CMD_LIME_KILN` | **石灰窯** | 特殊ブロック | **UC** | **`🌾 10` ＆ `🧱 15`** | `STONE`, `FOREST`, `MATERIAL`, `CONSTRUCTION`, `INDUSTRY`, `SPECIAL_BLOCK` | 石灰岩 ＆ 木材系資源を発見済み | 石灰窯を建設。<br>`CONSTRUCTION`タグを持つカードの🧱コストを **`-20%`** 軽減。 |
-| `CMD_MARKET` | **市場** | 特殊ブロック | **R** | **`🧱 25`** | `LINK`, `RESOURCE`, `INDUSTRY`, `SPECIAL_BLOCK` | LINK本数2以上 ＆ 異なる資源カテゴリ2種以上 | 市場を建設。<br>LINKされた異なる資源カテゴリ1種につき、毎ターン **`🌾 +1/T, 🧱 +1/T`**（最大3カテゴリまで適用）。 |
+| `CMD_MARKET` | **市場** | 特殊ブロック | **R** | **`🧱 25`** | `LINK`, `RESOURCE`, `INDUSTRY`, `SPECIAL_BLOCK` | 連携数2以上 ＆ 異なる資源カテゴリ2種以上 | 市場を建設。<br>連携した異なる資源カテゴリ1種につき、毎ターン **`🌾 +1/T, 🧱 +1/T`**（最大3カテゴリまで適用）。 |
 | `CMD_DEPOT` | **集積倉庫** | 特殊ブロック | **R** | **`🧱 30`** | `MATERIAL`, `STORAGE`, `LINK`, `INDUSTRY`, `SPECIAL_BLOCK` | 産業特殊ブロック2基以上 | 集積倉庫を建設。<br>`PROJECT`タグを持つカードの🧱コストを **`-15%`** 軽減。 |
 | `CMD_IRRIGATION` | **灌漑** | 土地改良 | **UC** | **`🧱 20`** | `WATER`, `PLAINS`, `RECLAIMED`, `FOOD`, `DEVELOPMENT` | 水源（湖またはオアシス）あり ＆ 対象農業地域あり | 水源に接続した農業地域から最大4マスを指定し、各 **`🌾 +1/T` 永続強化**。 |
-| `CMD_RESETTLEMENT` | **移住** | 地域開発 | **R** | **`🌾 15` ＆ `🧱 10`** | `PLAINS`, `MERGE`, `FOOD`, `DEVELOPMENT` | 平地2×2 MERGE成立済み | 指定した平地2×2 MERGEに即座に **`🔥 +2`**。<br>以後そのMERGE全体の持続産出を **`🌾 +2/T`** 永続加算。 |
+| `CMD_RESETTLEMENT` | **移住** | 地域開発 | **R** | **`🌾 15` ＆ `🧱 10`** | `PLAINS`, `MERGE`, `FOOD`, `DEVELOPMENT` | 平地2×2地帯が成立済み | 指定した平地2×2地帯に即座に **`🔥 +2`**。<br>以後その地帯全体の持続産出を **`🌾 +2/T`** 永続加算。 |
 | `CMD_WORKSHOP` | **工房** | 特殊ブロック | **R** | **`🧱 30`** | `MATERIAL`, `INDUSTRY`, `CONSTRUCTION`, `SPECIAL_BLOCK` | 異なる一次産業2種類以上存在 | 工房を建設。<br>`SPECIAL_BLOCK`タグを持つカードの🧱コストを **`-10%`** 軽減。 |
 
 ---
@@ -110,7 +110,7 @@
 | `CMD_GRANARY_NETWORK` | **大穀倉網** | Project | **UR** | **`🧱 50`** | `FOOD`, `STORAGE`, `LINK`, `PROJECT` | 穀物庫2基以上 ＆ 大規模農業圏成立 | 領内の全穀物庫を広域ネットワーク化。<br>既存穀物庫の維持費倍率を **`0.90 → 0.87 相当`** に強化。 |
 | `CMD_INDUSTRIAL_ROAD` | **産業街道** | Civil Works | **R** | **`🧱 45`** | `ROAD`, `LINK`, `INDUSTRY`, `PROJECT` | 産業特殊ブロック2基以上 | 指定した産業拠点2〜3基を街道で接続。<br>接続された施設の持続産出を **`+20%`** 強化。<br>※Trialでは敵軍も通常通り街道を利用するリスクを伴う。 |
 | `CMD_IRRIGATION_NETWORK` | **大規模灌漑網** | Civil Works | **UR** | **`🧱 50`** | `WATER`, `PLAINS`, `RECLAIMED`, `FOOD`, `PROJECT` | 灌漑済み地域 ＆ 水源あり | 水源から幹線水路を敷設。<br>最大8箇所の農業マスに対して各 **`🌾 +1/T` 永続強化**。 |
-| `CMD_INDUSTRIAL_CLUSTER` | **産業集積** | Project | **UR** | **`🧱 60`** | `INDUSTRY`, `LINK`, `PROJECT` | 異種産業3種類以上がLINK | 高度な産業複合体を成立させる。<br>`PROJECT`タグを持つ全カードの🧱コストを **`-20%`** 軽減。 |
+| `CMD_INDUSTRIAL_CLUSTER` | **産業集積** | Project | **UR** | **`🧱 60`** | `INDUSTRY`, `LINK`, `PROJECT` | 異種産業3種類以上が連携 | 高度な産業複合体を成立させる。<br>`PROJECT`タグを持つ全カードの🧱コストを **`-20%`** 軽減。 |
 | `CMD_GREAT_RAMPART_PROJECT` | **大防塁** | Civil Works | **UR** | **`🧱 70`** | `CONSTRUCTION`, `DEFENSE`, `PROJECT` | 大規模国土 ＆ 建設基盤成立 | 指定した連続する3〜5マスへ防塁効果を付与。<br>Trial時の敵軍侵入経路・迎撃効率へ大幅に作用する。<br>※Trial側の詳細仕様が確定するまで具体的な倍率・防衛値は固定しない。 |
 
 ---
@@ -133,7 +133,6 @@
 | `CMD_ABANDONED_SETTLEMENT` | 領土探索 | **`CMD_ABANDONED_SETTLEMENT` 放棄された集落へ整理** | 探索カードとしての名称・ロールプレイング性を整理し、2D6イベント型として存続。 |
 | `CMD_BLACK_MARKET` | 一括売却 | **削除** | 世界観に合致しない換金カードを全廃。 |
 | `CMD_GRAND_CULTIVATION` | 耕作計画 | **農地改革 ＋ 灌漑へ吸収** | 期間バフから、恒久的な地域開発・水利システムへ役割を移譲。 |
-| `CMD_RESETTLEMENT` | 移住 | **継続・再設計** | 平地2×2マージの定住地としての価値を高める地域開発カードとして確定。 |
+| `CMD_RESETTLEMENT` | 移住 | **継続・再設計** | 平地2×2地帯の定住地としての価値を高める地域開発カードとして確定。 |
 | `CMD_LIME_CONSTRUCTION` | 焼成 | **`CMD_LIME_KILN` 石灰窯へ置換** | 一時的なコスト軽減バフから、石灰窯という恒久的な建設産業特殊ブロックへ実体化。 |
 | `CMD_GREAT_RAMPART_PROJECT` | 大防塁 | **Stage 3 Civil Worksへ再設計** | 大規模国家事業として位置付け、Trial迎撃・経路制御の要塞化インフラとして再設計。 |
-
