@@ -9,22 +9,35 @@ import { isTrueMergedCell } from '../core/merge_rules.js';
 import { countPlacedLakes, getLakeSpawnRateMultiplier } from '../core/lake_rules.js';
 
 const COMMAND_CARDS_MASTER = [
-    // 📜 経済・政策カード
-    { id: "CMD_CONSERVE_EMBER", category: "COMMAND", nameKey: "CMD_CONSERVE_EMBER_NAME", descriptionKey: "CMD_CONSERVE_EMBER_DESC", cost: {}, maxEmber: 18, minStage: 1, rarity: "C", weight: 0.40, cyclePolicy: "RARITY" },
-    { id: "CMD_RATIONING", category: "COMMAND", nameKey: "CMD_RATIONING_NAME", descriptionKey: "CMD_RATIONING_DESC", cost: {}, maxFood: 40, minStage: 1, rarity: "C", weight: 0.40, cyclePolicy: "RARITY" },
-    { id: "CMD_SINGLE_CLEARING", category: "COMMAND", nameKey: "CMD_SINGLE_CLEARING_NAME", descriptionKey: "CMD_SINGLE_CLEARING_DESC", cost: { ember: 1 }, reqForestOrHillForest: 1, minStage: 1, rarity: "C", weight: 0.35, cyclePolicy: "RARITY" },
-    { id: "CMD_WETLAND_RECLAMATION", category: "COMMAND", nameKey: "CMD_WETLAND_RECLAMATION_NAME", descriptionKey: "CMD_WETLAND_RECLAMATION_DESC", cost: { wood: 15, ember: 1 }, reqWetland: 1, reqWood: 15, minStage: 1, rarity: "UC", weight: 0.25, cyclePolicy: "RARITY" },
-    { id: "CMD_SYSTEMATIC_LOGGING", category: "COMMAND", nameKey: "CMD_SYSTEMATIC_LOGGING_NAME", descriptionKey: "CMD_SYSTEMATIC_LOGGING_DESC", cost: { food: 10 }, reqForestOrHillForest: 2, minStage: 2, rarity: "UC", weight: 0.25, cyclePolicy: "RARITY" },
-    { id: "CMD_AGRICULTURAL_POLICY", category: "ECONOMY", nameKey: "CMD_AGRICULTURAL_POLICY_NAME", descriptionKey: "CMD_AGRICULTURAL_POLICY_DESC", cost: { wood: 20 }, reqPlains: 1, reqWood: 20, cyclePolicy: "UNIQUE", minStage: 1, rarity: "R", weight: 0.20 },
-    { id: "CMD_LAND_FOCUS", category: "ECONOMY", nameKey: "CMD_LAND_FOCUS_NAME", descriptionKey: "CMD_LAND_FOCUS_DESC", cost: { food: 10, wood: 10 }, maxPlacedBlocks: 5, minStage: 1, rarity: "C", weight: 0.40, cyclePolicy: "RARITY" },
-    { id: "CMD_EMERGENCY_LEVY", category: "COMMAND", nameKey: "CMD_EMERGENCY_LEVY_NAME", descriptionKey: "CMD_EMERGENCY_LEVY_DESC", cost: { food: 20 }, reqTrialWithin: 6, reqFood: 20, minStage: 1, rarity: "C", weight: 0.35, cyclePolicy: "RARITY" },
-    { id: "CMD_PASTORAL_EXPANSION", category: "COMMAND", nameKey: "CMD_PASTORAL_EXPANSION_NAME", descriptionKey: "CMD_PASTORAL_EXPANSION_DESC", cost: { wood: 10 }, reqDiscoveredResourceTag: "LIVESTOCK", minStage: 1, rarity: "C", weight: 0.35, cyclePolicy: "RARITY" },
-    { id: "CMD_ABANDONED_SETTLEMENT", category: "COMMAND", nameKey: "CMD_ABANDONED_SETTLEMENT_NAME", descriptionKey: "CMD_ABANDONED_SETTLEMENT_DESC", cost: { ember: 1 }, reqEmptyCells: 8, minStage: 1, rarity: "UC", weight: 0.25, cyclePolicy: "RARITY" },
-    { id: "CMD_BLACK_MARKET", category: "ECONOMY", nameKey: "CMD_BLACK_MARKET_NAME", descriptionKey: "CMD_BLACK_MARKET_DESC", cost: { food: 25 }, reqFood: 25, cyclePolicy: "UNIQUE", minStage: 2, rarity: "R", weight: 0.20 },
-    { id: "CMD_GRAND_CULTIVATION", category: "COMMAND", nameKey: "CMD_GRAND_CULTIVATION_NAME", descriptionKey: "CMD_GRAND_CULTIVATION_DESC", cost: { wood: 35 }, reqConnectedPlains: 8, minStage: 2, rarity: "UC", weight: 0.25, cyclePolicy: "RARITY" },
-    { id: "CMD_RESETTLEMENT", category: "COMMAND", nameKey: "CMD_RESETTLEMENT_NAME", descriptionKey: "CMD_RESETTLEMENT_DESC", cost: { food: 15, wood: 10 }, reqPlains: 6, maxEmber: 12, minStage: 2, rarity: "R", weight: 0.20, cyclePolicy: "RARITY" },
-    { id: "CMD_LIME_CONSTRUCTION", category: "COMMAND", nameKey: "CMD_LIME_CONSTRUCTION_NAME", descriptionKey: "CMD_LIME_CONSTRUCTION_DESC", cost: { food: 10 }, reqDiscoveredResourceTags: ["STONE", "WOOD"], minStage: 2, rarity: "UC", weight: 0.25, cyclePolicy: "RARITY" },
-    { id: "CMD_GREAT_RAMPART_PROJECT", category: "COMMAND", nameKey: "CMD_GREAT_RAMPART_PROJECT_NAME", descriptionKey: "CMD_GREAT_RAMPART_PROJECT_DESC", cost: { wood: 70 }, reqConnectedPlains: 12, reqTrialWithin: 10, cyclePolicy: "UNIQUE", minStage: 3, rarity: "UR", weight: 0.10 },
+    // 📜 経済・政策カード (全23枚: Stage 1: 8枚, Stage 2: 10枚, Stage 3: 5枚)
+    // ── Stage 1 (8枚) ──
+    { id: "CMD_RATIONING", category: "COMMAND", nameKey: "CMD_RATIONING_NAME", descriptionKey: "CMD_RATIONING_DESC", cost: {}, tags: ["FOOD", "EMERGENCY"], reqFoodDeficitOrFallback: true, minStage: 1, rarity: "C", weight: 0.40, cyclePolicy: "RARITY" },
+    { id: "CMD_WETLAND_RECLAMATION", category: "COMMAND", nameKey: "CMD_WETLAND_RECLAMATION_NAME", descriptionKey: "CMD_WETLAND_RECLAMATION_DESC", cost: { wood: 15, ember: 1 }, tags: ["WETLAND", "RECLAIMED", "FOOD", "DEVELOPMENT"], reqWetland: 1, reqWood: 15, minStage: 1, rarity: "UC", weight: 0.25, cyclePolicy: "RARITY" },
+    { id: "CMD_LOGGING_CAMP", category: "COMMAND", nameKey: "CMD_LOGGING_CAMP_NAME", descriptionKey: "CMD_LOGGING_CAMP_DESC", cost: { ember: 1 }, tags: ["FOREST", "MATERIAL", "INDUSTRY", "SPECIAL_BLOCK"], reqForestNearby: 3, minStage: 1, rarity: "C", weight: 0.35, cyclePolicy: "RARITY" },
+    { id: "CMD_GRANARY", category: "COMMAND", nameKey: "CMD_GRANARY_NAME", descriptionKey: "CMD_GRANARY_DESC", cost: { wood: 20 }, tags: ["PLAINS", "RECLAIMED", "FOOD", "STORAGE", "INDUSTRY", "SPECIAL_BLOCK"], reqPlains: 4, reqWood: 20, minStage: 1, rarity: "UC", weight: 0.25, cyclePolicy: "RARITY" },
+    { id: "CMD_AGRICULTURAL_REFORM", category: "COMMAND", nameKey: "CMD_AGRICULTURAL_REFORM_NAME", descriptionKey: "CMD_AGRICULTURAL_REFORM_DESC", cost: { wood: 20 }, tags: ["PLAINS", "RECLAIMED", "FOOD", "AGRICULTURE", "DEVELOPMENT"], reqConnectedPlainsOrReclaimed: 3, reqWood: 20, cyclePolicy: "UNIQUE", minStage: 1, rarity: "R", weight: 0.20 },
+    { id: "CMD_PASTORAL_FARM", category: "COMMAND", nameKey: "CMD_PASTORAL_FARM_NAME", descriptionKey: "CMD_PASTORAL_FARM_DESC", cost: { wood: 15 }, tags: ["PLAINS", "LIVESTOCK", "FOOD", "INDUSTRY", "SPECIAL_BLOCK"], reqDiscoveredResourceTag: "LIVESTOCK", reqPlains: 4, reqWood: 15, minStage: 1, rarity: "UC", weight: 0.25, cyclePolicy: "RARITY" },
+    { id: "CMD_ABANDONED_SETTLEMENT", category: "COMMAND", nameKey: "CMD_ABANDONED_SETTLEMENT_NAME", descriptionKey: "CMD_ABANDONED_SETTLEMENT_DESC", cost: { ember: 1 }, tags: ["EXPLORATION", "EVENT", "RESOURCE"], reqEmptyCells: 8, minStage: 1, rarity: "UC", weight: 0.25, cyclePolicy: "RARITY" },
+    { id: "CMD_EMERGENCY_LEVY", category: "COMMAND", nameKey: "CMD_EMERGENCY_LEVY_NAME", descriptionKey: "CMD_EMERGENCY_LEVY_DESC", cost: { food: 20 }, tags: ["FOOD", "MATERIAL", "EMERGENCY"], reqWoodDeficit: true, reqFood: 20, minStage: 1, rarity: "C", weight: 0.35, cyclePolicy: "RARITY" },
+
+    // ── Stage 2 (10枚) ──
+    { id: "CMD_SAWMILL", category: "COMMAND", nameKey: "CMD_SAWMILL_NAME", descriptionKey: "CMD_SAWMILL_DESC", cost: { wood: 25 }, tags: ["FOREST", "MATERIAL", "INDUSTRY", "SPECIAL_BLOCK"], reqLoggingCamp: 1, reqWood: 25, minStage: 2, rarity: "R", weight: 0.20, cyclePolicy: "RARITY" },
+    { id: "CMD_QUARRY", category: "COMMAND", nameKey: "CMD_QUARRY_NAME", descriptionKey: "CMD_QUARRY_DESC", cost: { wood: 20 }, tags: ["HILL", "STONE", "MATERIAL", "EXTRACTION", "INDUSTRY", "SPECIAL_BLOCK"], reqDiscoveredResourceTag: "STONE", reqHill: 1, reqWood: 20, minStage: 2, rarity: "UC", weight: 0.25, cyclePolicy: "RARITY" },
+    { id: "CMD_MINE", category: "COMMAND", nameKey: "CMD_MINE_NAME", descriptionKey: "CMD_MINE_DESC", cost: { wood: 25 }, tags: ["HILL", "MOUNTAIN", "ORE", "MATERIAL", "MYSTIC", "EXTRACTION", "SPECIAL_BLOCK"], reqOreSocket: true, reqWood: 25, minStage: 2, rarity: "R", weight: 0.20, cyclePolicy: "RARITY" },
+    { id: "CMD_STABLE", category: "COMMAND", nameKey: "CMD_STABLE_NAME", descriptionKey: "CMD_STABLE_DESC", cost: { wood: 20 }, tags: ["PLAINS", "LIVESTOCK", "MOBILITY", "INDUSTRY", "SPECIAL_BLOCK"], reqDiscoveredResourceTag: "HORSE", reqPlains: 6, reqWood: 20, minStage: 2, rarity: "R", weight: 0.20, cyclePolicy: "RARITY" },
+    { id: "CMD_LIME_KILN", category: "COMMAND", nameKey: "CMD_LIME_KILN_NAME", descriptionKey: "CMD_LIME_KILN_DESC", cost: { food: 10, wood: 15 }, tags: ["STONE", "FOREST", "MATERIAL", "CONSTRUCTION", "INDUSTRY", "SPECIAL_BLOCK"], reqDiscoveredResourceTags: ["STONE", "WOOD"], reqFood: 10, reqWood: 15, minStage: 2, rarity: "UC", weight: 0.25, cyclePolicy: "RARITY" },
+    { id: "CMD_MARKET", category: "COMMAND", nameKey: "CMD_MARKET_NAME", descriptionKey: "CMD_MARKET_DESC", cost: { wood: 25 }, tags: ["LINK", "RESOURCE", "INDUSTRY", "SPECIAL_BLOCK"], reqMinLinks: 2, reqWood: 25, minStage: 2, rarity: "R", weight: 0.20, cyclePolicy: "RARITY" },
+    { id: "CMD_DEPOT", category: "COMMAND", nameKey: "CMD_DEPOT_NAME", descriptionKey: "CMD_DEPOT_DESC", cost: { wood: 30 }, tags: ["MATERIAL", "STORAGE", "LINK", "INDUSTRY", "SPECIAL_BLOCK"], reqIndustrySpecialBlocks: 2, reqWood: 30, minStage: 2, rarity: "R", weight: 0.20, cyclePolicy: "RARITY" },
+    { id: "CMD_IRRIGATION", category: "COMMAND", nameKey: "CMD_IRRIGATION_NAME", descriptionKey: "CMD_IRRIGATION_DESC", cost: { wood: 20 }, tags: ["WATER", "PLAINS", "RECLAIMED", "FOOD", "DEVELOPMENT"], reqWaterSource: true, reqPlainsOrReclaimed: 1, reqWood: 20, minStage: 2, rarity: "UC", weight: 0.25, cyclePolicy: "RARITY" },
+    { id: "CMD_RESETTLEMENT", category: "COMMAND", nameKey: "CMD_RESETTLEMENT_NAME", descriptionKey: "CMD_RESETTLEMENT_DESC", cost: { food: 15, wood: 10 }, tags: ["PLAINS", "MERGE", "FOOD", "DEVELOPMENT"], reqPlainsMerge2x2: 1, reqFood: 15, reqWood: 10, minStage: 2, rarity: "R", weight: 0.20, cyclePolicy: "RARITY" },
+    { id: "CMD_WORKSHOP", category: "COMMAND", nameKey: "CMD_WORKSHOP_NAME", descriptionKey: "CMD_WORKSHOP_DESC", cost: { wood: 30 }, tags: ["MATERIAL", "INDUSTRY", "CONSTRUCTION", "SPECIAL_BLOCK"], reqDistinctPrimaryIndustries: 2, reqWood: 30, minStage: 2, rarity: "R", weight: 0.20, cyclePolicy: "RARITY" },
+
+    // ── Stage 3 (5枚) ──
+    { id: "CMD_GRANARY_NETWORK", category: "COMMAND", nameKey: "CMD_GRANARY_NETWORK_NAME", descriptionKey: "CMD_GRANARY_NETWORK_DESC", cost: { wood: 50 }, tags: ["FOOD", "STORAGE", "LINK", "PROJECT"], reqGranaries: 2, reqWood: 50, cyclePolicy: "UNIQUE", minStage: 3, rarity: "UR", weight: 0.10 },
+    { id: "CMD_INDUSTRIAL_ROAD", category: "COMMAND", nameKey: "CMD_INDUSTRIAL_ROAD_NAME", descriptionKey: "CMD_INDUSTRIAL_ROAD_DESC", cost: { wood: 45 }, tags: ["ROAD", "LINK", "INDUSTRY", "PROJECT"], reqIndustrySpecialBlocks: 2, reqWood: 45, minStage: 3, rarity: "R", weight: 0.20, cyclePolicy: "RARITY" },
+    { id: "CMD_IRRIGATION_NETWORK", category: "COMMAND", nameKey: "CMD_IRRIGATION_NETWORK_NAME", descriptionKey: "CMD_IRRIGATION_NETWORK_DESC", cost: { wood: 50 }, tags: ["WATER", "PLAINS", "RECLAIMED", "FOOD", "PROJECT"], reqIrrigationDone: true, reqWaterSource: true, reqWood: 50, cyclePolicy: "UNIQUE", minStage: 3, rarity: "UR", weight: 0.10 },
+    { id: "CMD_INDUSTRIAL_CLUSTER", category: "COMMAND", nameKey: "CMD_INDUSTRIAL_CLUSTER_NAME", descriptionKey: "CMD_INDUSTRIAL_CLUSTER_DESC", cost: { wood: 60 }, tags: ["INDUSTRY", "LINK", "PROJECT"], reqLinkedDistinctIndustries: 3, reqWood: 60, cyclePolicy: "UNIQUE", minStage: 3, rarity: "UR", weight: 0.10 },
+    { id: "CMD_GREAT_RAMPART_PROJECT", category: "COMMAND", nameKey: "CMD_GREAT_RAMPART_PROJECT_NAME", descriptionKey: "CMD_GREAT_RAMPART_PROJECT_DESC", cost: { wood: 70 }, tags: ["CONSTRUCTION", "DEFENSE", "PROJECT"], reqLargeTerritory: true, reqWood: 70, cyclePolicy: "UNIQUE", minStage: 3, rarity: "UR", weight: 0.10 },
 
     // 🛡️ 軍事・防衛カード
     { id: "CMD_VIGILANCE", category: "COMMAND", nameKey: "CMD_VIGILANCE_NAME", descriptionKey: "CMD_VIGILANCE_DESC", cost: { wood: 15 }, reqTrialOrLowDefense: true, minStage: 1, rarity: "C", weight: 0.35, cyclePolicy: "RARITY" },
@@ -331,8 +344,8 @@ class DeckManager {
         if (c.id === "CMD_WETLAND_RECLAMATION" && this.state && this.state.grid) {
             let hasReclaimable = false;
             for (let r = 0; r < this.state.grid.length && !hasReclaimable; r++) {
-                for (let c = 0; c < this.state.grid[r].length && !hasReclaimable; c++) {
-                    const cell = this.state.grid[r][c];
+                for (let cCol = 0; cCol < this.state.grid[r].length && !hasReclaimable; cCol++) {
+                    const cell = this.state.grid[r][cCol];
                     if (cell && cell.placed && !cell.isHQ && cell.terrain) {
                         const tid = cell.terrain.terrainId || cell.terrain.id || "";
                         const isLakeCell = cell.socketResource && (cell.socketResource.id === "SOCKET_LAKE" || cell.socketResource.isLake);
@@ -343,6 +356,122 @@ class DeckManager {
                 }
             }
             if (!hasReclaimable) return false;
+        }
+
+        // 🌾 食料不足または自動補填見込み判定
+        if (c.reqFoodDeficitOrFallback && this.state) {
+            const currentFood = this.state.food || 0;
+            const upkeep = (typeof this.state.getFoodUpkeep === 'function') ? this.state.getFoodUpkeep() : 20;
+            const isDeficit = currentFood < upkeep || currentFood <= 40;
+            if (!isDeficit) return false;
+        }
+
+        // 🌲 候補周囲に森系マスが存在すること
+        if (c.reqForestNearby !== undefined && this.state && this.state.grid) {
+            let forestCount = 0;
+            for (let r = 0; r < this.state.grid.length; r++) {
+                for (let col = 0; col < this.state.grid[r].length; col++) {
+                    const cell = this.state.grid[r][col];
+                    if (cell && cell.placed && cell.terrain) {
+                        const tid = cell.terrain.terrainId || cell.terrain.id || "";
+                        if (tid.includes("FOREST")) forestCount++;
+                    }
+                }
+            }
+            if (forestCount < c.reqForestNearby) return false;
+        }
+
+        // 🌾 連結した平地または干拓地
+        if (c.reqConnectedPlainsOrReclaimed !== undefined && this.state && this.state.grid) {
+            let count = 0;
+            for (let r = 0; r < this.state.grid.length; r++) {
+                for (let col = 0; col < this.state.grid[r].length; col++) {
+                    const cell = this.state.grid[r][col];
+                    if (cell && cell.placed && cell.terrain) {
+                        const tid = cell.terrain.terrainId || cell.terrain.id || "";
+                        if (tid.includes("PLAINS") || tid.includes("RECLAIMED_LAND")) count++;
+                    }
+                }
+            }
+            if (count < c.reqConnectedPlainsOrReclaimed) return false;
+        }
+
+        // 🧱 資材不足傾向
+        if (c.reqWoodDeficit && this.state) {
+            if ((this.state.wood || 0) > 30) return false;
+        }
+
+        // 🪓 伐採拠点の存在
+        if (c.reqLoggingCamp && this.state) {
+            const buffs = this.state.activeBuffs || [];
+            const hasCamp = buffs.some(b => b.id === "CMD_LOGGING_CAMP" || b.id === "LOGGING_CAMP");
+            let hasForest = false;
+            if (this.state.grid) {
+                for (let r = 0; r < this.state.grid.length && !hasForest; r++) {
+                    for (let col = 0; col < this.state.grid[r].length && !hasForest; col++) {
+                        const cell = this.state.grid[r][col];
+                        if (cell && cell.placed && cell.terrain && (cell.terrain.terrainId || "").includes("FOREST")) hasForest = true;
+                    }
+                }
+            }
+            if (!hasCamp && !hasForest) return false;
+        }
+
+        // ⛰️ 丘陵の存在
+        if (c.reqHill !== undefined && this.state && this.state.grid) {
+            let hillCount = 0;
+            for (let r = 0; r < this.state.grid.length; r++) {
+                for (let col = 0; col < this.state.grid[r].length; col++) {
+                    const cell = this.state.grid[r][col];
+                    if (cell && cell.placed && cell.terrain && (cell.terrain.terrainId || "").includes("HILL")) hillCount++;
+                }
+            }
+            if (hillCount < c.reqHill) return false;
+        }
+
+        // ⛏️ 鉱物系ソケットの存在
+        if (c.reqOreSocket && this.state && this.state.grid) {
+            let hasOre = false;
+            for (let r = 0; r < this.state.grid.length && !hasOre; r++) {
+                for (let col = 0; col < this.state.grid[r].length && !hasOre; col++) {
+                    const cell = this.state.grid[r][col];
+                    if (cell && cell.socketResource) {
+                        const cat = cell.socketResource.category || "";
+                        const sid = cell.socketResource.id || "";
+                        if (cat.includes("ORE") || cat.includes("STONE") || cat.includes("IRON") || sid.includes("ORE") || sid.includes("STONE")) hasOre = true;
+                    }
+                }
+            }
+            if (!hasOre) return false;
+        }
+
+        // 💧 水源（湖またはオアシス）
+        if (c.reqWaterSource && this.state && this.state.grid) {
+            let hasWater = false;
+            for (let r = 0; r < this.state.grid.length && !hasWater; r++) {
+                for (let col = 0; col < this.state.grid[r].length && !hasWater; col++) {
+                    const cell = this.state.grid[r][col];
+                    if (cell && cell.socketResource && (cell.socketResource.id === "SOCKET_LAKE" || cell.socketResource.id === "SOCKET_OASIS" || cell.socketResource.isLake)) hasWater = true;
+                }
+            }
+            if (!hasWater) return false;
+        }
+
+        // 🔗 平地2x2マージ
+        if (c.reqPlainsMerge2x2 && this.state) {
+            const hasMerge = this.state.mergedBlocks && Object.values(this.state.mergedBlocks).some(m => m.terrainId && m.terrainId.includes("PLAINS"));
+            if (!hasMerge) return false;
+        }
+
+        // 🏰 大規模国土
+        if (c.reqLargeTerritory && this.state && this.state.grid) {
+            let placedCount = 0;
+            for (let r = 0; r < this.state.grid.length; r++) {
+                for (let col = 0; col < this.state.grid[r].length; col++) {
+                    if (this.state.grid[r][col]?.placed && !this.state.grid[r][col]?.isHQ) placedCount++;
+                }
+            }
+            if (placedCount < 10) return false;
         }
 
         // 🔲 盤面の空きマス数判定
@@ -860,9 +989,10 @@ class DeckManager {
             });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🔥【${cName}】`);
         } else if (cId === "CMD_RATIONING") {
-            // 🌾 配給: コスト 無料 (今ターン維持費半減)
+            // 🌾 配給: コスト 無料 (今ターンの最終食料維持費を 40% 軽減)
+            this.state.foodCostRationingActive = true;
+            this.state.foodCostRationingDiscount = 0.40;
             this.state.foodCostHalvedTurns = 1;
-            this.state.food += 5;
             this.state.addBuff({
                 id: cId,
                 name: cName,
@@ -924,22 +1054,17 @@ class DeckManager {
             });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🌾【${cName}】`);
         } else if (cId === "CMD_EMERGENCY_LEVY") {
-            // 🧱 緊急徴発: コスト 🌾-20 (即座に 🧱+15、次ターン食料維持費 +5)
+            // 🧱 緊急徴発: コスト 🌾-20 (即座に 🧱+15 を獲得、次ターンペナルティ削除)
             this.state.wood = (this.state.wood || 0) + 15;
-            this.state.emergencyLevyTurns = 1;
-            this.state.emergencyLevyStartsNextTurn = true;
             this.state.addBuff({
                 id: cId,
                 name: cName,
                 shortName: cName,
-                icon: "⚠️",
+                icon: "🧱",
                 description: cDesc,
-                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 1 }) : "1T",
-                category: "DEBUFF",
-                remainingTurns: 1,
-                startsNextTurn: true
+                category: "CARD_EFFECT"
             });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `⚠️【${cName}】`);
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🧱【${cName}】`);
         } else if (cId === "CMD_MANIFEST_MIRACLE") {
             // ✨ 顕現: コスト ✨-10 (次のターンから3ターンの間、不足資源補填レート 3→1)
             this.state.manifestMiracleTurns = 3;
@@ -1248,6 +1373,105 @@ class DeckManager {
             this.state.systematicLoggingStartsNextTurn = true;
             this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🌲", description: cDesc, badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 3 }) : "3T", category: "DEBUFF", remainingTurns: 3, startsNextTurn: true });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🌲【${cName}】`);
+        } else if (cId === "CMD_LOGGING_CAMP") {
+            // 🪵 伐採拠点: コスト 🔥-1 (即時 🧱+8、周囲森林から🧱産出)
+            this.state.wood = (this.state.wood || 0) + 8;
+            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🪵", description: cDesc, category: "CARD_EFFECT" });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🪵【${cName}】`);
+        } else if (cId === "CMD_GRANARY") {
+            // 🌾 穀物庫: コスト 🧱-20 (食料維持費 x0.90)
+            this.state.granaryCount = (this.state.granaryCount || 0) + 1;
+            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🏛️", description: cDesc, category: "CARD_EFFECT" });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🏛️【${cName}】`);
+        } else if (cId === "CMD_AGRICULTURAL_REFORM") {
+            // 🌾 農地改革: コスト 🧱-20 (指定地域 🌾+1/T)
+            this.state.permanentPlainsFoodBonus = (this.state.permanentPlainsFoodBonus || 0) + 1;
+            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "📜", description: cDesc, category: "CARD_EFFECT" });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `📜【${cName}】`);
+        } else if (cId === "CMD_PASTORAL_FARM") {
+            // 🐄 牧畜場: コスト 🧱-15 (平地を牧畜場化、🌾産出追加)
+            this.state.food = (this.state.food || 0) + 2;
+            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🐄", description: cDesc, category: "CARD_EFFECT" });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🐄【${cName}】`);
+        } else if (cId === "CMD_SAWMILL") {
+            // 🪚 製材所: コスト 🧱-25 (伐採拠点を改良、🧱産出x1.5)
+            this.state.sawmillCount = (this.state.sawmillCount || 0) + 1;
+            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🪚", description: cDesc, category: "CARD_EFFECT" });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🪚【${cName}】`);
+        } else if (cId === "CMD_QUARRY") {
+            // 🪨 採石場: コスト 🧱-20 (即時 🧱+10、周囲丘陵/山岳から🧱産出)
+            this.state.wood = (this.state.wood || 0) + 10;
+            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🪨", description: cDesc, category: "CARD_EFFECT" });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🪨【${cName}】`);
+        } else if (cId === "CMD_MINE") {
+            // ⛏️ 鉱山: コスト 🧱-25 (鉱物ソケット産出 x1.5)
+            this.state.mineCount = (this.state.mineCount || 0) + 1;
+            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "⛏️", description: cDesc, category: "CARD_EFFECT" });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `⛏️【${cName}】`);
+        } else if (cId === "CMD_STABLE") {
+            // 🐎 厩舎: コスト 🧱-20 (騎馬カード提示率上昇、🧱コスト-5)
+            this.state.stableCount = (this.state.stableCount || 0) + 1;
+            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🐎", description: cDesc, category: "CARD_EFFECT" });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🐎【${cName}】`);
+        } else if (cId === "CMD_LIME_KILN") {
+            // 🧱 石灰窯: コスト 🌾-10 🧱-15 (建設カード🧱コスト-20%)
+            this.state.limeKilnCount = (this.state.limeKilnCount || 0) + 1;
+            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🧱", description: cDesc, category: "CARD_EFFECT" });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🧱【${cName}】`);
+        } else if (cId === "CMD_MARKET") {
+            // 🏪 市場: コスト 🧱-25 (LINK資源カテゴリごとに🌾/🧱産出)
+            this.state.marketCount = (this.state.marketCount || 0) + 1;
+            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🏪", description: cDesc, category: "CARD_EFFECT" });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🏪【${cName}】`);
+        } else if (cId === "CMD_DEPOT") {
+            // 🏭 集積倉庫: コスト 🧱-30 (PROJECTカード🧱コスト-15%)
+            this.state.depotCount = (this.state.depotCount || 0) + 1;
+            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🏭", description: cDesc, category: "CARD_EFFECT" });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🏭【${cName}】`);
+        } else if (cId === "CMD_IRRIGATION") {
+            // 💧 灌漑: コスト 🧱-20 (水源接続農地 🌾+1/T)
+            this.state.irrigationCount = (this.state.irrigationCount || 0) + 1;
+            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "💧", description: cDesc, category: "CARD_EFFECT" });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `💧【${cName}】`);
+        } else if (cId === "CMD_RESETTLEMENT") {
+            // 🏕️ 移住: コスト 🌾-15 🧱-10 (平地MERGEに 🔥+2、🌾+2/T)
+            if (this.state.emberSystem && typeof this.state.emberSystem.addBonus === 'function') {
+                this.state.emberSystem.addBonus(2);
+            } else {
+                this.state.ember = (this.state.ember || 0) + 2;
+            }
+            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🏕️", description: cDesc, category: "CARD_EFFECT" });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🏕️【${cName}】`);
+        } else if (cId === "CMD_WORKSHOP") {
+            // 🔨 工房: コスト 🧱-30 (SPECIAL_BLOCKカード🧱コスト-10%)
+            this.state.workshopCount = (this.state.workshopCount || 0) + 1;
+            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🔨", description: cDesc, category: "CARD_EFFECT" });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🔨【${cName}】`);
+        } else if (cId === "CMD_GRANARY_NETWORK") {
+            // 🏛️ 大穀倉網: コスト 🧱-50 (維持費倍率 0.90→0.87相当)
+            this.state.granaryNetworkActive = true;
+            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🏛️", description: cDesc, category: "PERMANENT" });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🏛️【${cName}】`);
+        } else if (cId === "CMD_INDUSTRIAL_ROAD") {
+            // 🛣️ 産業街道: コスト 🧱-45 (産業拠点持続産出+20%)
+            this.state.industrialRoadActive = true;
+            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🛣️", description: cDesc, category: "PERMANENT" });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🛣️【${cName}】`);
+        } else if (cId === "CMD_IRRIGATION_NETWORK") {
+            // 🌊 大規模灌漑網: コスト 🧱-50 (最大8農地 🌾+1/T)
+            this.state.irrigationNetworkActive = true;
+            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🌊", description: cDesc, category: "PERMANENT" });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🌊【${cName}】`);
+        } else if (cId === "CMD_INDUSTRIAL_CLUSTER") {
+            // 🏭 産業集積: コスト 🧱-60 (PROJECTカード🧱コスト-20%)
+            this.state.industrialClusterActive = true;
+            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🏭", description: cDesc, category: "PERMANENT" });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🏭【${cName}】`);
+        } else if (cId === "CMD_GREAT_RAMPART_PROJECT") {
+            // 🏯 大防塁: コスト 🧱-70 (連続防塁付与、Trial迎撃強化)
+            this.state.greatRampartActive = true;
+            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🏯", description: cDesc, category: "PERMANENT" });
+            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🏯【${cName}】`);
         } else if (cId === "CMD_ABANDONED_SETTLEMENT") {
             // 🎲 領土探索: コスト 🔥-1 (2D6判定)
             const checkResult = checkSystem.resolve({
@@ -1461,5 +1685,5 @@ if (typeof globalThis !== "undefined") {
 }
 
 const Step1DrawSystem = DeckManager;
-export { DeckManager, Step1DrawSystem };
+export { DeckManager, Step1DrawSystem, COMMAND_CARDS_MASTER };
 export default DeckManager;

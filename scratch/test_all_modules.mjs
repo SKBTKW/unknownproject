@@ -682,11 +682,10 @@ const saveEngine = new GameEngine();
 saveEngine.deckManager.playCommandCard({ id: 'CMD_CONSERVE_EMBER', category: 'COMMAND', cost: {} }, null, 0);
 assert(saveEngine.state.emberConsumptionReducedTurns === 1, '残火の節約で emberConsumptionReducedTurns が 1 になること');
 
-// ② CMD_RATIONING (節約配給)
-const foodBeforeRation = saveEngine.state.food;
+// ② CMD_RATIONING (配給: 今ターンの最終食料維持費40%軽減)
 saveEngine.deckManager.playCommandCard({ id: 'CMD_RATIONING', category: 'COMMAND', cost: {} }, null, 0);
-assert(saveEngine.state.foodCostHalvedTurns === 1, '節約配給で foodCostHalvedTurns が 1 になること');
-assert(saveEngine.state.food === foodBeforeRation + 5, '節約配給で 🌾+5 獲得すること');
+assert(saveEngine.state.foodCostHalvedTurns === 1, '配給で foodCostHalvedTurns が 1 になること');
+assert(saveEngine.state.foodCostRationingActive === true, '配給で foodCostRationingActive が true になること');
 
 // ③ CMD_MEDITATION (静かなる瞑想)
 const mysticBeforeMed = saveEngine.state.mystic;
@@ -719,14 +718,12 @@ assert(saveEngine.state.grandCultivationTurns === 4, '耕作計画で grandCulti
 assert(saveEngine.state.grandCultivationStartsNextTurn === true, '耕作計画発動時は grandCultivationStartsNextTurn が true であること');
 assert(saveEngine.state.buffSystem.hasBuff('CMD_GRAND_CULTIVATION'), 'バフマネージャーに CMD_GRAND_CULTIVATION が登録されること');
 
-// ⑥ CMD_EMERGENCY_LEVY (緊急徴発: コスト 🌾-20, 即座に 🧱+15, 次のターンの食料維持費 +5)
+// ⑥ CMD_EMERGENCY_LEVY (緊急徴発: コスト 🌾-20, 即座に 🧱+15, 次ターンペナルティ削除)
 saveEngine.state.food = 30;
 saveEngine.state.wood = 10;
 saveEngine.deckManager.playCommandCard({ id: 'CMD_EMERGENCY_LEVY', category: 'COMMAND', cost: { food: 20 } }, null, 0);
 assert(saveEngine.state.food === 10, '緊急徴発で 🌾20 消費されること');
 assert(saveEngine.state.wood === 25, '緊急徴発で 🧱15 獲得されること');
-assert(saveEngine.state.emergencyLevyTurns === 1, '緊急徴発で emergencyLevyTurns が 1 になること');
-assert(saveEngine.state.emergencyLevyStartsNextTurn === true, '緊急徴発発動時は emergencyLevyStartsNextTurn が true であること');
 assert(saveEngine.state.buffSystem.hasBuff('CMD_EMERGENCY_LEVY'), 'バフマネージャーに CMD_EMERGENCY_LEVY が登録されること');
 
 // ⑦ CMD_MANIFEST_MIRACLE (顕現: コスト ✨-10, 次のターンから3ターンの間 補填レート緩和)
