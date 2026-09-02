@@ -76,11 +76,12 @@ export class TopHeaderComponent {
         }
         this.lastFood = this.state.food;
 
-        const foodSign = prods.totalFood > 0 ? `+${prods.totalFood}` : `${prods.totalFood}`;
+        const netFood = prods.netFood ?? prods.totalFood ?? 0;
+        const foodSign = netFood > 0 ? `+${netFood}` : `${netFood}`;
         this.setElementText("valFoodProd", foodSign);
         const foodProdEl = document.getElementById("valFoodProd");
         if (foodProdEl) {
-            foodProdEl.style.color = (prods.totalFood < 0) ? "#ff6b6b" : "#2ecc71";
+            foodProdEl.style.color = (netFood < 0) ? "#ff6b6b" : "#2ecc71";
         }
 
         // 4. 🧱 資材 ＆ 🛡️ 防衛力 ＆ ✨ 神秘

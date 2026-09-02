@@ -3,6 +3,8 @@
    リソース産出（食料/資材/防衛/神秘）＆詳細内訳計算専用独立コンポーネント
    ============================================================= */
 
+import { MaintenanceFallbackSystem } from './maintenance_fallback_system.js';
+
 (function() {
     class ProductionCalculator {
         static calculateTotalProduction(state) {
@@ -141,20 +143,8 @@
                 }
             }
 
-            // 🔥 残り火ステッピングに基づく食料維持費 (rules/02_resources_and_ember.md 準拠)
-            let foodCost = 20;
-            if (state.emberSystem && typeof state.emberSystem.getFoodMaintenanceCost === 'function') {
-                foodCost = state.emberSystem.getFoodMaintenanceCost();
-            } else {
-                const ember = (state.ember !== undefined) ? state.ember : 20;
-                if (ember >= 24) {
-                    foodCost = 25; // 🔥 旺盛状態 (維持費増)
-                } else if (ember <= 9) {
-                    foodCost = 15; // 🔥 微火・危機 (省エネ復興)
-                } else {
-                    foodCost = 20; // 🔥 標準状態
-                }
-            }
+            // 表示予測も実決済も同じ最終維持費 resolver を参照する。
+            const foodCost = MaintenanceFallbackSystem.resolveFoodMaintenanceCost(state).foodCost;
 
             // 🏰 本営 (HQ) 基礎産出の動的解決 (Stage 1: 10/10/10/1, Stage 2: 14/14/14/2)
             const center = Math.floor(size / 2);
@@ -168,7 +158,7 @@
             const adjustedPlainsFood = Math.floor((foodTiles + plainsBuffBonus) * plainsFoodMultiplier);
             const grossFood = Math.floor((hqFood + adjustedPlainsFood + foodSockets + foodVicinity + foodLakeIrrigation) * foodMult * buffFoodMult);
             const netFood = grossFood - foodCost;
-            const totalFood = netFood; // 🌾 毎ターンの純収支 (Net Balance)
+            const totalFood = netFood; // 表示互換用。実state加算は必ずgrossFoodを使用する。
             const totalWood = Math.max(0, Math.floor((hqWood + woodTiles + woodSockets + woodVicinity - systematicLoggingPenalty) * woodMult * buffWoodMult));
             const totalMaterial = totalWood;
             const totalMystic = Math.floor((hqMystic + mysticTiles + mysticSockets + mysticVicinity + flatMysticBonus) * mysticMult * buffMysticMult);
@@ -422,6 +412,5 @@
 const ProductionCalculator = (typeof globalThis !== "undefined" && globalThis.ProductionCalculator) ? globalThis.ProductionCalculator : null;
 export { ProductionCalculator };
 export default ProductionCalculator;
-
 
 

@@ -10,6 +10,7 @@ import { ChronicleSystem } from '../systems/chronicle_system.js';
 import { GlobalEventManager } from '../systems/global_event_system.js';
 import { EmberSystem } from '../systems/ember_system.js';
 import { CardCycleSystem } from '../systems/card_cycle_system.js';
+import { MaintenanceFallbackSystem } from '../systems/maintenance_fallback_system.js';
 import { CellViewDataService } from '../services/cell_view_data_service.js';
 import { ActionTransactionManager } from './transaction_manager.js';
 import { resolvePlacementGeometry } from './placement_geometry.js';
@@ -120,21 +121,36 @@ class GameEngine {
     /**
      * 🔄 ターン送り
      */
-    nextTurn() {
+    nextTurn({
+        autoFallbackEnabled = true,
+        useHypotheticalFallback = false
+    } = {}) {
         if (this.transactionManager) this.transactionManager.clearHistory();
         if (this.undoSystem) this.undoSystem.clearSnapshot();
 
-        // 1. 資源産出の加算
-        if (this.state && typeof this.state.calculateTotalProduction === 'function') {
-            const prods = this.state.calculateTotalProduction();
-            this.state.food += (prods.totalFood || 0);
-            this.state.wood += (prods.totalWood || 0);
-            this.state.mystic += (prods.totalMystic || 1);
+        const maintenancePreview = this.previewTurnEndMaintenance({ autoFallbackEnabled });
+        const prods = maintenancePreview.production;
+
+        // 1. 資源総産出の加算。食料維持費はmaintenanceだけが一度控除する。
+        if (this.state) {
+            this.state.food += (prods.grossFood ?? 0);
+            this.state.wood += (prods.totalWood ?? 0);
+            this.state.material = this.state.wood;
+            this.state.mystic += (prods.totalMystic ?? 1);
         }
+
+        const fallbackPlan = !autoFallbackEnabled
+            && useHypotheticalFallback
+            && maintenancePreview.hypotheticalFallbackPlan.canFullyCover
+            ? maintenancePreview.hypotheticalFallbackPlan
+            : maintenancePreview.automaticPlan;
 
         // 2. ターン終了維持費（食料-20等）
         if (this.state && typeof this.state.processTurnEndMaintenance === 'function') {
-            this.state.processTurnEndMaintenance();
+            this.lastTurnMaintenanceResult = this.state.processTurnEndMaintenance({
+                ...maintenancePreview,
+                fallbackPlan
+            });
         }
 
         // 🌍 2.5. グローバルイベントのターン経過処理 (持続減衰・失効)
@@ -194,6 +210,12 @@ class GameEngine {
         }
 
         return this.state ? this.state.turn : 1;
+    }
+
+    previewTurnEndMaintenance({ autoFallbackEnabled = true } = {}) {
+        return MaintenanceFallbackSystem.previewTurnEndMaintenance(this.state, {
+            autoFallbackEnabled
+        });
     }
 
     /**

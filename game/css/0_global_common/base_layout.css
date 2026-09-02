@@ -41,3 +41,54 @@ body {
     min-height: 0;
     overflow: hidden;
 }
+
+/* Settings modal shared controls */
+.setting-item-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 10px 14px;
+    border: 1px solid #2a3144;
+    border-radius: 8px;
+    background: #1c2230;
+}
+
+.setting-item-copy {
+    min-width: 0;
+}
+
+.setting-item-title {
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.setting-item-desc {
+    margin-top: 2px;
+    color: #a4b0be;
+    font-size: 11px;
+}
+
+.setting-select-control {
+    flex: 0 0 auto;
+    padding: 5px 10px;
+    border: 1px solid #3d4a63;
+    border-radius: 6px;
+    background: #2b3548;
+    color: #1abc9c;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+@media (max-width: 768px) {
+    .setting-item-row {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .setting-select-control {
+        width: 100%;
+    }
+}

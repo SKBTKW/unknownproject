@@ -22,6 +22,7 @@ import { DiceWidgetComponent } from './dice_widget_component.js';
 import { DiceDisplayQueue } from './dice_display_queue.js';
 import { DevDiceControlsComponent } from './dev_dice_controls_component.js';
 import { BuildIdentityBadgeComponent } from './build_identity_badge_component.js';
+import { gameSettings } from './settings_modal_system.js';
 import {
     resolvePlacementAnchor,
     resolvePlacementShape,
@@ -1140,29 +1141,67 @@ class UIController {
     }
 
     nextTurn() {
-        const settings = (typeof window !== "undefined" && window.gameSettings) ? window.gameSettings : null;
+        const settings = (typeof window !== "undefined" && window.gameSettings) ? window.gameSettings : gameSettings;
         const warningRequired = settings ? settings.get("turnEndWarning") : true;
+        const continueToMaintenanceCheck = () => this.confirmFoodDeficitFallback();
 
         if (warningRequired && this.state && !this.state.hasPickedThisTurn) {
-            const modalSys = (typeof window !== "undefined" && window.ModalSystem) ? window.ModalSystem : null;
+            const modalSys = (typeof window !== "undefined" && window.ModalSystem) ? window.ModalSystem : ModalSystem;
             const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
-            if (modalSys && typeof modalSys.showConfirmation === "function") {
-                modalSys.showConfirmation({
-                    title: I18n ? I18n.t("UI_CONFIRM_WARN_NO_LAND_TITLE") : "⚠️ 土地カードが未配置です",
-                    message: I18n ? I18n.t("UI_CONFIRM_WARN_NO_LAND_MSG") : "今ターンはまだ土地カードを配置していません。このままターンを終了しますか？",
-                    confirmText: I18n ? I18n.t("UI_TURN_END_BTN") : "ターン終了",
-                    cancelText: I18n ? I18n.t("UI_CANCEL") : "戻る",
-                    onConfirm: () => this.executeNextTurn()
+            if (modalSys && typeof modalSys.showConfirmDialog === "function") {
+                modalSys.showConfirmDialog({
+                    title: I18n ? I18n.t("UI_CONFIRM_WARN_NO_LAND_TITLE") : "No land placed",
+                    descText: I18n ? I18n.t("UI_CONFIRM_WARN_NO_LAND_MSG") : "End the turn without placing land?",
+                    confirmLabel: I18n ? I18n.t("UI_TURN_END_BTN") : "End turn",
+                    cancelLabel: I18n ? I18n.t("UI_CANCEL") : "Cancel",
+                    onConfirm: continueToMaintenanceCheck
                 });
                 return;
             }
         }
-        this.executeNextTurn();
+        continueToMaintenanceCheck();
     }
 
-    executeNextTurn() {
+    confirmFoodDeficitFallback() {
+        const settings = (typeof window !== "undefined" && window.gameSettings) ? window.gameSettings : gameSettings;
+        const autoFallbackEnabled = settings ? settings.get("autoFoodDeficitFallback") : true;
+        const options = { autoFallbackEnabled, useHypotheticalFallback: false };
+        if (autoFallbackEnabled || !this.engine || typeof this.engine.previewTurnEndMaintenance !== "function") {
+            this.executeNextTurn(options);
+            return;
+        }
+
+        const preview = this.engine.previewTurnEndMaintenance({ autoFallbackEnabled: false });
+        const plan = preview && preview.hypotheticalFallbackPlan;
+        if (!preview || preview.deficit <= 0 || !plan || !plan.canFullyCover) {
+            this.executeNextTurn(options);
+            return;
+        }
+
+        const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
+        const modalSys = (typeof window !== "undefined" && window.ModalSystem) ? window.ModalSystem : ModalSystem;
+        if (!modalSys || typeof modalSys.showConfirmDialog !== "function") {
+            this.executeNextTurn(options);
+            return;
+        }
+
+        modalSys.showConfirmDialog({
+            title: I18n ? I18n.t("UI_FOOD_FALLBACK_CONFIRM_TITLE") : "Food deficit",
+            descText: I18n ? I18n.t("UI_FOOD_FALLBACK_CONFIRM_MSG", { deficit: preview.deficit }) : "Spend resources to prevent Ember loss?",
+            costText: `✨ -${plan.mysticSpent}  🧱 -${plan.materialSpent}`,
+            confirmLabel: I18n ? I18n.t("UI_FOOD_FALLBACK_CONFIRM") : "Use resources",
+            cancelLabel: I18n ? I18n.t("UI_FOOD_FALLBACK_SKIP") : "End without fallback",
+            onConfirm: () => this.executeNextTurn({
+                autoFallbackEnabled: false,
+                useHypotheticalFallback: true
+            }),
+            onCancel: () => this.executeNextTurn(options)
+        });
+    }
+
+    executeNextTurn(options = {}) {
         if (this.engine && typeof this.engine.nextTurn === "function") {
-            this.engine.nextTurn();
+            this.engine.nextTurn(options);
             this.selectedCard = null;
             this.selectedCardIdx = -1;
             this.selectedReserveIdx = -1;

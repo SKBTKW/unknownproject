@@ -141,6 +141,7 @@ export class TooltipSystem {
         const titleKeyOrText = target.getAttribute("data-tooltip-title");
 
         let isDataPanelBreakdown = (tooltipKeyOrText === "DATA_PANEL_BREAKDOWN");
+        const isTurnEndPreview = (tooltipKeyOrText === "TOOLTIP_TURN_END");
 
         // 🌐 多言語解決
         let descText = tooltipKeyOrText;
@@ -150,6 +151,12 @@ export class TooltipSystem {
                 : (this.state || (typeof window !== 'undefined' && window.ui ? window.ui.state : null) || (typeof window !== 'undefined' && window.gameEngine ? window.gameEngine.state : null));
             descText = this.renderDataPanelBreakdown(state);
             this.tooltipEl.classList.add("tooltip-data-panel-breakdown");
+        } else if (isTurnEndPreview) {
+            const state = (this.stateProvider && typeof this.stateProvider === 'function')
+                ? this.stateProvider()
+                : (this.state || (typeof window !== 'undefined' && window.ui ? window.ui.state : null));
+            descText = this.renderTurnEndPreview(state);
+            this.tooltipEl.classList.remove("tooltip-data-panel-breakdown");
         } else {
             this.tooltipEl.classList.remove("tooltip-data-panel-breakdown");
             if (this.I18n && typeof this.I18n.t === "function") {
@@ -348,6 +355,43 @@ export class TooltipSystem {
                 </div>
             </div>
         `;
+    }
+
+    renderTurnEndPreview(state, autoFallbackEnabled = null) {
+        const I18n = this.I18n || ((typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : null);
+        const baseText = I18n && typeof I18n.t === "function"
+            ? I18n.t("TOOLTIP_TURN_END")
+            : "End the turn and collect production.";
+        const engine = state && state.engine;
+        if (!engine || typeof engine.previewTurnEndMaintenance !== "function") return baseText;
+
+        const settings = typeof window !== "undefined" ? window.gameSettings : null;
+        const enabled = autoFallbackEnabled === null
+            ? (settings ? settings.get("autoFoodDeficitFallback") : true)
+            : Boolean(autoFallbackEnabled);
+        const preview = engine.previewTurnEndMaintenance({ autoFallbackEnabled: enabled });
+        if (!preview || preview.deficit <= 0) return baseText;
+
+        const hypothetical = preview.hypotheticalFallbackPlan;
+        if (!hypothetical.canFullyCover) {
+            return I18n && typeof I18n.t === "function"
+                ? I18n.t("TOOLTIP_FOOD_FALLBACK_INSUFFICIENT", {
+                    deficit: preview.deficit,
+                    covered: hypothetical.totalFoodCovered
+                })
+                : `Food deficit ${preview.deficit}; cannot fully cover; Ember -1 expected.`;
+        }
+
+        const key = enabled
+            ? "TOOLTIP_FOOD_FALLBACK_AUTO"
+            : "TOOLTIP_FOOD_FALLBACK_CONFIRM";
+        return I18n && typeof I18n.t === "function"
+            ? I18n.t(key, {
+                deficit: preview.deficit,
+                mystic: hypothetical.mysticSpent,
+                material: hypothetical.materialSpent
+            })
+            : `Food deficit ${preview.deficit}; Mystic ${hypothetical.mysticSpent}, Material ${hypothetical.materialSpent}.`;
     }
 }
 

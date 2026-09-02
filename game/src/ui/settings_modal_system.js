@@ -9,6 +9,7 @@ const STORAGE_KEY = "TOA_GAME_SETTINGS_V1";
 const DEFAULT_SETTINGS = {
     mulliganConfirm: true,        // マリガン時の吹き出し確認 (true: 確認あり, false: 即時実行)
     turnEndWarning: true,          // 土地未配置時のターン終了警告 (true: 警告あり, false: 即時終了)
+    autoFoodDeficitFallback: true, // 食料不足時の✨/🧱自動補填
     defaultHandMode: "standard",   // 手札の初期表示モード ("standard": 標準, "minimal": 縮小)
     autoRotateOnRightClick: true,  // 右クリックでのカード回転
     focusDoFBlur: false,           // 2層DoFフォーカス演出 (true: 配置中ボケ演出あり, false: 常時クリア)
@@ -175,6 +176,11 @@ export class SettingsModalSystem {
         const wOptTrue = I18n ? I18n.t("UI_SETTINGS_WARN_OPT_TRUE") : "ON";
         const wOptFalse = I18n ? I18n.t("UI_SETTINGS_WARN_OPT_FALSE") : "OFF";
 
+        const afTitle = I18n ? I18n.t("UI_SETTINGS_AUTO_FALLBACK_TITLE") : "Food Deficit Fallback";
+        const afDesc = I18n ? I18n.t("UI_SETTINGS_AUTO_FALLBACK_DESC") : "Use resources to prevent food deficit damage";
+        const afOptTrue = I18n ? I18n.t("UI_SETTINGS_AUTO_FALLBACK_OPT_TRUE") : "Automatic";
+        const afOptFalse = I18n ? I18n.t("UI_SETTINGS_AUTO_FALLBACK_OPT_FALSE") : "Confirm";
+
         const hmTitle = I18n ? I18n.t("UI_SETTINGS_HAND_MODE_TITLE") : "Hand Mode";
         const hmDesc = I18n ? I18n.t("UI_SETTINGS_HAND_MODE_DESC") : "";
         const hmOptStd = I18n ? I18n.t("UI_SETTINGS_HAND_MODE_STANDARD") : "Standard";
@@ -265,6 +271,18 @@ export class SettingsModalSystem {
                             <select id="optTurnEndWarning" class="setting-select-control" style="background: #2b3548; color: #1abc9c; border: 1px solid #3d4a63; padding: 5px 10px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer;">
                                 <option value="true">${wOptTrue}</option>
                                 <option value="false">${wOptFalse}</option>
+                            </select>
+                        </div>
+
+                        <!-- 食料不足時の自動補填 -->
+                        <div class="setting-item-row">
+                            <div class="setting-item-copy">
+                                <div class="setting-item-title">${afTitle}</div>
+                                <div class="setting-item-desc">${afDesc}</div>
+                            </div>
+                            <select id="optAutoFoodDeficitFallback" class="setting-select-control">
+                                <option value="true">${afOptTrue}</option>
+                                <option value="false">${afOptFalse}</option>
                             </select>
                         </div>
 
@@ -381,6 +399,7 @@ export class SettingsModalSystem {
         // 各種セレクト変更イベント
         const selMulligan = this.modalEl.querySelector("#optMulliganConfirm");
         const selTurnEnd = this.modalEl.querySelector("#optTurnEndWarning");
+        const selAutoFallback = this.modalEl.querySelector("#optAutoFoodDeficitFallback");
         const selHandMode = this.modalEl.querySelector("#optDefaultHandMode");
         const selAutoRotate = this.modalEl.querySelector("#optAutoRotate");
         const selFocus = this.modalEl.querySelector("#optFocusDoFBlur");
@@ -391,6 +410,7 @@ export class SettingsModalSystem {
 
         if (selMulligan) selMulligan.onchange = (e) => this.settings.set("mulliganConfirm", e.target.value === "true");
         if (selTurnEnd) selTurnEnd.onchange = (e) => this.settings.set("turnEndWarning", e.target.value === "true");
+        if (selAutoFallback) selAutoFallback.onchange = (e) => this.settings.set("autoFoodDeficitFallback", e.target.value === "true");
         if (selHandMode) selHandMode.onchange = (e) => {
             this.settings.set("defaultHandMode", e.target.value);
             if (typeof window !== "undefined" && window.gameUI) {
@@ -462,6 +482,7 @@ export class SettingsModalSystem {
 
         setVal("#optMulliganConfirm", this.settings.get("mulliganConfirm"));
         setVal("#optTurnEndWarning", this.settings.get("turnEndWarning"));
+        setVal("#optAutoFoodDeficitFallback", this.settings.get("autoFoodDeficitFallback"));
         setVal("#optDefaultHandMode", this.settings.get("defaultHandMode"));
         setVal("#optAutoRotate", this.settings.get("autoRotateOnRightClick"));
         setVal("#optFocusDoFBlur", this.settings.get("focusDoFBlur"));
@@ -494,4 +515,3 @@ if (typeof window !== "undefined") {
     window.openSettingsModal = () => settingsModalInstance.open();
     window.closeSettingsModal = () => settingsModalInstance.close();
 }
-

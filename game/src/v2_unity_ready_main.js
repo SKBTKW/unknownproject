@@ -3,6 +3,7 @@ import { GridEngine } from './systems/grid_engine.js';
 import { DeckManager } from './systems/deck_manager.js';
 import { DirectiveSystem } from './systems/directive_system.js';
 import { ProductionCalculator } from './systems/production_calculator.js';
+import { MaintenanceFallbackSystem } from './systems/maintenance_fallback_system.js';
 import { rotateShapeMatrix } from './core/placement_geometry.js';
 
 class GameState {
@@ -390,24 +391,14 @@ class GameState {
             };
         }
 
-        processTurnEndMaintenance() {
+        processTurnEndMaintenance(maintenancePreview = null) {
             const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
 
-            // 1. 🔥 残り火ステッピングに基づく毎ターンの 🌾 食料維持費
-            let foodCost = 20;
-            if (this.emberSystem && typeof this.emberSystem.getFoodMaintenanceCost === 'function') {
-                foodCost = this.emberSystem.getFoodMaintenanceCost();
-            } else if (this.ember >= 24) {
-                foodCost = 25; // 🔥 旺盛状態 (維持費増)
-            } else if (this.ember <= 9) {
-                foodCost = 15; // 🔥 微火・危機 (省エネ復興)
-            } else {
-                foodCost = 20; // 🔥 標準状態
-            }
+            const preview = maintenancePreview || MaintenanceFallbackSystem.previewMaintenancePayment(this);
+            const foodCost = preview.foodCost;
 
             // 🌾 節約配給 (食料維持費 50% 軽減)
-            if (this.foodCostHalvedTurns && this.foodCostHalvedTurns > 0) {
-                foodCost = Math.floor(foodCost / 2);
+            if (preview.rationingApplied) {
                 this.foodCostHalvedTurns -= 1;
                 this.addLog(I18n ? I18n.t("LOG_RATIONING_APPLIED", { cost: foodCost }) : `🌾 ${foodCost}`);
             }
@@ -416,10 +407,18 @@ class GameState {
             if (this.emergencyLevyTurns && this.emergencyLevyTurns > 0) {
                 if (this.emergencyLevyStartsNextTurn) {
                     this.emergencyLevyStartsNextTurn = false; // 発動ターン終了時はスキップ
-                } else {
-                    foodCost += 5; // 次のターンの終了時に +5
+                } else if (preview.emergencyLevyApplied) {
                     this.emergencyLevyTurns -= 1;
                 }
+            }
+
+            const fallbackPlan = preview.fallbackPlan || preview.automaticPlan;
+            const fallbackResult = MaintenanceFallbackSystem.applyFoodDeficitFallback(this, fallbackPlan);
+            if (fallbackResult.applied) {
+                this.addLog(I18n ? I18n.t("LOG_FOOD_FALLBACK_APPLIED", {
+                    mystic: fallbackResult.mysticSpent,
+                    material: fallbackResult.materialSpent
+                }) : `✨-${fallbackResult.mysticSpent} 🧱-${fallbackResult.materialSpent}`);
             }
 
             this.food -= foodCost;
@@ -565,7 +564,14 @@ class GameState {
             }
 
             const isGameClear = (this.turn >= 50 && this.ember > 0);
-            return { foodCost, emberDelta, isGameOver, isGameClear };
+            return {
+                foodCost,
+                emberDelta,
+                isGameOver,
+                isGameClear,
+                fallbackPlan,
+                fallbackResult
+            };
         }
 
         moveToReserve(cardIdx) {
