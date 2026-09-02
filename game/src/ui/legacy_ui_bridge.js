@@ -119,13 +119,10 @@ export function attachLegacyUIBridge(ui) {
 
         window.testPlayAbandonedSettlement = () => {
             if (!ui.engine) return;
-            const testCard = {
-                id: "CMD_ABANDONED_SETTLEMENT",
-                category: "COMMAND",
-                nameKey: "CMD_ABANDONED_SETTLEMENT_NAME",
-                descriptionKey: "CMD_ABANDONED_SETTLEMENT_DESC",
-                cost: { ember: 1 }
-            };
+            const testCard = (ui.drawSys && Array.isArray(ui.drawSys.commandCardsMaster))
+                ? ui.drawSys.commandCardsMaster.find(c => c.id === "CMD_ABANDONED_SETTLEMENT")
+                : null;
+            if (!testCard) return;
             if (ui.state && (ui.state.ember === undefined || ui.state.ember < 1)) {
                 ui.state.ember = 20;
             }
