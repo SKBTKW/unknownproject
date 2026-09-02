@@ -21,6 +21,7 @@ import { attachLegacyUIBridge } from './legacy_ui_bridge.js';
 import { DiceWidgetComponent } from './dice_widget_component.js';
 import { DiceDisplayQueue } from './dice_display_queue.js';
 import { DevDiceControlsComponent } from './dev_dice_controls_component.js';
+import { BuildIdentityBadgeComponent } from './build_identity_badge_component.js';
 import {
     resolvePlacementAnchor,
     resolvePlacementShape,
@@ -60,6 +61,7 @@ class UIController {
         this.diceWidget = (typeof document !== 'undefined') ? new DiceWidgetComponent() : null;
         this.diceQueue = new DiceDisplayQueue(this.diceWidget);
         this.devDiceControls = (typeof document !== 'undefined') ? new DevDiceControlsComponent(this) : null;
+        this.buildIdentityBadge = (typeof document !== 'undefined') ? new BuildIdentityBadgeComponent() : null;
         
         // 🎛️ UI セッション状態モデル (Single Source of Truth)
         this.interactionState = new UIInteractionState();
@@ -240,6 +242,10 @@ class UIController {
         const settingsSys = (typeof settingsModalInstance !== "undefined" && settingsModalInstance) ? settingsModalInstance : (typeof window !== "undefined" ? window.settingsModalInstance : null);
         if (settingsSys && typeof settingsSys.mount === "function") {
             settingsSys.mount();
+        }
+
+        if (this.buildIdentityBadge && typeof this.buildIdentityBadge.mount === "function") {
+            void this.buildIdentityBadge.mount();
         }
     }
 

@@ -136,6 +136,24 @@ const UILayoutConfig = {
         }
     },
 
+    // 🏷️ 開発ブランチ / 製品バージョン表示バッジ
+    buildIdentityBadge: {
+        desktop: {
+            position: "fixed",
+            right: "max(14px, env(safe-area-inset-right))",
+            bottom: "max(12px, env(safe-area-inset-bottom))",
+            zIndex: 920,
+            pointerEvents: "none"
+        },
+        mobile: {
+            position: "fixed",
+            right: "max(8px, env(safe-area-inset-right))",
+            bottom: "max(8px, env(safe-area-inset-bottom))",
+            zIndex: 920,
+            pointerEvents: "none"
+        }
+    },
+
     // 🎯 1. 中央土地盤面エリア (画面の真中央へ100%完全自動固定)
     boardContainer: {
         display: "flex",
@@ -348,4 +366,3 @@ if (typeof globalThis !== "undefined") {
 
 export { UI_FEATURE_FLAGS, UI_TILE_TEXT_PRESETS, UILayoutConfig };
 export default UILayoutConfig;
-

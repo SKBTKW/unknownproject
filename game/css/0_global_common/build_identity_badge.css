@@ -1,0 +1,82 @@
+/* =============================================================
+   Build Identity Badge
+   開発ブランチ / 製品バージョンの受動表示
+   ============================================================= */
+
+.build-identity-badge {
+    display: inline-flex;
+    align-items: center;
+    max-width: min(44vw, 420px);
+    min-height: 24px;
+    padding: 4px 9px;
+    border: 1px solid rgba(148, 163, 184, 0.32);
+    border-radius: 6px;
+    background: rgba(15, 23, 42, 0.74);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.24);
+    color: #cbd5e1;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 10px;
+    line-height: 1.2;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    user-select: none;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+.build-identity-badge[hidden] {
+    display: none;
+}
+
+.build-identity-badge-label {
+    color: #64748b;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+}
+
+.build-identity-badge-label::after {
+    content: "·";
+    margin: 0 6px;
+    color: #475569;
+}
+
+.build-identity-badge-value {
+    overflow: hidden;
+    max-width: 320px;
+    text-overflow: ellipsis;
+    font-weight: 650;
+}
+
+.build-identity-badge.is-development {
+    border-color: rgba(56, 189, 248, 0.28);
+}
+
+.build-identity-badge.is-development .build-identity-badge-value {
+    color: #7dd3fc;
+}
+
+.build-identity-badge.is-production {
+    border-color: rgba(251, 191, 36, 0.28);
+}
+
+.build-identity-badge.is-production .build-identity-badge-value {
+    color: #fcd34d;
+}
+
+@media (max-width: 768px) {
+    .build-identity-badge {
+        max-width: 58vw;
+        min-height: 20px;
+        padding: 3px 7px;
+        font-size: 9px;
+    }
+
+    .build-identity-badge-label {
+        font-size: 8px;
+    }
+
+    .build-identity-badge-value {
+        max-width: 44vw;
+    }
+}

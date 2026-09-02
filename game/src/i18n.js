@@ -362,6 +362,8 @@
             UI_TRIAL_SUB_HINT: "(試練アナウンス発生時に表示)",
             UI_MULLIGAN_BTN: "マリガン : 🔥 -1",
             UI_TURN_END_BTN: "TURN END ➔",
+            UI_BUILD_BADGE_BRANCH: "BRANCH",
+            UI_BUILD_BADGE_VERSION: "VERSION",
             UI_LAND_BLOCK_CATEGORY: "🌱 土地ブロック",
             UI_COST_EMBER_1: "🔥-1",
             UI_ROTATE_BTN: "回転",
@@ -847,6 +849,8 @@
             UI_TRIAL_SUB_HINT: "(Appears on Trial Announcement)",
             UI_MULLIGAN_BTN: "Mulligan : 🔥 -1",
             UI_TURN_END_BTN: "TURN END ➔",
+            UI_BUILD_BADGE_BRANCH: "BRANCH",
+            UI_BUILD_BADGE_VERSION: "VERSION",
             UI_LAND_BLOCK_CATEGORY: "🌱 Land Block",
             UI_COST_EMBER_1: "🔥-1",
             UI_ROTATE_BTN: "🔄 Rotate",
@@ -1189,5 +1193,4 @@
 const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : null;
 export { I18n };
 export default I18n;
-
 

@@ -37,6 +37,9 @@ import { GlobalEventManager, GlobalEventDirector, GlobalEventSelector } from './
 import { GLOBAL_EVENTS_MASTER } from './data/global_events.js';
 import { EmberSystem } from './systems/ember_system.js';
 import { CardCycleSystem, CYCLE_POLICIES } from './systems/card_cycle_system.js';
+import { BUILD_IDENTITY_CONFIG, BUILD_IDENTITY_MODES } from './config/build_identity_config.js';
+import { BuildIdentityService, normalizeBuildIdentity } from './services/build_identity_service.js';
+import { BuildIdentityBadgeComponent } from './ui/build_identity_badge_component.js';
 import {
     DEFAULT_PLACEMENT_ANCHOR,
     normalizePlacementAnchor,
@@ -108,6 +111,11 @@ export {
     EmberSystem,
     CardCycleSystem,
     CYCLE_POLICIES,
+    BUILD_IDENTITY_CONFIG,
+    BUILD_IDENTITY_MODES,
+    BuildIdentityService,
+    normalizeBuildIdentity,
+    BuildIdentityBadgeComponent,
     DEFAULT_PLACEMENT_ANCHOR,
     normalizePlacementAnchor,
     resolvePlacementAnchor,
