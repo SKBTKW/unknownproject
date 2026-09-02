@@ -138,6 +138,7 @@ export class BoardGridComponent {
 
                     const tid = cellData.terrain ? (cellData.terrain.terrainId || cellData.terrain.id || "") : "";
                     if (tid.includes("WETLAND")) cellEl.classList.add("terrain-wetland");
+                    else if (tid.includes("RECLAIMED_LAND")) cellEl.classList.add("terrain-reclaimed-land");
                     else if (tid.includes("PLAINS")) cellEl.classList.add("terrain-plains");
                     else if (tid.includes("DEEP_FOREST") || tid.includes("DEEP_HILL")) cellEl.classList.add("terrain-deep-forest");
                     else if (tid.includes("FOREST")) cellEl.classList.add("terrain-forest");

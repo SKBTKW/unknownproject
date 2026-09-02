@@ -327,6 +327,24 @@ class DeckManager {
             if (!ConditionEvaluator.evaluate({ type: "HAS_WETLAND", value: c.reqWetland }, { state: this.state })) return false;
         }
 
+        // 🌾 干拓: 湖ではない未MERGEの湿原が1マス以上存在すること
+        if (c.id === "CMD_WETLAND_RECLAMATION" && this.state && this.state.grid) {
+            let hasReclaimable = false;
+            for (let r = 0; r < this.state.grid.length && !hasReclaimable; r++) {
+                for (let c = 0; c < this.state.grid[r].length && !hasReclaimable; c++) {
+                    const cell = this.state.grid[r][c];
+                    if (cell && cell.placed && !cell.isHQ && cell.terrain) {
+                        const tid = cell.terrain.terrainId || cell.terrain.id || "";
+                        const isLakeCell = cell.socketResource && (cell.socketResource.id === "SOCKET_LAKE" || cell.socketResource.isLake);
+                        if (tid.includes("WETLAND") && !isTrueMergedCell(this.state, cell) && !isLakeCell) {
+                            hasReclaimable = true;
+                        }
+                    }
+                }
+            }
+            if (!hasReclaimable) return false;
+        }
+
         // 🔲 盤面の空きマス数判定
         if (c.reqEmptyCells !== undefined && this.state) {
             if (!ConditionEvaluator.evaluate({ type: "EMPTY_CELLS_AT_LEAST", value: c.reqEmptyCells }, { state: this.state })) return false;
@@ -1178,7 +1196,7 @@ class DeckManager {
             this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🪓", description: cDesc, category: "CARD_EFFECT" });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🪓【${cName}】`);
         } else if (cId === "CMD_WETLAND_RECLAMATION") {
-            // 🌾 干拓: コスト 🧱-15, 🔥-1 (湿原1マスを平地転換)
+            // 🌾 干拓: コスト 🧱-15, 🔥-1 (湖以外の湿原1マスを干拓地へ永久転換)
             let reclaimed = false;
             if (this.state.grid) {
                 for (let r = 0; r < this.state.grid.length && !reclaimed; r++) {
@@ -1186,8 +1204,23 @@ class DeckManager {
                         const cell = this.state.grid[r][c];
                         if (cell && cell.placed && !cell.isHQ && cell.terrain) {
                             const tid = cell.terrain.terrainId || cell.terrain.id || "";
-                            if (tid.includes("WETLAND") && !isTrueMergedCell(this.state, cell)) {
-                                cell.terrain = { id: "GL1_PLAINS", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, e: 1, food: 4, wood: 0, defense: 0, mystic: 0, category: "BASE" };
+                            const isLakeCell = cell.socketResource && (cell.socketResource.id === "SOCKET_LAKE" || cell.socketResource.isLake);
+                            if (tid.includes("WETLAND") && !isTrueMergedCell(this.state, cell) && !isLakeCell) {
+                                cell.terrain = {
+                                    id: "E1_RECLAIMED_LAND",
+                                    terrainId: "E1_RECLAIMED_LAND",
+                                    nameKey: "TERRAIN_RECLAIMED_LAND",
+                                    gl: 1,
+                                    e: 1,
+                                    food: 4,
+                                    wood: 1,
+                                    material: 1,
+                                    defense: 0,
+                                    mystic: 0,
+                                    category: "BASE",
+                                    isSpecialBlock: true,
+                                    isArtificialTerrain: true
+                                };
                                 reclaimed = true;
                             }
                         }

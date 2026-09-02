@@ -109,6 +109,7 @@ export class TerrainParameterEngine {
    * 地形IDから (e, gl) を逆引き
    */
   static getCoordsById(terrainId) {
+    if (terrainId === "E1_RECLAIMED_LAND") return { e: 1, gl: 1 };
     for (const e in TERRAIN_MATRIX) {
       for (const gl in TERRAIN_MATRIX[e]) {
         if (TERRAIN_MATRIX[e][gl].id === terrainId) {
@@ -125,8 +126,10 @@ export const TerrainRegistry = TerrainParameterEngine;
 // 📦 互換データマスター
 const LAND_SYSTEM_DATA = {
   "terrains": {
+    "E0_WETLAND":      { id: "E0_WETLAND",      nameKey: "TERRAIN_WETLAND",     gl: 1, e: 0, baseYieldsPerTile: { food: 2, material: 0, wood: 0, defense: 1, mystic: 0 }, category: "BASE" },
     "GL0_DESERT":      { id: "GL0_DESERT",      nameKey: "TERRAIN_DESERT",      gl: 0, e: 1, baseYieldsPerTile: { food: 0, material: 0, wood: 0, defense: 0, mystic: 2 }, category: "BASE" },
     "GL1_PLAINS":      { id: "GL1_PLAINS",      nameKey: "TERRAIN_PLAINS",      gl: 1, e: 1, baseYieldsPerTile: { food: 4, material: 0, wood: 0, defense: 0, mystic: 0 }, category: "BASE" },
+    "E1_RECLAIMED_LAND": { id: "E1_RECLAIMED_LAND", terrainId: "E1_RECLAIMED_LAND", nameKey: "TERRAIN_RECLAIMED_LAND", gl: 1, e: 1, baseYieldsPerTile: { food: 4, material: 1, wood: 1, defense: 0, mystic: 0 }, food: 4, material: 1, wood: 1, defense: 0, mystic: 0, category: "BASE", isSpecialBlock: true, isArtificialTerrain: true },
     "GL2_FOREST":      { id: "GL2_FOREST",      nameKey: "TERRAIN_FOREST",      gl: 2, e: 1, baseYieldsPerTile: { food: 2, material: 2, wood: 2, defense: 2, mystic: 0 }, category: "BASE" },
     "GL3_DEEP_FOREST": { id: "GL3_DEEP_FOREST", nameKey: "TERRAIN_DEEP_FOREST", gl: 3, e: 1, baseYieldsPerTile: { food: 1, material: 3, wood: 3, defense: 3, mystic: 1 }, category: "BASE" },
     "E2_DESERT_HILL":  { id: "E2_DESERT_HILL",  nameKey: "TERRAIN_DESERT_HILL", gl: 0, e: 2, baseYieldsPerTile: { food: 0, material: 1, wood: 1, defense: 1, mystic: 2 }, category: "COMPOSITE" },

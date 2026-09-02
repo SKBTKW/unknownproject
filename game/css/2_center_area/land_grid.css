@@ -693,6 +693,12 @@ body.is-camera-dragging-global * {
     border-color: #2e7d32 !important;
 }
 
+/* 特殊ブロック: 干拓地 / 青みがかった緑 (草原より青緑寄りの人工農地) */
+.cell.placed.terrain-reclaimed-land {
+    background: linear-gradient(135deg, #1b5240 0%, #0e382b 100%) !important;
+    border-color: #10b981 !important;
+}
+
 /* GL2: 森 / 中緑 (森・森丘陵の共通ベース) */
 .cell.placed.gl-2 {
     background: linear-gradient(135deg, #134236 0%, #0a261f 100%) !important;
