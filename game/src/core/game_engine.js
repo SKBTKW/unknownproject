@@ -11,6 +11,7 @@ import { GlobalEventManager } from '../systems/global_event_system.js';
 import { EmberSystem } from '../systems/ember_system.js';
 import { CardCycleSystem } from '../systems/card_cycle_system.js';
 import { MaintenanceFallbackSystem } from '../systems/maintenance_fallback_system.js';
+import { DefenseSystem } from '../systems/defense_system.js';
 import { CellViewDataService } from '../services/cell_view_data_service.js';
 import { ActionTransactionManager } from './transaction_manager.js';
 import { resolvePlacementGeometry } from './placement_geometry.js';
@@ -59,7 +60,7 @@ class GameEngine {
             this.state = dependencies.state;
         } else {
             const GameStateClass = dependencies.GameStateClass || GameState;
-            this.state = GameStateClass ? new GameStateClass({ engine: this }) : { turn: 1, ember: 20, food: 50, wood: 30, defense: 10, mystic: 0, handOffering: [], reserveSlots: [null] };
+            this.state = GameStateClass ? new GameStateClass({ engine: this }) : { turn: 1, ember: 20, food: 50, wood: 30, defense: 10, currentDefense: 10, maxDefense: 10, mystic: 0, handOffering: [], reserveSlots: [null] };
         }
 
         // 3. ドメインサブシステムの初期化と注入
@@ -87,6 +88,12 @@ class GameEngine {
         const EmberSystemClass = dependencies.EmberSystemClass || EmberSystem;
         this.emberSystem = dependencies.emberSystem || (EmberSystemClass ? new EmberSystemClass(this.state, this) : null);
 
+        const DefenseSystemClass = dependencies.DefenseSystemClass || DefenseSystem;
+        this.defenseSystem = dependencies.defenseSystem || (DefenseSystemClass ? new DefenseSystemClass(this.state, {
+            rebuildCostResolver: dependencies.defenseRebuildCostResolver || null,
+            mysticFallbackResolver: dependencies.defenseMysticFallbackResolver || null
+        }) : null);
+
         const CardCycleSystemClass = dependencies.CardCycleSystemClass || CardCycleSystem;
         this.cardCycleSystem = dependencies.cardCycleSystem || (CardCycleSystemClass ? new CardCycleSystemClass(this.state, this) : null);
 
@@ -102,6 +109,7 @@ class GameEngine {
             if (this.chronicleSystem) this.state.chronicleSystem = this.chronicleSystem;
             if (this.globalEventManager) this.state.globalEventManager = this.globalEventManager;
             if (this.emberSystem) this.state.emberSystem = this.emberSystem;
+            if (this.defenseSystem) this.state.defenseSystem = this.defenseSystem;
             if (this.cardCycleSystem) this.state.cardCycleSystem = this.cardCycleSystem;
         }
 
@@ -411,6 +419,32 @@ class GameEngine {
         }
         const success = this.undoSystem.undo();
         return { success };
+    }
+
+    getTrialAvailableDefense() {
+        return this.defenseSystem ? this.defenseSystem.getTrialAvailableDefense() : 0;
+    }
+
+    applyTrialDefenseLoss(amount) {
+        if (!this.defenseSystem) return { before: 0, after: 0, reduced: 0, maxDefense: 0 };
+        return this.defenseSystem.reduceCurrentDefense(amount);
+    }
+
+    recoverCurrentDefense(amount) {
+        if (!this.defenseSystem) return { before: 0, after: 0, recovered: 0, maxDefense: 0 };
+        return this.defenseSystem.recoverCurrentDefense(amount);
+    }
+
+    getDefenseRebuildPlan(options = {}) {
+        return this.defenseSystem
+            ? this.defenseSystem.getDefenseRebuildPlan(options)
+            : { canRebuild: false, reason: "NO_DEFENSE_SYSTEM" };
+    }
+
+    rebuildDefense(options = {}) {
+        return this.defenseSystem
+            ? this.defenseSystem.rebuildDefense(options)
+            : { success: false, reason: "NO_DEFENSE_SYSTEM" };
     }
 
     /**

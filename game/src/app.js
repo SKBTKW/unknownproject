@@ -36,6 +36,7 @@ import { ChronicleSystem, CHRONICLE_IMPORTANCE } from './systems/chronicle_syste
 import { GlobalEventManager, GlobalEventDirector, GlobalEventSelector } from './systems/global_event_system.js';
 import { GLOBAL_EVENTS_MASTER } from './data/global_events.js';
 import { EmberSystem } from './systems/ember_system.js';
+import { DefenseSystem, BASE_HQ_DEFENSE } from './systems/defense_system.js';
 import { CardCycleSystem, CYCLE_POLICIES } from './systems/card_cycle_system.js';
 import {
     MATERIAL_COST_PER_FOOD,
@@ -114,6 +115,8 @@ export {
     GlobalEventSelector,
     GLOBAL_EVENTS_MASTER,
     EmberSystem,
+    DefenseSystem,
+    BASE_HQ_DEFENSE,
     CardCycleSystem,
     CYCLE_POLICIES,
     MATERIAL_COST_PER_FOOD,

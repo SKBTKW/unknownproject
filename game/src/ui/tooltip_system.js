@@ -286,7 +286,8 @@ export class TooltipSystem {
         const woodSockets = bd ? bd.wood.sockets : 0;
         const woodVicinity = bd ? bd.wood.vicinity : 0;
 
-        const defTotal = bd ? bd.defense.total : 10;
+        const defMax = bd ? (bd.defense.max ?? bd.defense.total) : 10;
+        const defCurrent = bd ? (bd.defense.current ?? defMax) : 10;
         const defTiles = bd ? bd.defense.tiles : 0;
         const defSockets = bd ? bd.defense.sockets : 0;
 
@@ -299,6 +300,8 @@ export class TooltipSystem {
         const emberStr = emberPct > 0 ? (I18n ? I18n.t("UI_EMBER_BLESSING_TAG", { pct: emberPct }) : ` | 🔥残り火加護: +${emberPct}%`) : "";
         const netTag = I18n ? I18n.t("UI_NET_BALANCE_TAG") : "(純収支)";
         const defTrialTag = I18n ? I18n.t("UI_DEFENSE_TRIAL_TAG") : "(試練対策)";
+        const defCurrentLabel = I18n ? I18n.t("UI_DEFENSE_CURRENT") : "Current readiness";
+        const defMaxLabel = I18n ? I18n.t("UI_DEFENSE_MAX") : "Maximum readiness";
         const grossLabel = I18n ? I18n.t("UI_GROSS_YIELD_LABEL") : "総産出:";
         const hqBaseLabel = I18n ? I18n.t("UI_HQ_BASE_LABEL") : "本営基礎:";
         const tilesLabel = I18n ? I18n.t("UI_TILES_LABEL") : "開発した土地:";
@@ -336,9 +339,10 @@ export class TooltipSystem {
                 <div style="background:rgba(24, 34, 50, 0.75); border:1px solid #2c3e50; border-radius:8px; padding:8px 10px;">
                     <div style="font-size:13px; font-weight:900; color:#ffffff; display:flex; justify-content:space-between; margin-bottom:3px;">
                         <span>${I18n ? I18n.t("UI_DEFENSE") : "🛡️ 防衛力"} ${defTrialTag}</span>
-                        <span style="color:#ffffff; font-size:15px;">${defTotal}</span>
+                        <span style="color:#ffffff; font-size:15px;">${defCurrent} / ${defMax}</span>
                     </div>
                     <div style="font-size:11.5px; color:#a4b0be; line-height:1.4;">
+                        ${defCurrentLabel}: ${defCurrent} | ${defMaxLabel}: ${defMax}<br>
                         ${hqBaseLabel} 10 | ${tilesLabel} +${defTiles} | ${socketsLabel} +${defSockets}
                     </div>
                 </div>

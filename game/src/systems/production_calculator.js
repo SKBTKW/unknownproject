@@ -4,6 +4,7 @@
    ============================================================= */
 
 import { MaintenanceFallbackSystem } from './maintenance_fallback_system.js';
+import { DefenseSystem } from './defense_system.js';
 
 (function() {
     class ProductionCalculator {
@@ -167,41 +168,10 @@ import { MaintenanceFallbackSystem } from './maintenance_fallback_system.js';
         }
 
         static calculateTotalDefense(state) {
-            const size = (state && state.grid && state.grid.length) ? state.grid.length : 5;
-            const center = Math.floor(size / 2);
-            const hqTerrain = (state.grid && state.grid[center] && state.grid[center][center] && state.grid[center][center].terrain) 
-                ? state.grid[center][center].terrain 
-                : { food: 10, wood: 10, defense: 10, mystic: 1 };
-            const hqDef = (hqTerrain.defense !== undefined) ? hqTerrain.defense : 10;
-
-            let def = hqDef;
-            let vicinityCount = 0;
-            for (let r = 0; r < size; r++) {
-                for (let c = 0; c < size; c++) {
-                    const cell = state.grid[r][c];
-                    if (cell && cell.placed && !cell.isHQ && cell.terrain) {
-                        const t = cell.terrain;
-                        const td = (t.defense !== undefined) ? t.defense : ((t.baseYieldsPerTile && t.baseYieldsPerTile.defense) || (t.yields && t.yields.defense) || 0);
-                        def += td;
-                        if (cell.socketResource) {
-                            def += cell.socketResource.bonusDefense || 0;
-                        }
-                        if (state.isHQVicinity(r, c)) vicinityCount++;
-                    }
-                }
+            if (state?.defenseSystem && typeof state.defenseSystem.getMaxDefense === "function") {
+                return state.defenseSystem.getMaxDefense();
             }
-            def += (state.permanentVicinityDefenseBonus || 0) * vicinityCount;
-            if (state.defense) def += (state.defense - 10); // 直接加算された防衛力
-
-            // 🛡️ 警戒バフ (次のターンから2ターンの間、毎ターンの防衛力産出に+3ボーナス)
-            if (state.vigilanceTurns && state.vigilanceTurns > 0 && !state.vigilanceStartsNextTurn) {
-                def += 3;
-            }
-
-            if (state.directiveSystem) {
-                def = Math.floor(def * state.directiveSystem.getResourceMultiplier("defense"));
-            }
-            return def;
+            return DefenseSystem.calculateMaxDefense(state);
         }
 
         static getResourceBreakdown(state) {
@@ -281,7 +251,16 @@ import { MaintenanceFallbackSystem } from './maintenance_fallback_system.js';
             return {
                 food: { hqBase: hqFood, tiles: foodTiles, sockets: foodSockets, vicinity: foodVicinity, lakeIrrigation: prods.foodLakeIrrigation || 0, emberPct, gross: prods.grossFood, foodCost: prods.foodCost, net: prods.netFood, total: prods.totalFood },
                 wood: { hqBase: hqWood, tiles: woodTiles, sockets: woodSockets, vicinity: woodVicinity, emberPct, total: prods.totalWood },
-                defense: { hqBase: hqDefense, tiles: defenseTiles, sockets: defenseSockets, total: defTotal },
+                defense: {
+                    hqBase: hqDefense,
+                    tiles: defenseTiles,
+                    sockets: defenseSockets,
+                    total: defTotal,
+                    max: defTotal,
+                    current: state?.defenseSystem
+                        ? state.defenseSystem.getCurrentDefense()
+                        : Math.min(state?.currentDefense ?? defTotal, defTotal)
+                },
                 mystic: { hqBase: hqMystic, tiles: mysticTiles, sockets: mysticSockets, emberMystic, emberPct, total: prods.totalMystic }
             };
         }
@@ -412,5 +391,4 @@ import { MaintenanceFallbackSystem } from './maintenance_fallback_system.js';
 const ProductionCalculator = (typeof globalThis !== "undefined" && globalThis.ProductionCalculator) ? globalThis.ProductionCalculator : null;
 export { ProductionCalculator };
 export default ProductionCalculator;
-
 

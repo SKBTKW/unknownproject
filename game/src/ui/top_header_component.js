@@ -55,9 +55,12 @@ export class TopHeaderComponent {
         const prods = (typeof this.state.calculateTotalProduction === "function") 
             ? this.state.calculateTotalProduction() 
             : { totalFood: 10, totalWood: 10, totalMystic: 1 };
-        const defTotal = (typeof this.state.calculateTotalDefense === "function") 
+        const maxDefense = (typeof this.state.calculateTotalDefense === "function")
             ? this.state.calculateTotalDefense() 
-            : (this.state.defense || 10);
+            : (this.state.maxDefense ?? this.state.defense ?? 10);
+        const currentDefense = (typeof this.state.getCurrentDefense === "function")
+            ? this.state.getCurrentDefense()
+            : Math.min(this.state.currentDefense ?? maxDefense, maxDefense);
 
         // 1. タイトル ＆ ターン数
         this.setElementText("lblDataPanelTitle", I18n.t("UI_DATA_PANEL_TITLE"));
@@ -92,11 +95,11 @@ export class TopHeaderComponent {
         this.lastWood = this.state.wood;
         this.setElementText("valWoodProd", `+${prods.totalWood}`);
 
-        this.setElementText("valDefense", defTotal);
-        if (this.lastDefense !== null && defTotal !== this.lastDefense) {
-            FloatingFeedbackService.spawnOnElement("#valDefense", defTotal - this.lastDefense);
+        this.setElementText("valDefense", `${currentDefense} / ${maxDefense}`);
+        if (this.lastDefense !== null && currentDefense !== this.lastDefense) {
+            FloatingFeedbackService.spawnOnElement("#valDefense", currentDefense - this.lastDefense);
         }
-        this.lastDefense = defTotal;
+        this.lastDefense = currentDefense;
 
         this.setElementText("valMystic", this.state.mystic);
         if (this.lastMystic !== null && this.state.mystic !== this.lastMystic) {

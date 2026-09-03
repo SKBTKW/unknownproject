@@ -172,7 +172,9 @@ class DeckManager {
         }
         if (c.reqTrialOrLowDefense && this.state) {
             const notice = (typeof this.state.getTrialNotice === 'function') ? this.state.getTrialNotice() : { active: false };
-            const def = (typeof this.state.calculateTotalDefense === 'function') ? this.state.calculateTotalDefense() : (this.state.defense || 0);
+            const def = (typeof this.state.getCurrentDefense === 'function')
+                ? this.state.getCurrentDefense()
+                : (this.state.currentDefense ?? this.state.defense ?? 0);
             if (!notice.active && def > 30) return false;
         }
 
@@ -435,7 +437,12 @@ class DeckManager {
         }
 
         // 🛡️ 防衛力の上限
-        if (c.maxDefense !== undefined && this.state && (this.state.defense || 0) > c.maxDefense) return false;
+        if (c.maxDefense !== undefined && this.state) {
+            const maxDefense = (typeof this.state.calculateTotalDefense === 'function')
+                ? this.state.calculateTotalDefense()
+                : (this.state.maxDefense ?? this.state.defense ?? 0);
+            if (maxDefense > c.maxDefense) return false;
+        }
 
         return true;
     }
@@ -817,12 +824,21 @@ class DeckManager {
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `📜【${cName}】`);
         } else if (cId === "CMD_IRON_RAMPART") {
             // 🛡️ 鉄壁の防壁構築: コスト 🧱-20
-            this.state.defense += 25;
+            if (this.state.defenseSystem) {
+                this.state.defenseSystem.increaseMaxCapacity(25);
+            } else {
+                this.state.defense += 25;
+            }
             this.state.permanentVicinityDefenseBonus = (this.state.permanentVicinityDefenseBonus || 0) + 2;
+            if (this.state.defenseSystem) this.state.defenseSystem.reconcileWithMax();
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🛡️【${cName}】`);
         } else if (cId === "CMD_BALLISTA_SET") {
             // 🏹 迎撃用弩砲陣地: コスト 🧱-30
-            this.state.defense += 40;
+            if (this.state.defenseSystem) {
+                this.state.defenseSystem.increaseMaxCapacity(40);
+            } else {
+                this.state.defense += 40;
+            }
             this.state.nextTrialDamageMitigation = 0.5;
             this.state.addBuff({
                 id: cId,

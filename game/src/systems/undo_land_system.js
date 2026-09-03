@@ -43,6 +43,12 @@
             const checkSystemState = this.state.checkSystem && typeof this.state.checkSystem.getState === "function"
                 ? JSON.parse(JSON.stringify(this.state.checkSystem.getState()))
                 : null;
+            const defenseSnapshot = this.state.defenseSystem && typeof this.state.defenseSystem.reconcileWithMax === "function"
+                ? this.state.defenseSystem.reconcileWithMax()
+                : {
+                    currentDefense: this.state.currentDefense,
+                    maxDefense: this.state.maxDefense
+                };
 
             this.snapshot = {
                 turn: this.state.turn,
@@ -51,6 +57,9 @@
                 food: this.state.food,
                 wood: this.state.wood,
                 defense: this.state.defense,
+                defenseCapacityBonus: this.state.defenseCapacityBonus,
+                currentDefense: defenseSnapshot.currentDefense,
+                maxDefense: defenseSnapshot.maxDefense,
                 mystic: this.state.mystic,
                 grid: gridCopy,
                 grantedConnectionPairs: connPairsCopy,
@@ -111,6 +120,9 @@
             this.state.food = s.food;
             this.state.wood = s.wood;
             this.state.defense = s.defense;
+            this.state.defenseCapacityBonus = s.defenseCapacityBonus ?? Math.max(0, (s.defense ?? 10) - 10);
+            this.state.currentDefense = s.currentDefense ?? s.defense ?? 10;
+            this.state.maxDefense = s.maxDefense ?? s.defense ?? 10;
             this.state.mystic = s.mystic;
 
             this.state.grid = s.grid.map((row, r) => 
@@ -155,6 +167,9 @@
             this.state.placementGroupCounter = s.placementGroupCounter;
             if (s.checkSystemState && this.state.checkSystem && typeof this.state.checkSystem.setState === "function") {
                 this.state.checkSystem.setState(JSON.parse(JSON.stringify(s.checkSystemState)));
+            }
+            if (this.state.defenseSystem && typeof this.state.defenseSystem.reconcileWithMax === "function") {
+                this.state.defenseSystem.reconcileWithMax();
             }
 
             const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' && window.I18n ? window.I18n : null);
@@ -261,4 +276,3 @@
 const UndoLandSystem = (typeof globalThis !== "undefined" && globalThis.UndoLandSystem) ? globalThis.UndoLandSystem : null;
 export { UndoLandSystem };
 export default UndoLandSystem;
-

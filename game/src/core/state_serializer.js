@@ -10,6 +10,13 @@
 export function serializeGameState(state) {
     if (!state) return null;
 
+    const defenseSnapshot = state.defenseSystem && typeof state.defenseSystem.reconcileWithMax === "function"
+        ? state.defenseSystem.reconcileWithMax()
+        : {
+            currentDefense: state.currentDefense !== undefined ? state.currentDefense : 10,
+            maxDefense: state.maxDefense !== undefined ? state.maxDefense : (state.defense !== undefined ? state.defense : 10)
+        };
+
     // 1. 盤面グリッドの正規化
     const serializedGrid = [];
     if (Array.isArray(state.grid)) {
@@ -103,6 +110,9 @@ export function serializeGameState(state) {
         food: state.food !== undefined ? state.food : 50,
         wood: state.wood !== undefined ? state.wood : 30,
         defense: state.defense !== undefined ? state.defense : 10,
+        defenseCapacityBonus: state.defenseCapacityBonus !== undefined ? state.defenseCapacityBonus : 0,
+        currentDefense: defenseSnapshot.currentDefense,
+        maxDefense: defenseSnapshot.maxDefense,
         mystic: state.mystic !== undefined ? state.mystic : 0,
         hasPickedThisTurn: !!state.hasPickedThisTurn,
         hasMulliganedThisTurn: !!state.hasMulliganedThisTurn,

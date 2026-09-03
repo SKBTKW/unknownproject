@@ -1,78 +1,41 @@
-import { GameEngine, UIController, TerritoryBadgeComponent } from '../game/src/app.js';
+import { GameEngine, TerritoryBadgeComponent } from '../game/src/app.js';
 
-console.log("=== 🧪 盤面拡大・ステージ連動バッジ自動検証テスト ===");
+console.log('=== 🧪 盤面拡大・ステージ連動バッジ自動検証テスト ===');
 
-const dom = {
-    title: '',
-    getElementById: (id) => ({
-        id,
-        innerHTML: '',
-        innerText: '',
-        style: { setProperty: () => {} },
-        children: [],
-        hasChildNodes: () => false,
-        appendChild: () => {},
-        setAttribute: () => {},
-        classList: { add: () => {}, remove: () => {} },
-        addEventListener: () => {},
-        querySelector: () => ({ innerText: '', onclick: null })
-    }),
-    querySelector: () => null,
-    querySelectorAll: () => [],
-    createElement: (tag) => ({
-        tagName: tag,
-        innerHTML: '',
-        innerText: '',
-        style: { setProperty: () => {} },
-        children: [],
-        appendChild: function(c) { this.children.push(c); },
-        setAttribute: () => {},
-        classList: { add: () => {}, remove: () => {} },
-        addEventListener: () => {},
-        querySelector: () => ({ innerText: '', onclick: null })
-    })
-};
-globalThis.document = dom;
-globalThis.window = { document: dom, TerritoryBadgeComponent };
+let total = 0;
+let passed = 0;
+
+function assert(condition, message, details = '') {
+    total++;
+    if (!condition) {
+        console.error(`  ❌ [FAIL] ${message}${details ? ` (${details})` : ''}`);
+        process.exitCode = 1;
+        return;
+    }
+    passed++;
+    console.log(`  ✅ [PASS] ${message}`);
+}
 
 const engine = GameEngine.createGame();
-const ui = new UIController(engine);
-ui.init();
 
-// --- Test 1: Stage 1 (5x5) ---
-console.log("\n[1/3] Stage 1 (5x5)");
-console.log(`  盤面サイズ: ${engine.state.grid.length}x${engine.state.grid[0].length}`);
-console.log(`  最大開拓数: ${TerritoryBadgeComponent.getMaxTilesForStage(1)} マス`);
-if (engine.state.grid.length === 5 && TerritoryBadgeComponent.getMaxTilesForStage(1) === 24) {
-    console.log("  ✅ [PASS] Stage 1 正常 (5x5, 24マス)");
-} else {
-    process.exit(1);
-}
+console.log('\n[1/3] Stage 1 (5x5)');
+assert(engine.state.grid.length === 5, 'Stage 1盤面が5x5で開始する');
+assert(TerritoryBadgeComponent.getMaxTilesForStage(1) === 24, 'Stage 1最大開発数が24マスである');
+assert(engine.state.currentDefense === 10 && engine.state.maxDefense === 10, 'Stage 1防衛力が10 / 10で開始する');
 
-// --- Test 2: Stage 2 (7x7) ---
-console.log("\n[2/3] Stage 2 (7x7)");
-engine.state.stage = { id: 2, name: "Stage 2", size: 7 };
-engine.state.grid = engine.state.gridEngine.initGrid(7);
-ui.render();
-console.log(`  盤面サイズ: ${engine.state.grid.length}x${engine.state.grid[0].length}`);
-console.log(`  最大開拓数: ${TerritoryBadgeComponent.getMaxTilesForStage(2)} マス`);
-if (engine.state.grid.length === 7 && TerritoryBadgeComponent.getMaxTilesForStage(2) === 48) {
-    console.log("  ✅ [PASS] Stage 2 拡大成功 (7x7, 48マス)");
-} else {
-    process.exit(1);
-}
+console.log('\n[2/3] Stage 2 (7x7)');
+engine.state.stage = { id: 2, name: 'Stage 2', size: 7 };
+engine.gridEngine.expandGrid(7);
+assert(engine.state.grid.length === 7, 'Stage 2盤面が7x7へ拡張される');
+assert(TerritoryBadgeComponent.getMaxTilesForStage(2) === 48, 'Stage 2最大開発数が48マスである');
+assert(engine.state.currentDefense === 10 && engine.state.maxDefense === 14, 'Stage 2本営強化で最大🛡️のみ14へ増える');
 
-// --- Test 3: Stage 3 (9x9) ---
-console.log("\n[3/3] Stage 3 (9x9)");
-engine.state.stage = { id: 3, name: "Stage 3", size: 9 };
-engine.state.grid = engine.state.gridEngine.initGrid(9);
-ui.render();
-console.log(`  盤面サイズ: ${engine.state.grid.length}x${engine.state.grid[0].length}`);
-console.log(`  最大開拓数: ${TerritoryBadgeComponent.getMaxTilesForStage(3)} マス`);
-if (engine.state.grid.length === 9 && TerritoryBadgeComponent.getMaxTilesForStage(3) === 80) {
-    console.log("  ✅ [PASS] Stage 3 拡大成功 (9x9, 80マス)");
-} else {
-    process.exit(1);
-}
+console.log('\n[3/3] Stage 3 (9x9)');
+engine.state.stage = { id: 3, name: 'Stage 3', size: 9 };
+engine.gridEngine.expandGrid(9);
+assert(engine.state.grid.length === 9, 'Stage 3盤面が9x9へ拡張される');
+assert(TerritoryBadgeComponent.getMaxTilesForStage(3) === 80, 'Stage 3最大開発数が80マスである');
+assert(engine.state.currentDefense === 10 && engine.state.maxDefense === 14, 'Stage 3拡張後も現在🛡️を自動回復しない');
 
-console.log("\n🎉 全ステージ盤面拡大・バッジ連動テスト 100% 成功！");
+console.log(`\n盤面拡張: ${passed}/${total} PASS`);
+if (passed !== total) process.exitCode = 1;

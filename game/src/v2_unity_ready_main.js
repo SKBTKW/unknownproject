@@ -15,7 +15,17 @@ class GameState {
         this.food = dependencies.food !== undefined ? dependencies.food : 50; // 🌾 初期食料 50 (戦略的猶予確保)
         this.wood = dependencies.material !== undefined ? dependencies.material : (dependencies.wood !== undefined ? dependencies.wood : 30);
         this.material = this.wood;
-        this.defense = dependencies.defense !== undefined ? dependencies.defense : 10;
+        const legacyDefense = dependencies.defense !== undefined ? dependencies.defense : 10;
+        this.defenseCapacityBonus = dependencies.defenseCapacityBonus !== undefined
+            ? dependencies.defenseCapacityBonus
+            : Math.max(0, legacyDefense - 10);
+        this.defense = 10 + this.defenseCapacityBonus;
+        this.currentDefense = dependencies.currentDefense !== undefined
+            ? dependencies.currentDefense
+            : (dependencies.currentShield !== undefined ? dependencies.currentShield : legacyDefense);
+        this.maxDefense = dependencies.maxDefense !== undefined
+            ? dependencies.maxDefense
+            : (dependencies.maxShield !== undefined ? dependencies.maxShield : legacyDefense);
         this.mystic = dependencies.mystic !== undefined ? dependencies.mystic : 0;
 
         this.stage = dependencies.stage || { id: 1, name: "Stage 1", size: 5, bonusMultiplier: 1.0 };
@@ -356,14 +366,85 @@ class GameState {
         }
 
         calculateTotalDefense() {
+            if (this.defenseSystem && typeof this.defenseSystem.getMaxDefense === "function") {
+                return this.defenseSystem.getMaxDefense();
+            }
             if (ProductionCalculator && typeof ProductionCalculator.calculateTotalDefense === "function") {
                 return ProductionCalculator.calculateTotalDefense(this);
             }
-            let def = this.defense || 10;
-            if (this.vigilanceTurns && this.vigilanceTurns > 0 && !this.vigilanceStartsNextTurn) {
-                def += 3;
+            return this.maxDefense || 10;
+        }
+
+        getMaxDefense() {
+            return this.calculateTotalDefense();
+        }
+
+        getCurrentDefense() {
+            if (this.defenseSystem && typeof this.defenseSystem.getCurrentDefense === "function") {
+                return this.defenseSystem.getCurrentDefense();
             }
-            return def;
+            return Math.min(this.currentDefense || 0, this.calculateTotalDefense());
+        }
+
+        getTrialAvailableDefense() {
+            return this.getCurrentDefense();
+        }
+
+        setCurrentDefense(amount) {
+            if (this.defenseSystem && typeof this.defenseSystem.setCurrentDefense === "function") {
+                return this.defenseSystem.setCurrentDefense(amount);
+            }
+            this.currentDefense = Math.min(Math.max(0, Math.floor(amount || 0)), this.calculateTotalDefense());
+            return this.currentDefense;
+        }
+
+        reduceCurrentDefense(amount) {
+            if (this.defenseSystem && typeof this.defenseSystem.reduceCurrentDefense === "function") {
+                return this.defenseSystem.reduceCurrentDefense(amount);
+            }
+            const before = this.getCurrentDefense();
+            const after = this.setCurrentDefense(before - amount);
+            return { before, after, reduced: before - after, maxDefense: this.calculateTotalDefense() };
+        }
+
+        recoverCurrentDefense(amount) {
+            if (this.defenseSystem && typeof this.defenseSystem.recoverCurrentDefense === "function") {
+                return this.defenseSystem.recoverCurrentDefense(amount);
+            }
+            const before = this.getCurrentDefense();
+            const after = this.setCurrentDefense(before + amount);
+            return { before, after, recovered: after - before, maxDefense: this.calculateTotalDefense() };
+        }
+
+        reconcileDefenseWithMax() {
+            if (this.defenseSystem && typeof this.defenseSystem.reconcileWithMax === "function") {
+                return this.defenseSystem.reconcileWithMax();
+            }
+            this.maxDefense = this.calculateTotalDefense();
+            this.currentDefense = Math.min(this.currentDefense || 0, this.maxDefense);
+            return { currentDefense: this.currentDefense, maxDefense: this.maxDefense };
+        }
+
+        getDefenseRebuildCost() {
+            return this.defenseSystem
+                ? this.defenseSystem.getDefenseRebuildCost()
+                : { defined: false, reason: "NO_DEFENSE_SYSTEM" };
+        }
+
+        getDefenseRebuildPlan(options = {}) {
+            return this.defenseSystem
+                ? this.defenseSystem.getDefenseRebuildPlan(options)
+                : { canRebuild: false, reason: "NO_DEFENSE_SYSTEM" };
+        }
+
+        canRebuildDefense(options = {}) {
+            return this.defenseSystem ? this.defenseSystem.canRebuildDefense(options) : false;
+        }
+
+        rebuildDefense(options = {}) {
+            return this.defenseSystem
+                ? this.defenseSystem.rebuildDefense(options)
+                : { success: false, reason: "NO_DEFENSE_SYSTEM" };
         }
 
         gainDefense(baseAmount, reason = "") {
@@ -375,11 +456,11 @@ class GameState {
                 finalAmount += 3;
                 bonusText = I18n ? I18n.t("LOG_VIGILANCE_BONUS") : " (+3)";
             }
-            this.defense = (this.defense || 10) + finalAmount;
+            const recovery = this.recoverCurrentDefense(finalAmount);
             if (reason) {
-                this.addLog(I18n ? I18n.t("LOG_DEFENSE_GAINED", { amount: finalAmount, bonus: bonusText, reason: reason, total: this.calculateTotalDefense() }) : `🛡️ +${finalAmount}`);
+                this.addLog(I18n ? I18n.t("LOG_DEFENSE_GAINED", { amount: recovery.recovered, bonus: bonusText, reason: reason, total: this.getCurrentDefense() }) : `🛡️ +${recovery.recovered}`);
             }
-            return finalAmount;
+            return recovery.recovered;
         }
 
         getTrialNotice() {
@@ -640,6 +721,8 @@ class GameState {
         set directiveSystem(v) { this._directiveSystem = v; }
         get buffSystem() { return this._buffSystem || (this.engine ? this.engine.buffSystem : null); }
         set buffSystem(v) { this._buffSystem = v; }
+        get defenseSystem() { return this._defenseSystem || (this.engine ? this.engine.defenseSystem : null); }
+        set defenseSystem(v) { this._defenseSystem = v; }
     }
 
     // 🎴 Step1DrawSystem 互換エイリアス
