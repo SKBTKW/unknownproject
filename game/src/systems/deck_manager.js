@@ -7,7 +7,7 @@ import { ConditionEvaluator } from '../core/condition_evaluator.js';
 import { CardCycleSystem, CYCLE_POLICIES } from './card_cycle_system.js';
 import { normalizePlacementAnchor } from '../core/placement_geometry.js';
 import { isTrueMergedCell } from '../core/merge_rules.js';
-import { countPlacedLakes, getLakeSpawnRateMultiplier } from '../core/lake_rules.js';
+import { getWaterSourceSpawnChance } from '../core/lake_rules.js';
 
 class DeckManager {
     constructor(gameState, engine = null) {
@@ -1541,16 +1541,27 @@ class DeckManager {
 
                 if (sysMaster && sysMaster[baseTerrainId]) {
                     const pool = sysMaster[baseTerrainId];
-                    // 🌊 特殊水系判定 (湖発見確率逓減を適用)
-                    const placedLakeCount = countPlacedLakes(this.state);
-                    const lakeRateMult = getLakeSpawnRateMultiplier(placedLakeCount);
-                    if ((baseTerrainId === "E0_WETLAND" || baseTerrainId.includes("WETLAND")) && Math.random() < (0.60 * lakeRateMult)) {
-                        const lake = pool.find(s => s.id === "SOCKET_LAKE");
-                        if (lake) {
+                    // 🌊 探索時も配置時と同じ水源逓減・距離制約を適用する。
+                    let waterSourceId = null;
+                    let waterSourceBaseRate = 0;
+                    if (baseTerrainId === "E0_WETLAND" || baseTerrainId.includes("WETLAND")) {
+                        waterSourceId = "SOCKET_LAKE";
+                        waterSourceBaseRate = cell.hasSocket ? 0.60 : 0.20;
+                    } else if (baseTerrainId.includes("DESERT")) {
+                        waterSourceId = "SOCKET_OASIS";
+                        waterSourceBaseRate = 0.25;
+                    } else if (baseTerrainId.includes("PLAINS")) {
+                        waterSourceId = "SOCKET_LAKE";
+                        waterSourceBaseRate = 0.25;
+                    }
+                    const waterSourceChance = getWaterSourceSpawnChance(this.state, r, c, waterSourceBaseRate);
+                    if (waterSourceId && waterSourceChance > 0 && Math.random() < waterSourceChance) {
+                        const waterSource = pool.find(s => s.id === waterSourceId);
+                        if (waterSource) {
                             socketDef = {
-                                id: lake.id, nameKey: lake.nameKey, category: lake.category, icon: lake.icon,
-                                bonusFood: lake.bonusYields.food || 0, bonusWood: lake.bonusYields.wood || 0,
-                                bonusDefense: lake.bonusYields.defense || 0, bonusMystic: lake.bonusYields.mystic || 0
+                                id: waterSource.id, nameKey: waterSource.nameKey, category: waterSource.category, icon: waterSource.icon,
+                                bonusFood: waterSource.bonusYields.food || 0, bonusWood: waterSource.bonusYields.wood || 0,
+                                bonusDefense: waterSource.bonusYields.defense || 0, bonusMystic: waterSource.bonusYields.mystic || 0
                             };
                         }
                     }

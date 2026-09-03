@@ -37,6 +37,9 @@ export function serializeGameState(state) {
                     searched: !!cell.searched,
                     placementGroupId: cell.placementGroupId || null,
                     mergeGroupId: cell.mergeGroupId || null,
+                    cachedSocketSeeds: cell.cachedSocketSeeds
+                        ? JSON.parse(JSON.stringify(cell.cachedSocketSeeds))
+                        : {},
                     terrain: cell.terrain ? {
                         id: cell.terrain.id || null,
                         terrainId: cell.terrain.terrainId || null,
@@ -49,7 +52,15 @@ export function serializeGameState(state) {
                     socketResource: cell.socketResource ? {
                         id: cell.socketResource.id || null,
                         nameKey: cell.socketResource.nameKey || null,
-                        yields: cell.socketResource.yields ? { ...cell.socketResource.yields } : null
+                        category: cell.socketResource.category || null,
+                        icon: cell.socketResource.icon || null,
+                        yields: cell.socketResource.yields ? { ...cell.socketResource.yields } : null,
+                        bonusFood: cell.socketResource.bonusFood || 0,
+                        bonusWood: cell.socketResource.bonusWood || 0,
+                        bonusMaterial: cell.socketResource.bonusMaterial || 0,
+                        bonusDefense: cell.socketResource.bonusDefense || 0,
+                        bonusMystic: cell.socketResource.bonusMystic || 0,
+                        isLake: !!cell.socketResource.isLake
                     } : null
                 };
             }

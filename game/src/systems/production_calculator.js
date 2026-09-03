@@ -5,6 +5,11 @@
 
 import { MaintenanceFallbackSystem } from './maintenance_fallback_system.js';
 import { DefenseSystem } from './defense_system.js';
+import {
+    hasAdjacentWaterSource,
+    isWaterSourceCell,
+    isWetlandTerrain
+} from '../core/lake_rules.js';
 
 (function() {
     class ProductionCalculator {
@@ -24,23 +29,6 @@ import { DefenseSystem } from './defense_system.js';
 
             const size = (state && state.grid && state.grid.length) ? state.grid.length : 5;
 
-            const lakeCoords = [];
-            for (let r = 0; r < size; r++) {
-                for (let c = 0; c < size; c++) {
-                    const cell = state.grid[r][c];
-                    if (cell && cell.placed && cell.socketResource) {
-                        const sid = cell.socketResource.id || cell.socketResource.nameKey || "";
-                        if (sid === "SOCKET_LAKE" || sid === "SOCKET_OASIS") {
-                            lakeCoords.push({ r, c });
-                        }
-                    }
-                }
-            }
-
-            const isNearLake = (r, c) => {
-                return lakeCoords.some(l => Math.abs(l.r - r) <= 1 && Math.abs(l.c - c) <= 1 && !(l.r === r && l.c === c));
-            };
-
             const groupSums = {};
 
             for (let r = 0; r < size; r++) {
@@ -52,7 +40,10 @@ import { DefenseSystem } from './defense_system.js';
                         const tw = (t.material !== undefined) ? t.material : ((t.wood !== undefined) ? t.wood : ((t.baseYieldsPerTile && (t.baseYieldsPerTile.material || t.baseYieldsPerTile.wood)) || (t.yields && (t.yields.material || t.yields.wood)) || 0));
                         const tm = (t.mystic !== undefined) ? t.mystic : ((t.baseYieldsPerTile && t.baseYieldsPerTile.mystic) || (t.yields && t.yields.mystic) || 0);
 
-                        if (cell.mergeGroupId) {
+                        const isEligibleZoneCell = cell.mergeGroupId
+                            && !isWetlandTerrain(t)
+                            && !isWaterSourceCell(cell);
+                        if (isEligibleZoneCell) {
                             const gid = cell.mergeGroupId;
                             if (!groupSums[gid]) groupSums[gid] = { food: 0, wood: 0, material: 0, mystic: 0 };
                             groupSums[gid].food += tf;
@@ -77,8 +68,8 @@ import { DefenseSystem } from './defense_system.js';
                             if (tm > 0) mysticVicinity += 1;
                         }
 
-                        // 🌊 湖 (Lake) 周囲8マスの灌漑バフ (+50% 食料産出ブースト)
-                        if (isNearLake(r, c) && tf > 0) {
+                        // 🌊 水源周囲8マスの灌漑バフ（範囲が重なっても1回のみ）
+                        if (hasAdjacentWaterSource(state, r, c) && tf > 0) {
                             foodLakeIrrigation += Math.max(1, Math.floor(tf * 0.5));
                         }
                     }
@@ -199,7 +190,10 @@ import { DefenseSystem } from './defense_system.js';
                         const td = (t.defense !== undefined) ? t.defense : ((t.baseYieldsPerTile && t.baseYieldsPerTile.defense) || (t.yields && t.yields.defense) || 0);
                         const tm = (t.mystic !== undefined) ? t.mystic : ((t.baseYieldsPerTile && t.baseYieldsPerTile.mystic) || (t.yields && t.yields.mystic) || 0);
 
-                        if (cell.mergeGroupId) {
+                        const isEligibleZoneCell = cell.mergeGroupId
+                            && !isWetlandTerrain(t)
+                            && !isWaterSourceCell(cell);
+                        if (isEligibleZoneCell) {
                             const gid = cell.mergeGroupId;
                             if (!groupSums[gid]) groupSums[gid] = { food: 0, wood: 0, material: 0, defense: 0, mystic: 0 };
                             groupSums[gid].food += tf;
@@ -337,23 +331,7 @@ import { DefenseSystem } from './defense_system.js';
             }
 
             // ③ 湖/オアシス灌漑ボーナス (+50% 食料、最低+1)
-            const size = state.grid.length;
-            let isNearLake = false;
-            for (let lr = Math.max(0, r - 1); lr <= Math.min(size - 1, r + 1); lr++) {
-                for (let lc = Math.max(0, c - 1); lc <= Math.min(size - 1, c + 1); lc++) {
-                    if (lr === r && lc === c) continue;
-                    const neighbor = state.grid[lr][lc];
-                    if (neighbor && neighbor.placed && neighbor.socketResource) {
-                        const sid = neighbor.socketResource.id || neighbor.socketResource.nameKey || "";
-                        if (sid === "SOCKET_LAKE" || sid === "SOCKET_OASIS") {
-                            isNearLake = true;
-                            break;
-                        }
-                    }
-                }
-                if (isNearLake) break;
-            }
-            if (isNearLake && baseFood > 0) {
+            if (hasAdjacentWaterSource(state, r, c) && baseFood > 0) {
                 const lakeIrrigation = Math.max(1, Math.floor(baseFood * 0.5));
                 modifiers.push({ type: "LAKE_IRRIGATION", resource: "food", amount: lakeIrrigation });
                 totalFood += lakeIrrigation;
@@ -391,4 +369,3 @@ import { DefenseSystem } from './defense_system.js';
 const ProductionCalculator = (typeof globalThis !== "undefined" && globalThis.ProductionCalculator) ? globalThis.ProductionCalculator : null;
 export { ProductionCalculator };
 export default ProductionCalculator;
-

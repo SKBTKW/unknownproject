@@ -9,8 +9,10 @@ import {
     isTrueMergedCell
 } from '../core/merge_rules.js';
 import {
-    countPlacedLakes,
-    getLakeSpawnRateMultiplier
+    getWaterSourceSpawnChance,
+    isWithinWetlandExclusionRange,
+    isWaterSourceCell,
+    isWetlandTerrain
 } from '../core/lake_rules.js';
 
 class GridEngine {
@@ -305,6 +307,7 @@ class GridEngine {
         const targetE = terrain ? (terrain.e !== undefined ? terrain.e : (terrain.terrain ? terrain.terrain.e : 1)) : null;
         const targetTid = terrain ? (terrain.terrainId || terrain.id || "") : "";
         const isMountain = targetE === 3 || targetTid.includes("MOUNTAIN");
+        const isWetland = isWetlandTerrain(terrain);
 
         const reasons = [];
 
@@ -313,7 +316,29 @@ class GridEngine {
         let isMountainNearHQ = false;
         let isAdjacent = false;
         let hasInvalidGL = false;
+        let isWetlandTooClose = false;
         const elevationReasons = new Set();
+
+        // 湿原同士はマンハッタン距離2以内へ配置不可。Shape内の構成セル同士にも適用する。
+        if (isWetland) {
+            const wetlandCoords = [];
+            for (let dr = 0; dr < rows; dr++) {
+                for (let dc = 0; dc < cols; dc++) {
+                    if (shapeMatrix[dr][dc] !== 1) continue;
+                    const r = startR + dr;
+                    const c = startC + dc;
+                    if (isWithinWetlandExclusionRange(this.state, r, c)) isWetlandTooClose = true;
+                    wetlandCoords.push({ r, c });
+                }
+            }
+            for (let i = 0; i < wetlandCoords.length; i++) {
+                for (let j = i + 1; j < wetlandCoords.length; j++) {
+                    const distance = Math.abs(wetlandCoords[i].r - wetlandCoords[j].r)
+                        + Math.abs(wetlandCoords[i].c - wetlandCoords[j].c);
+                    if (distance <= 2) isWetlandTooClose = true;
+                }
+            }
+        }
 
         // 1. 盤外および既配置マスとの重複判定 ＆ 本営周囲山岳判定
         for (let dr = 0; dr < rows; dr++) {
@@ -391,12 +416,15 @@ class GridEngine {
             if (hasInvalidGL) {
                 reasons.push("INVALID_GL_NEIGHBOR");
             }
+            if (isWetlandTooClose) {
+                reasons.push("WETLAND_TOO_CLOSE");
+            }
             if (elevationReasons.size > 0) {
                 elevationReasons.forEach(rKey => reasons.push(rKey));
             }
 
             // 🔒 3. 同属性 2×2 マージ直接面隣接禁止ルール
-            if (!isOutOfBounds && !isAlreadyPlaced) {
+            if (!isOutOfBounds && !isAlreadyPlaced && !isWetland) {
                 const targetTid = terrain ? (terrain.terrainId || terrain.id) : null;
                 const placingCells = [];
                 for (let dr = 0; dr < rows; dr++) {
@@ -514,42 +542,46 @@ class GridEngine {
                     cell.placementGroupId = pGroupId;
                     cell.isHQVicinity = (Math.abs(r - 2) <= 1 && Math.abs(c - 2) <= 1 && !(r === 2 && c === 2));
 
-                    // ★ ソケット開花判定 (決定論的固定化 ✕ 相対 Weight 自然地理抽選: アンドゥリセマラを完全根絶)
-                    if (cell.hasSocket && !cell.socketResource) {
+                    // ★ 水源・ソケット開花判定（失敗結果もキャッシュし、Undo再抽選を防ぐ）
+                    if (!cell.socketResource && (cell.hasSocket || isWetlandTerrain(terrain))) {
                         const seedKey = `${r}_${c}`;
                         let spawnedSocket = null;
+                        const hasCachedOutcome = cell.cachedSocketSeeds
+                            && Object.prototype.hasOwnProperty.call(cell.cachedSocketSeeds, seedKey);
 
-                        if (cell.cachedSocketSeeds && cell.cachedSocketSeeds[seedKey]) {
-                            spawnedSocket = cell.cachedSocketSeeds[seedKey];
+                        if (hasCachedOutcome) {
+                            spawnedSocket = cell.cachedSocketSeeds[seedKey] || null;
                         } else {
                             if (!cell.cachedSocketSeeds) cell.cachedSocketSeeds = {};
                             const baseTid = terrain.terrainId || terrain.id || "";
                             const getRng = () => (this.state && typeof this.state.rng === "function") ? this.state.rng() : Math.random();
 
-                            // 1. 湿原: 湖 (60% * 逓減倍率)
+                            // 1. 湿原: ソケット60%、通常マス20%で湖を発見
                             if (baseTid.includes("WETLAND")) {
-                                const currentLakeCount = countPlacedLakes(this.state);
-                                const lakeRateMult = getLakeSpawnRateMultiplier(currentLakeCount);
-                                if (getRng() < (0.60 * lakeRateMult)) {
+                                const baseRate = cell.hasSocket ? 0.60 : 0.20;
+                                const spawnChance = getWaterSourceSpawnChance(this.state, r, c, baseRate);
+                                if (spawnChance > 0 && getRng() < spawnChance) {
                                     spawnedSocket = { id: "SOCKET_LAKE", nameKey: "SOCKET_LAKE", category: "CAT_WATER", icon: "💧", bonusFood: 2, bonusWood: 0, bonusDefense: 0, bonusMystic: 1, isLake: true };
                                 }
                             }
-                            // 2. 砂漠: オアシス (25%) ※オアシスは湖逓減の影響を受けない
-                            else if (baseTid.includes("DESERT") && getRng() < 0.25) {
-                                spawnedSocket = { id: "SOCKET_OASIS", nameKey: "SOCKET_OASIS", category: "CAT_WATER", icon: "🏝️", bonusFood: 1, bonusWood: 0, bonusDefense: 0, bonusMystic: 2, isLake: true };
+                            // 2. 砂漠: オアシス (25% × 水源逓減、距離制約)
+                            else if (cell.hasSocket && baseTid.includes("DESERT")) {
+                                const spawnChance = getWaterSourceSpawnChance(this.state, r, c, 0.25);
+                                if (spawnChance > 0 && getRng() < spawnChance) {
+                                    spawnedSocket = { id: "SOCKET_OASIS", nameKey: "SOCKET_OASIS", category: "CAT_WATER", icon: "🏝️", bonusFood: 1, bonusWood: 0, bonusDefense: 0, bonusMystic: 2, isLake: true };
+                                }
                             }
-                            // 3. 草原 1x1: 湖 (25% * 逓減倍率)
-                            else if (baseTid.includes("PLAINS") && activeCellCount === 1) {
-                                const currentLakeCount = countPlacedLakes(this.state);
-                                const lakeRateMult = getLakeSpawnRateMultiplier(currentLakeCount);
-                                if (getRng() < (0.25 * lakeRateMult)) {
+                            // 3. 草原 1x1: 湖 (25% × 水源逓減、距離制約)
+                            else if (cell.hasSocket && baseTid.includes("PLAINS") && activeCellCount === 1) {
+                                const spawnChance = getWaterSourceSpawnChance(this.state, r, c, 0.25);
+                                if (spawnChance > 0 && getRng() < spawnChance) {
                                     spawnedSocket = { id: "SOCKET_LAKE", nameKey: "SOCKET_LAKE", category: "CAT_WATER", icon: "💧", bonusFood: 2, bonusWood: 0, bonusDefense: 0, bonusMystic: 1, isLake: true };
                                 }
                             }
 
                             // 4. 一般資源プール抽選 (湖/オアシス非当選時)
                             const socketMaster = (typeof globalThis !== "undefined" && globalThis.SOCKET_RESOURCE_MASTER) ? globalThis.SOCKET_RESOURCE_MASTER : (typeof window !== "undefined" ? window.SOCKET_RESOURCE_MASTER : null);
-                            if (!spawnedSocket && socketMaster) {
+                            if (!spawnedSocket && cell.hasSocket && socketMaster) {
                                 const pool = socketMaster.filter(s => s.reqTerrains && s.reqTerrains.some(t => baseTid.includes(t)));
                                 if (pool.length > 0) {
                                     const chosen = pool[Math.floor(getRng() * pool.length)];
@@ -565,10 +597,10 @@ class GridEngine {
                                     };
                                 }
                             }
-                            if (!spawnedSocket) {
+                            if (!spawnedSocket && cell.hasSocket) {
                                 spawnedSocket = { id: "SOCKET_WILD_WHEAT", nameKey: "SOCKET_WILD_WHEAT", category: "CAT_GRAIN", icon: "🌾", bonusFood: 3, bonusWood: 0, bonusDefense: 0, bonusMystic: 0 };
                             }
-                            if (spawnedSocket) cell.cachedSocketSeeds[seedKey] = spawnedSocket;
+                            cell.cachedSocketSeeds[seedKey] = spawnedSocket ? { ...spawnedSocket } : null;
                         }
 
                         if (spawnedSocket) {
@@ -665,6 +697,10 @@ class GridEngine {
      */
     checkConnectionBonus(r, c, terrain) {
         if (!this.state || !this.state.grid) return;
+        const currentCell = this.state.grid[r] && this.state.grid[r][c];
+        if (!currentCell || isWetlandTerrain(terrain) || isWaterSourceCell(currentCell)) {
+            return { connected: false };
+        }
         const baseTerrainId = terrain.terrainId || terrain.id;
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' && window.I18n ? window.I18n : { t: k => k });
         const terrainName = I18n.t(terrain.nameKey);
@@ -702,8 +738,8 @@ class GridEngine {
             if (nr < 0 || nr >= this.state.grid.length || nc < 0 || nc >= this.state.grid.length) return false;
             const cell = this.state.grid[nr][nc];
             if (!cell.placed || cell.isHQ || !cell.terrain) return false;
+            if (isWetlandTerrain(cell.terrain) || isWaterSourceCell(cell)) return false;
             
-            const currentCell = this.state.grid[r][c];
             if (currentCell.placementGroupId && cell.placementGroupId && currentCell.placementGroupId === cell.placementGroupId) {
                 return false;
             }
@@ -780,7 +816,11 @@ class GridEngine {
             for (let row = 0; row < size; row++) {
                 for (let col = 0; col < size; col++) {
                     const cell = this.state.grid[row][col];
-                    if (cell && currPlaceId && cell.placementGroupId === currPlaceId) {
+                    if (cell
+                        && currPlaceId
+                        && cell.placementGroupId === currPlaceId
+                        && !isWetlandTerrain(cell.terrain)
+                        && !isWaterSourceCell(cell)) {
                         cell.mergeGroupId = targetGroupId;
                         cell.mergeType = is1x3 ? "1x3" : "1x2";
                     }
@@ -802,7 +842,11 @@ class GridEngine {
                 for (let row = 0; row < size; row++) {
                     for (let col = 0; col < size; col++) {
                         const cell = this.state.grid[row][col];
-                        if (cell && cell.mergeGroupId && oldGroupIds.has(cell.mergeGroupId)) {
+                        if (cell
+                            && cell.mergeGroupId
+                            && oldGroupIds.has(cell.mergeGroupId)
+                            && !isWetlandTerrain(cell.terrain)
+                            && !isWaterSourceCell(cell)) {
                             cell.mergeGroupId = targetGroupId;
                             cell.mergeType = is1x3 ? "1x3" : "1x2";
                         }
@@ -868,7 +912,7 @@ class GridEngine {
         const size = this.state.grid.length;
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' && window.I18n ? window.I18n : { t: k => k });
 
-        // 1. 2x2 正方形マージ判定（全地形共通）
+        // 1. 2x2 正方形マージ判定（湿原・水源セルは地帯化対象外）
         for (let r = 0; r < size - 1; r++) {
             for (let c = 0; c < size - 1; c++) {
                 const c1 = this.state.grid[r][c];
@@ -877,7 +921,13 @@ class GridEngine {
                 const c4 = this.state.grid[r+1][c+1];
 
                 const cells = [c1, c2, c3, c4];
-                const allPlaced = cells.every(cell => cell.placed && !cell.isHQ && (!cell.merged || cell.mergeType !== "2x2"));
+                const allPlaced = cells.every(cell =>
+                    cell.placed
+                    && !cell.isHQ
+                    && !isWetlandTerrain(cell.terrain)
+                    && !isWaterSourceCell(cell)
+                    && (!cell.merged || cell.mergeType !== "2x2")
+                );
                 if (allPlaced) {
                     const firstBaseId = c1.terrain ? (c1.terrain.terrainId || c1.terrain.id) : null;
                     const sameTerrain = cells.every(cell => cell.terrain && (cell.terrain.terrainId || cell.terrain.id) === firstBaseId);
@@ -984,7 +1034,9 @@ class GridEngine {
                     if (coords.some(pt => pt.r < 0 || pt.r >= size || pt.c < 0 || pt.c >= size)) continue;
 
                     const cells = coords.map(pt => this.state.grid[pt.r][pt.c]);
-                    const allPlaced = cells.every(cell => cell.placed && !cell.isHQ && !cell.merged);
+                    const allPlaced = cells.every(cell =>
+                        cell.placed && !cell.isHQ && !cell.merged && !isWaterSourceCell(cell)
+                    );
                     if (allPlaced) {
                         const isAllHill = cells.every(cell => cell.terrain && (cell.terrain.terrainId || cell.terrain.id || "").includes("HILL"));
                         if (isAllHill) {
@@ -1068,7 +1120,12 @@ class GridEngine {
                 for (const offsets of tOffsets) {
                     const coords = offsets.map(([dr, dc]) => ({ r: r + dr, c: c + dc }));
                     const cells = coords.map(pt => this.state.grid[pt.r][pt.c]);
-                    const allPlaced = cells.every(cell => cell.placed && !cell.isHQ && (!cell.merged || cell.mergeType !== "T_SHAPE"));
+                    const allPlaced = cells.every(cell =>
+                        cell.placed
+                        && !cell.isHQ
+                        && !isWaterSourceCell(cell)
+                        && (!cell.merged || cell.mergeType !== "T_SHAPE")
+                    );
                     if (allPlaced) {
                         const allMountain = cells.every(cell => {
                             const tid = cell.terrain ? (cell.terrain.terrainId || cell.terrain.id) : null;

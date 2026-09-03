@@ -19,7 +19,7 @@
             TERRAIN_DESERT_HILL: "荒野",
             TERRAIN_FOREST_HILL: "森丘陵",
             TERRAIN_DEEP_HILL: "森林丘陵",
-            CARD_DESC_WETLAND_1X1: "水分が集まる低湿地帯。地帯化はできないがぬかるみで敵を阻み、水脈や干拓の母体となる。",
+            CARD_DESC_WETLAND_1X1: "水分が集まる低湿地帯。他の湿原から2マス以内には開発できず地帯化もできないが、ぬかるみで敵を阻み、水脈や干拓の母体となる。",
             CARD_DESC_DESERT_1X1: "極度に乾燥した広大な砂地。命の恵みは得られないが古代の神秘を漂わせる。",
             CARD_DESC_DESERT_1X2: "広大な砂の流砂地帯。足場は劣悪だが非常に強い神秘を秘めたUR地勢。",
             CARD_DESC_DESERT_HILL_1X2: "岩石と乾燥した大地が広がる荒野。資材と防衛力に加え、古代の神秘が宿る。",
@@ -649,6 +649,7 @@
             ERR_NOT_ADJACENT: "既存の領土に隣接していません",
             ERR_MOUNTAIN_NEAR_HQ_FORBIDDEN: "本営周囲8マスでは山岳を開発できません",
             ERR_SAME_TERRAIN_MERGED_NEIGHBOR_FORBIDDEN: "同属性の2×2地帯同士は直接隣接できません",
+            ERR_WETLAND_TOO_CLOSE: "既存の湿原から2マス以内には湿原を開発できません",
             ERR_WETLAND_MOUNTAIN_NEIGHBOR: "湿地と山岳は隣接できません",
             ERR_WETLAND_HILL_NEIGHBOR: "湿地と丘陵は隣接できません",
             ERR_PLAINS_MOUNTAIN_NEIGHBOR: "平地と山岳は直接隣接できません（高度断絶）",
@@ -677,7 +678,7 @@
             TERRAIN_DESERT_HILL: "Desert Hill",
             TERRAIN_FOREST_HILL: "Forest Hill",
             TERRAIN_DEEP_HILL: "Deep Forest Hill",
-            CARD_DESC_WETLAND_1X1: "Lowland collecting moisture. Cannot form a zone, but hinders foes with mud and supports water sources and reclamation.",
+            CARD_DESC_WETLAND_1X1: "Lowland collecting moisture. Cannot be developed within 2 tiles of another Wetland or form a zone, but hinders foes with mud and supports water sources and reclamation.",
 
             // 📜 Economy & Policy
             CMD_CONSERVE_EMBER: "Conserve",
@@ -1220,6 +1221,7 @@
             ERR_NOT_ADJACENT: "Must be adjacent to existing territory",
             ERR_MOUNTAIN_NEAR_HQ_FORBIDDEN: "Land cannot be developed as Mountains within the 8 tiles surrounding the HQ",
             ERR_SAME_TERRAIN_MERGED_NEIGHBOR_FORBIDDEN: "Cannot directly connect to another 2x2 zone of the same terrain",
+            ERR_WETLAND_TOO_CLOSE: "Wetlands cannot be developed within 2 tiles of another Wetland",
             ERR_WETLAND_MOUNTAIN_NEIGHBOR: "Wetlands and Mountains cannot be adjacent",
             ERR_WETLAND_HILL_NEIGHBOR: "Wetlands and Hills cannot be adjacent",
             ERR_PLAINS_MOUNTAIN_NEIGHBOR: "Plains and Mountains cannot be directly adjacent",
