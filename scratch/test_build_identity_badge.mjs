@@ -1,4 +1,5 @@
 import assert from "assert";
+import { readFileSync } from "fs";
 import {
     BUILD_IDENTITY_CONFIG,
     BUILD_IDENTITY_MODES,
@@ -86,6 +87,13 @@ class MockDocument {
 console.log("============================================================");
 console.log("🏷️ Build Identity Badge Regression Tests");
 console.log("============================================================");
+
+const pagesWorkflow = readFileSync(
+    new URL("../.github/workflows/pages.yml", import.meta.url),
+    "utf8"
+);
+assert.match(pagesWorkflow, /TOA_COMMIT_SHA:\s*\$\{\{ github\.sha \}\}/);
+assert.match(pagesWorkflow, /"commitId":\s*os\.environ\["TOA_COMMIT_SHA"\]\[:7\]/);
 
 const development = normalizeBuildIdentity({
     mode: BUILD_IDENTITY_MODES.DEVELOPMENT,
@@ -206,6 +214,7 @@ component.destroy();
 assert.strictEqual(mockDocument.getElementById("buildIdentityBadge"), null);
 
 console.log("✅ Development branch / commit resolution PASS");
+console.log("✅ GitHub Pages branch / commit metadata generation PASS");
 console.log("✅ Production version fallback PASS");
 console.log("✅ Desktop / mobile badge layout PASS");
 console.log("✅ Component lifecycle PASS");

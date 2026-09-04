@@ -33,6 +33,7 @@ jobs:
       - name: Generate build identity
         env:
           TOA_BRANCH_NAME: ${{ github.ref_name }}
+          TOA_COMMIT_SHA: ${{ github.sha }}
         run: |
           python3 - <<'PY'
           import json
@@ -42,6 +43,7 @@ jobs:
           identity = {
               "mode": "development",
               "branchName": os.environ["TOA_BRANCH_NAME"],
+              "commitId": os.environ["TOA_COMMIT_SHA"][:7],
           }
           Path("game/__toa_build_identity__.json").write_text(
               json.dumps(identity, ensure_ascii=False),
