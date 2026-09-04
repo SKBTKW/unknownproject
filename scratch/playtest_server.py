@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Serve the game and expose the current Git branch to the development UI."""
+"""Serve the game and expose the current Git branch and commit to the development UI."""
 
 from __future__ import annotations
 
@@ -36,6 +36,16 @@ def resolve_git_branch() -> str:
     return f"detached@{commit}"
 
 
+def resolve_git_commit() -> str:
+    return subprocess.run(
+        ["git", "rev-parse", "--short", "HEAD"],
+        cwd=REPOSITORY_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+
 class PlaytestRequestHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(GAME_ROOT), **kwargs)
@@ -51,6 +61,7 @@ class PlaytestRequestHandler(SimpleHTTPRequestHandler):
             {
                 "mode": "development",
                 "branchName": resolve_git_branch(),
+                "commitId": resolve_git_commit(),
             },
             ensure_ascii=False,
         ).encode("utf-8")
@@ -73,7 +84,7 @@ def main() -> None:
     args = parse_args()
     server = ThreadingHTTPServer((args.host, args.port), PlaytestRequestHandler)
     print(f"Playtest server: http://{args.host}:{args.port}/")
-    print(f"Branch badge: {resolve_git_branch()}")
+    print(f"Build badge: {resolve_git_branch()} @ {resolve_git_commit()}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

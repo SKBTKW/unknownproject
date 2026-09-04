@@ -28,7 +28,8 @@
     display: none;
 }
 
-.build-identity-badge-label {
+.build-identity-badge-label,
+.build-identity-badge-commit-label {
     color: #64748b;
     font-size: 9px;
     font-weight: 800;
@@ -41,11 +42,28 @@
     color: #475569;
 }
 
+.build-identity-badge-commit-label::before,
+.build-identity-badge-commit-label::after {
+    content: "·";
+    margin: 0 6px;
+    color: #475569;
+}
+
 .build-identity-badge-value {
     overflow: hidden;
     max-width: 320px;
     text-overflow: ellipsis;
     font-weight: 650;
+}
+
+.build-identity-badge-commit-value {
+    color: #94a3b8;
+    font-weight: 650;
+}
+
+.build-identity-badge-commit-label[hidden],
+.build-identity-badge-commit-value[hidden] {
+    display: none;
 }
 
 .build-identity-badge.is-development {
@@ -72,7 +90,8 @@
         font-size: 9px;
     }
 
-    .build-identity-badge-label {
+    .build-identity-badge-label,
+    .build-identity-badge-commit-label {
         font-size: 8px;
     }
 

@@ -14,15 +14,17 @@ function normalizeBuildIdentity(rawIdentity, config = BUILD_IDENTITY_CONFIG) {
         ? BUILD_IDENTITY_MODES.DEVELOPMENT
         : BUILD_IDENTITY_MODES.PRODUCTION;
     const branchName = typeof raw.branchName === "string" ? raw.branchName.trim() : "";
+    const commitId = typeof raw.commitId === "string" ? raw.commitId.trim() : "";
     const versionName = typeof raw.versionName === "string" ? raw.versionName.trim() : "";
 
     if (mode === BUILD_IDENTITY_MODES.DEVELOPMENT && branchName) {
-        return Object.freeze({ mode, value: branchName });
+        return Object.freeze({ mode, value: branchName, commitId });
     }
 
     return Object.freeze({
         mode: BUILD_IDENTITY_MODES.PRODUCTION,
-        value: versionName || config.productionVersionName
+        value: versionName || config.productionVersionName,
+        commitId: ""
     });
 }
 

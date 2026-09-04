@@ -22,6 +22,8 @@ class BuildIdentityBadgeComponent {
         this.rootEl = null;
         this.labelEl = null;
         this.valueEl = null;
+        this.commitLabelEl = null;
+        this.commitValueEl = null;
         this.onResize = () => this.applyLayout();
     }
 
@@ -47,6 +49,8 @@ class BuildIdentityBadgeComponent {
             this.rootEl = existing;
             this.labelEl = existing.querySelector(".build-identity-badge-label");
             this.valueEl = existing.querySelector(".build-identity-badge-value");
+            this.commitLabelEl = existing.querySelector(".build-identity-badge-commit-label");
+            this.commitValueEl = existing.querySelector(".build-identity-badge-commit-value");
             return;
         }
 
@@ -62,13 +66,23 @@ class BuildIdentityBadgeComponent {
         const value = this.documentRef.createElement("span");
         value.className = "build-identity-badge-value";
 
+        const commitLabel = this.documentRef.createElement("span");
+        commitLabel.className = "build-identity-badge-commit-label";
+
+        const commitValue = this.documentRef.createElement("span");
+        commitValue.className = "build-identity-badge-commit-value";
+
         root.appendChild(label);
         root.appendChild(value);
+        root.appendChild(commitLabel);
+        root.appendChild(commitValue);
         parent.appendChild(root);
 
         this.rootEl = root;
         this.labelEl = label;
         this.valueEl = value;
+        this.commitLabelEl = commitLabel;
+        this.commitValueEl = commitValue;
     }
 
     applyLayout() {
@@ -91,13 +105,31 @@ class BuildIdentityBadgeComponent {
         const label = this.i18n && typeof this.i18n.t === "function"
             ? this.i18n.t(labelKey)
             : labelKey;
+        const commitLabel = this.i18n && typeof this.i18n.t === "function"
+            ? this.i18n.t("UI_BUILD_BADGE_COMMIT")
+            : "UI_BUILD_BADGE_COMMIT";
+        const hasCommit = isDevelopment && Boolean(identity.commitId);
 
         this.rootEl.classList.toggle("is-development", isDevelopment);
         this.rootEl.classList.toggle("is-production", !isDevelopment);
+        this.rootEl.classList.toggle("has-commit", hasCommit);
         this.rootEl.dataset.mode = identity.mode;
-        this.rootEl.setAttribute("aria-label", `${label}: ${identity.value}`);
+        this.rootEl.setAttribute(
+            "aria-label",
+            hasCommit
+                ? `${label}: ${identity.value}, ${commitLabel}: ${identity.commitId}`
+                : `${label}: ${identity.value}`
+        );
         this.labelEl.textContent = label;
         this.valueEl.textContent = identity.value;
+        if (this.commitLabelEl) {
+            this.commitLabelEl.textContent = commitLabel;
+            this.commitLabelEl.hidden = !hasCommit;
+        }
+        if (this.commitValueEl) {
+            this.commitValueEl.textContent = hasCommit ? identity.commitId : "";
+            this.commitValueEl.hidden = !hasCommit;
+        }
         this.rootEl.hidden = false;
     }
 
@@ -111,6 +143,8 @@ class BuildIdentityBadgeComponent {
         this.rootEl = null;
         this.labelEl = null;
         this.valueEl = null;
+        this.commitLabelEl = null;
+        this.commitValueEl = null;
     }
 }
 

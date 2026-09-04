@@ -89,11 +89,13 @@ console.log("============================================================");
 
 const development = normalizeBuildIdentity({
     mode: BUILD_IDENTITY_MODES.DEVELOPMENT,
-    branchName: "AGtest260902"
+    branchName: "AGtest260905",
+    commitId: "abc1234"
 });
 assert.deepStrictEqual(development, {
     mode: BUILD_IDENTITY_MODES.DEVELOPMENT,
-    value: "AGtest260902"
+    value: "AGtest260905",
+    commitId: "abc1234"
 });
 
 const production = normalizeBuildIdentity({
@@ -102,13 +104,15 @@ const production = normalizeBuildIdentity({
 });
 assert.deepStrictEqual(production, {
     mode: BUILD_IDENTITY_MODES.PRODUCTION,
-    value: "RELEASE-1"
+    value: "RELEASE-1",
+    commitId: ""
 });
 
 const injectedService = new BuildIdentityService({
     injectedIdentity: {
         mode: BUILD_IDENTITY_MODES.DEVELOPMENT,
-        branchName: "feature/test"
+        branchName: "feature/test",
+        commitId: "def5678"
     },
     fetchFn: async () => {
         throw new Error("injected identity must take priority");
@@ -116,7 +120,8 @@ const injectedService = new BuildIdentityService({
 });
 assert.deepStrictEqual(await injectedService.resolve(), {
     mode: BUILD_IDENTITY_MODES.DEVELOPMENT,
-    value: "feature/test"
+    value: "feature/test",
+    commitId: "def5678"
 });
 
 const endpointService = new BuildIdentityService({
@@ -125,13 +130,15 @@ const endpointService = new BuildIdentityService({
         ok: true,
         json: async () => ({
             mode: BUILD_IDENTITY_MODES.DEVELOPMENT,
-            branchName: "AGtest-endpoint"
+            branchName: "AGtest-endpoint",
+            commitId: "987fedc"
         })
     })
 });
 assert.deepStrictEqual(await endpointService.resolve(), {
     mode: BUILD_IDENTITY_MODES.DEVELOPMENT,
-    value: "AGtest-endpoint"
+    value: "AGtest-endpoint",
+    commitId: "987fedc"
 });
 
 const fallbackService = new BuildIdentityService({
@@ -140,7 +147,8 @@ const fallbackService = new BuildIdentityService({
 });
 assert.deepStrictEqual(await fallbackService.resolve(), {
     mode: BUILD_IDENTITY_MODES.PRODUCTION,
-    value: BUILD_IDENTITY_CONFIG.productionVersionName
+    value: BUILD_IDENTITY_CONFIG.productionVersionName,
+    commitId: ""
 });
 
 const mockDocument = new MockDocument();
@@ -157,7 +165,13 @@ const component = new BuildIdentityBadgeComponent({
     identityService: injectedService,
     documentRef: mockDocument,
     windowRef: mockWindow,
-    i18n: { t: key => key === "UI_BUILD_BADGE_BRANCH" ? "BRANCH" : "VERSION" }
+    i18n: {
+        t: key => ({
+            UI_BUILD_BADGE_BRANCH: "BRANCH",
+            UI_BUILD_BADGE_COMMIT: "COMMIT",
+            UI_BUILD_BADGE_VERSION: "VERSION"
+        })[key] || key
+    }
 });
 
 const resolvedIdentity = await component.mount();
@@ -166,6 +180,9 @@ assert.strictEqual(component.rootEl.hidden, false);
 assert.strictEqual(component.rootEl.dataset.mode, BUILD_IDENTITY_MODES.DEVELOPMENT);
 assert.strictEqual(component.labelEl.textContent, "BRANCH");
 assert.strictEqual(component.valueEl.textContent, "feature/test");
+assert.strictEqual(component.commitLabelEl.textContent, "COMMIT");
+assert.strictEqual(component.commitValueEl.textContent, "def5678");
+assert.strictEqual(component.commitValueEl.hidden, false);
 assert.strictEqual(component.rootEl.style.right, UILayoutConfig.buildIdentityBadge.desktop.right);
 assert.ok(component.rootEl.className.includes("is-development"));
 
@@ -176,17 +193,19 @@ assert.strictEqual(component.rootEl.style.bottom, UILayoutConfig.buildIdentityBa
 
 component.render({
     mode: BUILD_IDENTITY_MODES.PRODUCTION,
-    value: "RELEASE-2"
+    value: "RELEASE-2",
+    commitId: ""
 });
 assert.strictEqual(component.labelEl.textContent, "VERSION");
 assert.strictEqual(component.valueEl.textContent, "RELEASE-2");
+assert.strictEqual(component.commitValueEl.hidden, true);
 assert.ok(component.rootEl.className.includes("is-production"));
 assert.ok(!component.rootEl.className.includes("is-development"));
 
 component.destroy();
 assert.strictEqual(mockDocument.getElementById("buildIdentityBadge"), null);
 
-console.log("✅ Development branch resolution PASS");
+console.log("✅ Development branch / commit resolution PASS");
 console.log("✅ Production version fallback PASS");
 console.log("✅ Desktop / mobile badge layout PASS");
 console.log("✅ Component lifecycle PASS");
