@@ -11,7 +11,7 @@ const WATER_SOURCE_IDS = Object.freeze([
 ]);
 
 const WATER_SOURCE_EXCLUSION_RANGE = 2;
-const WETLAND_EXCLUSION_RANGE = 2;
+const WETLAND_EXCLUSION_RANGE = 1;
 
 export function isWaterSourceResource(resource) {
     return !!resource && WATER_SOURCE_IDS.includes(resource.id);
@@ -44,6 +44,8 @@ export function isWithinWetlandExclusionRange(
         for (let wetlandC = 0; wetlandC < row.length; wetlandC++) {
             if (wetlandR === r && wetlandC === c) continue;
             if (!isWetlandCell(row[wetlandC])) continue;
+            // 湖・オアシスを持つセルは水源距離制限だけを適用し、湿原の直辺隣接禁止から除外する。
+            if (isWaterSourceCell(row[wetlandC])) continue;
             if (Math.abs(wetlandR - r) + Math.abs(wetlandC - c) <= exclusionRange) {
                 return true;
             }

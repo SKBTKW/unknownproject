@@ -319,7 +319,7 @@ class GridEngine {
         let isWetlandTooClose = false;
         const elevationReasons = new Set();
 
-        // 湿原同士はマンハッタン距離2以内へ配置不可。Shape内の構成セル同士にも適用する。
+        // 水源化していない湿原同士は上下左右の直辺隣接のみ不可。Shape内の構成セル同士にも適用する。
         if (isWetland) {
             const wetlandCoords = [];
             for (let dr = 0; dr < rows; dr++) {

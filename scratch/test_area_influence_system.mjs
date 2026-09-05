@@ -97,17 +97,72 @@ assert.strictEqual(blockedOasisEngine.gridEngine.placeShape(1, 2, [[1]], desert)
 assert.notStrictEqual(blockedOasisEngine.state.grid[1][2].socketResource.id, "SOCKET_OASIS", "距離2ではオアシスを生成しない");
 console.log("  ✅ 通常湿原20%、ソケット湿原60%、オアシス25%と距離制約を実配置で確認");
 
-console.log("\n🌿 4. 湿原の距離2以内・地帯化禁止と水源セルの地帯化禁止:");
+console.log("\n🌿 4. 湿原の直辺隣接禁止・水源近傍での湖発見禁止・地帯化禁止:");
 const wetlandAdjacencyEngine = new GameEngine();
 Object.assign(wetlandAdjacencyEngine.state.grid[0][0], {
     placed: true, terrain: wetland, isHQ: false
 });
-const diagonalWetland = wetlandAdjacencyEngine.gridEngine.canPlaceShape(1, 1, [[1]], wetland);
-assert.strictEqual(diagonalWetland.can, false, "マンハッタン距離2の斜め湿原は禁止");
-assert.ok(diagonalWetland.reasons.includes("WETLAND_TOO_CLOSE"));
+Object.assign(wetlandAdjacencyEngine.state.grid[1][2], {
+    placed: true, terrain: plains, isHQ: false
+});
+const orthogonalWetland = wetlandAdjacencyEngine.gridEngine.canPlaceShape(0, 1, [[1]], wetland);
+assert.strictEqual(orthogonalWetland.can, false, "通常湿原同士の直辺隣接は禁止");
+assert.ok(orthogonalWetland.reasons.includes("WETLAND_TOO_CLOSE"));
 
-const distantWetland = wetlandAdjacencyEngine.gridEngine.canPlaceShape(2, 1, [[1]], wetland);
-assert.strictEqual(distantWetland.can, true, "画像の黄色に相当する距離3の湿原は許可");
+const diagonalWetland = wetlandAdjacencyEngine.gridEngine.canPlaceShape(1, 1, [[1]], wetland);
+assert.strictEqual(diagonalWetland.can, true, "別領土へ接続できれば通常湿原の斜め配置は可能");
+
+const axialDistanceTwoWetland = wetlandAdjacencyEngine.gridEngine.canPlaceShape(0, 2, [[1]], wetland);
+assert.strictEqual(axialDistanceTwoWetland.can, true, "通常湿原から直線距離2の配置は可能");
+
+const lakeAdjacentWetlandEngine = new GameEngine();
+Object.assign(lakeAdjacentWetlandEngine.state.grid[0][0], {
+    placed: true,
+    terrain: wetland,
+    socketResource: { id: "SOCKET_LAKE", bonusFood: 2 },
+    isHQ: false
+});
+lakeAdjacentWetlandEngine.state.rng = () => 0;
+const lakeAdjacentWetland = lakeAdjacentWetlandEngine.gridEngine.canPlaceShape(0, 1, [[1]], wetland);
+assert.strictEqual(lakeAdjacentWetland.can, true, "湖を持つ湿原セルには新しい湿原を直辺隣接できる");
+assert.strictEqual(lakeAdjacentWetlandEngine.gridEngine.placeShape(0, 1, [[1]], wetland).success, true);
+assert.notStrictEqual(
+    lakeAdjacentWetlandEngine.state.grid[0][1].socketResource?.id,
+    "SOCKET_LAKE",
+    "配置は成功しても既存湖から距離2以内では新しい湖を発見しない"
+);
+
+const distantDiscoveryEngine = new GameEngine();
+addSource(distantDiscoveryEngine.state, 0, 0, "SOCKET_LAKE");
+distantDiscoveryEngine.state.rng = () => 0;
+assert.strictEqual(distantDiscoveryEngine.gridEngine.placeShape(2, 1, [[1]], wetland).success, true);
+assert.strictEqual(
+    distantDiscoveryEngine.state.grid[2][1].socketResource.id,
+    "SOCKET_LAKE",
+    "既存湖からマンハッタン距離3の湿原は湖を発見できる"
+);
+
+const plainsSocketNearLakeEngine = new GameEngine();
+addSource(plainsSocketNearLakeEngine.state, 0, 0, "SOCKET_LAKE");
+plainsSocketNearLakeEngine.state.grid[0][1].hasSocket = true;
+plainsSocketNearLakeEngine.state.rng = () => 0;
+assert.strictEqual(plainsSocketNearLakeEngine.gridEngine.placeShape(0, 1, [[1]], plains).success, true);
+assert.notStrictEqual(
+    plainsSocketNearLakeEngine.state.grid[0][1].socketResource.id,
+    "SOCKET_LAKE",
+    "既存湖から距離2以内の資源ソケット草原では湖を発見しない"
+);
+
+const plainsSocketDistanceThreeEngine = new GameEngine();
+addSource(plainsSocketDistanceThreeEngine.state, 0, 0, "SOCKET_LAKE");
+plainsSocketDistanceThreeEngine.state.grid[2][1].hasSocket = true;
+plainsSocketDistanceThreeEngine.state.rng = () => 0;
+assert.strictEqual(plainsSocketDistanceThreeEngine.gridEngine.placeShape(2, 1, [[1]], plains).success, true);
+assert.strictEqual(
+    plainsSocketDistanceThreeEngine.state.grid[2][1].socketResource.id,
+    "SOCKET_LAKE",
+    "既存湖からマンハッタン距離3の資源ソケット草原は湖を発見できる"
+);
 
 const multiCellWetlandEngine = new GameEngine();
 const multiCellWetland = multiCellWetlandEngine.gridEngine.canPlaceShape(1, 1, [[1, 1]], wetland);
@@ -156,7 +211,7 @@ for (const [r, c] of [[0, 0], [0, 1], [1, 0], [1, 1]]) {
 waterMergeEngine.state.grid[0][0].socketResource = { id: "SOCKET_LAKE" };
 assert.strictEqual(waterMergeEngine.gridEngine.checkMergePatterns([{ r: 1, c: 1 }]).merge2x2, false);
 assert.strictEqual(Object.keys(waterMergeEngine.state.mergedBlocks).length, 0, "水源セルを含む2x2地帯は生成しない");
-console.log("  ✅ 湿原同士のマンハッタン距離2以内を禁止し、距離3の黄色位置から許可");
+console.log("  ✅ 通常湿原は直辺隣接のみ禁止。水源距離2以内は配置可能だが湖発見0%、距離3から抽選");
 
 console.log("\n🌊 5. 水源効果の非重複:");
 const irrigationEngine = new GameEngine();
