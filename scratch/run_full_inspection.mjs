@@ -40,6 +40,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Step 2 (ゲームロジック検問) で不合格が検出されました。");
         process.exit(1);
     }
+    const trialFoundationOk = await runCommand("node", ["scratch/test_trial_foundation.mjs"]);
+    if (!trialFoundationOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Step 2 (Trial Phase 1骨格検問) で不合格が検出されました。");
+        process.exit(1);
+    }
 
     // 🖥️ Step 3: UIライフサイクル ＆ DOM要素検問
     console.log("\n🖥️  [STEP 3/5] UIライフサイクル ＆ DOM構築・イベント検問 (Node.js)...");
@@ -70,6 +75,7 @@ async function main() {
     console.log(`✅ マスター統合検問 PASS (所要時間: ${elapsed}s)`);
     console.log("   ✅ 仕様書検証コマンド PASS");
     console.log("   ✅ ゲームロジック検証コマンド PASS");
+    console.log("   ✅ Trial Phase 1骨格検証コマンド PASS");
     console.log("   ✅ UIライフサイクル検証コマンド PASS");
     console.log("   ✅ ビルド識別バッジ検証コマンド PASS");
     console.log("   ✅ 食料決済・不足補填検証コマンド PASS");

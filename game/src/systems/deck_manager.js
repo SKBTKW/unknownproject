@@ -1279,6 +1279,7 @@ class DeckManager {
         } else if (cId === "CMD_WETLAND_RECLAMATION") {
             // 🌾 干拓: コスト 🧱-15, 🔥-1 (湖以外の湿原1マスを干拓地へ永久転換)
             let reclaimed = false;
+            let reclaimedCoord = null;
             if (this.state.grid) {
                 for (let r = 0; r < this.state.grid.length && !reclaimed; r++) {
                     for (let c = 0; c < this.state.grid[r].length && !reclaimed; c++) {
@@ -1305,9 +1306,17 @@ class DeckManager {
                                     isArtificialTerrain: true
                                 };
                                 reclaimed = true;
+                                reclaimedCoord = { r, c };
                             }
                         }
                     }
+                }
+            }
+            const gridEngine = this.engine?.gridEngine || this.state?.gridEngine;
+            if (reclaimedCoord && gridEngine && typeof gridEngine.checkMergePatterns === "function") {
+                const mergeResult = gridEngine.checkMergePatterns([reclaimedCoord]);
+                if (mergeResult?.merge2x2 && typeof gridEngine.checkNewMergeLinks === "function") {
+                    gridEngine.checkNewMergeLinks();
                 }
             }
             this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🌾", description: cDesc, category: "CARD_EFFECT" });

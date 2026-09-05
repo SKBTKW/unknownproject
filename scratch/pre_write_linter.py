@@ -134,7 +134,8 @@ def main():
     active_dirs = [
         os.path.join(game_dir, "src", "ui"),
         os.path.join(game_dir, "src", "systems"),
-        os.path.join(game_dir, "src", "core")
+        os.path.join(game_dir, "src", "core"),
+        os.path.join(game_dir, "src", "trial")
     ]
     target_files = [
         os.path.join(game_dir, "index.html"),
@@ -143,9 +144,10 @@ def main():
     ]
     for d in active_dirs:
         if os.path.exists(d):
-            for f in os.listdir(d):
-                if f.endswith(".js") and "backup" not in f:
-                    target_files.append(os.path.join(d, f))
+            for root, _, files in os.walk(d):
+                for f in files:
+                    if f.endswith(".js") and "backup" not in f:
+                        target_files.append(os.path.join(root, f))
 
     target_files.sort()
     total_violations = 0

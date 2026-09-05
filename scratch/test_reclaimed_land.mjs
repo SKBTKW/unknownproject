@@ -7,6 +7,7 @@ import { I18n } from "../game/src/i18n.js";
 import { ProductionCalculator } from "../game/src/systems/production_calculator.js";
 import { serializeGameState } from "../game/src/core/state_serializer.js";
 import { getZoneCategory } from "../game/src/core/merge_rules.js";
+import { TrialTerrainEffectResolver } from "../game/src/trial/systems/trial_terrain_effect_resolver.js";
 
 console.log("============================================================");
 console.log("🌾 [Reclaimed Land (干拓地) Zone Compatibility Tests]");
@@ -108,9 +109,43 @@ assert.strictEqual(tidAfter.includes("PLAINS"), false);
 console.log("  ✅ PASS: E1_RECLAIMED_LAND は WETLAND/PLAINS のどちらにも属さないため湖発見判定は走りません！");
 
 // ------------------------------------------------------------
-// G. 草原と干拓地の混在で平地系地帯が成立する
+// G. 実際の《干拓》コマンドだけで混成地帯が成立する
 // ------------------------------------------------------------
-console.log("\n🧪 Test G: 草原3＋干拓地1の混成地帯:");
+console.log("\n🧪 Test G: 《干拓》による草原3＋干拓地1の混成地帯:");
+const commandMergeEngine = new GameEngine();
+commandMergeEngine.state.grid = commandMergeEngine.gridEngine.initGrid(5);
+for (const [r, c] of [[0, 0], [0, 1], [1, 0]]) {
+    Object.assign(commandMergeEngine.state.grid[r][c], {
+        placed: true,
+        isHQ: false,
+        terrain: { id: "GL1_PLAINS", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", e: 1, gl: 1 }
+    });
+}
+Object.assign(commandMergeEngine.state.grid[1][1], {
+    placed: true,
+    isHQ: false,
+    terrain: { id: "E0_WETLAND", terrainId: "E0_WETLAND", nameKey: "TERRAIN_WETLAND", e: 0, gl: 1 }
+});
+const commandMergeResult = commandMergeEngine.deckManager.playCommandCard(cmdReclamation, { type: "OFFERING", index: -1 });
+assert.strictEqual(commandMergeResult.success, true, "実際の《干拓》コマンドが成功すること");
+assert.strictEqual(Object.keys(commandMergeEngine.state.mergedBlocks).length, 1, "《干拓》直後に混成地帯が自動成立すること");
+assert.strictEqual(commandMergeEngine.state.grid[1][1].merged, true, "干拓したセルが地帯へ参加すること");
+assert.strictEqual(commandMergeEngine.state.grid[1][1].terrain.terrainId, "E1_RECLAIMED_LAND", "自動地帯化後も干拓地IDを保持すること");
+const commandGroup = Object.values(commandMergeEngine.state.mergedBlocks)[0];
+assert.strictEqual(commandGroup.zoneCategory, "PLAINS", "実コマンドで成立した混成地帯がPLAINS系であること");
+const commandRewardState = { food: commandMergeEngine.state.food, ember: commandMergeEngine.state.ember };
+commandMergeEngine.gridEngine.checkMergePatterns([{ r: 1, c: 1 }]);
+assert.deepStrictEqual(
+    { food: commandMergeEngine.state.food, ember: commandMergeEngine.state.ember },
+    commandRewardState,
+    "実コマンド後の再判定で地帯報酬が二重発火しないこと"
+);
+console.log("  ✅ PASS: 《干拓》直後に既存GridEngine経由で平地系地帯が成立します。");
+
+// ------------------------------------------------------------
+// H. 地帯互換Resolver単体でも草原と干拓地の混在が成立する
+// ------------------------------------------------------------
+console.log("\n🧪 Test H: 地帯互換Resolverによる草原3＋干拓地1:");
 const engineG = new GameEngine();
 engineG.state.grid = engineG.gridEngine.initGrid(5);
 // (0,0)〜(1,1) の 2x2 領域に 草原3マス ＋ 干拓地1マス を配置
@@ -128,9 +163,9 @@ assert.strictEqual(engineG.state.mergedBlocks[mixedGroupId].yieldMultiplier, 1.2
 console.log("  ✅ PASS: 個別terrainIdを保持したまま平地系地帯が成立します。");
 
 // ------------------------------------------------------------
-// H. 干拓地 4 マスによる 2x2 MERGE の正常判定
+// I. 干拓地 4 マスによる 2x2 MERGE の正常判定
 // ------------------------------------------------------------
-console.log("\n🧪 Test H: 干拓地 4マスによる 2x2 MERGE 判定:");
+console.log("\n🧪 Test I: 干拓地 4マスによる 2x2 MERGE 判定:");
 const engineH = new GameEngine();
 engineH.state.grid = engineH.gridEngine.initGrid(5);
 // (0,0)〜(1,1) の 2x2 領域に 干拓地 4マス を配置
@@ -248,13 +283,45 @@ secondCoords.forEach(([r, c]) => {
 sameZoneLinkEngine.state.mergedBlocks[secondPlainsGroup] = { groupId: secondPlainsGroup, terrainId: "GL1_PLAINS", zoneCategory: "PLAINS", mergeType: "2x2", cells: secondCoords.map(([r, c]) => ({ r, c })), yieldMultiplier: 1.2 };
 assert.strictEqual(sameZoneLinkEngine.gridEngine.checkNewMergeLinks().count, 0, "草原系同士を異属性連携として扱わないこと");
 
+// 実際のGameEngineトランザクション経路では、《干拓》と派生地帯化をまとめてUndoする。
+const commandUndoEngine = new GameEngine();
+commandUndoEngine.state.grid = commandUndoEngine.gridEngine.initGrid(5);
+for (const [r, c] of [[0, 0], [0, 1], [1, 0]]) {
+    Object.assign(commandUndoEngine.state.grid[r][c], { placed: true, isHQ: false, terrain: { ...plainsTerrain } });
+}
+Object.assign(commandUndoEngine.state.grid[1][1], {
+    placed: true,
+    isHQ: false,
+    terrain: { id: "E0_WETLAND", terrainId: "E0_WETLAND", nameKey: "TERRAIN_WETLAND", e: 0, gl: 1 }
+});
+assert.strictEqual(commandUndoEngine.playCommandCard(cmdReclamation).success, true, "GameEngine経由の《干拓》が成功すること");
+assert.strictEqual(commandUndoEngine.state.grid[1][1].terrain.terrainId, "E1_RECLAIMED_LAND");
+assert.strictEqual(commandUndoEngine.state.grid[1][1].merged, true);
+assert.strictEqual(commandUndoEngine.undoLastAction().success, true, "《干拓》アクションのUndoが成功すること");
+assert.strictEqual(commandUndoEngine.state.grid[1][1].terrain.terrainId, "E0_WETLAND", "Undoで干拓前の湿原へ戻ること");
+assert.strictEqual(commandUndoEngine.state.grid[1][1].merged, false, "Undoで派生地帯化も取り消されること");
+assert.strictEqual(Object.keys(commandUndoEngine.state.mergedBlocks).length, 0, "Undoで混成地帯レコードも除去されること");
+
+// Trial Phase 1では干拓地は迎撃可能な標準E1で、湿原由来の補正を生成しない。
+const trialTerrainResolver = new TrialTerrainEffectResolver();
+const reclaimedTrialResult = trialTerrainResolver.resolve({
+    interceptCell: { cellId: "reclaimed", terrainId: "E1_RECLAIMED_LAND", elevation: 1 },
+    approachCell: { cellId: "plains", terrainId: "GL1_PLAINS", elevation: 1 }
+});
+assert.strictEqual(reclaimedTrialResult.canIntercept, true, "Trialで干拓地は迎撃可能であること");
+assert.strictEqual(reclaimedTrialResult.modifiers.length, 0, "Trialで干拓地に特殊地形補正がないこと");
+const reclaimedApproachResult = trialTerrainResolver.resolve({
+    interceptCell: { cellId: "plains", terrainId: "GL1_PLAINS", elevation: 1 },
+    approachCell: { cellId: "reclaimed", terrainId: "E1_RECLAIMED_LAND", elevation: 1 }
+});
+assert.strictEqual(reclaimedApproachResult.modifiers.length, 0, "干拓地通過に湿原由来の0.8倍が残らないこと");
 assert.strictEqual(getZoneCategory("GL1_PLAINS"), "PLAINS", "旧草原データをPLAINSへ正規化すること");
 assert.strictEqual(getZoneCategory("E1_RECLAIMED_LAND"), "PLAINS", "旧干拓地データをPLAINSへ正規化すること");
 
 // ------------------------------------------------------------
 // I. I18N 名称 ＆ 辞書キーの検証
 // ------------------------------------------------------------
-console.log("\n🧪 Test I: I18N 辞書の登録検証:");
+console.log("\n🧪 Test J: I18N 辞書の登録検証:");
 assert.strictEqual(I18n.t("TERRAIN_RECLAIMED_LAND"), "干拓地", "日本語名称が『干拓地』であること");
 I18n.setLanguage("en");
 assert.strictEqual(I18n.t("TERRAIN_RECLAIMED_LAND"), "Reclaimed Land", "英語名称が『Reclaimed Land』であること");
@@ -264,7 +331,7 @@ console.log("  ✅ PASS: I18N 辞書に日英ともに干拓地が正しく登�
 // ------------------------------------------------------------
 // J. 既存草原・湿原・丘陵の処理健全性
 // ------------------------------------------------------------
-console.log("\n🧪 Test J: 既存地形データの保全確認:");
+console.log("\n🧪 Test K: 既存地形データの保全確認:");
 assert.strictEqual(LAND_SYSTEM_DATA.terrains["GL1_PLAINS"].baseYieldsPerTile.food, 4, "草原の食料4が保全されていること");
 assert.strictEqual(LAND_SYSTEM_DATA.terrains["E0_WETLAND"].baseYieldsPerTile.food, 2, "湿原の食料2が保全されていること");
 assert.strictEqual(LAND_SYSTEM_DATA.terrains["E2_HILL"].baseYieldsPerTile.food, 2, "丘陵の食料2が保全されていること");
