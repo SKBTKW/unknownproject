@@ -40,7 +40,28 @@
         "defense": 0,
         "mystic": 0
       },
-      "category": "BASE"
+      "category": "BASE",
+      "zoneCategory": "PLAINS",
+      "trialTerrainCategory": "STANDARD_E1"
+    },
+    "E1_RECLAIMED_LAND": {
+      "id": "E1_RECLAIMED_LAND",
+      "terrainId": "E1_RECLAIMED_LAND",
+      "nameKey": "TERRAIN_RECLAIMED_LAND",
+      "gl": 1,
+      "e": 1,
+      "baseYieldsPerTile": {
+        "food": 4,
+        "material": 1,
+        "wood": 1,
+        "defense": 0,
+        "mystic": 0
+      },
+      "category": "BASE",
+      "zoneCategory": "PLAINS",
+      "trialTerrainCategory": "STANDARD_E1",
+      "isSpecialBlock": true,
+      "isArtificialTerrain": true
     },
     "GL2_FOREST": {
       "id": "GL2_FOREST",
@@ -176,7 +197,7 @@
       { "id": "SOCKET_GREAT_TREE", "nameKey": "SOCKET_GREAT_TREE", "category": "CAT_WOOD", "icon": "🌳", "weight": 55, "bonusYields": { "food": 0, "material": 2, "wood": 2, "defense": 0, "mystic": 1 } },
       { "id": "SOCKET_TREE_NUTS", "nameKey": "SOCKET_TREE_NUTS", "category": "CAT_GATHERING", "icon": "🍎", "weight": 100, "bonusYields": { "food": 2, "material": 0, "wood": 0, "defense": 0, "mystic": 0 } },
       { "id": "SOCKET_MEDICINAL_MUSHROOM", "nameKey": "SOCKET_MEDICINAL_MUSHROOM", "category": "CAT_FUNGI", "icon": "🍄", "weight": 65, "bonusYields": { "food": 1, "material": 0, "wood": 0, "defense": 0, "mystic": 1 } },
-      { "id": "SOCKET_ELK", "nameKey": "SOCKET_ELK", "category": "CAT_HUNTING", "icon": "🐾", "weight": 50, "bonusYields": { "food": 2, "material": 0, "wood": 0, "defense": 1, mystic: 0 } },
+      { "id": "SOCKET_ELK", "nameKey": "SOCKET_ELK", "category": "CAT_HUNTING", "icon": "🐾", "weight": 50, "bonusYields": { "food": 2, "material": 0, "wood": 0, "defense": 1, "mystic": 0 } },
       { "id": "SOCKET_SACRED_TREE", "nameKey": "SOCKET_SACRED_TREE", "category": "CAT_SPECIAL_NATURE", "icon": "💎", "weight": 25, "bonusYields": { "food": 0, "material": 0, "wood": 0, "defense": 0, "mystic": 2 } }
     ],
     "E2_WASTELAND": [

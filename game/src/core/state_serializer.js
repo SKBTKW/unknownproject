@@ -37,6 +37,8 @@ export function serializeGameState(state) {
                     searched: !!cell.searched,
                     placementGroupId: cell.placementGroupId || null,
                     mergeGroupId: cell.mergeGroupId || null,
+                    merged: !!cell.merged,
+                    mergeType: cell.mergeType || null,
                     cachedSocketSeeds: cell.cachedSocketSeeds
                         ? JSON.parse(JSON.stringify(cell.cachedSocketSeeds))
                         : {},
@@ -45,6 +47,17 @@ export function serializeGameState(state) {
                         terrainId: cell.terrain.terrainId || null,
                         nameKey: cell.terrain.nameKey || null,
                         category: cell.terrain.category || null,
+                        zoneCategory: cell.terrain.zoneCategory || null,
+                        trialTerrainCategory: cell.terrain.trialTerrainCategory || null,
+                        e: Number.isFinite(cell.terrain.e) ? cell.terrain.e : null,
+                        gl: Number.isFinite(cell.terrain.gl) ? cell.terrain.gl : null,
+                        food: Number.isFinite(cell.terrain.food) ? cell.terrain.food : null,
+                        wood: Number.isFinite(cell.terrain.wood) ? cell.terrain.wood : null,
+                        material: Number.isFinite(cell.terrain.material) ? cell.terrain.material : null,
+                        defense: Number.isFinite(cell.terrain.defense) ? cell.terrain.defense : null,
+                        mystic: Number.isFinite(cell.terrain.mystic) ? cell.terrain.mystic : null,
+                        isSpecialBlock: !!cell.terrain.isSpecialBlock,
+                        isArtificialTerrain: !!cell.terrain.isArtificialTerrain,
                         shape: cell.terrain.shape ? JSON.parse(JSON.stringify(cell.terrain.shape)) : null,
                         yields: cell.terrain.yields ? { ...cell.terrain.yields } : null,
                         baseYieldsPerTile: cell.terrain.baseYieldsPerTile ? { ...cell.terrain.baseYieldsPerTile } : null
@@ -133,6 +146,10 @@ export function serializeGameState(state) {
         reserveSlots: serializedReserve,
         cardCooldowns: serializedCooldowns,
         consumedUniqueCards: serializedConsumedUniques,
+        mergedBlocks: state.mergedBlocks
+            ? JSON.parse(JSON.stringify(state.mergedBlocks))
+            : {},
+        mergeLinks: Array.from(state.mergeLinks || []).sort(),
         stage: serializedStage
     };
 }

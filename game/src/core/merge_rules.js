@@ -9,6 +9,38 @@ const TRUE_MERGE_TYPES = Object.freeze([
     "T_SHAPE"
 ]);
 
+const ZONE_CATEGORIES = Object.freeze({
+    PLAINS: "PLAINS"
+});
+
+function resolveTerrainId(terrainOrId) {
+    if (typeof terrainOrId === "string") return terrainOrId;
+    if (!terrainOrId) return null;
+    return terrainOrId.terrainId || terrainOrId.id || null;
+}
+
+/**
+ * 土地固有IDとは独立した地帯化互換カテゴリを返す。
+ * 明示データを正本とし、旧セーブ・簡略テストデータには既知IDの互換fallbackを適用する。
+ */
+function getZoneCategory(terrainOrId) {
+    if (terrainOrId && typeof terrainOrId === "object" && terrainOrId.zoneCategory) {
+        return terrainOrId.zoneCategory;
+    }
+
+    const terrainId = resolveTerrainId(terrainOrId);
+    if (terrainId === "GL1_PLAINS" || terrainId === "E1_RECLAIMED_LAND") {
+        return ZONE_CATEGORIES.PLAINS;
+    }
+    return terrainId;
+}
+
+function areTerrainsZoneCompatible(terrainA, terrainB) {
+    const categoryA = getZoneCategory(terrainA);
+    const categoryB = getZoneCategory(terrainB);
+    return categoryA !== null && categoryA === categoryB;
+}
+
 function isCompletedMergeGroup(state, groupId) {
     if (!state || groupId === null || groupId === undefined) return false;
     const group = state.mergedBlocks && state.mergedBlocks[groupId];
@@ -24,10 +56,12 @@ function isTrueMergedCell(state, cell) {
 
 function resolveMergeTerrainAttribute(state, groupId, fallbackCell = null) {
     const group = state && state.mergedBlocks && state.mergedBlocks[groupId];
-    if (group && group.terrainId) return group.terrainId;
+    if (group && (group.zoneCategory || group.terrainId)) {
+        return getZoneCategory(group.zoneCategory || group.terrainId);
+    }
 
     const terrain = fallbackCell && fallbackCell.terrain;
-    return terrain ? (terrain.terrainId || terrain.id || null) : null;
+    return getZoneCategory(terrain);
 }
 
 function haveDifferentMergeTerrainAttributes(state, groupIdA, groupIdB, cellA = null, cellB = null) {
@@ -42,6 +76,9 @@ function getMergeLinkKey(groupIdA, groupIdB) {
 
 export {
     TRUE_MERGE_TYPES,
+    ZONE_CATEGORIES,
+    areTerrainsZoneCompatible,
+    getZoneCategory,
     getMergeLinkKey,
     haveDifferentMergeTerrainAttributes,
     isCompletedMergeGroup,

@@ -1299,6 +1299,8 @@ class DeckManager {
                                     defense: 0,
                                     mystic: 0,
                                     category: "BASE",
+                                    zoneCategory: "PLAINS",
+                                    trialTerrainCategory: "STANDARD_E1",
                                     isSpecialBlock: true,
                                     isArtificialTerrain: true
                                 };

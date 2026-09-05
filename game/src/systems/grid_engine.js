@@ -4,6 +4,8 @@
    ============================================================= */
 
 import {
+    areTerrainsZoneCompatible,
+    getZoneCategory,
     getMergeLinkKey,
     haveDifferentMergeTerrainAttributes,
     isTrueMergedCell
@@ -426,6 +428,7 @@ class GridEngine {
             // 🔒 3. 同属性 2×2 マージ直接面隣接禁止ルール
             if (!isOutOfBounds && !isAlreadyPlaced && !isWetland) {
                 const targetTid = terrain ? (terrain.terrainId || terrain.id) : null;
+                const targetZoneCategory = getZoneCategory(terrain);
                 const placingCells = [];
                 for (let dr = 0; dr < rows; dr++) {
                     for (let dc = 0; dc < cols; dc++) {
@@ -439,13 +442,26 @@ class GridEngine {
                     if (vr < 0 || vr >= size || vc < 0 || vc >= size) return null;
                     const isPlacing = placingCells.some(p => p.r === vr && p.c === vc);
                     if (isPlacing) {
-                        return { placed: true, isHQ: false, terrainId: targetTid, isVirtualPlacing: true };
+                        return {
+                            placed: true,
+                            isHQ: false,
+                            terrainId: targetTid,
+                            zoneCategory: targetZoneCategory,
+                            isVirtualPlacing: true
+                        };
                     }
                     const realCell = this.state.grid[vr][vc];
                     if (realCell && realCell.placed && !realCell.isHQ && realCell.terrain) {
                         const tid = realCell.terrain.terrainId || realCell.terrain.id;
                         const isMerged = isTrueMergedCell(this.state, realCell);
-                        return { placed: true, isHQ: false, terrainId: tid, isMerged, mergeGroupId: realCell.mergeGroupId };
+                        return {
+                            placed: true,
+                            isHQ: false,
+                            terrainId: tid,
+                            zoneCategory: getZoneCategory(realCell.terrain),
+                            isMerged,
+                            mergeGroupId: realCell.mergeGroupId
+                        };
                     }
                     return null;
                 };
@@ -459,10 +475,10 @@ class GridEngine {
                         const c11 = getVirtualCell(topR + 1, leftC + 1);
 
                         if (c00 && c01 && c10 && c11 &&
-                            c00.terrainId === targetTid &&
-                            c01.terrainId === targetTid &&
-                            c10.terrainId === targetTid &&
-                            c11.terrainId === targetTid) {
+                            c00.zoneCategory === targetZoneCategory &&
+                            c01.zoneCategory === targetZoneCategory &&
+                            c10.zoneCategory === targetZoneCategory &&
+                            c11.zoneCategory === targetZoneCategory) {
 
                             const includesNewPlacing = (c00.isVirtualPlacing || c01.isVirtualPlacing || c10.isVirtualPlacing || c11.isVirtualPlacing);
                             if (includesNewPlacing) {
@@ -477,10 +493,9 @@ class GridEngine {
                                     if (pr >= 0 && pr < size && pc >= 0 && pc < size) {
                                         const realNeighbor = this.state.grid[pr][pc];
                                         if (realNeighbor && realNeighbor.placed && !realNeighbor.isHQ && realNeighbor.terrain) {
-                                            const nTid = realNeighbor.terrain.terrainId || realNeighbor.terrain.id;
                                             const isNeighborMerged = isTrueMergedCell(this.state, realNeighbor);
 
-                                            if (nTid === targetTid && isNeighborMerged) {
+                                            if (areTerrainsZoneCompatible(realNeighbor.terrain, terrain) && isNeighborMerged) {
                                                 hasMergedAdjacencyConflict = true;
                                                 break;
                                             }
@@ -930,7 +945,8 @@ class GridEngine {
                 );
                 if (allPlaced) {
                     const firstBaseId = c1.terrain ? (c1.terrain.terrainId || c1.terrain.id) : null;
-                    const sameTerrain = cells.every(cell => cell.terrain && (cell.terrain.terrainId || cell.terrain.id) === firstBaseId);
+                    const zoneCategory = getZoneCategory(c1.terrain);
+                    const sameTerrain = cells.every(cell => areTerrainsZoneCompatible(cell.terrain, c1.terrain));
 
                     if (sameTerrain && firstBaseId) {
                         const groupId = `merge_${this.state.mergeGroupCounter++}`;
@@ -944,14 +960,15 @@ class GridEngine {
                         this.state.mergedBlocks[groupId] = {
                             groupId: groupId,
                             terrainId: firstBaseId,
-                            nameKey: c1.terrain.nameKey,
+                            zoneCategory,
+                            nameKey: zoneCategory === "PLAINS" ? "TERRAIN_PLAINS" : c1.terrain.nameKey,
                             mergeType: "2x2",
                             cells: cells.map(cell => ({ r: cell.r, c: cell.c })),
                             yieldMultiplier: 1.20,
                             createdTurn: this.state.turn
                         };
 
-                        const tid = firstBaseId.toUpperCase();
+                        const tid = String(zoneCategory || firstBaseId).toUpperCase();
                         let bonusFood = 0, bonusWood = 0, bonusMystic = 0, bonusEmber = 1;
 
                         if (tid.includes("PLAINS")) {
@@ -988,7 +1005,7 @@ class GridEngine {
                         textParts.push(`🔥+${bonusEmber}`);
                         const bText = textParts.join(" ");
 
-                        const tName = I18n.t(c1.terrain.nameKey);
+                        const tName = I18n.t(zoneCategory === "PLAINS" ? "TERRAIN_PLAINS" : c1.terrain.nameKey);
                         const toastMsg = I18n.t("TOAST_MERGE_2X2", { text: bText });
                         if (typeof this.state.addLog === 'function') {
                             this.state.addLog(I18n.t("LOG_MERGE_2X2_COMPLETE", { name: tName, bonus: bText }));
