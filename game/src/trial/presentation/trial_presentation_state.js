@@ -50,7 +50,9 @@ export class TrialPresentationState {
                 phase: modifier.phase,
                 priority: modifier.priority || 0,
                 before: modifier.before,
-                after: modifier.after
+                after: modifier.after,
+                interceptElevation: modifier.interceptElevation,
+                approachElevation: modifier.approachElevation
             })),
             prediction: { ...result.prediction }
         };

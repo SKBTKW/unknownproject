@@ -63,12 +63,13 @@ export class TrialInterceptionPreviewComponent {
             return `<section class="trial-interception-preview is-forbidden"><strong>${forbiddenMessage}</strong></section>`;
         }
 
-        const tagsHtml = renderModifierTags(I18n, preview.modifierRows);
-        const humanRows = preview.modifierRows
+        const modifierRows = preview.modifierRows || [];
+        const tagsHtml = renderModifierTags(I18n, modifierRows);
+        const humanRows = modifierRows
             .filter(row => row.target === MODIFIER_TARGETS.HUMAN_INTERCEPTION)
             .map(row => modifierRow(I18n, row))
             .join("");
-        const enemyRows = preview.modifierRows
+        const enemyRows = modifierRows
             .filter(row => row.target === MODIFIER_TARGETS.ENEMY_SUPPRESSION)
             .map(row => modifierRow(I18n, row))
             .join("");

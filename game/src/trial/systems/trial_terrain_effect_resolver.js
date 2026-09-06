@@ -94,16 +94,21 @@ export class TrialTerrainEffectResolver {
 
         const interceptElevation = context.interceptCell?.elevation;
         const approachElevation = context.approachCell?.elevation;
-        if (Number.isFinite(interceptElevation) && Number.isFinite(approachElevation) && interceptElevation !== approachElevation) {
+        const isWetlandToPlains = (approachElevation === 0 && interceptElevation === 1);
+        if (!isWetlandToPlains && Number.isFinite(interceptElevation) && Number.isFinite(approachElevation) && interceptElevation !== approachElevation) {
             const target = interceptElevation > approachElevation
                 ? MODIFIER_TARGETS.HUMAN_INTERCEPTION
                 : MODIFIER_TARGETS.ENEMY_SUPPRESSION;
-            modifiers.push(multiplierModifier(
-                TRIAL_TERRAIN_EFFECTS.HIGH_GROUND,
-                target,
-                this.config.highGroundMultiplier,
-                20
-            ));
+            modifiers.push({
+                ...multiplierModifier(
+                    TRIAL_TERRAIN_EFFECTS.HIGH_GROUND,
+                    target,
+                    this.config.highGroundMultiplier,
+                    20
+                ),
+                interceptElevation,
+                approachElevation
+            });
         }
 
         for (const modifier of modifiers.filter(item => item.source !== deployment?.id)) {
