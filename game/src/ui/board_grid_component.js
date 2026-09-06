@@ -1,6 +1,7 @@
 import { boardCameraSystem } from './board_camera_system.js';
 import { ElevationVisualService } from './elevation_visual_service.js';
 import { AreaInfluenceVisualService } from './area_influence_visual_service.js';
+import { isWaterSourceInfluence } from '../core/lake_rules.js';
 
 /**
  * 🗺️ BoardGridComponent (盤面グリッド ＆ セル描画・配置プレビュー・マージ演出専門コンポーネント)
@@ -113,8 +114,10 @@ export class BoardGridComponent {
                 if (trialCellState?.canIntercept) cellEl.classList.add("trial-interception-candidate");
 
                 const isHQVic = (typeof this.state.isHQVicinity === "function") ? this.state.isHQVicinity(r, c) : false;
+                const isLakeVic = (typeof this.state.isWaterSourceInfluence === "function")
+                    ? this.state.isWaterSourceInfluence(r, c)
+                    : isWaterSourceInfluence(this.state, r, c);
                 const lakeDirClass = this.getLakeDirectionClass(r, c, lakeCoords);
-                const isLakeVic = !!lakeDirClass;
 
                 let topGroupSame = false;
                 let leftGroupSame = false;
@@ -237,24 +240,24 @@ export class BoardGridComponent {
                 } else if (cellData.hasSocket) {
                     cellEl.classList.add("socket-unopened");
                     if (isHQVic) {
-                        cellEl.classList.add("hq-vicinity-unplaced");
+                        cellEl.classList.add("influence-hq-vicinity", "hq-vicinity-unplaced");
                         const dirClass = this.getHQDirectionClass(r, c);
                         if (dirClass) cellEl.classList.add(dirClass);
                     }
                     if (isLakeVic) {
-                        cellEl.classList.add("lake-vicinity-unplaced");
-                        cellEl.classList.add(lakeDirClass);
+                        cellEl.classList.add("influence-lake", "lake-vicinity-unplaced");
+                        if (lakeDirClass) cellEl.classList.add(lakeDirClass);
                     }
                     cellEl.innerHTML = `<span class="socket-star-icon">★</span>`;
                 } else {
                     if (isHQVic) {
-                        cellEl.classList.add("hq-vicinity-unplaced");
+                        cellEl.classList.add("influence-hq-vicinity", "hq-vicinity-unplaced");
                         const dirClass = this.getHQDirectionClass(r, c);
                         if (dirClass) cellEl.classList.add(dirClass);
                     }
                     if (isLakeVic) {
-                        cellEl.classList.add("lake-vicinity-unplaced");
-                        cellEl.classList.add(lakeDirClass);
+                        cellEl.classList.add("influence-lake", "lake-vicinity-unplaced");
+                        if (lakeDirClass) cellEl.classList.add(lakeDirClass);
                     }
                 }
 
@@ -417,6 +420,9 @@ export class BoardGridComponent {
                 emberComp.update(this.state);
             }
         }
+
+        // 🌐 盤面全体の影響圏オーバーレイ（湖 ＆ 本営近郊の地理的境界線）を描画
+        AreaInfluenceVisualService.renderBoardOverlay(boardEl, this.state, size);
 
         // 📷 盤面カメラ連携
         if (typeof boardCameraSystem !== "undefined" && boardCameraSystem && typeof boardCameraSystem.init === "function") {

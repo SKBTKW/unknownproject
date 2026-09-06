@@ -119,6 +119,24 @@ export function hasAdjacentWaterSource(state, r, c) {
     return false;
 }
 
+/**
+ * 🌊 指定座標が水源影響圏（水源セル自身または周囲8マス）かを判定する純粋 SSOT ヘルパー
+ * @param {Object} state - GameState または { grid: Array }
+ * @param {number} r - 行インデックス
+ * @param {number} c - 列インデックス
+ * @returns {boolean}
+ */
+export function isWaterSourceInfluence(state, r, c) {
+    if (!state) return false;
+    const grid = Array.isArray(state.grid) ? state.grid : (Array.isArray(state) ? state : null);
+    if (!grid) return false;
+    const row = grid[r];
+    if (!Array.isArray(row)) return false;
+    const targetCell = row[c];
+    if (isWaterSourceCell(targetCell)) return true;
+    return hasAdjacentWaterSource({ grid }, r, c);
+}
+
 // 既存importとの互換。意味は新仕様どおり「湖+オアシス」の水源合計へ更新する。
 export const countPlacedLakes = countPlacedWaterSources;
 export const getLakeSpawnRateMultiplier = getWaterSourceSpawnRateMultiplier;

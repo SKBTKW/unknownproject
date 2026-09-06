@@ -5,6 +5,7 @@ import { DirectiveSystem } from './systems/directive_system.js';
 import { ProductionCalculator } from './systems/production_calculator.js';
 import { MaintenanceFallbackSystem } from './systems/maintenance_fallback_system.js';
 import { rotateShapeMatrix } from './core/placement_geometry.js';
+import { isWaterSourceInfluence } from './core/lake_rules.js';
 
 class GameState {
     constructor(dependencies = {}) {
@@ -219,6 +220,11 @@ class GameState {
             if (this.gridEngine) return this.gridEngine.isHQVicinity(r, c);
             if (r === 2 && c === 2) return false;
             return Math.abs(r - 2) <= 1 && Math.abs(c - 2) <= 1;
+        }
+
+        isWaterSourceInfluence(r, c) {
+            if (this.gridEngine) return this.gridEngine.isWaterSourceInfluence(r, c);
+            return isWaterSourceInfluence(this, r, c);
         }
 
         countPlacedTiles() {

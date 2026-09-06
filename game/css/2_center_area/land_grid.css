@@ -149,16 +149,19 @@ body.is-camera-dragging-global * {
 
 /* 🏁 可変サイズ対応グリッドボード (行・列・外枠の完全等間隔 4px ＆ 独立角丸タイル吸着) */
 .grid-with-headers {
+    position: relative;
     --cell-size: 104px;
     --header-size: 44px;
+    --grid-gap: 4px;
+    --grid-padding: 4px;
     display: grid;
     grid-template-columns: var(--header-size, 44px) repeat(var(--board-size, 5), var(--cell-size, 104px));
     grid-template-rows: var(--header-size, 44px) repeat(var(--board-size, 5), var(--cell-size, 104px));
-    gap: 4px; /* 行間・列間を 4px に統一 */
-    row-gap: 4px;
-    column-gap: 4px;
+    gap: var(--grid-gap, 4px); /* 行間・列間を 4px に統一 */
+    row-gap: var(--grid-gap, 4px);
+    column-gap: var(--grid-gap, 4px);
     background: #11141d;
-    padding: 4px; /* 外枠パディング 4px */
+    padding: var(--grid-padding, 4px); /* 外枠パディング 4px */
     border-radius: 10px;
     border: 2px solid #232838;
     user-select: none;
@@ -738,7 +741,93 @@ body.is-camera-dragging-global * {
     display: block;
 }
 
-/* 🌐 範囲効果オーバーレイ (Area Influence Overlay: z-index: 20) */
+/* 🌐 盤面全体 範囲効果オーバーレイ (Board-Level Area Influence Overlay: z-index: 20) */
+.area-influence-board-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 20;
+    overflow: hidden;
+    border-radius: inherit;
+}
+
+.area-influence-board-overlay .area-influence-board-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: none;
+}
+
+/* 🌊 湖水源バフ境界線: ティール系グロー ＆ コアライン (4px gap内側1px) */
+.area-influence-board-overlay .lake-boundary-path-glow {
+    fill: none;
+    stroke: rgba(0, 240, 255, 0.40);
+    stroke-width: 3.5px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.area-influence-board-overlay .lake-boundary-path-core {
+    fill: none;
+    stroke: #00f0ff;
+    stroke-width: 1.5px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* 🏘️ 本営近郊バフ境界線: アンバー系グロー ＆ コアライン (4px gap外側3pxで物理的分離) */
+.area-influence-board-overlay .hq-boundary-path-glow {
+    fill: none;
+    stroke: rgba(230, 126, 34, 0.35);
+    stroke-width: 3.5px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.area-influence-board-overlay .hq-boundary-path-core {
+    fill: none;
+    stroke: #e67e22;
+    stroke-width: 1.5px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* 🌐 セル単位の範囲効果シャドウ (配置済み・未配置マス共通) */
+.cell.influence-lake {
+    box-shadow: inset 0 0 10px rgba(0, 220, 255, 0.12);
+}
+
+.cell.influence-hq-vicinity {
+    box-shadow: inset 0 0 6px rgba(230, 126, 34, 0.08);
+}
+
+.cell.influence-lake.influence-hq-vicinity {
+    box-shadow: inset 0 0 10px rgba(0, 220, 255, 0.12), inset 0 0 6px rgba(230, 126, 34, 0.08);
+}
+
+/* 🌾 未配置セル（Empty Cell）での地理的影響圏の可視化 */
+.cell.influence-lake:not(.placed) {
+    background: rgba(0, 210, 255, 0.04);
+}
+
+.cell.influence-hq-vicinity:not(.placed) {
+    background: rgba(230, 126, 34, 0.03);
+}
+
+.cell.influence-lake.influence-hq-vicinity:not(.placed) {
+    background: rgba(0, 210, 255, 0.04);
+}
+
+/* 🖱️ セルホバー時強調 */
+.cell.influence-lake:hover {
+    box-shadow: inset 0 0 14px rgba(0, 220, 255, 0.28);
+}
+
+.cell.influence-hq-vicinity:hover {
+    box-shadow: inset 0 0 10px rgba(230, 126, 34, 0.20);
+}
+
+/* 🌐 下位互換性用: セル内部オーバーレイ */
 .cell .area-influence-overlay {
     position: absolute;
     inset: 0;
@@ -753,62 +842,6 @@ body.is-camera-dragging-global * {
     width: 100%;
     height: 100%;
     display: block;
-}
-
-/* 🌊 湖水源バフ: セル内側の同心波紋 & 控えめなティールグロー */
-.cell.influence-lake .lake-ripple-outer {
-    fill: none;
-    stroke: rgba(0, 240, 255, 0.22);
-    stroke-width: 1.5;
-    stroke-dasharray: 4 2;
-}
-
-.cell.influence-lake .lake-ripple-inner {
-    fill: rgba(0, 210, 255, 0.05);
-    stroke: rgba(0, 240, 255, 0.35);
-    stroke-width: 1.2;
-}
-
-.cell.influence-lake {
-    box-shadow: inset 0 0 10px rgba(0, 220, 255, 0.12);
-}
-
-/* 🏘️ 本営近郊バフ: 外周四隅のアンバー L字マーカー & 控えめな区画枠 */
-.cell.influence-hq-vicinity .hq-corner-marker {
-    fill: none;
-    stroke: rgba(230, 126, 34, 0.40);
-    stroke-width: 2.2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-.cell.influence-hq-vicinity {
-    box-shadow: inset 0 0 6px rgba(230, 126, 34, 0.08);
-}
-
-/* 🌟 重複時: 湖グローと近郊シャドウの美しい共存 */
-.cell.influence-lake.influence-hq-vicinity {
-    box-shadow: inset 0 0 10px rgba(0, 220, 255, 0.12), inset 0 0 6px rgba(230, 126, 34, 0.08);
-}
-
-/* 🖱️ ホバー時強調 (セルホバー時のみ少し強調して影響圏を際立たせる) */
-.cell.influence-lake:hover .lake-ripple-outer {
-    stroke: rgba(0, 240, 255, 0.50);
-}
-.cell.influence-lake:hover .lake-ripple-inner {
-    fill: rgba(0, 210, 255, 0.12);
-    stroke: rgba(0, 240, 255, 0.70);
-}
-.cell.influence-lake:hover {
-    box-shadow: inset 0 0 14px rgba(0, 220, 255, 0.28);
-}
-
-.cell.influence-hq-vicinity:hover .hq-corner-marker {
-    stroke: rgba(230, 126, 34, 0.85);
-    stroke-width: 2.8;
-}
-.cell.influence-hq-vicinity:hover {
-    box-shadow: inset 0 0 10px rgba(230, 126, 34, 0.20);
 }
 
 /* 前面テキスト・UI要素の z-index 確保 (最前面表示: z-index: 30) */

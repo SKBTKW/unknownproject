@@ -806,6 +806,11 @@ export async function runUILifecycleInspection() {
         restoredCell.onmouseenter(trialHoverEvent);
         restoredCell.onmousemove(trialHoverEvent);
         assert("停止後は通常セルhoverへ復帰すること", !tooltipSystemInstance.tooltipEl.innerHTML.includes("trial-interception-preview"));
+
+        const influenceOverlayEl = restoredBoard.querySelector("#areaInfluenceBoardOverlay");
+        assert("盤面描画時に areaInfluenceBoardOverlay が生成されていること", influenceOverlayEl !== null);
+        assert("areaInfluenceBoardOverlay に area-influence-board-overlay クラスが付与されていること", influenceOverlayEl && influenceOverlayEl.className.includes("area-influence-board-overlay"));
+
         window.__TOA_DEV_MODE__ = false;
 
     } catch (err) {

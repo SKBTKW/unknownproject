@@ -8,6 +8,8 @@
  * 3. 湖（セル内側ティール波紋）と本営近郊（外周四隅アンバーL字枠）の視覚分離。
  */
 
+import { isWaterSourceInfluence } from '../core/lake_rules.js';
+
 export class AreaInfluenceVisualService {
     /**
      * 🏷️ セルに付与する範囲効果クラス名の配列を取得
@@ -24,44 +26,245 @@ export class AreaInfluenceVisualService {
     }
 
     /**
-     * 🎨 範囲効果オーバーレイ DOM / SVG HTML を生成
-     * @param {Object} params
-     * @param {boolean} params.isLakeVic - 水源（湖・オアシス）影響圏フラグ
-     * @param {boolean} params.isHQVic - 本営近郊影響圏フラグ
-     * @returns {string} オーバーレイ用 HTML 文字列
+     * 🗺️ Presentation用 Influence Cell Set の構築 (Domain/State SSOT利用)
+     * @param {Object} state - GameState
+     * @param {number} size - 盤面サイズ
+     * @returns {{ lakeInfluenceCells: Set<string>, hqInfluenceCells: Set<string> }}
+     */
+    static buildInfluenceCellSets(state, size = 5) {
+        const lakeInfluenceCells = new Set();
+        const hqInfluenceCells = new Set();
+        if (!state) return { lakeInfluenceCells, hqInfluenceCells };
+
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
+                const key = `${r},${c}`;
+                // 🌊 湖水源影響圏 (lake_rules.js / state SSOT)
+                const isLake = (typeof state.isWaterSourceInfluence === "function")
+                    ? state.isWaterSourceInfluence(r, c)
+                    : isWaterSourceInfluence(state, r, c);
+                if (isLake) {
+                    lakeInfluenceCells.add(key);
+                }
+
+                // 🏰 本営近郊 (grid_engine.js / state SSOT)
+                const isHq = (typeof state.isHQVicinity === "function")
+                    ? state.isHQVicinity(r, c)
+                    : false;
+                if (isHq) {
+                    hqInfluenceCells.add(key);
+                }
+            }
+        }
+
+        return { lakeInfluenceCells, hqInfluenceCells };
+    }
+
+    /**
+     * 📐 各セルDOMの実測バウンディングボックスを取得（JSDOM fallback対応）
+     * @param {HTMLElement} boardEl - グリッド盤面コンテナ (#gridBoard)
+     * @param {number} size - 盤面サイズ
+     * @returns {Map<string, { left: number, top: number, right: number, bottom: number, width: number, height: number }>}
+     */
+    static getCellRectsFromDom(boardEl, size = 5) {
+        const rectsMap = new Map();
+
+        const boardRect = (boardEl && typeof boardEl.getBoundingClientRect === "function")
+            ? boardEl.getBoundingClientRect()
+            : { left: 0, top: 0, width: 0, height: 0 };
+
+        const cellElements = (boardEl && boardEl.querySelectorAll) ? boardEl.querySelectorAll(".cell[data-r][data-c]") : [];
+        let hasValidDomRects = false;
+
+        if (cellElements.length > 0) {
+            cellElements.forEach(cell => {
+                const r = cell.getAttribute("data-r");
+                const c = cell.getAttribute("data-c");
+                if (r !== null && c !== null && typeof cell.getBoundingClientRect === "function") {
+                    const cRect = cell.getBoundingClientRect();
+                    if (cRect.width > 0 && cRect.height > 0) {
+                        hasValidDomRects = true;
+                        const left = cRect.left - boardRect.left;
+                        const top = cRect.top - boardRect.top;
+                        rectsMap.set(`${r},${c}`, {
+                            left,
+                            top,
+                            right: left + cRect.width,
+                            bottom: top + cRect.height,
+                            width: cRect.width,
+                            height: cRect.height
+                        });
+                    }
+                }
+            });
+        }
+
+        // 🧪 JSDOMやヘッドレス環境でDOMレイアウト座標が取れない場合の synthetic rects fallback
+        if (!hasValidDomRects) {
+            const cellSize = (size >= 9) ? 80 : 104;
+            const headerSize = (size >= 9) ? 38 : 44;
+            const gap = 4;
+            const padding = 4;
+
+            for (let r = 0; r < size; r++) {
+                for (let c = 0; c < size; c++) {
+                    const left = padding + headerSize + gap + c * (cellSize + gap);
+                    const top = padding + headerSize + gap + r * (cellSize + gap);
+                    rectsMap.set(`${r},${c}`, {
+                        left,
+                        top,
+                        right: left + cellSize,
+                        bottom: top + cellSize,
+                        width: cellSize,
+                        height: cellSize
+                    });
+                }
+            }
+        }
+
+        return rectsMap;
+    }
+
+    /**
+     * 🧩 外周境界セグメントおよびSVG Pathを計算する純粋 Presentation ヘルパー
+     * @param {Set<string>} cellSet - 影響圏セルのキー集合 Set<"r,c">
+     * @param {Map<string, Object>} cellRectsMap - セル矩形Map
+     * @param {Object} options
+     * @param {number} options.gapOffset - 4px gap内のオフセット (湖: 1px, HQ: 3px)
+     * @returns {{ segments: Array<Object>, pathData: string }}
+     */
+    static generateBoundaryGeometry(cellSet, cellRectsMap, { gapOffset = 1 } = {}) {
+        if (!cellSet || cellSet.size === 0 || !cellRectsMap || cellRectsMap.size === 0) {
+            return { segments: [], pathData: "" };
+        }
+
+        const segments = [];
+        const pathCommands = [];
+
+        for (const key of cellSet) {
+            const [rStr, cStr] = key.split(",");
+            const r = parseInt(rStr, 10);
+            const c = parseInt(cStr, 10);
+            const rect = cellRectsMap.get(key);
+            if (!rect) continue;
+
+            const hasTop = cellSet.has(`${r - 1},${c}`);
+            const hasBottom = cellSet.has(`${r + 1},${c}`);
+            const hasLeft = cellSet.has(`${r},${c - 1}`);
+            const hasRight = cellSet.has(`${r},${c + 1}`);
+
+            // 外周上辺 (Top Outer Edge)
+            if (!hasTop) {
+                const x1 = rect.left - (hasLeft ? 0 : gapOffset);
+                const x2 = rect.right + (hasRight ? 0 : gapOffset);
+                const y = rect.top - gapOffset;
+                segments.push({ type: "top", r, c, x1, y1: y, x2, y2: y });
+                pathCommands.push(`M ${x1} ${y} L ${x2} ${y}`);
+            }
+
+            // 外周右辺 (Right Outer Edge)
+            if (!hasRight) {
+                const y1 = rect.top - (hasTop ? 0 : gapOffset);
+                const y2 = rect.bottom + (hasBottom ? 0 : gapOffset);
+                const x = rect.right + gapOffset;
+                segments.push({ type: "right", r, c, x1: x, y1, x2: x, y2 });
+                pathCommands.push(`M ${x} ${y1} L ${x} ${y2}`);
+            }
+
+            // 外周下辺 (Bottom Outer Edge)
+            if (!hasBottom) {
+                const x1 = rect.left - (hasLeft ? 0 : gapOffset);
+                const x2 = rect.right + (hasRight ? 0 : gapOffset);
+                const y = rect.bottom + gapOffset;
+                segments.push({ type: "bottom", r, c, x1, y1: y, x2, y2: y });
+                pathCommands.push(`M ${x1} ${y} L ${x2} ${y}`);
+            }
+
+            // 外周左辺 (Left Outer Edge)
+            if (!hasLeft) {
+                const y1 = rect.top - (hasTop ? 0 : gapOffset);
+                const y2 = rect.bottom + (hasBottom ? 0 : gapOffset);
+                const x = rect.left - gapOffset;
+                segments.push({ type: "left", r, c, x1: x, y1, x2: x, y2 });
+                pathCommands.push(`M ${x} ${y1} L ${x} ${y2}`);
+            }
+        }
+
+        return {
+            segments,
+            pathData: pathCommands.join(" ")
+        };
+    }
+
+    /**
+     * 🎨 グリッド盤面全体に重ねる Board-Level Influence Overlay を生成・更新
+     * @param {HTMLElement} boardEl - グリッド盤面コンテナ (#gridBoard)
+     * @param {Object} state - GameState
+     * @param {number} size - 盤面サイズ
+     */
+    static renderBoardOverlay(boardEl, state, size = 5) {
+        if (!boardEl || !state) return;
+
+        // 既存オーバーレイコンテナの取得または生成（毎renderで安全に再構築）
+        let overlayEl = boardEl.querySelector ? boardEl.querySelector("#areaInfluenceBoardOverlay") : null;
+        if (!overlayEl) {
+            if (typeof document !== "undefined" && typeof document.createElement === "function") {
+                overlayEl = document.createElement("div");
+            } else {
+                overlayEl = { id: "areaInfluenceBoardOverlay", className: "", innerHTML: "" };
+            }
+            overlayEl.id = "areaInfluenceBoardOverlay";
+            overlayEl.className = "area-influence-board-overlay";
+            if (typeof boardEl.appendChild === "function") {
+                boardEl.appendChild(overlayEl);
+            }
+        }
+
+        const { lakeInfluenceCells, hqInfluenceCells } = this.buildInfluenceCellSets(state, size);
+        if (lakeInfluenceCells.size === 0 && hqInfluenceCells.size === 0) {
+            overlayEl.innerHTML = "";
+            return;
+        }
+
+        const cellRectsMap = this.getCellRectsFromDom(boardEl, size);
+
+        // 🌊 湖水源バフ: gapの内側寄り (offset: 1px)
+        const lakeGeom = this.generateBoundaryGeometry(lakeInfluenceCells, cellRectsMap, { gapOffset: 1 });
+        // 🏰 本営近郊バフ: gapの外側寄り (offset: 3px) で物理的分離
+        const hqGeom = this.generateBoundaryGeometry(hqInfluenceCells, cellRectsMap, { gapOffset: 3 });
+
+        let svgContent = "";
+
+        if (lakeGeom.pathData) {
+            svgContent += `
+                <g class="lake-influence-boundary-group">
+                    <path d="${lakeGeom.pathData}" class="lake-boundary-path-glow" />
+                    <path d="${lakeGeom.pathData}" class="lake-boundary-path-core" />
+                </g>
+            `;
+        }
+
+        if (hqGeom.pathData) {
+            svgContent += `
+                <g class="hq-influence-boundary-group">
+                    <path d="${hqGeom.pathData}" class="hq-boundary-path-glow" />
+                    <path d="${hqGeom.pathData}" class="hq-boundary-path-core" />
+                </g>
+            `;
+        }
+
+        overlayEl.innerHTML = `
+            <svg class="area-influence-board-svg" width="100%" height="100%">
+                ${svgContent}
+            </svg>
+        `;
+    }
+
+    /**
+     * 🎨 セル単体内部用オーバーレイ（下位互換性用）
      */
     static createInfluenceOverlayHtml({ isLakeVic = false, isHQVic = false } = {}) {
-        if (!isLakeVic && !isHQVic) return "";
-
-        let innerSvgParts = "";
-
-        // 🌊 1. 湖水源バフ: セル内側の同心円水面波紋（中央部は透過し地形GL・文字を阻害しない）
-        if (isLakeVic) {
-            innerSvgParts += `
-                <g class="influence-svg-lake">
-                    <circle cx="50" cy="50" r="38" class="lake-ripple-outer" />
-                    <circle cx="50" cy="50" r="24" class="lake-ripple-inner" />
-                </g>
-            `;
-        }
-
-        // 🏘️ 2. 本営近郊バフ: セル外周・四隅の薄い区画線 L字マーカー（内側は一切埋めない）
-        if (isHQVic) {
-            innerSvgParts += `
-                <g class="influence-svg-hq">
-                    <!-- Top-Left Corner -->
-                    <path d="M 6 16 L 6 6 L 16 6" class="hq-corner-marker" />
-                    <!-- Top-Right Corner -->
-                    <path d="M 84 6 L 94 6 L 94 16" class="hq-corner-marker" />
-                    <!-- Bottom-Left Corner -->
-                    <path d="M 6 84 L 6 94 L 16 94" class="hq-corner-marker" />
-                    <!-- Bottom-Right Corner -->
-                    <path d="M 84 94 L 94 94 L 94 84" class="hq-corner-marker" />
-                </g>
-            `;
-        }
-
-        return `<div class="area-influence-overlay"><svg viewBox="0 0 100 100" preserveAspectRatio="none" class="area-influence-svg">${innerSvgParts}</svg></div>`;
+        return "";
     }
 }
 

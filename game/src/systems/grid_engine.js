@@ -14,6 +14,7 @@ import {
     getWaterSourceSpawnChance,
     isWithinWetlandExclusionRange,
     isWaterSourceCell,
+    isWaterSourceInfluence,
     isWetlandTerrain
 } from '../core/lake_rules.js';
 
@@ -100,6 +101,14 @@ class GridEngine {
         const center = Math.floor(size / 2);
         if (r === center && c === center) return false;
         return Math.abs(r - center) <= 1 && Math.abs(c - center) <= 1;
+    }
+
+    /**
+     * 🌊 水源影響圏判定（湖・オアシス自身または周囲8マス・SSOT委譲）
+     */
+    isWaterSourceInfluence(r, c) {
+        if (!this.state || !this.state.grid) return false;
+        return isWaterSourceInfluence(this.state, r, c);
     }
 
     /**
