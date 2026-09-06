@@ -940,7 +940,6 @@ class GridEngine {
                     cell.placed
                     && !cell.isHQ
                     && !isWetlandTerrain(cell.terrain)
-                    && !isWaterSourceCell(cell)
                     && (!cell.merged || cell.mergeType !== "2x2")
                 );
                 if (allPlaced) {

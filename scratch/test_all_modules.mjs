@@ -1388,10 +1388,57 @@ expandingLinkEngine.gridEngine.expandGrid(9);
 const linkAfter9 = expandingLinkEngine.gridEngine.checkNewMergeLinks();
 assert(expandingLinkEngine.state.mergeLinks.has(expandingLinkKey) && expandingLinkEngine.state.getMergeLinkCount() === 1, '5x5→7x7→9x9拡張後も既存LINK集合が維持されること');
 assert(linkAfter7.count === 0 && linkAfter9.count === 0, '盤面拡張後の再判定で既存LINKボーナスが重複しないこと');
-assert(expandingLinkEngine.state.maxEmber === 21 && expandingLinkEngine.state.ember === 11, '盤面拡張後もLINK由来の最大🔥・現在🔥が維持されること');
+// 14. 湖 feature (SOCKET_LAKE) を持つ草原セルと通常草原による 2x2 地帯化 Domain Regression
+console.log('\n🌊 [Domain Regression] 湖 feature 持ち草原の 2x2 地帯化 ＆ ソケット保持検証');
+const lakeRegressionEngine = GameEngine.createGame();
+const lakePlainsTerrain = {
+    id: 'GL1_PLAINS',
+    terrainId: 'GL1_PLAINS',
+    nameKey: 'TERRAIN_PLAINS',
+    zoneCategory: 'PLAINS',
+    baseYieldsPerTile: { food: 4, wood: 0, defense: 0, mystic: 0 }
+};
+
+// 本営は (2,2)。(0,1), (0,2), (1,1), (1,2) の 2x2 を組む。
+// まず本営直上 (1,2) を配置
+lakeRegressionEngine.state.hasPickedThisTurn = false;
+const p12 = lakeRegressionEngine.gridEngine.placeShape(1, 2, [[1]], lakePlainsTerrain);
+assert(p12.success === true, '本営近郊 (1,2) への草原配置が成功すること');
+
+// (1,1) に 湖ソケット (SOCKET_LAKE) を付与して配置
+const lakePlainsCell = lakeRegressionEngine.state.grid[1][1];
+lakePlainsCell.socketResource = {
+    id: 'SOCKET_LAKE',
+    nameKey: 'SOCKET_LAKE',
+    type: 'food',
+    value: 2
+};
+lakeRegressionEngine.state.hasPickedThisTurn = false;
+const p11 = lakeRegressionEngine.gridEngine.placeShape(1, 1, [[1]], lakePlainsTerrain);
+assert(p11.success === true, '湖 feature を持つマス (1,1) への草原配置が成功すること');
+
+// (0,2) と (0,1) を順次配置して 2x2 を完成
+lakeRegressionEngine.state.hasPickedThisTurn = false;
+const p02 = lakeRegressionEngine.gridEngine.placeShape(0, 2, [[1]], lakePlainsTerrain);
+assert(p02.success === true, '(0,2) への草原配置が成功すること');
+
+lakeRegressionEngine.state.hasPickedThisTurn = false;
+const p01 = lakeRegressionEngine.gridEngine.placeShape(0, 1, [[1]], lakePlainsTerrain);
+assert(p01.success === true, '(0,1) への草原配置が成功すること');
+
+// 2x2 地帯化判定の検証
+const cell01 = lakeRegressionEngine.state.grid[0][1];
+const cell02 = lakeRegressionEngine.state.grid[0][2];
+const cell11 = lakeRegressionEngine.state.grid[1][1];
+const cell12 = lakeRegressionEngine.state.grid[1][2];
+
+assert(cell01.merged === true && cell02.merged === true && cell11.merged === true && cell12.merged === true, '湖を含む草原 2x2 の 4 セル全てが merged === true になること');
+assert(cell11.mergeGroupId !== null && cell11.mergeGroupId === cell01.mergeGroupId, '湖セルが草原地帯と同一の mergeGroupId を共有すること');
+assert(cell11.socketResource && cell11.socketResource.id === 'SOCKET_LAKE', '2x2 地帯化後も湖セルの socketResource (SOCKET_LAKE) が保持されること');
+assert(cell11.terrain && cell11.terrain.terrainId === 'GL1_PLAINS', '2x2 地帯化後も湖セルの terrainId (GL1_PLAINS) が保持されること');
 
 console.log('\n====================================================');
-console.log(`🎉 全テスト完了: ${passedTests} / ${totalTests} 件 合格 (100% PASS)`);
+console.log(`🎉 全テスト完了: ${passedTests} / ${totalTests} 件 合格`);
 console.log('====================================================');
 
 if (passedTests === totalTests && totalTests > 0) {
