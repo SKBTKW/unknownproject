@@ -1477,6 +1477,36 @@ body.is-camera-dragging-global * {
     border-top: 1px solid rgba(241, 196, 15, 0.5);
 }
 
+.trial-preview-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 6px 0 8px 0;
+}
+
+.trial-modifier-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.4;
+    border: 1px solid transparent;
+}
+
+.trial-modifier-tag.is-advantage {
+    background-color: rgba(41, 128, 185, 0.25);
+    border-color: rgba(52, 152, 219, 0.7);
+    color: #5dade2;
+}
+
+.trial-modifier-tag.is-disadvantage {
+    background-color: rgba(192, 57, 43, 0.25);
+    border-color: rgba(231, 76, 60, 0.7);
+    color: #ec7063;
+}
+
 .trial-preview-heading,
 .trial-preview-outcome {
     display: flex;
