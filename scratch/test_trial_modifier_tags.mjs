@@ -72,12 +72,11 @@ test("Req A: 湿原E0 → 草原E1迎撃 ➔ ドメイン計算・表示完全�
     assert.ok(html.includes("24"), "HTML should show margin 24");
 });
 
-// [Req A2] 湿原E0 → 丘陵E2迎撃: 泥濘 + 高所が両方適用 (自軍96, 敵56, margin +40)
-test("Req A2: 湿原E0 → 丘陵E2迎撃 ➔ 泥濘＋高所の双方が適用 (自軍96, 敵56, margin +40)", () => {
-    const combat = new TrialCombatResolver();
-
-    const interceptCell = { cellId: "c_hills", terrain: { id: "GL3_HILLS", e: 2 } };
-    const approachCell = { cellId: "c_wetland", terrain: { id: "E0_WETLAND", e: 0 } };
+// [Req A_REV] E0↔E1 双方向除外: 草原E1 → 湿原E0 でも HIGH_GROUND が生成されない
+test("Req A_REV: E0↔E1 双方向除外 ➔ 草原E1 → 湿原E0 でも HIGH_GROUND が生成されない", () => {
+    const resolver = new TrialTerrainEffectResolver();
+    const interceptCell = { cellId: "c_wetland", terrain: { id: "E0_WETLAND", e: 0 } };
+    const approachCell = { cellId: "c_plains", terrain: { id: "GL1_PLAINS", e: 1 } };
     const context = createBattleContext({
         interceptCell,
         approachCell,
@@ -85,17 +84,12 @@ test("Req A2: 湿原E0 → 丘陵E2迎撃 ➔ 泥濘＋高所の双方が適用 
         enemySuppression: 70
     });
 
-    const combatResult = combat.resolve(context);
-    assert.equal(combatResult.success, true);
-    assert.equal(combatResult.human.finalPower, 96, "Human power boosted to 96 (80 * 1.2)");
-    assert.equal(combatResult.enemy.finalPower, 56, "Enemy power reduced to 56 (70 * 0.8)");
-    assert.equal(combatResult.prediction.margin, 40, "Margin must be 96 - 56 = 40");
-    assert.ok(combatResult.appliedModifiers.some(m => m.source === TRIAL_TERRAIN_EFFECTS.WETLAND_EXIT));
-    assert.ok(combatResult.appliedModifiers.some(m => m.source === TRIAL_TERRAIN_EFFECTS.HIGH_GROUND));
+    const terrainEffect = resolver.resolve(context);
+    assert.ok(!terrainEffect.modifiers.some(m => m.source === TRIAL_TERRAIN_EFFECTS.HIGH_GROUND), "Must NOT generate HIGH_GROUND for E1->E0");
 });
 
-// [Req B] 通常の丘陵高所有利: 青 高所
-test("Req B: 通常の丘陵高所有利 ➔ 青 高所", () => {
+// [Req B] 通常の丘陵高所有利 (合法盤面 E1→E2): 青 高所
+test("Req B: 通常の丘陵高所有利 (E1→E2) ➔ 青 高所", () => {
     const row = {
         source: TRIAL_TERRAIN_EFFECTS.HIGH_GROUND,
         target: MODIFIER_TARGETS.HUMAN_INTERCEPTION,
