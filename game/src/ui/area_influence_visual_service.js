@@ -29,13 +29,22 @@ export class AreaInfluenceVisualService {
      * 🗺️ Presentation用 Influence Cell Set の構築 (Domain/State SSOT利用)
      * @param {Object} state - GameState
      * @param {number} size - 盤面サイズ
-     * @returns {{ lakeInfluenceCells: Set<string>, hqInfluenceCells: Set<string> }}
+     * @returns {{ lakeInfluenceCells: Set<string>, hqInfluenceGameplayCells: Set<string>, hqInfluenceVisualCells: Set<string>, hqInfluenceCells: Set<string> }}
      */
     static buildInfluenceCellSets(state, size = 5) {
         const lakeInfluenceCells = new Set();
-        const hqInfluenceCells = new Set();
-        if (!state) return { lakeInfluenceCells, hqInfluenceCells };
+        const hqInfluenceGameplayCells = new Set();
+        const hqInfluenceVisualCells = new Set();
+        if (!state) {
+            return {
+                lakeInfluenceCells,
+                hqInfluenceGameplayCells,
+                hqInfluenceVisualCells,
+                hqInfluenceCells: hqInfluenceVisualCells
+            };
+        }
 
+        const center = Math.floor(size / 2);
         for (let r = 0; r < size; r++) {
             for (let c = 0; c < size; c++) {
                 const key = `${r},${c}`;
@@ -47,17 +56,27 @@ export class AreaInfluenceVisualService {
                     lakeInfluenceCells.add(key);
                 }
 
-                // 🏰 本営近郊 (grid_engine.js / state SSOT)
-                const isHq = (typeof state.isHQVicinity === "function")
+                // 🏰 本営近郊 Gameplay (周囲8マスのみ・HQ自身は効果対象外)
+                const isHqVic = (typeof state.isHQVicinity === "function")
                     ? state.isHQVicinity(r, c)
                     : false;
-                if (isHq) {
-                    hqInfluenceCells.add(key);
+                if (isHqVic) {
+                    hqInfluenceGameplayCells.add(key);
+                    hqInfluenceVisualCells.add(key);
+                } else if (r === center && c === center) {
+                    // 🏰 本営自身: 表示専用 Visual Set にのみ追加し、3x3のひとまとまり外周として描画
+                    hqInfluenceVisualCells.add(key);
                 }
             }
         }
 
-        return { lakeInfluenceCells, hqInfluenceCells };
+        return {
+            lakeInfluenceCells,
+            hqInfluenceGameplayCells,
+            hqInfluenceVisualCells,
+            // 下位互換性
+            hqInfluenceCells: hqInfluenceVisualCells
+        };
     }
 
     /**
@@ -220,8 +239,8 @@ export class AreaInfluenceVisualService {
             }
         }
 
-        const { lakeInfluenceCells, hqInfluenceCells } = this.buildInfluenceCellSets(state, size);
-        if (lakeInfluenceCells.size === 0 && hqInfluenceCells.size === 0) {
+        const { lakeInfluenceCells, hqInfluenceVisualCells } = this.buildInfluenceCellSets(state, size);
+        if (lakeInfluenceCells.size === 0 && hqInfluenceVisualCells.size === 0) {
             overlayEl.innerHTML = "";
             return;
         }
@@ -230,8 +249,8 @@ export class AreaInfluenceVisualService {
 
         // 🌊 湖水源バフ: gapの内側寄り (offset: 1px)
         const lakeGeom = this.generateBoundaryGeometry(lakeInfluenceCells, cellRectsMap, { gapOffset: 1 });
-        // 🏰 本営近郊バフ: gapの外側寄り (offset: 3px) で物理的分離
-        const hqGeom = this.generateBoundaryGeometry(hqInfluenceCells, cellRectsMap, { gapOffset: 3 });
+        // 🏰 本営近郊バフ: gapの外側寄り (offset: 3px) で物理的分離 (HQ自身を含めた3x3外周描画)
+        const hqGeom = this.generateBoundaryGeometry(hqInfluenceVisualCells, cellRectsMap, { gapOffset: 3 });
 
         let svgContent = "";
 
