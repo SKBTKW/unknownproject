@@ -6,7 +6,7 @@ function normalizeCell(cell) {
         row: Number.isInteger(cell.row) ? cell.row : null,
         column: Number.isInteger(cell.column) ? cell.column : null,
         terrain,
-        terrainId: terrain.id || terrain.terrainId || null,
+        terrainId: terrain.terrainId || terrain.id || null,
         elevation: Number.isFinite(terrain.e) ? terrain.e : 1,
         growthLevel: Number.isFinite(terrain.gl) ? terrain.gl : null
     };
@@ -40,4 +40,3 @@ export function createBattleContext({
         supports: [...supports]
     };
 }
-

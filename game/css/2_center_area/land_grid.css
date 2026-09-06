@@ -1423,3 +1423,61 @@ body.is-camera-dragging-global * {
          1.5px 0px 0 #ffffff;
     filter: drop-shadow(0 4px 10px rgba(75, 207, 250, 0.9));
 }
+/* Trial Phase 2: route comparison preview (active only during an explicit preview session) */
+.cell.trial-route-cell {
+    box-shadow: inset 0 0 0 2px rgba(230, 126, 34, 0.5);
+}
+
+.cell.trial-interception-candidate {
+    cursor: crosshair;
+    box-shadow: inset 0 0 0 3px rgba(241, 196, 15, 0.88), 0 0 12px rgba(241, 196, 15, 0.45);
+}
+
+.cell.trial-interception-candidate:hover {
+    box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.92), 0 0 18px rgba(241, 196, 15, 0.75);
+}
+
+.trial-interception-preview {
+    min-width: 250px;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(241, 196, 15, 0.5);
+}
+
+.trial-preview-heading,
+.trial-preview-outcome {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    color: #f1c40f;
+    font-weight: 700;
+}
+
+.trial-preview-defense,
+.trial-preview-margin {
+    margin: 4px 0;
+    color: #d9e2ec;
+}
+
+.trial-preview-side,
+.trial-preview-modifier {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 2px 0;
+}
+
+.trial-preview-side.is-final {
+    margin-bottom: 4px;
+    color: #ffffff;
+}
+
+.trial-preview-modifier {
+    padding-left: 10px;
+    color: #b8c7d9;
+    font-size: 0.92em;
+}
+
+.trial-interception-preview.is-forbidden {
+    color: #e74c3c;
+}

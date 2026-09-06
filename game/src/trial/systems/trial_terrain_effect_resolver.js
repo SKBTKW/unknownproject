@@ -51,7 +51,7 @@ export class TrialTerrainEffectResolver {
 
     canInterceptAt(cell) {
         const id = terrainId(cell);
-        return !WETLAND_IDS.has(id) && !MOUNTAIN_IDS.has(id);
+        return !!id && !WETLAND_IDS.has(id) && !MOUNTAIN_IDS.has(id);
     }
 
     canEnterNormalRoute(cell) {
@@ -124,4 +124,3 @@ export class TrialTerrainEffectResolver {
         };
     }
 }
-

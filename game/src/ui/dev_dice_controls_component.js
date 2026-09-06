@@ -10,6 +10,7 @@
 import { UILayoutConfig } from './layout_config.js';
 import { I18n } from '../i18n.js';
 import { CheckSystem, CheckModifier } from '../core/check_system/check_system.js';
+import { isDevelopmentMode } from '../config/dev_mode.js';
 
 export class DevDiceControlsComponent {
     /**
@@ -89,6 +90,9 @@ export class DevDiceControlsComponent {
                 align-items: center;
                 gap: 4px;
             }
+            .dev-trial-preview-title {
+                margin-top: 8px;
+            }
             .dev-dice-btn-row {
                 display: flex;
                 align-items: center;
@@ -146,6 +150,13 @@ export class DevDiceControlsComponent {
         const cavalryText = (I18n && typeof I18n.t === "function") ? I18n.t("DEV_BTN_CAVALRY") : "Cavalry";
         const interceptText = (I18n && typeof I18n.t === "function") ? I18n.t("DEV_BTN_INTERCEPT") : "Intercept";
         const liveRollText = (I18n && typeof I18n.t === "function") ? I18n.t("DEV_BTN_LIVE_ROLL") : "Live Roll";
+        const trialControls = isDevelopmentMode() ? `
+            <div class="dev-dice-header-title dev-trial-preview-title">⚔️ ${I18n.t("DEV_TRIAL_PREVIEW_TITLE")}</div>
+            <div class="dev-dice-btn-row">
+                <button type="button" id="btnDevTrialPreviewStart" class="dev-dice-btn dev-dice-btn-tactical">${I18n.t("DEV_TRIAL_PREVIEW_START")}</button>
+                <button type="button" id="btnDevTrialPreviewStop" class="dev-dice-btn">${I18n.t("DEV_TRIAL_PREVIEW_STOP")}</button>
+            </div>
+        ` : "";
 
         this.containerEl.innerHTML = `
             <div class="dev-dice-header-title">🎲 ${titleText}</div>
@@ -154,6 +165,7 @@ export class DevDiceControlsComponent {
                 <button type="button" id="btnDevIntercept" class="dev-dice-btn dev-dice-btn-tactical">⚔️ ${interceptText}</button>
                 <button type="button" id="btnDevLiveRoll" class="dev-dice-btn">🎲 ${liveRollText}</button>
             </div>
+            ${trialControls}
         `;
 
         // 🏇 騎馬突撃 (CRITICAL演出 / リアルタイム2D6判定)
@@ -177,6 +189,19 @@ export class DevDiceControlsComponent {
         if (btnLiveRoll) {
             btnLiveRoll.onclick = () => {
                 this.rollStandardCheck();
+            };
+        }
+
+        const btnTrialStart = document.getElementById("btnDevTrialPreviewStart");
+        if (btnTrialStart) {
+            btnTrialStart.onclick = () => {
+                this.ui?.startDevelopmentTrialPreview("TERRAIN_COMPARE_BASIC");
+            };
+        }
+        const btnTrialStop = document.getElementById("btnDevTrialPreviewStop");
+        if (btnTrialStop) {
+            btnTrialStop.onclick = () => {
+                this.ui?.stopDevelopmentTrialPreview();
             };
         }
     }

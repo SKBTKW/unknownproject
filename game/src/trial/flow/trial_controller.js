@@ -39,6 +39,12 @@ export class TrialController {
         });
     }
 
+    previewInterception(input) {
+        if (!this.state) throw new Error("TRIAL_NOT_STARTED");
+        const context = this.createBattleContext(input);
+        return this.combatResolver.resolve(context);
+    }
+
     resolveBattle(input) {
         if (!this.state) throw new Error("TRIAL_NOT_STARTED");
         if (this.state.phase === TRIAL_PHASES.SETUP) this.flow.advance(this.state);
@@ -53,4 +59,3 @@ export class TrialController {
         return result;
     }
 }
-

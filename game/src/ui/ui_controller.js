@@ -22,6 +22,10 @@ import { DiceWidgetComponent } from './dice_widget_component.js';
 import { DiceDisplayQueue } from './dice_display_queue.js';
 import { DevDiceControlsComponent } from './dev_dice_controls_component.js';
 import { BuildIdentityBadgeComponent } from './build_identity_badge_component.js';
+import { TrialController } from '../trial/flow/trial_controller.js';
+import { TrialPresentationState } from '../trial/presentation/trial_presentation_state.js';
+import { TrialInterceptionPreviewComponent } from './trial_interception_preview_component.js';
+import { DevelopmentTrialPreviewHarness } from '../trial/dev/development_trial_preview_harness.js';
 import { gameSettings } from './settings_modal_system.js';
 import {
     resolvePlacementAnchor,
@@ -63,6 +67,10 @@ class UIController {
         this.diceQueue = new DiceDisplayQueue(this.diceWidget);
         this.devDiceControls = (typeof document !== 'undefined') ? new DevDiceControlsComponent(this) : null;
         this.buildIdentityBadge = (typeof document !== 'undefined') ? new BuildIdentityBadgeComponent() : null;
+        this.trialController = new TrialController();
+        this.trialPresentationState = new TrialPresentationState();
+        this.trialPreviewConfig = null;
+        this.developmentTrialPreviewHarness = new DevelopmentTrialPreviewHarness(this);
         
         // 🎛️ UI セッション状態モデル (Single Source of Truth)
         this.interactionState = new UIInteractionState();
@@ -97,6 +105,101 @@ class UIController {
 
     get pinnedPreviewCard() { return this.interactionState.pinnedPreviewCard; }
     set pinnedPreviewCard(v) { this.interactionState.pinnedPreviewCard = v; }
+
+    startTrialInterceptionPreview(scenario, { deployedDefense = 6, routeId = null } = {}) {
+        const availableDefense = scenario.availableDefense ?? this.state.currentDefense ?? this.state.defense ?? 0;
+        this.trialController.startScenario({ ...scenario, availableDefense });
+        this.trialPreviewConfig = {
+            routeId,
+            deployedDefense: Math.min(Math.max(0, Number(deployedDefense) || 0), availableDefense)
+        };
+        this.trialPresentationState.previewDefenseAllocation = this.trialPreviewConfig.deployedDefense;
+        this.render();
+        return this.trialController.state;
+    }
+
+    startDevelopmentTrialPreview(scenarioId = "TERRAIN_COMPARE_BASIC") {
+        return this.developmentTrialPreviewHarness.start(scenarioId);
+    }
+
+    stopDevelopmentTrialPreview() {
+        return this.developmentTrialPreviewHarness.stop();
+    }
+
+    getBoardDisplayGrid() {
+        return this.developmentTrialPreviewHarness.getDisplayGrid() || this.state.grid;
+    }
+
+    stopTrialInterceptionPreview() {
+        this.trialPreviewConfig = null;
+        this.trialController.state = null;
+        this.trialPresentationState.clearInterceptionPreview();
+        this.hideCellTooltip();
+        this.render();
+    }
+
+    getActiveTrialRoute() {
+        if (!this.trialPreviewConfig || !this.trialController.state) return null;
+        const routes = this.trialController.state.routes || [];
+        if (this.trialPreviewConfig.routeId !== null) {
+            return routes.find(route => route.id === this.trialPreviewConfig.routeId) || null;
+        }
+        return routes[0] || null;
+    }
+
+    getTrialRoutePosition(r, c) {
+        const route = this.getActiveTrialRoute();
+        const cells = route ? (route.cells || route.path || []) : [];
+        const index = cells.findIndex(entry => {
+            const row = Number.isInteger(entry.r) ? entry.r : entry.row;
+            const column = Number.isInteger(entry.c) ? entry.c : entry.column;
+            return row === r && column === c;
+        });
+        return index >= 0 ? { route, cells, index } : null;
+    }
+
+    createTrialPreviewInput(r, c) {
+        const position = this.getTrialRoutePosition(r, c);
+        const displayGrid = this.getBoardDisplayGrid();
+        const interceptCell = displayGrid?.[r]?.[c];
+        if (!position || !interceptCell || !interceptCell.placed || interceptCell.isHQ) return null;
+
+        const approachEntry = position.index > 0 ? position.cells[position.index - 1] : null;
+        const approachR = approachEntry ? (Number.isInteger(approachEntry.r) ? approachEntry.r : approachEntry.row) : r;
+        const approachC = approachEntry ? (Number.isInteger(approachEntry.c) ? approachEntry.c : approachEntry.column) : c;
+        const approachCell = displayGrid?.[approachR]?.[approachC] || interceptCell;
+
+        return {
+            allocatedDefense: this.trialPreviewConfig.deployedDefense,
+            interceptCell: { ...interceptCell, cellId: `${r}:${c}` },
+            approachCell: { ...approachCell, cellId: `${approachR}:${approachC}` }
+        };
+    }
+
+    getTrialInterceptionCellState(r, c) {
+        if (!this.trialPreviewConfig) return null;
+        const input = this.createTrialPreviewInput(r, c);
+        if (!input) return this.getTrialRoutePosition(r, c) ? { onRoute: true, canIntercept: false } : null;
+        const result = this.trialController.previewInterception(input);
+        return { onRoute: true, canIntercept: result.success !== false };
+    }
+
+    updateTrialInterceptionPreview(r, c) {
+        if (!this.trialPreviewConfig) return null;
+        const input = this.createTrialPreviewInput(r, c);
+        if (!input) {
+            this.trialPresentationState.clearInterceptionPreview();
+            return null;
+        }
+        const result = this.trialController.previewInterception(input);
+        const terrainNameKey = input.interceptCell.terrain?.nameKey || input.interceptCell.terrain?.id || null;
+        return this.trialPresentationState.setInterceptionPreview({
+            cell: { r, c, cellId: `${r}:${c}` },
+            terrainNameKey,
+            deployedDefense: this.trialPreviewConfig.deployedDefense,
+            result
+        });
+    }
 
     /**
      * 🚀 UI の初期化とマウント
@@ -780,6 +883,7 @@ class UIController {
 
     onCellClick(r, c) {
         if (!this.state) return;
+        if (this.developmentTrialPreviewHarness.isActive()) return;
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
         const undoSys = this.undoSys || (typeof window !== "undefined" ? window.undoSys : null);
 
@@ -897,6 +1001,7 @@ class UIController {
     }
 
     clearCellPreviews() {
+        if (this.trialPreviewConfig) this.trialPresentationState.clearInterceptionPreview();
         this.hideTileTooltip();
         const undoSys = this.undoSys || (typeof window !== "undefined" ? window.undoSys : null);
         if (undoSys) undoSys.hideHoverTooltip();
@@ -950,11 +1055,15 @@ class UIController {
 
     onCellMouseEnter(e, r, c) {
         if (!this.state || typeof document === "undefined") return;
-        const cellData = this.state.grid[r][c];
+        const cellData = this.getBoardDisplayGrid()[r][c];
         const groupId = cellData ? (cellData.mergeGroupId || cellData.placementGroupId) : null;
         if (groupId) {
             const groupCells = document.querySelectorAll(`.cell[data-group-id="${groupId}"]`);
             groupCells.forEach(el => el.classList.add("merge-hover-highlight"));
+        }
+        if (this.trialPreviewConfig) {
+            this.updateTrialInterceptionPreview(r, c);
+            return;
         }
         if (typeof window !== "undefined" && window.BlockPlacementSystem) {
             window.BlockPlacementSystem.updateHoverPreview(e, r, c, this.selectedCard, this.state);
@@ -966,7 +1075,7 @@ class UIController {
         const undoSys = this.undoSys || (typeof window !== "undefined" ? window.undoSys : null);
         if (undoSys) undoSys.hideHoverTooltip();
 
-        const cellData = this.state.grid[r][c];
+        const cellData = this.getBoardDisplayGrid()[r][c];
         this.showCellTooltip(e, r, c, cellData);
     }
 
@@ -994,6 +1103,20 @@ class UIController {
         }
 
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' && window.I18n ? window.I18n : { t: k => k });
+        if (this.developmentTrialPreviewHarness.isActive()) {
+            const preview = this.trialPresentationState.interceptionPreview;
+            if (!preview || preview.cell?.r !== r || preview.cell?.c !== c) {
+                this.hideCellTooltip();
+                return;
+            }
+            const terrainName = I18n.t(preview.terrainNameKey || "TERRAIN_PLAINS");
+            const title = `${terrainName} [${String.fromCharCode(65 + c)}${r + 1}]`;
+            const desc = TrialInterceptionPreviewComponent.renderHtml(preview, I18n);
+            if (typeof window !== "undefined" && window.tooltipSystemInstance?.showCustom) {
+                window.tooltipSystemInstance.showCustom(e?.clientX || 0, e?.clientY || 0, title, desc);
+            }
+            return;
+        }
         const undoSys = this.undoSys || (typeof window !== "undefined" ? window.undoSys : null);
         const isPlacedThisTurn = (undoSys && typeof undoSys.isCellPlacedThisTurn === "function") ? undoSys.isCellPlacedThisTurn(r, c) : false;
 
@@ -1120,6 +1243,11 @@ class UIController {
                     </div>
                 `;
             }
+        }
+
+        const trialPreview = this.trialPresentationState.interceptionPreview;
+        if (this.trialPreviewConfig && trialPreview && trialPreview.cell?.r === r && trialPreview.cell?.c === c) {
+            desc += TrialInterceptionPreviewComponent.renderHtml(trialPreview, I18n);
         }
 
         if (typeof window !== "undefined" && window.tooltipSystemInstance && typeof window.tooltipSystemInstance.showCustom === "function") {

@@ -28,6 +28,20 @@ export const TRIAL_TERRAIN_EFFECTS = Object.freeze({
     HIGH_GROUND: "HIGH_GROUND"
 });
 
+export const TRIAL_OUTCOMES = Object.freeze({
+    REPEL: "REPEL",
+    BREAKTHROUGH: "BREAKTHROUGH",
+    EXACT: "EXACT"
+});
+
+export const TRIAL_MODIFIER_I18N_KEYS = Object.freeze({
+    [TRIAL_TERRAIN_EFFECTS.FOREST_DEPLOYMENT]: "UI_TRIAL_MOD_FOREST_DEPLOYMENT",
+    [TRIAL_TERRAIN_EFFECTS.DEEP_FOREST_DEPLOYMENT]: "UI_TRIAL_MOD_DEEP_FOREST_DEPLOYMENT",
+    [TRIAL_TERRAIN_EFFECTS.WETLAND_EXIT]: "UI_TRIAL_MOD_WETLAND_EXIT",
+    [TRIAL_TERRAIN_EFFECTS.DESERT_EXIT]: "UI_TRIAL_MOD_DESERT_EXIT",
+    [TRIAL_TERRAIN_EFFECTS.HIGH_GROUND]: "UI_TRIAL_MOD_HIGH_GROUND"
+});
+
 export const DEFAULT_TRIAL_RULES = Object.freeze({
     defenseConversionRate: 5,
     suppressionConversionRate: 5,
@@ -38,4 +52,3 @@ export const DEFAULT_TRIAL_RULES = Object.freeze({
     // Phase 1検証用の注入可能な仮値。確定バランス値ではない。
     deepForestDeployment: Object.freeze({ threshold: 30, overflowEfficiency: 0.35 })
 });
-

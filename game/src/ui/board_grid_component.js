@@ -30,7 +30,10 @@ export class BoardGridComponent {
      */
     render(I18n) {
         const boardEl = document.getElementById("gridBoard");
-        if (!boardEl || !this.state || !this.state.grid) return;
+        const grid = this.ui && typeof this.ui.getBoardDisplayGrid === "function"
+            ? this.ui.getBoardDisplayGrid()
+            : this.state?.grid;
+        if (!boardEl || !this.state || !grid) return;
         boardEl.innerHTML = "";
 
         // 🏷️ 左上角: 盤面テキストスタイル切替ボタン (0.標準 ⇄ 1.カプセル ⇄ 2.対称 ⇄ 3.モダン ⇄ 4.新アイコン)
@@ -50,7 +53,7 @@ export class BoardGridComponent {
         cornerCell.innerHTML = `<button id="cornerTileStyleToggleBtn" onclick="toggleTileTextStyle(event)" style="background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25); color:#fff; border-radius:4px; padding:3px 6px; font-size:14px; cursor:pointer; line-height:1; transition:all 0.15s ease;" data-tooltip="TOOLTIP_BOARD_LABEL_TOGGLE">${styleIcon}</button>`;
         boardEl.appendChild(cornerCell);
 
-        const size = this.state.grid.length;
+        const size = grid.length;
         const cellSize = (size >= 9) ? '80px' : '104px'; // 🛡️ 隙間がなくなる直前までマス目を拡大 (104px)
         const headerSize = (size >= 9) ? '38px' : '44px';
 
@@ -68,7 +71,7 @@ export class BoardGridComponent {
         const lakeCoords = [];
         for (let r = 0; r < size; r++) {
             for (let c = 0; c < size; c++) {
-                const cell = this.state.grid[r][c];
+                const cell = grid[r][c];
                 if (cell && cell.placed && cell.socketResource) {
                     const sid = cell.socketResource.id || cell.socketResource.nameKey || "";
                     if (sid === "SOCKET_LAKE" || sid === "SOCKET_OASIS") {
@@ -98,11 +101,16 @@ export class BoardGridComponent {
             boardEl.appendChild(vCell);
 
             for (let c = 0; c < size; c++) {
-                const cellData = this.state.grid[r][c];
+                const cellData = grid[r][c];
                 const cellEl = document.createElement("div");
                 cellEl.className = "cell";
                 cellEl.setAttribute("data-r", r);
                 cellEl.setAttribute("data-c", c);
+                const trialCellState = this.ui && typeof this.ui.getTrialInterceptionCellState === "function"
+                    ? this.ui.getTrialInterceptionCellState(r, c)
+                    : null;
+                if (trialCellState?.onRoute) cellEl.classList.add("trial-route-cell");
+                if (trialCellState?.canIntercept) cellEl.classList.add("trial-interception-candidate");
 
                 const isHQVic = (typeof this.state.isHQVicinity === "function") ? this.state.isHQVicinity(r, c) : false;
                 const lakeDirClass = this.getLakeDirectionClass(r, c, lakeCoords);
@@ -164,18 +172,18 @@ export class BoardGridComponent {
                         }
 
                         // 🚫 内側境界線の完全打消し（マージ大土地・複数マスブロックの完全単一化）
-                        const topSame = (r > 0 && (this.state.grid[r-1][c].mergeGroupId === activeGroupId || this.state.grid[r-1][c].placementGroupId === activeGroupId));
-                        const rightSame = (c < size - 1 && (this.state.grid[r][c+1].mergeGroupId === activeGroupId || this.state.grid[r][c+1].placementGroupId === activeGroupId));
-                        const bottomSame = (r < size - 1 && (this.state.grid[r+1][c].mergeGroupId === activeGroupId || this.state.grid[r+1][c].placementGroupId === activeGroupId));
-                        const leftSame = (c > 0 && (this.state.grid[r][c-1].mergeGroupId === activeGroupId || this.state.grid[r][c-1].placementGroupId === activeGroupId));
+                        const topSame = (r > 0 && (grid[r-1][c].mergeGroupId === activeGroupId || grid[r-1][c].placementGroupId === activeGroupId));
+                        const rightSame = (c < size - 1 && (grid[r][c+1].mergeGroupId === activeGroupId || grid[r][c+1].placementGroupId === activeGroupId));
+                        const bottomSame = (r < size - 1 && (grid[r+1][c].mergeGroupId === activeGroupId || grid[r+1][c].placementGroupId === activeGroupId));
+                        const leftSame = (c > 0 && (grid[r][c-1].mergeGroupId === activeGroupId || grid[r][c-1].placementGroupId === activeGroupId));
 
                         if (topSame) cellEl.classList.add("no-border-top", "no-radius-tl", "no-radius-tr");
                         if (rightSame) cellEl.classList.add("no-border-right", "no-radius-tr", "no-radius-br");
                         if (bottomSame) cellEl.classList.add("no-border-bottom", "no-radius-bl", "no-radius-br");
                         if (leftSame) cellEl.classList.add("no-border-left", "no-radius-tl", "no-radius-bl");
 
-                        topGroupSame = (r > 0 && (this.state.grid[r-1][c].mergeGroupId === activeGroupId || this.state.grid[r-1][c].placementGroupId === activeGroupId));
-                        leftGroupSame = (c > 0 && (this.state.grid[r][c-1].mergeGroupId === activeGroupId || this.state.grid[r][c-1].placementGroupId === activeGroupId));
+                        topGroupSame = (r > 0 && (grid[r-1][c].mergeGroupId === activeGroupId || grid[r-1][c].placementGroupId === activeGroupId));
+                        leftGroupSame = (c > 0 && (grid[r][c-1].mergeGroupId === activeGroupId || grid[r][c-1].placementGroupId === activeGroupId));
 
                         const yieldInfo = this.getPrimaryYieldInfo(cellData, isHQVic);
                         if (yieldInfo && yieldInfo.val > 0) cellEl.classList.add("has-resource-yield");
@@ -262,12 +270,14 @@ export class BoardGridComponent {
                 cellEl.onmouseleave = () => this.ui.clearCellPreviews();
                 cellEl.onclick = () => this.ui.onCellClick(r, c);
                 cellEl.ondragover = (e) => {
+                    if (this.ui.developmentTrialPreviewHarness?.isActive()) return;
                     if (this.state.hasPickedThisTurn) return;
                     e.preventDefault();
                     e.dataTransfer.dropEffect = "move";
                     this.ui.onCellMouseEnter(e, r, c);
                 };
                 cellEl.ondrop = (e) => {
+                    if (this.ui.developmentTrialPreviewHarness?.isActive()) return;
                     if (this.state.hasPickedThisTurn) return;
                     e.preventDefault();
                     const cat = e.dataTransfer.getData("application/card-category");
@@ -293,6 +303,7 @@ export class BoardGridComponent {
                 };
                 cellEl.oncontextmenu = (e) => {
                     e.preventDefault();
+                    if (this.ui.developmentTrialPreviewHarness?.isActive()) return;
                     if (this.ui.selectedCard) {
                         const tObj = this.ui.selectedCard.terrain || this.ui.selectedCard;
                         const category = this.ui.selectedCard.category || tObj.category || "LAND";

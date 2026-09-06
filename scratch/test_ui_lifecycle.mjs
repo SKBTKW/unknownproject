@@ -743,6 +743,71 @@ export async function runUILifecycleInspection() {
             }
         }
 
+        // ⚔️ Trial Phase 2: 明示開始時だけ侵攻経路・迎撃候補・予測内訳を既存Tooltipへ表示
+        const trialRouteTerrains = [
+            { id: "E0_WETLAND", terrainId: "E0_WETLAND", gl: 1, e: 0, nameKey: "TERRAIN_WETLAND" },
+            { id: "GL1_PLAINS", terrainId: "GL1_PLAINS", gl: 1, e: 1, nameKey: "TERRAIN_PLAINS" },
+            { id: "GL2_FOREST", terrainId: "GL2_FOREST", gl: 2, e: 1, nameKey: "TERRAIN_FOREST" }
+        ];
+        trialRouteTerrains.forEach((terrain, c) => {
+            engine.state.grid[4][c] = { r: 4, c, placed: true, isHQ: false, terrain };
+        });
+        ui.startTrialInterceptionPreview({
+            id: "UI_PHASE2",
+            enemySuppression: 14,
+            availableDefense: engine.state.currentDefense,
+            routes: [{ id: "SOUTH", cells: [{ r: 4, c: 0 }, { r: 4, c: 1 }, { r: 4, c: 2 }] }]
+        }, { deployedDefense: Math.min(6, engine.state.currentDefense), routeId: "SOUTH" });
+        const trialBoard = mockDoc.getElementById("gridBoard");
+        const wetlandRouteCell = trialBoard.children.find(c => c.dataset && c.dataset.r === "4" && c.dataset.c === "0");
+        const plainsCandidateCell = trialBoard.children.find(c => c.dataset && c.dataset.r === "4" && c.dataset.c === "1");
+        assert("Trial侵攻経路上の湿原がroute表示されること", wetlandRouteCell.classList.contains("trial-route-cell"));
+        assert("迎撃不可の湿原にcandidate表示が付かないこと", !wetlandRouteCell.classList.contains("trial-interception-candidate"));
+        assert("侵攻経路上の草原に迎撃候補表示が付くこと", plainsCandidateCell.classList.contains("trial-interception-candidate"));
+        const trialHoverEvent = { clientX: 200, clientY: 200 };
+        plainsCandidateCell.onmouseenter(trialHoverEvent);
+        plainsCandidateCell.onmousemove(trialHoverEvent);
+        assert("迎撃候補hoverで既存TooltipへTrial予測が表示されること", tooltipSystemInstance.tooltipEl.innerHTML.includes("trial-interception-preview"));
+        assert("湿原出口のbefore/after内訳がTooltipへ表示されること", tooltipSystemInstance.tooltipEl.innerHTML.includes("UI_TRIAL_MOD_WETLAND_EXIT") || tooltipSystemInstance.tooltipEl.innerHTML.includes("湿原通過"));
+        ui.stopTrialInterceptionPreview();
+
+        // ⚔️ Trial Phase 2.5: dev限定固定Scenarioの開始・hover・停止
+        const devControlsRoot = mockDoc.getElementById("devDiceControlsRoot");
+        assert("production相当ではTrial Preview操作がdev HUDへ露出しないこと", !devControlsRoot.innerHTML.includes("btnDevTrialPreviewStart"));
+        window.__TOA_DEV_MODE__ = true;
+        ui.devDiceControls.render();
+        assert("dev modeではTrial Preview開始・停止操作が表示されること", devControlsRoot.innerHTML.includes("btnDevTrialPreviewStart") && devControlsRoot.innerHTML.includes("btnDevTrialPreviewStop"));
+
+        const normalGridReference = engine.state.grid;
+        const devStartState = JSON.stringify(engine.state.grid);
+        const devStartDefense = engine.state.currentDefense;
+        assert("dev固定Scenarioが起動すること", ui.startDevelopmentTrialPreview().success === true);
+        const devTrialBoard = mockDoc.getElementById("gridBoard");
+        const devWetlandCell = devTrialBoard.children.find(c => c.dataset && c.dataset.r === "0" && c.dataset.c === "0");
+        const devWetlandExitCell = devTrialBoard.children.find(c => c.dataset && c.dataset.r === "1" && c.dataset.c === "0");
+        const devForestCell = devTrialBoard.children.find(c => c.dataset && c.dataset.r === "2" && c.dataset.c === "1");
+        const devHighCell = devTrialBoard.children.find(c => c.dataset && c.dataset.r === "3" && c.dataset.c === "1");
+        assert("dev Scenarioの侵攻経路が表示されること", devWetlandCell.classList.contains("trial-route-cell"));
+        assert("迎撃不可湿原が候補表示されないこと", !devWetlandCell.classList.contains("trial-interception-candidate"));
+        assert("湿原出口・森・高所が迎撃候補表示されること", [devWetlandExitCell, devForestCell, devHighCell].every(cell => cell.classList.contains("trial-interception-candidate")));
+        devWetlandExitCell.onmouseenter(trialHoverEvent);
+        devWetlandExitCell.onmousemove(trialHoverEvent);
+        assert("dev Scenario hoverが既存Phase 2 Tooltipを使うこと", tooltipSystemInstance.tooltipEl.innerHTML.includes("trial-interception-preview"));
+        devWetlandExitCell.onmouseleave();
+        assert("hover outでTrial Tooltipが解除されること", tooltipSystemInstance.tooltipEl.style.display === "none");
+        assert("dev Scenario閲覧中も通常盤面と現在防衛が不変であること", JSON.stringify(engine.state.grid) === devStartState && engine.state.currentDefense === devStartDefense);
+
+        assert("dev Scenarioを停止できること", ui.stopDevelopmentTrialPreview() === true);
+        const restoredBoard = mockDoc.getElementById("gridBoard");
+        const restoredCell = restoredBoard.children.find(c => c.dataset && c.dataset.r === "0" && c.dataset.c === "0");
+        assert("停止後は通常盤面参照へ復帰すること", ui.getBoardDisplayGrid() === normalGridReference);
+        assert("停止後はTrial route/candidate classが残らないこと", !restoredCell.classList.contains("trial-route-cell") && !restoredCell.classList.contains("trial-interception-candidate"));
+        assert("停止後はTrial TooltipとTrialStateを破棄すること", tooltipSystemInstance.tooltipEl.style.display === "none" && ui.trialController.state === null);
+        restoredCell.onmouseenter(trialHoverEvent);
+        restoredCell.onmousemove(trialHoverEvent);
+        assert("停止後は通常セルhoverへ復帰すること", !tooltipSystemInstance.tooltipEl.innerHTML.includes("trial-interception-preview"));
+        window.__TOA_DEV_MODE__ = false;
+
     } catch (err) {
         console.error("  ❌ [FATAL] UIライフサイクル実行中に致命的例外が発生:", err);
         failCount++;

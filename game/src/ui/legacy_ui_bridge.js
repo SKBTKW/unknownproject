@@ -15,6 +15,7 @@ import { BuffPanelComponent } from './buff_panel_component.js';
 import { TerritoryBadgeComponent } from './territory_badge_component.js';
 import { UILayoutConfig } from './layout_config.js';
 import { BlockPlacementSystem } from './block_placement_system.js';
+import { isDevelopmentMode } from '../config/dev_mode.js';
 
 export function attachLegacyUIBridge(ui) {
     if (typeof window === "undefined" || !ui) return;
@@ -104,10 +105,7 @@ export function attachLegacyUIBridge(ui) {
         });
     };
 
-    const searchParams = (window.location && typeof window.location.search === "string")
-        ? new URLSearchParams(window.location.search)
-        : null;
-    const isDevMode = window.__TOA_DEV_MODE__ === true || searchParams?.get("dev") === "1";
+    const isDevMode = isDevelopmentMode();
     if (isDevMode) {
         window.demoResourceDelta = () => {
             const feedbackService = window.FloatingFeedbackService;

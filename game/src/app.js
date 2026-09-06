@@ -46,6 +46,10 @@ import {
 import { BUILD_IDENTITY_CONFIG, BUILD_IDENTITY_MODES } from './config/build_identity_config.js';
 import { BuildIdentityService, normalizeBuildIdentity } from './services/build_identity_service.js';
 import { BuildIdentityBadgeComponent } from './ui/build_identity_badge_component.js';
+import { TrialInterceptionPreviewComponent } from './ui/trial_interception_preview_component.js';
+import { DevelopmentTrialPreviewHarness } from './trial/dev/development_trial_preview_harness.js';
+import { TRIAL_PREVIEW_SCENARIOS, getTrialPreviewScenario } from './trial/dev/trial_preview_scenarios.js';
+import { isDevelopmentMode } from './config/dev_mode.js';
 import {
     DEFAULT_PLACEMENT_ANCHOR,
     normalizePlacementAnchor,
@@ -127,6 +131,11 @@ export {
     BuildIdentityService,
     normalizeBuildIdentity,
     BuildIdentityBadgeComponent,
+    TrialInterceptionPreviewComponent,
+    DevelopmentTrialPreviewHarness,
+    TRIAL_PREVIEW_SCENARIOS,
+    getTrialPreviewScenario,
+    isDevelopmentMode,
     DEFAULT_PLACEMENT_ANCHOR,
     normalizePlacementAnchor,
     resolvePlacementAnchor,

@@ -116,6 +116,22 @@ $$\text{敵総制圧力} = \text{Trial基礎脅威} + \text{盤面産出帯に�
 - 地形効果は双方へ働く物理条件、戦術はプレイヤーが選ぶ能動処理として別Resolverへ分離する。
 - Phase 1は純粋ロジック検証に限定し、ターン進行、Stage昇格、既存UI、Rendererへはまだ接続しない。
 
+### Phase 2 迎撃地点比較プレビュー（プロトタイプ）
+
+- Phase 2の目的はTrial全体の完成ではなく、同一Scenario・同一敵制圧力・同一配備🛡️で複数の迎撃候補を比較できる状態を作ることとする。
+- 迎撃候補hoverでは、基礎迎撃力、適用された地形補正の`before → after`、最終迎撃力、敵制圧力、予測結果および戦力差を表示する。
+- 予測と本戦は同じBattleContext、地形効果Resolver、Modifier Calculator、Combat Resolverを使用し、UIおよびPresentation層で戦闘計算を再実装しない。
+- 予測はGameState、TrialState、現在🛡️、Trial Flow、Undo履歴を変更しない純粋な参照処理とする。
+- 実際に値を変化させなかったModifierは適用済み効果として表示しない。
+- Phase 2では戦術、2D6、種族、天候、戦後損耗、Stage進行、`nextTurn()`接続および2.5D演出を実装しない。
+
+### Phase 2.5 開発用Trial比較環境（プロトタイプ）
+
+- 開発モードでのみ、固定Scenarioを5×5盤面へ一時表示し、侵攻経路上の草原・森・高所・湿原出口を同一敵制圧力・同一配備🛡️でhover比較できる。
+- 固定Scenarioは通常GameStateの盤面、資源、現在🛡️、Undo履歴を書き換えず、停止時にはTrial用経路・候補・Tooltip・一時表示状態を破棄して通常盤面へ戻る。
+- 迎撃予測はPhase 2の`previewInterception()`と同じDomain Resolverを再利用し、開発用環境およびUIで戦闘計算を再実装しない。
+- 本環境はUX検証専用であり、`nextTurn()`、本番Trial生成、戦術、2D6、種族、天候、戦後損耗、2.5D表示へは接続しない。
+
 ---
 
 ## 🔗 5. 連携と街道の役割分担
