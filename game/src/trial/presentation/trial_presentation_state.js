@@ -1,5 +1,22 @@
 import { TRIAL_MODIFIER_I18N_KEYS } from "../domain/trial_types.js";
 
+export function normalizeDefenseAllocation(value, availableDefense, fallback = 0) {
+    const normalizedAvailable = Number.isFinite(Number(availableDefense))
+        ? Math.max(0, Math.floor(Number(availableDefense)))
+        : 0;
+    const numericValue = Number(value);
+    const numericFallback = Number(fallback);
+    const safeValue = Number.isNaN(numericValue)
+        ? (Number.isFinite(numericFallback) ? numericFallback : 0)
+        : numericValue;
+    return Math.min(normalizedAvailable, Math.max(0, Math.floor(safeValue)));
+}
+
+function toCellCoordinates(cell) {
+    if (!cell || !Number.isInteger(cell.r) || !Number.isInteger(cell.c)) return null;
+    return { r: cell.r, c: cell.c };
+}
+
 export class TrialPresentationState {
     constructor({ mode = "2D" } = {}) {
         this.mode = mode;
@@ -21,8 +38,47 @@ export class TrialPresentationState {
         return this.mode;
     }
 
+    selectInterceptCell(cell) {
+        this.selectedInterceptCell = toCellCoordinates(cell);
+        return this.selectedInterceptCell;
+    }
+
+    clearSelectedInterceptCell() {
+        this.selectedInterceptCell = null;
+    }
+
+    setHoveredCell(cell) {
+        this.hoveredCell = toCellCoordinates(cell);
+        return this.hoveredCell;
+    }
+
+    clearHoveredCell() {
+        this.hoveredCell = null;
+    }
+
+    setPreviewDefenseAllocation(value, availableDefense, fallback = this.previewDefenseAllocation) {
+        this.previewDefenseAllocation = normalizeDefenseAllocation(value, availableDefense, fallback);
+        return this.previewDefenseAllocation;
+    }
+
+    setActiveEnemyRoute(routeId) {
+        this.activeEnemyRoute = routeId ?? null;
+        return this.activeEnemyRoute;
+    }
+
+    getEffectiveInterceptCell() {
+        return this.hoveredCell || this.selectedInterceptCell || null;
+    }
+
+    clearPlanningState() {
+        this.selectedInterceptCell = null;
+        this.hoveredCell = null;
+        this.previewDefenseAllocation = 0;
+        this.activeEnemyRoute = null;
+        this.interceptionPreview = null;
+    }
+
     setInterceptionPreview({ cell, terrainNameKey, deployedDefense, result }) {
-        this.hoveredCell = cell || null;
         if (!result || result.success === false) {
             this.interceptionPreview = result ? {
                 canIntercept: false,
@@ -60,7 +116,6 @@ export class TrialPresentationState {
     }
 
     clearInterceptionPreview() {
-        this.hoveredCell = null;
         this.interceptionPreview = null;
     }
 }

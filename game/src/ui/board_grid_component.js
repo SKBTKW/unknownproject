@@ -112,6 +112,10 @@ export class BoardGridComponent {
                     : null;
                 if (trialCellState?.onRoute) cellEl.classList.add("trial-route-cell");
                 if (trialCellState?.canIntercept) cellEl.classList.add("trial-interception-candidate");
+                const selectedInterceptCell = this.ui?.trialPresentationState?.selectedInterceptCell;
+                if (selectedInterceptCell?.r === r && selectedInterceptCell?.c === c) {
+                    cellEl.classList.add("trial-interception-selected");
+                }
 
                 const isHQVic = (typeof this.state.isHQVicinity === "function") ? this.state.isHQVicinity(r, c) : false;
                 const isLakeVic = (typeof this.state.isWaterSourceInfluence === "function")

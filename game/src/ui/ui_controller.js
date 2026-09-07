@@ -25,6 +25,7 @@ import { BuildIdentityBadgeComponent } from './build_identity_badge_component.js
 import { TrialController } from '../trial/flow/trial_controller.js';
 import { TrialPresentationState } from '../trial/presentation/trial_presentation_state.js';
 import { TrialInterceptionPreviewComponent } from './trial_interception_preview_component.js';
+import { TrialDefenseAllocationComponent } from './trial_defense_allocation_component.js';
 import { DevelopmentTrialPreviewHarness } from '../trial/dev/development_trial_preview_harness.js';
 import { gameSettings } from './settings_modal_system.js';
 import {
@@ -67,6 +68,7 @@ class UIController {
         this.diceQueue = new DiceDisplayQueue(this.diceWidget);
         this.devDiceControls = (typeof document !== 'undefined') ? new DevDiceControlsComponent(this) : null;
         this.buildIdentityBadge = (typeof document !== 'undefined') ? new BuildIdentityBadgeComponent() : null;
+        this.trialDefenseAllocationComponent = (typeof document !== 'undefined') ? new TrialDefenseAllocationComponent(this) : null;
         this.trialController = new TrialController();
         this.trialPresentationState = new TrialPresentationState();
         this.trialPreviewConfig = null;
@@ -109,11 +111,10 @@ class UIController {
     startTrialInterceptionPreview(scenario, { deployedDefense = 6, routeId = null } = {}) {
         const availableDefense = scenario.availableDefense ?? this.state.currentDefense ?? this.state.defense ?? 0;
         this.trialController.startScenario({ ...scenario, availableDefense });
-        this.trialPreviewConfig = {
-            routeId,
-            deployedDefense: Math.min(Math.max(0, Number(deployedDefense) || 0), availableDefense)
-        };
-        this.trialPresentationState.previewDefenseAllocation = this.trialPreviewConfig.deployedDefense;
+        this.trialPresentationState.clearPlanningState();
+        this.trialPresentationState.setActiveEnemyRoute(routeId);
+        this.trialPresentationState.setPreviewDefenseAllocation(deployedDefense, availableDefense, 0);
+        this.trialPreviewConfig = { active: true };
         this.render();
         return this.trialController.state;
     }
@@ -133,16 +134,21 @@ class UIController {
     stopTrialInterceptionPreview() {
         this.trialPreviewConfig = null;
         this.trialController.state = null;
-        this.trialPresentationState.clearInterceptionPreview();
+        this.trialPresentationState.clearPlanningState();
         this.hideCellTooltip();
         this.render();
+    }
+
+    getTrialAvailableDefense() {
+        return Math.max(0, Math.floor(Number(this.trialController.state?.human?.availableDefense) || 0));
     }
 
     getActiveTrialRoute() {
         if (!this.trialPreviewConfig || !this.trialController.state) return null;
         const routes = this.trialController.state.routes || [];
-        if (this.trialPreviewConfig.routeId !== null) {
-            return routes.find(route => route.id === this.trialPreviewConfig.routeId) || null;
+        const activeRouteId = this.trialPresentationState.activeEnemyRoute;
+        if (activeRouteId !== null) {
+            return routes.find(route => route.id === activeRouteId) || null;
         }
         return routes[0] || null;
     }
@@ -170,7 +176,7 @@ class UIController {
         const approachCell = displayGrid?.[approachR]?.[approachC] || interceptCell;
 
         return {
-            allocatedDefense: this.trialPreviewConfig.deployedDefense,
+            allocatedDefense: this.trialPresentationState.previewDefenseAllocation,
             interceptCell: { ...interceptCell, cellId: `${r}:${c}` },
             approachCell: { ...approachCell, cellId: `${approachR}:${approachC}` }
         };
@@ -186,6 +192,24 @@ class UIController {
 
     updateTrialInterceptionPreview(r, c) {
         if (!this.trialPreviewConfig) return null;
+        const cellState = this.getTrialInterceptionCellState(r, c);
+        if (!cellState?.canIntercept) {
+            this.trialPresentationState.clearHoveredCell();
+            return this.refreshTrialInterceptionPreview();
+        }
+        this.trialPresentationState.setHoveredCell({ r, c });
+        return this.refreshTrialInterceptionPreview();
+    }
+
+    refreshTrialInterceptionPreview() {
+        if (!this.trialPreviewConfig) return null;
+        const effectiveCell = this.trialPresentationState.getEffectiveInterceptCell();
+        if (!effectiveCell) {
+            this.trialPresentationState.clearInterceptionPreview();
+            if (this.trialDefenseAllocationComponent) this.trialDefenseAllocationComponent.render();
+            return null;
+        }
+        const { r, c } = effectiveCell;
         const input = this.createTrialPreviewInput(r, c);
         if (!input) {
             this.trialPresentationState.clearInterceptionPreview();
@@ -193,12 +217,40 @@ class UIController {
         }
         const result = this.trialController.previewInterception(input);
         const terrainNameKey = input.interceptCell.terrain?.nameKey || input.interceptCell.terrain?.id || null;
-        return this.trialPresentationState.setInterceptionPreview({
+        const preview = this.trialPresentationState.setInterceptionPreview({
             cell: { r, c, cellId: `${r}:${c}` },
             terrainNameKey,
-            deployedDefense: this.trialPreviewConfig.deployedDefense,
+            deployedDefense: this.trialPresentationState.previewDefenseAllocation,
             result
         });
+        if (this.trialDefenseAllocationComponent) this.trialDefenseAllocationComponent.render();
+        return preview;
+    }
+
+    selectTrialInterceptionCell(r, c) {
+        if (!this.trialPreviewConfig) return false;
+        const cellState = this.getTrialInterceptionCellState(r, c);
+        if (!cellState?.canIntercept) return false;
+        this.trialPresentationState.selectInterceptCell({ r, c });
+        this.trialPresentationState.clearHoveredCell();
+        this.refreshTrialInterceptionPreview();
+        this.renderBoardGrid(I18n);
+        return true;
+    }
+
+    setTrialDefenseAllocation(value) {
+        if (!this.trialPreviewConfig) return 0;
+        const allocation = this.trialPresentationState.setPreviewDefenseAllocation(
+            value,
+            this.getTrialAvailableDefense()
+        );
+        this.refreshTrialInterceptionPreview();
+        return allocation;
+    }
+
+    adjustTrialDefenseAllocation(delta) {
+        const current = this.trialPresentationState.previewDefenseAllocation;
+        return this.setTrialDefenseAllocation(current + Number(delta || 0));
     }
 
     /**
@@ -421,6 +473,7 @@ class UIController {
             this.renderBuffPanel();
             this.updateMulliganButton();
             this.updateFloatingPreview(null);
+            if (this.trialDefenseAllocationComponent) this.trialDefenseAllocationComponent.render();
         } catch (err) {
             console.error("UIController Render Error:", err);
         }
@@ -883,7 +936,10 @@ class UIController {
 
     onCellClick(r, c) {
         if (!this.state) return;
-        if (this.developmentTrialPreviewHarness.isActive()) return;
+        if (this.trialPreviewConfig) {
+            this.selectTrialInterceptionCell(r, c);
+            return;
+        }
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
         const undoSys = this.undoSys || (typeof window !== "undefined" ? window.undoSys : null);
 
@@ -1001,7 +1057,17 @@ class UIController {
     }
 
     clearCellPreviews() {
-        if (this.trialPreviewConfig) this.trialPresentationState.clearInterceptionPreview();
+        if (this.trialPreviewConfig) {
+            this.trialPresentationState.clearHoveredCell();
+            this.refreshTrialInterceptionPreview();
+            this.hideTileTooltip();
+            if (typeof document !== "undefined") {
+                document.querySelectorAll(".merge-hover-highlight").forEach(cell => {
+                    cell.classList.remove("merge-hover-highlight");
+                });
+            }
+            return;
+        }
         this.hideTileTooltip();
         const undoSys = this.undoSys || (typeof window !== "undefined" ? window.undoSys : null);
         if (undoSys) undoSys.hideHoverTooltip();

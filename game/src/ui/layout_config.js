@@ -136,6 +136,26 @@ const UILayoutConfig = {
         }
     },
 
+    // ⚔️ Trial迎撃計画: 地点比較と🛡配分を表示する固定パネル
+    trialDefenseAllocation: {
+        desktop: {
+            position: "fixed",
+            right: "24px",
+            bottom: "72px",
+            width: "300px",
+            zIndex: 720,
+            pointerEvents: "auto"
+        },
+        mobile: {
+            position: "fixed",
+            right: "12px",
+            bottom: "56px",
+            width: "min(300px, calc(100vw - 24px))",
+            zIndex: 720,
+            pointerEvents: "auto"
+        }
+    },
+
     // 🏷️ 開発ブランチ / 製品バージョン表示バッジ
     buildIdentityBadge: {
         desktop: {

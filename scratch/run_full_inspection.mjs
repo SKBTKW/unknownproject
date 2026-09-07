@@ -49,7 +49,7 @@ async function main() {
         process.exit(1);
     }
 
-    // ⚔️ Layer 4: Trial Phase 1〜2.5 Tests (試練・迎撃・プレビュー)
+    // ⚔️ Layer 4: Trial Phase 1〜2.7B Tests (試練・迎撃・配分プレビュー)
     console.log("\n⚔️  [LAYER 4/6] Trial Subsystem Tests (迎撃・戦闘・プレビュー)...");
     const trialFoundationOk = await runCommand("node", ["scratch/test_trial_foundation.mjs"]);
     if (!trialFoundationOk) {
@@ -64,6 +64,16 @@ async function main() {
     const trialDevHarnessOk = await runCommand("node", ["scratch/test_trial_phase25_dev_harness.mjs"]);
     if (!trialDevHarnessOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Trial Dev Harness) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const trialSelectionOk = await runCommand("node", ["scratch/test_trial_phase27a_selection.mjs"]);
+    if (!trialSelectionOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Trial Selection) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const trialAllocationOk = await runCommand("node", ["scratch/test_trial_phase27b_defense_allocation.mjs"]);
+    if (!trialAllocationOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Trial Defense Allocation) で不合格が検出されました。");
         process.exit(1);
     }
 
@@ -94,7 +104,7 @@ async function main() {
     console.log("   ✅ Layer 1: Static Lint (0 errors)");
     console.log("   ✅ Layer 2: Spec Assertions (all assertions matched)");
     console.log("   ✅ Layer 3: Domain Unit Tests PASS");
-    console.log("   ✅ Layer 4: Trial Phase 1〜2.5 Tests PASS");
+    console.log("   ✅ Layer 4: Trial Phase 1〜2.7B Tests PASS");
     console.log("   ✅ Layer 5: UI Lifecycle Tests PASS");
     console.log("   ✅ Layer 6: Integration & Settlement Tests PASS");
     console.log("============================================================\n");

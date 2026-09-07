@@ -790,11 +790,29 @@ export async function runUILifecycleInspection() {
         assert("dev Scenarioの侵攻経路が表示されること", devWetlandCell.classList.contains("trial-route-cell"));
         assert("迎撃不可湿原が候補表示されないこと", !devWetlandCell.classList.contains("trial-interception-candidate"));
         assert("湿原出口・森・高所が迎撃候補表示されること", [devWetlandExitCell, devForestCell, devHighCell].every(cell => cell.classList.contains("trial-interception-candidate")));
+        devForestCell.onclick();
+        assert("合法候補clickで迎撃地点の座標だけが選択されること", JSON.stringify(ui.trialPresentationState.selectedInterceptCell) === JSON.stringify({ r: 2, c: 1 }));
+        const selectedTrialBoard = mockDoc.getElementById("gridBoard");
+        const selectedForestCell = selectedTrialBoard.children.find(c => c.dataset && c.dataset.r === "2" && c.dataset.c === "1");
+        assert("選択地点にtrial-interception-selectedクラスが描画されること", selectedForestCell.classList.contains("trial-interception-selected"));
+        const allocationRoot = mockDoc.getElementById("trialDefenseAllocationRoot");
+        assert("Trial中だけ配分UIが表示されること", allocationRoot.classList.contains("is-active") && allocationRoot.innerHTML.includes("trialDefenseAllocationSlider"));
+        const allocationBefore = ui.trialPresentationState.previewDefenseAllocation;
+        const currentDefenseBeforeAllocation = engine.state.currentDefense;
+        mockDoc.getElementById("btnTrialDefenseDecrease").onclick();
+        assert("配分-1操作がPresentationStateだけを更新すること", ui.trialPresentationState.previewDefenseAllocation === allocationBefore - 1 && engine.state.currentDefense === currentDefenseBeforeAllocation);
+        mockDoc.getElementById("trialDefenseAllocationSlider").oninput({ target: { value: "10" } });
+        assert("slider操作で配分10のDomain Previewへ再計算されること", ui.trialPresentationState.previewDefenseAllocation === 10 && ui.trialPresentationState.interceptionPreview.deployedDefense === 10);
+        mockDoc.getElementById("btnTrialDefenseMax").onclick();
+        assert("MAX操作で利用可能🛡まで戻ること", ui.trialPresentationState.previewDefenseAllocation === ui.getTrialAvailableDefense());
+        devWetlandCell.onclick();
+        assert("迎撃不可地点clickでselectionが変わらないこと", JSON.stringify(ui.trialPresentationState.selectedInterceptCell) === JSON.stringify({ r: 2, c: 1 }));
         devWetlandExitCell.onmouseenter(trialHoverEvent);
         devWetlandExitCell.onmousemove(trialHoverEvent);
         assert("dev Scenario hoverが既存Phase 2 Tooltipを使うこと", tooltipSystemInstance.tooltipEl.innerHTML.includes("trial-interception-preview"));
         devWetlandExitCell.onmouseleave();
         assert("hover outでTrial Tooltipが解除されること", tooltipSystemInstance.tooltipEl.style.display === "none");
+        assert("hover out後は選択地点Previewへ戻ること", ui.trialPresentationState.interceptionPreview && ui.trialPresentationState.interceptionPreview.cell.r === 2 && ui.trialPresentationState.interceptionPreview.cell.c === 1);
         assert("dev Scenario閲覧中も通常盤面と現在防衛が不変であること", JSON.stringify(engine.state.grid) === devStartState && engine.state.currentDefense === devStartDefense);
 
         assert("dev Scenarioを停止できること", ui.stopDevelopmentTrialPreview() === true);
@@ -803,6 +821,7 @@ export async function runUILifecycleInspection() {
         assert("停止後は通常盤面参照へ復帰すること", ui.getBoardDisplayGrid() === normalGridReference);
         assert("停止後はTrial route/candidate classが残らないこと", !restoredCell.classList.contains("trial-route-cell") && !restoredCell.classList.contains("trial-interception-candidate"));
         assert("停止後はTrial TooltipとTrialStateを破棄すること", tooltipSystemInstance.tooltipEl.style.display === "none" && ui.trialController.state === null);
+        assert("停止後はselectionと配分UIもclearされること", ui.trialPresentationState.selectedInterceptCell === null && !allocationRoot.classList.contains("is-active"));
         restoredCell.onmouseenter(trialHoverEvent);
         restoredCell.onmousemove(trialHoverEvent);
         assert("停止後は通常セルhoverへ復帰すること", !tooltipSystemInstance.tooltipEl.innerHTML.includes("trial-interception-preview"));
