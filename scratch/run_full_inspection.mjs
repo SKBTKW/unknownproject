@@ -76,6 +76,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Trial Defense Allocation) で不合格が検出されました。");
         process.exit(1);
     }
+    const trialPlanningOk = await runCommand("node", ["scratch/test_trial_phase27c_foundation.mjs"]);
+    if (!trialPlanningOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Trial Planning Foundation) で不合格が検出されました。");
+        process.exit(1);
+    }
 
     // 🖥️ Layer 5: UI Lifecycle Tests (DOM構築・多言語・イベント)
     console.log("\n🖥️  [LAYER 5/6] UI Lifecycle Tests (DOMライフサイクル・描画)...");
@@ -104,7 +109,7 @@ async function main() {
     console.log("   ✅ Layer 1: Static Lint (0 errors)");
     console.log("   ✅ Layer 2: Spec Assertions (all assertions matched)");
     console.log("   ✅ Layer 3: Domain Unit Tests PASS");
-    console.log("   ✅ Layer 4: Trial Phase 1〜2.7B Tests PASS");
+    console.log("   ✅ Layer 4: Trial Phase 1〜2.7C Tests PASS");
     console.log("   ✅ Layer 5: UI Lifecycle Tests PASS");
     console.log("   ✅ Layer 6: Integration & Settlement Tests PASS");
     console.log("============================================================\n");

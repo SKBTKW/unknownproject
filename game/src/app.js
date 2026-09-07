@@ -67,6 +67,9 @@ import { AreaInfluenceVisualService } from './ui/area_influence_visual_service.j
 import { SFX } from './audio/sfx_manifest.js';
 import { sfxManager } from './audio/sfx_manager.js';
 import { resolveLandSelectSfx } from './audio/land_sfx_resolver.js';
+import { GAME_FACT_TYPES, GameFactHub } from './core/game_fact.js';
+import { GAME_FEEL } from './core/game_feel.js';
+import { TRIAL_PLAN_REASONS, TRIAL_ROUTE_PLAN_STATUSES } from './trial/domain/trial_types.js';
 
 export {
     I18n,
@@ -112,6 +115,11 @@ export {
     SFX,
     sfxManager,
     resolveLandSelectSfx,
+    GAME_FACT_TYPES,
+    GameFactHub,
+    GAME_FEEL,
+    TRIAL_PLAN_REASONS,
+    TRIAL_ROUTE_PLAN_STATUSES,
     TooltipSystem,
     tooltipSystemInstance,
     ConditionEvaluator,
