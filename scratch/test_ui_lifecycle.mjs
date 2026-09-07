@@ -218,6 +218,14 @@ export async function runUILifecycleInspection() {
         const engine = GameEngine.createGame();
         assert("GameEngine.createGame() が正常にインスタンス化されること", !!engine);
 
+        // 境界描画のfixtureは資源ソケット抽選を検証しないため、初期ランダム配置を除外する。
+        // 湖・オアシス開花による正規の連結除外を、境界class検証へ混入させない。
+        engine.state.grid.flat().forEach(cell => {
+            cell.hasSocket = false;
+            cell.socketResource = null;
+            cell.cachedSocketSeeds = {};
+        });
+
         const ui = new UIController(engine);
         assert("UIController が例外なくインスタンス化されること", !!ui);
 

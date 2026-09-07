@@ -58,6 +58,16 @@ assert(!!engine.buffSystem, 'BuffSystem が DI 注入されていること');
 assert(engine.state.ember === 20, '初期残り火が 20 であること');
 assert(engine.state.food === 50 && engine.state.wood === 30, '初期食料が 50、初期資材が 30 であること');
 
+const injectedStageState = new GameState({
+    stage: { id: 3, name: 'Stage 3', size: 9, maxTiles: 80 },
+    turn: 22
+});
+assert(injectedStageState.stage.id === 3 && injectedStageState.stage.size === 9, '注入したStage 3が初期化中にStage 1へ上書きされないこと');
+assert(injectedStageState.grid.length === 9 && injectedStageState.grid.every(row => row.length === 9), '注入Stageのsizeから9x9盤面が初期化されること');
+assert(injectedStageState.grid[4][4].isHQ === true, '9x9盤面の中央 (4,4) に本営が初期化されること');
+assert(injectedStageState.grid.flat().filter(cell => cell.hasSocket).length === 3, '9x9初期盤面にもソケット候補が3マス生成されること');
+assert(injectedStageState.isHQVicinity(3, 4) === true && injectedStageState.isHQVicinity(2, 2) === false, '本営近郊判定が固定5x5座標ではなく注入Stage中央を使うこと');
+
 // --- 2. GridEngine 土地配置 ＆ 近郊ボーナステスト ---
 console.log('\n🗺️ [2/6] GridEngine 土地配置・近郊ボーナス');
 // 本営 (2,2) の周囲 (1,2) に平地を配置

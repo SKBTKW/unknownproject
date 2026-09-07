@@ -29,7 +29,16 @@ class GameState {
             : (dependencies.maxShield !== undefined ? dependencies.maxShield : legacyDefense);
         this.mystic = dependencies.mystic !== undefined ? dependencies.mystic : 0;
 
-        this.stage = dependencies.stage || { id: 1, name: "Stage 1", size: 5, bonusMultiplier: 1.0 };
+        const requestedStage = dependencies.stage || {};
+        const stageId = Number.isInteger(requestedStage.id) ? requestedStage.id : 1;
+        const stageSize = Number.isInteger(requestedStage.size) ? requestedStage.size : 5;
+        this.stage = {
+            id: stageId,
+            name: requestedStage.name || `Stage ${stageId}`,
+            size: stageSize,
+            maxTiles: Number.isInteger(requestedStage.maxTiles) ? requestedStage.maxTiles : (stageSize * stageSize) - 1,
+            ...(requestedStage.bonusMultiplier !== undefined ? { bonusMultiplier: requestedStage.bonusMultiplier } : {})
+        };
         
         // 🛑 サブシステムの new 生成を 100% 撤廃 (GameEngine に一元化)
         this._gridEngine = dependencies.gridEngine || null;
@@ -37,7 +46,7 @@ class GameState {
         this._directiveSystem = dependencies.directiveSystem || null;
         this._buffSystem = dependencies.buffSystem || null;
 
-        this.grid = this.initGrid(5);
+        this.grid = this.initGrid(this.stage.size);
         this.handOffering = [];
         this.reserveSlots = [null];
         this.gameLogs = [];
@@ -51,8 +60,6 @@ class GameState {
             this.mergeLinks = new Set(dependencies.mergeLinks || []);
             this.grantedConnectionPairs = new Set();
 
-            this.stage = { id: 1, name: "Stage 1", size: 5, maxTiles: 24 };
-        
             // ⚔️ 3大試練スケジュール（±3前後ランダム決定 ＆ 5T前アナウンス）
             const randomOffset1 = Math.floor(Math.random() * 7) - 3; // -3 to +3
             const randomOffset2 = Math.floor(Math.random() * 7) - 3; // -3 to +3
@@ -218,8 +225,9 @@ class GameState {
 
         isHQVicinity(r, c) {
             if (this.gridEngine) return this.gridEngine.isHQVicinity(r, c);
-            if (r === 2 && c === 2) return false;
-            return Math.abs(r - 2) <= 1 && Math.abs(c - 2) <= 1;
+            const center = Math.floor((this.stage?.size || this.grid?.length || 5) / 2);
+            if (r === center && c === center) return false;
+            return Math.abs(r - center) <= 1 && Math.abs(c - center) <= 1;
         }
 
         isWaterSourceInfluence(r, c) {
@@ -230,8 +238,9 @@ class GameState {
         countPlacedTiles() {
             if (this.gridEngine) return this.gridEngine.countPlacedTiles();
             let count = 0;
-            for (let r = 0; r < 5; r++) {
-                for (let c = 0; c < 5; c++) {
+            const size = this.grid.length;
+            for (let r = 0; r < size; r++) {
+                for (let c = 0; c < size; c++) {
                     if (this.grid[r][c].placed && !this.grid[r][c].isHQ) count++;
                 }
             }

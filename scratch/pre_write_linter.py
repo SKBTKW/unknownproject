@@ -374,8 +374,6 @@ def main():
 
     # 差分行情報の取得 (Diff-Aware: 未ステージ + ステージ済み)
     added_lines = get_git_diff_added_lines(root_dir)
-    has_working_diff = len(added_lines) > 0
-
     all_violations = []
     total_files_scanned = 0
     total_css_debt = 0
@@ -383,10 +381,12 @@ def main():
     total_legacy_arch_debt = 0
 
     print("=== AoT Master Static Lint Guardrail (Fast Pre-Write Inspection) ===")
-    if has_working_diff:
-        print(f"Diff-Aware Mode: Inspecting modified files ({len(added_lines)} changed files detected).")
-    else:
-        print("Diff-Aware Mode: Working tree clean. Scanning full codebase against baseline.")
+    print(
+        "Policy: existing violations are baseline debt; "
+        "new violations in Git-added lines fail"
+        + ("; --all treats every violation as an error." if strict_all_mode else ".")
+    )
+    print(f"Git-added source lines detected in {len(added_lines)} file(s).")
 
     # 1. game/src 配下の全 JS を走査 (除外: i18n.js, data/)
     src_dir = os.path.join(game_dir, "src")
@@ -405,13 +405,8 @@ def main():
                 jp_v = scan_file_for_japanese(filepath, rel_path)
                 for v in jp_v:
                     is_new = (rel_path in added_lines and v.line_num in added_lines[rel_path])
-                    if is_new or strict_all_mode or not has_working_diff:
-                        # 差分行、または未変更時（クリーン時）の旧来互換チェック
-                        # ただし、旧来互換除外 (I18n.t fallback や console.log 等) を尊重
-                        if not is_new and ("I18n.t" in v.message or "console.log" in v.message or "reserve_slot" in rel_path or "tooltip_system" in rel_path):
-                            total_legacy_i18n_debt += 1
-                        else:
-                            all_violations.append(v)
+                    if is_new or strict_all_mode:
+                        all_violations.append(v)
                     else:
                         total_legacy_i18n_debt += 1
 
