@@ -554,18 +554,28 @@ uniqCmdEngine.state.wood = 50;
 uniqCmdEngine.state.reserveSlots[0] = { id: 'CMD_BALLISTA_SET', cardMasterId: 'CMD_BALLISTA_SET', category: 'MILITARY', nameKey: 'CMD_BALLISTA_SET' };
 
 // 100回オファリングを生成して、保留枠にある CMD_BALLISTA_SET が手札に出現しないこと ＆ 同一手札内で同一コマンドが重複しないことを検証
+let hasBallistaDuplicate = false;
+let hasCommandDuplicate = false;
+
 for (let t = 0; t < 100; t++) {
     const offering = uniqCmdEngine.deckManager.generateOfferingCards();
     const cmdIds = [];
     offering.forEach(c => {
         if (c && c.terrain && c.terrain.category && c.terrain.category !== 'LAND') {
             const mId = c.cardMasterId || c.terrain.id;
-            assert(mId !== 'CMD_BALLISTA_SET', '保留枠にある CMD_BALLISTA_SET が手札オファリングに重複出現しないこと');
-            assert(!cmdIds.includes(mId), `同一手札内に同一コマンドカード (${mId}) が重複出現しないこと`);
+            if (mId === 'CMD_BALLISTA_SET') {
+                hasBallistaDuplicate = true;
+            }
+            if (cmdIds.includes(mId)) {
+                hasCommandDuplicate = true;
+            }
             cmdIds.push(mId);
         }
     });
 }
+
+assert(!hasBallistaDuplicate, '保留枠にある CMD_BALLISTA_SET が手札オファリングに重複出現しないこと');
+assert(!hasCommandDuplicate, '同一手札内に同一コマンドカードが重複出現しないこと');
 
 // --- 17. 🔥 残り火 ✕ 🗺️ 領土マス数 Stage連動 経済サイクル (3段階維持費 ＆ 領土減衰停止/自家発熱 ＆ 保留維持費) 検問 ---
 console.log('\n🔥 [17/21] 🔥 残り火 ✕ 🗺️ 領土マス数 Stage連動 経済サイクル検証');
