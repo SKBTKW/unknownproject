@@ -246,6 +246,141 @@ export class TrialController {
         };
     }
 
+    validateConfirmedInterceptionPlan(plan = this.state?.interceptionPlan) {
+        if (!this.state) {
+            return { valid: false, errors: ["TRIAL_NOT_STARTED"] };
+        }
+        if (!plan || !Array.isArray(plan.routes)) {
+            return { valid: false, errors: [TRIAL_PLAN_REASONS.NO_CONFIRMED_PLAN] };
+        }
+        if (this.state.planActivated) {
+            return { valid: false, errors: [TRIAL_PLAN_REASONS.PLAN_ALREADY_ACTIVATED] };
+        }
+
+        const errors = [];
+        const totalAllocated = Number(plan.totalDefenseAllocated) || 0;
+        const currentAvailable = this.state.human?.availableDefense ?? 0;
+
+        if (totalAllocated > currentAvailable) {
+            errors.push(TRIAL_PLAN_REASONS.PLAN_DEFENSE_EXCEEDS_AVAILABLE);
+        }
+
+        const usedBlocks = new Set();
+        let calculatedTotal = 0;
+
+        for (const routePlan of plan.routes) {
+            if (!routePlan || typeof routePlan !== "object") {
+                errors.push(TRIAL_PLAN_REASONS.INVALID_CONFIRMED_PLAN);
+                continue;
+            }
+            if (routePlan.status === TRIAL_ROUTE_PLAN_STATUSES.SKIP) {
+                continue;
+            }
+            if (routePlan.status !== TRIAL_ROUTE_PLAN_STATUSES.INTERCEPT) {
+                errors.push(TRIAL_PLAN_REASONS.INVALID_CONFIRMED_PLAN);
+                continue;
+            }
+
+            const alloc = Number(routePlan.defenseAllocation) || 0;
+            calculatedTotal += alloc;
+            if (alloc <= 0) {
+                errors.push(TRIAL_PLAN_REASONS.INVALID_DEFENSE_ALLOCATION);
+            }
+
+            const routeId = routePlan.routeId;
+            const route = this.getRoute(routeId);
+            if (!route) {
+                errors.push(TRIAL_PLAN_REASONS.UNKNOWN_ROUTE);
+                continue;
+            }
+
+            const cell = routePlan.interceptCell;
+            const r = cell?.r;
+            const c = cell?.c;
+            if (!Number.isInteger(r) || !Number.isInteger(c)) {
+                errors.push(TRIAL_PLAN_REASONS.INVALID_INTERCEPT_CELL);
+                continue;
+            }
+
+            const pos = this.getRoutePosition(routeId, r, c);
+            if (!pos) {
+                errors.push(TRIAL_PLAN_REASONS.CELL_NOT_ON_ROUTE);
+                continue;
+            }
+
+            const blockId = routePlan.interceptBlockId || `cell:${r}:${c}`;
+            if (usedBlocks.has(blockId)) {
+                errors.push(TRIAL_PLAN_REASONS.BLOCK_ALREADY_PLANNED);
+            }
+            usedBlocks.add(blockId);
+        }
+
+        if (totalAllocated !== calculatedTotal && !errors.includes(TRIAL_PLAN_REASONS.INVALID_CONFIRMED_PLAN)) {
+            errors.push(TRIAL_PLAN_REASONS.INVALID_CONFIRMED_PLAN);
+        }
+
+        return {
+            valid: errors.length === 0,
+            errors
+        };
+    }
+
+    activateInterceptionPlan() {
+        if (!this.state) {
+            return { success: false, errors: ["TRIAL_NOT_STARTED"] };
+        }
+        if (this.state.planActivated) {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.PLAN_ALREADY_ACTIVATED] };
+        }
+        const plan = this.state.interceptionPlan;
+        if (!plan) {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.NO_CONFIRMED_PLAN] };
+        }
+
+        const validation = this.validateConfirmedInterceptionPlan(plan);
+        if (!validation.valid) {
+            return { success: false, errors: validation.errors };
+        }
+
+        // 1. Build battle queue items (only INTERCEPT routes) as independent snapshot
+        const battleQueue = [];
+        for (const routePlan of plan.routes) {
+            if (routePlan.status === TRIAL_ROUTE_PLAN_STATUSES.INTERCEPT) {
+                battleQueue.push({
+                    routeId: routePlan.routeId,
+                    interceptCell: { r: routePlan.interceptCell.r, c: routePlan.interceptCell.c },
+                    interceptBlockId: routePlan.interceptBlockId || null,
+                    defenseAllocation: routePlan.defenseAllocation,
+                    status: "PENDING"
+                });
+            }
+        }
+
+        // 2. Commit resource consumption
+        const defenseToCommit = Number(plan.totalDefenseAllocated) || 0;
+        this.state.human.availableDefense -= defenseToCommit;
+
+        // 3. Establish activation state
+        this.state.planActivated = true;
+        this.state.battleQueue = battleQueue;
+        this.state.currentBattleIndex = null;
+        this.state.battleResults = null;
+
+        // 4. Emit exactly 1 GameFact
+        const factPayload = {
+            totalDefenseCommitted: defenseToCommit,
+            battleCount: battleQueue.length,
+            routeIds: battleQueue.map(b => b.routeId)
+        };
+        this.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_PLAN_ACTIVATED, factPayload);
+
+        return {
+            success: true,
+            battleQueue: JSON.parse(JSON.stringify(battleQueue)),
+            totalDefenseCommitted: defenseToCommit
+        };
+    }
+
     createBattleContext(input) {
         if (!this.state) throw new Error("TRIAL_NOT_STARTED");
         const allocatedDefense = Math.max(0, Number(input.allocatedDefense) || 0);

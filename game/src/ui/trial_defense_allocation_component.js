@@ -98,8 +98,9 @@ export class TrialDefenseAllocationComponent {
         }
 
         const isConfirmed = Boolean(this.ui.isTrialPlanningConfirmed());
+        const isActivated = Boolean(this.ui.isTrialPlanActivated());
         const reviewRequested = this.ui.trialPresentationState.planningReviewRequested;
-        const isReviewMode = reviewRequested || isConfirmed;
+        const isReviewMode = reviewRequested || isConfirmed || isActivated;
 
         if (isReviewMode) {
             const reviewRoutesHtml = routes.map(r => {
@@ -134,7 +135,7 @@ export class TrialDefenseAllocationComponent {
             }).join("");
 
             let reviewActionsHtml = "";
-            if (!isConfirmed) {
+            if (!isConfirmed && !isActivated) {
                 reviewActionsHtml = `
                     <div class="trial-plan-review-requested-banner" id="trialPlanReviewRequestedBanner">
                         <span class="trial-plan-review-status">${I18n.t("UI_TRIAL_PLAN_REVIEW_REQUESTED")}</span>
@@ -148,10 +149,21 @@ export class TrialDefenseAllocationComponent {
                         </button>
                     </div>
                 `;
-            } else {
+            } else if (!isActivated) {
                 reviewActionsHtml = `
                     <div class="trial-plan-confirmed-banner" id="trialPlanConfirmedBanner">
-                        ${I18n.t("UI_TRIAL_PLAN_CONFIRMED")}
+                        <div class="trial-plan-confirmed-status">${I18n.t("UI_TRIAL_PLAN_CONFIRMED")}</div>
+                        <button type="button" id="btnTrialActivatePlan" class="btn-trial-action btn-activate-plan">
+                            ${I18n.t("UI_TRIAL_ACTIVATE_PLAN")}
+                        </button>
+                    </div>
+                `;
+            } else {
+                const pendingBattlesCount = this.ui.getTrialBattleQueue()?.length ?? 0;
+                reviewActionsHtml = `
+                    <div class="trial-plan-activated-banner" id="trialPlanActivatedBanner">
+                        <div class="trial-plan-activated-status">${I18n.t("UI_TRIAL_PLAN_ACTIVATED")}</div>
+                        <div class="trial-plan-battles-pending">${I18n.t("UI_TRIAL_BATTLES_PENDING", { count: pendingBattlesCount })}</div>
                     </div>
                 `;
             }
@@ -176,6 +188,9 @@ export class TrialDefenseAllocationComponent {
 
             const btnConfirm = document.getElementById("btnTrialConfirmPlan");
             if (btnConfirm) btnConfirm.onclick = () => this.ui.confirmTrialPlanning();
+
+            const btnActivate = document.getElementById("btnTrialActivatePlan");
+            if (btnActivate) btnActivate.onclick = () => this.ui.activateTrialPlan();
 
             return;
         }

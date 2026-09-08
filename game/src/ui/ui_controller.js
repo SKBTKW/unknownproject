@@ -286,7 +286,7 @@ class UIController {
 
     selectTrialInterceptionCell(r, c) {
         if (!this.trialPreviewConfig) return false;
-        if (this.trialPresentationState.planningReviewRequested || this.isTrialPlanningConfirmed()) return false;
+        if (this.trialPresentationState.planningReviewRequested || this.isTrialPlanningConfirmed() || this.isTrialPlanActivated()) return false;
         const cellState = this.getTrialInterceptionCellState(r, c);
         if (!cellState?.canIntercept) return false;
         this.trialPresentationState.selectInterceptCell({ r, c });
@@ -300,7 +300,7 @@ class UIController {
 
     setTrialDefenseAllocation(value) {
         if (!this.trialPreviewConfig) return 0;
-        if (this.trialPresentationState.planningReviewRequested || this.isTrialPlanningConfirmed()) {
+        if (this.trialPresentationState.planningReviewRequested || this.isTrialPlanningConfirmed() || this.isTrialPlanActivated()) {
             return this.trialPresentationState.previewDefenseAllocation;
         }
         const activeRoute = this.getActiveTrialRoute();
@@ -317,7 +317,7 @@ class UIController {
     }
 
     adjustTrialDefenseAllocation(delta) {
-        if (this.trialPresentationState.planningReviewRequested || this.isTrialPlanningConfirmed()) {
+        if (this.trialPresentationState.planningReviewRequested || this.isTrialPlanningConfirmed() || this.isTrialPlanActivated()) {
             return this.trialPresentationState.previewDefenseAllocation;
         }
         const current = this.trialPresentationState.previewDefenseAllocation;
@@ -369,6 +369,7 @@ class UIController {
     setTrialActiveRouteIntercept() {
         if (!this.trialPreviewConfig) return { success: false, reason: "NOT_IN_TRIAL" };
         if (this.trialPresentationState.planningReviewRequested) return { success: false, reason: "REVIEW_REQUESTED" };
+        if (this.isTrialPlanActivated()) return { success: false, reason: "PLAN_ALREADY_ACTIVATED" };
         if (this.isTrialPlanningConfirmed()) return { success: false, reason: "ALREADY_CONFIRMED" };
         const activeRoute = this.getActiveTrialRoute();
         if (!activeRoute) return { success: false, reason: "NO_ACTIVE_ROUTE" };
@@ -408,6 +409,7 @@ class UIController {
     setTrialActiveRouteSkip() {
         if (!this.trialPreviewConfig) return { success: false, reason: "NOT_IN_TRIAL" };
         if (this.trialPresentationState.planningReviewRequested) return { success: false, reason: "REVIEW_REQUESTED" };
+        if (this.isTrialPlanActivated()) return { success: false, reason: "PLAN_ALREADY_ACTIVATED" };
         if (this.isTrialPlanningConfirmed()) return { success: false, reason: "ALREADY_CONFIRMED" };
         const activeRoute = this.getActiveTrialRoute();
         if (!activeRoute) return { success: false, reason: "NO_ACTIVE_ROUTE" };
@@ -427,6 +429,7 @@ class UIController {
     clearTrialActiveRouteDecision() {
         if (!this.trialPreviewConfig) return { success: false, reason: "NOT_IN_TRIAL" };
         if (this.trialPresentationState.planningReviewRequested) return { success: false, reason: "REVIEW_REQUESTED" };
+        if (this.isTrialPlanActivated()) return { success: false, reason: "PLAN_ALREADY_ACTIVATED" };
         if (this.isTrialPlanningConfirmed()) return { success: false, reason: "ALREADY_CONFIRMED" };
         const activeRoute = this.getActiveTrialRoute();
         if (!activeRoute) return { success: false, reason: "NO_ACTIVE_ROUTE" };
@@ -546,6 +549,29 @@ class UIController {
             return result;
         }
 
+        this.trialPresentationState.planningValidationErrors = [];
+        this.render();
+        return result;
+    }
+
+    isTrialPlanActivated() {
+        return Boolean(this.trialController?.state?.planActivated);
+    }
+
+    getTrialBattleQueue() {
+        return this.trialController?.state?.battleQueue || null;
+    }
+
+    activateTrialPlan() {
+        if (!this.trialPreviewConfig || !this.trialController?.state) {
+            return { success: false, errors: ["TRIAL_NOT_STARTED"] };
+        }
+        const result = this.trialController.activateInterceptionPlan();
+        if (!result.success) {
+            this.trialPresentationState.planningValidationErrors = result.errors || [];
+            this.render();
+            return result;
+        }
         this.trialPresentationState.planningValidationErrors = [];
         this.render();
         return result;

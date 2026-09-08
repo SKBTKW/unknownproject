@@ -1973,3 +1973,37 @@ body.is-camera-dragging-global * {
     margin-top: 8px;
     box-shadow: 0 0 10px rgba(34, 197, 94, 0.2);
 }
+
+.btn-activate-plan {
+    background: #0284c7;
+    color: #ffffff;
+    border-color: #38bdf8;
+    font-weight: 700;
+    margin-top: 6px;
+}
+
+.btn-activate-plan:hover {
+    background: #0369a1;
+}
+
+.trial-plan-activated-banner {
+    padding: 10px;
+    background: rgba(2, 132, 199, 0.35);
+    border: 1px solid #38bdf8;
+    border-radius: 4px;
+    color: #bae6fd;
+    text-align: center;
+    font-weight: 800;
+    font-size: 13px;
+    margin-top: 8px;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.trial-plan-battles-pending {
+    font-size: 11px;
+    font-weight: 600;
+    color: #e0f2fe;
+}

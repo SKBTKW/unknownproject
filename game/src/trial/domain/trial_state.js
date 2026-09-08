@@ -18,6 +18,10 @@ export class TrialState {
         this.routes = cloneData(scenario.routes) || [];
         this.interceptions = [];
         this.interceptionPlan = null;
+        this.planActivated = false;
+        this.battleQueue = null;
+        this.currentBattleIndex = null;
+        this.battleResults = null;
         this.human = {
             defense: Math.max(0, Number(scenario.availableDefense) || 0),
             availableDefense: Math.max(0, Number(scenario.availableDefense) || 0),
