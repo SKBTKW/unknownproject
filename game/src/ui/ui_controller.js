@@ -27,6 +27,7 @@ import { TrialPresentationState } from '../trial/presentation/trial_presentation
 import { TrialInterceptionPreviewComponent } from './trial_interception_preview_component.js';
 import { TrialDefenseAllocationComponent } from './trial_defense_allocation_component.js';
 import { DevelopmentTrialPreviewHarness } from '../trial/dev/development_trial_preview_harness.js';
+import { TRIAL_PLAN_REASONS } from '../trial/domain/trial_types.js';
 import { gameSettings, settingsModalInstance } from './settings_modal_system.js';
 import { AdvisorDockComponent } from './advisor/advisor_dock_component.js';
 import {
@@ -285,6 +286,7 @@ class UIController {
 
     selectTrialInterceptionCell(r, c) {
         if (!this.trialPreviewConfig) return false;
+        if (this.trialPresentationState.planningReviewRequested || this.isTrialPlanningConfirmed()) return false;
         const cellState = this.getTrialInterceptionCellState(r, c);
         if (!cellState?.canIntercept) return false;
         this.trialPresentationState.selectInterceptCell({ r, c });
@@ -298,6 +300,9 @@ class UIController {
 
     setTrialDefenseAllocation(value) {
         if (!this.trialPreviewConfig) return 0;
+        if (this.trialPresentationState.planningReviewRequested || this.isTrialPlanningConfirmed()) {
+            return this.trialPresentationState.previewDefenseAllocation;
+        }
         const activeRoute = this.getActiveTrialRoute();
         const activeRouteId = activeRoute?.id;
         const maxForRoute = activeRouteId
@@ -312,6 +317,9 @@ class UIController {
     }
 
     adjustTrialDefenseAllocation(delta) {
+        if (this.trialPresentationState.planningReviewRequested || this.isTrialPlanningConfirmed()) {
+            return this.trialPresentationState.previewDefenseAllocation;
+        }
         const current = this.trialPresentationState.previewDefenseAllocation;
         return this.setTrialDefenseAllocation(current + Number(delta || 0));
     }
@@ -360,6 +368,8 @@ class UIController {
 
     setTrialActiveRouteIntercept() {
         if (!this.trialPreviewConfig) return { success: false, reason: "NOT_IN_TRIAL" };
+        if (this.trialPresentationState.planningReviewRequested) return { success: false, reason: "REVIEW_REQUESTED" };
+        if (this.isTrialPlanningConfirmed()) return { success: false, reason: "ALREADY_CONFIRMED" };
         const activeRoute = this.getActiveTrialRoute();
         if (!activeRoute) return { success: false, reason: "NO_ACTIVE_ROUTE" };
         const selectedCell = this.trialPresentationState.selectedInterceptCell;
@@ -397,6 +407,8 @@ class UIController {
 
     setTrialActiveRouteSkip() {
         if (!this.trialPreviewConfig) return { success: false, reason: "NOT_IN_TRIAL" };
+        if (this.trialPresentationState.planningReviewRequested) return { success: false, reason: "REVIEW_REQUESTED" };
+        if (this.isTrialPlanningConfirmed()) return { success: false, reason: "ALREADY_CONFIRMED" };
         const activeRoute = this.getActiveTrialRoute();
         if (!activeRoute) return { success: false, reason: "NO_ACTIVE_ROUTE" };
 
@@ -414,6 +426,8 @@ class UIController {
 
     clearTrialActiveRouteDecision() {
         if (!this.trialPreviewConfig) return { success: false, reason: "NOT_IN_TRIAL" };
+        if (this.trialPresentationState.planningReviewRequested) return { success: false, reason: "REVIEW_REQUESTED" };
+        if (this.isTrialPlanningConfirmed()) return { success: false, reason: "ALREADY_CONFIRMED" };
         const activeRoute = this.getActiveTrialRoute();
         if (!activeRoute) return { success: false, reason: "NO_ACTIVE_ROUTE" };
 
@@ -489,6 +503,52 @@ class UIController {
         this.trialPresentationState.clearPlanningReviewRequest();
         this.render();
         return { success: true };
+    }
+
+    isTrialPlanningConfirmed() {
+        return Boolean(this.trialController?.state?.interceptionPlan);
+    }
+
+    confirmTrialPlanning() {
+        if (!this.trialPreviewConfig || !this.trialController?.state) {
+            return { success: false, errors: ["TRIAL_NOT_STARTED"], warnings: [] };
+        }
+        if (this.isTrialPlanningConfirmed()) {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.ALREADY_CONFIRMED], warnings: [] };
+        }
+
+        const validation = this.validateTrialPlanning();
+        if (!validation.valid || (validation.errors && validation.errors.length > 0)) {
+            this.trialPresentationState.planningValidationErrors = validation.errors || [];
+            this.render();
+            return { success: false, errors: validation.errors, warnings: validation.warnings };
+        }
+
+        const hasUndecided = Array.isArray(validation.warnings) && validation.warnings.includes("ROUTES_UNDECIDED");
+        const allowWarnings = Boolean(this.trialPresentationState.planningWarningsAccepted);
+        if (hasUndecided && !allowWarnings) {
+            return {
+                success: false,
+                requiresConfirmation: true,
+                warnings: validation.warnings,
+                errors: []
+            };
+        }
+
+        const result = this.trialController.confirmInterceptionPlan(
+            this.trialPresentationState.routePlanDrafts,
+            { allowWarnings }
+        );
+
+        if (!result.success) {
+            this.trialPresentationState.planningValidationErrors = result.errors || [];
+            this.render();
+            return result;
+        }
+
+        this.trialPresentationState.planningValidationErrors = [];
+        this.render();
+        return result;
     }
 
     /**

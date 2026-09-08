@@ -1909,3 +1909,67 @@ body.is-camera-dragging-global * {
     border-color: #f59e0b;
     min-width: 100px;
 }
+
+.trial-review-route-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 6px 0 10px 0;
+}
+
+.trial-review-route-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 8px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.trial-review-route-details {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+}
+
+.trial-review-location {
+    color: #93c5fd;
+}
+
+.trial-review-defense {
+    color: #86efac;
+    font-weight: 700;
+}
+
+.trial-review-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.btn-confirm-plan {
+    background: #16a34a;
+    color: #ffffff;
+    border-color: #22c55e;
+    font-weight: 700;
+}
+
+.btn-confirm-plan:hover {
+    background: #15803d;
+}
+
+.trial-plan-confirmed-banner {
+    padding: 10px;
+    background: rgba(22, 101, 52, 0.35);
+    border: 1px solid #22c55e;
+    border-radius: 4px;
+    color: #86efac;
+    text-align: center;
+    font-weight: 800;
+    font-size: 13px;
+    margin-top: 8px;
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.2);
+}

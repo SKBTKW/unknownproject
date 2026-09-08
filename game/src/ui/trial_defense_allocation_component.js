@@ -97,17 +97,87 @@ export class TrialDefenseAllocationComponent {
             `;
         }
 
+        const isConfirmed = Boolean(this.ui.isTrialPlanningConfirmed());
         const reviewRequested = this.ui.trialPresentationState.planningReviewRequested;
-        let reviewBannerHtml = "";
-        if (reviewRequested) {
-            reviewBannerHtml = `
-                <div class="trial-plan-review-requested-banner" id="trialPlanReviewRequestedBanner">
-                    <span class="trial-plan-review-status">${I18n.t("UI_TRIAL_PLAN_REVIEW_REQUESTED")}</span>
-                    <button type="button" id="btnTrialModifyPlan" class="btn-trial-action btn-modify-plan">
-                        ${I18n.t("UI_TRIAL_PLAN_MODIFY")}
-                    </button>
+        const isReviewMode = reviewRequested || isConfirmed;
+
+        if (isReviewMode) {
+            const reviewRoutesHtml = routes.map(r => {
+                const rDecision = this.ui.trialPresentationState.getRouteDecision(r.id);
+                const rStatus = rDecision.status || "UNDECIDED";
+                const commanderMark = r.isCommanderRoute ? `<span class="trial-route-commander">★</span> ` : "";
+                const routeName = I18n.t(r.nameKey || r.id);
+
+                let detailsHtml = "";
+                if (rStatus === "INTERCEPT" && rDecision.interceptCell) {
+                    const cell = rDecision.interceptCell;
+                    const coordStr = `${String.fromCharCode(65 + cell.c)}${cell.r + 1}`;
+                    const cellData = this.ui.getBoardDisplayGrid()?.[cell.r]?.[cell.c];
+                    const terrainNameKey = cellData?.terrain?.nameKey || cellData?.terrain?.id || "TERRAIN_PLAINS";
+                    const terrainName = I18n.t(terrainNameKey);
+                    detailsHtml = `
+                        <span class="trial-review-location">[${coordStr}] ${terrainName}</span>
+                        <span class="trial-review-defense">🛡️ ${rDecision.defenseAllocation}</span>
+                    `;
+                } else if (rStatus === "SKIP") {
+                    detailsHtml = `<span class="trial-review-status status-skip">${I18n.t("UI_TRIAL_REVIEW_SKIP")}</span>`;
+                } else {
+                    detailsHtml = `<span class="trial-review-status status-undecided">${I18n.t("UI_TRIAL_REVIEW_UNDECIDED")}</span>`;
+                }
+
+                return `
+                    <div class="trial-review-route-item" data-route-id="${r.id}">
+                        <span class="trial-route-name">${commanderMark}${routeName}</span>
+                        <div class="trial-review-route-details">${detailsHtml}</div>
+                    </div>
+                `;
+            }).join("");
+
+            let reviewActionsHtml = "";
+            if (!isConfirmed) {
+                reviewActionsHtml = `
+                    <div class="trial-plan-review-requested-banner" id="trialPlanReviewRequestedBanner">
+                        <span class="trial-plan-review-status">${I18n.t("UI_TRIAL_PLAN_REVIEW_REQUESTED")}</span>
+                        <button type="button" id="btnTrialModifyPlan" class="btn-trial-action btn-modify-plan">
+                            ${I18n.t("UI_TRIAL_PLAN_MODIFY")}
+                        </button>
+                    </div>
+                    <div class="trial-review-actions">
+                        <button type="button" id="btnTrialConfirmPlan" class="btn-trial-action btn-confirm-plan">
+                            ${I18n.t("UI_TRIAL_REVIEW_CONFIRM")}
+                        </button>
+                    </div>
+                `;
+            } else {
+                reviewActionsHtml = `
+                    <div class="trial-plan-confirmed-banner" id="trialPlanConfirmedBanner">
+                        ${I18n.t("UI_TRIAL_PLAN_CONFIRMED")}
+                    </div>
+                `;
+            }
+
+            root.innerHTML = `
+                <div class="trial-defense-allocation-heading">${I18n.t("UI_TRIAL_REVIEW_TITLE")}</div>
+
+                <div class="trial-budget-bar">
+                    <span class="trial-budget-used">${budgetUsedText}</span>
+                    <span class="trial-budget-remaining">${budgetRemainingText}</span>
                 </div>
+
+                <div class="trial-route-list-header">${I18n.t("UI_TRIAL_ROUTE_LIST")}</div>
+                <div class="trial-review-route-list" id="trialReviewRouteList">${reviewRoutesHtml}</div>
+
+                ${errorsHtml}
+                ${reviewActionsHtml}
             `;
+
+            const btnModify = document.getElementById("btnTrialModifyPlan");
+            if (btnModify) btnModify.onclick = () => this.ui.clearTrialPlanningReviewRequest();
+
+            const btnConfirm = document.getElementById("btnTrialConfirmPlan");
+            if (btnConfirm) btnConfirm.onclick = () => this.ui.confirmTrialPlanning();
+
+            return;
         }
 
         const finishControlsHtml = `
@@ -179,7 +249,6 @@ export class TrialDefenseAllocationComponent {
             <div class="trial-defense-allocation-preview">${previewHtml}</div>
 
             ${errorsHtml}
-            ${reviewBannerHtml}
             ${finishControlsHtml}
             ${warningHtml}
         `;

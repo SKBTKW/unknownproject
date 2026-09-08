@@ -192,6 +192,13 @@ export class TrialController {
 
     confirmInterceptionPlan(drafts, { allowWarnings = false } = {}) {
         if (!this.state) return { success: false, errors: ["TRIAL_NOT_STARTED"], warnings: [] };
+        if (this.state.interceptionPlan !== null) {
+            return {
+                success: false,
+                errors: [TRIAL_PLAN_REASONS.ALREADY_CONFIRMED],
+                warnings: []
+            };
+        }
         const validation = this.validatePlanningDraft(drafts);
         if (!validation.valid || (validation.errors && validation.errors.length > 0)) {
             return { success: false, errors: validation.errors, warnings: validation.warnings };

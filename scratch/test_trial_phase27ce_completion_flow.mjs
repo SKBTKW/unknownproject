@@ -256,16 +256,24 @@ test("J. 「計画を修正する」をクリックすると Review Requested �
     assert.equal(banner, null, "Review banner should be removed");
 });
 
-// K. Review Requested 状態で Draft を変更すると自動的に reviewRequested が解除される
-test("K. Review Requested 状態で Draft を変更すると自動的に reviewRequested が解除される", () => {
+// K. Review Requested 状態では Draft 変更が拒否され、「計画を修正する」経由で編集可能になる
+test("K. Review Requested 状態では Draft 変更が拒否され、「計画を修正する」経由で編集可能になる", () => {
     // Put into review requested state again
     ui.finishTrialPlanning();
     ui.acceptTrialPlanningWarningAndProceed();
     assert.equal(ui.trialPresentationState.planningReviewRequested, true);
 
-    // Make a draft change: skip active route
-    ui.setTrialActiveRouteSkip();
-    assert.equal(ui.trialPresentationState.planningReviewRequested, false, "Draft edit must clear review requested");
+    // Phase 2.7C-F: Review中の裏編集は拒否される
+    const skipRes = ui.setTrialActiveRouteSkip();
+    assert.equal(skipRes.success, false);
+    assert.equal(skipRes.reason, "REVIEW_REQUESTED");
+    assert.equal(ui.trialPresentationState.planningReviewRequested, true);
+
+    // 「計画を修正する」で戻った後に変更可能
+    ui.clearTrialPlanningReviewRequest();
+    assert.equal(ui.trialPresentationState.planningReviewRequested, false);
+    const validSkip = ui.setTrialActiveRouteSkip();
+    assert.equal(validSkip.success, true);
     assert.equal(ui.trialPresentationState.planningWarningsAccepted, false);
 });
 
