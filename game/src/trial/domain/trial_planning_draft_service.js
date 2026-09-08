@@ -97,6 +97,39 @@ export class TrialPlanningDraftService {
         });
     }
 
+    static isBlockPlannedByOtherRoute(drafts, routeId, blockId) {
+        if (!blockId) return false;
+        const map = ensureDraftMap(drafts);
+        for (const [otherRouteId, plan] of map.entries()) {
+            if (otherRouteId !== routeId && plan.status === TRIAL_ROUTE_PLAN_STATUSES.INTERCEPT) {
+                if (plan.interceptBlockId && plan.interceptBlockId === blockId) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    static getPlannedCellInfo(drafts, r, c) {
+        const map = ensureDraftMap(drafts);
+        for (const plan of map.values()) {
+            if (plan.status === TRIAL_ROUTE_PLAN_STATUSES.INTERCEPT && plan.interceptCell) {
+                if (plan.interceptCell.r === r && plan.interceptCell.c === c) {
+                    return plan;
+                }
+            }
+        }
+        return null;
+    }
+
+    static getMaxAllocationForRoute(drafts, routeId, availableDefense = 0) {
+        const total = TrialPlanningDraftService.getPlannedDefenseTotal(drafts);
+        const currentDecision = TrialPlanningDraftService.getRouteDecision(drafts, routeId);
+        const currentAlloc = currentDecision.status === TRIAL_ROUTE_PLAN_STATUSES.INTERCEPT ? currentDecision.defenseAllocation : 0;
+        const available = Math.max(0, Number(availableDefense) || 0);
+        return Math.max(0, available - (total - currentAlloc));
+    }
+
     static setIntercept(drafts, {
         routeId,
         interceptCell,

@@ -1483,6 +1483,24 @@ body.is-camera-dragging-global * {
     pointer-events: none;
 }
 
+.cell.trial-interception-planned {
+    box-shadow: inset 0 0 0 3px #10b981, 0 0 12px rgba(16, 185, 129, 0.45);
+}
+
+.cell.trial-interception-planned.trial-interception-planned-active {
+    box-shadow: inset 0 0 0 4px #00d2d3, 0 0 18px rgba(0, 210, 211, 0.7);
+}
+
+.cell.trial-interception-planned.trial-interception-planned-other {
+    box-shadow: inset 0 0 0 3px #818cf8, 0 0 10px rgba(129, 140, 248, 0.45);
+}
+
+.cell.trial-interception-block-used {
+    cursor: not-allowed;
+    opacity: 0.65;
+    box-shadow: inset 0 0 0 2px #ef4444;
+}
+
 .trial-defense-allocation-panel {
     display: none;
     box-sizing: border-box;
@@ -1503,6 +1521,94 @@ body.is-camera-dragging-global * {
     color: #00d2d3;
     font-size: 13px;
     font-weight: 800;
+}
+
+.trial-budget-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    padding: 4px 6px;
+    margin-bottom: 8px;
+    background: rgba(30, 41, 59, 0.7);
+    border-radius: 4px;
+    border-left: 3px solid #00d2d3;
+}
+
+.trial-budget-used {
+    color: #f1f5f9;
+    font-weight: bold;
+}
+
+.trial-budget-remaining {
+    color: #38bdf8;
+}
+
+.trial-route-list-header {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+
+.trial-route-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 10px;
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+.trial-route-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 8px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 11px;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.trial-route-item:hover {
+    background: #334155;
+    border-color: #64748b;
+}
+
+.trial-route-item.is-active {
+    background: #0f2b3f;
+    border-color: #00d2d3;
+    box-shadow: 0 0 8px rgba(0, 210, 211, 0.3);
+}
+
+.trial-route-commander {
+    color: #f59e0b;
+    margin-right: 2px;
+}
+
+.trial-route-status {
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.trial-route-status.status-undecided {
+    background: #475569;
+    color: #cbd5e1;
+}
+
+.trial-route-status.status-intercept {
+    background: #065f46;
+    color: #34d399;
+}
+
+.trial-route-status.status-skip {
+    background: #7f1d1d;
+    color: #fca5a5;
 }
 
 .trial-defense-allocation-status {
@@ -1543,6 +1649,53 @@ body.is-camera-dragging-global * {
 .trial-defense-allocation-controls input[type="range"] {
     width: 100%;
     accent-color: #00d2d3;
+}
+
+.trial-route-decision-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.btn-trial-action {
+    flex: 1;
+    min-height: 28px;
+    padding: 4px 6px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: opacity 0.15s ease, transform 0.1s ease;
+}
+
+.btn-trial-action:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+}
+
+.btn-trial-action.btn-intercept {
+    background: #059669;
+    color: #ffffff;
+    border-color: #10b981;
+}
+
+.btn-trial-action.btn-skip {
+    background: #dc2626;
+    color: #ffffff;
+    border-color: #ef4444;
+}
+
+.btn-trial-action.btn-clear {
+    background: #475569;
+    color: #f1f5f9;
+    border-color: #64748b;
+}
+
+.trial-block-planned-warning {
+    color: #f87171;
+    font-size: 12px;
+    font-weight: 600;
 }
 
 .trial-defense-allocation-preview:empty {

@@ -114,6 +114,18 @@ export class TrialPresentationState {
         return TrialPlanningDraftService.getUndecidedRoutes(this.routePlanDrafts, routes);
     }
 
+    isBlockPlannedByOtherRoute(routeId, blockId) {
+        return TrialPlanningDraftService.isBlockPlannedByOtherRoute(this.routePlanDrafts, routeId, blockId);
+    }
+
+    getPlannedCellInfo(r, c) {
+        return TrialPlanningDraftService.getPlannedCellInfo(this.routePlanDrafts, r, c);
+    }
+
+    getMaxAllocationForRoute(routeId, availableDefense = 0) {
+        return TrialPlanningDraftService.getMaxAllocationForRoute(this.routePlanDrafts, routeId, availableDefense);
+    }
+
     validatePlanning(availableDefense, routes, context = {}) {
         return TrialPlanningDraftService.validateDraft(this.routePlanDrafts, {
             routes,

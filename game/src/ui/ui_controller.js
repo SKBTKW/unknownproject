@@ -184,10 +184,55 @@ class UIController {
 
     getTrialInterceptionCellState(r, c) {
         if (!this.trialPreviewConfig) return null;
+        const pos = this.getTrialRoutePosition(r, c);
+        const displayGrid = this.getBoardDisplayGrid();
+        const cell = displayGrid?.[r]?.[c];
+        const activeRoute = this.getActiveTrialRoute();
+        const activeRouteId = activeRoute?.id || null;
+
+        const blockId = cell?.placementGroupId != null
+            ? `placement:${cell.placementGroupId}`
+            : `cell:${r}:${c}`;
+        const isBlockPlannedByOther = Boolean(activeRouteId && this.trialPresentationState.isBlockPlannedByOtherRoute(activeRouteId, blockId));
+
+        const plannedInfo = this.trialPresentationState.getPlannedCellInfo(r, c);
+        const isPlanned = Boolean(plannedInfo);
+        const isPlannedActive = Boolean(plannedInfo && plannedInfo.routeId === activeRouteId);
+        const isPlannedOther = Boolean(plannedInfo && plannedInfo.routeId !== activeRouteId);
+
+        if (!pos && !isPlanned) {
+            return null;
+        }
+
+        const state = {
+            onRoute: Boolean(pos),
+            canIntercept: false
+        };
+
+        if (isPlanned) state.isPlanned = true;
+        if (isPlannedActive) state.isPlannedActive = true;
+        if (isPlannedOther) state.isPlannedOther = true;
+
+        if (!pos || !cell || !cell.placed || cell.isHQ) {
+            if (isBlockPlannedByOther) state.isBlockPlannedByOther = true;
+            return state;
+        }
+
+        if (isBlockPlannedByOther) {
+            state.canIntercept = false;
+            state.isBlockPlannedByOther = true;
+            state.reason = "BLOCK_ALREADY_PLANNED";
+            return state;
+        }
+
         const input = this.createTrialPreviewInput(r, c);
-        if (!input) return this.getTrialRoutePosition(r, c) ? { onRoute: true, canIntercept: false } : null;
+        if (!input) {
+            return state;
+        }
+
         const result = this.trialController.previewInterception(input);
-        return { onRoute: true, canIntercept: result.success !== false };
+        state.canIntercept = result.success !== false;
+        return state;
     }
 
     updateTrialInterceptionPreview(r, c) {
@@ -213,6 +258,7 @@ class UIController {
         const input = this.createTrialPreviewInput(r, c);
         if (!input) {
             this.trialPresentationState.clearInterceptionPreview();
+            if (this.trialDefenseAllocationComponent) this.trialDefenseAllocationComponent.render();
             return null;
         }
         const result = this.trialController.previewInterception(input);
@@ -234,15 +280,22 @@ class UIController {
         this.trialPresentationState.selectInterceptCell({ r, c });
         this.trialPresentationState.clearHoveredCell();
         this.refreshTrialInterceptionPreview();
+        const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
         this.renderBoardGrid(I18n);
+        if (this.trialDefenseAllocationComponent) this.trialDefenseAllocationComponent.render();
         return true;
     }
 
     setTrialDefenseAllocation(value) {
         if (!this.trialPreviewConfig) return 0;
+        const activeRoute = this.getActiveTrialRoute();
+        const activeRouteId = activeRoute?.id;
+        const maxForRoute = activeRouteId
+            ? this.trialPresentationState.getMaxAllocationForRoute(activeRouteId, this.getTrialAvailableDefense())
+            : this.getTrialAvailableDefense();
         const allocation = this.trialPresentationState.setPreviewDefenseAllocation(
             value,
-            this.getTrialAvailableDefense()
+            maxForRoute
         );
         this.refreshTrialInterceptionPreview();
         return allocation;
@@ -251,6 +304,115 @@ class UIController {
     adjustTrialDefenseAllocation(delta) {
         const current = this.trialPresentationState.previewDefenseAllocation;
         return this.setTrialDefenseAllocation(current + Number(delta || 0));
+    }
+
+    getTrialPlannedDefenseTotal() {
+        return this.trialPresentationState.getPlannedDefenseTotal();
+    }
+
+    getTrialRemainingDefense() {
+        return this.trialPresentationState.getRemainingDefense(this.getTrialAvailableDefense());
+    }
+
+    getTrialPlanningRoutes() {
+        if (!this.trialPreviewConfig || !this.trialController.state) return [];
+        return this.trialController.getPlanningRoutes();
+    }
+
+    selectTrialRoute(routeId) {
+        if (!this.trialPreviewConfig) return false;
+        this.trialPresentationState.setActiveEnemyRoute(routeId);
+        this.trialPresentationState.clearHoveredCell();
+
+        const decision = this.trialPresentationState.getRouteDecision(routeId);
+        const available = this.getTrialAvailableDefense();
+        const maxForRoute = this.trialPresentationState.getMaxAllocationForRoute(routeId, available);
+
+        if (decision.status === "INTERCEPT" && decision.interceptCell) {
+            this.trialPresentationState.selectInterceptCell(decision.interceptCell);
+            this.trialPresentationState.setPreviewDefenseAllocation(decision.defenseAllocation, maxForRoute);
+            this.refreshTrialInterceptionPreview();
+        } else if (decision.status === "SKIP") {
+            this.trialPresentationState.clearSelectedInterceptCell();
+            this.trialPresentationState.setPreviewDefenseAllocation(0, maxForRoute);
+            this.trialPresentationState.clearInterceptionPreview();
+        } else {
+            this.trialPresentationState.clearSelectedInterceptCell();
+            this.trialPresentationState.setPreviewDefenseAllocation(0, maxForRoute);
+            this.trialPresentationState.clearInterceptionPreview();
+        }
+
+        const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
+        this.renderBoardGrid(I18n);
+        if (this.trialDefenseAllocationComponent) this.trialDefenseAllocationComponent.render();
+        return true;
+    }
+
+    setTrialActiveRouteIntercept() {
+        if (!this.trialPreviewConfig) return { success: false, reason: "NOT_IN_TRIAL" };
+        const activeRoute = this.getActiveTrialRoute();
+        if (!activeRoute) return { success: false, reason: "NO_ACTIVE_ROUTE" };
+        const selectedCell = this.trialPresentationState.selectedInterceptCell;
+        if (!selectedCell) return { success: false, reason: "NO_SELECTED_CELL" };
+        const allocation = this.trialPresentationState.previewDefenseAllocation;
+        if (allocation < 1) return { success: false, reason: "INVALID_DEFENSE_ALLOCATION" };
+
+        const displayGrid = this.getBoardDisplayGrid();
+        const routes = this.trialController.state?.routes || [];
+
+        const result = this.trialPresentationState.setRouteInterceptPlan(
+            activeRoute.id,
+            selectedCell,
+            allocation,
+            {
+                availableDefense: this.getTrialAvailableDefense(),
+                routes,
+                cellResolver: (r, c) => displayGrid?.[r]?.[c] || null,
+                domainValidator: (routeId, coords, defense) => {
+                    const input = this.createTrialPreviewInput(coords.r, coords.c);
+                    if (!input) return { success: false, reason: "INVALID_INTERCEPT_CELL" };
+                    input.allocatedDefense = defense;
+                    return this.trialController.previewInterception(input);
+                }
+            }
+        );
+
+        if (result.success) {
+            this.refreshTrialInterceptionPreview();
+            this.render();
+        }
+        return result;
+    }
+
+    setTrialActiveRouteSkip() {
+        if (!this.trialPreviewConfig) return { success: false, reason: "NOT_IN_TRIAL" };
+        const activeRoute = this.getActiveTrialRoute();
+        if (!activeRoute) return { success: false, reason: "NO_ACTIVE_ROUTE" };
+
+        const routes = this.trialController.state?.routes || [];
+        const result = this.trialPresentationState.setRouteSkipped(activeRoute.id, routes);
+        if (result.success) {
+            this.trialPresentationState.clearSelectedInterceptCell();
+            this.trialPresentationState.setPreviewDefenseAllocation(0, this.getTrialAvailableDefense());
+            this.refreshTrialInterceptionPreview();
+            this.render();
+        }
+        return result;
+    }
+
+    clearTrialActiveRouteDecision() {
+        if (!this.trialPreviewConfig) return { success: false, reason: "NOT_IN_TRIAL" };
+        const activeRoute = this.getActiveTrialRoute();
+        if (!activeRoute) return { success: false, reason: "NO_ACTIVE_ROUTE" };
+
+        const result = this.trialPresentationState.clearRouteDecision(activeRoute.id);
+        if (result.success) {
+            this.trialPresentationState.clearSelectedInterceptCell();
+            this.trialPresentationState.setPreviewDefenseAllocation(0, this.getTrialAvailableDefense());
+            this.refreshTrialInterceptionPreview();
+            this.render();
+        }
+        return result;
     }
 
     /**
@@ -1170,6 +1332,15 @@ class UIController {
 
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' && window.I18n ? window.I18n : { t: k => k });
         if (this.developmentTrialPreviewHarness.isActive()) {
+            const cellState = this.getTrialInterceptionCellState(r, c);
+            if (cellState?.isBlockPlannedByOther) {
+                const title = `[${String.fromCharCode(65 + c)}${r + 1}]`;
+                const desc = `<div class="trial-block-planned-warning">${I18n.t("UI_TRIAL_BLOCK_ALREADY_PLANNED")}</div>`;
+                if (typeof window !== "undefined" && window.tooltipSystemInstance?.showCustom) {
+                    window.tooltipSystemInstance.showCustom(e?.clientX || 0, e?.clientY || 0, title, desc);
+                }
+                return;
+            }
             const preview = this.trialPresentationState.interceptionPreview;
             if (!preview || preview.cell?.r !== r || preview.cell?.c !== c) {
                 this.hideCellTooltip();

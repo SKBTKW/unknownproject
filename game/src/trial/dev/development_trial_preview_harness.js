@@ -21,10 +21,20 @@ function createScenarioGrid(scenario) {
     const grid = Array.from({ length: size }, (_, r) =>
         Array.from({ length: size }, (_, c) => createCell(r, c))
     );
-    scenario.route.forEach(entry => {
+    const cellsToPlace = [];
+    if (Array.isArray(scenario.routes) && scenario.routes.length > 0) {
+        scenario.routes.forEach(route => {
+            const cells = route.cells || route.route || [];
+            cells.forEach(entry => cellsToPlace.push(entry));
+        });
+    } else if (Array.isArray(scenario.route)) {
+        scenario.route.forEach(entry => cellsToPlace.push(entry));
+    }
+    cellsToPlace.forEach(entry => {
         Object.assign(grid[entry.r][entry.c], {
             placed: true,
-            terrain: { ...entry.terrain }
+            terrain: { ...entry.terrain },
+            placementGroupId: entry.placementGroupId ?? `block_${entry.r}_${entry.c}`
         });
     });
     Object.assign(grid[size - 1][size - 1], { placed: true, isHQ: true });
@@ -51,14 +61,24 @@ export class DevelopmentTrialPreviewHarness {
         const scenarioDefinition = getTrialPreviewScenario(scenarioId);
         if (!scenarioDefinition) return { success: false, reason: "DEV_TRIAL_SCENARIO_NOT_FOUND" };
 
+        const routes = Array.isArray(scenarioDefinition.routes) && scenarioDefinition.routes.length > 0
+            ? scenarioDefinition.routes.map(r => ({
+                id: r.id,
+                nameKey: r.nameKey,
+                isCommanderRoute: r.isCommanderRoute === true || r.commander === true,
+                suppression: r.suppression,
+                cells: (r.cells || r.route).map(({ r, c }) => ({ r, c }))
+            }))
+            : [{
+                id: scenarioDefinition.routeId,
+                cells: scenarioDefinition.route.map(({ r, c }) => ({ r, c }))
+            }];
+
         const scenario = {
             id: scenarioDefinition.id,
             enemySuppression: scenarioDefinition.enemySuppression,
             availableDefense: scenarioDefinition.availableDefense,
-            routes: [{
-                id: scenarioDefinition.routeId,
-                cells: scenarioDefinition.route.map(({ r, c }) => ({ r, c }))
-            }]
+            routes
         };
         this.session = {
             definition: scenarioDefinition,
@@ -66,7 +86,7 @@ export class DevelopmentTrialPreviewHarness {
         };
         this.ui.startTrialInterceptionPreview(scenario, {
             deployedDefense: scenarioDefinition.deployedDefense,
-            routeId: scenarioDefinition.routeId
+            routeId: routes[0]?.id || scenarioDefinition.routeId
         });
         return { success: true, scenarioId: scenarioDefinition.id };
     }
