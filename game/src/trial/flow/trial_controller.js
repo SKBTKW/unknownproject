@@ -5,6 +5,7 @@ import {
     TRIAL_PLAN_REASONS,
     TRIAL_ROUTE_PLAN_STATUSES
 } from "../domain/trial_types.js";
+import { TrialPlanningDraftService } from "../domain/trial_planning_draft_service.js";
 import { GAME_FACT_TYPES, GameFactHub } from "../../core/game_fact.js";
 import { InterceptionPowerResolver } from "../systems/interception_power_resolver.js";
 import { TrialCombatResolver } from "../systems/trial_combat_resolver.js";
@@ -87,26 +88,6 @@ export class TrialController {
         return { ...resolved, preview };
     }
 
-    getRouteDecision(routeId) {
-        return this.state?.plannedInterceptions.find(plan => plan.routeId === routeId) || {
-            routeId,
-            status: TRIAL_ROUTE_PLAN_STATUSES.UNDECIDED,
-            interceptCell: null,
-            defenseAllocation: 0
-        };
-    }
-
-    getPlannedDefenseTotal() {
-        return (this.state?.plannedInterceptions || []).reduce(
-            (total, plan) => total + (plan.status === TRIAL_ROUTE_PLAN_STATUSES.INTERCEPT ? plan.defenseAllocation : 0),
-            0
-        );
-    }
-
-    getRemainingDefense() {
-        return Math.max(0, (this.state?.human?.availableDefense || 0) - this.getPlannedDefenseTotal());
-    }
-
     getPlanningRoutes() {
         if (!this.state) return [];
         return this.state.routes.map((route, index) => ({ route, index }))
@@ -121,68 +102,126 @@ export class TrialController {
             .map(entry => entry.route);
     }
 
-    getUndecidedRoutes() {
-        return this.getPlanningRoutes().filter(route => this.getRouteDecision(route.id).status === TRIAL_ROUTE_PLAN_STATUSES.UNDECIDED);
+    getRouteDecision(drafts, routeId) {
+        if (routeId === undefined && typeof drafts === "string") {
+            routeId = drafts;
+            drafts = null;
+        }
+        return TrialPlanningDraftService.getRouteDecision(drafts, routeId);
     }
 
-    setRouteInterceptPlan(routeId, interceptCell, defenseAllocation) {
-        if (!Number.isInteger(defenseAllocation) || defenseAllocation < 1) {
-            return { success: false, reason: TRIAL_PLAN_REASONS.INVALID_DEFENSE_ALLOCATION };
+    getPlannedDefenseTotal(drafts) {
+        return TrialPlanningDraftService.getPlannedDefenseTotal(drafts);
+    }
+
+    getRemainingDefense(drafts) {
+        return TrialPlanningDraftService.getRemainingDefense(drafts, this.state?.human?.availableDefense || 0);
+    }
+
+    getUndecidedRoutes(drafts) {
+        return TrialPlanningDraftService.getUndecidedRoutes(drafts, this.getPlanningRoutes());
+    }
+
+    setRouteInterceptPlan(...args) {
+        let drafts, routeId, interceptCell, defenseAllocation;
+        if (args.length >= 4 && (args[0] instanceof Map || (typeof args[0] === "object" && args[0] !== null && !args[0].r))) {
+            [drafts, routeId, interceptCell, defenseAllocation] = args;
+        } else if (typeof args[0] === "string") {
+            [routeId, interceptCell, defenseAllocation, drafts] = args;
+        } else {
+            [drafts, routeId, interceptCell, defenseAllocation] = args;
         }
-        const available = this.state?.human?.availableDefense || 0;
-        if (defenseAllocation > available) {
-            return { success: false, reason: TRIAL_PLAN_REASONS.INVALID_DEFENSE_ALLOCATION };
-        }
-        const candidate = this.validateRouteInterception(routeId, interceptCell, defenseAllocation);
-        if (!candidate.success) return candidate;
-        const duplicate = this.state.plannedInterceptions.find(plan =>
-            plan.routeId !== routeId
-            && plan.status === TRIAL_ROUTE_PLAN_STATUSES.INTERCEPT
-            && plan.interceptBlockId === candidate.blockId
-        );
-        if (duplicate) return { success: false, reason: TRIAL_PLAN_REASONS.BLOCK_ALREADY_PLANNED };
-        const existing = this.state.plannedInterceptions.find(plan => plan.routeId === routeId);
-        const existingAllocation = existing?.status === TRIAL_ROUTE_PLAN_STATUSES.INTERCEPT ? existing.defenseAllocation : 0;
-        if (this.getPlannedDefenseTotal() - existingAllocation + defenseAllocation > available) {
-            return { success: false, reason: TRIAL_PLAN_REASONS.DEFENSE_BUDGET_EXCEEDED };
-        }
-        const plan = {
+        drafts = drafts || new Map();
+        return TrialPlanningDraftService.setIntercept(drafts, {
             routeId,
-            status: TRIAL_ROUTE_PLAN_STATUSES.INTERCEPT,
-            interceptCell: { r: interceptCell.r, c: interceptCell.c },
-            interceptBlockId: candidate.blockId,
-            defenseAllocation
+            interceptCell,
+            defenseAllocation,
+            availableDefense: this.state?.human?.availableDefense ?? Infinity,
+            routes: this.state?.routes,
+            cellResolver: this.cellResolver,
+            domainValidator: (rId, cell, alloc) => this.validateRouteInterception(rId, cell, alloc)
+        });
+    }
+
+    setRouteSkipped(...args) {
+        let drafts, routeId;
+        if (args.length >= 2 && (args[0] instanceof Map || (typeof args[0] === "object" && args[0] !== null))) {
+            [drafts, routeId] = args;
+        } else {
+            [routeId, drafts] = args;
+        }
+        drafts = drafts || new Map();
+        return TrialPlanningDraftService.setSkip(drafts, routeId, this.state?.routes);
+    }
+
+    clearRouteDecision(...args) {
+        let drafts, routeId;
+        if (args.length >= 2 && (args[0] instanceof Map || (typeof args[0] === "object" && args[0] !== null))) {
+            [drafts, routeId] = args;
+        } else {
+            [routeId, drafts] = args;
+        }
+        if (!drafts) return false;
+        return TrialPlanningDraftService.clearDecision(drafts, routeId);
+    }
+
+    validatePlanningDraft(drafts) {
+        if (!this.state) return { valid: false, errors: ["TRIAL_NOT_STARTED"], warnings: [] };
+        return TrialPlanningDraftService.validateDraft(drafts, {
+            routes: this.getPlanningRoutes(),
+            availableDefense: this.state?.human?.availableDefense ?? 0,
+            cellResolver: this.cellResolver,
+            domainValidator: (rId, cell, alloc) => this.validateRouteInterception(rId, cell, alloc)
+        });
+    }
+
+    confirmInterceptionPlan(drafts, { allowWarnings = false } = {}) {
+        if (!this.state) return { success: false, errors: ["TRIAL_NOT_STARTED"], warnings: [] };
+        const validation = this.validatePlanningDraft(drafts);
+        if (!validation.valid || (validation.errors && validation.errors.length > 0)) {
+            return { success: false, errors: validation.errors, warnings: validation.warnings };
+        }
+        if (validation.warnings && validation.warnings.length > 0 && !allowWarnings) {
+            return { success: false, requiresConfirmation: true, warnings: validation.warnings };
+        }
+
+        const map = drafts instanceof Map
+            ? drafts
+            : new Map(Array.isArray(drafts) ? drafts.map(d => [d.routeId, d]) : Object.entries(drafts || {}));
+        const confirmedRoutes = [];
+        for (const route of this.state.routes) {
+            const rId = route.id ?? route.routeId;
+            const decision = map.get(rId);
+            if (decision && (decision.status === TRIAL_ROUTE_PLAN_STATUSES.INTERCEPT || decision.status === TRIAL_ROUTE_PLAN_STATUSES.SKIP)) {
+                confirmedRoutes.push({
+                    routeId: rId,
+                    status: decision.status,
+                    interceptCell: decision.interceptCell ? { ...decision.interceptCell } : null,
+                    interceptBlockId: decision.interceptBlockId || null,
+                    defenseAllocation: Number(decision.defenseAllocation) || 0
+                });
+            }
+        }
+
+        const totalDefenseAllocated = confirmedRoutes.reduce(
+            (sum, r) => sum + (r.status === TRIAL_ROUTE_PLAN_STATUSES.INTERCEPT ? r.defenseAllocation : 0),
+            0
+        );
+
+        this.state.interceptionPlan = {
+            routes: confirmedRoutes,
+            totalDefenseAllocated
         };
-        this.replaceRouteDecision(plan);
-        this.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_INTERCEPTION_PLANNED, plan);
-        return { success: true, plan, preview: candidate.preview };
-    }
 
-    setRouteSkipped(routeId) {
-        if (!this.getRoute(routeId)) return { success: false, reason: TRIAL_PLAN_REASONS.UNKNOWN_ROUTE };
-        const plan = { routeId, status: TRIAL_ROUTE_PLAN_STATUSES.SKIP, interceptCell: null, defenseAllocation: 0 };
-        this.replaceRouteDecision(plan);
-        this.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_ROUTE_SKIPPED, plan);
-        return { success: true, plan };
-    }
+        this.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_PLAN_CONFIRMED, {
+            routes: JSON.parse(JSON.stringify(confirmedRoutes)),
+            totalDefenseAllocated
+        });
 
-    clearRouteDecision(routeId) {
-        if (!this.getRoute(routeId)) return false;
-        this.state.plannedInterceptions = this.state.plannedInterceptions.filter(plan => plan.routeId !== routeId);
-        return true;
-    }
-
-    replaceRouteDecision(plan) {
-        this.state.plannedInterceptions = this.state.plannedInterceptions.filter(item => item.routeId !== plan.routeId);
-        this.state.plannedInterceptions.push(plan);
-    }
-
-    validatePlanningDraft() {
-        if (!this.state) return { valid: false, reasons: ["TRIAL_NOT_STARTED"] };
-        const reasons = [];
-        if (this.getUndecidedRoutes().length > 0) reasons.push("ROUTES_UNDECIDED");
-        if (this.getPlannedDefenseTotal() > this.state.human.availableDefense) reasons.push(TRIAL_PLAN_REASONS.DEFENSE_BUDGET_EXCEEDED);
-        return { valid: reasons.length === 0, reasons };
+        return {
+            success: true,
+            plan: this.state.interceptionPlan
+        };
     }
 
     createBattleContext(input) {

@@ -17,7 +17,7 @@ export class TrialState {
         };
         this.routes = cloneData(scenario.routes) || [];
         this.interceptions = [];
-        this.plannedInterceptions = [];
+        this.interceptionPlan = null;
         this.human = {
             defense: Math.max(0, Number(scenario.availableDefense) || 0),
             availableDefense: Math.max(0, Number(scenario.availableDefense) || 0),

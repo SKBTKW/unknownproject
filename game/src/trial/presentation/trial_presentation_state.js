@@ -1,4 +1,5 @@
 import { TRIAL_MODIFIER_I18N_KEYS } from "../domain/trial_types.js";
+import { TrialPlanningDraftService } from "../domain/trial_planning_draft_service.js";
 
 export function normalizeDefenseAllocation(value, availableDefense, fallback = 0) {
     const normalizedAvailable = Number.isFinite(Number(availableDefense))
@@ -30,6 +31,7 @@ export class TrialPresentationState {
         this.currentBattleStep = null;
         this.cameraFocusCell = null;
         this.interceptionPreview = null;
+        this.routePlanDrafts = new Map();
     }
 
     setMode(mode) {
@@ -76,6 +78,74 @@ export class TrialPresentationState {
         this.previewDefenseAllocation = 0;
         this.activeEnemyRoute = null;
         this.interceptionPreview = null;
+        this.routePlanDrafts.clear();
+    }
+
+    getRouteDecision(routeId) {
+        return TrialPlanningDraftService.getRouteDecision(this.routePlanDrafts, routeId);
+    }
+
+    setRouteInterceptPlan(routeId, interceptCell, defenseAllocation, context = {}) {
+        return TrialPlanningDraftService.setIntercept(this.routePlanDrafts, {
+            routeId,
+            interceptCell,
+            defenseAllocation,
+            ...context
+        });
+    }
+
+    setRouteSkipped(routeId, routes = null) {
+        return TrialPlanningDraftService.setSkip(this.routePlanDrafts, routeId, routes);
+    }
+
+    clearRouteDecision(routeId) {
+        return TrialPlanningDraftService.clearDecision(this.routePlanDrafts, routeId);
+    }
+
+    getPlannedDefenseTotal() {
+        return TrialPlanningDraftService.getPlannedDefenseTotal(this.routePlanDrafts);
+    }
+
+    getRemainingDefense(availableDefense) {
+        return TrialPlanningDraftService.getRemainingDefense(this.routePlanDrafts, availableDefense);
+    }
+
+    getUndecidedRoutes(routes) {
+        return TrialPlanningDraftService.getUndecidedRoutes(this.routePlanDrafts, routes);
+    }
+
+    validatePlanning(availableDefense, routes, context = {}) {
+        return TrialPlanningDraftService.validateDraft(this.routePlanDrafts, {
+            routes,
+            availableDefense,
+            ...context
+        });
+    }
+
+    getInterceptionPlanSummary(availableDefense = 0, routes = []) {
+        const plans = Array.from(this.routePlanDrafts.values()).map(p => ({
+            ...p,
+            interceptCell: p.interceptCell ? { ...p.interceptCell } : null
+        }));
+        let interceptCount = 0;
+        let skipCount = 0;
+        for (const p of plans) {
+            if (p.status === "INTERCEPT") interceptCount++;
+            else if (p.status === "SKIP") skipCount++;
+        }
+        const undecidedRoutes = this.getUndecidedRoutes(routes);
+        const validation = this.validatePlanning(availableDefense, routes);
+        return {
+            plannedDefenseTotal: this.getPlannedDefenseTotal(),
+            remainingDefense: this.getRemainingDefense(availableDefense),
+            interceptCount,
+            skipCount,
+            undecidedCount: Array.isArray(routes) ? undecidedRoutes.length : 0,
+            isValid: validation.valid,
+            errors: validation.errors,
+            warnings: validation.warnings,
+            plans
+        };
     }
 
     setInterceptionPreview({ cell, terrainNameKey, deployedDefense, result }) {

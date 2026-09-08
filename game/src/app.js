@@ -70,6 +70,7 @@ import { resolveLandSelectSfx } from './audio/land_sfx_resolver.js';
 import { GAME_FACT_TYPES, GameFactHub } from './core/game_fact.js';
 import { GAME_FEEL } from './core/game_feel.js';
 import { TRIAL_PLAN_REASONS, TRIAL_ROUTE_PLAN_STATUSES } from './trial/domain/trial_types.js';
+import { TrialPlanningDraftService } from './trial/domain/trial_planning_draft_service.js';
 
 export {
     I18n,
@@ -120,6 +121,7 @@ export {
     GAME_FEEL,
     TRIAL_PLAN_REASONS,
     TRIAL_ROUTE_PLAN_STATUSES,
+    TrialPlanningDraftService,
     TooltipSystem,
     tooltipSystemInstance,
     ConditionEvaluator,
