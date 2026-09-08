@@ -322,6 +322,12 @@ assert(boardCameraSystem.currentZoom === 1.0, 'ズームリセットで初期倍
 console.log('\n⚡ [9/9] 1x1ブロック連結4マス上限 ＆ 即時ボーナストースト');
 const capEngine = new GameEngine();
 capEngine.state.grid = capEngine.gridEngine.initGrid(5);
+for (let r = 0; r < 5; r++) {
+    for (let c = 0; c < 5; c++) {
+        capEngine.state.grid[r][c].hasSocket = false;
+        capEngine.state.grid[r][c].socketResource = null;
+    }
+}
 const pTerrain = { id: 'GL1_PLAINS', terrainId: 'GL1_PLAINS', nameKey: 'TERRAIN_PLAINS', food: 2, wood: 0, mystic: 0 };
 capEngine.state.hasPickedThisTurn = false;
 capEngine.state.placeShape(1, 2, [[1]], pTerrain);
