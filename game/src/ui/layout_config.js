@@ -232,6 +232,14 @@ const UILayoutConfig = {
         whiteSpace: "nowrap"
     },
 
+    advisorDock: {
+        position: "fixed",
+        right: "16px",
+        bottom: "16px",
+        zIndex: 940,
+        pointerEvents: "auto"
+    },
+
     // 🃏 6. 画面下部中央: ドローカード選択エリア (Layer 3: プレイヤートレイ)
     offeringCardArea: {
         position: "relative",
@@ -327,6 +335,11 @@ UILayoutConfig.applyLayout = function() {
     const logContainer = document.getElementById("logComponentContainer");
     if (logContainer) {
         Object.assign(logContainer.style, this.logPanel);
+    }
+
+    const advisorContainer = document.getElementById("advisorDockContainer");
+    if (advisorContainer) {
+        Object.assign(advisorContainer.style, this.advisorDock);
     }
 
     const badgeContainer = document.getElementById("territoryBadgeContainer");

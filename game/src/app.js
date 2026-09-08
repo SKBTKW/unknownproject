@@ -52,6 +52,12 @@ import {
     resolveModifierTag
 } from './ui/trial_interception_preview_component.js';
 import { TrialDefenseAllocationComponent } from './ui/trial_defense_allocation_component.js';
+import { AdvisorDockComponent } from './ui/advisor/advisor_dock_component.js';
+import { AdvisorDialogueSystem } from './ui/advisor/advisor_dialogue_system.js';
+import { AdvisorEventBridge } from './ui/advisor/advisor_event_bridge.js';
+import { resolveAdvisorStatus } from './ui/advisor/advisor_status_resolver.js';
+import { resolveAdvisorAdvice } from './ui/advisor/advisor_advice_resolver.js';
+import { getAdvisorRecords } from './ui/advisor/advisor_record_adapter.js';
 import { DevelopmentTrialPreviewHarness } from './trial/dev/development_trial_preview_harness.js';
 import { TRIAL_PREVIEW_SCENARIOS, getTrialPreviewScenario } from './trial/dev/trial_preview_scenarios.js';
 import { isDevelopmentMode } from './config/dev_mode.js';
@@ -151,6 +157,12 @@ export {
     BuildIdentityBadgeComponent,
     TrialInterceptionPreviewComponent,
     TrialDefenseAllocationComponent,
+    AdvisorDockComponent,
+    AdvisorDialogueSystem,
+    AdvisorEventBridge,
+    resolveAdvisorStatus,
+    resolveAdvisorAdvice,
+    getAdvisorRecords,
     resolveModifierTag,
     DevelopmentTrialPreviewHarness,
     TRIAL_PREVIEW_SCENARIOS,

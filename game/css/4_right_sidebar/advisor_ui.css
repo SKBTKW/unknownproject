@@ -1,0 +1,31 @@
+.advisor-dock {
+    width: clamp(320px, 20vw, 380px);
+    max-height: calc(100vh - 32px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    color: #e8dfca;
+    background: rgba(13, 17, 24, 0.96);
+    border: 1px solid rgba(190, 151, 77, 0.72);
+    border-radius: 10px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.62);
+    pointer-events: auto;
+}
+
+.advisor-header { padding: 12px 14px; border-bottom: 1px solid rgba(190, 151, 77, 0.35); display: flex; flex-direction: column; gap: 3px; }
+.advisor-turn { color: #f3d18a; letter-spacing: 0.08em; }
+.advisor-trial-announcement { color: #e69b74; min-height: 1.2em; font-size: 0.85rem; }
+.advisor-portrait-viewport { min-height: 180px; position: relative; display: grid; place-items: center; background: radial-gradient(circle at 50% 35%, #27303c, #10141b 72%); }
+.advisor-portrait { color: #677181; font-size: 0.8rem; }
+.advisor-profile-name { position: absolute; left: 12px; top: 10px; color: #d9bd83; font-size: 0.82rem; }
+.advisor-popup-comment { position: absolute; left: 16px; right: 16px; bottom: 14px; padding: 9px 11px; max-height: 4.5em; overflow: hidden; opacity: 0; transform: translateY(6px); background: rgba(8, 11, 16, 0.92); border: 1px solid rgba(230, 205, 151, 0.45); border-radius: 7px; transition: opacity 180ms ease, transform 180ms ease; }
+.advisor-popup-comment.is-visible { opacity: 1; transform: translateY(0); }
+.advisor-detail-panel { min-height: 96px; max-height: 220px; padding: 11px 14px; overflow-y: auto; border-top: 1px solid rgba(190, 151, 77, 0.25); }
+.advisor-status-row, .advisor-record-row, .advisor-detail-fact, .advisor-advice { margin-bottom: 7px; line-height: 1.35; font-size: 0.85rem; }
+.advisor-record-row { color: #cbd2dc; }
+.advisor-advice { color: #e7d3aa; }
+.advisor-severity-high { color: #f0a080; }
+.advisor-footer-actions { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid rgba(190, 151, 77, 0.35); }
+.advisor-action-btn { min-height: 44px; border: 0; border-right: 1px solid rgba(190, 151, 77, 0.24); color: #c9c2b4; background: #191f29; cursor: pointer; }
+.advisor-action-btn:last-child { border-right: 0; }
+.advisor-action-btn:hover, .advisor-action-btn.is-active { color: #f4d797; background: #29303a; }

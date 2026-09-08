@@ -94,6 +94,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Settings Modal) で不合格が検出されました。");
         process.exit(1);
     }
+    const advisorFoundationOk = await runCommand("node", ["scratch/test_advisor_foundation.mjs"]);
+    if (!advisorFoundationOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Advisor Foundation) で不合格が検出されました。");
+        process.exit(1);
+    }
 
     // 🏷️ Layer 6: Other Integration & Economic Settlement (ビルド識別・食料決済)
     console.log("\n🌾 [LAYER 6/6] Integration & Economic Settlement Tests...");
