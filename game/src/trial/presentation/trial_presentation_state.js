@@ -32,6 +32,19 @@ export class TrialPresentationState {
         this.cameraFocusCell = null;
         this.interceptionPreview = null;
         this.routePlanDrafts = new Map();
+        this.planningCompletionWarningOpen = false;
+        this.planningReviewRequested = false;
+        this.planningWarningsAccepted = false;
+        this.planningValidationErrors = [];
+        this.planningWarningInfo = null;
+    }
+
+    clearPlanningReviewRequest() {
+        this.planningReviewRequested = false;
+        this.planningWarningsAccepted = false;
+        this.planningCompletionWarningOpen = false;
+        this.planningValidationErrors = [];
+        this.planningWarningInfo = null;
     }
 
     setMode(mode) {
@@ -79,6 +92,7 @@ export class TrialPresentationState {
         this.activeEnemyRoute = null;
         this.interceptionPreview = null;
         this.routePlanDrafts.clear();
+        this.clearPlanningReviewRequest();
     }
 
     getRouteDecision(routeId) {

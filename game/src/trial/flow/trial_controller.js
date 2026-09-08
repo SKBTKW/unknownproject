@@ -81,11 +81,18 @@ export class TrialController {
     validateRouteInterception(routeId, interceptCell, allocatedDefense = 0) {
         const resolved = this.createRouteInterceptionInput(routeId, interceptCell, allocatedDefense);
         if (!resolved.success) return resolved;
-        const preview = this.previewInterception(resolved.input);
-        if (preview.success === false) {
-            return { success: false, reason: TRIAL_PLAN_REASONS.INTERCEPTION_NOT_ALLOWED, preview };
+        try {
+            const preview = this.previewInterception(resolved.input);
+            if (preview.success === false) {
+                return { success: false, reason: TRIAL_PLAN_REASONS.INTERCEPTION_NOT_ALLOWED, preview };
+            }
+            return { ...resolved, preview };
+        } catch (err) {
+            const reason = err.message === "DEFENSE_ALLOCATION_EXCEEDS_AVAILABLE"
+                ? TRIAL_PLAN_REASONS.DEFENSE_BUDGET_EXCEEDED
+                : (err.message || TRIAL_PLAN_REASONS.INTERCEPTION_NOT_ALLOWED);
+            return { success: false, reason };
         }
-        return { ...resolved, preview };
     }
 
     getPlanningRoutes() {
@@ -165,13 +172,21 @@ export class TrialController {
         return TrialPlanningDraftService.clearDecision(drafts, routeId);
     }
 
-    validatePlanningDraft(drafts) {
+    validatePlanningDraft(drafts, { cellResolver = this.cellResolver } = {}) {
         if (!this.state) return { valid: false, errors: ["TRIAL_NOT_STARTED"], warnings: [] };
         return TrialPlanningDraftService.validateDraft(drafts, {
             routes: this.getPlanningRoutes(),
             availableDefense: this.state?.human?.availableDefense ?? 0,
-            cellResolver: this.cellResolver,
-            domainValidator: (rId, cell, alloc) => this.validateRouteInterception(rId, cell, alloc)
+            cellResolver,
+            domainValidator: (rId, cell, alloc) => {
+                const prev = this.cellResolver;
+                if (cellResolver) this.cellResolver = cellResolver;
+                try {
+                    return this.validateRouteInterception(rId, cell, alloc);
+                } finally {
+                    this.cellResolver = prev;
+                }
+            }
         });
     }
 

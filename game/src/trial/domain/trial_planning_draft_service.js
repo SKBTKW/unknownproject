@@ -313,9 +313,10 @@ export class TrialPlanningDraftService {
         }
 
         // Warnings check: UNDECIDED routes
+        let undecidedRoutes = [];
         if (Array.isArray(routes) && routes.length > 0) {
-            const undecided = TrialPlanningDraftService.getUndecidedRoutes(map, routes);
-            if (undecided.length > 0) {
+            undecidedRoutes = TrialPlanningDraftService.getUndecidedRoutes(map, routes);
+            if (undecidedRoutes.length > 0) {
                 warnings.push("ROUTES_UNDECIDED");
             }
         }
@@ -323,7 +324,8 @@ export class TrialPlanningDraftService {
         return {
             valid: errors.length === 0,
             errors,
-            warnings
+            warnings,
+            undecidedRoutes
         };
     }
 }

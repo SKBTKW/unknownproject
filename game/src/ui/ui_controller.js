@@ -108,9 +108,12 @@ class UIController {
     get pinnedPreviewCard() { return this.interactionState.pinnedPreviewCard; }
     set pinnedPreviewCard(v) { this.interactionState.pinnedPreviewCard = v; }
 
-    startTrialInterceptionPreview(scenario, { deployedDefense = 6, routeId = null } = {}) {
+    startTrialInterceptionPreview(scenario, { deployedDefense = 6, routeId = null, cellResolver = null } = {}) {
         const availableDefense = scenario.availableDefense ?? this.state.currentDefense ?? this.state.defense ?? 0;
-        this.trialController.startScenario({ ...scenario, availableDefense });
+        const resolvedCellResolver = (typeof cellResolver === "function")
+            ? cellResolver
+            : ((r, c) => this.getBoardDisplayGrid()?.[r]?.[c] || null);
+        this.trialController.startScenario({ ...scenario, availableDefense }, { cellResolver: resolvedCellResolver });
         this.trialPresentationState.clearPlanningState();
         this.trialPresentationState.setActiveEnemyRoute(routeId);
         this.trialPresentationState.setPreviewDefenseAllocation(deployedDefense, availableDefense, 0);
@@ -378,6 +381,7 @@ class UIController {
         );
 
         if (result.success) {
+            this.trialPresentationState.clearPlanningReviewRequest();
             this.refreshTrialInterceptionPreview();
             this.render();
         }
@@ -392,6 +396,7 @@ class UIController {
         const routes = this.trialController.state?.routes || [];
         const result = this.trialPresentationState.setRouteSkipped(activeRoute.id, routes);
         if (result.success) {
+            this.trialPresentationState.clearPlanningReviewRequest();
             this.trialPresentationState.clearSelectedInterceptCell();
             this.trialPresentationState.setPreviewDefenseAllocation(0, this.getTrialAvailableDefense());
             this.refreshTrialInterceptionPreview();
@@ -407,12 +412,76 @@ class UIController {
 
         const result = this.trialPresentationState.clearRouteDecision(activeRoute.id);
         if (result.success) {
+            this.trialPresentationState.clearPlanningReviewRequest();
             this.trialPresentationState.clearSelectedInterceptCell();
             this.trialPresentationState.setPreviewDefenseAllocation(0, this.getTrialAvailableDefense());
             this.refreshTrialInterceptionPreview();
             this.render();
         }
         return result;
+    }
+
+    validateTrialPlanning() {
+        if (!this.trialPreviewConfig || !this.trialController) {
+            return { valid: false, errors: ["TRIAL_NOT_STARTED"], warnings: [], undecidedRoutes: [] };
+        }
+        const displayGrid = this.getBoardDisplayGrid();
+        return this.trialController.validatePlanningDraft(this.trialPresentationState.routePlanDrafts, {
+            cellResolver: (r, c) => displayGrid?.[r]?.[c] || null
+        });
+    }
+
+    finishTrialPlanning() {
+        const validation = this.validateTrialPlanning();
+        if (!validation.valid) {
+            this.trialPresentationState.planningValidationErrors = validation.errors || [];
+            this.trialPresentationState.planningCompletionWarningOpen = false;
+            this.trialPresentationState.planningReviewRequested = false;
+            this.trialPresentationState.planningWarningsAccepted = false;
+            this.render();
+            return { success: false, errors: validation.errors, warnings: validation.warnings };
+        }
+
+        const hasUndecided = Array.isArray(validation.warnings) && validation.warnings.includes("ROUTES_UNDECIDED");
+        if (hasUndecided && !this.trialPresentationState.planningWarningsAccepted) {
+            this.trialPresentationState.planningValidationErrors = [];
+            this.trialPresentationState.planningCompletionWarningOpen = true;
+            this.trialPresentationState.planningWarningInfo = {
+                undecidedRoutes: validation.undecidedRoutes || [],
+                count: (validation.undecidedRoutes || []).length
+            };
+            this.trialPresentationState.planningReviewRequested = false;
+            this.render();
+            return { success: false, warning: "ROUTES_UNDECIDED", undecidedRoutes: validation.undecidedRoutes };
+        }
+
+        this.trialPresentationState.planningValidationErrors = [];
+        this.trialPresentationState.planningCompletionWarningOpen = false;
+        this.trialPresentationState.planningReviewRequested = true;
+        this.render();
+        return { success: true, reviewRequested: true };
+    }
+
+    dismissTrialPlanningWarning() {
+        this.trialPresentationState.planningCompletionWarningOpen = false;
+        this.trialPresentationState.planningWarningInfo = null;
+        this.render();
+        return { success: true };
+    }
+
+    acceptTrialPlanningWarningAndProceed() {
+        this.trialPresentationState.planningCompletionWarningOpen = false;
+        this.trialPresentationState.planningWarningsAccepted = true;
+        this.trialPresentationState.planningReviewRequested = true;
+        this.trialPresentationState.planningWarningInfo = null;
+        this.render();
+        return { success: true, reviewRequested: true };
+    }
+
+    clearTrialPlanningReviewRequest() {
+        this.trialPresentationState.clearPlanningReviewRequest();
+        this.render();
+        return { success: true };
     }
 
     /**

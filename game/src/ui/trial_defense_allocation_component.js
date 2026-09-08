@@ -85,6 +85,63 @@ export class TrialDefenseAllocationComponent {
         const canSkip = Boolean(activeRouteId);
         const canClear = Boolean(activeRouteId && currentDecision.status !== "UNDECIDED");
 
+        const errors = this.ui.trialPresentationState.planningValidationErrors || [];
+        let errorsHtml = "";
+        if (errors.length > 0) {
+            const errorItems = errors.map(err => `<li>${I18n.t(err)}</li>`).join("");
+            errorsHtml = `
+                <div class="trial-plan-errors-box" id="trialPlanErrorsBox">
+                    <div class="trial-plan-errors-title">${I18n.t("UI_TRIAL_PLAN_ERRORS_EXIST")}</div>
+                    <ul class="trial-plan-errors-list">${errorItems}</ul>
+                </div>
+            `;
+        }
+
+        const reviewRequested = this.ui.trialPresentationState.planningReviewRequested;
+        let reviewBannerHtml = "";
+        if (reviewRequested) {
+            reviewBannerHtml = `
+                <div class="trial-plan-review-requested-banner" id="trialPlanReviewRequestedBanner">
+                    <span class="trial-plan-review-status">${I18n.t("UI_TRIAL_PLAN_REVIEW_REQUESTED")}</span>
+                    <button type="button" id="btnTrialModifyPlan" class="btn-trial-action btn-modify-plan">
+                        ${I18n.t("UI_TRIAL_PLAN_MODIFY")}
+                    </button>
+                </div>
+            `;
+        }
+
+        const finishControlsHtml = `
+            <div class="trial-plan-finish-controls">
+                <button type="button" id="btnTrialFinishPlanning" class="btn-trial-action btn-finish-planning">
+                    ${I18n.t("UI_TRIAL_PLAN_FINISH")}
+                </button>
+            </div>
+        `;
+
+        const warningOpen = this.ui.trialPresentationState.planningCompletionWarningOpen;
+        const warningInfo = this.ui.trialPresentationState.planningWarningInfo;
+        let warningHtml = "";
+        if (warningOpen) {
+            const undecidedCount = warningInfo?.count ?? 0;
+            warningHtml = `
+                <div class="trial-plan-warning-overlay" id="trialPlanWarningModal">
+                    <div class="trial-plan-warning-dialog">
+                        <div class="trial-plan-warning-title">${I18n.t("UI_TRIAL_PLAN_UNDECIDED_WARNING_TITLE")}</div>
+                        <div class="trial-plan-warning-body">${I18n.t("UI_TRIAL_PLAN_UNDECIDED_WARNING")}</div>
+                        <div class="trial-plan-warning-count">${I18n.t("UI_TRIAL_PLAN_UNDECIDED_COUNT", { count: undecidedCount })}</div>
+                        <div class="trial-plan-warning-actions">
+                            <button type="button" id="btnTrialWarningBack" class="btn-trial-action btn-warning-back">
+                                ${I18n.t("UI_TRIAL_PLAN_WARNING_BACK")}
+                            </button>
+                            <button type="button" id="btnTrialWarningContinue" class="btn-trial-action btn-warning-continue">
+                                ${I18n.t("UI_TRIAL_PLAN_WARNING_CONTINUE")}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
         root.innerHTML = `
             <div class="trial-defense-allocation-heading">${I18n.t("UI_TRIAL_DEFENSE_ALLOCATION")}</div>
 
@@ -120,6 +177,11 @@ export class TrialDefenseAllocationComponent {
             </div>
 
             <div class="trial-defense-allocation-preview">${previewHtml}</div>
+
+            ${errorsHtml}
+            ${reviewBannerHtml}
+            ${finishControlsHtml}
+            ${warningHtml}
         `;
 
         const routeItems = root.querySelectorAll(".trial-route-item");
@@ -145,5 +207,17 @@ export class TrialDefenseAllocationComponent {
         if (btnIntercept) btnIntercept.onclick = () => this.ui.setTrialActiveRouteIntercept();
         if (btnSkip) btnSkip.onclick = () => this.ui.setTrialActiveRouteSkip();
         if (btnClear) btnClear.onclick = () => this.ui.clearTrialActiveRouteDecision();
+
+        const btnFinish = document.getElementById("btnTrialFinishPlanning");
+        if (btnFinish) btnFinish.onclick = () => this.ui.finishTrialPlanning();
+
+        const btnWarningBack = document.getElementById("btnTrialWarningBack");
+        if (btnWarningBack) btnWarningBack.onclick = () => this.ui.dismissTrialPlanningWarning();
+
+        const btnWarningContinue = document.getElementById("btnTrialWarningContinue");
+        if (btnWarningContinue) btnWarningContinue.onclick = () => this.ui.acceptTrialPlanningWarningAndProceed();
+
+        const btnModify = document.getElementById("btnTrialModifyPlan");
+        if (btnModify) btnModify.onclick = () => this.ui.clearTrialPlanningReviewRequest();
     }
 }

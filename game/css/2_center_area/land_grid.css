@@ -1776,3 +1776,136 @@ body.is-camera-dragging-global * {
 .trial-interception-preview.is-forbidden {
     color: #e74c3c;
 }
+
+.trial-plan-errors-box {
+    margin-top: 10px;
+    padding: 8px 10px;
+    background: rgba(220, 38, 38, 0.15);
+    border: 1px solid #ef4444;
+    border-radius: 6px;
+    color: #fca5a5;
+    font-size: 11px;
+}
+
+.trial-plan-errors-title {
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: #ef4444;
+}
+
+.trial-plan-errors-list {
+    margin: 0;
+    padding-left: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.trial-plan-review-requested-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    padding: 6px 10px;
+    background: rgba(5, 150, 105, 0.2);
+    border: 1px solid #10b981;
+    border-radius: 6px;
+}
+
+.trial-plan-review-status {
+    color: #34d399;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.btn-modify-plan {
+    background: #334155;
+    color: #f1f5f9;
+    border-color: #64748b;
+    padding: 3px 8px;
+    font-size: 10px;
+}
+
+.trial-plan-finish-controls {
+    margin-top: 12px;
+    display: flex;
+}
+
+.btn-finish-planning {
+    width: 100%;
+    padding: 8px 12px;
+    background: #0284c7;
+    color: #ffffff;
+    border-color: #38bdf8;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.btn-finish-planning:hover {
+    background: #0369a1;
+}
+
+.trial-plan-warning-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100010;
+}
+
+.trial-plan-warning-dialog {
+    background: #0f172a;
+    border: 1px solid #f59e0b;
+    border-radius: 8px;
+    padding: 16px 20px;
+    max-width: 420px;
+    width: 90%;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 15px rgba(245, 158, 11, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.trial-plan-warning-title {
+    color: #f59e0b;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.trial-plan-warning-body {
+    color: #cbd5e1;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.trial-plan-warning-count {
+    color: #fcd34d;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.trial-plan-warning-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 6px;
+    justify-content: flex-end;
+}
+
+.btn-warning-back {
+    background: #475569;
+    color: #f1f5f9;
+    border-color: #64748b;
+    min-width: 80px;
+}
+
+.btn-warning-continue {
+    background: #d97706;
+    color: #ffffff;
+    border-color: #f59e0b;
+    min-width: 100px;
+}
