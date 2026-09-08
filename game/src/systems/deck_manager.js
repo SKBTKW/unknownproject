@@ -477,10 +477,7 @@ class DeckManager {
 
         // 🛡️ 同一オファリング内における完全同一カードの重複排除
         if (Array.isArray(excludedCardIds) && excludedCardIds.length > 0) {
-            const filteredEligible = eligible.filter(c => !excludedCardIds.includes(c.id));
-            if (filteredEligible.length > 0) {
-                eligible = filteredEligible;
-            }
+            eligible = eligible.filter(c => !excludedCardIds.includes(c.id));
         }
 
         if (eligible.length === 0) {
