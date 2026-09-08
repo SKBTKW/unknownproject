@@ -43,6 +43,86 @@ body {
 }
 
 /* Settings modal shared controls */
+.settings-modal-window {
+    width: var(--settings-modal-width, min(680px, 92vw));
+    max-width: 92vw;
+    height: var(--settings-modal-height, min(680px, calc(100vh - 64px)));
+    max-height: calc(100vh - 64px);
+    overflow: hidden;
+}
+
+.settings-modal-window > .directive-modal-header,
+.settings-modal-window > .directive-modal-desc,
+.settings-modal-window > .settings-tab-bar,
+.settings-modal-window > .settings-modal-footer {
+    flex: 0 0 auto;
+}
+
+.settings-tab-bar {
+    display: flex;
+    gap: 8px;
+    margin: 12px 0 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #2e384e;
+}
+
+.settings-tab-btn {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #3d4a63;
+    border-radius: 6px;
+    background: #1c2230;
+    color: #a4b0be;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.settings-tab-btn.active {
+    background: #1abc9c;
+    color: #ffffff;
+}
+
+.settings-tab-content-container {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding-right: 4px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+}
+
+.settings-tab-pane {
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.settings-tab-pane.active {
+    display: flex;
+}
+
+.settings-modal-footer {
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0;
+}
+
+.settings-reset-btn {
+    padding: 6px 14px;
+    border: 1px solid #e74c3c;
+    border-radius: 6px;
+    background: transparent;
+    color: #e74c3c;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.setting-select-resolution {
+    min-width: 230px;
+}
+
 .setting-item-row {
     display: flex;
     align-items: center;
@@ -83,6 +163,12 @@ body {
 }
 
 @media (max-width: 768px) {
+    .settings-modal-window {
+        height: min(680px, calc(100vh - 24px));
+        max-height: calc(100vh - 24px);
+        padding: 14px;
+    }
+
     .setting-item-row {
         align-items: stretch;
         flex-direction: column;
@@ -90,5 +176,9 @@ body {
 
     .setting-select-control {
         width: 100%;
+    }
+
+    .setting-select-resolution {
+        min-width: 0;
     }
 }

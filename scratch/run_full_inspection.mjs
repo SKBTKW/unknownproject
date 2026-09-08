@@ -89,6 +89,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (UI Lifecycle) で不合格が検出されました。");
         process.exit(1);
     }
+    const settingsModalOk = await runCommand("node", ["scratch/test_settings_modal_system.mjs"]);
+    if (!settingsModalOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Settings Modal) で不合格が検出されました。");
+        process.exit(1);
+    }
 
     // 🏷️ Layer 6: Other Integration & Economic Settlement (ビルド識別・食料決済)
     console.log("\n🌾 [LAYER 6/6] Integration & Economic Settlement Tests...");

@@ -174,6 +174,12 @@ const UILayoutConfig = {
         }
     },
 
+    // ⚙️ 設定モーダル: タブ内容量に依存しない固定外形
+    settingsModal: {
+        width: "min(680px, 92vw)",
+        height: "min(680px, calc(100vh - 64px))"
+    },
+
     // 🎯 1. 中央土地盤面エリア (画面の真中央へ100%完全自動固定)
     boardContainer: {
         display: "flex",

@@ -3,7 +3,19 @@
    環境設定（オプション設定）管理 ＆ タブ型モーダルUI独立モジュール
    ============================================================= */
 
+import { UILayoutConfig } from "./layout_config.js";
+import { displaySettingsAdapter } from "./display_settings_adapter.js";
+
 const STORAGE_KEY = "TOA_GAME_SETTINGS_V1";
+
+export const RESOLUTION_PRESETS = Object.freeze([
+    Object.freeze({ value: "1366x768", width: 1366, height: 768 }),
+    Object.freeze({ value: "1600x900", width: 1600, height: 900 }),
+    Object.freeze({ value: "1920x1080", width: 1920, height: 1080, recommended: true }),
+    Object.freeze({ value: "2560x1440", width: 2560, height: 1440 }),
+    Object.freeze({ value: "3440x1440", width: 3440, height: 1440 }),
+    Object.freeze({ value: "3840x2160", width: 3840, height: 2160 })
+]);
 
 // ⚙️ デフォルト設定定義
 const DEFAULT_SETTINGS = {
@@ -13,6 +25,7 @@ const DEFAULT_SETTINGS = {
     defaultHandMode: "standard",   // 手札の初期表示モード ("standard": 標準, "minimal": 縮小)
     autoRotateOnRightClick: true,  // 右クリックでのカード回転
     focusDoFBlur: false,           // 2層DoFフォーカス演出 (true: 配置中ボケ演出あり, false: 常時クリア)
+    resolution: "1920x1080",      // 表示解像度プリセット（ブラウザ版では表示設定境界へ通知）
     language: "ja",                // 表示言語 ("ja" / "en")
     animSpeed: "normal",           // 演出速度 ("normal" / "fast")
     seEnabled: true,               // 効果音 (true / false)
@@ -84,11 +97,14 @@ export const gameSettings = new GameSettings();
  * 🏛️ 設定モーダルUI ＆ ヘッダー⚙️ボタン管理システム（タブ型）
  */
 export class SettingsModalSystem {
-    constructor(settings = gameSettings) {
+    constructor(settings = gameSettings, displayAdapter = displaySettingsAdapter) {
         this.settings = settings;
+        this.displayAdapter = displayAdapter;
         this.modalEl = null;
         this.isOpen = false;
-        this.activeTab = "gameplay"; // "gameplay" | "visual" | "sound"
+        this.activeTab = "gameplay"; // "gameplay" | "graphics" | "sound"
+        this.displayAdapter.applyResolution(this.settings.get("resolution"));
+        this.settings.onChange(current => this.displayAdapter.applyResolution(current.resolution));
     }
 
     /**
@@ -154,6 +170,8 @@ export class SettingsModalSystem {
         this.modalEl.id = "settingsModal";
         this.modalEl.className = "directive-modal-overlay";
         this.modalEl.style.display = "none";
+        this.modalEl.style.setProperty("--settings-modal-width", UILayoutConfig.settingsModal.width);
+        this.modalEl.style.setProperty("--settings-modal-height", UILayoutConfig.settingsModal.height);
 
         const titleText = I18n ? I18n.t("UI_SETTINGS_TITLE") : "⚙️";
         const descText = I18n ? I18n.t("UI_SETTINGS_DESC") : "";
@@ -162,7 +180,7 @@ export class SettingsModalSystem {
 
         // タブ名
         const tabGameplayText = I18n ? I18n.t("UI_SETTINGS_TAB_GAMEPLAY") : "Gameplay";
-        const tabVisualText = I18n ? I18n.t("UI_SETTINGS_TAB_VISUAL") : "Visual";
+        const tabGraphicsText = I18n ? I18n.t("UI_SETTINGS_TAB_GRAPHICS") : "Graphics";
         const tabSoundText = I18n ? I18n.t("UI_SETTINGS_TAB_SOUND") : "Sound";
 
         // ① ゲームプレイ項目
@@ -191,7 +209,14 @@ export class SettingsModalSystem {
         const rotOptTrue = I18n ? I18n.t("UI_SETTINGS_ROTATE_OPT_TRUE") : "ON";
         const rotOptFalse = I18n ? I18n.t("UI_SETTINGS_ROTATE_OPT_FALSE") : "OFF";
 
-        // ② ビジュアル項目
+        // ② グラフィック項目
+        const resolutionTitle = I18n ? I18n.t("UI_SETTINGS_RESOLUTION_TITLE") : "Resolution";
+        const resolutionDesc = I18n ? I18n.t("UI_SETTINGS_RESOLUTION_DESC") : "Target display resolution";
+        const recommendedLabel = I18n ? I18n.t("UI_SETTINGS_RESOLUTION_RECOMMENDED") : " (Recommended)";
+        const resolutionOptions = RESOLUTION_PRESETS.map(preset => {
+            const suffix = preset.recommended ? recommendedLabel : "";
+            return `<option value="${preset.value}">${preset.width} × ${preset.height}${suffix}</option>`;
+        }).join("");
         const fTitle = I18n ? I18n.t("UI_SETTINGS_FOCUS_TITLE") : "DoF Blur";
         const fDesc = I18n ? I18n.t("UI_SETTINGS_FOCUS_DESC") : "";
         const fOptTrue = I18n ? I18n.t("UI_SETTINGS_FOCUS_OPT_TRUE") : "ON";
@@ -216,7 +241,7 @@ export class SettingsModalSystem {
         const sndOptOff = I18n ? I18n.t("UI_SETTINGS_SOUND_OPT_OFF") : "OFF";
 
         this.modalEl.innerHTML = `
-            <div class="directive-modal-window settings-modal-window" style="max-width: 580px; width: 90%;">
+            <div class="directive-modal-window settings-modal-window">
                 <div class="directive-modal-header">
                     <h3 class="directive-modal-title">
                         <span>⚙️</span> ${titleText}
@@ -229,46 +254,46 @@ export class SettingsModalSystem {
                 </div>
 
                 <!-- 🗂️ 設定タブバー -->
-                <div class="settings-tab-bar" style="display: flex; gap: 8px; margin: 12px 0 16px 0; border-bottom: 2px solid #2e384e; padding-bottom: 8px;">
-                    <button class="settings-tab-btn ${this.activeTab === 'gameplay' ? 'active' : ''}" data-tab="gameplay" style="flex: 1; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 13px; cursor: pointer; border: 1px solid #3d4a63; background: ${this.activeTab === 'gameplay' ? '#1abc9c' : '#1c2230'}; color: ${this.activeTab === 'gameplay' ? '#ffffff' : '#a4b0be'};">${tabGameplayText}</button>
-                    <button class="settings-tab-btn ${this.activeTab === 'visual' ? 'active' : ''}" data-tab="visual" style="flex: 1; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 13px; cursor: pointer; border: 1px solid #3d4a63; background: ${this.activeTab === 'visual' ? '#1abc9c' : '#1c2230'}; color: ${this.activeTab === 'visual' ? '#ffffff' : '#a4b0be'};">${tabVisualText}</button>
-                    <button class="settings-tab-btn ${this.activeTab === 'sound' ? 'active' : ''}" data-tab="sound" style="flex: 1; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 13px; cursor: pointer; border: 1px solid #3d4a63; background: ${this.activeTab === 'sound' ? '#1abc9c' : '#1c2230'}; color: ${this.activeTab === 'sound' ? '#ffffff' : '#a4b0be'};">${tabSoundText}</button>
+                <div class="settings-tab-bar">
+                    <button class="settings-tab-btn ${this.activeTab === 'gameplay' ? 'active' : ''}" data-tab="gameplay">${tabGameplayText}</button>
+                    <button class="settings-tab-btn ${this.activeTab === 'graphics' ? 'active' : ''}" data-tab="graphics">${tabGraphicsText}</button>
+                    <button class="settings-tab-btn ${this.activeTab === 'sound' ? 'active' : ''}" data-tab="sound">${tabSoundText}</button>
                 </div>
 
-                <div class="settings-tab-content-container" style="min-height: 220px;">
+                <div class="settings-tab-content-container">
                     <!-- 🎮 1. ゲームプレイ タブペイン -->
-                    <div class="settings-tab-pane" id="paneGameplay" style="display: ${this.activeTab === 'gameplay' ? 'flex' : 'none'}; flex-direction: column; gap: 12px;">
+                    <div class="settings-tab-pane ${this.activeTab === 'gameplay' ? 'active' : ''}" id="paneGameplay">
                         <!-- 手札初期表示モード -->
-                        <div class="setting-item-row" style="display: flex; justify-content: space-between; align-items: center; background: #1c2230; padding: 10px 14px; border-radius: 8px; border: 1px solid #2a3144;">
-                            <div>
-                                <div style="font-weight: bold; color: #ffffff; font-size: 13px;">${hmTitle}</div>
-                                <div style="font-size: 11px; color: #a4b0be; margin-top: 2px;">${hmDesc}</div>
+                        <div class="setting-item-row">
+                            <div class="setting-item-copy">
+                                <div class="setting-item-title">${hmTitle}</div>
+                                <div class="setting-item-desc">${hmDesc}</div>
                             </div>
-                            <select id="optDefaultHandMode" class="setting-select-control" style="background: #2b3548; color: #1abc9c; border: 1px solid #3d4a63; padding: 5px 10px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer;">
+                            <select id="optDefaultHandMode" class="setting-select-control">
                                 <option value="standard">${hmOptStd}</option>
                                 <option value="minimal">${hmOptMin}</option>
                             </select>
                         </div>
 
                         <!-- マリガン確認 -->
-                        <div class="setting-item-row" style="display: flex; justify-content: space-between; align-items: center; background: #1c2230; padding: 10px 14px; border-radius: 8px; border: 1px solid #2a3144;">
-                            <div>
-                                <div style="font-weight: bold; color: #ffffff; font-size: 13px;">${mTitle}</div>
-                                <div style="font-size: 11px; color: #a4b0be; margin-top: 2px;">${mDesc}</div>
+                        <div class="setting-item-row">
+                            <div class="setting-item-copy">
+                                <div class="setting-item-title">${mTitle}</div>
+                                <div class="setting-item-desc">${mDesc}</div>
                             </div>
-                            <select id="optMulliganConfirm" class="setting-select-control" style="background: #2b3548; color: #1abc9c; border: 1px solid #3d4a63; padding: 5px 10px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer;">
+                            <select id="optMulliganConfirm" class="setting-select-control">
                                 <option value="true">${mOptTrue}</option>
                                 <option value="false">${mOptFalse}</option>
                             </select>
                         </div>
 
                         <!-- 土地未配置ターン終了警告 -->
-                        <div class="setting-item-row" style="display: flex; justify-content: space-between; align-items: center; background: #1c2230; padding: 10px 14px; border-radius: 8px; border: 1px solid #2a3144;">
-                            <div>
-                                <div style="font-weight: bold; color: #ffffff; font-size: 13px;">${wTitle}</div>
-                                <div style="font-size: 11px; color: #a4b0be; margin-top: 2px;">${wDesc}</div>
+                        <div class="setting-item-row">
+                            <div class="setting-item-copy">
+                                <div class="setting-item-title">${wTitle}</div>
+                                <div class="setting-item-desc">${wDesc}</div>
                             </div>
-                            <select id="optTurnEndWarning" class="setting-select-control" style="background: #2b3548; color: #1abc9c; border: 1px solid #3d4a63; padding: 5px 10px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer;">
+                            <select id="optTurnEndWarning" class="setting-select-control">
                                 <option value="true">${wOptTrue}</option>
                                 <option value="false">${wOptFalse}</option>
                             </select>
@@ -287,51 +312,61 @@ export class SettingsModalSystem {
                         </div>
 
                         <!-- 右クリック回転 -->
-                        <div class="setting-item-row" style="display: flex; justify-content: space-between; align-items: center; background: #1c2230; padding: 10px 14px; border-radius: 8px; border: 1px solid #2a3144;">
-                            <div>
-                                <div style="font-weight: bold; color: #ffffff; font-size: 13px;">${rotTitle}</div>
-                                <div style="font-size: 11px; color: #a4b0be; margin-top: 2px;">${rotDesc}</div>
+                        <div class="setting-item-row">
+                            <div class="setting-item-copy">
+                                <div class="setting-item-title">${rotTitle}</div>
+                                <div class="setting-item-desc">${rotDesc}</div>
                             </div>
-                            <select id="optAutoRotate" class="setting-select-control" style="background: #2b3548; color: #1abc9c; border: 1px solid #3d4a63; padding: 5px 10px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer;">
+                            <select id="optAutoRotate" class="setting-select-control">
                                 <option value="true">${rotOptTrue}</option>
                                 <option value="false">${rotOptFalse}</option>
                             </select>
                         </div>
                     </div>
 
-                    <!-- 🎨 2. ビジュアル タブペイン -->
-                    <div class="settings-tab-pane" id="paneVisual" style="display: ${this.activeTab === 'visual' ? 'flex' : 'none'}; flex-direction: column; gap: 12px;">
-                        <!-- 言語設定 -->
-                        <div class="setting-item-row" style="display: flex; justify-content: space-between; align-items: center; background: #1c2230; padding: 10px 14px; border-radius: 8px; border: 1px solid #2a3144;">
-                            <div>
-                                <div style="font-weight: bold; color: #ffffff; font-size: 13px;">${langTitle}</div>
-                                <div style="font-size: 11px; color: #a4b0be; margin-top: 2px;">${langDesc}</div>
+                    <!-- 🎨 2. グラフィック タブペイン -->
+                    <div class="settings-tab-pane ${this.activeTab === 'graphics' ? 'active' : ''}" id="paneGraphics">
+                        <!-- 解像度 -->
+                        <div class="setting-item-row">
+                            <div class="setting-item-copy">
+                                <div class="setting-item-title">${resolutionTitle}</div>
+                                <div class="setting-item-desc">${resolutionDesc}</div>
                             </div>
-                            <select id="optLanguage" class="setting-select-control" style="background: #2b3548; color: #1abc9c; border: 1px solid #3d4a63; padding: 5px 10px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer;">
+                            <select id="optResolution" class="setting-select-control setting-select-resolution">
+                                ${resolutionOptions}
+                            </select>
+                        </div>
+                        <!-- 言語設定 -->
+                        <div class="setting-item-row">
+                            <div class="setting-item-copy">
+                                <div class="setting-item-title">${langTitle}</div>
+                                <div class="setting-item-desc">${langDesc}</div>
+                            </div>
+                            <select id="optLanguage" class="setting-select-control">
                                 <option value="ja">${langJa}</option>
                                 <option value="en">${langEn}</option>
                             </select>
                         </div>
 
                         <!-- 2層DoFフォーカス演出 -->
-                        <div class="setting-item-row" style="display: flex; justify-content: space-between; align-items: center; background: #1c2230; padding: 10px 14px; border-radius: 8px; border: 1px solid #2a3144;">
-                            <div>
-                                <div style="font-weight: bold; color: #ffffff; font-size: 13px;">${fTitle}</div>
-                                <div style="font-size: 11px; color: #a4b0be; margin-top: 2px;">${fDesc}</div>
+                        <div class="setting-item-row">
+                            <div class="setting-item-copy">
+                                <div class="setting-item-title">${fTitle}</div>
+                                <div class="setting-item-desc">${fDesc}</div>
                             </div>
-                            <select id="optFocusDoFBlur" class="setting-select-control" style="background: #2b3548; color: #1abc9c; border: 1px solid #3d4a63; padding: 5px 10px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer;">
+                            <select id="optFocusDoFBlur" class="setting-select-control">
                                 <option value="true">${fOptTrue}</option>
                                 <option value="false">${fOptFalse}</option>
                             </select>
                         </div>
 
                         <!-- 演出アニメーション速度 -->
-                        <div class="setting-item-row" style="display: flex; justify-content: space-between; align-items: center; background: #1c2230; padding: 10px 14px; border-radius: 8px; border: 1px solid #2a3144;">
-                            <div>
-                                <div style="font-weight: bold; color: #ffffff; font-size: 13px;">${animTitle}</div>
-                                <div style="font-size: 11px; color: #a4b0be; margin-top: 2px;">${animDesc}</div>
+                        <div class="setting-item-row">
+                            <div class="setting-item-copy">
+                                <div class="setting-item-title">${animTitle}</div>
+                                <div class="setting-item-desc">${animDesc}</div>
                             </div>
-                            <select id="optAnimSpeed" class="setting-select-control" style="background: #2b3548; color: #1abc9c; border: 1px solid #3d4a63; padding: 5px 10px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer;">
+                            <select id="optAnimSpeed" class="setting-select-control">
                                 <option value="normal">${animNorm}</option>
                                 <option value="fast">${animFast}</option>
                             </select>
@@ -339,26 +374,26 @@ export class SettingsModalSystem {
                     </div>
 
                     <!-- 🔊 3. サウンド タブペイン -->
-                    <div class="settings-tab-pane" id="paneSound" style="display: ${this.activeTab === 'sound' ? 'flex' : 'none'}; flex-direction: column; gap: 12px;">
+                    <div class="settings-tab-pane ${this.activeTab === 'sound' ? 'active' : ''}" id="paneSound">
                         <!-- 効果音 (SE) -->
-                        <div class="setting-item-row" style="display: flex; justify-content: space-between; align-items: center; background: #1c2230; padding: 10px 14px; border-radius: 8px; border: 1px solid #2a3144;">
-                            <div>
-                                <div style="font-weight: bold; color: #ffffff; font-size: 13px;">${seTitle}</div>
-                                <div style="font-size: 11px; color: #a4b0be; margin-top: 2px;">${seDesc}</div>
+                        <div class="setting-item-row">
+                            <div class="setting-item-copy">
+                                <div class="setting-item-title">${seTitle}</div>
+                                <div class="setting-item-desc">${seDesc}</div>
                             </div>
-                            <select id="optSeEnabled" class="setting-select-control" style="background: #2b3548; color: #1abc9c; border: 1px solid #3d4a63; padding: 5px 10px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer;">
+                            <select id="optSeEnabled" class="setting-select-control">
                                 <option value="true">${sndOptOn}</option>
                                 <option value="false">${sndOptOff}</option>
                             </select>
                         </div>
 
                         <!-- 背景音楽 (BGM) -->
-                        <div class="setting-item-row" style="display: flex; justify-content: space-between; align-items: center; background: #1c2230; padding: 10px 14px; border-radius: 8px; border: 1px solid #2a3144;">
-                            <div>
-                                <div style="font-weight: bold; color: #ffffff; font-size: 13px;">${bgmTitle}</div>
-                                <div style="font-size: 11px; color: #a4b0be; margin-top: 2px;">${bgmDesc}</div>
+                        <div class="setting-item-row">
+                            <div class="setting-item-copy">
+                                <div class="setting-item-title">${bgmTitle}</div>
+                                <div class="setting-item-desc">${bgmDesc}</div>
                             </div>
-                            <select id="optBgmEnabled" class="setting-select-control" style="background: #2b3548; color: #1abc9c; border: 1px solid #3d4a63; padding: 5px 10px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer;">
+                            <select id="optBgmEnabled" class="setting-select-control">
                                 <option value="true">${sndOptOn}</option>
                                 <option value="false">${sndOptOff}</option>
                             </select>
@@ -366,8 +401,8 @@ export class SettingsModalSystem {
                     </div>
                 </div>
 
-                <div class="directive-modal-footer" style="margin-top: 14px; display: flex; justify-content: space-between; align-items: center;">
-                    <button id="btnResetSettings" style="background: transparent; color: #e74c3c; border: 1px solid #e74c3c; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;">${resetBtnText}</button>
+                <div class="directive-modal-footer settings-modal-footer">
+                    <button id="btnResetSettings" class="settings-reset-btn">${resetBtnText}</button>
                     <button class="directive-modal-btn-close" id="btnSaveCloseSettings">${closeBtnText}</button>
                 </div>
             </div>
@@ -402,6 +437,7 @@ export class SettingsModalSystem {
         const selAutoFallback = this.modalEl.querySelector("#optAutoFoodDeficitFallback");
         const selHandMode = this.modalEl.querySelector("#optDefaultHandMode");
         const selAutoRotate = this.modalEl.querySelector("#optAutoRotate");
+        const selResolution = this.modalEl.querySelector("#optResolution");
         const selFocus = this.modalEl.querySelector("#optFocusDoFBlur");
         const selLanguage = this.modalEl.querySelector("#optLanguage");
         const selAnimSpeed = this.modalEl.querySelector("#optAnimSpeed");
@@ -419,6 +455,7 @@ export class SettingsModalSystem {
             }
         };
         if (selAutoRotate) selAutoRotate.onchange = (e) => this.settings.set("autoRotateOnRightClick", e.target.value === "true");
+        if (selResolution) selResolution.onchange = (e) => this.settings.set("resolution", e.target.value);
         if (selFocus) selFocus.onchange = (e) => this.settings.set("focusDoFBlur", e.target.value === "true");
         if (selLanguage) selLanguage.onchange = (e) => {
             const lang = e.target.value;
@@ -451,21 +488,18 @@ export class SettingsModalSystem {
         const tabBtns = this.modalEl.querySelectorAll(".settings-tab-btn");
         tabBtns.forEach(btn => {
             const isMatch = btn.getAttribute("data-tab") === tabName;
-            btn.style.background = isMatch ? "#1abc9c" : "#1c2230";
-            btn.style.color = isMatch ? "#ffffff" : "#a4b0be";
+            btn.classList.toggle("active", isMatch);
         });
 
         // タブペインの表示・非表示更新
         const paneMap = {
             gameplay: this.modalEl.querySelector("#paneGameplay"),
-            visual: this.modalEl.querySelector("#paneVisual"),
+            graphics: this.modalEl.querySelector("#paneGraphics"),
             sound: this.modalEl.querySelector("#paneSound")
         };
 
         for (const [key, el] of Object.entries(paneMap)) {
-            if (el) {
-                el.style.display = (key === tabName) ? "flex" : "none";
-            }
+            if (el) el.classList.toggle("active", key === tabName);
         }
     }
 
@@ -485,6 +519,7 @@ export class SettingsModalSystem {
         setVal("#optAutoFoodDeficitFallback", this.settings.get("autoFoodDeficitFallback"));
         setVal("#optDefaultHandMode", this.settings.get("defaultHandMode"));
         setVal("#optAutoRotate", this.settings.get("autoRotateOnRightClick"));
+        setVal("#optResolution", this.settings.get("resolution"));
         setVal("#optFocusDoFBlur", this.settings.get("focusDoFBlur"));
         setVal("#optLanguage", this.settings.get("language"));
         setVal("#optAnimSpeed", this.settings.get("animSpeed"));

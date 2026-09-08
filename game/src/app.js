@@ -22,7 +22,8 @@ import { BlockPlacementSystem } from './ui/block_placement_system.js';
 import { UIController } from './ui/ui_controller.js';
 import { FocusLayerManager, focusLayerManager } from './ui/focus_layer_system.js';
 import { BoardCameraSystem, boardCameraSystem } from './ui/board_camera_system.js';
-import { GameSettings, gameSettings, SettingsModalSystem, settingsModalInstance } from './ui/settings_modal_system.js';
+import { GameSettings, gameSettings, RESOLUTION_PRESETS, SettingsModalSystem, settingsModalInstance } from './ui/settings_modal_system.js';
+import { DisplaySettingsAdapter, displaySettingsAdapter } from './ui/display_settings_adapter.js';
 import { EmberStatusComponent } from './ui/ember_status_component.js';
 import { HandCardsComponent } from './ui/hand_cards_component.js';
 import { ReserveSlotComponent } from './ui/reserve_slot_component.js';
@@ -103,8 +104,11 @@ export {
     boardCameraSystem,
     GameSettings,
     gameSettings,
+    RESOLUTION_PRESETS,
     SettingsModalSystem,
     settingsModalInstance,
+    DisplaySettingsAdapter,
+    displaySettingsAdapter,
     EmberStatusComponent,
     HandCardsComponent,
     ReserveSlotComponent,
