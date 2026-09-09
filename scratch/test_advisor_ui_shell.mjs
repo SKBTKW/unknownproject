@@ -8,6 +8,7 @@ import {
     ADVISOR_UI_TIMING
 } from "../game/src/ui/advisor/advisor_dock_component.js";
 import { ADVISOR_SECTIONS, ADVISOR_REPORT_DEPTHS } from "../game/src/ui/advisor/advisor_content_controller.js";
+import { DEFAULT_ADVISOR_PROFILE } from "../game/src/ui/advisor/advisor_profiles.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 let passed = 0;
@@ -68,13 +69,30 @@ check(settingsOpenCount === 1, "設定は既存SettingsModalの正規入口を�
 check(ADVISOR_REPORT_DEPTHS.join(",") === "shallow,medium,deep", "報告の浅・中・深を一元定義する");
 
 const dockSource = fs.readFileSync(path.join(ROOT, "game/src/ui/advisor/advisor_dock_component.js"), "utf8");
+const profileSource = fs.readFileSync(path.join(ROOT, "game/src/ui/advisor/advisor_profiles.js"), "utf8");
 const contentSource = fs.readFileSync(path.join(ROOT, "game/src/ui/advisor/advisor_content_controller.js"), "utf8");
 const css = fs.readFileSync(path.join(ROOT, "game/css/4_right_sidebar/advisor_ui.css"), "utf8");
-check(!dockSource.includes("advisor-turn"), "Advisorへ既存TURN表示を統合しない");
+
+check(DEFAULT_ADVISOR_PROFILE.portraitCollapsed.endsWith("/assets/advisor/advisor01_small.png"), "格納時portraitはadvisor01_small.pngを参照する");
+check(DEFAULT_ADVISOR_PROFILE.portraitExpanded.endsWith("/assets/advisor/advisor01.png"), "展開時portraitはadvisor01.pngを参照する");
+check(profileSource.includes("new URL") && !profileSource.includes("base64"), "Advisor画像はasset URL参照でbase64埋め込みしない");
+check(dockSource.includes("portraitCollapsed") && dockSource.includes("portraitExpanded"), "view stateに応じてportrait srcを切り替える");
+check(dockSource.match(/createElement\(\"nav\", \"advisor-navigation/g)?.length === 1, "Navigation DOMは1つだけ生成する");
+check(dockSource.includes("advisor-nav--horizontal") && dockSource.includes("advisor-nav--vertical"), "同一Navigationへ横・縦layout classを付け替える");
+check(dockSource.includes("dataset.section = action"), "Navigation buttonはsection識別子を持つ");
+check(dockSource.includes("advisor-collapse-button") && dockSource.includes("collapseButton.onclick = () => this.collapse()"), "展開時専用の明示的格納buttonを持つ");
 check(contentSource.includes("render(host, section)"), "SidePanelとModalが同じContent Controllerを使う");
-check(css.includes(".advisor-dock.is-collapsed") && css.includes(".advisor-dock.is-expanded"), "格納・展開を排他的CSS stateで表現する");
-check(css.includes("grid-template-columns: repeat(4, 1fr)") && css.includes("grid-template-columns: 1fr"), "Navigationを格納時は横、展開時は縦にする");
-check(!css.includes("!important"), "Advisor CSSへ新規!importantを追加しない");
-check(css.includes("pointer-events: none") && css.includes("pointer-events: auto"), "透明領域は盤面入力を奪わず操作部だけを有効にする");
+check(!dockSource.includes("advisor-turn"), "Advisorへ既存TURN表示を統合しない");
+check(css.includes(".advisor-navigation.advisor-nav--horizontal") && css.includes("grid-template-columns: repeat(4, 1fr)"), "格納時Navigationを横4列にする");
+check(css.includes(".advisor-navigation.advisor-nav--vertical") && css.includes("flex-direction: column"), "展開時Navigationを縦列にする");
+check(css.includes(".advisor-navigation.advisor-nav--horizontal .advisor-nav-label") && css.includes("clip-path: inset(50%)"), "格納時labelを視覚的に隠す");
+check(css.includes(".advisor-navigation.advisor-nav--vertical .advisor-nav-button"), "展開時button label用layoutを持つ");
+check(css.includes("--advisor-collapsed-width") && css.includes("--advisor-expanded-width") && css.includes("--advisor-nav-width") && css.includes("--advisor-side-panel-width"), "主要AdvisorサイズをCSS変数化する");
+check(css.includes("--advisor-motion-duration") && css.includes("--advisor-hover-open-delay") && css.includes("--advisor-hover-close-delay") && css.includes("--advisor-edge-trigger-width"), "motion/hover/edge triggerをCSS変数化する");
+check(css.includes("pointer-events: none") && css.includes("pointer-events: auto"), "透明wrapperは盤面入力を奪わず操作部だけを有効にする");
+check(css.includes("object-fit: contain") && css.includes("object-position: center bottom") && css.includes("overflow: hidden"), "portrait viewportで画像サイズ差を吸収する");
+check(css.includes("@media (max-width: 1680px), (max-height: 940px)"), "1600x900向けresponsive調整を持つ");
+check(!css.includes("rotation") && !css.includes("rotate(") && !css.includes("bounce"), "開閉animationにrotation/bounceを使わない");
+check(!css.includes("!important"), "Advisor CSSへ!importantを追加しない");
 
 console.log(`Advisor UI shell: ${passed}/${passed} PASS`);
