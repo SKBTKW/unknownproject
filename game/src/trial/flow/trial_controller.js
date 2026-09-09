@@ -11,6 +11,7 @@ import { GAME_FACT_TYPES, GameFactHub } from "../../core/game_fact.js";
 import { InterceptionPowerResolver } from "../systems/interception_power_resolver.js";
 import { TrialCombatResolver } from "../systems/trial_combat_resolver.js";
 import { TrialBattleSequenceService } from "../systems/trial_battle_sequence_service.js";
+import { TrialEnemyAdvanceService } from "../systems/trial_enemy_advance_service.js";
 import { TrialFlow } from "./trial_flow.js";
 
 export class TrialController {
@@ -18,12 +19,14 @@ export class TrialController {
         powerResolver = new InterceptionPowerResolver(),
         combatResolver = new TrialCombatResolver(),
         sequenceService = new TrialBattleSequenceService(),
+        enemyAdvanceService = new TrialEnemyAdvanceService(),
         flow = new TrialFlow(),
         gameFactHub = new GameFactHub()
     } = {}) {
         this.powerResolver = powerResolver;
         this.combatResolver = combatResolver;
         this.sequenceService = sequenceService;
+        this.enemyAdvanceService = enemyAdvanceService;
         this.flow = flow;
         this.gameFactHub = gameFactHub;
         this.state = null;
@@ -488,6 +491,40 @@ export class TrialController {
             battleIndex: this.state.currentBattleIndex,
             combatResult: completionResult.battleResult
         };
+    }
+
+    advanceAfterCurrentBattle() {
+        if (!this.state) {
+            return { success: false, errors: ["TRIAL_NOT_STARTED"] };
+        }
+        if (!this.state.planActivated) {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.PLAN_NOT_ACTIVATED] };
+        }
+        if (this.state.currentBattleIndex === null) {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.NO_ACTIVE_BATTLE] };
+        }
+
+        const advanceResult = this.enemyAdvanceService.advanceAfterBattle(this.state);
+        if (!advanceResult.success) {
+            return advanceResult;
+        }
+
+        // Emit exactly 1 GameFact
+        this.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_TRAVERSAL_RESOLVED, advanceResult.traversalResult);
+
+        return advanceResult;
+    }
+
+    getCurrentTraversalResult() {
+        return this.state ? this.state.getCurrentTraversalResult() : null;
+    }
+
+    getRouteProgress(routeId) {
+        return this.state ? this.state.getRouteProgress(routeId) : null;
+    }
+
+    isCurrentTraversalApplied() {
+        return this.state ? this.state.isCurrentTraversalApplied() : false;
     }
 
     createBattleContext(input) {

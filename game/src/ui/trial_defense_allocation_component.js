@@ -253,12 +253,42 @@ export class TrialDefenseAllocationComponent {
                     }
                 }
 
+                const isTraversalApplied = Boolean(this.ui.isTrialTraversalApplied?.());
+                let traversalControlsHtml = "";
+                if (!isTraversalApplied) {
+                    traversalControlsHtml = `
+                        <button type="button" id="btnTrialAdvanceEnemy" class="btn-trial-action btn-advance-enemy">
+                            ${I18n.t("UI_TRIAL_ADVANCE_ENEMY")}
+                        </button>
+                    `;
+                } else {
+                    const traversalResult = this.ui.getCurrentTrialTraversalResult?.();
+                    if (traversalResult) {
+                        let statusText = "";
+                        let statusClass = "";
+                        if (traversalResult.stopped) {
+                            statusText = `🛡️ ${I18n.t("UI_TRIAL_TRAVERSAL_STOPPED")}`;
+                            statusClass = "status-stopped";
+                        } else if (traversalResult.reachedRouteEnd) {
+                            statusText = `⚠️ ${I18n.t("UI_TRIAL_TRAVERSAL_REACHED_END")}`;
+                            statusClass = "status-reached-end";
+                        } else if (traversalResult.advanced) {
+                            statusText = `👣 ${I18n.t("UI_TRIAL_TRAVERSAL_ADVANCED")}`;
+                            statusClass = "status-advanced";
+                        }
+                        if (statusText) {
+                            traversalControlsHtml = `<div class="trial-traversal-status ${statusClass}">${statusText}</div>`;
+                        }
+                    }
+                }
+
                 reviewActionsHtml = `
                     <div class="trial-battle-resolved-banner" id="trialBattleResolvedBanner">
                         <div class="trial-battle-resolved-status">🏁 ${outcomeText}</div>
                         ${battleDetailsHtml}
                         ${powerComparisonHtml}
                         ${tagsHtml}
+                        ${traversalControlsHtml}
                     </div>
                 `;
             }
@@ -292,6 +322,9 @@ export class TrialDefenseAllocationComponent {
 
             const btnResolveBattle = document.getElementById("btnTrialResolveBattle");
             if (btnResolveBattle) btnResolveBattle.onclick = () => this.ui.resolveCurrentTrialBattle();
+
+            const btnAdvanceEnemy = document.getElementById("btnTrialAdvanceEnemy");
+            if (btnAdvanceEnemy) btnAdvanceEnemy.onclick = () => this.ui.advanceCurrentTrialBattle();
 
             return;
         }

@@ -79,6 +79,7 @@ import { GAME_FEEL } from './core/game_feel.js';
 import { TRIAL_PLAN_REASONS, TRIAL_ROUTE_PLAN_STATUSES, TRIAL_BATTLE_STATUSES, TRIAL_OUTCOMES } from './trial/domain/trial_types.js';
 import { TrialPlanningDraftService } from './trial/domain/trial_planning_draft_service.js';
 import { TrialBattleSequenceService } from './trial/systems/trial_battle_sequence_service.js';
+import { TrialEnemyAdvanceService } from './trial/systems/trial_enemy_advance_service.js';
 
 export {
     I18n,
@@ -136,6 +137,7 @@ export {
     TRIAL_OUTCOMES,
     TrialPlanningDraftService,
     TrialBattleSequenceService,
+    TrialEnemyAdvanceService,
     TooltipSystem,
     tooltipSystemInstance,
     ConditionEvaluator,

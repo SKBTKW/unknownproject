@@ -22,6 +22,8 @@ export class TrialState {
         this.battleQueue = null;
         this.currentBattleIndex = null;
         this.battleResults = null;
+        this.routeProgress = {};
+        this.traversalResults = null;
         this.human = {
             defense: Math.max(0, Number(scenario.availableDefense) || 0),
             availableDefense: Math.max(0, Number(scenario.availableDefense) || 0),
@@ -49,6 +51,33 @@ export class TrialState {
         }
         const res = this.battleResults[this.currentBattleIndex];
         return res ? cloneData(res) : null;
+    }
+
+    getRouteProgress(routeId) {
+        if (!this.routeProgress) return null;
+        if (routeId) {
+            return this.routeProgress[routeId] ? cloneData(this.routeProgress[routeId]) : null;
+        }
+        return cloneData(this.routeProgress);
+    }
+
+    getTraversalResults() {
+        return this.traversalResults ? cloneData(this.traversalResults) : null;
+    }
+
+    getCurrentTraversalResult() {
+        if (!Array.isArray(this.traversalResults) || this.currentBattleIndex === null) {
+            return null;
+        }
+        const res = this.traversalResults[this.currentBattleIndex];
+        return res ? cloneData(res) : null;
+    }
+
+    isCurrentTraversalApplied() {
+        if (!Array.isArray(this.traversalResults) || this.currentBattleIndex === null) {
+            return false;
+        }
+        return Boolean(this.traversalResults[this.currentBattleIndex]);
     }
 }
 

@@ -625,6 +625,33 @@ class UIController {
         return result;
     }
 
+    advanceCurrentTrialBattle() {
+        if (!this.trialPreviewConfig || !this.trialController?.state) {
+            return { success: false, errors: ["TRIAL_NOT_STARTED"] };
+        }
+        const result = this.trialController.advanceAfterCurrentBattle();
+        if (!result.success) {
+            this.trialPresentationState.planningValidationErrors = result.errors || [];
+            this.render();
+            return result;
+        }
+        this.trialPresentationState.planningValidationErrors = [];
+        this.render();
+        return result;
+    }
+
+    getCurrentTrialTraversalResult() {
+        return this.trialController?.getCurrentTraversalResult?.() || null;
+    }
+
+    isTrialTraversalApplied() {
+        return this.trialController?.isCurrentTraversalApplied?.() || false;
+    }
+
+    getTrialRouteProgress(routeId) {
+        return this.trialController?.getRouteProgress?.(routeId) || null;
+    }
+
     /**
      * 🚀 UI の初期化とマウント
      */
