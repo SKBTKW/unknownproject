@@ -1,6 +1,6 @@
 /* =============================================================
    BuildIdentityBadgeComponent
-   開発時はブランチ名、製品版はバージョン名をログ上部へ表示する
+   開発時はブランチ名、製品版はバージョン名をヘッダー右上へ表示する
    ============================================================= */
 
 import { I18n } from '../i18n.js';
@@ -96,20 +96,13 @@ class BuildIdentityBadgeComponent {
             : UILayoutConfig.buildIdentityBadge.desktop;
         Object.assign(this.rootEl.style, config);
 
-        const left = isMobile ? "12px" : "20px";
-        const top = isMobile ? "12px" : "16px";
-        this.rootEl.style.left = left;
-        this.rootEl.style.top = top;
-        this.rootEl.style.right = "auto";
+        this.rootEl.style.position = "fixed";
+        this.rootEl.style.top = isMobile ? "12px" : "14px";
+        this.rootEl.style.right = isMobile ? "12px" : "18px";
+        this.rootEl.style.left = "auto";
         this.rootEl.style.bottom = "auto";
+        this.rootEl.style.zIndex = "980";
         this.rootEl.style.pointerEvents = "none";
-
-        const logContainer = this.documentRef?.getElementById("logComponentContainer");
-        if (logContainer) {
-            const badgeHeight = Math.max(this.rootEl.getBoundingClientRect?.().height || 0, isMobile ? 28 : 32);
-            logContainer.style.top = `calc(${top} + ${Math.ceil(badgeHeight)}px + 8px)`;
-            logContainer.style.left = left;
-        }
     }
 
     render(identity) {
