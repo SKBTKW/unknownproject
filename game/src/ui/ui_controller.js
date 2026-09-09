@@ -30,6 +30,7 @@ import { DevelopmentTrialPreviewHarness } from '../trial/dev/development_trial_p
 import { TRIAL_PLAN_REASONS } from '../trial/domain/trial_types.js';
 import { gameSettings, settingsModalInstance } from './settings_modal_system.js';
 import { AdvisorDockComponent } from './advisor/advisor_dock_component.js';
+import { resolveAdvisorAwareToast } from './advisor/advisor_toast_policy.js';
 import {
     resolvePlacementAnchor,
     resolvePlacementShape,
@@ -1335,9 +1336,11 @@ class UIController {
      */
     processToastQueue() {
         if (typeof document === "undefined") return;
-        const toasts = (this.engine && typeof this.engine.drainToasts === "function")
+        const drainedToasts = (this.engine && typeof this.engine.drainToasts === "function")
             ? this.engine.drainToasts()
             : [];
+        const advisorEnabled = this.advisorDockComponent?.isEnabled?.() === true;
+        const toasts = drainedToasts.map(toast => resolveAdvisorAwareToast(toast, advisorEnabled)).filter(Boolean);
         if (toasts.length === 0) return;
 
         const viewportWidth = (typeof window !== "undefined" ? window.innerWidth : 800);
@@ -1814,6 +1817,8 @@ class UIController {
 
         const res = this.engine.playCommandCard(card, source);
         if (res && res.success) {
+            const cardData = card?.terrain || card || {};
+            if ((cardData.category || card?.category) === "MILITARY") this.advisorDockComponent?.observeMilitaryAction?.(cardData.id || cardData.nameKey || "MILITARY");
             sfxManager.play("COMMAND_EXECUTE");
             const diceCheck = res.diceCheck || (res.result && res.result.diceCheck);
             if (diceCheck && typeof this.showDiceCheck === "function") {

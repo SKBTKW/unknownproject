@@ -1120,7 +1120,13 @@ class GridEngine {
                             if (this.state.toastQueue) {
                                 formedMerge2x2 = true;
                                 const toastMsg = I18n ? I18n.t("TOAST_MERGE_L", { bonus: bText }) : `🟨 L-Shape Zone Formed (${bText})`;
-                                this.state.toastQueue.push({ r: coords[0].r, c: coords[0].c, text: toastMsg });
+                                this.state.toastQueue.push({
+                                    type: "MERGE_L",
+                                    r: coords[0].r,
+                                    c: coords[0].c,
+                                    text: toastMsg,
+                                    rewards: { food: 4, wood: 6, ember: 1 }
+                                });
                             }
                         }
                     }
@@ -1211,7 +1217,13 @@ class GridEngine {
                             }
                             if (this.state.toastQueue) {
                                 const toastMsg = I18n ? I18n.t("TOAST_MERGE_T", { bonus: bText }) : `🛡️ T-Shape Zone Formed (${bText})`;
-                                this.state.toastQueue.push({ r: coords[0].r, c: coords[0].c, text: toastMsg });
+                                this.state.toastQueue.push({
+                                    type: "MERGE_T",
+                                    r: coords[0].r,
+                                    c: coords[0].c,
+                                    text: toastMsg,
+                                    rewards: { wood: 8, mystic: 4, ember: 1 }
+                                });
                             }
                         }
                     }

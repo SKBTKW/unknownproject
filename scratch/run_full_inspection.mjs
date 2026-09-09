@@ -99,6 +99,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Advisor Foundation) で不合格が検出されました。");
         process.exit(1);
     }
+    const advisorPeaceOk = await runCommand("node", ["scratch/test_advisor_peace_dialogue.mjs"]);
+    if (!advisorPeaceOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Advisor Peace Dialogue) で不合格が検出されました。");
+        process.exit(1);
+    }
 
     // 🏷️ Layer 6: Other Integration & Economic Settlement (ビルド識別・食料決済)
     console.log("\n🌾 [LAYER 6/6] Integration & Economic Settlement Tests...");

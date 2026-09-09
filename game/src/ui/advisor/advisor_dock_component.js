@@ -16,7 +16,7 @@ export class AdvisorDockComponent {
         this.activePanel = null;
         this.root = null;
         this.dialogueSystem = new AdvisorDialogueSystem({ profile, translate: (key, params) => this.i18n.t(key, params) });
-        this.eventBridge = new AdvisorEventBridge(this.dialogueSystem, gameFactHub);
+        this.eventBridge = new AdvisorEventBridge(this.dialogueSystem, gameFactHub, { profile, enabledProvider: () => this.isEnabled() });
         this.unsubscribeDialogue = this.dialogueSystem.subscribe(item => this.renderPopup(item));
     }
 
@@ -71,6 +71,15 @@ export class AdvisorDockComponent {
         this.render();
     }
 
+    isEnabled() {
+        return this.settingsModal?.settings?.get?.("advisorEnabled") !== false;
+    }
+
+    observeMilitaryAction(actionType) {
+        const state = this.stateProvider?.() || {};
+        return this.eventBridge.observeMilitaryAction(actionType, Number(state.turn || 1));
+    }
+
     render() {
         if (!this.root) return;
         const state = this.stateProvider?.() || {};
@@ -78,6 +87,9 @@ export class AdvisorDockComponent {
         const turn = Number(state.turn || 1);
         const maxTurns = Number(state.maxTurns || 50);
         const remaining = Number(state.nextTrialTurn || 0) - turn;
+        this.root.hidden = !this.isEnabled();
+        this.eventBridge.observeSnapshot({ turn, trialActive: trialStatus.active, trialRemaining: remaining, warningDuration: state.trialSchedule?.warningDuration ?? 5, state, zoneCount: Object.keys(state.mergedBlocks || {}).length, linkCount: state.mergeLinks instanceof Set ? state.mergeLinks.size : 0, activeGlobalEvents: state.activeGlobalEvents || [] });
+        if (this.root.hidden) return;
         this.root.querySelector(".advisor-turn").textContent = this.i18n.t("UI_ADVISOR_TURN", { turn, max: maxTurns });
         const announcement = this.root.querySelector(".advisor-trial-announcement");
         announcement.textContent = trialStatus.active
@@ -94,7 +106,6 @@ export class AdvisorDockComponent {
             button.classList.toggle("is-active", action === this.activePanel);
         });
         this.renderDetail(state, trialStatus);
-        this.eventBridge.observeSnapshot({ turn, trialActive: trialStatus.active, trialRemaining: remaining });
     }
 
     renderDetail(state, trialStatus) {

@@ -22,6 +22,7 @@ const DEFAULT_SETTINGS = {
     mulliganConfirm: true,        // マリガン時の吹き出し確認 (true: 確認あり, false: 即時実行)
     turnEndWarning: true,          // 土地未配置時のターン終了警告 (true: 警告あり, false: 即時終了)
     autoFoodDeficitFallback: true, // 食料不足時の✨/🧱自動補填
+    advisorEnabled: true,          // 側近表示・平時発話
     defaultHandMode: "standard",   // 手札の初期表示モード ("standard": 標準, "minimal": 縮小)
     autoRotateOnRightClick: true,  // 右クリックでのカード回転
     focusDoFBlur: false,           // 2層DoFフォーカス演出 (true: 配置中ボケ演出あり, false: 常時クリア)
@@ -208,6 +209,8 @@ export class SettingsModalSystem {
         const rotDesc = I18n ? I18n.t("UI_SETTINGS_ROTATE_DESC") : "";
         const rotOptTrue = I18n ? I18n.t("UI_SETTINGS_ROTATE_OPT_TRUE") : "ON";
         const rotOptFalse = I18n ? I18n.t("UI_SETTINGS_ROTATE_OPT_FALSE") : "OFF";
+        const advisorTitle = I18n ? I18n.t("UI_SETTINGS_ADVISOR_TITLE") : "Advisor";
+        const advisorDesc = I18n ? I18n.t("UI_SETTINGS_ADVISOR_DESC") : "Show advisor guidance";
 
         // ② グラフィック項目
         const resolutionTitle = I18n ? I18n.t("UI_SETTINGS_RESOLUTION_TITLE") : "Resolution";
@@ -320,6 +323,17 @@ export class SettingsModalSystem {
                             <select id="optAutoRotate" class="setting-select-control">
                                 <option value="true">${rotOptTrue}</option>
                                 <option value="false">${rotOptFalse}</option>
+                            </select>
+                        </div>
+
+                        <div class="setting-item-row">
+                            <div class="setting-item-copy">
+                                <div class="setting-item-title">${advisorTitle}</div>
+                                <div class="setting-item-desc">${advisorDesc}</div>
+                            </div>
+                            <select id="optAdvisorEnabled" class="setting-select-control">
+                                <option value="true">${mOptTrue}</option>
+                                <option value="false">${mOptFalse}</option>
                             </select>
                         </div>
                     </div>
@@ -437,6 +451,7 @@ export class SettingsModalSystem {
         const selAutoFallback = this.modalEl.querySelector("#optAutoFoodDeficitFallback");
         const selHandMode = this.modalEl.querySelector("#optDefaultHandMode");
         const selAutoRotate = this.modalEl.querySelector("#optAutoRotate");
+        const selAdvisor = this.modalEl.querySelector("#optAdvisorEnabled");
         const selResolution = this.modalEl.querySelector("#optResolution");
         const selFocus = this.modalEl.querySelector("#optFocusDoFBlur");
         const selLanguage = this.modalEl.querySelector("#optLanguage");
@@ -455,6 +470,10 @@ export class SettingsModalSystem {
             }
         };
         if (selAutoRotate) selAutoRotate.onchange = (e) => this.settings.set("autoRotateOnRightClick", e.target.value === "true");
+        if (selAdvisor) selAdvisor.onchange = (e) => {
+            this.settings.set("advisorEnabled", e.target.value === "true");
+            if (typeof window !== "undefined" && window.gameUI) window.gameUI.render();
+        };
         if (selResolution) selResolution.onchange = (e) => this.settings.set("resolution", e.target.value);
         if (selFocus) selFocus.onchange = (e) => this.settings.set("focusDoFBlur", e.target.value === "true");
         if (selLanguage) selLanguage.onchange = (e) => {
@@ -519,6 +538,7 @@ export class SettingsModalSystem {
         setVal("#optAutoFoodDeficitFallback", this.settings.get("autoFoodDeficitFallback"));
         setVal("#optDefaultHandMode", this.settings.get("defaultHandMode"));
         setVal("#optAutoRotate", this.settings.get("autoRotateOnRightClick"));
+        setVal("#optAdvisorEnabled", this.settings.get("advisorEnabled"));
         setVal("#optResolution", this.settings.get("resolution"));
         setVal("#optFocusDoFBlur", this.settings.get("focusDoFBlur"));
         setVal("#optLanguage", this.settings.get("language"));

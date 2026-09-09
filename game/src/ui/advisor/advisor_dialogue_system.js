@@ -21,13 +21,13 @@ export class AdvisorDialogueSystem {
         return () => this.listeners.delete(listener);
     }
 
-    emit(event, context = {}) {
+    emit(event, context = {}, options = {}) {
         const entry = findAdvisorDialogue(event, this.profile);
         if (!entry) return false;
         const lastAt = this.cooldowns.get(event);
         if (lastAt !== undefined && this.now() - lastAt < entry.cooldownMs) return false;
         const lineKey = entry.lineKeys.find(key => !this.recentHistory.includes(key)) || entry.lineKeys[0];
-        const item = { event, lineKey, text: this.translate(lineKey, context), priority: entry.priority, durationMs: entry.durationMs };
+        const item = { event, topic: options.topic || event, lineKey, text: this.translate(lineKey, context), priority: options.priority ?? entry.priority, durationMs: entry.durationMs };
         this.cooldowns.set(event, this.now());
         if (!this.current || item.priority > this.current.priority) this.show(item);
         else {
@@ -35,6 +35,11 @@ export class AdvisorDialogueSystem {
             this.queue.sort((a, b) => b.priority - a.priority);
         }
         return true;
+    }
+
+    emitTopic(topicResult, context = {}) {
+        if (!topicResult?.id) return false;
+        return this.emit(topicResult.id, { ...context, ...(topicResult.context || {}) }, { topic: topicResult.topic, priority: topicResult.priority });
     }
 
     show(item) {

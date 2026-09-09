@@ -28,18 +28,18 @@ const dialogue = new AdvisorDialogueSystem({
 });
 const displayed = [];
 dialogue.subscribe(item => displayed.push(item?.event || null));
-check(dialogue.emit(ADVISOR_EVENTS.TURN_START, { turn: 2 }), "eventから発言候補を表示する");
-check(dialogue.current.event === ADVISOR_EVENTS.TURN_START, "現在の発言を保持する");
-check(!dialogue.emit(ADVISOR_EVENTS.TURN_START, { turn: 2 }), "cooldown中の同一eventを抑止する");
+check(dialogue.emit(ADVISOR_EVENTS.GAME_START, { turn: 2 }), "eventから発言候補を表示する");
+check(dialogue.current.event === ADVISOR_EVENTS.GAME_START, "現在の発言を保持する");
+check(!dialogue.emit(ADVISOR_EVENTS.GAME_START, { turn: 2 }), "cooldown中の同一eventを抑止する");
 check(dialogue.emit(ADVISOR_EVENTS.TRIAL_START), "高priority発言を受理する");
 check(dialogue.current.event === ADVISOR_EVENTS.TRIAL_START, "高priority発言が現在表示を更新する");
-dialogue.emit(ADVISOR_EVENTS.TURN_START, { turn: 3 });
+dialogue.emit(ADVISOR_EVENTS.GAME_START, { turn: 3 });
 check(dialogue.queue.length === 0, "cooldown対象をqueueへ重複追加しない");
 now += 3000;
-check(dialogue.emit(ADVISOR_EVENTS.TURN_START, { turn: 4 }), "cooldown後は発言をqueueへ追加できる");
+check(dialogue.emit(ADVISOR_EVENTS.STABLE_OVERALL, { turn: 4 }), "低priority発言をqueueへ追加できる");
 check(dialogue.queue.length === 1, "低priority発言をqueueに保持する");
 dialogue.dismiss();
-check(dialogue.current.event === ADVISOR_EVENTS.TURN_START, "dismiss後にqueueの次発言を表示する");
+check(dialogue.current.event === ADVISOR_EVENTS.STABLE_OVERALL, "dismiss後にqueueの次発言を表示する");
 
 const hub = new GameFactHub();
 const bridge = new AdvisorEventBridge(dialogue, hub);

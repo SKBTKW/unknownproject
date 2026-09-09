@@ -132,6 +132,7 @@ console.log("\nSettings Modal System regression tests");
 const migratedSettings = new GameSettings();
 assert(migratedSettings.get("language") === "en", "旧保存データの既存値を維持する");
 assert(migratedSettings.get("resolution") === "1920x1080", "旧保存データへ解像度既定値を補完する");
+assert(migratedSettings.get("advisorEnabled") === true, "旧保存データへ側近ON既定値を補完する");
 assert(RESOLUTION_PRESETS.length === 6, "解像度プリセットを6件に一元化する");
 assert(RESOLUTION_PRESETS.find(item => item.recommended)?.value === "1920x1080", "1920x1080だけを推奨プリセットにする");
 
@@ -154,6 +155,7 @@ assert(modal.modalEl.innerHTML.includes('data-tab="graphics"'), "内部タブ識
 assert(modal.modalEl.innerHTML.includes('id="paneGraphics"'), "グラフィックペイン識別子を使う");
 assert(!modal.modalEl.innerHTML.includes('data-tab="visual"'), "旧visualタブ識別子を生成しない");
 assert(modal.modalEl.innerHTML.includes('id="optResolution"'), "グラフィックタブに解像度selectを生成する");
+assert(modal.modalEl.innerHTML.includes('id="optAdvisorEnabled"'), "ゲームプレイタブに側近ON/OFFを生成する");
 assert(modal.modalEl.innerHTML.includes("1920 × 1080（推奨）"), "日本語で推奨解像度ラベルを表示する");
 assert(modal.modalEl.style.getPropertyValue("--settings-modal-width") === "min(680px, 92vw)", "モーダル幅をレイアウト設定から受け取る");
 assert(modal.modalEl.style.getPropertyValue("--settings-modal-height") === "min(680px, calc(100vh - 64px))", "モーダル高をレイアウト設定から受け取る");
