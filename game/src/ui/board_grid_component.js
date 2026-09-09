@@ -120,6 +120,12 @@ export class BoardGridComponent {
                 if (trialCellState?.isPlannedActive) cellEl.classList.add("trial-interception-planned-active");
                 if (trialCellState?.isPlannedOther) cellEl.classList.add("trial-interception-planned-other");
                 if (trialCellState?.isBlockPlannedByOther) cellEl.classList.add("trial-interception-block-used");
+                const currentTrialBattle = this.ui && typeof this.ui.getCurrentTrialBattle === "function"
+                    ? this.ui.getCurrentTrialBattle()
+                    : null;
+                if (currentTrialBattle?.interceptCell?.r === r && currentTrialBattle?.interceptCell?.c === c) {
+                    cellEl.classList.add("trial-battle-active");
+                }
 
                 const isHQVic = (typeof this.state.isHQVicinity === "function") ? this.state.isHQVicinity(r, c) : false;
                 const isLakeVic = (typeof this.state.isWaterSourceInfluence === "function")

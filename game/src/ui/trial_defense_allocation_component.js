@@ -1,6 +1,6 @@
 import { I18n } from "../i18n.js";
 import { UILayoutConfig } from "./layout_config.js";
-import { TrialInterceptionPreviewComponent } from "./trial_interception_preview_component.js";
+import { TrialInterceptionPreviewComponent, resolveModifierTag } from "./trial_interception_preview_component.js";
 
 export class TrialDefenseAllocationComponent {
     constructor(uiController) {
@@ -99,15 +99,18 @@ export class TrialDefenseAllocationComponent {
 
         const isConfirmed = Boolean(this.ui.isTrialPlanningConfirmed());
         const isActivated = Boolean(this.ui.isTrialPlanActivated());
+        const isBattleActive = Boolean(this.ui.isTrialBattleActive?.());
         const reviewRequested = this.ui.trialPresentationState.planningReviewRequested;
-        const isReviewMode = reviewRequested || isConfirmed || isActivated;
+        const isReviewMode = reviewRequested || isConfirmed || isActivated || isBattleActive;
 
         if (isReviewMode) {
+            const currentBattleSnapshot = isBattleActive ? this.ui.getCurrentTrialBattle?.() : null;
             const reviewRoutesHtml = routes.map(r => {
                 const rDecision = this.ui.trialPresentationState.getRouteDecision(r.id);
                 const rStatus = rDecision.status || "UNDECIDED";
                 const commanderMark = r.isCommanderRoute ? `<span class="trial-route-commander">★</span> ` : "";
                 const routeName = I18n.t(r.nameKey || r.id);
+                const isRouteActiveInBattle = Boolean(currentBattleSnapshot && currentBattleSnapshot.routeId === r.id);
 
                 let detailsHtml = "";
                 if (rStatus === "INTERCEPT" && rDecision.interceptCell) {
@@ -127,7 +130,7 @@ export class TrialDefenseAllocationComponent {
                 }
 
                 return `
-                    <div class="trial-review-route-item" data-route-id="${r.id}">
+                    <div class="trial-review-route-item ${isRouteActiveInBattle ? "is-battle-active" : ""}" data-route-id="${r.id}">
                         <span class="trial-route-name">${commanderMark}${routeName}</span>
                         <div class="trial-review-route-details">${detailsHtml}</div>
                     </div>
@@ -135,7 +138,7 @@ export class TrialDefenseAllocationComponent {
             }).join("");
 
             let reviewActionsHtml = "";
-            if (!isConfirmed && !isActivated) {
+            if (!isConfirmed && !isActivated && !isBattleActive) {
                 reviewActionsHtml = `
                     <div class="trial-plan-review-requested-banner" id="trialPlanReviewRequestedBanner">
                         <span class="trial-plan-review-status">${I18n.t("UI_TRIAL_PLAN_REVIEW_REQUESTED")}</span>
@@ -149,7 +152,7 @@ export class TrialDefenseAllocationComponent {
                         </button>
                     </div>
                 `;
-            } else if (!isActivated) {
+            } else if (!isActivated && !isBattleActive) {
                 reviewActionsHtml = `
                     <div class="trial-plan-confirmed-banner" id="trialPlanConfirmedBanner">
                         <div class="trial-plan-confirmed-status">${I18n.t("UI_TRIAL_PLAN_CONFIRMED")}</div>
@@ -158,12 +161,43 @@ export class TrialDefenseAllocationComponent {
                         </button>
                     </div>
                 `;
-            } else {
+            } else if (!isBattleActive) {
                 const pendingBattlesCount = this.ui.getTrialBattleQueue()?.length ?? 0;
+                let startBattleButtonHtml = "";
+                if (pendingBattlesCount > 0) {
+                    startBattleButtonHtml = `
+                        <button type="button" id="btnTrialStartBattle" class="btn-trial-action btn-start-battle">
+                            ${I18n.t("UI_TRIAL_START_BATTLE")}
+                        </button>
+                    `;
+                }
                 reviewActionsHtml = `
                     <div class="trial-plan-activated-banner" id="trialPlanActivatedBanner">
                         <div class="trial-plan-activated-status">${I18n.t("UI_TRIAL_PLAN_ACTIVATED")}</div>
-                        <div class="trial-plan-battles-pending">${I18n.t("UI_TRIAL_BATTLES_PENDING", { count: pendingBattlesCount })}</div>
+                        <div class="trial-plan-battles-pending">${pendingBattlesCount > 0 ? I18n.t("UI_TRIAL_BATTLES_PENDING", { count: pendingBattlesCount }) : I18n.t("UI_TRIAL_NO_PENDING_BATTLES")}</div>
+                        ${startBattleButtonHtml}
+                    </div>
+                `;
+            } else {
+                const currentBattle = currentBattleSnapshot;
+                let battleDetailsHtml = "";
+                if (currentBattle) {
+                    const targetRoute = routes.find(r => r.id === currentBattle.routeId);
+                    const routeName = targetRoute ? I18n.t(targetRoute.nameKey || targetRoute.id) : currentBattle.routeId;
+                    const cell = currentBattle.interceptCell;
+                    const coordStr = `${String.fromCharCode(65 + cell.c)}${cell.r + 1}`;
+                    battleDetailsHtml = `
+                        <div class="trial-battle-active-route">${routeName}</div>
+                        <div class="trial-battle-active-details">
+                            <span class="trial-battle-active-cell">[${coordStr}]</span>
+                            <span class="trial-battle-active-defense">🛡️ ${currentBattle.defenseAllocation}</span>
+                        </div>
+                    `;
+                }
+                reviewActionsHtml = `
+                    <div class="trial-battle-active-banner" id="trialBattleActiveBanner">
+                        <div class="trial-battle-active-status">⚔️ ${I18n.t("UI_TRIAL_BATTLE_ACTIVE")}</div>
+                        ${battleDetailsHtml}
                     </div>
                 `;
             }
@@ -191,6 +225,9 @@ export class TrialDefenseAllocationComponent {
 
             const btnActivate = document.getElementById("btnTrialActivatePlan");
             if (btnActivate) btnActivate.onclick = () => this.ui.activateTrialPlan();
+
+            const btnStartBattle = document.getElementById("btnTrialStartBattle");
+            if (btnStartBattle) btnStartBattle.onclick = () => this.ui.startTrialBattle();
 
             return;
         }

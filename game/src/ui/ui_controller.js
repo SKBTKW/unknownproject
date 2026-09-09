@@ -27,7 +27,7 @@ import { TrialPresentationState } from '../trial/presentation/trial_presentation
 import { TrialInterceptionPreviewComponent } from './trial_interception_preview_component.js';
 import { TrialDefenseAllocationComponent } from './trial_defense_allocation_component.js';
 import { DevelopmentTrialPreviewHarness } from '../trial/dev/development_trial_preview_harness.js';
-import { TRIAL_PLAN_REASONS } from '../trial/domain/trial_types.js';
+import { TRIAL_PLAN_REASONS, TRIAL_BATTLE_STATUSES } from '../trial/domain/trial_types.js';
 import { gameSettings, settingsModalInstance } from './settings_modal_system.js';
 import { AdvisorDockComponent } from './advisor/advisor_dock_component.js';
 import { resolveAdvisorAwareToast } from './advisor/advisor_toast_policy.js';
@@ -568,6 +568,29 @@ class UIController {
             return { success: false, errors: ["TRIAL_NOT_STARTED"] };
         }
         const result = this.trialController.activateInterceptionPlan();
+        if (!result.success) {
+            this.trialPresentationState.planningValidationErrors = result.errors || [];
+            this.render();
+            return result;
+        }
+        this.trialPresentationState.planningValidationErrors = [];
+        this.render();
+        return result;
+    }
+
+    isTrialBattleActive() {
+        return this.trialController?.state?.currentBattleIndex !== null;
+    }
+
+    getCurrentTrialBattle() {
+        return this.trialController ? this.trialController.getCurrentBattle() : null;
+    }
+
+    startTrialBattle() {
+        if (!this.trialPreviewConfig || !this.trialController?.state) {
+            return { success: false, errors: ["TRIAL_NOT_STARTED"] };
+        }
+        const result = this.trialController.startNextBattle();
         if (!result.success) {
             this.trialPresentationState.planningValidationErrors = result.errors || [];
             this.render();

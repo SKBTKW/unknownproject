@@ -30,6 +30,14 @@ export class TrialState {
         this.environment = cloneData(scenario.environment) || {};
         this.result = null;
     }
+
+    getCurrentBattle() {
+        if (!Array.isArray(this.battleQueue) || this.currentBattleIndex === null) {
+            return null;
+        }
+        const item = this.battleQueue[this.currentBattleIndex];
+        return item ? cloneData(item) : null;
+    }
 }
 
 export function createTrialState(scenario) {

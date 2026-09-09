@@ -2007,3 +2007,56 @@ body.is-camera-dragging-global * {
     font-weight: 600;
     color: #e0f2fe;
 }
+
+.btn-start-battle {
+    background: #d97706;
+    color: #ffffff;
+    border-color: #f59e0b;
+    font-weight: 700;
+    margin-top: 6px;
+}
+
+.btn-start-battle:hover {
+    background: #b45309;
+}
+
+.trial-battle-active-banner {
+    padding: 10px;
+    background: rgba(217, 119, 6, 0.35);
+    border: 1px solid #f59e0b;
+    border-radius: 4px;
+    color: #fef3c7;
+    text-align: center;
+    font-weight: 800;
+    font-size: 13px;
+    margin-top: 8px;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.trial-battle-active-route {
+    font-size: 12px;
+    font-weight: 700;
+    color: #fde68a;
+}
+
+.trial-battle-active-details {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    font-size: 11px;
+    color: #ffffff;
+}
+
+.cell.trial-battle-active {
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.8), inset 0 0 8px rgba(245, 158, 11, 0.6);
+    border-color: #f59e0b;
+    z-index: 11;
+}
+
+.trial-review-route-item.is-battle-active {
+    border-color: #f59e0b;
+    background: rgba(245, 158, 11, 0.15);
+}
