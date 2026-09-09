@@ -9,8 +9,8 @@ export const ADVISOR_EXPANDED_REASONS = Object.freeze({ CLICK: "click", HOVER: "
 export const ADVISOR_UI_TIMING = Object.freeze({ HOVER_OPEN_MS: 160, HOVER_CLOSE_MS: 400 });
 
 const NAV_ACTIONS = Object.freeze([
-    { action: ADVISOR_SECTIONS.REPORT, icon: "▤" },
-    { action: ADVISOR_SECTIONS.RECORD, icon: "◫" },
+    { action: ADVISOR_SECTIONS.REPORT, icon: "✦" },
+    { action: ADVISOR_SECTIONS.RECORD, icon: "▤" },
     { action: ADVISOR_SECTIONS.HELP, icon: "?" },
     { action: "settings", icon: "⚙" }
 ]);
@@ -45,6 +45,7 @@ export class AdvisorDockComponent {
         this.root = document.createElement("aside");
         this.root.className = "advisor-dock is-collapsed";
         this.root.setAttribute("aria-label", this.i18n.t("UI_ADVISOR_TITLE"));
+
         const interactive = this.createElement("div", "advisor-interactive-region");
         const sidePanel = this.createContentHost("advisor-content-panel advisor-content-panel--side");
         sidePanel.hidden = true;
@@ -56,10 +57,16 @@ export class AdvisorDockComponent {
         portraitButton.type = "button";
         portraitButton.className = "advisor-portrait-button";
         portraitButton.onclick = () => this.handlePortraitClick();
+
         const portraitViewport = this.createElement("div", "advisor-portrait-viewport");
-        const portrait = this.createElement(this.profile.portrait ? "img" : "div", "advisor-portrait");
+        const hasPortrait = Boolean(this.profile.portrait || this.profile.portraitExpanded || this.profile.portraitCollapsed);
+        const portrait = this.createElement(hasPortrait ? "img" : "div", "advisor-portrait");
         portrait.setAttribute("aria-hidden", "true");
-        if (this.profile.portrait) portrait.src = this.profile.portrait;
+        if (portrait instanceof HTMLImageElement) {
+            portrait.alt = "";
+            portrait.decoding = "async";
+            portrait.draggable = false;
+        }
         portraitViewport.appendChild(portrait);
         portraitViewport.appendChild(this.createElement("div", "advisor-profile-name"));
         const popup = this.createElement("div", "advisor-popup-comment");
@@ -72,7 +79,8 @@ export class AdvisorDockComponent {
         collapseButton.className = "advisor-collapse-button";
         collapseButton.textContent = "‹";
         collapseButton.onclick = () => this.collapse();
-        const navigation = this.createElement("nav", "advisor-navigation");
+
+        const navigation = this.createElement("nav", "advisor-navigation advisor-nav--horizontal");
         NAV_ACTIONS.forEach(({ action, icon }) => navigation.appendChild(this.createNavButton(action, icon)));
 
         shell.appendChild(portraitButton);
@@ -103,6 +111,7 @@ export class AdvisorDockComponent {
         button.type = "button";
         button.className = "advisor-nav-button";
         button.dataset.action = action;
+        button.dataset.section = action;
         const iconNode = this.createElement("span", "advisor-nav-icon");
         iconNode.textContent = icon;
         iconNode.setAttribute("aria-hidden", "true");
@@ -239,7 +248,7 @@ export class AdvisorDockComponent {
         modalClose.setAttribute("aria-label", this.i18n.t("UI_ADVISOR_MODAL_CLOSE"));
         this.root.querySelector(".advisor-profile-name").textContent = this.i18n.t(this.profile.displayNameKey);
         const portrait = this.root.querySelector(".advisor-portrait");
-        portrait.textContent = this.profile.portrait ? "" : this.i18n.t("UI_ADVISOR_PORTRAIT_PENDING");
+        if (!(portrait instanceof HTMLImageElement)) portrait.textContent = this.i18n.t("UI_ADVISOR_PORTRAIT_PENDING");
         this.root.querySelectorAll(".advisor-nav-button").forEach(button => {
             const action = button.dataset.action;
             const label = this.i18n.t(`UI_ADVISOR_ACTION_${action.toUpperCase()}`);
@@ -258,6 +267,22 @@ export class AdvisorDockComponent {
         this.root.classList.toggle("is-expanded", expanded);
         this.root.classList.toggle("is-collapsed", !expanded);
         this.root.dataset.expandedReason = this.expandedReason || "";
+
+        const navigation = this.root.querySelector(".advisor-navigation");
+        navigation?.classList.toggle("advisor-nav--horizontal", !expanded);
+        navigation?.classList.toggle("advisor-nav--vertical", expanded);
+
+        const portrait = this.root.querySelector(".advisor-portrait");
+        if (portrait instanceof HTMLImageElement) {
+            const nextSrc = expanded
+                ? (this.profile.portraitExpanded || this.profile.portrait)
+                : (this.profile.portraitCollapsed || this.profile.portrait);
+            if (nextSrc && portrait.src !== nextSrc) portrait.src = nextSrc;
+            portrait.dataset.portraitMode = expanded ? "expanded" : "collapsed";
+        }
+
+        const collapseButton = this.root.querySelector(".advisor-collapse-button");
+        collapseButton?.setAttribute("aria-hidden", expanded ? "false" : "true");
         this.root.querySelector(".advisor-content-panel--side").hidden = !(expanded && this.activeSection);
     }
 
