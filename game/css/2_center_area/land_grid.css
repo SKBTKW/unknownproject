@@ -2060,3 +2060,69 @@ body.is-camera-dragging-global * {
     border-color: #f59e0b;
     background: rgba(245, 158, 11, 0.15);
 }
+
+.btn-resolve-battle {
+    background: #e11d48;
+    color: #ffffff;
+    border-color: #f43f5e;
+    font-weight: 700;
+    margin-top: 6px;
+}
+
+.btn-resolve-battle:hover {
+    background: #be123c;
+}
+
+.trial-battle-resolved-banner {
+    padding: 10px;
+    background: rgba(30, 41, 59, 0.85);
+    border: 1px solid #38bdf8;
+    border-radius: 4px;
+    color: #f8fafc;
+    text-align: center;
+    font-weight: 800;
+    font-size: 13px;
+    margin-top: 8px;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.trial-battle-resolved-status {
+    font-size: 14px;
+    color: #38bdf8;
+    letter-spacing: 0.5px;
+}
+
+.trial-battle-power-comparison {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    background: rgba(15, 23, 42, 0.6);
+    border-radius: 3px;
+    padding: 6px;
+    margin: 4px 0;
+}
+
+.trial-power-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+}
+
+.trial-player-power {
+    color: #93c5fd;
+}
+
+.trial-enemy-power {
+    color: #fca5a5;
+}
+
+.trial-battle-tags {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+    margin-top: 2px;
+}

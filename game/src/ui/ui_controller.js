@@ -582,8 +582,17 @@ class UIController {
         return this.trialController?.state?.currentBattleIndex !== null;
     }
 
+    isTrialBattleResolved() {
+        const currentBattle = this.getCurrentTrialBattle();
+        return Boolean(currentBattle && currentBattle.status === TRIAL_BATTLE_STATUSES.RESOLVED);
+    }
+
     getCurrentTrialBattle() {
         return this.trialController ? this.trialController.getCurrentBattle() : null;
+    }
+
+    getCurrentTrialBattleResult() {
+        return this.trialController?.state?.getCurrentBattleResult?.() || null;
     }
 
     startTrialBattle() {
@@ -591,6 +600,21 @@ class UIController {
             return { success: false, errors: ["TRIAL_NOT_STARTED"] };
         }
         const result = this.trialController.startNextBattle();
+        if (!result.success) {
+            this.trialPresentationState.planningValidationErrors = result.errors || [];
+            this.render();
+            return result;
+        }
+        this.trialPresentationState.planningValidationErrors = [];
+        this.render();
+        return result;
+    }
+
+    resolveCurrentTrialBattle() {
+        if (!this.trialPreviewConfig || !this.trialController?.state) {
+            return { success: false, errors: ["TRIAL_NOT_STARTED"] };
+        }
+        const result = this.trialController.resolveCurrentBattle();
         if (!result.success) {
             this.trialPresentationState.planningValidationErrors = result.errors || [];
             this.render();

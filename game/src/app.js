@@ -76,7 +76,7 @@ import { sfxManager } from './audio/sfx_manager.js';
 import { resolveLandSelectSfx } from './audio/land_sfx_resolver.js';
 import { GAME_FACT_TYPES, GameFactHub } from './core/game_fact.js';
 import { GAME_FEEL } from './core/game_feel.js';
-import { TRIAL_PLAN_REASONS, TRIAL_ROUTE_PLAN_STATUSES, TRIAL_BATTLE_STATUSES } from './trial/domain/trial_types.js';
+import { TRIAL_PLAN_REASONS, TRIAL_ROUTE_PLAN_STATUSES, TRIAL_BATTLE_STATUSES, TRIAL_OUTCOMES } from './trial/domain/trial_types.js';
 import { TrialPlanningDraftService } from './trial/domain/trial_planning_draft_service.js';
 import { TrialBattleSequenceService } from './trial/systems/trial_battle_sequence_service.js';
 
@@ -133,6 +133,7 @@ export {
     TRIAL_PLAN_REASONS,
     TRIAL_ROUTE_PLAN_STATUSES,
     TRIAL_BATTLE_STATUSES,
+    TRIAL_OUTCOMES,
     TrialPlanningDraftService,
     TrialBattleSequenceService,
     TooltipSystem,

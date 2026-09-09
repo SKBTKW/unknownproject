@@ -38,6 +38,18 @@ export class TrialState {
         const item = this.battleQueue[this.currentBattleIndex];
         return item ? cloneData(item) : null;
     }
+
+    getBattleResults() {
+        return this.battleResults ? cloneData(this.battleResults) : null;
+    }
+
+    getCurrentBattleResult() {
+        if (!Array.isArray(this.battleResults) || this.currentBattleIndex === null) {
+            return null;
+        }
+        const res = this.battleResults[this.currentBattleIndex];
+        return res ? cloneData(res) : null;
+    }
 }
 
 export function createTrialState(scenario) {

@@ -389,6 +389,19 @@ export class TrialController {
         return this.sequenceService.getCurrentBattle(this.state);
     }
 
+    isCurrentBattleResolved() {
+        const current = this.getCurrentBattle();
+        return Boolean(current && current.status === TRIAL_BATTLE_STATUSES.RESOLVED);
+    }
+
+    getCurrentBattleResult() {
+        return this.state ? this.state.getCurrentBattleResult() : null;
+    }
+
+    getBattleResults() {
+        return this.state ? this.state.getBattleResults() : null;
+    }
+
     startNextBattle() {
         const startResult = this.sequenceService.startNextBattle(this.state);
         if (!startResult.success) {
@@ -407,10 +420,80 @@ export class TrialController {
         return startResult;
     }
 
+    resolveCurrentBattle() {
+        if (!this.state) {
+            return { success: false, errors: ["TRIAL_NOT_STARTED"] };
+        }
+        if (!this.state.planActivated) {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.PLAN_NOT_ACTIVATED] };
+        }
+        if (this.state.currentBattleIndex === null) {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.NO_ACTIVE_BATTLE] };
+        }
+        if (!Array.isArray(this.state.battleQueue)) {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.NO_CONFIRMED_PLAN] };
+        }
+
+        const currentBattle = this.state.battleQueue[this.state.currentBattleIndex];
+        if (!currentBattle || typeof currentBattle !== "object") {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.INVALID_CURRENT_BATTLE] };
+        }
+        if (currentBattle.status === TRIAL_BATTLE_STATUSES.RESOLVED) {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.BATTLE_ALREADY_RESOLVED] };
+        }
+        if (currentBattle.status !== TRIAL_BATTLE_STATUSES.ACTIVE) {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.NO_ACTIVE_BATTLE] };
+        }
+
+        // 1. Build combat input from current battle snapshot
+        const interceptionInput = this.createRouteInterceptionInput(
+            currentBattle.routeId,
+            currentBattle.interceptCell,
+            currentBattle.defenseAllocation
+        );
+        if (!interceptionInput.success) {
+            return { success: false, errors: [interceptionInput.reason || TRIAL_PLAN_REASONS.INVALID_CURRENT_BATTLE] };
+        }
+
+        // 2. Resolve combat via CombatResolver
+        const context = this.createBattleContext({
+            ...interceptionInput.input,
+            skipAvailableCheck: true
+        });
+        const combatResult = this.combatResolver.resolve(context);
+        if (!combatResult.success) {
+            return { success: false, errors: [combatResult.reason || "COMBAT_RESOLUTION_FAILED"] };
+        }
+
+        // 3. Complete current battle state via sequenceService
+        const completionResult = this.sequenceService.completeCurrentBattle(this.state, combatResult);
+        if (!completionResult.success) {
+            return completionResult;
+        }
+
+        // 4. Emit exactly 1 GameFact
+        const factPayload = {
+            battleIndex: this.state.currentBattleIndex,
+            routeId: currentBattle.routeId,
+            interceptCell: { r: currentBattle.interceptCell.r, c: currentBattle.interceptCell.c },
+            outcome: combatResult.prediction.outcome,
+            playerActualPower: combatResult.human.finalPower,
+            enemyActualPower: combatResult.enemy.finalPower,
+            margin: combatResult.prediction.margin
+        };
+        this.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_BATTLE_RESOLVED, factPayload);
+
+        return {
+            success: true,
+            battleIndex: this.state.currentBattleIndex,
+            combatResult: completionResult.battleResult
+        };
+    }
+
     createBattleContext(input) {
         if (!this.state) throw new Error("TRIAL_NOT_STARTED");
         const allocatedDefense = Math.max(0, Number(input.allocatedDefense) || 0);
-        if (allocatedDefense > this.state.human.availableDefense) {
+        if (!input.skipAvailableCheck && !this.state.planActivated && allocatedDefense > this.state.human.availableDefense) {
             throw new Error("DEFENSE_ALLOCATION_EXCEEDS_AVAILABLE");
         }
         return createBattleContext({

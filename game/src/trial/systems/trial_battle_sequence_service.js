@@ -54,4 +54,59 @@ export class TrialBattleSequenceService {
             currentBattle: cloneData(targetItem)
         };
     }
+
+    completeCurrentBattle(state, combatResult) {
+        if (!state) {
+            return { success: false, errors: ["TRIAL_NOT_STARTED"] };
+        }
+        if (!state.planActivated) {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.PLAN_NOT_ACTIVATED] };
+        }
+        if (state.currentBattleIndex === null) {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.NO_ACTIVE_BATTLE] };
+        }
+        if (!Array.isArray(state.battleQueue)) {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.NO_CONFIRMED_PLAN] };
+        }
+        const currentBattle = state.battleQueue[state.currentBattleIndex];
+        if (!currentBattle || typeof currentBattle !== "object") {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.INVALID_CURRENT_BATTLE] };
+        }
+        if (currentBattle.status === TRIAL_BATTLE_STATUSES.RESOLVED) {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.BATTLE_ALREADY_RESOLVED] };
+        }
+        if (currentBattle.status !== TRIAL_BATTLE_STATUSES.ACTIVE) {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.NO_ACTIVE_BATTLE] };
+        }
+        if (!combatResult || typeof combatResult !== "object") {
+            return { success: false, errors: ["INVALID_COMBAT_RESULT"] };
+        }
+
+        // State commit
+        currentBattle.status = TRIAL_BATTLE_STATUSES.RESOLVED;
+
+        if (!Array.isArray(state.battleResults)) {
+            state.battleResults = [];
+        }
+        const clonedCombat = cloneData(combatResult);
+        const resultSnapshot = {
+            battleIndex: state.currentBattleIndex,
+            routeId: currentBattle.routeId,
+            interceptCell: cloneData(currentBattle.interceptCell),
+            defenseAllocation: currentBattle.defenseAllocation,
+            outcome: clonedCombat.prediction?.outcome || clonedCombat.outcome,
+            playerActualPower: clonedCombat.human?.finalPower ?? clonedCombat.playerActualPower,
+            enemyActualPower: clonedCombat.enemy?.finalPower ?? clonedCombat.enemyActualPower,
+            margin: clonedCombat.prediction?.margin ?? clonedCombat.margin,
+            modifiers: cloneData(clonedCombat.modifiers || []),
+            ...clonedCombat
+        };
+        state.battleResults[state.currentBattleIndex] = resultSnapshot;
+
+        return {
+            success: true,
+            battleIndex: state.currentBattleIndex,
+            battleResult: cloneData(resultSnapshot)
+        };
+    }
 }
