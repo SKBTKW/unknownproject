@@ -1,6 +1,6 @@
 /* =============================================================
    1_top_header / top_header.css
-   最上部ヘッダー（アプリタイトル・役割アバター・残り火中央固定・ターン表示）専用スタイル
+   最上部ヘッダー（リソース・ターン表示）専用スタイル
    ============================================================= */
 
 .top-bar {
@@ -13,7 +13,7 @@
     align-items: center;
     box-shadow: 0 4px 12px rgba(0,0,0,0.5);
     flex-shrink: 0;
-    height: 80px; /* 80px 拡大化 */
+    height: 80px;
     position: relative;
     overflow: hidden;
 }
@@ -39,7 +39,22 @@
     font-weight: bold;
 }
 
-/* 🌾 ヘッダーリソース数値・アイコンの全体的拡大 ＆ 視認性大幅向上 */
+/* リソース表示はヘッダーの幾何学中心へ固定 */
+.header-resource-data-panel {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+}
+
+/* 旧ヘッダー設定ボタンは廃止。設定はAdvisor / Escから開ける */
+#btnOpenSettings,
+.btn-settings-header {
+    display: none !important;
+}
+
+/* 🌾 ヘッダーリソース数値・アイコン */
 .header-data-item {
     display: flex;
     align-items: center;
