@@ -84,6 +84,7 @@ check(dockSource.includes("advisor-report-bubble") && dockSource.includes("repor
 check(contentSource.includes('this.reportDepth = "medium"'), "報告のdefaultをmediumにする");
 check(contentSource.includes("resolveAdvisorAdvice") && contentSource.includes('this.reportDepth === "deep"'), "深い報告では助言を追加する");
 check(css.includes("position: fixed") && css.includes("height: 100vh") && css.includes("--advisor-edge-trigger-width"), "右端hover triggerを画面全高にする");
+check(css.includes("--advisor-rail-color") && css.includes(".advisor-hover-trigger:hover"), "右端hover triggerを常時見える展開レールとして描画する");
 check(css.includes(".advisor-navigation.advisor-nav--vertical") && css.includes("position: absolute"), "展開Navigationをportrait枠内overlayにする");
 check(css.includes(".advisor-navigation.advisor-nav--horizontal") && css.includes("grid-template-columns: repeat(4, 1fr)"), "格納時Navigationを横4列にする");
 check(css.includes(".advisor-navigation.advisor-nav--vertical") && css.includes("flex-direction: column"), "展開時Navigationを縦列にする");

@@ -7,6 +7,8 @@
     --advisor-hover-open-delay: 160ms;
     --advisor-hover-close-delay: 400ms;
     --advisor-edge-trigger-width: 12px;
+    --advisor-rail-color: rgba(31, 183, 205, 0.78);
+    --advisor-rail-color-hover: rgba(83, 224, 238, 0.96);
     --advisor-gap: 8px;
     --advisor-button-bg: rgba(205, 235, 246, 0.88);
     --advisor-button-bg-hover: rgba(226, 246, 252, 0.96);
@@ -229,7 +231,17 @@
     right: 0;
     width: var(--advisor-edge-trigger-width);
     height: 100vh;
+    background: linear-gradient(90deg, rgba(7, 54, 67, 0.38), var(--advisor-rail-color));
+    border-left: 1px solid rgba(113, 231, 241, 0.72);
+    box-shadow: -2px 0 10px rgba(20, 177, 199, 0.2);
     pointer-events: auto;
+    transition: background 140ms ease-out, box-shadow 140ms ease-out;
+}
+
+.advisor-hover-trigger:hover,
+.advisor-dock.is-expanded .advisor-hover-trigger {
+    background: linear-gradient(90deg, rgba(10, 78, 91, 0.52), var(--advisor-rail-color-hover));
+    box-shadow: -3px 0 14px rgba(42, 211, 226, 0.34);
 }
 
 .advisor-report-bubble {
