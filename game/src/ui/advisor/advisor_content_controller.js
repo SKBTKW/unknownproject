@@ -1,4 +1,5 @@
 import { resolveAdvisorStatus } from './advisor_status_resolver.js';
+import { resolveAdvisorAdvice } from './advisor_advice_resolver.js';
 import { getAdvisorRecords } from './advisor_record_adapter.js';
 
 export const ADVISOR_SECTIONS = Object.freeze({ REPORT: "report", RECORD: "record", HELP: "help" });
@@ -9,7 +10,7 @@ export class AdvisorContentController {
         this.i18n = i18n;
         this.stateProvider = stateProvider;
         this.trialStatusProvider = trialStatusProvider;
-        this.reportDepth = "shallow";
+        this.reportDepth = "medium";
         this.onDepthChange = null;
     }
 
@@ -26,6 +27,26 @@ export class AdvisorContentController {
         if (section === ADVISOR_SECTIONS.REPORT) return this.renderReport(host);
         if (section === ADVISOR_SECTIONS.RECORD) return this.renderRecords(host);
         if (section === ADVISOR_SECTIONS.HELP) return this.renderHelp(host);
+    }
+
+    getReportLines() {
+        const state = this.stateProvider?.() || {};
+        const trialStatus = this.trialStatusProvider?.() || {};
+        const resolved = resolveAdvisorStatus(state, trialStatus);
+        const items = [...resolved.urgency, ...resolved.status, ...resolved.outlook];
+        const limit = this.reportDepth === "shallow" ? 1 : (this.reportDepth === "medium" ? 3 : 5);
+        const lines = items.slice(0, limit).map(item => this.i18n.t(item.key, item.params || {}));
+
+        if (this.reportDepth === "deep") {
+            const advice = resolveAdvisorAdvice(state, trialStatus);
+            if (advice?.suggestionKey) lines.push(this.i18n.t(advice.suggestionKey));
+        }
+        if (!lines.length) lines.push(this.i18n.t("UI_ADVISOR_REPORT_PLACEHOLDER"));
+        return lines;
+    }
+
+    getReportText() {
+        return this.getReportLines().join("\n");
     }
 
     renderReport(host) {
@@ -45,11 +66,12 @@ export class AdvisorContentController {
             depthBar.appendChild(button);
         });
         host.appendChild(depthBar);
-        const resolved = resolveAdvisorStatus(this.stateProvider?.() || {}, this.trialStatusProvider?.() || {});
-        const items = [...resolved.urgency, ...resolved.status, ...resolved.outlook];
-        if (!items.length) return this.appendText(host, "UI_ADVISOR_REPORT_PLACEHOLDER", {}, "advisor-content-note");
-        const limit = this.reportDepth === "shallow" ? 1 : (this.reportDepth === "medium" ? 3 : 5);
-        items.slice(0, limit).forEach(item => this.appendText(host, item.key, item.params, "advisor-status-row"));
+        this.getReportLines().forEach(line => {
+            const row = document.createElement("div");
+            row.className = "advisor-status-row";
+            row.textContent = line;
+            host.appendChild(row);
+        });
     }
 
     renderRecords(host) {
