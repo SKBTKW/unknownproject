@@ -162,6 +162,56 @@ body {
     cursor: pointer;
 }
 
+/* =============================================================
+   2026-09-09 Layout pass: mock-based composition
+   ============================================================= */
+
+/* 盤面をヘッダー直下の最上段へ寄せる */
+#layerWorldBoard.layer-world-board {
+    justify-content: flex-start !important;
+    align-items: center !important;
+    padding-top: 10px !important;
+}
+
+.board-container-wrapper {
+    justify-content: flex-start !important;
+    margin-top: 0 !important;
+    margin-bottom: auto !important;
+}
+
+/* 手札トレイは左下。Advisorより常に前面にする */
+#layerPlayerTray.layer-player-tray {
+    left: 16px !important;
+    right: auto !important;
+    bottom: 16px !important;
+    width: auto !important;
+    justify-content: flex-start !important;
+    z-index: 700 !important;
+}
+
+#layerPlayerTray .offering-section {
+    margin: 0 !important;
+    z-index: 700 !important;
+}
+
+/* Advisorは通常HUDより下層。透明領域は入力を取らない */
+#advisorDockContainer {
+    z-index: 420 !important;
+    pointer-events: none !important;
+}
+
+/* ログは機能を残したまま一旦非表示 */
+#logComponentContainer {
+    display: none !important;
+    pointer-events: none !important;
+}
+
+/* 判定テストHUDは機能を保持したまま一旦非表示 */
+#devDiceControlsRoot {
+    display: none !important;
+    pointer-events: none !important;
+}
+
 @media (max-width: 768px) {
     .settings-modal-window {
         height: min(680px, calc(100vh - 24px));
@@ -180,5 +230,10 @@ body {
 
     .setting-select-resolution {
         min-width: 0;
+    }
+
+    #layerPlayerTray.layer-player-tray {
+        left: 8px !important;
+        bottom: 8px !important;
     }
 }
