@@ -166,6 +166,27 @@ body {
    2026-09-09 Layout pass: mock-based composition
    ============================================================= */
 
+/* タイトルロゴはヘッダーから切り離し、メインエリア左上へ */
+#gameWallpaperArt {
+    position: absolute !important;
+    top: 96px !important;
+    left: 18px !important;
+    right: auto !important;
+    width: clamp(260px, 24vw, 420px) !important;
+    max-width: 30vw !important;
+    transform: none !important;
+    opacity: 0.94 !important;
+    z-index: 20 !important;
+    pointer-events: none !important;
+}
+
+#gameWallpaperArt .wallpaper-logo-img {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+
 /* 盤面をヘッダー直下の最上段へ寄せる */
 #layerWorldBoard.layer-world-board {
     justify-content: flex-start !important;
@@ -230,6 +251,13 @@ body {
 
     .setting-select-resolution {
         min-width: 0;
+    }
+
+    #gameWallpaperArt {
+        top: 92px !important;
+        left: 10px !important;
+        width: min(240px, 42vw) !important;
+        max-width: 42vw !important;
     }
 
     #layerPlayerTray.layer-player-tray {
