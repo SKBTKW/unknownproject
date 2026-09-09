@@ -1,6 +1,7 @@
 import { I18n } from "../i18n.js";
 import { UILayoutConfig } from "./layout_config.js";
 import { TrialInterceptionPreviewComponent, resolveModifierTag } from "./trial_interception_preview_component.js";
+import { TRIAL_BATTLE_STATUSES } from "../trial/domain/trial_types.js";
 
 export class TrialDefenseAllocationComponent {
     constructor(uiController) {
@@ -163,7 +164,7 @@ export class TrialDefenseAllocationComponent {
                     </div>
                 `;
             } else if (!isBattleActive && !isBattleResolved) {
-                const pendingBattlesCount = this.ui.getTrialBattleQueue()?.length ?? 0;
+                const pendingBattlesCount = this.ui.getTrialBattleQueue()?.filter(b => b.status === TRIAL_BATTLE_STATUSES.PENDING).length ?? 0;
                 let startBattleButtonHtml = "";
                 if (pendingBattlesCount > 0) {
                     startBattleButtonHtml = `
@@ -263,6 +264,7 @@ export class TrialDefenseAllocationComponent {
                     `;
                 } else {
                     const traversalResult = this.ui.getCurrentTrialTraversalResult?.();
+                    let statusBadgeHtml = "";
                     if (traversalResult) {
                         let statusText = "";
                         let statusClass = "";
@@ -277,9 +279,23 @@ export class TrialDefenseAllocationComponent {
                             statusClass = "status-advanced";
                         }
                         if (statusText) {
-                            traversalControlsHtml = `<div class="trial-traversal-status ${statusClass}">${statusText}</div>`;
+                            statusBadgeHtml = `<div class="trial-traversal-status ${statusClass}">${statusText}</div>`;
                         }
                     }
+
+                    let nextBattleButtonHtml = "";
+                    if (!currentBattle?.sequenceAdvanced) {
+                        nextBattleButtonHtml = `
+                            <button type="button" id="btnTrialNextBattle" class="btn-trial-action btn-next-battle">
+                                ${I18n.t("UI_TRIAL_NEXT_BATTLE")}
+                            </button>
+                        `;
+                    }
+
+                    traversalControlsHtml = `
+                        ${statusBadgeHtml}
+                        ${nextBattleButtonHtml}
+                    `;
                 }
 
                 reviewActionsHtml = `
@@ -325,6 +341,9 @@ export class TrialDefenseAllocationComponent {
 
             const btnAdvanceEnemy = document.getElementById("btnTrialAdvanceEnemy");
             if (btnAdvanceEnemy) btnAdvanceEnemy.onclick = () => this.ui.advanceCurrentTrialBattle();
+
+            const btnNextBattle = document.getElementById("btnTrialNextBattle");
+            if (btnNextBattle) btnNextBattle.onclick = () => this.ui.transitionTrialAfterCurrentBattle();
 
             return;
         }

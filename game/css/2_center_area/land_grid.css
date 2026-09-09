@@ -2164,3 +2164,14 @@ body.is-camera-dragging-global * {
     border: 1px solid rgba(239, 68, 68, 0.6);
     color: #fca5a5;
 }
+
+.btn-next-battle {
+    background: #4f46e5;
+    border-color: #818cf8;
+    color: #eef2ff;
+    margin-top: 4px;
+}
+
+.btn-next-battle:hover {
+    background: #4338ca;
+}

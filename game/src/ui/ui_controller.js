@@ -652,6 +652,25 @@ class UIController {
         return this.trialController?.getRouteProgress?.(routeId) || null;
     }
 
+    transitionTrialAfterCurrentBattle() {
+        if (!this.trialPreviewConfig || !this.trialController?.state) {
+            return { success: false, errors: ["TRIAL_NOT_STARTED"] };
+        }
+        const result = this.trialController.transitionAfterCurrentBattle();
+        if (!result.success) {
+            this.trialPresentationState.planningValidationErrors = result.errors || [];
+            this.render();
+            return result;
+        }
+        this.trialPresentationState.planningValidationErrors = [];
+        this.render();
+        return result;
+    }
+
+    isTrialBattleSequenceAdvanced() {
+        return this.trialController?.isCurrentBattleSequenceAdvanced?.() || false;
+    }
+
     /**
      * 🚀 UI の初期化とマウント
      */

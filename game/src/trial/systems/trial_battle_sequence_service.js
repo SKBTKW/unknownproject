@@ -31,11 +31,10 @@ export class TrialBattleSequenceService {
         if (!Array.isArray(state.battleQueue)) {
             return { success: false, errors: [TRIAL_PLAN_REASONS.NO_CONFIRMED_PLAN] };
         }
-        if (state.battleQueue.length === 0) {
+        const targetIndex = state.battleQueue.findIndex(item => item && item.status === TRIAL_BATTLE_STATUSES.PENDING);
+        if (targetIndex === -1) {
             return { success: false, errors: [TRIAL_PLAN_REASONS.NO_PENDING_BATTLES] };
         }
-
-        const targetIndex = 0;
         const targetItem = state.battleQueue[targetIndex];
 
         if (!targetItem || typeof targetItem !== "object" || !targetItem.routeId || !targetItem.interceptCell ||
@@ -107,6 +106,66 @@ export class TrialBattleSequenceService {
             success: true,
             battleIndex: state.currentBattleIndex,
             battleResult: cloneData(resultSnapshot)
+        };
+    }
+
+    transitionAfterTraversal(state) {
+        if (!state) {
+            return { success: false, errors: ["TRIAL_NOT_STARTED"] };
+        }
+        if (!state.planActivated) {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.PLAN_NOT_ACTIVATED] };
+        }
+        if (state.currentBattleIndex === null) {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.NO_ACTIVE_BATTLE] };
+        }
+        if (!Array.isArray(state.battleQueue)) {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.NO_CONFIRMED_PLAN] };
+        }
+        const currentBattle = state.battleQueue[state.currentBattleIndex];
+        if (!currentBattle || typeof currentBattle !== "object") {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.INVALID_CURRENT_BATTLE] };
+        }
+        if (currentBattle.status !== TRIAL_BATTLE_STATUSES.RESOLVED) {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.NO_RESOLVED_BATTLE] };
+        }
+        if (!currentBattle.traversalApplied) {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.TRAVERSAL_NOT_APPLIED] };
+        }
+        if (!Array.isArray(state.traversalResults) || !state.traversalResults[state.currentBattleIndex]) {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.MISSING_TRAVERSAL_RESULT] };
+        }
+        if (currentBattle.sequenceAdvanced) {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.BATTLE_TRANSITION_ALREADY_APPLIED] };
+        }
+
+        const completedBattleIndex = state.currentBattleIndex;
+        const completedRouteId = currentBattle.routeId;
+        const traversalResult = state.traversalResults[completedBattleIndex];
+        const reachedRouteEnd = Boolean(traversalResult?.reachedRouteEnd);
+
+        // Find next pending battle
+        const nextBattleIndex = state.battleQueue.findIndex(
+            (item, idx) => idx !== completedBattleIndex && item && item.status === TRIAL_BATTLE_STATUSES.PENDING
+        );
+        const hasNextBattle = (nextBattleIndex !== -1);
+
+        const transitionResult = {
+            completedBattleIndex,
+            completedRouteId,
+            hasNextBattle,
+            nextBattleIndex: hasNextBattle ? nextBattleIndex : null,
+            reachedRouteEnd
+        };
+
+        // State commit
+        currentBattle.sequenceAdvanced = true;
+        currentBattle.sequenceTransition = cloneData(transitionResult);
+        state.currentBattleIndex = null;
+
+        return {
+            success: true,
+            transitionResult: cloneData(transitionResult)
         };
     }
 }

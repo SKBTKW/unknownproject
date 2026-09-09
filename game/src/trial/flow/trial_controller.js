@@ -527,6 +527,33 @@ export class TrialController {
         return this.state ? this.state.isCurrentTraversalApplied() : false;
     }
 
+    transitionAfterCurrentBattle() {
+        if (!this.state) {
+            return { success: false, errors: ["TRIAL_NOT_STARTED"] };
+        }
+        if (!this.state.planActivated) {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.PLAN_NOT_ACTIVATED] };
+        }
+        if (this.state.currentBattleIndex === null) {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.NO_ACTIVE_BATTLE] };
+        }
+
+        const transitionResult = this.sequenceService.transitionAfterTraversal(this.state);
+        if (!transitionResult.success) {
+            return transitionResult;
+        }
+
+        // Emit exactly 1 GameFact
+        this.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_BATTLE_SEQUENCE_ADVANCED, transitionResult.transitionResult);
+
+        return transitionResult;
+    }
+
+    isCurrentBattleSequenceAdvanced() {
+        const battle = this.getCurrentBattle();
+        return Boolean(battle?.sequenceAdvanced);
+    }
+
     createBattleContext(input) {
         if (!this.state) throw new Error("TRIAL_NOT_STARTED");
         const allocatedDefense = Math.max(0, Number(input.allocatedDefense) || 0);
