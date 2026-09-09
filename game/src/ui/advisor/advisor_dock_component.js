@@ -2,7 +2,7 @@ import { I18n } from '../../i18n.js';
 import { DEFAULT_ADVISOR_PROFILE } from './advisor_profiles.js';
 import { AdvisorDialogueSystem } from './advisor_dialogue_system.js';
 import { AdvisorEventBridge } from './advisor_event_bridge.js';
-import { AdvisorContentController, ADVISOR_SECTIONS } from './advisor_content_controller.js';
+import { AdvisorContentController, ADVISOR_SECTIONS, ADVISOR_REPORT_DEPTHS } from './advisor_content_controller.js';
 
 export const ADVISOR_VIEW_STATES = Object.freeze({ COLLAPSED: "collapsed", EXPANDED: "expanded" });
 export const ADVISOR_EXPANDED_REASONS = Object.freeze({ CLICK: "click", HOVER: "hover" });
@@ -30,11 +30,15 @@ export class AdvisorDockComponent {
         this.viewState = ADVISOR_VIEW_STATES.COLLAPSED;
         this.expandedReason = null;
         this.activeSection = null;
+        this.reportBubbleOpen = false;
         this.root = null;
         this.hoverOpenTimer = null;
         this.hoverCloseTimer = null;
         this.contentController = new AdvisorContentController({ i18n, stateProvider, trialStatusProvider });
-        this.contentController.onDepthChange = () => this.renderContent();
+        this.contentController.onDepthChange = () => {
+            this.renderReportBubble();
+            this.renderContent();
+        };
         this.dialogueSystem = new AdvisorDialogueSystem({ profile, translate: (key, params) => this.i18n.t(key, params) });
         this.eventBridge = new AdvisorEventBridge(this.dialogueSystem, gameFactHub, { profile, enabledProvider: () => this.isEnabled() });
         this.unsubscribeDialogue = this.dialogueSystem.subscribe(item => this.renderPopup(item));
@@ -77,6 +81,8 @@ export class AdvisorDockComponent {
         portraitViewport.appendChild(popup);
         portraitButton.appendChild(portraitViewport);
 
+        const reportBubble = this.createReportBubble();
+
         const collapseButton = document.createElement("button");
         collapseButton.type = "button";
         collapseButton.className = "advisor-collapse-button";
@@ -87,6 +93,7 @@ export class AdvisorDockComponent {
         NAV_ACTIONS.forEach(({ action, icon }) => navigation.appendChild(this.createNavButton(action, icon)));
 
         shell.appendChild(portraitButton);
+        shell.appendChild(reportBubble);
         shell.appendChild(collapseButton);
         shell.appendChild(navigation);
         interactive.appendChild(sidePanel);
@@ -125,6 +132,29 @@ export class AdvisorDockComponent {
         return button;
     }
 
+    createReportBubble() {
+        const bubble = this.createElement("section", "advisor-report-bubble");
+        bubble.hidden = true;
+        bubble.setAttribute("aria-live", "polite");
+        const text = this.createElement("div", "advisor-report-bubble-text");
+        const depths = this.createElement("div", "advisor-report-bubble-depths");
+        depths.setAttribute("role", "group");
+        ADVISOR_REPORT_DEPTHS.forEach(depth => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "advisor-report-bubble-depth";
+            button.dataset.depth = depth;
+            button.onclick = event => {
+                event.stopPropagation();
+                this.contentController.setDepth(depth);
+            };
+            depths.appendChild(button);
+        });
+        bubble.appendChild(text);
+        bubble.appendChild(depths);
+        return bubble;
+    }
+
     createContentHost(className) {
         const host = this.createElement("section", className);
         host.setAttribute("aria-live", "polite");
@@ -152,10 +182,20 @@ export class AdvisorDockComponent {
 
     handlePortraitClick() {
         if (this.viewState === ADVISOR_VIEW_STATES.COLLAPSED) return this.expand(ADVISOR_EXPANDED_REASONS.CLICK);
-        if (this.expandedReason === ADVISOR_EXPANDED_REASONS.HOVER) return this.expand(ADVISOR_EXPANDED_REASONS.CLICK);
+        return this.collapse();
     }
 
     handleAction(action) {
+        if (action === ADVISOR_SECTIONS.REPORT) {
+            this.closeModal();
+            this.activeSection = this.reportBubbleOpen ? null : ADVISOR_SECTIONS.REPORT;
+            this.reportBubbleOpen = !this.reportBubbleOpen;
+            this.renderStateClasses();
+            this.renderReportBubble();
+            return;
+        }
+        this.reportBubbleOpen = false;
+        this.renderReportBubble();
         if (action === "settings") return this.settingsModal?.open?.();
         if (this.viewState === ADVISOR_VIEW_STATES.COLLAPSED) {
             this.activeSection = action;
@@ -179,6 +219,7 @@ export class AdvisorDockComponent {
         this.viewState = ADVISOR_VIEW_STATES.COLLAPSED;
         this.expandedReason = null;
         this.activeSection = null;
+        this.reportBubbleOpen = false;
         this.closeModal();
         this.render();
     }
@@ -221,7 +262,7 @@ export class AdvisorDockComponent {
         if (!overlay) return;
         overlay.hidden = true;
         overlay.classList.remove("is-open");
-        if (this.viewState === ADVISOR_VIEW_STATES.COLLAPSED) this.activeSection = null;
+        if (this.viewState === ADVISOR_VIEW_STATES.COLLAPSED && !this.reportBubbleOpen) this.activeSection = null;
     }
 
     observeMilitaryAction(actionType) {
@@ -241,8 +282,11 @@ export class AdvisorDockComponent {
 
         this.root.setAttribute("aria-label", this.i18n.t("UI_ADVISOR_TITLE"));
         const portraitButton = this.root.querySelector(".advisor-portrait-button");
-        portraitButton.title = this.i18n.t("UI_ADVISOR_EXPAND");
-        portraitButton.setAttribute("aria-label", this.i18n.t("UI_ADVISOR_EXPAND"));
+        const portraitActionLabel = this.viewState === ADVISOR_VIEW_STATES.EXPANDED
+            ? this.i18n.t("UI_ADVISOR_COLLAPSE")
+            : this.i18n.t("UI_ADVISOR_EXPAND");
+        portraitButton.title = portraitActionLabel;
+        portraitButton.setAttribute("aria-label", portraitActionLabel);
         const collapseButton = this.root.querySelector(".advisor-collapse-button");
         collapseButton.title = this.i18n.t("UI_ADVISOR_COLLAPSE");
         collapseButton.setAttribute("aria-label", this.i18n.t("UI_ADVISOR_COLLAPSE"));
@@ -262,6 +306,7 @@ export class AdvisorDockComponent {
         });
         this.renderStateClasses();
         this.renderContent();
+        this.renderReportBubble();
     }
 
     renderStateClasses() {
@@ -286,13 +331,29 @@ export class AdvisorDockComponent {
 
         const collapseButton = this.root.querySelector(".advisor-collapse-button");
         collapseButton?.setAttribute("aria-hidden", expanded ? "false" : "true");
-        this.root.querySelector(".advisor-content-panel--side").hidden = !(expanded && this.activeSection);
+        this.root.querySelector(".advisor-content-panel--side").hidden = !(expanded && this.activeSection && this.activeSection !== ADVISOR_SECTIONS.REPORT);
     }
 
     renderContent() {
-        if (!this.root || !this.activeSection) return;
+        if (!this.root || !this.activeSection || this.activeSection === ADVISOR_SECTIONS.REPORT) return;
         const selector = this.viewState === ADVISOR_VIEW_STATES.EXPANDED ? ".advisor-content-panel--side" : ".advisor-content-panel--modal";
         this.contentController.render(this.root.querySelector(selector), this.activeSection);
+    }
+
+    renderReportBubble() {
+        if (!this.root) return;
+        const bubble = this.root.querySelector(".advisor-report-bubble");
+        if (!bubble) return;
+        bubble.hidden = !this.reportBubbleOpen;
+        bubble.classList.toggle("is-visible", this.reportBubbleOpen);
+        if (!this.reportBubbleOpen) return;
+        const text = bubble.querySelector(".advisor-report-bubble-text");
+        if (text) text.textContent = this.contentController.getReportText();
+        bubble.querySelectorAll(".advisor-report-bubble-depth").forEach(button => {
+            const depth = button.dataset.depth;
+            button.textContent = this.i18n.t(`UI_ADVISOR_DEPTH_${depth.toUpperCase()}`);
+            button.classList.toggle("is-active", depth === this.contentController.reportDepth);
+        });
     }
 
     renderPopup(item) {
