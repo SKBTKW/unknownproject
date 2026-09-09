@@ -23,6 +23,7 @@ const DEFAULT_SETTINGS = {
     turnEndWarning: true,          // 土地未配置時のターン終了警告 (true: 警告あり, false: 即時終了)
     autoFoodDeficitFallback: true, // 食料不足時の✨/🧱自動補填
     advisorEnabled: true,          // 側近表示・平時発話
+    advisorHoverExpand: false,     // 画面右端hoverによる側近一時展開
     defaultHandMode: "standard",   // 手札の初期表示モード ("standard": 標準, "minimal": 縮小)
     autoRotateOnRightClick: true,  // 右クリックでのカード回転
     focusDoFBlur: false,           // 2層DoFフォーカス演出 (true: 配置中ボケ演出あり, false: 常時クリア)
@@ -211,6 +212,8 @@ export class SettingsModalSystem {
         const rotOptFalse = I18n ? I18n.t("UI_SETTINGS_ROTATE_OPT_FALSE") : "OFF";
         const advisorTitle = I18n ? I18n.t("UI_SETTINGS_ADVISOR_TITLE") : "Advisor";
         const advisorDesc = I18n ? I18n.t("UI_SETTINGS_ADVISOR_DESC") : "Show advisor guidance";
+        const advisorHoverTitle = I18n ? I18n.t("UI_SETTINGS_ADVISOR_HOVER_TITLE") : "Hover expansion";
+        const advisorHoverDesc = I18n ? I18n.t("UI_SETTINGS_ADVISOR_HOVER_DESC") : "Expand the advisor from the right edge";
 
         // ② グラフィック項目
         const resolutionTitle = I18n ? I18n.t("UI_SETTINGS_RESOLUTION_TITLE") : "Resolution";
@@ -336,6 +339,17 @@ export class SettingsModalSystem {
                                 <option value="false">${mOptFalse}</option>
                             </select>
                         </div>
+
+                        <div class="setting-item-row">
+                            <div class="setting-item-copy">
+                                <div class="setting-item-title">${advisorHoverTitle}</div>
+                                <div class="setting-item-desc">${advisorHoverDesc}</div>
+                            </div>
+                            <select id="optAdvisorHoverExpand" class="setting-select-control">
+                                <option value="true">${mOptTrue}</option>
+                                <option value="false">${mOptFalse}</option>
+                            </select>
+                        </div>
                     </div>
 
                     <!-- 🎨 2. グラフィック タブペイン -->
@@ -452,6 +466,7 @@ export class SettingsModalSystem {
         const selHandMode = this.modalEl.querySelector("#optDefaultHandMode");
         const selAutoRotate = this.modalEl.querySelector("#optAutoRotate");
         const selAdvisor = this.modalEl.querySelector("#optAdvisorEnabled");
+        const selAdvisorHover = this.modalEl.querySelector("#optAdvisorHoverExpand");
         const selResolution = this.modalEl.querySelector("#optResolution");
         const selFocus = this.modalEl.querySelector("#optFocusDoFBlur");
         const selLanguage = this.modalEl.querySelector("#optLanguage");
@@ -474,6 +489,7 @@ export class SettingsModalSystem {
             this.settings.set("advisorEnabled", e.target.value === "true");
             if (typeof window !== "undefined" && window.gameUI) window.gameUI.render();
         };
+        if (selAdvisorHover) selAdvisorHover.onchange = (e) => this.settings.set("advisorHoverExpand", e.target.value === "true");
         if (selResolution) selResolution.onchange = (e) => this.settings.set("resolution", e.target.value);
         if (selFocus) selFocus.onchange = (e) => this.settings.set("focusDoFBlur", e.target.value === "true");
         if (selLanguage) selLanguage.onchange = (e) => {
@@ -539,6 +555,7 @@ export class SettingsModalSystem {
         setVal("#optDefaultHandMode", this.settings.get("defaultHandMode"));
         setVal("#optAutoRotate", this.settings.get("autoRotateOnRightClick"));
         setVal("#optAdvisorEnabled", this.settings.get("advisorEnabled"));
+        setVal("#optAdvisorHoverExpand", this.settings.get("advisorHoverExpand"));
         setVal("#optResolution", this.settings.get("resolution"));
         setVal("#optFocusDoFBlur", this.settings.get("focusDoFBlur"));
         setVal("#optLanguage", this.settings.get("language"));

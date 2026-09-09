@@ -133,6 +133,7 @@ const migratedSettings = new GameSettings();
 assert(migratedSettings.get("language") === "en", "旧保存データの既存値を維持する");
 assert(migratedSettings.get("resolution") === "1920x1080", "旧保存データへ解像度既定値を補完する");
 assert(migratedSettings.get("advisorEnabled") === true, "旧保存データへ側近ON既定値を補完する");
+assert(migratedSettings.get("advisorHoverExpand") === false, "旧保存データへ側近hover展開OFF既定値を補完する");
 assert(RESOLUTION_PRESETS.length === 6, "解像度プリセットを6件に一元化する");
 assert(RESOLUTION_PRESETS.find(item => item.recommended)?.value === "1920x1080", "1920x1080だけを推奨プリセットにする");
 
@@ -156,6 +157,7 @@ assert(modal.modalEl.innerHTML.includes('id="paneGraphics"'), "グラフィッ�
 assert(!modal.modalEl.innerHTML.includes('data-tab="visual"'), "旧visualタブ識別子を生成しない");
 assert(modal.modalEl.innerHTML.includes('id="optResolution"'), "グラフィックタブに解像度selectを生成する");
 assert(modal.modalEl.innerHTML.includes('id="optAdvisorEnabled"'), "ゲームプレイタブに側近ON/OFFを生成する");
+assert(modal.modalEl.innerHTML.includes('id="optAdvisorHoverExpand"'), "ゲームプレイタブに側近hover展開設定を生成する");
 assert(modal.modalEl.innerHTML.includes("1920 × 1080（推奨）"), "日本語で推奨解像度ラベルを表示する");
 assert(modal.modalEl.style.getPropertyValue("--settings-modal-width") === "min(680px, 92vw)", "モーダル幅をレイアウト設定から受け取る");
 assert(modal.modalEl.style.getPropertyValue("--settings-modal-height") === "min(680px, calc(100vh - 64px))", "モーダル高をレイアウト設定から受け取る");
@@ -164,6 +166,10 @@ const resolutionControl = document.controls.get("#optResolution");
 resolutionControl.onchange({ target: { value: "3440x1440" } });
 assert(reloadedSettings.get("resolution") === "3440x1440", "select変更をGameSettingsへ保存する");
 assert(applied.at(-1) === "3440x1440", "保存変更を表示Adapterへ通知する");
+
+const advisorHoverControl = document.controls.get("#optAdvisorHoverExpand");
+advisorHoverControl.onchange({ target: { value: "true" } });
+assert(reloadedSettings.get("advisorHoverExpand") === true, "hover展開設定をGameSettingsへ保存する");
 
 const languageControl = document.controls.get("#optLanguage");
 languageControl.onchange({ target: { value: "en" } });
