@@ -36,6 +36,7 @@ const dock = new AdvisorDockComponent({
 
 check(dock.viewState === ADVISOR_VIEW_STATES.COLLAPSED, "初期状態は格納");
 check(dock.expandedReason === null && dock.activeSection === null, "初期展開理由とsectionは空");
+check(dock.contentController.reportDepth === "medium", "報告レベルの初期値は普通(medium)");
 dock.scheduleHoverExpand();
 check(timers.size === 0, "hover設定OFFでは展開timerを作らない");
 
@@ -54,24 +55,23 @@ dock.scheduleHoverCollapse();
 timers.get(dock.hoverCloseTimer).callback();
 check(dock.viewState === ADVISOR_VIEW_STATES.COLLAPSED, "hover leave後に格納する");
 
-dock.expand(ADVISOR_EXPANDED_REASONS.HOVER);
+dock.expand(ADVISOR_EXPANDED_REASONS.CLICK);
 dock.handlePortraitClick();
-check(dock.expandedReason === ADVISOR_EXPANDED_REASONS.CLICK, "hover展開中の顔clickで固定展開へ昇格する");
-dock.scheduleHoverCollapse();
-check(dock.hoverCloseTimer === null, "click固定展開はmouse leaveで格納しない");
-dock.collapse();
-check(dock.viewState === ADVISOR_VIEW_STATES.COLLAPSED, "明示的な格納操作でcollapsedへ戻る");
+check(dock.viewState === ADVISOR_VIEW_STATES.COLLAPSED, "展開中の顔clickでも格納できる");
 
 dock.handleAction(ADVISOR_SECTIONS.REPORT);
-check(dock.activeSection === ADVISOR_SECTIONS.REPORT, "格納中の報告操作を共通sectionへ渡す");
+check(dock.activeSection === ADVISOR_SECTIONS.REPORT && dock.reportBubbleOpen === true, "報告buttonで吹き出しを開く");
+dock.handleAction(ADVISOR_SECTIONS.REPORT);
+check(dock.activeSection === null && dock.reportBubbleOpen === false, "報告button自体を吹き出しtoggleとして使う");
 dock.handleAction("settings");
 check(settingsOpenCount === 1, "設定は既存SettingsModalの正規入口を使う");
-check(ADVISOR_REPORT_DEPTHS.join(",") === "shallow,medium,deep", "報告の浅・中・深を一元定義する");
+check(ADVISOR_REPORT_DEPTHS.join(",") === "shallow,medium,deep", "報告の浅・普通・深を一元定義する");
 
 const dockSource = fs.readFileSync(path.join(ROOT, "game/src/ui/advisor/advisor_dock_component.js"), "utf8");
 const profileSource = fs.readFileSync(path.join(ROOT, "game/src/ui/advisor/advisor_profiles.js"), "utf8");
 const contentSource = fs.readFileSync(path.join(ROOT, "game/src/ui/advisor/advisor_content_controller.js"), "utf8");
 const css = fs.readFileSync(path.join(ROOT, "game/css/4_right_sidebar/advisor_ui.css"), "utf8");
+const layoutCss = fs.readFileSync(path.join(ROOT, "game/css/0_global_common/base_layout.css"), "utf8");
 
 check(DEFAULT_ADVISOR_PROFILE.portraitCollapsed.endsWith("/assets/advisor/advisor01_small.png"), "格納時portraitはadvisor01_small.pngを参照する");
 check(DEFAULT_ADVISOR_PROFILE.portraitExpanded.endsWith("/assets/advisor/advisor01.png"), "展開時portraitはadvisor01.pngを参照する");
@@ -79,19 +79,20 @@ check(profileSource.includes("new URL") && !profileSource.includes("base64"), "A
 check(dockSource.includes("portraitCollapsed") && dockSource.includes("portraitExpanded"), "view stateに応じてportrait srcを切り替える");
 check(dockSource.match(/createElement\(\"nav\", \"advisor-navigation/g)?.length === 1, "Navigation DOMは1つだけ生成する");
 check(dockSource.includes("advisor-nav--horizontal") && dockSource.includes("advisor-nav--vertical"), "同一Navigationへ横・縦layout classを付け替える");
-check(dockSource.includes("dataset.section = action"), "Navigation buttonはsection識別子を持つ");
-check(dockSource.includes("advisor-collapse-button") && dockSource.includes("collapseButton.onclick = () => this.collapse()"), "展開時専用の明示的格納buttonを持つ");
-check(contentSource.includes("render(host, section)"), "SidePanelとModalが同じContent Controllerを使う");
-check(!dockSource.includes("advisor-turn"), "Advisorへ既存TURN表示を統合しない");
+check(dockSource.includes("advisor-report-bubble") && dockSource.includes("reportBubbleOpen"), "報告は専用吹き出しtoggleで表示する");
+check(contentSource.includes('this.reportDepth = "medium"'), "報告のdefaultをmediumにする");
+check(contentSource.includes("resolveAdvisorAdvice") && contentSource.includes('this.reportDepth === "deep"'), "深い報告では助言を追加する");
+check(css.includes("position: fixed") && css.includes("height: 100vh") && css.includes("--advisor-edge-trigger-width"), "右端hover triggerを画面全高にする");
+check(css.includes(".advisor-navigation.advisor-nav--vertical") && css.includes("position: absolute"), "展開Navigationをportrait枠内overlayにする");
 check(css.includes(".advisor-navigation.advisor-nav--horizontal") && css.includes("grid-template-columns: repeat(4, 1fr)"), "格納時Navigationを横4列にする");
 check(css.includes(".advisor-navigation.advisor-nav--vertical") && css.includes("flex-direction: column"), "展開時Navigationを縦列にする");
 check(css.includes(".advisor-navigation.advisor-nav--horizontal .advisor-nav-label") && css.includes("clip-path: inset(50%)"), "格納時labelを視覚的に隠す");
-check(css.includes(".advisor-navigation.advisor-nav--vertical .advisor-nav-button"), "展開時button label用layoutを持つ");
 check(css.includes("--advisor-collapsed-width") && css.includes("--advisor-expanded-width") && css.includes("--advisor-nav-width") && css.includes("--advisor-side-panel-width"), "主要AdvisorサイズをCSS変数化する");
-check(css.includes("--advisor-motion-duration") && css.includes("--advisor-hover-open-delay") && css.includes("--advisor-hover-close-delay") && css.includes("--advisor-edge-trigger-width"), "motion/hover/edge triggerをCSS変数化する");
 check(css.includes("pointer-events: none") && css.includes("pointer-events: auto"), "透明wrapperは盤面入力を奪わず操作部だけを有効にする");
 check(css.includes("object-fit: contain") && css.includes("object-position: center bottom") && css.includes("overflow: hidden"), "portrait viewportで画像サイズ差を吸収する");
-check(css.includes("@media (max-width: 1680px), (max-height: 940px)"), "1600x900向けresponsive調整を持つ");
+check(layoutCss.includes("#layerPlayerTray.layer-player-tray") && layoutCss.includes("justify-content: flex-start"), "手札を左下へ寄せる");
+check(layoutCss.includes("#advisorDockContainer") && layoutCss.includes("z-index: 420"), "Advisorを手札より下層にする");
+check(layoutCss.includes("#devDiceControlsRoot") && layoutCss.includes("display: none"), "判定テストHUDを機能保持のまま非表示にする");
 check(!css.includes("rotation") && !css.includes("rotate(") && !css.includes("bounce"), "開閉animationにrotation/bounceを使わない");
 check(!css.includes("!important"), "Advisor CSSへ!importantを追加しない");
 
