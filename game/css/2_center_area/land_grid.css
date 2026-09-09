@@ -2175,3 +2175,61 @@ body.is-camera-dragging-global * {
 .btn-next-battle:hover {
     background: #4338ca;
 }
+
+.btn-complete-trial {
+    background: #059669;
+    border-color: #34d399;
+    color: #ecfdf5;
+    font-weight: 700;
+    margin-top: 6px;
+}
+
+.btn-complete-trial:hover {
+    background: #047857;
+}
+
+.trial-completed-banner {
+    padding: 12px;
+    border-radius: 4px;
+    text-align: center;
+    font-weight: 800;
+    font-size: 14px;
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.trial-completed-banner.trial-completed-survived {
+    background: rgba(5, 150, 105, 0.35);
+    border: 1px solid #34d399;
+    color: #a7f3d0;
+    box-shadow: 0 0 12px rgba(52, 211, 153, 0.3);
+}
+
+.trial-completed-banner.trial-completed-failed {
+    background: rgba(220, 38, 38, 0.35);
+    border: 1px solid #f87171;
+    color: #fecaca;
+    box-shadow: 0 0 12px rgba(248, 113, 113, 0.3);
+}
+
+.trial-completed-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.trial-completed-ember {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.trial-completed-stats {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    opacity: 0.9;
+}

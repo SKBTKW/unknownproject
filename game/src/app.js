@@ -76,11 +76,12 @@ import { sfxManager } from './audio/sfx_manager.js';
 import { resolveLandSelectSfx } from './audio/land_sfx_resolver.js';
 import { GAME_FACT_TYPES, GameFactHub } from './core/game_fact.js';
 import { GAME_FEEL } from './core/game_feel.js';
-import { TRIAL_PLAN_REASONS, TRIAL_ROUTE_PLAN_STATUSES, TRIAL_BATTLE_STATUSES, TRIAL_OUTCOMES } from './trial/domain/trial_types.js';
+import { TRIAL_PLAN_REASONS, TRIAL_ROUTE_PLAN_STATUSES, TRIAL_BATTLE_STATUSES, TRIAL_OUTCOMES, TRIAL_COMPLETION_OUTCOMES } from './trial/domain/trial_types.js';
 import { TrialPlanningDraftService } from './trial/domain/trial_planning_draft_service.js';
 import { TrialBattleSequenceService } from './trial/systems/trial_battle_sequence_service.js';
 import { TrialEnemyAdvanceService } from './trial/systems/trial_enemy_advance_service.js';
 import { TrialHqDamageResolver } from './trial/systems/trial_hq_damage_resolver.js';
+import { TrialCompletionService } from './trial/systems/trial_completion_service.js';
 
 export {
     I18n,
@@ -136,10 +137,12 @@ export {
     TRIAL_ROUTE_PLAN_STATUSES,
     TRIAL_BATTLE_STATUSES,
     TRIAL_OUTCOMES,
+    TRIAL_COMPLETION_OUTCOMES,
     TrialPlanningDraftService,
     TrialBattleSequenceService,
     TrialEnemyAdvanceService,
     TrialHqDamageResolver,
+    TrialCompletionService,
     TooltipSystem,
     tooltipSystemInstance,
     ConditionEvaluator,

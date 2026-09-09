@@ -700,6 +700,33 @@ class UIController {
         return this.trialController?.isCurrentBattleSequenceAdvanced?.() || false;
     }
 
+    canCompleteTrial() {
+        return this.trialController ? this.trialController.canCompleteTrial() : false;
+    }
+
+    completeTrial() {
+        if (!this.trialPreviewConfig || !this.trialController?.state) {
+            return { success: false, errors: ["TRIAL_NOT_STARTED"] };
+        }
+        const result = this.trialController.completeTrial();
+        if (!result.success) {
+            this.trialPresentationState.planningValidationErrors = result.errors || [];
+            this.render();
+            return result;
+        }
+        this.trialPresentationState.planningValidationErrors = [];
+        this.render();
+        return result;
+    }
+
+    isTrialCompleted() {
+        return this.trialController ? this.trialController.isTrialCompleted() : false;
+    }
+
+    getTrialResult() {
+        return this.trialController ? this.trialController.getTrialResult() : null;
+    }
+
     /**
      * 🚀 UI の初期化とマウント
      */

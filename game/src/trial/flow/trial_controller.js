@@ -13,6 +13,7 @@ import { TrialCombatResolver } from "../systems/trial_combat_resolver.js";
 import { TrialBattleSequenceService } from "../systems/trial_battle_sequence_service.js";
 import { TrialEnemyAdvanceService } from "../systems/trial_enemy_advance_service.js";
 import { TrialHqDamageResolver } from "../systems/trial_hq_damage_resolver.js";
+import { TrialCompletionService } from "../systems/trial_completion_service.js";
 import { TrialFlow } from "./trial_flow.js";
 
 export class TrialController {
@@ -22,6 +23,7 @@ export class TrialController {
         sequenceService = new TrialBattleSequenceService(),
         enemyAdvanceService = new TrialEnemyAdvanceService(),
         damageResolver = new TrialHqDamageResolver(),
+        completionService = new TrialCompletionService(),
         flow = new TrialFlow(),
         gameFactHub = new GameFactHub(),
         emberSystem = null
@@ -31,6 +33,7 @@ export class TrialController {
         this.sequenceService = sequenceService;
         this.enemyAdvanceService = enemyAdvanceService;
         this.damageResolver = damageResolver;
+        this.completionService = completionService;
         this.flow = flow;
         this.gameFactHub = gameFactHub;
         this.emberSystem = emberSystem;
@@ -697,5 +700,56 @@ export class TrialController {
         this.state.result = result;
         this.flow.advance(this.state);
         return result;
+    }
+
+    canCompleteTrial() {
+        if (!this.state) return false;
+        const validation = this.completionService.validateCompletion(this.state);
+        return Boolean(validation.success);
+    }
+
+    completeTrial() {
+        if (!this.state) {
+            return { success: false, errors: ["TRIAL_NOT_STARTED"] };
+        }
+
+        const validation = this.completionService.validateCompletion(this.state);
+        if (!validation.success) {
+            return { success: false, errors: [validation.reason || "COMPLETION_VALIDATION_FAILED"] };
+        }
+
+        const completionResult = this.completionService.buildCompletionResult(this.state);
+
+        // Advance flow to RESULT phase cleanly
+        if (this.state.phase === TRIAL_PHASES.SETUP) {
+            this.flow.advance(this.state); // -> DEPLOYMENT
+        }
+        if (this.state.phase === TRIAL_PHASES.DEPLOYMENT) {
+            this.flow.advance(this.state); // -> BATTLE
+        }
+        if (this.state.phase === TRIAL_PHASES.BATTLE) {
+            this.flow.advance(this.state); // -> RESULT
+        } else if (this.state.phase !== TRIAL_PHASES.RESULT) {
+            this.state.phase = TRIAL_PHASES.RESULT;
+        }
+
+        this.state.trialCompleted = true;
+        this.state.result = JSON.parse(JSON.stringify(completionResult));
+
+        // Emit exactly 1 GameFact
+        this.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_COMPLETED, completionResult);
+
+        return {
+            success: true,
+            result: JSON.parse(JSON.stringify(completionResult))
+        };
+    }
+
+    isTrialCompleted() {
+        return Boolean(this.state && this.state.isTrialCompleted());
+    }
+
+    getTrialResult() {
+        return this.state ? this.state.getTrialResult() : null;
     }
 }

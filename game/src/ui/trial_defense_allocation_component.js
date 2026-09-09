@@ -102,8 +102,9 @@ export class TrialDefenseAllocationComponent {
         const isActivated = Boolean(this.ui.isTrialPlanActivated());
         const isBattleActive = Boolean(this.ui.isTrialBattleActive?.());
         const isBattleResolved = Boolean(this.ui.isTrialBattleResolved?.());
+        const isCompleted = Boolean(this.ui.isTrialCompleted?.());
         const reviewRequested = this.ui.trialPresentationState.planningReviewRequested;
-        const isReviewMode = reviewRequested || isConfirmed || isActivated || isBattleActive || isBattleResolved;
+        const isReviewMode = reviewRequested || isConfirmed || isActivated || isBattleActive || isBattleResolved || isCompleted;
 
         if (isReviewMode) {
             const currentBattleSnapshot = (isBattleActive || isBattleResolved) ? this.ui.getCurrentTrialBattle?.() : null;
@@ -140,7 +141,33 @@ export class TrialDefenseAllocationComponent {
             }).join("");
 
             let reviewActionsHtml = "";
-            if (!isConfirmed && !isActivated && !isBattleActive && !isBattleResolved) {
+            if (isCompleted) {
+                const completionResult = this.ui.getTrialResult?.();
+                const isSurvived = completionResult?.outcome === "SURVIVED";
+                const outcomeBannerText = isSurvived
+                    ? `🏆 ${I18n.t("UI_TRIAL_COMPLETED_SURVIVED")}`
+                    : `💀 ${I18n.t("UI_TRIAL_COMPLETED_FAILED")}`;
+                const bannerClass = isSurvived ? "trial-completed-survived" : "trial-completed-failed";
+                const remainingEmberText = I18n.t("UI_TRIAL_REMAINING_EMBER", { amount: completionResult?.emberRemaining ?? 0 });
+                const battlesText = I18n.t("UI_TRIAL_RESULT_BATTLES", {
+                    resolved: completionResult?.resolvedBattleCount ?? 0,
+                    total: completionResult?.battleCount ?? 0
+                });
+                const damageText = I18n.t("UI_TRIAL_RESULT_DAMAGE", { damage: completionResult?.totalEmberDamage ?? 0 });
+
+                reviewActionsHtml = `
+                    <div class="trial-completed-banner ${bannerClass}" id="trialCompletedBanner">
+                        <div class="trial-completed-status">${outcomeBannerText}</div>
+                        <div class="trial-completed-details">
+                            <div class="trial-completed-ember">${remainingEmberText}</div>
+                            <div class="trial-completed-stats">
+                                <span>${battlesText}</span>
+                                <span>${damageText}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (!isConfirmed && !isActivated && !isBattleActive && !isBattleResolved) {
                 reviewActionsHtml = `
                     <div class="trial-plan-review-requested-banner" id="trialPlanReviewRequestedBanner">
                         <span class="trial-plan-review-status">${I18n.t("UI_TRIAL_PLAN_REVIEW_REQUESTED")}</span>
@@ -166,10 +193,17 @@ export class TrialDefenseAllocationComponent {
             } else if (!isBattleActive && !isBattleResolved) {
                 const pendingBattlesCount = this.ui.getTrialBattleQueue()?.filter(b => b.status === TRIAL_BATTLE_STATUSES.PENDING).length ?? 0;
                 let startBattleButtonHtml = "";
+                let completeTrialButtonHtml = "";
                 if (pendingBattlesCount > 0) {
                     startBattleButtonHtml = `
                         <button type="button" id="btnTrialStartBattle" class="btn-trial-action btn-start-battle">
                             ${I18n.t("UI_TRIAL_START_BATTLE")}
+                        </button>
+                    `;
+                } else if (this.ui.canCompleteTrial?.()) {
+                    completeTrialButtonHtml = `
+                        <button type="button" id="btnTrialCompleteTrial" class="btn-trial-action btn-complete-trial">
+                            ${I18n.t("UI_TRIAL_COMPLETE_TRIAL")}
                         </button>
                     `;
                 }
@@ -178,6 +212,7 @@ export class TrialDefenseAllocationComponent {
                         <div class="trial-plan-activated-status">${I18n.t("UI_TRIAL_PLAN_ACTIVATED")}</div>
                         <div class="trial-plan-battles-pending">${pendingBattlesCount > 0 ? I18n.t("UI_TRIAL_BATTLES_PENDING", { count: pendingBattlesCount }) : I18n.t("UI_TRIAL_NO_PENDING_BATTLES")}</div>
                         ${startBattleButtonHtml}
+                        ${completeTrialButtonHtml}
                     </div>
                 `;
             } else if (!isBattleResolved) {
@@ -355,6 +390,9 @@ export class TrialDefenseAllocationComponent {
 
             const btnNextBattle = document.getElementById("btnTrialNextBattle");
             if (btnNextBattle) btnNextBattle.onclick = () => this.ui.transitionTrialAfterCurrentBattle();
+
+            const btnCompleteTrial = document.getElementById("btnTrialCompleteTrial");
+            if (btnCompleteTrial) btnCompleteTrial.onclick = () => this.ui.completeTrial();
 
             return;
         }

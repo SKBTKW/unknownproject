@@ -38,6 +38,15 @@ export class TrialState {
         this.maxEmber = initMaxEmber;
         this.environment = cloneData(scenario.environment) || {};
         this.result = null;
+        this.trialCompleted = false;
+    }
+
+    isTrialCompleted() {
+        return Boolean(this.trialCompleted);
+    }
+
+    getTrialResult() {
+        return this.result ? cloneData(this.result) : null;
     }
 
     getCurrentBattle() {
