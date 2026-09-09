@@ -24,11 +24,18 @@ export class TrialState {
         this.battleResults = null;
         this.routeProgress = {};
         this.traversalResults = null;
+        this.damageResults = null;
+        const initEmber = Number.isFinite(scenario.ember) ? Math.max(0, Number(scenario.ember)) : 20;
+        const initMaxEmber = Number.isFinite(scenario.maxEmber) ? Math.max(1, Number(scenario.maxEmber)) : 20;
         this.human = {
             defense: Math.max(0, Number(scenario.availableDefense) || 0),
             availableDefense: Math.max(0, Number(scenario.availableDefense) || 0),
-            mystic: Math.max(0, Number(scenario.mystic) || 0)
+            mystic: Math.max(0, Number(scenario.mystic) || 0),
+            ember: initEmber,
+            maxEmber: initMaxEmber
         };
+        this.ember = initEmber;
+        this.maxEmber = initMaxEmber;
         this.environment = cloneData(scenario.environment) || {};
         this.result = null;
     }
@@ -78,6 +85,26 @@ export class TrialState {
             return false;
         }
         return Boolean(this.traversalResults[this.currentBattleIndex]);
+    }
+
+    getDamageResults() {
+        return this.damageResults ? cloneData(this.damageResults) : null;
+    }
+
+    getCurrentDamageResult() {
+        if (!Array.isArray(this.damageResults) || this.currentBattleIndex === null) {
+            return null;
+        }
+        const res = this.damageResults[this.currentBattleIndex];
+        return res ? cloneData(res) : null;
+    }
+
+    getDamageResult(battleIndex) {
+        if (!Array.isArray(this.damageResults) || typeof battleIndex !== "number") {
+            return null;
+        }
+        const res = this.damageResults[battleIndex];
+        return res ? cloneData(res) : null;
     }
 }
 

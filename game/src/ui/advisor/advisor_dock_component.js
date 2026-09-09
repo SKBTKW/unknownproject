@@ -18,6 +18,12 @@ const NAV_ACTIONS = Object.freeze([
     { action: "settings", icon: "⚙" }
 ]);
 
+function isImageElement(el) {
+    if (!el) return false;
+    if (typeof HTMLImageElement !== "undefined" && el instanceof HTMLImageElement) return true;
+    return String(el.tagName || "").toUpperCase() === "IMG";
+}
+
 export class AdvisorDockComponent {
     constructor({ stateProvider, trialStatusProvider = () => ({}), settingsModal = null, gameFactHub = null, profile = DEFAULT_ADVISOR_PROFILE, i18n = I18n, setTimer = defaultSetTimer, clearTimer = defaultClearTimer } = {}) {
         this.stateProvider = stateProvider;
@@ -69,7 +75,7 @@ export class AdvisorDockComponent {
         const hasPortrait = Boolean(this.profile.portrait || this.profile.portraitExpanded || this.profile.portraitCollapsed);
         const portrait = this.createElement(hasPortrait ? "img" : "div", "advisor-portrait");
         portrait.setAttribute("aria-hidden", "true");
-        if (portrait instanceof HTMLImageElement) {
+        if (isImageElement(portrait)) {
             portrait.alt = "";
             portrait.decoding = "async";
             portrait.draggable = false;
@@ -295,7 +301,7 @@ export class AdvisorDockComponent {
         modalClose.setAttribute("aria-label", this.i18n.t("UI_ADVISOR_MODAL_CLOSE"));
         this.root.querySelector(".advisor-profile-name").textContent = this.i18n.t(this.profile.displayNameKey);
         const portrait = this.root.querySelector(".advisor-portrait");
-        if (!(portrait instanceof HTMLImageElement)) portrait.textContent = this.i18n.t("UI_ADVISOR_PORTRAIT_PENDING");
+        if (!isImageElement(portrait)) portrait.textContent = this.i18n.t("UI_ADVISOR_PORTRAIT_PENDING");
         this.root.querySelectorAll(".advisor-nav-button").forEach(button => {
             const action = button.dataset.action;
             const label = this.i18n.t(`UI_ADVISOR_ACTION_${action.toUpperCase()}`);
@@ -321,7 +327,7 @@ export class AdvisorDockComponent {
         navigation?.classList.toggle("advisor-nav--vertical", expanded);
 
         const portrait = this.root.querySelector(".advisor-portrait");
-        if (portrait instanceof HTMLImageElement) {
+        if (isImageElement(portrait)) {
             const nextSrc = expanded
                 ? (this.profile.portraitExpanded || this.profile.portrait)
                 : (this.profile.portraitCollapsed || this.profile.portrait);

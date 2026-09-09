@@ -283,6 +283,16 @@ export class TrialDefenseAllocationComponent {
                         }
                     }
 
+                    const damageResult = this.ui.getCurrentTrialDamageResult?.();
+                    let damageBadgeHtml = "";
+                    if (damageResult && damageResult.reachedRouteEnd) {
+                        damageBadgeHtml = `
+                            <div class="trial-hq-damage-badge" id="trialHqDamageBadge">
+                                ${I18n.t("UI_TRIAL_HQ_DAMAGE", { amount: damageResult.emberDamage, remaining: damageResult.emberAfter })}
+                            </div>
+                        `;
+                    }
+
                     let nextBattleButtonHtml = "";
                     if (!currentBattle?.sequenceAdvanced) {
                         nextBattleButtonHtml = `
@@ -294,6 +304,7 @@ export class TrialDefenseAllocationComponent {
 
                     traversalControlsHtml = `
                         ${statusBadgeHtml}
+                        ${damageBadgeHtml}
                         ${nextBattleButtonHtml}
                     `;
                 }

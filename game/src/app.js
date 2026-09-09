@@ -80,6 +80,7 @@ import { TRIAL_PLAN_REASONS, TRIAL_ROUTE_PLAN_STATUSES, TRIAL_BATTLE_STATUSES, T
 import { TrialPlanningDraftService } from './trial/domain/trial_planning_draft_service.js';
 import { TrialBattleSequenceService } from './trial/systems/trial_battle_sequence_service.js';
 import { TrialEnemyAdvanceService } from './trial/systems/trial_enemy_advance_service.js';
+import { TrialHqDamageResolver } from './trial/systems/trial_hq_damage_resolver.js';
 
 export {
     I18n,
@@ -138,6 +139,7 @@ export {
     TrialPlanningDraftService,
     TrialBattleSequenceService,
     TrialEnemyAdvanceService,
+    TrialHqDamageResolver,
     TooltipSystem,
     tooltipSystemInstance,
     ConditionEvaluator,

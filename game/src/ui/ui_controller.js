@@ -119,10 +119,13 @@ class UIController {
 
     startTrialInterceptionPreview(scenario, { deployedDefense = 6, routeId = null, cellResolver = null } = {}) {
         const availableDefense = scenario.availableDefense ?? this.state.currentDefense ?? this.state.defense ?? 0;
+        const ember = scenario.ember ?? this.state?.ember ?? (this.state?.emberSystem?.current ?? 20);
+        const maxEmber = scenario.maxEmber ?? this.state?.maxEmber ?? (this.state?.emberSystem?.max ?? 20);
+        this.trialController.emberSystem = this.state?.emberSystem || null;
         const resolvedCellResolver = (typeof cellResolver === "function")
             ? cellResolver
             : ((r, c) => this.getBoardDisplayGrid()?.[r]?.[c] || null);
-        this.trialController.startScenario({ ...scenario, availableDefense }, { cellResolver: resolvedCellResolver });
+        this.trialController.startScenario({ ...scenario, availableDefense, ember, maxEmber }, { cellResolver: resolvedCellResolver });
         this.trialPresentationState.clearPlanningState();
         this.trialPresentationState.setActiveEnemyRoute(routeId);
         this.trialPresentationState.setPreviewDefenseAllocation(deployedDefense, availableDefense, 0);
@@ -635,6 +638,9 @@ class UIController {
             this.render();
             return result;
         }
+        if (result.traversalResult?.reachedRouteEnd) {
+            this.trialController.resolveRouteEndDamage(result.traversalResult.battleIndex);
+        }
         this.trialPresentationState.planningValidationErrors = [];
         this.render();
         return result;
@@ -642,6 +648,29 @@ class UIController {
 
     getCurrentTrialTraversalResult() {
         return this.trialController?.getCurrentTraversalResult?.() || null;
+    }
+
+    getCurrentTrialDamageResult() {
+        return this.trialController?.getCurrentDamageResult?.() || null;
+    }
+
+    getTrialDamageResult(battleIndex) {
+        return this.trialController?.getDamageResult?.(battleIndex) || null;
+    }
+
+    resolveTrialRouteEndDamage(battleIndex = null) {
+        if (!this.trialPreviewConfig || !this.trialController?.state) {
+            return { success: false, errors: ["TRIAL_NOT_STARTED"] };
+        }
+        const result = this.trialController.resolveRouteEndDamage(battleIndex);
+        if (!result.success) {
+            this.trialPresentationState.planningValidationErrors = result.errors || [];
+            this.render();
+            return result;
+        }
+        this.trialPresentationState.planningValidationErrors = [];
+        this.render();
+        return result;
     }
 
     isTrialTraversalApplied() {

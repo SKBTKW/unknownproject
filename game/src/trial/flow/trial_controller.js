@@ -12,6 +12,7 @@ import { InterceptionPowerResolver } from "../systems/interception_power_resolve
 import { TrialCombatResolver } from "../systems/trial_combat_resolver.js";
 import { TrialBattleSequenceService } from "../systems/trial_battle_sequence_service.js";
 import { TrialEnemyAdvanceService } from "../systems/trial_enemy_advance_service.js";
+import { TrialHqDamageResolver } from "../systems/trial_hq_damage_resolver.js";
 import { TrialFlow } from "./trial_flow.js";
 
 export class TrialController {
@@ -20,15 +21,19 @@ export class TrialController {
         combatResolver = new TrialCombatResolver(),
         sequenceService = new TrialBattleSequenceService(),
         enemyAdvanceService = new TrialEnemyAdvanceService(),
+        damageResolver = new TrialHqDamageResolver(),
         flow = new TrialFlow(),
-        gameFactHub = new GameFactHub()
+        gameFactHub = new GameFactHub(),
+        emberSystem = null
     } = {}) {
         this.powerResolver = powerResolver;
         this.combatResolver = combatResolver;
         this.sequenceService = sequenceService;
         this.enemyAdvanceService = enemyAdvanceService;
+        this.damageResolver = damageResolver;
         this.flow = flow;
         this.gameFactHub = gameFactHub;
+        this.emberSystem = emberSystem;
         this.state = null;
         this.cellResolver = null;
     }
@@ -552,6 +557,110 @@ export class TrialController {
     isCurrentBattleSequenceAdvanced() {
         const battle = this.getCurrentBattle();
         return Boolean(battle?.sequenceAdvanced);
+    }
+
+    resolveRouteEndDamage(targetBattleIndex = null) {
+        if (!this.state) {
+            return { success: false, errors: ["TRIAL_NOT_STARTED"] };
+        }
+        if (!this.state.planActivated) {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.PLAN_NOT_ACTIVATED] };
+        }
+
+        let battleIndex = null;
+        if (typeof targetBattleIndex === "number") {
+            battleIndex = targetBattleIndex;
+        } else if (this.state.currentBattleIndex !== null) {
+            battleIndex = this.state.currentBattleIndex;
+        } else if (Array.isArray(this.state.traversalResults)) {
+            const foundIndex = this.state.traversalResults.findIndex(
+                (t, idx) => t && t.reachedRouteEnd && !t.damageApplied && (!this.state.damageResults || !this.state.damageResults[idx])
+            );
+            if (foundIndex !== -1) {
+                battleIndex = foundIndex;
+            }
+        }
+
+        if (battleIndex === null || typeof battleIndex !== "number") {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.NO_ROUTE_END_DAMAGE] };
+        }
+
+        const traversalResult = Array.isArray(this.state.traversalResults) ? this.state.traversalResults[battleIndex] : null;
+        if (!traversalResult || !traversalResult.reachedRouteEnd) {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.NO_ROUTE_END_DAMAGE] };
+        }
+
+        if (traversalResult.damageApplied || (Array.isArray(this.state.damageResults) && this.state.damageResults[battleIndex])) {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.DAMAGE_ALREADY_APPLIED] };
+        }
+
+        const battleResult = Array.isArray(this.state.battleResults) ? this.state.battleResults[battleIndex] : null;
+        if (!battleResult) {
+            return { success: false, errors: [TRIAL_PLAN_REASONS.INVALID_DAMAGE_SOURCE] };
+        }
+
+        const currentEmber = (this.emberSystem && typeof this.emberSystem.current === "number")
+            ? this.emberSystem.current
+            : (this.state.human?.ember ?? this.state.ember ?? 20);
+
+        const calculation = this.damageResolver.resolve({
+            battleIndex,
+            routeId: traversalResult.routeId,
+            traversalResult,
+            battleResult,
+            emberBefore: currentEmber
+        });
+
+        if (!calculation.success) {
+            return calculation;
+        }
+
+        const damageResult = calculation.damageResult;
+
+        // Formal State commit
+        traversalResult.damageApplied = true;
+        traversalResult.damage = JSON.parse(JSON.stringify(damageResult));
+
+        if (Array.isArray(this.state.battleQueue) && this.state.battleQueue[battleIndex]) {
+            this.state.battleQueue[battleIndex].damageApplied = true;
+            this.state.battleQueue[battleIndex].damage = JSON.parse(JSON.stringify(damageResult));
+        }
+
+        if (!Array.isArray(this.state.damageResults)) {
+            this.state.damageResults = [];
+        }
+        this.state.damageResults[battleIndex] = JSON.parse(JSON.stringify(damageResult));
+
+        // Commit to Ember
+        if (this.emberSystem && typeof this.emberSystem.applyDamage === "function") {
+            this.emberSystem.applyDamage(damageResult.emberDamage);
+        }
+        if (this.state.human) {
+            this.state.human.ember = damageResult.emberAfter;
+        }
+        this.state.ember = damageResult.emberAfter;
+
+        // Emit exactly 1 GameFact
+        this.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_HQ_DAMAGE_RESOLVED, damageResult);
+
+        return {
+            success: true,
+            battleIndex,
+            damageResult: JSON.parse(JSON.stringify(damageResult))
+        };
+    }
+
+    getCurrentDamageResult() {
+        return this.state ? this.state.getCurrentDamageResult() : null;
+    }
+
+    getDamageResult(battleIndex) {
+        return this.state ? this.state.getDamageResult(battleIndex) : null;
+    }
+
+    isDamageApplied(battleIndex) {
+        if (!this.state || !Array.isArray(this.state.damageResults)) return false;
+        return Boolean(this.state.damageResults[battleIndex]?.damageApplied);
     }
 
     createBattleContext(input) {
