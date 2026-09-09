@@ -195,28 +195,23 @@ class BoardCameraSystem {
     clampPosition(x, y) {
         if (!this.targetEl || !this.containerEl) return { x, y };
 
-        const cRect = this.containerEl.getBoundingClientRect ? this.containerEl.getBoundingClientRect() : { width: 1200, height: 800 };
-        const tWidth = this.targetEl.offsetWidth || 500;
-        const tHeight = this.targetEl.offsetHeight || 500;
+        const cRect = this.containerEl.getBoundingClientRect();
+        const tRect = this.targetEl.getBoundingClientRect();
 
-        // ズーム後の実サイズ
-        const scaledWidth = tWidth * this.currentZoom;
-        const scaledHeight = tHeight * this.currentZoom;
+        // 現在のtranslateを除いた実配置を基準に、候補位置での描画境界を算出する。
+        // flex-startやpaddingが変更されても、盤面上端をコンテナ上端（= ヘッダー底面）より上へ出さない。
+        const naturalLeft = tRect.left - this.panX;
+        const naturalTop = tRect.top - this.panY;
+        const naturalRight = tRect.right - this.panX;
+        const naturalBottom = tRect.bottom - this.panY;
 
-        // コンテナ中央配置を基準とした初期オフセット
-        const baseMarginX = (cRect.width - scaledWidth) / 2;
-        const baseMarginY = (cRect.height - scaledHeight) / 2;
+        const minY = cRect.top - naturalTop;
+        const bottomLimitY = cRect.bottom - naturalBottom;
+        const maxY = Math.max(minY, bottomLimitY);
 
-        // 🚫 [ヘッダー天井ストッパー]: 盤面上端 (baseMarginY + y) >= 0 (ヘッダー下端 Y=0 より上へ絶対に行かない)
-        // ➔ y >= -baseMarginY
-        const minY = -Math.max(0, baseMarginY);
-
-        // 🚫 [画面下端ストッパー]: 盤面下端 <= cRect.height
-        const maxY = Math.max(minY, baseMarginY);
-
-        // 🚫 [左右ストッパー]
-        const minX = -Math.max(0, baseMarginX);
-        const maxX = Math.max(minX, baseMarginX);
+        const minX = cRect.left - naturalLeft;
+        const rightLimitX = cRect.right - naturalRight;
+        const maxX = Math.max(minX, rightLimitX);
 
         // クランプ適用 (ヘッダー天井ストッパーを厳格適用)
         const clampedY = Math.min(maxY, Math.max(minY, y));
@@ -241,6 +236,8 @@ class BoardCameraSystem {
      */
     setZoom(newZoom) {
         this.currentZoom = Math.min(this.maxZoom, Math.max(this.minZoom, parseFloat(newZoom.toFixed(2))));
+        // 新倍率の実描画矩形を確定してから境界を再計算する（同一フレーム内なので画面には中間状態を描画しない）。
+        this.applyTransform();
         // ズーム倍率変更時もヘッダー天井ストッパーを超えていないか自動再クランプ
         const clamped = this.clampPosition(this.panX, this.panY);
         this.panX = clamped.x;

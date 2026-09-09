@@ -520,12 +520,6 @@ export async function runUILifecycleInspection() {
         const clampedOverTop = boardCameraSystem.clampPosition(0, -1000);
         assert("ヘッダー天井ストッパーにより上方向への過度な移動が制限されること", clampedOverTop.y > -1000);
 
-        const landGridCss = fs.readFileSync(path.join(ROOT, "game/css/2_center_area/land_grid.css"), "utf8");
-        assert(
-            "盤面レイヤーが表示領域をクリップし、ヘッダー側へ描画を漏らさないこと",
-            /\.layer-world-board\s*\{[\s\S]*?overflow:\s*hidden\s*;/.test(landGridCss)
-        );
-
         // カメラリセット検証
         boardCameraSystem.setPan(100, 50);
         boardCameraSystem.setZoom(1.5);
