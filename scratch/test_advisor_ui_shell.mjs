@@ -73,8 +73,9 @@ const contentSource = fs.readFileSync(path.join(ROOT, "game/src/ui/advisor/advis
 const css = fs.readFileSync(path.join(ROOT, "game/css/4_right_sidebar/advisor_ui.css"), "utf8");
 const layoutCss = fs.readFileSync(path.join(ROOT, "game/css/0_global_common/base_layout.css"), "utf8");
 
-check(DEFAULT_ADVISOR_PROFILE.portraitCollapsed.endsWith("/assets/advisor/advisor01_small.png"), "格納時portraitはadvisor01_small.pngを参照する");
-check(DEFAULT_ADVISOR_PROFILE.portraitExpanded.endsWith("/assets/advisor/advisor01.png"), "展開時portraitはadvisor01.pngを参照する");
+check(new URL(DEFAULT_ADVISOR_PROFILE.portraitCollapsed).pathname.endsWith("/assets/advisor/advisor01_small.png"), "格納時portraitはadvisor01_small.pngを参照する");
+check(new URL(DEFAULT_ADVISOR_PROFILE.portraitExpanded).pathname.endsWith("/assets/advisor/advisor01.png"), "展開時portraitはadvisor01.pngを参照する");
+check(new URL(DEFAULT_ADVISOR_PROFILE.portraitExpanded).searchParams.has("v"), "Advisor画像URLへキャッシュ更新用revisionを付与する");
 check(profileSource.includes("new URL") && !profileSource.includes("base64"), "Advisor画像はasset URL参照でbase64埋め込みしない");
 check(dockSource.includes("portraitCollapsed") && dockSource.includes("portraitExpanded"), "view stateに応じてportrait srcを切り替える");
 check(dockSource.match(/createElement\(\"nav\", \"advisor-navigation/g)?.length === 1, "Navigation DOMは1つだけ生成する");
