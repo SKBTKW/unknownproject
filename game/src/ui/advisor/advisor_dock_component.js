@@ -8,6 +8,9 @@ export const ADVISOR_VIEW_STATES = Object.freeze({ COLLAPSED: "collapsed", EXPAN
 export const ADVISOR_EXPANDED_REASONS = Object.freeze({ CLICK: "click", HOVER: "hover" });
 export const ADVISOR_UI_TIMING = Object.freeze({ HOVER_OPEN_MS: 160, HOVER_CLOSE_MS: 400 });
 
+const defaultSetTimer = (callback, delay) => setTimeout(callback, delay);
+const defaultClearTimer = timerId => clearTimeout(timerId);
+
 const NAV_ACTIONS = Object.freeze([
     { action: ADVISOR_SECTIONS.REPORT, icon: "✦" },
     { action: ADVISOR_SECTIONS.RECORD, icon: "▤" },
@@ -16,7 +19,7 @@ const NAV_ACTIONS = Object.freeze([
 ]);
 
 export class AdvisorDockComponent {
-    constructor({ stateProvider, trialStatusProvider = () => ({}), settingsModal = null, gameFactHub = null, profile = DEFAULT_ADVISOR_PROFILE, i18n = I18n, setTimer = setTimeout, clearTimer = clearTimeout } = {}) {
+    constructor({ stateProvider, trialStatusProvider = () => ({}), settingsModal = null, gameFactHub = null, profile = DEFAULT_ADVISOR_PROFILE, i18n = I18n, setTimer = defaultSetTimer, clearTimer = defaultClearTimer } = {}) {
         this.stateProvider = stateProvider;
         this.trialStatusProvider = trialStatusProvider;
         this.settingsModal = settingsModal;
