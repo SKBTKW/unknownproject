@@ -289,17 +289,27 @@
 .advisor-modal-overlay {
     position: fixed;
     inset: 0;
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     padding: 32px;
     background: rgba(5, 8, 12, 0.72);
-    pointer-events: auto;
+    pointer-events: none;
     opacity: 0;
     transition: opacity var(--advisor-motion-duration) ease-out;
 }
 
-.advisor-modal-overlay.is-open { opacity: 1; }
+.advisor-modal-overlay[hidden] {
+    display: none;
+    pointer-events: none;
+}
+
+.advisor-modal-overlay.is-open:not([hidden]) {
+    display: flex;
+    pointer-events: auto;
+    opacity: 1;
+}
+
 .advisor-modal { position: relative; width: min(560px, 92vw); max-height: calc(100vh - 64px); border-radius: 12px; overflow: hidden; }
 .advisor-content-panel--modal { min-height: 220px; max-height: calc(100vh - 64px); padding: 22px; overflow-y: auto; }
 .advisor-modal-close { position: absolute; top: 10px; right: 10px; z-index: 1; width: 32px; height: 32px; border: 0; border-radius: 6px; color: #d9e6ec; background: #293943; cursor: pointer; }
