@@ -1,7 +1,10 @@
 import { findAdvisorDialogue } from './advisor_dialogue_database.js';
 
+const defaultSetTimer = (callback, delay) => setTimeout(callback, delay);
+const defaultClearTimer = timerId => clearTimeout(timerId);
+
 export class AdvisorDialogueSystem {
-    constructor({ profile, translate = key => key, now = () => Date.now(), setTimer = setTimeout, clearTimer = clearTimeout } = {}) {
+    constructor({ profile, translate = key => key, now = () => Date.now(), setTimer = defaultSetTimer, clearTimer = defaultClearTimer } = {}) {
         this.profile = profile;
         this.translate = translate;
         this.now = now;
