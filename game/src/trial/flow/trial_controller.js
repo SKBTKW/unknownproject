@@ -10,17 +10,20 @@ import { TrialPlanningDraftService } from "../domain/trial_planning_draft_servic
 import { GAME_FACT_TYPES, GameFactHub } from "../../core/game_fact.js";
 import { InterceptionPowerResolver } from "../systems/interception_power_resolver.js";
 import { TrialCombatResolver } from "../systems/trial_combat_resolver.js";
+import { TrialBattleSequenceService } from "../systems/trial_battle_sequence_service.js";
 import { TrialFlow } from "./trial_flow.js";
 
 export class TrialController {
     constructor({
         powerResolver = new InterceptionPowerResolver(),
         combatResolver = new TrialCombatResolver(),
+        sequenceService = new TrialBattleSequenceService(),
         flow = new TrialFlow(),
         gameFactHub = new GameFactHub()
     } = {}) {
         this.powerResolver = powerResolver;
         this.combatResolver = combatResolver;
+        this.sequenceService = sequenceService;
         this.flow = flow;
         this.gameFactHub = gameFactHub;
         this.state = null;
@@ -383,56 +386,25 @@ export class TrialController {
     }
 
     getCurrentBattle() {
-        return this.state ? this.state.getCurrentBattle() : null;
+        return this.sequenceService.getCurrentBattle(this.state);
     }
 
     startNextBattle() {
-        if (!this.state) {
-            return { success: false, errors: ["TRIAL_NOT_STARTED"] };
+        const startResult = this.sequenceService.startNextBattle(this.state);
+        if (!startResult.success) {
+            return startResult;
         }
-        if (!this.state.planActivated) {
-            return { success: false, errors: [TRIAL_PLAN_REASONS.PLAN_NOT_ACTIVATED] };
-        }
-        if (this.state.currentBattleIndex !== null) {
-            return { success: false, errors: [TRIAL_PLAN_REASONS.BATTLE_ALREADY_ACTIVE] };
-        }
-        if (!Array.isArray(this.state.battleQueue)) {
-            return { success: false, errors: [TRIAL_PLAN_REASONS.NO_CONFIRMED_PLAN] };
-        }
-        if (this.state.battleQueue.length === 0) {
-            return { success: false, errors: [TRIAL_PLAN_REASONS.NO_PENDING_BATTLES] };
-        }
-        if (this.state.battleResults !== null) {
-            return { success: false, errors: ["BATTLE_ALREADY_RESOLVED"] };
-        }
-
-        const targetIndex = 0;
-        const targetItem = this.state.battleQueue[targetIndex];
-
-        if (!targetItem || typeof targetItem !== "object" || !targetItem.routeId || !targetItem.interceptCell ||
-            typeof targetItem.interceptCell.r !== "number" || typeof targetItem.interceptCell.c !== "number" ||
-            typeof targetItem.defenseAllocation !== "number") {
-            return { success: false, errors: [TRIAL_PLAN_REASONS.INVALID_BATTLE_QUEUE_ITEM] };
-        }
-
-        // State commit
-        this.state.currentBattleIndex = targetIndex;
-        targetItem.status = TRIAL_BATTLE_STATUSES.ACTIVE;
 
         // Emit GameFact
         const factPayload = {
-            battleIndex: targetIndex,
-            routeId: targetItem.routeId,
-            interceptCell: { r: targetItem.interceptCell.r, c: targetItem.interceptCell.c },
-            defenseAllocation: targetItem.defenseAllocation
+            battleIndex: startResult.battleIndex,
+            routeId: startResult.currentBattle.routeId,
+            interceptCell: { r: startResult.currentBattle.interceptCell.r, c: startResult.currentBattle.interceptCell.c },
+            defenseAllocation: startResult.currentBattle.defenseAllocation
         };
         this.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_BATTLE_STARTED, factPayload);
 
-        return {
-            success: true,
-            battleIndex: targetIndex,
-            currentBattle: JSON.parse(JSON.stringify(targetItem))
-        };
+        return startResult;
     }
 
     createBattleContext(input) {
