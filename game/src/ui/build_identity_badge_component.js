@@ -95,14 +95,6 @@ class BuildIdentityBadgeComponent {
             ? UILayoutConfig.buildIdentityBadge.mobile
             : UILayoutConfig.buildIdentityBadge.desktop;
         Object.assign(this.rootEl.style, config);
-
-        this.rootEl.style.position = "fixed";
-        this.rootEl.style.top = isMobile ? "12px" : "14px";
-        this.rootEl.style.right = isMobile ? "12px" : "18px";
-        this.rootEl.style.left = "auto";
-        this.rootEl.style.bottom = "auto";
-        this.rootEl.style.zIndex = "980";
-        this.rootEl.style.pointerEvents = "none";
     }
 
     render(identity) {

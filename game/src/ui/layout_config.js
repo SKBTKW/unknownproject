@@ -160,16 +160,20 @@ const UILayoutConfig = {
     buildIdentityBadge: {
         desktop: {
             position: "fixed",
-            right: "max(14px, env(safe-area-inset-right))",
-            bottom: "max(12px, env(safe-area-inset-bottom))",
-            zIndex: 920,
+            top: "14px",
+            right: "18px",
+            left: "auto",
+            bottom: "auto",
+            zIndex: 980,
             pointerEvents: "none"
         },
         mobile: {
             position: "fixed",
-            right: "max(8px, env(safe-area-inset-right))",
-            bottom: "max(8px, env(safe-area-inset-bottom))",
-            zIndex: 920,
+            top: "12px",
+            right: "12px",
+            left: "auto",
+            bottom: "auto",
+            zIndex: 980,
             pointerEvents: "none"
         }
     },
