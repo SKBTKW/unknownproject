@@ -4,8 +4,9 @@ import { TrialInterceptionPreviewComponent, resolveModifierTag } from "./trial_i
 import { TRIAL_BATTLE_STATUSES } from "../trial/domain/trial_types.js";
 
 export class TrialDefenseAllocationComponent {
-    constructor(uiController) {
+    constructor(uiController, { contextOwnerProvider = null } = {}) {
         this.ui = uiController;
+        this.contextOwnerProvider = contextOwnerProvider;
         this.containerEl = null;
         if (typeof document !== "undefined") this.mount();
     }
@@ -28,7 +29,8 @@ export class TrialDefenseAllocationComponent {
     render() {
         const root = this.mount();
         if (!root) return;
-        const active = Boolean(this.ui?.trialPreviewConfig && this.ui?.trialController?.state);
+        const ownsContext = !this.contextOwnerProvider || this.contextOwnerProvider() === "trial";
+        const active = Boolean(this.ui?.trialPreviewConfig && this.ui?.trialController?.state && ownsContext);
         root.classList.toggle("is-active", active);
         if (!active) {
             root.innerHTML = "";

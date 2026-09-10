@@ -26,6 +26,7 @@ import { TrialController } from '../trial/flow/trial_controller.js';
 import { TrialPresentationState } from '../trial/presentation/trial_presentation_state.js';
 import { TrialInterceptionPreviewComponent } from './trial_interception_preview_component.js';
 import { TrialDefenseAllocationComponent } from './trial_defense_allocation_component.js';
+import { LayoutStateManager, UI_LAYOUT_STATES, HAND_LAYOUT_STATES } from './layout_state_manager.js';
 import { DevelopmentTrialPreviewHarness } from '../trial/dev/development_trial_preview_harness.js';
 import { TRIAL_PLAN_REASONS, TRIAL_BATTLE_STATUSES } from '../trial/domain/trial_types.js';
 import { gameSettings, settingsModalInstance } from './settings_modal_system.js';
@@ -71,7 +72,10 @@ class UIController {
         this.diceQueue = new DiceDisplayQueue(this.diceWidget);
         this.devDiceControls = (typeof document !== 'undefined') ? new DevDiceControlsComponent(this) : null;
         this.buildIdentityBadge = (typeof document !== 'undefined') ? new BuildIdentityBadgeComponent() : null;
-        this.trialDefenseAllocationComponent = (typeof document !== 'undefined') ? new TrialDefenseAllocationComponent(this) : null;
+        this.layoutStateManager = new LayoutStateManager();
+        this.trialDefenseAllocationComponent = (typeof document !== 'undefined') ? new TrialDefenseAllocationComponent(this, {
+            contextOwnerProvider: () => this.layoutStateManager.getContextOwner()
+        }) : null;
         this.trialController = new TrialController();
         this.trialPresentationState = new TrialPresentationState();
         this.trialPreviewConfig = null;
@@ -80,6 +84,7 @@ class UIController {
             stateProvider: () => this.state,
             trialStatusProvider: () => ({ active: Boolean(this.trialPreviewConfig && this.trialController.state) }),
             settingsModal: settingsModalInstance,
+            layoutStateManager: this.layoutStateManager,
             gameFactHub: this.trialController.gameFactHub
         }) : null;
         
@@ -96,6 +101,18 @@ class UIController {
             }
         }
         this.isMinimalMode = initialMinimal;
+
+        this.layoutStateManager.setAdapters({
+            setHandState: handState => {
+                this.isMinimalMode = handState !== HAND_LAYOUT_STATES.EXPANDED;
+            },
+            setAdvisorExpanded: expanded => {
+                this.advisorDockComponent?.applyLayoutViewState?.(expanded);
+            },
+            setTrialContextVisible: () => {
+                this.trialDefenseAllocationComponent?.render?.();
+            }
+        });
 
         // 🌉 レガシー HTML / グローバル互換境界の接続 (UIController 本体の純粋化)
         attachLegacyUIBridge(this);
@@ -130,6 +147,7 @@ class UIController {
         this.trialPresentationState.setActiveEnemyRoute(routeId);
         this.trialPresentationState.setPreviewDefenseAllocation(deployedDefense, availableDefense, 0);
         this.trialPreviewConfig = { active: true };
+        this.layoutStateManager.enterTrial();
         this.render();
         return this.trialController.state;
     }
@@ -151,6 +169,7 @@ class UIController {
         this.trialController.state = null;
         this.trialPresentationState.clearPlanningState();
         this.hideCellTooltip();
+        this.layoutStateManager.exitTrial();
         this.render();
     }
 
@@ -1088,7 +1107,12 @@ class UIController {
         if (typeof window !== "undefined" && window.tooltipSystemInstance && typeof window.tooltipSystemInstance.hide === "function") {
             window.tooltipSystemInstance.hide();
         }
-        this.isMinimalMode = !this.isMinimalMode;
+        if (this.layoutStateManager.getState() === UI_LAYOUT_STATES.TRIAL) return;
+        if (this.layoutStateManager.getState() === UI_LAYOUT_STATES.HAND_EXPANDED) {
+            this.layoutStateManager.closeHand();
+        } else {
+            this.layoutStateManager.openHand();
+        }
         if (typeof localStorage !== 'undefined') {
             localStorage.setItem("toa_hand_minimal_mode", this.isMinimalMode ? "true" : "false");
         }

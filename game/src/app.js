@@ -53,6 +53,7 @@ import {
 } from './ui/trial_interception_preview_component.js';
 import { TrialDefenseAllocationComponent } from './ui/trial_defense_allocation_component.js';
 import { AdvisorDockComponent } from './ui/advisor/advisor_dock_component.js?v=20260909_advisor2';
+import { LayoutStateManager, UI_LAYOUT_STATES, RIGHT_CONTEXT_OWNERS, HAND_LAYOUT_STATES } from './ui/layout_state_manager.js';
 import { AdvisorDialogueSystem } from './ui/advisor/advisor_dialogue_system.js';
 import { AdvisorEventBridge } from './ui/advisor/advisor_event_bridge.js';
 import { resolveAdvisorStatus } from './ui/advisor/advisor_status_resolver.js';
@@ -169,6 +170,10 @@ export {
     TrialInterceptionPreviewComponent,
     TrialDefenseAllocationComponent,
     AdvisorDockComponent,
+    LayoutStateManager,
+    UI_LAYOUT_STATES,
+    RIGHT_CONTEXT_OWNERS,
+    HAND_LAYOUT_STATES,
     AdvisorDialogueSystem,
     AdvisorEventBridge,
     resolveAdvisorStatus,

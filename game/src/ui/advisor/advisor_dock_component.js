@@ -3,6 +3,7 @@ import { DEFAULT_ADVISOR_PROFILE } from './advisor_profiles.js?v=20260909_adviso
 import { AdvisorDialogueSystem } from './advisor_dialogue_system.js';
 import { AdvisorEventBridge } from './advisor_event_bridge.js';
 import { AdvisorContentController, ADVISOR_SECTIONS, ADVISOR_REPORT_DEPTHS } from './advisor_content_controller.js';
+import { UI_LAYOUT_STATES } from '../layout_state_manager.js';
 
 export const ADVISOR_VIEW_STATES = Object.freeze({ COLLAPSED: "collapsed", EXPANDED: "expanded" });
 export const ADVISOR_EXPANDED_REASONS = Object.freeze({ CLICK: "click", HOVER: "hover" });
@@ -25,7 +26,7 @@ function isImageElement(el) {
 }
 
 export class AdvisorDockComponent {
-    constructor({ stateProvider, trialStatusProvider = () => ({}), settingsModal = null, gameFactHub = null, profile = DEFAULT_ADVISOR_PROFILE, i18n = I18n, setTimer = defaultSetTimer, clearTimer = defaultClearTimer } = {}) {
+    constructor({ stateProvider, trialStatusProvider = () => ({}), settingsModal = null, gameFactHub = null, layoutStateManager = null, profile = DEFAULT_ADVISOR_PROFILE, i18n = I18n, setTimer = defaultSetTimer, clearTimer = defaultClearTimer } = {}) {
         this.stateProvider = stateProvider;
         this.trialStatusProvider = trialStatusProvider;
         this.settingsModal = settingsModal;
@@ -33,6 +34,7 @@ export class AdvisorDockComponent {
         this.i18n = i18n;
         this.setTimer = setTimer;
         this.clearTimer = clearTimer;
+        this.layoutStateManager = layoutStateManager;
         this.viewState = ADVISOR_VIEW_STATES.COLLAPSED;
         this.expandedReason = null;
         this.activeSection = null;
@@ -233,19 +235,38 @@ export class AdvisorDockComponent {
             return this.openModal();
         }
         this.activeSection = this.activeSection === action ? null : action;
+        if (this.activeSection) this.layoutStateManager?.claimAdvisorContext?.();
+        else this.layoutStateManager?.releaseAdvisorContext?.();
         this.renderContent();
         this.renderStateClasses();
     }
 
     expand(reason = ADVISOR_EXPANDED_REASONS.CLICK) {
+        if (this.layoutStateManager && this.layoutStateManager.getState?.() !== UI_LAYOUT_STATES.ADVISOR_EXPANDED) {
+            this.expandedReason = reason;
+            this.layoutStateManager.openAdvisor?.();
+            return;
+        }
+        this.applyLayoutViewState(true, reason);
+    }
+
+    applyLayoutViewState(expanded, reason = this.expandedReason || ADVISOR_EXPANDED_REASONS.CLICK) {
         this.cancelHoverTimers();
-        this.viewState = ADVISOR_VIEW_STATES.EXPANDED;
-        this.expandedReason = reason;
+        this.viewState = expanded ? ADVISOR_VIEW_STATES.EXPANDED : ADVISOR_VIEW_STATES.COLLAPSED;
+        this.expandedReason = expanded ? reason : null;
+        if (!expanded) {
+            this.activeSection = null;
+            this.reportBubbleOpen = false;
+        }
         this.closeModal();
         this.render();
     }
 
     collapse() {
+        if (this.layoutStateManager?.getState?.() === UI_LAYOUT_STATES.ADVISOR_EXPANDED) {
+            this.layoutStateManager.closeAdvisor();
+            return;
+        }
         this.cancelHoverTimers();
         this.viewState = ADVISOR_VIEW_STATES.COLLAPSED;
         this.expandedReason = null;

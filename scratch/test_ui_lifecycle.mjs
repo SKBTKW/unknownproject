@@ -232,6 +232,8 @@ export async function runUILifecycleInspection() {
         // 2. ui.init() ライフサイクルの完走
         ui.init();
         assert("ui.init() が未定義参照エラーなく完走すること", true);
+        ui.layoutStateManager.openHand();
+        ui.render();
 
         // 3. 盤面グリッド (#gridBoard) の構築検証
         const gridBoard = mockDoc.getElementById("gridBoard");
