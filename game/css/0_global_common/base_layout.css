@@ -11,6 +11,11 @@
     --z-player: 700;
     --z-overlay: 900;
     --z-modal: 9999;
+
+    /* 📐 レイアウトメトリクス・オフセット (Layout Metrics Tokens) */
+    --layout-header-height: 80px;
+    --layout-app-gap: 8px;
+    --layout-edge-gap: 16px;
 }
 
 * {
@@ -38,7 +43,7 @@ body {
     height: 100%;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--layout-app-gap);
     position: relative;
 }
 
@@ -179,9 +184,9 @@ body {
    ============================================================= */
 
 /* タイトルロゴはヘッダーから切り離し、メインエリア左上へ */
-#gameWallpaperArt {
+.app-wrapper > #gameWallpaperArt {
     position: absolute !important;
-    top: 96px !important;
+    top: calc(var(--layout-header-height) + var(--layout-app-gap) + 8px);
     left: 18px !important;
     right: auto !important;
     width: clamp(260px, 24vw, 420px) !important;
@@ -214,9 +219,9 @@ body {
 
 /* 手札トレイは左下。Advisorより常に前面にする */
 #layerPlayerTray.layer-player-tray {
-    left: 16px !important;
+    left: var(--layout-edge-gap);
     right: auto !important;
-    bottom: 16px !important;
+    bottom: var(--layout-edge-gap);
     width: auto !important;
     justify-content: flex-start !important;
     z-index: 700 !important;

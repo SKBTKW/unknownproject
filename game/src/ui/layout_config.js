@@ -268,18 +268,18 @@ const UILayoutConfig = {
         zIndex: 600
     },
 
-    // 🌌 8. 背景ウォールペーパーアート (300% 拡大 ＆ 試練アナウンス下部完全クリアランス)
+    // 🌌 8. 背景ウォールペーパーアート (タイトルロゴ: メインエリア左上)
     gameWallpaperArt: {
         position: "absolute",
-        top: "200px",
-        right: "-20px",
-        left: "auto",
+        top: "calc(var(--layout-header-height, 80px) + var(--layout-app-gap, 8px) + 8px)",
+        left: "18px",
+        right: "auto",
+        width: "clamp(260px, 24vw, 420px)",
+        maxWidth: "30vw",
         transform: "none",
-        width: "1100px",
-        maxWidth: "68vw",
-        zIndex: 0,
-        pointerEvents: "none",
-        opacity: "0.88"
+        opacity: "0.94",
+        zIndex: 20,
+        pointerEvents: "none"
     },
 
     // 🌌 9. メインエリア背景 ウォーターマーク ターン表示 (AAA級スタイリッシュ演出)
