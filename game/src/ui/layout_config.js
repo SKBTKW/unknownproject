@@ -240,7 +240,7 @@ const UILayoutConfig = {
         position: "fixed",
         right: "16px",
         bottom: "16px",
-        zIndex: 960,
+        zIndex: 420,
         pointerEvents: "none",
         "--advisor-report-expanded-left": "18px",
         "--advisor-report-expanded-top": "30%"

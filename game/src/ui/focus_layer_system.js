@@ -133,13 +133,13 @@ class FocusLayerManager {
         if (isFront) {
             this.boardContainerEl.classList.add('layer-active-front');
             this.boardContainerEl.classList.remove('layer-dim-blur');
-            this.boardContainerEl.style.zIndex = '700';
+            this.boardContainerEl.style.zIndex = '100';
             if (gridEl) gridEl.classList.remove('board-dim-blur');
 
-            // 🌟 カード選択中であっても手札トレイ（保留スロット含む）のクリックを盤面で覆い隠さない (z-index: 800)
-            if (playerTray) playerTray.style.zIndex = '800';
+            // 🌟 カード選択中であっても手札トレイ（保留スロット含む）のクリックを盤面で覆い隠さない (PLAYER帯域: z-index: 700)
+            if (playerTray) playerTray.style.zIndex = '700';
             if (this.offeringSectionEl) {
-                this.offeringSectionEl.style.zIndex = '800';
+                this.offeringSectionEl.style.zIndex = '700';
                 if (isBlurEnabled) {
                     this.offeringSectionEl.classList.add('layer-dim-blur');
                 }
@@ -153,12 +153,12 @@ class FocusLayerManager {
                 this.boardContainerEl.classList.remove('layer-dim-blur');
                 if (gridEl) gridEl.classList.remove('board-dim-blur');
             }
-            this.boardContainerEl.style.zIndex = '50';
+            this.boardContainerEl.style.zIndex = '10';
         }
     }
 
     /**
-     * 🃏 手札を最優先（最前面手前 z-index: 800）または下層ボケ（奥 z-index: 50）に設定
+     * 🃏 手札を最優先（最前面手前 z-index: 700）または下層ボケ（奥 z-index: 500）に設定
      */
     setHandFocus(isFront) {
         if (!this.offeringSectionEl) return;
@@ -169,10 +169,10 @@ class FocusLayerManager {
         if (isFront) {
             this.offeringSectionEl.classList.add('layer-active-front');
             this.offeringSectionEl.classList.remove('layer-dim-blur');
-            this.offeringSectionEl.style.zIndex = '800';
-            if (playerTray) playerTray.style.zIndex = '800';
+            this.offeringSectionEl.style.zIndex = '700';
+            if (playerTray) playerTray.style.zIndex = '700';
 
-            if (this.boardContainerEl) this.boardContainerEl.style.zIndex = '50';
+            if (this.boardContainerEl) this.boardContainerEl.style.zIndex = '10';
         } else {
             this.offeringSectionEl.classList.remove('layer-active-front');
             if (isBlurEnabled) {
@@ -196,10 +196,10 @@ class FocusLayerManager {
         }
         if (this.offeringSectionEl) {
             this.offeringSectionEl.classList.remove('layer-active-front', 'layer-dim-blur');
-            this.offeringSectionEl.style.zIndex = '500';
+            this.offeringSectionEl.style.zIndex = '700';
         }
         if (playerTray) {
-            playerTray.style.zIndex = '500';
+            playerTray.style.zIndex = '700';
         }
         const gridEl = this.getGridElement();
         if (gridEl) {

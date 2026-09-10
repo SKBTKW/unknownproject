@@ -3,6 +3,16 @@
    アプリケーション全体の基本枠組み・リセット・メイングリッド配置定義
    ============================================================= */
 
+:root {
+    /* 🏛️ 論理レイヤー帯域 (Logical Layer z-index Bands) */
+    --z-world: 10;
+    --z-hud: 200;
+    --z-advisor: 420;
+    --z-player: 700;
+    --z-overlay: 900;
+    --z-modal: 9999;
+}
+
 * {
     box-sizing: border-box;
     margin: 0;
