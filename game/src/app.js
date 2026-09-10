@@ -19,7 +19,7 @@ import { BuffPanelComponent } from './ui/buff_panel_component.js';
 import { territoryBadgeInstance as TerritoryBadgeComponent, TerritoryBadgeComponent as TerritoryBadgeComponentClass } from './ui/territory_badge_component.js';
 import { UILayoutConfig, UI_FEATURE_FLAGS } from './ui/layout_config.js';
 import { BlockPlacementSystem } from './ui/block_placement_system.js';
-import { UIController } from './ui/ui_controller.js';
+import { UIController } from './ui/ui_controller.js?v=20260909_advisor2';
 import { FocusLayerManager, focusLayerManager } from './ui/focus_layer_system.js';
 import { BoardCameraSystem, boardCameraSystem } from './ui/board_camera_system.js';
 import { GameSettings, gameSettings, RESOLUTION_PRESETS, SettingsModalSystem, settingsModalInstance } from './ui/settings_modal_system.js';
@@ -52,7 +52,7 @@ import {
     resolveModifierTag
 } from './ui/trial_interception_preview_component.js';
 import { TrialDefenseAllocationComponent } from './ui/trial_defense_allocation_component.js';
-import { AdvisorDockComponent } from './ui/advisor/advisor_dock_component.js';
+import { AdvisorDockComponent } from './ui/advisor/advisor_dock_component.js?v=20260909_advisor2';
 import { AdvisorDialogueSystem } from './ui/advisor/advisor_dialogue_system.js';
 import { AdvisorEventBridge } from './ui/advisor/advisor_event_bridge.js';
 import { resolveAdvisorStatus } from './ui/advisor/advisor_status_resolver.js';

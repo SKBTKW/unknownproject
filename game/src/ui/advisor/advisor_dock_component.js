@@ -1,12 +1,12 @@
 import { I18n } from '../../i18n.js';
-import { DEFAULT_ADVISOR_PROFILE } from './advisor_profiles.js';
+import { DEFAULT_ADVISOR_PROFILE } from './advisor_profiles.js?v=20260909_advisor2';
 import { AdvisorDialogueSystem } from './advisor_dialogue_system.js';
 import { AdvisorEventBridge } from './advisor_event_bridge.js';
 import { AdvisorContentController, ADVISOR_SECTIONS, ADVISOR_REPORT_DEPTHS } from './advisor_content_controller.js';
 
 export const ADVISOR_VIEW_STATES = Object.freeze({ COLLAPSED: "collapsed", EXPANDED: "expanded" });
 export const ADVISOR_EXPANDED_REASONS = Object.freeze({ CLICK: "click", HOVER: "hover" });
-export const ADVISOR_UI_TIMING = Object.freeze({ HOVER_OPEN_MS: 160, HOVER_CLOSE_MS: 400 });
+export const ADVISOR_UI_TIMING = Object.freeze({ HOVER_OPEN_MS: 0, HOVER_CLOSE_MS: 400 });
 
 const defaultSetTimer = (callback, delay) => setTimeout(callback, delay);
 const defaultClearTimer = timerId => clearTimeout(timerId);
@@ -37,6 +37,7 @@ export class AdvisorDockComponent {
         this.expandedReason = null;
         this.activeSection = null;
         this.reportBubbleOpen = false;
+        this.reportDepthMenuOpen = false;
         this.root = null;
         this.hoverOpenTimer = null;
         this.hoverCloseTimer = null;
@@ -96,7 +97,7 @@ export class AdvisorDockComponent {
         collapseButton.onclick = () => this.collapse();
 
         const navigation = this.createElement("nav", "advisor-navigation advisor-nav--horizontal");
-        NAV_ACTIONS.forEach(({ action, icon }) => navigation.appendChild(this.createNavButton(action, icon)));
+        NAV_ACTIONS.forEach(({ action, icon }) => navigation.appendChild(this.createNavItem(action, icon)));
 
         shell.appendChild(portraitButton);
         shell.appendChild(reportBubble);
@@ -138,26 +139,48 @@ export class AdvisorDockComponent {
         return button;
     }
 
+    createNavItem(action, icon) {
+        const item = this.createElement("div", "advisor-nav-item");
+        item.appendChild(this.createNavButton(action, icon));
+        if (action !== ADVISOR_SECTIONS.REPORT) return item;
+
+        const toggle = document.createElement("button");
+        toggle.type = "button";
+        toggle.className = "advisor-depth-menu-toggle";
+        toggle.textContent = "⋯";
+        toggle.onclick = event => {
+            event.stopPropagation();
+            this.reportDepthMenuOpen = !this.reportDepthMenuOpen;
+            this.renderDepthMenu();
+        };
+        item.appendChild(toggle);
+
+        const menu = this.createElement("div", "advisor-depth-menu");
+        menu.hidden = true;
+        menu.setAttribute("role", "group");
+        ADVISOR_REPORT_DEPTHS.forEach(depth => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "advisor-depth-menu-option";
+            button.dataset.depth = depth;
+            button.onclick = event => {
+                event.stopPropagation();
+                this.contentController.setDepth(depth);
+                this.reportDepthMenuOpen = false;
+                this.renderDepthMenu();
+            };
+            menu.appendChild(button);
+        });
+        item.appendChild(menu);
+        return item;
+    }
+
     createReportBubble() {
         const bubble = this.createElement("section", "advisor-report-bubble");
         bubble.hidden = true;
         bubble.setAttribute("aria-live", "polite");
         const text = this.createElement("div", "advisor-report-bubble-text");
-        const depths = this.createElement("div", "advisor-report-bubble-depths");
-        depths.setAttribute("role", "group");
-        ADVISOR_REPORT_DEPTHS.forEach(depth => {
-            const button = document.createElement("button");
-            button.type = "button";
-            button.className = "advisor-report-bubble-depth";
-            button.dataset.depth = depth;
-            button.onclick = event => {
-                event.stopPropagation();
-                this.contentController.setDepth(depth);
-            };
-            depths.appendChild(button);
-        });
         bubble.appendChild(text);
-        bubble.appendChild(depths);
         return bubble;
     }
 
@@ -188,6 +211,7 @@ export class AdvisorDockComponent {
 
     handlePortraitClick() {
         if (this.viewState === ADVISOR_VIEW_STATES.COLLAPSED) return this.expand(ADVISOR_EXPANDED_REASONS.CLICK);
+        if (this.expandedReason === ADVISOR_EXPANDED_REASONS.HOVER) return this.expand(ADVISOR_EXPANDED_REASONS.CLICK);
         return this.collapse();
     }
 
@@ -201,6 +225,7 @@ export class AdvisorDockComponent {
             return;
         }
         this.reportBubbleOpen = false;
+        this.reportDepthMenuOpen = false;
         this.renderReportBubble();
         if (action === "settings") return this.settingsModal?.open?.();
         if (this.viewState === ADVISOR_VIEW_STATES.COLLAPSED) {
@@ -313,6 +338,7 @@ export class AdvisorDockComponent {
         this.renderStateClasses();
         this.renderContent();
         this.renderReportBubble();
+        this.renderDepthMenu();
     }
 
     renderStateClasses() {
@@ -355,7 +381,20 @@ export class AdvisorDockComponent {
         if (!this.reportBubbleOpen) return;
         const text = bubble.querySelector(".advisor-report-bubble-text");
         if (text) text.textContent = this.contentController.getReportText();
-        bubble.querySelectorAll(".advisor-report-bubble-depth").forEach(button => {
+    }
+
+    renderDepthMenu() {
+        if (!this.root) return;
+        const toggle = this.root.querySelector(".advisor-depth-menu-toggle");
+        const menu = this.root.querySelector(".advisor-depth-menu");
+        if (!toggle || !menu) return;
+        const label = this.i18n.t("UI_ADVISOR_REPORT_DEPTH_LABEL");
+        toggle.title = label;
+        toggle.setAttribute("aria-label", label);
+        toggle.setAttribute("aria-expanded", this.reportDepthMenuOpen ? "true" : "false");
+        menu.hidden = !this.reportDepthMenuOpen;
+        menu.setAttribute("aria-label", label);
+        menu.querySelectorAll(".advisor-depth-menu-option").forEach(button => {
             const depth = button.dataset.depth;
             button.textContent = this.i18n.t(`UI_ADVISOR_DEPTH_${depth.toUpperCase()}`);
             button.classList.toggle("is-active", depth === this.contentController.reportDepth);

@@ -241,7 +241,9 @@ const UILayoutConfig = {
         right: "16px",
         bottom: "16px",
         zIndex: 960,
-        pointerEvents: "none"
+        pointerEvents: "none",
+        "--advisor-report-expanded-left": "18px",
+        "--advisor-report-expanded-top": "30%"
     },
 
     // 🃏 6. 画面下部中央: ドローカード選択エリア (Layer 3: プレイヤートレイ)

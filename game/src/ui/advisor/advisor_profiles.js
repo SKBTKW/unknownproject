@@ -6,7 +6,7 @@ const advisorAsset = (fileName, revision) => {
 };
 
 // 画像を同名で差し替えた場合も、GitHub Pagesやブラウザに旧画像を再利用させない。
-const GENERAL_OLD_01_ASSET_REVISION = "8fccabe";
+const GENERAL_OLD_01_ASSET_REVISION = "b380df9";
 
 export const ADVISOR_PROFILES = Object.freeze({
     GENERAL_OLD_01: Object.freeze({

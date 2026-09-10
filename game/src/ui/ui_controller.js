@@ -29,7 +29,7 @@ import { TrialDefenseAllocationComponent } from './trial_defense_allocation_comp
 import { DevelopmentTrialPreviewHarness } from '../trial/dev/development_trial_preview_harness.js';
 import { TRIAL_PLAN_REASONS, TRIAL_BATTLE_STATUSES } from '../trial/domain/trial_types.js';
 import { gameSettings, settingsModalInstance } from './settings_modal_system.js';
-import { AdvisorDockComponent } from './advisor/advisor_dock_component.js';
+import { AdvisorDockComponent } from './advisor/advisor_dock_component.js?v=20260909_advisor2';
 import { resolveAdvisorAwareToast } from './advisor/advisor_toast_policy.js';
 import {
     resolvePlacementAnchor,
