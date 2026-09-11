@@ -23,6 +23,7 @@ export class HistorySnapshotService {
         if (!engine) throw new TypeError('HISTORY_SNAPSHOT_ENGINE_REQUIRED');
         this.engine = engine;
         this.snapshots = [];
+        this.restorePoints = [];
     }
 
     capture({ completedTurn, nextTurn } = {}) {
@@ -79,8 +80,51 @@ export class HistorySnapshotService {
         return [...this.snapshots];
     }
 
+    captureRestorePoint({ verse, sourceCompletedTurn = null } = {}) {
+        if (!Number.isInteger(verse) || verse < 1) {
+            throw new TypeError('HISTORY_RESTORE_POINT_VERSE_REQUIRED');
+        }
+        const engine = this.engine;
+        const state = engine.state;
+        const restorePoint = freezeDeep({
+            schemaVersion: HISTORY_SNAPSHOT_SCHEMA_VERSION,
+            verse,
+            sourceCompletedTurn,
+            gameState: serializeGameState(state),
+            rngState: cloneData(engine.checkSystem?.getState?.()),
+            gameplayRngState: cloneData(engine.gameplayRandom?.getState?.()),
+            chronicle: cloneData(engine.chronicleSystem?.getAllEvents?.(), []),
+            runtime: {
+                runSeed: Number.isFinite(engine.runSeed) ? engine.runSeed : null,
+                activeGlobalEvents: cloneData(state?.activeGlobalEvents, []),
+                eventCooldowns: cloneData(state?.eventCooldowns, {}),
+                temporaryWeightModifiers: cloneData(state?.temporaryWeightModifiers, []),
+                lastGlobalEventTurn: Number.isFinite(state?.lastGlobalEventTurn) ? state.lastGlobalEventTurn : 0,
+                buffs: cloneData(engine.buffSystem?.buffs, [])
+            }
+        });
+
+        const existingIndex = this.restorePoints.findIndex(item => item.verse === verse);
+        if (existingIndex >= 0) {
+            this.restorePoints[existingIndex] = restorePoint;
+        } else {
+            this.restorePoints.push(restorePoint);
+            this.restorePoints.sort((a, b) => a.verse - b.verse);
+        }
+        return restorePoint;
+    }
+
+    getRestorePoint(verse) {
+        return this.restorePoints.find(point => point.verse === verse) || null;
+    }
+
+    getAllRestorePoints() {
+        return [...this.restorePoints];
+    }
+
     clear() {
         this.snapshots = [];
+        this.restorePoints = [];
     }
 }
 
