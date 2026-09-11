@@ -5,6 +5,7 @@
 
 import { ConditionEvaluator } from "../core/condition_evaluator.js";
 import { EffectResolver } from "../core/effect_resolver.js";
+import { GameplayRandomService } from "../core/gameplay_random_service.js";
 import { GLOBAL_EVENTS_MASTER } from "../data/global_events.js";
 import { CHRONICLE_IMPORTANCE } from "./chronicle_system.js";
 
@@ -12,7 +13,8 @@ import { CHRONICLE_IMPORTANCE } from "./chronicle_system.js";
  * 🌍 1. GlobalEventDirector (発生制御・経過ターン別確率・共通CT)
  */
 export class GlobalEventDirector {
-    constructor() {
+    constructor(randomSource = null) {
+        this.randomSource = randomSource;
         // rules/10_global_events.md 準拠の経過ターン別発生率テーブル
         this.PROBABILITY_TABLE = [
             { maxElapsed: 2, rate: 0.00 },
@@ -47,7 +49,8 @@ export class GlobalEventDirector {
             }
         }
 
-        return Math.random() < rate;
+        const roll = this.randomSource?.nextFloat?.() ?? Math.random();
+        return roll < rate;
     }
 }
 
@@ -55,6 +58,10 @@ export class GlobalEventDirector {
  * 🎯 2. GlobalEventSelector (条件フィルタ ＆ Weight付き候補抽選)
  */
 export class GlobalEventSelector {
+    constructor(randomSource = null) {
+        this.randomSource = randomSource;
+    }
+
     /**
      * 🔍 発生候補の選定と抽選
      * @param {Object} state - gameState
@@ -97,7 +104,7 @@ export class GlobalEventSelector {
 
         // 🎲 Weight付きランダム抽選
         const totalWeight = eligible.reduce((sum, item) => sum + item.weight, 0);
-        let rand = Math.random() * totalWeight;
+        let rand = (this.randomSource?.nextFloat?.() ?? Math.random()) * totalWeight;
 
         for (const item of eligible) {
             if (rand <= item.weight) {
@@ -117,8 +124,11 @@ export class GlobalEventManager {
     constructor(gameState = null, engine = null) {
         this.state = gameState;
         this.engine = engine;
-        this.director = new GlobalEventDirector();
-        this.selector = new GlobalEventSelector();
+        const randomSource = engine
+            ? (engine.gameplayRandom || (engine.gameplayRandom = new GameplayRandomService(engine.runSeed)))
+            : null;
+        this.director = new GlobalEventDirector(randomSource);
+        this.selector = new GlobalEventSelector(randomSource);
         this.initManager();
     }
 
