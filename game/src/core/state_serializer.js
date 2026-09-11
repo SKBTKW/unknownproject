@@ -6,7 +6,6 @@
  *    「純粋なゲーム世界データ」のみを正規化・直列化する。
  * 2. Undo の完全性検証 (Deep Equality)、Save/Load、Replay、テストに共通利用可能。
  */
-
 export function serializeGameState(state) {
     if (!state) return null;
 
@@ -22,7 +21,6 @@ export function serializeGameState(state) {
             maxDefense: state.maxDefense !== undefined ? state.maxDefense : (state.defense !== undefined ? state.defense : 10)
         };
 
-    // 1. 盤面グリッドの正規化
     const serializedGrid = [];
     if (Array.isArray(state.grid)) {
         for (let r = 0; r < state.grid.length; r++) {
@@ -85,35 +83,39 @@ export function serializeGameState(state) {
         }
     }
 
-    // 2. 手札オファリングの正規化
+    const serializeCardInstance = (card) => {
+        if (!card) return null;
+        if (card.isBlank) {
+            return {
+                isBlank: true,
+                id: card.id || null,
+                originalHandIdx: Number.isInteger(card.originalHandIdx) ? card.originalHandIdx : null
+            };
+        }
+        const master = card.terrain || card;
+        return {
+            id: card.id || null,
+            cardMasterId: card.cardMasterId || master.id || null,
+            category: master.category || card.category || "LAND",
+            rarity: master.rarity || card.rarity || "COMMON",
+            terrainId: master.terrainId || master.id || null,
+            nameKey: master.nameKey || card.nameKey || null,
+            currentShape: cloneData(card.currentShape || master.shape || [[1]], [[1]]),
+            currentAnchor: cloneData(card.currentAnchor),
+            cyclePolicy: master.cyclePolicy || card.cyclePolicy || null,
+            originalHandIdx: Number.isInteger(card.originalHandIdx) ? card.originalHandIdx : null,
+            reservedThisTurn: !!card.reservedThisTurn
+        };
+    };
+
     const serializedOffering = Array.isArray(state.handOffering)
-        ? state.handOffering.map(card => (card && !card.isBlank) ? {
-            id: card.id,
-            category: card.category || "LAND",
-            rarity: card.rarity || "COMMON",
-            terrainId: card.terrainId || (card.terrain ? card.terrain.terrainId : null),
-            nameKey: card.nameKey || (card.terrain ? card.terrain.nameKey : null),
-            shape: card.shape ? JSON.parse(JSON.stringify(card.shape)) : (card.terrain && card.terrain.shape ? JSON.parse(JSON.stringify(card.terrain.shape)) : null),
-            yields: card.yields ? { ...card.yields } : (card.terrain && card.terrain.yields ? { ...card.terrain.yields } : null),
-            cyclePolicy: card.cyclePolicy || null
-        } : null)
+        ? state.handOffering.map(serializeCardInstance)
         : [];
 
-    // 3. リザーブ保留枠の正規化
     const serializedReserve = Array.isArray(state.reserveSlots)
-        ? state.reserveSlots.map(card => card ? {
-            id: card.id,
-            category: card.category || "LAND",
-            rarity: card.rarity || "COMMON",
-            terrainId: card.terrainId || (card.terrain ? card.terrain.terrainId : null),
-            nameKey: card.nameKey || (card.terrain ? card.terrain.nameKey : null),
-            shape: card.shape ? JSON.parse(JSON.stringify(card.shape)) : (card.terrain && card.terrain.shape ? JSON.parse(JSON.stringify(card.terrain.shape)) : null),
-            yields: card.yields ? { ...card.yields } : (card.terrain && card.terrain.yields ? { ...card.terrain.yields } : null),
-            cyclePolicy: card.cyclePolicy || null
-        } : null)
+        ? state.reserveSlots.map(serializeCardInstance)
         : [];
 
-    // 4. クールダウン・UNIQUE消費の正規化
     const serializedCooldowns = {};
     if (state.cardCooldowns && typeof state.cardCooldowns === "object") {
         for (const [key, val] of Object.entries(state.cardCooldowns)) {
@@ -127,7 +129,6 @@ export function serializeGameState(state) {
         ? [...state.usedUniqueCards].sort()
         : [];
 
-    // 5. ステージ情報
     const serializedStage = state.stage ? {
         id: state.stage.id,
         name: state.stage.name,
@@ -135,7 +136,6 @@ export function serializeGameState(state) {
         maxTiles: state.stage.maxTiles
     } : { id: 1, name: "Stage 1", size: 5, maxTiles: 24 };
 
-    // 6. 純粋ゲームステート集約オブジェクト
     return {
         turn: state.turn || 1,
         ember: state.ember !== undefined ? state.ember : 20,
