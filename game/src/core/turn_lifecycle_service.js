@@ -1,4 +1,5 @@
 import { GAME_FACT_TYPES, GameFactHub } from './game_fact.js';
+import { HistorySnapshotService } from './history_snapshot_service.js';
 
 /**
  * TurnLifecycleService
@@ -25,6 +26,8 @@ export class TurnLifecycleService {
         this.gameFactHub = engine.gameFactHub || new GameFactHub();
         this.engine.gameFactHub = this.gameFactHub;
         this.engine.chronicleSystem?.attachGameFactHub?.(this.gameFactHub);
+        this.historySnapshotService = engine.historySnapshotService || new HistorySnapshotService(engine);
+        this.engine.historySnapshotService = this.historySnapshotService;
         this.phase = TURN_LIFECYCLE_PHASES.ACTIVE;
         this.lastCommittedBoundary = null;
     }
@@ -46,6 +49,7 @@ export class TurnLifecycleService {
         this.phase = TURN_LIFECYCLE_PHASES.COMMITTED;
         this.lastCommittedBoundary = boundary;
         this._emitCommittedFact(boundary);
+        this._captureHistorySnapshot(boundary);
 
         this.phase = TURN_LIFECYCLE_PHASES.INITIALIZING;
         this._initializeNextTurn();
@@ -158,6 +162,11 @@ export class TurnLifecycleService {
             completedTurn: boundary.completedTurn,
             nextTurn: boundary.nextTurn
         });
+    }
+
+    _captureHistorySnapshot(boundary) {
+        if (!this.historySnapshotService || typeof this.historySnapshotService.capture !== 'function') return null;
+        return this.historySnapshotService.capture(boundary);
     }
 
     _advanceTurnState() {

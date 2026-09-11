@@ -139,6 +139,7 @@ export function serializeGameState(state) {
         maxDefense: defenseSnapshot.maxDefense,
         mystic: state.mystic !== undefined ? state.mystic : 0,
         hasPickedThisTurn: !!state.hasPickedThisTurn,
+        hasReservedThisTurn: !!state.hasReservedThisTurn,
         hasMulliganedThisTurn: !!state.hasMulliganedThisTurn,
         permanentPlainsFoodBonus: state.permanentPlainsFoodBonus || 0,
         grid: serializedGrid,

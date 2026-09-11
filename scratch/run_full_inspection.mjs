@@ -58,6 +58,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Verse Chronicle Facts) で不合格が検出されました。");
         process.exit(1);
     }
+    const historySnapshotOk = await runCommand("node", ["scratch/test_history_snapshot_service.mjs"]);
+    if (!historySnapshotOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (History Snapshot Contract) で不合格が検出されました。");
+        process.exit(1);
+    }
 
     // ⚔️ Layer 4: Trial Phase 1〜2.7B Tests (試練・迎撃・配分プレビュー)
     console.log("\n⚔️  [LAYER 4/6] Trial Subsystem Tests (迎撃・戦闘・プレビュー)...");
