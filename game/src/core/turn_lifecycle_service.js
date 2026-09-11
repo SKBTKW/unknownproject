@@ -2,8 +2,8 @@
  * TurnLifecycleService
  *
  * Owns the boundary orchestration for advancing one turn.
- * R2 intentionally preserves the existing execution order and delegates
- * the actual turn increment / per-turn card reset to DeckManager.onNextTurn().
+ * R3 makes this service the SSOT for turn increment and per-turn flag reset.
+ * DeckManager remains responsible only for regenerating the offering.
  *
  * Verse presentation/semantics are intentionally out of scope here.
  */
@@ -52,14 +52,10 @@ export class TurnLifecycleService {
             engine.globalEventManager.tickTurn();
         }
 
-        // Compatibility boundary: ownership moves out of DeckManager only in
-        // the next refactor step after this extraction is regression-tested.
-        if (engine.deckManager) {
-            engine.deckManager.onNextTurn();
-        } else if (state) {
-            state.turn++;
-            state.hasPickedThisTurn = false;
-            state.hasMulliganedThisTurn = false;
+        this._advanceTurnState();
+
+        if (engine.deckManager && typeof engine.deckManager.generateOfferingCards === "function") {
+            engine.deckManager.generateOfferingCards();
         }
 
         if (engine.globalEventManager) {
@@ -98,6 +94,16 @@ export class TurnLifecycleService {
         }
 
         return state ? state.turn : 1;
+    }
+
+    _advanceTurnState() {
+        const state = this.engine.state;
+        if (!state) return;
+
+        state.turn++;
+        state.hasPickedThisTurn = false;
+        state.hasReservedThisTurn = false;
+        state.hasMulliganedThisTurn = false;
     }
 
     _translate(key, params, fallback) {
