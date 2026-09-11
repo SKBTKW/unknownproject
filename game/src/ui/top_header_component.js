@@ -7,7 +7,7 @@ import { FloatingFeedbackService } from './floating_feedback_service.js';
  * 
  * 責務:
  * 1. 資源（🌾食料 / 🧱資材 / 🛡️防衛力 / ✨神秘）および産出予測レートの描画更新
- * 2. ターン数・Stage規模・残りターン表示の更新
+ * 2. Verse表示・Stage規模・残りターン表示の更新
  * 3. 🔥残り火表示および EmberStatusComponent の更新統括
  * 4. 領土マスバッジ (TerritoryBadgeComponent) の更新
  * 5. ⚠️ 試練カウントダウンバッジの点灯・予告制御
@@ -62,10 +62,11 @@ export class TopHeaderComponent {
             ? this.state.getCurrentDefense()
             : Math.min(this.state.currentDefense ?? maxDefense, maxDefense);
 
-        // 1. タイトル ＆ ターン数
+        // 1. タイトル ＆ Verse表示
         this.setElementText("lblDataPanelTitle", I18n.t("UI_DATA_PANEL_TITLE"));
         this.setElementText("valTurn", this.state.turn);
         this.setElementText("valTurnBg", String(this.state.turn).padStart(2, '0'));
+        this.setElementText("btnTurnEnd", "NEXT verse »");
 
         // 2. 🔥 残り火ステータスコンポーネント (EmberStatusComponent) 連動
         if (this.emberStatusComponent && typeof this.emberStatusComponent.update === "function") {
