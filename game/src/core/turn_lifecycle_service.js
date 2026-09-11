@@ -53,6 +53,7 @@ export class TurnLifecycleService {
 
         this.phase = TURN_LIFECYCLE_PHASES.INITIALIZING;
         this._initializeNextTurn();
+        this._captureRestorePoint(boundary);
 
         this.phase = TURN_LIFECYCLE_PHASES.ACTIVE;
         return this.engine.state ? this.engine.state.turn : 1;
@@ -167,6 +168,14 @@ export class TurnLifecycleService {
     _captureHistorySnapshot(boundary) {
         if (!this.historySnapshotService || typeof this.historySnapshotService.capture !== 'function') return null;
         return this.historySnapshotService.capture(boundary);
+    }
+
+    _captureRestorePoint(boundary) {
+        if (!this.historySnapshotService || typeof this.historySnapshotService.captureRestorePoint !== 'function') return null;
+        return this.historySnapshotService.captureRestorePoint({
+            verse: boundary.nextTurn,
+            sourceCompletedTurn: boundary.completedTurn
+        });
     }
 
     _advanceTurnState() {
