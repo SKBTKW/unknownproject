@@ -10,6 +10,11 @@
 export function serializeGameState(state) {
     if (!state) return null;
 
+    const cloneData = (value, fallback = null) => {
+        if (value === undefined) return fallback;
+        return JSON.parse(JSON.stringify(value));
+    };
+
     const defenseSnapshot = state.defenseSystem && typeof state.defenseSystem.reconcileWithMax === "function"
         ? state.defenseSystem.reconcileWithMax()
         : {
@@ -118,6 +123,9 @@ export function serializeGameState(state) {
     const serializedConsumedUniques = Array.isArray(state.consumedUniqueCards)
         ? [...state.consumedUniqueCards].sort()
         : [];
+    const serializedUsedUniques = Array.isArray(state.usedUniqueCards)
+        ? [...state.usedUniqueCards].sort()
+        : [];
 
     // 5. ステージ情報
     const serializedStage = state.stage ? {
@@ -131,6 +139,7 @@ export function serializeGameState(state) {
     return {
         turn: state.turn || 1,
         ember: state.ember !== undefined ? state.ember : 20,
+        maxEmber: state.maxEmber !== undefined ? state.maxEmber : 20,
         food: state.food !== undefined ? state.food : 50,
         wood: state.wood !== undefined ? state.wood : 30,
         defense: state.defense !== undefined ? state.defense : 10,
@@ -141,11 +150,40 @@ export function serializeGameState(state) {
         hasPickedThisTurn: !!state.hasPickedThisTurn,
         hasReservedThisTurn: !!state.hasReservedThisTurn,
         hasMulliganedThisTurn: !!state.hasMulliganedThisTurn,
+        mergeGroupCounter: Number.isInteger(state.mergeGroupCounter) ? state.mergeGroupCounter : 1,
+        placementGroupCounter: Number.isInteger(state.placementGroupCounter) ? state.placementGroupCounter : 1,
+        grantedConnectionPairs: Array.from(state.grantedConnectionPairs || []).sort(),
+        handOfferingSize: Number.isInteger(state.handOfferingSize) ? state.handOfferingSize : 3,
+        nextTrialDamageMitigation: state.nextTrialDamageMitigation !== undefined ? state.nextTrialDamageMitigation : 1.0,
+        nextTrialMultiplier: state.nextTrialMultiplier !== undefined ? state.nextTrialMultiplier : 1.0,
+        trialSchedule: cloneData(state.trialSchedule),
+        nextTrialTurn: state.nextTrialTurn !== undefined ? state.nextTrialTurn : null,
+        activeConstructionProjects: cloneData(state.activeConstructionProjects, []),
+        activeDrawBias: cloneData(state.activeDrawBias),
+        placedBlockCount: Number.isFinite(state.placedBlockCount) ? state.placedBlockCount : 0,
         permanentPlainsFoodBonus: state.permanentPlainsFoodBonus || 0,
+        permanentVicinityDefenseBonus: state.permanentVicinityDefenseBonus || 0,
+        emberConsumptionReducedTurns: state.emberConsumptionReducedTurns || 0,
+        emberConsumptionStartsNextTurn: !!state.emberConsumptionStartsNextTurn,
+        vigilanceTurns: state.vigilanceTurns || 0,
+        vigilanceStartsNextTurn: !!state.vigilanceStartsNextTurn,
+        grandCultivationTurns: state.grandCultivationTurns || 0,
+        grandCultivationStartsNextTurn: !!state.grandCultivationStartsNextTurn,
+        systematicLoggingTurns: state.systematicLoggingTurns || 0,
+        systematicLoggingStartsNextTurn: !!state.systematicLoggingStartsNextTurn,
+        emergencyLevyTurns: state.emergencyLevyTurns || 0,
+        emergencyLevyStartsNextTurn: !!state.emergencyLevyStartsNextTurn,
+        manifestMiracleTurns: state.manifestMiracleTurns || 0,
+        manifestMiracleStartsNextTurn: !!state.manifestMiracleStartsNextTurn,
+        reserveFeeWaivedTurns: state.reserveFeeWaivedTurns || 0,
+        reserveFeeWaivedStartsNextTurn: !!state.reserveFeeWaivedStartsNextTurn,
+        temporaryDefense: state.temporaryDefense || 0,
+        temporaryDefenseTurns: state.temporaryDefenseTurns || 0,
         grid: serializedGrid,
         handOffering: serializedOffering,
         reserveSlots: serializedReserve,
         cardCooldowns: serializedCooldowns,
+        usedUniqueCards: serializedUsedUniques,
         consumedUniqueCards: serializedConsumedUniques,
         mergedBlocks: state.mergedBlocks
             ? JSON.parse(JSON.stringify(state.mergedBlocks))
