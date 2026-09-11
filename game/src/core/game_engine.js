@@ -16,6 +16,7 @@ import { CellViewDataService } from '../services/cell_view_data_service.js';
 import { ActionTransactionManager } from './transaction_manager.js';
 import { resolvePlacementGeometry } from './placement_geometry.js';
 import { CheckSystem } from './check_system/check_system.js';
+import { TurnLifecycleService } from './turn_lifecycle_service.js';
 import { GameState } from '../v2_unity_ready_main.js';
 
 function normalizeRunSeed(seed) {
@@ -97,6 +98,10 @@ class GameEngine {
         const CardCycleSystemClass = dependencies.CardCycleSystemClass || CardCycleSystem;
         this.cardCycleSystem = dependencies.cardCycleSystem || (CardCycleSystemClass ? new CardCycleSystemClass(this.state, this) : null);
 
+        const TurnLifecycleServiceClass = dependencies.TurnLifecycleServiceClass || TurnLifecycleService;
+        this.turnLifecycleService = dependencies.turnLifecycleService
+            || (TurnLifecycleServiceClass ? new TurnLifecycleServiceClass(this) : null);
+
         // 4. GameState への双方向リンク確立
         if (this.state) {
             this.state.engine = this;
@@ -133,91 +138,13 @@ class GameEngine {
         autoFallbackEnabled = true,
         useHypotheticalFallback = false
     } = {}) {
-        if (this.transactionManager) this.transactionManager.clearHistory();
-        if (this.undoSystem) this.undoSystem.clearSnapshot();
-
-        const maintenancePreview = this.previewTurnEndMaintenance({ autoFallbackEnabled });
-        const prods = maintenancePreview.production;
-
-        // 1. 資源総産出の加算。食料維持費はmaintenanceだけが一度控除する。
-        if (this.state) {
-            this.state.food += (prods.grossFood ?? 0);
-            this.state.wood += (prods.totalWood ?? 0);
-            this.state.material = this.state.wood;
-            this.state.mystic += (prods.totalMystic ?? 1);
+        if (!this.turnLifecycleService || typeof this.turnLifecycleService.advance !== "function") {
+            throw new Error("TURN_LIFECYCLE_SERVICE_REQUIRED");
         }
-
-        const fallbackPlan = !autoFallbackEnabled
-            && useHypotheticalFallback
-            && maintenancePreview.hypotheticalFallbackPlan.canFullyCover
-            ? maintenancePreview.hypotheticalFallbackPlan
-            : maintenancePreview.automaticPlan;
-
-        // 2. ターン終了維持費（食料-20等）
-        if (this.state && typeof this.state.processTurnEndMaintenance === 'function') {
-            this.lastTurnMaintenanceResult = this.state.processTurnEndMaintenance({
-                ...maintenancePreview,
-                fallbackPlan
-            });
-        }
-
-        // 🌍 2.5. グローバルイベントのターン経過処理 (持続減衰・失効)
-        if (this.globalEventManager) {
-            this.globalEventManager.tickTurn();
-        }
-
-        // 3. 手札オファリング再生成 ＆ マリガン権回復
-        if (this.deckManager) {
-            this.deckManager.onNextTurn();
-        } else if (this.state) {
-            this.state.turn++;
-            this.state.hasPickedThisTurn = false;
-            this.state.hasMulliganedThisTurn = false;
-        }
-
-        // 🌍 3.5. 新ターン開始時のグローバルイベント発生判定
-        if (this.globalEventManager) {
-            this.globalEventManager.onTurnStart();
-        }
-
-        // ⚔️ 4. 試練到達チェック ＆ テスト用自動ステージ昇格（5x5 ➔ 7x7 拡大）
-        if (this.state && this.state.trialSchedule) {
-            const currentTurn = this.state.turn;
-            if (this.state.stage && this.state.stage.id === 1 && currentTurn >= this.state.trialSchedule.trial1) {
-                // 第1試練 到達 ➔ Stage 2 (7x7) へ昇格
-                this.state.stage = { id: 2, name: "Stage 2", size: 7, maxTiles: 48 };
-                this.state.nextTrialTurn = this.state.trialSchedule.trial2;
-                if (this.gridEngine) {
-                    this.gridEngine.expandGrid(7);
-                }
-                if (this.state.addLog) {
-                    const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
-                    const logMsg = I18n ? I18n.t("LOG_STAGE_EXPAND", { stage: 2, size: 7 }) : `⚔️ Stage 2 (7x7)`;
-                    this.state.addLog(logMsg);
-                }
-            } else if (this.state.stage && this.state.stage.id === 2 && currentTurn >= this.state.trialSchedule.trial2) {
-                // 第2試練 到達 ➔ Stage 3 (9x9) へ昇格
-                this.state.stage = { id: 3, name: "Stage 3", size: 9, maxTiles: 80 };
-                this.state.nextTrialTurn = this.state.trialSchedule.trial3;
-                if (this.gridEngine) {
-                    this.gridEngine.expandGrid(9);
-                }
-                if (this.state.addLog) {
-                    const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
-                    const logMsg = I18n ? I18n.t("LOG_STAGE_EXPAND", { stage: 3, size: 9 }) : `⚔️ Stage 3 (9x9)`;
-                    this.state.addLog(logMsg);
-                }
-            }
-        }
-
-        // 5. ログ出力
-        if (this.state && typeof this.state.addLog === 'function') {
-            const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
-            const logMsg = I18n ? I18n.t("LOG_TURN_START", { turn: this.state.turn }) : `Turn ${this.state.turn} started.`;
-            this.state.addLog(logMsg);
-        }
-
-        return this.state ? this.state.turn : 1;
+        return this.turnLifecycleService.advance({
+            autoFallbackEnabled,
+            useHypotheticalFallback
+        });
     }
 
     previewTurnEndMaintenance({ autoFallbackEnabled = true } = {}) {
