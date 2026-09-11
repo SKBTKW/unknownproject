@@ -68,6 +68,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (StateSerializer Restore Coverage) で不合格が検出されました。");
         process.exit(1);
     }
+    const gameplayRandomOk = await runCommand("node", ["scratch/test_gameplay_random_service.mjs"]);
+    if (!gameplayRandomOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Gameplay RNG Contract) で不合格が検出されました。");
+        process.exit(1);
+    }
 
     // ⚔️ Layer 4: Trial Phase 1〜2.7B Tests (試練・迎撃・配分プレビュー)
     console.log("\n⚔️  [LAYER 4/6] Trial Subsystem Tests (迎撃・戦闘・プレビュー)...");

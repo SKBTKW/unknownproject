@@ -41,6 +41,7 @@ export class HistorySnapshotService {
             resumeTurn: nextTurn,
             gameState: serializeGameState(state),
             rngState: cloneData(engine.checkSystem?.getState?.()),
+            gameplayRngState: cloneData(engine.gameplayRandom?.getState?.()),
             chronicle: cloneData(engine.chronicleSystem?.getAllEvents?.(), []),
             runtime: {
                 runSeed: Number.isFinite(engine.runSeed) ? engine.runSeed : null,
