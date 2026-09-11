@@ -24,6 +24,7 @@ const state = {
     material: 7,
     mystic: 2,
     hasPickedThisTurn: true,
+    hasReservedThisTurn: true,
     hasMulliganedThisTurn: true,
     stage: { id: 1, name: 'Stage 1', size: 5, maxTiles: 24 },
     trialSchedule: { trial1: 5, trial2: 30, trial3: 50 },
@@ -59,11 +60,8 @@ const engine = {
         onTurnStart: () => calls.push('global.start')
     },
     deckManager: {
-        onNextTurn() {
-            calls.push('deck.next');
-            state.turn++;
-            state.hasPickedThisTurn = false;
-            state.hasMulliganedThisTurn = false;
+        generateOfferingCards() {
+            calls.push('deck.offering');
         }
     },
     gridEngine: {
@@ -75,15 +73,23 @@ const lifecycle = new TurnLifecycleService(engine);
 const result = lifecycle.advance();
 
 assert(result === 5, 'returns the advanced turn');
-assert(state.turn === 5, 'keeps turn increment delegated to DeckManager during R2');
+assert(state.turn === 5, 'TurnLifecycleService owns the turn increment');
+assert(
+    state.hasPickedThisTurn === false
+        && state.hasReservedThisTurn === false
+        && state.hasMulliganedThisTurn === false,
+    'TurnLifecycleService resets all per-turn action flags'
+);
 assert(state.food === 15, 'applies gross production before maintenance');
 assert(state.wood === 11 && state.material === 11, 'keeps wood/material alias synchronized');
 assert(state.mystic === 3, 'applies mystic production');
 assert(state.stage.id === 2 && state.nextTrialTurn === 30, 'runs stage transition after advancing the turn');
+assert(calls.includes('deck.offering'), 'DeckManager is used only to regenerate the offering');
+assert(!calls.includes('deck.next'), 'TurnLifecycleService no longer delegates turn ownership to DeckManager.onNextTurn');
 assert(
-    calls.indexOf('global.tick') < calls.indexOf('deck.next')
-        && calls.indexOf('deck.next') < calls.indexOf('global.start'),
-    'preserves global-event tick -> turn advance -> turn-start order'
+    calls.indexOf('global.tick') < calls.indexOf('deck.offering')
+        && calls.indexOf('deck.offering') < calls.indexOf('global.start'),
+    'preserves global-event tick -> turn advance/offering -> turn-start order'
 );
 assert(
     calls.indexOf('global.start') < calls.indexOf('grid.expand:7'),
