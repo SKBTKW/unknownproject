@@ -61,8 +61,10 @@ class GameState {
             this.grantedConnectionPairs = new Set();
 
             // ⚔️ 3大試練スケジュール（±3前後ランダム決定 ＆ 5T前アナウンス）
-            const randomOffset1 = Math.floor(Math.random() * 7) - 3; // -3 to +3
-            const randomOffset2 = Math.floor(Math.random() * 7) - 3; // -3 to +3
+            const randomOffset1 = this.engine?.gameplayRandom?.nextInt?.(-3, 3)
+                ?? (Math.floor(Math.random() * 7) - 3); // -3 to +3
+            const randomOffset2 = this.engine?.gameplayRandom?.nextInt?.(-3, 3)
+                ?? (Math.floor(Math.random() * 7) - 3); // -3 to +3
             this.trialSchedule = {
                 trial1: Math.max(12, Math.min(18, 15 + randomOffset1)), // Turn 12〜18
                 trial2: Math.max(27, Math.min(33, 30 + randomOffset2)), // Turn 27〜33
@@ -186,7 +188,8 @@ class GameState {
             }
 
             for (let i = candidates.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
+                const j = this.engine?.gameplayRandom?.nextInt?.(0, i)
+                    ?? Math.floor(Math.random() * (i + 1));
                 [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
             }
 

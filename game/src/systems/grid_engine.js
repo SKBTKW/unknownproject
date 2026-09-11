@@ -24,6 +24,22 @@ class GridEngine {
         this.engine = engine;
     }
 
+    _nextGameplayFloat() {
+        return this.engine?.gameplayRandom?.nextFloat?.()
+            ?? ((this.state && typeof this.state.rng === "function") ? this.state.rng() : Math.random());
+    }
+
+    _shuffle(items) {
+        if (this.engine?.gameplayRandom?.shuffle) {
+            return this.engine.gameplayRandom.shuffle(items);
+        }
+        for (let i = items.length - 1; i > 0; i--) {
+            const j = Math.floor(this._nextGameplayFloat() * (i + 1));
+            [items[i], items[j]] = [items[j], items[i]];
+        }
+        return items;
+    }
+
     /**
      * 🌐 盤面グリッド初期化（本営中央配置 ＆ ソケット非隣接ランダム配置）
      * @param {number} size - グリッドサイズ（デフォルト 5）
@@ -67,11 +83,7 @@ class GridEngine {
             }
         }
 
-        // Fisher-Yates シャッフル
-        for (let i = candidates.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
-        }
+        this._shuffle(candidates);
 
         // 🚫 ソケット同士の隣接禁止ルール（縦・横・斜めで接しないマスを順次選定）
         const selectedSockets = [];
@@ -246,11 +258,7 @@ class GridEngine {
             }
         }
 
-        // Fisher-Yates シャッフル
-        for (let i = perimeterCandidates.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [perimeterCandidates[i], perimeterCandidates[j]] = [perimeterCandidates[j], perimeterCandidates[i]];
-        }
+        this._shuffle(perimeterCandidates);
 
         const addedSockets = [];
         for (const cand of perimeterCandidates) {
@@ -274,10 +282,7 @@ class GridEngine {
             }
         }
 
-        for (let i = allCandidates.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [allCandidates[i], allCandidates[j]] = [allCandidates[j], allCandidates[i]];
-        }
+        this._shuffle(allCandidates);
 
         for (const cand of allCandidates) {
             if (addedSockets.length >= 4) break;
@@ -578,7 +583,7 @@ class GridEngine {
                         } else {
                             if (!cell.cachedSocketSeeds) cell.cachedSocketSeeds = {};
                             const baseTid = terrain.terrainId || terrain.id || "";
-                            const getRng = () => (this.state && typeof this.state.rng === "function") ? this.state.rng() : Math.random();
+                            const getRng = () => this._nextGameplayFloat();
 
                             // 1. 湿原: ソケット60%、通常マス20%で湖を発見
                             if (baseTid.includes("WETLAND")) {
