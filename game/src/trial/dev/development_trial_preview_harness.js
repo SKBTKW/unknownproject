@@ -1,4 +1,5 @@
 import { isDevelopmentMode } from "../../config/dev_mode.js";
+import { TrialRestoreBoundaryService } from "../../core/trial_restore_boundary_service.js";
 import { getTrialPreviewScenario } from "./trial_preview_scenarios.js";
 
 function createCell(r, c) {
@@ -46,6 +47,13 @@ export class DevelopmentTrialPreviewHarness {
         this.ui = uiController;
         this.devModeResolver = devModeResolver;
         this.session = null;
+
+        const engine = uiController?.engine || null;
+        this.trialRestoreBoundaryService = engine?.trialRestoreBoundaryService
+            || (engine ? new TrialRestoreBoundaryService(engine) : null);
+        if (engine && this.trialRestoreBoundaryService) {
+            engine.trialRestoreBoundaryService = this.trialRestoreBoundaryService;
+        }
     }
 
     isAvailable() {
@@ -88,6 +96,7 @@ export class DevelopmentTrialPreviewHarness {
             deployedDefense: scenarioDefinition.deployedDefense,
             routeId: routes[0]?.id || scenarioDefinition.routeId
         });
+        this.trialRestoreBoundaryService?.begin?.(this.ui.state?.turn);
         return { success: true, scenarioId: scenarioDefinition.id };
     }
 
@@ -95,6 +104,7 @@ export class DevelopmentTrialPreviewHarness {
         if (!this.session) return false;
         this.session = null;
         this.ui.stopTrialInterceptionPreview();
+        this.trialRestoreBoundaryService?.end?.();
         return true;
     }
 

@@ -63,6 +63,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (History Snapshot Contract) で不合格が検出されました。");
         process.exit(1);
     }
+    const trialRestoreBoundaryOk = await runCommand("node", ["scratch/test_trial_restore_boundary_service.mjs"]);
+    if (!trialRestoreBoundaryOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Trial Restore Boundary Contract) で不合格が検出されました。");
+        process.exit(1);
+    }
     const serializerCoverageOk = await runCommand("node", ["scratch/test_state_serializer_restore_coverage.mjs"]);
     if (!serializerCoverageOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (StateSerializer Restore Coverage) で不合格が検出されました。");
