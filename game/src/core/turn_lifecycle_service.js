@@ -7,20 +7,54 @@
  *
  * Verse presentation/semantics are intentionally out of scope here.
  */
+export const TURN_LIFECYCLE_PHASES = Object.freeze({
+    ACTIVE: "ACTIVE",
+    COMMITTING: "COMMITTING",
+    COMMITTED: "COMMITTED",
+    INITIALIZING: "INITIALIZING"
+});
+
 export class TurnLifecycleService {
     constructor(engine) {
         if (!engine) {
             throw new TypeError("TURN_LIFECYCLE_ENGINE_REQUIRED");
         }
         this.engine = engine;
+        this.phase = TURN_LIFECYCLE_PHASES.ACTIVE;
+        this.lastCommittedBoundary = null;
     }
 
     advance({
         autoFallbackEnabled = true,
         useHypotheticalFallback = false
     } = {}) {
+        if (this.phase !== TURN_LIFECYCLE_PHASES.ACTIVE) {
+            throw new Error(`TURN_LIFECYCLE_NOT_ACTIVE:${this.phase}`);
+        }
+
+        this.phase = TURN_LIFECYCLE_PHASES.COMMITTING;
+        const boundary = this._commitCurrentTurn({
+            autoFallbackEnabled,
+            useHypotheticalFallback
+        });
+
+        this.phase = TURN_LIFECYCLE_PHASES.COMMITTED;
+        this.lastCommittedBoundary = boundary;
+
+        this.phase = TURN_LIFECYCLE_PHASES.INITIALIZING;
+        this._initializeNextTurn();
+
+        this.phase = TURN_LIFECYCLE_PHASES.ACTIVE;
+        return this.engine.state ? this.engine.state.turn : 1;
+    }
+
+    _commitCurrentTurn({
+        autoFallbackEnabled = true,
+        useHypotheticalFallback = false
+    } = {}) {
         const engine = this.engine;
         const state = engine.state;
+        const completedTurn = state ? state.turn : 1;
 
         if (engine.transactionManager) engine.transactionManager.clearHistory();
         if (engine.undoSystem) engine.undoSystem.clearSnapshot();
@@ -51,6 +85,16 @@ export class TurnLifecycleService {
         if (engine.globalEventManager) {
             engine.globalEventManager.tickTurn();
         }
+
+        return Object.freeze({
+            completedTurn,
+            nextTurn: completedTurn + 1
+        });
+    }
+
+    _initializeNextTurn() {
+        const engine = this.engine;
+        const state = engine.state;
 
         this._advanceTurnState();
 
@@ -92,8 +136,14 @@ export class TurnLifecycleService {
                 `Turn ${state.turn} started.`
             ));
         }
+    }
 
-        return state ? state.turn : 1;
+    getPhase() {
+        return this.phase;
+    }
+
+    getLastCommittedBoundary() {
+        return this.lastCommittedBoundary;
     }
 
     _advanceTurnState() {

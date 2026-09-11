@@ -1,4 +1,7 @@
-import { TurnLifecycleService } from '../game/src/core/turn_lifecycle_service.js';
+import {
+    TurnLifecycleService,
+    TURN_LIFECYCLE_PHASES
+} from '../game/src/core/turn_lifecycle_service.js';
 
 console.log('=== TurnLifecycleService regression contract ===');
 
@@ -72,6 +75,9 @@ const engine = {
 const lifecycle = new TurnLifecycleService(engine);
 const result = lifecycle.advance();
 
+assert(lifecycle.getPhase() === TURN_LIFECYCLE_PHASES.ACTIVE, 'returns to ACTIVE after advancing');
+assert(lifecycle.getLastCommittedBoundary()?.completedTurn === 4, 'records the committed turn before increment');
+assert(lifecycle.getLastCommittedBoundary()?.nextTurn === 5, 'records the next turn boundary');
 assert(result === 5, 'returns the advanced turn');
 assert(state.turn === 5, 'TurnLifecycleService owns the turn increment');
 assert(
