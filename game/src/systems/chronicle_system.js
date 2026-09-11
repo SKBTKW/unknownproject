@@ -3,6 +3,8 @@
    50ターンの歴史・出来事を3層重要度で統合記録する年代記システム (Pure & Unity Ready)
    ============================================================= */
 
+import { GAME_FACT_TYPES } from '../core/game_fact.js';
+
 export const CHRONICLE_IMPORTANCE = {
     MINOR: "MINOR",       // 👤 個人史 (通常マージ・通常資源発見・小規模出来事)
     MAJOR: "MAJOR",       // 🌍 ラン主要史 (大寒波・大防塁・亜人襲撃・好機イベント)
@@ -16,9 +18,43 @@ const IMPORTANCE_WEIGHT = {
 };
 
 export class ChronicleSystem {
-    constructor(gameState = null) {
+    constructor(gameState = null, gameFactHub = null) {
         this.state = gameState;
         this.events = [];
+        this.unsubscribeFact = null;
+        if (gameFactHub) this.attachGameFactHub(gameFactHub);
+    }
+
+    attachGameFactHub(gameFactHub) {
+        if (this.unsubscribeFact) this.unsubscribeFact();
+        this.unsubscribeFact = gameFactHub?.subscribe?.(fact => this.recordGameFact(fact)) || null;
+        return this.unsubscribeFact;
+    }
+
+    recordGameFact(fact) {
+        if (fact?.type !== GAME_FACT_TYPES.VERSE_COMMITTED) return null;
+
+        const completedTurn = Number(fact.payload?.completedTurn);
+        if (!Number.isInteger(completedTurn) || completedTurn < 1) return null;
+
+        const id = `VERSE_COMMITTED_${completedTurn}`;
+        const existing = this.events.find(event => event.id === id);
+        if (existing) return existing;
+
+        const nextTurnRaw = Number(fact.payload?.nextTurn);
+        const nextTurn = Number.isInteger(nextTurnRaw) ? nextTurnRaw : completedTurn + 1;
+
+        return this.record({
+            turn: completedTurn,
+            type: GAME_FACT_TYPES.VERSE_COMMITTED,
+            id,
+            nameKey: "CHRONICLE_VERSE_COMMITTED",
+            importance: CHRONICLE_IMPORTANCE.MINOR,
+            meta: {
+                verse: completedTurn,
+                nextVerse: nextTurn
+            }
+        });
     }
 
     /**
@@ -61,6 +97,11 @@ export class ChronicleSystem {
      */
     clear() {
         this.events = [];
+    }
+
+    destroy() {
+        if (this.unsubscribeFact) this.unsubscribeFact();
+        this.unsubscribeFact = null;
     }
 }
 

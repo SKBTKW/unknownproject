@@ -48,6 +48,16 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Domain Tests) で不合格が検出されました。");
         process.exit(1);
     }
+    const turnLifecycleOk = await runCommand("node", ["scratch/test_turn_lifecycle_service.mjs"]);
+    if (!turnLifecycleOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Turn Lifecycle Contract) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const verseChronicleOk = await runCommand("node", ["scratch/test_verse_chronicle_facts.mjs"]);
+    if (!verseChronicleOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Verse Chronicle Facts) で不合格が検出されました。");
+        process.exit(1);
+    }
 
     // ⚔️ Layer 4: Trial Phase 1〜2.7B Tests (試練・迎撃・配分プレビュー)
     console.log("\n⚔️  [LAYER 4/6] Trial Subsystem Tests (迎撃・戦闘・プレビュー)...");

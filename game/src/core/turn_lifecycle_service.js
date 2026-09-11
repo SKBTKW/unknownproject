@@ -1,3 +1,5 @@
+import { GAME_FACT_TYPES, GameFactHub } from './game_fact.js';
+
 /**
  * TurnLifecycleService
  *
@@ -20,6 +22,9 @@ export class TurnLifecycleService {
             throw new TypeError("TURN_LIFECYCLE_ENGINE_REQUIRED");
         }
         this.engine = engine;
+        this.gameFactHub = engine.gameFactHub || new GameFactHub();
+        this.engine.gameFactHub = this.gameFactHub;
+        this.engine.chronicleSystem?.attachGameFactHub?.(this.gameFactHub);
         this.phase = TURN_LIFECYCLE_PHASES.ACTIVE;
         this.lastCommittedBoundary = null;
     }
@@ -40,6 +45,7 @@ export class TurnLifecycleService {
 
         this.phase = TURN_LIFECYCLE_PHASES.COMMITTED;
         this.lastCommittedBoundary = boundary;
+        this._emitCommittedFact(boundary);
 
         this.phase = TURN_LIFECYCLE_PHASES.INITIALIZING;
         this._initializeNextTurn();
@@ -144,6 +150,14 @@ export class TurnLifecycleService {
 
     getLastCommittedBoundary() {
         return this.lastCommittedBoundary;
+    }
+
+    _emitCommittedFact(boundary) {
+        if (!this.gameFactHub || typeof this.gameFactHub.emit !== "function") return null;
+        return this.gameFactHub.emit(GAME_FACT_TYPES.VERSE_COMMITTED, {
+            completedTurn: boundary.completedTurn,
+            nextTurn: boundary.nextTurn
+        });
     }
 
     _advanceTurnState() {
