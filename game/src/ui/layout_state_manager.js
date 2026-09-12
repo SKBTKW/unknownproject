@@ -29,9 +29,17 @@ export const BOARD_VIEW_MODES = Object.freeze({
     QUARTER: "quarter"
 });
 
+// Board presentation context is intentionally independent from renderer/view mode.
+// Do not replace these two axes with combined states such as TOP_TRIAL.
+export const BOARD_CONTEXT_MODES = Object.freeze({
+    NORMAL: "normal",
+    TRIAL: "trial"
+});
+
 const VALID_LAYOUT_STATES = new Set(Object.values(UI_LAYOUT_STATES));
 const VALID_CONTEXT_OWNERS = new Set(Object.values(RIGHT_CONTEXT_OWNERS));
 const VALID_BOARD_VIEW_MODES = new Set(Object.values(BOARD_VIEW_MODES));
+const VALID_BOARD_CONTEXT_MODES = new Set(Object.values(BOARD_CONTEXT_MODES));
 
 export class LayoutStateManager {
     constructor({ documentRef = typeof document !== "undefined" ? document : null } = {}) {
@@ -40,6 +48,7 @@ export class LayoutStateManager {
         this.contextOwner = RIGHT_CONTEXT_OWNERS.NONE;
         this.advisorReturnState = UI_LAYOUT_STATES.NORMAL;
         this.boardViewMode = BOARD_VIEW_MODES.TOP;
+        this.boardContextMode = BOARD_CONTEXT_MODES.NORMAL;
         this.adapters = {};
         this.applyRootState();
     }
@@ -52,6 +61,7 @@ export class LayoutStateManager {
     getState() { return this.state; }
     getContextOwner() { return this.contextOwner; }
     getBoardViewMode() { return this.boardViewMode; }
+    getBoardContextMode() { return this.boardContextMode; }
 
     setState(nextState) {
         if (!VALID_LAYOUT_STATES.has(nextState)) throw new Error(`Unknown layout state: ${nextState}`);
@@ -74,6 +84,13 @@ export class LayoutStateManager {
         this.boardViewMode = nextMode;
         this.applyContract();
         return this.boardViewMode;
+    }
+
+    setBoardContextMode(nextMode) {
+        if (!VALID_BOARD_CONTEXT_MODES.has(nextMode)) throw new Error(`Unknown board context mode: ${nextMode}`);
+        this.boardContextMode = nextMode;
+        this.applyContract();
+        return this.boardContextMode;
     }
 
     openHand() {
@@ -124,11 +141,15 @@ export class LayoutStateManager {
     }
 
     enterTrial() {
+        // Entering a real Trial defaults the board presentation to Trial context,
+        // while the renderer axis (2D / 2.5D) is preserved independently.
+        this.boardContextMode = BOARD_CONTEXT_MODES.TRIAL;
         this.advisorReturnState = UI_LAYOUT_STATES.TRIAL;
         this.setState(UI_LAYOUT_STATES.TRIAL);
     }
 
     exitTrial() {
+        this.boardContextMode = BOARD_CONTEXT_MODES.NORMAL;
         this.advisorReturnState = UI_LAYOUT_STATES.NORMAL;
         this.setState(UI_LAYOUT_STATES.NORMAL);
     }
@@ -138,6 +159,7 @@ export class LayoutStateManager {
         this.state = UI_LAYOUT_STATES.NORMAL;
         this.contextOwner = RIGHT_CONTEXT_OWNERS.NONE;
         this.advisorReturnState = UI_LAYOUT_STATES.NORMAL;
+        this.boardContextMode = BOARD_CONTEXT_MODES.NORMAL;
         this.applyRootState();
     }
 
@@ -166,6 +188,9 @@ export class LayoutStateManager {
     }
 
     getPlayerTrayMode() {
+        // Player Tray mode follows actual gameplay phase, not board presentation context.
+        // This allows a NORMAL run to inspect the unlocked Trial board context without
+        // incorrectly mounting live Trial controls.
         if (this.state === UI_LAYOUT_STATES.TRIAL
             || (this.state === UI_LAYOUT_STATES.ADVISOR_EXPANDED && this.advisorReturnState === UI_LAYOUT_STATES.TRIAL)) {
             return PLAYER_TRAY_MODES.TRIAL;
@@ -177,21 +202,31 @@ export class LayoutStateManager {
         const handState = this.getHandState();
         const playerTrayMode = this.getPlayerTrayMode();
         const boardViewMode = this.getBoardViewMode();
+        const boardContextMode = this.getBoardContextMode();
         const advisorExpanded = this.state === UI_LAYOUT_STATES.ADVISOR_EXPANDED;
         const trialContextVisible = this.contextOwner === RIGHT_CONTEXT_OWNERS.TRIAL;
-        this.applyRootState(handState, playerTrayMode, boardViewMode);
+        this.applyRootState(handState, playerTrayMode, boardViewMode, boardContextMode);
         this.adapters.setHandState?.(handState);
         this.adapters.setPlayerTrayMode?.(playerTrayMode);
         this.adapters.setBoardViewMode?.(boardViewMode);
+        this.adapters.setBoardContextMode?.(boardContextMode);
         this.adapters.setAdvisorExpanded?.(advisorExpanded);
         this.adapters.setTrialContextVisible?.(trialContextVisible);
-        this.adapters.onChange?.({ state: this.state, contextOwner: this.contextOwner, handState, playerTrayMode, boardViewMode });
+        this.adapters.onChange?.({
+            state: this.state,
+            contextOwner: this.contextOwner,
+            handState,
+            playerTrayMode,
+            boardViewMode,
+            boardContextMode
+        });
     }
 
     applyRootState(
         handState = this.getHandState(),
         playerTrayMode = this.getPlayerTrayMode(),
-        boardViewMode = this.getBoardViewMode()
+        boardViewMode = this.getBoardViewMode(),
+        boardContextMode = this.getBoardContextMode()
     ) {
         const roots = [this.documentRef?.documentElement, this.documentRef?.body].filter(Boolean);
         roots.forEach(root => {
@@ -201,6 +236,7 @@ export class LayoutStateManager {
             root.dataset.handState = handState;
             root.dataset.playerTrayMode = playerTrayMode;
             root.dataset.boardView = boardViewMode;
+            root.dataset.boardContext = boardContextMode;
         });
     }
 }
