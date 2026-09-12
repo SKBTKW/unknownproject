@@ -179,44 +179,6 @@
     0% { opacity: 1; transform: translate(-50%, 0); }
     100% { opacity: 0; transform: translate(-50%, -26px); }
 }
-.tile-tooltip {
-    position: fixed;
-    background: rgba(22, 25, 34, 0.95);
-    border: 1px solid #1abc9c;
-    border-radius: 6px;
-    padding: 8px 12px;
-    font-size: 12px;
-    color: #ecf0f1;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.7);
-    pointer-events: none !important;
-    z-index: 100;
-    display: none;
-}
-.card-rotate-cursor-tooltip {
-    position: fixed;
-    pointer-events: none !important;
-    z-index: 100000;
-    background: rgba(10, 14, 23, 0.92);
-    border: 1.5px solid #1abc9c;
-    color: #1abc9c;
-    font-size: 11px;
-    font-weight: bold;
-    padding: 3px 8px;
-    border-radius: 4px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8), 0 0 10px rgba(26, 188, 156, 0.4);
-    white-space: nowrap;
-    display: none;
-}
-
-/* 👉 右サイドバー */
-.right-sidebar {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    min-height: 0;
-    width: 280px;
-}
-
 .data-panel {
     background: #1a1e2b;
     color: #ffffff;
