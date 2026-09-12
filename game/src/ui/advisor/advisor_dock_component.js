@@ -262,6 +262,16 @@ export class AdvisorDockComponent {
         this.render();
     }
 
+    prepareRestoreView() {
+        this.cancelHoverTimers();
+        this.viewState = ADVISOR_VIEW_STATES.COLLAPSED;
+        this.expandedReason = null;
+        this.activeSection = null;
+        this.reportBubbleOpen = false;
+        this.reportDepthMenuOpen = false;
+        this.closeModal();
+    }
+
     collapse() {
         if (this.layoutStateManager?.getState?.() === UI_LAYOUT_STATES.ADVISOR_EXPANDED) {
             this.layoutStateManager.closeAdvisor();

@@ -1,0 +1,183 @@
+import assert from 'node:assert/strict';
+import { GameEngine } from '../game/src/core/game_engine.js';
+import { DevChronicleRestoreComponent } from '../game/src/ui/dev_chronicle_restore_component.js';
+import { LayoutStateManager } from '../game/src/ui/layout_state_manager.js';
+import { UIInteractionState } from '../game/src/ui/ui_interaction_state.js';
+import { TrialRestoreBoundaryService } from '../game/src/core/trial_restore_boundary_service.js';
+import { TrialPresentationState } from '../game/src/trial/presentation/trial_presentation_state.js';
+import { boardCameraSystem } from '../game/src/ui/board_camera_system.js';
+
+class Element {
+    constructor() {
+        this.children = [];
+        this.style = {};
+        this.dataset = {};
+        this.textContent = '';
+        this.hidden = false;
+        this.classList = { remove() {} };
+    }
+    appendChild(element) { this.children.push(element); return element; }
+    replaceChildren(...children) { this.children = children; }
+    setAttribute() {}
+}
+const body = new Element();
+globalThis.document = {
+    body,
+    documentElement: new Element(),
+    createElement: () => new Element(),
+    getElementById: () => null,
+    querySelector: () => null
+};
+
+let passed = 0;
+function check(name, fn) { fn(); passed++; console.log(`  PASS: ${name}`); }
+const t = (key, vars = {}) => Object.entries(vars).reduce((text, [k, v]) => text.replace(`{${k}}`, v), {
+    DEV_CHRONICLE_RESTORE_CONFIRM: 'Restore Verse {verse}? Later history will be lost.',
+    DEV_CHRONICLE_RESTORED: 'Requested {requested} / Restored {restored}'
+}[key] || key);
+function createEngine(seed) {
+    const mockDocument = globalThis.document;
+    delete globalThis.document;
+    try { return GameEngine.createGame({ runSeed: seed }); }
+    finally { globalThis.document = mockDocument; }
+}
+
+function setup() {
+    const engine = createEngine(331);
+    engine.nextTurn();
+    engine.nextTurn();
+    let renderCount = 0;
+    let confirmCount = 0;
+    let restoreCount = 0;
+    let allowed = true;
+    let prompt = '';
+    const restore = engine.historyRestoreService.restoreVerse.bind(engine.historyRestoreService);
+    engine.historyRestoreService.restoreVerse = (...args) => { restoreCount++; return restore(...args); };
+    const ui = {
+        engine,
+        state: engine.state,
+        interactionState: new UIInteractionState(),
+        developmentTrialPreviewHarness: { session: null },
+        trialPreviewConfig: null,
+        trialController: { state: null },
+        trialPresentationState: new TrialPresentationState(),
+        layoutStateManager: new LayoutStateManager({ documentRef: document }),
+        advisorDockComponent: { prepareRestoreView() { this.expanded = false; } },
+        isMinimalMode: false,
+        closeDirectiveModal() {}, hideCardActionHintPopover() {}, hideCellTooltip() {},
+        render() { renderCount++; component.render(); }
+    };
+    const component = new DevChronicleRestoreComponent(ui, {
+        devModeResolver: () => true,
+        confirm: message => { prompt = message; confirmCount++; return allowed; },
+        i18n: { t }
+    });
+    component.mount(new Element());
+    component.open = true;
+    component.render();
+    return {
+        engine, ui, component,
+        get renderCount() { return renderCount; }, get confirmCount() { return confirmCount; },
+        get restoreCount() { return restoreCount; }, get prompt() { return prompt; },
+        cancel() { allowed = false; },
+        replaceRestore(fn) { engine.historyRestoreService.restoreVerse = fn; }
+    };
+}
+
+check('dev flag gates mounting and normal Chronicle remains separate', () => {
+    const engine = createEngine(90);
+    const component = new DevChronicleRestoreComponent({ engine }, { devModeResolver: () => false, i18n: { t } });
+    component.mount(new Element());
+    assert.equal(component.root, null);
+});
+
+check('Verse entry action confirms and calls core with its requested Verse', () => {
+    const f = setup();
+    assert.deepEqual(f.component.list.children.map(entry => Number(entry.dataset.verse)), [1, 2, 3]);
+    f.component.list.children[1].children[2].onclick();
+    assert.equal(f.restoreCount, 1);
+    assert.equal(f.engine.state.turn, 2);
+    assert.match(f.prompt, /2/);
+    assert.equal(f.renderCount, 1);
+});
+
+check('cancel never calls restore or render', () => {
+    const f = setup();
+    f.cancel();
+    f.component.list.children[0].children[2].onclick();
+    assert.equal(f.confirmCount, 1);
+    assert.equal(f.restoreCount, 0);
+    assert.equal(f.renderCount, 0);
+});
+
+check('Verse 1 is same run, not a new engine; future Chronicle entries vanish', () => {
+    const f = setup();
+    const originalEngine = f.engine;
+    const oldState = f.engine.state;
+    f.component.list.children[0].children[2].onclick();
+    assert.equal(f.engine, originalEngine);
+    assert.equal(f.engine.state, oldState);
+    assert.equal(f.engine.state.turn, 1);
+    assert.deepEqual(f.component.list.children.map(entry => Number(entry.dataset.verse)), [1]);
+    assert.deepEqual(f.engine.chronicleSystem.getAllEvents(), []);
+    assert.equal(f.renderCount, 1);
+});
+
+check('core failure and thrown error show failure without render', () => {
+    const f = setup();
+    const oldError = console.error;
+    console.error = () => {};
+    try {
+        f.replaceRestore(() => ({ success: false, reason: 'TEST_FAILURE' }));
+        f.component.list.children[1].children[2].onclick();
+        assert.equal(f.renderCount, 0);
+        assert.match(f.component.status.textContent, /FAILED/);
+        f.replaceRestore(() => { throw new Error('TEST_EXCEPTION'); });
+        f.component.list.children[0].children[2].onclick();
+        assert.equal(f.renderCount, 0);
+    } finally { console.error = oldError; }
+});
+
+check('Trial restore maps to start and clears all transient UI without extra render', () => {
+    const f = setup();
+    f.engine.trialRestoreBoundaryService = new TrialRestoreBoundaryService(f.engine);
+    f.engine.trialRestoreBoundaryService.begin(1);
+    f.ui.layoutStateManager.enterTrial();
+    f.ui.trialPreviewConfig = { active: true };
+    f.ui.developmentTrialPreviewHarness.session = { displayGrid: [['STALE']] };
+    f.ui.trialController.state = { battleQueue: ['FUTURE'], currentBattleIndex: 1 };
+    f.ui.trialPresentationState.selectedInterceptCell = { r: 2, c: 2 };
+    f.ui.trialPresentationState.routePlanDrafts.set('route', { defense: 9 });
+    f.ui.trialPresentationState.currentBattleStep = { id: 'FUTURE' };
+    f.ui.trialPresentationState.highlightedCells = [{ r: 0, c: 0 }];
+    f.ui.interactionState.selectOffering(0, f.engine.state.handOffering[0]);
+    f.ui.interactionState.pinnedPreviewCard = { id: 'STALE' };
+    f.ui.interactionState.isReservePopoverOpen = true;
+    f.ui.advisorDockComponent.expanded = true;
+    const camera = [boardCameraSystem.currentZoom, boardCameraSystem.panX, boardCameraSystem.panY];
+    const result = f.component.list.children[2].children[2].onclick();
+    // Action handler calls controller; inspect resulting state and status rather than button return.
+    assert.equal(result.success, true);
+    assert.equal(f.engine.state.turn, 1);
+    assert.match(f.component.status.textContent, /requested.*3.*restored.*1/i);
+    assert.equal(f.engine.trialRestoreBoundaryService.isActive(), false);
+    assert.equal(f.ui.trialPreviewConfig, null);
+    assert.equal(f.ui.developmentTrialPreviewHarness.session, null);
+    assert.equal(f.ui.trialController.state, null);
+    assert.equal(f.ui.trialPresentationState.selectedInterceptCell, null);
+    assert.equal(f.ui.trialPresentationState.routePlanDrafts.size, 0);
+    assert.equal(f.ui.trialPresentationState.currentBattleStep, null);
+    assert.deepEqual(f.ui.trialPresentationState.highlightedCells, []);
+    assert.equal(f.ui.interactionState.selectedCardIdx, -1);
+    assert.equal(f.ui.interactionState.selectedReserveIdx, -1);
+    assert.equal(f.ui.interactionState.pinnedPreviewCard, null);
+    assert.equal(f.ui.interactionState.isReservePopoverOpen, false);
+    assert.equal(f.ui.advisorDockComponent.expanded, false);
+    assert.equal(f.ui.layoutStateManager.getState(), 'normal');
+    assert.equal(document.body.dataset.contextOwner, 'none');
+    assert.deepEqual([boardCameraSystem.currentZoom, boardCameraSystem.panX, boardCameraSystem.panY], camera);
+    assert.equal(f.renderCount, 1);
+    assert.deepEqual(f.component.list.children.map(entry => Number(entry.dataset.verse)), [1]);
+});
+
+console.log(`Dev Chronicle Restore UI: ${passed}/${passed} PASS`);

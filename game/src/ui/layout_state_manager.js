@@ -113,6 +113,14 @@ export class LayoutStateManager {
         this.setState(UI_LAYOUT_STATES.NORMAL);
     }
 
+    /** Restore presentation reconciliation is followed by one canonical UI render. */
+    prepareRestoreView() {
+        this.state = UI_LAYOUT_STATES.NORMAL;
+        this.contextOwner = RIGHT_CONTEXT_OWNERS.NONE;
+        this.advisorReturnState = UI_LAYOUT_STATES.NORMAL;
+        this.applyRootState();
+    }
+
     resolveDefaultOwner(state) {
         if (state === UI_LAYOUT_STATES.TRIAL) return RIGHT_CONTEXT_OWNERS.TRIAL;
         if (state === UI_LAYOUT_STATES.ALERT) return RIGHT_CONTEXT_OWNERS.ALERT;

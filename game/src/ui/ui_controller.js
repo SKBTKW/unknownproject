@@ -21,6 +21,7 @@ import { attachLegacyUIBridge } from './legacy_ui_bridge.js';
 import { DiceWidgetComponent } from './dice_widget_component.js';
 import { DiceDisplayQueue } from './dice_display_queue.js';
 import { DevDiceControlsComponent } from './dev_dice_controls_component.js';
+import { DevChronicleRestoreComponent } from './dev_chronicle_restore_component.js';
 import { BuildIdentityBadgeComponent } from './build_identity_badge_component.js';
 import { TrialController } from '../trial/flow/trial_controller.js';
 import { TrialPresentationState } from '../trial/presentation/trial_presentation_state.js';
@@ -90,6 +91,7 @@ class UIController {
         
         // 🎛️ UI セッション状態モデル (Single Source of Truth)
         this.interactionState = new UIInteractionState();
+        this.devChronicleRestore = (typeof document !== 'undefined') ? new DevChronicleRestoreComponent(this) : null;
 
         let initialMinimal = false;
         if (typeof localStorage !== 'undefined') {
@@ -926,6 +928,7 @@ class UIController {
         if (this.buildIdentityBadge && typeof this.buildIdentityBadge.mount === "function") {
             void this.buildIdentityBadge.mount();
         }
+        this.devChronicleRestore?.mount(document.body);
     }
 
     initStaticI18nLabels() {
@@ -998,6 +1001,7 @@ class UIController {
             this.updateFloatingPreview(null);
             if (this.trialDefenseAllocationComponent) this.trialDefenseAllocationComponent.render();
             if (this.advisorDockComponent) this.advisorDockComponent.render();
+            this.devChronicleRestore?.render();
         } catch (err) {
             console.error("UIController Render Error:", err);
         }

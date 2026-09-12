@@ -136,6 +136,16 @@ const UILayoutConfig = {
         }
     },
 
+    devChronicleRestore: {
+        position: "fixed",
+        top: "72px",
+        right: "24px",
+        width: "270px",
+        maxHeight: "calc(100vh - 96px)",
+        zIndex: 900,
+        pointerEvents: "auto"
+    },
+
     // ⚔️ Trial迎撃計画: 地点比較と🛡配分を表示する固定パネル
     trialDefenseAllocation: {
         desktop: {

@@ -95,6 +95,11 @@ export class TrialPresentationState {
         this.clearPlanningReviewRequest();
     }
 
+    resetForRestore() {
+        // Preserve the player's display mode, discard every future battle draft/cache.
+        Object.assign(this, new TrialPresentationState({ mode: this.mode }));
+    }
+
     getRouteDecision(routeId) {
         return TrialPlanningDraftService.getRouteDecision(this.routePlanDrafts, routeId);
     }
