@@ -1,6 +1,9 @@
 /* =============================================================
    0_global_common / base_layout.css
    アプリケーション全体の基本枠組み・リセット・メイングリッド配置定義
+
+   Screen-space metrics are owned by layout_tokens.css. This file owns
+   only the base shell structure and logical z-index bands.
    ============================================================= */
 
 :root {
@@ -11,11 +14,6 @@
     --z-player: 700;
     --z-overlay: 900;
     --z-modal: 9999;
-
-    /* 📐 レイアウトメトリクス・オフセット (Layout Metrics Tokens) */
-    --layout-header-height: 84px;
-    --layout-app-gap: 8px;
-    --layout-edge-gap: 16px;
 }
 
 * {
@@ -177,88 +175,4 @@ body {
     font-size: 12px;
     font-weight: 700;
     cursor: pointer;
-}
-
-/* =============================================================
-   2026-09-09 Layout pass: mock-based composition
-   ============================================================= */
-
-/* タイトルロゴはヘッダーから切り離し、メインエリア左上へ */
-.app-wrapper > #gameWallpaperArt {
-    position: absolute !important;
-    top: calc(var(--layout-header-height) + var(--layout-app-gap) + 4px);
-    left: 18px !important;
-    right: auto !important;
-    width: clamp(260px, 24vw, 420px) !important;
-    max-width: 30vw !important;
-    transform: none !important;
-    opacity: 0.94 !important;
-    z-index: 20 !important;
-    pointer-events: none !important;
-}
-
-#gameWallpaperArt .wallpaper-logo-img {
-    display: block;
-    width: 100%;
-    height: auto;
-    object-fit: contain;
-}
-
-/* 盤面をヘッダー直下の最上段へ寄せる */
-#layerWorldBoard.layer-world-board {
-    justify-content: flex-start !important;
-    align-items: center !important;
-    padding-top: 10px !important;
-}
-
-.board-container-wrapper {
-    justify-content: flex-start !important;
-    margin-top: 0 !important;
-    margin-bottom: auto !important;
-}
-
-/* Advisorは通常HUDより下層。透明領域は入力を取らない */
-#advisorDockContainer {
-    z-index: 420 !important;
-    pointer-events: none !important;
-}
-
-/* ログは機能を残したまま一旦非表示 */
-#logComponentContainer {
-    display: none !important;
-    pointer-events: none !important;
-}
-
-/* 判定テストHUDは機能を保持したまま一旦非表示 */
-#devDiceControlsRoot {
-    display: none !important;
-    pointer-events: none !important;
-}
-
-@media (max-width: 768px) {
-    .settings-modal-window {
-        height: min(680px, calc(100vh - 24px));
-        max-height: calc(100vh - 24px);
-        padding: 14px;
-    }
-
-    .setting-item-row {
-        align-items: stretch;
-        flex-direction: column;
-    }
-
-    .setting-select-control {
-        width: 100%;
-    }
-
-    .setting-select-resolution {
-        min-width: 0;
-    }
-
-    #gameWallpaperArt {
-        top: 92px !important;
-        left: 10px !important;
-        width: min(240px, 42vw) !important;
-        max-width: 42vw !important;
-    }
 }
