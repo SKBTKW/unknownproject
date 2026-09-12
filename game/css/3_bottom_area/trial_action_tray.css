@@ -1,0 +1,223 @@
+/* =============================================================
+   3_bottom_area / trial_action_tray.css
+   Trial mode replacement for the normal Hand / Offering tray.
+   ============================================================= */
+
+#trialActionTrayHost {
+    display: none;
+    pointer-events: auto;
+}
+
+body[data-player-tray-mode="trial"] #layerPlayerTray .offering-section {
+    display: none !important;
+}
+
+body[data-player-tray-mode="trial"] #trialActionTrayHost {
+    display: block;
+}
+
+.trial-action-tray {
+    width: min(680px, calc(100vw - 48px));
+    min-height: 164px;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: minmax(210px, 0.9fr) minmax(330px, 1.4fr);
+    gap: 18px;
+    padding: 14px 16px;
+    border: 3px solid #2e384e;
+    border-radius: 16px;
+    background: rgba(15, 18, 26, 0.97);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.82);
+    backdrop-filter: blur(5px);
+    color: #f4f7fb;
+}
+
+.trial-action-point-summary,
+.trial-action-tray-empty,
+.trial-action-control-cluster {
+    min-width: 0;
+}
+
+.trial-action-point-summary,
+.trial-action-tray-empty {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    padding: 2px 4px;
+}
+
+.trial-action-tray-empty strong {
+    font-size: 18px;
+}
+
+.trial-action-tray-empty span {
+    color: #aeb9c9;
+    font-size: 14px;
+}
+
+.trial-action-point-heading {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.trial-action-point-heading strong {
+    font-size: 22px;
+    color: #ffffff;
+}
+
+.trial-action-point-heading span {
+    font-size: 18px;
+    font-weight: 800;
+    color: #f7d774;
+}
+
+.trial-action-route-line,
+.trial-action-prediction-line,
+.trial-action-budget-line,
+.trial-action-allocation-value {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.trial-action-route-line,
+.trial-action-prediction-line {
+    font-size: 14px;
+}
+
+.trial-action-route-line span,
+.trial-action-prediction-line span,
+.trial-action-budget-line span {
+    color: #aeb9c9;
+}
+
+.trial-action-prediction-line small {
+    margin-left: auto;
+    color: #cdd6e3;
+}
+
+.trial-action-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    min-height: 22px;
+}
+
+.trial-action-tag {
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.trial-action-tag.is-advantage {
+    border-color: rgba(46, 204, 113, 0.7);
+}
+
+.trial-action-tag.is-disadvantage {
+    border-color: rgba(231, 76, 60, 0.7);
+}
+
+.trial-action-control-cluster {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 9px;
+}
+
+.trial-action-budget-line {
+    justify-content: space-between;
+    font-size: 13px;
+}
+
+.trial-action-budget-line strong {
+    color: #ffffff;
+}
+
+.trial-action-allocation-value {
+    justify-content: space-between;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.trial-action-allocation-value strong {
+    font-size: 18px;
+    color: #f7d774;
+}
+
+.trial-action-slider-row {
+    display: grid;
+    grid-template-columns: 36px minmax(150px, 1fr) 36px 54px;
+    gap: 7px;
+    align-items: center;
+}
+
+.trial-action-slider-row input[type="range"] {
+    width: 100%;
+    min-width: 0;
+    accent-color: #1abc9c;
+}
+
+.trial-action-slider-row button,
+.trial-action-decision-row button {
+    min-height: 34px;
+    border-radius: 7px;
+    border: 1px solid #56657a;
+    background: rgba(43, 52, 68, 0.96);
+    color: #ffffff;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.trial-action-slider-row button:hover:not(:disabled),
+.trial-action-decision-row button:hover:not(:disabled) {
+    border-color: #1abc9c;
+    transform: translateY(-1px);
+}
+
+.trial-action-slider-row button:disabled,
+.trial-action-decision-row button:disabled {
+    opacity: 0.38;
+    cursor: default;
+}
+
+.trial-action-decision-row {
+    display: grid;
+    grid-template-columns: 1.35fr 1fr 1fr;
+    gap: 7px;
+}
+
+.trial-action-decision-row .is-primary {
+    border-color: #1abc9c;
+    background: rgba(15, 115, 100, 0.92);
+}
+
+@media (max-width: 900px) {
+    .trial-action-tray {
+        width: min(620px, calc(100vw - 32px));
+        grid-template-columns: 1fr;
+        gap: 10px;
+        min-height: 0;
+        max-height: 44vh;
+        overflow-y: auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .trial-action-tray {
+        width: calc(100vw - 16px);
+        padding: 10px;
+        border-width: 2px;
+    }
+
+    .trial-action-slider-row {
+        grid-template-columns: 34px minmax(100px, 1fr) 34px 50px;
+    }
+}
