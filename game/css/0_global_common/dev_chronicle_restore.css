@@ -19,14 +19,19 @@
 }
 
 .dev-chronicle-action {
-    color: #fca5a5;
-    border-color: #b91c1c;
-    background: #450a0a;
+    color: #cbd5e1;
+    border-color: #64748b;
+    background: #1e293b;
 }
 
 .dev-chronicle-entries[hidden] { display: none; }
 .dev-chronicle-entries { margin-top: 8px; }
 .dev-chronicle-entry { display: flex; align-items: center; gap: 5px; border-top: 1px solid #475569; padding: 6px 0; }
-.dev-chronicle-detail { flex: 1; font-size: 10px; color: #94a3b8; }
+.dev-chronicle-entry[data-importance="MAJOR"] { border-left: 2px solid #a3a3a3; padding-left: 5px; }
+.dev-chronicle-entry[data-importance="HISTORIC"] { border-left: 3px solid #e2c996; padding-left: 5px; }
+.dev-chronicle-view { cursor: pointer; color: #e2e8f0; background: transparent; border: 0; text-align: left; }
+.dev-chronicle-detail { flex: 1; color: #cbd5e1; }
+.dev-chronicle-expanded { padding: 4px 8px 8px; color: #94a3b8; border-left: 1px solid #64748b; }
+.dev-chronicle-entry[data-importance="HISTORIC"] .dev-chronicle-detail { color: #e2c996; }
 .dev-chronicle-status { margin: 5px 0 0; color: #fbbf24; }
 .dev-chronicle-status:empty { display: none; }

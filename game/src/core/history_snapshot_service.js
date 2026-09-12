@@ -94,6 +94,8 @@ export class HistorySnapshotService {
             gameplayRngState: cloneData(engine.gameplayRandom?.getState?.()),
             chronicle: cloneData(engine.chronicleSystem?.getAllEvents?.(), []),
             runtime: {
+                // Operation log feeds Advisor records; preserve the observed Verse-start copy.
+                gameLogs: cloneData(state?.gameLogs, []),
                 runSeed: Number.isFinite(engine.runSeed) ? engine.runSeed : null,
                 activeGlobalEvents: cloneData(state?.activeGlobalEvents, []),
                 eventCooldowns: cloneData(state?.eventCooldowns, {}),

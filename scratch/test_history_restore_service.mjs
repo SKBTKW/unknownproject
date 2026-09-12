@@ -127,6 +127,31 @@ test('Verse N keeps earlier history and its own Restore Point', () => {
     assert.deepEqual(engine.chronicleSystem.getAllEvents(), point2.chronicle);
 });
 
+test('operation log snapshots do not alias live records and restore Advisor-visible history', () => {
+    const engine = GameEngine.createGame({ runSeed: 555 });
+    engine.state.addLog('PAST_LOG');
+    engine.nextTurn();
+    const point = engine.historySnapshotService.getRestorePoint(2);
+    assert.ok(point.runtime.gameLogs.includes('PAST_LOG'));
+    engine.state.addLog('FUTURE_LOG');
+    assert.equal(engine.historyRestoreService.restoreVerse(2).success, true);
+    assert.deepEqual(engine.state.gameLogs, point.runtime.gameLogs);
+    assert.ok(!engine.state.gameLogs.includes('FUTURE_LOG'));
+    engine.state.gameLogs.push('BRANCH_LOG');
+    assert.ok(!point.runtime.gameLogs.includes('BRANCH_LOG'));
+});
+
+test('old restore points without operation logs clear future-only records', () => {
+    const engine = GameEngine.createGame({ runSeed: 556 });
+    const point = engine.historySnapshotService.getRestorePoint(1);
+    const legacy = { ...point, runtime: { ...point.runtime } };
+    delete legacy.runtime.gameLogs;
+    engine.historySnapshotService.restorePoints = [legacy];
+    engine.state.addLog('FUTURE_LOG');
+    assert.equal(engine.historyRestoreService.restoreVerse(1).success, true);
+    assert.deepEqual(engine.state.gameLogs, []);
+});
+
 test('GlobalEvent state and only non-derived buffs are restored before derived proxies', () => {
     const engine = GameEngine.createGame({ runSeed: 112 });
     const id = GLOBAL_EVENTS_MASTER[0].id;

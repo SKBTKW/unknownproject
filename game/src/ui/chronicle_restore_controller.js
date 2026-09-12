@@ -1,6 +1,7 @@
 import { boardCameraSystem } from './board_camera_system.js';
 import { focusLayerManager } from './focus_layer_system.js';
 import { tooltipSystemInstance } from './tooltip_system.js';
+import { LogComponent } from './log_component.js';
 
 /** Dev presentation boundary. All historical state changes belong to HistoryRestoreService. */
 export class ChronicleRestoreController {
@@ -18,7 +19,11 @@ export class ChronicleRestoreController {
             this.onError(this.i18n.t('DEV_CHRONICLE_RESTORE_FAILED'));
             return { success: false, reason: 'HISTORY_RESTORE_POINT_NOT_FOUND' };
         }
-        if (!this.confirm(this.i18n.t('DEV_CHRONICLE_RESTORE_CONFIRM', { verse }))) {
+        const mappedVerse = engine.trialRestoreBoundaryService?.resolveRestoreVerse?.(verse) ?? verse;
+        const title = this.ui.devChronicleRestore?.getEntryTitle?.(verse) || this.i18n.t('DEV_CHRONICLE_VERSE', { verse });
+        const mapping = mappedVerse !== verse
+            ? this.i18n.t('DEV_CHRONICLE_TRIAL_MAPPING', { restored: mappedVerse }) : '';
+        if (!this.confirm(this.i18n.t('DEV_CHRONICLE_RESTORE_CONFIRM', { verse, title, mapping, restored: mappedVerse }))) {
             return { success: false, reason: 'CANCELLED' };
         }
         try {
@@ -50,6 +55,7 @@ export class ChronicleRestoreController {
         ui.trialPreviewConfig = null;
         if (ui.trialController) ui.trialController.state = null;
         ui.trialPresentationState?.resetForRestore();
+        LogComponent.importStateLogs(ui.engine.state, { render: false });
         ui.layoutStateManager?.prepareRestoreView();
         ui.advisorDockComponent?.prepareRestoreView();
         ui.isMinimalMode = true;

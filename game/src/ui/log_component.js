@@ -77,7 +77,7 @@
         /**
          * 📥 GameState から蓄積ログを一括インポート
          */
-        importStateLogs(state) {
+        importStateLogs(state, { render = true } = {}) {
             if (!state || !Array.isArray(state.gameLogs)) return;
             const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
 
@@ -98,7 +98,7 @@
                 }
                 this.logs.unshift({ turn, message: msg });
             });
-            this.renderLogs();
+            if (render) this.renderLogs();
         }
 
         /**
@@ -191,6 +191,5 @@
 const LogComponent = (typeof globalThis !== "undefined" && globalThis.LogComponent) ? globalThis.LogComponent : null;
 export { LogComponent };
 export default LogComponent;
-
 
 

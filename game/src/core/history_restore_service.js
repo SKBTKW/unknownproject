@@ -54,6 +54,8 @@ export class HistoryRestoreService {
 
             // GameState event runtime is authoritative; derived buffs are rebuilt once.
             const state = engine.state;
+            // Earlier restore points have no log copy; never display a future log as past.
+            state.gameLogs = Array.isArray(runtime.gameLogs) ? cloneData(runtime.gameLogs) : [];
             state.activeGlobalEvents = cloneData(runtime.activeGlobalEvents, []);
             state.eventCooldowns = cloneData(runtime.eventCooldowns, {});
             state.temporaryWeightModifiers = cloneData(runtime.temporaryWeightModifiers, []);

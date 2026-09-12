@@ -2,6 +2,7 @@ import { isDevelopmentMode } from '../config/dev_mode.js';
 import { I18n } from '../i18n.js';
 import { UILayoutConfig } from './layout_config.js';
 import { ChronicleRestoreController } from './chronicle_restore_controller.js';
+import { describeChronicleVerse } from './chronicle_verse_entries.js';
 
 /** Separate, dev-only Chronicle listing; does not repurpose the hidden operation log. */
 export class DevChronicleRestoreComponent {
@@ -13,6 +14,7 @@ export class DevChronicleRestoreComponent {
         this.list = null;
         this.status = null;
         this.open = false;
+        this.selectedVerse = null;
         this.controller = new ChronicleRestoreController(ui, {
             confirm,
             i18n,
@@ -53,23 +55,35 @@ export class DevChronicleRestoreComponent {
         if (this.status) this.status.textContent = message;
     }
 
+    getEntryTitle(verse) {
+        const points = this.ui.engine.historySnapshotService?.getAllRestorePoints?.() || [];
+        const index = points.findIndex(point => point.verse === verse);
+        return index < 0 ? null : describeChronicleVerse(points[index], points[index - 1], this.i18n).title;
+    }
+
     render() {
         if (!this.root) return;
         this.list.hidden = !this.open;
         this.list.replaceChildren();
         if (!this.open) return;
-        const events = this.ui.engine.chronicleSystem?.getAllEvents?.() || [];
         const points = this.ui.engine.historySnapshotService?.getAllRestorePoints?.() || [];
-        for (const point of points) {
+        if (!points.some(point => point.verse === this.selectedVerse)) this.selectedVerse = null;
+        for (let index = 0; index < points.length; index++) {
+            const point = points[index];
+            const entry = describeChronicleVerse(point, points[index - 1], this.i18n);
             const row = document.createElement('div');
             row.className = 'dev-chronicle-entry';
             row.dataset.verse = String(point.verse);
-            const entry = events.find(event => event.id === `VERSE_COMMITTED_${point.sourceCompletedTurn}`);
-            const label = document.createElement('span');
+            row.dataset.importance = entry.importance;
+            const label = document.createElement('button');
+            label.type = 'button';
+            label.className = 'dev-chronicle-view';
             label.textContent = this.i18n.t('DEV_CHRONICLE_VERSE', { verse: point.verse });
-            const detail = document.createElement('span');
+            label.setAttribute('aria-expanded', String(this.selectedVerse === point.verse));
+            label.onclick = () => { this.selectedVerse = this.selectedVerse === point.verse ? null : point.verse; this.render(); };
+            const detail = document.createElement('div');
             detail.className = 'dev-chronicle-detail';
-            detail.textContent = entry ? this.i18n.t('DEV_CHRONICLE_COMMITTED', { verse: entry.turn }) : '';
+            detail.textContent = entry.title;
             const restore = document.createElement('button');
             restore.type = 'button';
             restore.className = 'dev-chronicle-action';
@@ -79,6 +93,14 @@ export class DevChronicleRestoreComponent {
             row.appendChild(detail);
             row.appendChild(restore);
             this.list.appendChild(row);
+            if (this.selectedVerse === point.verse) {
+                const expanded = document.createElement('div');
+                expanded.className = 'dev-chronicle-expanded';
+                expanded.textContent = entry.events.length
+                    ? entry.events.map(event => this.i18n.t(event.nameKey || event.id)).join(' · ')
+                    : this.i18n.t('DEV_CHRONICLE_NO_EVENTS');
+                this.list.appendChild(expanded);
+            }
         }
     }
 }

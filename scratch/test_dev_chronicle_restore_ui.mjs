@@ -6,6 +6,9 @@ import { UIInteractionState } from '../game/src/ui/ui_interaction_state.js';
 import { TrialRestoreBoundaryService } from '../game/src/core/trial_restore_boundary_service.js';
 import { TrialPresentationState } from '../game/src/trial/presentation/trial_presentation_state.js';
 import { boardCameraSystem } from '../game/src/ui/board_camera_system.js';
+import { describeChronicleVerse } from '../game/src/ui/chronicle_verse_entries.js';
+import { LogComponent } from '../game/src/ui/log_component.js';
+import { I18n } from '../game/src/i18n.js';
 
 class Element {
     constructor() {
@@ -72,6 +75,7 @@ function setup() {
         confirm: message => { prompt = message; confirmCount++; return allowed; },
         i18n: { t }
     });
+    ui.devChronicleRestore = component;
     component.mount(new Element());
     component.open = true;
     component.render();
@@ -178,6 +182,81 @@ check('Trial restore maps to start and clears all transient UI without extra ren
     assert.deepEqual([boardCameraSystem.currentZoom, boardCameraSystem.panX, boardCameraSystem.panY], camera);
     assert.equal(f.renderCount, 1);
     assert.deepEqual(f.component.list.children.map(entry => Number(entry.dataset.verse)), [1]);
+});
+
+check('Chronicle titles select observed historic over major/minor without creating new events', () => {
+    const point = { verse: 4, sourceCompletedTurn: 3, gameState: { stage: { id: 1 } }, chronicle: [
+        { turn: 3, type: 'EVENT', nameKey: 'minor', importance: 'MINOR' },
+        { turn: 3, type: 'EVENT', nameKey: 'major', importance: 'MAJOR' },
+        { turn: 3, type: 'EVENT', nameKey: 'historic', importance: 'HISTORIC' },
+        { turn: 2, type: 'EVENT', nameKey: 'future-unrelated', importance: 'HISTORIC' }
+    ] };
+    const entry = describeChronicleVerse(point, null, { t: key => key });
+    assert.equal(entry.title, 'historic');
+    assert.equal(entry.importance, 'HISTORIC');
+    assert.equal(entry.events.length, 3);
+    assert.equal(point.chronicle.length, 4);
+});
+
+check('Verse 1 and stage/Trial boundaries use observed metadata, not invented Chronicle records', () => {
+    const i18n = { t: (key, vars = {}) => `${key}:${Object.values(vars).join(',')}` };
+    const origin = { verse: 1, gameState: { stage: { id: 1 } }, chronicle: [] };
+    const stage = { verse: 2, gameState: { stage: { id: 2 } }, chronicle: [] };
+    const trial = { verse: 15, gameState: { stage: { id: 2 }, trialSchedule: { trial1: 15 } }, chronicle: [] };
+    assert.match(describeChronicleVerse(origin, null, i18n).title, /ORIGIN/);
+    assert.equal(describeChronicleVerse(stage, origin, i18n).importance, 'MAJOR');
+    assert.equal(describeChronicleVerse(trial, stage, i18n).importance, 'HISTORIC');
+    assert.equal(describeChronicleVerse(trial, stage, i18n).trialStart, true);
+});
+
+check('Verse reading opens details but not restore; restore remains a separate secondary action', () => {
+    const f = setup();
+    const row = f.component.list.children[1];
+    assert.equal(row.dataset.importance, 'MINOR');
+    row.children[0].onclick();
+    assert.equal(f.restoreCount, 0);
+    assert.equal(f.confirmCount, 0);
+    assert.equal(f.component.selectedVerse, 2);
+    assert.equal(f.component.list.children.length, 4);
+    assert.equal(f.component.list.children[2].className, 'dev-chronicle-expanded');
+    f.component.list.children[1].children[2].onclick();
+    assert.equal(f.restoreCount, 1);
+});
+
+check('confirmation explains branch loss and Trial mapping before the core restore', () => {
+    const f = setup();
+    f.engine.trialRestoreBoundaryService = new TrialRestoreBoundaryService(f.engine);
+    f.engine.trialRestoreBoundaryService.begin(1);
+    f.component.controller.i18n = I18n;
+    f.cancel();
+    f.component.list.children[2].children[2].onclick();
+    assert.match(f.prompt, /第3節/);
+    assert.match(f.prompt, /第1節の試練開始時点/);
+    assert.match(f.prompt, /復元先の第1節より後の記録/);
+    assert.match(f.prompt, /未来は分岐/);
+    assert.equal(f.restoreCount, 0);
+});
+
+check('Verse 1 confirmation describes same-run history, never a new run or restart', () => {
+    const f = setup();
+    f.component.i18n = I18n;
+    f.component.controller.i18n = I18n;
+    f.cancel();
+    f.component.list.children[0].children[2].onclick();
+    assert.match(f.prompt, /同じ世界のはじまり/);
+    assert.doesNotMatch(f.prompt, /New Run|Restart|最初からやり直す/);
+});
+
+check('restore point restores Advisor records and operation log without future messages', () => {
+    const f = setup();
+    const point = f.engine.historySnapshotService.getRestorePoint(2);
+    assert.deepEqual(point.runtime.gameLogs, f.engine.historySnapshotService.getRestorePoint(2).runtime.gameLogs);
+    f.engine.state.addLog('FUTURE_ONLY_LOG');
+    assert.ok(f.engine.state.gameLogs.includes('FUTURE_ONLY_LOG'));
+    f.component.list.children[1].children[2].onclick();
+    assert.deepEqual(f.engine.state.gameLogs, point.runtime.gameLogs);
+    assert.deepEqual(LogComponent.logs.map(log => log.message), point.runtime.gameLogs);
+    assert.equal(f.renderCount, 1);
 });
 
 console.log(`Dev Chronicle Restore UI: ${passed}/${passed} PASS`);
