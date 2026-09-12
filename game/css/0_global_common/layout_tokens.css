@@ -13,6 +13,9 @@
     /* Shared app-shell geometry */
     --layout-header-height: 84px;
     --layout-app-gap: 8px;
+    --layout-body-padding: 10px;
+    --layout-body-gap: 10px;
+    --layout-app-max-width: 2100px;
     --layout-edge-gap: 16px;
     --layout-mobile-edge-gap: 8px;
     --layout-system-overlay-inset: 0px;
