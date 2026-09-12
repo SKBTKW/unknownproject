@@ -112,12 +112,19 @@
     </div>
 
     <script type="module">
-        import { GameEngine, UIController, UndoLandSystem, BuffSystem, TerritoryBadgeComponent, ModalSystem, FocusLayerManager, BoardCameraSystem, SettingsModalSystem, settingsModalInstance, gameSettings, EmberStatusComponent, HandCardsComponent, ReserveSlotComponent, TopHeaderComponent, BoardGridComponent, HqComponent, TooltipSystem, tooltipSystemInstance, EmberSystem } from './src/app.js?v=20260909_v53';
+        import { GameEngine, UIController, UndoLandSystem, BuffSystem, TerritoryBadgeComponent, ModalSystem, FocusLayerManager, BoardCameraSystem, SettingsModalSystem, settingsModalInstance, gameSettings, EmberStatusComponent, HandCardsComponent, ReserveSlotComponent, TopHeaderComponent, BoardGridComponent, HqComponent, TooltipSystem, tooltipSystemInstance, EmberSystem, LogComponent } from './src/app.js?v=20260909_v53';
+        import { PlatformNeutralGameState } from './src/core/platform_neutral_game_state.js?v=20260913_u1';
         import { attachTrialActionTray } from './src/ui/trial_action_tray_runtime_bridge.js?v=20260913_v1';
+
+        class BrowserGameState extends PlatformNeutralGameState {
+            constructor(dependencies = {}) {
+                super({ ...dependencies, logSink: LogComponent });
+            }
+        }
 
         function bootstrap() {
             try {
-                const engine = GameEngine.createGame();
+                const engine = GameEngine.createGame({ GameStateClass: BrowserGameState });
                 const ui = new UIController(engine);
                 attachTrialActionTray(ui);
 
