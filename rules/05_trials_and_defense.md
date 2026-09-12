@@ -152,6 +152,8 @@ Trial で利用可能な防衛力は **現在🛡️** とする。
 
 この変換率はResolverへ注入可能であり、将来調整可能。
 
+重要: `InterceptionPowerResolver` は**与えられた戦略制圧力を戦闘尺度へ変換するだけ**であり、平時盤面から `strategicSuppression` 自体を算出する責務は持たない。
+
 ---
 
 ## 7. 地形効果
@@ -298,11 +300,83 @@ E0↔E1間の遷移は現行実装では高地補正対象外。
 
 ### 12.2 通常50 Verse進行との完全接続
 
-Trial domain / planning / battle / damage / completionの各機構は存在するが、通常ゲーム進行との統合は段階的実装中。
+Trial domain / planning / battle / damage / completionの各機構は存在するが、通常ゲーム進行との統合は未完成。
+
+現状、通常Verse進行にはTrial予定Verseは存在するが、予定Verse到達時に `TrialController.startScenario()` を呼ぶ正規オーケストレーションは存在しない。
 
 開発用Preview / Harnessで検証されている機能と、通常ランへ接続済みの機能を同一視しない。
 
-### 12.3 戦術
+### 12.3 Trial Scenario生成
+
+現 `game/src/trial/` は、**scenarioを生成する側ではなく、与えられたscenarioを解決する側**として実装されている。
+
+`TrialState` / `TrialController.startScenario()` が現在必要とする主要入力は以下。
+
+- `enemySuppression`
+- `routes`
+- `availableDefense`
+- `ember`
+- `maxEmber`
+- 任意で `commander`
+- 任意で `forces`
+- 任意で `environment`
+
+開発用 `trial_preview_scenarios.js` では、敵制圧力・route・routeごとの制圧力・地形座標を手書きしている。
+
+したがって通常ランへTrialを接続するには、最低でも以下の上流責務が必要。
+
+```text
+通常GameState / 盤面
+  ↓
+Trial番号・Stageを解決
+  ↓
+敵戦略制圧力を算出
+  ↓
+侵入方向を決定
+  ↓
+盤面上の侵攻routeを生成
+  ↓
+routeごとの制圧力を配分
+  ↓
+commander / forces / environment 等を組み立てる
+  ↓
+Trial scenario
+  ↓
+TrialController.startScenario()
+```
+
+現時点では、この一連を担う本番用 `TrialScenarioFactory` / `RouteGenerator` / `ThreatCalculator` 相当の専用実装は確認できない。
+
+### 12.4 Stage遷移との接続
+
+採用ルールでは、
+
+```text
+第1 Trial終了・生存
+→ Stage 2
+
+第2 Trial終了・生存
+→ Stage 3
+```
+
+を境界とする。
+
+現gameでは `TurnLifecycleService` が `currentTurn >= trialSchedule.trial1/trial2` だけを見てStageを拡張しており、Trial完了結果を参照していない。
+
+この現挙動は暫定実装 / 将来修正対象とする。
+
+### 12.5 第3 Trial / Verse 50終了
+
+第3 TrialはVerse 50を内部予定値として持つが、現在の通常Verse進行には、
+
+- 第3 Trialを正規起動する処理
+- 第3 Trial完了をラン結果へ接続する処理
+- Verse 50終了時のVictory / Run Complete判定
+- Verse 51以降への進行を止める終端
+
+が未接続。
+
+### 12.6 戦術
 
 地形効果とは別に、迎撃地点から自然に想起される能動戦術を追加する方針。
 
@@ -315,7 +389,7 @@ Trial domain / planning / battle / damage / completionの各機構は存在す�
 
 ただし専用Trialカードを手札へ持ち込む構造にはしない。
 
-### 12.4 2D6戦術判定
+### 12.7 2D6戦術判定
 
 奇襲・騎馬突撃等へ2D6判定を使用する構想は存在するが、現在の基礎Trial戦闘正本にはまだ含めない。
 
@@ -339,11 +413,45 @@ Trial domain / planning / battle / damage / completionの各機構は存在す�
 + 司令官等の補正
 ```
 
+### 現在の実装境界
+
+この式に相当する**敵戦略制圧力の生成処理はまだ未実装**。
+
+現在の `InterceptionPowerResolver` は、scenarioから渡された `strategicSuppression` を戦闘尺度へ変換するだけである。
+
+したがって、
+
+```text
+盤面発展
+→ 敵戦略制圧力
+```
+
+の対応関係は今後設計・実装する必要がある。
+
 具体的な脅威算出式・産出帯・非線形スケーリングはまだ調整対象であり、未確定値を確定仕様として固定しない。
 
 ---
 
-## 14. 連携のTrial上の位置づけ
+## 14. 侵攻route生成の上位原則
+
+routeはTrial開始時に外から手書きで与える本番仕様にはしない。
+
+通常ランでは現在の盤面から生成する。
+
+既存の地形ルールと整合する上位原則は以下。
+
+- 外周から本営方向へ進む。
+- 山岳は通常routeへ進入できない。
+- 道路等の低進軍コスト要素は、敵を誘導する方向で利用できる。
+- 地形ごとの進軍コストを利用し、原則として合理的な低コストrouteを選択する。
+- 調査・警戒システムは、この生成済みrouteの情報を段階的に公開する。
+- 嘘のroute情報を生成するのではなく、情報解像度を変える。
+
+具体的な pathfinding アルゴリズム、同コスト時のtie-break、複数routeの分離条件は未確定。
+
+---
+
+## 15. 連携のTrial上の位置づけ
 
 連携は平時の盤面形成とTrialを接続する重要要素である。
 
@@ -355,7 +463,7 @@ Trial domain / planning / battle / damage / completionの各機構は存在す�
 
 ---
 
-## 15. プレイヤー向け最小説明
+## 16. プレイヤー向け最小説明
 
 最終的にプレイヤーへ理解させる内容は、複雑な内部式ではなく以下へ圧縮する。
 
@@ -363,4 +471,3 @@ Trial domain / planning / battle / damage / completionの各機構は存在す�
 > **🛡️は、各戦線へ配る有限の防衛力。**  
 > **すべての侵攻を止められるとは限らない。**  
 > **どこで迎え撃つかによって、地形の意味が変わる。**
-
