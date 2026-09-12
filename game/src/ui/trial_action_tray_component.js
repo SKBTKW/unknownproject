@@ -1,5 +1,6 @@
 import { I18n } from "../i18n.js";
 import { resolveModifierTag } from "./trial_interception_preview_component.js";
+import { PLAYER_TRAY_MODES } from "./layout_state_manager.js";
 
 export class TrialActionTrayComponent {
     constructor(uiController, { hostId = "trialActionTrayHost" } = {}) {
@@ -16,7 +17,7 @@ export class TrialActionTrayComponent {
         return Boolean(
             this.ui?.trialPreviewConfig
             && this.ui?.trialController?.state
-            && this.ui?.layoutStateManager?.getPlayerTrayMode?.() === "trial"
+            && this.ui?.layoutStateManager?.getPlayerTrayMode?.() === PLAYER_TRAY_MODES.TRIAL
         );
     }
 
