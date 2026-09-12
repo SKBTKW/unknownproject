@@ -21,14 +21,26 @@ console.log("\nLayout geometry token contract");
 
 check(indexHtml.includes("css/0_global_common/layout_tokens.css"), "shared layout tokens are loaded by the browser entry point");
 check(indexHtml.includes("css/0_global_common/layer_contract.css"), "final screen-space layer contract is loaded by the browser entry point");
+check(indexHtml.indexOf("css/3_bottom_area/draw_card_select_area.css")
+    < indexHtml.indexOf("css/3_bottom_area/player_tray_view_mode.css"),
+"Player Tray placement authority loads after legacy hand styling");
+check(indexHtml.indexOf("css/0_global_common/layer_contract.css")
+    > indexHtml.indexOf("css/3_bottom_area/player_tray_view_mode.css"),
+"final layer contract loads after feature-level tray styling");
+
 check(tokensCss.includes("--layout-player-tray-bottom")
     && tokensCss.includes("--layout-trial-action-tray-width")
     && tokensCss.includes("--layout-right-context-width"),
 "layout tokens cover Player Tray, Trial Action Tray, and Right Context geometry");
 
-check(trayViewCss.includes("var(--layout-player-tray-bottom)")
+check(trayViewCss.includes("position: absolute")
+    && trayViewCss.includes("width: auto !important")
+    && trayViewCss.includes("var(--layout-player-tray-bottom)")
     && trayViewCss.includes("var(--layout-player-tray-motion-ms)"),
-"Player Tray placement consumes Layout-owned geometry tokens");
+"Player Tray placement file is the final screen-space geometry authority");
+check(trayViewCss.includes('data-board-view="top"')
+    && trayViewCss.includes('data-board-view="quarter"'),
+"Player Tray placement consumes board-view only as a placement input");
 check(!trayViewCss.includes("data-board-context"), "Player Tray placement remains independent from Board Presentation context semantics");
 
 check(trialTrayCss.includes("var(--layout-trial-action-tray-width)")
