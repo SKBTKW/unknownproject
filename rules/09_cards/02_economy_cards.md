@@ -63,10 +63,24 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 | ID | 状態 | 現在 |
 | :--- | :---: | :--- |
 | `CMD_GRANARY_NETWORK` | **Planned / Partial** | UNIQUE。永続状態を立てる骨格あり。 |
-| `CMD_INDUSTRIAL_ROAD` | **Planned / Partial** | 街道/連携を使う完成効果は未接続。 |
+| `CMD_INDUSTRIAL_ROAD` | **Planned / Partial** | `industrialRoadActive=true` とBuff登録までは実装。ただし盤面セル/辺としての道路、移動コスト、産業拠点+20%、Trial route誘導のいずれも実装確認できない。 |
 | `CMD_IRRIGATION_NETWORK` | **Planned / Partial** | `irrigationNetworkActive` 等の状態は持てるが、最大8農地強化は未接続。 |
 | `CMD_INDUSTRIAL_CLUSTER` | **Planned / Partial** | `industrialClusterActive` を立てるが、PROJECTコスト軽減は未接続。 |
 | `CMD_GREAT_RAMPART_PROJECT` | **Planned / Partial** | `greatRampartActive` を立てるが、Trialへ防塁効果を反映する完成経路は未接続。 |
+
+### 《産業街道》と道路システムの境界
+
+現 `game/` には、Trial route計算に使える一般的な道路グラフ/道路セル/道路edge/移動コストシステムは確認できない。
+
+`GridEngine` は土地配置・地帯化・連携等を管理するが、道路状態や道路移動コストを保持しない。`ProductionCalculator` も `industrialRoadActive` を参照しない。
+
+したがって現在は、
+
+> **道路カードのデータと永続フラグはあるが、「道路」という盤面システム自体はまだ存在しない**
+
+と分類する。
+
+将来の「道路で敵の低コストrouteを誘導する」というTrial上位設計を実装する場合は、まず平時盤面上で道路をどの単位（セル / edge / 連携間接続等）として保持するかを確定する必要がある。
 
 ---
 
@@ -105,6 +119,7 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 2. 《農地改革》: rules旧「指定最大4マス」 vs runtime「全平地系+1/T」。
 3. 《伐採拠点》《穀物庫》《牧畜場》《製材所》《鉱山》等: カードは存在するが、完成した持続効果が未接続。
 4. Stage 3 Project群: フラグ/Buff骨格中心で、Trial/Production/Cost resolverへの接続が未完成。
+5. 《産業街道》: `industrialRoadActive` は立つが、道路盤面表現・産出効果・Trial移動コストの消費先がない。
 
 これらは「rulesどおりgameを即修正」ではなく、カードごとに採用する最終仕様を決めてから同期する。
 
