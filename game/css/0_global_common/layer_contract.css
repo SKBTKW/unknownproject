@@ -33,4 +33,18 @@
         right: var(--layout-advisor-mobile-right) !important;
         bottom: var(--layout-advisor-mobile-bottom) !important;
     }
+
+    /*
+     * On compact screens the point-specific Trial Action Tray occupies the
+     * lower band, so the global Trial summary moves into an upper-right band.
+     * This is Layout geometry only; Trial content/semantics remain feature-owned.
+     */
+    .trial-defense-allocation-panel {
+        top: var(--layout-right-context-mobile-top) !important;
+        right: var(--layout-right-context-mobile-right) !important;
+        bottom: auto !important;
+        width: var(--layout-right-context-mobile-width) !important;
+        max-height: var(--layout-right-context-mobile-max-height) !important;
+        overflow-y: auto;
+    }
 }
