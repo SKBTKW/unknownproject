@@ -5,22 +5,6 @@
     0_global_common/base_layout.css を SSOT 正本として管理)
    ============================================================= */
 
-/* 1. 最上部ヘッダー (高さ 80px ✕ 🔥 100% 画面中央固定) */
-.top-bar {
-    background: #161922;
-    border: 1px solid #2a2e3d;
-    border-radius: 10px;
-    padding: 0 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-    flex-shrink: 0;
-    height: var(--layout-header-height, 80px);
-    position: relative;
-    overflow: visible;
-}
-
 .app-title-box {
     display: flex;
     align-items: center;
@@ -729,22 +713,6 @@
             0% { opacity: 0; transform: translateY(-6px) scale(0.97); }
             100% { opacity: 1; transform: translateY(0) scale(1); }
         }
-        /* 1. 最上部ヘッダー (高さ 84px ✕ 🔥 超巨大センタリング ✕ 📊 右端拡大データ) */
-        .top-bar {
-            background: #161922;
-            border: 1px solid #2a2e3d;
-            border-radius: 10px;
-            padding: 0 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.5);
-            flex-shrink: 0;
-            height: 84px;
-            position: relative;
-            overflow: visible;
-        }
-
         /* 📊 右端: 各種データ表示パネル (限界超大型拡大 ✕ テキスト排除 ✕ アイコン数値特大) */
         .header-resource-data-panel {
             margin-left: auto;

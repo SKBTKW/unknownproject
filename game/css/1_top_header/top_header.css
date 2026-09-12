@@ -7,15 +7,15 @@
     background: #161922;
     border: 1px solid #2a2e3d;
     border-radius: 10px;
-    padding: 0 16px;
+    padding: 0 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.5);
     flex-shrink: 0;
-    height: var(--layout-header-height, 80px);
+    height: var(--layout-header-height, 84px);
     position: relative;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .app-title-box {

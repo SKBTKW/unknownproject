@@ -13,7 +13,7 @@
     --z-modal: 9999;
 
     /* 📐 レイアウトメトリクス・オフセット (Layout Metrics Tokens) */
-    --layout-header-height: 80px;
+    --layout-header-height: 84px;
     --layout-app-gap: 8px;
     --layout-edge-gap: 16px;
 }
@@ -186,7 +186,7 @@ body {
 /* タイトルロゴはヘッダーから切り離し、メインエリア左上へ */
 .app-wrapper > #gameWallpaperArt {
     position: absolute !important;
-    top: calc(var(--layout-header-height) + var(--layout-app-gap) + 8px);
+    top: calc(var(--layout-header-height) + var(--layout-app-gap) + 4px);
     left: 18px !important;
     right: auto !important;
     width: clamp(260px, 24vw, 420px) !important;
