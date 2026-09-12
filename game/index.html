@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="css/2_center_area/land_grid.css?v=20260909_v39">
     <link rel="stylesheet" href="css/3_bottom_area/draw_card_select_area.css?v=20260827_v38">
     <link rel="stylesheet" href="css/3_bottom_area/player_tray_view_mode.css?v=20260912_v1">
+    <link rel="stylesheet" href="css/3_bottom_area/trial_action_tray.css?v=20260912_v1">
     <link rel="stylesheet" href="css/4_right_sidebar/right_sidebar.css?v=20260827_v38">
     <link rel="stylesheet" href="css/4_right_sidebar/advisor_ui.css?v=20260909_v6">
     <link rel="stylesheet" href="css/layout.css?v=20260827_v38">
@@ -70,6 +71,7 @@
                     <div id="cardFloatingPreview" class="card-floating-preview-container"></div>
                     <div id="cardRow" class="cards-row-wrapper"></div>
                 </div>
+                <div id="trialActionTrayHost" class="trial-action-tray-host" aria-hidden="true"></div>
             </div>
 
             <div id="layerSystemOverlay" class="layer-system-overlay layer-system-overlay-anchor">
@@ -111,20 +113,30 @@
 
     <script type="module">
         import { GameEngine, UIController, UndoLandSystem, BuffSystem, TerritoryBadgeComponent, ModalSystem, FocusLayerManager, BoardCameraSystem, SettingsModalSystem, settingsModalInstance, gameSettings, EmberStatusComponent, HandCardsComponent, ReserveSlotComponent, TopHeaderComponent, BoardGridComponent, HqComponent, TooltipSystem, tooltipSystemInstance, EmberSystem } from './src/app.js?v=20260909_v53';
+        import { TrialActionTrayComponent } from './src/ui/trial_action_tray_component.js?v=20260912_v1';
 
         function bootstrap() {
             try {
                 const engine = GameEngine.createGame();
                 const ui = new UIController(engine);
+                const trialActionTray = new TrialActionTrayComponent(ui);
+                const renderBase = ui.render.bind(ui);
+                ui.render = (...args) => {
+                    const result = renderBase(...args);
+                    trialActionTray.render();
+                    return result;
+                };
 
                 window.gameEngine = engine;
                 window.ui = ui;
+                window.trialActionTray = trialActionTray;
 
                 if (UndoLandSystem && ui.state) {
                     window.undoSys = new UndoLandSystem(ui.state);
                 }
 
                 ui.init();
+                trialActionTray.render();
             } catch (err) {
                 console.error("🔥 [Bootstrap Error]", err);
                 const errBox = document.createElement("div");
