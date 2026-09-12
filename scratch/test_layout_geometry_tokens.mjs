@@ -96,6 +96,10 @@ check(layoutConfig.includes('right: "var(--layout-right-context-right)"')
     && layoutConfig.includes('width: "var(--layout-right-context-width)"')
     && layoutConfig.includes('width: "var(--layout-right-context-mobile-width)"'),
 "legacy Trial Right Context geometry delegates to shared Layout tokens");
+check(layoutConfig.includes('top: "var(--layout-right-context-mobile-top)"')
+    && layoutConfig.includes('maxHeight: "var(--layout-right-context-mobile-max-height)"')
+    && !layoutConfig.includes("--layout-right-context-mobile-bottom"),
+"mobile Trial Right Context config follows the upper-band Layout contract");
 
 check(layerContractCss.includes("#layerPlayerTray.layer-player-tray")
     && layerContractCss.includes("var(--z-player)"),
