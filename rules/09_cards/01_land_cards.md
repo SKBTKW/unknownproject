@@ -74,7 +74,15 @@
 
 ### 山岳
 
-山岳カードは `Stage >= 2` に加え、現在 `reqE2: 3` を持つため丘陵条件を要求する。
+山岳カードのデータには `Stage >= 2` に加え `reqE2: 3` が設定されており、**データ上は丘陵3マスを前提とする意図**がある。
+
+ただし現在の `DeckManager.isCardEligible()` が評価するキーは `reqE2HillsOnBoard` であり、`LAND_CARDS_MASTER` 側の `reqE2` を正規化・参照する処理は確認できない。
+
+したがって現runtimeでは、
+
+> **山岳カードの `reqE2:3` はOffering Eligibilityへ未接続で、Stage 2到達後は丘陵3マスを満たしていなくても候補化し得る。**
+
+と扱う。
 
 | ID | Stage | 形状 | Rare | Weight | 1マス産出 |
 | :--- | ---: | :--- | :---: | ---: | :--- |
@@ -140,4 +148,5 @@
 
 1. `land_cards.json` / `land_cards_data.js` / `land_system.js` / `card_database.js` の責務を整理し、土地産出の二重定義を減らす。
 2. 特に砂漠の✨2と✨5の不一致を解消する。
-3. rulesへカード数値を重複保持しすぎず、実装データとの差分が出た場合は本台帳を更新する。
+3. 山岳カードの `reqE2` とEligibility側の `reqE2HillsOnBoard` のキー不一致を解消する。
+4. rulesへカード数値を重複保持しすぎず、実装データとの差分が出た場合は本台帳を更新する。
