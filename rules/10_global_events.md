@@ -35,16 +35,24 @@ Global Eventは、長期計画を無作為に無効化するためではなく�
 
 | ID | 名称 | 実装状態 |
 | :--- | :--- | :--- |
-| `EVENT_COLD_WAVE` | 寒波 | 実装済み |
-| `EVENT_DROUGHT` | 旱魃 | 実装済み |
-| `EVENT_NEW_GENERATION` | 新たな世代 | 実装済み |
-| `EVENT_CRAFTSMAN_BOOM` | 職人たちの活況 | 実装済み |
-| `EVENT_BOUNTIFUL_SEASON` | 豊穣の季節 | 実装済み |
-| `EVENT_RECOVERY_MOMENTUM` | 復興の機運 | 実装済み |
-| `EVENT_DEMIHUMAN_RAID` | 亜人襲撃 | 定義のみ。`effects: []` |
-| `EVENT_DEMIHUMAN_SCOUTS` | 亜人の斥候 | 定義のみ。`effects: []` |
+| `EVENT_COLD_WAVE` | 寒波 | **Implemented / Partial chain** — 平地🌾倍率0.75は産出計算へ接続済み。終了後の`FOOD_CRISIS`イベントWeight補正は現イベントID/categoryに対応先がなく、実効先を確認できない。 |
+| `EVENT_DROUGHT` | 旱魃 | **Implemented** — 平地🌾倍率0.60は産出計算へ接続済み。 |
+| `EVENT_NEW_GENERATION` | 新たな世代 | **Partial** — `OFFERING_WEIGHT_TAG_BOOST(POPULATION)`定義はあるが、現`DeckManager`は`GlobalEventManager.applyOfferingWeightEffects()`を呼ばないため、Offeringへの実効効果は未接続。 |
+| `EVENT_CRAFTSMAN_BOOM` | 職人たちの活況 | **Partial** — `OFFERING_WEIGHT_TAG_BOOST(CONSTRUCTION)`定義はあるが、Offering抽選側hook未接続。 |
+| `EVENT_BOUNTIFUL_SEASON` | 豊穣の季節 | **Implemented / Partial chain** — 平地🌾倍率1.25は産出計算へ接続済み。終了後の`EVENT_NEW_GENERATION` Weight補正はSelector側で参照されるが、`NEXT_GLOBAL_EVENT`寿命の消費処理に不整合あり。 |
+| `EVENT_RECOVERY_MOMENTUM` | 復興の機運 | **Partial** — `OFFERING_WEIGHT_TAG_BOOST(RECOVERY)`定義はあるが、Offering抽選側hook未接続。 |
+| `EVENT_DEMIHUMAN_RAID` | 亜人襲撃 | **Partial / Data only** — 候補定義あり、`effects: []`。 |
+| `EVENT_DEMIHUMAN_SCOUTS` | 亜人の斥候 | **Partial / Data only** — 候補定義あり、`effects: []`。 |
 
-《亜人襲撃》《亜人の斥候》は候補定義は存在するが、小規模戦闘や情報獲得の本効果は未接続である。
+《寒波》《旱魃》《豊穣の季節》の `PRODUCTION_MULTIPLIER` は `ProductionCalculator` が `globalEventManager.applyProductionEffects()` を呼ぶため実効する。
+
+一方、《新たな世代》《職人たちの活況》《復興の機運》が使用する `OFFERING_WEIGHT_TAG_BOOST` は `EffectResolver` / `GlobalEventManager.applyOfferingWeightEffects()` まで実装されているが、現 `DeckManager.drawSingleCard()` はこのhookを呼ばず、カードWeight計算も `baseWeight × Directive × Draw Bias` だけで進む。
+
+したがって現状は、
+
+> **Offering Weight系Global Eventは、イベントの発生・継続表示までは動くが、カード抽選への最終効果が未接続**
+
+と扱う。
 
 ## 3. Trial接近は通常Global Eventと分離する
 
@@ -180,6 +188,20 @@ Trial接近時は、数値カウントダウンではなく**警戒状態**と�
 
 専用イベントチェーンシステムは必須としない。既存のWeight補正で出来事の因果関係を表現できる。
 
+現在 `EVENT_WEIGHT_MODIFIER` 自体は実装され、`GlobalEventSelector` は `state.temporaryWeightModifiers` を参照して候補Weightへ倍率を掛ける。
+
+ただし寿命管理には実装不整合がある。
+
+- `EffectResolver.EVENT_WEIGHT_MODIFIER` は `expiry: { type: "NEXT_GLOBAL_EVENT" }` を保存できる。
+- `GlobalEventManager.tickTurn()` は `TURN_COUNT` expiryのみを除去し、`NEXT_GLOBAL_EVENT` は保持する。
+- 現 `triggerEvent()` 内にも「次のGlobal Event発生時に当該modifierを消費/削除する」処理を確認できない。
+
+したがって、`NEXT_GLOBAL_EVENT` と宣言されたWeight補正は、現状では**意図した1回消費寿命ではなく残存し続ける可能性がある**。
+
+さらに《寒波》終了時の `targetTag: "FOOD_CRISIS"` は、現8イベントの `id` / `category` と一致する対象を確認できないため、現マスターでは実効対象なし。
+
+《豊穣の季節》終了時の `targetTag: "EVENT_NEW_GENERATION"` はEvent IDに一致するためSelectorのWeight計算対象にはなるが、上記expiry未消費問題を持つ。
+
 第1 Trial前の異変シーケンスのみ、導入体験として保証する。
 
 ## 10. Chronicle
@@ -194,13 +216,16 @@ Trial接近時は、数値カウントダウンではなく**警戒状態**と�
 
 現 `game/` には以下が残る。
 
-1. 通常Global Event基盤は実装済み。
-2. 亜人襲撃・斥候は効果未実装。
-3. 第1 Trial前の固定異変シーケンスは未実装。
-4. 調査・情報カテゴリの解禁状態は未実装。
-5. 警戒状態の環境Presentationは未実装。
-6. `TopHeaderComponent` の正確な5VerseカウントダウンはLegacy実装として残存。
-7. `DeckManager.isCardEligible()` の一部カード条件は、警戒状態ではなく `nextTrialTurn - currentTurn` を直接参照している。
-8. そのため、固定異変・脅威認識・調査解禁より先にTrial接近条件だけで候補化し得るカードがある。
-9. 通常Verse進行からTrial本体を自動起動する配線は未実装。
-
+1. 通常Global Eventの発生・候補抽選・継続管理基盤は実装済み。
+2. 寒波 / 旱魃 / 豊穣のProduction倍率は産出計算へ接続済み。
+3. 新たな世代 / 職人活況 / 復興の機運のOffering Weight効果は、GlobalEvent側hookまで存在するが`DeckManager`未接続。
+4. 亜人襲撃・斥候は効果未実装。
+5. `EVENT_WEIGHT_MODIFIER` の `NEXT_GLOBAL_EVENT` expiryは宣言できるが、次イベント発生時の消費処理を確認できない。
+6. 寒波の終了Weight補正`FOOD_CRISIS`は現イベントマスターに実効対象がない。
+7. 第1 Trial前の固定異変シーケンスは未実装。
+8. 調査・情報カテゴリの解禁状態は未実装。
+9. 警戒状態の環境Presentationは未実装。
+10. `TopHeaderComponent` の正確な5VerseカウントダウンはLegacy実装として残存。
+11. `DeckManager.isCardEligible()` の一部カード条件は、警戒状態ではなく `nextTrialTurn - currentTurn` を直接参照している。
+12. そのため、固定異変・脅威認識・調査解禁より先にTrial接近条件だけで候補化し得るカードがある。
+13. 通常Verse進行からTrial本体を自動起動する配線は未実装。
