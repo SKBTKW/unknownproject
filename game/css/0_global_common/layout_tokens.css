@@ -10,9 +10,12 @@
    ============================================================= */
 
 :root {
-    /* Shared edge spacing */
+    /* Shared app-shell geometry */
+    --layout-header-height: 84px;
+    --layout-app-gap: 8px;
     --layout-edge-gap: 16px;
     --layout-mobile-edge-gap: 8px;
+    --layout-system-overlay-inset: 0px;
 
     /* Layout-owned layer placement between Player HUD and System Overlay. */
     --z-right-context: 720;
