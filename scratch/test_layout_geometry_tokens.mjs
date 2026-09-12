@@ -31,12 +31,19 @@ check(indexHtml.indexOf("css/0_global_common/layer_contract.css")
 
 check(tokensCss.includes("--layout-header-height")
     && tokensCss.includes("--layout-app-gap")
+    && tokensCss.includes("--layout-body-padding")
+    && tokensCss.includes("--layout-body-gap")
+    && tokensCss.includes("--layout-app-max-width")
     && tokensCss.includes("--layout-edge-gap"),
 "shared app-shell metrics are defined by layout_tokens.css");
 check(!baseLayoutCss.includes("--layout-header-height:")
     && !baseLayoutCss.includes("--layout-app-gap:")
     && !baseLayoutCss.includes("--layout-edge-gap:"),
 "base_layout.css consumes Layout metrics without redefining their source of truth");
+check(baseLayoutCss.includes("padding: var(--layout-body-padding)")
+    && baseLayoutCss.includes("gap: var(--layout-body-gap)")
+    && baseLayoutCss.includes("max-width: var(--layout-app-max-width)"),
+"base app shell consumes canonical spacing and width tokens");
 
 check(tokensCss.includes("--layout-player-tray-bottom")
     && tokensCss.includes("--layout-player-tray-top-left")
