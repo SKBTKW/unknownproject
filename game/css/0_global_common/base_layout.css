@@ -26,16 +26,16 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #0d0f14;
     color: #e0e0e0;
-    padding: 10px;
+    padding: var(--layout-body-padding);
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--layout-body-gap);
     height: 100vh;
     overflow: hidden;
 }
 
 .app-wrapper {
-    max-width: 2100px;
+    max-width: var(--layout-app-max-width);
     margin: 0 auto;
     width: 100%;
     height: 100%;
