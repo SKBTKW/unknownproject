@@ -32,7 +32,7 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 | `CMD_WETLAND_RECLAMATION` | **Implemented** | 🧱15＋🔥1。湖でない未地帯化湿原1マスを `E1_RECLAIMED_LAND` へ永久変換し、変換後に地帯化/連携再判定。 |
 | `CMD_LOGGING_CAMP` | **Partial** | 🔥1、即時🧱+8は実装。周囲森林からの継続産出は現ProductionCalculatorへ未接続。 |
 | `CMD_GRANARY` | **Partial** | 🧱20、`granaryCount` は増えるが、現在のMaintenance resolverは `granaryCount` を参照しない。維持費×0.90は未接続。 |
-| `CMD_AGRICULTURAL_REFORM` | **Implemented / Simplified** | 🧱20、`permanentPlainsFoodBonus +1`。現実装では指定4マスではなく**全平地系への恒久+1/Verse**として処理される。 |
+| `CMD_AGRICULTURAL_REFORM` | **Implemented / Simplified / Eligibility different** | 🧱20、`permanentPlainsFoodBonus +1`。現実装では指定4マスではなく**全平地系への恒久+1/Verse**として処理される。またデータの `reqConnectedPlainsOrReclaimed:3` に対し、Eligibility実装は連結判定をせず、盤面全体の平地＋干拓地を単純合計して3マス以上なら通す。 |
 | `CMD_PASTORAL_FARM` | **Partial** | 🧱15、現実装は即時🌾+2とBuff登録。牧畜場化・周囲平地による持続産出は未接続。 |
 | `CMD_ABANDONED_SETTLEMENT` | **Implemented** | 🔥1、2D6。現在値は 2–5:🌾+15 / 6–8:🧱+15 / 9–11:✨+10 / 12:🌾+20🧱+20✨+15。旧土地探索表は使わない。 |
 | `CMD_EMERGENCY_LEVY` | **Implemented** | 🌾20を支払い、即時🧱+15。旧「次Verse維持費+5」ペナルティは現発動分岐では設定しない。 |
@@ -95,9 +95,13 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 - `reqIrrigationDone`
 - `reqLinkedDistinctIndustries`
 
+さらに、条件キー自体は参照されても、名前が示す意味と実判定が一致しないものがある。
+
+- `reqConnectedPlainsOrReclaimed`: 現実装は連結成分を探索せず、盤面全体の平地＋干拓地を単純合計する。
+
 したがって、
 
-> **カードデータに条件が書かれていること自体は、Offering条件が実装済みであることを意味しない。**
+> **カードデータに条件が書かれていること自体は、Offering条件がその意味どおり実装済みであることを意味しない。**
 
 と扱う。
 
@@ -123,7 +127,7 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 特に重要な差分：
 
 1. 《配給》: rules旧40%軽減 vs runtime 50%軽減。
-2. 《農地改革》: rules旧「指定最大4マス」 vs runtime「全平地系+1/Verse」。
+2. 《農地改革》: rules旧「指定最大4マス」 vs runtime「全平地系+1/Verse」。さらに候補化の `reqConnectedPlainsOrReclaimed:3` は実際には非連結でも合計3マスで成立する。
 3. 《伐採拠点》《穀物庫》《牧畜場》《製材所》《鉱山》等: カードは存在するが、完成した持続効果が未接続。
 4. Stage 3 Project群: フラグ/Buff骨格中心で、Trial/Production/Cost resolverへの接続が未完成。
 5. 《産業街道》: `industrialRoadActive` は立つが、道路盤面表現・産出効果・Trial移動コストの消費先がない。
