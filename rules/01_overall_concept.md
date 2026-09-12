@@ -38,9 +38,11 @@ Trial の中心となる問いは常に以下である。
 
 ### 現在の実装状態
 
-通常ランの `GameEngine.nextTurn()` / `TurnLifecycleService.advance()` には、現時点で Verse 50 に到達した時点で進行を停止し勝利結果へ遷移する終端処理が接続されていない。
+`GameState.processTurnEndMaintenance()` には、`turn >= 50 && ember > 0` のとき `isGameClear=true` を返す判定自体は存在する。
 
-したがって、**50 Verse完走は採用ルールだが、通常ランの勝利終了配線は未実装**として扱う。
+ただし、通常ランの `GameEngine.nextTurn()` / `TurnLifecycleService.advance()` はこの結果をラン終端として消費せず、そのまま次Verse初期化へ進む。
+
+したがって、**Verse 50完走条件の検出は部分実装済みだが、勝利結果への遷移・進行停止は未実装**として扱う。現状はVerse 51以降へ進行可能である。
 
 ---
 
