@@ -30,6 +30,12 @@
     --layout-trial-action-tray-max-height-compact: 44vh;
     --layout-trial-action-tray-clearance: 20px;
 
+    /* Advisor dock geometry. Advisor internals remain feature-owned. */
+    --layout-advisor-right: var(--layout-edge-gap);
+    --layout-advisor-bottom: var(--layout-edge-gap);
+    --layout-advisor-mobile-right: var(--layout-mobile-edge-gap);
+    --layout-advisor-mobile-bottom: var(--layout-mobile-edge-gap);
+
     /*
      * Right Context geometry.
      * Its bottom edge stays above the desktop Player Action Host so the
