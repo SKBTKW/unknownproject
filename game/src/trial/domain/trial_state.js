@@ -24,6 +24,7 @@ export class TrialState {
         this.battleResults = null;
         this.routeProgress = {};
         this.traversalResults = null;
+        this.skippedRouteResults = {};
         this.damageResults = null;
         const initEmber = Number.isFinite(scenario.ember) ? Math.max(0, Number(scenario.ember)) : 20;
         const initMaxEmber = Number.isFinite(scenario.maxEmber) ? Math.max(1, Number(scenario.maxEmber)) : 20;
