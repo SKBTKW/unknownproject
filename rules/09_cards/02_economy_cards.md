@@ -50,7 +50,7 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 | `CMD_LIME_KILN` | **Partial** | 🌾10＋🧱15、`limeKilnCount` 登録。建設コスト軽減は未接続。 |
 | `CMD_MARKET` | **Partial / Eligibility gap** | 🧱25、`marketCount` 登録。持続産出は未接続。データには `reqMinLinks:2` があるが、現 `DeckManager.isCardEligible()` は `reqMinLinks` を評価しないため、2連携条件もOffering抽選へ未接続。 |
 | `CMD_DEPOT` | **Partial / Eligibility gap** | 🧱30、`depotCount` 登録。PROJECTコスト軽減は未接続。データの `reqIndustrySpecialBlocks:2` は現Eligibilityで評価されない。 |
-| `CMD_IRRIGATION` | **Partial** | 🧱20、`irrigationCount` 登録。対象農地への恒久🌾+1/Verseは未接続。既存の水源灌漑+50%とは別。 |
+| `CMD_IRRIGATION` | **Partial / Eligibility gap** | 🧱20、`irrigationCount` 登録。対象農地への恒久🌾+1/Verseは未接続。既存の水源灌漑+50%とは別。`reqWaterSource` は評価されるが、データの `reqPlainsOrReclaimed:1` は現Eligibilityで評価されないため、平地/干拓地条件は未接続。 |
 | `CMD_RESETTLEMENT` | **Partial** | 🌾15＋🧱10、即時🔥+2は実装。指定平地地帯への🌾+2/Verseは未接続。 |
 | `CMD_WORKSHOP` | **Partial / Eligibility gap** | 🧱30、`workshopCount` 登録。SPECIAL_BLOCKコスト軽減は未接続。データの `reqDistinctPrimaryIndustries:2` は現Eligibilityで評価されない。 |
 
@@ -94,6 +94,7 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 - `reqGranaries`
 - `reqIrrigationDone`
 - `reqLinkedDistinctIndustries`
+- `reqPlainsOrReclaimed`
 
 さらに、条件キー自体は参照されても、名前が示す意味と実判定が一致しないものがある。
 
@@ -107,7 +108,7 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 
 と扱う。
 
-逆に、`reqWaterSource`、`reqLargeTerritory`、`reqWood`、`reqFood`、`reqMystic`、地形/socket系など、現Eligibilityで明示的に評価される条件も存在する。
+逆に、`reqWaterSource`、`reqLargeTerritory`、`reqWood`、`reqFood`、`reqMystic`、`reqPlainsMerge2x2`、地形/socket系など、現Eligibilityで明示的に評価される条件も存在する。
 
 ---
 
@@ -131,10 +132,11 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 1. 《配給》: rules旧40%軽減 vs runtime 50%軽減。
 2. 《農地改革》: rules旧「指定最大4マス」 vs runtime「全平地系+1/Verse」。さらに候補化の `reqConnectedPlainsOrReclaimed:3` は実際には非連結でも合計3マスで成立する。
 3. 《伐採拠点》《製材所》: 前者の `reqForestNearby` は盤面全体集計、後者の `reqLoggingCamp` は森が1マスあるだけでも成立し得るため、カードデータ名が示す前提関係より緩い。
-4. 《穀物庫》《牧畜場》《製材所》《鉱山》等: カードは存在するが、完成した持続効果が未接続。
-5. Stage 3 Project群: フラグ/Buff骨格中心で、Trial/Production/Cost resolverへの接続が未完成。
-6. 《産業街道》: `industrialRoadActive` は立つが、道路盤面表現・産出効果・Trial移動コストの消費先がない。
-7. 市場・補給所・工房・一部Stage3事業は、データ上の高度な候補化条件キーが `DeckManager.isCardEligible()` で評価されず、想定条件より早くOfferingへ出現し得る。
+4. 《灌漑》: `reqWaterSource` は評価されるが、`reqPlainsOrReclaimed` は未評価のため、対象農地条件が候補化へ接続されていない。
+5. 《穀物庫》《牧畜場》《製材所》《鉱山》等: カードは存在するが、完成した持続効果が未接続。
+6. Stage 3 Project群: フラグ/Buff骨格中心で、Trial/Production/Cost resolverへの接続が未完成。
+7. 《産業街道》: `industrialRoadActive` は立つが、道路盤面表現・産出効果・Trial移動コストの消費先がない。
+8. 市場・補給所・工房・一部Stage3事業は、データ上の高度な候補化条件キーが `DeckManager.isCardEligible()` で評価されず、想定条件より早くOfferingへ出現し得る。
 
 これらは「rulesどおりgameを即修正」ではなく、カードごとに採用する最終仕様を決めてから同期する。
 
