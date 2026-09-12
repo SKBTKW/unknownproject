@@ -55,6 +55,21 @@
 
 という状態。
 
+さらに、Trial内部の資源状態と通常GameStateのコミット境界も統一されていない。
+
+- `startTrialInterceptionPreview()` は通常GameState由来の `availableDefense` と🔥をScenarioへコピーする。
+- 迎撃計画を発動すると、消費した🛡️はTrial-local `state.human.availableDefense` からのみ減少する。
+- 現 `TrialController` は通常GameStateの `currentDefense` を減少させない。
+- 一方、本営到達時の🔥損害は `emberSystem.applyDamage()` が注入されていれば通常GameState側へ直接反映される。
+
+したがって現在は、
+
+> **🛡️はTrial-local、🔥損害はGameStateへ直接コミットし得る**
+
+という非対称な半接続状態である。
+
+軍事カードの「次のTrial」効果を完成させる際は、個別フラグを直接Trialへ継ぎ足す前に、通常GameStateからTrial開始時状態を構成し、Trial終了結果を一括でGameStateへ反映する境界を定義する必要がある。
+
 ---
 
 ## 4. 🛡️最大値と現在値
@@ -89,3 +104,6 @@
 3. 《弩砲》の`nextTrialDamageMitigation=0.5`は`TrialHqDamageResolver`へ渡らず、50%軽減は未接続。
 4. route生成自体が通常ランへ未接続のため、Guided Defense / Cavalry Scouts等のroute系効果も消費先がない。
 5. Trial専用手札は存在せず、現状のTrial戦闘は盤面地形と配備🛡️中心で動く。
+6. `TrialController` の🛡️消費はTrial-localであり、通常GameStateの `currentDefense` へコミットされない。
+7. Trial本営損害は、`emberSystem` 注入時には通常GameStateの🔥へ直接反映されるため、🛡️と🔥で永続化境界が一致していない。
+8. Trial完了時のpayloadは生成されるが、Stage遷移・Chronicle・次Trial状態・カードの「次Trial」フラグ消費までを一括処理する結果コミッタは確認できない。
