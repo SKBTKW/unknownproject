@@ -1,4 +1,5 @@
 import { TrialActionTrayComponent } from "./trial_action_tray_component.js";
+import { attachTrialRouteBoardSelection } from "./trial_route_board_selection_bridge.js";
 
 const RERENDER_AFTER_METHODS = Object.freeze([
     "selectTrialInterceptionCell",
@@ -41,6 +42,7 @@ export function attachTrialActionTray(uiController) {
         };
     });
 
+    attachTrialRouteBoardSelection(uiController);
     component.render();
     return component;
 }
