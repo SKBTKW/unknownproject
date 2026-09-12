@@ -199,6 +199,19 @@ body[data-player-tray-mode="trial"] #trialActionTrayHost {
     background: rgba(15, 115, 100, 0.92);
 }
 
+/*
+ * Migration boundary:
+ * point-specific controls now belong to the bottom Trial Action Tray.
+ * The legacy right-side Trial context remains responsible for route/global
+ * summary and planning progression until the Advisor / fallback panel split.
+ */
+body[data-player-tray-mode="trial"] .trial-defense-allocation-panel .trial-defense-allocation-status,
+body[data-player-tray-mode="trial"] .trial-defense-allocation-panel .trial-defense-allocation-controls,
+body[data-player-tray-mode="trial"] .trial-defense-allocation-panel .trial-route-decision-actions,
+body[data-player-tray-mode="trial"] .trial-defense-allocation-panel .trial-defense-allocation-preview {
+    display: none !important;
+}
+
 @media (max-width: 900px) {
     .trial-action-tray {
         width: min(620px, calc(100vw - 32px));
