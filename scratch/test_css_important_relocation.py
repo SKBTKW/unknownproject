@@ -66,10 +66,13 @@ with TemporaryDirectory() as temp:
                                                 "game/css/3_bottom_area/draw_card_select_area.css"]})
     check(len(violations) == 4, "other CSS files receive no exception")
 
-root = Path(__file__).resolve().parent.parent
+root = Path.cwd()
+check((root / ".git").exists(), "inspection runs from repository root")
+check((root / "game/css/0_global_common/base_layout.css").exists(),
+      "baseline CSS exists in the repository working tree")
 original_bytes = run(
     ["git", "show", "HEAD:game/css/0_global_common/base_layout.css"],
-    cwd=root,
+    cwd=str(root),
     capture_output=True,
     check=True,
 ).stdout
@@ -77,4 +80,4 @@ original = original_bytes.decode("utf-8")
 expected = 8 if "#layerPlayerTray.layer-player-tray {" in original else 0
 check(len(get_relocated_player_tray_lines(root)) == expected,
       "only pending, identical relocation allows the eight existing declarations")
-print("CSS001 relocation: 12/12 PASS")
+print("CSS001 relocation: 14/14 PASS")
