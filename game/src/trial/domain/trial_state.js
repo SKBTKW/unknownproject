@@ -26,6 +26,7 @@ export class TrialState {
         this.traversalResults = null;
         this.skippedRouteResults = {};
         this.damageResults = null;
+        this.hqDamageResolution = null;
         const initEmber = Number.isFinite(scenario.ember) ? Math.max(0, Number(scenario.ember)) : 20;
         const initMaxEmber = Number.isFinite(scenario.maxEmber) ? Math.max(1, Number(scenario.maxEmber)) : 20;
         this.human = {
@@ -51,9 +52,7 @@ export class TrialState {
     }
 
     getCurrentBattle() {
-        if (!Array.isArray(this.battleQueue) || this.currentBattleIndex === null) {
-            return null;
-        }
+        if (!Array.isArray(this.battleQueue) || this.currentBattleIndex === null) return null;
         const item = this.battleQueue[this.currentBattleIndex];
         return item ? cloneData(item) : null;
     }
@@ -63,18 +62,14 @@ export class TrialState {
     }
 
     getCurrentBattleResult() {
-        if (!Array.isArray(this.battleResults) || this.currentBattleIndex === null) {
-            return null;
-        }
+        if (!Array.isArray(this.battleResults) || this.currentBattleIndex === null) return null;
         const res = this.battleResults[this.currentBattleIndex];
         return res ? cloneData(res) : null;
     }
 
     getRouteProgress(routeId) {
         if (!this.routeProgress) return null;
-        if (routeId) {
-            return this.routeProgress[routeId] ? cloneData(this.routeProgress[routeId]) : null;
-        }
+        if (routeId) return this.routeProgress[routeId] ? cloneData(this.routeProgress[routeId]) : null;
         return cloneData(this.routeProgress);
     }
 
@@ -83,17 +78,13 @@ export class TrialState {
     }
 
     getCurrentTraversalResult() {
-        if (!Array.isArray(this.traversalResults) || this.currentBattleIndex === null) {
-            return null;
-        }
+        if (!Array.isArray(this.traversalResults) || this.currentBattleIndex === null) return null;
         const res = this.traversalResults[this.currentBattleIndex];
         return res ? cloneData(res) : null;
     }
 
     isCurrentTraversalApplied() {
-        if (!Array.isArray(this.traversalResults) || this.currentBattleIndex === null) {
-            return false;
-        }
+        if (!Array.isArray(this.traversalResults) || this.currentBattleIndex === null) return false;
         return Boolean(this.traversalResults[this.currentBattleIndex]);
     }
 
@@ -102,17 +93,13 @@ export class TrialState {
     }
 
     getCurrentDamageResult() {
-        if (!Array.isArray(this.damageResults) || this.currentBattleIndex === null) {
-            return null;
-        }
+        if (!Array.isArray(this.damageResults) || this.currentBattleIndex === null) return null;
         const res = this.damageResults[this.currentBattleIndex];
         return res ? cloneData(res) : null;
     }
 
     getDamageResult(battleIndex) {
-        if (!Array.isArray(this.damageResults) || typeof battleIndex !== "number") {
-            return null;
-        }
+        if (!Array.isArray(this.damageResults) || typeof battleIndex !== "number") return null;
         const res = this.damageResults[battleIndex];
         return res ? cloneData(res) : null;
     }

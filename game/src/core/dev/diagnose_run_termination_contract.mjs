@@ -1,0 +1,22 @@
+import { RunTerminationService } from "../run_termination_service.js";
+import { EmberSystem } from "../../systems/ember_system.js";
+import { serializeGameState } from "../state_serializer.js";
+import { hydrateGameState } from "../hydrate_game_state.js";
+function assert(condition, message) { if (!condition) throw new Error(message); }
+const state = { turn: 18, ember: 2, maxEmber: 20, isGameOver: false, runTermination: null, grid: [], handOffering: [], reserveSlots: [], mergeLinks: new Set(), grantedConnectionPairs: new Set() };
+const engine = {};
+const emberSystem = new EmberSystem(state, engine);
+emberSystem.applyDamage(2);
+assert(engine.runTerminationService instanceof RunTerminationService, "EmberSystem must expose run termination service");
+assert(engine.runTerminationService.isTerminated(), "Ember 0 must terminate the run");
+const first = engine.runTerminationService.getResult();
+assert(first.outcome === "DEFEAT", "terminal outcome must be DEFEAT");
+assert(first.reason === "EMBER_DEPLETED", "terminal reason must be Ember depletion");
+assert(first.source === "EMBER_DAMAGE", "first terminal source must be retained");
+const serialized = serializeGameState(state);
+assert(serialized.runTermination?.terminated === true, "termination result must serialize");
+const restored = {};
+hydrateGameState(restored, serialized, { resolveCardMaster: () => null });
+assert(restored.isGameOver === true, "game-over flag must hydrate");
+assert(restored.runTermination?.reason === "EMBER_DEPLETED", "termination result must hydrate");
+console.log("PASS: run termination survives Ember damage and restore");

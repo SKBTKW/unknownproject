@@ -1,4 +1,5 @@
 import { I18n } from '../i18n.js';
+import { RunTerminationService } from '../core/run_termination_service.js';
 
 /**
  * ====================================================================
@@ -16,6 +17,9 @@ export class EmberSystem {
             if (this.state.maxEmber === undefined) this.state.maxEmber = 20;
             this.state.emberSystem = this;
         }
+        if (this.engine && !this.engine.runTerminationService) {
+            this.engine.runTerminationService = new RunTerminationService(this.state);
+        }
     }
 
     get current() {
@@ -23,9 +27,7 @@ export class EmberSystem {
     }
 
     set current(val) {
-        if (this.state) {
-            this.state.ember = Math.max(0, val);
-        }
+        if (this.state) this.state.ember = Math.max(0, val);
     }
 
     get max() {
@@ -33,9 +35,7 @@ export class EmberSystem {
     }
 
     set max(val) {
-        if (this.state) {
-            this.state.maxEmber = Math.max(1, val);
-        }
+        if (this.state) this.state.maxEmber = Math.max(1, val);
     }
 
     recoverInstant(amount, allowOvercap = false) {
@@ -62,9 +62,7 @@ export class EmberSystem {
 
     getPassiveRegenTotal() {
         let total = 0;
-        for (const val of this.passiveRegens.values()) {
-            total += val;
-        }
+        for (const val of this.passiveRegens.values()) total += val;
         return total;
     }
 
@@ -84,6 +82,7 @@ export class EmberSystem {
     applyDamage(amount) {
         if (!amount || amount <= 0) return this.current;
         this.current = Math.max(0, this.current - amount);
+        this.engine?.runTerminationService?.evaluate?.({ source: "EMBER_DAMAGE" });
         return this.current;
     }
 
@@ -138,11 +137,8 @@ export class EmberSystem {
         let reserveCost = 0;
         const hasReserved = this.state && this.state.reserveSlots && this.state.reserveSlots.some(s => s !== null && !s.isBlank);
         if (hasReserved) {
-            if (this.state.reserveFeeWaivedTurns && this.state.reserveFeeWaivedTurns > 0) {
-                reserveCost = 0;
-            } else {
-                reserveCost = -1;
-            }
+            if (this.state.reserveFeeWaivedTurns && this.state.reserveFeeWaivedTurns > 0) reserveCost = 0;
+            else reserveCost = -1;
         }
 
         const passiveRegen = this.getPassiveRegenTotal();
