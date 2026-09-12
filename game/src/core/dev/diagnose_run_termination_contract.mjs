@@ -30,7 +30,7 @@ assert(liveTermination.evaluate({ source: "NON_FATAL" }) === null, "Ember > 0 mu
 assert(liveState.isGameOver === false, "non-fatal evaluation must preserve isGameOver=false");
 
 const state = makeState();
-const engine = {};
+const engine = { state };
 const emberSystem = new EmberSystem(state, engine);
 emberSystem.applyDamage(2);
 assert(engine.runTerminationService instanceof RunTerminationService, "EmberSystem must expose run termination service");
@@ -51,7 +51,7 @@ const negativeState = makeState({ ember: -4 });
 const negativeTermination = new RunTerminationService(negativeState);
 const negativeResult = negativeTermination.evaluate({ source: "NEGATIVE_EMBER" });
 assert(negativeResult?.terminated === true, "Ember < 0 equivalent must terminate the run");
-assert(negativeResult?.ember === 0, "negative Ember must be clamped to 0 in the terminal result");
+assert(negativeResult?.ember === 0 && negativeState.ember === 0, "negative Ember must clamp state and result to 0");
 
 let executed = false;
 const actionManager = new ActionTransactionManager(engine);
