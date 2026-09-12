@@ -143,7 +143,7 @@ Trial内部の迎撃計画・基礎戦闘・進軍・HQ Damage・Completionは�
 | Card Cycle | **GAME_AHEAD** | cooldown / UNIQUE / fallbackへ同期済み | 実装済み | 一致 |
 | Hold中のcooldown経過 | **GAME_AHEAD** | 独立進行へ同期済み | 実装済み | 一致 |
 | Command使用と土地開発権 | **RULES_AHEAD** | Commandは通常の土地開発権を消費しない方針 | Command使用後`hasPickedThisTurn=true`となり土地配置が拒否される | 明確な齟齬 |
-| 複数Command使用 | **GAME_AHEAD / UNRESOLVED** | 複数使用可能を基準化 | `playCommandCard()`側に事前`hasPickedThisTurn`拒否がない | 現挙動を基準化済み |
+| 複数Command使用 | **INTERNAL_CONFLICT / RULES_AHEAD** | コストを払える限り複数Command使用可 | `DeckManager.playCommandCard()`は2枚目を事前拒否しないが、`HandCardsComponent`は1枚目使用後に全カードをlocked | 通常UIでは複数Command不可 |
 
 参照: `04_draw_and_hand_system.md`
 
@@ -240,16 +240,22 @@ Trial内部の迎撃計画・基礎戦闘・進軍・HQ Damage・Completionは�
    - Terrain Matrix: ✨2
    - 通常土地カード: ✨5
 
-3. **古い探索系コード残存**
+3. **Command選択フラグの責務不一致**
+   - `DeckManager.playCommandCard()` は1枚目使用後に `hasPickedThisTurn = true` を設定する。
+   - 同メソッド自体は次のCommand呼び出しでこのフラグを拒否しない。
+   - `HandCardsComponent` は同フラグを全カード共通lockとして扱う。
+   - そのためAPIと通常UIで「複数Command可能か」の挙動が一致しない。
+
+4. **古い探索系コード残存**
    - `executeExploration()`
    - `CMD_LAND_EXPLORATION`
    - `cell.searched`
    - legacy check definition / UI参照の可能性
 
-4. **カード効果の巨大分岐**
+5. **カード効果の巨大分岐**
    - `DeckManager.playCommandCard()` に多数の部分実装効果が集中し、flagだけ立つ効果と本実装済み効果が混在する。
 
-5. **Trialと通常ランの状態分離**
+6. **Trialと通常ランの状態分離**
    - Trialは独立`TrialState`へコピーして進行するが、通常GameStateとの開始 / 完了境界が未統合。
 
 ---
