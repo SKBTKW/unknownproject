@@ -48,11 +48,11 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 | `CMD_MINE` | **Partial** | 🧱25、`mineCount` 登録。鉱物socket産出×1.5は未接続。 |
 | `CMD_STABLE` | **Partial** | 🧱20、`stableCount` 登録。騎馬カードWeight/コスト軽減は実効処理未確認・未接続扱い。 |
 | `CMD_LIME_KILN` | **Partial** | 🌾10＋🧱15、`limeKilnCount` 登録。建設コスト軽減は未接続。 |
-| `CMD_MARKET` | **Partial** | 🧱25、`marketCount` 登録。連携資源による持続産出は未接続。 |
-| `CMD_DEPOT` | **Partial** | 🧱30、`depotCount` 登録。PROJECTコスト軽減は未接続。 |
+| `CMD_MARKET` | **Partial / Eligibility gap** | 🧱25、`marketCount` 登録。持続産出は未接続。データには `reqMinLinks:2` があるが、現 `DeckManager.isCardEligible()` は `reqMinLinks` を評価しないため、2連携条件もOffering抽選へ未接続。 |
+| `CMD_DEPOT` | **Partial / Eligibility gap** | 🧱30、`depotCount` 登録。PROJECTコスト軽減は未接続。データの `reqIndustrySpecialBlocks:2` は現Eligibilityで評価されない。 |
 | `CMD_IRRIGATION` | **Partial** | 🧱20、`irrigationCount` 登録。対象農地への恒久🌾+1/Verseは未接続。既存の水源灌漑+50%とは別。 |
 | `CMD_RESETTLEMENT` | **Partial** | 🌾15＋🧱10、即時🔥+2は実装。指定平地地帯への🌾+2/Verseは未接続。 |
-| `CMD_WORKSHOP` | **Partial** | 🧱30、`workshopCount` 登録。SPECIAL_BLOCKコスト軽減は未接続。 |
+| `CMD_WORKSHOP` | **Partial / Eligibility gap** | 🧱30、`workshopCount` 登録。SPECIAL_BLOCKコスト軽減は未接続。データの `reqDistinctPrimaryIndustries:2` は現Eligibilityで評価されない。 |
 
 ---
 
@@ -62,11 +62,11 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 
 | ID | 状態 | 現在 |
 | :--- | :---: | :--- |
-| `CMD_GRANARY_NETWORK` | **Planned / Partial** | UNIQUE。永続状態を立てる骨格あり。 |
-| `CMD_INDUSTRIAL_ROAD` | **Planned / Partial** | `industrialRoadActive=true` とBuff登録までは実装。ただし盤面セル/辺としての道路、移動コスト、産業拠点+20%、Trial route誘導のいずれも実装確認できない。 |
-| `CMD_IRRIGATION_NETWORK` | **Planned / Partial** | `irrigationNetworkActive` 等の状態は持てるが、最大8農地強化は未接続。 |
-| `CMD_INDUSTRIAL_CLUSTER` | **Planned / Partial** | `industrialClusterActive` を立てるが、PROJECTコスト軽減は未接続。 |
-| `CMD_GREAT_RAMPART_PROJECT` | **Planned / Partial** | `greatRampartActive` を立てるが、Trialへ防塁効果を反映する完成経路は未接続。 |
+| `CMD_GRANARY_NETWORK` | **Planned / Partial / Eligibility gap** | UNIQUE。永続状態を立てる骨格あり。データの `reqGranaries:2` は現 `DeckManager.isCardEligible()` で評価されない。 |
+| `CMD_INDUSTRIAL_ROAD` | **Planned / Partial / Eligibility gap** | `industrialRoadActive=true` とBuff登録までは実装。ただし盤面セル/辺としての道路、移動コスト、産業拠点+20%、Trial route誘導のいずれも実装確認できない。データの `reqIndustrySpecialBlocks:2` も現Eligibilityで未評価。 |
+| `CMD_IRRIGATION_NETWORK` | **Planned / Partial / Eligibility gap** | `irrigationNetworkActive` 等の状態は持てるが、最大8農地強化は未接続。`reqWaterSource` は評価されるが、データの `reqIrrigationDone` は現Eligibilityで評価されない。 |
+| `CMD_INDUSTRIAL_CLUSTER` | **Planned / Partial / Eligibility gap** | `industrialClusterActive` を立てるが、PROJECTコスト軽減は未接続。データの `reqLinkedDistinctIndustries:3` は現Eligibilityで評価されない。 |
+| `CMD_GREAT_RAMPART_PROJECT` | **Planned / Partial** | `greatRampartActive` を立てるが、Trialへ防塁効果を反映する完成経路は未接続。`reqLargeTerritory` と資材条件は現Eligibilityで評価される。 |
 
 ### 《産業街道》と道路システムの境界
 
@@ -80,21 +80,28 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 
 と分類する。
 
-将来の「道路で敵の低コストrouteを誘導する」というTrial上位設計を実装する場合は、まず平時盤面上で道路をどの単位（セル / edge / 連携間接続等）として保持するかを確定する必要がある。
-
 ---
 
-## 5. Offering条件は実装済みでも効果が未完成な場合がある
+## 5. Offering条件の実装境界
 
-`DeckManager.isCardEligible()` は、地形数・資源量・socket発見・連結土地・水源・Stage等の多数の条件を評価できる。
+`DeckManager.isCardEligible()` は、地形数・資源量・socket発見・連結土地・水源・Stage・Trial距離等の多数の条件を評価できる。
+
+一方、カードデータに存在していても、現 `isCardEligible()` から参照されない条件キーがある。今回確認済みなのは以下。
+
+- `reqMinLinks`
+- `reqIndustrySpecialBlocks`
+- `reqDistinctPrimaryIndustries`
+- `reqGranaries`
+- `reqIrrigationDone`
+- `reqLinkedDistinctIndustries`
 
 したがって、
 
-> **「適切なときにカードが出る」部分は実装されていても、「出した後の文明施設効果」は未完成**
+> **カードデータに条件が書かれていること自体は、Offering条件が実装済みであることを意味しない。**
 
-というカードが存在する。
+と扱う。
 
-この二つを混同しない。
+逆に、`reqWaterSource`、`reqLargeTerritory`、`reqWood`、`reqFood`、`reqMystic`、地形/socket系など、現Eligibilityで明示的に評価される条件も存在する。
 
 ---
 
@@ -120,6 +127,7 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 3. 《伐採拠点》《穀物庫》《牧畜場》《製材所》《鉱山》等: カードは存在するが、完成した持続効果が未接続。
 4. Stage 3 Project群: フラグ/Buff骨格中心で、Trial/Production/Cost resolverへの接続が未完成。
 5. 《産業街道》: `industrialRoadActive` は立つが、道路盤面表現・産出効果・Trial移動コストの消費先がない。
+6. 市場・補給所・工房・一部Stage3事業は、データ上の高度な候補化条件キーが `DeckManager.isCardEligible()` で評価されず、想定条件より早くOfferingへ出現し得る。
 
 これらは「rulesどおりgameを即修正」ではなく、カードごとに採用する最終仕様を決めてから同期する。
 
@@ -129,4 +137,5 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 
 - カード発動分岐が巨大な `DeckManager.playCommandCard()` に集中しているため、将来は効果Resolver/Handlerへ分離する余地が大きい。
 - カウンタやActiveフラグを立てるだけで、どこからも参照されていない効果を棚卸しする。
+- カードデータの条件キーと `DeckManager.isCardEligible()` の対応表を持ち、未対応キーをテストで検出できるようにする余地がある。
 - カードマスターのdescriptionと実際のresolver結果が一致するテストを用意する。
