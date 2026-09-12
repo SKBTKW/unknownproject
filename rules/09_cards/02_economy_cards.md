@@ -1,138 +1,117 @@
-# 09-2. 経済・政策カード (Economy & Policy Cards) 仕様書
+# 09-2. 経済・政策カード — 実装状態台帳
 
-本書は、文明形成と領土発展を担う**経済・政策カード（全23枚）**の確定仕様書である。
-今後のゲーム実装（Offering選出・特殊ブロック配置・開発処理）へ反映するための**正式ルール設計**として規定する。
-
-> ※現行のゲーム実装（game/配下）はこの新仕様へ未同期であり、今後のアップデートで順次実装される。
-> ※以下の数値はプロトタイプ初期値であり、Offering頻度、配置機会、回収ターン数、採用率をテストプレイで調整する前提とする。
-
----
-
-## 🏛️ 1. 設計原則 (Design Principles)
-
-> **土地カードが「どんな大地を得るか」を決めるなら、**
-> **経済・政策カードは「その大地を人類が何に使うか」を決める。**
-
-経済・政策カードは、従来の単純な「資源の一時的バーストや使い切りコマンド」から脱却し、プレイヤーが自ら形成した大地に対して**文明の営みや産業機能を定着させる手段**として位置付ける。
-
-### 主な役割分類
-
-1. **特殊ブロック配置 (Special Block)**: 土地の上に新たな文明施設を建設し、周囲の地勢やソケットから継続的な利益・産業価値を引き出す。
-2. **土地改良 (Land Improvement)**: 湿原を干拓して人工農地へ変換したり、水源を引き込んで乾いた土地を潤す不可逆な地形変換。
-3. **産業化 (Industrialization)**: 原材料（木材・石材・鉱石・家畜）の抽出・加工・流通ラインを立ち上げ、資材や特定カードのコスト軽減をもたらす。
-4. **地域開発 (Regional Development)**: 連結された農地や地帯化した居住地域を指定し、面としての産出を永続的に引き上げる。
-5. **緊急政策 (Emergency Policy)**: 飢饉や資材枯渇などの危機に直面した際、一時的なコストと引き換えに破綻を回避する即効性の施策。
-6. **大規模事業 (Civil Works / Project)**: Stage 3で解禁される、国家規模のインフラ整備・防壁建設・産業集積。
-
-### Offering選出メカニズムの前提
-
-経済・政策カードは無作為に提示されるのではなく、カードごとに設定された**タグ・盤面状態・資源発見状況・Stage・グローバルイベント**を参照し、条件を満たしたカードのみが候補化され、状況に応じたWeight（出現重み）によって提示される。
+> **Status:** Mixed — Implemented / Partial / Planned
+>
+> カードの候補化データは `game/src/data/economy_cards.json` および生成済み `command_cards_data.js` に存在する。
+> ただし、カードがOfferingへ存在することと、説明どおりの最終効果がゲームシステムへ接続済みであることは別とする。
 
 ---
 
-## 🏷️ 2. Offering用タグ体系 (Card Tags)
+## 1. 設計原則
 
-カードの候補化・Weight算出・イベント連動のため、以下の統一定義タグを使用する。同義タグの乱立は禁止とする。
+> 土地カードが「どんな大地を得るか」を決め、経済・政策カードは「その大地をどう利用するか」を決める。
 
-| 分類 | タグ | 意味・参照対象 |
-| :--- | :--- | :--- |
-| **地形 (Terrain)** | `PLAINS` | 草原（平地） |
-| | `FOREST` | 森、深い森 |
-| | `WETLAND` | 低湿地（E0） |
-| | `RECLAIMED` | 人工改良地形（干拓地） |
-| | `HILL` | 丘陵（E2） |
-| | `MOUNTAIN` | 山岳（E3） |
-| **資源 (Resource)** | `FOOD` | 食料・農業関連 |
-| | `MATERIAL` | 資材・木材・建材 |
-| | `LIVESTOCK` | 家畜資源（牛、馬など） |
-| | `STONE` | 石材資源（石灰岩、採石など） |
-| | `ORE` | 鉱物・金属資源 |
-| | `WATER` | 水源（湖、オアシス、河川） |
-| | `MYSTIC` | 神秘・儀礼 |
-| **システム (System)** | `LINK` | プレイヤー向け「連携」。内部互換用タグ |
-| | `MERGE` | プレイヤー向け「地帯 / 地帯化」。内部互換用タグ |
-| | `ROAD` | 街道・インフラ接続 |
-| | `CONSTRUCTION` | 建設・建築関連 |
-| | `MOBILITY` | 機動力・騎兵関連 |
-| **役割 (Role)** | `INDUSTRY` | 一次・二次産業施設 |
-| | `SPECIAL_BLOCK`| 特殊ブロック建築 |
-| | `DEVELOPMENT` | 面的な地域開発・土地改良 |
-| | `EXTRACTION` | 資源採取・採掘 |
-| | `STORAGE` | 備蓄・維持費軽減 |
-| | `AGRICULTURE` | 農業・耕作 |
-| | `EMERGENCY` | 緊急対応・危機回避 |
-| | `PROJECT` | 大規模国家事業 |
-| | `EVENT` | イベント・偶発要素 |
-| | `EXPLORATION` | 土地探索・調査 |
-| | `RESOURCE` | 資源獲得 |
-| | `DEFENSE` | 防衛・防壁 |
+この方向性は維持する。
+
+Offering条件・Weight・コストは実装データを現在値の正本とし、本文書では主に**実装完成度**を管理する。
+
+### 状態ラベル
+
+- **Implemented**: 発動結果が現在の主要システムへ接続され、実ゲーム上の効果を持つ。
+- **Partial**: カード・コスト・条件・発動分岐はあるが、記述された効果の一部が未接続。
+- **Planned**: データ/設計のみ、またはフラグだけで実効処理が未完成。
+- **Legacy**: 現行方針と合わず整理対象。
 
 ---
 
-## 📜 3. 経済・政策カード一覧 (全23枚)
+## 2. Stage 1
 
-### 3.1. Stage 1 カード一覧 (8枚)
-
-| カード ID | 名称 | 種別 | レア | コスト | タグ | Offering条件 | 暫定効果 (プロトタイプ初期値) |
-| :--- | :--- | :---: | :---: | :--- | :--- | :--- | :--- |
-| `CMD_RATIONING` | **配給** | 政策 | **C** | **0** | `FOOD`, `EMERGENCY` | 次回維持費決済で🌾不足、または自動補填発生見込み | 今ターンの最終食料維持費を **40% 軽減**。 |
-| `CMD_WETLAND_RECLAMATION` | **干拓** | 土地改良 | **UC** | **`🧱 15` ＆ `🔥 1`** | `WETLAND`, `RECLAIMED`, `FOOD`, `DEVELOPMENT` | 湖のない湿原1マス以上 ＆ `🧱 >= 15` | 湿原1マスを **`E1_RECLAIMED_LAND`（干拓地: 🌾4 🧱1 🛡️0 ✨0）** へ永久変換。<br>※発見済み湖セルは干拓不可。 |
-| `CMD_LOGGING_CAMP` | **伐採拠点** | 特殊ブロック | **C** | **`🔥 1`** | `FOREST`, `MATERIAL`, `INDUSTRY`, `SPECIAL_BLOCK` | 周囲8マスに森系3マス以上を持つ候補地点が存在 | 森または深い森1マスを伐採拠点化。<br>・即時: **`🧱 +8`**<br>・持続: 周囲8マスの森1マスにつき **`🧱 +1/T`**、深い森1マスにつき **`🧱 +2/T`**（追加産出上限: **`+8/T`**）。 |
-| `CMD_GRANARY` | **穀物庫** | 特殊ブロック | **UC** | **`🧱 20`** | `PLAINS`, `RECLAIMED`, `FOOD`, `STORAGE`, `INDUSTRY`, `SPECIAL_BLOCK` | 平地系4マス以上 ＆ 指定配置パターン成立 | 全体の食料維持費 **`× 0.90`**。<br>※複数穀物庫は加算ではなく乗算。 |
-| `CMD_AGRICULTURAL_REFORM` | **農地改革** | 地域開発 | **R** | **`🧱 20`** | `PLAINS`, `RECLAIMED`, `FOOD`, `AGRICULTURE`, `DEVELOPMENT` | 連結した草原/干拓地3マス以上 | 指定した連結農業地域の最大4マスを、各 **`🌾 +1/T` 永続強化**。 |
-| `CMD_PASTORAL_FARM` | **牧畜場** | 特殊ブロック | **UC** | **`🧱 15`** | `PLAINS`, `LIVESTOCK`, `FOOD`, `INDUSTRY`, `SPECIAL_BLOCK` | 生活家畜発見済み ＆ 開放平地4マス以上 | 平地1マスを牧畜場化。<br>・基礎追加: **`🌾 +2/T`**<br>・さらに周囲の開放平地2マスごとに **`🌾 +1/T`**（追加上限: **`+3/T`**）。 |
-| `CMD_ABANDONED_SETTLEMENT` | **放棄された集落** | イベント型 | **UC** | **`🔥 1`** | `EXPLORATION`, `EVENT`, `RESOURCE` | 空きマス8以上 | **🎲 2D6判定**。既存の探索報酬テーブルを参照し、必ず何らかの資源または特殊結果を獲得する。 |
-| `CMD_EMERGENCY_LEVY` | **緊急徴発** | 政策 | **C** | **`🌾 20`** | `FOOD`, `MATERIAL`, `EMERGENCY` | 🧱不足傾向 ＆ `🌾 >= 20` | 即座に **`🧱 +15`** を獲得。（※旧仕様の次ターン食料維持費ペナルティは全廃）。 |
+| ID | 状態 | 現在の実挙動 / 注意点 |
+| :--- | :---: | :--- |
+| `CMD_RATIONING` | **Implemented** | 食料維持費軽減。現在resolverは `foodCostHalvedTurns` を見て**基本維持費を50%**にする。旧rulesの「40%軽減」と不一致。 |
+| `CMD_WETLAND_RECLAMATION` | **Implemented** | 🧱15＋🔥1。湖でない未地帯化湿原1マスを `E1_RECLAIMED_LAND` へ永久変換し、変換後に地帯化/連携再判定。 |
+| `CMD_LOGGING_CAMP` | **Partial** | 🔥1、即時🧱+8は実装。周囲森林からの継続産出は現ProductionCalculatorへ未接続。 |
+| `CMD_GRANARY` | **Partial** | 🧱20、`granaryCount` は増えるが、現在のMaintenance resolverは `granaryCount` を参照しない。維持費×0.90は未接続。 |
+| `CMD_AGRICULTURAL_REFORM` | **Implemented / Simplified** | 🧱20、`permanentPlainsFoodBonus +1`。現実装では指定4マスではなく**全平地系への恒久+1/T**として処理される。 |
+| `CMD_PASTORAL_FARM` | **Partial** | 🧱15、現実装は即時🌾+2とBuff登録。牧畜場化・周囲平地による持続産出は未接続。 |
+| `CMD_ABANDONED_SETTLEMENT` | **Implemented** | 🔥1、2D6。現在値は 2–5:🌾+15 / 6–8:🧱+15 / 9–11:✨+10 / 12:🌾+20🧱+20✨+15。旧土地探索表は使わない。 |
+| `CMD_EMERGENCY_LEVY` | **Implemented** | 🌾20を支払い、即時🧱+15。旧「次Verse維持費+5」ペナルティは現発動分岐では設定しない。 |
 
 ---
 
-### 3.2. Stage 2 カード一覧 (10枚)
+## 3. Stage 2
 
-| カード ID | 名称 | 種別 | レア | コスト | タグ | Offering条件 | 暫定効果 (プロトタイプ初期値) |
-| :--- | :--- | :---: | :---: | :--- | :--- | :--- | :--- |
-| `CMD_SAWMILL` | **製材所** | 特殊ブロック改良 | **R** | **`🧱 25`** | `FOREST`, `MATERIAL`, `INDUSTRY`, `SPECIAL_BLOCK` | 伐採拠点1基以上 ＆ 周囲森林が十分残存 | 既存の伐採拠点1基を製材所へ改良。<br>周囲森林由来の追加🧱持続産出を **`× 1.5`** に増幅。 |
-| `CMD_QUARRY` | **採石場** | 特殊ブロック | **UC** | **`🧱 20`** | `HILL`, `STONE`, `MATERIAL`, `EXTRACTION`, `INDUSTRY`, `SPECIAL_BLOCK` | 石材資源発見済み ＆ 丘陵候補地点あり | 丘陵1マスを採石場化。<br>・即時: **`🧱 +10`**<br>・持続: 周囲丘陵1マスにつき **`🧱 +1/T`**、周囲山岳1マスにつき **`🧱 +2/T`**（追加上限: **`+7/T`**）。 |
-| `CMD_MINE` | **鉱山** | 特殊ブロック | **R** | **`🧱 25`** | `HILL`, `MOUNTAIN`, `ORE`, `MATERIAL`, `MYSTIC`, `EXTRACTION`, `SPECIAL_BLOCK` | 鉱物系ソケット発見済み | 対象の鉱物系ソケットの持続産出を **`× 1.5`** に増幅。 |
-| `CMD_STABLE` | **厩舎** | 特殊ブロック | **R** | **`🧱 20`** | `PLAINS`, `LIVESTOCK`, `MOBILITY`, `INDUSTRY`, `SPECIAL_BLOCK` | 馬資源発見済み ＆ 開放平地6マス以上 | 平地1マスに厩舎を建設。<br>・`CAVALRY`タグを持つカードのOffering Weight上昇。<br>・騎馬系カードの🧱コストを **`-5`** 軽減。 |
-| `CMD_LIME_KILN` | **石灰窯** | 特殊ブロック | **UC** | **`🌾 10` ＆ `🧱 15`** | `STONE`, `FOREST`, `MATERIAL`, `CONSTRUCTION`, `INDUSTRY`, `SPECIAL_BLOCK` | 石灰岩 ＆ 木材系資源を発見済み | 石灰窯を建設。<br>`CONSTRUCTION`タグを持つカードの🧱コストを **`-20%`** 軽減。 |
-| `CMD_MARKET` | **市場** | 特殊ブロック | **R** | **`🧱 25`** | `LINK`, `RESOURCE`, `INDUSTRY`, `SPECIAL_BLOCK` | 連携数2以上 ＆ 異なる資源カテゴリ2種以上 | 市場を建設。<br>連携した異なる資源カテゴリ1種につき、毎ターン **`🌾 +1/T, 🧱 +1/T`**（最大3カテゴリまで適用）。 |
-| `CMD_DEPOT` | **集積倉庫** | 特殊ブロック | **R** | **`🧱 30`** | `MATERIAL`, `STORAGE`, `LINK`, `INDUSTRY`, `SPECIAL_BLOCK` | 産業特殊ブロック2基以上 | 集積倉庫を建設。<br>`PROJECT`タグを持つカードの🧱コストを **`-15%`** 軽減。 |
-| `CMD_IRRIGATION` | **灌漑** | 土地改良 | **UC** | **`🧱 20`** | `WATER`, `PLAINS`, `RECLAIMED`, `FOOD`, `DEVELOPMENT` | 水源（湖またはオアシス）あり ＆ 対象農業地域あり | 水源に接続した農業地域から最大4マスを指定し、各 **`🌾 +1/T` 永続強化**。 |
-| `CMD_RESETTLEMENT` | **移住** | 地域開発 | **R** | **`🌾 15` ＆ `🧱 10`** | `PLAINS`, `MERGE`, `FOOD`, `DEVELOPMENT` | 平地2×2地帯が成立済み | 指定した平地2×2地帯に即座に **`🔥 +2`**。<br>以後その地帯全体の持続産出を **`🌾 +2/T`** 永続加算。 |
-| `CMD_WORKSHOP` | **工房** | 特殊ブロック | **R** | **`🧱 30`** | `MATERIAL`, `INDUSTRY`, `CONSTRUCTION`, `SPECIAL_BLOCK` | 異なる一次産業2種類以上存在 | 工房を建設。<br>`SPECIAL_BLOCK`タグを持つカードの🧱コストを **`-10%`** 軽減。 |
-
----
-
-### 3.3. Stage 3 カード一覧 (5枚)
-
-| カード ID | 名称 | 種別 | レア | コスト | タグ | Offering条件 | 暫定効果 (プロトタイプ初期値) |
-| :--- | :--- | :---: | :---: | :--- | :--- | :--- | :--- |
-| `CMD_GRANARY_NETWORK` | **大穀倉網** | Project | **UR** | **`🧱 50`** | `FOOD`, `STORAGE`, `LINK`, `PROJECT` | 穀物庫2基以上 ＆ 大規模農業圏成立 | 領内の全穀物庫を広域ネットワーク化。<br>既存穀物庫の維持費倍率を **`0.90 → 0.87 相当`** に強化。 |
-| `CMD_INDUSTRIAL_ROAD` | **産業街道** | Civil Works | **R** | **`🧱 45`** | `ROAD`, `LINK`, `INDUSTRY`, `PROJECT` | 産業特殊ブロック2基以上 | 指定した産業拠点2〜3基を街道で接続。<br>接続された施設の持続産出を **`+20%`** 強化。<br>※Trialでは敵軍も通常通り街道を利用するリスクを伴う。 |
-| `CMD_IRRIGATION_NETWORK` | **大規模灌漑網** | Civil Works | **UR** | **`🧱 50`** | `WATER`, `PLAINS`, `RECLAIMED`, `FOOD`, `PROJECT` | 灌漑済み地域 ＆ 水源あり | 水源から幹線水路を敷設。<br>最大8箇所の農業マスに対して各 **`🌾 +1/T` 永続強化**。 |
-| `CMD_INDUSTRIAL_CLUSTER` | **産業集積** | Project | **UR** | **`🧱 60`** | `INDUSTRY`, `LINK`, `PROJECT` | 異種産業3種類以上が連携 | 高度な産業複合体を成立させる。<br>`PROJECT`タグを持つ全カードの🧱コストを **`-20%`** 軽減。 |
-| `CMD_GREAT_RAMPART_PROJECT` | **大防塁** | Civil Works | **UR** | **`🧱 70`** | `CONSTRUCTION`, `DEFENSE`, `PROJECT` | 大規模国土 ＆ 建設基盤成立 | 指定した連続する3〜5マスへ防塁効果を付与。<br>Trial時の敵軍侵入経路・迎撃効率へ大幅に作用する。<br>※Trial側の詳細仕様が確定するまで具体的な倍率・防衛値は固定しない。 |
+| ID | 状態 | 現在の実挙動 / 注意点 |
+| :--- | :---: | :--- |
+| `CMD_SAWMILL` | **Partial** | 🧱25、`sawmillCount` とBuff登録のみ。森林由来産出×1.5は主要産出計算へ未接続。 |
+| `CMD_QUARRY` | **Partial** | 🧱20、即時🧱+10は実装。周囲丘陵/山岳の継続産出は未接続。 |
+| `CMD_MINE` | **Partial** | 🧱25、`mineCount` 登録。鉱物socket産出×1.5は未接続。 |
+| `CMD_STABLE` | **Partial** | 🧱20、`stableCount` 登録。騎馬カードWeight/コスト軽減は実効処理未確認・未接続扱い。 |
+| `CMD_LIME_KILN` | **Partial** | 🌾10＋🧱15、`limeKilnCount` 登録。建設コスト軽減は未接続。 |
+| `CMD_MARKET` | **Partial** | 🧱25、`marketCount` 登録。連携資源による持続産出は未接続。 |
+| `CMD_DEPOT` | **Partial** | 🧱30、`depotCount` 登録。PROJECTコスト軽減は未接続。 |
+| `CMD_IRRIGATION` | **Partial** | 🧱20、`irrigationCount` 登録。対象農地への恒久🌾+1/Tは未接続。既存の水源灌漑+50%とは別。 |
+| `CMD_RESETTLEMENT` | **Partial** | 🌾15＋🧱10、即時🔥+2は実装。指定平地地帯への🌾+2/Tは未接続。 |
+| `CMD_WORKSHOP` | **Partial** | 🧱30、`workshopCount` 登録。SPECIAL_BLOCKコスト軽減は未接続。 |
 
 ---
 
-## 🔄 4. 旧カード処遇・移行対応表 (Legacy Migration)
+## 4. Stage 3 大規模事業
 
-従来の15枚のコマンドカードから新体系への移行・再設計の処遇を以下に明記する。
+以下はカードデータ・発動分岐・永続フラグ/Buffの骨格は存在するが、完成した国家事業効果としては未接続部分が大きい。
 
-| 旧カード ID | 旧カード名称 | 移行先・新処遇 | 理由・設計方針 |
-| :--- | :--- | :--- | :--- |
-| `CMD_CONSERVE_EMBER` | 節約 | **削除** | 単純な維持費軽減はゲームテンポを停滞させるため廃止。食料自給と補填システムへ統合。 |
-| `CMD_RATIONING` | 配給 | **継続・再設計** | 食料危機時の緊急政策として位置付け、軽減率を40%に調整して存続。 |
-| `CMD_SINGLE_CLEARING` | 伐採 | **`CMD_LOGGING_CAMP` 伐採拠点へ置換** | 使い捨ての平地化から、周囲の森林を活用する継続的な産業拠点（特殊ブロック）へ昇格。 |
-| `CMD_WETLAND_RECLAMATION` | 干拓 | **継続・干拓地化** | 単なる草原化を全廃し、人工改良地形《干拓地》（`E1_RECLAIMED_LAND`）への永久変換として刷新。 |
-| `CMD_SYSTEMATIC_LOGGING` | 計画伐採 | **`CMD_SAWMILL` 製材所へ吸収** | 一括換金バーストから、伐採拠点を高度化させる施設改良へ昇格。 |
-| `CMD_AGRICULTURAL_POLICY` | 農地改革 | **継続・地域指定型へ再設計** | 盤面全体への一律加算から、プレイヤーが育てた連結農業地域を指定して強化する方式へ改変。 |
-| `CMD_LAND_FOCUS` | 探索重視 | **削除** | メタ的なドロー操作カードを排除し、盤面形成そのものに集中させる。 |
-| `CMD_EMERGENCY_LEVY` | 緊急徴発 | **継続・再設計** | 食料を資材へ緊急変換する政策として純化。Trial依存の条件および次ターン食料ペナルティを削除。 |
-| `CMD_PASTORAL_EXPANSION` | 放牧 | **`CMD_PASTORAL_FARM` 牧畜場 ＋ `CMD_STABLE` 厩舎へ分解** | 抽象的な即時ボーナス強化から、食料生産の「牧畜場」と軍事機動の「厩舎」という具体的施設へ分離。 |
-| `CMD_ABANDONED_SETTLEMENT` | 領土探索 | **`CMD_ABANDONED_SETTLEMENT` 放棄された集落へ整理** | 探索カードとしての名称・ロールプレイング性を整理し、2D6イベント型として存続。 |
-| `CMD_BLACK_MARKET` | 一括売却 | **削除** | 世界観に合致しない換金カードを全廃。 |
-| `CMD_GRAND_CULTIVATION` | 耕作計画 | **農地改革 ＋ 灌漑へ吸収** | 期間バフから、恒久的な地域開発・水利システムへ役割を移譲。 |
-| `CMD_RESETTLEMENT` | 移住 | **継続・再設計** | 平地2×2地帯の定住地としての価値を高める地域開発カードとして確定。 |
-| `CMD_LIME_CONSTRUCTION` | 焼成 | **`CMD_LIME_KILN` 石灰窯へ置換** | 一時的なコスト軽減バフから、石灰窯という恒久的な建設産業特殊ブロックへ実体化。 |
-| `CMD_GREAT_RAMPART_PROJECT` | 大防塁 | **Stage 3 Civil Worksへ再設計** | 大規模国家事業として位置付け、Trial迎撃・経路制御の要塞化インフラとして再設計。 |
+| ID | 状態 | 現在 |
+| :--- | :---: | :--- |
+| `CMD_GRANARY_NETWORK` | **Planned / Partial** | UNIQUE。永続状態を立てる骨格あり。 |
+| `CMD_INDUSTRIAL_ROAD` | **Planned / Partial** | 街道/連携を使う完成効果は未接続。 |
+| `CMD_IRRIGATION_NETWORK` | **Planned / Partial** | `irrigationNetworkActive` 等の状態は持てるが、最大8農地強化は未接続。 |
+| `CMD_INDUSTRIAL_CLUSTER` | **Planned / Partial** | `industrialClusterActive` を立てるが、PROJECTコスト軽減は未接続。 |
+| `CMD_GREAT_RAMPART_PROJECT` | **Planned / Partial** | `greatRampartActive` を立てるが、Trialへ防塁効果を反映する完成経路は未接続。 |
+
+---
+
+## 5. Offering条件は実装済みでも効果が未完成な場合がある
+
+`DeckManager.isCardEligible()` は、地形数・資源量・socket発見・連結土地・水源・Stage等の多数の条件を評価できる。
+
+したがって、
+
+> **「適切なときにカードが出る」部分は実装されていても、「出した後の文明施設効果」は未完成**
+
+というカードが存在する。
+
+この二つを混同しない。
+
+---
+
+## 6. 《放棄された集落》と探索の扱い
+
+`CMD_ABANDONED_SETTLEMENT` は独立土地探索システムとは分離する。
+
+- カード自身の2D6判定として存続
+- `CheckSystem` を利用
+- 専用の現在報酬表を持つ
+- 廃止方向の `executeExploration()` 報酬表を参照しない
+
+これにより「探索という題材をカード化する」現在方針と整合する。
+
+---
+
+## 7. 既知のrules/game差分
+
+特に重要な差分：
+
+1. 《配給》: rules旧40%軽減 vs runtime 50%軽減。
+2. 《農地改革》: rules旧「指定最大4マス」 vs runtime「全平地系+1/T」。
+3. 《伐採拠点》《穀物庫》《牧畜場》《製材所》《鉱山》等: カードは存在するが、完成した持続効果が未接続。
+4. Stage 3 Project群: フラグ/Buff骨格中心で、Trial/Production/Cost resolverへの接続が未完成。
+
+これらは「rulesどおりgameを即修正」ではなく、カードごとに採用する最終仕様を決めてから同期する。
+
+---
+
+## 8. game側整理候補
+
+- カード発動分岐が巨大な `DeckManager.playCommandCard()` に集中しているため、将来は効果Resolver/Handlerへ分離する余地が大きい。
+- カウンタやActiveフラグを立てるだけで、どこからも参照されていない効果を棚卸しする。
+- カードマスターのdescriptionと実際のresolver結果が一致するテストを用意する。
