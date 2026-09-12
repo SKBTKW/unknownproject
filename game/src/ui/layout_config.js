@@ -13,7 +13,7 @@ const UI_TILE_TEXT_PRESETS = {
 const UI_FEATURE_FLAGS = {
     enableBottomFocusBlur: true,  // 🌟 2層レイヤー構造（手札ホバー時の盤面暗転ブラー）有効化
     enableReserveArea: false,
-    tileTextStyle: UI_TILE_TEXT_PRESETS.SYMBOLIC_BOARD // 🎨 デフォルトを「4. 新アイコン配置(右上産出+左下属性)」に設定
+    tileTextStyle: UI_TILE_TEXT_PRESETS.SYMBOLIC_BOARD // 🎨 デフォルトを「4. 新アイコン配置(右上産出+左下属性＆資源)」に設定
 };
 
 const UILayoutConfig = {
@@ -130,23 +130,23 @@ const UILayoutConfig = {
         pointerEvents: "auto"
     },
 
-    // ⚔️ Trial迎撃計画: 地点比較と🛡配分を表示する固定パネル
+    // ⚔️ Trial迎撃計画: Layout-owned screen-space geometry only.
     trialDefenseAllocation: {
         desktop: {
             position: "fixed",
-            right: "24px",
-            top: "96px",
-            bottom: "72px",
-            width: "360px",
-            maxHeight: "calc(100vh - 168px)",
+            right: "var(--layout-right-context-right)",
+            top: "var(--layout-right-context-top)",
+            bottom: "var(--layout-right-context-bottom)",
+            width: "var(--layout-right-context-width)",
+            maxHeight: "var(--layout-right-context-max-height)",
             zIndex: 720,
             pointerEvents: "auto"
         },
         mobile: {
             position: "fixed",
-            right: "12px",
-            bottom: "56px",
-            width: "min(300px, calc(100vw - 24px))",
+            right: "var(--layout-right-context-mobile-right)",
+            bottom: "var(--layout-right-context-mobile-bottom)",
+            width: "var(--layout-right-context-mobile-width)",
             zIndex: 720,
             pointerEvents: "auto"
         }
