@@ -48,6 +48,9 @@ export class CardCycleSystem {
      * @returns {-1 | 0 | 1}
      */
     getRandomJitter() {
+        if (this.engine?.gameplayRandom?.nextInt) {
+            return this.engine.gameplayRandom.nextInt(-1, 1);
+        }
         if (this.engine && typeof this.engine.getRandom === "function") {
             const val = this.engine.getRandom();
             return Math.floor(val * 3) - 1;

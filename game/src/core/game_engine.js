@@ -18,6 +18,7 @@ import { resolvePlacementGeometry } from './placement_geometry.js';
 import { CheckSystem } from './check_system/check_system.js';
 import { GameplayRandomService } from './gameplay_random_service.js';
 import { TurnLifecycleService } from './turn_lifecycle_service.js';
+import { HistoryRestoreService } from './history_restore_service.js';
 import { GameState } from '../v2_unity_ready_main.js';
 
 function normalizeRunSeed(seed) {
@@ -139,6 +140,7 @@ class GameEngine {
                 sourceCompletedTurn: null
             });
         }
+        this.historyRestoreService = new HistoryRestoreService(this);
     }
 
     /**

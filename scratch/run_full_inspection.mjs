@@ -88,6 +88,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (History Restore Primitives) で不合格が検出されました。");
         process.exit(1);
     }
+    const historyRestoreOk = await runCommand("node", ["scratch/test_history_restore_service.mjs"]);
+    if (!historyRestoreOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (History Restore Service) で不合格が検出されました。");
+        process.exit(1);
+    }
     const trialRestoreBoundaryOk = await runCommand("node", ["scratch/test_trial_restore_boundary_service.mjs"]);
     if (!trialRestoreBoundaryOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Trial Restore Boundary Contract) で不合格が検出されました。");
