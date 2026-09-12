@@ -7,6 +7,14 @@
    reorder or reposition the global composition.
    ============================================================= */
 
+/* Header shell geometry belongs to Layout; top_header.css owns its contents. */
+.top-bar {
+    position: relative !important;
+    height: var(--layout-header-height) !important;
+    flex-shrink: 0;
+    z-index: var(--z-hud) !important;
+}
+
 #layerPlayerTray.layer-player-tray {
     z-index: var(--z-player) !important;
 }
@@ -19,7 +27,13 @@
     z-index: var(--z-advisor) !important;
 }
 
+/* System Overlay is a viewport-sized screen-space region. */
 #layerSystemOverlay.layer-system-overlay {
+    position: fixed !important;
+    inset: var(--layout-system-overlay-inset) !important;
+    width: 100% !important;
+    height: 100% !important;
+    pointer-events: none;
     z-index: var(--z-overlay) !important;
 }
 
