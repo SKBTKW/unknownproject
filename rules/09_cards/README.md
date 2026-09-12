@@ -1,26 +1,117 @@
-# 09. カード一覧 仕様書 (Card List Specification - Master Index)
+# 09. カード仕様 — Authority Index
 
-本仕様書は、全カードマスターデータベースおよび確定カード定義の **親ポータル・目次（インデックス）仕様書** である。
-実データおよび詳細定義は、本フォルダ (`rules/09_cards/`) 配下の4つのカテゴリ別仕様書に分類・管理されている。
+> **Status:** Rules index / Runtime data lives in `game/src/data/`
+>
+> カード仕様は、設計意図と実行時データを分離して管理する。
+> `rules/09_cards/` はカード群の役割・設計方針・未実装差分を記録し、現在gameが実際に使用する数値・条件・タグは runtime master を参照する。
 
 ---
 
-## ─── 📚 カテゴリ別仕様書 目次 ───
+## 1. 現行Runtime正本
 
-カードの追加、効果パラメータ・数値の直接編集、詳細なドロー提示条件の閲覧は、各カテゴリの個別仕様書を参照すること。
+現在の `DeckManager` は以下を読み込んでOffering候補を構築する。
 
-### 1. 🌱 [01. 土地カード仕様書 (01_land_cards.md)](./01_land_cards.md)
-* **対象**: 全7群の土地カード (平地, 森, 深い森, 丘陵, 山岳, 砂漠, 複合土地)
-* **概要**: 領土を開墾し、毎ターンの基礎持続収入（🌾食料 / 🧱資材 / 🛡️防衛 / ✨神秘）を生み出すインフラカード群。
+- `game/src/data/land_cards_data.js`
+- `game/src/data/command_cards_data.js`
 
-### 2. 📜 [02. 経済・政策カード仕様書 (02_economy_cards.md)](./02_economy_cards.md)
-* **対象**: `CMD_CONSERVE_EMBER` (残火の節約), `CMD_RATIONING` (節約配給), `CMD_AGRICULTURAL_POLICY` (農地改革), `CMD_BLACK_MARKET` (闇市場), `CMD_LAND_FOCUS` (土地探索重視)
-* **概要**: 食料(`🌾`)や資材、維持費節約・自然減衰軽減をもたらす使い切り内政・経済コマンド群。
+これらの生成元として、以下のJSONデータが存在する。
 
-### 3. 🛡️ [03. 軍事・防衛カード仕様書 (03_military_cards.md)](./03_military_cards.md)
-* **対象**: `CMD_VIGILANCE` (警戒態勢), `CMD_IRON_RAMPART` (鉄壁の防壁), `CMD_BALLISTA_SET` (迎撃用弩砲), `CMD_MILITARY_FOCUS` (軍事重視)
-* **概要**: 資材(`🧱`)を一括消費し、グローバル防衛力(`🛡️`)や試練の被害無効化、軍事ドロー偏向をもたらすサバイバルコマンド群。
+- `game/src/data/land_cards.json`
+- `game/src/data/economy_cards.json`
+- `game/src/data/military_cards.json`
+- `game/src/data/mystic_cards.json`
 
-### 4. ✨ [04. 神秘・奇跡カード仕様書 (04_mystic_cards.md)](./04_mystic_cards.md)
-* **対象**: `CMD_MEDITATION` (静かなる瞑想), `CMD_REKINDLE_EMBER` (🔥の聖なる再燃), `CMD_TRANSMUTE_GOLDEN` (黄金秘境変容), `CMD_MYSTIC_FOCUS` (神秘重視)
-* **概要**: 神秘(`✨`)や **🔥** を活用し、🔥回復・聖なる光脈変容・神秘ドロー偏向を起こす超常現象コマンド群。
+したがって、**現在ゲーム内で有効なカードID、cost、rarity、weight、tags、minStage、Offering条件等の事実確認はgame側データを優先する。**
+
+`rules/09_cards/` に異なる数値が書かれている場合、それだけを理由にgameを変更してはならない。
+
+---
+
+## 2. rules側の役割
+
+`rules/09_cards/` は以下を扱う。
+
+- カード群の設計思想
+- プレイヤーに何を選ばせるカードか
+- 実装予定だが未同期の効果
+- 廃止候補・Legacyカード
+- runtime dataでは表現しにくい意味論
+
+個別数値を記載する場合は、必ず以下のどちらかを明示する。
+
+- **Implemented:** 現行gameと一致
+- **Planned:** 採用予定だがgame未同期
+
+「確定仕様」という見出しだけで未実装値を正本扱いしない。
+
+---
+
+## 3. カテゴリ別文書
+
+### 🌱 `01_land_cards.md`
+土地カード。盤面形成・地形・形状・Stage解禁等を扱う。
+
+### 📜 `02_economy_cards.md`
+経済・政策・土地改良・産業・特殊ブロック関連。
+
+### 🛡️ `03_military_cards.md`
+防衛・軍事準備・Trial準備関連。
+
+### ✨ `04_mystic_cards.md`
+神秘・予兆・Offering操作・🔥回復等。
+
+実装上は非土地カードの多くが `category: "COMMAND"` として統一されており、上記4分類は主に設計・文書整理上の分類である。
+
+---
+
+## 4. Offeringとの関係
+
+カードが存在するだけではOfferingへ出現しない。
+
+実際の候補化は `DeckManager` により、概ね以下の順で処理される。
+
+1. Stage条件
+2. Card Cycle / Cooldown
+3. UNIQUE消費済み判定
+4. HOLD中重複除外
+5. 発動中Buff・建設中Project等との重複除外
+6. カード固有の盤面・資源・Trial条件
+7. Weight抽選
+8. 候補不足時のfallback
+
+詳細は `rules/04_draw_and_hand_system.md` を正本とする。
+
+---
+
+## 5. Trialカード方針
+
+Trial専用カードを別手札として持ち込む構造は採用しない。
+
+> **戦場そのものがカードストックの役割を持つ。**
+
+平時のカードは、盤面・制度・資源・準備状態を形成するために使う。Trialでは、それまで作った状態そのものを戦力として利用する。
+
+---
+
+## 6. 調査・情報カテゴリ
+
+第1 Trial前の異変認識後に、調査・情報系カードをOfferingへ解禁する方針を採用している。
+
+ただし現行 `command_cards_data.js` には、このカテゴリを完成した独立カード群として扱う実装はまだない。
+
+よって現在は **Planned / Not fully implemented** とする。
+
+---
+
+## 7. 今後の同期ルール
+
+カードを新規追加・変更する場合は、以下を同一変更単位として扱う。
+
+1. rules上の設計意図
+2. source JSON
+3. generated data
+4. 実行ロジック（必要な場合）
+5. Offering条件
+6. 表示文言
+
+数値だけrulesへ先行記載し、長期間gameと乖離させる運用は行わない。
