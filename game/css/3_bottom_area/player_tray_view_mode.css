@@ -5,11 +5,22 @@
    The board-view value is an input only. This stylesheet decides
    where the Player Action Host sits; it does not own view semantics.
 
+   IMPORTANT:
+   - This file is the final placement authority for #layerPlayerTray.
+   - draw_card_select_area.css may still contain legacy placement rules
+     during migration, but they are intentionally overridden here.
+   - NORMAL / TRIAL changes the tray contents, never its screen anchor.
+
    TOP     : bottom-center for direct 2D board interaction.
    QUARTER : bottom-left for future 2.5D quarter-view composition.
    ============================================================= */
 
 #layerPlayerTray.layer-player-tray {
+    position: absolute;
+    right: auto !important;
+    width: auto !important;
+    align-items: flex-end;
+    pointer-events: none;
     transition:
         left var(--layout-player-tray-motion-ms) cubic-bezier(0.16, 1, 0.3, 1),
         transform var(--layout-player-tray-motion-ms) cubic-bezier(0.16, 1, 0.3, 1),
@@ -19,20 +30,22 @@
 
 body[data-board-view="top"] #layerPlayerTray.layer-player-tray {
     left: 50% !important;
-    right: auto !important;
-    bottom: var(--layout-player-tray-bottom);
-    width: auto !important;
+    bottom: var(--layout-player-tray-bottom) !important;
     justify-content: center !important;
     transform: translateX(-50%);
 }
 
 body[data-board-view="quarter"] #layerPlayerTray.layer-player-tray {
     left: var(--layout-edge-gap) !important;
-    right: auto !important;
-    bottom: var(--layout-player-tray-bottom);
-    width: auto !important;
+    bottom: var(--layout-player-tray-bottom) !important;
     justify-content: flex-start !important;
     transform: translateX(0);
+}
+
+/* Tray contents remain interactive while the screen-space host stays transparent. */
+#layerPlayerTray > .offering-section,
+#layerPlayerTray > #trialActionTrayHost {
+    pointer-events: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -47,6 +60,7 @@ body[data-board-view="quarter"] #layerPlayerTray.layer-player-tray {
         left: var(--layout-mobile-edge-gap) !important;
         right: auto !important;
         bottom: var(--layout-player-tray-mobile-bottom) !important;
+        width: auto !important;
         transform: translateX(0);
         justify-content: flex-start !important;
     }
