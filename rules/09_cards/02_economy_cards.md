@@ -32,7 +32,7 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 | `CMD_WETLAND_RECLAMATION` | **Implemented** | 🧱15＋🔥1。湖でない未地帯化湿原1マスを `E1_RECLAIMED_LAND` へ永久変換し、変換後に地帯化/連携再判定。 |
 | `CMD_LOGGING_CAMP` | **Partial** | 🔥1、即時🧱+8は実装。周囲森林からの継続産出は現ProductionCalculatorへ未接続。 |
 | `CMD_GRANARY` | **Partial** | 🧱20、`granaryCount` は増えるが、現在のMaintenance resolverは `granaryCount` を参照しない。維持費×0.90は未接続。 |
-| `CMD_AGRICULTURAL_REFORM` | **Implemented / Simplified** | 🧱20、`permanentPlainsFoodBonus +1`。現実装では指定4マスではなく**全平地系への恒久+1/T**として処理される。 |
+| `CMD_AGRICULTURAL_REFORM` | **Implemented / Simplified** | 🧱20、`permanentPlainsFoodBonus +1`。現実装では指定4マスではなく**全平地系への恒久+1/Verse**として処理される。 |
 | `CMD_PASTORAL_FARM` | **Partial** | 🧱15、現実装は即時🌾+2とBuff登録。牧畜場化・周囲平地による持続産出は未接続。 |
 | `CMD_ABANDONED_SETTLEMENT` | **Implemented** | 🔥1、2D6。現在値は 2–5:🌾+15 / 6–8:🧱+15 / 9–11:✨+10 / 12:🌾+20🧱+20✨+15。旧土地探索表は使わない。 |
 | `CMD_EMERGENCY_LEVY` | **Implemented** | 🌾20を支払い、即時🧱+15。旧「次Verse維持費+5」ペナルティは現発動分岐では設定しない。 |
@@ -50,8 +50,8 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 | `CMD_LIME_KILN` | **Partial** | 🌾10＋🧱15、`limeKilnCount` 登録。建設コスト軽減は未接続。 |
 | `CMD_MARKET` | **Partial** | 🧱25、`marketCount` 登録。連携資源による持続産出は未接続。 |
 | `CMD_DEPOT` | **Partial** | 🧱30、`depotCount` 登録。PROJECTコスト軽減は未接続。 |
-| `CMD_IRRIGATION` | **Partial** | 🧱20、`irrigationCount` 登録。対象農地への恒久🌾+1/Tは未接続。既存の水源灌漑+50%とは別。 |
-| `CMD_RESETTLEMENT` | **Partial** | 🌾15＋🧱10、即時🔥+2は実装。指定平地地帯への🌾+2/Tは未接続。 |
+| `CMD_IRRIGATION` | **Partial** | 🧱20、`irrigationCount` 登録。対象農地への恒久🌾+1/Verseは未接続。既存の水源灌漑+50%とは別。 |
+| `CMD_RESETTLEMENT` | **Partial** | 🌾15＋🧱10、即時🔥+2は実装。指定平地地帯への🌾+2/Verseは未接続。 |
 | `CMD_WORKSHOP` | **Partial** | 🧱30、`workshopCount` 登録。SPECIAL_BLOCKコスト軽減は未接続。 |
 
 ---
@@ -116,7 +116,7 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 特に重要な差分：
 
 1. 《配給》: rules旧40%軽減 vs runtime 50%軽減。
-2. 《農地改革》: rules旧「指定最大4マス」 vs runtime「全平地系+1/T」。
+2. 《農地改革》: rules旧「指定最大4マス」 vs runtime「全平地系+1/Verse」。
 3. 《伐採拠点》《穀物庫》《牧畜場》《製材所》《鉱山》等: カードは存在するが、完成した持続効果が未接続。
 4. Stage 3 Project群: フラグ/Buff骨格中心で、Trial/Production/Cost resolverへの接続が未完成。
 5. 《産業街道》: `industrialRoadActive` は立つが、道路盤面表現・産出効果・Trial移動コストの消費先がない。
