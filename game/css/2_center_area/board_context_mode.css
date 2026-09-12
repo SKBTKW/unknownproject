@@ -1,0 +1,39 @@
+/* =============================================================
+   2_center_area / board_context_mode.css
+   Board Presentation context rules.
+
+   Board Data remains shared between NORMAL and TRIAL. This file only
+   changes which board-facing information is emphasized or suppressed.
+   Renderer/view mode (top / quarter) is intentionally independent.
+   ============================================================= */
+
+/* Normal-only economic/action affordances should not compete with Trial. */
+body[data-board-context="trial"] #gridBoard .tile-yield-line,
+body[data-board-context="trial"] #gridBoard .socket-yield-line,
+body[data-board-context="trial"] #gridBoard .searched-badge,
+body[data-board-context="trial"] #gridBoard .corner-toggle-cell,
+body[data-board-context="trial"] #gridBoard .footer-left-slot,
+body[data-board-context="trial"] #gridBoard .footer-right-slot {
+    display: none !important;
+}
+
+/* Keep the board frame stable while its normal footer actions are suppressed. */
+body[data-board-context="trial"] #gridBoard .footer-bar-cell {
+    min-height: 18px;
+    opacity: 0.55;
+}
+
+/* Trial-relevant spatial state takes visual priority over economy labels. */
+body[data-board-context="trial"] #gridBoard .trial-route-cell,
+body[data-board-context="trial"] #gridBoard .trial-interception-candidate,
+body[data-board-context="trial"] #gridBoard .trial-interception-planned,
+body[data-board-context="trial"] #gridBoard .trial-battle-active {
+    isolation: isolate;
+}
+
+/* NORMAL explicitly restores presentation without mutating board data. */
+body[data-board-context="normal"] #gridBoard .tile-yield-line,
+body[data-board-context="normal"] #gridBoard .socket-yield-line,
+body[data-board-context="normal"] #gridBoard .searched-badge {
+    display: revert;
+}
