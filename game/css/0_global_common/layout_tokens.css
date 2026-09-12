@@ -19,6 +19,9 @@
 
     /* Player Action Host geometry */
     --layout-player-tray-bottom: var(--layout-edge-gap);
+    --layout-player-tray-top-left: 50%;
+    --layout-player-tray-quarter-left: var(--layout-edge-gap);
+    --layout-player-tray-mobile-left: var(--layout-mobile-edge-gap);
     --layout-player-tray-mobile-bottom: var(--layout-mobile-edge-gap);
     --layout-player-tray-motion-ms: 320ms;
 
