@@ -214,9 +214,11 @@ Advisorの外見と能力アンロックは独立して扱う。
 
 採用ルールでは基本ランを **50 Verse** とし、Verse 50終了時点で🔥が残っていれば完走とする。
 
-ただし現 `GameEngine.nextTurn()` / `TurnLifecycleService.advance()` には Verse 50で進行を停止して勝利結果へ遷移する終端処理が接続されていない。
+現 `GameState.processTurnEndMaintenance()` には `turn >= 50 && ember > 0` を `isGameClear=true` として返す判定が存在する。
 
-したがって、**50 Verse完走は設計上の正本、通常ランの勝利終了配線は未実装**として扱う。
+ただし `GameEngine.nextTurn()` / `TurnLifecycleService.advance()` はこの判定結果をラン終端として消費せず、次Verse初期化を続行する。
+
+したがって、**50 Verse完走条件の検出は部分実装済み、通常ランの勝利遷移・進行停止は未実装**として扱う。
 
 ---
 
@@ -252,7 +254,7 @@ Advisorの外見と能力アンロックは独立して扱う。
 - Trial計画・戦闘・進軍・HQ Damage・Completionは旧rulesより進んでいる。
 - **通常Verse進行からTrialを自動起動する配線は未実装。**
 - **Stage遷移はTrial完了ではなく予定Verse到達で発生している。**
-- **Verse 50の勝利終端処理は未実装。**
+- **Verse 50の完走判定フラグは存在するが、勝利遷移・進行停止は未実装。**
 - TrialのSKIP route処理は未完成。
 - 第1 Trial前固定異変 / 調査カテゴリ解禁は未実装。
 - `TopHeaderComponent` の正確なTrialカウントダウンはLegacy表示として残存。
