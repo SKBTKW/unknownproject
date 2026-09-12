@@ -43,6 +43,28 @@
 
 ただし、現状では `DEVELOPMENT` 以外が解禁されていないため、通常プレイで方針変更機能は成立していない。
 
+### Dormant UI shell
+
+`game/index.html` には現在も `directiveModal` / `directiveOptions` のDOMが残っている。
+
+さらに `legacy_ui_bridge.js` は、
+
+- `window.toggleDirectiveModal`
+- `window.closeDirectiveModal`
+- `window.selectDirective`
+
+を `UIController` へ中継している。
+
+しかし現 `UIController.toggleDirectiveModal()` はmodalを開く処理を実行しておらず、実質的に空の互換メソッドになっている。
+
+また `UIController.selectDirective(id)` は `dirSys.setDirective(id)` を呼ぶが、現 `DirectiveSystem` が提供する変更APIは `changeDirective(targetDirectiveId)` であり、`setDirective()` は定義されていない。
+
+したがってDirective UIは、
+
+> **DOM / legacy bridge / controller methodの殻は残るが、通常操作として成立していないDormant UI**
+
+であり、さらにcontrollerとsystem間にAPI名の内部不一致が残っている。
+
 ---
 
 ## 3. 旧4方針データ
@@ -123,5 +145,7 @@
 - `DIRECTIVES` 内の旧倍率値
 - `unlockedDirectives = ["DEVELOPMENT"]`
 - 方針変更API
+- `directiveModal` DOM / legacy bridge
+- `UIController.selectDirective()` と `DirectiveSystem.changeDirective()` のAPI不一致
 
 再実装時にはrulesを先に確定し、gameと同時更新する。
