@@ -8,6 +8,7 @@ const header = read('../game/css/1_top_header/top_header.css');
 const legacy = read('../game/css/layout.css');
 const tray = read('../game/css/3_bottom_area/draw_card_select_area.css');
 const html = read('../game/index.html');
+const layoutSource = read('../game/src/ui/layout_config.js');
 let passed = 0;
 function check(name, fn) { fn(); passed++; console.log(`  PASS: ${name}`); }
 
@@ -66,17 +67,31 @@ check('Player Tray narrow-viewport override is relocated without changing its co
     assert.doesNotMatch(base, /#layerPlayerTray\.layer-player-tray\s*\{/);
     assert.match(tray, /@media \(max-width: 768px\)\s*\{\s*#layerPlayerTray\.layer-player-tray\s*\{\s*left:\s*8px !important;\s*bottom:\s*8px !important;\s*\}\s*\}/);
 });
-check('Offering keeps its inline config and stronger dedicated CSS override', () => {
+check('Offering geometry is owned by CSS without runtime inline configuration', () => {
     assert.deepEqual(namedRule(tray, '#layerPlayerTray .offering-section'), {
         margin: '0 !important', 'z-index': '700 !important'
     });
-    assert.equal(UILayoutConfig.offeringCardArea.margin, '0 auto');
-    assert.equal(UILayoutConfig.offeringCardArea.zIndex, 500);
+    const offering = rule(tray, 'offering-section');
+    assert.equal(offering.position, 'relative');
+    assert.equal(offering.bottom, 'auto');
+    assert.equal(offering.left, 'auto');
+    assert.equal(offering.margin, '0 auto');
+    assert.equal(offering['z-index'], '500');
+    assert.equal(offering['pointer-events'], 'auto');
+    assert.doesNotMatch(layoutSource, /offeringCardArea|Object\.assign\(offeringSec\.style/);
+    assert.doesNotMatch(layoutSource, /playerTray\s*:/);
+    assert.equal(Object.hasOwn(UILayoutConfig.layers, 'playerTray'), false);
+    assert.equal(Object.hasOwn(UILayoutConfig, 'offeringCardArea'), false);
+    assert.match(layoutSource, /offeringSec\.addEventListener\("mouseenter"/);
 });
 check('Collapsed, expanded and Trial Hand state selectors remain present', () => {
     assert.match(tray, /\.offering-section:not\(\.is-minimal\)\s*\{/);
     assert.match(tray, /\.offering-section\.is-minimal\s*\{/);
     assert.match(tray, /\.offering-section\.is-trial-collapsed\s*,/);
+    assert.match(tray, /#layerPlayerTray \.offering-section\s*\{\s*margin:\s*0 !important;\s*z-index:\s*700 !important;/);
+    assert.match(tray, /\.offering-section\.layer-active-front,[\s\S]*?z-index:\s*700 !important;/);
+    assert.match(tray, /\.offering-section\.layer-dim-blur\s*\{\s*z-index:\s*50 !important;/);
+    assert.match(tray, /\.offering-section\.has-popover-open\s*\{\s*z-index:\s*2500 !important;/);
 });
 
 console.log(`Layout CSS Ownership: ${passed}/${passed} PASS`);

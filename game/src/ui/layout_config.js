@@ -38,22 +38,6 @@ const UILayoutConfig = {
             pointerEvents: "auto",
             transition: "filter 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.22s ease, box-shadow 0.22s ease"
         },
-        // 3️⃣ [Layer 3: Player Action Tray] 画面下部・浮遊操作トレイ (中央配置)
-        playerTray: {
-            position: "absolute",
-            bottom: "16px",
-            left: "0px",
-            right: "0px",
-            width: "100%",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "flex-end",
-            zIndex: 500,
-            pointerEvents: "none",
-            defaultOpacity: 0.92,
-            activeOpacity: 1.0,
-            selectedDimOpacity: 0.35
-        },
         // 4️⃣ [Layer 4: System Overlay] 四隅・最前面ポップアップ
         systemOverlay: {
             position: "fixed",
@@ -258,16 +242,6 @@ const UILayoutConfig = {
         "--advisor-report-expanded-top": "30%"
     },
 
-    // 🃏 6. 画面下部中央: ドローカード選択エリア (Layer 3: プレイヤートレイ)
-    offeringCardArea: {
-        position: "relative",
-        bottom: "auto",
-        left: "auto",
-        margin: "0 auto",
-        zIndex: 500,
-        pointerEvents: "auto"
-    },
-
     // 🎛️ 7. 画面右下隅 ターン終了 ＆ ギブアップ 操作エリア
     rightBottomControls: {
         position: "absolute",
@@ -376,9 +350,6 @@ UILayoutConfig.applyLayout = function() {
     }
 
     const offeringSec = document.querySelector(".offering-section");
-    if (offeringSec) {
-        Object.assign(offeringSec.style, this.offeringCardArea);
-    }
 
     const rightControls = document.querySelector(".right-bottom-controls");
     if (rightControls) {
