@@ -93,7 +93,31 @@ turnsLeft = nextTrialTurn - currentTurn
 
 これは**現採用デザインではないLegacy UI**とする。
 
-将来のgame修正では、この数値カウントダウンを削除または非表示化し、下記の警戒状態・環境演出・調査情報へ役割を移す。
+さらに、旧Trial予定Verseは表示だけではなく、現在の `DeckManager.isCardEligible()` の一部条件にも直接使用されている。
+
+現実装には次の条件が残る。
+
+- `reqTrialNotice`: `notice.active` または `nextTrialTurn - currentTurn <= 5`
+- `reqTrialWithin: N`: `nextTrialTurn - currentTurn <= N`
+- `reqTrialOrLowDefense`: Trial notice または低防衛
+
+現行カードデータでは、たとえば以下がこの旧schedule couplingを利用する。
+
+- `CMD_MUD_OBSTACLE`
+- `CMD_HIGH_GROUND_FORMATION`
+- `CMD_CAVALRY_SCOUTS`
+- `CMD_GUIDED_DEFENSE`
+- `CMD_SCOUT_ENEMY`
+- `CMD_SCORCHED_RETREAT`
+- `CMD_LOCAL_IRON_ARMAMENT`
+- `CMD_OMEN_DREAM`
+- `CMD_VIGILANCE`
+
+したがって現在の `nextTrialTurn` は、**Legacy countdown表示だけの値ではなく、Offering Eligibilityにも実効的に影響している。**
+
+内部Trial距離をEligibilityへ利用すること自体は現行ルールと必ずしも矛盾しない。しかし現在は、第1 Trial前の固定異変・脅威認識・調査カテゴリ解禁が未実装のまま、rawな予定Verseとの差分だけでカード候補化が進む。
+
+特に `CMD_OMEN_DREAM` は `reqTrialWithin: 10` を持つため、現状では予定Verseへの接近だけで候補化条件を満たし得る。これは「異変認識後に調査・情報手段を解禁する」という現在の接近シーケンスとは未統合である。
 
 ## 5. 警戒状態
 
@@ -102,6 +126,8 @@ Trial接近時は、数値カウントダウンではなく**警戒状態**と�
 警戒状態は単一ゲージである必要はなく、画面・音・Advisor・調査結果・Offering変化を組み合わせた世界状態として扱う。
 
 内部的なTrial距離はカードEligibility等へ使用してよいが、その値を直接プレイヤーへ露出させない。
+
+ただし現在のgameでは、そのEligibilityが警戒・脅威認識状態ではなく `nextTrialTurn - currentTurn` の旧scheduleへ直接結合している部分がある。これは実装上の未統合として扱う。
 
 ## 6. 第1 Trial前の固定異変
 
@@ -137,7 +163,8 @@ Trial接近時は、数値カウントダウンではなく**警戒状態**と�
 - Offeringの調査カテゴリ解禁状態: **未実装**
 - 第1 Trial前固定異変の強制トリガー: **未実装**
 - 警戒状態のPresentation: **未実装**
-- 正確な残りVerseカウントダウン: **旧UIが現存 / 削除対象**
+- 正確な残りVerseカウントダウン: **旧UIが現存 / Legacy**
+- `nextTrialTurn` を直接参照するカードEligibility: **現役実装 / 警戒・調査解禁状態とは未統合**
 
 旧来の「第1 Trial前は完全無風」は廃止する。
 
@@ -173,6 +200,7 @@ Trial接近時は、数値カウントダウンではなく**警戒状態**と�
 4. 調査・情報カテゴリの解禁状態は未実装。
 5. 警戒状態の環境Presentationは未実装。
 6. `TopHeaderComponent` の正確な5VerseカウントダウンはLegacy実装として残存。
-7. 通常Verse進行からTrial本体を自動起動する配線は未実装。
+7. `DeckManager.isCardEligible()` の一部カード条件は、警戒状態ではなく `nextTrialTurn - currentTurn` を直接参照している。
+8. そのため、固定異変・脅威認識・調査解禁より先にTrial接近条件だけで候補化し得るカードがある。
+9. 通常Verse進行からTrial本体を自動起動する配線は未実装。
 
-`game/` を将来修正する場合も、通常Global Event基盤とTrial接近シーケンスは別責務として扱う。
