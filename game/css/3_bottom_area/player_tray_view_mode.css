@@ -7,8 +7,8 @@
 
    IMPORTANT:
    - This file is the final placement authority for #layerPlayerTray.
-   - draw_card_select_area.css may still contain legacy placement rules
-     during migration, but they are intentionally overridden here.
+   - Legacy hand CSS may style tray contents, but must not be required
+     for host placement to be correct.
    - NORMAL / TRIAL changes the tray contents, never its screen anchor.
 
    TOP     : bottom-center for direct 2D board interaction.
@@ -17,9 +17,15 @@
 
 #layerPlayerTray.layer-player-tray {
     position: absolute;
+    left: var(--layout-player-tray-top-left) !important;
     right: auto !important;
+    bottom: var(--layout-player-tray-bottom) !important;
     width: auto !important;
+    height: auto;
+    display: flex;
+    justify-content: center !important;
     align-items: flex-end;
+    transform: translateX(-50%);
     pointer-events: none;
     transition:
         left var(--layout-player-tray-motion-ms) cubic-bezier(0.16, 1, 0.3, 1),
@@ -29,15 +35,13 @@
 }
 
 body[data-board-view="top"] #layerPlayerTray.layer-player-tray {
-    left: 50% !important;
-    bottom: var(--layout-player-tray-bottom) !important;
+    left: var(--layout-player-tray-top-left) !important;
     justify-content: center !important;
     transform: translateX(-50%);
 }
 
 body[data-board-view="quarter"] #layerPlayerTray.layer-player-tray {
-    left: var(--layout-edge-gap) !important;
-    bottom: var(--layout-player-tray-bottom) !important;
+    left: var(--layout-player-tray-quarter-left) !important;
     justify-content: flex-start !important;
     transform: translateX(0);
 }
@@ -56,8 +60,9 @@ body[data-board-view="quarter"] #layerPlayerTray.layer-player-tray {
 
 /* Mobile placement is a Layout decision and intentionally ignores board-view placement. */
 @media (max-width: 768px) {
+    #layerPlayerTray.layer-player-tray,
     body[data-board-view] #layerPlayerTray.layer-player-tray {
-        left: var(--layout-mobile-edge-gap) !important;
+        left: var(--layout-player-tray-mobile-left) !important;
         right: auto !important;
         bottom: var(--layout-player-tray-mobile-bottom) !important;
         width: auto !important;
