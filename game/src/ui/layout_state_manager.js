@@ -19,6 +19,11 @@ export const HAND_LAYOUT_STATES = Object.freeze({
     TRIAL_COLLAPSED: "trial-collapsed"
 });
 
+export const PLAYER_TRAY_MODES = Object.freeze({
+    NORMAL: "normal",
+    TRIAL: "trial"
+});
+
 const VALID_LAYOUT_STATES = new Set(Object.values(UI_LAYOUT_STATES));
 const VALID_CONTEXT_OWNERS = new Set(Object.values(RIGHT_CONTEXT_OWNERS));
 
@@ -145,24 +150,35 @@ export class LayoutStateManager {
         return HAND_LAYOUT_STATES.COLLAPSED;
     }
 
-    applyContract() {
-        const handState = this.getHandState();
-        const advisorExpanded = this.state === UI_LAYOUT_STATES.ADVISOR_EXPANDED;
-        const trialContextVisible = this.contextOwner === RIGHT_CONTEXT_OWNERS.TRIAL;
-        this.applyRootState(handState);
-        this.adapters.setHandState?.(handState);
-        this.adapters.setAdvisorExpanded?.(advisorExpanded);
-        this.adapters.setTrialContextVisible?.(trialContextVisible);
-        this.adapters.onChange?.({ state: this.state, contextOwner: this.contextOwner, handState });
+    getPlayerTrayMode() {
+        if (this.state === UI_LAYOUT_STATES.TRIAL
+            || (this.state === UI_LAYOUT_STATES.ADVISOR_EXPANDED && this.advisorReturnState === UI_LAYOUT_STATES.TRIAL)) {
+            return PLAYER_TRAY_MODES.TRIAL;
+        }
+        return PLAYER_TRAY_MODES.NORMAL;
     }
 
-    applyRootState(handState = this.getHandState()) {
+    applyContract() {
+        const handState = this.getHandState();
+        const playerTrayMode = this.getPlayerTrayMode();
+        const advisorExpanded = this.state === UI_LAYOUT_STATES.ADVISOR_EXPANDED;
+        const trialContextVisible = this.contextOwner === RIGHT_CONTEXT_OWNERS.TRIAL;
+        this.applyRootState(handState, playerTrayMode);
+        this.adapters.setHandState?.(handState);
+        this.adapters.setPlayerTrayMode?.(playerTrayMode);
+        this.adapters.setAdvisorExpanded?.(advisorExpanded);
+        this.adapters.setTrialContextVisible?.(trialContextVisible);
+        this.adapters.onChange?.({ state: this.state, contextOwner: this.contextOwner, handState, playerTrayMode });
+    }
+
+    applyRootState(handState = this.getHandState(), playerTrayMode = this.getPlayerTrayMode()) {
         const roots = [this.documentRef?.documentElement, this.documentRef?.body].filter(Boolean);
         roots.forEach(root => {
             if (!root.dataset) return;
             root.dataset.layoutState = this.state;
             root.dataset.contextOwner = this.contextOwner;
             root.dataset.handState = handState;
+            root.dataset.playerTrayMode = playerTrayMode;
         });
     }
 }
