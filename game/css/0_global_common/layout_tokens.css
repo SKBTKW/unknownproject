@@ -59,7 +59,9 @@
         - var(--layout-right-context-bottom)
     );
 
+    /* Mobile keeps the global Trial summary in the upper screen band. */
     --layout-right-context-mobile-right: 12px;
-    --layout-right-context-mobile-bottom: 56px;
+    --layout-right-context-mobile-top: 72px;
     --layout-right-context-mobile-width: min(300px, calc(100vw - 24px));
+    --layout-right-context-mobile-max-height: 34vh;
 }
