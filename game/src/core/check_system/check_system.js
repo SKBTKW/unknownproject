@@ -13,7 +13,7 @@ import { DicePool } from './dice_pool.js';
 import { CHECK_DEFINITIONS } from './check_definitions.js';
 import { CheckResolver, CheckModifier } from './check_resolver.js';
 import { TargetBuilder } from './target_builder.js';
-import { validateCheckDefinitions } from './check_validator.js';
+import { validateCheckDefinitions, validateDefinition } from './check_validator.js';
 
 export class CheckSystem {
     /**
@@ -60,6 +60,35 @@ export class CheckSystem {
      * 📸 状態取得 (Undo / Replay / Save 用)
      * @returns {Object}
      */
+    /** Resolve a caller-provided DiceSpec and OutcomeTable on the CheckSystem stream. */
+    resolveDefinition({ definition, modifiers = [], actionId = null, checkSequence = 1 } = {}) {
+        if (!definition || typeof definition !== "object") {
+            throw new Error("[CheckSystem] resolveDefinition failed: definition must be an object.");
+        }
+        const runtimeDef = {
+            ...definition,
+            id: definition.id || "runtime_check",
+            resolution: definition.resolution || { type: "sum" }
+        };
+        if (!runtimeDef.resolution || typeof runtimeDef.resolution !== "object") {
+            throw new Error("[CheckSystem] resolveDefinition failed: resolution must be an object.");
+        }
+        if (runtimeDef.resolution.type !== "sum") {
+            throw new Error(
+                `[CheckSystem] Unsupported resolution type: "${runtimeDef.resolution.type}". ` +
+                'Initial supported type is "sum".'
+            );
+        }
+        validateDefinition(runtimeDef.id, runtimeDef);
+        return CheckResolver.resolve({
+            checkDef: runtimeDef,
+            rng: this.rng,
+            modifiers,
+            actionId,
+            checkSequence
+        });
+    }
+
     getState() {
         return {
             rng: this.rng.getState()
