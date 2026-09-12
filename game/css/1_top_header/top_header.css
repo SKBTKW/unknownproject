@@ -13,7 +13,7 @@
     align-items: center;
     box-shadow: 0 4px 14px rgba(0,0,0,0.5);
     flex-shrink: 0;
-    height: var(--layout-header-height, 84px);
+    height: var(--layout-header-height);
     position: relative;
     overflow: visible;
 }
