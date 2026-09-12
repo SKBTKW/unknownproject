@@ -3,16 +3,17 @@
    画面右側（ターン表示・データパネル・ログエリア・下部ボタン）専用スタイル
    ============================================================= */
 
-/* 👉 右サイドバー貫通独立コラムコンテナ */
+/* 👉 右サイドバー貫通独立コラムコンテナ
+   外周geometryはLayout tokenを消費し、内部パネルの見た目だけをここで所有する。 */
 .right-sidebar {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: var(--layout-right-sidebar-gap);
     min-height: 0;
-    width: 280px;
+    width: var(--layout-right-sidebar-width);
     background: #161922;
     border-left: 2px solid #2a2e3d;
-    padding: 14px 12px;
+    padding: var(--layout-right-sidebar-padding-block) var(--layout-right-sidebar-padding-inline);
     align-items: center;
     box-shadow: -4px 0 12px rgba(0, 0, 0, 0.4);
 }
