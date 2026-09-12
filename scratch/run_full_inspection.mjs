@@ -134,8 +134,8 @@ async function main() {
         process.exit(1);
     }
 
-    // ⚔️ Layer 4: Trial Phase 1〜2.7B Tests (試練・迎撃・配分プレビュー)
-    console.log("\n⚔️  [LAYER 4/6] Trial Subsystem Tests (迎撃・戦闘・プレビュー)...");
+    // ⚔️ Layer 4: Trial Phase 1〜2.8G Tests (試練・迎撃・戦闘・完了)
+    console.log("\n⚔️  [LAYER 4/6] Trial Subsystem Tests (迎撃・戦闘・完了)...");
     const trialFoundationOk = await runCommand("node", ["scratch/test_trial_foundation.mjs"]);
     if (!trialFoundationOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Trial Foundation) で不合格が検出されました。");
@@ -165,6 +165,25 @@ async function main() {
     if (!trialPlanningOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Trial Planning Foundation) で不合格が検出されました。");
         process.exit(1);
+    }
+    const trialFlowTests = [
+        ["Trial Route Decision UI", "scratch/test_trial_phase27cd_route_decision_ui.mjs"],
+        ["Trial Completion Flow", "scratch/test_trial_phase27ce_completion_flow.mjs"],
+        ["Trial Final Review Confirm", "scratch/test_trial_phase27cf_final_review_confirm.mjs"],
+        ["Trial Plan Activation", "scratch/test_trial_phase28a_plan_activation.mjs"],
+        ["Trial Battle Sequence Start", "scratch/test_trial_phase28b_battle_sequence_start.mjs"],
+        ["Trial Battle Resolution", "scratch/test_trial_phase28c_battle_resolution.mjs"],
+        ["Trial Enemy Traversal", "scratch/test_trial_phase28d_enemy_traversal.mjs"],
+        ["Trial Next Battle Transition", "scratch/test_trial_phase28e_next_battle_transition.mjs"],
+        ["Trial HQ Ember Damage", "scratch/test_trial_phase28f_hq_ember_damage.mjs"],
+        ["Trial Completion", "scratch/test_trial_phase28g_trial_completion.mjs"],
+    ];
+    for (const [label, testPath] of trialFlowTests) {
+        const ok = await runCommand("node", [testPath]);
+        if (!ok) {
+            console.error(`\n❌ [PIPELINE BLOCKED] Layer 4 (${label}) で不合格が検出されました。`);
+            process.exit(1);
+        }
     }
 
     // 🖥️ Layer 5: UI Lifecycle Tests (DOM構築・多言語・イベント)
@@ -234,7 +253,7 @@ async function main() {
     console.log("   ✅ Layer 1: Static Lint (0 errors)");
     console.log("   ✅ Layer 2: Spec Assertions (all assertions matched)");
     console.log("   ✅ Layer 3: Domain Unit Tests PASS");
-    console.log("   ✅ Layer 4: Trial Phase 1〜2.7C Tests PASS");
+    console.log("   ✅ Layer 4: Trial Phase 1〜2.8G Tests PASS");
     console.log("   ✅ Layer 5: UI Lifecycle Tests PASS");
     console.log("   ✅ Layer 6: Integration & Settlement Tests PASS");
     console.log("============================================================\n");
