@@ -133,6 +133,17 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (DeckManager RNG Contract) で不合格が検出されました。");
         process.exit(1);
     }
+    const runTerminationContracts = [
+        ["Run Termination Contract", "game/src/core/dev/diagnose_run_termination_contract.mjs"],
+        ["Terminal Verse Lifecycle", "game/src/core/dev/diagnose_terminal_verse_lifecycle.mjs"],
+    ];
+    for (const [label, testPath] of runTerminationContracts) {
+        const ok = await runCommand("node", [testPath]);
+        if (!ok) {
+            console.error(`\n❌ [PIPELINE BLOCKED] Layer 3 (${label}) で不合格が検出されました。`);
+            process.exit(1);
+        }
+    }
 
     // ⚔️ Layer 4: Trial Phase 1〜2.8G Tests (試練・迎撃・戦闘・完了)
     console.log("\n⚔️  [LAYER 4/6] Trial Subsystem Tests (迎撃・戦闘・完了)...");
@@ -177,6 +188,10 @@ async function main() {
         ["Trial Next Battle Transition", "scratch/test_trial_phase28e_next_battle_transition.mjs"],
         ["Trial HQ Ember Damage", "scratch/test_trial_phase28f_hq_ember_damage.mjs"],
         ["Trial Completion", "scratch/test_trial_phase28g_trial_completion.mjs"],
+        ["Trial HQ Arrival Aggregation", "game/src/trial/dev/diagnose_hq_arrival_aggregation.mjs"],
+        ["Trial HQ Aggregate Resolution", "game/src/trial/dev/diagnose_hq_aggregate_resolution.mjs"],
+        ["Trial All-SKIP Completion", "game/src/trial/dev/diagnose_all_skip_trial_completion.mjs"],
+        ["Trial Fatal HQ Resolution", "game/src/trial/dev/diagnose_trial_fatal_hq_resolution.mjs"],
     ];
     for (const [label, testPath] of trialFlowTests) {
         const ok = await runCommand("node", [testPath]);
@@ -252,8 +267,8 @@ async function main() {
     console.log(`✅ 統合検問パイプライン合格 (所要時間: ${elapsed}s)`);
     console.log("   ✅ Layer 1: Static Lint (0 errors)");
     console.log("   ✅ Layer 2: Spec Assertions (all assertions matched)");
-    console.log("   ✅ Layer 3: Domain Unit Tests PASS");
-    console.log("   ✅ Layer 4: Trial Phase 1〜2.8G Tests PASS");
+    console.log("   ✅ Layer 3: Domain Unit Tests + Run Termination Contracts PASS");
+    console.log("   ✅ Layer 4: Trial Phase 1〜2.8G + HQ Resolution Contracts PASS");
     console.log("   ✅ Layer 5: UI Lifecycle Tests PASS");
     console.log("   ✅ Layer 6: Integration & Settlement Tests PASS");
     console.log("============================================================\n");
