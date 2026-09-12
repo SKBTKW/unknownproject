@@ -1,6 +1,9 @@
 /* =============================================================
    3_bottom_area / player_tray_view_mode.css
-   Board view dependent Player Tray anchoring.
+   Screen-space Player Tray placement owned by Layout Refactor.
+
+   The board-view value is an input only. This stylesheet decides
+   where the Player Action Host sits; it does not own view semantics.
 
    TOP     : bottom-center for direct 2D board interaction.
    QUARTER : bottom-left for future 2.5D quarter-view composition.
@@ -8,16 +11,16 @@
 
 #layerPlayerTray.layer-player-tray {
     transition:
-        left 320ms cubic-bezier(0.16, 1, 0.3, 1),
-        transform 320ms cubic-bezier(0.16, 1, 0.3, 1),
-        bottom 320ms cubic-bezier(0.16, 1, 0.3, 1);
+        left var(--layout-player-tray-motion-ms) cubic-bezier(0.16, 1, 0.3, 1),
+        transform var(--layout-player-tray-motion-ms) cubic-bezier(0.16, 1, 0.3, 1),
+        bottom var(--layout-player-tray-motion-ms) cubic-bezier(0.16, 1, 0.3, 1);
     will-change: left, transform;
 }
 
 body[data-board-view="top"] #layerPlayerTray.layer-player-tray {
     left: 50% !important;
     right: auto !important;
-    bottom: var(--layout-edge-gap);
+    bottom: var(--layout-player-tray-bottom);
     width: auto !important;
     justify-content: center !important;
     transform: translateX(-50%);
@@ -26,7 +29,7 @@ body[data-board-view="top"] #layerPlayerTray.layer-player-tray {
 body[data-board-view="quarter"] #layerPlayerTray.layer-player-tray {
     left: var(--layout-edge-gap) !important;
     right: auto !important;
-    bottom: var(--layout-edge-gap);
+    bottom: var(--layout-player-tray-bottom);
     width: auto !important;
     justify-content: flex-start !important;
     transform: translateX(0);
@@ -38,12 +41,12 @@ body[data-board-view="quarter"] #layerPlayerTray.layer-player-tray {
     }
 }
 
-/* Mobile layout is intentionally kept on the existing compact left anchor. */
+/* Mobile placement is a Layout decision and intentionally ignores board-view placement. */
 @media (max-width: 768px) {
     body[data-board-view] #layerPlayerTray.layer-player-tray {
-        left: 8px !important;
+        left: var(--layout-mobile-edge-gap) !important;
         right: auto !important;
-        bottom: 8px !important;
+        bottom: var(--layout-player-tray-mobile-bottom) !important;
         transform: translateX(0);
         justify-content: flex-start !important;
     }
