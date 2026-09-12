@@ -1,5 +1,6 @@
 import { I18n } from "../i18n.js";
 import { UILayoutConfig } from "./layout_config.js";
+import { RIGHT_CONTEXT_OWNERS } from "./layout_state_manager.js";
 import { TrialInterceptionPreviewComponent, resolveModifierTag } from "./trial_interception_preview_component.js";
 import { TRIAL_BATTLE_STATUSES } from "../trial/domain/trial_types.js";
 
@@ -30,11 +31,12 @@ export class TrialDefenseAllocationComponent {
     render() {
         const root = this.mount();
         if (!root) return;
-        const ownsContext = !this.contextOwnerProvider || this.contextOwnerProvider() === "trial";
+        const ownsContext = !this.contextOwnerProvider
+            || this.contextOwnerProvider() === RIGHT_CONTEXT_OWNERS.TRIAL;
         const active = Boolean(this.ui?.trialPreviewConfig && this.ui?.trialController?.state && ownsContext);
         root.classList.toggle("is-active", active);
         root.setAttribute("aria-hidden", active ? "false" : "true");
-        root.dataset.contextOwner = active ? "trial" : "none";
+        root.dataset.contextOwner = active ? RIGHT_CONTEXT_OWNERS.TRIAL : RIGHT_CONTEXT_OWNERS.NONE;
         if (!active) {
             root.innerHTML = "";
             return;
