@@ -30,8 +30,9 @@ check(indexHtml.indexOf("css/0_global_common/layer_contract.css")
 
 check(tokensCss.includes("--layout-player-tray-bottom")
     && tokensCss.includes("--layout-trial-action-tray-width")
-    && tokensCss.includes("--layout-right-context-width"),
-"layout tokens cover Player Tray, Trial Action Tray, and Right Context geometry");
+    && tokensCss.includes("--layout-right-context-width")
+    && tokensCss.includes("--layout-advisor-right"),
+"layout tokens cover Player Tray, Trial Action Tray, Right Context, and Advisor geometry");
 
 check(trayViewCss.includes("position: absolute")
     && trayViewCss.includes("width: auto !important")
@@ -68,8 +69,10 @@ check(layerContractCss.includes("#layerPlayerTray.layer-player-tray")
     && layerContractCss.includes("var(--z-player)"),
 "Player Tray global stacking order is normalized by the Layout layer contract");
 check(layerContractCss.includes("#advisorDockContainer")
+    && layerContractCss.includes("var(--layout-advisor-right)")
+    && layerContractCss.includes("var(--layout-advisor-bottom)")
     && layerContractCss.includes("var(--z-advisor)"),
-"Advisor global stacking order is normalized by the Layout layer contract");
+"Advisor dock placement and stacking are normalized by the Layout layer contract");
 check(layerContractCss.includes("#layerSystemOverlay.layer-system-overlay")
     && layerContractCss.includes("var(--z-overlay)"),
 "System Overlay global stacking order is normalized by the Layout layer contract");
