@@ -22,7 +22,7 @@
 | `CMD_VIGILANCE` | **Implemented / Different** | 🧱15。次Verseから2Verse、最大🛡️計算へ**+3**。旧説明の「すべての🛡️獲得ごとに+3」ではない。 |
 | `CMD_MUD_OBSTACLE` | **Partial** | `mudObstacleActive` とBuffを登録するが、`TrialTerrainEffectResolver` はこのフラグを参照せず、TrialControllerも通常GameStateのカードflagをTrialStateへ取り込まない。湿原出口倍率は基礎地形ルールのみ。 |
 | `CMD_HIGH_GROUND_FORMATION` | **Partial** | 高地布陣フラグ/Buffは存在するが、`TrialTerrainEffectResolver` の高低差計算は標高のみを参照し、このフラグを参照しない。Trial側未接続を確認済み。 |
-| `CMD_MILITARY_FOCUS` | **Implemented** | `activeDrawBias={ targetCategory:"MILITARY", type:"UNTIL_DEFENSE", untilValue:20 }` を設定し、Offering抽選時にMILITARYカテゴリの重みを×2する。土地配置後の `checkConditionalBuffs()` で最大🛡️が20以上になれば自動解除される。 |
+| `CMD_MILITARY_FOCUS` | **Implemented / Internal taxonomy gap** | `activeDrawBias={ targetCategory:"MILITARY", type:"UNTIL_DEFENSE", untilValue:20 }` を設定し、Offering抽選時に`category:"MILITARY"`の重みを×2する。土地配置後の `checkConditionalBuffs()` で最大🛡️が20以上になれば自動解除される。ただし軍事テーマのカードでも `category:"COMMAND"` のものはBias対象外。 |
 | `CMD_CAVALRY_SCOUTS` | **Partial** | 状態フラグを立てるが、通常盤面からの侵攻方向/route生成自体が未接続であり、このフラグを消費するTrial経路もない。現データコストは🌾30＋🧱20。 |
 | `CMD_OUTPOST_SIGNAL` | **Partial** | `outpostSignalActive` を立てるが、警戒/情報解像度やTrial Scenario生成へ未接続。 |
 | `CMD_IRON_RAMPART` | **Implemented / Different** | 🧱20。`DefenseSystem.increaseMaxCapacity(25)`、さらに本営近郊1マスあたり恒久🛡️+2。旧rulesの「🛡️+10」と不一致。 |
@@ -107,4 +107,4 @@
 6. `TrialController` の🛡️消費はTrial-localであり、通常GameStateの `currentDefense` へコミットされない。
 7. Trial本営損害は、`emberSystem` 注入時には通常GameStateの🔥へ直接反映されるため、🛡️と🔥で永続化境界が一致していない。
 8. Trial完了時のpayloadは生成されるが、Stage遷移・Chronicle・次Trial状態・カードの「次Trial」フラグ消費までを一括処理する結果コミッタは確認できない。
-9. `CMD_MILITARY_FOCUS` はTrial系フラグではなくOffering抽選へ直接接続されており、軍事カテゴリ重み×2と最大🛡️20到達時の解除まで実装済み。
+9. `CMD_MILITARY_FOCUS` はOffering抽選へ直接接続されており、`category:"MILITARY"` の重み×2と最大🛡️20到達時の解除まで実装済み。ただし `military_cards.json` の多くは `category:"COMMAND"` なので、軍事テーマ全体ではなく一部だけがBias対象になる。
