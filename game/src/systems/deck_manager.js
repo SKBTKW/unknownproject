@@ -9,12 +9,37 @@ import { normalizePlacementAnchor } from '../core/placement_geometry.js';
 import { isTrueMergedCell } from '../core/merge_rules.js';
 import { getWaterSourceSpawnChance } from '../core/lake_rules.js';
 
+const LAND_EXPLORATION_CHECK = {
+    id: "land_exploration",
+    dice: { count: 2, sides: 6, keep: "all" },
+    resolution: { type: "sum" },
+    outcomes: [
+        { max: 4, id: "low" },
+        { min: 5, max: 7, id: "medium" },
+        { min: 8, id: "discovery" }
+    ]
+};
+
 class DeckManager {
     constructor(gameState, engine = null) {
         this.state = gameState;
         this.engine = engine;
         this._landCardMasterCache = null;
         this.cycleSystem = new CardCycleSystem(this.state, this.engine);
+    }
+
+    _nextGameplayFloat() {
+        return this.engine?.gameplayRandom?.nextFloat?.() ?? Math.random();
+    }
+
+    _nextGameplayInt(min, max) {
+        return this.engine?.gameplayRandom?.nextInt?.(min, max)
+            ?? min + Math.floor(Math.random() * (max - min + 1));
+    }
+
+    _nextGameplayId(prefix, scope) {
+        return this.engine?.gameplayRandom?.nextId?.(prefix, scope)
+            ?? `${prefix}_${scope}_${Date.now()}_${Math.random()}`;
     }
 
     /**
@@ -454,7 +479,7 @@ class DeckManager {
     _wrapCardInstance(picked) {
         if (!picked) return null;
         return {
-            id: `card_${(this.state ? this.state.turn : 1)}_${Date.now()}_${Math.random()}`,
+            id: this._nextGameplayId("card", this.state?.turn || 1),
             cardMasterId: picked.id,
             nameKey: picked.nameKey,
             terrain: picked,
@@ -500,7 +525,7 @@ class DeckManager {
             return acc + (w * dirMult * biasMult);
         }, 0);
 
-        let rand = Math.random() * totalW;
+        let rand = this._nextGameplayFloat() * totalW;
         let chosen = eligible[0];
 
         for (let c of eligible) {
@@ -800,7 +825,7 @@ class DeckManager {
 
         // 🎴 発動スロットの消費（手札の場合は空きスロット化、保留の場合は空スロット化）
         if (handIdx >= 0 && this.state.handOffering && this.state.handOffering[handIdx]) {
-            this.state.handOffering[handIdx] = { isBlank: true, originalCard: cardObj, id: `blank_${handIdx}_${Date.now()}` };
+            this.state.handOffering[handIdx] = { isBlank: true, originalCard: cardObj, id: this._nextGameplayId("blank", `${this.state.turn || 1}_${handIdx}`) };
             this.state.hasPickedThisTurn = true;
         } else if (reserveIdx >= 0 && this.state.reserveSlots) {
             this.state.reserveSlots[reserveIdx] = null;
@@ -1440,7 +1465,7 @@ class DeckManager {
             // 🎲 領土探索: コスト 🔥-1 (2D6判定)
             const checkResult = checkSystem.resolve({
                 checkId: "standard_2d6",
-                actionId: `expedition_${Date.now()}`,
+                actionId: `abandoned_settlement_${this.state.turn || 1}_${handIdx >= 0 ? `hand_${handIdx}` : reserveIdx >= 0 ? `reserve_${reserveIdx}` : "direct"}`,
                 checkSequence: 1
             });
             const roll = checkResult.finalTotal;
@@ -1508,7 +1533,7 @@ class DeckManager {
                 return { success: false, reason: "NO_EXPLORABLE_TILES" };
             }
 
-            const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+            const chosen = candidates[this._nextGameplayInt(0, candidates.length - 1)];
             const posStr = `${String.fromCharCode(65+chosen.c)}${chosen.r+1}`;
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: `(${posStr}) 2D6` }) : `📜 ${cName}`);
             const expRes = this.executeExploration(chosen.r, chosen.c);
@@ -1529,14 +1554,20 @@ class DeckManager {
      */
     executeExploration(r, c) {
         if (!this.state || !this.state.grid) return { success: false, reason: "NO_GRID" };
-        const cell = this.state.grid[r][c];
+        const cell = this.state.grid[r]?.[c];
         if (!cell || !cell.placed || cell.isHQ) return { success: false, reason: "INVALID_CELL" };
         if (cell.searched) return { success: false, reason: "ALREADY_SEARCHED" };
 
+        const checkSystem = this.engine?.checkSystem || this.state?.checkSystem;
+        if (!checkSystem || typeof checkSystem.resolveDefinition !== "function") {
+            return { success: false, reason: "CHECK_SYSTEM_UNAVAILABLE" };
+        }
+        const checkResult = checkSystem.resolveDefinition({
+            definition: LAND_EXPLORATION_CHECK,
+            actionId: `land_exploration_${this.state.turn || 1}_${r}_${c}`
+        });
+        const totalRoll = checkResult.finalTotal;
         cell.searched = true;
-        const d1 = Math.floor(Math.random() * 6) + 1;
-        const d2 = Math.floor(Math.random() * 6) + 1;
-        const totalRoll = d1 + d2;
         const posStr = `(${String.fromCharCode(65+c)}${r+1})`;
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' && window.I18n ? window.I18n : { t: k => k });
 
@@ -1563,7 +1594,7 @@ class DeckManager {
                         waterSourceBaseRate = 0.25;
                     }
                     const waterSourceChance = getWaterSourceSpawnChance(this.state, r, c, waterSourceBaseRate);
-                    if (waterSourceId && waterSourceChance > 0 && Math.random() < waterSourceChance) {
+                    if (waterSourceId && waterSourceChance > 0 && this._nextGameplayFloat() < waterSourceChance) {
                         const waterSource = pool.find(s => s.id === waterSourceId);
                         if (waterSource) {
                             socketDef = {
@@ -1577,7 +1608,7 @@ class DeckManager {
                         const candidates = pool.filter(s => !s.isSpecialWater && (s.weight || 0) > 0);
                         const validPool = candidates.length > 0 ? candidates : pool;
                         const totalWeight = validPool.reduce((sum, s) => sum + (s.weight || 1), 0);
-                        let rand = Math.random() * totalWeight;
+                        let rand = this._nextGameplayFloat() * totalWeight;
                         let chosen = validPool[0];
                         for (const s of validPool) {
                             const w = s.weight || 1;
