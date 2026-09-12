@@ -64,6 +64,17 @@ assert.equal(layout.getHandState(), HAND_LAYOUT_STATES.COLLAPSED);
 assert.equal(layout.getPlayerTrayMode(), PLAYER_TRAY_MODES.NORMAL);
 assert.equal(documentRef.body.dataset.boardContext, "normal");
 
+// Restore resets only screen-space layout. Board presentation is restored by
+// its own subsystem and must not be rewritten as a side effect here.
+presentation.setContextMode(BOARD_CONTEXT_MODES.TRIAL);
+layout.enterTrial();
+layout.prepareRestoreView();
+assert.equal(layout.getState(), UI_LAYOUT_STATES.NORMAL);
+assert.equal(layout.getContextOwner(), RIGHT_CONTEXT_OWNERS.NONE);
+assert.equal(layout.getPlayerTrayMode(), PLAYER_TRAY_MODES.NORMAL);
+assert.equal(presentation.contextMode, BOARD_CONTEXT_MODES.TRIAL);
+assert.equal(documentRef.body.dataset.boardContext, "trial");
+
 const uiControllerSource = fs.readFileSync(
     new URL("../game/src/ui/ui_controller.js", import.meta.url),
     "utf8"
