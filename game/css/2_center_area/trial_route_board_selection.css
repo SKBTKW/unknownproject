@@ -1,3 +1,5 @@
+@import url("./board_context_mode.css");
+
 /* Trial route entry selectors on the board. */
 .cell.is-trial-route-selector-host { overflow: visible; }
 .trial-route-entry-selector {
