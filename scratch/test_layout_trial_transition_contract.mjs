@@ -88,4 +88,28 @@ assert.ok(
     "Trial stop must restore normal Layout state explicitly"
 );
 
+const trialActionTraySource = fs.readFileSync(
+    new URL("../game/src/ui/trial_action_tray_component.js", import.meta.url),
+    "utf8"
+);
+assert.ok(
+    trialActionTraySource.includes("PLAYER_TRAY_MODES.TRIAL"),
+    "Trial Action Tray visibility must consume the canonical Layout tray mode token"
+);
+assert.ok(
+    !trialActionTraySource.includes("BOARD_CONTEXT_MODES")
+        && !trialActionTraySource.includes("data-board-context"),
+    "Trial Action Tray visibility must not depend on Board Presentation context"
+);
+
+const rightContextSource = fs.readFileSync(
+    new URL("../game/src/ui/trial_defense_allocation_component.js", import.meta.url),
+    "utf8"
+);
+assert.ok(
+    rightContextSource.includes("contextOwnerProvider")
+        && rightContextSource.includes('this.contextOwnerProvider() === "trial"'),
+    "Trial Right Context visibility must remain gated by Layout context ownership"
+);
+
 console.log("Layout Trial transition contract: PASS");
