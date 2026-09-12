@@ -36,13 +36,15 @@ export class RunTerminationService {
         if (!this.state) return null;
         if (this.isTerminated()) return this.getResult();
 
+        const terminalEmber = Math.max(0, Number(this.state.ember) || 0);
+        this.state.ember = terminalEmber;
         this.state.runTermination = Object.freeze({
             terminated: true,
             outcome: RUN_TERMINATION_OUTCOMES.DEFEAT,
             reason: RUN_TERMINATION_REASONS.EMBER_DEPLETED,
             source,
             turn: Number(this.state.turn) || 1,
-            ember: Math.max(0, Number(this.state.ember) || 0)
+            ember: terminalEmber
         });
         this.state.isGameOver = true;
         return this.getResult();
