@@ -100,6 +100,10 @@ check(layoutConfig.includes('top: "var(--layout-right-context-mobile-top)"')
     && layoutConfig.includes('maxHeight: "var(--layout-right-context-mobile-max-height)"')
     && !layoutConfig.includes("--layout-right-context-mobile-bottom"),
 "mobile Trial Right Context config follows the upper-band Layout contract");
+check(layoutConfig.includes('zIndex: "var(--z-right-context)"')
+    && tokensCss.includes("--z-right-context:")
+    && layerContractCss.includes("var(--z-right-context)"),
+"Trial Right Context stacking consumes the shared Layout layer token");
 
 check(layerContractCss.includes("#layerPlayerTray.layer-player-tray")
     && layerContractCss.includes("var(--z-player)"),
