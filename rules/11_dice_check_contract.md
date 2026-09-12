@@ -1,35 +1,49 @@
 # The Age of Trials — Flexible Dice Check Contract
 
-Status: DESIGN CONTRACT / implementation target
-
-This document defines the reusable dice-check boundary for The Age of Trials. It is intentionally not tied to exploration, Trial, or any single card.
+> **Status:** Core implemented / extensibility partially planned
+>
+> この文書は探索専用仕様ではなく、ゲーム全体で再利用するダイス判定境界を定義する。
 
 ## 1. Design principle
 
-Dice checks are composed from independent data layers so future rules can change without rewriting game-specific callers.
+判定は独立した層で構成する。
 
 ```text
 DiceSpec
 → DiceRoll
 → ResolutionRule
 → OutcomeTable
-→ game-specific effect
+→ caller-specific effect
 ```
 
-Presentation is separate from rules:
+演出は別レイヤーとする。
 
-```text
-PresentationHint
-→ UI chooses the appropriate animation / layout
-```
+> **ダイス機構は汎用。結果の意味はcallerまたはcheck definitionが所有する。**
 
-Core rule:
+---
 
-> The dice mechanism is reusable; the meaning of the result belongs to the caller or the check definition.
+## 2. 現在実装されている境界
 
-## 2. DiceSpec
+`game/src/core/check_system/` に以下が存在する。
 
-DiceSpec describes only what is rolled and what is kept.
+- `CheckSystem`
+- `RandomSource`
+- `DicePool`
+- `CheckResolver`
+- `CheckModifier`
+- `TargetBuilder`
+- `CHECK_DEFINITIONS`
+- definition validator
+
+`CheckSystem.resolve()` は登録済みcheckIdを解決し、`resolveDefinition()` はcaller提供のdefinitionを同じCheckSystem RNG上で解決する。
+
+DOMや演出はCheckSystemの責務に含めない。
+
+---
+
+## 3. DiceSpec
+
+DiceSpecは何個・何面を振り、何を保持するかだけを表す。
 
 ```js
 {
@@ -39,7 +53,7 @@ DiceSpec describes only what is rolled and what is kept.
 }
 ```
 
-Supported by the existing DicePool contract:
+DicePoolのkeep契約は以下を扱える。
 
 ```text
 all
@@ -47,19 +61,13 @@ highest_N
 lowest_N
 ```
 
-The underlying contract must remain generic enough for examples such as:
+2D6へハードコードしない。
 
-```js
-{ count: 2,  sides: 6, keep: "all" }
-{ count: 5,  sides: 6, keep: "highest_3" }
-{ count: 10, sides: 2, keep: "all" }
-```
+---
 
-Do not hard-code the gameplay layer to 2D6.
+## 4. DiceRoll
 
-## 3. DiceRoll
-
-A raw roll result preserves factual roll data.
+raw rollは事実データを保持する。
 
 ```js
 {
@@ -69,47 +77,41 @@ A raw roll result preserves factual roll data.
 }
 ```
 
-Rules and UI may inspect this data, but the roll result itself does not contain exploration-, Trial-, or card-specific effects.
+この層は資源獲得・Trialダメージ・情報公開などを知らない。
 
-## 4. ResolutionRule
+---
 
-ResolutionRule defines how the kept dice are converted into one scalar resolution value.
+## 5. ResolutionRule — 現在の実装境界
 
-Initial target set:
+### Implemented
+
+現在 `resolveDefinition()` が正式に受け付けるResolutionRuleは、
 
 ```text
 sum
+```
+
+のみ。
+
+### Planned extensibility
+
+以下は設計上の拡張候補であり、現在実装済みとは扱わない。
+
+```text
 highest
 lowest
 success_count
 ```
 
-Examples:
+DicePoolの`keep highest_N / lowest_N`と、ResolutionRuleの`highest / lowest`は別責務である。
 
-```js
-{ type: "sum" }
-```
+---
 
-```js
-{ type: "highest" }
-```
+## 6. OutcomeTable
 
-```js
-{
-  type: "success_count",
-  successAt: 5
-}
-```
+解決値を任意のsemantic resultへ対応させる。
 
-For `success_count`, each kept die meeting the configured threshold counts as one success.
-
-`keep` and `resolution` are intentionally separate responsibilities. Example: 5D6 keep highest 3 + sum is valid without inventing a new resolution type.
-
-## 5. OutcomeTable
-
-OutcomeTable maps the resolved value to an arbitrary semantic result.
-
-Example:
+例：
 
 ```js
 [
@@ -119,155 +121,115 @@ Example:
 ]
 ```
 
-Another check may use completely different bands:
+Outcome IDは意味ラベルのみ。実効果はcallerが所有する。
 
-```js
-[
-  { max: 1, id: "failure" },
-  { min: 2, max: 3, id: "mixed" },
-  { min: 4, id: "success" }
-]
-```
+validatorは不正DiceSpec、Outcomeの穴・重複等をfail-fastで拒否する。
 
-Outcome IDs are semantic labels only. Resource gain, damage, intel, movement, or other actual effects remain outside the generic dice layer.
+---
 
-Definitions must fail fast on invalid dice specs, unsupported resolution rules, gaps, or overlapping outcome ranges.
+## 7. 現在の主要check definitions
 
-## 6. PresentationHint
+現在 `CHECK_DEFINITIONS` には少なくとも以下がある。
 
-PresentationHint must communicate importance, not dictate concrete DOM structure.
+- `standard_2d6`
+- `trial_intercept`
+- `oracle_check` — 3D6 keep highest 2
+- `harsh_check`
 
-Example:
+これらはCheckSystemの共通RNG streamを使用する。
 
-```js
-{
-  importance: "TACTICAL"
-}
-```
+《放棄された集落》も `standard_2d6` をcallerとして利用する。
 
-Rules must not encode UI instructions such as "render two D6 cubes" or "show five dice in one row".
+---
 
-The presentation layer may choose different layouts based on DiceSpec and available space.
+## 8. PresentationHint
 
-Examples:
+Presentationは判定ルールから分離する。
 
-```text
-2D6
-→ existing rich 3D D6 animation may be used
+ルール層は「2個の3DダイスをDOMで横並びにする」等の具体的UI命令を持たない。
 
-5D6
-→ compact dice-row presentation may be used
+既存2D6演出品質を維持しつつ、将来別DiceSpecへ拡張できる構造を保つ。
 
-10D2 / non-D6
-→ generic dice presentation may be used
-```
+---
 
-Existing 2D6 presentation quality must not regress merely because the rule backend becomes generic.
+## 9. RNG ownership
 
-## 7. RNG ownership
+player-facing checkはCheckSystem RNGを使う。
 
-Player-facing dice checks use the CheckSystem random stream.
-
-World / content generation randomness uses GameplayRandomService.
+world/content generationはGameplayRandomServiceを使う。
 
 ```text
 runSeed
 ├ CheckSystem RNG
-│  └ player-facing dice / checks
+│  └ dice / checks
 │
 └ GameplayRandomService
-   └ Offering / sockets / events / world selection / deterministic gameplay IDs
+   └ Offering / sockets / events / world selection / gameplay IDs
 ```
 
-Do not consume GameplayRandomService for player-facing dice.
+一方を消費しても他方の将来結果をずらしてはならない。
 
-Do not consume CheckSystem RNG for Offering, socket placement, weighted card selection, or similar world-generation randomness.
+---
 
-The two streams must remain independent: consuming one stream must not alter future results in the other stream.
+## 10. Restore / determinism
 
-## 8. Restore / determinism contract
+CheckSystemは `getState()` / `setState()` によりRNG状態を独立保存・復元する。
 
-CheckSystem RNG state and GameplayRandomService state are restored independently.
+原則：
 
-Required property:
+> **同じ復元状態 + 同じ後続判断 = 同じ後続結果**
 
-> Same restored state + same subsequent decisions = same subsequent dice and world-random results.
+Undo/Restoreを隠れたreroll手段にしない。
 
-Restore must not be usable as a hidden reroll mechanism.
+既に生成済みのOffering・socket等は再抽選せず履歴状態そのものを戻す。
 
-Known historical state such as an already generated Offering or known socket layout is restored exactly rather than regenerated.
+---
 
-## 9. Existing and future callers
+## 11. caller例
 
-The generic system is not an exploration subsystem.
+汎用CheckSystemは探索Subsystemではない。
 
-Possible callers include:
+現在・将来caller候補：
 
 ```text
-land exploration
 abandoned settlement
 ambush
 cavalry charge
-forced breakthrough
-retreat
-reinforcement arrival
 reconnaissance
-emergency construction
 future Trial tactical checks
+oracle / prophecy
+emergency actions
 ```
 
-Each caller may select its own DiceSpec, ResolutionRule, OutcomeTable, and effects.
+独立土地探索は現行設計ではLegacy整理対象であり、CheckSystem自体を削除する理由にはならない。
 
-## 10. Initial implementation boundary
+---
 
-The first implementation should preserve existing behavior and avoid speculative feature breadth.
+## 12. Regression requirements
 
-Required first-step capabilities:
-
-```text
-existing DicePool keep rules
-resolution: sum
-arbitrary OutcomeTable
-seeded deterministic CheckSystem RNG
-```
-
-The API and data shape must leave room for:
-
-```text
-highest
-lowest
-success_count
-```
-
-without requiring callers to be rewritten.
-
-## 11. Regression requirements
-
-At minimum, future implementation tests should cover:
+最低限維持する契約：
 
 ```text
 2D6 all
-5D6 highest_3
-10D2 all
-same seed reproduces same roll sequence
-CheckSystem getState/setState resumes the sequence exactly
-invalid DiceSpec fails fast
-invalid OutcomeTable fails fast
-GameplayRandom consumption does not shift CheckSystem dice
-CheckSystem dice consumption does not shift GameplayRandom results
-existing 2D6 check behavior remains unchanged
+3D6 highest_2
+same seed => same roll sequence
+getState/setState => exact resume
+invalid DiceSpec => fail fast
+invalid OutcomeTable => fail fast
+GameplayRandom consumption does not shift CheckSystem
+CheckSystem consumption does not shift GameplayRandom
 ```
 
-## 12. Non-goals for this contract
+将来 `highest / lowest / success_count` ResolutionRuleを追加する場合は、その時点で個別回帰テストを追加する。
 
-Not required at this stage:
+---
 
-```text
-supporting every physical die shape in UI
-building dedicated 5D6 / 10D2 animations
-choosing final Trial dice mechanics
-making exploration the owner of generic dice rules
-moving world randomness into CheckSystem
-```
+## 13. Non-goals
 
-This contract exists to keep those future choices open without creating a rewrite requirement.
+現時点では以下を確定しない。
+
+- あらゆる物理ダイス形状の専用UI
+- Trialの最終ダイス戦術仕様
+- `highest / lowest / success_count` ResolutionRuleの即時実装
+- explorationをgeneric dice ruleのownerにすること
+- world randomnessをCheckSystemへ統合すること
