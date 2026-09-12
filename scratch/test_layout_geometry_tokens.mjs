@@ -36,6 +36,15 @@ check(trialTrayCss.includes("var(--layout-trial-action-tray-width)")
 check(trialTrayCss.includes('data-player-tray-mode="trial"'), "Trial Action Tray visibility remains driven by Layout player-tray mode");
 check(!trialTrayCss.includes("data-board-context"), "Trial Action Tray visibility is not coupled to Board Presentation context");
 
+check(tokensCss.includes("--layout-right-context-bottom: calc(")
+    && tokensCss.includes("var(--layout-trial-action-tray-min-height)")
+    && tokensCss.includes("var(--layout-trial-action-tray-clearance)"),
+"desktop Right Context reserves vertical clearance above the Trial Action Tray");
+check(tokensCss.includes("--layout-right-context-max-height: calc(")
+    && tokensCss.includes("var(--layout-right-context-top)")
+    && tokensCss.includes("var(--layout-right-context-bottom)"),
+"Right Context max height is derived from the same Layout-owned boundaries");
+
 check(layoutConfig.includes('right: "var(--layout-right-context-right)"')
     && layoutConfig.includes('width: "var(--layout-right-context-width)"')
     && layoutConfig.includes('width: "var(--layout-right-context-mobile-width)"'),
