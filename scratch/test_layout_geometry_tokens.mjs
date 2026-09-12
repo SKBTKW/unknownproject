@@ -5,6 +5,7 @@ const read = path => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 
 const indexHtml = read("../game/index.html");
 const tokensCss = read("../game/css/0_global_common/layout_tokens.css");
+const layerContractCss = read("../game/css/0_global_common/layer_contract.css");
 const trayViewCss = read("../game/css/3_bottom_area/player_tray_view_mode.css");
 const trialTrayCss = read("../game/css/3_bottom_area/trial_action_tray.css");
 const layoutConfig = read("../game/src/ui/layout_config.js");
@@ -19,6 +20,7 @@ function check(condition, message) {
 console.log("\nLayout geometry token contract");
 
 check(indexHtml.includes("css/0_global_common/layout_tokens.css"), "shared layout tokens are loaded by the browser entry point");
+check(indexHtml.includes("css/0_global_common/layer_contract.css"), "final screen-space layer contract is loaded by the browser entry point");
 check(tokensCss.includes("--layout-player-tray-bottom")
     && tokensCss.includes("--layout-trial-action-tray-width")
     && tokensCss.includes("--layout-right-context-width"),
@@ -49,5 +51,18 @@ check(layoutConfig.includes('right: "var(--layout-right-context-right)"')
     && layoutConfig.includes('width: "var(--layout-right-context-width)"')
     && layoutConfig.includes('width: "var(--layout-right-context-mobile-width)"'),
 "legacy Trial Right Context geometry delegates to shared Layout tokens");
+
+check(layerContractCss.includes("#layerPlayerTray.layer-player-tray")
+    && layerContractCss.includes("var(--z-player)"),
+"Player Tray global stacking order is normalized by the Layout layer contract");
+check(layerContractCss.includes("#advisorDockContainer")
+    && layerContractCss.includes("var(--z-advisor)"),
+"Advisor global stacking order is normalized by the Layout layer contract");
+check(layerContractCss.includes("#layerSystemOverlay.layer-system-overlay")
+    && layerContractCss.includes("var(--z-overlay)"),
+"System Overlay global stacking order is normalized by the Layout layer contract");
+check(layerContractCss.includes(".trial-defense-allocation-panel")
+    && layerContractCss.includes("var(--z-right-context)"),
+"Right Context global stacking order is normalized by the Layout layer contract");
 
 console.log(`Layout geometry tokens: ${passed}/${passed} PASS`);
