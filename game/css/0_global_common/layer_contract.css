@@ -15,6 +15,13 @@
     z-index: var(--z-hud) !important;
 }
 
+/* Legacy sidebar width/spacing remains Layout-owned even while old CSS survives. */
+.right-sidebar {
+    width: var(--layout-right-sidebar-width) !important;
+    gap: var(--layout-right-sidebar-gap) !important;
+    padding: var(--layout-right-sidebar-padding-block) var(--layout-right-sidebar-padding-inline) !important;
+}
+
 #layerPlayerTray.layer-player-tray {
     z-index: var(--z-player) !important;
 }
