@@ -4,14 +4,18 @@
 
    Component styles may define their internal z-indexes, but the major
    screen-space regions are normalized here so feature CSS cannot quietly
-   reorder the global composition.
+   reorder or reposition the global composition.
    ============================================================= */
 
 #layerPlayerTray.layer-player-tray {
     z-index: var(--z-player) !important;
 }
 
+/* Advisor dock placement belongs to Layout; advisor_ui.css owns its internals. */
 #advisorDockContainer {
+    position: fixed !important;
+    right: var(--layout-advisor-right) !important;
+    bottom: var(--layout-advisor-bottom) !important;
     z-index: var(--z-advisor) !important;
 }
 
@@ -22,4 +26,11 @@
 /* Right Context intentionally sits just above the Player HUD band. */
 .trial-defense-allocation-panel {
     z-index: var(--z-right-context) !important;
+}
+
+@media (max-width: 768px) {
+    #advisorDockContainer {
+        right: var(--layout-advisor-mobile-right) !important;
+        bottom: var(--layout-advisor-mobile-bottom) !important;
+    }
 }
