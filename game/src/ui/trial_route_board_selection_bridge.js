@@ -25,8 +25,8 @@ function clearMarkers(boardEl) {
  * Moves Trial route selection onto the Board without changing Trial domain state.
  *
  * Route markers belong to the TRIAL presentation context, not to the renderer axis
- * and not merely to the existence of a live Trial. This lets the same underlying
- * Trial/Game state be viewed through either NORMAL or TRIAL board presentation.
+ * and not merely to the existence of a live Trial. BoardPresentationState is the
+ * semantic source; Layout only projects that state into screen composition.
  */
 export function attachTrialRouteBoardSelection(uiController) {
     if (!uiController || typeof document === "undefined") return null;
@@ -39,7 +39,7 @@ export function attachTrialRouteBoardSelection(uiController) {
             clearMarkers(boardEl);
 
             const hasLiveTrial = Boolean(uiController.trialPreviewConfig && uiController.trialController?.state);
-            const isTrialPresentation = uiController.layoutStateManager?.getBoardContextMode?.() === "trial";
+            const isTrialPresentation = uiController.boardPresentationState?.contextMode === "TRIAL";
             const active = hasLiveTrial && isTrialPresentation;
             document.body?.classList.toggle("trial-route-selection-on-board", active);
             if (!active) return;
@@ -95,17 +95,6 @@ export function attachTrialRouteBoardSelection(uiController) {
             bridge.sync();
             return result;
         };
-    }
-
-    const layoutStateManager = uiController.layoutStateManager;
-    if (layoutStateManager && typeof layoutStateManager.setBoardContextMode === "function" && !layoutStateManager.__trialRouteContextSyncAttached) {
-        const baseSetBoardContextMode = layoutStateManager.setBoardContextMode.bind(layoutStateManager);
-        layoutStateManager.setBoardContextMode = (...args) => {
-            const result = baseSetBoardContextMode(...args);
-            bridge.sync();
-            return result;
-        };
-        layoutStateManager.__trialRouteContextSyncAttached = true;
     }
 
     bridge.sync();
