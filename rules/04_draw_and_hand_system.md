@@ -9,12 +9,14 @@
 
 各 Verse の開始時、Offering に原則 **3枚**のカードを提示する。
 
-カードは大きく以下の実装カテゴリへ分かれる。
+現在のカードデータでは `category` として主に以下が使われる。
 
 - `LAND` — 盤面へ開発する土地カード
-- `COMMAND` — 資源消費、恒久効果、期間効果、建設、盤面変換等を行うコマンドカード
+- `COMMAND` — 多数の経済・軍事・神秘・制度系カードが共有する一般コマンド分類
+- `MILITARY` — 一部の軍事カードで使用
+- `MYSTIC` — 一部の神秘カードで使用
 
-経済・軍事・神秘・制度・開拓等の意味づけは、`category`だけでなく `tags`、出現条件、効果内容によって表現する。
+したがって、経済・軍事・神秘・制度・開拓等の**テーマ上の所属**と、runtime上の `category` 文字列は同義ではない。
 
 旧来の「6大カテゴリ」はデザイン上の分類語として参照可能だが、現在の抽選ロジック上のSSOTではない。
 
@@ -35,7 +37,7 @@ Offering は「全カードから完全ランダムに3枚」ではない。
 
 ## 3. Eligibility Gate
 
-カードごとに現在のGameStateを参照し、条件を満たさないカードを物理的に候補から除外する。
+カードごとに現在のGameStateを参照し、実装済みの条件キーについては条件を満たさないカードを候補から除外する。
 
 代表例：
 
@@ -55,7 +57,17 @@ Offering は「全カードから完全ランダムに3枚」ではない。
 - 空きマス数
 - 特定地形の連結数
 
-したがって、カードプールはVerseごとに動的に変化する。
+ただし、**カードデータに `req*` / `max*` キーが存在すること自体は、その条件がruntimeで評価されていることを保証しない。**
+
+現 `DeckManager.isCardEligible()` には未対応の条件キーや、名前が示す意味より簡略化された判定が存在する。確認済み例：
+
+- 未対応: `reqMinLinks`, `reqIndustrySpecialBlocks`, `reqDistinctPrimaryIndustries`, `reqGranaries`, `reqIrrigationDone`, `reqLinkedDistinctIndustries`, `reqPlainsOrReclaimed`
+- キー不一致: 土地カード側 `reqE2` に対しEligibility側は `reqE2HillsOnBoard` を見るため、山岳カードの丘陵前提が未接続
+- 意味差: `reqConnectedPlainsOrReclaimed` は連結成分ではなく盤面全体の対象地形数を数える
+- 意味差: `reqForestNearby` は近隣ではなく盤面全体の森数を数える
+- 意味差: `reqLoggingCamp` は伐採拠点がなくても森の存在だけで成立し得る
+
+個別カードの現状は `09_cards/` を参照する。
 
 ---
 
@@ -73,6 +85,16 @@ Eligibilityを通過した候補へ重みを付けて抽選する。
 ```
 
 Draw Bias対象カテゴリの場合、現行実装では `×2.0` を使用する。
+
+重要なのは、現 `DeckManager` のDraw Bias判定が**テーマ・tags・カード群ではなく `card.category === activeDrawBias.targetCategory` の完全一致だけ**を見る点である。
+
+そのため、たとえば `targetCategory: "MILITARY"` は軍事テーマの全カードを対象にせず、`category: "MILITARY"` を持つカードだけを×2する。軍事テーマでも `category: "COMMAND"` のカードは対象外。同様に `MYSTIC` Biasも、神秘テーマのうち `category: "MYSTIC"` のカードだけが対象となる。
+
+したがって現在のruntimeでは、
+
+> **Draw Biasの「カテゴリ」はテーマ上のカテゴリではなく、実データの `category` 文字列そのもの**
+
+として扱う。
 
 Global EventによるOffering補正用hookも存在する。
 
@@ -303,4 +325,3 @@ Trialでは、平時に形成した盤面・制度・準備状態そのものを
 等のゲーム上の挙動とする。
 
 Presentation詳細は実装側UI設定を正本とし、必要なら専用UI仕様へ分離する。
-
