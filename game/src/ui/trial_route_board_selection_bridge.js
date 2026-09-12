@@ -23,8 +23,10 @@ function clearMarkers(boardEl) {
 
 /**
  * Moves Trial route selection onto the Board without changing Trial domain state.
- * The route entry cell is the stable spatial selector; the legacy right-side route
- * list remains visible as summary during migration but is no longer the primary input.
+ *
+ * Route markers belong to the TRIAL presentation context, not to the renderer axis
+ * and not merely to the existence of a live Trial. This lets the same underlying
+ * Trial/Game state be viewed through either NORMAL or TRIAL board presentation.
  */
 export function attachTrialRouteBoardSelection(uiController) {
     if (!uiController || typeof document === "undefined") return null;
@@ -36,7 +38,9 @@ export function attachTrialRouteBoardSelection(uiController) {
             if (!boardEl) return;
             clearMarkers(boardEl);
 
-            const active = Boolean(uiController.trialPreviewConfig && uiController.trialController?.state);
+            const hasLiveTrial = Boolean(uiController.trialPreviewConfig && uiController.trialController?.state);
+            const isTrialPresentation = uiController.layoutStateManager?.getBoardContextMode?.() === "trial";
+            const active = hasLiveTrial && isTrialPresentation;
             document.body?.classList.toggle("trial-route-selection-on-board", active);
             if (!active) return;
 
