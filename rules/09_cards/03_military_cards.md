@@ -22,14 +22,14 @@
 | `CMD_VIGILANCE` | **Implemented / Different** | 🧱15。次Verseから2Verse、最大🛡️計算へ**+3**。旧説明の「すべての🛡️獲得ごとに+3」ではない。 |
 | `CMD_MUD_OBSTACLE` | **Partial** | `mudObstacleActive` とBuffを登録するが、`TrialTerrainEffectResolver` はこのフラグを参照せず、TrialControllerも通常GameStateのカードflagをTrialStateへ取り込まない。湿原出口倍率は基礎地形ルールのみ。 |
 | `CMD_HIGH_GROUND_FORMATION` | **Partial** | 高地布陣フラグ/Buffは存在するが、`TrialTerrainEffectResolver` の高低差計算は標高のみを参照し、このフラグを参照しない。Trial側未接続を確認済み。 |
-| `CMD_MILITARY_FOCUS` | **Partial** | 軍事Draw Biasを設定する実装あり。ただしDirectiveとは別系統。効果終了条件等はCard/State側で管理。 |
+| `CMD_MILITARY_FOCUS` | **Implemented** | `activeDrawBias={ targetCategory:"MILITARY", type:"UNTIL_DEFENSE", untilValue:20 }` を設定し、Offering抽選時にMILITARYカテゴリの重みを×2する。土地配置後の `checkConditionalBuffs()` で最大🛡️が20以上になれば自動解除される。 |
 | `CMD_CAVALRY_SCOUTS` | **Partial** | 状態フラグを立てるが、通常盤面からの侵攻方向/route生成自体が未接続であり、このフラグを消費するTrial経路もない。現データコストは🌾30＋🧱20。 |
 | `CMD_OUTPOST_SIGNAL` | **Partial** | `outpostSignalActive` を立てるが、警戒/情報解像度やTrial Scenario生成へ未接続。 |
 | `CMD_IRON_RAMPART` | **Implemented / Different** | 🧱20。`DefenseSystem.increaseMaxCapacity(25)`、さらに本営近郊1マスあたり恒久🛡️+2。旧rulesの「🛡️+10」と不一致。 |
 | `CMD_BALLISTA_SET` | **Partial** | 🧱30。最大🛡️容量+40は実装。`nextTrialDamageMitigation=0.5` も立つが、`TrialHqDamageResolver` はこの値を受け取らず、残存敵制圧力と変換率だけから🔥損害を計算する。50%軽減は未接続確定。 |
 | `CMD_GUIDED_DEFENSE` | **Partial** | 発動フラグはあるが、通常盤面からのroute生成/移動コスト計算が未接続で、このフラグを消費する経路もない。 |
 | `CMD_SCOUT_ENEMY` | **Partial** | 🌾5。`scoutEnemyActive` を立てる。旧rulesの2D6情報品質判定は現在発動処理にはなく、Trial Scenario/情報状態への接続もない。 |
-| `CMD_SCORCHED_RETREAT` | **Partial** | 🌾20。焦土関連状態を立てるが、TrialController/TrialStateはこの状態を取り込まず、Trial route/戦後土地産出へ完成接続していない。 |
+| `CMD_SCORCHED_RETREAT` | **Partial** | 🌾20。`scorchedRetreatTurns=3` とBuffを登録するが、TrialController/TrialStateはこの状態を取り込まず、`ProductionCalculator` も参照しない。現時点ではTrial効果・戦後土地産出ペナルティとも未接続。 |
 | `CMD_CAVALRY_HOST` | **Partial** | 🌾30＋🧱20。`cavalryHostActive` を立てるが、TrialController/TrialStateはこの状態を取り込まず、Trial機動処理へ未接続。 |
 | `CMD_LOCAL_IRON_ARMAMENT` | **Partial** | 🧱15。`localIronArmamentActive` を立てるが、`TrialTerrainEffectResolver` の高地Modifierは標高のみで計算し、このフラグを参照しない。 |
 | `CMD_STONE_STRONGPOINT` | **Partial** | 🧱20。`stoneStrongpointActive` を立てるが、`TrialTerrainEffectResolver` の地形減衰計算は地形IDのみを参照し、このフラグを参照しない。 |
@@ -107,3 +107,4 @@
 6. `TrialController` の🛡️消費はTrial-localであり、通常GameStateの `currentDefense` へコミットされない。
 7. Trial本営損害は、`emberSystem` 注入時には通常GameStateの🔥へ直接反映されるため、🛡️と🔥で永続化境界が一致していない。
 8. Trial完了時のpayloadは生成されるが、Stage遷移・Chronicle・次Trial状態・カードの「次Trial」フラグ消費までを一括処理する結果コミッタは確認できない。
+9. `CMD_MILITARY_FOCUS` はTrial系フラグではなくOffering抽選へ直接接続されており、軍事カテゴリ重み×2と最大🛡️20到達時の解除まで実装済み。
