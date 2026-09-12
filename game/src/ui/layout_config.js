@@ -141,8 +141,10 @@ const UILayoutConfig = {
         desktop: {
             position: "fixed",
             right: "24px",
+            top: "96px",
             bottom: "72px",
-            width: "300px",
+            width: "360px",
+            maxHeight: "calc(100vh - 168px)",
             zIndex: 720,
             pointerEvents: "auto"
         },

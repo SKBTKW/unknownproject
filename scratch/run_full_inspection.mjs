@@ -124,6 +124,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Layout State Contract) で不合格が検出されました。");
         process.exit(1);
     }
+    const trialUiIntegrationOk = await runCommand("node", ["scratch/test_trial_ui_integration.mjs"]);
+    if (!trialUiIntegrationOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Trial UI Integration) で不合格が検出されました。");
+        process.exit(1);
+    }
     const settingsModalOk = await runCommand("node", ["scratch/test_settings_modal_system.mjs"]);
     if (!settingsModalOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Settings Modal) で不合格が検出されました。");

@@ -16,6 +16,7 @@ export class TrialDefenseAllocationComponent {
         const root = document.createElement("aside");
         root.id = "trialDefenseAllocationRoot";
         root.className = "trial-defense-allocation-panel";
+        root.setAttribute("aria-hidden", "true");
         const layoutMode = (typeof window !== "undefined" && Number(window.innerWidth) <= 768)
             ? "mobile"
             : "desktop";
@@ -32,6 +33,8 @@ export class TrialDefenseAllocationComponent {
         const ownsContext = !this.contextOwnerProvider || this.contextOwnerProvider() === "trial";
         const active = Boolean(this.ui?.trialPreviewConfig && this.ui?.trialController?.state && ownsContext);
         root.classList.toggle("is-active", active);
+        root.setAttribute("aria-hidden", active ? "false" : "true");
+        root.dataset.contextOwner = active ? "trial" : "none";
         if (!active) {
             root.innerHTML = "";
             return;
@@ -61,6 +64,11 @@ export class TrialDefenseAllocationComponent {
         const decreaseLabel = I18n.t("UI_TRIAL_DEFENSE_ALLOCATION_DECREASE");
         const increaseLabel = I18n.t("UI_TRIAL_DEFENSE_ALLOCATION_INCREASE");
         const maxLabel = I18n.t("UI_TRIAL_DEFENSE_MAX");
+        const activeRouteName = activeRoute ? I18n.t(activeRoute.nameKey || activeRoute.id) : I18n.t("UI_TRIAL_ROUTE_NONE");
+        const activeRouteSuppression = Number(activeRoute?.suppression ?? this.ui.trialController?.state?.enemySuppression ?? 0);
+        const selectedCoordinate = selectedCell
+            ? `${String.fromCharCode(65 + selectedCell.c)}${selectedCell.r + 1}`
+            : I18n.t("UI_TRIAL_INTERCEPT_UNSELECTED");
 
         const routeListHtml = routes.map(r => {
             const isActive = r.id === activeRouteId;
@@ -441,6 +449,12 @@ export class TrialDefenseAllocationComponent {
 
             <div class="trial-route-list-header">${I18n.t("UI_TRIAL_ROUTE_LIST")}</div>
             <div class="trial-route-list">${routeListHtml}</div>
+
+            <div class="trial-context-summary">
+                <div><span>${I18n.t("UI_TRIAL_SELECTED_ROUTE")}</span><strong>${activeRouteName}</strong></div>
+                <div><span>${I18n.t("UI_TRIAL_ENEMY_SUPPRESSION")}</span><strong>${activeRouteSuppression}</strong></div>
+                <div><span>${I18n.t("UI_TRIAL_INTERCEPT_LOCATION")}</span><strong>${selectedCoordinate}</strong></div>
+            </div>
 
             <div class="trial-defense-allocation-status">
                 <strong>🛡️ ${allocated} / ${maxForActive}</strong>

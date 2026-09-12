@@ -1458,8 +1458,46 @@ body.is-camera-dragging-global * {
 }
 /* Trial Phase 2: route comparison preview (active only during an explicit preview session) */
 .cell.trial-route-cell {
+    position: relative;
     box-shadow: inset 0 0 0 2px rgba(230, 126, 34, 0.5);
 }
+
+.cell.trial-route-cell::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 14px;
+    height: 14px;
+    border-top: 3px solid rgba(251, 191, 36, 0.9);
+    border-right: 3px solid rgba(251, 191, 36, 0.9);
+    transform: translate(-50%, -50%) rotate(45deg);
+    filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.8));
+    pointer-events: none;
+    z-index: 4;
+}
+
+.cell.trial-route-cell[data-trial-direction="south"]::before { transform: translate(-50%, -50%) rotate(135deg); }
+.cell.trial-route-cell[data-trial-direction="west"]::before { transform: translate(-50%, -50%) rotate(225deg); }
+.cell.trial-route-cell[data-trial-direction="north"]::before { transform: translate(-50%, -50%) rotate(315deg); }
+
+.cell.trial-route-entry::after,
+.cell.trial-route-end::after {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    padding: 2px 5px;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 900;
+    line-height: 1;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.cell.trial-route-entry::after { content: "IN"; background: #dc2626; }
+.cell.trial-route-end::after { content: "END"; background: #7c3aed; }
 
 .cell.trial-interception-candidate {
     cursor: crosshair;
@@ -1510,6 +1548,9 @@ body.is-camera-dragging-global * {
     background: rgba(15, 18, 26, 0.96);
     color: #ecf0f1;
     box-shadow: 0 8px 28px rgba(0, 0, 0, 0.65);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
 
 .trial-defense-allocation-panel.is-active {
@@ -1559,6 +1600,26 @@ body.is-camera-dragging-global * {
     max-height: 120px;
     overflow-y: auto;
 }
+
+.trial-context-summary {
+    display: grid;
+    gap: 5px;
+    margin: 0 0 10px;
+    padding: 8px;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    background: rgba(30, 41, 59, 0.7);
+}
+
+.trial-context-summary > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 11px;
+}
+
+.trial-context-summary span { color: #94a3b8; }
+.trial-context-summary strong { color: #f8fafc; text-align: right; }
 
 .trial-route-item {
     display: flex;

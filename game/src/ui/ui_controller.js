@@ -198,6 +198,31 @@ class UIController {
         return index >= 0 ? { route, cells, index } : null;
     }
 
+    getTrialRouteVisualState(r, c) {
+        const pos = this.getTrialRoutePosition(r, c);
+        if (!pos) return null;
+        const next = pos.cells[pos.index + 1] || null;
+        const previous = pos.cells[pos.index - 1] || null;
+        const directionTarget = next || previous;
+        const targetR = directionTarget
+            ? (Number.isInteger(directionTarget.r) ? directionTarget.r : directionTarget.row)
+            : r;
+        const targetC = directionTarget
+            ? (Number.isInteger(directionTarget.c) ? directionTarget.c : directionTarget.column)
+            : c;
+        const deltaR = next ? targetR - r : r - targetR;
+        const deltaC = next ? targetC - c : c - targetC;
+        return {
+            routeId: pos.route.id,
+            routeIndex: pos.index,
+            isRouteEntry: pos.index === 0,
+            isRouteEnd: pos.index === pos.cells.length - 1,
+            routeDirection: Math.abs(deltaC) >= Math.abs(deltaR)
+                ? (deltaC >= 0 ? "east" : "west")
+                : (deltaR >= 0 ? "south" : "north")
+        };
+    }
+
     createTrialPreviewInput(r, c) {
         const position = this.getTrialRoutePosition(r, c);
         const displayGrid = this.getBoardDisplayGrid();
@@ -1125,6 +1150,7 @@ class UIController {
     }
 
     renderOfferingCards(I18n) {
+        const isTrialCollapsed = this.layoutStateManager.getHandState() === HAND_LAYOUT_STATES.TRIAL_COLLAPSED;
         const offeringSection = document.querySelector(".offering-section");
         if (offeringSection) {
             // 既存の古い独立ヘッダーがあれば削除
@@ -1134,12 +1160,22 @@ class UIController {
             // 🚀 保留ポップオーバー展開時は手札トレイ全体を最前面化 (z-index: 2500)
             offeringSection.classList.toggle("has-popover-open", !!this.isReservePopoverOpen);
             offeringSection.classList.toggle("is-minimal", !!this.isMinimalMode);
+            offeringSection.classList.toggle("is-trial-collapsed", isTrialCollapsed);
         }
 
         const cardRowEl = document.getElementById("cardRow");
         if (!cardRowEl || !this.state.handOffering) return;
         cardRowEl.innerHTML = "";
         cardRowEl.classList.toggle("is-minimal", !!this.isMinimalMode);
+        cardRowEl.classList.toggle("is-trial-collapsed", isTrialCollapsed);
+
+        if (isTrialCollapsed) {
+            const trialBar = document.createElement("div");
+            trialBar.className = "trial-hand-collapsed-bar";
+            trialBar.innerHTML = `<span class="trial-hand-collapsed-icon">⚔️</span><span>${I18n.t("UI_TRIAL_HAND_COLLAPSED")}</span>`;
+            cardRowEl.appendChild(trialBar);
+            return;
+        }
 
         const canMulligan = !this.state.hasPickedThisTurn && !this.state.hasMulliganedThisTurn && this.state.ember >= 1;
         const reserveCostText = I18n ? (I18n.t("RESERVE_HEADER_COST") || "ターン終了時 🔥-1") : "ターン終了時 🔥-1";

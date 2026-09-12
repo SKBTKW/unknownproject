@@ -110,7 +110,13 @@ export class BoardGridComponent {
                 const trialCellState = this.ui && typeof this.ui.getTrialInterceptionCellState === "function"
                     ? this.ui.getTrialInterceptionCellState(r, c)
                     : null;
+                const trialRouteVisualState = this.ui && typeof this.ui.getTrialRouteVisualState === "function"
+                    ? this.ui.getTrialRouteVisualState(r, c)
+                    : null;
                 if (trialCellState?.onRoute) cellEl.classList.add("trial-route-cell");
+                if (trialRouteVisualState?.isRouteEntry) cellEl.classList.add("trial-route-entry");
+                if (trialRouteVisualState?.isRouteEnd) cellEl.classList.add("trial-route-end");
+                if (trialRouteVisualState?.routeDirection) cellEl.setAttribute("data-trial-direction", trialRouteVisualState.routeDirection);
                 if (trialCellState?.canIntercept) cellEl.classList.add("trial-interception-candidate");
                 const selectedInterceptCell = this.ui?.trialPresentationState?.selectedInterceptCell;
                 if (selectedInterceptCell?.r === r && selectedInterceptCell?.c === c) {
