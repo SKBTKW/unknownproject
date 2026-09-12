@@ -14,6 +14,9 @@
     --layout-edge-gap: 16px;
     --layout-mobile-edge-gap: 8px;
 
+    /* Layout-owned layer placement between Player HUD and System Overlay. */
+    --z-right-context: 720;
+
     /* Player Action Host geometry */
     --layout-player-tray-bottom: var(--layout-edge-gap);
     --layout-player-tray-mobile-bottom: var(--layout-mobile-edge-gap);
