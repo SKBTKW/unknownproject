@@ -108,8 +108,14 @@ const rightContextSource = fs.readFileSync(
 );
 assert.ok(
     rightContextSource.includes("contextOwnerProvider")
-        && rightContextSource.includes('this.contextOwnerProvider() === "trial"'),
-    "Trial Right Context visibility must remain gated by Layout context ownership"
+        && rightContextSource.includes("RIGHT_CONTEXT_OWNERS.TRIAL")
+        && rightContextSource.includes("RIGHT_CONTEXT_OWNERS.NONE"),
+    "Trial Right Context visibility must consume canonical Layout context owner tokens"
+);
+assert.ok(
+    !rightContextSource.includes('this.contextOwnerProvider() === "trial"')
+        && !rightContextSource.includes('active ? "trial" : "none"'),
+    "Trial Right Context must not duplicate Layout context owner string literals"
 );
 
 console.log("Layout Trial transition contract: PASS");
