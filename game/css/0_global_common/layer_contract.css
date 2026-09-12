@@ -1,0 +1,25 @@
+/* =============================================================
+   0_global_common / layer_contract.css
+   Final screen-space layer ownership contract.
+
+   Component styles may define their internal z-indexes, but the major
+   screen-space regions are normalized here so feature CSS cannot quietly
+   reorder the global composition.
+   ============================================================= */
+
+#layerPlayerTray.layer-player-tray {
+    z-index: var(--z-player) !important;
+}
+
+#advisorDockContainer {
+    z-index: var(--z-advisor) !important;
+}
+
+#layerSystemOverlay.layer-system-overlay {
+    z-index: var(--z-overlay) !important;
+}
+
+/* Right Context intentionally sits just above the Player HUD band. */
+.trial-defense-allocation-panel {
+    z-index: var(--z-right-context) !important;
+}
