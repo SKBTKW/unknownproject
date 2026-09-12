@@ -63,6 +63,31 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (History Snapshot Contract) で不合格が検出されました。");
         process.exit(1);
     }
+    const verseRestorePointOk = await runCommand("node", ["scratch/test_verse_restore_point_contract.mjs"]);
+    if (!verseRestorePointOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Verse Restore Point) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const verse1RestorePointOk = await runCommand("node", ["scratch/test_verse1_restore_point.mjs"]);
+    if (!verse1RestorePointOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Verse 1 Restore Point) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const snapshotSchemaOk = await runCommand("node", ["scratch/test_snapshot_schema_ownership.mjs"]);
+    if (!snapshotSchemaOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Snapshot Schema Ownership) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const hydrateRoundTripOk = await runCommand("node", ["scratch/test_hydrate_game_state_round_trip.mjs"]);
+    if (!hydrateRoundTripOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Hydrate GameState Round-trip) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const historyPrimitivesOk = await runCommand("node", ["scratch/test_history_restore_primitives.mjs"]);
+    if (!historyPrimitivesOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (History Restore Primitives) で不合格が検出されました。");
+        process.exit(1);
+    }
     const trialRestoreBoundaryOk = await runCommand("node", ["scratch/test_trial_restore_boundary_service.mjs"]);
     if (!trialRestoreBoundaryOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Trial Restore Boundary Contract) で不合格が検出されました。");
@@ -76,6 +101,16 @@ async function main() {
     const gameplayRandomOk = await runCommand("node", ["scratch/test_gameplay_random_service.mjs"]);
     if (!gameplayRandomOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Gameplay RNG Contract) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const flexibleDiceOk = await runCommand("node", ["scratch/test_flexible_dice_contract.mjs"]);
+    if (!flexibleDiceOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Flexible Dice Contract) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const mixedRngRestoreOk = await runCommand("node", ["scratch/test_mixed_rng_restore_determinism.mjs"]);
+    if (!mixedRngRestoreOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Mixed RNG Restore) で不合格が検出されました。");
         process.exit(1);
     }
     const deckRandomOk = await runCommand("node", ["scratch/test_deck_manager_rng_migration.mjs"]);

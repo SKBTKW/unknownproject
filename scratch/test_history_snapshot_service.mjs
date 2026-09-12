@@ -76,7 +76,10 @@ assert(snapshot.completedTurn === 4 && snapshot.resumeTurn === 5, 'stores comple
 assert(snapshot.gameState.turn === 4, 'captures game state before next Verse increment');
 assert(snapshot.gameState.hasReservedThisTurn === true, 'captures reserved-action turn flag');
 assert(snapshot.rngState.rng.seed === 1234, 'captures CheckSystem RNG state');
-assert(snapshot.runtime.trialSchedule.trial1 === 20, 'captures Trial schedule runtime state');
+assert(snapshot.gameState.trialSchedule.trial1 === 20, 'captures Trial schedule in GameState');
+assert(snapshot.gameState.nextTrialTurn === 20, 'captures next Trial turn in GameState');
+assert(!Object.hasOwn(snapshot.runtime, 'trialSchedule'), 'runtime does not duplicate Trial schedule');
+assert(!Object.hasOwn(snapshot.runtime, 'nextTrialTurn'), 'runtime does not duplicate next Trial turn');
 assert(snapshot.runtime.activeGlobalEvents[0].remainingTurns === 2, 'captures active GlobalEvent runtime');
 assert(snapshot.runtime.buffs[0].id === 'TEST_BUFF', 'captures BuffSystem runtime state');
 assert(

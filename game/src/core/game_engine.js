@@ -129,6 +129,16 @@ class GameEngine {
         if (this.deckManager && (!this.state.handOffering || this.state.handOffering.length === 0)) {
             this.deckManager.generateOfferingCards();
         }
+
+        // Verse 1 begins only after initial world/socket and Offering generation.
+        // An injected already-started state must not be re-captured as Verse 1.
+        if (this.state?.turn === 1 &&
+            !this.historySnapshotService?.getRestorePoint?.(1)) {
+            this.historySnapshotService?.captureRestorePoint?.({
+                verse: 1,
+                sourceCompletedTurn: null
+            });
+        }
     }
 
     /**

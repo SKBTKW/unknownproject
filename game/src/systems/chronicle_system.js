@@ -92,6 +92,14 @@ export class ChronicleSystem {
         return [...this.events];
     }
 
+    /** Replace recorded history without recording a new event or emitting a GameFact. */
+    restoreEvents(events) {
+        if (!Array.isArray(events)) throw new TypeError('CHRONICLE_RESTORE_EVENTS_REQUIRED');
+        const restored = JSON.parse(JSON.stringify(events));
+        this.events = restored;
+        return this.getAllEvents();
+    }
+
     /**
      * 🔄 年表の初期化
      */

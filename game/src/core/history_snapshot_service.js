@@ -16,7 +16,8 @@ function freezeDeep(value) {
 /**
  * Internal historical snapshots captured at the committed Verse boundary.
  *
- * V4 is capture-only. Restore/hydration belongs to V5.
+ * Captures committed boundaries and initialized Verse start points.
+ * End-to-end Restore orchestration belongs to V5.
  */
 export class HistorySnapshotService {
     constructor(engine) {
@@ -46,8 +47,6 @@ export class HistorySnapshotService {
             chronicle: cloneData(engine.chronicleSystem?.getAllEvents?.(), []),
             runtime: {
                 runSeed: Number.isFinite(engine.runSeed) ? engine.runSeed : null,
-                trialSchedule: cloneData(state?.trialSchedule),
-                nextTrialTurn: Number.isFinite(state?.nextTrialTurn) ? state.nextTrialTurn : null,
                 activeGlobalEvents: cloneData(state?.activeGlobalEvents, []),
                 eventCooldowns: cloneData(state?.eventCooldowns, {}),
                 temporaryWeightModifiers: cloneData(state?.temporaryWeightModifiers, []),
@@ -100,7 +99,8 @@ export class HistorySnapshotService {
                 eventCooldowns: cloneData(state?.eventCooldowns, {}),
                 temporaryWeightModifiers: cloneData(state?.temporaryWeightModifiers, []),
                 lastGlobalEventTurn: Number.isFinite(state?.lastGlobalEventTurn) ? state.lastGlobalEventTurn : 0,
-                buffs: cloneData(engine.buffSystem?.buffs, [])
+                buffs: cloneData(engine.buffSystem?.buffs, []),
+                lastTurnMaintenanceResult: cloneData(engine.lastTurnMaintenanceResult)
             }
         });
 
@@ -120,6 +120,15 @@ export class HistorySnapshotService {
 
     getAllRestorePoints() {
         return [...this.restorePoints];
+    }
+
+    truncateAfterVerse(verse) {
+        if (!Number.isInteger(verse) || verse < 1) {
+            throw new TypeError('HISTORY_TRUNCATE_VERSE_INVALID');
+        }
+        this.snapshots = this.snapshots.filter(snapshot => snapshot.completedTurn < verse);
+        this.restorePoints = this.restorePoints.filter(point => point.verse <= verse);
+        return { snapshots: this.snapshots.length, restorePoints: this.restorePoints.length };
     }
 
     clear() {
