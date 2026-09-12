@@ -16,6 +16,7 @@ import { CellViewDataService } from '../services/cell_view_data_service.js';
 import { ActionTransactionManager } from './transaction_manager.js';
 import { resolvePlacementGeometry } from './placement_geometry.js';
 import { CheckSystem } from './check_system/check_system.js';
+import { GameplayRandomService } from './gameplay_random_service.js';
 import { TurnLifecycleService } from './turn_lifecycle_service.js';
 import { GameState } from '../v2_unity_ready_main.js';
 
@@ -55,6 +56,12 @@ class GameEngine {
             ?? createRunSeed();
         const CheckSystemClass = dependencies.CheckSystemClass || CheckSystem;
         this.checkSystem = injectedCheckSystem || new CheckSystemClass({ seed: this.runSeed });
+
+        // Gameplay-facing randomness is deliberately independent from CheckSystem dice/check RNG.
+        // It must exist before GameState construction because GameState creates world-start randomness.
+        const GameplayRandomServiceClass = dependencies.GameplayRandomServiceClass || GameplayRandomService;
+        this.gameplayRandom = dependencies.gameplayRandom
+            || new GameplayRandomServiceClass(this.runSeed);
 
         // 2. GameState (データストア) の初期化
         if (dependencies.state) {
