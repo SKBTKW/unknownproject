@@ -139,7 +139,7 @@ const UILayoutConfig = {
             bottom: "var(--layout-right-context-bottom)",
             width: "var(--layout-right-context-width)",
             maxHeight: "var(--layout-right-context-max-height)",
-            zIndex: 720,
+            zIndex: "var(--z-right-context)",
             pointerEvents: "auto"
         },
         mobile: {
@@ -148,7 +148,7 @@ const UILayoutConfig = {
             top: "var(--layout-right-context-mobile-top)",
             width: "var(--layout-right-context-mobile-width)",
             maxHeight: "var(--layout-right-context-mobile-max-height)",
-            zIndex: 720,
+            zIndex: "var(--z-right-context)",
             pointerEvents: "auto"
         }
     },
