@@ -53,6 +53,8 @@
 | 敵戦略制圧力算出 | **PARTIAL** | 人類の発展規模等から決定 | `InterceptionPowerResolver`は与えられたsuppressionを戦闘尺度へ変換するだけ | 元値生成なし |
 | route生成 | **PARTIAL** | 実盤面上の侵攻routeを使用 | routeはscenario入力として与える | 通常盤面からの生成未接続 |
 | SKIP route | **PARTIAL** | 見送った戦線も最終的に解決 | SKIPがあるとCompletion安全ゲートで停止 | 進軍 / 損害処理未完成 |
+| Trial🔥損害書き戻し | **PARTIAL** | 本営到達損害は実ランの🔥へ反映されるべき | `startTrialInterceptionPreview()` が `state.emberSystem` をControllerへ参照注入し、HQ Damage時は `applyDamage()` へwrite-through | Trial起動自体が通常ラン未接続だが、🔥書き戻し経路は存在 |
+| Trial🛡️消費書き戻し | **PARTIAL** | Trial投入分は通常ランの現在🛡️へ反映されるべき | 開始時 `currentDefense` を `TrialState.human.availableDefense` へcopy-inするが、配分後に `state.currentDefense` / `DefenseSystem` へ戻す経路を確認できない | copy-inのみ |
 | Trial完了→Stage | **RULES_AHEAD** | Trial結果を受けて次Stageへ | Stage遷移は予定Verse依存 | 未接続 |
 
 Trial内部の迎撃計画・基礎戦闘・進軍・HQ Damage・Completionは実装済み部分が多い。
@@ -95,7 +97,7 @@ Trial内部の迎撃計画・基礎戦闘・進軍・HQ Damage・Completionは�
 | 項目 | 分類 | rules | 現game | 状態 |
 | :--- | :---: | :--- | :--- | :--- |
 | 通常土地の実産出SSOT | **GAME_AHEAD** | `LAND_CARDS_MASTER`優先へ同期済み | 配置カードobjectを`cell.terrain`へ保持しProductionCalculatorが読む | 一致 |
-| 砂漠産出 | **INTERNAL_CONFLICT** | 通常配置は✨5/Tとして記録 | `LAND_CARDS_MASTER`は✨5、`TERRAIN_MATRIX.GL0_DESERT`は✨2 | game内部重複不一致 |
+| 砂漠産出 | **INTERNAL_CONFLICT** | 通常配置は✨5/Verseとして記録 | `LAND_CARDS_MASTER`は✨5、`TERRAIN_MATRIX.GL0_DESERT`は✨2 | game内部重複不一致 |
 | 地形データ重複 | **INTERNAL_CONFLICT** | カードruntimeと地形parameterを役割分離して記録 | `land_system.js` と land card data に重複値 | 統合余地あり |
 | 干拓地 | **GAME_AHEAD** | E1/GL1、🌾4🧱1へ同期済み | 実装済み | 一致 |
 | standalone探索 | **LEGACY** | 現行中核から廃止 | `executeExploration()` 等が残存 | 整理対象 |
@@ -114,7 +116,7 @@ Trial内部の迎撃計画・基礎戦闘・進軍・HQ Damage・Completionは�
 | 山岳T字 | **GAME_AHEAD** | 主峰砦まで同期済み | 実装済み | Trial専用戦術は未接続 |
 | 地帯1.2倍 | **GAME_AHEAD** | 土地産出×1.2、socketは外加算へ修正済み | ProductionCalculator実装と一致 | 一致 |
 | 連携🔥効果 | **GAME_AHEAD** | 1連携につき現在🔥+1 / max🔥+1へ同期済み | 実装済み | 一致 |
-| 連携→Trial多方面能力 | **PARTIAL** | 上位設計あり | Trial Planningへ制約未接続 | 未実装 |
+| 連携→Trial多方面能力 | **PARTIAL** | 上位設計あり | `mergeLinks` / `getMergeLinkCount()` は存在するがTrial Planningと`DeckManager`に消費経路を確認できない | 未実装 |
 | 専用地帯グラフィック | **PARTIAL** | Presentation候補 | 一括専用sprite置換は未確認 | 未接続 |
 | 中央穴埋めボーナス | **PARTIAL** | 旧/先行仕様に存在 | 実装確認なし | 現行正本から除外済み |
 
@@ -158,11 +160,11 @@ Trial内部の迎撃計画・基礎戦闘・進軍・HQ Damage・Completionは�
 | Rationing | **GAME_AHEAD** | 旧40%軽減ではなく現在50%軽減 |
 | Logging Camp | **PARTIAL** | 即時🧱+8のみ。継続産出未接続 |
 | Granary | **PARTIAL** | `granaryCount`のみ。維持費軽減未接続 |
-| Agricultural Reform | **GAME_AHEAD / Different** | 指定区域ではなく全平地系へ恒久+1/T |
+| Agricultural Reform | **GAME_AHEAD / Different** | 指定区域ではなく全平地系へ恒久+1/Verse |
 | Pastoral Farm | **PARTIAL** | 即時🌾+2中心。持続施設効果未接続 |
-| Emergency Levy | **GAME_AHEAD / Different** | 旧次Verse維持費+5ペナルティなし |
-| Stage2施設群 | **PARTIAL** | counter / immediate reward止まり多数 |
-| Stage3国家事業 | **PARTIAL** | card data / flagは存在、最終効果未接続多数 |
+| Emergency Levy | **GAME_AHEAD / LEGACY** | 現発動は旧「次Verse維持費+5」を設定しない。一方 `GameState` とMaintenance側には `emergencyLevyTurns` 等の旧受け口が残る |
+| Stage2施設群 | **PARTIAL** | `mineCount` / `stableCount` / `limeKilnCount` / `marketCount` / `depotCount` / `irrigationCount` / `workshopCount` 等は設定されるが、確認した主要産出・維持費・Card Cycle経路では最終効果未接続 |
+| Stage3国家事業 | **PARTIAL** | card data / flagは存在するが、`industrialRoadActive` / `irrigationNetworkActive` 等をProductionCalculatorが消費していない |
 
 ---
 
@@ -255,8 +257,22 @@ Trial内部の迎撃計画・基礎戦闘・進軍・HQ Damage・Completionは�
 5. **カード効果の巨大分岐**
    - `DeckManager.playCommandCard()` に多数の部分実装効果が集中し、flagだけ立つ効果と本実装済み効果が混在する。
 
-6. **Trialと通常ランの状態分離**
-   - Trialは独立`TrialState`へコピーして進行するが、通常GameStateとの開始 / 完了境界が未統合。
+6. **Trial結果の通常State反映が非対称**
+   - `startTrialInterceptionPreview()` は通常Stateの `currentDefense` をTrialの `availableDefense` へコピーする。
+   - Trial内の🛡️配分は `TrialState.human.availableDefense` を減らすが、通常Stateの `currentDefense` / `DefenseSystem` へ書き戻す経路は確認できない。
+   - 一方🔥は `state.emberSystem` を `TrialController` へ参照注入し、HQ Damage時に `EmberSystem.applyDamage()` へwrite-throughする。
+   - Trial全体が単一の隔離Stateとして完結しているわけではない。
+
+7. **Development Trial Previewの状態隔離不一致**
+   - Dev Harnessはscenario側の固定 `availableDefense` を使用するため、🛡️は通常Stateから独立し得る。
+   - scenarioに `ember` を渡さないため、Preview開始時は通常Stateの🔥を採用し、HQ Damageは実 `EmberSystem` を削り得る。
+   - `DevelopmentTrialPreviewHarness.stop()` はPreviewを閉じるだけで、`TrialRestoreBoundaryService.end()` もsnapshot rollbackを行わない。
+   - したがって開発Previewが通常GameStateの🔥へ副作用を残し得る。
+
+8. **Emergency Levy旧ペナルティ受け口残存**
+   - 現 `CMD_EMERGENCY_LEVY` 発動は旧「次Verse維持費+5」を設定しない。
+   - しかし `GameState` の `emergencyLevyTurns / emergencyLevyStartsNextTurn` とMaintenance側の処理は残っている。
+   - 現行効果には使われないLegacy残存とする。
 
 ---
 
