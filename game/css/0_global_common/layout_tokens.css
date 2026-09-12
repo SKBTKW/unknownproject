@@ -20,6 +20,12 @@
     --layout-mobile-edge-gap: 8px;
     --layout-system-overlay-inset: 0px;
 
+    /* Legacy right sidebar shell geometry. Internal panel styling stays feature-owned. */
+    --layout-right-sidebar-width: 280px;
+    --layout-right-sidebar-gap: 14px;
+    --layout-right-sidebar-padding-block: 14px;
+    --layout-right-sidebar-padding-inline: 12px;
+
     /* Layout-owned layer placement between Player HUD and System Overlay. */
     --z-right-context: 720;
 
