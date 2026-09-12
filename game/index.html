@@ -113,30 +113,22 @@
 
     <script type="module">
         import { GameEngine, UIController, UndoLandSystem, BuffSystem, TerritoryBadgeComponent, ModalSystem, FocusLayerManager, BoardCameraSystem, SettingsModalSystem, settingsModalInstance, gameSettings, EmberStatusComponent, HandCardsComponent, ReserveSlotComponent, TopHeaderComponent, BoardGridComponent, HqComponent, TooltipSystem, tooltipSystemInstance, EmberSystem } from './src/app.js?v=20260909_v53';
-        import { TrialActionTrayComponent } from './src/ui/trial_action_tray_component.js?v=20260912_v1';
+        import { attachTrialActionTray } from './src/ui/trial_action_tray_runtime_bridge.js?v=20260913_v1';
 
         function bootstrap() {
             try {
                 const engine = GameEngine.createGame();
                 const ui = new UIController(engine);
-                const trialActionTray = new TrialActionTrayComponent(ui);
-                const renderBase = ui.render.bind(ui);
-                ui.render = (...args) => {
-                    const result = renderBase(...args);
-                    trialActionTray.render();
-                    return result;
-                };
+                attachTrialActionTray(ui);
 
                 window.gameEngine = engine;
                 window.ui = ui;
-                window.trialActionTray = trialActionTray;
 
                 if (UndoLandSystem && ui.state) {
                     window.undoSys = new UndoLandSystem(ui.state);
                 }
 
                 ui.init();
-                trialActionTray.render();
             } catch (err) {
                 console.error("🔥 [Bootstrap Error]", err);
                 const errBox = document.createElement("div");
