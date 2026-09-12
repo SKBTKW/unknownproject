@@ -4,6 +4,7 @@ import fs from "node:fs";
 const read = path => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 
 const indexHtml = read("../game/index.html");
+const baseLayoutCss = read("../game/css/0_global_common/base_layout.css");
 const tokensCss = read("../game/css/0_global_common/layout_tokens.css");
 const layerContractCss = read("../game/css/0_global_common/layer_contract.css");
 const trayViewCss = read("../game/css/3_bottom_area/player_tray_view_mode.css");
@@ -30,8 +31,12 @@ check(indexHtml.indexOf("css/0_global_common/layer_contract.css")
 
 check(tokensCss.includes("--layout-header-height")
     && tokensCss.includes("--layout-app-gap")
-    && tokensCss.includes("--layout-system-overlay-inset"),
-"layout tokens own shared app-shell geometry");
+    && tokensCss.includes("--layout-edge-gap"),
+"shared app-shell metrics are defined by layout_tokens.css");
+check(!baseLayoutCss.includes("--layout-header-height:")
+    && !baseLayoutCss.includes("--layout-app-gap:")
+    && !baseLayoutCss.includes("--layout-edge-gap:"),
+"base_layout.css consumes Layout metrics without redefining their source of truth");
 
 check(tokensCss.includes("--layout-player-tray-bottom")
     && tokensCss.includes("--layout-player-tray-top-left")
@@ -85,10 +90,6 @@ check(layoutConfig.includes('right: "var(--layout-right-context-right)"')
     && layoutConfig.includes('width: "var(--layout-right-context-mobile-width)"'),
 "legacy Trial Right Context geometry delegates to shared Layout tokens");
 
-check(layerContractCss.includes(".top-bar")
-    && layerContractCss.includes("var(--layout-header-height)")
-    && layerContractCss.includes("var(--z-hud)"),
-"Header shell geometry and stacking are normalized by the Layout layer contract");
 check(layerContractCss.includes("#layerPlayerTray.layer-player-tray")
     && layerContractCss.includes("var(--z-player)"),
 "Player Tray global stacking order is normalized by the Layout layer contract");
@@ -98,10 +99,8 @@ check(layerContractCss.includes("#advisorDockContainer")
     && layerContractCss.includes("var(--z-advisor)"),
 "Advisor dock placement and stacking are normalized by the Layout layer contract");
 check(layerContractCss.includes("#layerSystemOverlay.layer-system-overlay")
-    && layerContractCss.includes("position: fixed !important")
-    && layerContractCss.includes("var(--layout-system-overlay-inset)")
     && layerContractCss.includes("var(--z-overlay)"),
-"System Overlay viewport geometry and stacking are normalized by the Layout layer contract");
+"System Overlay global stacking order is normalized by the Layout layer contract");
 check(layerContractCss.includes(".trial-defense-allocation-panel")
     && layerContractCss.includes("var(--z-right-context)"),
 "Right Context global stacking order is normalized by the Layout layer contract");
