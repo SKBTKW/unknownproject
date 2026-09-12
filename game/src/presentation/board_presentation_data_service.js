@@ -6,9 +6,25 @@ function sameCell(a, r, c) {
     return Boolean(a && a.r === r && a.c === c);
 }
 
+function createStateGridView(state, gridOverride) {
+    if (!state || !gridOverride || gridOverride === state.grid) return state;
+    const stateView = Object.create(state);
+    Object.defineProperty(stateView, "grid", {
+        value: gridOverride,
+        enumerable: true,
+        configurable: false,
+        writable: false
+    });
+    return stateView;
+}
+
 function buildRouteIndex(trialSemanticData) {
     const byCell = new Map();
-    for (const route of trialSemanticData.routes || []) {
+    const routes = trialSemanticData.routes || [];
+    const activeRoutes = trialSemanticData.activeRouteId != null
+        ? routes.filter(route => route.routeId === trialSemanticData.activeRouteId)
+        : routes.slice(0, 1);
+    for (const route of activeRoutes) {
         route.cells.forEach((cell, index) => {
             const next = route.cells[index + 1] || null;
             const previous = route.cells[index - 1] || null;
@@ -57,29 +73,59 @@ export class BoardPresentationDataService {
 
     getBoard(state, {
         presentationState,
-        trialSemanticData = null
+        trialSemanticData = null,
+        gridOverride = null
     } = {}) {
         if (!presentationState) throw new Error('BOARD_PRESENTATION_STATE_REQUIRED');
 
+        const sourceState = createStateGridView(state, gridOverride);
+        const grid = sourceState?.grid;
         const profile = getBoardPresentationProfile(presentationState.contextMode);
         const trial = trialSemanticData || emptyTrialBoardSemanticData();
-        const routeIndex = buildRouteIndex(trial);
-        const interceptionIndex = buildMarkedCellIndex(trial.interceptionCandidates);
-        const plannedIndex = buildMarkedCellIndex(trial.plannedIntercepts);
-        const battleIndex = buildMarkedCellIndex(trial.battleMarkers);
+        const showRoutes = profile.trialRoutes !== "HIDDEN";
+        const showInterception = profile.interception !== "HIDDEN";
+        const showBattleMarkers = profile.battleMarkers !== "HIDDEN";
+        const showTrialOperationalData = showRoutes || showInterception || showBattleMarkers;
 
-        if (!state?.grid) {
+        const visibleTrial = Object.freeze({
+            available: Boolean(trial.available && showTrialOperationalData),
+            activeRouteId: showRoutes ? trial.activeRouteId : null,
+            routes: Object.freeze(showRoutes ? [...(trial.routes || [])] : []),
+            interceptionCandidates: Object.freeze(
+                showInterception ? [...(trial.interceptionCandidates || [])] : []
+            ),
+            plannedIntercepts: Object.freeze(
+                showInterception ? [...(trial.plannedIntercepts || [])] : []
+            ),
+            battleMarkers: Object.freeze(
+                showBattleMarkers ? [...(trial.battleMarkers || [])] : []
+            ),
+            enemyState: showTrialOperationalData ? trial.enemyState : null
+        });
+
+        const routeIndex = showRoutes ? buildRouteIndex(visibleTrial) : new Map();
+        const interceptionIndex = showInterception
+            ? buildMarkedCellIndex(visibleTrial.interceptionCandidates)
+            : new Map();
+        const plannedIndex = showInterception
+            ? buildMarkedCellIndex(visibleTrial.plannedIntercepts)
+            : new Map();
+        const battleIndex = showBattleMarkers
+            ? buildMarkedCellIndex(visibleTrial.battleMarkers)
+            : new Map();
+
+        if (!grid) {
             return Object.freeze({
                 presentation: presentationState.snapshot(),
                 profile,
                 board: Object.freeze({ rows: 0, columns: 0 }),
-                trial,
+                trial: visibleTrial,
                 cells: Object.freeze([])
             });
         }
 
-        const cells = state.grid.map((row, r) => Object.freeze(row.map((_, c) => {
-            const facts = this.cellViewDataService.getCellViewData(state, r, c);
+        const cells = grid.map((row, r) => Object.freeze(row.map((_, c) => {
+            const facts = this.cellViewDataService.getCellViewData(sourceState, r, c);
             if (!facts) return null;
 
             const key = `${r}:${c}`;
@@ -96,7 +142,7 @@ export class BoardPresentationDataService {
                     focused: sameCell(presentationState.focusCell, r, c)
                 }),
                 trial: Object.freeze({
-                    available: trial.available,
+                    available: visibleTrial.available,
                     onRoute: Boolean(route),
                     route,
                     interceptionCandidate: interception,
@@ -110,10 +156,10 @@ export class BoardPresentationDataService {
             presentation: presentationState.snapshot(),
             profile,
             board: Object.freeze({
-                rows: state.grid.length,
-                columns: state.grid.reduce((max, row) => Math.max(max, row?.length || 0), 0)
+                rows: grid.length,
+                columns: grid.reduce((max, row) => Math.max(max, row?.length || 0), 0)
             }),
-            trial,
+            trial: visibleTrial,
             cells: Object.freeze(cells)
         });
     }

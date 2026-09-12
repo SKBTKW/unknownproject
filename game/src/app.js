@@ -19,7 +19,7 @@ import { BuffPanelComponent } from './ui/buff_panel_component.js';
 import { territoryBadgeInstance as TerritoryBadgeComponent, TerritoryBadgeComponent as TerritoryBadgeComponentClass } from './ui/territory_badge_component.js';
 import { UILayoutConfig, UI_FEATURE_FLAGS } from './ui/layout_config.js';
 import { BlockPlacementSystem } from './ui/block_placement_system.js';
-import { UIController } from './ui/ui_controller.js?v=20260909_advisor2';
+import { BoardAwareUIController as UIController } from './ui/board_aware_ui_controller.js';
 import { FocusLayerManager, focusLayerManager } from './ui/focus_layer_system.js';
 import { BoardCameraSystem, boardCameraSystem } from './ui/board_camera_system.js';
 import { GameSettings, gameSettings, RESOLUTION_PRESETS, SettingsModalSystem, settingsModalInstance } from './ui/settings_modal_system.js';
