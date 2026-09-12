@@ -25,13 +25,27 @@
     --layout-trial-action-tray-width-mobile: calc(100vw - 16px);
     --layout-trial-action-tray-min-height: 164px;
     --layout-trial-action-tray-max-height-compact: 44vh;
+    --layout-trial-action-tray-clearance: 20px;
 
-    /* Right context geometry. Content remains owned by its feature. */
+    /*
+     * Right Context geometry.
+     * Its bottom edge stays above the desktop Player Action Host so the
+     * global Trial summary never competes with point-specific controls.
+     * Content remains owned by its feature; only geometry is defined here.
+     */
     --layout-right-context-right: 24px;
     --layout-right-context-top: 96px;
-    --layout-right-context-bottom: 72px;
+    --layout-right-context-bottom: calc(
+        var(--layout-player-tray-bottom)
+        + var(--layout-trial-action-tray-min-height)
+        + var(--layout-trial-action-tray-clearance)
+    );
     --layout-right-context-width: min(360px, calc(100vw - 48px));
-    --layout-right-context-max-height: calc(100vh - 168px);
+    --layout-right-context-max-height: calc(
+        100vh
+        - var(--layout-right-context-top)
+        - var(--layout-right-context-bottom)
+    );
 
     --layout-right-context-mobile-right: 12px;
     --layout-right-context-mobile-bottom: 56px;
