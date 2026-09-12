@@ -97,6 +97,17 @@ export function attachTrialRouteBoardSelection(uiController) {
         };
     }
 
+    const layoutStateManager = uiController.layoutStateManager;
+    if (layoutStateManager && typeof layoutStateManager.setBoardContextMode === "function" && !layoutStateManager.__trialRouteContextSyncAttached) {
+        const baseSetBoardContextMode = layoutStateManager.setBoardContextMode.bind(layoutStateManager);
+        layoutStateManager.setBoardContextMode = (...args) => {
+            const result = baseSetBoardContextMode(...args);
+            bridge.sync();
+            return result;
+        };
+        layoutStateManager.__trialRouteContextSyncAttached = true;
+    }
+
     bridge.sync();
     return bridge;
 }
