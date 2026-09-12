@@ -145,8 +145,9 @@ const UILayoutConfig = {
         mobile: {
             position: "fixed",
             right: "var(--layout-right-context-mobile-right)",
-            bottom: "var(--layout-right-context-mobile-bottom)",
+            top: "var(--layout-right-context-mobile-top)",
             width: "var(--layout-right-context-mobile-width)",
+            maxHeight: "var(--layout-right-context-mobile-max-height)",
             zIndex: 720,
             pointerEvents: "auto"
         }
