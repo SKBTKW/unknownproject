@@ -25,6 +25,24 @@
 
 `rules/09_cards/` に異なる数値が書かれている場合、それだけを理由にgameを変更してはならない。
 
+### Legacy data file
+
+`game/src/data/card_database.js` にも古い土地定義が残っているが、現行 `index.html` のmodule entryは `src/app.js` であり、`DeckManager` はこのファイルではなく上記 runtime master を使用する。
+
+さらに `card_database.js` 内の土地値は現runtimeと一致しないものがある。
+
+例:
+
+- 森林: `defense: 0`
+- 山岳: `wood: 1`, `defense: 3`
+- 砂漠: `food: 1`, `mystic: 2`
+
+これらを現在のカード産出値として参照してはならない。
+
+> **`game/src/data/card_database.js` は現時点では Legacy / non-authoritative data file として扱う。**
+
+削除・archive移動はgame側整理時に判断する。
+
 ---
 
 ## 2. rules側の役割
