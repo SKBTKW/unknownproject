@@ -68,6 +68,12 @@ check(tokensCss.includes("--layout-right-context-max-height: calc(")
     && tokensCss.includes("var(--layout-right-context-top)")
     && tokensCss.includes("var(--layout-right-context-bottom)"),
 "Right Context max height is derived from the same Layout-owned boundaries");
+check(tokensCss.includes("--layout-right-context-mobile-top")
+    && tokensCss.includes("--layout-right-context-mobile-max-height")
+    && layerContractCss.includes("bottom: auto !important")
+    && layerContractCss.includes("var(--layout-right-context-mobile-top)")
+    && layerContractCss.includes("var(--layout-right-context-mobile-max-height)"),
+"mobile Right Context is reserved in the upper band instead of overlapping the Trial Action Tray");
 
 check(layoutConfig.includes('right: "var(--layout-right-context-right)"')
     && layoutConfig.includes('width: "var(--layout-right-context-width)"')
