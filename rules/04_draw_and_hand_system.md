@@ -209,34 +209,33 @@ Mulligan後も通常のEligibility / Weight / Card Cycle規則を用いてOfferi
 
 コマンドカードは、カードごとに指定された🌾 / 🧱 / ✨ / 🔥等のコストを支払って発動する。
 
-### 同一Verse中の複数発動
+### 設計上の正本
 
-**設計上の正本は、コストを支払える限り複数のコマンドカードを同一Verse中に使用可能とする。**
+**コストを支払える限り、複数のコマンドカードを同一Verse中に使用可能とする。**
 
-現在の `playCommandCard()` にコマンド同士の `hasPickedThisTurn` 事前拒否はないため、複数コマンド発動自体は可能。
+### 現在のgame実装
 
-### 現在の実装齟齬
+`DeckManager.playCommandCard()` 自体には `hasPickedThisTurn` の事前拒否がないため、API単体では2枚目以降のCommand呼び出しを拒否しない。
 
-現行 `DeckManager.playCommandCard()` は、OfferingまたはHoldからコマンドを発動した際に `hasPickedThisTurn = true` を設定する。
+しかし通常の `HandCardsComponent` は `state.hasPickedThisTurn` を全カード共通の `isLocked` として扱う。
 
-一方、土地開発側は `hasPickedThisTurn` がtrueなら `ALREADY_PICKED` として拒否する。
+1枚目のCommand発動時に `playCommandCard()` が `hasPickedThisTurn = true` を設定するため、通常UIではその直後に残りのOfferingカードがすべてlockedとなり、2枚目のCommandも通常操作では発動できない。
 
-そのため現実装では、
+同様に土地開発側も `hasPickedThisTurn === true` を `ALREADY_PICKED` として拒否する。
 
-> **コマンドを1枚以上使用した後に、そのVerseの土地開発ができなくなる**
+したがって現gameは、
 
-挙動が発生する。
+```text
+DeckManager API: 複数Commandを明示的には拒否しない
+Hand UI: 1枚目使用後に全カードをlockする
+Land action: 1枚目Command後の土地開発を拒否する
+```
 
-これは本節の「コマンドカードはコストを支払う限り複数使用可能」という設計と、通常の土地選択権との関係が曖昧な実装状態である。
+という**内部不一致**を持つ。
 
-**rules側ではこの挙動を新しい確定仕様として追認しない。**
+通常プレイヤー操作として観測される挙動は、実質「土地またはCommandのいずれか1枚を使うと、そのVerseの残りカード操作がlockedされる」である。
 
-今後game側で、以下のどちらを正式仕様とするか実装を整理する必要がある。
-
-- A: コマンド使用は通常の土地開発権を消費しない
-- B: コマンド使用はそのVerseの主要行動権を消費する
-
-現時点ではAを設計基準として扱い、game側齟齬として記録する。
+この挙動は設計上の正本とは一致しないため、rules側で新仕様として追認しない。
 
 ---
 
@@ -246,7 +245,7 @@ Mulligan後も通常のEligibility / Weight / Card Cycle規則を用いてOfferi
 
 同様に、建設中Projectや既存Draw Biasと重複するカードも候補から除外する。
 
-目的は、現在使えない・重複して意味のないカードを死に札として提示しないこと。
+目的は、現在使えない・重複して意味のないカードを死に札として提示しない。
 
 ---
 
