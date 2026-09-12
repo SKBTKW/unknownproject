@@ -6,6 +6,7 @@ import {
 } from '../presentation/board_presentation_state.js';
 import { BoardPresentationDataService } from '../presentation/board_presentation_data_service.js';
 import { TrialBoardSemanticAdapter } from '../presentation/trial_board_semantic_adapter.js';
+import { BoardPresentationGridComponent } from './board_presentation_grid_component.js';
 
 /**
  * Browser compatibility subclass that wires the renderer-neutral board
@@ -19,6 +20,9 @@ export class BoardAwareUIController extends LegacyUIController {
         this.boardPresentationState = new BoardPresentationState();
         this.boardPresentationDataService = new BoardPresentationDataService();
         this.preTrialBoardContextMode = null;
+        if (typeof document !== 'undefined') {
+            this.boardGridComponent = new BoardPresentationGridComponent(this);
+        }
     }
 
     startTrialInterceptionPreview(scenario, options = {}) {
@@ -104,6 +108,9 @@ export class BoardAwareUIController extends LegacyUIController {
 
     getTrialInterceptionCellState(r, c) {
         if (!this.trialPreviewConfig) return null;
+        if (this.boardPresentationState.contextMode !== BOARD_CONTEXT_MODES.TRIAL) {
+            return null;
+        }
         return this.trialInterceptionSemanticProvider.getCellState({
             r,
             c,
@@ -115,6 +122,9 @@ export class BoardAwareUIController extends LegacyUIController {
     }
 
     getTrialRouteVisualState(r, c) {
+        if (this.boardPresentationState.contextMode !== BOARD_CONTEXT_MODES.TRIAL) {
+            return null;
+        }
         const cell = this.getBoardPresentationData()?.cells?.[r]?.[c] || null;
         return cell?.trial?.route || null;
     }
