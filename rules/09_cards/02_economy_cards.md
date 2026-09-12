@@ -30,7 +30,7 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 | :--- | :---: | :--- |
 | `CMD_RATIONING` | **Implemented** | 食料維持費軽減。現在resolverは `foodCostHalvedTurns` を見て**基本維持費を50%**にする。旧rulesの「40%軽減」と不一致。 |
 | `CMD_WETLAND_RECLAMATION` | **Implemented** | 🧱15＋🔥1。湖でない未地帯化湿原1マスを `E1_RECLAIMED_LAND` へ永久変換し、変換後に地帯化/連携再判定。 |
-| `CMD_LOGGING_CAMP` | **Partial** | 🔥1、即時🧱+8は実装。周囲森林からの継続産出は現ProductionCalculatorへ未接続。 |
+| `CMD_LOGGING_CAMP` | **Partial / Eligibility different** | 🔥1、即時🧱+8は実装。周囲森林からの継続産出は現ProductionCalculatorへ未接続。データの `reqForestNearby:3` は「近隣」判定ではなく、現Eligibilityでは盤面全体の森系マス数を単純集計する。 |
 | `CMD_GRANARY` | **Partial** | 🧱20、`granaryCount` は増えるが、現在のMaintenance resolverは `granaryCount` を参照しない。維持費×0.90は未接続。 |
 | `CMD_AGRICULTURAL_REFORM` | **Implemented / Simplified / Eligibility different** | 🧱20、`permanentPlainsFoodBonus +1`。現実装では指定4マスではなく**全平地系への恒久+1/Verse**として処理される。またデータの `reqConnectedPlainsOrReclaimed:3` に対し、Eligibility実装は連結判定をせず、盤面全体の平地＋干拓地を単純合計して3マス以上なら通す。 |
 | `CMD_PASTORAL_FARM` | **Partial** | 🧱15、現実装は即時🌾+2とBuff登録。牧畜場化・周囲平地による持続産出は未接続。 |
@@ -43,7 +43,7 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 
 | ID | 状態 | 現在の実挙動 / 注意点 |
 | :--- | :---: | :--- |
-| `CMD_SAWMILL` | **Partial** | 🧱25、`sawmillCount` とBuff登録のみ。森林由来産出×1.5は主要産出計算へ未接続。 |
+| `CMD_SAWMILL` | **Partial / Eligibility different** | 🧱25、`sawmillCount` とBuff登録のみ。森林由来産出×1.5は主要産出計算へ未接続。データの `reqLoggingCamp:1` に対し、現Eligibilityは伐採拠点そのものを厳密に要求せず、盤面に森が1マスでもあれば条件を通す。 |
 | `CMD_QUARRY` | **Partial** | 🧱20、即時🧱+10は実装。周囲丘陵/山岳の継続産出は未接続。 |
 | `CMD_MINE` | **Partial** | 🧱25、`mineCount` 登録。鉱物socket産出×1.5は未接続。 |
 | `CMD_STABLE` | **Partial** | 🧱20、`stableCount` 登録。騎馬カードWeight/コスト軽減は実効処理未確認・未接続扱い。 |
@@ -98,6 +98,8 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 さらに、条件キー自体は参照されても、名前が示す意味と実判定が一致しないものがある。
 
 - `reqConnectedPlainsOrReclaimed`: 現実装は連結成分を探索せず、盤面全体の平地＋干拓地を単純合計する。
+- `reqForestNearby`: 現実装は対象位置との近接関係を見ず、盤面全体の森系マスを単純集計する。
+- `reqLoggingCamp`: 現実装は伐採拠点の存在に加えて「盤面に森がある」だけでも通すため、伐採拠点を厳密な前提条件にしていない。
 
 したがって、
 
@@ -128,10 +130,11 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 
 1. 《配給》: rules旧40%軽減 vs runtime 50%軽減。
 2. 《農地改革》: rules旧「指定最大4マス」 vs runtime「全平地系+1/Verse」。さらに候補化の `reqConnectedPlainsOrReclaimed:3` は実際には非連結でも合計3マスで成立する。
-3. 《伐採拠点》《穀物庫》《牧畜場》《製材所》《鉱山》等: カードは存在するが、完成した持続効果が未接続。
-4. Stage 3 Project群: フラグ/Buff骨格中心で、Trial/Production/Cost resolverへの接続が未完成。
-5. 《産業街道》: `industrialRoadActive` は立つが、道路盤面表現・産出効果・Trial移動コストの消費先がない。
-6. 市場・補給所・工房・一部Stage3事業は、データ上の高度な候補化条件キーが `DeckManager.isCardEligible()` で評価されず、想定条件より早くOfferingへ出現し得る。
+3. 《伐採拠点》《製材所》: 前者の `reqForestNearby` は盤面全体集計、後者の `reqLoggingCamp` は森が1マスあるだけでも成立し得るため、カードデータ名が示す前提関係より緩い。
+4. 《穀物庫》《牧畜場》《製材所》《鉱山》等: カードは存在するが、完成した持続効果が未接続。
+5. Stage 3 Project群: フラグ/Buff骨格中心で、Trial/Production/Cost resolverへの接続が未完成。
+6. 《産業街道》: `industrialRoadActive` は立つが、道路盤面表現・産出効果・Trial移動コストの消費先がない。
+7. 市場・補給所・工房・一部Stage3事業は、データ上の高度な候補化条件キーが `DeckManager.isCardEligible()` で評価されず、想定条件より早くOfferingへ出現し得る。
 
 これらは「rulesどおりgameを即修正」ではなく、カードごとに採用する最終仕様を決めてから同期する。
 
