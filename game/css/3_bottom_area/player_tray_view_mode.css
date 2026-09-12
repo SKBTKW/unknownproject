@@ -1,0 +1,50 @@
+/* =============================================================
+   3_bottom_area / player_tray_view_mode.css
+   Board view dependent Player Tray anchoring.
+
+   TOP     : bottom-center for direct 2D board interaction.
+   QUARTER : bottom-left for future 2.5D quarter-view composition.
+   ============================================================= */
+
+#layerPlayerTray.layer-player-tray {
+    transition:
+        left 320ms cubic-bezier(0.16, 1, 0.3, 1),
+        transform 320ms cubic-bezier(0.16, 1, 0.3, 1),
+        bottom 320ms cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: left, transform;
+}
+
+body[data-board-view="top"] #layerPlayerTray.layer-player-tray {
+    left: 50% !important;
+    right: auto !important;
+    bottom: var(--layout-edge-gap);
+    width: auto !important;
+    justify-content: center !important;
+    transform: translateX(-50%);
+}
+
+body[data-board-view="quarter"] #layerPlayerTray.layer-player-tray {
+    left: var(--layout-edge-gap) !important;
+    right: auto !important;
+    bottom: var(--layout-edge-gap);
+    width: auto !important;
+    justify-content: flex-start !important;
+    transform: translateX(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #layerPlayerTray.layer-player-tray {
+        transition: none;
+    }
+}
+
+/* Mobile layout is intentionally kept on the existing compact left anchor. */
+@media (max-width: 768px) {
+    body[data-board-view] #layerPlayerTray.layer-player-tray {
+        left: 8px !important;
+        right: auto !important;
+        bottom: 8px !important;
+        transform: translateX(0);
+        justify-content: flex-start !important;
+    }
+}
