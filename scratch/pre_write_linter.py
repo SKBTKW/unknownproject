@@ -149,7 +149,91 @@ def scan_file_for_japanese(filepath, rel_path):
     return violations
 
 
-def scan_css_for_important(filepath, rel_path, added_lines):
+PLAYER_TRAY_SOURCE = "game/css/0_global_common/base_layout.css"
+PLAYER_TRAY_OWNER = "game/css/3_bottom_area/draw_card_select_area.css"
+PLAYER_TRAY_RULES = {
+    ("#layerPlayerTray.layer-player-tray", None),
+    ("#layerPlayerTray .offering-section", None),
+    ("#layerPlayerTray.layer-player-tray", "max-width:768px"),
+}
+
+
+def player_tray_rules(css):
+    """Return exact declarations and line numbers for only the moved selectors."""
+    clean = re.sub(r'/\*.*?\*/', lambda m: re.sub(r'[^\n]', ' ', m.group()), css, flags=re.S)
+    media_ranges = []
+    for media in re.finditer(r'@media\s*\(\s*max-width:\s*768px\s*\)\s*\{', clean):
+        depth = 0
+        for index in range(media.end() - 1, len(clean)):
+            depth += (clean[index] == '{') - (clean[index] == '}')
+            if depth == 0:
+                media_ranges.append((media.end(), index))
+                break
+    rules = {}
+    pattern = r'(?m)^[ \t]*(#layerPlayerTray\.layer-player-tray|#layerPlayerTray \.offering-section)[ \t]*\{([^{}]*)\}'
+    for match in re.finditer(pattern, clean):
+        selector = match.group(1)
+        inside_mobile = any(start <= match.start() < end for start, end in media_ranges)
+        key = (selector, "max-width:768px" if inside_mobile else None)
+        if key in rules:
+            return None
+        body = css[match.start(2):match.end(2)]
+        start_line = css.count('\n', 0, match.start(2)) + 1
+        important_lines = {
+            start_line + index for index, line in enumerate(body.split('\n'))
+            if '!important' in line and not line.strip().startswith(('/*', '*'))
+        }
+        rules[key] = (body, important_lines)
+    return rules
+
+
+def relocated_player_tray_important_lines(old_source, new_source, old_owner, new_owner,
+                                         old_total, new_total):
+    """Only identical, removed-and-reinserted Player Tray rules qualify as baseline debt."""
+    if new_total > old_total:
+        return set()
+    old_rules = player_tray_rules(old_source)
+    new_rules = player_tray_rules(new_owner)
+    if old_rules is None or new_rules is None:
+        return set()
+    if set(old_rules) != PLAYER_TRAY_RULES or set(new_rules) != PLAYER_TRAY_RULES:
+        return set()
+    if player_tray_rules(new_source) != {} or player_tray_rules(old_owner) != {}:
+        return set()
+    if any(old_rules[key][0] != new_rules[key][0] for key in PLAYER_TRAY_RULES):
+        return set()
+    return set().union(*(new_rules[key][1] for key in PLAYER_TRAY_RULES))
+
+
+def get_relocated_player_tray_lines(root_dir):
+    def at_head(path):
+        result = subprocess.run(["git", "show", "HEAD:" + path], cwd=root_dir,
+                                capture_output=True, text=True, encoding="utf-8")
+        return result.stdout if result.returncode == 0 else None
+
+    old_source, old_owner = at_head(PLAYER_TRAY_SOURCE), at_head(PLAYER_TRAY_OWNER)
+    if old_source is None or old_owner is None:
+        return set()
+    with open(os.path.join(root_dir, PLAYER_TRAY_SOURCE), encoding="utf-8") as source:
+        new_source = source.read()
+    with open(os.path.join(root_dir, PLAYER_TRAY_OWNER), encoding="utf-8") as owner:
+        new_owner = owner.read()
+    baseline = subprocess.run(["git", "grep", "-o", "!important", "HEAD", "--", "game/css"],
+                              cwd=root_dir, capture_output=True, text=True, encoding="utf-8")
+    if baseline.returncode not in (0, 1):
+        return set()
+    old_total = len(baseline.stdout.splitlines())
+    new_total = 0
+    for directory, _, files in os.walk(os.path.join(root_dir, "game", "css")):
+        for filename in files:
+            if filename.endswith(".css"):
+                with open(os.path.join(directory, filename), encoding="utf-8") as css_file:
+                    new_total += css_file.read().count("!important")
+    return relocated_player_tray_important_lines(
+        old_source, new_source, old_owner, new_owner, old_total, new_total)
+
+
+def scan_css_for_important(filepath, rel_path, added_lines, relocated_lines=frozenset()):
     """
     [CSS001] 新規 !important 検出
     - 既存負債はカウントのみ
@@ -169,7 +253,7 @@ def scan_css_for_important(filepath, rel_path, added_lines):
             if stripped.startswith("/*") or stripped.startswith("*"):
                 continue
 
-            if is_changed_file and idx in added_lines[rel_path]:
+            if is_changed_file and idx in added_lines[rel_path] and idx not in relocated_lines:
                 violations.append(LintViolation(
                     rule_id="CSS001",
                     level="ERROR",
@@ -438,13 +522,16 @@ def main():
     # 3. game/css 配下の全 CSS 走査
     css_dir = os.path.join(game_dir, "css")
     if os.path.exists(css_dir):
+        relocated_lines = get_relocated_player_tray_lines(root_dir)
         for root, dirs, files in os.walk(css_dir):
             for f in files:
                 if f.endswith(".css"):
                     filepath = os.path.join(root, f)
                     rel_path = os.path.relpath(filepath, root_dir)
                     total_files_scanned += 1
-                    css_v, debt = scan_css_for_important(filepath, rel_path, added_lines)
+                    css_v, debt = scan_css_for_important(
+                        filepath, rel_path, added_lines,
+                        relocated_lines if rel_path == PLAYER_TRAY_OWNER else frozenset())
                     all_violations.extend(css_v)
                     total_css_debt += debt
 

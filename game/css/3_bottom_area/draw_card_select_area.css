@@ -17,6 +17,39 @@
     pointer-events: none;
 }
 
+/* ─── ブロック C: プレイヤー操作トレイ ─── */
+.layer-player-tray-anchor {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 0;
+    z-index: 500;
+    pointer-events: none;
+}
+
+/* 手札トレイは左下。Advisorより常に前面にする */
+#layerPlayerTray.layer-player-tray {
+    left: var(--layout-edge-gap);
+    right: auto !important;
+    bottom: var(--layout-edge-gap);
+    width: auto !important;
+    justify-content: flex-start !important;
+    z-index: 700 !important;
+}
+
+#layerPlayerTray .offering-section {
+    margin: 0 !important;
+    z-index: 700 !important;
+}
+
+@media (max-width: 768px) {
+    #layerPlayerTray.layer-player-tray {
+        left: 8px !important;
+        bottom: 8px !important;
+    }
+}
+
 /* 🃏 ドローカード選択エリア本体 (中央自動センタリング) */
 .offering-section {
     position: relative;

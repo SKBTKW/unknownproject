@@ -867,16 +867,6 @@
     pointer-events: auto;
 }
 
-/* ─── ブロック C: プレイヤー操作トレイ ─── */
-.layer-player-tray-anchor {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 0;
-    z-index: 500;
-    pointer-events: none;
-}
 .pointer-events-auto {
     pointer-events: auto !important;
 }

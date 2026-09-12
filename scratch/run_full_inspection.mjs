@@ -32,6 +32,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 1 (Static Lint) で違反が検出されました。");
         process.exit(1);
     }
+    const cssRelocationOk = await runCommand("python", ["-B", "scratch/test_css_important_relocation.py"]);
+    if (!cssRelocationOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 1 (CSS001 Relocation Contract) で違反が検出されました。");
+        process.exit(1);
+    }
 
     // 📜 Layer 2: Spec Assertions (仕様定数 expected vs actual 突合)
     console.log("\n📜 [LAYER 2/6] Spec Assertions (定数 1:1 数値突合)...");

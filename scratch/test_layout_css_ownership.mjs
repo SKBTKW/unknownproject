@@ -11,12 +11,14 @@ const html = read('../game/index.html');
 let passed = 0;
 function check(name, fn) { fn(); passed++; console.log(`  PASS: ${name}`); }
 
-const rule = (css, selector) => {
-    const match = css.match(new RegExp(`(?:^|\\n)\\s*\\.${selector}\\s*\\{([^{}]*)\\}`));
-    assert.ok(match, `missing .${selector}`);
-    return Object.fromEntries(match[1].split(';').map(part => part.trim()).filter(Boolean)
+const namedRule = (css, selector) => {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const matches = [...css.matchAll(new RegExp(`(?:^|\\n)\\s*${escaped}\\s*\\{([^{}]*)\\}`, 'g'))];
+    assert.equal(matches.length, 1, `expected exactly one ${selector} rule`);
+    return Object.fromEntries(matches[0][1].split(';').map(part => part.trim()).filter(Boolean)
         .map(part => { const split = part.indexOf(':'); return [part.slice(0, split).trim(), part.slice(split + 1).trim()]; }));
 };
+const rule = (css, selector) => namedRule(css, `.${selector}`);
 
 check('Header has one owner in the dedicated stylesheet, after the global token', () => {
     assert.equal((header.match(/\.top-bar\s*\{/g) || []).length, 1);
@@ -39,11 +41,42 @@ check('Logo CSS and inline config keep the prior 96px relative offset', () => {
         'calc(var(--layout-header-height, 84px) + var(--layout-app-gap, 8px) + 4px)');
     assert.equal(84 + 8 + 4, 80 + 8 + 8);
 });
-check('Player Tray temporary override and state selectors remain untouched', () => {
-    assert.match(base, /#layerPlayerTray\.layer-player-tray\s*\{[^}]*z-index:\s*700\s*!important/s);
-    assert.match(base, /#layerPlayerTray \.offering-section\s*\{[^}]*margin:\s*0\s*!important/s);
-    assert.match(tray, /\.offering-section\.is-trial-collapsed\s*,/);
+check('Player Tray has one geometry owner in the dedicated stylesheet', () => {
+    assert.ok(html.indexOf('base_layout.css') < html.indexOf('draw_card_select_area.css'));
+    assert.ok(html.indexOf('draw_card_select_area.css') < html.indexOf('css/layout.css'));
+    assert.doesNotMatch(base, /#layerPlayerTray\.layer-player-tray\s*\{/);
+    assert.doesNotMatch(base, /#layerPlayerTray \.offering-section\s*\{/);
+    assert.doesNotMatch(legacy, /\.layer-player-tray-anchor\s*\{/);
+    assert.match(html, /id="layerPlayerTray" class="layer-player-tray layer-player-tray-anchor"/);
+});
+check('Player Tray anchor declarations remain unchanged', () => {
+    assert.deepEqual(rule(tray, 'layer-player-tray-anchor'), {
+        position: 'absolute', bottom: '0', left: '0', width: '100%',
+        height: '0', 'z-index': '500', 'pointer-events': 'none'
+    });
+});
+check('Player Tray ID override retains exact geometry, specificity and priority', () => {
+    assert.deepEqual(namedRule(tray.slice(0, tray.indexOf('@media (max-width: 768px)')), '#layerPlayerTray.layer-player-tray'), {
+        left: 'var(--layout-edge-gap)', right: 'auto !important',
+        bottom: 'var(--layout-edge-gap)', width: 'auto !important',
+        'justify-content': 'flex-start !important', 'z-index': '700 !important'
+    });
+});
+check('Player Tray narrow-viewport override is relocated without changing its conditions', () => {
+    assert.doesNotMatch(base, /#layerPlayerTray\.layer-player-tray\s*\{/);
+    assert.match(tray, /@media \(max-width: 768px\)\s*\{\s*#layerPlayerTray\.layer-player-tray\s*\{\s*left:\s*8px !important;\s*bottom:\s*8px !important;\s*\}\s*\}/);
+});
+check('Offering keeps its inline config and stronger dedicated CSS override', () => {
+    assert.deepEqual(namedRule(tray, '#layerPlayerTray .offering-section'), {
+        margin: '0 !important', 'z-index': '700 !important'
+    });
     assert.equal(UILayoutConfig.offeringCardArea.margin, '0 auto');
+    assert.equal(UILayoutConfig.offeringCardArea.zIndex, 500);
+});
+check('Collapsed, expanded and Trial Hand state selectors remain present', () => {
+    assert.match(tray, /\.offering-section:not\(\.is-minimal\)\s*\{/);
+    assert.match(tray, /\.offering-section\.is-minimal\s*\{/);
+    assert.match(tray, /\.offering-section\.is-trial-collapsed\s*,/);
 });
 
 console.log(`Layout CSS Ownership: ${passed}/${passed} PASS`);

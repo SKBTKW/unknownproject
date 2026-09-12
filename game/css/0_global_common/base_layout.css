@@ -217,21 +217,6 @@ body {
     margin-bottom: auto !important;
 }
 
-/* 手札トレイは左下。Advisorより常に前面にする */
-#layerPlayerTray.layer-player-tray {
-    left: var(--layout-edge-gap);
-    right: auto !important;
-    bottom: var(--layout-edge-gap);
-    width: auto !important;
-    justify-content: flex-start !important;
-    z-index: 700 !important;
-}
-
-#layerPlayerTray .offering-section {
-    margin: 0 !important;
-    z-index: 700 !important;
-}
-
 /* Advisorは通常HUDより下層。透明領域は入力を取らない */
 #advisorDockContainer {
     z-index: 420 !important;
@@ -275,10 +260,5 @@ body {
         left: 10px !important;
         width: min(240px, 42vw) !important;
         max-width: 42vw !important;
-    }
-
-    #layerPlayerTray.layer-player-tray {
-        left: 8px !important;
-        bottom: 8px !important;
     }
 }
