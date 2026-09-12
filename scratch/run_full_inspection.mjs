@@ -179,6 +179,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Layout State Contract) で不合格が検出されました。");
         process.exit(1);
     }
+    const layoutTrialTransitionOk = await runCommand("node", ["scratch/test_layout_trial_transition_contract.mjs"]);
+    if (!layoutTrialTransitionOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Layout Trial Transition Contract) で不合格が検出されました。");
+        process.exit(1);
+    }
     const layoutCssOwnershipOk = await runCommand("node", ["scratch/test_layout_css_ownership.mjs"]);
     if (!layoutCssOwnershipOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Layout CSS Ownership) で不合格が検出されました。");
