@@ -1,6 +1,7 @@
 /* =============================================================
    3_bottom_area / trial_action_tray.css
    Trial mode replacement for the normal Hand / Offering tray.
+   Screen-space geometry is sourced from Layout-owned tokens.
    ============================================================= */
 
 #trialActionTrayHost {
@@ -17,8 +18,8 @@ body[data-player-tray-mode="trial"] #trialActionTrayHost {
 }
 
 .trial-action-tray {
-    width: min(680px, calc(100vw - 48px));
-    min-height: 164px;
+    width: var(--layout-trial-action-tray-width);
+    min-height: var(--layout-trial-action-tray-min-height);
     box-sizing: border-box;
     display: grid;
     grid-template-columns: minmax(210px, 0.9fr) minmax(330px, 1.4fr);
@@ -214,18 +215,18 @@ body[data-player-tray-mode="trial"] .trial-defense-allocation-panel .trial-defen
 
 @media (max-width: 900px) {
     .trial-action-tray {
-        width: min(620px, calc(100vw - 32px));
+        width: var(--layout-trial-action-tray-width-compact);
         grid-template-columns: 1fr;
         gap: 10px;
         min-height: 0;
-        max-height: 44vh;
+        max-height: var(--layout-trial-action-tray-max-height-compact);
         overflow-y: auto;
     }
 }
 
 @media (max-width: 768px) {
     .trial-action-tray {
-        width: calc(100vw - 16px);
+        width: var(--layout-trial-action-tray-width-mobile);
         padding: 10px;
         border-width: 2px;
     }
