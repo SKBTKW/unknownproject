@@ -85,9 +85,10 @@ export const ADVISOR_DIALOGUES = Object.freeze([
     { event: ADVISOR_EVENTS.MILITARY_ACTION, personality: "stern", policyKey: "defense", priority: 75, cooldownMs: 0, durationMs: 3800,
         segmentGroups: [["UI_ADVISOR_DIALOGUE_MILITARY_1_SEG_1", "UI_ADVISOR_DIALOGUE_MILITARY_1_SEG_2", "UI_ADVISOR_DIALOGUE_MILITARY_1_SEG_3"]],
         lineKeys: ["UI_ADVISOR_DIALOGUE_MILITARY_1", "UI_ADVISOR_DIALOGUE_MILITARY_2"] },
+    // Keep the legacy first line out of runtime selection because Advisor speech standardizes on "people" wording.
     { event: ADVISOR_EVENTS.GLOBAL_EVENT_SURVIVAL, personality: "stern", policyKey: "survival", priority: 85, cooldownMs: 0, durationMs: 4200,
-        segmentGroups: [["UI_ADVISOR_DIALOGUE_GLOBAL_SURVIVAL_1", "UI_ADVISOR_DIALOGUE_GLOBAL_SURVIVAL_2"]],
-        lineKeys: ["UI_ADVISOR_DIALOGUE_GLOBAL_SURVIVAL_1", "UI_ADVISOR_DIALOGUE_GLOBAL_SURVIVAL_2"] }
+        segmentGroups: [["UI_ADVISOR_DIALOGUE_GLOBAL_SURVIVAL_2"]],
+        lineKeys: ["UI_ADVISOR_DIALOGUE_GLOBAL_SURVIVAL_2"] }
 ]);
 
 export function findAdvisorDialogue(event, profile, database = ADVISOR_DIALOGUES) {
