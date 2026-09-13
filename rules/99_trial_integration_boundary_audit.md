@@ -15,11 +15,11 @@
 
 現在は、
 
-> **通常GameState → Trial の入口は一部コピー、Trial → 通常GameState の出口は🔥・敗北終端・Chronicleまで一部接続された半統合状態**
+> **通常GameState → Trial の入口は一部コピー、Trial → 通常GameState の出口は🔥がwrite-throughし、結果Settlement APIまで存在する半統合状態**
 
 である。
 
-このため、通常Trialの正規起動処理を追加するだけでは統合完了にならない。
+ただし、Settlement APIは通常UIのTrial完了操作へ自動接続されていない。
 
 ---
 
@@ -66,11 +66,9 @@
 
 ### `nextTrialDamageMitigation` の注意
 
-この値は単なる一時ローカル変数ではない。
-
 - `GameState` に初期値 `1.0` を持つ。
 - 《弩砲》で `0.5` を設定する。
-- `StateSerializer` / `hydrateGameState()` のSave/Restore対象でもある。
+- Save/Restore対象でもある。
 - しかし現Trial HQ Damage Resolverへ渡されない。
 
 よって、**永続化まで実装されたwrite-only gameplay state** になっている。
@@ -81,7 +79,7 @@
 - 旧 `LGD_DESPERATE_PACT` 分岐で `1.5` を設定するコードが残る。
 - Save/Restore対象でもある。
 - 現Trialは参照しない。
-- 現行カードmasterに `LGD_DESPERATE_PACT` が存在することは確認できない。
+- 現行カードmasterに `LGD_DESPERATE_PACT` は存在しない。
 
 現時点では **Legacy / Dormant candidate** として扱う。
 
@@ -135,8 +133,6 @@ emberSystem.applyDamage(emberDamage)
 
 が呼ばれる。
 
-`EmberSystem.current` は通常GameStateの `state.ember` そのものを操作する。
-
 したがって、
 
 > **🔥損害だけはTrial-localではなく、本編GameStateへ直接コミットし得る。**
@@ -149,15 +145,7 @@ emberSystem.applyDamage(emberDamage)
 
 `UIController.startTrialInterceptionPreview()` は、通常GameStateの `emberSystem` を `TrialController` へ注入する。
 
-一方、`DevelopmentTrialPreviewHarness.stop()` は、
-
-- Preview session解除
-- Trial UI終了
-- `TrialRestoreBoundaryService.end()`
-
-を行うだけで、通常GameStateの資源スナップショットを復元しない。
-
-`TrialRestoreBoundaryService` 自体もGameState rollback機構ではなく、Trial中のChronicle restore先VerseをTrial開始Verseへ固定する境界である。
+一方、`DevelopmentTrialPreviewHarness.stop()` は通常GameStateの資源スナップショットを復元しない。
 
 したがって現実装では、開発Preview中にHQ Damageを解決した場合、
 
@@ -169,41 +157,31 @@ emberSystem.applyDamage(emberDamage)
 
 ## 8. Trial完了・Settlementの現在地
 
-`TrialCompletionService.buildCompletionResult()` が現在生成する主な結果は以下。
-
-- `completed`
-- `outcome` (`SURVIVED` / `FAILED`)
-- `emberRemaining`
-- `battleCount`
-- `resolvedBattleCount`
-- `routeEndCount`
-- `totalEmberDamage`
-
 `TrialController.completeTrial()` は、必要なら集約HQ Damageを先に解決し、その後Trial phaseを `RESULT` へ進め、`trialCompleted=true` と `result` を保存して `TRIAL_COMPLETED` GameFactをemitする。
 
-さらに現在は `TrialController.settleTrialResult()` → `TrialResultSettlementService` が存在し、以下まで接続済み。
+さらに現在は `TrialController.settleTrialResult()` → `TrialResultSettlementService` が存在し、明示的に呼べば以下まで処理できる。
 
 - `SURVIVED` / `FAILED` の結果検証
 - `FAILED` 時の `RunTerminationService` 終端確認
 - `ChronicleSystem` への `TRIAL_RESULT` 記録
 - `TRIAL_RESULT_SETTLED` GameFact emit
-- Trial退出可能状態 `TRIAL_EXIT_READY` GameFact emit
+- `TRIAL_EXIT_READY` GameFact emit
 
-したがって以前の「Completion payloadのみでChronicle / RunTerminationへ未接続」という評価は古い。
+ただし通常UI側の `UIController.completeTrial()` は `trialController.completeTrial()` までしか呼ばず、その後 `settleTrialResult()` を自動実行しない。
 
-一方、Settlementでも以下は通常GameStateへ反映しない。
+したがって現在は、
+
+> **Settlement API自体は実装済みだが、通常UIのTrial完了フローには未接続。**
+
+と分類する。
+
+またSettlement APIを明示呼び出しした場合でも、以下は未反映。
 
 - Trialで消費した現在🛡️
 - 「次のTrialまで / 次Trialで1回」系stateの消費・解除
 - Trial番号 / 次Trial状態更新
 - Stage遷移
 - 第3Trial後のVictory / Run Complete
-
-したがって現在は、
-
-> **結果Settlement境界は存在し、敗北終端とChronicleまでは接続済みだが、通常ランの防衛・Stage・one-shot state・Victoryまでを一括確定する完全なResult Commitには至っていない。**
-
-と分類する。
 
 ---
 
@@ -218,12 +196,12 @@ HQ損害はrouteごとに個別変換せず、`TrialHqArrivalAggregationService`
 
 を集約してから損害変換へ渡す。
 
-また、INTERCEPT routeについて、
+またINTERCEPT routeでは、
 
-- `stopped=true` かつ `reachedRouteEnd=false` は正規の「撃退」結果としてゼロ到達扱い
+- `stopped=true` かつ `reachedRouteEnd=false` は正規の撃退・ゼロ到達
 - `stopped=false` なのに `reachedRouteEnd=false` は未完了として `INCOMPLETE_DAMAGE`
 
-となり、未完了進軍のままTrial Completionを通過させない。
+となり、未完了進軍のままCompletionを通過できない。
 
 したがって、以前の「SKIP routeが存在するとCompletion安全ゲートで停止する」という分類は現在は古い。
 
@@ -251,12 +229,9 @@ HQ損害はrouteごとに個別変換せず、`TrialHqArrivalAggregationService`
                          ├─ 🔥損害 ────→ GameState EmberSystemへ直接反映し得る
                          ├─ SKIP ──────→ route終端到達として解決・HQ集約対象
                          ├─ Completion → RESULT / result payload
-                         └─ Settlement → FAILED終端 / Chronicle / Exit Ready
-                                          │
-                                          ├─ Stage遷移               [未接続]
-                                          ├─ 🛡️消費commit            [未接続]
-                                          ├─ next-Trial state消費     [未接続]
-                                          └─ Victory / Run Complete   [未接続]
+                         └─ Settlement API
+                              ├─ FAILED終端 / Chronicle / Exit Ready [明示呼出時]
+                              └─ 通常UI completeTrial()からは未接続
 ```
 
 ---
@@ -272,8 +247,10 @@ HQ損害はrouteごとに個別変換せず、`TrialHqArrivalAggregationService`
 | 未完了INTERCEPT traversalのCompletion阻止 | **実装済み** |
 | 🛡️消費の通常GameState反映 | **PARTIAL / 未実装** |
 | 🔥損害の通常GameState反映 | **実装済みだが他資源境界と非対称** |
-| Trial結果→Chronicle | **実装済み** |
-| FAILED Trial→RunTermination | **実装済み** |
+| Trial Settlement API | **実装済み** |
+| 通常UI完了→Settlement | **PARTIAL / 未接続** |
+| Settlement→Chronicle | **API内実装済み / 通常UI未接続** |
+| FAILED Trial→RunTermination | **API内実装済み / 通常UI未接続** |
 | Trial完了→Stage | **RULES_AHEAD** |
 | Trial完了→Run Victory | **RULES_AHEAD** |
 | Trial完了→one-shot state消費 | **PARTIAL / 未実装** |
@@ -287,15 +264,4 @@ HQ損害はrouteごとに個別変換せず、`TrialHqArrivalAggregationService`
 
 この文書は、通常ランTrial統合の新しい設計案を決めるものではない。
 
-ここで確定しているのは、
-
-- 現在どのstateが存在するか
-- Trial側にどの入力器があるか
-- 何が現在受け渡されているか
-- どこで通常GameStateへ直接書き戻しているか
-- 何がSettlementまで接続されているか
-- 何が未接続か
-
-だけである。
-
-統合方法・クラス構成・具体的な脅威式・route生成アルゴリズムは別途設計対象とする。
+ここで確定しているのは現在の接続境界だけであり、統合方法・具体的な脅威式・route生成アルゴリズムは別途設計対象とする。
