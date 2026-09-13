@@ -13,15 +13,15 @@
 | :--- | :---: | :--- |
 | `CMD_MEDITATION` | **Implemented / Different** | 無料。即時✨+3、次Verse向けLAND Draw Biasを1Verse設定。旧説明の「今Verse土地を置かなかった場合」は条件として検査せず、カード使用自体が選択済み状態を立てる。 |
 | `CMD_FILL_THE_VOID` | **Partial** | 無料、✨5以上で候補化。`fillTheVoidTurns=1` を立て、Verse経過時にカウンタを減算する処理も存在する。しかし一般コマンド支払い処理はこの値を参照せず、🌾/🧱/✨/🔥不足を通常どおり即時拒否するため、不足資源補填の実効効果は未接続。 |
-| `CMD_VOICE_BENEATH_EARTH` | **Partial** | ✨5。`voiceBeneathEarthTurns=1` を立てるが、通常のOffering生成はこの状態を参照せず、次Offeringを発見資源タグへ連動させる完成処理は未接続。 |
-| `CMD_OMEN_DREAM` | **Partial** | ✨5。`omenDreamActive` を立てるが、侵攻方向等の情報解像度システムへ未接続。第1 Trial前の調査カテゴリ再編候補。 |
+| `CMD_VOICE_BENEATH_EARTH` | **Partial / Stale state** | ✨5。`voiceBeneathEarthTurns=1` を立てるが、通常Offering生成はこの状態を参照せず、次Offeringを発見資源タグへ連動させる完成処理は未接続。さらにGameStateのVerse経過処理にこのカウンタの減算が確認できず、専用stateが1のまま残留し得る。 |
+| `CMD_OMEN_DREAM` | **Partial / Stale state** | ✨5。`omenDreamActive=true` を立てるが、侵攻方向等の情報解像度システムへ未接続。明示解除処理も確認できず、stateが残留し得る。第1 Trial前の調査カテゴリ再編候補。 |
 | `CMD_REKINDLE_EMBER` | **Implemented / Different** | ✨10。即時🔥+3。`reserveFeeWaivedTurns=3` と開始待ちflagを設定する。ただしカウンタ減算はHoldカードが存在するVerseの維持費処理内でのみ行われるため、Holdが空のVerseでは寿命が進まない。実挙動は「次Verseから連続3Verse」ではなく、実質的にHold維持費を最大3回免除するまで状態が残る。 |
 | `CMD_MYSTIC_FOCUS` | **Implemented / Internal taxonomy gap** | ✨10、UNIQUE。次Verseから3Verse、`MYSTIC` category Draw Biasを設定。通常Offering生成は `activeDrawBias` を読み、`category:"MYSTIC"` のWeightへ現行×2.0を適用する。ただし神秘テーマのカードでも `category:"COMMAND"` のものはBias対象外。 |
 | `CMD_MANIFEST_MIRACLE` | **Partial** | ✨10。`manifestMiracleTurns=3` と `startsNextTurn` を設定し、GameState側に開始待ち・Verse減算の生命周期も実装済み。ただし一般コマンド支払い処理はこの状態を参照しないため、「不足コストを✨で補填」の実効効果は未接続。食料維持費不足補填とは別システム。 |
 | `CMD_TRANSMUTE_GOLDEN` | **Partial / Broken path** | ✨20、UNIQUE。`targetTile` が渡れば対象socketを聖なる光脈へ変える分岐は存在する。しかし通常の `GameEngine.playCommandCard()` は `DeckManager.playCommandCard(..., null, ...)` と明示的に `targetTile=null` を渡すため、通常Action経路では対象指定分岐へ入れず、フォールバックの✨+10が実行される。 |
-| `CMD_REVELATION_CHOICE` | **Partial** | ✨15。`revelationChoiceTurns=1` を立てるが、通常Offering生成はこの状態を参照せず、次Offering1枠のカテゴリ指定UI/抽選へ未接続。 |
-| `CMD_LEYLINE_RESONANCE` | **Partial** | ✨8。`leylineResonanceActive` を立てるが、一般コマンド支払い処理はこの状態を参照せず、補填可能量拡大の実効効果は未接続。 |
-| `CMD_TWO_FUTURES` | **Partial** | ✨20、UNIQUE。`twoFuturesTurns=1` を立てるが、通常Offering生成はこの状態を参照せず、次Verseに2組のOfferingを生成・選択するフローは未接続。 |
+| `CMD_REVELATION_CHOICE` | **Partial / Stale state** | ✨15。`revelationChoiceTurns=1` を立てるが、通常Offering生成はこの状態を参照せず、次Offering1枠のカテゴリ指定UI/抽選へ未接続。GameStateのVerse経過処理に専用カウンタ減算が確認できず、stateが残留し得る。 |
+| `CMD_LEYLINE_RESONANCE` | **Partial / Stale state** | ✨8。`leylineResonanceActive=true` を立てるが、一般コマンド支払い処理はこの状態を参照せず、補填可能量拡大の実効効果は未接続。明示解除処理も確認できず、stateが残留し得る。 |
+| `CMD_TWO_FUTURES` | **Partial / Stale state** | ✨20、UNIQUE。`twoFuturesTurns=1` を立てるが、通常Offering生成はこの状態を参照せず、次Verseに2組のOfferingを生成・選択するフローは未接続。GameStateのVerse経過処理に専用カウンタ減算が確認できず、stateが残留し得る。 |
 
 ---
 
@@ -83,7 +83,15 @@ rulesではMaintenance fallbackと同じ万能変換として扱わない。
 - `revelationChoiceTurns`
 - `twoFuturesTurns`
 
-したがって、これらはカード発動時の状態登録までは存在するが、通常Offering生成の実効処理へは未接続として扱う。
+さらにこれらの専用stateカウンタは、現在のGameState Verse経過処理で減算されることも確認できない。
+
+したがって、
+
+> **表示Buffは満了しても、専用stateだけが残り続ける可能性がある。**
+
+と扱う。
+
+この状態で将来consumerだけを接続すると、過去Verseで使用したカードstateが後から誤って消費される危険がある。
 
 ---
 
@@ -115,3 +123,4 @@ DeckManager.playCommandCard(cardObj, null, offeringIdx, reserveIdx)
 4. `Transmute Golden` — target対応分岐は存在するが、通常GameEngine Action APIからtargetが渡らない。
 5. `Mystic Focus` — Draw Bias自体は実装済みだが、`MYSTIC`カテゴリ指定と神秘テーマカードの`COMMAND`分類が混在しており、テーマ上の神秘カード全体には掛からない。
 6. `Rekindle Ember` — Hold維持費免除自体は実効するが、durationは通常Verse経過ではなくHold維持費処理が発生したVerseでのみ消費される。
+7. `Voice Beneath Earth / Revelation Choice / Two Futures / Omen Dream / Leyline Resonance` — 最終consumer未接続に加え、専用stateの寿命/解除も未完成で残留し得る。
