@@ -33,7 +33,7 @@ export class BoardInputDispatcher {
         const handler = this.handlers[handlerName];
         if (typeof handler !== "function") return Object.freeze({ success: false, type: command.type, reason: "BOARD_INPUT_HANDLER_UNAVAILABLE" });
         const result = handler(command.payload, command);
-        if (result && typeof result === "object") return Object.freeze({ type: command.type, ...result });
+        if (result && typeof result === "object") return Object.freeze({ ...result, type: command.type });
         return Object.freeze({ success: result !== false, type: command.type, result: result ?? null });
     }
     _ok(command, result) { return Object.freeze({ success: true, type: command.type, result }); }
