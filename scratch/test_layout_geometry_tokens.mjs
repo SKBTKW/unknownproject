@@ -9,6 +9,7 @@ const tokensCss = read("../game/css/0_global_common/layout_tokens.css");
 const layerContractCss = read("../game/css/0_global_common/layer_contract.css");
 const trayViewCss = read("../game/css/3_bottom_area/player_tray_view_mode.css");
 const trialTrayCss = read("../game/css/3_bottom_area/trial_action_tray.css");
+const legacyLayoutCss = read("../game/css/layout.css");
 const layoutConfig = read("../game/src/ui/layout_config.js");
 
 let passed = 0;
@@ -112,6 +113,11 @@ check(layoutConfig.includes('top: "var(--layout-system-overlay-inset)"')
     && layoutConfig.includes('left: "var(--layout-system-overlay-inset)"')
     && layoutConfig.includes('zIndex: "var(--z-overlay)"'),
 "System Overlay config consumes shared Layout geometry and layer tokens");
+check(layoutConfig.includes('zIndex: "var(--z-world)"')
+    && baseLayoutCss.includes("--z-world:")
+    && legacyLayoutCss.includes(".layer-world-board-container")
+    && legacyLayoutCss.includes("z-index: var(--z-world)"),
+"World Board config and runtime CSS consume the shared world layer token");
 
 check(layerContractCss.includes("#layerPlayerTray.layer-player-tray")
     && layerContractCss.includes("var(--z-player)"),
