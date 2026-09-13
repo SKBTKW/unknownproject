@@ -7,7 +7,7 @@ const SCALAR_FIELDS = Object.freeze([
     "defenseCapacityBonus", "currentDefense", "maxDefense", "mystic",
     "hasPickedThisTurn", "hasReservedThisTurn", "hasMulliganedThisTurn",
     "mergeGroupCounter", "placementGroupCounter", "handOfferingSize",
-    "nextTrialDamageMitigation", "nextTrialMultiplier", "nextTrialTurn",
+    "nextTrialTurn",
     "placedBlockCount", "permanentPlainsFoodBonus", "permanentVicinityDefenseBonus",
     "emberConsumptionReducedTurns", "emberConsumptionStartsNextTurn",
     "vigilanceTurns", "vigilanceStartsNextTurn", "grandCultivationTurns",
