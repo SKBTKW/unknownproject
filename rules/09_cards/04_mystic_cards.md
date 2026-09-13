@@ -10,7 +10,7 @@
 
 | ID | 状態 | 現在の実挙動 / 注意点 |
 | :--- | :---: | :--- |
-| `CMD_MEDITATION` | **Implemented / Different** | 無料。即時✨+3、次Verse向けLAND Draw Biasを1Verse設定。旧「土地を置かなかった場合」条件は検査しない。 |
+| `CMD_MEDITATION` | **Implemented / Different / Player-facing description mismatch** | 無料。runtimeは条件確認なしで即時✨+3し、次Verse向け `LAND` Draw Bias×2を1回設定する。表示説明の「今Verse土地を置かなかった場合」「次手札に土地カードを保証」はどちらもruntimeと一致しない。 |
 | `CMD_FILL_THE_VOID` | **Partial** | `fillTheVoidTurns=1` と減衰処理はあるが、一般コマンド支払いはこの状態を参照しない。 |
 | `CMD_VOICE_BENEATH_EARTH` | **Partial / Stale state** | `voiceBeneathEarthTurns=1` を立てるがOffering側consumerと減算処理が未接続。 |
 | `CMD_REKINDLE_EMBER` | **Implemented / Different** | 即時🔥+3。Hold維持費免除は実効するが、状態寿命の扱いにより最大4回免除し得る。 |
@@ -67,6 +67,35 @@ Trial中に突然専用カードを引いて戦う構造にはしない。
 
 ただしBiasはテーマではなく `category` 文字列の完全一致。
 
+《瞑想》も同じ `activeDrawBias` 機構を使う。
+
+現runtimeの《瞑想》は、
+
+```text
+activeDrawBias = {
+  targetCategory: "LAND",
+  type: "TURNS",
+  remainingTurns: 1,
+  startsNextTurn: true
+}
+```
+
+を設定する。
+
+Offering抽選側はBias対象カテゴリのweightを×2するだけなので、土地カードの**確定枠・保証枠**ではない。
+
+さらに発動時に「このVerseで土地を置かなかったか」を確認する条件もない。
+
+したがって現在の表示説明
+
+> 今Verse土地を置かない場合、✨+3 ＆ 次Verse土地カード保証
+
+に対し、実runtimeは
+
+> 条件なし即時✨+3 ＆ 次VerseLAND weight×2
+
+である。
+
 一方、
 
 - `voiceBeneathEarthTurns`
@@ -89,12 +118,13 @@ Trial中に突然専用カードを引いて戦う構造にはしない。
 
 ---
 
-## 7. 現在の重要未接続
+## 7. 現在の重要未接続 / 不一致
 
-1. Fill the Void / Manifest Miracle / Leyline Resonance — 支払い側consumerなし。
-2. Voice Beneath Earth / Revelation Choice / Two Futures — Offering側consumerなし。
-3. Transmute Golden — 通常Actionからtargetが渡らない。
-4. Mystic Focus — Biasは実装済みだがcategory分類とテーマ分類が一致しない。
-5. Rekindle Ember — Hold維持費免除回数が説明より長くなり得る。
-6. Voice Beneath Earth / Revelation Choice / Two Futures / Leyline Resonance — state寿命/解除も未完成。
-7. Omen Dream — **現役Partialではなくretired。**
+1. Meditation — **表示説明とruntimeが二重に不一致**。「土地を置かない」条件なし／土地保証ではなくweight×2。
+2. Fill the Void / Manifest Miracle / Leyline Resonance — 支払い側consumerなし。
+3. Voice Beneath Earth / Revelation Choice / Two Futures — Offering側consumerなし。
+4. Transmute Golden — 通常Actionからtargetが渡らない。
+5. Mystic Focus — Biasは実装済みだがcategory分類とテーマ分類が一致しない。
+6. Rekindle Ember — Hold維持費免除回数が説明より長くなり得る。
+7. Voice Beneath Earth / Revelation Choice / Two Futures / Leyline Resonance — state寿命/解除も未完成。
+8. Omen Dream — **現役Partialではなくretired。**
