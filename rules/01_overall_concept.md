@@ -57,9 +57,19 @@ isGameOver = true
 
 `TurnLifecycleService.advance()` はVerse開始時とVerse commit後にこの終端状態を評価し、terminatedなら次Verse初期化へ進まない。
 
-したがって、**Verse進行境界における🔥0敗北のラン終端は現在実装済み**とする。
+また現在の `EmberSystem.applyDamage()` は🔥減少直後に `RunTerminationService.evaluate({ source: "EMBER_DAMAGE" })` を呼ぶ。
 
-ただし `EmberSystem.applyDamage()` 自体が直接RunTerminationServiceを呼ぶわけではないため、Verse途中に🔥0へ到達した瞬間のPresentation / 即時画面遷移が存在することまでは本項で保証しない。少なくとも次のVerse進行要求時には既存termination評価によって停止する。
+したがって、**Trial本営損害など `applyDamage()` 経由で🔥0へ到達した場合は、そのダメージ処理内で敗北terminationまで評価される。**
+
+ただし `EmberSystem.consume()` はterminationを評価しないため、Command支払い・Mulligan・土地開発コスト等の「消費」経路で🔥0へ到達した場合は、同一Action内で敗北確定しない経路がまだ残る。
+
+よって現在は、
+
+- `applyDamage()` 経由の🔥0敗北 — **即時termination評価あり**
+- `consume()` / 直接減算経由の🔥0敗北 — **Action境界が未統一**
+- Verse境界 — `TurnLifecycleService` がterminationを再評価し進行停止
+
+として扱う。
 
 ---
 
