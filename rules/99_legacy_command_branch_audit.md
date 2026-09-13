@@ -19,12 +19,15 @@
 | `CMD_GRAND_CULTIVATION` | **LEGACY / master absent** |
 | `CMD_SYSTEMATIC_LOGGING` | **LEGACY / master absent** |
 | `CMD_SINGLE_CLEARING` | **LEGACY / master absent** |
+| `CMD_LAND_FOCUS` | **LEGACY / master absent** |
 
 ### 代表例
 
 `CMD_AGRICULTURAL_POLICY` は旧aliasで、現行《農地改革》は `CMD_AGRICULTURAL_REFORM`。
 
 `LGD_DESPERATE_PACT` は旧《背水の盟約》で、`nextTrialMultiplier` を書く分岐が残るが現masterから通常発火しない。
+
+`CMD_LAND_FOCUS` は `DeckManager.playCommandCard()` とEligibility特例に分岐が残るが、現 `command_cards_data.js` に定義がなく、通常Offeringから到達しない。現役Focusは `CMD_MILITARY_FOCUS` / `CMD_MYSTIC_FOCUS` と区別する。
 
 ---
 
