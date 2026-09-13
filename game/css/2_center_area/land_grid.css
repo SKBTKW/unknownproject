@@ -39,11 +39,12 @@
     filter: brightness(0.65) blur(2px) !important;
 }
 
-/* 🌌 メインエリア背景 ウォーターマーク ターン表示 (最前面HUDプレート - 背後盤面通過時も100%鮮明) */
-.bg-turn-watermark {
-    position: absolute;
-    top: 16px;
-    right: 24px;
+/* 🌌 メインエリア背景 ウォーターマーク（レガシー互換スコープ） */
+.middle-layout .bg-turn-watermark {
+    position: relative;
+    top: auto;
+    right: auto;
+    margin-top: 0;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
@@ -60,7 +61,7 @@
     transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-.bg-turn-label {
+.middle-layout .bg-turn-label {
     font-size: 13px;
     font-weight: 900;
     letter-spacing: 5px;
@@ -71,7 +72,7 @@
     text-shadow: 0 0 10px rgba(26, 188, 156, 0.6);
 }
 
-.bg-turn-num {
+.middle-layout .bg-turn-num {
     font-size: 82px;
     font-weight: 900;
     line-height: 0.9;
@@ -81,7 +82,7 @@
     letter-spacing: 1px;
 }
 
-.bg-turn-num small {
+.middle-layout .bg-turn-num small {
     font-size: 26px;
     font-weight: 700;
     color: rgba(255, 255, 255, 0.70);

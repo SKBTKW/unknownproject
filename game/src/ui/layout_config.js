@@ -158,8 +158,8 @@ const UILayoutConfig = {
         desktop: {
             position: "fixed",
             top: "14px",
-            right: "18px",
-            left: "auto",
+            left: "18px",
+            right: "auto",
             bottom: "auto",
             zIndex: 980,
             pointerEvents: "none"
@@ -167,8 +167,8 @@ const UILayoutConfig = {
         mobile: {
             position: "fixed",
             top: "12px",
-            right: "12px",
-            left: "auto",
+            left: "12px",
+            right: "auto",
             bottom: "auto",
             zIndex: 980,
             pointerEvents: "none"
@@ -196,14 +196,14 @@ const UILayoutConfig = {
         zIndex: 10
     },
 
-    // 🧩 2. 盤面グリッドラッパー (水平中央・上揃えの基準軸)
+    // 🧩 2. 盤面グリッドラッパー (水平中央・ヘッダー下60px)
     boardWrapper: {
         position: "relative",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "flex-start",
-        marginTop: "0px",
+        marginTop: "60px",
         marginBottom: "auto"
     },
 
@@ -277,14 +277,14 @@ const UILayoutConfig = {
         pointerEvents: "none"
     },
 
-    // 🌌 9. Verse表示: Middle Board Area の右上へ通常レイアウトで整列
+    // 🌌 9. Verse表示: ヘッダー右隅のコンパクトHUD
     bgTurnWatermark: {
         position: "relative",
         top: "auto",
         right: "auto",
-        alignSelf: "start",
-        justifySelf: "end",
-        marginRight: "var(--layout-verse-right)",
+        marginTop: "0px",
+        marginLeft: "auto",
+        marginRight: "0px",
         opacity: "1.0",
         zIndex: 2,
         pointerEvents: "none"

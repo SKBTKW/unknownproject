@@ -79,3 +79,55 @@
     color: #2ecc71;
     font-weight: bold;
 }
+
+/* 🌌 ヘッダー右隅 ターン表示 (Verse HUD) */
+.top-bar .bg-turn-watermark.header-turn-display {
+    position: relative;
+    margin-left: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 4px 14px;
+    background: rgba(14, 17, 24, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+    z-index: 2;
+    pointer-events: none;
+    user-select: none;
+}
+
+.top-bar .bg-turn-watermark.header-turn-display .bg-turn-label {
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    color: #1abc9c;
+    text-transform: uppercase;
+    margin-bottom: 0px;
+    text-shadow: 0 0 8px rgba(26, 188, 156, 0.5);
+}
+
+.top-bar .bg-turn-watermark.header-turn-display .bg-turn-num {
+    font-size: 28px;
+    font-weight: 900;
+    line-height: 1.0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Impact", sans-serif;
+    color: #ffffff;
+    text-shadow: 0 0 16px rgba(26, 188, 156, 0.4);
+    letter-spacing: 0.5px;
+}
+
+.top-bar .bg-turn-watermark.header-turn-display .bg-turn-num small {
+    font-size: 14px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.70);
+    margin-left: 2px;
+}
+
+/* ⚠️ 試練カウントダウンバッジ（現フェーズ停止・非表示） */
+.top-bar #trialCountdownBadge,
+.trial-countdown-badge[hidden] {
+    display: none;
+}
+

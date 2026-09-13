@@ -45,13 +45,15 @@ check('Main play area keeps the 4px header gap contract', () => {
     assert.equal(UILayoutConfig.gameWallpaperArt.top,
         'calc(var(--layout-header-height, 84px) + var(--layout-app-gap, 4px) + 4px)');
 });
-check('Board and Verse share the same start-aligned main stack', () => {
-    assert.match(layerContract, /\.middle-layout\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-areas:\s*"main-stack";[\s\S]*?align-items:\s*start;/);
-    assert.match(layerContract, /#layerWorldBoard\.layer-world-board\s*\{[\s\S]*?grid-area:\s*main-stack;[\s\S]*?justify-content:\s*flex-start;/);
-    assert.match(layerContract, /#bgTurnWatermark\.bg-turn-watermark\s*\{[\s\S]*?grid-area:\s*main-stack;[\s\S]*?align-self:\s*start;[\s\S]*?justify-self:\s*end;/);
-    assert.equal(UILayoutConfig.boardContainer.justifyContent, 'flex-start');
-    assert.equal(UILayoutConfig.boardWrapper.marginTop, '0px');
-    assert.equal(UILayoutConfig.bgTurnWatermark.alignSelf, 'start');
+check('Board is positioned 60px below header and Verse is in header right', () => {
+    assert.match(layerContract, /\.board-container-wrapper\s*\{[\s\S]*?margin-top:\s*60px;/);
+    assert.match(layerContract, /\.top-bar #bgTurnWatermark\.bg-turn-watermark\s*\{[\s\S]*?margin-left:\s*auto;/);
+    assert.match(html, /<div class="top-bar">[\s\S]*?id="bgTurnWatermark"[\s\S]*?<\/div>\s*<!-- 🕹️ 2\. Middle Board Area -->/);
+    assert.equal(UILayoutConfig.boardWrapper.marginTop, '60px');
+    assert.equal(UILayoutConfig.bgTurnWatermark.position, 'relative');
+    assert.equal(UILayoutConfig.bgTurnWatermark.marginLeft, 'auto');
+    assert.equal(UILayoutConfig.buildIdentityBadge.desktop.left, '18px');
+    assert.equal(UILayoutConfig.buildIdentityBadge.desktop.right, 'auto');
 });
 check('Buff expansion and invisible headroom share Layout tokens', () => {
     assert.match(tokens, /--layout-buff-dropup-max-height:\s*min\(320px,\s*calc\(100vh - var\(--layout-header-height\) - 32px\)\);/);

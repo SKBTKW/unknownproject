@@ -37,18 +37,16 @@
     z-index: var(--z-player) !important;
 }
 
-#bgTurnWatermark.bg-turn-watermark {
-    grid-area: main-stack;
+.top-bar #bgTurnWatermark.bg-turn-watermark {
     position: relative;
     top: auto;
     right: auto;
-    align-self: start;
-    justify-self: end;
-    margin-right: var(--layout-verse-right);
+    margin-left: auto;
+    z-index: 2;
 }
 
 .board-container-wrapper {
-    margin-top: 0;
+    margin-top: 60px;
     margin-bottom: auto;
 }
 
