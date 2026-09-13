@@ -1,6 +1,7 @@
 import { CellViewDataService } from '../services/cell_view_data_service.js';
 import { getBoardPresentationProfile } from './board_presentation_profile.js';
 import { emptyTrialBoardSemanticData } from './trial_board_semantic_data.js';
+import { BoardPresentationSemanticService } from './board_presentation_semantic_service.js';
 
 function sameCell(a, r, c) {
     return Boolean(a && a.r === r && a.c === c);
@@ -60,15 +61,12 @@ function buildMarkedCellIndex(items) {
     return map;
 }
 
-/**
- * Shared semantic read model for Browser 2D / Web 2.5D / Unity renderers.
- *
- * It consumes facts and presentation state. It never starts/stops a Trial,
- * changes LayoutState, chooses PlayerTray content, or emits screen geometry.
- */
 export class BoardPresentationDataService {
-    constructor({ cellViewDataService = null } = {}) {
+    constructor({ cellViewDataService = null, semanticService = null } = {}) {
         this.cellViewDataService = cellViewDataService || new CellViewDataService();
+        this.semanticService = semanticService || new BoardPresentationSemanticService({
+            cellViewDataService: this.cellViewDataService
+        });
     }
 
     getBoard(state, {
@@ -113,6 +111,7 @@ export class BoardPresentationDataService {
         const battleIndex = showBattleMarkers
             ? buildMarkedCellIndex(visibleTrial.battleMarkers)
             : new Map();
+        const linkIndex = this.semanticService.buildLinkIndex(sourceState);
 
         if (!grid) {
             return Object.freeze({
@@ -133,9 +132,11 @@ export class BoardPresentationDataService {
             const interception = interceptionIndex.get(key) || null;
             const planned = plannedIndex.get(key) || null;
             const battle = battleIndex.get(key) || null;
+            const semantic = this.semanticService.getCellSemantic(sourceState, facts, linkIndex);
 
             return Object.freeze({
                 ...facts,
+                ...semantic,
                 interaction: Object.freeze({
                     selected: sameCell(presentationState.selectedCell, r, c),
                     hovered: sameCell(presentationState.hoveredCell, r, c),
