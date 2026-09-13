@@ -11,6 +11,7 @@ const legacy = read('../game/css/layout.css');
 const tray = read('../game/css/3_bottom_area/draw_card_select_area.css');
 const html = read('../game/index.html');
 const layoutSource = read('../game/src/ui/layout_config.js');
+const focusSource = read('../game/src/ui/focus_layer_system.js');
 let passed = 0;
 function check(name, fn) { fn(); passed++; console.log(`  PASS: ${name}`); }
 
@@ -108,6 +109,12 @@ check('Offering geometry is owned by CSS without runtime inline configuration', 
     assert.equal(Object.hasOwn(UILayoutConfig, 'playerTray'), false);
     assert.equal(Object.hasOwn(UILayoutConfig, 'offeringCardArea'), false);
     assert.match(layoutSource, /offeringSec\.addEventListener\("mouseenter"/);
+});
+check('Focus layer state leaves Player Tray and Offering z-index to CSS', () => {
+    assert.doesNotMatch(focusSource, /playerTray\.style\.zIndex/);
+    assert.doesNotMatch(focusSource, /offeringSectionEl\.style\.zIndex/);
+    assert.match(focusSource, /offeringSectionEl\.classList\.add\('layer-active-front'\)/);
+    assert.match(focusSource, /offeringSectionEl\.classList\.add\('layer-dim-blur'\)/);
 });
 check('Collapsed, expanded and Trial Hand state selectors remain present', () => {
     assert.match(tray, /\.offering-section:not\(\.is-minimal\)\s*\{/);

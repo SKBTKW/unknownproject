@@ -126,7 +126,6 @@ class FocusLayerManager {
     setBoardFocus(isFront) {
         if (!this.boardContainerEl) return;
         const gridEl = this.getGridElement();
-        const playerTray = document.getElementById('layerPlayerTray') || document.querySelector('.layer-player-tray');
         const settings = (typeof window !== "undefined" && window.gameSettings) ? window.gameSettings : null;
         const isBlurEnabled = settings ? settings.get("focusDoFBlur") : true;
 
@@ -136,13 +135,9 @@ class FocusLayerManager {
             this.boardContainerEl.style.zIndex = '100';
             if (gridEl) gridEl.classList.remove('board-dim-blur');
 
-            // 🌟 カード選択中であっても手札トレイ（保留スロット含む）のクリックを盤面で覆い隠さない (PLAYER帯域: z-index: 700)
-            if (playerTray) playerTray.style.zIndex = '700';
-            if (this.offeringSectionEl) {
-                this.offeringSectionEl.style.zIndex = '700';
-                if (isBlurEnabled) {
-                    this.offeringSectionEl.classList.add('layer-dim-blur');
-                }
+            // 🌟 カード選択中であっても手札トレイ（保留スロット含む）のクリックを盤面で覆い隠さない
+            if (this.offeringSectionEl && isBlurEnabled) {
+                this.offeringSectionEl.classList.add('layer-dim-blur');
             }
         } else {
             this.boardContainerEl.classList.remove('layer-active-front');
@@ -158,19 +153,16 @@ class FocusLayerManager {
     }
 
     /**
-     * 🃏 手札を最優先（最前面手前 z-index: 700）または下層ボケ（奥 z-index: 500）に設定
+     * 🃏 手札を最優先または下層ボケに設定
      */
     setHandFocus(isFront) {
         if (!this.offeringSectionEl) return;
-        const playerTray = document.getElementById('layerPlayerTray') || document.querySelector('.layer-player-tray');
         const settings = (typeof window !== "undefined" && window.gameSettings) ? window.gameSettings : null;
         const isBlurEnabled = settings ? settings.get("focusDoFBlur") : true;
 
         if (isFront) {
             this.offeringSectionEl.classList.add('layer-active-front');
             this.offeringSectionEl.classList.remove('layer-dim-blur');
-            this.offeringSectionEl.style.zIndex = '700';
-            if (playerTray) playerTray.style.zIndex = '700';
 
             if (this.boardContainerEl) this.boardContainerEl.style.zIndex = '10';
         } else {
@@ -180,8 +172,6 @@ class FocusLayerManager {
             } else {
                 this.offeringSectionEl.classList.remove('layer-dim-blur');
             }
-            this.offeringSectionEl.style.zIndex = '500';
-            if (playerTray) playerTray.style.zIndex = '500';
         }
     }
 
@@ -189,17 +179,12 @@ class FocusLayerManager {
      * ⚖️ 中立（平常時）クリア表示へのリセット
      */
     resetToNeutral() {
-        const playerTray = document.getElementById('layerPlayerTray') || document.querySelector('.layer-player-tray');
         if (this.boardContainerEl) {
             this.boardContainerEl.classList.remove('layer-active-front', 'layer-dim-blur');
             this.boardContainerEl.style.zIndex = '10';
         }
         if (this.offeringSectionEl) {
             this.offeringSectionEl.classList.remove('layer-active-front', 'layer-dim-blur');
-            this.offeringSectionEl.style.zIndex = '700';
-        }
-        if (playerTray) {
-            playerTray.style.zIndex = '700';
         }
         const gridEl = this.getGridElement();
         if (gridEl) {
