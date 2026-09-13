@@ -26,7 +26,7 @@
 
 ---
 
-## 2. Serializerへ含まれる主なカードstate
+## 2. Serializerへ含まれる主なstate
 
 現 `state_serializer_base.js` で明示的に保存される例:
 
@@ -44,8 +44,18 @@
 - `manifestMiracleTurns`
 - `reserveFeeWaivedTurns`
 - 対応する一部 `startsNextTurn` flag
+- `hasPickedThisTurn`
+- `hasReservedThisTurn`
+- `hasMulliganedThisTurn`
 
-これらは少なくともHistory snapshotのGameState payloadへ含まれる。
+さらにwrapperの `state_serializer.js` は、
+
+- `isGameOver`
+- `runTermination`
+
+を追加で保存する。
+
+したがって、**敗北終端stateそのものはHistory Restore対象**であり、現在のPersistence問題を「RunTerminationまで保存されない」とは扱わない。
 
 ---
 
@@ -153,7 +163,7 @@ state.material = state.wood
 
 ## 6. 現在の結論
 
-History / Chronicle Restoreは盤面・主要資源・一部カードstate・Buff表示を復元できるが、**カード効果GameState全体を完全にはserializeしていない。**
+History / Chronicle Restoreは盤面・主要資源・RunTermination・一部カードstate・Buff表示を復元できるが、**カード効果GameState全体を完全にはserializeしていない。**
 
 特に「Buff配列は保存されるが、その効果判定用fieldが保存されない」カードはPresentationとruntime effectが分離し得る。
 
