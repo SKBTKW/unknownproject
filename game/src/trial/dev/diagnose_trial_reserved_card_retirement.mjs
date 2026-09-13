@@ -11,7 +11,10 @@ const RETIRED = [
     "CMD_SCORCHED_RETREAT",
     "CMD_CAVALRY_HOST",
     "CMD_LOCAL_IRON_ARMAMENT",
-    "CMD_OMEN_DREAM"
+    "CMD_OMEN_DREAM",
+    "CMD_STONE_STRONGPOINT",
+    "CMD_GREAT_RAMPART_PROJECT",
+    "CMD_OUTPOST"
 ];
 
 function assert(condition, message) {
