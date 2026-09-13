@@ -66,9 +66,11 @@ Trial開始
   ↓
 各戦闘を順番に解決
   ↓
-突破した敵の進軍
+止められなかったrouteのHQ進軍
   ↓
-route終端到達時に本営 / 🔥損害
+全到達routeの制圧力を集約
+  ↓
+本営 / 🔥損害
   ↓
 全戦線解決後にTrial結果確定
 ```
@@ -101,6 +103,16 @@ Trial では複数の侵攻routeを持ち得る。
 - 全routeへの🛡️配分合計は、利用可能な現在🛡️を超えてはならない。
 
 迎撃計画は一度確定した後、戦闘開始前に再検証される。
+
+### SKIP の現在挙動
+
+`SKIP` routeは現在、Trial完了時のHQ解決前に `TrialSkippedRouteResolutionService` により自動解決される。
+
+- 意図的迎撃を行わない。
+- 生存敵はroute終端まで進む。
+- 到達制圧力は他の突破routeと同じHQ集約へ入る。
+
+したがって、現在のSKIPは「未解決routeを残してTrial完了を止める」状態ではない。
 
 ---
 
@@ -227,7 +239,7 @@ E0↔E1間の遷移は現行実装では高地補正対象外。
 
 ---
 
-## 9. 戦闘結果
+## 9. 戦闘結果と突破後進軍
 
 現在の基礎戦闘結果は以下。
 
@@ -237,37 +249,79 @@ E0↔E1間の遷移は現行実装では高地補正対象外。
 
 単純な「Trial成功 / Trial失敗」だけを1戦ごとに出すのではなく、その戦線で敵を止められたかを判定する。
 
-### 撃退した場合
+### REPELした場合
 
 - 敵はその迎撃地点で停止する。
 - route進行は発生しない。
+- HQへ到達しない。
 
-### 撃退できなかった場合
+### REPELできなかった場合
 
-- 敵はrouteを先へ進む。
-- 現行 `TrialEnemyAdvanceService` では、1戦闘解決につきroute上を1段進行する。
+現在の `TrialEnemyAdvanceService` は、1戦闘ごとに1セルだけ進めるモデルではない。
+
+同一route上に2回目の意図的迎撃を置く構造ではないため、迎撃で止められなかった生存敵は**そのrouteの残り全区間を進み、route終端/HQへ到達する。**
+
+したがって現runtimeは、
+
+```text
+REPEL
+→ 迎撃地点で停止
+
+REPEL以外
+→ 残りrouteを全進行
+→ HQ到達
+```
+
+として扱う。
 
 ---
 
 ## 10. 本営到達と🔥損害
 
-突破した敵がroute終端へ到達した場合、本営への損害を解決する。
+route終端へ到達した敵は、本営への損害源となる。
 
-現在は戦闘後の**残存敵制圧力**を損害源として使用する。
+現在のCompletion経路ではrouteごとに🔥損害を即時確定しない。
+
+まず以下を1つのHQ到達制圧力へ集約する。
+
+- `SKIP` routeの到達制圧力
+- `INTERCEPT` routeでREPELできずHQへ到達した残存敵制圧力
+
+REPELされたrouteは到達値0として扱う。
 
 ### 現行式
 
 ```text
-🔥損害 = ceil(残存敵戦闘制圧力 / 5)
+総HQ到達制圧力
+= 全到達routeの制圧力合計
+
+🔥損害
+= ceil(総HQ到達制圧力 / 5)
 ```
 
 ここで `/5` は戦略尺度へ戻すための現行変換率に対応する。
 
+重要なのは、
+
+```text
+ceil(routeA / 5) + ceil(routeB / 5)
+```
+
+ではなく、
+
+```text
+ceil((routeA + routeB + ...) / 5)
+```
+
+と、**全routeを集約した後に1回だけ丸める**こと。
+
 🔥は0未満にならない。
+
+`EmberSystem.applyDamage()` を通る本営損害は、🔥0到達時にRunTermination評価まで実行する。
 
 したがって、Trialでは「1回突破されたら即敗北」ではない。
 
-どのrouteをどれだけ削り、どれだけ🔥損害を抑えるかが重要になる。
+どのrouteをどれだけ削り、最終的な総到達制圧力をどこまで抑えるかが重要になる。
 
 ---
 
@@ -279,6 +333,14 @@ E0↔E1間の遷移は現行実装では高地補正対象外。
 
 - `SURVIVED` — Trial終了時 `🔥 > 0`
 - `FAILED` — Trial終了時 `🔥 = 0`
+
+Completionは少なくとも以下の完了を要求する。
+
+- 全INTERCEPT battleの解決
+- 必要なroute traversalの解決
+- SKIP routeの自動解決
+- HQ到達制圧力の集約
+- 集約🔥損害の解決
 
 ### Trial内の戦線突破とTrial敗北は別
 
@@ -292,11 +354,35 @@ E0↔E1間の遷移は現行実装では高地補正対象外。
 
 以下はコード上の器・概念・将来設計が存在していても、現時点で完成済みの正規Trialルールとして扱わない。
 
-### 12.1 SKIP route の完全解決
+### 12.1 Settlement / Trial退出の通常UI接続
 
-`SKIP` 自体は迎撃計画として定義済みだが、現行実装ではSKIP routeの進軍・損害シミュレーションが未完成。
+`TrialController.settleTrialResult()` と `TrialResultSettlementService` は存在する。
 
-そのため現在のTrial Completionには、SKIP routeが存在すると完了を止める安全ゲートがある。
+Domain/API側では、
+
+- `SURVIVED` / `FAILED` 結果検証
+- FAILED時のRunTermination確認
+- Chronicleへの `TRIAL_RESULT` 記録
+- `TRIAL_RESULT_SETTLED` emit
+- `TRIAL_EXIT_READY` emit
+- `resultSettlement.canExitTrial = true`
+
+まで実装されている。
+
+ただし通常UIの `completeTrial()` は `trialController.completeTrial()` までしか呼ばない。
+
+結果バナー表示後に、
+
+- `settleTrialResult()` を呼ぶ通常UI導線
+- `canExitTrial` を読んでTrialを退出する導線
+
+は未接続。
+
+したがって現在は、
+
+> **Completion / 結果表示まではUI接続済み。Settlement / Chronicle確定 / Exit ReadyはAPI実装済みだが通常UI未接続。**
+
+と扱う。
 
 ### 12.2 通常50 Verse進行との完全接続
 
@@ -317,6 +403,7 @@ Trial domain / planning / battle / damage / completionの各機構は存在す�
 - `availableDefense`
 - `ember`
 - `maxEmber`
+- `mystic`
 - 任意で `commander`
 - 任意で `forces`
 - 任意で `environment`
@@ -371,10 +458,12 @@ TrialController.startScenario()
 
 - 第3 Trialを正規起動する処理
 - 第3 Trial完了をラン結果へ接続する処理
-- Verse 50終了時のVictory / Run Complete判定
-- Verse 51以降への進行を止める終端
+- Verse 50完走検出を `VICTORY / Run Complete` へ確定する処理
+- Verse 51以降への進行を勝利状態として止める終端
 
 が未接続。
+
+`GameState.processTurnEndMaintenance()` には `turn >= 50 && ember > 0` の `isGameClear` 検出自体は存在するが、現在の `RunTerminationService` は `DEFEAT` のみを確定する。
 
 ### 12.6 戦術
 
