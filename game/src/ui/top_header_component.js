@@ -131,17 +131,10 @@ export class TopHeaderComponent {
             window.renderDirectiveHeaderBadge();
         }
 
-        // 7. ⚠️ 試練カウントダウンの動的表示 (予告期間中のみ点灯)
+        // 7. ⚠️ 試練カウントダウンの動的表示 (現フェーズ停止・常時非表示)
         const trialBadge = document.getElementById("trialCountdownBadge");
         if (trialBadge) {
-            const nextTrial = this.state.nextTrialTurn || (this.state.stage && this.state.stage.id ? this.state.stage.id * 20 : 20);
-            const turnsLeft = nextTrial - this.state.turn;
-            if (turnsLeft > 0 && turnsLeft <= 5) {
-                trialBadge.style.display = "inline-flex";
-                this.setElementText("valTrialCountdown", turnsLeft);
-            } else {
-                trialBadge.style.display = "none";
-            }
+            trialBadge.style.display = "none";
         }
     }
 }

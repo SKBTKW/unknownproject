@@ -88,7 +88,9 @@
     flex-direction: column;
     align-items: flex-end;
     justify-content: center;
-    padding: 2px 16px;
+    height: 110px;
+    box-sizing: border-box;
+    padding: 4px 20px;
     background: rgba(14, 17, 24, 0.78);
     border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: 8px;
@@ -99,19 +101,19 @@
 }
 
 .top-bar .bg-turn-watermark.header-turn-display .bg-turn-label {
-    font-size: 16px;
+    font-size: 22px;
     font-weight: 900;
     letter-spacing: 3px;
     color: #1abc9c;
     text-transform: uppercase;
-    margin-bottom: -2px;
+    margin-bottom: -4px;
     text-shadow: 0 0 8px rgba(26, 188, 156, 0.5);
 }
 
 .top-bar .bg-turn-watermark.header-turn-display .bg-turn-num {
-    font-size: 56px;
+    font-size: 80px;
     font-weight: 900;
-    line-height: 0.95;
+    line-height: 0.92;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Impact", sans-serif;
     color: #ffffff;
     text-shadow: 0 0 20px rgba(26, 188, 156, 0.45);
@@ -119,10 +121,10 @@
 }
 
 .top-bar .bg-turn-watermark.header-turn-display .bg-turn-num small {
-    font-size: 28px;
+    font-size: 40px;
     font-weight: 700;
     color: rgba(255, 255, 255, 0.70);
-    margin-left: 3px;
+    margin-left: 4px;
 }
 
 /* ⚠️ 試練カウントダウンバッジ（現フェーズ停止・非表示） */

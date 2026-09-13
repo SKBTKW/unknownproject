@@ -229,7 +229,7 @@ const UILayoutConfig = {
     // 🌌 8. 背景ウォールペーパーアート (タイトルロゴ: メインエリア左上)
     gameWallpaperArt: {
         position: "absolute",
-        top: "calc(var(--layout-header-height, 84px) + var(--layout-app-gap, 4px) + 4px)",
+        top: "calc(var(--layout-header-height, 120px) + var(--layout-app-gap, 4px) + 4px)",
         left: "18px",
         right: "auto",
         width: "clamp(260px, 24vw, 420px)",

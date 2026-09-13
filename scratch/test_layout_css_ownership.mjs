@@ -31,9 +31,9 @@ check('Header has one owner in the dedicated stylesheet, after the global token'
     assert.ok(html.indexOf('top_header.css') < html.indexOf('css/layout.css'));
     assert.equal(Object.hasOwn(UILayoutConfig, 'layers'), false);
 });
-check('Header retains the effective 84px border-box height and visible overflow', () => {
+check('Header retains the effective 120px border-box height and visible overflow', () => {
     assert.match(base, /\*\s*\{\s*box-sizing:\s*border-box;/);
-    assert.match(tokens, /--layout-header-height:\s*84px;/);
+    assert.match(tokens, /--layout-header-height:\s*120px;/);
     assert.doesNotMatch(base, /--layout-header-height\s*:/);
     const style = rule(header, 'top-bar');
     assert.equal(style.height, 'var(--layout-header-height)');
@@ -44,7 +44,7 @@ check('Header retains the effective 84px border-box height and visible overflow'
 check('Main play area keeps the 4px header gap contract', () => {
     assert.match(tokens, /--layout-app-gap:\s*4px;/);
     assert.equal(UILayoutConfig.gameWallpaperArt.top,
-        'calc(var(--layout-header-height, 84px) + var(--layout-app-gap, 4px) + 4px)');
+        'calc(var(--layout-header-height, 120px) + var(--layout-app-gap, 4px) + 4px)');
 });
 check('Board is positioned 60px below header and Verse is in header right', () => {
     assert.match(layerContract, /\.board-container-wrapper\s*\{[\s\S]*?margin-top:\s*60px;/);

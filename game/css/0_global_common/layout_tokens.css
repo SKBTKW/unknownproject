@@ -11,7 +11,7 @@
 
 :root {
     /* Shared app-shell geometry */
-    --layout-header-height: 84px;
+    --layout-header-height: 120px;
     --layout-app-gap: 4px;
     --layout-body-padding: 10px;
     --layout-body-gap: 10px;
