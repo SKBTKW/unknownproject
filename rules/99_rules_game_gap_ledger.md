@@ -2,313 +2,229 @@
 
 > **Status:** Audit Ledger / Non-Authority
 >
-> 本文書は、`rules/` と `game/` の間で確認済みの齟齬・未接続・Legacy残存・内部実装不一致を一元管理するための台帳である。
-> **本文書そのものをゲームルールの正本にはしない。**
-> 正しいルールは各専門文書を参照する。
->
-> 目的は、
->
-> - rulesが現行設計でgameが古い
-> - gameが現行挙動でrulesが古い
-> - 部分実装
-> - Legacy残存
-> - game内部のデータ重複 / 不一致
->
-> を混同せず追跡すること。
-
----
+> 現在も有効な `rules/` ↔ `game/` 差分だけを索引化する。
+> 正しいゲームルールは各専門正本を参照する。
 
 ## 1. 分類
 
 | ラベル | 意味 |
 | :--- | :--- |
-| **RULES_AHEAD** | rulesが現行設計。gameが古い / 未接続。 |
-| **GAME_AHEAD** | gameが現行実態。rulesが古かったためrulesを更新済み、または更新対象。 |
-| **PARTIAL** | データ・フラグ・UI・一部処理のみ存在し、最終効果まで接続されていない。 |
-| **LEGACY** | 現行設計から外れた旧コード / 旧UIが残っている。 |
-| **INTERNAL_CONFLICT** | game内部の複数データ源・処理系が互いに一致していない。 |
-| **UNRESOLVED** | どちらを正とするか未決定。 |
+| **RULES_AHEAD** | rulesが現行設計。gameが未接続。 |
+| **GAME_AHEAD** | gameが先行し、rules側説明が古い。 |
+| **PARTIAL** | 一部だけ実装・接続済み。 |
+| **LEGACY / RETIRED** | 現行Gameplayから外れた旧実装。 |
+| **INTERNAL_CONFLICT** | game内部で責務・値・状態が不一致。 |
 
 ---
 
 ## 2. Run / Verse / Stage
 
-| 項目 | 分類 | rules | 現game | 状態 |
-| :--- | :---: | :--- | :--- | :--- |
-| Stage 1→2 | **RULES_AHEAD** | 第1 Trial完了後に5×5→7×7 | `currentTurn >= trialSchedule.trial1` で自動拡張 | Trial完了結果と未接続 |
-| Stage 2→3 | **RULES_AHEAD** | 第2 Trial完了後に7×7→9×9 | `currentTurn >= trialSchedule.trial2` で自動拡張 | Trial完了結果と未接続 |
-| 50 Verse完走 | **RULES_AHEAD** | Verse 50終了時、🔥>0なら完走 | `nextTurn()` に50 Verse終端なし | Verse 51以降へ進行可能 |
-| Verse表記 | **PARTIAL** | プレイヤー向けはVerse | 内部識別子・多くの状態名は`turn` | 互換名として許容中 |
+| 項目 | 分類 | 現在 |
+| :--- | :---: | :--- |
+| Stage 1→2 / 2→3 | **RULES_AHEAD** | rulesはTrial完了後。gameは予定Verse到達で自動拡張。 |
+| Verse 50 Victory | **RULES_AHEAD** | 完走判定値はあるが `RunTerminationService` にVictory outcomeがなく、ラン終端へ未接続。 |
+| 🔥0 Defeat | **実装済み** | `RunTerminationService` がDEFEATを確定。Verse進行も停止。 |
+| 🔥0になる通常Action | **PARTIAL** | Command / Mulligan / 土地開発の支払い直後には共通termination評価がなく、敗北確定が遅延し得る。 |
 
-参照: `01_overall_concept.md`, `05_trials_and_defense.md`
+参照: `01_overall_concept.md`, `99_ember_action_boundary_audit.md`
 
 ---
 
 ## 3. Trial通常ラン統合
 
-| 項目 | 分類 | rules | 現game | 状態 |
-| :--- | :---: | :--- | :--- | :--- |
-| Trial自動起動 | **RULES_AHEAD** | 通常ラン中に3回発生 | 通常Verse Lifecycleから`TrialController`を起動する配線なし | dev Previewが主入口 |
-| Trial Scenario生成 | **PARTIAL** | 実盤面・脅威・侵入方向からTrialを構成 | `TrialController`は完成scenarioを受け取るだけ | dev scenarioは手書き |
-| 敵戦略制圧力算出 | **PARTIAL** | 人類の発展規模等から決定 | `InterceptionPowerResolver`は与えられたsuppressionを戦闘尺度へ変換するだけ | 元値生成なし |
-| route生成 | **PARTIAL** | 実盤面上の侵攻routeを使用 | routeはscenario入力として与える | 通常盤面からの生成未接続 |
-| SKIP route | **PARTIAL** | 見送った戦線も最終的に解決 | SKIPがあるとCompletion安全ゲートで停止 | 進軍 / 損害処理未完成 |
-| Trial🔥損害書き戻し | **PARTIAL** | 本営到達損害は実ランの🔥へ反映されるべき | `startTrialInterceptionPreview()` が `state.emberSystem` をControllerへ参照注入し、HQ Damage時は `applyDamage()` へwrite-through | Trial起動自体が通常ラン未接続だが、🔥書き戻し経路は存在 |
-| Trial🛡️消費書き戻し | **PARTIAL** | Trial投入分は通常ランの現在🛡️へ反映されるべき | 開始時 `currentDefense` を `TrialState.human.availableDefense` へcopy-inするが、配分後に `state.currentDefense` / `DefenseSystem` へ戻す経路を確認できない | copy-inのみ |
-| Trial完了→Stage | **RULES_AHEAD** | Trial結果を受けて次Stageへ | Stage遷移は予定Verse依存 | 未接続 |
+| 項目 | 分類 | 現在 |
+| :--- | :---: | :--- |
+| Trial自動起動 | **RULES_AHEAD** | 通常Verse Lifecycleから正規起動する配線なし。 |
+| Scenario生成 | **PARTIAL / 未実装** | Trialは完成scenarioを受けて解決する側。Threat / Route / Direction生成なし。 |
+| SKIP route | **実装済み** | route終端まで自動解決。 |
+| INTERCEPT進軍 | **GAME_AHEAD** | REPELなら停止、非REPELなら残りrouteを全進行してHQ到達。旧「1段進行」説明は古い。 |
+| HQ🔥損害 | **GAME_AHEAD** | 到達routeを全て合算後 `ceil(totalSourcePower / 5)` を1回適用。 |
+| Trial🔥損害→GameState | **実装済み** | `EmberSystem.applyDamage()` へwrite-throughし、🔥0ならRunTermination評価。 |
+| Trial🛡️消費→GameState | **PARTIAL** | Trial-local `availableDefense` のみ減少。通常 `currentDefense` へ未commit。 |
+| Settlement API | **実装済み** | Chronicle / FAILED終端 / Exit ReadyまでAPIあり。 |
+| 通常UI→Settlement | **PARTIAL** | UIはCompletion結果表示まで。Settlement / Trial退出導線未接続。 |
+| Trial完了→Stage | **RULES_AHEAD** | 未接続。 |
+| 第3Trial→Victory | **RULES_AHEAD** | 未接続。 |
+| mergeLinks→Trial | **PARTIAL** | 平時stateは存在するがTrial入力へ未接続。 |
 
-Trial内部の迎撃計画・基礎戦闘・進軍・HQ Damage・Completionは実装済み部分が多い。
-
-参照: `05_trials_and_defense.md`
+参照: `05_trials_and_defense.md`, `99_trial_integration_boundary_audit.md`, `99_trial_settlement_ui_gap_audit.md`, `99_trial_traversal_semantics_audit.md`, `99_trial_hq_damage_aggregation_audit.md`
 
 ---
 
-## 4. Trial接近 / Alert / UI
+## 4. retired Trial予約カード
 
-| 項目 | 分類 | rules | 現game | 状態 |
-| :--- | :---: | :--- | :--- | :--- |
-| 正確な残りVerse表示 | **LEGACY** | 原則表示しない | `TopHeaderComponent` が残り1〜5を数値表示 | 削除 / 置換対象 |
-| 第1 Trial前固定異変 | **RULES_AHEAD** | 必ず脅威認識イベントを発生 | 強制トリガーなし | 未実装 |
-| 調査・情報カテゴリ解禁 | **RULES_AHEAD** | 固定異変後に解禁 | 独立カテゴリとして未完成 | 未実装 |
-| 警戒状態Presentation | **RULES_AHEAD** | 画面・音・Advisor・環境変化で表現 | 専用進行未接続 | 未実装 |
-| 亜人襲撃 / 斥候イベント | **PARTIAL** | 第1 Trial以後の脅威表現に利用可能 | 定義あり、`effects: []` | 効果未実装 |
+旧「平時に仕込み、次Trialで発火する」予約カード群は現在 `CardCycleSystem.RETIRED_TRIAL_RESERVED_CARD_IDS` で通常Offeringから排除される。
+
+代表:
+
+- Mud Obstacle / High Ground Formation
+- Cavalry Scouts / Outpost Signal
+- Ballista Set / Guided Defense / Scout Enemy
+- Scorched Retreat / Cavalry Host
+- Local Iron Armament / Stone Strongpoint
+- Omen Dream / Great Rampart Project / Outpost
+
+これらを現役の「Trial未接続カード」として数えない。
+
+`nextTrialDamageMitigation` / `nextTrialMultiplier` もGameState fieldは残るがSerializer / Hydratorから除外され、非永続化境界がテスト固定されている。
+
+分類: **LEGACY / RETIRED**
+
+参照: `09_cards/03_military_cards.md`, `99_legacy_command_branch_audit.md`
+
+---
+
+## 5. Offering / Action
+
+| 項目 | 分類 | 現在 |
+| :--- | :---: | :--- |
+| Mulligan通常UI | **INTERNAL_CONFLICT** | `GameEngine.mulligan()` は存在しない `drawOffering()` を探し、🔥と使用権だけ消費して再抽選しない経路がある。 |
+| Command後の土地開発 | **RULES_AHEAD** | rulesは別権利扱い。gameはCommandで `hasPickedThisTurn=true` となり土地配置を拒否。 |
+| 複数Command | **INTERNAL_CONFLICT / RULES_AHEAD** | DeckManager APIは明示拒否しないがHand UIは1枚目後に全カードlock。 |
+| Draw Bias | **INTERNAL_CONFLICT** | テーマではなく `category` 完全一致。Military / Mystic Focusがテーマ全体へ掛からない。 |
+
+参照: `04_draw_and_hand_system.md`, `99_mulligan_runtime_gap_audit.md`, `99_card_eligibility_audit.md`
+
+---
+
+## 6. Card Eligibility
+
+### Land
+
+- 山岳カード: データは `reqE2`、runtimeは `reqE2HillsOnBoard` を見るため **KEY_MISMATCH**。
+- 丘陵カウンタも `terrain.id` と `terrainId` の識別子差で正常集計できない可能性がある。
+- その結果、山岳カードが合法配置先なしでOfferingへ出る死に札候補。
+
+### Economy
+
+未対応確認済み:
+
+- `reqMinLinks`
+- `reqIndustrySpecialBlocks`
+- `reqDistinctPrimaryIndustries`
+- `reqGranaries`
+- `reqIrrigationDone`
+- `reqLinkedDistinctIndustries`
+- `reqPlainsOrReclaimed`
+
+意味差確認済み:
+
+- `reqConnectedPlainsOrReclaimed` → 実際は盤面全体合計
+- `reqForestNearby` → 実際は盤面全体の森数
+- `reqLoggingCamp` → 森1マスでも成立し得る
+
+retiredカードだけが使う条件は現役Eligibility問題から除外する。
+
+参照: `99_card_eligibility_audit.md`
+
+---
+
+## 7. Resource / Land Action
+
+| 項目 | 分類 | 現在 |
+| :--- | :---: | :--- |
+| 土地開発🔥不足 | **INTERNAL_CONFLICT** | 配置後に `consume()`し、失敗戻り値を確認しないため、必要🔥不足でも土地配置が成功し得る。 |
+| Command🔥0 | **PARTIAL** | affordabilityは検査するが、支払いで🔥0になった直後のtermination評価なし。 |
+| Mulligan🔥0 | **PARTIAL** | 同上。 |
+| 旺盛補正Tooltip | **INTERNAL_CONFLICT** | 実決済は🔥24以上×1.10＋✨2。詳細Tooltipは旧閾値/旧倍率を表示。 |
+
+参照: `02_resources_and_ember.md`, `99_ember_action_boundary_audit.md`, `99_resource_presentation_gap_audit.md`
+
+---
+
+## 8. 地帯 / Production / 表示
+
+| 項目 | 分類 | 現在 |
+| :--- | :---: | :--- |
+| 真の地帯 | 正本 | 2×2 / L / T。 |
+| 1×2 / 1×3接続group | **INTERNAL_CONFLICT** | 真の地帯ではないが `mergeGroupId` が付く。 |
+| 🌾🧱✨ Production | **INTERNAL_CONFLICT** | ProductionCalculatorが `mergeGroupId` だけ見て1×2 / 1×3にも×1.20を掛ける。 |
+| 🛡️ Production | **INTERNAL_CONFLICT** | DefenseSystemは地帯×1.20を掛けない。 |
+| Board表示 | **INTERNAL_CONFLICT** | 真の地帯表示は🛡️にも×1.20を表示し、局所modifier込み合計を倍率へ巻き込むため実決済とズレる。 |
+| 単セル産出表示 | **PARTIAL** | Global Event / 旺盛補正等の全体倍率を完全には反映しない。 |
+
+参照: `03_land_system/03_merge_system.md`, `99_zone_production_presentation_audit.md`
+
+---
+
+## 9. Economy / Project
+
+主な現役Partial:
+
+- Granary / Sawmill / Mine / Stable / Lime Kiln / Market / Depot / Irrigation / Workshop: counterやflagまでで主要consumer未接続のものが多い。
+- Industrial Road: flagはあるが道路グラフ / edge / 移動コスト / Trial route誘導システムなし。
+- Stage3 Project群: Eligibility未対応条件を含む。
+- Great Rampart Projectは現在 **RETIRED**。旧重複分岐はlegacy cleanup対象。
+
+参照: `09_cards/02_economy_cards.md`
+
+---
+
+## 10. Mystic
+
+現役未接続:
+
+- Fill the Void / Manifest Miracle / Leyline Resonance → Command支払い側consumerなし。
+- Voice Beneath Earth / Revelation Choice / Two Futures → Offering側consumerなし。
+- Transmute Golden → 通常Actionがtargetを渡さない。
+- Voice / Revelation / Two Futures / Leyline → state寿命・解除も不完全。
+- Rekindle Ember → Hold維持費免除が最大4回になり得る。
+
+Omen Dreamは現在 **RETIRED**。
+
+参照: `09_cards/04_mystic_cards.md`
+
+---
+
+## 11. Global Event
+
+| 項目 | 分類 | 現在 |
+| :--- | :---: | :--- |
+| Production multiplier系 | **実装済み** | Production側hook接続済み。 |
+| Offering Weight Tag Boost系 | **PARTIAL** | GlobalEventManager側hookはあるがDeckManagerが呼ばない。 |
+| `NEXT_GLOBAL_EVENT` expiry | **PARTIAL** | 次イベント時の明示消費が確認できない。 |
+| 一部targetTag | **PARTIAL** | 現イベント群と一致せず実効対象なしのものがある。 |
 
 参照: `10_global_events.md`
 
 ---
 
-## 5. Resources / Ember / Defense
+## 12. Persistence / Undo
 
-| 項目 | 分類 | rules | 現game | 状態 |
-| :--- | :---: | :--- | :--- | :--- |
-| 食料維持費 | **GAME_AHEAD** | 現在15 / 20 / 25へ同期済み | Ember状態に応じ15 / 20 / 25 | 一致 |
-| 旺盛補正 | **GAME_AHEAD** | Production×1.10、✨+2へ同期済み | 実装済み | 一致 |
-| 食料不足補填 | **GAME_AHEAD** | ✨1=🌾6、🧱5=🌾1へ同期済み | 実装済み | 一致 |
-| 土地開発🔥コスト | **GAME_AHEAD** | 0〜5:0 / 6〜15:1 / 16〜30:2 / 31+:3へ同期済み | 実装済み | 旧rulesの一律🔥1は修正済み |
-| 🛡️ current / max | **GAME_AHEAD** | 分離を正本化済み | `currentDefense` / `maxDefense` | 一致 |
-| 防衛再建コスト | **PARTIAL** | 具体値未確定 | APIあり、cost resolver未注入 | `REBUILD_COST_UNDEFINED` |
-
-参照: `02_resources_and_ember.md`, `05_trials_and_defense.md`
-
----
-
-## 6. Land / Terrain / Production
-
-| 項目 | 分類 | rules | 現game | 状態 |
-| :--- | :---: | :--- | :--- | :--- |
-| 通常土地の実産出SSOT | **GAME_AHEAD** | `LAND_CARDS_MASTER`優先へ同期済み | 配置カードobjectを`cell.terrain`へ保持しProductionCalculatorが読む | 一致 |
-| 砂漠産出 | **INTERNAL_CONFLICT** | 通常配置は✨5/Verseとして記録 | `LAND_CARDS_MASTER`は✨5、`TERRAIN_MATRIX.GL0_DESERT`は✨2 | game内部重複不一致 |
-| 地形データ重複 | **INTERNAL_CONFLICT** | カードruntimeと地形parameterを役割分離して記録 | `land_system.js` と land card data に重複値 | 統合余地あり |
-| 干拓地 | **GAME_AHEAD** | E1/GL1、🌾4🧱1へ同期済み | 実装済み | 一致 |
-| standalone探索 | **LEGACY** | 現行中核から廃止 | `executeExploration()` 等が残存 | 整理対象 |
-| `CMD_LAND_EXPLORATION` | **LEGACY** | standalone探索は廃止 | 旧分岐が残存 | 整理対象 |
-
-参照: `03_land_system/01_land_base.md`, `03_land_system/04_exploration_system.md`, `09_cards/01_land_cards.md`
-
----
-
-## 7. Zone / Link
-
-| 項目 | 分類 | rules | 現game | 状態 |
-| :--- | :---: | :--- | :--- | :--- |
-| 2×2地帯化 | **GAME_AHEAD** | 実装値へ同期済み | 実装済み | 一致 |
-| 丘陵L字 | **GAME_AHEAD** | 隠匿鉱床まで同期済み | 実装済み | Trial専用戦術は未接続 |
-| 山岳T字 | **GAME_AHEAD** | 主峰砦まで同期済み | 実装済み | Trial専用戦術は未接続 |
-| 地帯1.2倍 | **GAME_AHEAD** | 土地産出×1.2、socketは外加算へ修正済み | ProductionCalculator実装と一致 | 一致 |
-| 連携🔥効果 | **GAME_AHEAD** | 1連携につき現在🔥+1 / max🔥+1へ同期済み | 実装済み | 一致 |
-| 連携→Trial多方面能力 | **PARTIAL** | 上位設計あり | `mergeLinks` / `getMergeLinkCount()` は存在するがTrial Planningと`DeckManager`に消費経路を確認できない | 未実装 |
-| 専用地帯グラフィック | **PARTIAL** | Presentation候補 | 一括専用sprite置換は未確認 | 未接続 |
-| 中央穴埋めボーナス | **PARTIAL** | 旧/先行仕様に存在 | 実装確認なし | 現行正本から除外済み |
-
-参照: `03_land_system/03_merge_system.md`
-
----
-
-## 8. Outpost / Special Blocks
-
-| 項目 | 分類 | rules | 現game | 状態 |
-| :--- | :---: | :--- | :--- | :--- |
-| Outpost本体 | **RULES_AHEAD** | 採用構想 / Planned | 独立Outpost建設systemなし | 未実装 |
-| 城市化 / 3タイプ | **PARTIAL** | 旧確定扱いをPlannedへ降格済み | 実装なし | 未実装 |
-| `CMD_OUTPOST_SIGNAL` | **PARTIAL** | 情報系効果を想定 | flagのみ | Trial情報へ未接続 |
-| 干拓地 | **GAME_AHEAD** | 特殊改良地形として同期済み | 実装済み | 一致 |
-| 経済施設群 | **PARTIAL** | カードごとの意図を保持 | counter / flagのみのもの多数 | Production等へ未接続 |
-
-参照: `03_land_system/02_outpost_system.md`, `03_land_system/05_special_blocks.md`, `09_cards/02_economy_cards.md`
-
----
-
-## 9. Offering / Command action
-
-| 項目 | 分類 | rules | 現game | 状態 |
-| :--- | :---: | :--- | :--- | :--- |
-| Card Cycle | **GAME_AHEAD** | cooldown / UNIQUE / fallbackへ同期済み | 実装済み | 一致 |
-| Hold中のcooldown経過 | **GAME_AHEAD** | 独立進行へ同期済み | 実装済み | 一致 |
-| Command使用と土地開発権 | **RULES_AHEAD** | Commandは通常の土地開発権を消費しない方針 | Command使用後`hasPickedThisTurn=true`となり土地配置が拒否される | 明確な齟齬 |
-| 複数Command使用 | **INTERNAL_CONFLICT / RULES_AHEAD** | コストを払える限り複数Command使用可 | `DeckManager.playCommandCard()`は2枚目を事前拒否しないが、`HandCardsComponent`は1枚目使用後に全カードをlocked | 通常UIでは複数Command不可 |
-
-参照: `04_draw_and_hand_system.md`
-
----
-
-## 10. Economy Cards
-
-詳細は `09_cards/02_economy_cards.md` を正本とし、この台帳では代表的齟齬だけ記録する。
-
-| カード / 項目 | 分類 | 現game差分 |
+| 項目 | 分類 | 現在 |
 | :--- | :---: | :--- |
-| Rationing | **GAME_AHEAD** | 旧40%軽減ではなく現在50%軽減 |
-| Logging Camp | **PARTIAL** | 即時🧱+8のみ。継続産出未接続 |
-| Granary | **PARTIAL** | `granaryCount`のみ。維持費軽減未接続 |
-| Agricultural Reform | **GAME_AHEAD / Different** | 指定区域ではなく全平地系へ恒久+1/Verse |
-| Pastoral Farm | **PARTIAL** | 即時🌾+2中心。持続施設効果未接続 |
-| Emergency Levy | **GAME_AHEAD / LEGACY** | 現発動は旧「次Verse維持費+5」を設定しない。一方 `GameState` とMaintenance側には `emergencyLevyTurns` 等の旧受け口が残る |
-| Stage2施設群 | **PARTIAL** | `mineCount` / `stableCount` / `limeKilnCount` / `marketCount` / `depotCount` / `irrigationCount` / `workshopCount` 等は設定されるが、確認した主要産出・維持費・Card Cycle経路では最終効果未接続 |
-| Stage3国家事業 | **PARTIAL** | card data / flagは存在するが、`industrialRoadActive` / `irrigationNetworkActive` 等をProductionCalculatorが消費していない |
+| History Restore | **INTERNAL_CONFLICT** | Buff表示は保存されても効果判定用fieldがSerializer対象外のカードがある。 |
+| Rationing | **INTERNAL_CONFLICT** | `foodCostHalvedTurns` がSerializer対象外で、Restore後に表示と実効果が分裂し得る。 |
+| Land Undo | **INTERNAL_CONFLICT** | `activeDrawBias` / BuffSystemを土地Undo snapshotが保持せず、条件解除されたFocusを復元できない場合がある。 |
+| RunTermination | **実装済みPersistence** | `isGameOver` / `runTermination` はwrapperで保存。 |
+| retired nextTrial modifier | **LEGACY** | Serializer / Hydratorから意図的に除外済み。 |
+
+参照: `99_state_persistence_gap_audit.md`, `99_land_undo_state_gap_audit.md`
 
 ---
 
-## 11. Military Cards
+## 13. Alert / Trial接近
 
-詳細は `09_cards/03_military_cards.md`。
-
-| カード / 項目 | 分類 | 現game差分 |
+| 項目 | 分類 | 現在 |
 | :--- | :---: | :--- |
-| Vigilance | **GAME_AHEAD / Different** | 現在は最大🛡️計算へ+3。旧「取得ごと+3」ではない |
-| Mud Obstacle | **PARTIAL** | flagはあるがTrial Terrain Resolver未参照 |
-| High Ground Formation | **PARTIAL** | flagはあるが高低差Resolver未接続 |
-| Outpost Signal | **PARTIAL** | flagのみ |
-| Iron Rampart | **GAME_AHEAD / Different** | 最大🛡️容量+25 + 本営近郊恒久+2/マス |
-| Ballista Set | **PARTIAL** | max🛡️+40は有効、50%HQ損害軽減は未接続 |
-| Guided Defense | **PARTIAL** | route cost未接続 |
-| Scout Enemy | **PARTIAL** | flagのみ。旧2D6情報品質なし |
-| その他Trial軍事カード | **PARTIAL** | flag登録止まり多数 |
+| 正確な残りVerse表示 | **LEGACY** | 現設計は環境・警戒表現優先だが旧数値表示が残る。 |
+| 第1Trial前固定異変 | **RULES_AHEAD** | 強制トリガー未接続。 |
+| 調査カテゴリ解禁 | **RULES_AHEAD** | 正規進行未接続。 |
+| 環境Presentation | **RULES_AHEAD** | 音・画面変化等の警戒表現未完成。 |
+
+参照: `10_global_events.md`
 
 ---
 
-## 12. Mystic Cards
+## 14. 監査運用
 
-詳細は `09_cards/04_mystic_cards.md`。
+現在の優先順位は、
 
-| カード / 項目 | 分類 | 現game差分 |
-| :--- | :---: | :--- |
-| Meditation | **GAME_AHEAD / Different** | 即時✨+3 + LAND bias。旧「土地を置かなかった場合」条件なし |
-| Fill the Void | **PARTIAL** | command cost補填未接続 |
-| Voice Beneath Earth | **PARTIAL** | Offering resource-tag操作未接続 |
-| Omen Dream | **PARTIAL** | Trial情報へ未接続 |
-| Manifest Miracle | **PARTIAL** | command cost✨代替未接続 |
-| Transmute Golden | **PARTIAL / Broken path** | `targetTile`が通常action pathから渡らず、fallback✨+10が発生し得る |
-| Revelation Choice | **PARTIAL** | category選択Offering未接続 |
-| Leyline Resonance | **PARTIAL** | 補填拡張未接続 |
-| Two Futures | **PARTIAL** | Offering二択生成未接続 |
+1. **現役Gameplayの壊れた経路**
+2. **rulesとgameの意味差**
+3. **Restore / Undo / UI表示の境界崩れ**
+4. **retired / legacy codeの整理**
 
----
+とする。
 
-## 13. Roles / Directives
-
-| 項目 | 分類 | rules | 現game | 状態 |
-| :--- | :---: | :--- | :--- | :--- |
-| Leader Role具体効果 | **RULES_AHEAD** | 方向性のみ正本、具体値TBD | 旧固定ロール効果は現行正本として未接続 | 実装未完成 |
-| Directive | **LEGACY / DORMANT** | Dormant扱い | 旧データは残るが倍率getterはneutral値 | 実効停止中 |
-| Advisor性能差 | **一致** | 見た目・性別と性能を分離 | 現UI基盤に性能差なし | 問題なし |
-
-参照: `06_leader_roles.md`, `08_directives_and_policy.md`
-
----
-
-## 14. Dice / Check
-
-| 項目 | 分類 | rules | 現game | 状態 |
-| :--- | :---: | :--- | :--- | :--- |
-| 2D6基盤 | **GAME_AHEAD** | CheckSystemへ同期済み | 実装済み | 一致 |
-| `ResolutionRule=sum` | **一致** | Implemented | 実装済み | 一致 |
-| highest / lowest / success_count | **PARTIAL** | Planned extensibility | `resolveDefinition()`はsum以外拒否 | 未実装 |
-| standalone探索2D6 | **LEGACY** | 廃止 | 旧実行経路が残る | 整理対象 |
-
-参照: `11_dice_check_contract.md`
-
----
-
-## 15. game内部の主な重複 / 技術的齟齬
-
-以下はrulesとgameの差分というより、game内部で確認済みの不一致。
-
-1. **土地産出データの二重化**
-   - `land_system.js`
-   - `land_cards_data.js`
-   - 通常配置では後者が実産出へ優先される。
-
-2. **砂漠産出値の不一致**
-   - Terrain Matrix: ✨2
-   - 通常土地カード: ✨5
-
-3. **Command選択フラグの責務不一致**
-   - `DeckManager.playCommandCard()` は1枚目使用後に `hasPickedThisTurn = true` を設定する。
-   - 同メソッド自体は次のCommand呼び出しでこのフラグを拒否しない。
-   - `HandCardsComponent` は同フラグを全カード共通lockとして扱う。
-   - そのためAPIと通常UIで「複数Command可能か」の挙動が一致しない。
-
-4. **古い探索系コード残存**
-   - `executeExploration()`
-   - `CMD_LAND_EXPLORATION`
-   - `cell.searched`
-   - legacy check definition / UI参照の可能性
-
-5. **カード効果の巨大分岐**
-   - `DeckManager.playCommandCard()` に多数の部分実装効果が集中し、flagだけ立つ効果と本実装済み効果が混在する。
-
-6. **Trial結果の通常State反映が非対称**
-   - `startTrialInterceptionPreview()` は通常Stateの `currentDefense` をTrialの `availableDefense` へコピーする。
-   - Trial内の🛡️配分は `TrialState.human.availableDefense` を減らすが、通常Stateの `currentDefense` / `DefenseSystem` へ書き戻す経路は確認できない。
-   - 一方🔥は `state.emberSystem` を `TrialController` へ参照注入し、HQ Damage時に `EmberSystem.applyDamage()` へwrite-throughする。
-   - Trial全体が単一の隔離Stateとして完結しているわけではない。
-
-7. **Development Trial Previewの状態隔離不一致**
-   - Dev Harnessはscenario側の固定 `availableDefense` を使用するため、🛡️は通常Stateから独立し得る。
-   - scenarioに `ember` を渡さないため、Preview開始時は通常Stateの🔥を採用し、HQ Damageは実 `EmberSystem` を削り得る。
-   - `DevelopmentTrialPreviewHarness.stop()` はPreviewを閉じるだけで、`TrialRestoreBoundaryService.end()` もsnapshot rollbackを行わない。
-   - したがって開発Previewが通常GameStateの🔥へ副作用を残し得る。
-
-8. **Emergency Levy旧ペナルティ受け口残存**
-   - 現 `CMD_EMERGENCY_LEVY` 発動は旧「次Verse維持費+5」を設定しない。
-   - しかし `GameState` の `emergencyLevyTurns / emergencyLevyStartsNextTurn` とMaintenance側の処理は残っている。
-   - 現行効果には使われないLegacy残存とする。
-
----
-
-## 16. 監査済みrules
-
-現時点で実装突合を実施済み、または状態分類済みの主要文書：
-
-- `00_master_handover_specification.md`
-- `01_overall_concept.md`
-- `02_resources_and_ember.md`
-- `03_land_system/README.md`
-- `03_land_system/01_land_base.md`
-- `03_land_system/02_outpost_system.md`
-- `03_land_system/03_merge_system.md`
-- `03_land_system/04_exploration_system.md`
-- `03_land_system/05_special_blocks.md`
-- `04_draw_and_hand_system.md`
-- `05_trials_and_defense.md`
-- `06_leader_roles.md`
-- `07_mysticism_and_desert.md`
-- `08_directives_and_policy.md`
-- `09_cards/README.md`
-- `09_cards/01_land_cards.md`
-- `09_cards/02_economy_cards.md`
-- `09_cards/03_military_cards.md`
-- `09_cards/04_mystic_cards.md`
-- `10_global_events.md`
-- `11_dice_check_contract.md`
-
----
-
-## 17. この台帳の保守ルール
-
-- 新しい設計案はここへ書かない。
-- rules↔game差分だけを書く。
-- 差分が解消した場合は削除せず、必要なら「Resolved」へ移して履歴を残す。
-- 個別ルールの正解を変更する場合は、必ず専門文書側を先に更新する。
-- gameを変更しただけでrulesが自動的に正本変更されたとは扱わない。
-- 未確認事項を推測で齟齬扱いしない。
+retiredコードが残っているだけの項目を、現役Gameplayの未完成機能より高く扱わない。
