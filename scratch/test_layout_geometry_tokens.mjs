@@ -108,6 +108,10 @@ check(layoutConfig.includes('right: "var(--layout-advisor-right)"')
     && layoutConfig.includes('bottom: "var(--layout-advisor-bottom)"')
     && layoutConfig.includes('zIndex: "var(--z-advisor)"'),
 "Advisor dock config consumes shared Layout geometry and layer tokens");
+check(layoutConfig.includes('top: "var(--layout-system-overlay-inset)"')
+    && layoutConfig.includes('left: "var(--layout-system-overlay-inset)"')
+    && layoutConfig.includes('zIndex: "var(--z-overlay)"'),
+"System Overlay config consumes shared Layout geometry and layer tokens");
 
 check(layerContractCss.includes("#layerPlayerTray.layer-player-tray")
     && layerContractCss.includes("var(--z-player)"),
