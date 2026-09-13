@@ -15,7 +15,7 @@
 
 現在は、
 
-> **通常GameState → Trial の入口は一部コピー、Trial → 通常GameState の出口は🔥だけ直接反映し得る半接続状態**
+> **通常GameState → Trial の入口は一部コピー、Trial → 通常GameState の出口は🔥・敗北終端・Chronicleまで一部接続された半統合状態**
 
 である。
 
@@ -167,7 +167,7 @@ emberSystem.applyDamage(emberDamage)
 
 ---
 
-## 8. Trial完了時の現在の出力
+## 8. Trial完了・Settlementの現在地
 
 `TrialCompletionService.buildCompletionResult()` が現在生成する主な結果は以下。
 
@@ -179,33 +179,57 @@ emberSystem.applyDamage(emberDamage)
 - `routeEndCount`
 - `totalEmberDamage`
 
-`TrialController.completeTrial()` は、
+`TrialController.completeTrial()` は、必要なら集約HQ Damageを先に解決し、その後Trial phaseを `RESULT` へ進め、`trialCompleted=true` と `result` を保存して `TRIAL_COMPLETED` GameFactをemitする。
 
-1. Trial phaseを `RESULT` へ進める。
-2. Trial-local `trialCompleted=true` を設定する。
-3. Trial-local `result` を保存する。
-4. `TRIAL_COMPLETED` GameFactをemitする。
+さらに現在は `TrialController.settleTrialResult()` → `TrialResultSettlementService` が存在し、以下まで接続済み。
 
-ところまで行う。
+- `SURVIVED` / `FAILED` の結果検証
+- `FAILED` 時の `RunTerminationService` 終端確認
+- `ChronicleSystem` への `TRIAL_RESULT` 記録
+- `TRIAL_RESULT_SETTLED` GameFact emit
+- Trial退出可能状態 `TRIAL_EXIT_READY` GameFact emit
 
-しかし以下を通常GameStateへ反映する処理は確認できない。
+したがって以前の「Completion payloadのみでChronicle / RunTerminationへ未接続」という評価は古い。
+
+一方、Settlementでも以下は通常GameStateへ反映しない。
 
 - Trialで消費した現在🛡️
 - 「次のTrialまで / 次Trialで1回」系stateの消費・解除
 - Trial番号 / 次Trial状態更新
 - Stage遷移
-- Chronicleへの正式Trial結果記録
-- 第3Trial後のRun Complete / Victory
+- 第3Trial後のVictory / Run Complete
 
-したがって、
+したがって現在は、
 
-> **Trial結果payloadは存在するが、本編ランへ確定反映する正規結果コミット境界は未実装**
+> **結果Settlement境界は存在し、敗北終端とChronicleまでは接続済みだが、通常ランの防衛・Stage・one-shot state・Victoryまでを一括確定する完全なResult Commitには至っていない。**
 
 と分類する。
 
 ---
 
-## 9. 現在の入口 / 出口マトリクス
+## 9. SKIP route とHQ到達集約
+
+現在は `TrialSkippedRouteResolutionService` が存在し、`SKIP` を選択したrouteを迎撃なしでroute終端まで解決し、`skippedRouteResults` と `routeProgress` に `REACHED_END` を記録する。
+
+HQ損害はrouteごとに個別変換せず、`TrialHqArrivalAggregationService` が、
+
+- SKIP routeの到達制圧力
+- INTERCEPT突破後にroute終端へ到達した残存制圧力
+
+を集約してから損害変換へ渡す。
+
+また、INTERCEPT routeについて、
+
+- `stopped=true` かつ `reachedRouteEnd=false` は正規の「撃退」結果としてゼロ到達扱い
+- `stopped=false` なのに `reachedRouteEnd=false` は未完了として `INCOMPLETE_DAMAGE`
+
+となり、未完了進軍のままTrial Completionを通過させない。
+
+したがって、以前の「SKIP routeが存在するとCompletion安全ゲートで停止する」という分類は現在は古い。
+
+---
+
+## 10. 現在の入口 / 出口マトリクス
 
 ```text
 通常GameState
@@ -225,25 +249,33 @@ emberSystem.applyDamage(emberDamage)
                          │
                          ├─ 🛡️消費 ───→ Trial-local only
                          ├─ 🔥損害 ────→ GameState EmberSystemへ直接反映し得る
-                         └─ Completion → result payload / GameFactのみ
+                         ├─ SKIP ──────→ route終端到達として解決・HQ集約対象
+                         ├─ Completion → RESULT / result payload
+                         └─ Settlement → FAILED終端 / Chronicle / Exit Ready
                                           │
-                                          X
-                                      通常ラン確定反映
+                                          ├─ Stage遷移               [未接続]
+                                          ├─ 🛡️消費commit            [未接続]
+                                          ├─ next-Trial state消費     [未接続]
+                                          └─ Victory / Run Complete   [未接続]
 ```
 
 ---
 
-## 10. 齟齬分類
+## 11. 齟齬分類
 
 | 項目 | 分類 |
 | :--- | :---: |
 | 通常run→Trial scenario組立 | **PARTIAL / 未実装** |
 | 軍事・偵察準備stateのTrial受け渡し | **PARTIAL** |
 | 連携→Trial能力 | **PARTIAL** |
+| SKIP route解決 | **実装済み** |
+| 未完了INTERCEPT traversalのCompletion阻止 | **実装済み** |
 | 🛡️消費の通常GameState反映 | **PARTIAL / 未実装** |
 | 🔥損害の通常GameState反映 | **実装済みだが他資源境界と非対称** |
+| Trial結果→Chronicle | **実装済み** |
+| FAILED Trial→RunTermination | **実装済み** |
 | Trial完了→Stage | **RULES_AHEAD** |
-| Trial完了→Run Complete | **RULES_AHEAD** |
+| Trial完了→Run Victory | **RULES_AHEAD** |
 | Trial完了→one-shot state消費 | **PARTIAL / 未実装** |
 | Dev Preview終了時の資源復元 | **INTERNAL_CONFLICT / leak candidate** |
 | `nextTrialDamageMitigation` | **PARTIAL / write-only** |
@@ -251,7 +283,7 @@ emberSystem.applyDamage(emberDamage)
 
 ---
 
-## 11. 監査上の注意
+## 12. 監査上の注意
 
 この文書は、通常ランTrial統合の新しい設計案を決めるものではない。
 
@@ -261,6 +293,7 @@ emberSystem.applyDamage(emberDamage)
 - Trial側にどの入力器があるか
 - 何が現在受け渡されているか
 - どこで通常GameStateへ直接書き戻しているか
+- 何がSettlementまで接続されているか
 - 何が未接続か
 
 だけである。
