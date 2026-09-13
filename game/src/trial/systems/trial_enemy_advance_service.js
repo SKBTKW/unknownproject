@@ -64,7 +64,8 @@ export class TrialEnemyAdvanceService {
         let advanced = false;
         let reachedRouteEnd = false;
 
-        const advance = isRepelled ? 0 : 1;
+        const remainingDistance = Math.max(0, route.cells.length - 1 - interceptIndex);
+        const advance = isRepelled ? 0 : remainingDistance;
         if (isRepelled) {
             stopped = true;
             advanced = false;
@@ -72,9 +73,12 @@ export class TrialEnemyAdvanceService {
             reachedRouteEnd = false;
         } else {
             stopped = false;
-            advanced = true;
-            toIndex = interceptIndex + 1;
-            reachedRouteEnd = (toIndex >= route.cells.length - 1);
+            // A non-repel result means the interception failed to stop the route.
+            // There is no second deliberate interception on the same route, so
+            // survivors continue through all remaining route cells to HQ.
+            toIndex = route.cells.length - 1;
+            advanced = toIndex > interceptIndex;
+            reachedRouteEnd = true;
         }
 
         const cellIndexForCurrentCell = Math.min(toIndex, route.cells.length - 1);
