@@ -33,8 +33,6 @@ const state = {
     placementGroupCounter: 12,
     grantedConnectionPairs: new Set(['1:2', '2:3']),
     handOfferingSize: 4,
-    nextTrialDamageMitigation: 0.8,
-    nextTrialMultiplier: 1.25,
     trialSchedule: { trial1: 16, trial2: 31, trial3: 50, warningDuration: 5 },
     nextTrialTurn: 16,
     activeConstructionProjects: [{ name: 'CMD_BIG_WINDMILL', remainingTurns: 2 }],
@@ -75,7 +73,7 @@ assert(snapshot.maxEmber === 27, 'captures maxEmber');
 assert(snapshot.mergeGroupCounter === 8 && snapshot.placementGroupCounter === 12, 'captures identity counters');
 assert(snapshot.grantedConnectionPairs.join(',') === '1:2,2:3', 'captures granted connection pairs deterministically');
 assert(snapshot.handOfferingSize === 4, 'captures offering size');
-assert(snapshot.nextTrialDamageMitigation === 0.8 && snapshot.nextTrialMultiplier === 1.25, 'captures Trial modifiers');
+assert(!Object.prototype.hasOwnProperty.call(snapshot, 'nextTrialDamageMitigation') && !Object.prototype.hasOwnProperty.call(snapshot, 'nextTrialMultiplier'), 'omits retired Trial modifiers');
 assert(snapshot.trialSchedule.trial1 === 16 && snapshot.nextTrialTurn === 16, 'captures Trial schedule state');
 assert(snapshot.activeConstructionProjects[0].remainingTurns === 2, 'captures construction runtime');
 assert(snapshot.activeDrawBias.type === 'UNTIL_BLOCKS', 'captures draw bias');
