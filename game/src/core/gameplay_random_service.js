@@ -50,10 +50,10 @@ export class GameplayRandomService {
         if (!savedState || typeof savedState !== 'object' || !savedState.source) {
             throw new Error('GAMEPLAY_RANDOM_STATE_REQUIRED');
         }
-        this.source.setState(savedState.source);
         if (!Number.isInteger(savedState.sequence) || savedState.sequence < 0) {
             throw new Error('GAMEPLAY_RANDOM_SEQUENCE_INVALID');
         }
+        this.source.setState(savedState.source);
         this.sequence = savedState.sequence;
     }
 }
