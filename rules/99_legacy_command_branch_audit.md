@@ -13,6 +13,13 @@
 | `CMD_LIME_CONSTRUCTION` | あり | なし | **LEGACY / normal Offering unreachable** |
 | `FAC_GREAT_WINDMILL` | あり | なし | **LEGACY / normal Offering unreachable** |
 | `LGD_DESPERATE_PACT` | あり | なし | **LEGACY / normal Offering unreachable** |
+| `CMD_AGRICULTURAL_POLICY` | あり | なし | **LEGACY alias / normal Offering unreachable** |
+| `CMD_BLACK_MARKET` | あり | なし | **LEGACY / normal Offering unreachable** |
+| `CMD_CONSERVE_EMBER` | あり | なし | **LEGACY / normal Offering unreachable** |
+| `CMD_GRAND_CULTIVATION` | あり | なし | **LEGACY / normal Offering unreachable** |
+| `CMD_SYSTEMATIC_LOGGING` | あり | なし | **LEGACY / normal Offering unreachable** |
+| `CMD_SINGLE_CLEARING` | あり | なし | **LEGACY / normal Offering unreachable** |
+| `CMD_OUTPOST` | あり | なし | **LEGACY / normal Offering unreachable** |
 
 ## Notes
 
@@ -37,6 +44,16 @@
 旧《背水の盟約》分岐。🔥+5、Offering4枚化、`nextTrialMultiplier=1.5` を設定するが、現masterに定義がない。
 
 このため `nextTrialMultiplier` は現GameStateに残るものの、少なくともこの旧分岐は通常Offeringから発火しない。
+
+### `CMD_AGRICULTURAL_POLICY`
+
+旧《農地改革》系alias。現行masterと通常Offeringが使用するIDは `CMD_AGRICULTURAL_REFORM` であり、そちらの発動分岐は別途存在する。したがって現《農地改革》が壊れているわけではなく、旧alias分岐だけが残っている。
+
+### その他の旧分岐
+
+`CMD_BLACK_MARKET`、`CMD_CONSERVE_EMBER`、`CMD_GRAND_CULTIVATION`、`CMD_SYSTEMATIC_LOGGING`、`CMD_SINGLE_CLEARING`、`CMD_OUTPOST` も発動分岐は残るが現masterには存在しない。
+
+これらのstate・Buff・コメント・古い効果値を、現行カード仕様の根拠として扱わない。
 
 ## Audit rule
 
