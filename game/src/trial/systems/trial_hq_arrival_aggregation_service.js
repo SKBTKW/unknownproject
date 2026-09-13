@@ -80,7 +80,14 @@ export class TrialHqArrivalAggregationService {
                 continue;
             }
 
-            if (!traversal.reachedRouteEnd) continue;
+            if (!traversal.reachedRouteEnd) {
+                // A stopped traversal is a legitimate zero-arrival result.
+                // A non-stopped traversal that has not reached route end is
+                // incomplete and must never allow Trial completion.
+                if (traversal.stopped) continue;
+                unresolvedRouteIds.push(routeId);
+                continue;
+            }
 
             const battleResult = Array.isArray(state.battleResults)
                 ? state.battleResults[battleIndex]
