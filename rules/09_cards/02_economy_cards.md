@@ -66,7 +66,35 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 | `CMD_INDUSTRIAL_ROAD` | **Planned / Partial / Eligibility gap** | `industrialRoadActive=true` とBuff登録までは実装。ただし盤面セル/辺としての道路、移動コスト、産業拠点+20%、Trial route誘導のいずれも実装確認できない。データの `reqIndustrySpecialBlocks:2` も現Eligibilityで未評価。 |
 | `CMD_IRRIGATION_NETWORK` | **Planned / Partial / Eligibility gap** | `irrigationNetworkActive` 等の状態は持てるが、最大8農地強化は未接続。`reqWaterSource` は評価されるが、データの `reqIrrigationDone` は現Eligibilityで評価されない。 |
 | `CMD_INDUSTRIAL_CLUSTER` | **Planned / Partial / Eligibility gap** | `industrialClusterActive` を立てるが、PROJECTコスト軽減は未接続。データの `reqLinkedDistinctIndustries:3` は現Eligibilityで評価されない。 |
-| `CMD_GREAT_RAMPART_PROJECT` | **Planned / Partial** | `greatRampartActive` を立てるが、Trialへ防塁効果を反映する完成経路は未接続。`reqLargeTerritory` と資材条件は現Eligibilityで評価される。 |
+| `CMD_GREAT_RAMPART_PROJECT` | **Partial / Duplicate branch conflict** | 現masterのカードIDと発動分岐は存在するが、`playCommandCard()` 内に同一ID分岐が2回ある。先行分岐が `greatRampartTurns=4` を設定するため、後段の `greatRampartActive=true` 分岐は到達不能。`greatRampartTurns` の実効consumerも確認できず、現行大防塁効果は未接続。`reqLargeTerritory` と資材条件はEligibilityで評価される。 |
+
+### 《大防塁》duplicate branch conflict
+
+`DeckManager.playCommandCard()` の同一 `else-if` チェーン内に `CMD_GREAT_RAMPART_PROJECT` が2回存在する。
+
+先に一致する分岐は、
+
+```text
+greatRampartTurns = 4
++ Buff登録
+```
+
+を行う。
+
+後段には、
+
+```text
+greatRampartActive = true
++ PERMANENT Buff登録
+```
+
+という別実装があるが、同じIDのため通常実行では先行分岐で処理が終了し、後段へ到達しない。
+
+したがって、
+
+> **現masterにカードが存在すること、発動分岐が存在することだけでは、後段の現行風効果が実行される根拠にならない。**
+
+と扱う。
 
 ### 《産業街道》と道路システムの境界
 
@@ -135,16 +163,12 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 4. 《灌漑》: `reqWaterSource` は評価されるが、`reqPlainsOrReclaimed` は未評価のため、対象農地条件が候補化へ接続されていない。
 5. 《穀物庫》《牧畜場》《製材所》《鉱山》等: カードは存在するが、完成した持続効果が未接続。
 6. Stage 3 Project群: フラグ/Buff骨格中心で、Trial/Production/Cost resolverへの接続が未完成。
-7. 《産業街道》: `industrialRoadActive` は立つが、道路盤面表現・産出効果・Trial移動コストの消費先がない。
-8. 市場・補給所・工房・一部Stage3事業は、データ上の高度な候補化条件キーが `DeckManager.isCardEligible()` で評価されず、想定条件より早くOfferingへ出現し得る。
-
-これらは「rulesどおりgameを即修正」ではなく、カードごとに採用する最終仕様を決めてから同期する。
+7. 《大防塁》: 同一IDの発動分岐が重複し、先行旧分岐が後段分岐をshadowする。
 
 ---
 
-## 8. game側整理候補
+## 8. Legacy分岐
 
-- カード発動分岐が巨大な `DeckManager.playCommandCard()` に集中しているため、将来は効果Resolver/Handlerへ分離する余地が大きい。
-- カウンタやActiveフラグを立てるだけで、どこからも参照されていない効果を棚卸しする。
-- カードデータの条件キーと `DeckManager.isCardEligible()` の対応表を持ち、未対応キーをテストで検出できるようにする余地がある。
-- カードマスターのdescriptionと実際のresolver結果が一致するテストを用意する。
+`DeckManager.playCommandCard()` には、現 `COMMAND_CARDS_MASTER` に存在せず通常Offeringから到達しない旧カード分岐も残る。
+
+詳細は `rules/99_legacy_command_branch_audit.md` を参照する。
