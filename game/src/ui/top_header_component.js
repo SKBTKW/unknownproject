@@ -66,7 +66,6 @@ export class TopHeaderComponent {
         this.setElementText("lblDataPanelTitle", I18n.t("UI_DATA_PANEL_TITLE"));
         this.setElementText("valTurn", this.state.turn);
         this.setElementText("valTurnBg", String(this.state.turn).padStart(2, '0'));
-        this.setElementText("btnTurnEnd", "NEXT verse »");
 
         // 2. 🔥 残り火ステータスコンポーネント (EmberStatusComponent) 連動
         if (this.emberStatusComponent && typeof this.emberStatusComponent.update === "function") {

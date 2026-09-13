@@ -5,6 +5,7 @@ import { UILayoutConfig } from '../game/src/ui/layout_config.js';
 const read = path => readFileSync(new URL(path, import.meta.url), 'utf8');
 const base = read('../game/css/0_global_common/base_layout.css');
 const tokens = read('../game/css/0_global_common/layout_tokens.css');
+const layerContract = read('../game/css/0_global_common/layer_contract.css');
 const header = read('../game/css/1_top_header/top_header.css');
 const legacy = read('../game/css/layout.css');
 const tray = read('../game/css/3_bottom_area/draw_card_select_area.css');
@@ -39,11 +40,25 @@ check('Header retains the effective 84px border-box height and visible overflow'
     assert.equal(style.padding, '0 20px');
     assert.equal(style['box-shadow'], '0 4px 14px rgba(0,0,0,0.5)');
 });
-check('Logo CSS and inline config keep the prior 96px relative offset', () => {
-    assert.match(tokens, /--layout-app-gap:\s*8px;/);
+check('Main play area keeps the 4px header gap contract', () => {
+    assert.match(tokens, /--layout-app-gap:\s*4px;/);
     assert.equal(UILayoutConfig.gameWallpaperArt.top,
-        'calc(var(--layout-header-height, 84px) + var(--layout-app-gap, 8px) + 4px)');
-    assert.equal(84 + 8 + 4, 80 + 8 + 8);
+        'calc(var(--layout-header-height, 84px) + var(--layout-app-gap, 4px) + 4px)');
+});
+check('Board and Verse share the same start-aligned main stack', () => {
+    assert.match(layerContract, /\.middle-layout\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-areas:\s*"main-stack";[\s\S]*?align-items:\s*start;/);
+    assert.match(layerContract, /#layerWorldBoard\.layer-world-board\s*\{[\s\S]*?grid-area:\s*main-stack;[\s\S]*?justify-content:\s*flex-start;/);
+    assert.match(layerContract, /#bgTurnWatermark\.bg-turn-watermark\s*\{[\s\S]*?grid-area:\s*main-stack;[\s\S]*?align-self:\s*start;[\s\S]*?justify-self:\s*end;/);
+    assert.equal(UILayoutConfig.boardContainer.justifyContent, 'flex-start');
+    assert.equal(UILayoutConfig.boardWrapper.marginTop, '0px');
+    assert.equal(UILayoutConfig.bgTurnWatermark.alignSelf, 'start');
+});
+check('Buff expansion and invisible headroom share Layout tokens', () => {
+    assert.match(tokens, /--layout-buff-dropup-max-height:\s*min\(320px,\s*calc\(100vh - var\(--layout-header-height\) - 32px\)\);/);
+    assert.match(tokens, /--layout-buff-panel-headroom:\s*calc\([\s\S]*?var\(--layout-buff-summary-height\)[\s\S]*?var\(--layout-buff-dropup-gap\)[\s\S]*?var\(--layout-buff-dropup-max-height\)[\s\S]*?\);/);
+    assert.equal(UILayoutConfig.buffPanel.top, 'calc(-1 * var(--layout-buff-panel-headroom))');
+    assert.equal(UILayoutConfig.buffPanel.height, 'var(--layout-buff-panel-headroom)');
+    assert.match(layerContract, /\.buff-dropup-panel\s*\{[\s\S]*?max-height:\s*var\(--layout-buff-dropup-max-height\);[\s\S]*?overflow-y:\s*auto;/);
 });
 check('Player Tray has one geometry owner in the dedicated stylesheet', () => {
     assert.ok(html.indexOf('base_layout.css') < html.indexOf('draw_card_select_area.css'));
