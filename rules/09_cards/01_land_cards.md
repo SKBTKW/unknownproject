@@ -78,15 +78,33 @@
 
 ただし現在の `DeckManager.isCardEligible()` が評価するキーは `reqE2HillsOnBoard` であり、`LAND_CARDS_MASTER` 側の `reqE2` を正規化・参照する処理は確認できない。
 
-したがって現runtimeでは、
+さらにEligibilityへ渡す `h2Count` の取得元 `GridEngine.countE2HillsOnBoard()` は、通常配置セルの `terrainId` ではなく `cell.terrain.id === "E2_HILL"` を確認している。
 
-> **山岳カードの `reqE2:3` はOffering Eligibilityへ未接続で、Stage 2到達後は丘陵3マスを満たしていなくても候補化し得る。**
+通常土地カード配置では `cell.terrain` にカード定義自体が保存されるため、丘陵カードは通常、
+
+```text
+id = CARD_HILL_...
+terrainId = E2_HILL
+```
+
+となる。
+
+したがって現在の山岳前提条件には、
+
+1. カードデータ側 `reqE2` とEligibility側 `reqE2HillsOnBoard` のキー不一致
+2. 丘陵数カウンタ側 `id` と通常カード側 `terrainId` の識別子不一致
+
+の二重の問題がある。
+
+現runtimeでは、
+
+> **山岳カードの「丘陵3マス」前提はOffering Eligibilityとして信頼できず、Stage 2到達後に早期候補化し得る。**
 
 と扱う。
 
 さらに配置側の `GridEngine.canPlaceShape()` は、E1平地等とE3山岳の直接隣接を `INVALID_ELEVATION_NEIGHBOR` として禁止する。したがってE2接続先が十分に存在しない盤面では、山岳カードがOfferingへ出ても合法配置先を持たない場合がある。
 
-つまり現在のキー不一致は単なる表示上の問題ではなく、
+つまり現在の不一致は、
 
 > **Offeringへ候補化された土地カードが実際には置けない「死に札」化を起こし得る。**
 
@@ -156,5 +174,5 @@
 
 1. `land_cards.json` / `land_cards_data.js` / `land_system.js` / `card_database.js` の責務を整理し、土地産出の二重定義を減らす。
 2. 特に砂漠の✨2と✨5の不一致を解消する。
-3. 山岳カードの `reqE2` とEligibility側の `reqE2HillsOnBoard` のキー不一致を解消する。
+3. 山岳カードの `reqE2` / `reqE2HillsOnBoard` と丘陵数カウンタの `id` / `terrainId` の二重不一致を解消する。
 4. rulesへカード数値を重複保持しすぎず、実装データとの差分が出た場合は本台帳を更新する。
