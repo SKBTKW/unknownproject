@@ -1,15 +1,14 @@
 import { BoardAwareUIController } from './board_aware_ui_controller.js';
 import { TrialResultExitAdapter } from './trial_result_exit_adapter.js';
 import { releaseSettledTrialPreviewSession } from '../trial/dev/settled_trial_preview_release.js';
+import { TrialSessionBoundaryService } from '../trial/flow/trial_session_boundary_service.js';
 
-/**
- * Browser application boundary for consuming settled Trial results.
- * Trial/Game Flow owns exit readiness; this class only projects that fact to
- * Browser layout without clearing TrialState.
- */
 export class TrialResultUIController extends BoardAwareUIController {
     constructor(engine) {
         super(engine);
+        if (this.engine && !this.engine.trialSessionBoundaryService) {
+            this.engine.trialSessionBoundaryService = new TrialSessionBoundaryService(this.engine);
+        }
         this.trialResultExitAdapter = new TrialResultExitAdapter({
             gameFactHub: this.trialController.gameFactHub,
             lifecycleProvider: () => this.trialController.getLifecycleReadModel(),
@@ -17,10 +16,29 @@ export class TrialResultUIController extends BoardAwareUIController {
         });
     }
 
+    startTrialInterceptionPreview(scenario, options = {}) {
+        const state = super.startTrialInterceptionPreview(scenario, options);
+        this.engine?.trialSessionBoundaryService?.beginTrial?.({
+            startVerse: this.state?.turn
+        });
+        return state;
+    }
+
+    stopTrialInterceptionPreview() {
+        this.engine?.trialSessionBoundaryService?.abortTrial?.();
+        return super.stopTrialInterceptionPreview();
+    }
+
     releaseSettledTrialPresentation() {
         const lifecycle = this.trialController.getLifecycleReadModel?.();
         if (!lifecycle?.canExitTrial) {
             return { success: false, reason: "TRIAL_EXIT_NOT_READY" };
+        }
+
+        const sessionBoundaryRelease = this.engine?.trialSessionBoundaryService
+            ?.releaseAfterSettlement?.(lifecycle) || null;
+        if (sessionBoundaryRelease && sessionBoundaryRelease.success === false) {
+            return sessionBoundaryRelease;
         }
 
         const developmentSessionRelease = releaseSettledTrialPreviewSession(
@@ -39,6 +57,7 @@ export class TrialResultUIController extends BoardAwareUIController {
         return {
             success: true,
             lifecycle,
+            sessionBoundaryRelease,
             developmentSessionRelease
         };
     }

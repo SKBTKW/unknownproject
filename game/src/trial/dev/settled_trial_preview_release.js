@@ -1,9 +1,8 @@
 export function releaseSettledTrialPreviewSession(harness) {
-    if (!harness) return { released: false, restoreBoundary: null };
+    if (!harness) return { released: false };
     const wasActive = harness.session !== null;
     harness.session = null;
-    const restoreBoundary = harness.trialRestoreBoundaryService?.end?.() || null;
-    return { released: wasActive, restoreBoundary };
+    return { released: wasActive };
 }
 
 export default releaseSettledTrialPreviewSession;
