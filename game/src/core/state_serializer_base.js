@@ -154,8 +154,6 @@ export function serializeGameState(state) {
         placementGroupCounter: Number.isInteger(state.placementGroupCounter) ? state.placementGroupCounter : 1,
         grantedConnectionPairs: Array.from(state.grantedConnectionPairs || []).sort(),
         handOfferingSize: Number.isInteger(state.handOfferingSize) ? state.handOfferingSize : 3,
-        nextTrialDamageMitigation: state.nextTrialDamageMitigation !== undefined ? state.nextTrialDamageMitigation : 1.0,
-        nextTrialMultiplier: state.nextTrialMultiplier !== undefined ? state.nextTrialMultiplier : 1.0,
         trialSchedule: cloneData(state.trialSchedule),
         nextTrialTurn: state.nextTrialTurn !== undefined ? state.nextTrialTurn : null,
         activeConstructionProjects: cloneData(state.activeConstructionProjects, []),
