@@ -9,21 +9,27 @@
 
 import { ProductionCalculator } from '../systems/production_calculator.js';
 
+function normalizeSocketResource(socket) {
+    if (!socket) return null;
+    const declaredYields = socket.yields || {};
+    return {
+        id: socket.id || null,
+        nameKey: socket.nameKey || null,
+        category: socket.category || null,
+        yields: {
+            food: declaredYields.food ?? socket.bonusFood ?? 0,
+            wood: declaredYields.wood ?? declaredYields.material ?? socket.bonusMaterial ?? socket.bonusWood ?? 0,
+            defense: declaredYields.defense ?? socket.bonusDefense ?? 0,
+            mystic: declaredYields.mystic ?? socket.bonusMystic ?? 0
+        }
+    };
+}
+
 export class CellViewDataService {
-    /**
-     * @param {Object} [calculator=null] - 産出計算機 (DI可能)
-     */
     constructor(calculator = null) {
         this.calculator = calculator || ProductionCalculator;
     }
 
-    /**
-     * 🔍 単一マスの表示用純粋事実データを取得
-     * @param {Object} state - GameState
-     * @param {number} r - 行
-     * @param {number} c - 列
-     * @returns {Object|null}
-     */
     getCellViewData(state, r, c) {
         if (!state || !state.grid || !state.grid[r] || !state.grid[r][c]) {
             return null;
@@ -32,7 +38,6 @@ export class CellViewDataService {
         const cell = state.grid[r][c];
         if (!cell) return null;
 
-        // 1. 未配置マスの ViewModel
         if (!cell.placed) {
             return {
                 r,
@@ -42,11 +47,10 @@ export class CellViewDataService {
                 terrainId: null,
                 category: null,
                 nameKey: null,
+                elevation: null,
+                greenery: null,
                 hasSocket: !!cell.hasSocket,
-                socketResource: cell.socketResource ? {
-                    id: cell.socketResource.id || null,
-                    nameKey: cell.socketResource.nameKey || null
-                } : null,
+                socketResource: normalizeSocketResource(cell.socketResource),
                 yields: { food: 0, wood: 0, defense: 0, mystic: 0 },
                 primaryYield: null,
                 modifiers: [],
@@ -55,7 +59,6 @@ export class CellViewDataService {
             };
         }
 
-        // 2. 正式な産出・補正内訳を ProductionCalculator から取得
         const breakdown = this.calculator && typeof this.calculator.calculateCellYieldBreakdown === "function"
             ? this.calculator.calculateCellYieldBreakdown(state, r, c)
             : { baseYields: {}, modifiers: [], totalYields: {} };
@@ -63,7 +66,6 @@ export class CellViewDataService {
         const totalYields = breakdown.totalYields || { food: 0, wood: 0, defense: 0, mystic: 0 };
         const modifiers = breakdown.modifiers || [];
 
-        // 3. 最大産出資源 (primaryYield) の決定論的選定
         let primaryYield = null;
         let maxVal = 0;
         const resourcePriority = ["food", "wood", "defense", "mystic"];
@@ -75,7 +77,6 @@ export class CellViewDataService {
             }
         }
 
-        // 4. 純粋な事実 ViewModel
         const t = cell.terrain || {};
         return {
             r,
@@ -85,12 +86,10 @@ export class CellViewDataService {
             terrainId: t.terrainId || t.id || (cell.isHQ ? "HQ" : null),
             category: t.category || (cell.isHQ ? "HQ" : "LAND"),
             nameKey: t.nameKey || (cell.isHQ ? "TERRAIN_HQ_NAME" : null),
+            elevation: Number.isInteger(t.e) ? t.e : null,
+            greenery: Number.isInteger(t.gl) ? t.gl : null,
             hasSocket: !!cell.hasSocket,
-            socketResource: cell.socketResource ? {
-                id: cell.socketResource.id || null,
-                nameKey: cell.socketResource.nameKey || null,
-                yields: cell.socketResource.yields ? { ...cell.socketResource.yields } : null
-            } : null,
+            socketResource: normalizeSocketResource(cell.socketResource),
             yields: totalYields,
             baseYields: breakdown.baseYields || { food: 0, wood: 0, defense: 0, mystic: 0 },
             primaryYield,
