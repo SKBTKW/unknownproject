@@ -1,5 +1,6 @@
 import { BoardAwareUIController } from './board_aware_ui_controller.js';
 import { TrialResultExitAdapter } from './trial_result_exit_adapter.js';
+import { releaseSettledTrialPreviewSession } from '../trial/dev/settled_trial_preview_release.js';
 
 /**
  * Browser application boundary for consuming settled Trial results.
@@ -21,6 +22,11 @@ export class TrialResultUIController extends BoardAwareUIController {
         if (!lifecycle?.canExitTrial) {
             return { success: false, reason: "TRIAL_EXIT_NOT_READY" };
         }
+
+        const developmentSessionRelease = releaseSettledTrialPreviewSession(
+            this.developmentTrialPreviewHarness
+        );
+
         if (this.preTrialBoardContextMode) {
             this.boardPresentationState.setContextMode(this.preTrialBoardContextMode);
         }
@@ -30,7 +36,11 @@ export class TrialResultUIController extends BoardAwareUIController {
         this.hideCellTooltip();
         this.layoutStateManager.exitTrial();
         this.render();
-        return { success: true, lifecycle };
+        return {
+            success: true,
+            lifecycle,
+            developmentSessionRelease
+        };
     }
 
     getTrialLifecycleReadModel() {
