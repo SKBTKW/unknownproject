@@ -15,10 +15,28 @@ const SEGMENT_LIMITS = Object.freeze({
     [ADVISOR_DIALOGUE_MODES.DETAILED]: Infinity
 });
 
+const MODE_RANK = Object.freeze({
+    [ADVISOR_DIALOGUE_MODES.COMPACT]: 1,
+    [ADVISOR_DIALOGUE_MODES.NORMAL]: 2,
+    [ADVISOR_DIALOGUE_MODES.DETAILED]: 3
+});
+
 function normalizeDialogueMode(mode) {
     return Object.prototype.hasOwnProperty.call(SEGMENT_LIMITS, mode)
         ? mode
         : ADVISOR_DIALOGUE_MODES.NORMAL;
+}
+
+function policyValueToMode(value) {
+    if (value >= 4) return ADVISOR_DIALOGUE_MODES.DETAILED;
+    if (value >= 2) return ADVISOR_DIALOGUE_MODES.NORMAL;
+    return ADVISOR_DIALOGUE_MODES.COMPACT;
+}
+
+function shallowerMode(a, b) {
+    const normalizedA = normalizeDialogueMode(a);
+    const normalizedB = normalizeDialogueMode(b);
+    return MODE_RANK[normalizedA] <= MODE_RANK[normalizedB] ? normalizedA : normalizedB;
 }
 
 export class AdvisorDialogueSystem {
@@ -45,6 +63,16 @@ export class AdvisorDialogueSystem {
         if (typeof listener !== "function") throw new TypeError("ADVISOR_DIALOGUE_LISTENER_REQUIRED");
         this.listeners.add(listener);
         return () => this.listeners.delete(listener);
+    }
+
+    resolveDialogueMode(entry, requestedMode = this.dialogueMode) {
+        const normalizedRequestedMode = normalizeDialogueMode(requestedMode);
+        if (!entry?.policyKey) return normalizedRequestedMode;
+
+        const policyValue = this.profile?.policy?.[entry.policyKey];
+        if (!Number.isFinite(policyValue)) return normalizedRequestedMode;
+
+        return shallowerMode(normalizedRequestedMode, policyValueToMode(policyValue));
     }
 
     resolveLine(entry, context = {}, mode = this.dialogueMode) {
@@ -84,7 +112,9 @@ export class AdvisorDialogueSystem {
         const lastAt = this.cooldowns.get(event);
         if (lastAt !== undefined && this.now() - lastAt < entry.cooldownMs) return false;
 
-        const resolvedLine = this.resolveLine(entry, context, options.dialogueMode ?? this.dialogueMode);
+        const requestedMode = options.dialogueMode ?? this.dialogueMode;
+        const effectiveMode = this.resolveDialogueMode(entry, requestedMode);
+        const resolvedLine = this.resolveLine(entry, context, effectiveMode);
         if (!resolvedLine) return false;
 
         const item = {
@@ -93,6 +123,7 @@ export class AdvisorDialogueSystem {
             lineKey: resolvedLine.lineKey,
             segmentKeys: resolvedLine.segmentKeys,
             text: resolvedLine.text,
+            dialogueMode: effectiveMode,
             priority: options.priority ?? entry.priority,
             durationMs: entry.durationMs
         };
