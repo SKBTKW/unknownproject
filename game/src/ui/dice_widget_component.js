@@ -28,8 +28,8 @@ export class DiceWidgetComponent {
 
         const config = (UILayoutConfig && UILayoutConfig.diceWidget && UILayoutConfig.diceWidget.desktop) || {
             position: "fixed",
-            right: "24px",
-            bottom: "135px",
+            right: "16px",
+            bottom: "80px",
             width: "180px",
             zIndex: 850,
             pointerEvents: "none"

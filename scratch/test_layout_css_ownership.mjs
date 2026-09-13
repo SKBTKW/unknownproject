@@ -57,6 +57,8 @@ check('Board is positioned 60px below header and Verse is in header right', () =
     assert.equal(UILayoutConfig.buildIdentityBadge.desktop.bottom, '16px');
     assert.equal(UILayoutConfig.buildIdentityBadge.desktop.top, 'auto');
     assert.equal(UILayoutConfig.buildIdentityBadge.desktop.right, 'auto');
+    assert.equal(UILayoutConfig.diceWidget.desktop.right, '16px');
+    assert.equal(UILayoutConfig.diceWidget.desktop.bottom, '80px');
 });
 check('Buff expansion and invisible headroom share Layout tokens', () => {
     assert.match(tokens, /--layout-buff-dropup-max-height:\s*min\(320px,\s*calc\(100vh - var\(--layout-header-height\) - 32px\)\);/);

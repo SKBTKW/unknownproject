@@ -44,12 +44,12 @@ const UILayoutConfig = {
         }
     },
 
-    // 🎲 画面右下隅ダイストレイ HUD (完全受動 / pointer-events: none)
+    // 🎲 画面右辺右下隅ダイストレイ HUD (完全受動 / pointer-events: none / 右辺沿い)
     diceWidget: {
         desktop: {
             position: "fixed",
-            right: "24px",
-            bottom: "135px",
+            right: "16px",
+            bottom: "80px",
             width: "180px",
             diceSize: "32px",
             zIndex: 850,
@@ -57,8 +57,8 @@ const UILayoutConfig = {
         },
         mobile: {
             position: "fixed",
-            right: "12px",
-            bottom: "95px",
+            right: "8px",
+            bottom: "60px",
             width: "140px",
             diceSize: "26px",
             zIndex: 850,
@@ -358,6 +358,22 @@ UILayoutConfig.applyLayout = function() {
             : Boolean(typeof window !== "undefined" && window.innerWidth <= 768);
         const config = isMobile ? this.buildIdentityBadge.mobile : this.buildIdentityBadge.desktop;
         Object.assign(buildBadge.style, config);
+    }
+
+    const diceRoot = document.getElementById("diceWidgetRoot");
+    if (diceRoot && this.diceWidget) {
+        const isMobile = typeof window !== "undefined" && typeof window.matchMedia === "function"
+            ? window.matchMedia("(max-width: 768px)").matches
+            : Boolean(typeof window !== "undefined" && window.innerWidth <= 768);
+        const config = isMobile ? this.diceWidget.mobile : this.diceWidget.desktop;
+        Object.assign(diceRoot.style, {
+            position: config.position,
+            right: config.right,
+            bottom: config.bottom,
+            width: config.width,
+            zIndex: String(config.zIndex),
+            pointerEvents: config.pointerEvents
+        });
     }
 
     const offeringSec = document.querySelector(".offering-section");
