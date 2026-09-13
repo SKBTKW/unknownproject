@@ -47,8 +47,32 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 | `CMD_MARKET` | **Partial / Eligibility gap** | `marketCount` 登録。`reqMinLinks` は現Eligibilityで未評価。 |
 | `CMD_DEPOT` | **Partial / Eligibility gap** | `depotCount` 登録。`reqIndustrySpecialBlocks` 未評価。 |
 | `CMD_IRRIGATION` | **Partial / Eligibility gap** | `irrigationCount` 登録。`reqWaterSource`は評価、`reqPlainsOrReclaimed`は未評価。 |
-| `CMD_RESETTLEMENT` | **Partial** | 即時🔥+2。指定平地地帯への継続🌾+2未接続。 |
+| `CMD_RESETTLEMENT` | **Partial / Duplicate branch conflict** | 同一ID分岐が2回ある。先行分岐が実際に発火し、🔥+2を30でcapし、`resettlementFoodBonus += 2` を設定する。後段の `EmberSystem.addBonus(2)` 分岐はshadowされる。`resettlementFoodBonus` はProductionCalculatorで参照されず、継続🌾+2は未接続。 |
 | `CMD_WORKSHOP` | **Partial / Eligibility gap** | `workshopCount` 登録。`reqDistinctPrimaryIndustries`未評価。 |
+
+### 《移住》duplicate branch conflict
+
+`DeckManager.playCommandCard()` には `CMD_RESETTLEMENT` が2回存在する。
+
+先行分岐は、
+
+```text
+ember = min(30, ember + 2)
+resettlementFoodBonus += 2
+PERMANENT Buff
+```
+
+を実行する。
+
+後段には `EmberSystem.addBonus(2)` を使う別分岐があるが、同じ `else-if` チェーンのため通常実行では到達しない。
+
+さらに `ProductionCalculator` は `resettlementFoodBonus` を参照しない。
+
+したがって現在は、
+
+> **即時🔥+2は先行分岐で実効するが、30capを持つ。継続🌾+2はstate登録だけで未接続。後段の別実装はdead branch。**
+
+と扱う。
 
 ---
 
@@ -67,7 +91,7 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 
 したがって通常Offeringへ復帰せず、現役Stage3 Projectとして扱わない。
 
-`DeckManager.playCommandCard()` 内には同一IDの旧分岐が複数残っているが、これは現役カードの実行競合ではなく **LEGACY / RETIRED code残存**として扱う。
+`DeckManager.playCommandCard()` 内には同一IDの旧分岐が複数残るが、これは現役カードの実行競合ではなく **LEGACY / RETIRED code残存**として扱う。
 
 ---
 
@@ -110,9 +134,10 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 2. 《農地改革》: 指定区域ではなく全平地系+1/Verse。Eligibilityの連結条件も非連結合計。
 3. 《伐採拠点》《製材所》: 条件名より実Eligibilityが緩い。
 4. 《灌漑》: 水源条件は有効だが平地/干拓地条件は未評価。
-5. 複数施設カード: counter/flagは存在するが持続効果consumer未接続。
-6. Stage3事業: flag/Buff骨格中心でProduction/Cost/Trialへの接続が未完成。
-7. 《大防塁》: 現在はretired。旧重複分岐はlegacy cleanup対象。
+5. 《移住》: 現役同一ID分岐が重複。先行分岐が後段をshadowし、継続🌾stateはconsumerなし。
+6. 複数施設カード: counter/flagは存在するが持続効果consumer未接続。
+7. Stage3事業: flag/Buff骨格中心でProduction/Cost/Trialへの接続が未完成。
+8. 《大防塁》: 現在はretired。旧重複分岐はlegacy cleanup対象。
 
 ---
 
