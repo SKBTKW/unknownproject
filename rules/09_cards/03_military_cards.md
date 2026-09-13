@@ -13,9 +13,24 @@
 
 | ID | 状態 | 現在の実挙動 / 注意点 |
 | :--- | :---: | :--- |
-| `CMD_VIGILANCE` | **Implemented / Different** | 🧱15。次Verseから2Verse、最大🛡️計算へ+3。旧説明の「すべての🛡️獲得ごとに+3」ではない。 |
+| `CMD_VIGILANCE` | **Implemented / Internal dual path** | 🧱15。次Verseから2Verse、`DefenseSystem.calculateMaxDefense()` は最大🛡️へ+3する。同時に `GameState.gainDefense()` にも有効中の🛡️獲得量+3ロジックが残る。後者が通常Gameplayの主要経路から呼ばれるかは未確定なので、常時二重加算とは断定しない。 |
 | `CMD_MILITARY_FOCUS` | **Implemented / Internal taxonomy gap / threshold conflict** | `activeDrawBias={ targetCategory:"MILITARY", type:"UNTIL_DEFENSE", untilValue:20 }` を設定し、Offering抽選時に `category:"MILITARY"` の重みを×2する。最大🛡️20以上で解除。ただしEligibilityは20ちょうどを許可するため、最大🛡️=20では発動直後に解除される。 |
 | `CMD_IRON_RAMPART` | **Implemented / Different** | 🧱20。`DefenseSystem.increaseMaxCapacity(25)` と、本営近郊1マスあたり恒久🛡️+2。旧説明の「🛡️+10」とは一致しない。 |
+
+### 《警戒》の二重意味
+
+現在の実装には同じ `vigilanceTurns` を読む処理が2箇所ある。
+
+1. `DefenseSystem.calculateMaxDefense()`
+   - 有効中、最大🛡️ +3。
+2. `GameState.gainDefense()`
+   - 有効中、回復/獲得しようとする🛡️へ +3。
+
+したがってコード上は「最大値補正」と「獲得量補正」の両方が存在する。
+
+ただし後者の通常callerは本監査で確定できていないため、プレイヤーが常に両効果を受けるとはまだ扱わない。
+
+分類: **INTERNAL_CONFLICT / duplicate semantic path candidate**
 
 ### Military Focus のカテゴリ注意
 
@@ -75,11 +90,7 @@ Draw Biasは軍事テーマ全体ではなく、`card.category === "MILITARY"` �
 
 という境界が固定されている。
 
-したがって、以前の
-
-> 「永続化済みのwrite-only Trial modifier」
-
-という分類は古い。
+したがって以前の「永続化済みwrite-only Trial modifier」という分類は古い。
 
 現在は、
 
