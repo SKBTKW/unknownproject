@@ -98,9 +98,33 @@ state.ember -= cost.ember
 
 ---
 
-## 7. 現在の結論
+## 7. 敗北確定後の通常Action停止
 
-現在の🔥終端は、すべての減算経路に一元化されていない。
+`TurnLifecycleService.advance()` は既に `runTermination.terminated` の場合、次Verseへ進まない。
+
+一方、現在確認した通常操作入口では、
+
+- `GameEngine.executeAction()`
+- `UIController`
+- `HandCardsComponent`
+
+に `runTermination.terminated` / `isGameOver` を共通の操作拒否条件として使う処理を確認できない。
+
+`HandCardsComponent` の通常カードlockは主に `state.hasPickedThisTurn` を参照する。
+
+したがって、
+
+> **敗北状態はVerse進行を停止できるが、通常Action API / 手札操作全体を一括停止する境界は未確認・未接続である。**
+
+少なくともドメインAction側では、敗北済みstateを共通拒否する契約が存在しない。
+
+分類: **PARTIAL — run termination exists / global action lock missing**
+
+---
+
+## 8. 現在の結論
+
+現在の🔥終端は、すべての減算経路・通常Actionへ一元化されていない。
 
 | 経路 | 支払い不足拒否 | 🔥0即時終端 |
 | :--- | :---: | :---: |
@@ -109,5 +133,7 @@ state.ember -= cost.ember
 | Command🔥コスト | あり | なし |
 | Mulligan🔥1 | あり | なし |
 | 土地開発🔥コスト | **なし** | なし |
+
+加えて、敗北確定後も通常Actionを一括拒否する共通境界は確認できない。
 
 本監査ではgameを変更しない。採用ルールは引き続き「任意時点で🔥0なら敗北」とする。
