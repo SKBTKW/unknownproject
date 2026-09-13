@@ -29,7 +29,7 @@ check('Header has one owner in the dedicated stylesheet, after the global token'
     assert.ok(html.indexOf('base_layout.css') < html.indexOf('layout_tokens.css'));
     assert.ok(html.indexOf('layout_tokens.css') < html.indexOf('top_header.css'));
     assert.ok(html.indexOf('top_header.css') < html.indexOf('css/layout.css'));
-    assert.equal(Object.hasOwn(UILayoutConfig.layers, 'header'), false);
+    assert.equal(Object.hasOwn(UILayoutConfig, 'layers'), false);
 });
 check('Header retains the effective 84px border-box height and visible overflow', () => {
     assert.match(base, /\*\s*\{\s*box-sizing:\s*border-box;/);
@@ -105,7 +105,7 @@ check('Offering geometry is owned by CSS without runtime inline configuration', 
     assert.equal(offering['pointer-events'], 'auto');
     assert.doesNotMatch(layoutSource, /offeringCardArea|Object\.assign\(offeringSec\.style/);
     assert.doesNotMatch(layoutSource, /playerTray\s*:/);
-    assert.equal(Object.hasOwn(UILayoutConfig.layers, 'playerTray'), false);
+    assert.equal(Object.hasOwn(UILayoutConfig, 'playerTray'), false);
     assert.equal(Object.hasOwn(UILayoutConfig, 'offeringCardArea'), false);
     assert.match(layoutSource, /offeringSec\.addEventListener\("mouseenter"/);
 });

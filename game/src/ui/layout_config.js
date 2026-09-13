@@ -17,33 +17,6 @@ const UI_FEATURE_FLAGS = {
 };
 
 const UILayoutConfig = {
-    // 🏛️ 4大責務レイヤー構造 定義 (4 Major Responsibility Layers)
-    layers: {
-        // 2️⃣ [Layer 2: World Board] 画面中央・主役盤面
-        worldBoard: {
-            position: "relative",
-            width: "100%",
-            height: "100%",
-            zIndex: "var(--z-world)",
-            pointerEvents: "auto",
-            transition: "filter 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.22s ease, box-shadow 0.22s ease"
-        },
-        // 4️⃣ [Layer 4: System Overlay] 四隅・最前面ポップアップ
-        systemOverlay: {
-            position: "fixed",
-            top: "var(--layout-system-overlay-inset)",
-            left: "var(--layout-system-overlay-inset)",
-            width: "100%",
-            height: "100%",
-            zIndex: "var(--z-overlay)",
-            pointerEvents: "none"
-        },
-        dimBlurStyle: {
-            brightness: "0.60",
-            blur: "2.5px"
-        }
-    },
-
     // 🎲 画面右辺右下隅ダイストレイ HUD (完全受動 / pointer-events: none / 右辺沿い)
     diceWidget: {
         desktop: {
