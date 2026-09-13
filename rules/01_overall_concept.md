@@ -40,13 +40,26 @@ Trial の中心となる問いは常に以下である。
 
 `GameState.processTurnEndMaintenance()` には、`turn >= 50 && ember > 0` のとき `isGameClear=true` を返す判定自体は存在する。
 
-ただし、通常ランの `GameEngine.nextTurn()` / `TurnLifecycleService.advance()` はこの結果をラン終端として消費せず、そのまま次Verse初期化へ進む。
+ただし現在の `RunTerminationService` が持つ終端outcomeは `DEFEAT` のみで、Verse 50完走を `VICTORY` として確定する経路は存在しない。
 
-したがって、**Verse 50完走条件の検出は部分実装済みだが、勝利結果への遷移・進行停止は未実装**として扱う。現状はVerse 51以降へ進行可能である。
+したがって、**Verse 50完走条件の検出は部分実装済みだが、勝利結果への遷移・進行停止は未実装**として扱う。
 
-敗北側も同様に、Verse終了処理は `🔥 <= 0` を `isGameOver=true` として返すが、`TurnLifecycleService` / `UIController` はこれをラン終端として消費しない。また `EmberSystem.applyDamage()` 自体は🔥を0まで減らすだけで、即時の敗北遷移を発火しない。
+一方、🔥0敗北については `RunTerminationService` が `ember <= 0` を検出すると、
 
-したがって、**🔥0の検出は部分実装済みだが、「任意時点で🔥0になればラン敗北」という終端配線は未完成**として扱う。
+```text
+runTermination.terminated = true
+outcome = DEFEAT
+reason = EMBER_DEPLETED
+isGameOver = true
+```
+
+を確定する。
+
+`TurnLifecycleService.advance()` はVerse開始時とVerse commit後にこの終端状態を評価し、terminatedなら次Verse初期化へ進まない。
+
+したがって、**Verse進行境界における🔥0敗北のラン終端は現在実装済み**とする。
+
+ただし `EmberSystem.applyDamage()` 自体が直接RunTerminationServiceを呼ぶわけではないため、Verse途中に🔥0へ到達した瞬間のPresentation / 即時画面遷移が存在することまでは本項で保証しない。少なくとも次のVerse進行要求時には既存termination評価によって停止する。
 
 ---
 
