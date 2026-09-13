@@ -41,11 +41,11 @@ const UILayoutConfig = {
         // 4️⃣ [Layer 4: System Overlay] 四隅・最前面ポップアップ
         systemOverlay: {
             position: "fixed",
-            top: "0px",
-            left: "0px",
+            top: "var(--layout-system-overlay-inset)",
+            left: "var(--layout-system-overlay-inset)",
             width: "100%",
             height: "100%",
-            zIndex: 900,
+            zIndex: "var(--z-overlay)",
             pointerEvents: "none"
         },
         dimBlurStyle: {
