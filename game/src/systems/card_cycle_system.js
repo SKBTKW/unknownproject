@@ -22,6 +22,24 @@ export const BASE_COOLDOWNS = Object.freeze({
     UR: 15
 });
 
+// 平時に仕込み、後の Trial で発火する予約効果カードは廃止。
+// generated card master が再生成されるまで古い定義が残っても、Offering へ復帰させない。
+export const RETIRED_TRIAL_RESERVED_CARD_IDS = Object.freeze([
+    "CMD_MUD_OBSTACLE",
+    "CMD_HIGH_GROUND_FORMATION",
+    "CMD_CAVALRY_SCOUTS",
+    "CMD_OUTPOST_SIGNAL",
+    "CMD_BALLISTA_SET",
+    "CMD_GUIDED_DEFENSE",
+    "CMD_SCOUT_ENEMY",
+    "CMD_SCORCHED_RETREAT",
+    "CMD_CAVALRY_HOST",
+    "CMD_LOCAL_IRON_ARMAMENT",
+    "CMD_OMEN_DREAM"
+]);
+
+const RETIRED_TRIAL_RESERVED_CARD_SET = new Set(RETIRED_TRIAL_RESERVED_CARD_IDS);
+
 export class CardCycleSystem {
     /**
      * @param {Object} state - GameState
@@ -41,6 +59,10 @@ export class CardCycleSystem {
         if (!Array.isArray(this.state.consumedUniqueCards)) {
             this.state.consumedUniqueCards = [];
         }
+    }
+
+    isRetiredCard(cardId) {
+        return RETIRED_TRIAL_RESERVED_CARD_SET.has(cardId);
     }
 
     /**
@@ -107,7 +129,7 @@ export class CardCycleSystem {
         for (const card of cards) {
             if (!card) continue;
             const cardId = card.cardMasterId || (card.terrain ? card.terrain.id : card.id);
-            if (!cardId) continue;
+            if (!cardId || this.isRetiredCard(cardId)) continue;
 
             const tObj = card.terrain || card;
             const cd = this.calculateCooldown(tObj);
@@ -124,6 +146,7 @@ export class CardCycleSystem {
      * @returns {boolean}
      */
     isInCooldown(cardId, currentTurn) {
+        if (this.isRetiredCard(cardId)) return true;
         if (!this.state || !this.state.cardCooldowns) return false;
         const availableTurn = this.state.cardCooldowns[cardId];
         return availableTurn != null && currentTurn < availableTurn;
@@ -135,6 +158,7 @@ export class CardCycleSystem {
      * @returns {number|null}
      */
     getAvailableTurn(cardId) {
+        if (this.isRetiredCard(cardId)) return null;
         if (!this.state || !this.state.cardCooldowns) return null;
         return this.state.cardCooldowns[cardId] ?? null;
     }
@@ -146,6 +170,7 @@ export class CardCycleSystem {
      * @returns {number}
      */
     getRemainingTurns(cardId, currentTurn) {
+        if (this.isRetiredCard(cardId)) return 0;
         if (!this.state || !this.state.cardCooldowns) return 0;
         const av = this.state.cardCooldowns[cardId];
         if (av == null) return 0;
@@ -158,7 +183,7 @@ export class CardCycleSystem {
      * @param {string} cardId 
      */
     consumeUnique(cardId) {
-        if (!this.state || !cardId) return;
+        if (!this.state || !cardId || this.isRetiredCard(cardId)) return;
         this.init();
         if (!this.state.consumedUniqueCards.includes(cardId)) {
             this.state.consumedUniqueCards.push(cardId);
@@ -171,6 +196,7 @@ export class CardCycleSystem {
      * @returns {boolean}
      */
     isUniqueConsumed(cardId) {
+        if (this.isRetiredCard(cardId)) return true;
         if (!this.state || !Array.isArray(this.state.consumedUniqueCards)) return false;
         return this.state.consumedUniqueCards.includes(cardId);
     }
@@ -187,6 +213,7 @@ export class CardCycleSystem {
 
         for (const c of candidates) {
             const cId = c.id || c.cardMasterId;
+            if (!cId || this.isRetiredCard(cId)) continue;
             const av = (this.state && this.state.cardCooldowns) ? (this.state.cardCooldowns[cId] ?? 0) : 0;
             if (av < minTurn) {
                 minTurn = av;
