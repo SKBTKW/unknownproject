@@ -268,7 +268,6 @@ test("A3: active battleなしでの進軍拒否", () => {
     ui.activateTrialPlan();
     const controller = ui.trialController;
 
-    // battleQueueはあるがstartNextBattleしていない
     assert.equal(controller.getCurrentBattle(), null);
     const result = controller.advanceAfterCurrentBattle();
     assert.equal(result.success, false);
@@ -293,7 +292,6 @@ test("A4: RESOLVED以外の状態（ACTIVE状態）での進軍拒否", () => {
     ui.activateTrialPlan();
     ui.trialController.startNextBattle();
 
-    // ACTIVE状態だがまだRESOLVEDしていない
     const currentBattle = ui.trialController.getCurrentBattle();
     assert.equal(currentBattle.status, TRIAL_BATTLE_STATUSES.ACTIVE);
 
@@ -316,13 +314,11 @@ test("A5: 重複進軍の拒否 (TRAVERSAL_ALREADY_APPLIED)", () => {
 test("A6: バリデーション失敗時の状態不変性 (Atomicity)", () => {
     const { controller } = createResolvedHarness("TERRAIN_COMPARE_BASIC", 16);
 
-    // 1回目進軍
     controller.advanceAfterCurrentBattle();
     const initialRouteProgress = JSON.parse(JSON.stringify(controller.state.routeProgress));
     const initialTraversalResults = JSON.parse(JSON.stringify(controller.state.traversalResults));
     const initialFactCount = controller.gameFactHub.getFacts().length;
 
-    // 2回目の失敗時
     const failedAdv = controller.advanceAfterCurrentBattle();
     assert.equal(failedAdv.success, false);
 
@@ -336,7 +332,6 @@ test("A6: バリデーション失敗時の状態不変性 (Atomicity)", () => {
 // =========================================================================
 
 test("B1: REPEL 時に敵が迎撃マスで停止する (stopped = true, advance = 0)", () => {
-    // 16戦力割当 -> Player final power > Enemy final power -> REPEL
     const { controller } = createResolvedHarness("TERRAIN_COMPARE_BASIC", 16);
     const battleResult = controller.state.getCurrentBattleResult();
     assert.equal(battleResult.prediction.outcome, TRIAL_OUTCOMES.REPEL);
@@ -353,13 +348,11 @@ test("B1: REPEL 時に敵が迎撃マスで停止する (stopped = true, advance
     assert.equal(tr.fromIndex, tr.toIndex);
     assert.deepEqual(tr.toCell, tr.interceptCell);
 
-    // state.routeProgress の確認
     const routeProg = controller.getRouteProgress(tr.routeId);
     assert.equal(routeProg.currentIndex, tr.toIndex);
     assert.equal(routeProg.stopped, true);
     assert.deepEqual(routeProg.currentCell, tr.interceptCell);
 
-    // TRIAL_TRAVERSAL_RESOLVED Fact
     const facts = controller.gameFactHub.getFacts().filter(f => f.type === GAME_FACT_TYPES.TRIAL_TRAVERSAL_RESOLVED);
     assert.equal(facts.length, 1);
     assert.equal(facts[0].payload.stopped, true);
@@ -370,8 +363,7 @@ test("B1: REPEL 時に敵が迎撃マスで停止する (stopped = true, advance
 // Group C: BREAKTHROUGH Case (防衛失敗時)
 // =========================================================================
 
-test("C1: BREAKTHROUGH 時に敵が次マスへ進軍する (advance = 1, stopped = false)", () => {
-    // 1戦力割当 -> Player final power < Enemy final power -> BREAKTHROUGH
+test("C1: BREAKTHROUGH 時に残存敵が残りrouteをHQまで進軍する", () => {
     const { controller } = createResolvedHarness("TERRAIN_COMPARE_BASIC", 1);
     const battleResult = controller.state.getCurrentBattleResult();
     assert.equal(battleResult.prediction.outcome, TRIAL_OUTCOMES.BREAKTHROUGH);
@@ -381,22 +373,29 @@ test("C1: BREAKTHROUGH 時に敵が次マスへ進軍する (advance = 1, stoppe
     assert.ok(advRes.traversalResult);
 
     const tr = advRes.traversalResult;
-    assert.equal(tr.advance, 1);
-    assert.equal(tr.stopped, false);
-    assert.equal(tr.advanced, true);
-    assert.equal(tr.toIndex, tr.fromIndex + 1);
+    const route = controller.getRoute(tr.routeId);
+    const lastIndex = route.cells.length - 1;
+    const expectedAdvance = lastIndex - tr.fromIndex;
 
-    // state.routeProgress の確認
+    assert.equal(tr.advance, expectedAdvance);
+    assert.equal(tr.stopped, false);
+    assert.equal(tr.advanced, expectedAdvance > 0);
+    assert.equal(tr.reachedRouteEnd, true);
+    assert.equal(tr.toIndex, lastIndex);
+    assert.deepEqual(tr.toCell, route.cells[lastIndex]);
+
     const routeProg = controller.getRouteProgress(tr.routeId);
-    assert.equal(routeProg.currentIndex, tr.fromIndex + 1);
+    assert.equal(routeProg.currentIndex, lastIndex);
+    assert.equal(routeProg.status, "REACHED_END");
     assert.equal(routeProg.stopped, false);
+    assert.equal(routeProg.reachedRouteEnd, true);
     assert.deepEqual(routeProg.currentCell, tr.toCell);
 
-    // TRIAL_TRAVERSAL_RESOLVED Fact
     const facts = controller.gameFactHub.getFacts().filter(f => f.type === GAME_FACT_TYPES.TRIAL_TRAVERSAL_RESOLVED);
     assert.equal(facts.length, 1);
-    assert.equal(facts[0].payload.advanced, true);
-    assert.equal(facts[0].payload.advance, 1);
+    assert.equal(facts[0].payload.advanced, expectedAdvance > 0);
+    assert.equal(facts[0].payload.advance, expectedAdvance);
+    assert.equal(facts[0].payload.reachedRouteEnd, true);
 });
 
 // =========================================================================
@@ -404,19 +403,18 @@ test("C1: BREAKTHROUGH 時に敵が次マスへ進軍する (advance = 1, stoppe
 // =========================================================================
 
 test("D1: 終端マスでの突破判定 (reachedRouteEnd = true) でも HQ/Ember damage は発生しない", () => {
-    // ルート終端手前マスで迎撃して敗北させ、reachedRouteEnd = true にする
     elementRegistry.clear();
     const engine = GameEngine.createGame();
     const ui = new UIController(engine);
     ui.startDevelopmentTrialPreview("TERRAIN_COMPARE_BASIC");
     const routes = ui.getTrialPlanningRoutes();
     const route0 = routes[0];
-    const lastCellIndex = route0.cells.length - 2; // 終端1つ手前
+    const lastCellIndex = route0.cells.length - 2;
     const interceptCell = route0.cells[lastCellIndex];
 
     ui.selectTrialRoute(route0.id);
     ui.selectTrialInterceptionCell(interceptCell.r, interceptCell.c);
-    ui.setTrialDefenseAllocation(1); // 敗北確実
+    ui.setTrialDefenseAllocation(1);
     ui.setTrialActiveRouteIntercept();
 
     for (let i = 1; i < routes.length; i++) {
@@ -438,10 +436,9 @@ test("D1: 終端マスでの突破判定 (reachedRouteEnd = true) でも HQ/Embe
     assert.equal(advRes.success, true);
     assert.equal(advRes.traversalResult.reachedRouteEnd, true);
 
-    // Out-of-Scope: HQ損害、Ember損害、Trial完了は発生していないこと
     assert.equal(ui.trialController.state.isCompleted?.() || false, false);
     assert.equal(ui.trialController.state.trialCompleted || false, false);
-    assert.equal(ui.trialController.state.currentBattleIndex, 0); // 次battleへの自動遷移なし
+    assert.equal(ui.trialController.state.currentBattleIndex, 0);
 });
 
 // =========================================================================
@@ -451,15 +448,12 @@ test("D1: 終端マスでの突破判定 (reachedRouteEnd = true) でも HQ/Embe
 test("E1: UI上で解決後に進軍ボタンが表示され、クリックで進軍完了ステータスへ切り替わる", () => {
     const { ui } = createResolvedHarness("TERRAIN_COMPARE_BASIC", 16);
 
-    // 解決直後: advance button が存在するはず
     ui.render();
     const btnAdvance = mockBody.querySelector("#btnTrialAdvanceEnemy");
     assert.ok(btnAdvance, "btnTrialAdvanceEnemy should exist in UI before traversal");
 
-    // クリック実行
     btnAdvance.onclick();
 
-    // 進軍後: advance button は消え、status badge が表示される
     const btnAdvanceAfter = mockBody.querySelector("#btnTrialAdvanceEnemy");
     assert.equal(btnAdvanceAfter, null, "btnTrialAdvanceEnemy should not exist after traversal");
 
