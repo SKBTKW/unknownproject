@@ -16,8 +16,30 @@ export const BOARD_INPUT_COMMANDS = Object.freeze({
     SELECT_TRIAL_INTERCEPTION: "SELECT_TRIAL_INTERCEPTION"
 });
 const COMMAND_SET = new Set(Object.values(BOARD_INPUT_COMMANDS));
+
+function isPlainObject(value) {
+    if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+    const proto = Object.getPrototypeOf(value);
+    return proto === Object.prototype || proto === null;
+}
+function assertJsonSafe(value, path = "$") {
+    if (value === null || typeof value === "string" || typeof value === "boolean") return;
+    if (typeof value === "number") {
+        if (!Number.isFinite(value)) throw new Error(`BOARD_INPUT_NON_FINITE_NUMBER:${path}`);
+        return;
+    }
+    if (Array.isArray(value)) {
+        value.forEach((item, index) => assertJsonSafe(item, `${path}[${index}]`));
+        return;
+    }
+    if (isPlainObject(value)) {
+        for (const [key, item] of Object.entries(value)) assertJsonSafe(item, `${path}.${key}`);
+        return;
+    }
+    throw new Error(`BOARD_INPUT_NON_SERIALIZABLE:${path}`);
+}
 function assertPlainObject(value, name) {
-    if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(`${name}_REQUIRED`);
+    if (!isPlainObject(value)) throw new Error(`${name}_REQUIRED`);
 }
 function requireCell(payload) {
     const cell = normalizeBoardCell(payload?.cell);
@@ -32,6 +54,7 @@ function requireRouteId(payload) {
 export function createBoardInputCommand(type, payload = {}) {
     if (!COMMAND_SET.has(type)) throw new Error(`UNKNOWN_BOARD_INPUT_COMMAND:${type}`);
     assertPlainObject(payload, "BOARD_INPUT_PAYLOAD");
+    assertJsonSafe(payload, "$.payload");
     let normalizedPayload = {};
     switch (type) {
         case BOARD_INPUT_COMMANDS.SET_VIEW_MODE:
@@ -56,11 +79,14 @@ export function createBoardInputCommand(type, payload = {}) {
             normalizedPayload = {}; break;
         default: throw new Error(`UNHANDLED_BOARD_INPUT_COMMAND:${type}`);
     }
-    return Object.freeze({ contractVersion: BOARD_INPUT_CONTRACT_VERSION, type, payload: Object.freeze(normalizedPayload) });
+    const command = { contractVersion: BOARD_INPUT_CONTRACT_VERSION, type, payload: Object.freeze(normalizedPayload) };
+    assertJsonSafe(command);
+    return Object.freeze(command);
 }
 export function parseBoardInputCommand(input) {
     const parsed = typeof input === "string" ? JSON.parse(input) : input;
-    if (!parsed || typeof parsed !== "object") throw new Error("BOARD_INPUT_COMMAND_REQUIRED");
+    assertPlainObject(parsed, "BOARD_INPUT_COMMAND");
+    assertJsonSafe(parsed);
     if (parsed.contractVersion !== BOARD_INPUT_CONTRACT_VERSION) throw new Error(`UNSUPPORTED_BOARD_INPUT_CONTRACT:${parsed.contractVersion ?? "null"}`);
     return createBoardInputCommand(parsed.type, parsed.payload || {});
 }
