@@ -143,23 +143,23 @@ const UILayoutConfig = {
         }
     },
 
-    // 🏷️ 開発ブランチ / 製品バージョン表示バッジ
+    // 🏷️ 開発ブランチ / 製品バージョン表示バッジ（画面左下隅）
     buildIdentityBadge: {
         desktop: {
             position: "fixed",
-            top: "14px",
+            bottom: "16px",
             left: "18px",
+            top: "auto",
             right: "auto",
-            bottom: "auto",
             zIndex: 980,
             pointerEvents: "none"
         },
         mobile: {
             position: "fixed",
-            top: "12px",
+            bottom: "12px",
             left: "12px",
+            top: "auto",
             right: "auto",
-            bottom: "auto",
             zIndex: 980,
             pointerEvents: "none"
         }
