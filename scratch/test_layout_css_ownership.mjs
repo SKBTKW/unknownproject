@@ -48,10 +48,16 @@ check('Main play area keeps the 4px header gap contract', () => {
         'calc(var(--layout-header-height, 120px) + var(--layout-app-gap, 4px) + 4px)');
 });
 check('Board is positioned 60px below header and Verse is in header right', () => {
-    assert.match(layerContract, /\.board-container-wrapper\s*\{[\s\S]*?margin-top:\s*60px;/);
+    const boardWrapper = rule(layerContract, 'board-container-wrapper');
+    assert.deepEqual(boardWrapper, {
+        position: 'relative', display: 'flex', 'flex-direction': 'column',
+        'align-items': 'center', 'justify-content': 'flex-start',
+        'margin-top': '60px', 'margin-bottom': 'auto'
+    });
+    assert.equal(Object.hasOwn(UILayoutConfig, 'boardWrapper'), false);
+    assert.doesNotMatch(layoutSource, /Object\.assign\(boardWrapper\.style/);
     assert.match(layerContract, /\.top-bar #bgTurnWatermark\.bg-turn-watermark\s*\{[\s\S]*?margin-left:\s*auto;/);
     assert.match(html, /<div class="top-bar">[\s\S]*?id="bgTurnWatermark"[\s\S]*?<\/div>\s*<!-- 🕹️ 2\. Middle Board Area -->/);
-    assert.equal(UILayoutConfig.boardWrapper.marginTop, '60px');
     assert.equal(UILayoutConfig.bgTurnWatermark.position, 'relative');
     assert.equal(UILayoutConfig.bgTurnWatermark.marginLeft, 'auto');
     assert.equal(UILayoutConfig.buildIdentityBadge.desktop.left, '18px');

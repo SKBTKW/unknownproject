@@ -159,17 +159,6 @@ const UILayoutConfig = {
         zIndex: 10
     },
 
-    // 🧩 2. 盤面グリッドラッパー (水平中央・ヘッダー下60px)
-    boardWrapper: {
-        position: "relative",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "flex-start",
-        marginTop: "60px",
-        marginBottom: "auto"
-    },
-
     // ✨ 3. モジュール化バフ表示コンテナ
     // 盤面の見た目上端は動かさず、最大展開分だけ論理上端を上方へ予約する。
     buffPanel: {
@@ -359,11 +348,6 @@ UILayoutConfig.applyLayout = function() {
     const boardContainer = document.querySelector(".board-container");
     if (boardContainer) {
         Object.assign(boardContainer.style, this.boardContainer);
-    }
-
-    const boardWrapper = document.querySelector(".board-container-wrapper") || document.querySelector(".grid-board-wrapper");
-    if (boardWrapper) {
-        Object.assign(boardWrapper.style, this.boardWrapper);
     }
 
     if (!offeringSec || !boardContainer) return;
