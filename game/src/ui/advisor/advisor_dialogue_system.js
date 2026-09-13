@@ -75,6 +75,11 @@ export class AdvisorDialogueSystem {
         return shallowerMode(normalizedRequestedMode, policyValueToMode(policyValue));
     }
 
+    translateSegmentKeys(segmentKeys, context) {
+        const translated = segmentKeys.map(key => this.translate(key, context));
+        return translated.some((text, index) => text === segmentKeys[index]) ? null : translated;
+    }
+
     resolveLine(entry, context = {}, mode = this.dialogueMode) {
         const segmentGroups = Array.isArray(entry.segmentGroups)
             ? entry.segmentGroups.filter(group => Array.isArray(group) && group.length > 0)
@@ -84,15 +89,15 @@ export class AdvisorDialogueSystem {
             const group = segmentGroups.find(candidate => !this.recentHistory.includes(candidate[0])) || segmentGroups[0];
             const normalizedMode = normalizeDialogueMode(mode);
             const segmentKeys = group.slice(0, SEGMENT_LIMITS[normalizedMode]);
-            const text = segmentKeys
-                .map(key => this.translate(key, context))
-                .join(entry.segmentJoiner ?? "");
+            const translatedSegments = this.translateSegmentKeys(segmentKeys, context);
 
-            return {
-                lineKey: group[0],
-                segmentKeys,
-                text
-            };
+            if (translatedSegments) {
+                return {
+                    lineKey: group[0],
+                    segmentKeys,
+                    text: translatedSegments.join(entry.segmentJoiner ?? "")
+                };
+            }
         }
 
         const lineKeys = Array.isArray(entry.lineKeys) ? entry.lineKeys : [];
