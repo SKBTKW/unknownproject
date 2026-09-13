@@ -1,4 +1,5 @@
 import "./diagnose_trial_breakthrough_route_completion.mjs";
+import "./diagnose_trial_reserved_card_retirement.mjs";
 import { TrialHqArrivalAggregationService } from "../systems/trial_hq_arrival_aggregation_service.js";
 import { TRIAL_ROUTE_PLAN_STATUSES, TRIAL_OUTCOMES } from "../domain/trial_types.js";
 function assert(condition, message) { if (!condition) throw new Error(message); }
