@@ -1,84 +1,142 @@
 # 09-3. 軍事・防衛カード — 実装状態台帳
 
-> **Status:** Mixed — Implemented / Partial
+> **Status:** Active set + Retired legacy boundary
 >
-> Offering条件・コスト・レアリティの現在値は `game/src/data/military_cards.json` / `command_cards_data.js` を参照する。
-> Trial向けカードは、発動時にフラグが立ってもTrial側へ状態が渡らず、最終Resolverが参照していないものが多い。
+> 現在の軍事カード正本データは `game/src/data/military_cards.json` を参照する。
+> 本文書では、通常Offeringへ入る**現役カード**と、旧Trial予約カードとして**retired化されたカード**を分離して扱う。
 
 ---
 
-## 1. 状態ラベル
+## 1. 現在の現役軍事カード
 
-- **Implemented**: 現在のDefenseSystem等へ実効接続済み。
-- **Partial**: カード発動・状態登録はあるが、Trial効果の最終Resolver接続が未完成。
-- **Planned**: データ/設計のみ。
-
----
-
-## 2. カード台帳
+現 `military_cards.json` に存在する軍事カードは以下の3枚。
 
 | ID | 状態 | 現在の実挙動 / 注意点 |
 | :--- | :---: | :--- |
-| `CMD_VIGILANCE` | **Implemented / Different** | 🧱15。次Verseから2Verse、最大🛡️計算へ**+3**。旧説明の「すべての🛡️獲得ごとに+3」ではない。 |
-| `CMD_MUD_OBSTACLE` | **Partial** | `mudObstacleActive` とBuffを登録するが、`TrialTerrainEffectResolver` はこのフラグを参照せず、TrialControllerも通常GameStateのカードflagをTrialStateへ取り込まない。湿原出口倍率は基礎地形ルールのみ。 |
-| `CMD_HIGH_GROUND_FORMATION` | **Partial** | 高地布陣フラグ/Buffは存在するが、`TrialTerrainEffectResolver` の高低差計算は標高のみを参照し、このフラグを参照しない。Trial側未接続を確認済み。 |
-| `CMD_MILITARY_FOCUS` | **Implemented / Internal taxonomy gap / threshold conflict** | `activeDrawBias={ targetCategory:"MILITARY", type:"UNTIL_DEFENSE", untilValue:20 }` を設定し、Offering抽選時に`category:"MILITARY"`の重みを×2する。土地配置後の `checkConditionalBuffs()` で最大🛡️が20以上になれば自動解除される。ただし軍事テーマのカードでも `category:"COMMAND"` のものはBias対象外。またデータの `maxDefense:20` はEligibility側で `>20` のみ除外するため、最大🛡️=20でも候補化・発動できる一方、発動直後の `checkConditionalBuffs()` は `>=20` で即解除する。 |
-| `CMD_CAVALRY_SCOUTS` | **Partial** | 状態フラグを立てるが、通常盤面からの侵攻方向/route生成自体が未接続であり、このフラグを消費するTrial経路もない。現データコストは🌾30＋🧱20。 |
-| `CMD_OUTPOST_SIGNAL` | **Partial** | `outpostSignalActive` を立てるが、警戒/情報解像度やTrial Scenario生成へ未接続。 |
-| `CMD_IRON_RAMPART` | **Implemented / Different** | 🧱20。`DefenseSystem.increaseMaxCapacity(25)`、さらに本営近郊1マスあたり恒久🛡️+2。旧rulesの「🛡️+10」と不一致。 |
-| `CMD_BALLISTA_SET` | **Partial** | 🧱30。最大🛡️容量+40は実装。`nextTrialDamageMitigation=0.5` も立つが、`TrialHqDamageResolver` はこの値を受け取らず、残存敵制圧力と変換率だけから🔥損害を計算する。50%軽減は未接続確定。 |
-| `CMD_GUIDED_DEFENSE` | **Partial** | 発動フラグはあるが、通常盤面からのroute生成/移動コスト計算が未接続で、このフラグを消費する経路もない。 |
-| `CMD_SCOUT_ENEMY` | **Partial** | 🌾5。`scoutEnemyActive` を立てる。旧rulesの2D6情報品質判定は現在発動処理にはなく、Trial Scenario/情報状態への接続もない。 |
-| `CMD_SCORCHED_RETREAT` | **Partial** | 🌾20。`scorchedRetreatTurns=3` とBuffを登録するが、TrialController/TrialStateはこの状態を取り込まず、`ProductionCalculator` も参照しない。現時点ではTrial効果・戦後土地産出ペナルティとも未接続。 |
-| `CMD_CAVALRY_HOST` | **Partial** | 🌾30＋🧱20。`cavalryHostActive` を立てるが、TrialController/TrialStateはこの状態を取り込まず、Trial機動処理へ未接続。 |
-| `CMD_LOCAL_IRON_ARMAMENT` | **Partial** | 🧱15。`localIronArmamentActive` を立てるが、`TrialTerrainEffectResolver` の高地Modifierは標高のみで計算し、このフラグを参照しない。 |
-| `CMD_STONE_STRONGPOINT` | **Partial** | 🧱20。`stoneStrongpointActive` を立てるが、`TrialTerrainEffectResolver` の地形減衰計算は地形IDのみを参照し、このフラグを参照しない。 |
+| `CMD_VIGILANCE` | **Implemented / Different** | 🧱15。次Verseから2Verse、最大🛡️計算へ+3。旧説明の「すべての🛡️獲得ごとに+3」ではない。 |
+| `CMD_MILITARY_FOCUS` | **Implemented / Internal taxonomy gap / threshold conflict** | `activeDrawBias={ targetCategory:"MILITARY", type:"UNTIL_DEFENSE", untilValue:20 }` を設定し、Offering抽選時に `category:"MILITARY"` の重みを×2する。最大🛡️20以上で解除。ただしEligibilityは20ちょうどを許可するため、最大🛡️=20では発動直後に解除される。 |
+| `CMD_IRON_RAMPART` | **Implemented / Different** | 🧱20。`DefenseSystem.increaseMaxCapacity(25)` と、本営近郊1マスあたり恒久🛡️+2。旧説明の「🛡️+10」とは一致しない。 |
+
+### Military Focus のカテゴリ注意
+
+Draw Biasは軍事テーマ全体ではなく、`card.category === "MILITARY"` の完全一致で適用される。
+
+そのため、軍事的な意味を持つカードでも `category:"COMMAND"` ならBias対象外となる。
 
 ---
 
-## 3. Trial側で現在確実に使われるもの
+## 2. retired Trial予約カード
 
-現在のTrial戦闘Resolverが確実に使用するのは、カードフラグより主に以下。
+現在の `CardCycleSystem` は以下を `RETIRED_TRIAL_RESERVED_CARD_IDS` として明示的に永久除外する。
+
+- `CMD_MUD_OBSTACLE`
+- `CMD_HIGH_GROUND_FORMATION`
+- `CMD_CAVALRY_SCOUTS`
+- `CMD_OUTPOST_SIGNAL`
+- `CMD_BALLISTA_SET`
+- `CMD_GUIDED_DEFENSE`
+- `CMD_SCOUT_ENEMY`
+- `CMD_SCORCHED_RETREAT`
+- `CMD_CAVALRY_HOST`
+- `CMD_LOCAL_IRON_ARMAMENT`
+- `CMD_OMEN_DREAM`
+- `CMD_STONE_STRONGPOINT`
+- `CMD_GREAT_RAMPART_PROJECT`
+- `CMD_OUTPOST`
+
+これらは、
+
+- Cooldown判定上つねに再提示不可
+- UNIQUE消費判定上も復帰不可
+- 候補不足フォールバックでも復活不可
+
+となる。
+
+したがって、旧発動分岐や旧state fieldがコード内に残っていても、**現在の通常Offeringで使用可能な現役カードとして扱わない。**
+
+分類: **LEGACY / RETIRED**
+
+---
+
+## 3. 旧「次Trial予約効果」state
+
+`GameState` には現在も、後方互換・旧実装残存として、
+
+- `nextTrialDamageMitigation`
+- `nextTrialMultiplier`
+
+の初期fieldが残る。
+
+ただし現在の `StateSerializer` はこれらを保存しない。
+
+さらに診断テストで、
+
+> `nextTrialDamageMitigation` / `nextTrialMultiplier` をserializeしてはならない
+
+という境界が固定されている。
+
+したがって、以前の
+
+> 「永続化済みのwrite-only Trial modifier」
+
+という分類は古い。
+
+現在は、
+
+> **retired Trial予約カード由来のlegacy state。通常runの永続Gameplay契約には含めない。**
+
+と扱う。
+
+---
+
+## 4. 現在のTrial戦闘で確実に使われる軍事要素
+
+現Trial Resolverが確実に使用するのは、カード予約flagではなく主に以下。
 
 - 配備した現在🛡️
 - `1🛡️ = 5⚔` 換算
-- 森/深い森の大軍展開制限
+- 森 / 深い森の展開制限
 - 湿原出口倍率
 - 砂漠出口倍率
 - 高低差倍率
+- 盤面上の迎撃地点
 
-`TrialController.startScenario()` は完成済みScenarioから独立`TrialState`を生成し、通常GameState上の軍事カードflag群をコピーしない。
+旧Mud / High Ground Formation / Cavalry / Guided Defense等の予約flagは、現役カードではない。
 
-したがって現状は、
+したがって現在のTrialについては、
 
-> **盤面地形そのものはTrialへ接続済みだが、通常GameStateに保存された軍事カード準備状態はTrialへ渡っていない**
+> **「現役軍事カードのTrial予約効果が未接続」ではなく、「旧Trial予約カード群そのものをretired化し、Trialは盤面・地形・🛡️中心へ整理中」**
 
-という状態。
-
-さらに、Trial内部の資源状態と通常GameStateのコミット境界も統一されていない。
-
-- `startTrialInterceptionPreview()` は通常GameState由来の `availableDefense` と🔥をScenarioへコピーする。
-- 迎撃計画を発動すると、消費した🛡️はTrial-local `state.human.availableDefense` からのみ減少する。
-- 現 `TrialController` は通常GameStateの `currentDefense` を減少させない。
-- 一方、本営到達時の🔥損害は `emberSystem.applyDamage()` が注入されていれば通常GameState側へ直接反映される。
-
-したがって現在は、
-
-> **🛡️はTrial-local、🔥損害はGameStateへ直接コミットし得る**
-
-という非対称な半接続状態である。
-
-軍事カードの「次のTrial」効果を完成させる際は、個別フラグを直接Trialへ継ぎ足す前に、通常GameStateからTrial開始時状態を構成し、Trial終了結果を一括でGameStateへ反映する境界を定義する必要がある。
+と見る方が正確。
 
 ---
 
-## 4. 🛡️最大値と現在値
+## 5. Trialとの資源境界
 
-軍事カードの「🛡️を増やす」という表現は、必ず最大値と現在値を区別する。
+軍事カードのretired化とは別に、Trial通常ラン統合には未完成箇所が残る。
+
+- Trial開始時の `availableDefense` は通常GameStateからコピーされる。
+- 迎撃計画で消費した🛡️はTrial-local `state.human.availableDefense` のみ減少する。
+- 通常GameStateの `currentDefense` には消費結果がコミットされない。
+- 本営到達🔥損害は `EmberSystem` 注入時に通常GameStateへwrite-throughする。
+
+したがって現在も、
+
+> **🛡️はTrial-local、🔥損害は通常GameStateへ直接反映し得る**
+
+という非対称境界は残る。
+
+詳細は `99_trial_integration_boundary_audit.md` を参照する。
+
+---
+
+## 6. 🛡️最大値と現在値
+
+軍事カードの「🛡️を増やす」という表現は、最大値と現在値を区別する。
 
 `DefenseSystem.increaseMaxCapacity()` は最大容量を増加させる。現在🛡️が自動的に同量回復するとは限らない。
 
-このためカード説明では、
+カード説明では、
 
 - 最大🛡️容量+X
 - 現在🛡️回復+X
@@ -87,25 +145,19 @@
 
 ---
 
-## 5. 警戒/情報カードとの関係
+## 7. 現在の結論
 
-`reqTrialNotice` / `reqTrialWithin` など、内部では正確なTrial距離を参照する条件がまだ存在する。
+軍事カード周辺は、旧Trial予約カードを多数抱えた状態から、現在は以下へ整理されている。
 
-これはプレイヤーへ「残りN Verse」を見せることを意味しない。現在の設計では、警戒状態・予兆・調査進行を通じて提示する。
+```text
+現役
+├─ 警戒
+├─ Military Focus
+└─ 鉄壁
 
-`CMD_SCOUT_ENEMY`、`CMD_OUTPOST_SIGNAL`、`CMD_CAVALRY_SCOUTS` は将来の調査・情報カテゴリ再編対象でもある。
+旧Trial予約カード
+└─ CardCycleSystemでretired固定
+   └─ 通常Offeringへ復帰しない
+```
 
----
-
-## 6. 実装差分として確認済みの点
-
-1. 軍事カードのActiveフラグは通常GameStateには立つが、現TrialControllerはそれらをTrialStateへ取り込まない。
-2. `TrialTerrainEffectResolver` は地形ID・標高を基礎として処理し、Mud / High Ground Formation / Local Iron Armament / Stone Strongpoint等のカードflagを参照しない。
-3. 《弩砲》の`nextTrialDamageMitigation=0.5`は`TrialHqDamageResolver`へ渡らず、50%軽減は未接続。
-4. route生成自体が通常ランへ未接続のため、Guided Defense / Cavalry Scouts等のroute系効果も消費先がない。
-5. Trial専用手札は存在せず、現状のTrial戦闘は盤面地形と配備🛡️中心で動く。
-6. `TrialController` の🛡️消費はTrial-localであり、通常GameStateの `currentDefense` へコミットされない。
-7. Trial本営損害は、`emberSystem` 注入時には通常GameStateの🔥へ直接反映されるため、🛡️と🔥で永続化境界が一致していない。
-8. Trial完了時のpayloadは生成されるが、Stage遷移・Chronicle・次Trial状態・カードの「次Trial」フラグ消費までを一括処理する結果コミッタは確認できない。
-9. `CMD_MILITARY_FOCUS` はOffering抽選へ直接接続されており、`category:"MILITARY"` の重み×2と最大🛡️20到達時の解除まで実装済み。ただし `military_cards.json` の多くは `category:"COMMAND"` なので、軍事テーマ全体ではなく一部だけがBias対象になる。
-10. `CMD_MILITARY_FOCUS` はEligibilityが `maxDefense:20` を20ちょうどで許可する一方、発動直後の解除判定は最大🛡️20以上を終了条件にする。そのため最大🛡️=20ではカードを使用してもBiasが即時解除される。
+今後Trial統合を監査する際は、retiredカードの旧flagを現行Gameplay要件として数えない。
