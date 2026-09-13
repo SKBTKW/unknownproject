@@ -29,6 +29,7 @@ class MockElement {
         this.children = [];
         this.attributes = {};
         this.style = {};
+        this.dataset = {};
         this.onclick = null;
         this.oninput = null;
         this.disabled = false;
@@ -438,9 +439,8 @@ test("2.2 TrialController all-INTERCEPT complete trial with FAILED outcome when 
         simulateRouteEndDamage: true
     });
 
-    // Verify ember is 0
-    assert.equal(ui.trialController.state.ember, 0);
-
+    // Aggregate damage is intentionally deferred until completeTrial().
+    assert.equal(ui.trialController.state.ember, 1);
     assert.equal(ui.trialController.canCompleteTrial(), true);
 
     const compRes = ui.trialController.completeTrial();
@@ -448,18 +448,20 @@ test("2.2 TrialController all-INTERCEPT complete trial with FAILED outcome when 
     assert.equal(compRes.result.outcome, TRIAL_COMPLETION_OUTCOMES.FAILED);
     assert.equal(compRes.result.emberRemaining, 0);
     assert.ok(compRes.result.totalEmberDamage > 0);
+    assert.equal(ui.trialController.state.ember, 0);
 });
 
-test("2.3 TrialController rejects completion if SKIP route exists (safety gate)", () => {
+test("2.3 TrialController resolves SKIP routes at the aggregate completion boundary", () => {
     const { ui } = createCompletedHarness({
         allIntercept: false,
         initialEmber: 20
     });
 
-    assert.equal(ui.trialController.canCompleteTrial(), false);
+    assert.equal(ui.trialController.canCompleteTrial(), true);
     const compRes = ui.trialController.completeTrial();
-    assert.equal(compRes.success, false);
-    assert.equal(compRes.errors[0], TRIAL_PLAN_REASONS.UNRESOLVED_SKIPPED_ROUTE);
+    assert.equal(compRes.success, true);
+    assert.equal(compRes.hqDamage.aggregate, true);
+    assert.ok(Object.keys(ui.trialController.state.skippedRouteResults).length > 0);
 });
 
 test("2.4 TrialController rejects second call to completeTrial (Idempotency / Guard)", () => {
@@ -543,7 +545,7 @@ test("3.2 UI displays FAILED banner when completed with Ember 0", () => {
         simulateRouteEndDamage: true
     });
 
-    assert.equal(ui.trialController.state.ember, 0);
+    assert.equal(ui.trialController.state.ember, 1);
     ui.render();
 
     const btnComplete = mockDoc.getElementById("btnTrialCompleteTrial");
@@ -551,6 +553,7 @@ test("3.2 UI displays FAILED banner when completed with Ember 0", () => {
     btnComplete.click();
 
     assert.equal(ui.isTrialCompleted(), true);
+    assert.equal(ui.trialController.state.ember, 0);
     ui.render();
 
     const banner = mockDoc.getElementById("trialCompletedBanner");
@@ -558,7 +561,7 @@ test("3.2 UI displays FAILED banner when completed with Ember 0", () => {
     assert.ok(banner.classList.contains("trial-completed-failed"));
 });
 
-test("3.3 UI does not show Complete Trial button when SKIP route exists", () => {
+test("3.3 UI allows aggregate completion when SKIP route exists", () => {
     const { ui } = createCompletedHarness({
         allIntercept: false,
         initialEmber: 20
@@ -566,7 +569,9 @@ test("3.3 UI does not show Complete Trial button when SKIP route exists", () => 
 
     ui.render();
     const btnComplete = mockDoc.getElementById("btnTrialCompleteTrial");
-    assert.equal(btnComplete, null, "Complete Trial button must NOT render with SKIP route");
+    assert.ok(btnComplete, "Complete Trial button must render once SKIP routes are aggregatable");
+    btnComplete.click();
+    assert.equal(ui.isTrialCompleted(), true);
 });
 
 console.log(`\nAll ${passed} Phase 2.8G Trial Completion tests passed successfully!`);

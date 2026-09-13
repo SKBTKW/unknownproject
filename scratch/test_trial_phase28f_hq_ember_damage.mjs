@@ -6,6 +6,7 @@ import {
     TRIAL_PLAN_REASONS,
     TRIAL_BATTLE_STATUSES,
     TRIAL_OUTCOMES,
+    TRIAL_COMPLETION_OUTCOMES,
     GAME_FACT_TYPES
 } from "../game/src/app.js";
 import { I18n } from "../game/src/i18n.js";
@@ -29,6 +30,7 @@ class MockElement {
         this.children = [];
         this.attributes = {};
         this.style = {};
+        this.dataset = {};
         this.onclick = null;
         this.oninput = null;
         this.disabled = false;
@@ -254,6 +256,29 @@ function createTraversedHarness({
     return { engine, ui, controller: ui.trialController };
 }
 
+function completeRemainingTrialBattles({ ui, controller }) {
+    while (controller.state.currentBattleIndex !== null) {
+        const transition = ui.transitionTrialAfterCurrentBattle();
+        assert.equal(transition.success, true, "Setup: transition resolved battle");
+    }
+
+    while (controller.state.battleQueue.some(battle => battle.status === TRIAL_BATTLE_STATUSES.PENDING)) {
+        const start = controller.startNextBattle();
+        assert.equal(start.success, true, "Setup: start remaining battle");
+        const resolve = controller.resolveCurrentBattle();
+        assert.equal(resolve.success, true, "Setup: resolve remaining battle");
+        const traversal = ui.advanceCurrentTrialBattle();
+        assert.equal(traversal.success, true, "Setup: advance remaining battle");
+        const transition = ui.transitionTrialAfterCurrentBattle();
+        assert.equal(transition.success, true, "Setup: transition remaining battle");
+    }
+
+    assert.equal(controller.canCompleteTrial(), true, "Setup: aggregate HQ resolution is ready");
+    const completion = ui.completeTrial();
+    assert.equal(completion.success, true, "Setup: complete Trial");
+    return completion;
+}
+
 console.log("⚔️ Starting Phase 2.8F HQ / Ember Damage Resolution Tests...");
 
 // 1. Pure Resolver tests
@@ -347,7 +372,7 @@ test("TrialController: No route end produces NO_ROUTE_END_DAMAGE and 0 Fact", ()
     assert.equal(damageFacts.length, 0);
 });
 
-test("TrialController: Route end breakthrough applies exactly 1 damage resolution and emits 1 Fact", () => {
+test("TrialController: Route end breakthrough waits for aggregate completion and emits 1 Fact", () => {
     // Intercept at cell (3,1) (final cell) with 1 defense -> BREAKTHROUGH -> reachedRouteEnd === true
     const { ui, controller, engine } = createTraversedHarness({
         interceptCell: { r: 3, c: 1 },
@@ -357,10 +382,17 @@ test("TrialController: Route end breakthrough applies exactly 1 damage resolutio
     const traversal = controller.getCurrentTraversalResult();
     assert.equal(traversal.reachedRouteEnd, true);
 
-    // Damage was auto-resolved upon traversal advance
-    const damageResult = ui.getCurrentTrialDamageResult();
-    assert.ok(damageResult, "DamageResult should exist");
-    assert.equal(damageResult.reachedRouteEnd, true);
+    const pending = controller.resolveRouteEndDamage(0);
+    assert.equal(pending.success, true);
+    assert.equal(pending.pendingAggregation, true);
+    assert.equal(controller.state.hqDamageResolution, null);
+    assert.equal(engine.state.ember, 20);
+    assert.equal(controller.gameFactHub.getFacts().filter(f => f.type === GAME_FACT_TYPES.TRIAL_HQ_DAMAGE_RESOLVED).length, 0);
+
+    const completion = completeRemainingTrialBattles({ ui, controller });
+    const damageResult = completion.hqDamage;
+    assert.ok(damageResult, "Aggregate DamageResult should exist");
+    assert.equal(damageResult.aggregate, true);
     assert.equal(damageResult.damageApplied, true);
     assert.ok(damageResult.emberDamage > 0, "Should inflict damage");
     assert.equal(damageResult.emberAfter, 20 - damageResult.emberDamage);
@@ -375,16 +407,18 @@ test("TrialController: Route end breakthrough applies exactly 1 damage resolutio
     assert.equal(damageFacts[0].payload.emberDamage, damageResult.emberDamage);
 });
 
-test("TrialController: Duplicate damage resolution is rejected (Atomicity & Idempotency)", () => {
-    const { ui, controller } = createTraversedHarness({
+test("TrialController: Duplicate aggregate damage resolution is rejected (Atomicity & Idempotency)", () => {
+    const harness = createTraversedHarness({
         interceptCell: { r: 3, c: 1 },
         defenseAlloc: 1
     });
+    const { controller } = harness;
+    completeRemainingTrialBattles(harness);
 
     const initialEmber = controller.state.ember;
 
-    // Attempt second damage resolution on battle 0
-    const secondCall = controller.resolveRouteEndDamage(0);
+    // Attempt a second aggregate resolution
+    const secondCall = controller.resolveAggregatedHqDamage();
     assert.equal(secondCall.success, false);
     assert.equal(secondCall.errors[0], TRIAL_PLAN_REASONS.DAMAGE_ALREADY_APPLIED);
 
@@ -396,89 +430,72 @@ test("TrialController: Duplicate damage resolution is rejected (Atomicity & Idem
     assert.equal(damageFacts.length, 1);
 });
 
-test("TrialController: Multiple breakthroughs across different battles resolve independently", () => {
-    const { ui, controller, engine } = createTraversedHarness({
+test("TrialController: Multiple route arrivals resolve in one aggregate", () => {
+    const harness = createTraversedHarness({
         interceptCell: { r: 3, c: 1 },
         defenseAlloc: 1,
         multiRoute: true
     });
+    const { controller, engine } = harness;
 
-    // Battle 0 breakthrough reached route end
-    const damage0 = controller.getDamageResult(0);
-    assert.ok(damage0, "Damage 0 should exist");
-    assert.equal(damage0.damageApplied, true);
-    const emberAfter0 = controller.state.ember;
+    const completion = completeRemainingTrialBattles(harness);
+    const damageResult = completion.hqDamage;
+    assert.equal(damageResult.aggregate, true);
+    assert.ok(damageResult.routeEndCount >= 2, "Aggregate should include multiple arrivals");
+    assert.equal(damageResult.emberDamage, Math.ceil(damageResult.sourcePower / damageResult.conversionRate));
+    assert.equal(controller.state.ember, damageResult.emberAfter);
+    assert.equal(engine.state.ember, damageResult.emberAfter);
 
-    // Transition to battle 1
-    const transRes = ui.transitionTrialAfterCurrentBattle();
-    assert.equal(transRes.success, true);
-    assert.equal(controller.state.currentBattleIndex, null);
-
-    // Battle 1
-    const start1 = ui.trialController.startNextBattle();
-    assert.equal(start1.success, true);
-    const resolve1 = ui.trialController.resolveCurrentBattle();
-    assert.equal(resolve1.success, true);
-    const adv1 = ui.advanceCurrentTrialBattle();
-    assert.equal(adv1.success, true);
-
-    const damage1 = controller.getDamageResult(1);
-    assert.ok(damage1, "Damage 1 should exist");
-    assert.equal(damage1.damageApplied, true);
-
-    // Ember should be further reduced
-    const emberAfter1 = controller.state.ember;
-    assert.equal(emberAfter1, damage1.emberAfter);
-    assert.equal(emberAfter1, Math.max(0, emberAfter0 - damage1.emberDamage));
-    assert.equal(engine.state.ember, emberAfter1);
-
-    // Total Facts should be 2
+    // All arrivals produce one aggregate Fact.
     const damageFacts = controller.gameFactHub.getFacts().filter(f => f.type === GAME_FACT_TYPES.TRIAL_HQ_DAMAGE_RESOLVED);
-    assert.equal(damageFacts.length, 2);
-    assert.equal(damageFacts[0].payload.battleIndex, 0);
-    assert.equal(damageFacts[1].payload.battleIndex, 1);
+    assert.equal(damageFacts.length, 1);
+    assert.equal(damageFacts[0].payload.aggregate, true);
 });
 
 test("TrialController: Clamp ember at 0 without negative numbers", () => {
-    const { ui, controller, engine } = createTraversedHarness({
+    const harness = createTraversedHarness({
         interceptCell: { r: 3, c: 1 },
         defenseAlloc: 1,
         initialEmber: 2
     });
+    const { controller, engine } = harness;
 
-    const damageResult = controller.getCurrentDamageResult();
+    const damageResult = completeRemainingTrialBattles(harness).hqDamage;
     assert.ok(damageResult.emberDamage > 2, "Damage should exceed initial 2 ember");
     assert.equal(damageResult.emberAfter, 0, "emberAfter must clamp to 0");
     assert.equal(controller.state.ember, 0);
     assert.equal(engine.state.ember, 0);
 });
 
-test("TrialController: Ember 0 does NOT trigger Trial Completion in Phase 2.8F", () => {
-    const { controller } = createTraversedHarness({
+test("TrialController: Ember 0 completes Trial with a retained FAILED result", () => {
+    const harness = createTraversedHarness({
         interceptCell: { r: 3, c: 1 },
         defenseAlloc: 1,
         initialEmber: 1
     });
+    const { controller } = harness;
 
+    const completion = completeRemainingTrialBattles(harness);
     assert.equal(controller.state.ember, 0);
-    // Strict Scope check: No completion!
-    assert.equal(controller.state.result, null);
-    assert.notEqual(controller.state.phase, "RESULT");
+    assert.equal(completion.result.outcome, TRIAL_COMPLETION_OUTCOMES.FAILED);
+    assert.equal(controller.state.result.outcome, TRIAL_COMPLETION_OUTCOMES.FAILED);
+    assert.equal(controller.state.phase, "RESULT");
 });
 
 test("TrialController: Snapshot mutation does not corrupt internal state", () => {
-    const { controller } = createTraversedHarness({
+    const harness = createTraversedHarness({
         interceptCell: { r: 3, c: 1 },
         defenseAlloc: 1
     });
+    const { controller } = harness;
 
-    const snapshot = controller.getCurrentDamageResult();
+    const snapshot = completeRemainingTrialBattles(harness).hqDamage;
     snapshot.emberDamage = 99999;
-    snapshot.reachedRouteEnd = false;
+    snapshot.aggregate = false;
 
-    const freshSnapshot = controller.getCurrentDamageResult();
+    const freshSnapshot = controller.state.hqDamageResolution;
     assert.notEqual(freshSnapshot.emberDamage, 99999);
-    assert.equal(freshSnapshot.reachedRouteEnd, true);
+    assert.equal(freshSnapshot.aggregate, true);
 });
 
 test("TrialController: Non-damage resource integrity", () => {
@@ -493,17 +510,16 @@ test("TrialController: Non-damage resource integrity", () => {
     assert.equal(controller.state.human.mystic, 0);
 });
 
-test("UI Integration: Damage badge is rendered upon route end and Next Battle button is present", () => {
+test("UI Integration: Aggregate damage is withheld at route end and Next Battle button is present", () => {
     const { ui } = createTraversedHarness({
         interceptCell: { r: 3, c: 1 },
         defenseAlloc: 1
     });
 
     ui.render();
-    // Check damage badge element rendered
+    // Per-route damage is no longer rendered before aggregate completion.
     const badge = mockBody.querySelector("#trialHqDamageBadge");
-    assert.ok(badge, "#trialHqDamageBadge should be rendered");
-    assert.ok(badge.textContent.includes("🔥"), "Badge should contain 🔥");
+    assert.equal(badge, null, "#trialHqDamageBadge should wait for aggregate completion");
 
     // Check next battle button
     const nextBtn = mockBody.querySelector("#btnTrialNextBattle");

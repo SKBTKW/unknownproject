@@ -4,6 +4,7 @@ import { UILayoutConfig } from '../game/src/ui/layout_config.js';
 
 const read = path => readFileSync(new URL(path, import.meta.url), 'utf8');
 const base = read('../game/css/0_global_common/base_layout.css');
+const tokens = read('../game/css/0_global_common/layout_tokens.css');
 const header = read('../game/css/1_top_header/top_header.css');
 const legacy = read('../game/css/layout.css');
 const tray = read('../game/css/3_bottom_area/draw_card_select_area.css');
@@ -24,20 +25,22 @@ const rule = (css, selector) => namedRule(css, `.${selector}`);
 check('Header has one owner in the dedicated stylesheet, after the global token', () => {
     assert.equal((header.match(/\.top-bar\s*\{/g) || []).length, 1);
     assert.doesNotMatch(legacy, /\.top-bar\s*\{/);
-    assert.ok(html.indexOf('base_layout.css') < html.indexOf('top_header.css'));
+    assert.ok(html.indexOf('base_layout.css') < html.indexOf('layout_tokens.css'));
+    assert.ok(html.indexOf('layout_tokens.css') < html.indexOf('top_header.css'));
     assert.ok(html.indexOf('top_header.css') < html.indexOf('css/layout.css'));
 });
 check('Header retains the effective 84px border-box height and visible overflow', () => {
     assert.match(base, /\*\s*\{\s*box-sizing:\s*border-box;/);
-    assert.match(base, /--layout-header-height:\s*84px;/);
+    assert.match(tokens, /--layout-header-height:\s*84px;/);
+    assert.doesNotMatch(base, /--layout-header-height\s*:/);
     const style = rule(header, 'top-bar');
-    assert.equal(style.height, 'var(--layout-header-height, 84px)');
+    assert.equal(style.height, 'var(--layout-header-height)');
     assert.equal(style.overflow, 'visible');
     assert.equal(style.padding, '0 20px');
     assert.equal(style['box-shadow'], '0 4px 14px rgba(0,0,0,0.5)');
 });
 check('Logo CSS and inline config keep the prior 96px relative offset', () => {
-    assert.match(base, /top:\s*calc\(var\(--layout-header-height\) \+ var\(--layout-app-gap\) \+ 4px\)/);
+    assert.match(tokens, /--layout-app-gap:\s*8px;/);
     assert.equal(UILayoutConfig.gameWallpaperArt.top,
         'calc(var(--layout-header-height, 84px) + var(--layout-app-gap, 8px) + 4px)');
     assert.equal(84 + 8 + 4, 80 + 8 + 8);

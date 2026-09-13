@@ -34,6 +34,13 @@
     z-index: var(--z-advisor) !important;
 }
 
+/* Keep dormant diagnostics mounted without exposing them in the play layout. */
+#logComponentContainer,
+#devDiceControlsRoot {
+    display: none;
+    pointer-events: none;
+}
+
 /* System Overlay is a viewport-sized screen-space region. */
 #layerSystemOverlay.layer-system-overlay {
     position: fixed !important;

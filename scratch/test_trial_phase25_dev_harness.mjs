@@ -44,7 +44,9 @@ test("dev modeで固定5x5地形比較Scenarioを起動できる", () => {
 });
 
 test("湿原はrouteだが迎撃候補ではない", () => {
-    assert.deepEqual(ui.getTrialInterceptionCellState(0, 0), { onRoute: true, canIntercept: false });
+    const state = ui.getTrialInterceptionCellState(0, 0);
+    assert.equal(state?.onRoute, true);
+    assert.equal(state?.canIntercept, false);
 });
 
 test("草原・森・高所・湿原出口を同じ条件で比較できる", () => {

@@ -30,6 +30,7 @@ class MockElement {
         this.children = [];
         this.attributes = {};
         this.style = {};
+        this.dataset = {};
         this.onclick = null;
         this.oninput = null;
         this.disabled = false;

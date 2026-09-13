@@ -77,6 +77,7 @@ const profileSource = fs.readFileSync(path.join(ROOT, "game/src/ui/advisor/advis
 const contentSource = fs.readFileSync(path.join(ROOT, "game/src/ui/advisor/advisor_content_controller.js"), "utf8");
 const css = fs.readFileSync(path.join(ROOT, "game/css/4_right_sidebar/advisor_ui.css"), "utf8");
 const layoutCss = fs.readFileSync(path.join(ROOT, "game/css/0_global_common/base_layout.css"), "utf8");
+const layerContractCss = fs.readFileSync(path.join(ROOT, "game/css/0_global_common/layer_contract.css"), "utf8");
 const trayCss = fs.readFileSync(path.join(ROOT, "game/css/3_bottom_area/draw_card_select_area.css"), "utf8");
 
 check(new URL(DEFAULT_ADVISOR_PROFILE.portraitCollapsed).pathname.endsWith("/assets/advisor/advisor01_small.png"), "格納時portraitはadvisor01_small.pngを参照する");
@@ -102,8 +103,17 @@ check(css.includes("--advisor-collapsed-width") && css.includes("--advisor-expan
 check(css.includes("pointer-events: none") && css.includes("pointer-events: auto"), "透明wrapperは盤面入力を奪わず操作部だけを有効にする");
 check(css.includes("object-fit: contain") && css.includes("object-position: center bottom") && css.includes("overflow: hidden"), "portrait viewportで画像サイズ差を吸収する");
 check(trayCss.includes("#layerPlayerTray.layer-player-tray") && trayCss.includes("justify-content: flex-start !important") && trayCss.includes("z-index: 700 !important"), "手札を左下へ寄せる");
-check(layoutCss.includes("#advisorDockContainer") && layoutCss.includes("z-index: 420"), "Advisorを手札より下層にする");
-check(layoutCss.includes("#devDiceControlsRoot") && layoutCss.includes("display: none"), "判定テストHUDを機能保持のまま非表示にする");
+check(layoutCss.includes("--z-advisor: 420")
+    && layoutCss.includes("--z-player: 700")
+    && layerContractCss.includes("#advisorDockContainer")
+    && layerContractCss.includes("z-index: var(--z-advisor) !important")
+    && layerContractCss.includes("z-index: var(--z-player) !important"),
+"Advisorを手札より下層にする");
+check(layerContractCss.includes("#logComponentContainer")
+    && layerContractCss.includes("#devDiceControlsRoot")
+    && layerContractCss.includes("display: none")
+    && layerContractCss.includes("pointer-events: none"),
+"ログと判定テストHUDを機能保持のまま非表示にする");
 check(!css.includes("rotation") && !css.includes("rotate(") && !css.includes("bounce"), "開閉animationにrotation/bounceを使わない");
 check(!css.includes("!important"), "Advisor CSSへ!importantを追加しない");
 
