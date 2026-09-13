@@ -2,65 +2,90 @@
 
 > **Status:** Audit Ledger / Non-Authority
 >
-> `DeckManager.playCommandCard()` に発動分岐が残る一方、現行 `COMMAND_CARDS_MASTER` にカード定義が存在せず、通常Offeringから到達できないことを確認した分岐を記録する。
+> `DeckManager.playCommandCard()` 等に旧分岐が残っていても、現在の通常Offeringから到達できないものを整理する。
 
-## Confirmed unreachable branches
+## 1. master定義がなく通常Offeringから到達不能
 
-| ID | DeckManager branch | Current COMMAND_CARDS_MASTER | 分類 |
-| :--- | :---: | :---: | :--- |
-| `CMD_LAND_EXPLORATION` | あり | なし | **LEGACY / normal Offering unreachable** |
-| `CMD_PASTORAL_EXPANSION` | あり | なし | **LEGACY / normal Offering unreachable** |
-| `CMD_LIME_CONSTRUCTION` | あり | なし | **LEGACY / normal Offering unreachable** |
-| `FAC_GREAT_WINDMILL` | あり | なし | **LEGACY / normal Offering unreachable** |
-| `LGD_DESPERATE_PACT` | あり | なし | **LEGACY / normal Offering unreachable** |
-| `CMD_AGRICULTURAL_POLICY` | あり | なし | **LEGACY alias / normal Offering unreachable** |
-| `CMD_BLACK_MARKET` | あり | なし | **LEGACY / normal Offering unreachable** |
-| `CMD_CONSERVE_EMBER` | あり | なし | **LEGACY / normal Offering unreachable** |
-| `CMD_GRAND_CULTIVATION` | あり | なし | **LEGACY / normal Offering unreachable** |
-| `CMD_SYSTEMATIC_LOGGING` | あり | なし | **LEGACY / normal Offering unreachable** |
-| `CMD_SINGLE_CLEARING` | あり | なし | **LEGACY / normal Offering unreachable** |
-| `CMD_OUTPOST` | あり | なし | **LEGACY / normal Offering unreachable** |
+| ID | 分類 |
+| :--- | :--- |
+| `CMD_LAND_EXPLORATION` | **LEGACY / master absent** |
+| `CMD_PASTORAL_EXPANSION` | **LEGACY / master absent** |
+| `CMD_LIME_CONSTRUCTION` | **LEGACY / master absent** |
+| `FAC_GREAT_WINDMILL` | **LEGACY / master absent** |
+| `LGD_DESPERATE_PACT` | **LEGACY / master absent** |
+| `CMD_AGRICULTURAL_POLICY` | **LEGACY alias / master absent** |
+| `CMD_BLACK_MARKET` | **LEGACY / master absent** |
+| `CMD_CONSERVE_EMBER` | **LEGACY / master absent** |
+| `CMD_GRAND_CULTIVATION` | **LEGACY / master absent** |
+| `CMD_SYSTEMATIC_LOGGING` | **LEGACY / master absent** |
+| `CMD_SINGLE_CLEARING` | **LEGACY / master absent** |
 
-## Notes
+### 代表例
 
-### `CMD_LAND_EXPLORATION`
+`CMD_AGRICULTURAL_POLICY` は旧aliasで、現行《農地改革》は `CMD_AGRICULTURAL_REFORM`。
 
-旧standalone探索系。現行方針では独立探索を中核仕様から外しており、カードmasterにも存在しない。
+`LGD_DESPERATE_PACT` は旧《背水の盟約》で、`nextTrialMultiplier` を書く分岐が残るが現masterから通常発火しない。
 
-### `CMD_PASTORAL_EXPANSION`
+---
 
-発動すると `pastoralExpansionActive=true` を立てる旧分岐が残るが、現masterにカード自体がない。現行経済カード `CMD_PASTORAL_FARM` とは別ID。
+## 2. CardCycleで明示retiredされたTrial予約カード
 
-### `CMD_LIME_CONSTRUCTION`
+現在 `CardCycleSystem.RETIRED_TRIAL_RESERVED_CARD_IDS` に含まれるカード:
 
-発動すると `limeConstructionActive=true` を立てる旧分岐が残るが、現masterにカード自体がない。現行 `CMD_LIME_KILN` とは別ID。
+- `CMD_MUD_OBSTACLE`
+- `CMD_HIGH_GROUND_FORMATION`
+- `CMD_CAVALRY_SCOUTS`
+- `CMD_OUTPOST_SIGNAL`
+- `CMD_BALLISTA_SET`
+- `CMD_GUIDED_DEFENSE`
+- `CMD_SCOUT_ENEMY`
+- `CMD_SCORCHED_RETREAT`
+- `CMD_CAVALRY_HOST`
+- `CMD_LOCAL_IRON_ARMAMENT`
+- `CMD_OMEN_DREAM`
+- `CMD_STONE_STRONGPOINT`
+- `CMD_GREAT_RAMPART_PROJECT`
+- `CMD_OUTPOST`
 
-### `FAC_GREAT_WINDMILL`
+これらは、古い定義や発動分岐が残っていても、Card Cycle上で通常Offeringへ戻らない。
 
-`activeConstructionProjects` へ大風車建設projectを登録する分岐が残るが、現masterに定義がない。
+- `isRetiredCard()` → true
+- `isInCooldown()` → 常時true
+- UNIQUE消費判定上も復帰不可
+- 候補不足フォールバックでも復活不可
 
-### `LGD_DESPERATE_PACT`
+分類: **LEGACY / RETIRED / normal Offering unreachable**
 
-旧《背水の盟約》分岐。🔥+5、Offering4枚化、`nextTrialMultiplier=1.5` を設定するが、現masterに定義がない。
+---
 
-このため `nextTrialMultiplier` は現GameStateに残るものの、少なくともこの旧分岐は通常Offeringから発火しない。
+## 3. retired Trial modifier state
 
-### `CMD_AGRICULTURAL_POLICY`
+旧Trial予約カード由来の以下fieldはGameState初期値だけ残る。
 
-旧《農地改革》系alias。現行masterと通常Offeringが使用するIDは `CMD_AGRICULTURAL_REFORM` であり、そちらの発動分岐は別途存在する。したがって現《農地改革》が壊れているわけではなく、旧alias分岐だけが残っている。
+- `nextTrialDamageMitigation`
+- `nextTrialMultiplier`
 
-### その他の旧分岐
+現在のStateSerializerはこれらを保存しない。
 
-`CMD_BLACK_MARKET`、`CMD_CONSERVE_EMBER`、`CMD_GRAND_CULTIVATION`、`CMD_SYSTEMATIC_LOGGING`、`CMD_SINGLE_CLEARING`、`CMD_OUTPOST` も発動分岐は残るが現masterには存在しない。
+診断テストでも「serializeしてはならない」と固定されている。
 
-これらのstate・Buff・コメント・古い効果値を、現行カード仕様の根拠として扱わない。
+したがって現在の永続Gameplay仕様として扱わない。
 
-## Audit rule
+---
 
-本表の項目は「コードが存在する」ことだけを理由に現行カード仕様へ戻さない。
+## 4. Audit rule
 
-再採用が明示されない限り、
+次の3つを区別する。
 
-> **legacy compatibility / dead branch candidate**
+```text
+現masterに存在 + Offering到達可能
+→ 現役候補
 
-として扱う。
+masterに定義なし
+→ LEGACY / master absent
+
+CardCycle RETIRED_TRIAL_RESERVED_CARD_IDS
+→ LEGACY / RETIRED
+```
+
+コード分岐やstate fieldが残っていることだけを理由に、現行カード仕様へ戻さない。
