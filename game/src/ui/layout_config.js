@@ -235,9 +235,9 @@ const UILayoutConfig = {
 
     advisorDock: {
         position: "fixed",
-        right: "16px",
-        bottom: "16px",
-        zIndex: 420,
+        right: "var(--layout-advisor-right)",
+        bottom: "var(--layout-advisor-bottom)",
+        zIndex: "var(--z-advisor)",
         pointerEvents: "none",
         "--advisor-report-expanded-left": "18px",
         "--advisor-report-expanded-top": "30%"
