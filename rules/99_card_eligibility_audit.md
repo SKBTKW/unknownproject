@@ -2,45 +2,36 @@
 
 > **Status:** Audit / Non-Authority
 >
-> 本文書は、現行カードマスターに存在する Offering 条件キーと `DeckManager.isCardEligible()` の対応状況を監査するための非正本文書である。
-> ゲームルールの正解は `04_draw_and_hand_system.md` および `09_cards/` を参照する。
->
-> 目的は、**カードデータに条件キーが存在すること**と、**runtimeでその条件が意味どおり評価されていること**を混同しないこと。
-
----
+> 現行カードmasterに存在し、通常Offeringへ到達し得るカードの条件キーと `DeckManager.isCardEligible()` の対応状況を監査する。
 
 ## 1. 分類
 
 | 分類 | 意味 |
 | :--- | :--- |
-| **SUPPORTED** | 現 `DeckManager.isCardEligible()` が条件を明示的に評価する。 |
-| **UNSUPPORTED** | 現カードデータに存在するが、Eligibility側に対応処理を確認できない。 |
-| **SEMANTIC_MISMATCH** | キー自体は評価されるが、名前・データ意図と実判定の意味が一致しない。 |
-| **KEY_MISMATCH** | データ側とEligibility側でキー名が一致せず、意図した条件が接続されない。 |
-| **INTERNAL_CONFLICT** | 同一条件を複数経路で異なる意味で評価する。 |
+| **SUPPORTED** | runtimeが条件を明示評価する。 |
+| **UNSUPPORTED** | データにあるが対応処理を確認できない。 |
+| **SEMANTIC_MISMATCH** | キーは読むが意味が一致しない。 |
+| **KEY_MISMATCH** | データ側とruntime側でキー名が違う。 |
+| **INTERNAL_CONFLICT** | 同じ条件を複数経路で異なる意味に扱う。 |
 
 ---
 
 ## 2. Land Cards
 
-### 現在確認済み
-
 | データキー | 分類 | runtime |
 | :--- | :---: | :--- |
-| `minStage` | **SUPPORTED** | `cardStage > stageNum` なら除外。 |
-| `reqE2` | **KEY_MISMATCH** | 山岳カードは `reqE2:3` を持つが、Eligibility側が見るのは `reqE2HillsOnBoard`。`reqE2` の正規化/参照を確認できない。 |
+| `minStage` | **SUPPORTED** | Stage条件を評価。 |
+| `reqE2` | **KEY_MISMATCH** | 山岳カードは `reqE2:3`、Eligibility側は `reqE2HillsOnBoard` を見る。 |
 
-### 影響
+さらに `countE2HillsOnBoard()` は `terrain.id === "E2_HILL"` を見る一方、通常配置カードは `terrainId:"E2_HILL"` を持つため、キー名だけ直しても丘陵数を正しく数えない可能性がある。
 
-山岳カード3種はデータ上「丘陵3マス」を前提としているが、現runtimeではその条件がOfferingへ接続されていない。
+山岳カードは丘陵条件を無視してOfferingへ出現し、配置側の高度差制約により合法配置先を持たない死に札になり得る。
 
 ---
 
 ## 3. Economy Cards
 
 ### SUPPORTED
-
-以下は現 `DeckManager.isCardEligible()` で明示的に評価される。
 
 - `minStage`
 - `reqWood`
@@ -60,9 +51,7 @@
 
 ### UNSUPPORTED
 
-現カードデータに存在するが、Eligibility側の対応処理を確認できない。
-
-| キー | 主なカード |
+| キー | 主な現役カード |
 | :--- | :--- |
 | `reqMinLinks` | `CMD_MARKET` |
 | `reqIndustrySpecialBlocks` | `CMD_DEPOT`, `CMD_INDUSTRIAL_ROAD` |
@@ -72,120 +61,123 @@
 | `reqLinkedDistinctIndustries` | `CMD_INDUSTRIAL_CLUSTER` |
 | `reqPlainsOrReclaimed` | `CMD_IRRIGATION` |
 
-これらは未評価なので、他の条件だけを満たせば想定より早くOfferingへ出現し得る。
-
 ### SEMANTIC_MISMATCH
 
-| キー | 現データ上の意味 | 現runtime判定 |
-| :--- | :--- | :--- |
-| `reqConnectedPlainsOrReclaimed` | 連結した平地/干拓地 | 連結成分を探索せず、盤面全体の平地＋干拓地を単純合計。 |
-| `reqForestNearby` | 近隣の森 | 対象位置を持たず、盤面全体の森系マス数を集計。 |
-| `reqLoggingCamp` | 伐採拠点の存在 | 伐採拠点Buffがなくても、盤面に森が1マスあれば成立。 |
+| キー | 現runtime |
+| :--- | :--- |
+| `reqConnectedPlainsOrReclaimed` | 連結成分ではなく盤面全体の平地＋干拓地合計。 |
+| `reqForestNearby` | 近接ではなく盤面全体の森系マス数。 |
+| `reqLoggingCamp` | 伐採拠点がなくても森1マスで成立し得る。 |
 
 ---
 
-## 4. Military Cards
+## 4. Military Cards — 現役masterのみ
 
-現 `military_cards.json` / `command_cards_data.js` で使用される主要Eligibilityキーについては、今回の監査範囲では対応処理を確認できた。
+現 `military_cards.json` に存在するのは3枚。
+
+- `CMD_VIGILANCE`
+- `CMD_MILITARY_FOCUS`
+- `CMD_IRON_RAMPART`
+
+現役masterで使用される主要条件:
 
 - `minStage`
 - `reqTrialOrLowDefense`
+- `maxDefense`
+- `reqWood`
+
+これらは今回の監査範囲では対応処理あり。
+
+以前ここへ含めていた、
+
 - `reqWetlandOrLake`
 - `reqTrialNotice`
-- `maxDefense`
 - `reqDiscoveredResourceTag`
 - `reqPlains`
 - `reqOutpostOrHighGround`
-- `reqWood`
 - `reqHillOrMountain`
 - `reqConnectedHillOrForest`
 - `reqTrialWithin`
 - `reqConnectedPlains`
 - `reqFood`
 
-したがって、軍事カードの主要な未完成点はEligibilityより、**発動後のTrial効果消費側**に集中している。
+等の多くはretired Trial予約カード由来であり、**現役軍事Eligibility監査から除外する。**
 
-別途、`CMD_MILITARY_FOCUS` のDraw Biasはテーマ上の軍事カード全体ではなく、`category:"MILITARY"` のカードだけを×2する。これはEligibilityではなくWeight/Category側の内部不一致として扱う。
+### Military Focus境界値
+
+データの `maxDefense:20` はEligibility側で20ちょうどを許可する一方、発動後の終了条件は最大🛡️20以上。
+
+そのため最大🛡️=20では候補化・発動後に即解除される。
 
 ---
 
-## 5. Mystic Cards
+## 5. Mystic Cards — 現役masterのみ
 
-現 `mystic_cards.json` / `command_cards_data.js` で使用される主要Eligibilityキーについては、今回の監査範囲では対応処理を確認できた。
+現 `mystic_cards.json` の主要条件:
 
 - `minStage`
 - `maxMystic`
 - `reqMystic`
 - `reqDiscoveredResourcesCount`
-- `reqTrialWithin`
 - `maxEmber`
 - `reqUnmergedDesertOrMountain`
 - `reqDiscoveredMysticResourcesCount`
 
-したがって、神秘カードの主要な未完成点はEligibilityより、**発動後のコスト代替 / Offering操作 / 情報解像度の消費側**に集中している。
+これらは今回の監査範囲では対応処理あり。
 
-別途、`CMD_MYSTIC_FOCUS` のDraw Biasはテーマ上の神秘カード全体ではなく、`category:"MYSTIC"` のカードだけを×2する。
-
----
-
-## 6. Eligibility実装内の潜在的不一致
-
-### `maxPlacedBlocks`
-
-`DeckManager.isCardEligible()` 内には `maxPlacedBlocks` を評価する処理が二系統ある。
-
-1. 前半: `state.countPlacedTiles()` を使用する。
-2. 後半: `ConditionEvaluator.PLACED_BLOCKS_AT_MOST` を使用する。
-
-後者は `state.placedBlocksCount` または `state.placedCards.length` を参照するが、現 `GameState` の正式な開発ブロック数stateは `placedBlockCount`（単数）である。
-
-したがって同じ `maxPlacedBlocks` という名前に対して、
-
-- マス数
-- 別名のブロック数state
-
-が混在している。
-
-現行主要カードマスターでの実利用は今回確認できていないため、現在のプレイヤー挙動への影響は確定扱いせず、**潜在的なINTERNAL_CONFLICT**として記録する。
+以前含めていた `reqTrialWithin` はretired化された `CMD_OMEN_DREAM` 由来なので、現役神秘Eligibility要件から除外する。
 
 ---
 
-## 7. Draw BiasはEligibilityとは別
+## 6. retiredカード条件の扱い
 
-現 `DeckManager.drawSingleCard()` のDraw Biasは、
+`CardCycleSystem.RETIRED_TRIAL_RESERVED_CARD_IDS` に含まれるカードは、定義や旧条件処理が残っていても通常Offeringへ戻らない。
+
+したがってretiredカードだけが使用する条件キーを、現役カードシステムの未完成要件として数えない。
+
+分類: **LEGACY / RETIRED**
+
+---
+
+## 7. `maxPlacedBlocks` 潜在不一致
+
+`DeckManager.isCardEligible()` 内には `maxPlacedBlocks` 評価が複数系統ある。
+
+- `countPlacedTiles()` を見る経路
+- `placedBlocksCount` / `placedCards.length` を見る経路
+
+一方、現GameStateの正式fieldは `placedBlockCount`。
+
+現役主要masterでの実利用は確認できていないため、**潜在INTERNAL_CONFLICT**として保留する。
+
+---
+
+## 8. Draw BiasはEligibilityとは別
+
+Draw Biasは、
 
 ```text
 card.category === activeDrawBias.targetCategory
 ```
 
-の完全一致で対象を決める。
+の完全一致。
 
-したがって、
+- Military Focus → `MILITARY`のみ
+- Mystic Focus → `MYSTIC`のみ
 
-- `MILITARY` Bias → `category:"MILITARY"` のみ
-- `MYSTIC` Bias → `category:"MYSTIC"` のみ
-- テーマ上は軍事/神秘でも `category:"COMMAND"` のカードは対象外
-
-となる。
-
-このためカードテーマ・tags・rules上の分類語とruntime `category` を同一視しない。
+テーマ上は軍事/神秘でも `COMMAND` categoryなら対象外。
 
 ---
 
-## 8. 監査結論
+## 9. 結論
 
-現カードシステムでは、
+Eligibility監査では常に、
 
-> **カードマスターに条件やカテゴリが書かれている = その意味どおりOffering runtimeへ接続済み**
+1. 現masterに存在するか
+2. CardCycleでretiredされていないか
+3. 条件キーをruntimeが読むか
+4. キー名どおりの意味で判定するか
 
-とは限らない。
+を分けて確認する。
 
-今回確認された主なパターンは以下。
-
-1. 条件キーそのものが未対応。
-2. データとEligibilityでキー名が違う。
-3. 条件名と実際の判定意味が違う。
-4. テーマ上のカテゴリとruntime `category` が違う。
-5. 条件判定が複数系統に重複している。
-
-この文書は監査結果の索引であり、新しいゲーム仕様を定義しない。
+**旧カードの条件処理が残っていることを、現役Offering仕様の根拠にしない。**
