@@ -136,8 +136,12 @@ test("UIのBoard hover接続はGameStateと現在🛡️を変更しない", () 
         routes: [{ id: "NORTH", cells: routeCells.map(({ r, c }) => ({ r, c })) }]
     }, { deployedDefense: Math.min(6, currentDefense), routeId: "NORTH" });
     const before = JSON.stringify(serializeGameState(engine.state));
-    assert.deepEqual(ui.getTrialInterceptionCellState(0, 0), { onRoute: true, canIntercept: false });
-    assert.deepEqual(ui.getTrialInterceptionCellState(0, 1), { onRoute: true, canIntercept: true });
+    const forbiddenState = ui.getTrialInterceptionCellState(0, 0);
+    assert.equal(forbiddenState?.onRoute, true);
+    assert.equal(forbiddenState?.canIntercept, false);
+    const allowedState = ui.getTrialInterceptionCellState(0, 1);
+    assert.equal(allowedState?.onRoute, true);
+    assert.equal(allowedState?.canIntercept, true);
     const preview = ui.updateTrialInterceptionPreview(0, 1);
     assert.equal(preview.modifierRows.some(row => row.source === "WETLAND_EXIT"), true);
     assert.equal(engine.state.currentDefense, currentDefense);
