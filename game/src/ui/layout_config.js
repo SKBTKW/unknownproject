@@ -351,6 +351,15 @@ UILayoutConfig.applyLayout = function() {
         Object.assign(wallpaper.style, this.gameWallpaperArt);
     }
 
+    const buildBadge = document.getElementById("buildIdentityBadge");
+    if (buildBadge && this.buildIdentityBadge) {
+        const isMobile = typeof window !== "undefined" && typeof window.matchMedia === "function"
+            ? window.matchMedia("(max-width: 768px)").matches
+            : Boolean(typeof window !== "undefined" && window.innerWidth <= 768);
+        const config = isMobile ? this.buildIdentityBadge.mobile : this.buildIdentityBadge.desktop;
+        Object.assign(buildBadge.style, config);
+    }
+
     const offeringSec = document.querySelector(".offering-section");
 
     const rightControls = document.querySelector(".right-bottom-controls");
