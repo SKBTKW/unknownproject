@@ -29,6 +29,7 @@ check('Header has one owner in the dedicated stylesheet, after the global token'
     assert.ok(html.indexOf('base_layout.css') < html.indexOf('layout_tokens.css'));
     assert.ok(html.indexOf('layout_tokens.css') < html.indexOf('top_header.css'));
     assert.ok(html.indexOf('top_header.css') < html.indexOf('css/layout.css'));
+    assert.equal(Object.hasOwn(UILayoutConfig.layers, 'header'), false);
 });
 check('Header retains the effective 84px border-box height and visible overflow', () => {
     assert.match(base, /\*\s*\{\s*box-sizing:\s*border-box;/);

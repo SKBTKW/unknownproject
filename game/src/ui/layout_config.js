@@ -19,16 +19,6 @@ const UI_FEATURE_FLAGS = {
 const UILayoutConfig = {
     // 🏛️ 4大責務レイヤー構造 定義 (4 Major Responsibility Layers)
     layers: {
-        // 1️⃣ [Layer 1: Header HUD] 最上部固定情報バー
-        header: {
-            position: "fixed",
-            top: "0px",
-            left: "0px",
-            width: "100%",
-            height: "56px",
-            zIndex: 600,
-            pointerEvents: "auto"
-        },
         // 2️⃣ [Layer 2: World Board] 画面中央・主役盤面
         worldBoard: {
             position: "relative",
