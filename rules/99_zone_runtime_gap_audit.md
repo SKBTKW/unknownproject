@@ -58,10 +58,26 @@
 
 分類: **INTERNAL_CONFLICT — Presentation modifier order vs runtime settlement order**
 
-## 5. 原因
+## 5. CellViewDataの実装境界
+
+`CellViewDataService` は `ProductionCalculator.calculateCellYieldBreakdown()` を表示SSOTとして使う。
+
+ただしこの単セルbreakdownには、Verse決済で使われるすべての補正が含まれているわけではない。現時点で少なくとも以下は単セル表示へ含まれない。
+
+- 🔥状態による全体Production倍率
+- Directiveのresource倍率
+- Global EventのProduction倍率
+- `grandCultivationTurns`
+- `systematicLoggingTurns`
+
+したがって盤面上の産出表示は「局所基礎値＋一部局所modifier」であり、最終Verse決済値の完全な内訳ではない。
+
+分類: **PARTIAL PRESENTATION CONTRACT**
+
+## 6. 原因
 
 `mergeGroupId` が旧接続グループと真の地帯の双方に使われ、consumerごとに `mergeGroupId / cell.merged / yieldMultiplier / isTrueMergedCell()` のどれを地帯判定に使うか統一されていない。
 
-さらにPresentation側とProduction側で、地帯倍率を適用する対象と順序も統一されていない。
+さらにPresentation側とProduction側で、地帯倍率を適用する対象・順序・全体補正の取り込み範囲も統一されていない。
 
 本監査ではgameを変更しない。正本上は4セルの真の地帯のみを地帯化として扱う。
