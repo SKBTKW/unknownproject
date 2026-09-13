@@ -104,6 +104,10 @@ check(layoutConfig.includes('zIndex: "var(--z-right-context)"')
     && tokensCss.includes("--z-right-context:")
     && layerContractCss.includes("var(--z-right-context)"),
 "Trial Right Context stacking consumes the shared Layout layer token");
+check(layoutConfig.includes('right: "var(--layout-advisor-right)"')
+    && layoutConfig.includes('bottom: "var(--layout-advisor-bottom)"')
+    && layoutConfig.includes('zIndex: "var(--z-advisor)"'),
+"Advisor dock config consumes shared Layout geometry and layer tokens");
 
 check(layerContractCss.includes("#layerPlayerTray.layer-player-tray")
     && layerContractCss.includes("var(--z-player)"),
