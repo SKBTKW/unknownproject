@@ -61,6 +61,8 @@ function toCellDto(cell) {
         terrainId: cell.terrainId ?? null,
         category: cell.category ?? null,
         nameKey: cell.nameKey ?? null,
+        elevation: Number.isInteger(cell.elevation) ? cell.elevation : null,
+        greenery: Number.isInteger(cell.greenery) ? cell.greenery : null,
         hasSocket: Boolean(cell.hasSocket),
         socketResource: cloneJsonSafe(cell.socketResource ?? null),
         yields: cloneJsonSafe(cell.yields ?? {}),
@@ -69,6 +71,11 @@ function toCellDto(cell) {
         modifiers: cloneJsonSafe(cell.modifiers ?? []),
         placementGroupId: cell.placementGroupId ?? null,
         mergeGroupId: cell.mergeGroupId ?? null,
+        zone: cloneJsonSafe(cell.zone ?? null),
+        links: cloneJsonSafe(cell.links ?? []),
+        display: cloneJsonSafe(cell.display ?? { role: null, production: null }),
+        influence: cloneJsonSafe(cell.influence ?? { hqVicinity: false, waterSource: false }),
+        edges: cloneJsonSafe(cell.edges ?? []),
         interaction: toInteractionDto(cell.interaction),
         trial: toTrialCellDto(cell.trial)
     };
