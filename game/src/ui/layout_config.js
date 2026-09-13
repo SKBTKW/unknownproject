@@ -34,7 +34,7 @@ const UILayoutConfig = {
             position: "relative",
             width: "100%",
             height: "100%",
-            zIndex: 10,
+            zIndex: "var(--z-world)",
             pointerEvents: "auto",
             transition: "filter 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.22s ease, box-shadow 0.22s ease"
         },
