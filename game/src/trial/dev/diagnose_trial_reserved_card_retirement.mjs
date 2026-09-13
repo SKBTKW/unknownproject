@@ -1,4 +1,5 @@
 import { CardCycleSystem } from "../../systems/card_cycle_system.js";
+import { serializeGameState } from "../../core/state_serializer.js";
 
 const RETIRED = [
     "CMD_MUD_OBSTACLE",
@@ -34,4 +35,23 @@ assert(
     "cooldown fallback must not resurrect retired Trial-reservation cards"
 );
 
-console.log("PASS: retired Trial-reservation cards cannot re-enter Offering fallback");
+const snapshot = serializeGameState({
+    grid: [],
+    handOffering: [],
+    reserveSlots: [null],
+    mergeLinks: new Set(),
+    grantedConnectionPairs: new Set(),
+    nextTrialDamageMitigation: 0.5,
+    nextTrialMultiplier: 1.5
+});
+
+assert(
+    !Object.prototype.hasOwnProperty.call(snapshot, "nextTrialDamageMitigation"),
+    "nextTrialDamageMitigation must not be serialized"
+);
+assert(
+    !Object.prototype.hasOwnProperty.call(snapshot, "nextTrialMultiplier"),
+    "nextTrialMultiplier must not be serialized"
+);
+
+console.log("PASS: retired Trial-reservation cards cannot re-enter Offering or persist Trial modifiers");
