@@ -40,64 +40,45 @@ export class TrialState {
         this.maxEmber = initMaxEmber;
         this.environment = cloneData(scenario.environment) || {};
         this.result = null;
+        this.resultSettlement = null;
         this.trialCompleted = false;
     }
 
-    isTrialCompleted() {
-        return Boolean(this.trialCompleted);
-    }
-
-    getTrialResult() {
-        return this.result ? cloneData(this.result) : null;
-    }
-
+    isTrialCompleted() { return Boolean(this.trialCompleted); }
+    getTrialResult() { return this.result ? cloneData(this.result) : null; }
+    getResultSettlement() { return this.resultSettlement ? cloneData(this.resultSettlement) : null; }
     getCurrentBattle() {
         if (!Array.isArray(this.battleQueue) || this.currentBattleIndex === null) return null;
         const item = this.battleQueue[this.currentBattleIndex];
         return item ? cloneData(item) : null;
     }
-
-    getBattleResults() {
-        return this.battleResults ? cloneData(this.battleResults) : null;
-    }
-
+    getBattleResults() { return this.battleResults ? cloneData(this.battleResults) : null; }
     getCurrentBattleResult() {
         if (!Array.isArray(this.battleResults) || this.currentBattleIndex === null) return null;
         const res = this.battleResults[this.currentBattleIndex];
         return res ? cloneData(res) : null;
     }
-
     getRouteProgress(routeId) {
         if (!this.routeProgress) return null;
         if (routeId) return this.routeProgress[routeId] ? cloneData(this.routeProgress[routeId]) : null;
         return cloneData(this.routeProgress);
     }
-
-    getTraversalResults() {
-        return this.traversalResults ? cloneData(this.traversalResults) : null;
-    }
-
+    getTraversalResults() { return this.traversalResults ? cloneData(this.traversalResults) : null; }
     getCurrentTraversalResult() {
         if (!Array.isArray(this.traversalResults) || this.currentBattleIndex === null) return null;
         const res = this.traversalResults[this.currentBattleIndex];
         return res ? cloneData(res) : null;
     }
-
     isCurrentTraversalApplied() {
         if (!Array.isArray(this.traversalResults) || this.currentBattleIndex === null) return false;
         return Boolean(this.traversalResults[this.currentBattleIndex]);
     }
-
-    getDamageResults() {
-        return this.damageResults ? cloneData(this.damageResults) : null;
-    }
-
+    getDamageResults() { return this.damageResults ? cloneData(this.damageResults) : null; }
     getCurrentDamageResult() {
         if (!Array.isArray(this.damageResults) || this.currentBattleIndex === null) return null;
         const res = this.damageResults[this.currentBattleIndex];
         return res ? cloneData(res) : null;
     }
-
     getDamageResult(battleIndex) {
         if (!Array.isArray(this.damageResults) || typeof battleIndex !== "number") return null;
         const res = this.damageResults[battleIndex];
@@ -105,6 +86,4 @@ export class TrialState {
     }
 }
 
-export function createTrialState(scenario) {
-    return new TrialState(scenario);
-}
+export function createTrialState(scenario) { return new TrialState(scenario); }

@@ -2,6 +2,8 @@ import { TrialController as TrialControllerBase } from "./trial_controller_base.
 import { GAME_FACT_TYPES } from "../../core/game_fact.js";
 import { TRIAL_PLAN_REASONS } from "../domain/trial_types.js";
 import { TrialHqResolutionService } from "../systems/trial_hq_resolution_service.js";
+import { TrialResultSettlementService } from "../systems/trial_result_settlement_service.js";
+import { TrialLifecycleReadService } from "../presentation/trial_lifecycle_read_service.js";
 
 export class TrialController extends TrialControllerBase {
     constructor(options = {}) {
@@ -9,15 +11,13 @@ export class TrialController extends TrialControllerBase {
         this.hqResolutionService = options.hqResolutionService || new TrialHqResolutionService({
             damageResolver: this.damageResolver
         });
+        this.resultSettlementService = options.resultSettlementService || new TrialResultSettlementService();
+        this.lifecycleReadService = options.lifecycleReadService || new TrialLifecycleReadService();
     }
 
     resolveRouteEndDamage(targetBattleIndex = null) {
-        if (!this.state) {
-            return { success: false, errors: ["TRIAL_NOT_STARTED"] };
-        }
-        if (!this.state.planActivated) {
-            return { success: false, errors: [TRIAL_PLAN_REASONS.PLAN_NOT_ACTIVATED] };
-        }
+        if (!this.state) return { success: false, errors: ["TRIAL_NOT_STARTED"] };
+        if (!this.state.planActivated) return { success: false, errors: [TRIAL_PLAN_REASONS.PLAN_NOT_ACTIVATED] };
 
         let battleIndex = null;
         if (typeof targetBattleIndex === "number") {
@@ -49,17 +49,13 @@ export class TrialController extends TrialControllerBase {
     }
 
     resolveAggregatedHqDamage() {
-        if (!this.state) {
-            return { success: false, errors: ["TRIAL_NOT_STARTED"] };
-        }
+        if (!this.state) return { success: false, errors: ["TRIAL_NOT_STARTED"] };
 
         const currentEmber = (this.emberSystem && typeof this.emberSystem.current === "number")
             ? this.emberSystem.current
             : (this.state.human?.ember ?? this.state.ember ?? 20);
 
-        const resolved = this.hqResolutionService.resolve(this.state, {
-            emberBefore: currentEmber
-        });
+        const resolved = this.hqResolutionService.resolve(this.state, { emberBefore: currentEmber });
         if (!resolved.success) return resolved;
 
         const damageResult = resolved.damageResult;
@@ -80,16 +76,12 @@ export class TrialController extends TrialControllerBase {
 
     canCompleteTrial() {
         if (!this.state) return false;
-        if (this.state.hqDamageResolution?.damageApplied) {
-            return super.canCompleteTrial();
-        }
+        if (this.state.hqDamageResolution?.damageApplied) return super.canCompleteTrial();
         return this.hqResolutionService.canResolve(this.state);
     }
 
     completeTrial() {
-        if (!this.state) {
-            return { success: false, errors: ["TRIAL_NOT_STARTED"] };
-        }
+        if (!this.state) return { success: false, errors: ["TRIAL_NOT_STARTED"] };
 
         let hqResolution = null;
         if (!this.state.hqDamageResolution?.damageApplied) {
@@ -105,8 +97,51 @@ export class TrialController extends TrialControllerBase {
             hqDamage: JSON.parse(JSON.stringify(this.state.hqDamageResolution)),
             runTermination: hqResolution?.runTermination
                 || this.emberSystem?.engine?.runTerminationService?.getResult?.()
-                || null
+                || null,
+            lifecycle: this.getLifecycleReadModel()
         };
+    }
+
+    settleTrialResult() {
+        if (!this.state) return { success: false, errors: ["TRIAL_NOT_STARTED"] };
+
+        const engine = this.emberSystem?.engine || null;
+        const settled = this.resultSettlementService.settle(this.state, {
+            runTerminationService: engine?.runTerminationService || null,
+            chronicleSystem: engine?.chronicleSystem || null,
+            turn: engine?.state?.turn ?? null
+        });
+        if (!settled.success) return settled;
+        if (settled.alreadySettled) {
+            return {
+                ...settled,
+                lifecycle: this.getLifecycleReadModel()
+            };
+        }
+
+        this.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, {
+            scenarioId: this.state.scenarioId || null,
+            outcome: this.state.result?.outcome || null,
+            settlement: settled.settlement
+        });
+
+        if (settled.settlement?.canExitTrial) {
+            this.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_EXIT_READY, {
+                scenarioId: this.state.scenarioId || null,
+                outcome: this.state.result?.outcome || null,
+                runTerminated: Boolean(settled.runTermination?.terminated)
+            });
+        }
+
+        return {
+            ...settled,
+            lifecycle: this.getLifecycleReadModel()
+        };
+    }
+
+    getLifecycleReadModel() {
+        const runTermination = this.emberSystem?.engine?.runTerminationService?.getResult?.() || null;
+        return this.lifecycleReadService.read(this.state, { runTermination });
     }
 }
 
