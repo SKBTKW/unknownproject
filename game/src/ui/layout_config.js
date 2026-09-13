@@ -181,12 +181,12 @@ const UILayoutConfig = {
         height: "min(680px, calc(100vh - 64px))"
     },
 
-    // 🎯 1. 中央土地盤面エリア (画面の真中央へ100%完全自動固定)
+    // 🎯 1. 中央土地盤面エリア
     boardContainer: {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        justifyContent: "center",
+        justifyContent: "flex-start",
         position: "relative",
         width: "100%",
         height: "100%",
@@ -196,21 +196,29 @@ const UILayoutConfig = {
         zIndex: 10
     },
 
-    // 🧩 2. 盤面グリッドラッパー (中央揃えの不動軸)
+    // 🧩 2. 盤面グリッドラッパー (水平中央・上揃えの基準軸)
     boardWrapper: {
         position: "relative",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        justifyContent: "center",
-        marginTop: "auto",
+        justifyContent: "flex-start",
+        marginTop: "0px",
         marginBottom: "auto"
     },
 
-    // ✨ 3. モジュール化バフ表示コンテナ (盤面直上の安定配置)
+    // ✨ 3. モジュール化バフ表示コンテナ
+    // 盤面の見た目上端は動かさず、最大展開分だけ論理上端を上方へ予約する。
     buffPanel: {
-        position: "relative",
-        marginBottom: "10px",
+        position: "absolute",
+        top: "calc(-1 * var(--layout-buff-panel-headroom))",
+        left: "50%",
+        transform: "translateX(-50%)",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "flex-end",
+        height: "var(--layout-buff-panel-headroom)",
+        marginBottom: "0px",
         width: "100%",
         maxWidth: "520px",
         zIndex: 800
@@ -258,7 +266,7 @@ const UILayoutConfig = {
     // 🌌 8. 背景ウォールペーパーアート (タイトルロゴ: メインエリア左上)
     gameWallpaperArt: {
         position: "absolute",
-        top: "calc(var(--layout-header-height, 84px) + var(--layout-app-gap, 8px) + 4px)",
+        top: "calc(var(--layout-header-height, 84px) + var(--layout-app-gap, 4px) + 4px)",
         left: "18px",
         right: "auto",
         width: "clamp(260px, 24vw, 420px)",
@@ -269,11 +277,14 @@ const UILayoutConfig = {
         pointerEvents: "none"
     },
 
-    // 🌌 9. メインエリア背景 ウォーターマーク ターン表示 (AAA級スタイリッシュ演出)
+    // 🌌 9. Verse表示: Middle Board Area の右上へ通常レイアウトで整列
     bgTurnWatermark: {
-        position: "absolute",
-        top: "20px",
-        right: "28px",
+        position: "relative",
+        top: "auto",
+        right: "auto",
+        alignSelf: "start",
+        justifySelf: "end",
+        marginRight: "var(--layout-verse-right)",
         opacity: "1.0",
         zIndex: 2,
         pointerEvents: "none"

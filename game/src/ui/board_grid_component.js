@@ -350,7 +350,7 @@ export class BoardGridComponent {
             }
         }
 
-        // 🏁 底部フッター行 (全幅結合セル: 左端に占領率バッジ ✕ 右端にTURN ENDボタン)
+        // 🏁 底部フッター行 (全幅結合セル: 左端に占領率バッジ ✕ 右端にターン進行ボタン)
         const footerBar = document.createElement("div");
         footerBar.className = "header-cell footer-cell footer-bar-cell";
         footerBar.style.gridColumn = `1 / span ${size + 1}`;
@@ -368,7 +368,7 @@ export class BoardGridComponent {
         centerSpacer.className = "footer-center-spacer";
         footerBar.appendChild(centerSpacer);
 
-        // 右端スロット: ターンエンドボタン
+        // 右端スロット: Verse進行ボタン
         const turnEndSlot = document.createElement("div");
         turnEndSlot.className = "footer-right-slot";
 
@@ -376,7 +376,7 @@ export class BoardGridComponent {
         btnTurnEnd.className = "btn-turn-end footer-btn-turn-end";
         btnTurnEnd.id = "btnTurnEnd";
         btnTurnEnd.setAttribute("data-tooltip", "TOOLTIP_TURN_END");
-        btnTurnEnd.innerHTML = `<span>TURN END</span> <span class="arrow-icon">➔</span>`;
+        btnTurnEnd.innerHTML = `<span>NEXT verse</span> <span class="arrow-icon">➔</span>`;
         btnTurnEnd.onclick = () => {
             if (typeof window.nextTurn === "function") {
                 window.nextTurn();

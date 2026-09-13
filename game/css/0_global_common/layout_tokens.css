@@ -12,13 +12,24 @@
 :root {
     /* Shared app-shell geometry */
     --layout-header-height: 84px;
-    --layout-app-gap: 8px;
+    --layout-app-gap: 4px;
     --layout-body-padding: 10px;
     --layout-body-gap: 10px;
     --layout-app-max-width: 2100px;
     --layout-edge-gap: 16px;
     --layout-mobile-edge-gap: 8px;
     --layout-system-overlay-inset: 0px;
+
+    /* Board / Verse top-alignment geometry */
+    --layout-verse-right: 24px;
+    --layout-buff-summary-height: 52px;
+    --layout-buff-dropup-gap: 8px;
+    --layout-buff-dropup-max-height: min(320px, calc(100vh - var(--layout-header-height) - 32px));
+    --layout-buff-panel-headroom: calc(
+        var(--layout-buff-summary-height)
+        + var(--layout-buff-dropup-gap)
+        + var(--layout-buff-dropup-max-height)
+    );
 
     /* Legacy right sidebar shell geometry. Internal panel styling stays feature-owned. */
     --layout-right-sidebar-width: 280px;
