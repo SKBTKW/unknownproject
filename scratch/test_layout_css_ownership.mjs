@@ -83,6 +83,13 @@ check('Buff expansion and invisible headroom share Layout tokens', () => {
     assert.equal(UILayoutConfig.buffPanel.height, 'var(--layout-buff-panel-headroom)');
     assert.match(layerContract, /\.buff-dropup-panel\s*\{[\s\S]*?max-height:\s*var\(--layout-buff-dropup-max-height\);[\s\S]*?overflow-y:\s*auto;/);
 });
+check('Legacy board container runtime is removed from Layout config', () => {
+    assert.equal(Object.hasOwn(UILayoutConfig, 'boardContainer'), false);
+    assert.doesNotMatch(layoutSource, /querySelector\(["']\.board-container["']\)/);
+    assert.doesNotMatch(layoutSource, /board-blur-focus|card-container-active-focus/);
+    assert.match(focusSource, /getElementById\('layerWorldBoard'\)|getElementById\("layerWorldBoard"\)/);
+    assert.match(focusSource, /querySelector\('\.offering-section'\)|querySelector\("\.offering-section"\)/);
+});
 check('Player Tray has one geometry owner in the dedicated stylesheet', () => {
     assert.ok(html.indexOf('base_layout.css') < html.indexOf('draw_card_select_area.css'));
     assert.ok(html.indexOf('draw_card_select_area.css') < html.indexOf('css/layout.css'));
@@ -123,7 +130,6 @@ check('Offering geometry is owned by CSS without runtime inline configuration', 
     assert.doesNotMatch(layoutSource, /playerTray\s*:/);
     assert.equal(Object.hasOwn(UILayoutConfig, 'playerTray'), false);
     assert.equal(Object.hasOwn(UILayoutConfig, 'offeringCardArea'), false);
-    assert.match(layoutSource, /offeringSec\.addEventListener\("mouseenter"/);
 });
 check('Focus layer state leaves Player Tray and Offering z-index to CSS', () => {
     assert.doesNotMatch(focusSource, /playerTray\.style\.zIndex/);

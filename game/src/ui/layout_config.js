@@ -144,21 +144,6 @@ const UILayoutConfig = {
         height: "min(680px, calc(100vh - 64px))"
     },
 
-    // 🎯 1. 中央土地盤面エリア
-    boardContainer: {
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "flex-start",
-        position: "relative",
-        width: "100%",
-        height: "100%",
-        padding: "0px",
-        margin: "0 auto",
-        overflow: "visible",
-        zIndex: 10
-    },
-
     // ✨ 3. モジュール化バフ表示コンテナ
     // 盤面の見た目上端は動かさず、最大展開分だけ論理上端を上方へ予約する。
     buffPanel: {
@@ -279,7 +264,7 @@ UILayoutConfig.getBlockThemeColor = function(terrainId) {
 };
 
 /**
- * DOM要素にレイアウト設定を一括適用し、フォーカスイベントを初期化するヘルパー関数
+ * DOM要素にレイアウト設定を一括適用するヘルパー関数
  */
 UILayoutConfig.applyLayout = function() {
     if (typeof document === "undefined") return;
@@ -338,31 +323,10 @@ UILayoutConfig.applyLayout = function() {
         });
     }
 
-    const offeringSec = document.querySelector(".offering-section");
-
     const rightControls = document.querySelector(".right-bottom-controls");
     if (rightControls) {
         Object.assign(rightControls.style, this.rightBottomControls);
     }
-
-    const boardContainer = document.querySelector(".board-container");
-    if (boardContainer) {
-        Object.assign(boardContainer.style, this.boardContainer);
-    }
-
-    if (!offeringSec || !boardContainer) return;
-
-    offeringSec.addEventListener("mouseenter", () => {
-        if (UI_FEATURE_FLAGS && UI_FEATURE_FLAGS.enableBottomFocusBlur) {
-            boardContainer.classList.add("board-blur-focus");
-            offeringSec.classList.add("card-container-active-focus");
-        }
-    });
-
-    offeringSec.addEventListener("mouseleave", () => {
-        boardContainer.classList.remove("board-blur-focus");
-        offeringSec.classList.remove("card-container-active-focus");
-    });
 };
 
 if (typeof window !== "undefined") {
