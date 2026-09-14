@@ -49,7 +49,7 @@ if (secondResult.comparison?.scale?.change !== 'INCREASED') {
 if (!secondResult.comparison?.newTags?.includes('BAGGAGE_PRESENT')) {
     throw new Error('new evidence not detected');
 }
-if (!state.observedTags.has('BAGGAGE_PRESENT')) {
+if (!state.observedTags.includes('BAGGAGE_PRESENT')) {
     throw new Error('KnownEnemyState did not accumulate observed tag');
 }
 
