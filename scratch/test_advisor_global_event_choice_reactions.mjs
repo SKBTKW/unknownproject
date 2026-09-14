@@ -119,25 +119,32 @@ const baseContext = {
 
 {
     const factHub = new GameFactHub();
-    const emitted = [];
+    const personalityDialogue = [];
+    const neutralNarrations = [];
     const dialogueSystem = {
         emit: () => false,
         emitTopic: () => false,
         emitResolved: reaction => {
-            emitted.push(reaction);
+            personalityDialogue.push(reaction);
             return true;
         }
     };
     const bridge = new AdvisorEventBridge(dialogueSystem, factHub, {
         profile: { personality: 'stern', policy: {} },
-        enabledProvider: () => false
+        enabledProvider: () => false,
+        neutralNarrationSink: reaction => {
+            neutralNarrations.push(reaction);
+            return true;
+        }
     });
 
     factHub.emit(GAME_FACT_TYPES.GLOBAL_EVENT_CHOICE_PRESENTED, {
         eventId: 'EVENT_CAPTURED_SCOUT',
         publicContext: baseContext
     });
-    assert.equal(emitted.length, 0);
+    assert.equal(personalityDialogue.length, 0);
+    assert.equal(neutralNarrations.length, 1);
+    assert.equal(neutralNarrations[0].focus, 'FACT_ONLY');
 
     bridge.destroy();
 }
