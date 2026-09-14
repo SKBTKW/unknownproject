@@ -47,6 +47,7 @@ export const GLOBAL_EVENT_CHOICE_MASTER = Object.freeze([
             Object.freeze({
                 id: "EXECUTE",
                 labelKey: "EVENT_CAPTURED_SCOUT_CHOICE_EXECUTE",
+                resultKey: "EVENT_CAPTURED_SCOUT_RESULT_EXECUTE",
                 publicOutcomeTags: Object.freeze([
                     "INFORMATION_LEAK_PREVENTED",
                     "RETALIATION_RISK"
@@ -55,6 +56,7 @@ export const GLOBAL_EVENT_CHOICE_MASTER = Object.freeze([
             Object.freeze({
                 id: "INTERROGATE",
                 labelKey: "EVENT_CAPTURED_SCOUT_CHOICE_INTERROGATE",
+                resultKey: "EVENT_CAPTURED_SCOUT_RESULT_INTERROGATE",
                 publicOutcomeTags: Object.freeze([
                     "INTEL_OPPORTUNITY",
                     "CAPTIVE_REMAINS"
@@ -63,6 +65,7 @@ export const GLOBAL_EVENT_CHOICE_MASTER = Object.freeze([
             Object.freeze({
                 id: "RELEASE",
                 labelKey: "EVENT_CAPTURED_SCOUT_CHOICE_RELEASE",
+                resultKey: "EVENT_CAPTURED_SCOUT_RESULT_RELEASE",
                 publicOutcomeTags: Object.freeze([
                     "DEESCALATION_POSSIBLE",
                     "INFORMATION_LEAK_RISK"
