@@ -47,9 +47,6 @@ body {
 
 /* 2. 中間レイアウト構造 (SSOT: ワールド盤面・手札トレイ・オーバーレイの親コンテナ) */
 .middle-layout {
-    display: flex;
-    justify-content: center;
-    align-items: center;
     width: 100%;
     flex: 1;
     min-height: 0;
