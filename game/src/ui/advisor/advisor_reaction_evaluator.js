@@ -65,7 +65,7 @@ export class AdvisorReactionEvaluator {
     }
 
     evaluateGlobalEvent(event, runtime, turn) {
-        const normalized = String(event?.category || event?.id || "").toUpperCase();
+        const normalized = `${event?.category || ""} ${event?.eventId || event?.id || ""}`.toUpperCase();
         if (!/(PLAGUE|FAMINE|WAR|RAID|SCOUT|COLD|DROUGHT|DISASTER|SURVIVAL|MILITARY|THREAT)/.test(normalized)) return null;
         if (runtime.recentGlobalEventCategories.some(item => item.category === normalized && turn - item.turn <= 3)) return null;
         runtime.recentGlobalEventCategories.unshift({ category: normalized, turn });
