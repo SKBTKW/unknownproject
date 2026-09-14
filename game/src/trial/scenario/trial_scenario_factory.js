@@ -42,13 +42,15 @@ function resolveHumanSnapshot(gameState) {
 /**
  * 通常GameStateからTrialState互換scenarioを構築する境界。
  *
+ * EnemyTruthReadModelが与えられた場合、敵戦力/編成はTruth snapshotを正本にする。
+ * 未接続の旧診断・開発ハーネスのみ、従来のThreat直接解決へfallbackできる。
  * Warning/Intelは入力に要求しない。
- * 敵の正解データ（threat / ingress / routes）はTrial構築側のresolver群だけで決定する。
  */
 export class TrialScenarioFactory {
     constructor({
         developmentSnapshotService = new CivilizationDevelopmentSnapshotService(),
         threatResolver = new TrialThreatResolver(),
+        enemyTruthReadModel = null,
         ingressResolver = null,
         routeGenerator = null,
         suppressionAllocator = null,
@@ -58,6 +60,7 @@ export class TrialScenarioFactory {
     } = {}) {
         this.developmentSnapshotService = developmentSnapshotService;
         this.threatResolver = threatResolver;
+        this.enemyTruthReadModel = enemyTruthReadModel;
         this.ingressResolver = ingressResolver;
         this.routeGenerator = routeGenerator;
         this.suppressionAllocator = suppressionAllocator;
@@ -66,14 +69,17 @@ export class TrialScenarioFactory {
         this.environmentResolver = environmentResolver;
     }
 
-    build({ trialIndex, gameState } = {}) {
+    build({ trialIndex, gameState, enemyTruth = null } = {}) {
         const input = validateTrialScenarioBuildInput({ trialIndex, gameState });
         if (!input.valid) {
             return { success: false, errors: input.errors };
         }
 
         const development = this.developmentSnapshotService.capture(gameState);
-        const threat = this.threatResolver?.resolve?.({ trialIndex, development });
+        const truth = cloneData(enemyTruth || this.enemyTruthReadModel?.getSnapshot?.() || null);
+        const threat = truth
+            ? { strategicSuppression: truth.strategicSuppression, source: "ENEMY_TRUTH" }
+            : this.threatResolver?.resolve?.({ trialIndex, development });
         const enemySuppression = nonNegativeFinite(threat?.strategicSuppression);
         if (enemySuppression === null) {
             return { success: false, errors: [TRIAL_SCENARIO_BUILD_REASONS.THREAT_UNRESOLVED] };
@@ -87,7 +93,8 @@ export class TrialScenarioFactory {
             trialIndex,
             gameState,
             development,
-            threat
+            threat,
+            enemyTruth: truth
         };
 
         const ingresses = this.ingressResolver.resolve(context);
@@ -126,8 +133,8 @@ export class TrialScenarioFactory {
             enemySuppression,
             routes: cloneData(routes),
             ...human,
-            commander: cloneData(this.commanderResolver?.resolve?.(context) ?? null),
-            forces: cloneData(this.forcesResolver?.resolve?.(context) ?? []),
+            commander: cloneData(truth?.commander ?? this.commanderResolver?.resolve?.(context) ?? null),
+            forces: cloneData(truth?.forces ?? this.forcesResolver?.resolve?.(context) ?? []),
             environment: cloneData(this.environmentResolver?.resolve?.(context) ?? {})
         };
 
@@ -137,6 +144,7 @@ export class TrialScenarioFactory {
             diagnostics: {
                 development: cloneData(development),
                 threat: cloneData(threat),
+                enemyTruth: cloneData(truth),
                 ingresses: cloneData(ingresses)
             }
         };
