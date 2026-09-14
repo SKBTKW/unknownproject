@@ -1,4 +1,6 @@
+import { INVESTIGATION_CARDS_MASTER } from "../../data/investigation_cards_data.js";
 import { createKnownEnemyState } from "../domain/known_enemy_state.js";
+import { InvestigationResolver } from "../systems/investigation_resolver.js";
 import { InvestigationOfferingAdapter } from "../systems/investigation_offering_adapter.js";
 import { InvestigationCardExecutionService } from "../systems/investigation_card_execution_service.js";
 
@@ -6,19 +8,36 @@ function cardDefinition(card) {
     return card?.terrain || card || null;
 }
 
-function removeCardFromSource(state, source) {
-    if (!state || !source) return;
-    if (source.type === "OFFERING" && Number.isInteger(source.index) && Array.isArray(state.handOffering)) {
-        state.handOffering.splice(source.index, 1);
-    } else if (source.type === "RESERVE" && Number.isInteger(source.index) && Array.isArray(state.reserveSlots)) {
-        state.reserveSlots[source.index] = null;
+function sourceCard(state, source) {
+    if (!state || !source || !Number.isInteger(source.index)) return null;
+    if (source.type === "OFFERING" && Array.isArray(state.handOffering)) {
+        return state.handOffering[source.index] || null;
     }
+    if (source.type === "RESERVE" && Array.isArray(state.reserveSlots)) {
+        return state.reserveSlots[source.index] || null;
+    }
+    return null;
+}
+
+function sameCard(expected, actual) {
+    if (!expected || !actual) return false;
+    if (expected === actual) return true;
+    if (expected.id && actual.id && expected.id === actual.id) return true;
+    if (expected.cardMasterId && actual.cardMasterId && expected.cardMasterId === actual.cardMasterId) {
+        return expected.id === actual.id;
+    }
+    return false;
+}
+
+function removeCardFromSource(state, source) {
+    if (source.type === "OFFERING") state.handOffering.splice(source.index, 1);
+    else if (source.type === "RESERVE") state.reserveSlots[source.index] = null;
 }
 
 export function attachInvestigationRuntime(engine, {
     observableProfileProvider,
     offeringAdapter = new InvestigationOfferingAdapter(),
-    executionService = new InvestigationCardExecutionService()
+    executionService = null
 } = {}) {
     if (!engine || !engine.state || !engine.deckManager) {
         return { success: false, reason: "ENGINE_NOT_READY" };
@@ -26,17 +45,20 @@ export function attachInvestigationRuntime(engine, {
     if (typeof observableProfileProvider !== "function") {
         return { success: false, reason: "OBSERVABLE_PROFILE_PROVIDER_REQUIRED" };
     }
+    if (!engine.gameplayRandom || typeof engine.gameplayRandom.nextFloat !== "function" || typeof engine.gameplayRandom.nextId !== "function") {
+        return { success: false, reason: "GAMEPLAY_RANDOM_REQUIRED" };
+    }
     if (engine.__investigationRuntimeAttached) {
         return { success: true, alreadyAttached: true };
     }
 
     const state = engine.state;
-    if (!state.knownEnemyState) {
-        state.knownEnemyState = createKnownEnemyState({ trialIndex: 1 });
-    }
-    if (typeof state.investigationUnlocked !== "boolean") {
-        state.investigationUnlocked = false;
-    }
+    if (!state.knownEnemyState) state.knownEnemyState = createKnownEnemyState({ trialIndex: 1 });
+    if (typeof state.investigationUnlocked !== "boolean") state.investigationUnlocked = false;
+
+    const resolvedExecutionService = executionService || new InvestigationCardExecutionService({
+        resolver: new InvestigationResolver({ rng: () => engine.gameplayRandom.nextFloat() })
+    });
 
     const deckManager = engine.deckManager;
     const originalGetMaster = deckManager.getLandCardMaster.bind(deckManager);
@@ -44,35 +66,30 @@ export function attachInvestigationRuntime(engine, {
         return offeringAdapter.extendMaster(originalGetMaster(), state);
     };
 
-    const previousRestoreMasterProvider = typeof engine.getAdditionalCardMastersForRestore === "function"
+    const previousRestoreMasters = typeof engine.getAdditionalCardMastersForRestore === "function"
         ? engine.getAdditionalCardMastersForRestore.bind(engine)
         : null;
     engine.getAdditionalCardMastersForRestore = function getAdditionalCardMastersForRestore() {
-        const previous = previousRestoreMasterProvider?.() || [];
-        const own = Array.isArray(offeringAdapter.investigationCards) ? offeringAdapter.investigationCards : [];
-        const byId = new Map();
-        for (const master of [...previous, ...own]) {
-            if (master?.id) byId.set(master.id, master);
-        }
-        return Array.from(byId.values());
+        const previous = previousRestoreMasters?.() || [];
+        return [...previous, ...INVESTIGATION_CARDS_MASTER];
     };
 
-    engine.executeInvestigationCard = function executeInvestigationCard(card, source = { type: "OFFERING", index: -1 }) {
-        const definition = cardDefinition(card);
+    engine.executeInvestigationCard = function executeInvestigationCard(card, source) {
+        if (!state.investigationUnlocked) return { success: false, reason: "INVESTIGATION_LOCKED" };
+        if (state.hasPickedThisTurn) return { success: false, reason: "ALREADY_PICKED" };
+
+        const actualCard = sourceCard(state, source);
+        if (!actualCard || !sameCard(card, actualCard)) {
+            return { success: false, reason: "INVESTIGATION_SOURCE_MISMATCH" };
+        }
+
+        const definition = cardDefinition(actualCard);
         if (!definition || definition.category !== "INVESTIGATION") {
             return { success: false, reason: "NOT_INVESTIGATION_CARD" };
         }
-        if (!state.investigationUnlocked) {
-            return { success: false, reason: "INVESTIGATION_LOCKED" };
-        }
-        if (state.hasPickedThisTurn) {
-            return { success: false, reason: "ALREADY_PICKED" };
-        }
 
         const profile = observableProfileProvider({ engine, state, card: definition });
-        if (!profile) {
-            return { success: false, reason: "OBSERVABLE_PROFILE_UNAVAILABLE" };
-        }
+        if (!profile) return { success: false, reason: "OBSERVABLE_PROFILE_UNAVAILABLE" };
 
         if (!state.knownEnemyState) {
             state.knownEnemyState = createKnownEnemyState({
@@ -80,11 +97,15 @@ export function attachInvestigationRuntime(engine, {
             });
         }
 
-        const result = executionService.execute({
+        const verse = Number.isInteger(state.turn) ? state.turn : null;
+        const trialIndex = Number.isInteger(profile.trialIndex) ? profile.trialIndex : "unknown";
+        const reportId = engine.gameplayRandom.nextId("investigation", `${trialIndex}:${verse ?? "unknown"}`);
+        const result = resolvedExecutionService.execute({
             card: definition,
             profile,
             knownEnemyState: state.knownEnemyState,
-            observedAtVerse: Number.isInteger(state.turn) ? state.turn : null
+            observedAtVerse: verse,
+            reportId
         });
         if (!result.success) return result;
 
@@ -94,7 +115,7 @@ export function attachInvestigationRuntime(engine, {
         state.lastInvestigationComparison = result.comparison || null;
 
         if (engine.cardCycleSystem?.registerOffering) {
-            engine.cardCycleSystem.registerOffering([card], Number.isInteger(state.turn) ? state.turn : 1);
+            engine.cardCycleSystem.registerOffering([actualCard], Number.isInteger(state.turn) ? state.turn : 1);
         }
 
         return result;
