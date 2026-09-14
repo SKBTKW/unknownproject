@@ -14,6 +14,7 @@ function buildState() {
         currentDefense: 23,
         maxDefense: 31,
         mystic: 4,
+        placedBlockCount: 4,
         stage: { id: 2 },
         getTerritoryTileCount() {
             return 12;
@@ -97,6 +98,7 @@ assert.equal(built.scenario.mystic, 4);
 assert.equal(built.scenario.routes.length, 1);
 assert.deepEqual(built.diagnostics.development, {
     stage: 2,
+    placedBlockCount: 4,
     territoryTiles: 12,
     completedZones: 2,
     links: 2
