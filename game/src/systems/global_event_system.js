@@ -1,350 +1,163 @@
-/* =============================================================
-   game/src/systems/global_event_system.js
-   グローバルイベントの発生判定・候補抽選・状態管理を一元管理するシステム (Pure & Unity Ready)
-   ============================================================= */
-
 import { ConditionEvaluator } from "../core/condition_evaluator.js";
 import { EffectResolver } from "../core/effect_resolver.js";
 import { GameplayRandomService } from "../core/gameplay_random_service.js";
 import { GLOBAL_EVENTS_MASTER } from "../data/global_events.js";
 import { CHRONICLE_IMPORTANCE } from "./chronicle_system.js";
+import { createGlobalEventChoicePublicContext } from "./global_event_choice_context_factory.js";
 
-export const GLOBAL_EVENT_TIMINGS = Object.freeze({
-    START: "START",
-    END: "END"
-});
+export const GLOBAL_EVENT_TIMINGS = Object.freeze({ START: "START", END: "END" });
 
-/**
- * 🌍 1. GlobalEventDirector (発生制御・経過ターン別確率・共通CT)
- */
 export class GlobalEventDirector {
     constructor(randomSource = null) {
         this.randomSource = randomSource;
-        // rules/10_global_events.md 準拠の経過ターン別発生率テーブル
         this.PROBABILITY_TABLE = [
-            { maxElapsed: 2, rate: 0.00 },
-            { maxElapsed: 3, rate: 0.05 },
-            { maxElapsed: 4, rate: 0.10 },
-            { maxElapsed: 5, rate: 0.20 },
-            { maxElapsed: 6, rate: 0.35 },
-            { maxElapsed: Infinity, rate: 0.50 }
+            { maxElapsed: 2, rate: 0 }, { maxElapsed: 3, rate: 0.05 },
+            { maxElapsed: 4, rate: 0.10 }, { maxElapsed: 5, rate: 0.20 },
+            { maxElapsed: 6, rate: 0.35 }, { maxElapsed: Infinity, rate: 0.50 }
         ];
-        this.COOLDOWN_TURNS = 3; // イベント発生後の最低平穏期間 (3T)
+        this.COOLDOWN_TURNS = 3;
     }
-
-    /**
-     * 🎲 イベント発生判定
-     * @param {Object} state - gameState
-     * @returns {boolean}
-     */
     shouldTriggerEvent(state) {
         if (!state) return false;
-        const currentTurn = state.turn || 1;
-        const lastEventTurn = state.lastGlobalEventTurn || 0;
-        const elapsed = currentTurn - lastEventTurn;
-
-        // 平穏期間 (0〜2T) は発生確率 0%
+        const elapsed = (state.turn || 1) - (state.lastGlobalEventTurn || 0);
         if (elapsed < this.COOLDOWN_TURNS) return false;
-
-        let rate = 0.50;
-        for (const entry of this.PROBABILITY_TABLE) {
-            if (elapsed <= entry.maxElapsed) {
-                rate = entry.rate;
-                break;
-            }
-        }
-
-        const roll = this.randomSource?.nextFloat?.() ?? Math.random();
-        return roll < rate;
+        const rate = this.PROBABILITY_TABLE.find(e => elapsed <= e.maxElapsed)?.rate ?? 0.5;
+        return (this.randomSource?.nextFloat?.() ?? Math.random()) < rate;
     }
 }
 
-/**
- * 🎯 2. GlobalEventSelector (条件フィルタ ＆ Weight付き候補抽選)
- */
 export class GlobalEventSelector {
-    constructor(randomSource = null) {
-        this.randomSource = randomSource;
-    }
-
-    /**
-     * 🔍 発生候補の選定と抽選
-     * @param {Object} state - gameState
-     * @param {Array<Object>} masterEvents - GLOBAL_EVENTS_MASTER
-     * @returns {Object|null}
-     */
+    constructor(randomSource = null) { this.randomSource = randomSource; }
     selectEvent(state, masterEvents = GLOBAL_EVENTS_MASTER) {
-        if (!state || !Array.isArray(masterEvents) || masterEvents.length === 0) return null;
-
-        const context = { state };
+        if (!state || !masterEvents?.length) return null;
         const eligible = [];
-
         for (const def of masterEvents) {
-            // 🚫 アクティブ中イベントの重複発動遮断
-            const isActive = state.activeGlobalEvents && state.activeGlobalEvents.some(e => e.definitionId === def.id);
-            if (isActive) continue;
-
-            // ⏳ イベント固有クールタイム判定 (例: 亜人襲撃 8T)
-            if (def.cooldownTurns && state.eventCooldowns && state.eventCooldowns[def.id]) {
-                const lastTurn = state.eventCooldowns[def.id];
-                if ((state.turn || 1) - lastTurn < def.cooldownTurns) continue;
+            if (state.activeGlobalEvents?.some(e => e.definitionId === def.id)) continue;
+            const last = state.eventCooldowns?.[def.id];
+            if (def.cooldownTurns && last && (state.turn || 1) - last < def.cooldownTurns) continue;
+            if (!ConditionEvaluator.evaluateAll(def.conditions, { state })) continue;
+            let weight = def.baseWeight || 100;
+            for (const mod of state.temporaryWeightModifiers || []) {
+                if (mod.targetTag === def.id || mod.targetTag === def.category) weight *= mod.multiplier || 1;
             }
-
-            // 🔍 条件評価 (ConditionEvaluator 経由)
-            if (ConditionEvaluator.evaluateAll(def.conditions, context)) {
-                // 因果関係Weight補正の算出
-                let finalWeight = def.baseWeight || 100;
-                if (state.temporaryWeightModifiers && Array.isArray(state.temporaryWeightModifiers)) {
-                    for (const mod of state.temporaryWeightModifiers) {
-                        if (mod.targetTag === def.id || mod.targetTag === def.category) {
-                            finalWeight *= (mod.multiplier || 1.0);
-                        }
-                    }
-                }
-                eligible.push({ def, weight: Math.max(1, finalWeight) });
-            }
+            eligible.push({ def, weight: Math.max(1, weight) });
         }
-
-        if (eligible.length === 0) return null;
-
-        // 🎲 Weight付きランダム抽選
-        const totalWeight = eligible.reduce((sum, item) => sum + item.weight, 0);
-        let rand = (this.randomSource?.nextFloat?.() ?? Math.random()) * totalWeight;
-
-        for (const item of eligible) {
-            if (rand <= item.weight) {
-                return item.def;
-            }
-            rand -= item.weight;
-        }
-
+        if (!eligible.length) return null;
+        const total = eligible.reduce((n, e) => n + e.weight, 0);
+        let roll = (this.randomSource?.nextFloat?.() ?? Math.random()) * total;
+        for (const item of eligible) { if (roll <= item.weight) return item.def; roll -= item.weight; }
         return eligible[0].def;
     }
 }
 
-/**
- * 📦 3. GlobalEventManager (実行時状態の正本 ＆ フック管理)
- */
 export class GlobalEventManager {
     constructor(gameState = null, engine = null) {
         this.state = gameState;
         this.engine = engine;
         this.lifecycleListeners = new Set();
-        const randomSource = engine
-            ? (engine.gameplayRandom || (engine.gameplayRandom = new GameplayRandomService(engine.runSeed)))
-            : null;
-        this.director = new GlobalEventDirector(randomSource);
-        this.selector = new GlobalEventSelector(randomSource);
+        this.randomSource = engine ? (engine.gameplayRandom || (engine.gameplayRandom = new GameplayRandomService(engine.runSeed))) : null;
+        this.director = new GlobalEventDirector(this.randomSource);
+        this.selector = new GlobalEventSelector(this.randomSource);
         this.initManager();
     }
-
     initManager() {
         if (!this.state) return;
-        if (!this.state.activeGlobalEvents) this.state.activeGlobalEvents = [];
-        if (!this.state.eventCooldowns) this.state.eventCooldowns = {};
-        if (!this.state.temporaryWeightModifiers) this.state.temporaryWeightModifiers = [];
-        if (!this.state.lastGlobalEventTurn) this.state.lastGlobalEventTurn = 0;
+        this.state.activeGlobalEvents ||= [];
+        this.state.eventCooldowns ||= {};
+        this.state.temporaryWeightModifiers ||= [];
+        this.state.lastGlobalEventTurn ||= 0;
     }
-
     subscribe(listener) {
         if (typeof listener !== "function") throw new TypeError("GLOBAL_EVENT_LISTENER_REQUIRED");
         this.lifecycleListeners.add(listener);
         return () => this.lifecycleListeners.delete(listener);
     }
-
-    emitLifecycle(timing, def, turn = this.state?.turn || 1) {
+    emitLifecycle(timing, def, turn = this.state?.turn || 1, instance = null) {
         if (!def) return null;
-        const notification = Object.freeze({
-            timing,
-            eventId: def.id,
-            category: def.category || null,
-            importance: def.importance || CHRONICLE_IMPORTANCE.MAJOR,
-            turn
+        const choice = instance?.runtimeState?.choice || null;
+        const note = Object.freeze({
+            timing, eventId: def.id, category: def.category || null,
+            importance: def.importance || CHRONICLE_IMPORTANCE.MAJOR, turn,
+            choiceEventId: choice?.eventId || def.choiceEventId || null,
+            choiceStatus: choice?.status || null,
+            publicContext: choice?.publicContext ? JSON.parse(JSON.stringify(choice.publicContext)) : null
         });
-        this.lifecycleListeners.forEach(listener => listener(notification));
-        return notification;
+        this.lifecycleListeners.forEach(fn => fn(note));
+        return note;
     }
-
-    /**
-     * 🔄 ターン開始時の発生判定・トリガー
-     */
+    getPendingChoice() {
+        const inst = (this.state?.activeGlobalEvents || []).find(e => e?.runtimeState?.choice?.status === "PENDING");
+        if (!inst) return null;
+        return JSON.parse(JSON.stringify({ sourceEventId: inst.definitionId, ...inst.runtimeState.choice }));
+    }
+    markChoiceResolved(sourceEventId, resolution) {
+        const inst = (this.state?.activeGlobalEvents || []).find(e => e.definitionId === sourceEventId);
+        const choice = inst?.runtimeState?.choice;
+        if (!choice || choice.status !== "PENDING" || choice.eventId !== resolution?.eventId) return false;
+        inst.runtimeState.choice = { ...choice, status: "RESOLVED", choiceId: resolution.choiceId || null, publicOutcomeTags: [...(resolution.publicOutcomeTags || [])] };
+        return true;
+    }
     onTurnStart() {
-        if (!this.state) return null;
-        if (this.director.shouldTriggerEvent(this.state)) {
-            const selectedDef = this.selector.selectEvent(this.state, GLOBAL_EVENTS_MASTER);
-            if (selectedDef) {
-                return this.triggerEvent(selectedDef.id);
-            }
-        }
-        return null;
+        if (!this.state || this.getPendingChoice() || !this.director.shouldTriggerEvent(this.state)) return null;
+        const def = this.selector.selectEvent(this.state, GLOBAL_EVENTS_MASTER);
+        return def ? this.triggerEvent(def.id) : null;
     }
-
-    /**
-     * ⚡ イベントの強制発動 / 通常発動
-     * @param {string} eventId
-     */
     triggerEvent(eventId) {
         if (!this.state) return null;
         const def = GLOBAL_EVENTS_MASTER.find(d => d.id === eventId);
         if (!def) return null;
-
-        const currentTurn = this.state.turn || 1;
-        this.state.lastGlobalEventTurn = currentTurn;
-        if (def.cooldownTurns) {
-            this.state.eventCooldowns[def.id] = currentTurn;
-        }
-
-        // 📦 正本 (Instance) の追加
-        const instance = {
-            definitionId: def.id,
-            remainingTurns: def.duration || 1,
-            runtimeState: {}
-        };
-        this.state.activeGlobalEvents.push(instance);
-
-        // ⚡ 初期効果の解決 (EffectResolver)
-        const context = { state: this.state, engine: this.engine };
-        EffectResolver.resolveAll(def.effects, context);
-
-        // 📜 統合年代記 (Chronicle) への記録
-        if (this.state.chronicleSystem && typeof this.state.chronicleSystem.record === "function") {
-            this.state.chronicleSystem.record({
-                turn: currentTurn,
-                type: "GLOBAL_EVENT",
-                id: def.id,
-                nameKey: def.nameKey,
-                importance: def.importance || CHRONICLE_IMPORTANCE.MAJOR,
-                meta: { category: def.category, duration: def.duration }
-            });
-        }
-
-        // ✨ BuffSystem への表示用 Proxy 登録 (正本はGlobalEventManager)
+        const turn = this.state.turn || 1;
+        this.state.lastGlobalEventTurn = turn;
+        if (def.cooldownTurns) this.state.eventCooldowns[def.id] = turn;
+        const inst = { definitionId: def.id, remainingTurns: def.duration || 1, runtimeState: {} };
+        if (def.choiceEventId) inst.runtimeState.choice = { eventId: def.choiceEventId, status: "PENDING", publicContext: createGlobalEventChoicePublicContext(def.choiceEventId, { state: this.state, randomSource: this.randomSource }) };
+        this.state.activeGlobalEvents.push(inst);
+        EffectResolver.resolveAll(def.effects, { state: this.state, engine: this.engine });
+        this.state.chronicleSystem?.record?.({ turn, type: "GLOBAL_EVENT", id: def.id, nameKey: def.nameKey, importance: def.importance || CHRONICLE_IMPORTANCE.MAJOR, meta: { category: def.category, duration: def.duration } });
         this.syncBuffProxy();
-
-        const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
-        const eventName = I18n ? I18n.t(def.nameKey) : def.id;
-        const eventDesc = I18n ? I18n.t(def.descKey) : "";
-        if (this.state.addLog) {
-            this.state.addLog(`🌍【${eventName}】: ${eventDesc}`);
-        }
-
-        // Presentation/Advisorなどの外部層へは、効果解決後の事実だけを通知する。
-        // GlobalEventManagerは購読者の種類や人格を知らない。
-        this.emitLifecycle(GLOBAL_EVENT_TIMINGS.START, def, currentTurn);
-
-        return instance;
+        const i18n = globalThis.I18n || { t: k => k };
+        this.state.addLog?.(def.choiceEventId ? `🌍【${i18n.t(def.nameKey)}】` : `🌍【${i18n.t(def.nameKey)}】: ${i18n.t(def.descKey)}`);
+        this.emitLifecycle(GLOBAL_EVENT_TIMINGS.START, def, turn, inst);
+        return inst;
     }
-
-    /**
-     * ✨ BuffSystem との表示用 Proxy 同期
-     */
     syncBuffProxy() {
-        if (!this.state || !this.state.buffSystem) return;
-        const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
-
-        // 既存のグローバルイベントProxyを一旦クリア
-        for (const def of GLOBAL_EVENTS_MASTER) {
-            this.state.buffSystem.removeBuff(def.id);
-        }
-
-        // アクティブ中のイベントのみProxy登録
-        for (const inst of (this.state.activeGlobalEvents || [])) {
+        if (!this.state?.buffSystem) return;
+        const i18n = globalThis.I18n || { t: k => k };
+        for (const def of GLOBAL_EVENTS_MASTER) this.state.buffSystem.removeBuff(def.id);
+        for (const inst of this.state.activeGlobalEvents || []) {
+            if (inst?.runtimeState?.choice?.status === "PENDING") continue;
             const def = GLOBAL_EVENTS_MASTER.find(d => d.id === inst.definitionId);
             if (!def) continue;
-            const name = I18n ? I18n.t(def.nameKey) : def.id;
-            const desc = I18n ? I18n.t(def.descKey) : "";
-
-            this.state.buffSystem.addBuff({
-                id: def.id,
-                name: `🌍 ${name}`,
-                shortName: name,
-                icon: def.icon || "🌍",
-                description: desc,
-                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: inst.remainingTurns }) : `${inst.remainingTurns}T`,
-                category: "GLOBAL_EVENT",
-                remainingTurns: inst.remainingTurns,
-                isProxy: true // 表示専用 Proxy フラグ
-            });
+            const name = i18n.t(def.nameKey);
+            this.state.buffSystem.addBuff({ id: def.id, name: `🌍 ${name}`, shortName: name, icon: def.icon || "🌍", description: i18n.t(def.descKey), badgeText: i18n.t("BUFF_REMAINING_TURNS", { count: inst.remainingTurns }), category: "GLOBAL_EVENT", remainingTurns: inst.remainingTurns, isProxy: true });
         }
     }
-
-    /**
-     * 🌾 産出計算へのフック適用
-     * @param {Object} prods - { totalFood, multipliers, ... }
-     */
-    applyProductionEffects(prods) {
-        if (!this.state || !this.state.activeGlobalEvents) return;
-        const context = { state: this.state, production: prods };
-
-        for (const inst of this.state.activeGlobalEvents) {
+    applyProductionEffects(prods) { this._applyEffects({ state: this.state, production: prods }); }
+    applyOfferingWeightEffects(weights) { this._applyEffects({ state: this.state, offeringWeights: weights }); }
+    _applyEffects(context) {
+        for (const inst of this.state?.activeGlobalEvents || []) {
             const def = GLOBAL_EVENTS_MASTER.find(d => d.id === inst.definitionId);
-            if (def && Array.isArray(def.effects)) {
-                EffectResolver.resolveAll(def.effects, context);
-            }
+            if (def?.effects) EffectResolver.resolveAll(def.effects, context);
         }
     }
-
-    /**
-     * 🃏 オファリング手札重みへのフック適用
-     * @param {Object} weights - { tagMultipliers, ... }
-     */
-    applyOfferingWeightEffects(weights) {
-        if (!this.state || !this.state.activeGlobalEvents) return;
-        const context = { state: this.state, offeringWeights: weights };
-
-        for (const inst of this.state.activeGlobalEvents) {
-            const def = GLOBAL_EVENTS_MASTER.find(d => d.id === inst.definitionId);
-            if (def && Array.isArray(def.effects)) {
-                EffectResolver.resolveAll(def.effects, context);
-            }
-        }
-    }
-
-    /**
-     * ⏳ ターン経過処理 (持続ターン減衰・失効・endEffects解決)
-     */
     tickTurn() {
-        if (!this.state || !this.state.activeGlobalEvents) return;
+        if (!this.state?.activeGlobalEvents) return;
         const context = { state: this.state, engine: this.engine };
-
         for (let i = this.state.activeGlobalEvents.length - 1; i >= 0; i--) {
             const inst = this.state.activeGlobalEvents[i];
-            inst.remainingTurns -= 1;
-
-            if (inst.remainingTurns <= 0) {
-                const def = GLOBAL_EVENTS_MASTER.find(d => d.id === inst.definitionId);
-                if (def && Array.isArray(def.endEffects)) {
-                    EffectResolver.resolveAll(def.endEffects, context);
-                }
-                this.state.activeGlobalEvents.splice(i, 1);
-                this.emitLifecycle(GLOBAL_EVENT_TIMINGS.END, def, this.state.turn || 1);
-            }
+            if (inst?.runtimeState?.choice?.status === "PENDING") continue;
+            if (--inst.remainingTurns > 0) continue;
+            const def = GLOBAL_EVENTS_MASTER.find(d => d.id === inst.definitionId);
+            if (def?.endEffects) EffectResolver.resolveAll(def.endEffects, context);
+            this.state.activeGlobalEvents.splice(i, 1);
+            this.emitLifecycle(GLOBAL_EVENT_TIMINGS.END, def, this.state.turn || 1, inst);
         }
-
-        // 一時的Weight補正の寿命管理
-        if (this.state.temporaryWeightModifiers) {
-            const currentTurn = this.state.turn || 1;
-            this.state.temporaryWeightModifiers = this.state.temporaryWeightModifiers.filter(mod => {
-                if (mod.expiry && mod.expiry.type === "TURN_COUNT") {
-                    return currentTurn - mod.appliedTurn < (mod.expiry.value || 3);
-                }
-                return true; // NEXT_GLOBAL_EVENT の場合は次回イベント発生時にクリア
-            });
-        }
-
+        const turn = this.state.turn || 1;
+        this.state.temporaryWeightModifiers = (this.state.temporaryWeightModifiers || []).filter(mod => mod.expiry?.type !== "TURN_COUNT" || turn - mod.appliedTurn < (mod.expiry.value || 3));
         this.syncBuffProxy();
     }
 }
 
-if (typeof window !== "undefined") {
-    window.GlobalEventDirector = GlobalEventDirector;
-    window.GlobalEventSelector = GlobalEventSelector;
-    window.GlobalEventManager = GlobalEventManager;
-}
-if (typeof globalThis !== "undefined") {
-    globalThis.GlobalEventDirector = GlobalEventDirector;
-    globalThis.GlobalEventSelector = GlobalEventSelector;
-    globalThis.GlobalEventManager = GlobalEventManager;
-}
-
+if (typeof window !== "undefined") Object.assign(window, { GlobalEventDirector, GlobalEventSelector, GlobalEventManager });
+if (typeof globalThis !== "undefined") Object.assign(globalThis, { GlobalEventDirector, GlobalEventSelector, GlobalEventManager });
 export default GlobalEventManager;
