@@ -45,8 +45,8 @@ const result = service.execute({
 
 if (!result.success) throw new Error('investigation execution failed');
 if (known.reports.length !== 1) throw new Error('report was not recorded');
-if (!known.observedTags.has('NORTH_ACTIVITY')) throw new Error('direction observation missing');
-if (!known.observedTags.has('LARGE_BODY_PRESENT')) throw new Error('physique observation missing');
+if (!known.observedTags.includes('NORTH_ACTIVITY')) throw new Error('direction observation missing');
+if (!known.observedTags.includes('LARGE_BODY_PRESENT')) throw new Error('physique observation missing');
 if (result.report.sourceType !== 'FOOTPRINTS') throw new Error('source policy mismatch');
 if (result.report.threatRevision !== 3) throw new Error('snapshot revision missing');
 
