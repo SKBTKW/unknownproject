@@ -2,6 +2,8 @@ import { GAME_FACT_TYPES, GameFactHub } from './game_fact.js';
 import { HistorySnapshotService } from './history_snapshot_service.js';
 import { RunTerminationService } from './run_termination_service.js';
 import { TrialThreatStateService } from '../trial/systems/trial_threat_state_service.js';
+import { TrueEnemyStateService } from '../trial/systems/true_enemy_state_service.js';
+import { EnemyTruthReadModel } from '../trial/systems/enemy_truth_read_model.js';
 
 export const TURN_LIFECYCLE_PHASES = Object.freeze({ ACTIVE: "ACTIVE", COMMITTING: "COMMITTING", COMMITTED: "COMMITTED", INITIALIZING: "INITIALIZING" });
 
@@ -18,6 +20,13 @@ export class TurnLifecycleService {
             gameFactHub: this.gameFactHub
         });
         this.engine.trialThreatStateService = this.threatStateService;
+        this.trueEnemyStateService = engine.trueEnemyStateService || new TrueEnemyStateService({
+            gameState: engine.state,
+            gameFactHub: this.gameFactHub,
+            transitionResolver: engine.enemyStateTransitionResolver || null
+        });
+        this.engine.trueEnemyStateService = this.trueEnemyStateService;
+        this.engine.enemyTruthReadModel = engine.enemyTruthReadModel || new EnemyTruthReadModel(this.trueEnemyStateService);
         this.historySnapshotService = engine.historySnapshotService || new HistorySnapshotService(engine);
         this.engine.historySnapshotService = this.historySnapshotService;
         this.phase = TURN_LIFECYCLE_PHASES.ACTIVE;
