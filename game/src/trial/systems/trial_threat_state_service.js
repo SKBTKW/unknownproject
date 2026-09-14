@@ -20,6 +20,7 @@ function defaultTrialIndexResolver(gameState) {
  *
  * - CIVILIZATION_DEVELOPMENT_CHANGED: dirty化のみ
  * - VERSE_COMMITTED: dirty時だけ最新SnapshotからThreatを再計算
+ * - 更新確定後にTRIAL_THREAT_UPDATEDをpublish
  * - Investigation / Advisor / UIはThreat更新契機にしない
  * - TrueEnemyStateの変化はこのサービスの責務外
  */
@@ -96,6 +97,7 @@ export class TrialThreatStateService {
             };
         }
 
+        const previous = cloneData(this.current);
         const development = this.developmentSnapshotService.capture(this.gameState);
         const trialIndex = normalizeTrialIndex(this.trialIndexResolver(this.gameState));
         const threat = this.threatResolver.resolve({ trialIndex, development });
@@ -112,6 +114,13 @@ export class TrialThreatStateService {
             revision: this.revision,
             committedVerse: this.lastCommittedVerse
         });
+
+        if (typeof this.gameFactHub.emit === "function") {
+            this.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_THREAT_UPDATED, {
+                previous,
+                current: cloneData(this.current)
+            });
+        }
 
         return {
             updated: true,
