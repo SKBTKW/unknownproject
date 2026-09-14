@@ -3,42 +3,8 @@ export const ADVISOR_GLOBAL_EVENT_CHOICE_TIMINGS = Object.freeze({
     RESOLVED: "RESOLVED"
 });
 
-export const ADVISOR_PRESENTATION_MODES = Object.freeze({
-    PERSONALITY: "PERSONALITY",
-    NEUTRAL: "NEUTRAL"
-});
-
 export const ADVISOR_GLOBAL_EVENT_CHOICE_REACTIONS = Object.freeze({
     EVENT_CAPTURED_SCOUT: Object.freeze({
-        neutral: Object.freeze({
-            PRESENTED: Object.freeze([
-                Object.freeze({
-                    priority: 100,
-                    focus: "FACT_ONLY",
-                    lineKey: "UI_ADVISOR_NEUTRAL_CAPTURED_SCOUT_PRESENTED"
-                })
-            ]),
-            RESOLVED: Object.freeze([
-                Object.freeze({
-                    priority: 100,
-                    focus: "FACT_ONLY",
-                    choiceId: "EXECUTE",
-                    lineKey: "UI_ADVISOR_NEUTRAL_CAPTURED_SCOUT_EXECUTED"
-                }),
-                Object.freeze({
-                    priority: 100,
-                    focus: "FACT_ONLY",
-                    choiceId: "INTERROGATE",
-                    lineKey: "UI_ADVISOR_NEUTRAL_CAPTURED_SCOUT_INTERROGATED"
-                }),
-                Object.freeze({
-                    priority: 100,
-                    focus: "FACT_ONLY",
-                    choiceId: "RELEASE",
-                    lineKey: "UI_ADVISOR_NEUTRAL_CAPTURED_SCOUT_RELEASED"
-                })
-            ])
-        }),
         stern: Object.freeze({
             PRESENTED: Object.freeze([
                 Object.freeze({
