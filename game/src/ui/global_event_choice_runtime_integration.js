@@ -3,6 +3,10 @@ import { GlobalEventChoiceSystem } from '../systems/global_event_choice_system.j
 import { GlobalEventChoiceComponent } from './global_event_choice_component.js';
 import { choiceText } from './global_event_choice_i18n.js';
 
+function clone(value) {
+    return value == null ? value : JSON.parse(JSON.stringify(value));
+}
+
 export class GlobalEventChoiceRuntimeIntegration {
     constructor(uiController) {
         this.ui = uiController;
@@ -65,6 +69,26 @@ export class GlobalEventChoiceRuntimeIntegration {
         const pending = this.manager?.getPendingChoice?.();
         if (!pending) return null;
         return this.present(pending.eventId, pending.publicContext, pending.sourceEventId);
+    }
+
+    reconcilePending() {
+        const pending = this.manager?.getPendingChoice?.();
+        if (!pending) {
+            this.active = null;
+            this.component?.hide?.();
+            return null;
+        }
+
+        const publicContext = clone(pending.publicContext);
+        const presentation = this.system.buildPresentation(pending.eventId, publicContext);
+        this.component?.hide?.();
+        this.active = {
+            eventId: pending.eventId,
+            publicContext,
+            sourceEventId: pending.sourceEventId || null
+        };
+        this.component?.show?.(presentation);
+        return presentation;
     }
 
     destroy() {

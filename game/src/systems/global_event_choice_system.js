@@ -75,12 +75,12 @@ export class GlobalEventChoiceSystem {
         this.factHub = factHub;
     }
 
-    createPresentation(eventId, publicContext) {
+    buildPresentation(eventId, publicContext) {
         const def = findGlobalEventChoiceDefinition(eventId);
         if (!def) throw new Error(`GLOBAL_EVENT_CHOICE_UNKNOWN_EVENT:${eventId}`);
         validateContext(def, publicContext);
 
-        const presentation = freezePayload({
+        return freezePayload({
             eventId: def.id,
             category: def.category,
             importance: def.importance,
@@ -92,7 +92,10 @@ export class GlobalEventChoiceSystem {
                 labelKey: choice.labelKey
             }))
         });
+    }
 
+    createPresentation(eventId, publicContext) {
+        const presentation = this.buildPresentation(eventId, publicContext);
         this.factHub?.emit?.(GAME_FACT_TYPES.GLOBAL_EVENT_CHOICE_PRESENTED, presentation);
         return presentation;
     }

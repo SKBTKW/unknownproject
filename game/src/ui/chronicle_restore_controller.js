@@ -58,6 +58,7 @@ export class ChronicleRestoreController {
         LogComponent.importStateLogs(ui.engine.state, { render: false });
         ui.layoutStateManager?.prepareRestoreView();
         ui.advisorDockComponent?.prepareRestoreView();
+        ui.globalEventChoiceRuntime?.reconcilePending?.();
         ui.isMinimalMode = true;
         focusLayerManager.isCardSelected = false;
         focusLayerManager.isHandHovered = false;

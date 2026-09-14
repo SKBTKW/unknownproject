@@ -259,4 +259,25 @@ check('restore point restores Advisor records and operation log without future m
     assert.equal(f.renderCount, 1);
 });
 
+check('successful Restore reconciles GE Choice once and failed Restore does not reconcile', () => {
+    const success = setup();
+    let successReconciles = 0;
+    success.ui.globalEventChoiceRuntime = { reconcilePending() { successReconciles++; } };
+    success.component.list.children[0].children[2].onclick();
+    assert.equal(successReconciles, 1);
+
+    const failure = setup();
+    let failureReconciles = 0;
+    failure.ui.globalEventChoiceRuntime = { reconcilePending() { failureReconciles++; } };
+    failure.replaceRestore(() => { throw new Error('TEST_RESTORE_FAILURE'); });
+    const oldError = console.error;
+    console.error = () => {};
+    try {
+        failure.component.list.children[0].children[2].onclick();
+    } finally {
+        console.error = oldError;
+    }
+    assert.equal(failureReconciles, 0);
+});
+
 console.log(`Dev Chronicle Restore UI: ${passed}/${passed} PASS`);

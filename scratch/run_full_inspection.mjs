@@ -98,6 +98,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (History Restore Service) で不合格が検出されました。");
         process.exit(1);
     }
+    const historyRestoreAtomicOk = await runCommand("node", ["scratch/test_history_restore_atomic_rollback.mjs"]);
+    if (!historyRestoreAtomicOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (History Restore Atomic Rollback) で不合格が検出されました。");
+        process.exit(1);
+    }
     const chronicleRestoreUiOk = await runCommand("node", ["scratch/test_dev_chronicle_restore_ui.mjs"]);
     if (!chronicleRestoreUiOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Dev Chronicle Restore UI) で不合格が検出されました。");
@@ -236,6 +241,11 @@ async function main() {
     const advisorFoundationOk = await runCommand("node", ["scratch/test_advisor_foundation.mjs"]);
     if (!advisorFoundationOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Advisor Foundation) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const globalEventChoiceRestoreOk = await runCommand("node", ["scratch/test_global_event_choice_restore_reconciliation.mjs"]);
+    if (!globalEventChoiceRestoreOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Global Event Choice Restore Reconciliation) で不合格が検出されました。");
         process.exit(1);
     }
     const advisorPeaceOk = await runCommand("node", ["scratch/test_advisor_peace_dialogue.mjs"]);
