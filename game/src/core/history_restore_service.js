@@ -32,17 +32,21 @@ export class HistoryRestoreService {
         const history = engine.historySnapshotService;
         const restorePoint = history?.getRestorePoint?.(restoredVerse);
         if (!restorePoint) return { success: false, reason: 'HISTORY_RESTORE_POINT_NOT_FOUND' };
+        const runtime = restorePoint.runtime || {};
+        const hasThreatRestoreState = runtime.trialThreatState !== undefined;
+        const hasEnemyRestoreState = runtime.trueEnemyState !== undefined;
         if (!engine.state || !engine.checkSystem?.setState || !engine.gameplayRandom?.setState ||
             !engine.chronicleSystem?.restoreEvents || !history?.truncateAfterVerse ||
             !restorePoint.rngState || !restorePoint.gameplayRngState ||
-            !Array.isArray(restorePoint.chronicle) || !restorePoint.gameState) {
+            !Array.isArray(restorePoint.chronicle) || !restorePoint.gameState ||
+            (hasThreatRestoreState && !engine.trialThreatStateService?.restoreState) ||
+            (hasEnemyRestoreState && !engine.trueEnemyStateService?.restoreState)) {
             return { success: false, reason: 'HISTORY_RESTORE_DEPENDENCY_MISSING' };
         }
 
         // Master lookup is read-only. The hydrator stays independent of DeckManager.
         const masters = engine.deckManager?.getLandCardMaster?.() || [];
         const byId = new Map(masters.map(master => [master.id, master]));
-        const runtime = restorePoint.runtime || {};
         this.isRestoring = true;
         try {
             hydrateGameState(engine.state, restorePoint.gameState, {
@@ -51,6 +55,15 @@ export class HistoryRestoreService {
             engine.checkSystem.setState(restorePoint.rngState);
             engine.gameplayRandom.setState(restorePoint.gameplayRngState);
             engine.chronicleSystem.restoreEvents(restorePoint.chronicle);
+
+            // Service-owned simulation state is restored directly. Never replay facts or recalculate
+            // Threat/Enemy Truth during history restore: the Restore Point is the observed authority.
+            if (hasThreatRestoreState) {
+                engine.trialThreatStateService.restoreState(runtime.trialThreatState);
+            }
+            if (hasEnemyRestoreState) {
+                engine.trueEnemyStateService.restoreState(runtime.trueEnemyState);
+            }
 
             // GameState event runtime is authoritative; derived buffs are rebuilt once.
             const state = engine.state;
