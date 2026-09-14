@@ -48,10 +48,7 @@ export class InvestigationCardExecutionService {
             reportId
         });
 
-        const recorded = this.knownEnemyStateService.record({
-            state: knownEnemyState,
-            report
-        });
+        const recorded = this.knownEnemyStateService.record(knownEnemyState, report);
 
         return {
             success: true,
