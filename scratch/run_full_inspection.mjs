@@ -136,6 +136,7 @@ async function main() {
     const runTerminationContracts = [
         ["Run Termination Contract", "game/src/core/dev/diagnose_run_termination_contract.mjs"],
         ["Terminal Verse Lifecycle", "game/src/core/dev/diagnose_terminal_verse_lifecycle.mjs"],
+        ["Post-Trial Action Gate", "game/src/core/dev/diagnose_post_trial_action_gate.mjs"],
     ];
     for (const [label, testPath] of runTerminationContracts) {
         const ok = await runCommand("node", [testPath]);
@@ -192,6 +193,9 @@ async function main() {
         ["Trial HQ Aggregate Resolution", "game/src/trial/dev/diagnose_hq_aggregate_resolution.mjs"],
         ["Trial All-SKIP Completion", "game/src/trial/dev/diagnose_all_skip_trial_completion.mjs"],
         ["Trial Fatal HQ Resolution", "game/src/trial/dev/diagnose_trial_fatal_hq_resolution.mjs"],
+        ["Trial Breakthrough Route Completion", "game/src/trial/dev/diagnose_trial_breakthrough_route_completion.mjs"],
+        ["Trial Settled Session Release", "game/src/trial/dev/diagnose_trial_settled_session_release.mjs"],
+        ["Trial Session Boundary", "game/src/trial/dev/diagnose_trial_session_boundary_service.mjs"],
     ];
     for (const [label, testPath] of trialFlowTests) {
         const ok = await runCommand("node", [testPath]);
