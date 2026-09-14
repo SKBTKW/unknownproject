@@ -12,6 +12,7 @@ function buildState() {
         food: 50,
         wood: 30,
         mystic: 0,
+        placedBlockCount: 4,
         stage: { id: 2 },
         getTerritoryTileCount() {
             return 12;
@@ -48,6 +49,7 @@ const snapshot = snapshotService.capture(state);
 
 assert.deepEqual(snapshot, {
     stage: 2,
+    placedBlockCount: 4,
     territoryTiles: 12,
     completedZones: 2,
     links: 2
@@ -77,6 +79,7 @@ const resolver = new TrialThreatResolver({
 const result = resolver.resolve({ trialIndex: 2, development: snapshot });
 assert.deepEqual(result.breakdown, {
     baseThreat: 20,
+    placedBlockThreat: 0,
     territoryThreat: 12,
     completedZoneThreat: 6,
     linkThreat: 8,
@@ -87,6 +90,13 @@ assert.equal(
     result.strategicSuppression,
     Object.values(result.breakdown).reduce((sum, value) => sum + value, 0)
 );
+
+const placedBlockOnly = new TrialThreatResolver({
+    baseThreatByTrial: { 2: 20 },
+    placedBlockWeight: 2
+}).resolve({ trialIndex: 2, development: snapshot });
+assert.equal(placedBlockOnly.breakdown.placedBlockThreat, 8);
+assert.equal(placedBlockOnly.strategicSuppression, 28);
 
 // Default resolver must be behavior-neutral until balancing coefficients are explicitly supplied.
 assert.equal(
