@@ -2,6 +2,7 @@ import { TRIAL_PLAN_REASONS, TRIAL_BATTLE_STATUSES, TRIAL_ROUTE_PLAN_STATUSES } 
 import { TrialSkippedRouteResolutionService } from "./trial_skipped_route_resolution_service.js";
 import { TrialHqArrivalAggregationService } from "./trial_hq_arrival_aggregation_service.js";
 import { TrialHqDamageResolver } from "./trial_hq_damage_resolver.js";
+import { InterceptionPowerResolver } from "./interception_power_resolver.js";
 
 function cloneData(value) {
     if (value === undefined) return undefined;
@@ -13,11 +14,13 @@ function nonNegative(value) {
 
 export class TrialHqResolutionService {
     constructor({
-        skippedRouteService = new TrialSkippedRouteResolutionService(),
+        powerResolver = new InterceptionPowerResolver(),
+        skippedRouteService = null,
         aggregationService = new TrialHqArrivalAggregationService(),
         damageResolver = new TrialHqDamageResolver()
     } = {}) {
-        this.skippedRouteService = skippedRouteService;
+        this.powerResolver = powerResolver;
+        this.skippedRouteService = skippedRouteService || new TrialSkippedRouteResolutionService({ powerResolver });
         this.aggregationService = aggregationService;
         this.damageResolver = damageResolver;
     }
