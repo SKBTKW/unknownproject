@@ -111,6 +111,15 @@ export class AdvisorDialogueSystem {
         };
     }
 
+    enqueueItem(item) {
+        if (!this.current || item.priority > this.current.priority) this.show(item);
+        else {
+            this.queue.push(item);
+            this.queue.sort((a, b) => b.priority - a.priority);
+        }
+        return true;
+    }
+
     emit(event, context = {}, options = {}) {
         const entry = findAdvisorDialogue(event, this.profile);
         if (!entry) return false;
@@ -134,12 +143,27 @@ export class AdvisorDialogueSystem {
         };
 
         this.cooldowns.set(event, this.now());
-        if (!this.current || item.priority > this.current.priority) this.show(item);
-        else {
-            this.queue.push(item);
-            this.queue.sort((a, b) => b.priority - a.priority);
-        }
-        return true;
+        return this.enqueueItem(item);
+    }
+
+    emitResolved(reaction) {
+        if (!reaction?.lineKey) return false;
+        const context = reaction.context || {};
+        const text = this.translate(reaction.lineKey, context);
+        if (!text || text === reaction.lineKey) return false;
+
+        const item = {
+            event: reaction.event || "RESOLVED_REACTION",
+            topic: reaction.topic || reaction.event || "RESOLVED_REACTION",
+            lineKey: reaction.lineKey,
+            segmentKeys: null,
+            text,
+            dialogueMode: normalizeDialogueMode(reaction.dialogueMode ?? this.dialogueMode),
+            priority: Number(reaction.priority || 0),
+            durationMs: Number(reaction.durationMs || 4200)
+        };
+
+        return this.enqueueItem(item);
     }
 
     emitTopic(topicResult, context = {}) {
