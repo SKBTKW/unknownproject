@@ -9,6 +9,11 @@ import { GameplayRandomService } from "../core/gameplay_random_service.js";
 import { GLOBAL_EVENTS_MASTER } from "../data/global_events.js";
 import { CHRONICLE_IMPORTANCE } from "./chronicle_system.js";
 
+export const GLOBAL_EVENT_TIMINGS = Object.freeze({
+    START: "START",
+    END: "END"
+});
+
 /**
  * 🌍 1. GlobalEventDirector (発生制御・経過ターン別確率・共通CT)
  */
@@ -124,6 +129,7 @@ export class GlobalEventManager {
     constructor(gameState = null, engine = null) {
         this.state = gameState;
         this.engine = engine;
+        this.lifecycleListeners = new Set();
         const randomSource = engine
             ? (engine.gameplayRandom || (engine.gameplayRandom = new GameplayRandomService(engine.runSeed)))
             : null;
@@ -138,6 +144,25 @@ export class GlobalEventManager {
         if (!this.state.eventCooldowns) this.state.eventCooldowns = {};
         if (!this.state.temporaryWeightModifiers) this.state.temporaryWeightModifiers = [];
         if (!this.state.lastGlobalEventTurn) this.state.lastGlobalEventTurn = 0;
+    }
+
+    subscribe(listener) {
+        if (typeof listener !== "function") throw new TypeError("GLOBAL_EVENT_LISTENER_REQUIRED");
+        this.lifecycleListeners.add(listener);
+        return () => this.lifecycleListeners.delete(listener);
+    }
+
+    emitLifecycle(timing, def, turn = this.state?.turn || 1) {
+        if (!def) return null;
+        const notification = Object.freeze({
+            timing,
+            eventId: def.id,
+            category: def.category || null,
+            importance: def.importance || CHRONICLE_IMPORTANCE.MAJOR,
+            turn
+        });
+        this.lifecycleListeners.forEach(listener => listener(notification));
+        return notification;
     }
 
     /**
@@ -202,6 +227,10 @@ export class GlobalEventManager {
         if (this.state.addLog) {
             this.state.addLog(`🌍【${eventName}】: ${eventDesc}`);
         }
+
+        // Presentation/Advisorなどの外部層へは、効果解決後の事実だけを通知する。
+        // GlobalEventManagerは購読者の種類や人格を知らない。
+        this.emitLifecycle(GLOBAL_EVENT_TIMINGS.START, def, currentTurn);
 
         return instance;
     }
@@ -288,6 +317,7 @@ export class GlobalEventManager {
                     EffectResolver.resolveAll(def.endEffects, context);
                 }
                 this.state.activeGlobalEvents.splice(i, 1);
+                this.emitLifecycle(GLOBAL_EVENT_TIMINGS.END, def, this.state.turn || 1);
             }
         }
 
