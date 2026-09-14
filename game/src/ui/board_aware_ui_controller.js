@@ -137,27 +137,30 @@ export class BoardAwareUIController extends LegacyUIController {
     }
 
     selectTrialInterceptionCell(r, c) {
-        const selected = super.selectTrialInterceptionCell(r, c);
-        if (selected) {
-            this.boardPresentationState.selectCell({ r, c });
-            this.boardPresentationState.focusOnCell({ r, c });
-            this.boardPresentationState.clearHover();
-        }
-        return selected;
+        // Trial selection/hover belongs to TrialPresentationState. Do not mirror it
+        // into BoardPresentationState or normal board selection would be lost when
+        // Trial ends.
+        return super.selectTrialInterceptionCell(r, c);
     }
 
     onCellClick(r, c) {
-        this.boardPresentationState.focusOnCell({ r, c });
+        if (this.boardPresentationState.contextMode !== BOARD_CONTEXT_MODES.TRIAL) {
+            this.boardPresentationState.focusOnCell({ r, c });
+        }
         return super.onCellClick(r, c);
     }
 
     onCellMouseEnter(e, r, c) {
-        this.boardPresentationState.hoverCell({ r, c });
+        if (this.boardPresentationState.contextMode !== BOARD_CONTEXT_MODES.TRIAL) {
+            this.boardPresentationState.hoverCell({ r, c });
+        }
         return super.onCellMouseEnter(e, r, c);
     }
 
     clearCellPreviews() {
-        this.boardPresentationState.clearHover();
+        if (this.boardPresentationState.contextMode !== BOARD_CONTEXT_MODES.TRIAL) {
+            this.boardPresentationState.clearHover();
+        }
         return super.clearCellPreviews();
     }
 }
