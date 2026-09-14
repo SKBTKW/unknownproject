@@ -1,124 +1,92 @@
 # 03. 土地システム (Land System) — 正本インデックス
 
-> **Status:** Mixed current / planned / legacy
+> **Status:** Design authority + implementation ledgers
 >
-> 本ディレクトリは、土地配置・地形・地帯化・連携・土地改良・特殊ブロックに関する正本をまとめる。
+> 本ディレクトリは、土地配置・地形・資源ソケット・地帯化・連携・土地改良・特殊ブロックに関する正本をまとめる。
 >
-> 重要: すべての文書が同じ実装成熟度ではない。各文書のStatusを確認すること。
+> **最重要:** `00_land_foundation_and_resource_sockets.md` は、土地・E/GL・基礎産出・資源ソケット・水源の基礎設計正本である。現在の `game/` に未接続・未実装の項目があっても、それだけを理由に削除・Legacy降格・実装値への置換を行わない。実装との差異は監査層で扱う。
 
 ---
 
 ## サブ仕様書一覧
 
+### 0. [`00_land_foundation_and_resource_sockets.md`](./00_land_foundation_and_resource_sockets.md)
+
+**Status: Foundational design authority / protected source of truth**
+
+土地システム全体の土台となる基礎仕様。
+
+主に以下を保持する。
+
+- E / GL と土地基礎産出モデル
+- 地形ごとの確定基礎値
+- 気候・高度の隣接制約
+- 資源ソケットのカテゴリ・個別資源・持続産出
+- 地形ごとの資源候補と相対Weight
+- 湖 / オアシス等の水源ルール
+- 湿原・干拓地の基礎意味論
+- Stage拡張時の土地・ソケット関連仕様
+- 土地表現・2.5D資源ブロック構成の基礎情報
+
+このファイルは `AGtest260911` の `rules/03_land_system/01_land_base.md` を内容欠落なく復元したもの。
+
+`game/` の現在値や実装成熟度と食い違う場合は、まず差異を `RULES_AHEAD / PARTIAL / INTERNAL_CONFLICT` 等として監査し、基礎設計データを実装へ合わせて削らない。
+
+---
+
 ### 1. [`01_land_base.md`](./01_land_base.md)
 
 **Status: Current implementation ledger**
 
-現在実装されている、
+現在の `game/` における土地配置・地形・ソケット周辺の実装状況を確認するための台帳。
 
-- 土地カードと地形マトリクスの責務分離
+- 土地カードと地形マトリクスの現在の責務
 - 開発コスト
-- E / GL隣接制約
-- 湿原
-- 干拓地
-- ソケット
-- 湖 / オアシス
-- 灌漑
+- 現在の配置判定
+- 湿原 / 干拓地
+- 現在のソケット / 水源処理
+- 現在の灌漑処理
 
-を定義する。
+を記録する。
 
-通常土地カードの実産出は `LAND_CARDS_MASTER` を優先し、地形型・特殊地形・ソケットは `land_system.js` を参照する。
+**このファイルは `00_land_foundation_and_resource_sockets.md` を置換しない。**
 
-土地データの複数SSOT問題は既知のリファクタリング課題。
+両者が異なる場合、`01_land_base.md` の現在実装記述を理由に `00` の設計情報を削除しない。
 
 ---
 
 ### 2. [`02_outpost_system.md`](./02_outpost_system.md)
 
-**Status: Planned / not implemented as a full system**
-
-前哨塔は、
-
-> 高地・山岳 → Trial前の観測情報
-
-へ変換する構想として採用。
-
-ただし、盤面配置・城市化・3タイプ分岐・建設費等の旧詳細仕様は現行確定事項ではない。
-
-`CMD_OUTPOST_SIGNAL` は存在するがOutpost本体は未完成。
+前哨塔 / 拠点に関する仕様・実装状況を扱う。
 
 ---
 
 ### 3. [`03_merge_system.md`](./03_merge_system.md)
 
-**Status: Mostly current**
+地帯化・連携を扱う。
 
 プレイヤー向け用語:
 
 - MERGE → **地帯化**
 - LINK → **連携**
 
-現在実装されている主な内容:
-
-- 4セル地帯
-- 2×2 / L / T系shape
-- 地帯産出1.2倍
-- 湿原・水源セルの除外
-- 草原+干拓地の`PLAINS`互換
-- 異なる完成地帯間の連携
-
-一部の地帯固有戦術・特殊報酬は未実装のため、本文中の実装状態を確認する。
-
 ---
 
 ### 4. [`04_exploration_system.md`](./04_exploration_system.md)
 
-**Status: Legacy / removal direction**
+土地探索・2D6探索に関する仕様・実装差分を扱う。
 
-旧「配置済み土地を独立操作で2D6探索する」仕組み。
-
-`game` に残存コードはあるが、現行設計では専用探索を廃止し、
-
-- カード
-- イベント
-- 調査 / 情報
-
-へ吸収する方向。
-
-新規仕様の根拠として使用しない。
+`00_land_foundation_and_resource_sockets.md` 内の資源ソケット・探索関連基礎情報と矛盾する場合、実装未接続を理由に基礎仕様を削除せず、別途差分として扱う。
 
 ---
 
 ### 5. [`05_special_blocks.md`](./05_special_blocks.md)
 
-**Status: Mixed**
-
-特殊ブロック / 土地改良の実装状態を管理する。
-
-現在完成度が高いもの:
-
-- 湿原 → 干拓地
-- 干拓地の人工地形化
-- 草原+干拓地のPLAINS地帯
-
-Partial:
-
-- 穀物庫
-- 製材所
-- 鉱山
-- 市場
-- 工房
-- 国家事業
-- その他施設カード
-
-Planned:
-
-- 前哨塔盤面配置
-- 前哨塔によるTrial情報精度向上
+特殊ブロック / 土地改良に関する仕様・実装状況を扱う。
 
 ---
 
-## 土地システムの現在フロー
+## 土地システムの基本フロー
 
 ```text
 Offering
@@ -133,39 +101,41 @@ Offering
 ↓
 異なる地帯を連携
 ↓
-資源・地勢条件に応じて土地改良 / 施設カードが候補化
+資源・地勢条件に応じて土地改良 / 施設へ接続
 ↓
 Trialで盤面そのものを利用
 ```
 
 本作では、
 
-> **土地を置くことが最終目的ではなく、土地の形が後の選択肢を決める**
+> **土地を置くことが最終目的ではなく、土地の形と中身が後の選択肢を決める**
 
 ことを土地システムの中心思想とする。
 
 ---
 
-## 現在の正本関係
+## 正本と実装台帳の関係
 
-| 領域 | 正本 |
-| :--- | :--- |
-| 通常土地カードのshape / Stage / rarity / yield | `rules/09_cards/01_land_cards.md` / `LAND_CARDS_MASTER` |
-| 地形型・E/GL・特殊地形 | `01_land_base.md` / `land_system.js` |
-| 実際の配置合法性 | `GridEngine.canPlaceShape()` |
-| 実際の総産出 | `ProductionCalculator` |
-| 地帯化 / 連携 | `03_merge_system.md` / `merge_rules.js` / `GridEngine` |
-| 独立探索 | Legacy |
-| 干拓 | `05_special_blocks.md` + economy card |
-| 前哨塔 | Planned |
+| 領域 | 設計正本 / 基礎情報 | 実装確認先 |
+| :--- | :--- | :--- |
+| E / GL・土地基礎産出・資源ソケット・水源 | `00_land_foundation_and_resource_sockets.md` | `01_land_base.md` / `land_system.js` / card data |
+| 通常土地カードshape / Stage / rarity | `rules/09_cards/01_land_cards.md` | `LAND_CARDS_MASTER` |
+| 配置合法性 | `00_land_foundation_and_resource_sockets.md` ほか土地正本 | `GridEngine.canPlaceShape()` |
+| 総産出 | 土地・地帯・資源正本 | `ProductionCalculator` / `DefenseSystem` |
+| 地帯化 / 連携 | `03_merge_system.md` | `merge_rules.js` / `GridEngine` |
+| 土地探索 | `04_exploration_system.md` + `00` の資源発見基礎情報 | `DeckManager` / `CheckSystem` |
+| 干拓 / 特殊ブロック | `05_special_blocks.md` | economy card / terrain conversion runtime |
+| 前哨塔 | `02_outpost_system.md` | Trial / investigation関連runtime |
 
 ---
 
-## 旧「新機能実装予定案」の扱い
+## 保護原則
 
-以下は現行採用仕様ではなく、将来候補へ降格する。
+`rules/03_land_system` では、次を厳守する。
 
-- Territory Milestone（盤面50% / 80% / 100%埋めボーナス）
-- Gradation Harmony（E/GL連続配置への追加ボーナス）
-
-採用する場合は、現在のTrial・Offering・地帯化との役割重複を確認してから再設計する。
+1. **未実装 = 廃止ではない。**
+2. **現在のコードから未到達 = Legacyではない。**
+3. 設計正本を実装へ合わせて削除・圧縮しない。
+4. 廃止・置換は、明示的な仕様決定または後発の確定正本がある場合だけ行う。
+5. `game/` との差異は正本本文の削除ではなく、監査ファイルで分類する。
+6. 特に `00_land_foundation_and_resource_sockets.md` の資源ソケット・E/GL・水源情報は、2.5D表現を含む他システムの基礎データとして保護する。
