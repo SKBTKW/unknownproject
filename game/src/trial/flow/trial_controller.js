@@ -9,7 +9,8 @@ export class TrialController extends TrialControllerBase {
     constructor(options = {}) {
         super(options);
         this.hqResolutionService = options.hqResolutionService || new TrialHqResolutionService({
-            damageResolver: this.damageResolver
+            damageResolver: this.damageResolver,
+            powerResolver: this.powerResolver
         });
         this.resultSettlementService = options.resultSettlementService || new TrialResultSettlementService();
         this.lifecycleReadService = options.lifecycleReadService || new TrialLifecycleReadService();
