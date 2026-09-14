@@ -22,11 +22,9 @@ function sourceCard(state, source) {
 function sameCard(expected, actual) {
     if (!expected || !actual) return false;
     if (expected === actual) return true;
-    if (expected.id && actual.id && expected.id === actual.id) return true;
-    if (expected.cardMasterId && actual.cardMasterId && expected.cardMasterId === actual.cardMasterId) {
-        return expected.id === actual.id;
-    }
-    return false;
+    return typeof expected.id === "string" && expected.id.length > 0
+        && typeof actual.id === "string" && actual.id.length > 0
+        && expected.id === actual.id;
 }
 
 function removeCardFromSource(state, source) {
