@@ -45,7 +45,9 @@ const hub = new GameFactHub();
 const bridge = new AdvisorEventBridge(dialogue, hub);
 bridge.observeSnapshot({ turn: 1, trialActive: false, trialRemaining: 4 });
 bridge.observeSnapshot({ turn: 2, trialActive: false, trialRemaining: 1 });
-check(displayed.includes(ADVISOR_EVENTS.TRIAL_WARNING), "公開snapshotからTrial警告へ橋渡しする");
+check(!displayed.includes(ADVISOR_EVENTS.TRIAL_WARNING), "内部Trial countdownだけからTrial警告を導出しない");
+bridge.observeSnapshot({ turn: 3, trialActive: true, trialRemaining: 0 });
+check(displayed.includes(ADVISOR_EVENTS.TRIAL_START), "公開されたTrial active意味状態には反応する");
 hub.emit(GAME_FACT_TYPES.TRIAL_PLAN_CONFIRMED, { routes: 2 });
 check(dialogue.queue.some(item => item.event === ADVISOR_EVENTS.TRIAL_PLAN_CONFIRMED), "公開GameFactをAdvisor eventへ橋渡しする");
 
@@ -59,8 +61,10 @@ const state = {
     gameLogs: ["[T4] LOG_TEST", "plain"],
     emberSystem: { getStatus: () => "STANDARD" }
 };
+const hiddenScheduleStatus = resolveAdvisorStatus(state, {});
+check(!hiddenScheduleStatus.urgency.some(item => item.key === "UI_ADVISOR_STATUS_TRIAL_WARNING"), "内部Trial scheduleだけから警告状態を生成しない");
 const status = resolveAdvisorStatus(state, { active: true });
-check(status.urgency[0].key === "UI_ADVISOR_STATUS_TRIAL_ACTIVE", "状況Resolverが進行中のTrialを優先する");
+check(status.urgency[0].key === "UI_ADVISOR_STATUS_TRIAL_ACTIVE", "公開されたTrial意味状態には状況Resolverが反応する");
 check([...status.urgency, ...status.status, ...status.outlook].length <= 5, "状況要約を最大5項目に制限する");
 const advice = resolveAdvisorAdvice(state, { active: true });
 check(advice.topic === "defense" && advice.suggestionKey, "助言Resolverが事実と提案を分離する");
