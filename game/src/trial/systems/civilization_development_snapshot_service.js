@@ -19,6 +19,20 @@ function resolveTerritoryTiles(state) {
     return 0;
 }
 
+function resolvePlacedBlockCount(state) {
+    if (!state) return 0;
+    if (Number.isFinite(Number(state.placedBlockCount))) {
+        return nonNegativeInteger(state.placedBlockCount);
+    }
+    if (typeof state.countPlacedBlocks === "function") {
+        return nonNegativeInteger(state.countPlacedBlocks());
+    }
+    if (state.gridEngine && typeof state.gridEngine.getPlacedBlockCount === "function") {
+        return nonNegativeInteger(state.gridEngine.getPlacedBlockCount());
+    }
+    return 0;
+}
+
 function resolveCompletedZoneCount(state) {
     if (!state || !state.mergedBlocks || typeof state.mergedBlocks !== "object") return 0;
     return Object.keys(state.mergedBlocks)
@@ -51,6 +65,7 @@ export class CivilizationDevelopmentSnapshotService {
         if (!state) {
             return Object.freeze({
                 stage: 1,
+                placedBlockCount: 0,
                 territoryTiles: 0,
                 completedZones: 0,
                 links: 0
@@ -59,6 +74,7 @@ export class CivilizationDevelopmentSnapshotService {
 
         const snapshot = {
             stage: Math.max(1, nonNegativeInteger(state.stage?.id) || 1),
+            placedBlockCount: resolvePlacedBlockCount(state),
             territoryTiles: resolveTerritoryTiles(state),
             completedZones: resolveCompletedZoneCount(state),
             links: resolveLinkCount(state)
