@@ -2,6 +2,7 @@ import { BoardAwareUIController } from './board_aware_ui_controller.js';
 import { TrialResultExitAdapter } from './trial_result_exit_adapter.js';
 import { releaseSettledTrialPreviewSession } from '../trial/dev/settled_trial_preview_release.js';
 import { TrialSessionBoundaryService } from '../trial/flow/trial_session_boundary_service.js';
+import { GlobalEventChoiceRuntimeIntegration } from './global_event_choice_runtime_integration.js';
 
 export class TrialResultUIController extends BoardAwareUIController {
     constructor(engine) {
@@ -14,6 +15,12 @@ export class TrialResultUIController extends BoardAwareUIController {
             lifecycleProvider: () => this.trialController.getLifecycleReadModel(),
             onExitReady: () => this.releaseSettledTrialPresentation()
         });
+        this.globalEventChoiceRuntime = new GlobalEventChoiceRuntimeIntegration(this);
+    }
+
+    render() {
+        super.render();
+        this.globalEventChoiceRuntime?.resumePending?.();
     }
 
     startTrialInterceptionPreview(scenario, options = {}) {
