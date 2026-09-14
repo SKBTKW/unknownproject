@@ -59,10 +59,10 @@ const state = {
     gameLogs: ["[T4] LOG_TEST", "plain"],
     emberSystem: { getStatus: () => "STANDARD" }
 };
-const status = resolveAdvisorStatus(state, {});
-check(status.urgency[0].key === "UI_ADVISOR_STATUS_TRIAL_WARNING", "状況ResolverがTrial接近を優先する");
+const status = resolveAdvisorStatus(state, { active: true });
+check(status.urgency[0].key === "UI_ADVISOR_STATUS_TRIAL_ACTIVE", "状況Resolverが進行中のTrialを優先する");
 check([...status.urgency, ...status.status, ...status.outlook].length <= 5, "状況要約を最大5項目に制限する");
-const advice = resolveAdvisorAdvice(state, {});
+const advice = resolveAdvisorAdvice(state, { active: true });
 check(advice.topic === "defense" && advice.suggestionKey, "助言Resolverが事実と提案を分離する");
 const records = getAdvisorRecords(state);
 check(records[0].turn === 4 && records[0].message === "LOG_TEST", "既存GameLogを複製せず表示形式へ変換する");

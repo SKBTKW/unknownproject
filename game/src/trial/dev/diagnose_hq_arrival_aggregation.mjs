@@ -16,7 +16,7 @@ const state = {
     ],
     traversalResults: [
         { routeId: "R_BREAK", outcome: TRIAL_OUTCOMES.BREAKTHROUGH, reachedRouteEnd: true },
-        { routeId: "R_REPEL", outcome: TRIAL_OUTCOMES.REPEL, reachedRouteEnd: false }
+        { routeId: "R_REPEL", outcome: TRIAL_OUTCOMES.REPEL, reachedRouteEnd: false, stopped: true }
     ],
     battleResults: [
         { enemyActualPower: 13, playerActualPower: 5 },

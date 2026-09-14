@@ -205,7 +205,7 @@ globalThis.window = {
  */
 function createCompletedHarness({
     allIntercept = true,
-    defenseAllocPerRoute = [6, 6, 6],
+    defenseAllocPerRoute = [16, 16, 16],
     initialEmber = 20,
     simulateRouteEndDamage = false
 } = {}) {
@@ -222,6 +222,17 @@ function createCompletedHarness({
     const routes = ui.getTrialPlanningRoutes();
 
     if (allIntercept) {
+        const requiredDefense = routes.reduce(
+            (sum, _, i) => sum + (defenseAllocPerRoute[i] !== undefined ? defenseAllocPerRoute[i] : 10),
+            0
+        );
+        const currentAvailable = ui.trialController.state.human?.availableDefense || 0;
+        const fixtureDefense = Math.max(currentAvailable, requiredDefense);
+        if (ui.trialController.state.human) {
+            ui.trialController.state.human.defense = fixtureDefense;
+            ui.trialController.state.human.availableDefense = fixtureDefense;
+        }
+
         // Intercept all routes
         for (let i = 0; i < routes.length; i++) {
             const r = routes[i];
@@ -403,9 +414,15 @@ test("1.7 TrialCompletionService blocks double completion", () => {
 test("2.1 TrialController all-INTERCEPT complete trial with SURVIVED outcome", () => {
     const { ui, battleCount } = createCompletedHarness({
         allIntercept: true,
-        defenseAllocPerRoute: [6, 6, 6],
+        defenseAllocPerRoute: [16, 16, 16],
         initialEmber: 20
     });
+
+    // Verify all routes repelled before completion
+    for (const trav of ui.trialController.state.traversalResults) {
+        assert.equal(trav.stopped, true, "All repelled traversals must stop");
+        assert.equal(trav.reachedRouteEnd, false, "All repelled traversals must not reach route end");
+    }
 
     assert.equal(ui.trialController.canCompleteTrial(), true, "canCompleteTrial should be true");
     assert.equal(ui.trialController.isTrialCompleted(), false, "isTrialCompleted initially false");
@@ -414,15 +431,22 @@ test("2.1 TrialController all-INTERCEPT complete trial with SURVIVED outcome", (
     assert.equal(compRes.success, true);
     assert.equal(compRes.result.completed, true);
     assert.equal(compRes.result.outcome, TRIAL_COMPLETION_OUTCOMES.SURVIVED);
-    assert.equal(compRes.result.emberRemaining, 20);
+
+    // Assert zero damage contract
+    assert.equal(compRes.hqDamage.arrivals.length, 0, "No enemy arrived at HQ");
+    assert.equal(compRes.hqDamage.sourcePower, 0, "Zero source power at HQ");
+    assert.equal(compRes.hqDamage.emberDamage, 0, "Zero Ember damage on all-REPEL");
+    assert.equal(compRes.result.totalEmberDamage, 0, "Result reflects zero Ember damage");
+    assert.equal(compRes.result.emberRemaining, 20, "Full 20 Ember remains");
+
     assert.equal(compRes.result.battleCount, battleCount);
     assert.equal(compRes.result.resolvedBattleCount, battleCount);
-    assert.equal(compRes.result.totalEmberDamage, 0);
 
     // State check
     assert.equal(ui.trialController.isTrialCompleted(), true);
     assert.equal(ui.trialController.state.trialCompleted, true);
     assert.equal(ui.trialController.state.phase, "RESULT");
+    assert.equal(ui.trialController.state.ember, 20);
 
     // GameFact check
     const compFacts = ui.trialController.gameFactHub.getFacts().filter(f => f.type === GAME_FACT_TYPES.TRIAL_COMPLETED);
