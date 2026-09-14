@@ -8,6 +8,7 @@ export { KnownEnemyStateService } from './systems/known_enemy_state_service.js';
 export { InvestigationOfferingPolicy } from './systems/investigation_offering_policy.js';
 export { InvestigationOfferingAdapter } from './systems/investigation_offering_adapter.js';
 export { InvestigationCardExecutionService } from './systems/investigation_card_execution_service.js';
+export { attachInvestigationRuntime } from './integration/investigation_runtime_bridge.js';
 export { InvestigationReportPresenter } from './presentation/investigation_report_presenter.js';
 export { InvestigationReportTextRenderer } from './presentation/investigation_report_text_renderer.js';
 export { InvestigationNarrativeComposer } from './presentation/investigation_narrative_composer.js';
