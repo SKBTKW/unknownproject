@@ -69,7 +69,13 @@ export class AdvisorEventBridge {
     observeSnapshot(snapshot) {
         if (!snapshot) return;
         const enabled = Boolean(this.enabledProvider());
-        const current = { turn: snapshot.turn, trialActive: Boolean(snapshot.trialActive), state: snapshot.state || {}, zoneCount: Number(snapshot.zoneCount || 0), linkCount: Number(snapshot.linkCount || 0) };
+        const current = {
+            turn: snapshot.turn,
+            trialActive: Boolean(snapshot.trialActive),
+            state: snapshot.state || {},
+            zoneCount: Number(snapshot.zoneCount || 0),
+            linkCount: Number(snapshot.linkCount || 0)
+        };
         this.ensureGlobalEventSubscription(current.state?.globalEventManager || null);
         const peaceActive = !current.trialActive;
         if (!this.previous) {

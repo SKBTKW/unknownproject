@@ -138,6 +138,29 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (DeckManager RNG Contract) で不合格が検出されました。");
         process.exit(1);
     }
+    const investigationContracts = [
+        ["Warning Observation Boundary", "scratch/test_warning_observation_boundary.mjs"],
+        ["Investigation Resolver", "scratch/test_investigation_resolver.mjs"],
+        ["Investigation Card Execution", "scratch/test_investigation_card_execution.mjs"],
+        ["Known Enemy State", "scratch/test_known_enemy_state_service.mjs"],
+        ["Investigation Offering Adapter", "scratch/test_investigation_offering_adapter.mjs"],
+        ["Investigation Runtime Bridge", "scratch/test_investigation_runtime_bridge.mjs"],
+        ["Investigation Unlock Bridge", "scratch/test_investigation_unlock_bridge.mjs"],
+        ["Investigation Restore Round-trip", "scratch/test_investigation_restore_round_trip.mjs"],
+        ["Investigation Restore Offering Master", "scratch/test_investigation_restore_offering_master.mjs"],
+        ["Investigation GameEngine Attach", "scratch/test_investigation_game_engine_attach.mjs"],
+        ["Investigation History Comparator", "scratch/test_investigation_history_comparator.mjs"],
+        ["Investigation Report Presenter", "scratch/test_investigation_report_presenter.mjs"],
+        ["Investigation Report Text Renderer", "scratch/test_investigation_report_text_renderer.mjs"],
+        ["Investigation Narrative", "scratch/test_investigation_narrative.mjs"],
+    ];
+    for (const [label, testPath] of investigationContracts) {
+        const ok = await runCommand("node", [testPath]);
+        if (!ok) {
+            console.error(`\n❌ [PIPELINE BLOCKED] Layer 3 (${label}) で不合格が検出されました。`);
+            process.exit(1);
+        }
+    }
     const runTerminationContracts = [
         ["Run Termination Contract", "game/src/core/dev/diagnose_run_termination_contract.mjs"],
         ["Terminal Verse Lifecycle", "game/src/core/dev/diagnose_terminal_verse_lifecycle.mjs"],

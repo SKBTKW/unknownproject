@@ -20,6 +20,8 @@ import { GameplayRandomService } from './gameplay_random_service.js';
 import { TurnLifecycleService } from './turn_lifecycle_service.js';
 import { HistoryRestoreService } from './history_restore_service.js';
 import { GameState } from '../v2_unity_ready_main.js';
+import { EnemyObservationProjector } from '../warning/systems/enemy_observation_projector.js';
+import { attachInvestigationSubsystem } from '../warning/integration/investigation_bootstrap.js';
 
 function normalizeRunSeed(seed) {
     if (!Number.isFinite(seed)) return null;
@@ -109,6 +111,14 @@ class GameEngine {
         const TurnLifecycleServiceClass = dependencies.TurnLifecycleServiceClass || TurnLifecycleService;
         this.turnLifecycleService = dependencies.turnLifecycleService
             || (TurnLifecycleServiceClass ? new TurnLifecycleServiceClass(this) : null);
+
+        const observationProjector = dependencies.enemyObservationProjector || new EnemyObservationProjector();
+        this.investigationSubsystem = attachInvestigationSubsystem(this, {
+            observableProfileProvider: () => {
+                const truthSnapshot = this.enemyTruthReadModel?.getSnapshot?.();
+                return observationProjector.project(truthSnapshot);
+            }
+        });
 
         // 4. GameState への双方向リンク確立
         if (this.state) {

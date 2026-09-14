@@ -180,9 +180,14 @@ export class HistoryRestoreService {
             return { success: false, reason: 'HISTORY_RESTORE_DEPENDENCY_MISSING' };
         }
 
-        // Master lookup is read-only. The hydrator stays independent of DeckManager.
+        // Master lookup must be independent from the *current* unlock state.
+        // A restore point may contain cards that are unavailable in the present Verse.
         const masters = engine.deckManager?.getLandCardMaster?.() || [];
-        const byId = new Map(masters.map(master => [master.id, master]));
+        const additionalMasters = engine.getAdditionalCardMastersForRestore?.() || [];
+        const byId = new Map();
+        for (const master of [...masters, ...additionalMasters]) {
+            if (master?.id) byId.set(master.id, master);
+        }
         const resolveCardMaster = id => byId.get(id) || null;
         const checkpoint = captureRollbackCheckpoint(engine, history);
         this.isRestoring = true;

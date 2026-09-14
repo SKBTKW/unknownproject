@@ -1,0 +1,52 @@
+// Generated pure data module from investigation_cards.json.
+// Keep this file in sync with the JSON source until the repository generator handles it.
+
+export const INVESTIGATION_CARDS_MASTER = [
+  {
+    "id": "INVESTIGATE_FOOTPRINTS",
+    "category": "INVESTIGATION",
+    "nameKey": "INVESTIGATE_FOOTPRINTS_NAME",
+    "descriptionKey": "INVESTIGATE_FOOTPRINTS_DESC",
+    "cost": {},
+    "tags": ["INVESTIGATION", "TRACE"],
+    "reqInvestigationUnlocked": true,
+    "investigationSourceType": "FOOTPRINTS",
+    "maxObservations": 2,
+    "minStage": 1,
+    "rarity": "C",
+    "weight": 0.12,
+    "cyclePolicy": "RARITY"
+  },
+  {
+    "id": "INVESTIGATE_CAMP_REMAINS",
+    "category": "INVESTIGATION",
+    "nameKey": "INVESTIGATE_CAMP_REMAINS_NAME",
+    "descriptionKey": "INVESTIGATE_CAMP_REMAINS_DESC",
+    "cost": {},
+    "tags": ["INVESTIGATION", "TRACE"],
+    "reqInvestigationUnlocked": true,
+    "investigationSourceType": "CAMP_REMAINS",
+    "maxObservations": 2,
+    "minStage": 1,
+    "rarity": "C",
+    "weight": 0.12,
+    "cyclePolicy": "RARITY"
+  },
+  {
+    "id": "INVESTIGATE_SCOUT_SIGHTING",
+    "category": "INVESTIGATION",
+    "nameKey": "INVESTIGATE_SCOUT_SIGHTING_NAME",
+    "descriptionKey": "INVESTIGATE_SCOUT_SIGHTING_DESC",
+    "cost": {},
+    "tags": ["INVESTIGATION", "SCOUT"],
+    "reqInvestigationUnlocked": true,
+    "investigationSourceType": "SCOUT_SIGHTING",
+    "maxObservations": 2,
+    "minStage": 1,
+    "rarity": "UC",
+    "weight": 0.09,
+    "cyclePolicy": "RARITY"
+  }
+];
+
+export default INVESTIGATION_CARDS_MASTER;
