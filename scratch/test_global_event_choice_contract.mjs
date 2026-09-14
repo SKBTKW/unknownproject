@@ -30,6 +30,7 @@ assert(presentation.choices.length === 3, "captured scout must expose exactly th
 assert(presentation.publicContext.captureZone === "INNER", "public context must be preserved");
 
 const resolution = system.resolveChoice(GLOBAL_EVENT_CHOICE_IDS.CAPTURED_SCOUT, "EXECUTE", publicContext);
+assert(resolution.resultKey === "EVENT_CAPTURED_SCOUT_RESULT_EXECUTE", "resolved choice must expose its public result key");
 assert(resolution.publicOutcomeTags.includes("RETALIATION_RISK"), "execute must expose retaliation risk");
 
 const facts = factHub.getFacts();
