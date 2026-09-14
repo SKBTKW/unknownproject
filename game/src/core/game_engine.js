@@ -91,7 +91,7 @@ class GameEngine {
         this.undoSystem = dependencies.undoSystem || (UndoLandSystemClass ? new UndoLandSystemClass(this.state) : null);
 
         const ChronicleSystemClass = dependencies.ChronicleSystemClass || ChronicleSystem;
-        this.chronicleSystem = dependencies.chronicleSystem || (ChronicleSystemClass ? new ChronicleSystemClass(this.state, this) : null);
+        this.chronicleSystem = dependencies.chronicleSystem || (ChronicleSystemClass ? new ChronicleSystemClass(this.state) : null);
 
         const GlobalEventManagerClass = dependencies.GlobalEventManagerClass || GlobalEventManager;
         this.globalEventManager = dependencies.globalEventManager || (GlobalEventManagerClass ? new GlobalEventManagerClass(this.state, this) : null);
