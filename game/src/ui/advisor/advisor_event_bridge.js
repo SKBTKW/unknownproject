@@ -3,12 +3,8 @@ import { ADVISOR_EVENTS } from './advisor_dialogue_database.js';
 import { AdvisorRuntimeState } from './advisor_runtime_state.js';
 import { createAdvisorPeaceSnapshot, resolveAdvisorPeaceStates } from './advisor_peace_state_resolver.js';
 import { AdvisorReactionEvaluator } from './advisor_reaction_evaluator.js';
-import {
-    resolveAdvisorGlobalEventChoiceReaction
-} from './advisor_global_event_choice_reaction_resolver.js';
-import {
-    ADVISOR_GLOBAL_EVENT_CHOICE_TIMINGS
-} from './advisor_global_event_choice_reactions.js';
+import { resolveAdvisorGlobalEventChoiceReaction } from './advisor_global_event_choice_reaction_resolver.js';
+import { ADVISOR_GLOBAL_EVENT_CHOICE_TIMINGS } from './advisor_global_event_choice_reactions.js';
 import { ADVISOR_NEUTRAL_PERSONALITY } from './advisor_global_event_neutral_reactions.js';
 
 export class AdvisorEventBridge {
@@ -16,6 +12,7 @@ export class AdvisorEventBridge {
         this.dialogueSystem = dialogueSystem;
         this.profile = profile;
         this.enabledProvider = enabledProvider;
+        this.choiceReactionSink = null;
         this.neutralNarrationSink = typeof neutralNarrationSink === "function" ? neutralNarrationSink : null;
         this.runtime = new AdvisorRuntimeState();
         this.evaluator = new AdvisorReactionEvaluator({ rng });
@@ -39,9 +36,7 @@ export class AdvisorEventBridge {
 
     handleGlobalEventChoiceFact(timing, payload = {}) {
         const advisorEnabled = Boolean(this.enabledProvider());
-        const personality = advisorEnabled
-            ? this.profile?.personality
-            : ADVISOR_NEUTRAL_PERSONALITY;
+        const personality = advisorEnabled ? this.profile?.personality : ADVISOR_NEUTRAL_PERSONALITY;
         const reaction = resolveAdvisorGlobalEventChoiceReaction({
             eventId: payload.eventId,
             personality,
@@ -51,9 +46,8 @@ export class AdvisorEventBridge {
             publicOutcomeTags: payload.publicOutcomeTags || []
         });
         if (!reaction) return false;
-        if (!advisorEnabled && this.neutralNarrationSink) {
-            return this.neutralNarrationSink(reaction) !== false;
-        }
+        if (!advisorEnabled && this.neutralNarrationSink) return this.neutralNarrationSink(reaction) !== false;
+        if (advisorEnabled && typeof this.choiceReactionSink === "function") return this.choiceReactionSink(reaction) !== false;
         return this.dialogueSystem.emitResolved(reaction);
     }
 
@@ -75,13 +69,7 @@ export class AdvisorEventBridge {
     observeSnapshot(snapshot) {
         if (!snapshot) return;
         const enabled = Boolean(this.enabledProvider());
-        const current = {
-            turn: snapshot.turn,
-            trialActive: Boolean(snapshot.trialActive),
-            state: snapshot.state || {},
-            zoneCount: Number(snapshot.zoneCount || 0),
-            linkCount: Number(snapshot.linkCount || 0)
-        };
+        const current = { turn: snapshot.turn, trialActive: Boolean(snapshot.trialActive), state: snapshot.state || {}, zoneCount: Number(snapshot.zoneCount || 0), linkCount: Number(snapshot.linkCount || 0) };
         this.ensureGlobalEventSubscription(current.state?.globalEventManager || null);
         const peaceActive = !current.trialActive;
         if (!this.previous) {
@@ -117,24 +105,21 @@ export class AdvisorEventBridge {
         if (current.zoneCount > this.previous.zoneCount) this.emitImmediate(this.evaluator.evaluateMilestone("ZONE_COMPLETED", this.runtime), current.turn);
         if (current.linkCount > this.previous.linkCount) this.emitImmediate(this.evaluator.evaluateMilestone("LINK_COMPLETED", this.runtime), current.turn);
     }
-
     observeMilitaryAction(actionType, turn) {
         if (!this.enabledProvider()) return false;
         return this.emitImmediate(this.evaluator.evaluateMilitaryAction(actionType, this.runtime), turn);
     }
-
     emitImmediate(result, turn) {
         if (!result || (!result.mandatory && this.profile?.policy?.[result.topic] < 3)) return false;
         const emitted = this.dialogueSystem.emitTopic(result, { turn });
         if (emitted) this.runtime.recordSpeech(result.topic, turn);
         return emitted;
     }
-
     destroy() {
         this.unsubscribeGlobalEvent?.();
         this.unsubscribeGlobalEvent = null;
         this.globalEventManager = null;
-        if (this.unsubscribeFact) this.unsubscribeFact();
+        this.unsubscribeFact?.();
         this.unsubscribeFact = null;
     }
 }
