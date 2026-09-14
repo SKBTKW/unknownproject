@@ -47,6 +47,15 @@ check('Main play area keeps the 4px header gap contract', () => {
     assert.equal(UILayoutConfig.gameWallpaperArt.top,
         'calc(var(--layout-header-height, 120px) + var(--layout-app-gap, 4px) + 4px)');
 });
+check('Middle layout shell and composition have separate owners', () => {
+    assert.deepEqual(rule(base, 'middle-layout'), {
+        width: '100%', flex: '1', 'min-height': '0', position: 'relative', overflow: 'visible'
+    });
+    assert.deepEqual(rule(layerContract, 'middle-layout'), {
+        display: 'grid', 'grid-template-areas': '"main-stack"',
+        'align-items': 'start', 'justify-items': 'center'
+    });
+});
 check('Board is positioned 60px below header and Verse is in header right', () => {
     const boardWrapper = rule(layerContract, 'board-container-wrapper');
     assert.deepEqual(boardWrapper, {
