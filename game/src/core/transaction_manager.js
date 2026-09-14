@@ -1,3 +1,5 @@
+import { GAME_FACT_TYPES } from "./game_fact.js";
+
 /**
  * 🏛️ ActionTransactionManager (ゲームアクション・トランザクション統括モジュール)
  */
@@ -63,6 +65,15 @@ export class ActionTransactionManager {
                 derived: derivedResult
             };
             this.history.push(record);
+
+            if (actionType === "PLACE_LAND" && this.engine?.gameFactHub?.emit) {
+                this.engine.gameFactHub.emit(GAME_FACT_TYPES.CIVILIZATION_DEVELOPMENT_CHANGED, {
+                    source: actionType,
+                    turn: state.turn,
+                    placedBlockCount: Number(state.placedBlockCount) || 0
+                });
+            }
+
             return { success: true, actionId: record.id, result: execResult, derived: derivedResult };
         } catch (err) {
             console.error(`🔥 [Transaction Exception: ${actionType}]`, err);
