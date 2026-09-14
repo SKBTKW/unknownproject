@@ -13,10 +13,6 @@ function edgeOf(size, r, c) {
     return edges;
 }
 
-function defaultSelector({ candidates }) {
-    return candidates.slice(0, 1);
-}
-
 /**
  * Trial正解データとしての侵入口候補を盤面外周から解決する。
  * Warning / Intel / 表示上の推定方向は参照しない。
@@ -26,7 +22,7 @@ function defaultSelector({ candidates }) {
 export class TrialIngressResolver {
     constructor({
         terrainEffectResolver = new TrialTerrainEffectResolver(),
-        selector = defaultSelector
+        selector = null
     } = {}) {
         this.terrainEffectResolver = terrainEffectResolver;
         this.selector = selector;
@@ -61,7 +57,7 @@ export class TrialIngressResolver {
 
     resolve(context = {}) {
         const candidates = this.listCandidates(context);
-        if (candidates.length === 0) return [];
+        if (candidates.length === 0 || typeof this.selector !== "function") return [];
 
         const selected = this.selector({
             ...context,
