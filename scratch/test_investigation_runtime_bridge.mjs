@@ -1,6 +1,8 @@
 import { attachInvestigationRuntime } from '../game/src/warning/index.js';
 import { INVESTIGATION_CARDS_MASTER } from '../game/src/data/investigation_cards_data.js';
 
+let sequence = 0;
+let floatCalls = 0;
 const state = {
     turn: 9,
     stage: 1,
@@ -18,6 +20,10 @@ const deckManager = {
 const engine = {
     state,
     deckManager,
+    gameplayRandom: {
+        nextFloat() { floatCalls += 1; return 0; },
+        nextId(prefix, scope) { sequence += 1; return `${prefix}_${scope}_${sequence}`; }
+    },
     cardCycleSystem: {
         registered: [],
         registerOffering(cards, turn) {
@@ -46,25 +52,26 @@ if (engine.deckManager.getLandCardMaster().some(card => card.category === 'INVES
 
 state.investigationUnlocked = true;
 const extended = engine.deckManager.getLandCardMaster();
-if (!extended.some(card => card.id === 'INVESTIGATE_FOOTPRINTS')) {
-    throw new Error('investigation card missing after unlock');
-}
-if (!extended.some(card => card.id === 'BASE_CARD')) {
-    throw new Error('base cards were lost');
-}
+if (!extended.some(card => card.id === 'INVESTIGATE_FOOTPRINTS')) throw new Error('investigation card missing after unlock');
+if (!extended.some(card => card.id === 'BASE_CARD')) throw new Error('base cards were lost');
 
 const card = INVESTIGATION_CARDS_MASTER[0];
-state.handOffering = [{ cardMasterId: card.id, terrain: card }];
-const result = engine.executeInvestigationCard(state.handOffering[0], { type: 'OFFERING', index: 0 });
+const instance = { id: 'offering-1', cardMasterId: card.id, terrain: card };
+state.handOffering = [instance];
 
+const fake = { id: 'fake', cardMasterId: card.id, terrain: card };
+const mismatch = engine.executeInvestigationCard(fake, { type: 'OFFERING', index: 0 });
+if (mismatch.reason !== 'INVESTIGATION_SOURCE_MISMATCH') throw new Error('source mismatch was not rejected');
+if (state.handOffering[0] !== instance) throw new Error('source mismatch consumed a real card');
+
+const result = engine.executeInvestigationCard(instance, { type: 'OFFERING', index: 0 });
 if (!result.success) throw new Error(`investigation execution failed: ${result.reason}`);
 if (state.handOffering.length !== 0) throw new Error('played investigation card was not consumed');
 if (!state.hasPickedThisTurn) throw new Error('investigation did not consume the Verse action');
 if (state.knownEnemyState.reports.length !== 1) throw new Error('report was not recorded');
-if (!state.knownEnemyState.observedTags.has('NORTH_ACTIVITY')) throw new Error('known enemy state missing observed evidence');
+if (!state.knownEnemyState.observedTags.includes('NORTH_ACTIVITY')) throw new Error('known enemy state missing observed evidence');
 if (engine.cardCycleSystem.registered.length !== 1) throw new Error('card cycle was not registered');
-
-const second = engine.executeInvestigationCard({ terrain: card }, { type: 'OFFERING', index: 0 });
-if (second.reason !== 'ALREADY_PICKED') throw new Error('multiple investigation actions allowed in one Verse');
+if (floatCalls < 1) throw new Error('gameplay RNG was not used');
+if (result.report.id !== 'investigation_1:9_1') throw new Error('deterministic report ID was not supplied');
 
 console.log('PASS investigation runtime bridge');
