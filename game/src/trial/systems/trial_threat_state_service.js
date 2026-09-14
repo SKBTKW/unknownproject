@@ -162,7 +162,9 @@ export class TrialThreatStateService {
 
         this.dirty = Boolean(snapshot.dirty);
         this.revision = Math.max(0, Math.floor(Number(snapshot.revision) || 0));
-        this.lastCommittedVerse = Number.isFinite(Number(snapshot.lastCommittedVerse))
+        this.lastCommittedVerse = snapshot.lastCommittedVerse !== null &&
+            snapshot.lastCommittedVerse !== undefined &&
+            Number.isFinite(Number(snapshot.lastCommittedVerse))
             ? Number(snapshot.lastCommittedVerse)
             : null;
         this.lastDevelopmentChange = cloneData(snapshot.lastDevelopmentChange ?? null);
