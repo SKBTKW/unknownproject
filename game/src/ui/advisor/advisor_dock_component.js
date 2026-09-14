@@ -337,9 +337,8 @@ export class AdvisorDockComponent {
         const state = this.stateProvider?.() || {};
         const trialStatus = this.trialStatusProvider?.() || {};
         const turn = Number(state.turn || 1);
-        const remaining = Number(state.nextTrialTurn || 0) - turn;
         this.root.hidden = !this.isEnabled();
-        this.eventBridge.observeSnapshot({ turn, trialActive: trialStatus.active, trialRemaining: remaining, warningDuration: state.trialSchedule?.warningDuration ?? 5, state, zoneCount: Object.keys(state.mergedBlocks || {}).length, linkCount: state.mergeLinks instanceof Set ? state.mergeLinks.size : 0, activeGlobalEvents: state.activeGlobalEvents || [] });
+        this.eventBridge.observeSnapshot({ turn, trialActive: trialStatus.active, state, zoneCount: Object.keys(state.mergedBlocks || {}).length, linkCount: state.mergeLinks instanceof Set ? state.mergeLinks.size : 0, activeGlobalEvents: state.activeGlobalEvents || [] });
         if (this.root.hidden) return;
 
         this.root.setAttribute("aria-label", this.i18n.t("UI_ADVISOR_TITLE"));
