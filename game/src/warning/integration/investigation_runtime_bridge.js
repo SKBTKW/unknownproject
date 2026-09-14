@@ -70,6 +70,14 @@ export function attachInvestigationRuntime(engine, {
             return { success: false, reason: "OBSERVABLE_PROFILE_UNAVAILABLE" };
         }
 
+        // Restore of a legacy/pre-investigation snapshot may legitimately leave
+        // KnownEnemyState absent while the runtime bridge remains attached.
+        if (!state.knownEnemyState) {
+            state.knownEnemyState = createKnownEnemyState({
+                trialIndex: Number.isInteger(profile.trialIndex) ? profile.trialIndex : 1
+            });
+        }
+
         const result = executionService.execute({
             card: definition,
             profile,
