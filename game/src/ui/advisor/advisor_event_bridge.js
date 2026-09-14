@@ -9,12 +9,14 @@ import {
 import {
     ADVISOR_GLOBAL_EVENT_CHOICE_TIMINGS
 } from './advisor_global_event_choice_reactions.js';
+import { ADVISOR_NEUTRAL_PERSONALITY } from './advisor_global_event_neutral_reactions.js';
 
 export class AdvisorEventBridge {
-    constructor(dialogueSystem, gameFactHub = null, { profile = null, enabledProvider = () => true, rng = Math.random } = {}) {
+    constructor(dialogueSystem, gameFactHub = null, { profile = null, enabledProvider = () => true, rng = Math.random, neutralNarrationSink = null } = {}) {
         this.dialogueSystem = dialogueSystem;
         this.profile = profile;
         this.enabledProvider = enabledProvider;
+        this.neutralNarrationSink = typeof neutralNarrationSink === "function" ? neutralNarrationSink : null;
         this.runtime = new AdvisorRuntimeState();
         this.evaluator = new AdvisorReactionEvaluator({ rng });
         this.previous = null;
@@ -22,7 +24,7 @@ export class AdvisorEventBridge {
         this.unsubscribeGlobalEvent = null;
         this.unsubscribeFact = gameFactHub?.subscribe?.(fact => {
             if (fact.type === GAME_FACT_TYPES.TRIAL_PLAN_CONFIRMED) {
-                this.dialogueSystem.emit(ADVISOR_EVENTS.TRIAL_PLAN_CONFIRMED, fact.payload);
+                if (this.enabledProvider()) this.dialogueSystem.emit(ADVISOR_EVENTS.TRIAL_PLAN_CONFIRMED, fact.payload);
                 return;
             }
             if (fact.type === GAME_FACT_TYPES.GLOBAL_EVENT_CHOICE_PRESENTED) {
@@ -36,16 +38,23 @@ export class AdvisorEventBridge {
     }
 
     handleGlobalEventChoiceFact(timing, payload = {}) {
-        if (!this.enabledProvider()) return false;
+        const advisorEnabled = Boolean(this.enabledProvider());
+        const personality = advisorEnabled
+            ? this.profile?.personality
+            : ADVISOR_NEUTRAL_PERSONALITY;
         const reaction = resolveAdvisorGlobalEventChoiceReaction({
             eventId: payload.eventId,
-            personality: this.profile?.personality,
+            personality,
             timing,
             choiceId: payload.choiceId || null,
             publicContext: payload.publicContext || {},
             publicOutcomeTags: payload.publicOutcomeTags || []
         });
-        return reaction ? this.dialogueSystem.emitResolved(reaction) : false;
+        if (!reaction) return false;
+        if (!advisorEnabled && this.neutralNarrationSink) {
+            return this.neutralNarrationSink(reaction) !== false;
+        }
+        return this.dialogueSystem.emitResolved(reaction);
     }
 
     ensureGlobalEventSubscription(manager) {
