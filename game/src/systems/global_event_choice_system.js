@@ -109,6 +109,7 @@ export class GlobalEventChoiceSystem {
             eventId: def.id,
             category: def.category,
             choiceId: choice.id,
+            resultKey: choice.resultKey || null,
             publicContext,
             publicOutcomeTags: choice.publicOutcomeTags || []
         });
