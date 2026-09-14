@@ -15,6 +15,18 @@ export class TrialController extends TrialControllerBase {
         this.lifecycleReadService = options.lifecycleReadService || new TrialLifecycleReadService();
     }
 
+    createRouteInterceptionInput(routeId, interceptCell, allocatedDefense = 0) {
+        const resolved = super.createRouteInterceptionInput(routeId, interceptCell, allocatedDefense);
+        if (!resolved.success) return resolved;
+
+        const route = this.getRoute(routeId);
+        const strategicSuppression = Number(route?.strategicSuppression);
+        if (Number.isFinite(strategicSuppression) && strategicSuppression >= 0) {
+            resolved.input.enemySuppression = this.powerResolver.resolveSuppression(strategicSuppression);
+        }
+        return resolved;
+    }
+
     resolveRouteEndDamage(targetBattleIndex = null) {
         if (!this.state) return { success: false, errors: ["TRIAL_NOT_STARTED"] };
         if (!this.state.planActivated) return { success: false, errors: [TRIAL_PLAN_REASONS.PLAN_NOT_ACTIVATED] };
