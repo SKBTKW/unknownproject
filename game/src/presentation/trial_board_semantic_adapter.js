@@ -84,6 +84,7 @@ export class TrialBoardSemanticAdapter {
         return createTrialBoardSemanticData({
             available: true,
             activeRouteId,
+            selectedInterceptCell: trialPresentationState?.selectedInterceptCell || null,
             routes,
             interceptionCandidates,
             plannedIntercepts: buildPlannedIntercepts(trialState, trialPresentationState),

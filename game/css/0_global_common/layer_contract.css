@@ -83,6 +83,18 @@
     pointer-events: none;
 }
 
+/*
+ * Trial keeps the board shell mounted, but normal progression controls are not
+ * actionable while the Trial board context is active. Layout owns this
+ * screen/action visibility so Board Presentation CSS remains semantic-only.
+ */
+body[data-board-context="trial"] #gridBoard .footer-left-slot,
+body[data-board-context="trial"] #gridBoard .footer-right-slot,
+body[data-board-context="trial"] #gridBoard #cornerTileStyleToggleBtn {
+    visibility: hidden;
+    pointer-events: none;
+}
+
 /* System Overlay is a viewport-sized screen-space region. */
 #layerSystemOverlay.layer-system-overlay {
     position: fixed !important;

@@ -88,6 +88,7 @@ export class BoardPresentationDataService {
         const visibleTrial = Object.freeze({
             available: Boolean(trial.available && showTrialOperationalData),
             activeRouteId: showRoutes ? trial.activeRouteId : null,
+            selectedInterceptCell: showInterception ? trial.selectedInterceptCell : null,
             routes: Object.freeze(showRoutes ? [...(trial.routes || [])] : []),
             interceptionCandidates: Object.freeze(
                 showInterception ? [...(trial.interceptionCandidates || [])] : []
@@ -147,6 +148,7 @@ export class BoardPresentationDataService {
                     onRoute: Boolean(route),
                     route,
                     interceptionCandidate: interception,
+                    interceptionSelected: sameCell(visibleTrial.selectedInterceptCell, r, c),
                     plannedIntercept: planned,
                     battleMarker: battle
                 })

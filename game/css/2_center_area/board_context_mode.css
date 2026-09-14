@@ -6,19 +6,6 @@ body[data-board-context="trial"] #gridBoard .searched-badge {
     display: none;
 }
 
-/*
- * Trial reuses the same board geometry, but normal progression controls are not
- * meaningful while the Trial interaction contract owns the screen. Keep the
- * footer shell and center camera-grab region mounted so board dimensions and
- * camera anchoring do not shift when entering/leaving Trial.
- */
-body[data-board-context="trial"] #gridBoard .footer-left-slot,
-body[data-board-context="trial"] #gridBoard .footer-right-slot,
-body[data-board-context="trial"] #gridBoard #cornerTileStyleToggleBtn {
-    visibility: hidden;
-    pointer-events: none;
-}
-
 body[data-board-context="trial"] #gridBoard .trial-route-cell,
 body[data-board-context="trial"] #gridBoard .trial-interception-candidate,
 body[data-board-context="trial"] #gridBoard .trial-interception-planned,

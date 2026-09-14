@@ -32,8 +32,9 @@ check(manager.getContextOwner() === RIGHT_CONTEXT_OWNERS.NONE, "expanded hand re
 manager.openAdvisor();
 check(manager.getState() === UI_LAYOUT_STATES.ADVISOR_EXPANDED, "opening Advisor replaces expanded hand");
 check(manager.getHandState() === HAND_LAYOUT_STATES.COLLAPSED, "Advisor expansion collapses hand");
+check(manager.getContextOwner() === RIGHT_CONTEXT_OWNERS.ADVISOR, "Advisor expansion immediately owns right context");
 manager.claimAdvisorContext();
-check(manager.getContextOwner() === RIGHT_CONTEXT_OWNERS.ADVISOR, "Advisor can exclusively own right context");
+check(manager.getContextOwner() === RIGHT_CONTEXT_OWNERS.ADVISOR, "Advisor ownership remains exclusive when explicitly claimed");
 
 manager.enterAlert();
 check(manager.getState() === UI_LAYOUT_STATES.ALERT, "ALERT state is reserved");
@@ -47,10 +48,10 @@ check(manager.openHand() === false, "Trial rejects normal hand expansion");
 
 manager.openAdvisor();
 check(manager.getState() === UI_LAYOUT_STATES.ADVISOR_EXPANDED, "Advisor can temporarily open during Trial");
-check(manager.getContextOwner() === RIGHT_CONTEXT_OWNERS.NONE, "Trial context is suspended while Advisor opens");
+check(manager.getContextOwner() === RIGHT_CONTEXT_OWNERS.ADVISOR, "Advisor immediately replaces suspended Trial context");
 check(manager.getHandState() === HAND_LAYOUT_STATES.TRIAL_COLLAPSED, "Trial hand remains deep-collapsed under Advisor");
 manager.claimAdvisorContext();
-check(manager.getContextOwner() === RIGHT_CONTEXT_OWNERS.ADVISOR, "Advisor replaces suspended Trial context");
+check(manager.getContextOwner() === RIGHT_CONTEXT_OWNERS.ADVISOR, "Advisor remains the exclusive owner during Trial overlay");
 manager.closeAdvisor();
 check(manager.getState() === UI_LAYOUT_STATES.TRIAL, "closing Advisor restores TRIAL state");
 check(manager.getContextOwner() === RIGHT_CONTEXT_OWNERS.TRIAL, "closing Advisor restores Trial context owner");

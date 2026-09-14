@@ -31,6 +31,7 @@ function freezeArray(items) {
 export function createTrialBoardSemanticData({
     available = false,
     activeRouteId = null,
+    selectedInterceptCell = null,
     routes = [],
     interceptionCandidates = [],
     plannedIntercepts = [],
@@ -66,6 +67,7 @@ export function createTrialBoardSemanticData({
     return Object.freeze({
         available: Boolean(available),
         activeRouteId: activeRouteId ?? null,
+        selectedInterceptCell: normalizeRouteCell(selectedInterceptCell),
         routes: freezeArray(normalizedRoutes),
         interceptionCandidates: freezeArray(
             interceptionCandidates.map(normalizeMarkedCell).filter(Boolean)

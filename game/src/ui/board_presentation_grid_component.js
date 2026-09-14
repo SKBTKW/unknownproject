@@ -41,9 +41,9 @@ export class BoardPresentationGridComponent extends LegacyBoardGridComponent {
             const interaction = cell?.interaction || null;
             const trial = cell?.trial || null;
             applyBoardGroupJoinClasses(cellEl, cell?.edges);
-            cellEl.classList.toggle('board-logical-hover', Boolean(interaction?.hovered));
-            cellEl.classList.toggle('board-logical-focus', Boolean(interaction?.focused));
-            cellEl.classList.toggle('board-logical-selected', Boolean(interaction?.selected));
+            cellEl.classList.toggle('board-logical-hover', !isTrialContext && Boolean(interaction?.hovered));
+            cellEl.classList.toggle('board-logical-focus', !isTrialContext && Boolean(interaction?.focused));
+            cellEl.classList.toggle('board-logical-selected', !isTrialContext && Boolean(interaction?.selected));
             if (!isTrialContext) {
                 TRIAL_VISUAL_CLASSES.forEach(cls => cellEl.classList.remove(cls));
                 cellEl.removeAttribute('data-trial-direction');
@@ -53,7 +53,7 @@ export class BoardPresentationGridComponent extends LegacyBoardGridComponent {
             cellEl.classList.toggle('trial-route-entry', Boolean(trial?.route?.isRouteEntry));
             cellEl.classList.toggle('trial-route-end', Boolean(trial?.route?.isRouteEnd));
             cellEl.classList.toggle('trial-interception-candidate', Boolean(trial?.interceptionCandidate?.canIntercept));
-            cellEl.classList.toggle('trial-interception-selected', Boolean(interaction?.selected));
+            cellEl.classList.toggle('trial-interception-selected', Boolean(trial?.interceptionSelected));
             cellEl.classList.toggle('trial-interception-planned', Boolean(trial?.plannedIntercept));
             cellEl.classList.toggle('trial-interception-planned-active', Boolean(trial?.plannedIntercept && trial.plannedIntercept.routeId === presentation?.trial?.activeRouteId));
             cellEl.classList.toggle('trial-interception-planned-other', Boolean(trial?.plannedIntercept && trial.plannedIntercept.routeId !== presentation?.trial?.activeRouteId));
