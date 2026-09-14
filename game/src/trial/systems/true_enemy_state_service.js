@@ -123,6 +123,23 @@ export class TrueEnemyStateService {
         return cloneData(this.current);
     }
 
+    getRestoreState() {
+        return {
+            current: this.getSnapshot(),
+            lastThreat: cloneData(this.lastThreat ?? null)
+        };
+    }
+
+    restoreState(snapshot) {
+        if (!snapshot || typeof snapshot !== "object" || !snapshot.current || typeof snapshot.current !== "object") {
+            throw new TypeError("TRUE_ENEMY_RESTORE_STATE_INVALID");
+        }
+
+        this.current = Object.freeze(cloneData(snapshot.current));
+        this.lastThreat = cloneData(snapshot.lastThreat ?? null);
+        return this.getRestoreState();
+    }
+
     dispose() {
         if (typeof this.unsubscribe === "function") {
             this.unsubscribe();
