@@ -1,6 +1,7 @@
 import { GAME_FACT_TYPES, GameFactHub } from './game_fact.js';
 import { HistorySnapshotService } from './history_snapshot_service.js';
 import { RunTerminationService } from './run_termination_service.js';
+import { TrialThreatStateService } from '../trial/systems/trial_threat_state_service.js';
 
 export const TURN_LIFECYCLE_PHASES = Object.freeze({ ACTIVE: "ACTIVE", COMMITTING: "COMMITTING", COMMITTED: "COMMITTED", INITIALIZING: "INITIALIZING" });
 
@@ -12,6 +13,11 @@ export class TurnLifecycleService {
         this.gameFactHub = engine.gameFactHub || new GameFactHub();
         this.engine.gameFactHub = this.gameFactHub;
         this.engine.chronicleSystem?.attachGameFactHub?.(this.gameFactHub);
+        this.threatStateService = engine.trialThreatStateService || new TrialThreatStateService({
+            gameState: engine.state,
+            gameFactHub: this.gameFactHub
+        });
+        this.engine.trialThreatStateService = this.threatStateService;
         this.historySnapshotService = engine.historySnapshotService || new HistorySnapshotService(engine);
         this.engine.historySnapshotService = this.historySnapshotService;
         this.phase = TURN_LIFECYCLE_PHASES.ACTIVE;
