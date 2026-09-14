@@ -15,15 +15,6 @@ function removeCardFromSource(state, source) {
     }
 }
 
-/**
- * Runtime seam for wiring investigation into the existing game without making
- * DeckManager or Trial own Warning/Investigation concerns.
- *
- * Requirements:
- * - observableProfileProvider must return an already-redacted
- *   ObservableEnemyProfile; this bridge never reads Trial truth directly.
- * - investigation unlock is represented by state.investigationUnlocked only.
- */
 export function attachInvestigationRuntime(engine, {
     observableProfileProvider,
     offeringAdapter = new InvestigationOfferingAdapter(),
@@ -53,6 +44,19 @@ export function attachInvestigationRuntime(engine, {
         return offeringAdapter.extendMaster(originalGetMaster(), state);
     };
 
+    const previousRestoreMasterProvider = typeof engine.getAdditionalCardMastersForRestore === "function"
+        ? engine.getAdditionalCardMastersForRestore.bind(engine)
+        : null;
+    engine.getAdditionalCardMastersForRestore = function getAdditionalCardMastersForRestore() {
+        const previous = previousRestoreMasterProvider?.() || [];
+        const own = Array.isArray(offeringAdapter.investigationCards) ? offeringAdapter.investigationCards : [];
+        const byId = new Map();
+        for (const master of [...previous, ...own]) {
+            if (master?.id) byId.set(master.id, master);
+        }
+        return Array.from(byId.values());
+    };
+
     engine.executeInvestigationCard = function executeInvestigationCard(card, source = { type: "OFFERING", index: -1 }) {
         const definition = cardDefinition(card);
         if (!definition || definition.category !== "INVESTIGATION") {
@@ -70,8 +74,6 @@ export function attachInvestigationRuntime(engine, {
             return { success: false, reason: "OBSERVABLE_PROFILE_UNAVAILABLE" };
         }
 
-        // Restore of a legacy/pre-investigation snapshot may legitimately leave
-        // KnownEnemyState absent while the runtime bridge remains attached.
         if (!state.knownEnemyState) {
             state.knownEnemyState = createKnownEnemyState({
                 trialIndex: Number.isInteger(profile.trialIndex) ? profile.trialIndex : 1
