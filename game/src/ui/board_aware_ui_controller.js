@@ -18,6 +18,7 @@ export class BoardAwareUIController extends LegacyUIController {
         super(engine);
         this.trialInterceptionSemanticProvider = new TrialInterceptionSemanticProvider();
         this.boardPresentationState = new BoardPresentationState();
+        this.layoutStateManager.bindBoardPresentationState(this.boardPresentationState);
         this.boardPresentationDataService = new BoardPresentationDataService();
         this.preTrialBoardContextMode = null;
         if (typeof document !== 'undefined') {
@@ -46,21 +47,27 @@ export class BoardAwareUIController extends LegacyUIController {
     setBoardViewMode(mode) {
         const snapshot = this.boardPresentationState.setViewMode(mode);
         this.trialPresentationState?.setMode?.(snapshot.viewMode);
+        this.layoutStateManager.applyContract();
         return snapshot;
     }
 
     toggleBoardViewMode() {
         const snapshot = this.boardPresentationState.toggleViewMode();
         this.trialPresentationState?.setMode?.(snapshot.viewMode);
+        this.layoutStateManager.applyContract();
         return snapshot;
     }
 
     setBoardContextMode(mode) {
-        return this.boardPresentationState.setContextMode(mode);
+        const snapshot = this.boardPresentationState.setContextMode(mode);
+        this.layoutStateManager.applyContract();
+        return snapshot;
     }
 
     toggleBoardContextMode() {
-        return this.boardPresentationState.toggleContextMode();
+        const snapshot = this.boardPresentationState.toggleContextMode();
+        this.layoutStateManager.applyContract();
+        return snapshot;
     }
 
     getTrialBoardSemanticData() {
