@@ -2,19 +2,9 @@ import { INVESTIGATION_LOCALIZATION } from "./investigation_localization_fragmen
 
 function resolve(dictionary, key) {
     if (!key) return "";
-    return Object.prototype.hasOwnProperty.call(dictionary, key)
-        ? dictionary[key]
-        : key;
+    return Object.prototype.hasOwnProperty.call(dictionary, key) ? dictionary[key] : key;
 }
 
-/**
- * Renders a localization-ready InvestigationReport presentation model.
- *
- * Boundary rules:
- * - consumes presenter output only;
- * - does not read InvestigationReport, ObservableEnemyProfile, or Trial truth;
- * - unknown keys fall back to the key itself so missing copy is visible in dev.
- */
 export class InvestigationReportTextRenderer {
     constructor({ locale = "ja", dictionaries = INVESTIGATION_LOCALIZATION } = {}) {
         this.locale = locale;
@@ -35,9 +25,8 @@ export class InvestigationReportTextRenderer {
 
         return {
             reportId: viewModel?.reportId || null,
-            observedAtVerse: Number.isInteger(viewModel?.observedAtVerse)
-                ? viewModel.observedAtVerse
-                : null,
+            observedAtVerse: Number.isInteger(viewModel?.observedAtVerse) ? viewModel.observedAtVerse : null,
+            sourceType: viewModel?.sourceType || "UNKNOWN",
             title: resolve(dictionary, viewModel?.sourceTitleKey),
             body: resolve(dictionary, viewModel?.sourceBodyKey),
             observations,
