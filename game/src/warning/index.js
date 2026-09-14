@@ -5,4 +5,6 @@ export { EnemyObservationProjector } from './systems/enemy_observation_projector
 export { InvestigationResolver } from './systems/investigation_resolver.js';
 export { InvestigationReportPresenter } from './presentation/investigation_report_presenter.js';
 export { InvestigationReportTextRenderer } from './presentation/investigation_report_text_renderer.js';
+export { InvestigationNarrativeComposer } from './presentation/investigation_narrative_composer.js';
+export { InvestigationNarrativeTextRenderer } from './presentation/investigation_narrative_text_renderer.js';
 export { INVESTIGATION_LOCALIZATION } from './presentation/investigation_localization_fragment.js';
