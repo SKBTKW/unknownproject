@@ -151,6 +151,25 @@ export class TrialThreatStateService {
         };
     }
 
+    getRestoreState() {
+        return this.getReadModel();
+    }
+
+    restoreState(snapshot) {
+        if (!snapshot || typeof snapshot !== "object" || !snapshot.current || typeof snapshot.current !== "object") {
+            throw new TypeError("TRIAL_THREAT_RESTORE_STATE_INVALID");
+        }
+
+        this.dirty = Boolean(snapshot.dirty);
+        this.revision = Math.max(0, Math.floor(Number(snapshot.revision) || 0));
+        this.lastCommittedVerse = Number.isFinite(Number(snapshot.lastCommittedVerse))
+            ? Number(snapshot.lastCommittedVerse)
+            : null;
+        this.lastDevelopmentChange = cloneData(snapshot.lastDevelopmentChange ?? null);
+        this.current = Object.freeze(cloneData(snapshot.current));
+        return this.getRestoreState();
+    }
+
     dispose() {
         if (typeof this.unsubscribe === "function") {
             this.unsubscribe();
