@@ -12,11 +12,28 @@ export class AdvisorEventBridge {
         this.runtime = new AdvisorRuntimeState();
         this.evaluator = new AdvisorReactionEvaluator({ rng });
         this.previous = null;
+        this.globalEventManager = null;
+        this.unsubscribeGlobalEvent = null;
         this.unsubscribeFact = gameFactHub?.subscribe?.(fact => {
             if (fact.type === GAME_FACT_TYPES.TRIAL_PLAN_CONFIRMED) {
                 this.dialogueSystem.emit(ADVISOR_EVENTS.TRIAL_PLAN_CONFIRMED, fact.payload);
             }
         }) || null;
+    }
+
+    ensureGlobalEventSubscription(manager) {
+        if (manager === this.globalEventManager) return;
+        this.unsubscribeGlobalEvent?.();
+        this.unsubscribeGlobalEvent = null;
+        this.globalEventManager = manager || null;
+        if (!this.globalEventManager?.subscribe) return;
+        this.unsubscribeGlobalEvent = this.globalEventManager.subscribe(notification => {
+            if (!notification || notification.timing !== "START") return;
+            if (!this.enabledProvider()) return;
+            if (String(notification.importance || "MAJOR").toUpperCase() !== "MAJOR") return;
+            const turn = Number(notification.turn || 1);
+            this.emitImmediate(this.evaluator.evaluateGlobalEvent(notification, this.runtime, turn), turn);
+        });
     }
 
     observeSnapshot(snapshot) {
@@ -29,16 +46,15 @@ export class AdvisorEventBridge {
             warningDuration: Number(snapshot.warningDuration ?? 5),
             state: snapshot.state || {},
             zoneCount: Number(snapshot.zoneCount || 0),
-            linkCount: Number(snapshot.linkCount || 0),
-            activeGlobalEvents: snapshot.activeGlobalEvents || []
+            linkCount: Number(snapshot.linkCount || 0)
         };
+        this.ensureGlobalEventSubscription(current.state?.globalEventManager || null);
         const peaceActive = !current.trialActive && (current.trialRemaining < 0 || current.trialRemaining > current.warningDuration);
         if (!this.previous) {
             if (enabled && peaceActive && this.dialogueSystem.emit(ADVISOR_EVENTS.GAME_START, current)) this.runtime.recordSpeech("game_start", current.turn);
         } else {
             if (enabled && peaceActive) {
                 this.observeMilestones(current);
-                this.observeGlobalEvents(current);
                 if (current.turn !== this.previous.turn) this.evaluateTurn(current);
             }
             if (enabled && current.trialActive && !this.previous.trialActive) this.dialogueSystem.emit(ADVISOR_EVENTS.TRIAL_START, current);
@@ -71,11 +87,6 @@ export class AdvisorEventBridge {
         if (current.linkCount > this.previous.linkCount) this.emitImmediate(this.evaluator.evaluateMilestone("LINK_COMPLETED", this.runtime), current.turn);
     }
 
-    observeGlobalEvents(current) {
-        const previousIds = new Set(this.previous.activeGlobalEvents.map(event => event.id));
-        current.activeGlobalEvents.filter(event => !previousIds.has(event.id)).forEach(event => this.emitImmediate(this.evaluator.evaluateGlobalEvent(event, this.runtime, current.turn), current.turn));
-    }
-
     observeMilitaryAction(actionType, turn) {
         if (!this.enabledProvider()) return false;
         return this.emitImmediate(this.evaluator.evaluateMilitaryAction(actionType, this.runtime), turn);
@@ -89,6 +100,9 @@ export class AdvisorEventBridge {
     }
 
     destroy() {
+        this.unsubscribeGlobalEvent?.();
+        this.unsubscribeGlobalEvent = null;
+        this.globalEventManager = null;
         if (this.unsubscribeFact) this.unsubscribeFact();
         this.unsubscribeFact = null;
     }
