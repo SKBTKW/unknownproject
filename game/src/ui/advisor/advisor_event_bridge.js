@@ -78,14 +78,12 @@ export class AdvisorEventBridge {
         const current = {
             turn: snapshot.turn,
             trialActive: Boolean(snapshot.trialActive),
-            trialRemaining: snapshot.trialRemaining,
-            warningDuration: Number(snapshot.warningDuration ?? 5),
             state: snapshot.state || {},
             zoneCount: Number(snapshot.zoneCount || 0),
             linkCount: Number(snapshot.linkCount || 0)
         };
         this.ensureGlobalEventSubscription(current.state?.globalEventManager || null);
-        const peaceActive = !current.trialActive && (current.trialRemaining < 0 || current.trialRemaining > current.warningDuration);
+        const peaceActive = !current.trialActive;
         if (!this.previous) {
             if (enabled && peaceActive && this.dialogueSystem.emit(ADVISOR_EVENTS.GAME_START, current)) this.runtime.recordSpeech("game_start", current.turn);
         } else {
@@ -95,9 +93,6 @@ export class AdvisorEventBridge {
             }
             if (enabled && current.trialActive && !this.previous.trialActive) this.dialogueSystem.emit(ADVISOR_EVENTS.TRIAL_START, current);
             if (enabled && !current.trialActive && this.previous.trialActive) this.dialogueSystem.emit(ADVISOR_EVENTS.TRIAL_END, current);
-            if (enabled && current.trialRemaining >= 0 && current.trialRemaining <= 1 && current.trialRemaining !== this.previous.trialRemaining) {
-                this.dialogueSystem.emit(ADVISOR_EVENTS.TRIAL_WARNING, current);
-            }
         }
         this.previous = current;
     }
