@@ -4,6 +4,7 @@ export { createObservableEnemyProfile } from './domain/observable_enemy_profile.
 export { EnemyObservationProjector } from './systems/enemy_observation_projector.js';
 export { InvestigationResolver } from './systems/investigation_resolver.js';
 export { InvestigationHistoryComparator } from './systems/investigation_history_comparator.js';
+export { KnownEnemyStateService } from './systems/known_enemy_state_service.js';
 export { InvestigationReportPresenter } from './presentation/investigation_report_presenter.js';
 export { InvestigationReportTextRenderer } from './presentation/investigation_report_text_renderer.js';
 export { InvestigationNarrativeComposer } from './presentation/investigation_narrative_composer.js';
