@@ -3,6 +3,12 @@ import { ADVISOR_EVENTS } from './advisor_dialogue_database.js';
 import { AdvisorRuntimeState } from './advisor_runtime_state.js';
 import { createAdvisorPeaceSnapshot, resolveAdvisorPeaceStates } from './advisor_peace_state_resolver.js';
 import { AdvisorReactionEvaluator } from './advisor_reaction_evaluator.js';
+import {
+    resolveAdvisorGlobalEventChoiceReaction
+} from './advisor_global_event_choice_reaction_resolver.js';
+import {
+    ADVISOR_GLOBAL_EVENT_CHOICE_TIMINGS
+} from './advisor_global_event_choice_reactions.js';
 
 export class AdvisorEventBridge {
     constructor(dialogueSystem, gameFactHub = null, { profile = null, enabledProvider = () => true, rng = Math.random } = {}) {
@@ -17,8 +23,29 @@ export class AdvisorEventBridge {
         this.unsubscribeFact = gameFactHub?.subscribe?.(fact => {
             if (fact.type === GAME_FACT_TYPES.TRIAL_PLAN_CONFIRMED) {
                 this.dialogueSystem.emit(ADVISOR_EVENTS.TRIAL_PLAN_CONFIRMED, fact.payload);
+                return;
+            }
+            if (fact.type === GAME_FACT_TYPES.GLOBAL_EVENT_CHOICE_PRESENTED) {
+                this.handleGlobalEventChoiceFact(ADVISOR_GLOBAL_EVENT_CHOICE_TIMINGS.PRESENTED, fact.payload);
+                return;
+            }
+            if (fact.type === GAME_FACT_TYPES.GLOBAL_EVENT_CHOICE_RESOLVED) {
+                this.handleGlobalEventChoiceFact(ADVISOR_GLOBAL_EVENT_CHOICE_TIMINGS.RESOLVED, fact.payload);
             }
         }) || null;
+    }
+
+    handleGlobalEventChoiceFact(timing, payload = {}) {
+        if (!this.enabledProvider()) return false;
+        const reaction = resolveAdvisorGlobalEventChoiceReaction({
+            eventId: payload.eventId,
+            personality: this.profile?.personality,
+            timing,
+            choiceId: payload.choiceId || null,
+            publicContext: payload.publicContext || {},
+            publicOutcomeTags: payload.publicOutcomeTags || []
+        });
+        return reaction ? this.dialogueSystem.emitResolved(reaction) : false;
     }
 
     ensureGlobalEventSubscription(manager) {
