@@ -16,12 +16,14 @@ function resolveTrialBase(baseThreatByTrial, trialIndex) {
 export class TrialThreatResolver {
     constructor({
         baseThreatByTrial = {},
+        placedBlockWeight = 0,
         territoryWeight = 0,
         completedZoneWeight = 0,
         linkWeight = 0,
         stageWeight = 0
     } = {}) {
         this.baseThreatByTrial = { ...baseThreatByTrial };
+        this.placedBlockWeight = nonNegative(placedBlockWeight);
         this.territoryWeight = nonNegative(territoryWeight);
         this.completedZoneWeight = nonNegative(completedZoneWeight);
         this.linkWeight = nonNegative(linkWeight);
@@ -31,12 +33,14 @@ export class TrialThreatResolver {
     resolve({ trialIndex = 1, development = {} } = {}) {
         const normalizedTrialIndex = Math.max(1, Math.floor(Number(trialIndex) || 1));
         const stage = Math.max(1, Math.floor(Number(development.stage) || 1));
+        const placedBlockCount = nonNegative(development.placedBlockCount);
         const territoryTiles = nonNegative(development.territoryTiles);
         const completedZones = nonNegative(development.completedZones);
         const links = nonNegative(development.links);
 
         const breakdown = {
             baseThreat: resolveTrialBase(this.baseThreatByTrial, normalizedTrialIndex),
+            placedBlockThreat: placedBlockCount * this.placedBlockWeight,
             territoryThreat: territoryTiles * this.territoryWeight,
             completedZoneThreat: completedZones * this.completedZoneWeight,
             linkThreat: links * this.linkWeight,
