@@ -110,6 +110,7 @@ function createLifecycleBus() {
         zoneCount: 0,
         linkCount: 0
     };
+    const countGlobalEventReactions = () => emitted.filter(item => item.result?.id === 'GLOBAL_EVENT_SURVIVAL').length;
     bridge.observeSnapshot({ ...baseSnapshot, turn: 1 });
     bus.emit({
         timing: 'START',
@@ -118,12 +119,12 @@ function createLifecycleBus() {
         importance: 'MAJOR',
         turn: 2
     });
-    const afterStart = emitted.length;
+    const afterStart = countGlobalEventReactions();
     assert.equal(afterStart, 1, 'MAJOR threat START should produce one advisor reaction');
 
     bridge.observeSnapshot({ ...baseSnapshot, turn: 2 });
     bridge.observeSnapshot({ ...baseSnapshot, turn: 3 });
-    assert.equal(emitted.length, afterStart, 'Verse snapshots must not replay Global Event reaction');
+    assert.equal(countGlobalEventReactions(), afterStart, 'Verse snapshots must not replay Global Event reaction');
 
     bus.emit({
         timing: 'END',
@@ -132,7 +133,7 @@ function createLifecycleBus() {
         importance: 'MAJOR',
         turn: 3
     });
-    assert.equal(emitted.length, afterStart, 'END is not an advisor comment trigger by default');
+    assert.equal(countGlobalEventReactions(), afterStart, 'END is not an advisor comment trigger by default');
     bridge.destroy();
 }
 

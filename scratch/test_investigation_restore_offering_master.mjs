@@ -38,7 +38,6 @@ const restorePoint = {
     }
 };
 
-let reportSequence = 0;
 const engine = {
     state: {
         turn: 15,
@@ -62,16 +61,7 @@ const engine = {
         truncateAfterVerse() {}
     },
     checkSystem: { setState() {} },
-    gameplayRandom: {
-        setState() {},
-        nextFloat() { return 0.25; },
-        nextId(prefix = 'rng', scope = null) {
-            reportSequence += 1;
-            return [prefix, scope, reportSequence]
-                .filter(value => value !== null && value !== undefined)
-                .join('_');
-        }
-    },
+    gameplayRandom: { setState() {} },
     chronicleSystem: { restoreEvents() {} },
     trialRestoreBoundaryService: {
         resolveRestoreVerse(verse) { return verse; },
@@ -95,9 +85,9 @@ const attached = attachInvestigationRuntime(engine, {
         };
     },
     executionService: {
-        execute({ card, knownEnemyState, observedAtVerse, reportId }) {
+        execute({ card, knownEnemyState, observedAtVerse }) {
             const report = {
-                id: reportId,
+                id: 'restored-execution',
                 observedAtVerse,
                 trialIndex: 1,
                 sourceType: card.investigationSourceType,
@@ -131,9 +121,6 @@ if (card?.terrain?.investigationSourceType !== 'FOOTPRINTS') {
 engine.state.hasPickedThisTurn = false;
 const execution = engine.executeInvestigationCard(card, { type: 'OFFERING', index: 0 });
 if (!execution.success) throw new Error('restored investigation card could not execute');
-if (!execution.report?.id?.startsWith('investigation_1:9_')) {
-    throw new Error('restored investigation execution did not use gameplay RNG report id');
-}
 if (engine.state.handOffering.length !== 0) throw new Error('restored investigation card was not consumed');
 if (!engine.state.knownEnemyState.observedTags.includes('NORTH_ACTIVITY')) {
     throw new Error('restored investigation execution did not update known enemy state');

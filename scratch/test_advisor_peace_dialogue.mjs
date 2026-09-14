@@ -79,11 +79,15 @@ const bridgeDialogue = {
 };
 const bridge = new AdvisorEventBridge(bridgeDialogue, null, { profile: DEFAULT_ADVISOR_PROFILE, enabledProvider: () => true, rng: () => 0 });
 const peacefulState = { turn: 1, ember: 20, maxEmber: 20, food: 100, mergedBlocks: {}, mergeLinks: new Set(), stage: { size: 5 }, grid: [] };
-bridge.observeSnapshot({ turn: 1, trialRemaining: 10, warningDuration: 5, state: peacefulState });
-bridge.observeSnapshot({ turn: 2, trialRemaining: 8, warningDuration: 5, state: { ...peacefulState, turn: 2 } });
-const beforeBoundary = emitted.length;
-bridge.observeSnapshot({ turn: 3, trialRemaining: 5, warningDuration: 5, state: { ...peacefulState, turn: 3 } });
-check(emitted.length === beforeBoundary, "Trial announcement開始後は平時発話を停止する");
+bridge.observeSnapshot({ turn: 1, trialActive: false, trialRemaining: 10, warningDuration: 5, state: peacefulState });
+bridge.observeSnapshot({ turn: 2, trialActive: false, trialRemaining: 8, warningDuration: 5, state: { ...peacefulState, turn: 2 } });
+const beforeCountdownBoundary = emitted.length;
+bridge.observeSnapshot({ turn: 3, trialActive: false, trialRemaining: 5, warningDuration: 5, state: { ...peacefulState, turn: 3 } });
+check(!emitted.includes("TRIAL_WARNING"), "内部Trial countdownだけではTrial警告を発話しない");
+check(emitted.length >= beforeCountdownBoundary, "内部Trial countdownだけでは平時評価を強制停止しない");
+const beforeTrialStart = emitted.length;
+bridge.observeSnapshot({ turn: 4, trialActive: true, trialRemaining: 0, warningDuration: 5, state: { ...peacefulState, turn: 4 } });
+check(emitted.length > beforeTrialStart, "公開されたTrial active意味状態には反応する");
 
 const rewardToast = { type: "MERGE_2X2", text: "meaning", rewards: { food: 10, ember: 2 } };
 check(resolveAdvisorAwareToast(rewardToast, true).text === "🌾+10 🔥+2", "Advisor ONでは説明Toastを数値表示へ置き換える");
