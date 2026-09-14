@@ -52,7 +52,9 @@ export class HistorySnapshotService {
                 temporaryWeightModifiers: cloneData(state?.temporaryWeightModifiers, []),
                 lastGlobalEventTurn: Number.isFinite(state?.lastGlobalEventTurn) ? state.lastGlobalEventTurn : 0,
                 buffs: cloneData(engine.buffSystem?.buffs, []),
-                lastTurnMaintenanceResult: cloneData(engine.lastTurnMaintenanceResult)
+                lastTurnMaintenanceResult: cloneData(engine.lastTurnMaintenanceResult),
+                trialThreatState: cloneData(engine.trialThreatStateService?.getRestoreState?.()),
+                trueEnemyState: cloneData(engine.trueEnemyStateService?.getRestoreState?.())
             }
         });
 
@@ -102,7 +104,9 @@ export class HistorySnapshotService {
                 temporaryWeightModifiers: cloneData(state?.temporaryWeightModifiers, []),
                 lastGlobalEventTurn: Number.isFinite(state?.lastGlobalEventTurn) ? state.lastGlobalEventTurn : 0,
                 buffs: cloneData(engine.buffSystem?.buffs, []),
-                lastTurnMaintenanceResult: cloneData(engine.lastTurnMaintenanceResult)
+                lastTurnMaintenanceResult: cloneData(engine.lastTurnMaintenanceResult),
+                trialThreatState: cloneData(engine.trialThreatStateService?.getRestoreState?.()),
+                trueEnemyState: cloneData(engine.trueEnemyStateService?.getRestoreState?.())
             }
         });
 
