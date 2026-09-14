@@ -19,17 +19,9 @@ function facetRank(facet) {
     return index >= 0 ? index : FACET_ORDER.length;
 }
 
-/**
- * Builds a narrative-ready model from already rendered investigation text.
- *
- * This class deliberately does not infer new facts. It only:
- * - preserves source/body text already resolved by presentation;
- * - orders confirmed observations for readable prose;
- * - exposes localization keys for glue/intro copy;
- * - retains highlight tokens so UI can emphasize semantic evidence.
- */
 export class InvestigationNarrativeComposer {
-    compose(renderedReport, { sourceType = "UNKNOWN" } = {}) {
+    compose(renderedReport) {
+        const sourceType = renderedReport?.sourceType || "UNKNOWN";
         const observations = Array.isArray(renderedReport?.observations)
             ? renderedReport.observations
                 .filter(item => typeof item?.value === "string" && item.value.length > 0)
@@ -38,7 +30,10 @@ export class InvestigationNarrativeComposer {
                     const byFacet = facetRank(a.facet) - facetRank(b.facet);
                     return byFacet !== 0 ? byFacet : a._index - b._index;
                 })
-                .map(({ _index, ...item }) => item)
+                .map(({ _index, ...item }) => ({
+                    ...item,
+                    narrativeKey: item?.tag ? `INVESTIGATION_NARRATIVE_TAG_${item.tag}` : null
+                }))
             : [];
 
         return {
