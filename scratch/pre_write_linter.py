@@ -24,6 +24,7 @@ if hasattr(sys.stdout, 'reconfigure'):
 # CARD002: Contaminated land_cards.json (non-LAND card)
 # CARD003: Banned legacy card ID in data assets
 # ARCH001: Domain layer DOM access (document/window in core or trial domain)
+# GIT001:  Work must stay on the locally authorized, same-name origin branch
 
 class LintViolation:
     def __init__(self, rule_id, level, filepath, line_num, message, fix_hint):
@@ -38,6 +39,132 @@ class LintViolation:
         icon = "❌" if self.level == "ERROR" else "⚠️"
         loc = f"{self.filepath}:{self.line_num}" if self.line_num else self.filepath
         return f"  {icon} [{self.rule_id}] ({self.level}) {loc}\n      {self.message}\n      👉 Fix: {self.fix_hint}"
+
+
+def validate_git_branch_tracking(branch, upstream, authorized_branch):
+    """Return GIT001 violations for unauthorized or incorrectly tracked work."""
+    if not authorized_branch:
+        return [LintViolation(
+            rule_id="GIT001",
+            level="ERROR",
+            filepath=".git/config",
+            line_num=0,
+            message="No user-authorized working branch is recorded for this clone.",
+            fix_hint=(
+                "After the user names the branch, run: "
+                "git config --local aot.authorizedBranch <branch>"
+            ),
+        )]
+
+    if not branch:
+        return [LintViolation(
+            rule_id="GIT001",
+            level="ERROR",
+            filepath=".git",
+            line_num=0,
+            message="Detached HEAD is not an authorized working branch.",
+            fix_hint="Ask the user which existing origin branch to use before editing",
+        )]
+
+    if branch != authorized_branch:
+        return [LintViolation(
+            rule_id="GIT001",
+            level="ERROR",
+            filepath=".git/config",
+            line_num=0,
+            message=(
+                f"Current branch '{branch}' is not the user-authorized branch "
+                f"'{authorized_branch}'."
+            ),
+            fix_hint="Stop work and ask the user before switching or authorizing another branch",
+        )]
+
+    expected_upstream = f"origin/{branch}"
+    if not upstream:
+        return [LintViolation(
+            rule_id="GIT001",
+            level="ERROR",
+            filepath=".git",
+            line_num=0,
+            message=f"Branch '{branch}' has no upstream and may be an unauthorized local branch.",
+            fix_hint="Do not create a branch autonomously; ask the user to select or authorize a branch",
+        )]
+
+    if upstream != expected_upstream:
+        return [LintViolation(
+            rule_id="GIT001",
+            level="ERROR",
+            filepath=".git",
+            line_num=0,
+            message=(
+                f"Branch '{branch}' tracks '{upstream}', not its same-name "
+                f"authorized remote branch '{expected_upstream}'."
+            ),
+            fix_hint="Stop and ask the user to confirm the intended existing origin branch",
+        )]
+
+    return []
+
+
+def inspect_git_branch_policy(root_dir):
+    """Read the current Git branch/upstream and enforce GIT001 fail-closed."""
+    try:
+        authorized_result = subprocess.run(
+            ["git", "config", "--local", "--get", "aot.authorizedBranch"],
+            cwd=root_dir,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="ignore",
+        )
+        authorized_branch = (
+            authorized_result.stdout.strip() if authorized_result.returncode == 0 else ""
+        )
+        if not authorized_branch:
+            return validate_git_branch_tracking("", "", ""), "", "", ""
+
+        branch_result = subprocess.run(
+            ["git", "symbolic-ref", "--quiet", "--short", "HEAD"],
+            cwd=root_dir,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="ignore",
+        )
+        branch = branch_result.stdout.strip() if branch_result.returncode == 0 else ""
+        if not branch:
+            return (
+                validate_git_branch_tracking("", "", authorized_branch),
+                "",
+                "",
+                authorized_branch,
+            )
+
+        upstream_result = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"],
+            cwd=root_dir,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="ignore",
+        )
+        upstream = upstream_result.stdout.strip() if upstream_result.returncode == 0 else ""
+        return (
+            validate_git_branch_tracking(branch, upstream, authorized_branch),
+            branch,
+            upstream,
+            authorized_branch,
+        )
+    except (OSError, subprocess.SubprocessError) as error:
+        violation = LintViolation(
+            rule_id="GIT001",
+            level="ERROR",
+            filepath=".git",
+            line_num=0,
+            message=f"Git branch authorization could not be verified: {error}",
+            fix_hint="Run this inspection inside the repository on a user-selected origin branch",
+        )
+        return [violation], "", "", ""
 
 
 def get_git_diff_added_lines(root_dir):
@@ -456,9 +583,14 @@ def main():
 
     strict_all_mode = "--all" in sys.argv
 
+    all_violations = []
+    branch_violations, current_branch, current_upstream, authorized_branch = (
+        inspect_git_branch_policy(root_dir)
+    )
+    all_violations.extend(branch_violations)
+
     # 差分行情報の取得 (Diff-Aware: 未ステージ + ステージ済み)
     added_lines = get_git_diff_added_lines(root_dir)
-    all_violations = []
     total_files_scanned = 0
     total_css_debt = 0
     total_legacy_i18n_debt = 0
@@ -469,6 +601,11 @@ def main():
         "Policy: existing violations are baseline debt; "
         "new violations in Git-added lines fail"
         + ("; --all treats every violation as an error." if strict_all_mode else ".")
+    )
+    print(
+        f"Git branch authorization: branch={current_branch or '(detached)'} "
+        f"upstream={current_upstream or '(none)'} "
+        f"authorized={authorized_branch or '(none)'}"
     )
     print(f"Git-added source lines detected in {len(added_lines)} file(s).")
 

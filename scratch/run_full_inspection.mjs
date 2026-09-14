@@ -32,6 +32,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 1 (Static Lint) で違反が検出されました。");
         process.exit(1);
     }
+    const gitBranchGuardOk = await runCommand("python", ["-B", "scratch/test_git_branch_guard.py"]);
+    if (!gitBranchGuardOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 1 (GIT001 Branch Authorization) で違反が検出されました。");
+        process.exit(1);
+    }
     const cssRelocationOk = await runCommand("python", ["-B", "scratch/test_css_important_relocation.py"]);
     if (!cssRelocationOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 1 (CSS001 Relocation Contract) で違反が検出されました。");

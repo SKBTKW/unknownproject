@@ -29,6 +29,9 @@
 2. `git fetch origin <branch>`: リモートの最新リビジョン情報を安全に取得する（ワーキングツリーは変更しない）。
 3. `git status -uno`: local と remote の関係（up to date / ahead / behind / diverged）を確認する。
    - **diverged (ahead/behind 分岐)** または **behind** を検知した場合、勝手に pull や rebase を実行せず、必ず状況をユーザーへ報告して指示を仰ぐ。
+4. ユーザーが指定した作業ブランチをclone-local設定へ記録する: `git config --local aot.authorizedBranch <branch>`。
+   - この設定の新規作成・変更は、ユーザーが作業ブランチを明示した場合に限る。
+5. ファイル編集前に `python scratch/pre_write_linter.py` を実行し、`GIT001` が出た場合は作業を開始せずユーザーへ確認する。
 
 ### 2.2 ブランチ・履歴保全
 - 指定された作業ブランチ（例: `AGtest260906`）から勝手に別ブランチを作成・切り替えて作業してはならない。
@@ -144,6 +147,7 @@ AoT のドメインロジックにおいて、以下の異なる概念を同一�
 - **CSS003**: JS 内での直接スタイル操作の警告（WARN）。
 - **CARD001〜003**: ロジック層でのカード直書き、`land_cards.json` 純化、削除旧カード残存の検知。
 - **ARCH001**: ドメインロジック層からの DOM API アクセス遮断。
+- **GIT001**: 現在ブランチがclone-localの `aot.authorizedBranch` と一致し、同名の `origin/<branch>` を追跡していることを必須化。無許可ブランチ切替、detached HEAD、upstreamなしの新規ローカルブランチ、別名・別remote追跡を遮断する。
 
 ### 8.2 自動仕様突合アサーション (`scratch/verify_all_rule_files.py`)
 - 仕様書が要求する定数（土地産出値、初期リソース、マージ倍率等）と、エンジン・データ資産の実数値を 1:1 で厳密比較検証する。
