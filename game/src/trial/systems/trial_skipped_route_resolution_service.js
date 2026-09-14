@@ -2,6 +2,7 @@ import {
     TRIAL_PLAN_REASONS,
     TRIAL_ROUTE_PLAN_STATUSES
 } from "../domain/trial_types.js";
+import { InterceptionPowerResolver } from "./interception_power_resolver.js";
 
 function cloneData(value) {
     return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
@@ -20,6 +21,10 @@ function normalizePower(value) {
  * accidentally reintroducing per-route damage conversion.
  */
 export class TrialSkippedRouteResolutionService {
+    constructor({ powerResolver = new InterceptionPowerResolver() } = {}) {
+        this.powerResolver = powerResolver;
+    }
+
     resolve(state, routeId) {
         if (!state) {
             return { success: false, errors: ["TRIAL_NOT_STARTED"] };
@@ -52,13 +57,15 @@ export class TrialSkippedRouteResolutionService {
 
         const first = cells[0];
         const last = cells[cells.length - 1];
-        const sourcePower = normalizePower(
-            route.suppression
-            ?? route.enemySuppression
-            ?? route.strategicSuppression
-            ?? state.enemy?.totalSuppression
-            ?? state.enemy?.strategicSuppression
-        );
+        const routeStrategicSuppression = Number(route.strategicSuppression);
+        const sourcePower = Number.isFinite(routeStrategicSuppression) && routeStrategicSuppression >= 0
+            ? this.powerResolver.resolveSuppression(routeStrategicSuppression)
+            : normalizePower(
+                route.suppression
+                ?? route.enemySuppression
+                ?? state.enemy?.totalSuppression
+                ?? state.enemy?.strategicSuppression
+            );
 
         const traversalResult = Object.freeze({
             routeId,
