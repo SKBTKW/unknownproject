@@ -3,6 +3,7 @@ export { createInvestigationReport } from './domain/investigation_report.js';
 export { createObservableEnemyProfile } from './domain/observable_enemy_profile.js';
 export { EnemyObservationProjector } from './systems/enemy_observation_projector.js';
 export { InvestigationResolver } from './systems/investigation_resolver.js';
+export { InvestigationHistoryComparator } from './systems/investigation_history_comparator.js';
 export { InvestigationReportPresenter } from './presentation/investigation_report_presenter.js';
 export { InvestigationReportTextRenderer } from './presentation/investigation_report_text_renderer.js';
 export { InvestigationNarrativeComposer } from './presentation/investigation_narrative_composer.js';
