@@ -20,6 +20,8 @@ import { GameplayRandomService } from './gameplay_random_service.js';
 import { TurnLifecycleService } from './turn_lifecycle_service.js';
 import { HistoryRestoreService } from './history_restore_service.js';
 import { GameState } from '../v2_unity_ready_main.js';
+import { EnemyObservationProjector } from '../warning/systems/enemy_observation_projector.js';
+import { attachInvestigationSubsystem } from '../warning/integration/investigation_bootstrap.js';
 
 function normalizeRunSeed(seed) {
     if (!Number.isFinite(seed)) return null;
@@ -109,6 +111,14 @@ class GameEngine {
         const TurnLifecycleServiceClass = dependencies.TurnLifecycleServiceClass || TurnLifecycleService;
         this.turnLifecycleService = dependencies.turnLifecycleService
             || (TurnLifecycleServiceClass ? new TurnLifecycleServiceClass(this) : null);
+
+        const observationProjector = dependencies.enemyObservationProjector || new EnemyObservationProjector();
+        this.investigationSubsystem = attachInvestigationSubsystem(this, {
+            observableProfileProvider: () => {
+                const truthSnapshot = this.enemyTruthReadModel?.getSnapshot?.();
+                return observationProjector.project(truthSnapshot);
+            }
+        });
 
         // 4. GameState への双方向リンク確立
         if (this.state) {
@@ -258,181 +268,3 @@ class GameEngine {
      * 🃏 手札オファリングから保留枠へのカード移動 Action API
      * @param {number} offeringIdx - オファリング枠インデックス
      * @param {number} [targetReserveIdx=0] - 保留枠インデックス
-     */
-    reserveOfferingCard(offeringIdx, targetReserveIdx = 0) {
-        return this.executeAction("RESERVE_CARD", () => {
-            if (this.deckManager && typeof this.deckManager.moveToReserve === "function") {
-                const ok = this.deckManager.moveToReserve(offeringIdx);
-                return { success: !!ok, reason: ok ? null : "MOVE_TO_RESERVE_FAILED" };
-            }
-            if (typeof this.state.moveToReserve === "function") {
-                const ok = this.state.moveToReserve(offeringIdx);
-                return { success: !!ok, reason: ok ? null : "MOVE_TO_RESERVE_FAILED" };
-            }
-            return { success: false, reason: "NO_RESERVE_LOGIC" };
-        });
-    }
-
-    returnReservedCard(reserveIdx = 0, targetHandIdx = -1) {
-        return this.executeAction("RETURN_RESERVE_CARD", () => {
-            if (this.deckManager && typeof this.deckManager.returnFromReserve === "function") {
-                const ok = this.deckManager.returnFromReserve(reserveIdx, targetHandIdx);
-                return { success: !!ok, reason: ok ? null : "RETURN_FROM_RESERVE_FAILED" };
-            }
-            if (typeof this.state.returnFromReserve === "function") {
-                const ok = this.state.returnFromReserve(reserveIdx, targetHandIdx);
-                return { success: !!ok, reason: ok ? null : "RETURN_FROM_RESERVE_FAILED" };
-            }
-            return { success: false, reason: "NO_RETURN_LOGIC" };
-        });
-    }
-
-    discardReservedCard(reserveIdx = 0) {
-        return this.executeAction("DISCARD_RESERVE_CARD", () => {
-            if (this.deckManager && typeof this.deckManager.discardFromReserve === "function") {
-                const ok = this.deckManager.discardFromReserve(reserveIdx);
-                return { success: !!ok, reason: ok ? null : "DISCARD_FROM_RESERVE_FAILED" };
-            }
-            if (typeof this.state.discardFromReserve === "function") {
-                const ok = this.state.discardFromReserve(reserveIdx);
-                return { success: !!ok, reason: ok ? null : "DISCARD_FROM_RESERVE_FAILED" };
-            }
-            return { success: false, reason: "NO_DISCARD_LOGIC" };
-        });
-    }
-
-    playCommandCard(card, source = { type: "OFFERING", index: -1 }) {
-        return this.executeAction("PLAY_COMMAND_CARD", () => {
-            if (this.deckManager && typeof this.deckManager.playCommandCard === "function") {
-                const cardObj = card.terrain || card;
-                const offeringIdx = source.type === "OFFERING" ? source.index : -1;
-                const reserveIdx = source.type === "RESERVE" ? source.index : -1;
-                const ok = this.deckManager.playCommandCard(cardObj, null, offeringIdx, reserveIdx);
-                const isSuccess = (ok && typeof ok === "object") ? ok.success !== false : ok !== false;
-                const diceCheck = (ok && typeof ok === "object") ? ok.diceCheck : null;
-                return { success: isSuccess, card, diceCheck, reason: isSuccess ? null : ok?.reason };
-            }
-            if (typeof this.state.playCommandCard === "function") {
-                const cardObj = card.terrain || card;
-                const offeringIdx = source.type === "OFFERING" ? source.index : -1;
-                const reserveIdx = source.type === "RESERVE" ? source.index : -1;
-                const ok = this.state.playCommandCard(cardObj, null, offeringIdx, reserveIdx);
-                const isSuccess = (ok && typeof ok === "object") ? ok.success !== false : ok !== false;
-                const diceCheck = (ok && typeof ok === "object") ? ok.diceCheck : null;
-                return { success: isSuccess, card, diceCheck, reason: isSuccess ? null : ok?.reason };
-            }
-            return { success: false, reason: "NO_COMMAND_LOGIC" };
-        });
-    }
-
-    /**
-     * 🎲 マリガン Action API
-     */
-    mulligan() {
-        return this.executeAction("MULLIGAN", () => {
-            if (!this.state) return { success: false, reason: "NO_STATE" };
-            if (this.state.hasPickedThisTurn || this.state.hasMulliganedThisTurn || this.state.ember < 1) {
-                return { success: false, reason: "MULLIGAN_BLOCKED" };
-            }
-
-            this.state.ember -= 1;
-            this.state.hasMulliganedThisTurn = true;
-
-            if (this.deckManager && typeof this.deckManager.drawOffering === "function") {
-                this.deckManager.drawOffering();
-            } else if (typeof this.state.drawOffering === "function") {
-                this.state.drawOffering();
-            }
-
-            if (typeof this.state.addLog === "function") {
-                const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
-                this.state.addLog(I18n.t("LOG_MULLIGAN_EXECUTED") || "🎲 マリガン実行: 🔥 -1 を消費して手札を再抽選しました。");
-            }
-
-            return { success: true };
-        });
-    }
-
-    /**
-     * ↩️ 直前 Action の巻き戻し API
-     */
-    undoLastAction() {
-        if (this.transactionManager && typeof this.transactionManager.undo === "function") {
-            return this.transactionManager.undo();
-        }
-        if (this.undoSystem && typeof this.undoSystem.undo !== "function") {
-            return { success: false, reason: "NO_UNDO_SYSTEM" };
-        }
-        const success = this.undoSystem.undo();
-        return { success };
-    }
-
-    getTrialAvailableDefense() {
-        return this.defenseSystem ? this.defenseSystem.getTrialAvailableDefense() : 0;
-    }
-
-    applyTrialDefenseLoss(amount) {
-        if (!this.defenseSystem) return { before: 0, after: 0, reduced: 0, maxDefense: 0 };
-        return this.defenseSystem.reduceCurrentDefense(amount);
-    }
-
-    recoverCurrentDefense(amount) {
-        if (!this.defenseSystem) return { before: 0, after: 0, recovered: 0, maxDefense: 0 };
-        return this.defenseSystem.recoverCurrentDefense(amount);
-    }
-
-    getDefenseRebuildPlan(options = {}) {
-        return this.defenseSystem
-            ? this.defenseSystem.getDefenseRebuildPlan(options)
-            : { canRebuild: false, reason: "NO_DEFENSE_SYSTEM" };
-    }
-
-    rebuildDefense(options = {}) {
-        return this.defenseSystem
-            ? this.defenseSystem.rebuildDefense(options)
-            : { success: false, reason: "NO_DEFENSE_SYSTEM" };
-    }
-
-    /**
-     * 🍞 トーストキューの一括引き抜き (UI 表示用ドレイン)
-     * @returns {Array<Object>}
-     */
-    drainToasts() {
-        if (!this.state || !Array.isArray(this.state.toastQueue) || this.state.toastQueue.length === 0) {
-            return [];
-        }
-        const toasts = [...this.state.toastQueue];
-        this.state.toastQueue = [];
-        return toasts;
-    }
-
-    /**
-     * 🏁 ターン終了 API (nextTurn のエイリアス)
-     */
-    endTurn() {
-        return this.nextTurn();
-    }
-
-    /**
-     * 🗺️ 単一マスの表示用純粋事実データ取得 (Facade API)
-     * @param {number} r - 行
-     * @param {number} c - 列
-     * @returns {Object|null}
-     */
-    getCellViewData(r, c) {
-        if (!this.cellViewDataService || typeof this.cellViewDataService.getCellViewData !== "function") {
-            return null;
-        }
-        return this.cellViewDataService.getCellViewData(this.state, r, c);
-    }
-}
-
-if (typeof window !== "undefined") {
-    window.GameEngine = GameEngine;
-}
-if (typeof globalThis !== "undefined") {
-    globalThis.GameEngine = GameEngine;
-}
-
-export { GameEngine };
-export default GameEngine;
