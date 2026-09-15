@@ -193,6 +193,20 @@ export class Web25DCanvasRenderer {
         const point = this.getCanvasPointFromEvent(event);
         const cell = this.getLogicalCellAtCanvasPoint(point.x, point.y);
         if (!cell) return null;
+
+        const isTrial = this.readModel?.presentation?.contextMode === "TRIAL";
+        if (isTrial) {
+            const routeId = cell.trial?.route?.routeId
+                || this.readModel?.trial?.activeRouteId
+                || this.readModel?.trial?.routes?.[0]?.routeId
+                || "default";
+            this.bridge.dispatch(createBoardInputCommand(
+                BOARD_INPUT_COMMANDS.SELECT_TRIAL_INTERCEPTION,
+                { cell, routeId }
+            ));
+            return cell;
+        }
+
         this.bridge.dispatch(createBoardInputCommand(
             BOARD_INPUT_COMMANDS.SELECT_CELL,
             { cell }

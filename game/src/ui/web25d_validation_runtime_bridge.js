@@ -48,6 +48,16 @@ export function attachWeb25DValidationRuntime(uiController, {
             selectCell: ({ cell }) => {
                 if (!cell || typeof uiController.onCellClick !== 'function') return false;
                 return uiController.onCellClick(cell.r, cell.c);
+            },
+            selectTrialInterception: (payload) => {
+                if (payload?.cell) {
+                    uiController.selectTrialInterceptionCell?.(payload.cell.r, payload.cell.c);
+                }
+            },
+            selectTrialRoute: (payload) => {
+                if (payload?.routeId) {
+                    uiController.selectTrialRoute?.(payload.routeId);
+                }
             }
         }
     });
