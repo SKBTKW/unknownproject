@@ -15,8 +15,9 @@ export const ADVISOR_EVENTS = Object.freeze({
     MILITARY_ACTION: "MILITARY_ACTION", GLOBAL_EVENT_SURVIVAL: "GLOBAL_EVENT_SURVIVAL"
 });
 
-// Character lines describe the lived condition represented by Ember; they never speak its internal narrative name.
-// segmentGroups are ordered from shallow observation to deeper interpretation. Existing lineKeys remain as fallback compatibility.
+// Character lines describe only facts and implications available to the active Advisor.
+// Generic peacetime events must not imply knowledge of a future Trial or unseen enemy.
+// Dedicated Trial warning/start events are the only entries here allowed to announce that threat directly.
 export const ADVISOR_DIALOGUES = Object.freeze([
     { event: ADVISOR_EVENTS.GAME_START, personality: "stern", priority: 20, cooldownMs: Infinity, durationMs: 4200, lineKeys: ["UI_ADVISOR_DIALOGUE_GAME_START"] },
     { event: ADVISOR_EVENTS.TRIAL_WARNING, personality: "stern", priority: 80, cooldownMs: Infinity, durationMs: 4800, lineKeys: ["UI_ADVISOR_DIALOGUE_TRIAL_WARNING"] },
@@ -44,12 +45,12 @@ export const ADVISOR_DIALOGUES = Object.freeze([
         segmentGroups: [["UI_ADVISOR_DIALOGUE_FOOD_RECOVERED_1_SEG_1", "UI_ADVISOR_DIALOGUE_FOOD_RECOVERED_1_SEG_2", "UI_ADVISOR_DIALOGUE_FOOD_RECOVERED_1_SEG_3"]],
         lineKeys: ["UI_ADVISOR_DIALOGUE_FOOD_RECOVERED_1", "UI_ADVISOR_DIALOGUE_FOOD_RECOVERED_2"] },
 
+    // These generic defense assessments can occur before any threat is publicly known.
+    // Keep them about present defensive capacity, not an unseen enemy or future interception.
     { event: ADVISOR_EVENTS.DEFENSE_WEAK, personality: "stern", policyKey: "defense", priority: 70, cooldownMs: 0, durationMs: 3900,
-        segmentGroups: [["UI_ADVISOR_DIALOGUE_DEFENSE_WEAK_1_SEG_1", "UI_ADVISOR_DIALOGUE_DEFENSE_WEAK_1_SEG_2", "UI_ADVISOR_DIALOGUE_DEFENSE_WEAK_1_SEG_3"]],
-        lineKeys: ["UI_ADVISOR_DIALOGUE_DEFENSE_WEAK_1", "UI_ADVISOR_DIALOGUE_DEFENSE_WEAK_2"] },
+        lineKeys: ["UI_ADVISOR_DIALOGUE_DEFENSE_WEAK_1"] },
     { event: ADVISOR_EVENTS.DEFENSE_CRITICAL, personality: "stern", policyKey: "defense", priority: 95, cooldownMs: 0, durationMs: 4400,
-        segmentGroups: [["UI_ADVISOR_DIALOGUE_DEFENSE_CRITICAL_1_SEG_1", "UI_ADVISOR_DIALOGUE_DEFENSE_CRITICAL_1_SEG_2", "UI_ADVISOR_DIALOGUE_DEFENSE_CRITICAL_1_SEG_3"]],
-        lineKeys: ["UI_ADVISOR_DIALOGUE_DEFENSE_CRITICAL_1", "UI_ADVISOR_DIALOGUE_DEFENSE_CRITICAL_2"] },
+        lineKeys: ["UI_ADVISOR_DIALOGUE_DEFENSE_WEAK_1"] },
     { event: ADVISOR_EVENTS.DEFENSE_HEALTHY, personality: "stern", policyKey: "defense", priority: 35, cooldownMs: 0, durationMs: 3400,
         segmentGroups: [["UI_ADVISOR_DIALOGUE_DEFENSE_HEALTHY_1_SEG_1", "UI_ADVISOR_DIALOGUE_DEFENSE_HEALTHY_1_SEG_2", "UI_ADVISOR_DIALOGUE_DEFENSE_HEALTHY_1_SEG_3"]],
         lineKeys: ["UI_ADVISOR_DIALOGUE_DEFENSE_HEALTHY_1", "UI_ADVISOR_DIALOGUE_DEFENSE_HEALTHY_2"] },
@@ -83,8 +84,7 @@ export const ADVISOR_DIALOGUES = Object.freeze([
         segmentGroups: [["UI_ADVISOR_DIALOGUE_AMBIENT_1", "UI_ADVISOR_DIALOGUE_AMBIENT_2"]],
         lineKeys: ["UI_ADVISOR_DIALOGUE_AMBIENT_1", "UI_ADVISOR_DIALOGUE_AMBIENT_2"] },
     { event: ADVISOR_EVENTS.MILITARY_ACTION, personality: "stern", policyKey: "defense", priority: 75, cooldownMs: 0, durationMs: 3800,
-        segmentGroups: [["UI_ADVISOR_DIALOGUE_MILITARY_1_SEG_1", "UI_ADVISOR_DIALOGUE_MILITARY_1_SEG_2", "UI_ADVISOR_DIALOGUE_MILITARY_1_SEG_3"]],
-        lineKeys: ["UI_ADVISOR_DIALOGUE_MILITARY_1", "UI_ADVISOR_DIALOGUE_MILITARY_2"] },
+        lineKeys: ["UI_ADVISOR_DIALOGUE_MILITARY_2"] },
     // Keep the legacy first line out of runtime selection because Advisor speech standardizes on "people" wording.
     { event: ADVISOR_EVENTS.GLOBAL_EVENT_SURVIVAL, personality: "stern", policyKey: "survival", priority: 85, cooldownMs: 0, durationMs: 4200,
         segmentGroups: [["UI_ADVISOR_DIALOGUE_GLOBAL_SURVIVAL_2"]],
