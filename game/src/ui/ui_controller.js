@@ -1612,7 +1612,7 @@ class UIController {
     }
 
     clearCellPreviews() {
-        if (this.trialPreviewConfig) {
+        if (this.isTrialInteractionActive()) {
             this.trialPresentationState.clearHoveredCell();
             this.refreshTrialInterceptionPreview();
             this.hideTileTooltip();
@@ -1676,15 +1676,15 @@ class UIController {
 
     onCellMouseEnter(e, r, c) {
         if (!this.state || typeof document === "undefined") return;
+        if (this.isTrialInteractionActive()) {
+            this.updateTrialInterceptionPreview(r, c);
+            return;
+        }
         const cellData = this.getBoardDisplayGrid()[r][c];
         const groupId = cellData ? (cellData.mergeGroupId || cellData.placementGroupId) : null;
         if (groupId) {
             const groupCells = document.querySelectorAll(`.cell[data-group-id="${groupId}"]`);
             groupCells.forEach(el => el.classList.add("merge-hover-highlight"));
-        }
-        if (this.trialPreviewConfig) {
-            this.updateTrialInterceptionPreview(r, c);
-            return;
         }
         if (typeof window !== "undefined" && window.BlockPlacementSystem) {
             window.BlockPlacementSystem.updateHoverPreview(e, r, c, this.selectedCard, this.state);
@@ -1724,7 +1724,7 @@ class UIController {
         }
 
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' && window.I18n ? window.I18n : { t: k => k });
-        if (this.developmentTrialPreviewHarness.isActive()) {
+        if (this.isTrialInteractionActive()) {
             const cellState = this.getTrialInterceptionCellState(r, c);
             if (cellState?.isBlockPlannedByOther) {
                 const title = `[${String.fromCharCode(65 + c)}${r + 1}]`;
@@ -1734,7 +1734,7 @@ class UIController {
                 }
                 return;
             }
-            const preview = this.trialPresentationState.interceptionPreview;
+            const preview = this.trialPresentationState?.interceptionPreview;
             if (!preview || preview.cell?.r !== r || preview.cell?.c !== c) {
                 this.hideCellTooltip();
                 return;
