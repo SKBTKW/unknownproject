@@ -22,7 +22,6 @@ export class GlobalEventChoiceRuntimeIntegration {
         const bridge = uiController?.advisorDockComponent?.eventBridge;
         if (bridge) {
             bridge.choiceReactionSink = reaction => this.component?.setAdvisorReaction(reaction) ?? false;
-            bridge.neutralNarrationSink = reaction => this.component?.setNeutralReaction(reaction) ?? false;
         }
 
         this.unsubscribe = this.manager?.subscribe?.(notification => {

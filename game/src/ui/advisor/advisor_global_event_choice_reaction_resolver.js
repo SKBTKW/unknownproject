@@ -2,10 +2,6 @@ import {
     ADVISOR_GLOBAL_EVENT_CHOICE_REACTIONS,
     ADVISOR_GLOBAL_EVENT_CHOICE_TIMINGS
 } from './advisor_global_event_choice_reactions.js';
-import {
-    ADVISOR_NEUTRAL_PERSONALITY,
-    resolveNeutralGlobalEventReaction
-} from './advisor_global_event_neutral_reactions.js';
 
 function valuesMatch(expected = {}, actual = {}) {
     return Object.entries(expected).every(([key, value]) => actual?.[key] === value);
@@ -44,16 +40,11 @@ export function resolveAdvisorGlobalEventChoiceReaction({
     if (!eventId || !personality || !timing) return null;
     if (!Object.values(ADVISOR_GLOBAL_EVENT_CHOICE_TIMINGS).includes(timing)) return null;
 
-    let matched = null;
-    if (personality === ADVISOR_NEUTRAL_PERSONALITY) {
-        matched = resolveNeutralGlobalEventReaction(eventId, timing);
-    } else {
-        const rules = ADVISOR_GLOBAL_EVENT_CHOICE_REACTIONS[eventId]?.[personality]?.[timing];
-        if (!Array.isArray(rules) || rules.length === 0) return null;
-        matched = rules
-            .filter(rule => matchesRule(rule, { choiceId, publicContext, publicOutcomeTags }))
-            .sort((a, b) => Number(b.priority || 0) - Number(a.priority || 0))[0];
-    }
+    const rules = ADVISOR_GLOBAL_EVENT_CHOICE_REACTIONS[eventId]?.[personality]?.[timing];
+    if (!Array.isArray(rules) || rules.length === 0) return null;
+    const matched = rules
+        .filter(rule => matchesRule(rule, { choiceId, publicContext, publicOutcomeTags }))
+        .sort((a, b) => Number(b.priority || 0) - Number(a.priority || 0))[0];
 
     if (!matched?.lineKey) return null;
 

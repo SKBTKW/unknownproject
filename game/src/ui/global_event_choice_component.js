@@ -7,7 +7,6 @@ export class GlobalEventChoiceComponent {
         this.root = null;
         this.presentation = null;
         this.advisorReaction = null;
-        this.neutralReaction = null;
     }
 
     mount(container = document.body) {
@@ -31,11 +30,6 @@ export class GlobalEventChoiceComponent {
         if (this.presentation && this.root && !this.root.hidden) this.renderPresentation();
         return true;
     }
-    setNeutralReaction(reaction) {
-        this.neutralReaction = reaction || null;
-        if (this.presentation && this.root && !this.root.hidden) this.renderPresentation();
-        return true;
-    }
 
     show(presentation) {
         if (!this.root) this.mount();
@@ -50,9 +44,8 @@ export class GlobalEventChoiceComponent {
         const ctx = p.publicContext || {};
         const rows = [ctx.captureZone, ctx.civilianMood, ...(ctx.visibleFacts || [])]
             .filter(Boolean).map(key => `<div class="ge-choice-row">${choiceText(this.i18n, key)}</div>`).join('');
-        const reaction = this.advisorReaction || this.neutralReaction;
-        const reactionText = reaction?.lineKey ? this.i18n?.t?.(reaction.lineKey) : '';
-        const advisor = reactionText && reactionText !== reaction.lineKey
+        const reactionText = this.advisorReaction?.lineKey ? this.i18n?.t?.(this.advisorReaction.lineKey) : '';
+        const advisor = reactionText && reactionText !== this.advisorReaction.lineKey
             ? `<div class="ge-choice-advisor"><div class="ge-choice-advisor-label">${choiceText(this.i18n, 'advisor')}</div><div>${reactionText}</div></div>` : '';
         const actions = (p.choices || []).map(choice => `<button class="ge-choice-btn" data-choice="${choice.id}">${choiceText(this.i18n, choice.id)}</button>`).join('');
         this.root.innerHTML = `<section class="ge-choice-card"><div class="ge-choice-kicker">${choiceText(this.i18n,'decision')}</div><div class="ge-choice-title">${choiceText(this.i18n,'title')}</div><div class="ge-choice-desc">${choiceText(this.i18n,'desc')}</div><div class="ge-choice-context">${rows}</div>${advisor}<div class="ge-choice-actions">${actions}</div></section>`;
@@ -63,9 +56,8 @@ export class GlobalEventChoiceComponent {
         if (!this.root) return;
         this.presentation = null;
         const resultKey = `RESULT_${resolution?.choiceId || ''}`;
-        const reaction = this.advisorReaction || this.neutralReaction;
-        const reactionText = reaction?.lineKey ? this.i18n?.t?.(reaction.lineKey) : '';
-        const advisor = reactionText && reactionText !== reaction.lineKey
+        const reactionText = this.advisorReaction?.lineKey ? this.i18n?.t?.(this.advisorReaction.lineKey) : '';
+        const advisor = reactionText && reactionText !== this.advisorReaction.lineKey
             ? `<div class="ge-choice-advisor"><div class="ge-choice-advisor-label">${choiceText(this.i18n,'advisor')}</div><div>${reactionText}</div></div>` : '';
         this.root.innerHTML = `<section class="ge-choice-card"><div class="ge-choice-kicker">${choiceText(this.i18n,'result')}</div><div class="ge-choice-title">${choiceText(this.i18n,'title')}</div><div class="ge-choice-result">${choiceText(this.i18n,resultKey)}</div>${advisor}<button class="ge-choice-close">${choiceText(this.i18n,'close')}</button></section>`;
         this.root.querySelector('.ge-choice-close').onclick = () => this.hide();
@@ -77,7 +69,6 @@ export class GlobalEventChoiceComponent {
         this.root.innerHTML = '';
         this.presentation = null;
         this.advisorReaction = null;
-        this.neutralReaction = null;
     }
 }
 

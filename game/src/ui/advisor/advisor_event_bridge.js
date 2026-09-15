@@ -5,15 +5,13 @@ import { createAdvisorPeaceSnapshot, resolveAdvisorPeaceStates } from './advisor
 import { AdvisorReactionEvaluator } from './advisor_reaction_evaluator.js';
 import { resolveAdvisorGlobalEventChoiceReaction } from './advisor_global_event_choice_reaction_resolver.js';
 import { ADVISOR_GLOBAL_EVENT_CHOICE_TIMINGS } from './advisor_global_event_choice_reactions.js';
-import { ADVISOR_NEUTRAL_PERSONALITY } from './advisor_global_event_neutral_reactions.js';
 
 export class AdvisorEventBridge {
-    constructor(dialogueSystem, gameFactHub = null, { profile = null, enabledProvider = () => true, rng = Math.random, neutralNarrationSink = null } = {}) {
+    constructor(dialogueSystem, gameFactHub = null, { profile = null, enabledProvider = () => true, rng = Math.random } = {}) {
         this.dialogueSystem = dialogueSystem;
         this.profile = profile;
         this.enabledProvider = enabledProvider;
         this.choiceReactionSink = null;
-        this.neutralNarrationSink = typeof neutralNarrationSink === "function" ? neutralNarrationSink : null;
         this.runtime = new AdvisorRuntimeState();
         this.evaluator = new AdvisorReactionEvaluator({ rng });
         this.previous = null;
@@ -35,19 +33,17 @@ export class AdvisorEventBridge {
     }
 
     handleGlobalEventChoiceFact(timing, payload = {}) {
-        const advisorEnabled = Boolean(this.enabledProvider());
-        const personality = advisorEnabled ? this.profile?.personality : ADVISOR_NEUTRAL_PERSONALITY;
+        if (!this.enabledProvider()) return false;
         const reaction = resolveAdvisorGlobalEventChoiceReaction({
             eventId: payload.eventId,
-            personality,
+            personality: this.profile?.personality,
             timing,
             choiceId: payload.choiceId || null,
             publicContext: payload.publicContext || {},
             publicOutcomeTags: payload.publicOutcomeTags || []
         });
         if (!reaction) return false;
-        if (!advisorEnabled && this.neutralNarrationSink) return this.neutralNarrationSink(reaction) !== false;
-        if (advisorEnabled && typeof this.choiceReactionSink === "function") return this.choiceReactionSink(reaction) !== false;
+        if (typeof this.choiceReactionSink === "function") return this.choiceReactionSink(reaction) !== false;
         return this.dialogueSystem.emitResolved(reaction);
     }
 
