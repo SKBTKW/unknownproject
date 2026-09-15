@@ -42,6 +42,14 @@ export const STAFF_OFFICER_REACTIONS = Object.freeze({
             expression: ADVISOR_EXPRESSIONS.SATISFIED,
             lines: ["備えた分だけ、残りました。"]
         },
+        [ADVISOR_SCENES.TRIAL_SURVIVED_UNDAMAGED]: {
+            expression: ADVISOR_EXPRESSIONS.SATISFIED,
+            lines: ["残火への損害はありません。……よい備えでした。"]
+        },
+        [ADVISOR_SCENES.TRIAL_SURVIVED_DAMAGED]: {
+            expression: ADVISOR_EXPRESSIONS.CONCERNED,
+            lines: ["敵は退きました。……損害の確認を始めます。"]
+        },
         [ADVISOR_SCENES.TRIAL_PYRRHIC_VICTORY]: {
             expression: ADVISOR_EXPRESSIONS.CONCERNED,
             lines: ["敵は退きました。……こちらの損耗を確認します。"]
