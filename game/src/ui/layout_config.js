@@ -109,6 +109,7 @@ const UILayoutConfig = {
             position: "fixed",
             right: "var(--layout-right-context-mobile-right)",
             top: "var(--layout-right-context-mobile-top)",
+            bottom: "auto",
             width: "var(--layout-right-context-mobile-width)",
             maxHeight: "var(--layout-right-context-mobile-max-height)",
             zIndex: "var(--z-right-context)",

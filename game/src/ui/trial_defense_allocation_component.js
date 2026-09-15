@@ -12,25 +12,34 @@ export class TrialDefenseAllocationComponent {
         if (typeof document !== "undefined") this.mount();
     }
 
+    applyLayoutGeometry(root = this.containerEl) {
+        if (!root || typeof window === "undefined") return;
+        const layoutMode = Number(window.innerWidth) <= 768 ? "mobile" : "desktop";
+        const config = UILayoutConfig?.trialDefenseAllocation?.[layoutMode];
+        if (config) Object.assign(root.style, config);
+    }
+
     mount() {
         if (this.containerEl || typeof document === "undefined") return this.containerEl;
         const root = document.createElement("aside");
         root.id = "trialDefenseAllocationRoot";
         root.className = "trial-defense-allocation-panel";
         root.setAttribute("aria-hidden", "true");
-        const layoutMode = (typeof window !== "undefined" && Number(window.innerWidth) <= 768)
-            ? "mobile"
-            : "desktop";
-        const config = UILayoutConfig?.trialDefenseAllocation?.[layoutMode];
-        if (config) Object.assign(root.style, config);
+        this.applyLayoutGeometry(root);
         document.body.appendChild(root);
         this.containerEl = root;
+
+        if (typeof window !== "undefined") {
+            this._resizeHandler = () => this.applyLayoutGeometry(this.containerEl);
+            window.addEventListener("resize", this._resizeHandler);
+        }
         return root;
     }
 
     render() {
         const root = this.mount();
         if (!root) return;
+        this.applyLayoutGeometry(root);
         const ownsContext = !this.contextOwnerProvider
             || this.contextOwnerProvider() === RIGHT_CONTEXT_OWNERS.TRIAL;
         const active = Boolean(this.ui?.trialPreviewConfig && this.ui?.trialController?.state && ownsContext);
