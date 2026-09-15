@@ -2,6 +2,10 @@ import {
     Web25DCanvasRenderer,
     resolveWeb25DElevationPixels
 } from './web25d_canvas_renderer.js';
+import {
+    ZONE_LINK_EDGE_KINDS,
+    buildZoneLinkVisuals
+} from './board_zone_link_visual_contract.js';
 
 function drawDiamond(ctx, center, halfW, halfH) {
     ctx.beginPath();
@@ -26,6 +30,21 @@ function translateEdge(points, lift) {
     return (points || []).map(point => ({ x: point.x, y: point.y - lift }));
 }
 
+function midpoint(points) {
+    if (!points || points.length < 2) return null;
+    return {
+        x: (points[0].x + points[1].x) / 2,
+        y: (points[0].y + points[1].y) / 2
+    };
+}
+
+function shouldDrawSharedEdge(cell, neighbor) {
+    if (!neighbor) return true;
+    if (cell.r < neighbor.r) return true;
+    if (cell.r > neighbor.r) return false;
+    return cell.c <= neighbor.c;
+}
+
 function resourceCode(resource) {
     switch (resource) {
         case 'food': return 'F';
@@ -37,13 +56,14 @@ function resourceCode(resource) {
 }
 
 /**
- * Phase 2.5D-C/D visual layer.
+ * Phase 2.5D-C/D/E visual layer.
  *
  * Adds HQ, Resource Socket, interaction emphasis, multi-cell placement
- * continuity, presentation-provided LAND_PRIMARY production markers and
- * renderer-neutral placement-preview semantics on top of the Phase B terrain
- * renderer. This file remains disposable Web-only rendering code and never
- * recalculates placement or production semantics.
+ * continuity, presentation-provided LAND_PRIMARY production markers,
+ * renderer-neutral placement-preview semantics and Zone/Link edge visuals on
+ * top of the Phase B terrain renderer. This file remains disposable Web-only
+ * rendering code and never recalculates placement, production, Zone or Link
+ * semantics.
  */
 export class Web25DPhaseCRenderer extends Web25DCanvasRenderer {
     render() {
@@ -66,6 +86,7 @@ export class Web25DPhaseCRenderer extends Web25DCanvasRenderer {
         };
 
         this.drawPlacementContinuity(cell, projected, lift);
+        this.drawZoneLinkVisuals(cell, projected, lift);
 
         if (cell.isHQ) {
             this.drawHQ(center);
@@ -142,6 +163,62 @@ export class Web25DPhaseCRenderer extends Web25DCanvasRenderer {
             ctx.strokeStyle = 'rgba(190, 205, 192, 0.18)';
             ctx.lineWidth = 0.6;
             drawLine(ctx, raisedEdge);
+        }
+    }
+
+    drawZoneLinkVisuals(cell, projected, lift) {
+        const visuals = buildZoneLinkVisuals(cell);
+        if (!visuals.zoneId && visuals.linkIds.length === 0) return;
+
+        const ctx = this.ctx;
+        const topFill = this.resolveTerrainTopFill(cell);
+
+        for (const edge of visuals.edges) {
+            if (edge.kind === ZONE_LINK_EDGE_KINDS.NONE) continue;
+            if (!shouldDrawSharedEdge(cell, edge.neighbor)) continue;
+
+            const screenEdge = projected.projectedEdges?.[edge.direction];
+            if (!screenEdge) continue;
+            const raisedEdge = translateEdge(screenEdge, lift);
+
+            if (edge.kind === ZONE_LINK_EDGE_KINDS.ZONE_INTERNAL) {
+                // A Zone should read as one territorial mass. First erase most
+                // of the ordinary per-cell seam, then keep only a very faint
+                // construction line so cell-level interaction remains legible.
+                ctx.strokeStyle = topFill;
+                ctx.lineWidth = 3.4;
+                drawLine(ctx, raisedEdge);
+                ctx.strokeStyle = 'rgba(212, 220, 202, 0.10)';
+                ctx.lineWidth = 0.45;
+                drawLine(ctx, raisedEdge);
+                continue;
+            }
+
+            if (edge.kind === ZONE_LINK_EDGE_KINDS.ZONE_BOUNDARY) {
+                ctx.strokeStyle = 'rgba(221, 209, 174, 0.66)';
+                ctx.lineWidth = 1.8;
+                drawLine(ctx, raisedEdge);
+                continue;
+            }
+
+            if (edge.kind === ZONE_LINK_EDGE_KINDS.LINK) {
+                ctx.strokeStyle = 'rgba(238, 181, 91, 0.34)';
+                ctx.lineWidth = 4.4;
+                drawLine(ctx, raisedEdge);
+                ctx.strokeStyle = 'rgba(255, 211, 128, 0.94)';
+                ctx.lineWidth = 1.5;
+                drawLine(ctx, raisedEdge);
+
+                const center = midpoint(raisedEdge);
+                if (center) {
+                    drawDiamond(ctx, center, 4, 2.5);
+                    ctx.fillStyle = 'rgba(255, 205, 112, 0.90)';
+                    ctx.fill();
+                    ctx.strokeStyle = 'rgba(255, 232, 176, 0.92)';
+                    ctx.lineWidth = 0.8;
+                    ctx.stroke();
+                }
+            }
         }
     }
 
