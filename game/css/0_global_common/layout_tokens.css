@@ -47,6 +47,18 @@
     --layout-player-tray-mobile-left: var(--layout-mobile-edge-gap);
     --layout-player-tray-mobile-bottom: var(--layout-mobile-edge-gap);
     --layout-player-tray-motion-ms: 320ms;
+    --layout-player-tray-motion-easing: cubic-bezier(0.16, 1, 0.3, 1);
+
+    /*
+     * 2.5D hand docking experiment.
+     * STANDARD uses the lower-left reading dock. MINIMIZED returns to the
+     * board-adjacent lower center for quick card-to-board interaction.
+     * These are screen-space anchors only; hand contents remain view-agnostic.
+     */
+    --layout-quarter-hand-standard-left: var(--layout-edge-gap);
+    --layout-quarter-hand-standard-translate-x: 0%;
+    --layout-quarter-hand-minimal-left: 50%;
+    --layout-quarter-hand-minimal-translate-x: -50%;
 
     /* Trial Action Tray geometry */
     --layout-trial-action-tray-width: min(680px, calc(100vw - 48px));

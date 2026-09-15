@@ -37,6 +37,40 @@
     z-index: var(--z-player) !important;
 }
 
+/*
+ * 2.5D hand dock contract.
+ * The hand stays a screen-space HUD. Only its anchor changes with hand state:
+ * expanded/standard = lower-left reading dock,
+ * collapsed/minimal = board-adjacent lower center quick dock.
+ * The renderer and GameState never own these coordinates.
+ */
+@media (min-width: 769px) {
+    body[data-board-view="quarter"] #layerPlayerTray.layer-player-tray {
+        right: auto !important;
+        bottom: var(--layout-player-tray-bottom) !important;
+        transition:
+            left var(--layout-player-tray-motion-ms) var(--layout-player-tray-motion-easing),
+            transform var(--layout-player-tray-motion-ms) var(--layout-player-tray-motion-easing);
+        will-change: left, transform;
+    }
+
+    body[data-board-view="quarter"][data-hand-state="expanded"] #layerPlayerTray.layer-player-tray {
+        left: var(--layout-quarter-hand-standard-left) !important;
+        transform: translateX(var(--layout-quarter-hand-standard-translate-x));
+    }
+
+    body[data-board-view="quarter"][data-hand-state="collapsed"] #layerPlayerTray.layer-player-tray {
+        left: var(--layout-quarter-hand-minimal-left) !important;
+        transform: translateX(var(--layout-quarter-hand-minimal-translate-x));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body[data-board-view="quarter"] #layerPlayerTray.layer-player-tray {
+        transition: none;
+    }
+}
+
 .top-bar #bgTurnWatermark.bg-turn-watermark {
     position: relative;
     top: auto;
