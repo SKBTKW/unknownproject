@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - "AGtest*"
+      - "AoT*"
   workflow_dispatch:
 
 permissions:
