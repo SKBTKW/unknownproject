@@ -51,13 +51,23 @@ export function attachWeb25DValidationRuntime(uiController, {
             },
             selectTrialInterception: (payload) => {
                 if (payload?.cell) {
-                    uiController.selectTrialInterceptionCell?.(payload.cell.r, payload.cell.c);
+                    return uiController.selectTrialInterceptionCell?.(payload.cell.r, payload.cell.c);
                 }
+                return false;
+            },
+            hoverTrialInterception: (payload) => {
+                if (!payload?.cell) return false;
+                return uiController.updateTrialInterceptionPreview?.(payload.cell.r, payload.cell.c) ?? false;
+            },
+            clearTrialHover: () => {
+                uiController.trialPresentationState?.clearHoveredCell?.();
+                return uiController.refreshTrialInterceptionPreview?.() ?? true;
             },
             selectTrialRoute: (payload) => {
                 if (payload?.routeId) {
-                    uiController.selectTrialRoute?.(payload.routeId);
+                    return uiController.selectTrialRoute?.(payload.routeId);
                 }
+                return false;
             }
         }
     });
