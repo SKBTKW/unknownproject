@@ -6,7 +6,7 @@ import { STAFF_OFFICER_REACTIONS } from "../data/advisor_staff_officer_reactions
 import { ADVISOR_SCENES } from "../data/advisor_scene_catalog.js";
 import { AdvisorReactionService } from "./advisor_reaction_service.js";
 
-test("confirmed Trial plan resolves to the staff officer reaction without DOM", () => {
+function createService() {
     const gameFactHub = new GameFactHub();
     const service = new AdvisorReactionService({
         gameFactHub,
@@ -14,6 +14,11 @@ test("confirmed Trial plan resolves to the staff officer reaction without DOM", 
     });
     const received = [];
     service.subscribe(reaction => received.push(reaction));
+    return { gameFactHub, service, received };
+}
+
+test("confirmed Trial plan resolves to the staff officer reaction without DOM", () => {
+    const { gameFactHub, service, received } = createService();
 
     gameFactHub.emit(GAME_FACT_TYPES.TRIAL_PLAN_CONFIRMED, {
         routes: [{ routeId: "route-a", status: "INTERCEPT", defenseAllocation: 3 }],
@@ -30,17 +35,72 @@ test("confirmed Trial plan resolves to the staff officer reaction without DOM", 
     service.dispose();
 });
 
-test("facts without an advisor scene stay silent", () => {
-    const gameFactHub = new GameFactHub();
-    const service = new AdvisorReactionService({
-        gameFactHub,
-        character: STAFF_OFFICER_REACTIONS
+test("survived Trial with zero Ember damage resolves to undamaged scene", () => {
+    const { gameFactHub, service, received } = createService();
+
+    gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, {
+        scenarioId: "trial-1",
+        outcome: "SURVIVED",
+        result: { emberRemaining: 10, totalEmberDamage: 0, routeEndCount: 0 },
+        settlement: { runTerminated: false }
     });
-    const received = [];
-    service.subscribe(reaction => received.push(reaction));
 
+    assert.equal(received.length, 1);
+    assert.equal(received[0].scene, ADVISOR_SCENES.TRIAL_SURVIVED_UNDAMAGED);
+    assert.equal(received[0].expression, "SATISFIED");
+    assert.equal(received[0].line, "残火への損害はありません。……よい備えでした。");
+    service.dispose();
+});
+
+test("survived Trial with Ember damage resolves to damaged scene", () => {
+    const { gameFactHub, service, received } = createService();
+
+    gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, {
+        scenarioId: "trial-1",
+        outcome: "SURVIVED",
+        result: { emberRemaining: 7, totalEmberDamage: 3, routeEndCount: 1 },
+        settlement: { runTerminated: false }
+    });
+
+    assert.equal(received.length, 1);
+    assert.equal(received[0].scene, ADVISOR_SCENES.TRIAL_SURVIVED_DAMAGED);
+    assert.equal(received[0].expression, "CONCERNED");
+    assert.equal(received[0].line, "敵は退きました。……損害の確認を始めます。");
+    service.dispose();
+});
+
+test("failed Trial resolves to game over regardless of damage details", () => {
+    const { gameFactHub, service, received } = createService();
+
+    gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, {
+        scenarioId: "trial-1",
+        outcome: "FAILED",
+        result: { emberRemaining: 0, totalEmberDamage: 10, routeEndCount: 2 },
+        settlement: { runTerminated: true }
+    });
+
+    assert.equal(received.length, 1);
+    assert.equal(received[0].scene, ADVISOR_SCENES.GAME_OVER);
+    assert.equal(received[0].line, "……最後まで、確認します。");
+    service.dispose();
+});
+
+test("legacy survived result without damage data falls back to generic completion", () => {
+    const { gameFactHub, service, received } = createService();
+
+    gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, {
+        outcome: "SURVIVED",
+        settlement: { runTerminated: false }
+    });
+
+    assert.equal(received.length, 1);
+    assert.equal(received[0].scene, ADVISOR_SCENES.TRIAL_COMPLETED);
+    service.dispose();
+});
+
+test("facts without an advisor scene stay silent", () => {
+    const { gameFactHub, service, received } = createService();
     gameFactHub.emit(GAME_FACT_TYPES.VERSE_COMMITTED, { verse: 2 });
-
     assert.equal(received.length, 0);
     service.dispose();
 });
@@ -62,13 +122,7 @@ test("missing character reaction means intentional silence", () => {
 });
 
 test("dispose disconnects the service from the shared fact hub", () => {
-    const gameFactHub = new GameFactHub();
-    const service = new AdvisorReactionService({
-        gameFactHub,
-        character: STAFF_OFFICER_REACTIONS
-    });
-    const received = [];
-    service.subscribe(reaction => received.push(reaction));
+    const { gameFactHub, service, received } = createService();
     service.dispose();
 
     gameFactHub.emit(GAME_FACT_TYPES.TRIAL_PLAN_CONFIRMED, {
