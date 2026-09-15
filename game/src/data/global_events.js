@@ -1,6 +1,6 @@
 /* =============================================================
    game/src/data/global_events.js
-   グローバルイベント 8 種の宣言的純データマスター (Pure & Unity Ready)
+   グローバルイベントの宣言的純データマスター (Pure & Unity Ready)
    ============================================================= */
 
 export const GLOBAL_EVENTS_MASTER = [
@@ -29,6 +29,10 @@ export const GLOBAL_EVENTS_MASTER = [
     {
         id: "EVENT_RECOVERY_MOMENTUM", category: "OPPORTUNITY", nameKey: "EVENT_RECOVERY_MOMENTUM_NAME", descKey: "EVENT_RECOVERY_MOMENTUM_DESC", icon: "🛡️", minStage: 1, duration: 3, baseWeight: 100, importance: "MAJOR",
         conditions: [{ type: "STAGE_AT_LEAST", value: 1 }, { type: "HISTORY_CHECK", checkType: "TRIAL_DAMAGE_TAKEN" }], effects: [{ type: "OFFERING_WEIGHT_TAG_BOOST", tag: "RECOVERY", multiplier: 2.0 }], endEffects: []
+    },
+    {
+        id: "EVENT_DEMIHUMAN_TRACES", category: "THREAT", nameKey: "EVENT_DEMIHUMAN_TRACES_NAME", descKey: "EVENT_DEMIHUMAN_TRACES_DESC", icon: "🐾", minStage: 1, duration: 1, baseWeight: 1, importance: "MAJOR", cooldownTurns: 999, randomEligible: false,
+        conditions: [], effects: [], endEffects: []
     },
     {
         id: "EVENT_DEMIHUMAN_RAID", category: "THREAT", nameKey: "EVENT_DEMIHUMAN_RAID_NAME", descKey: "EVENT_DEMIHUMAN_RAID_DESC", icon: "⚔️", minStage: 2, duration: 1, baseWeight: 80, importance: "MAJOR", cooldownTurns: 8,

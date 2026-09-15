@@ -32,6 +32,7 @@ export class GlobalEventSelector {
         if (!state || !masterEvents?.length) return null;
         const eligible = [];
         for (const def of masterEvents) {
+            if (def.randomEligible === false) continue;
             if (state.activeGlobalEvents?.some(e => e.definitionId === def.id)) continue;
             const last = state.eventCooldowns?.[def.id];
             if (def.cooldownTurns && last && (state.turn || 1) - last < def.cooldownTurns) continue;
