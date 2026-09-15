@@ -24,11 +24,14 @@ manager.emit({ timing: GLOBAL_EVENT_TIMINGS.END, eventId: 'EVENT_DEMIHUMAN_SCOUT
 if (state.investigationUnlocked) throw new Error('event END unlocked investigation');
 
 manager.emit({ timing: GLOBAL_EVENT_TIMINGS.START, eventId: 'EVENT_DEMIHUMAN_SCOUTS', turn: 5 });
-if (!state.investigationUnlocked) throw new Error('demihuman scouts did not unlock investigation');
-if (state.investigationUnlockedAtVerse !== 5) throw new Error('unlock verse not recorded');
+if (state.investigationUnlocked) throw new Error('demihuman scouts incorrectly unlocked investigation');
 
 manager.emit({ timing: GLOBAL_EVENT_TIMINGS.START, eventId: 'EVENT_DEMIHUMAN_TRACES', turn: 8 });
-if (state.investigationUnlockedAtVerse !== 5) throw new Error('unlock was not idempotent');
+if (!state.investigationUnlocked) throw new Error('demihuman traces did not unlock investigation');
+if (state.investigationUnlockedAtVerse !== 8) throw new Error('unlock verse not recorded from traces');
+
+manager.emit({ timing: GLOBAL_EVENT_TIMINGS.START, eventId: 'EVENT_DEMIHUMAN_TRACES', turn: 10 });
+if (state.investigationUnlockedAtVerse !== 8) throw new Error('unlock was not idempotent');
 
 bridge.detach();
 console.log('PASS investigation unlock bridge');
