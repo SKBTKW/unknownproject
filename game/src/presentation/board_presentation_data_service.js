@@ -89,6 +89,7 @@ export class BoardPresentationDataService {
             available: Boolean(trial.available && showTrialOperationalData),
             activeRouteId: showRoutes ? trial.activeRouteId : null,
             selectedInterceptCell: showInterception ? trial.selectedInterceptCell : null,
+            hoveredInterceptCell: showInterception ? trial.hoveredInterceptCell : null,
             routes: Object.freeze(showRoutes ? [...(trial.routes || [])] : []),
             interceptionCandidates: Object.freeze(
                 showInterception ? [...(trial.interceptionCandidates || [])] : []
@@ -149,6 +150,7 @@ export class BoardPresentationDataService {
                     route,
                     interceptionCandidate: interception,
                     interceptionSelected: sameCell(visibleTrial.selectedInterceptCell, r, c),
+                    interceptionHovered: sameCell(visibleTrial.hoveredInterceptCell, r, c),
                     plannedIntercept: planned,
                     battleMarker: battle
                 })
