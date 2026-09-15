@@ -205,6 +205,7 @@ export class Web25DPhaseFRenderer extends Web25DPhaseCRenderer {
     drawTrialInterceptionCandidates(trial) {
         const ctx = this.ctx;
         const selected = trial.selectedInterceptCell || null;
+        const hovered = trial.hoveredInterceptCell || null;
         const planned = trial.plannedIntercepts || [];
 
         for (const item of trial.interceptionCandidates || []) {
@@ -212,6 +213,7 @@ export class Web25DPhaseFRenderer extends Web25DPhaseCRenderer {
             if (!cell) continue;
             const center = this.projectTrialCell(cell);
             const isSelected = sameCell(cell, selected);
+            const isHovered = sameCell(cell, hovered);
 
             drawDiamond(
                 ctx,
@@ -221,12 +223,16 @@ export class Web25DPhaseFRenderer extends Web25DPhaseCRenderer {
             );
             ctx.fillStyle = isSelected
                 ? 'rgba(235, 203, 101, 0.22)'
-                : 'rgba(111, 195, 216, 0.12)';
+                : isHovered
+                    ? 'rgba(146, 221, 231, 0.20)'
+                    : 'rgba(111, 195, 216, 0.12)';
             ctx.fill();
             ctx.strokeStyle = isSelected
                 ? 'rgba(255, 226, 132, 0.98)'
-                : 'rgba(141, 223, 239, 0.84)';
-            ctx.lineWidth = isSelected ? 2.5 : 1.5;
+                : isHovered
+                    ? 'rgba(204, 247, 250, 0.98)'
+                    : 'rgba(141, 223, 239, 0.84)';
+            ctx.lineWidth = isSelected ? 2.5 : (isHovered ? 2.2 : 1.5);
             ctx.stroke();
         }
 
