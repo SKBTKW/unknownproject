@@ -14,7 +14,32 @@ class FocusLayerManager {
         this.isHandHovered = false;
         this.isBoardHovered = false;
         this.isEnabled = true;
+        this.isSuspended = false;
         this.hasUserInteracted = false; // 🌟 ユーザーの初回意図的操作検知フラグ
+    }
+
+    suspend() {
+        this.isSuspended = true;
+        this.resetToNeutral();
+    }
+
+    resume() {
+        this.isSuspended = false;
+        this.updateLayerStates();
+    }
+
+    isTrialModeActive() {
+        if (this.isSuspended) return true;
+        if (typeof document !== 'undefined') {
+            const root = document.body || document.documentElement;
+            if (root?.dataset?.playerTrayMode === 'trial' || root?.dataset?.layoutState === 'trial') {
+                return true;
+            }
+        }
+        if (typeof window !== 'undefined' && window.ui?.isTrialInteractionActive?.()) {
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -35,8 +60,17 @@ class FocusLayerManager {
         document.addEventListener('mouseover', (e) => {
             if (!e.target || typeof e.target.closest !== 'function') return;
 
+            // ⚔️ Trial Action Trayへのホバー、またはTrialモード中は手札ホバーとして扱わない（盤面ブラー逆転防止）
+            const isTrialTray = !!e.target.closest('#trialActionTrayHost') || !!e.target.closest('.trial-action-tray');
+            const inTrial = this.isTrialModeActive();
+
             // 🃏 1. 手札トレイ領域へのホバー
-            const isHand = !!e.target.closest('.offering-section') || !!e.target.closest('#layerPlayerTray') || !!e.target.closest('.card-frame-tcg') || !!e.target.closest('.reserve-slot-empty');
+            const isHand = !isTrialTray && !inTrial && (
+                !!e.target.closest('.offering-section') ||
+                !!e.target.closest('#layerPlayerTray') ||
+                !!e.target.closest('.card-frame-tcg') ||
+                !!e.target.closest('.reserve-slot-empty')
+            );
             // 🗺️ 2. 盤面領域へのホバー
             const isBoard = !isHand && (!!e.target.closest('#gridBoard') || !!e.target.closest('.board-container-wrapper') || !!e.target.closest('#layerWorldBoard') || !!e.target.closest('.grid-board-anchor'));
 
@@ -89,6 +123,10 @@ class FocusLayerManager {
      * 🔄 最優先 ⇄ 下層レイヤーの動的状態更新 (Single Source of Truth)
      */
     updateLayerStates() {
+        if (this.isTrialModeActive()) {
+            this.resetToNeutral();
+            return;
+        }
         if (!this.boardContainerEl || !this.offeringSectionEl) return;
         const gridEl = this.getGridElement();
 

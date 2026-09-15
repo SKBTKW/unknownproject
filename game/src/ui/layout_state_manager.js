@@ -237,6 +237,9 @@ export class LayoutStateManager {
             boardViewMode,
             boardContextMode
         });
+        if (typeof globalThis !== "undefined" && globalThis.focusLayerManager?.updateLayerStates) {
+            globalThis.focusLayerManager.updateLayerStates();
+        }
     }
 
     applyRootState(
