@@ -293,14 +293,14 @@ export class BoardGridComponent {
                 cellEl.onmouseleave = () => this.ui.clearCellPreviews();
                 cellEl.onclick = () => this.ui.onCellClick(r, c);
                 cellEl.ondragover = (e) => {
-                    if (this.ui.developmentTrialPreviewHarness?.isActive()) return;
+                    if (this.ui.isTrialInteractionActive?.() || this.ui.developmentTrialPreviewHarness?.isActive()) return;
                     if (this.state.hasPickedThisTurn) return;
                     e.preventDefault();
                     e.dataTransfer.dropEffect = "move";
                     this.ui.onCellMouseEnter(e, r, c);
                 };
                 cellEl.ondrop = (e) => {
-                    if (this.ui.developmentTrialPreviewHarness?.isActive()) return;
+                    if (this.ui.isTrialInteractionActive?.() || this.ui.developmentTrialPreviewHarness?.isActive()) return;
                     if (this.state.hasPickedThisTurn) return;
                     e.preventDefault();
                     const cat = e.dataTransfer.getData("application/card-category");
@@ -326,7 +326,7 @@ export class BoardGridComponent {
                 };
                 cellEl.oncontextmenu = (e) => {
                     e.preventDefault();
-                    if (this.ui.developmentTrialPreviewHarness?.isActive()) return;
+                    if (this.ui.isTrialInteractionActive?.() || this.ui.developmentTrialPreviewHarness?.isActive()) return;
                     if (this.ui.selectedCard) {
                         const tObj = this.ui.selectedCard.terrain || this.ui.selectedCard;
                         const category = this.ui.selectedCard.category || tObj.category || "LAND";
@@ -391,11 +391,13 @@ export class BoardGridComponent {
 
         // 🎯 盤面エリアへのドラッグオーバー ＆ コマンドカードドロップ受付
         boardEl.ondragover = (e) => {
+            if (this.ui.isTrialInteractionActive?.() || this.ui.developmentTrialPreviewHarness?.isActive()) return;
             if (this.state.hasPickedThisTurn) return;
             e.preventDefault();
             e.dataTransfer.dropEffect = "move";
         };
         boardEl.ondrop = (e) => {
+            if (this.ui.isTrialInteractionActive?.() || this.ui.developmentTrialPreviewHarness?.isActive()) return;
             if (this.state.hasPickedThisTurn) return;
             e.preventDefault();
             const cat = e.dataTransfer.getData("application/card-category");
@@ -414,7 +416,7 @@ export class BoardGridComponent {
             }
         };
 
-        if (this.ui.selectedCard) {
+        if (this.ui.selectedCard && !this.ui.isTrialInteractionActive?.()) {
             this.ui.highlightPlaceableCells();
         }
 

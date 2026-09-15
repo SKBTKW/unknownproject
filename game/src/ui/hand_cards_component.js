@@ -53,12 +53,14 @@ export class HandCardsComponent {
 
                 // 🖱️ D&D ドロップ受け入れ（保留カード ➔ 手札空きスロット）
                 blankEl.ondragover = (e) => {
+                    if (this.ui?.isTrialInteractionActive?.()) return;
                     if (this.state.hasPickedThisTurn) return;
                     if (!this.state.reserveSlots || !this.state.reserveSlots[0]) return;
                     e.preventDefault();
                     e.dataTransfer.dropEffect = "move";
                 };
                 blankEl.ondragenter = (e) => {
+                    if (this.ui?.isTrialInteractionActive?.()) return;
                     if (this.state.hasPickedThisTurn) return;
                     if (!this.state.reserveSlots || !this.state.reserveSlots[0]) return;
                     e.preventDefault();
@@ -117,7 +119,7 @@ export class HandCardsComponent {
 
             // 🖱️ D&D ドラッグ開始
             cardEl.ondragstart = (e) => {
-                if (isLocked) {
+                if (isLocked || this.ui?.isTrialInteractionActive?.()) {
                     e.preventDefault();
                     return;
                 }
@@ -130,6 +132,7 @@ export class HandCardsComponent {
             // 🚀 ドラッグ終了（上フリック発動検知）
             cardEl.ondragend = (e) => {
                 cardEl.classList.remove("card-dragging");
+                if (this.ui?.isTrialInteractionActive?.()) return;
                 if (category !== "LAND" && !this.state.hasPickedThisTurn) {
                     const offeringEl = document.querySelector(".offering-section") || document.getElementById("cardRow");
                     if (offeringEl) {
@@ -144,6 +147,7 @@ export class HandCardsComponent {
             // 👆 クリック選択
             cardEl.onclick = (e) => {
                 e.stopPropagation();
+                if (this.ui?.isTrialInteractionActive?.()) return;
                 if (this.ui && typeof this.ui.hideCardActionHintPopover === "function") {
                     this.ui.hideCardActionHintPopover();
                 }
@@ -155,6 +159,7 @@ export class HandCardsComponent {
             cardEl.oncontextmenu = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                if (this.ui?.isTrialInteractionActive?.()) return;
                 if (category === "LAND") {
                     this.ui.selectedReserveIdx = -1;
                     this.ui.selectedCard = card;
@@ -165,6 +170,7 @@ export class HandCardsComponent {
 
             // 🃏 ホバー時フローティング拡大プレビュー ＆ 操作ガイドポップアップ ＆ 未選択時盤面配置可能ガイド
             cardEl.addEventListener("mouseenter", () => {
+                if (this.ui?.isTrialInteractionActive?.()) return;
                 if (this.ui) {
                     if (typeof this.ui.updateFloatingPreview === "function") {
                         this.ui.updateFloatingPreview(cardEl);

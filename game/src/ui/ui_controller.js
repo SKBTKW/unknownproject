@@ -179,6 +179,13 @@ class UIController {
         return Math.max(0, Math.floor(Number(this.trialController.state?.human?.availableDefense) || 0));
     }
 
+    isTrialInteractionActive() {
+        return Boolean(
+            (this.trialPreviewConfig?.active && this.trialController?.state)
+            || this.developmentTrialPreviewHarness?.isActive?.()
+        );
+    }
+
     getActiveTrialRoute() {
         if (!this.trialPreviewConfig || !this.trialController.state) return null;
         const routes = this.trialController.state.routes || [];
@@ -1414,6 +1421,7 @@ class UIController {
     }
 
     selectCard(idx) {
+        if (this.isTrialInteractionActive()) return;
         if (!this.state || this.state.hasPickedThisTurn) return;
         const card = this.state.handOffering[idx];
         if (!card || card.isBlank) return;
@@ -1451,6 +1459,7 @@ class UIController {
     rotateSelectedCard(e, idx) {
         if (e && typeof e.stopPropagation === "function") e.stopPropagation();
         if (e && typeof e.preventDefault === "function") e.preventDefault();
+        if (this.isTrialInteractionActive()) return;
         if (!this.state || !this.state.handOffering) return;
         const card = this.state.handOffering[idx];
         if (!card || card.isBlank) return;
@@ -1480,7 +1489,7 @@ class UIController {
 
     onCellClick(r, c) {
         if (!this.state) return;
-        if (this.trialPreviewConfig) {
+        if (this.isTrialInteractionActive()) {
             this.selectTrialInterceptionCell(r, c);
             return;
         }

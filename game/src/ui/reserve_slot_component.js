@@ -73,7 +73,7 @@ export class ReserveSlotComponent {
 
             // 🖱️ D&D ドラッグ
             rCardEl.ondragstart = (e) => {
-                if (isLocked) { e.preventDefault(); return; }
+                if (isLocked || this.ui?.isTrialInteractionActive?.()) { e.preventDefault(); return; }
                 e.dataTransfer.setData("text/plain", "reserve_0");
                 e.dataTransfer.setData("application/card-category", category);
                 e.dataTransfer.effectAllowed = "move";
@@ -81,6 +81,7 @@ export class ReserveSlotComponent {
             };
             rCardEl.ondragend = (e) => {
                 rCardEl.classList.remove("card-dragging");
+                if (this.ui?.isTrialInteractionActive?.()) return;
                 if (category !== "LAND" && !this.state.hasPickedThisTurn) {
                     const offeringEl = document.querySelector(".offering-section") || document.getElementById("cardRow");
                     if (offeringEl) {
@@ -95,6 +96,7 @@ export class ReserveSlotComponent {
             // 👆 クリック操作（直上ポップオーバーを開く）
             rCardEl.onclick = (e) => {
                 e.stopPropagation();
+                if (this.ui?.isTrialInteractionActive?.()) return;
                 this.ui.toggleReservePopover(0);
             };
 
@@ -102,11 +104,13 @@ export class ReserveSlotComponent {
             rCardEl.oncontextmenu = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                if (this.ui?.isTrialInteractionActive?.()) return;
                 if (category === "LAND") this.ui.rotateReserveCard(e, 0);
             };
 
             // 🃏 ホバー時フローティング拡大プレビュー ＆ 未選択時盤面配置可能ガイド
             rCardEl.addEventListener("mouseenter", () => {
+                if (this.ui?.isTrialInteractionActive?.()) return;
                 if (this.ui) {
                     if (typeof this.ui.updateFloatingPreview === "function") {
                         this.ui.updateFloatingPreview(rCardEl);
@@ -302,6 +306,7 @@ export class ReserveSlotComponent {
 
             // 🃏 空保留枠ホバー時フローティング拡大プレビュー (ミニマルモード連動 ＆ 選択中常時表示対応)
             emptySlotEl.addEventListener("mouseenter", () => {
+                if (this.ui?.isTrialInteractionActive?.()) return;
                 if (this.ui && typeof this.ui.updateFloatingPreview === "function") {
                     this.ui.updateFloatingPreview(emptySlotEl);
                 }
@@ -317,6 +322,7 @@ export class ReserveSlotComponent {
             emptySlotEl.onclick = (e) => {
                 e.stopPropagation();
                 e.preventDefault();
+                if (this.ui?.isTrialInteractionActive?.()) return;
                 if (this.ui.selectedCardIdx !== -1 && !this.state.hasPickedThisTurn && !this.state.hasReservedThisTurn) {
                     this.ui.reserveCard(this.ui.selectedCardIdx);
                 }
@@ -324,11 +330,13 @@ export class ReserveSlotComponent {
 
             // 🖱️ D&D ドロップ受け入れ (1ターン1回制限)
             emptySlotEl.ondragover = (e) => {
+                if (this.ui?.isTrialInteractionActive?.()) return;
                 if (this.state.hasPickedThisTurn || this.state.hasReservedThisTurn) return;
                 e.preventDefault();
                 e.dataTransfer.dropEffect = "move";
             };
             emptySlotEl.ondragenter = (e) => {
+                if (this.ui?.isTrialInteractionActive?.()) return;
                 if (this.state.hasPickedThisTurn || this.state.hasReservedThisTurn) return;
                 e.preventDefault();
                 emptySlotEl.classList.add("reserve-slot-drop-hover");
@@ -337,6 +345,7 @@ export class ReserveSlotComponent {
                 emptySlotEl.classList.remove("reserve-slot-drop-hover");
             };
             emptySlotEl.ondrop = (e) => {
+                if (this.ui?.isTrialInteractionActive?.()) return;
                 if (this.state.hasPickedThisTurn || this.state.hasReservedThisTurn) return;
                 e.preventDefault();
                 emptySlotEl.classList.remove("reserve-slot-drop-hover");
