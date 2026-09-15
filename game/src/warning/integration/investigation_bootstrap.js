@@ -1,3 +1,4 @@
+import { attachCardRuntimePolicy } from "../../systems/card_runtime_policy.js";
 import { attachInvestigationRuntime } from "./investigation_runtime_bridge.js";
 import { InvestigationUnlockBridge } from "../systems/investigation_unlock_bridge.js";
 
@@ -16,6 +17,9 @@ export function attachInvestigationSubsystem(engine, {
     if (!engine || !engine.state) {
         return { success: false, reason: "ENGINE_NOT_READY" };
     }
+
+    const cardRuntimePolicy = attachCardRuntimePolicy(engine.deckManager);
+    if (!cardRuntimePolicy.success) return cardRuntimePolicy;
 
     const runtime = attachInvestigationRuntime(engine, {
         ...runtimeOptions,
@@ -39,7 +43,8 @@ export function attachInvestigationSubsystem(engine, {
     return {
         success: true,
         runtimeAttached: true,
-        unlockAttached: true
+        unlockAttached: true,
+        cardRuntimePolicyAttached: true
     };
 }
 
