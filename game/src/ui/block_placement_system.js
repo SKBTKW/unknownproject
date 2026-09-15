@@ -1,4 +1,4 @@
-import { resolvePlacementGeometry } from '../core/placement_geometry.js';
+import { PlacementPreviewResolver } from '../presentation/placement_preview_resolver.js';
 
 /* =============================================================
    game/src/ui/block_placement_system.js
@@ -12,6 +12,7 @@ import { resolvePlacementGeometry } from '../core/placement_geometry.js';
         constructor() {
             this.activeSelectedCard = null;
             this.activeSelectedCardIdx = -1;
+            this.previewResolver = new PlacementPreviewResolver();
         }
 
         /**
@@ -47,8 +48,8 @@ import { resolvePlacementGeometry } from '../core/placement_geometry.js';
 
         /**
          * 2. 土地カード選択時の「置ける候補マス」全発光ハイライト (常時点灯パルス)
-         * @param {Object} card 
-         * @param {Object} gameState 
+         * @param {Object} card
+         * @param {Object} gameState
          */
         highlightPlaceableCandidates(card, gameState) {
             if (!card || !gameState || gameState.hasPickedThisTurn) {
@@ -58,26 +59,13 @@ import { resolvePlacementGeometry } from '../core/placement_geometry.js';
 
             this.clearHoverPreviews();
 
-            const size = (gameState.stage && gameState.stage.size) ? gameState.stage.size : (gameState.grid ? gameState.grid.length : 5);
-
-            const terrain = card.terrain || card;
-
-            for (let r = 0; r < size; r++) {
-                for (let c = 0; c < size; c++) {
-                    const placement = resolvePlacementGeometry(card, r, c);
-                    const check = (typeof gameState.canPlaceShape === "function")
-                        ? gameState.canPlaceShape(placement.startR, placement.startC, placement.shape, terrain)
-                        : (gameState.gridEngine ? gameState.gridEngine.canPlaceShape(placement.startR, placement.startC, placement.shape, terrain) : false);
-                    const canPlace = (typeof check === 'object' && check !== null) ? check.can : (check === true);
-                    const targetEl = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
-                    if (targetEl) {
-                        if (canPlace) {
-                            targetEl.classList.add("placeable-candidate");
-                        } else {
-                            targetEl.classList.remove("placeable-candidate");
-                        }
-                    }
-                }
+            const candidates = this.previewResolver.resolveCandidates(card, gameState);
+            for (const candidate of candidates) {
+                const { r, c } = candidate.anchor;
+                const targetEl = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
+                if (!targetEl) continue;
+                if (candidate.valid) targetEl.classList.add("placeable-candidate");
+                else targetEl.classList.remove("placeable-candidate");
             }
         }
 
@@ -96,14 +84,12 @@ import { resolvePlacementGeometry } from '../core/placement_geometry.js';
 
             this.clearHoverPreviews();
 
-            const terrain = card.terrain || card;
-            const placement = resolvePlacementGeometry(card, r, c);
-            const check = gameState.canPlaceShape(placement.startR, placement.startC, placement.shape, terrain);
-            const isValid = (typeof check === 'object' && check !== null) ? check.can : check;
-
+            const preview = this.previewResolver.resolveHover(card, gameState, r, c);
+            if (!preview) return;
+            const isValid = preview.valid;
             const size = (gameState.stage && gameState.stage.size) ? gameState.stage.size : 5;
 
-            for (const cell of placement.cells) {
+            for (const cell of preview.placement.cells) {
                 if (cell.r >= 0 && cell.r < size && cell.c >= 0 && cell.c < size) {
                     const targetEl = document.querySelector(`.cell[data-r="${cell.r}"][data-c="${cell.c}"]`);
                     if (targetEl) {
@@ -115,9 +101,7 @@ import { resolvePlacementGeometry } from '../core/placement_geometry.js';
             // ⚠️ 配置不可マスの場合、理由一覧をツールチップポップアップ表示
             if (!isValid && typeof window !== "undefined" && window.tooltipSystemInstance && typeof window.tooltipSystemInstance.showCustom === "function") {
                 const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' && window.I18n ? window.I18n : { t: k => k });
-                const reasons = (check && Array.isArray(check.reasons) && check.reasons.length > 0) 
-                    ? check.reasons 
-                    : (check && check.reason ? [check.reason] : ["NOT_ADJACENT"]);
+                const reasons = preview.reasons.length > 0 ? preview.reasons : ["NOT_ADJACENT"];
 
                 const titleText = I18n.t("TOOLTIP_CANNOT_PLACE_TITLE");
                 const itemsHtml = reasons.map(reasonKey => {
@@ -150,4 +134,3 @@ import { resolvePlacementGeometry } from '../core/placement_geometry.js';
 const BlockPlacementSystem = (typeof globalThis !== "undefined" && globalThis.BlockPlacementSystem) ? globalThis.BlockPlacementSystem : null;
 export { BlockPlacementSystem };
 export default BlockPlacementSystem;
-
