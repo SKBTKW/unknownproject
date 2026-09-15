@@ -2,6 +2,10 @@ import {
     Web25DPhaseCRenderer
 } from './web25d_phase_c_renderer.js';
 import { resolveWeb25DElevationPixels } from './web25d_canvas_renderer.js';
+import {
+    BOARD_INPUT_COMMANDS,
+    createBoardInputCommand
+} from './board_input_contract.js';
 
 function drawDiamond(ctx, center, halfW, halfH) {
     ctx.beginPath();
@@ -37,6 +41,45 @@ export class Web25DPhaseFRenderer extends Web25DPhaseCRenderer {
     render() {
         super.render();
         this.drawTrialOverlay();
+    }
+
+    handlePointerMove(event) {
+        const isTrial = this.readModel?.presentation?.contextMode === 'TRIAL';
+        if (!isTrial) return super.handlePointerMove(event);
+
+        const point = this.getCanvasPointFromEvent(event);
+        const cell = this.getLogicalCellAtCanvasPoint(point.x, point.y);
+        if (sameCell(cell, this.lastPointerCell)) return cell;
+
+        this.lastPointerCell = cell;
+        const readCell = cell ? this.getReadModelCell(cell) : null;
+        const routeId = readCell?.trial?.route?.routeId
+            || this.readModel?.trial?.activeRouteId
+            || null;
+        const canHover = Boolean(readCell?.trial?.interceptionCandidate && routeId);
+
+        if (canHover) {
+            this.bridge.dispatch(createBoardInputCommand(
+                BOARD_INPUT_COMMANDS.HOVER_TRIAL_INTERCEPTION,
+                { cell, routeId }
+            ));
+        } else {
+            this.bridge.dispatch(createBoardInputCommand(
+                BOARD_INPUT_COMMANDS.CLEAR_TRIAL_HOVER
+            ));
+        }
+        return cell;
+    }
+
+    handlePointerLeave() {
+        const isTrial = this.readModel?.presentation?.contextMode === 'TRIAL';
+        if (!isTrial) return super.handlePointerLeave();
+        if (!this.lastPointerCell) return;
+
+        this.lastPointerCell = null;
+        this.bridge.dispatch(createBoardInputCommand(
+            BOARD_INPUT_COMMANDS.CLEAR_TRIAL_HOVER
+        ));
     }
 
     getReadModelCell(cellRef) {
