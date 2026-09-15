@@ -12,11 +12,37 @@ function drawDiamond(ctx, center, halfW, halfH) {
     ctx.closePath();
 }
 
+function drawLine(ctx, points) {
+    if (!points || points.length < 2) return;
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(points[i].x, points[i].y);
+    }
+    ctx.stroke();
+}
+
+function translateEdge(points, lift) {
+    return (points || []).map(point => ({ x: point.x, y: point.y - lift }));
+}
+
+function resourceCode(resource) {
+    switch (resource) {
+        case 'food': return 'F';
+        case 'wood': return 'M';
+        case 'defense': return 'D';
+        case 'mystic': return 'X';
+        default: return '?';
+    }
+}
+
 /**
- * Phase 2.5D-C visual layer.
+ * Phase 2.5D-C/D visual layer.
  *
- * Adds HQ, Resource Socket and interaction emphasis on top of the Phase B
- * terrain renderer. This file remains disposable Web-only rendering code.
+ * Adds HQ, Resource Socket, interaction emphasis, multi-cell placement
+ * continuity and presentation-provided LAND_PRIMARY production markers on top
+ * of the Phase B terrain renderer. This file remains disposable Web-only
+ * rendering code and never recalculates placement or production semantics.
  */
 export class Web25DPhaseCRenderer extends Web25DCanvasRenderer {
     drawUnplacedCell(cell, projected) {
@@ -33,6 +59,8 @@ export class Web25DPhaseCRenderer extends Web25DCanvasRenderer {
             y: projected.screenCenter.y - lift
         };
 
+        this.drawPlacementContinuity(cell, projected, lift);
+
         if (cell.isHQ) {
             this.drawHQ(center);
         } else if (cell.socketResource) {
@@ -41,7 +69,60 @@ export class Web25DPhaseCRenderer extends Web25DCanvasRenderer {
             this.drawDormantSocketCore(center);
         }
 
+        this.drawLandPrimaryMarker(cell, center);
         this.drawInteractionEmphasis(cell, center, lift);
+    }
+
+    drawPlacementContinuity(cell, projected, lift) {
+        const samePlacementEdges = (cell.edges || []).filter(edge => edge?.samePlacementGroup);
+        if (samePlacementEdges.length === 0) return;
+
+        const ctx = this.ctx;
+        const topFill = this.resolveTerrainTopFill(cell);
+
+        for (const edge of samePlacementEdges) {
+            const screenEdge = projected.projectedEdges?.[edge.direction];
+            if (!screenEdge) continue;
+            const raisedEdge = translateEdge(screenEdge, lift);
+
+            // Paint back most of the ordinary cell outline so cells from the
+            // same placement read as one block while the logical split remains
+            // faintly visible for interaction and debugging.
+            ctx.strokeStyle = topFill;
+            ctx.lineWidth = 2.6;
+            drawLine(ctx, raisedEdge);
+
+            ctx.strokeStyle = 'rgba(190, 205, 192, 0.18)';
+            ctx.lineWidth = 0.6;
+            drawLine(ctx, raisedEdge);
+        }
+    }
+
+    drawLandPrimaryMarker(cell, center) {
+        if (cell.display?.role !== 'LAND_PRIMARY') return;
+
+        const production = cell.display?.production || null;
+        const primary = production?.primaryYield || null;
+        const label = primary
+            ? `${resourceCode(primary.resource)}${primary.amount}`
+            : 'P';
+
+        const ctx = this.ctx;
+        const width = Math.max(14, 7 + label.length * 6);
+        const x = Math.round(center.x - width / 2);
+        const y = Math.round(center.y + 5);
+
+        ctx.fillStyle = 'rgba(31, 35, 31, 0.78)';
+        ctx.fillRect(x, y, width, 10);
+        ctx.strokeStyle = 'rgba(218, 224, 207, 0.58)';
+        ctx.lineWidth = 0.8;
+        ctx.strokeRect?.(x, y, width, 10);
+
+        ctx.font = '8px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'rgba(236, 238, 222, 0.92)';
+        ctx.fillText(label, center.x, y + 5);
     }
 
     drawDormantSocketCore(center) {
