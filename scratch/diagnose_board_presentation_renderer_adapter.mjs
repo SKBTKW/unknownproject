@@ -76,6 +76,7 @@ let readModel = {
             onRoute: false,
             route: null,
             interceptionCandidate: null,
+            interceptionSelected: false,
             plannedIntercept: null,
             battleMarker: null
         }
@@ -123,6 +124,7 @@ readModel = {
                 isRouteEnd: false,
                 routeDirection: 'east'
             },
+            interceptionSelected: true,
             interceptionCandidate: {
                 canIntercept: true,
                 isBlockPlannedByOther: false
@@ -140,8 +142,9 @@ readModel = {
 component.applyBoardPresentation();
 
 assert(board.getAttribute('data-board-view-mode') === '2_5D', 'view token missing');
-assert(cell.classList.contains('board-logical-focus'), 'logical focus not applied');
-assert(cell.classList.contains('board-logical-selected'), 'logical selection not applied');
+assert(!cell.classList.contains('board-logical-hover'), 'Trial context leaked normal hover');
+assert(!cell.classList.contains('board-logical-focus'), 'Trial context leaked normal focus');
+assert(!cell.classList.contains('board-logical-selected'), 'Trial context leaked normal selection');
 assert(cell.classList.contains('trial-route-cell'), 'Trial route not applied');
 assert(cell.classList.contains('trial-route-entry'), 'Trial entry not applied');
 assert(cell.classList.contains('trial-interception-candidate'), 'candidate not applied');
