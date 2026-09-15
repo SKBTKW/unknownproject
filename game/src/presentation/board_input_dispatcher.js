@@ -18,7 +18,11 @@ export class BoardInputDispatcher {
             case BOARD_INPUT_COMMANDS.TOGGLE_VIEW_MODE: return this._ok(command, this.presentationState.toggleViewMode());
             case BOARD_INPUT_COMMANDS.SET_CONTEXT_MODE: return this._ok(command, this.presentationState.setContextMode(payload.contextMode));
             case BOARD_INPUT_COMMANDS.TOGGLE_CONTEXT_MODE: return this._ok(command, this.presentationState.toggleContextMode());
-            case BOARD_INPUT_COMMANDS.SELECT_CELL: return this._ok(command, this.presentationState.selectCell(payload.cell));
+            case BOARD_INPUT_COMMANDS.SELECT_CELL: {
+                const selected = this.presentationState.selectCell(payload.cell);
+                this._notify("selectCell", command);
+                return this._ok(command, selected);
+            }
             case BOARD_INPUT_COMMANDS.CLEAR_SELECTION: this.presentationState.clearSelection(); return this._ok(command, this.presentationState.snapshot());
             case BOARD_INPUT_COMMANDS.HOVER_CELL: return this._ok(command, this.presentationState.hoverCell(payload.cell));
             case BOARD_INPUT_COMMANDS.CLEAR_HOVER: this.presentationState.clearHover(); return this._ok(command, this.presentationState.snapshot());
@@ -28,6 +32,11 @@ export class BoardInputDispatcher {
             case BOARD_INPUT_COMMANDS.SELECT_TRIAL_INTERCEPTION: return this._delegate("selectTrialInterception", command);
             default: return { success: false, type, reason: "UNHANDLED_BOARD_INPUT_COMMAND" };
         }
+    }
+    _notify(handlerName, command) {
+        const handler = this.handlers[handlerName];
+        if (typeof handler !== "function") return;
+        handler(command.payload, command);
     }
     _delegate(handlerName, command) {
         const handler = this.handlers[handlerName];

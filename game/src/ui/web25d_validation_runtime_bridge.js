@@ -43,7 +43,13 @@ export function attachWeb25DValidationRuntime(uiController, {
     boardEl.parentNode.insertBefore(canvas, boardEl.nextSibling);
 
     const rendererBridge = new BoardRendererBridge({
-        presentationState: uiController.boardPresentationState
+        presentationState: uiController.boardPresentationState,
+        inputHandlers: {
+            selectCell: ({ cell }) => {
+                if (!cell || typeof uiController.onCellClick !== 'function') return false;
+                return uiController.onCellClick(cell.r, cell.c);
+            }
+        }
     });
 
     let runtime = null;
