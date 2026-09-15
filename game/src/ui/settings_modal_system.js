@@ -188,18 +188,12 @@ export class SettingsModalSystem {
         // ① ゲームプレイ項目
         const mTitle = I18n ? I18n.t("UI_SETTINGS_MULLIGAN_TITLE") : "Mulligan";
         const mDesc = I18n ? I18n.t("UI_SETTINGS_MULLIGAN_DESC") : "";
-        const mOptTrue = I18n ? I18n.t("UI_SETTINGS_MULLIGAN_OPT_TRUE") : "ON";
-        const mOptFalse = I18n ? I18n.t("UI_SETTINGS_MULLIGAN_OPT_FALSE") : "OFF";
 
         const wTitle = I18n ? I18n.t("UI_SETTINGS_WARN_TITLE") : "Turn End Warning";
         const wDesc = I18n ? I18n.t("UI_SETTINGS_WARN_DESC") : "";
-        const wOptTrue = I18n ? I18n.t("UI_SETTINGS_WARN_OPT_TRUE") : "ON";
-        const wOptFalse = I18n ? I18n.t("UI_SETTINGS_WARN_OPT_FALSE") : "OFF";
 
         const afTitle = I18n ? I18n.t("UI_SETTINGS_AUTO_FALLBACK_TITLE") : "Food Deficit Fallback";
-        const afDesc = I18n ? I18n.t("UI_SETTINGS_AUTO_FALLBACK_DESC") : "Use resources to prevent food deficit damage";
-        const afOptTrue = I18n ? I18n.t("UI_SETTINGS_AUTO_FALLBACK_OPT_TRUE") : "Automatic";
-        const afOptFalse = I18n ? I18n.t("UI_SETTINGS_AUTO_FALLBACK_OPT_FALSE") : "Confirm";
+        const afDesc = I18n ? I18n.t("UI_SETTINGS_AUTO_FALLBACK_DESC") : "";
 
         const hmTitle = I18n ? I18n.t("UI_SETTINGS_HAND_MODE_TITLE") : "Hand Mode";
         const hmDesc = I18n ? I18n.t("UI_SETTINGS_HAND_MODE_DESC") : "";
@@ -208,16 +202,14 @@ export class SettingsModalSystem {
 
         const rotTitle = I18n ? I18n.t("UI_SETTINGS_ROTATE_TITLE") : "Right-Click Rotate";
         const rotDesc = I18n ? I18n.t("UI_SETTINGS_ROTATE_DESC") : "";
-        const rotOptTrue = I18n ? I18n.t("UI_SETTINGS_ROTATE_OPT_TRUE") : "ON";
-        const rotOptFalse = I18n ? I18n.t("UI_SETTINGS_ROTATE_OPT_FALSE") : "OFF";
         const advisorTitle = I18n ? I18n.t("UI_SETTINGS_ADVISOR_TITLE") : "Advisor";
-        const advisorDesc = I18n ? I18n.t("UI_SETTINGS_ADVISOR_DESC") : "Show advisor guidance";
+        const advisorDesc = I18n ? I18n.t("UI_SETTINGS_ADVISOR_DESC") : "";
         const advisorHoverTitle = I18n ? I18n.t("UI_SETTINGS_ADVISOR_HOVER_TITLE") : "Hover expansion";
-        const advisorHoverDesc = I18n ? I18n.t("UI_SETTINGS_ADVISOR_HOVER_DESC") : "Expand the advisor from the right edge";
+        const advisorHoverDesc = I18n ? I18n.t("UI_SETTINGS_ADVISOR_HOVER_DESC") : "";
 
         // ② グラフィック項目
         const resolutionTitle = I18n ? I18n.t("UI_SETTINGS_RESOLUTION_TITLE") : "Resolution";
-        const resolutionDesc = I18n ? I18n.t("UI_SETTINGS_RESOLUTION_DESC") : "Target display resolution";
+        const resolutionDesc = I18n ? I18n.t("UI_SETTINGS_RESOLUTION_DESC") : "";
         const recommendedLabel = I18n ? I18n.t("UI_SETTINGS_RESOLUTION_RECOMMENDED") : " (Recommended)";
         const resolutionOptions = RESOLUTION_PRESETS.map(preset => {
             const suffix = preset.recommended ? recommendedLabel : "";
@@ -225,8 +217,6 @@ export class SettingsModalSystem {
         }).join("");
         const fTitle = I18n ? I18n.t("UI_SETTINGS_FOCUS_TITLE") : "DoF Blur";
         const fDesc = I18n ? I18n.t("UI_SETTINGS_FOCUS_DESC") : "";
-        const fOptTrue = I18n ? I18n.t("UI_SETTINGS_FOCUS_OPT_TRUE") : "ON";
-        const fOptFalse = I18n ? I18n.t("UI_SETTINGS_FOCUS_OPT_FALSE") : "OFF";
 
         const langTitle = I18n ? I18n.t("UI_SETTINGS_LANG_TITLE") : "Language";
         const langDesc = I18n ? I18n.t("UI_SETTINGS_LANG_DESC") : "";
@@ -243,19 +233,27 @@ export class SettingsModalSystem {
         const seDesc = I18n ? I18n.t("UI_SETTINGS_SE_DESC") : "";
         const bgmTitle = I18n ? I18n.t("UI_SETTINGS_BGM_TITLE") : "BGM";
         const bgmDesc = I18n ? I18n.t("UI_SETTINGS_BGM_DESC") : "";
-        const sndOptOn = I18n ? I18n.t("UI_SETTINGS_SOUND_OPT_ON") : "ON";
-        const sndOptOff = I18n ? I18n.t("UI_SETTINGS_SOUND_OPT_OFF") : "OFF";
+
+        const createToggleMarkup = (id, key) => {
+            const checked = Boolean(this.settings.get(key));
+            return `
+                <button type="button" role="switch" id="${id}" class="setting-toggle" aria-checked="${checked}">
+                    <span class="setting-toggle-track"></span>
+                    <span class="setting-toggle-thumb"></span>
+                </button>
+            `;
+        };
 
         this.modalEl.innerHTML = `
             <div class="directive-modal-window settings-modal-window">
-                <div class="directive-modal-header">
-                    <h3 class="directive-modal-title">
+                <div class="directive-modal-header settings-modal-header">
+                    <h3 class="directive-modal-title settings-modal-title">
                         <span>⚙️</span> ${titleText}
                     </h3>
                     <button class="directive-modal-close-btn" id="btnCloseSettings">✕</button>
                 </div>
                 
-                <div class="directive-modal-desc">
+                <div class="directive-modal-desc settings-modal-desc">
                     ${descText}
                 </div>
 
@@ -275,10 +273,12 @@ export class SettingsModalSystem {
                                 <div class="setting-item-title">${hmTitle}</div>
                                 <div class="setting-item-desc">${hmDesc}</div>
                             </div>
-                            <select id="optDefaultHandMode" class="setting-select-control">
-                                <option value="standard">${hmOptStd}</option>
-                                <option value="minimal">${hmOptMin}</option>
-                            </select>
+                            <div class="setting-item-control">
+                                <select id="optDefaultHandMode" class="setting-select-control">
+                                    <option value="standard">${hmOptStd}</option>
+                                    <option value="minimal">${hmOptMin}</option>
+                                </select>
+                            </div>
                         </div>
 
                         <!-- マリガン確認 -->
@@ -287,10 +287,9 @@ export class SettingsModalSystem {
                                 <div class="setting-item-title">${mTitle}</div>
                                 <div class="setting-item-desc">${mDesc}</div>
                             </div>
-                            <select id="optMulliganConfirm" class="setting-select-control">
-                                <option value="true">${mOptTrue}</option>
-                                <option value="false">${mOptFalse}</option>
-                            </select>
+                            <div class="setting-item-control">
+                                ${createToggleMarkup("optMulliganConfirm", "mulliganConfirm")}
+                            </div>
                         </div>
 
                         <!-- 土地未配置ターン終了警告 -->
@@ -299,10 +298,9 @@ export class SettingsModalSystem {
                                 <div class="setting-item-title">${wTitle}</div>
                                 <div class="setting-item-desc">${wDesc}</div>
                             </div>
-                            <select id="optTurnEndWarning" class="setting-select-control">
-                                <option value="true">${wOptTrue}</option>
-                                <option value="false">${wOptFalse}</option>
-                            </select>
+                            <div class="setting-item-control">
+                                ${createToggleMarkup("optTurnEndWarning", "turnEndWarning")}
+                            </div>
                         </div>
 
                         <!-- 食料不足時の自動補填 -->
@@ -311,10 +309,9 @@ export class SettingsModalSystem {
                                 <div class="setting-item-title">${afTitle}</div>
                                 <div class="setting-item-desc">${afDesc}</div>
                             </div>
-                            <select id="optAutoFoodDeficitFallback" class="setting-select-control">
-                                <option value="true">${afOptTrue}</option>
-                                <option value="false">${afOptFalse}</option>
-                            </select>
+                            <div class="setting-item-control">
+                                ${createToggleMarkup("optAutoFoodDeficitFallback", "autoFoodDeficitFallback")}
+                            </div>
                         </div>
 
                         <!-- 右クリック回転 -->
@@ -323,32 +320,31 @@ export class SettingsModalSystem {
                                 <div class="setting-item-title">${rotTitle}</div>
                                 <div class="setting-item-desc">${rotDesc}</div>
                             </div>
-                            <select id="optAutoRotate" class="setting-select-control">
-                                <option value="true">${rotOptTrue}</option>
-                                <option value="false">${rotOptFalse}</option>
-                            </select>
+                            <div class="setting-item-control">
+                                ${createToggleMarkup("optAutoRotate", "autoRotateOnRightClick")}
+                            </div>
                         </div>
 
+                        <!-- 側近表示 -->
                         <div class="setting-item-row">
                             <div class="setting-item-copy">
                                 <div class="setting-item-title">${advisorTitle}</div>
                                 <div class="setting-item-desc">${advisorDesc}</div>
                             </div>
-                            <select id="optAdvisorEnabled" class="setting-select-control">
-                                <option value="true">${mOptTrue}</option>
-                                <option value="false">${mOptFalse}</option>
-                            </select>
+                            <div class="setting-item-control">
+                                ${createToggleMarkup("optAdvisorEnabled", "advisorEnabled")}
+                            </div>
                         </div>
 
+                        <!-- 側近ホバー展開 -->
                         <div class="setting-item-row">
                             <div class="setting-item-copy">
                                 <div class="setting-item-title">${advisorHoverTitle}</div>
                                 <div class="setting-item-desc">${advisorHoverDesc}</div>
                             </div>
-                            <select id="optAdvisorHoverExpand" class="setting-select-control">
-                                <option value="true">${mOptTrue}</option>
-                                <option value="false">${mOptFalse}</option>
-                            </select>
+                            <div class="setting-item-control">
+                                ${createToggleMarkup("optAdvisorHoverExpand", "advisorHoverExpand")}
+                            </div>
                         </div>
                     </div>
 
@@ -360,9 +356,11 @@ export class SettingsModalSystem {
                                 <div class="setting-item-title">${resolutionTitle}</div>
                                 <div class="setting-item-desc">${resolutionDesc}</div>
                             </div>
-                            <select id="optResolution" class="setting-select-control setting-select-resolution">
-                                ${resolutionOptions}
-                            </select>
+                            <div class="setting-item-control">
+                                <select id="optResolution" class="setting-select-control setting-select-resolution">
+                                    ${resolutionOptions}
+                                </select>
+                            </div>
                         </div>
                         <!-- 言語設定 -->
                         <div class="setting-item-row">
@@ -370,34 +368,37 @@ export class SettingsModalSystem {
                                 <div class="setting-item-title">${langTitle}</div>
                                 <div class="setting-item-desc">${langDesc}</div>
                             </div>
-                            <select id="optLanguage" class="setting-select-control">
-                                <option value="ja">${langJa}</option>
-                                <option value="en">${langEn}</option>
-                            </select>
+                            <div class="setting-item-control">
+                                <select id="optLanguage" class="setting-select-control">
+                                    <option value="ja">${langJa}</option>
+                                    <option value="en">${langEn}</option>
+                                </select>
+                            </div>
                         </div>
 
-                        <!-- 2層DoFフォーカス演出 -->
+                        <!-- フォーカス演出 -->
                         <div class="setting-item-row">
                             <div class="setting-item-copy">
                                 <div class="setting-item-title">${fTitle}</div>
                                 <div class="setting-item-desc">${fDesc}</div>
                             </div>
-                            <select id="optFocusDoFBlur" class="setting-select-control">
-                                <option value="true">${fOptTrue}</option>
-                                <option value="false">${fOptFalse}</option>
-                            </select>
+                            <div class="setting-item-control">
+                                ${createToggleMarkup("optFocusDoFBlur", "focusDoFBlur")}
+                            </div>
                         </div>
 
-                        <!-- 演出アニメーション速度 -->
+                        <!-- 演出速度 -->
                         <div class="setting-item-row">
                             <div class="setting-item-copy">
                                 <div class="setting-item-title">${animTitle}</div>
                                 <div class="setting-item-desc">${animDesc}</div>
                             </div>
-                            <select id="optAnimSpeed" class="setting-select-control">
-                                <option value="normal">${animNorm}</option>
-                                <option value="fast">${animFast}</option>
-                            </select>
+                            <div class="setting-item-control">
+                                <select id="optAnimSpeed" class="setting-select-control">
+                                    <option value="normal">${animNorm}</option>
+                                    <option value="fast">${animFast}</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
@@ -409,10 +410,9 @@ export class SettingsModalSystem {
                                 <div class="setting-item-title">${seTitle}</div>
                                 <div class="setting-item-desc">${seDesc}</div>
                             </div>
-                            <select id="optSeEnabled" class="setting-select-control">
-                                <option value="true">${sndOptOn}</option>
-                                <option value="false">${sndOptOff}</option>
-                            </select>
+                            <div class="setting-item-control">
+                                ${createToggleMarkup("optSeEnabled", "seEnabled")}
+                            </div>
                         </div>
 
                         <!-- 背景音楽 (BGM) -->
@@ -421,17 +421,16 @@ export class SettingsModalSystem {
                                 <div class="setting-item-title">${bgmTitle}</div>
                                 <div class="setting-item-desc">${bgmDesc}</div>
                             </div>
-                            <select id="optBgmEnabled" class="setting-select-control">
-                                <option value="true">${sndOptOn}</option>
-                                <option value="false">${sndOptOff}</option>
-                            </select>
+                            <div class="setting-item-control">
+                                ${createToggleMarkup("optBgmEnabled", "bgmEnabled")}
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="directive-modal-footer settings-modal-footer">
                     <button id="btnResetSettings" class="settings-reset-btn">${resetBtnText}</button>
-                    <button class="directive-modal-btn-close" id="btnSaveCloseSettings">${closeBtnText}</button>
+                    <button class="directive-modal-btn-close settings-btn-close" id="btnSaveCloseSettings">${closeBtnText}</button>
                 </div>
             </div>
         `;
@@ -459,24 +458,47 @@ export class SettingsModalSystem {
             this.updateControlsFromSettings();
         };
 
-        // 各種セレクト変更イベント
-        const selMulligan = this.modalEl.querySelector("#optMulliganConfirm");
-        const selTurnEnd = this.modalEl.querySelector("#optTurnEndWarning");
-        const selAutoFallback = this.modalEl.querySelector("#optAutoFoodDeficitFallback");
+        // トグルバインド共通ヘルパー
+        const bindToggle = (id, key, onToggle) => {
+            const btn = this.modalEl.querySelector(id);
+            if (!btn) return;
+            const toggleAction = () => {
+                const current = Boolean(this.settings.get(key));
+                const next = !current;
+                this.settings.set(key, next);
+                this.syncToggleControl(btn, next);
+                if (typeof onToggle === "function") onToggle(next);
+            };
+            btn.onclick = toggleAction;
+            // 仮想環境/テスト互換性用 onchange プロパティサポート
+            btn.onchange = (e) => {
+                const next = (e && e.target && e.target.value !== undefined)
+                    ? (e.target.value === "true" || e.target.value === true)
+                    : !Boolean(this.settings.get(key));
+                this.settings.set(key, next);
+                this.syncToggleControl(btn, next);
+                if (typeof onToggle === "function") onToggle(next);
+            };
+        };
+
+        bindToggle("#optMulliganConfirm", "mulliganConfirm");
+        bindToggle("#optTurnEndWarning", "turnEndWarning");
+        bindToggle("#optAutoFoodDeficitFallback", "autoFoodDeficitFallback");
+        bindToggle("#optAutoRotate", "autoRotateOnRightClick");
+        bindToggle("#optAdvisorEnabled", "advisorEnabled", () => {
+            if (typeof window !== "undefined" && window.gameUI) window.gameUI.render();
+        });
+        bindToggle("#optAdvisorHoverExpand", "advisorHoverExpand");
+        bindToggle("#optFocusDoFBlur", "focusDoFBlur");
+        bindToggle("#optSeEnabled", "seEnabled");
+        bindToggle("#optBgmEnabled", "bgmEnabled");
+
+        // セレクト変更イベント
         const selHandMode = this.modalEl.querySelector("#optDefaultHandMode");
-        const selAutoRotate = this.modalEl.querySelector("#optAutoRotate");
-        const selAdvisor = this.modalEl.querySelector("#optAdvisorEnabled");
-        const selAdvisorHover = this.modalEl.querySelector("#optAdvisorHoverExpand");
         const selResolution = this.modalEl.querySelector("#optResolution");
-        const selFocus = this.modalEl.querySelector("#optFocusDoFBlur");
         const selLanguage = this.modalEl.querySelector("#optLanguage");
         const selAnimSpeed = this.modalEl.querySelector("#optAnimSpeed");
-        const selSe = this.modalEl.querySelector("#optSeEnabled");
-        const selBgm = this.modalEl.querySelector("#optBgmEnabled");
 
-        if (selMulligan) selMulligan.onchange = (e) => this.settings.set("mulliganConfirm", e.target.value === "true");
-        if (selTurnEnd) selTurnEnd.onchange = (e) => this.settings.set("turnEndWarning", e.target.value === "true");
-        if (selAutoFallback) selAutoFallback.onchange = (e) => this.settings.set("autoFoodDeficitFallback", e.target.value === "true");
         if (selHandMode) selHandMode.onchange = (e) => {
             this.settings.set("defaultHandMode", e.target.value);
             if (typeof window !== "undefined" && window.gameUI) {
@@ -484,14 +506,7 @@ export class SettingsModalSystem {
                 window.gameUI.render();
             }
         };
-        if (selAutoRotate) selAutoRotate.onchange = (e) => this.settings.set("autoRotateOnRightClick", e.target.value === "true");
-        if (selAdvisor) selAdvisor.onchange = (e) => {
-            this.settings.set("advisorEnabled", e.target.value === "true");
-            if (typeof window !== "undefined" && window.gameUI) window.gameUI.render();
-        };
-        if (selAdvisorHover) selAdvisorHover.onchange = (e) => this.settings.set("advisorHoverExpand", e.target.value === "true");
         if (selResolution) selResolution.onchange = (e) => this.settings.set("resolution", e.target.value);
-        if (selFocus) selFocus.onchange = (e) => this.settings.set("focusDoFBlur", e.target.value === "true");
         if (selLanguage) selLanguage.onchange = (e) => {
             const lang = e.target.value;
             this.settings.set("language", lang);
@@ -506,10 +521,23 @@ export class SettingsModalSystem {
             }
         };
         if (selAnimSpeed) selAnimSpeed.onchange = (e) => this.settings.set("animSpeed", e.target.value);
-        if (selSe) selSe.onchange = (e) => this.settings.set("seEnabled", e.target.value === "true");
-        if (selBgm) selBgm.onchange = (e) => this.settings.set("bgmEnabled", e.target.value === "true");
 
         this.updateControlsFromSettings();
+    }
+
+    /**
+     * 🔘 トグルコントロールの同期
+     */
+    syncToggleControl(el, checked) {
+        if (!el) return;
+        const boolVal = Boolean(checked);
+        if (typeof el.setAttribute === "function") {
+            el.setAttribute("aria-checked", String(boolVal));
+        }
+        el.value = String(boolVal);
+        if (el.classList && typeof el.classList.toggle === "function") {
+            el.classList.toggle("is-active", boolVal);
+        }
     }
 
     /**
@@ -544,24 +572,34 @@ export class SettingsModalSystem {
     updateControlsFromSettings() {
         if (!this.modalEl) return;
 
+        // トグルコントロールの更新
+        const updateToggle = (selector, key) => {
+            const el = this.modalEl.querySelector(selector);
+            if (el) {
+                this.syncToggleControl(el, this.settings.get(key));
+            }
+        };
+
+        updateToggle("#optMulliganConfirm", "mulliganConfirm");
+        updateToggle("#optTurnEndWarning", "turnEndWarning");
+        updateToggle("#optAutoFoodDeficitFallback", "autoFoodDeficitFallback");
+        updateToggle("#optAutoRotate", "autoRotateOnRightClick");
+        updateToggle("#optAdvisorEnabled", "advisorEnabled");
+        updateToggle("#optAdvisorHoverExpand", "advisorHoverExpand");
+        updateToggle("#optFocusDoFBlur", "focusDoFBlur");
+        updateToggle("#optSeEnabled", "seEnabled");
+        updateToggle("#optBgmEnabled", "bgmEnabled");
+
+        // セレクトコントロールの更新
         const setVal = (selector, val) => {
             const el = this.modalEl.querySelector(selector);
             if (el) el.value = String(val);
         };
 
-        setVal("#optMulliganConfirm", this.settings.get("mulliganConfirm"));
-        setVal("#optTurnEndWarning", this.settings.get("turnEndWarning"));
-        setVal("#optAutoFoodDeficitFallback", this.settings.get("autoFoodDeficitFallback"));
         setVal("#optDefaultHandMode", this.settings.get("defaultHandMode"));
-        setVal("#optAutoRotate", this.settings.get("autoRotateOnRightClick"));
-        setVal("#optAdvisorEnabled", this.settings.get("advisorEnabled"));
-        setVal("#optAdvisorHoverExpand", this.settings.get("advisorHoverExpand"));
         setVal("#optResolution", this.settings.get("resolution"));
-        setVal("#optFocusDoFBlur", this.settings.get("focusDoFBlur"));
         setVal("#optLanguage", this.settings.get("language"));
         setVal("#optAnimSpeed", this.settings.get("animSpeed"));
-        setVal("#optSeEnabled", this.settings.get("seEnabled"));
-        setVal("#optBgmEnabled", this.settings.get("bgmEnabled"));
     }
 
     open() {

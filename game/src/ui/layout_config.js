@@ -141,8 +141,8 @@ const UILayoutConfig = {
 
     // ⚙️ 設定モーダル: タブ内容量に依存しない固定外形
     settingsModal: {
-        width: "min(680px, 92vw)",
-        height: "min(680px, calc(100vh - 64px))"
+        width: "min(840px, 94vw)",
+        height: "min(720px, calc(100vh - 48px))"
     },
 
     // ✨ 3. モジュール化バフ表示コンテナ

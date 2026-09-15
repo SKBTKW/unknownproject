@@ -54,51 +54,95 @@ body {
     overflow: visible;
 }
 
-/* Settings modal shared controls */
+/* Settings modal scoped styles */
 .settings-modal-window {
-    width: var(--settings-modal-width, min(680px, 92vw));
-    max-width: 92vw;
-    height: var(--settings-modal-height, min(680px, calc(100vh - 64px)));
-    max-height: calc(100vh - 64px);
+    width: var(--settings-modal-width, min(840px, 94vw));
+    max-width: 94vw;
+    height: var(--settings-modal-height, min(720px, calc(100vh - 48px)));
+    max-height: calc(100vh - 48px);
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
+    padding: 24px 28px;
+    background: #151a23;
+    border: 1px solid #283244;
+    border-radius: 12px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.75);
 }
 
-.settings-modal-window > .directive-modal-header,
-.settings-modal-window > .directive-modal-desc,
+.settings-modal-window > .settings-modal-header,
+.settings-modal-window > .settings-modal-desc,
 .settings-modal-window > .settings-tab-bar,
 .settings-modal-window > .settings-modal-footer {
     flex: 0 0 auto;
 }
 
+.settings-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #232b3b;
+}
+
+.settings-modal-title {
+    margin: 0;
+    font-size: 21px;
+    font-weight: 700;
+    color: #f1f5f9;
+    letter-spacing: 0.03em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.settings-modal-desc {
+    font-size: 13px;
+    color: #94a3b8;
+    line-height: 1.5;
+    margin: 10px 0 0;
+}
+
+/* 🗂️ Underline Tabs */
 .settings-tab-bar {
     display: flex;
-    gap: 8px;
-    margin: 12px 0 0;
-    padding-bottom: 8px;
-    border-bottom: 2px solid #2e384e;
+    gap: 24px;
+    margin: 16px 0 0;
+    padding-bottom: 0;
+    border-bottom: 1px solid #232b3b;
 }
 
 .settings-tab-btn {
-    flex: 1;
-    padding: 8px 12px;
-    border: 1px solid #3d4a63;
-    border-radius: 6px;
-    background: #1c2230;
-    color: #a4b0be;
-    font-size: 13px;
-    font-weight: 700;
+    flex: 0 0 auto;
+    padding: 8px 4px 12px;
+    border: none;
+    border-bottom: 3px solid transparent;
+    border-radius: 0;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
     cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.settings-tab-btn:hover {
+    color: #e2e8f0;
 }
 
 .settings-tab-btn.active {
-    background: #1abc9c;
-    color: #ffffff;
+    background: transparent;
+    color: #1abc9c;
+    border-bottom-color: #1abc9c;
 }
 
+/* 📜 Content Area */
 .settings-tab-content-container {
     flex: 1 1 auto;
     min-height: 0;
-    padding-right: 4px;
+    margin: 12px 0;
+    padding: 4px 12px 4px 0;
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-gutter: stable;
@@ -107,69 +151,169 @@ body {
 .settings-tab-pane {
     display: none;
     flex-direction: column;
-    gap: 12px;
 }
 
 .settings-tab-pane.active {
     display: flex;
 }
 
-.settings-modal-footer {
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 0;
-}
-
-.settings-reset-btn {
-    padding: 6px 14px;
-    border: 1px solid #e74c3c;
-    border-radius: 6px;
-    background: transparent;
-    color: #e74c3c;
-    font-size: 12px;
-    font-weight: 700;
-    cursor: pointer;
-}
-
-.setting-select-resolution {
-    min-width: 230px;
-}
-
+/* 📋 Flat Row Layout */
 .setting-item-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 14px;
-    padding: 10px 14px;
-    border: 1px solid #2a3144;
-    border-radius: 8px;
-    background: #1c2230;
+    gap: 20px;
+    padding: 14px 4px;
+    border: none;
+    border-bottom: 1px solid #1e2636;
+    border-radius: 0;
+    background: transparent;
+}
+
+.setting-item-row:last-child {
+    border-bottom: none;
 }
 
 .setting-item-copy {
+    flex: 1 1 auto;
     min-width: 0;
 }
 
 .setting-item-title {
-    color: #ffffff;
-    font-size: 13px;
-    font-weight: 700;
+    color: #f8fafc;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
 }
 
 .setting-item-desc {
-    margin-top: 2px;
-    color: #a4b0be;
-    font-size: 11px;
+    margin-top: 4px;
+    color: #94a3b8;
+    font-size: 13px;
+    line-height: 1.45;
 }
 
-.setting-select-control {
+.setting-item-control {
     flex: 0 0 auto;
-    padding: 5px 10px;
-    border: 1px solid #3d4a63;
-    border-radius: 6px;
-    background: #2b3548;
-    color: #1abc9c;
-    font-size: 12px;
-    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+/* 🔘 Toggle Switch Control */
+.setting-toggle {
+    position: relative;
+    width: 48px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid #334155;
+    border-radius: 13px;
+    background: #1e293b;
     cursor: pointer;
+    outline: none;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.setting-toggle:hover {
+    border-color: #475569;
+}
+
+.setting-toggle:focus-visible {
+    box-shadow: 0 0 0 2px #1abc9c;
+}
+
+.setting-toggle[aria-checked="true"],
+.setting-toggle.is-active {
+    background: #1abc9c;
+    border-color: #16a085;
+}
+
+.setting-toggle-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #cbd5e1;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease;
+    pointer-events: none;
+}
+
+.setting-toggle[aria-checked="true"] .setting-toggle-thumb,
+.setting-toggle.is-active .setting-toggle-thumb {
+    transform: translateX(22px);
+    background: #ffffff;
+}
+
+/* 🔽 Select Dropdown Control */
+.setting-select-control {
+    padding: 7px 12px;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    background: #1e293b;
+    color: #e2e8f0;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.setting-select-control:hover {
+    border-color: #475569;
+    background: #243147;
+}
+
+.setting-select-control:focus-visible {
+    border-color: #1abc9c;
+}
+
+.setting-select-resolution {
+    min-width: 220px;
+}
+
+/* 🦶 Footer */
+.settings-modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 14px;
+    border-top: 1px solid #232b3b;
+    margin-top: 0;
+}
+
+.settings-reset-btn {
+    padding: 7px 16px;
+    border: 1px solid #475569;
+    border-radius: 6px;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.settings-reset-btn:hover {
+    border-color: #ef4444;
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.08);
+}
+
+.settings-btn-close {
+    background: #2563eb;
+    color: #ffffff;
+    border: none;
+    padding: 8px 24px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.settings-btn-close:hover {
+    background: #1d4ed8;
 }

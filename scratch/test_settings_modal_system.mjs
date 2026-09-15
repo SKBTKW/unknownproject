@@ -85,11 +85,18 @@ function createFakeDocument() {
                 querySelector(selector) {
                     if (!selector.startsWith("#")) return null;
                     if (!controls.has(selector)) {
+                        const attrs = new Map();
                         controls.set(selector, {
                             value: "",
                             onclick: null,
                             onchange: null,
-                            classList: createClassList()
+                            classList: createClassList(),
+                            setAttribute(name, val) {
+                                attrs.set(name, String(val));
+                            },
+                            getAttribute(name) {
+                                return attrs.has(name) ? attrs.get(name) : null;
+                            }
                         });
                     }
                     return controls.get(selector);
@@ -159,8 +166,8 @@ assert(modal.modalEl.innerHTML.includes('id="optResolution"'), "グラフィッ�
 assert(modal.modalEl.innerHTML.includes('id="optAdvisorEnabled"'), "ゲームプレイタブに側近ON/OFFを生成する");
 assert(modal.modalEl.innerHTML.includes('id="optAdvisorHoverExpand"'), "ゲームプレイタブに側近hover展開設定を生成する");
 assert(modal.modalEl.innerHTML.includes("1920 × 1080（推奨）"), "日本語で推奨解像度ラベルを表示する");
-assert(modal.modalEl.style.getPropertyValue("--settings-modal-width") === "min(680px, 92vw)", "モーダル幅をレイアウト設定から受け取る");
-assert(modal.modalEl.style.getPropertyValue("--settings-modal-height") === "min(680px, calc(100vh - 64px))", "モーダル高をレイアウト設定から受け取る");
+assert(modal.modalEl.style.getPropertyValue("--settings-modal-width") === "min(840px, 94vw)", "モーダル幅をレイアウト設定から受け取る");
+assert(modal.modalEl.style.getPropertyValue("--settings-modal-height") === "min(720px, calc(100vh - 48px))", "モーダル高をレイアウト設定から受け取る");
 
 const resolutionControl = document.controls.get("#optResolution");
 resolutionControl.onchange({ target: { value: "3440x1440" } });
@@ -175,6 +182,65 @@ const languageControl = document.controls.get("#optLanguage");
 languageControl.onchange({ target: { value: "en" } });
 assert(reloadedSettings.get("resolution") === "3440x1440", "言語切替によるDOM再生成後も解像度を維持する");
 assert(document.controls.get("#optResolution").value === "3440x1440", "再生成後のselectへ保存値を反映する");
+
+// Booleanトグル9項目のrole="switch"検査
+const booleanToggleKeys = [
+    "mulliganConfirm",
+    "turnEndWarning",
+    "autoFoodDeficitFallback",
+    "autoRotateOnRightClick",
+    "advisorEnabled",
+    "advisorHoverExpand",
+    "focusDoFBlur",
+    "seEnabled",
+    "bgmEnabled"
+];
+const toggleIds = [
+    "#optMulliganConfirm",
+    "#optTurnEndWarning",
+    "#optAutoFoodDeficitFallback",
+    "#optAutoRotate",
+    "#optAdvisorEnabled",
+    "#optAdvisorHoverExpand",
+    "#optFocusDoFBlur",
+    "#optSeEnabled",
+    "#optBgmEnabled"
+];
+for (const id of toggleIds) {
+    const rawId = id.slice(1);
+    assert(modal.modalEl.innerHTML.includes(`id="${rawId}"`), `トグル要素 ${id} がHTMLに存在する`);
+    assert(modal.modalEl.innerHTML.includes(`role="switch"`), `トグル要素に role="switch" が付与されている`);
+}
+
+// Select維持4項目の検査
+const selectIds = [
+    "#optDefaultHandMode",
+    "#optResolution",
+    "#optLanguage",
+    "#optAnimSpeed"
+];
+for (const id of selectIds) {
+    const rawId = id.slice(1);
+    assert(modal.modalEl.innerHTML.includes(`<select id="${rawId}"`), `セレクト要素 ${id} がselectとして維持されている`);
+}
+
+// トグルクリック操作による状態反転テスト
+const mulliganBtn = document.controls.get("#optMulliganConfirm");
+const origMulligan = reloadedSettings.get("mulliganConfirm");
+mulliganBtn.onclick();
+assert(reloadedSettings.get("mulliganConfirm") === !origMulligan, "トグルボタンクリックで設定値が反転保存される");
+assert(mulliganBtn.getAttribute("aria-checked") === String(!origMulligan), "トグルのaria-checkedが更新される");
+mulliganBtn.onclick();
+assert(reloadedSettings.get("mulliganConfirm") === origMulligan, "再度クリックで設定値が復帰する");
+assert(mulliganBtn.getAttribute("aria-checked") === String(origMulligan), "トグルのaria-checkedが復帰する");
+
+// 側近ON/OFFトグルのテスト
+const advisorBtn = document.controls.get("#optAdvisorEnabled");
+const origAdvisor = reloadedSettings.get("advisorEnabled");
+advisorBtn.onclick();
+assert(reloadedSettings.get("advisorEnabled") === !origAdvisor, "側近トグルクリックで設定値が反転保存される");
+advisorBtn.onclick();
+assert(reloadedSettings.get("advisorEnabled") === origAdvisor, "側近トグル再度クリックで復帰する");
 
 const root = {
     dataset: {},
@@ -195,6 +261,10 @@ const css = fs.readFileSync(path.join(ROOT, "game/css/0_global_common/base_layou
 const source = fs.readFileSync(path.join(ROOT, "game/src/ui/settings_modal_system.js"), "utf8");
 assert(css.includes(".settings-modal-window") && css.includes("height: var(--settings-modal-height"), "設定モーダル外形をCSSで固定する");
 assert(css.includes(".settings-tab-content-container") && css.includes("overflow-y: auto"), "タブ内容領域だけを縦スクロール可能にする");
+assert(css.includes(".setting-toggle"), "CSSにトグルスイッチスタイルが存在する");
+assert(css.includes(".setting-item-row") && css.includes("border-bottom"), "フラットな行ボーダーレイアウトがCSSに定義されている");
+assert(css.includes(".settings-tab-btn") && css.includes("border-bottom"), "アンダーライン式のタブスタイルがCSSに定義されている");
+assert(!css.includes("!important"), "base_layout.cssに新規!importantを含まない");
 assert(!source.includes('style="'), "設定モーダルのHTMLテンプレートへinline styleを残さない");
 
 console.log(`\nPASS: ${passed} settings modal assertions`);
