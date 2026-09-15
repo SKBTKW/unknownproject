@@ -54,6 +54,10 @@ export const STAFF_OFFICER_REACTIONS = Object.freeze({
             expression: ADVISOR_EXPRESSIONS.SATISFIED,
             lines: ["……生き残りましたね。"]
         },
+        [ADVISOR_SCENES.TRIAL_COMPLETED]: {
+            expression: ADVISOR_EXPRESSIONS.NORMAL,
+            lines: ["戦闘終了。各部隊からの報告を待ちます。"]
+        },
         [ADVISOR_SCENES.THIRD_TRIAL_VICTORY]: {
             expression: ADVISOR_EXPRESSIONS.SATISFIED,
             lines: ["……終わりました。"]
