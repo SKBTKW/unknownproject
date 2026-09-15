@@ -13,7 +13,9 @@ export const BOARD_INPUT_COMMANDS = Object.freeze({
     FOCUS_CELL: "FOCUS_CELL",
     CLEAR_FOCUS: "CLEAR_FOCUS",
     SELECT_TRIAL_ROUTE: "SELECT_TRIAL_ROUTE",
-    SELECT_TRIAL_INTERCEPTION: "SELECT_TRIAL_INTERCEPTION"
+    SELECT_TRIAL_INTERCEPTION: "SELECT_TRIAL_INTERCEPTION",
+    HOVER_TRIAL_INTERCEPTION: "HOVER_TRIAL_INTERCEPTION",
+    CLEAR_TRIAL_HOVER: "CLEAR_TRIAL_HOVER"
 });
 const COMMAND_SET = new Set(Object.values(BOARD_INPUT_COMMANDS));
 
@@ -70,12 +72,14 @@ export function createBoardInputCommand(type, payload = {}) {
         case BOARD_INPUT_COMMANDS.SELECT_TRIAL_ROUTE:
             normalizedPayload = { routeId: requireRouteId(payload) }; break;
         case BOARD_INPUT_COMMANDS.SELECT_TRIAL_INTERCEPTION:
+        case BOARD_INPUT_COMMANDS.HOVER_TRIAL_INTERCEPTION:
             normalizedPayload = { routeId: requireRouteId(payload), cell: requireCell(payload) }; break;
         case BOARD_INPUT_COMMANDS.TOGGLE_VIEW_MODE:
         case BOARD_INPUT_COMMANDS.TOGGLE_CONTEXT_MODE:
         case BOARD_INPUT_COMMANDS.CLEAR_SELECTION:
         case BOARD_INPUT_COMMANDS.CLEAR_HOVER:
         case BOARD_INPUT_COMMANDS.CLEAR_FOCUS:
+        case BOARD_INPUT_COMMANDS.CLEAR_TRIAL_HOVER:
             normalizedPayload = {}; break;
         default: throw new Error(`UNHANDLED_BOARD_INPUT_COMMAND:${type}`);
     }
