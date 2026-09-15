@@ -40,11 +40,17 @@ function resourceCode(resource) {
  * Phase 2.5D-C/D visual layer.
  *
  * Adds HQ, Resource Socket, interaction emphasis, multi-cell placement
- * continuity and presentation-provided LAND_PRIMARY production markers on top
- * of the Phase B terrain renderer. This file remains disposable Web-only
- * rendering code and never recalculates placement or production semantics.
+ * continuity, presentation-provided LAND_PRIMARY production markers and
+ * renderer-neutral placement-preview semantics on top of the Phase B terrain
+ * renderer. This file remains disposable Web-only rendering code and never
+ * recalculates placement or production semantics.
  */
 export class Web25DPhaseCRenderer extends Web25DCanvasRenderer {
+    render() {
+        super.render();
+        this.drawPlacementPreview();
+    }
+
     drawUnplacedCell(cell, projected) {
         super.drawUnplacedCell(cell, projected);
         if (cell.hasSocket) this.drawDormantSocketCore(projected.screenCenter);
@@ -71,6 +77,47 @@ export class Web25DPhaseCRenderer extends Web25DCanvasRenderer {
 
         this.drawLandPrimaryMarker(cell, center);
         this.drawInteractionEmphasis(cell, center, lift);
+    }
+
+    drawPlacementPreview() {
+        const preview = this.readModel?.placementPreview;
+        if (!preview?.active) return;
+
+        const ctx = this.ctx;
+        const hover = preview.hover || null;
+        const hoveredAnchor = hover?.anchor || null;
+
+        for (const candidate of preview.candidates || []) {
+            if (!candidate?.valid || !candidate.anchor) continue;
+            if (hoveredAnchor
+                && candidate.anchor.r === hoveredAnchor.r
+                && candidate.anchor.c === hoveredAnchor.c) {
+                continue;
+            }
+            const center = this.projection.projectCell(candidate.anchor.r, candidate.anchor.c);
+            drawDiamond(ctx, center, 7, 4);
+            ctx.fillStyle = 'rgba(92, 210, 170, 0.24)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(116, 232, 193, 0.78)';
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+        }
+
+        if (!hover?.placement?.cells?.length) return;
+        const valid = Boolean(hover.valid);
+        for (const cell of hover.placement.cells) {
+            const center = this.projection.projectCell(cell.r, cell.c);
+            drawDiamond(ctx, center, this.projection.halfW - 3, this.projection.halfH - 2);
+            ctx.fillStyle = valid
+                ? 'rgba(47, 207, 160, 0.20)'
+                : 'rgba(224, 74, 74, 0.20)';
+            ctx.fill();
+            ctx.strokeStyle = valid
+                ? 'rgba(105, 244, 199, 0.96)'
+                : 'rgba(255, 111, 111, 0.96)';
+            ctx.lineWidth = 2.2;
+            ctx.stroke();
+        }
     }
 
     drawPlacementContinuity(cell, projected, lift) {
