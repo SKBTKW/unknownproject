@@ -286,6 +286,20 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Advisor UI Shell) で不合格が検出されました。");
         process.exit(1);
     }
+    const trialUiIsolationTests = [
+        ["Trial Normal Input Isolation", "scratch/test_trial_normal_input_isolation.mjs"],
+        ["Trial FocusLayer Suppression", "scratch/test_trial_focus_layer_suppression.mjs"],
+        ["Trial Hover Tooltip Isolation", "scratch/test_trial_hover_tooltip_isolation.mjs"],
+        ["Trial 2D/2.5D Input Semantics", "scratch/test_trial_2d_25d_input_semantics.mjs"],
+        ["Trial Right Context Geometry", "scratch/test_trial_right_context_geometry.mjs"],
+    ];
+    for (const [label, testPath] of trialUiIsolationTests) {
+        const ok = await runCommand("node", [testPath]);
+        if (!ok) {
+            console.error(`\n❌ [PIPELINE BLOCKED] Layer 5 (${label}) で不合格が検出されました。`);
+            process.exit(1);
+        }
+    }
 
     // 🏷️ Layer 6: Other Integration & Economic Settlement (ビルド識別・食料決済)
     console.log("\n🌾 [LAYER 6/6] Integration & Economic Settlement Tests...");

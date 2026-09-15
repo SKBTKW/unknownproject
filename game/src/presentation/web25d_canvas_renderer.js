@@ -196,10 +196,13 @@ export class Web25DCanvasRenderer {
 
         const isTrial = this.readModel?.presentation?.contextMode === "TRIAL";
         if (isTrial) {
+            const isLegalCandidate = Boolean(cell.trial?.interceptionCandidate);
             const routeId = cell.trial?.route?.routeId
                 || this.readModel?.trial?.activeRouteId
-                || this.readModel?.trial?.routes?.[0]?.routeId
-                || "default";
+                || null;
+            if (!isLegalCandidate || !routeId) {
+                return null;
+            }
             this.bridge.dispatch(createBoardInputCommand(
                 BOARD_INPUT_COMMANDS.SELECT_TRIAL_INTERCEPTION,
                 { cell, routeId }
