@@ -1,7 +1,7 @@
 import { BOARD_VIEW_MODES } from '../presentation/board_presentation_state.js';
 import { BoardRendererBridge } from '../presentation/board_renderer_bridge.js';
 import { Web25DProjectionAdapter } from '../presentation/web25d_projection_adapter.js';
-import { Web25DCanvasRenderer } from '../presentation/web25d_canvas_renderer.js';
+import { Web25DPhaseCRenderer } from '../presentation/web25d_phase_c_renderer.js';
 
 const DEFAULT_CANVAS_WIDTH = 584;
 const DEFAULT_CANVAS_HEIGHT = 584;
@@ -15,7 +15,7 @@ function resolveCanvasSize(boardEl) {
 }
 
 /**
- * Browser-only Phase 2.5D-A validation connection.
+ * Browser-only Phase 2.5D validation connection.
  *
  * This bridge swaps the legacy 2D board DOM for the disposable Web 2.5D canvas
  * only when BoardPresentationState.viewMode is WORLD_2_5D. It consumes the same
@@ -55,7 +55,7 @@ export function attachWeb25DValidationRuntime(uiController, {
         }
     };
 
-    const renderer = new Web25DCanvasRenderer({
+    const renderer = new Web25DPhaseCRenderer({
         canvas,
         bridge: dispatchBridge,
         projectionAdapter: new Web25DProjectionAdapter({
