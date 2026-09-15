@@ -25,10 +25,8 @@ export class AdvisorCueResolver {
     resolveTrialResultSettled(payload) {
         const outcome = payload?.outcome;
         const settlement = payload?.settlement || {};
+        const result = payload?.result || {};
 
-        // The current Trial result contract only guarantees SURVIVED / FAILED here.
-        // Do not manufacture richer meanings (pyrrhic, civilian loss, clean victory)
-        // until those facts are explicitly present in the game-owned payload.
         if (outcome === "FAILED" || settlement.runTerminated === true) {
             return {
                 type: ADVISOR_SCENES.GAME_OVER,
@@ -36,14 +34,26 @@ export class AdvisorCueResolver {
             };
         }
 
-        if (outcome === "SURVIVED") {
+        if (outcome !== "SURVIVED") return null;
+
+        // These two scenes are purely objective: the Trial-owned result says whether
+        // the Last Ember actually took damage. Richer labels such as pyrrhic victory,
+        // civilian loss, or desperate stand remain undefined until game-owned facts exist.
+        const totalEmberDamage = Number(result.totalEmberDamage);
+        if (Number.isFinite(totalEmberDamage)) {
             return {
-                type: ADVISOR_SCENES.TRIAL_COMPLETED,
+                type: totalEmberDamage === 0
+                    ? ADVISOR_SCENES.TRIAL_SURVIVED_UNDAMAGED
+                    : ADVISOR_SCENES.TRIAL_SURVIVED_DAMAGED,
                 payload
             };
         }
 
-        return null;
+        // Backward-compatible fallback for older / synthetic facts without result data.
+        return {
+            type: ADVISOR_SCENES.TRIAL_COMPLETED,
+            payload
+        };
     }
 }
 
