@@ -1,8 +1,7 @@
 import { GLOBAL_EVENT_TIMINGS } from "../../systems/global_event_system.js";
 
 const DEFAULT_UNLOCK_EVENT_IDS = Object.freeze([
-    "EVENT_DEMIHUMAN_TRACES",
-    "EVENT_DEMIHUMAN_SCOUTS"
+    "EVENT_DEMIHUMAN_TRACES"
 ]);
 
 /**
