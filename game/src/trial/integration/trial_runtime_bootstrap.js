@@ -1,6 +1,7 @@
 import { GameFactHub } from "../../core/game_fact.js";
 import { attachWarningSubsystem } from "../../warning/integration/warning_bootstrap.js";
 import { WarningTimingBridge } from "../../warning/systems/warning_timing_bridge.js";
+import { TrialDueStateService } from "../systems/trial_due_state_service.js";
 import { attachTrialTimingSubsystem } from "./trial_timing_bootstrap.js";
 
 /**
@@ -12,6 +13,7 @@ import { attachTrialTimingSubsystem } from "./trial_timing_bootstrap.js";
  * completes only the missing live wiring after GameEngine construction:
  *
  *   shared GameFactHub -> exact Trial timing -> semantic Warning lifecycle
+ *                                      -> pending Trial start request
  *
  * It deliberately does not re-run Investigation bootstrap, avoiding duplicate
  * unlock/event bridges during the migration.
@@ -57,6 +59,13 @@ export function attachTrialRuntimeSubsystems(engine, {
         });
     }
 
+    if (!engine.trialDueStateService) {
+        engine.trialDueStateService = new TrialDueStateService({
+            gameFactHub: factHub,
+            timingAuthority: engine.trialTimingAuthorityService
+        });
+    }
+
     // The constructor-side Investigation bootstrap may have reported failure
     // only because Warning lacked a shared GameFactHub. Preserve the already
     // attached Investigation runtime/unlock and reflect the now-complete state.
@@ -76,7 +85,8 @@ export function attachTrialRuntimeSubsystems(engine, {
         timingAuthority: engine.trialTimingAuthorityService,
         timingAttached: true,
         warningAttached: true,
-        warningTimingAttached: true
+        warningTimingAttached: true,
+        trialDueAttached: true
     };
 }
 
