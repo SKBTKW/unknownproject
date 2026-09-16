@@ -1,6 +1,7 @@
 import { GAME_FACT_TYPES, GameFactHub } from './game_fact.js';
 import { HistorySnapshotService } from './history_snapshot_service.js';
 import { RunTerminationService } from './run_termination_service.js';
+import { applyLegacyTrialScheduleStageProgression } from './legacy_trial_schedule_compat.js';
 import { TrialThreatStateService } from '../trial/systems/trial_threat_state_service.js';
 import { TrueEnemyStateService } from '../trial/systems/true_enemy_state_service.js';
 import { EnemyTruthReadModel } from '../trial/systems/enemy_truth_read_model.js';
@@ -87,20 +88,9 @@ export class TurnLifecycleService {
         this._advanceTurnState();
         if (engine.deckManager && typeof engine.deckManager.generateOfferingCards === "function") engine.deckManager.generateOfferingCards();
         if (engine.globalEventManager) engine.globalEventManager.onTurnStart();
-        if (state && state.trialSchedule) {
-            const currentTurn = state.turn;
-            if (state.stage && state.stage.id === 1 && currentTurn >= state.trialSchedule.trial1) {
-                state.stage = { id: 2, name: "Stage 2", size: 7, maxTiles: 48 };
-                state.nextTrialTurn = state.trialSchedule.trial2;
-                if (engine.gridEngine) engine.gridEngine.expandGrid(7);
-                if (state.addLog) state.addLog(this._translate("LOG_STAGE_EXPAND", { stage: 2, size: 7 }, "⚔️ Stage 2 (7x7)"));
-            } else if (state.stage && state.stage.id === 2 && currentTurn >= state.trialSchedule.trial2) {
-                state.stage = { id: 3, name: "Stage 3", size: 9, maxTiles: 80 };
-                state.nextTrialTurn = state.trialSchedule.trial3;
-                if (engine.gridEngine) engine.gridEngine.expandGrid(9);
-                if (state.addLog) state.addLog(this._translate("LOG_STAGE_EXPAND", { stage: 3, size: 9 }, "⚔️ Stage 3 (9x9)"));
-            }
-        }
+        applyLegacyTrialScheduleStageProgression(engine, {
+            translate: (key, params, fallback) => this._translate(key, params, fallback)
+        });
         if (state && typeof state.addLog === "function") state.addLog(this._translate("LOG_TURN_START", { turn: state.turn }, `Turn ${state.turn} started.`));
     }
 
