@@ -1,4 +1,6 @@
 import { GAME_FACT_TYPES } from '../../core/game_fact.js';
+import { ADVISOR_SCENES } from '../../data/advisor_scene_catalog.js';
+import { AdvisorReactionService } from '../../services/advisor_reaction_service.js';
 import { ADVISOR_EVENTS } from './advisor_dialogue_database.js';
 import { AdvisorRuntimeState } from './advisor_runtime_state.js';
 import { createAdvisorPeaceSnapshot, resolveAdvisorPeaceStates } from './advisor_peace_state_resolver.js';
@@ -19,6 +21,7 @@ export class AdvisorEventBridge {
         this.unsubscribeGlobalEvent = null;
         this.unsubscribeFact = gameFactHub?.subscribe?.(fact => {
             if (fact.type === GAME_FACT_TYPES.TRIAL_PLAN_CONFIRMED) {
+                if (this.profile?.reactions?.[ADVISOR_SCENES.TRIAL_INTERCEPTION_CONFIRMED]) return;
                 if (this.enabledProvider()) this.dialogueSystem.emit(ADVISOR_EVENTS.TRIAL_PLAN_CONFIRMED, fact.payload);
                 return;
             }
@@ -29,6 +32,13 @@ export class AdvisorEventBridge {
             if (fact.type === GAME_FACT_TYPES.GLOBAL_EVENT_CHOICE_RESOLVED) {
                 this.handleGlobalEventChoiceFact(ADVISOR_GLOBAL_EVENT_CHOICE_TIMINGS.RESOLVED, fact.payload);
             }
+        }) || null;
+        this.reactionService = gameFactHub && profile
+            ? new AdvisorReactionService({ gameFactHub, character: profile })
+            : null;
+        this.unsubscribeReaction = this.reactionService?.subscribe(presentation => {
+            if (!this.enabledProvider()) return;
+            this.dialogueSystem.emitPresentation(presentation);
         }) || null;
     }
 
@@ -123,5 +133,9 @@ export class AdvisorEventBridge {
         this.globalEventManager = null;
         this.unsubscribeFact?.();
         this.unsubscribeFact = null;
+        this.unsubscribeReaction?.();
+        this.unsubscribeReaction = null;
+        this.reactionService?.dispose();
+        this.reactionService = null;
     }
 }
