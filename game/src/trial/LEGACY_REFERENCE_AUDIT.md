@@ -21,26 +21,69 @@ The old model exposes exact Trial distance. The modern Warning / Investigation m
 
 | Surface | Classification | Confirmed dependency | Current action |
 | --- | --- | --- | --- |
-| `GameState` construction | legacy production state | Creates randomized Trial 1/2 schedule and `nextTrialTurn` | Keep until replacement timing authority exists |
-| `GameState.getTrialNotice()` | legacy compatibility/rule helper | Returns direct remaining-turn notice | Keep while card predicates still consume it |
-| `TurnLifecycleService` stage expansion | production gameplay, legacy-coupled | Stage 1 -> 2 at `trialSchedule.trial1`; Stage 2 -> 3 at `trialSchedule.trial2`; updates `nextTrialTurn` | Isolated behind `core/legacy_trial_schedule_compat.js` |
-| `ConditionEvaluator.TRIAL_DISTANCE_ABOVE` | production rule predicate | Reads `nextTrialTurn - turn` | Do not extend; migrate to modern semantic condition later |
-| `ConditionEvaluator.TRIAL_NOTICE` | production rule predicate | Calls `getTrialNotice()` and falls back to `nextTrialTurn - turn <= 5` | Do not remove while cards use `reqTrialNotice` |
-| `ConditionEvaluator.TRIAL_WITHIN` | production rule predicate | Reads exact `nextTrialTurn - turn <= N` | Do not remove while cards use `reqTrialWithin` |
-| `DeckManager.isCardEligible()` | production gameplay, duplicate timing authority | Reimplements `reqTrialNotice`, `reqTrialWithin`, and `reqTrialOrLowDefense` directly from `getTrialNotice()` / `nextTrialTurn` | Consolidate before replacing timing semantics |
+| `GameState` construction | legacy production state | Creates randomized Trial 1/2 schedule and `nextTrialTurn` | Replacement schedule policy now exists but is not wired yet |
+| `GameState.getTrialNotice()` | legacy compatibility/rule helper | Returns direct remaining-turn notice | Keep while DeckManager still consumes it |
+| `TurnLifecycleService` stage expansion | production gameplay, legacy-coupled | Stage 1 -> 2 at Trial 1 scheduled Verse; Stage 2 -> 3 at Trial 2 scheduled Verse; updates `nextTrialTurn` | Isolated behind `core/legacy_trial_schedule_compat.js` |
+| `ConditionEvaluator.TRIAL_DISTANCE_ABOVE` | production rule predicate | Exact Trial distance | Migrated to `LegacyTrialTimingReadModel` compatibility boundary |
+| `ConditionEvaluator.TRIAL_NOTICE` | production rule predicate | Legacy notice active or distance <= 5 | Migrated to `LegacyTrialTimingReadModel` compatibility boundary |
+| `ConditionEvaluator.TRIAL_WITHIN` | production rule predicate | Exact distance <= N | Migrated to `LegacyTrialTimingReadModel` compatibility boundary |
+| `DeckManager.isCardEligible()` | production gameplay, duplicate timing authority | Reimplements `reqTrialNotice`, `reqTrialWithin`, and `reqTrialOrLowDefense` directly from `getTrialNotice()` / `nextTrialTurn` | Main remaining direct timing consumer; compat gate exists but is not wired yet |
 | `state_serializer_base.js` | save/history compatibility | Serializes `trialSchedule` and `nextTrialTurn` | Keep until restore schema migration |
 | `hydrate_game_state_base.js` | restore compatibility | Hydrates `trialSchedule` and `nextTrialTurn` | Keep until restore schema migration |
 | `TopHeaderComponent` | presentation legacy residue | Countdown badge exists but is forced hidden | Safe presentation residue; not timing authority |
 | Warning / Investigation subsystem | modern production subsystem | No confirmed dependency on old schedule/countdown in inspected integration path | Keep independent |
 
+## Replacement timing foundation now present
+
+### Exact internal timing authority
+
+`game/src/trial/systems/trial_timing_authority_service.js`
+
+`TrialTimingAuthorityService` owns:
+
+- scheduled Verse by Trial index;
+- current Trial index;
+- exact distance-to-due calculation for simulation use;
+- due/not-due checks;
+- Trial-index advancement after settlement;
+- restore state.
+
+It is explicitly **not** a Warning/Advisor/UI read model. Exact remaining Verse counts must stay internal.
+
+### Schedule generation policy
+
+`game/src/trial/systems/trial_timing_policy.js`
+
+Target schedule policy is now explicit and separately testable:
+
+- first-run Trial 1: Verse 15 fixed;
+- later-run Trial 1: Verse 12..18;
+- Trial 2: Verse 27..33;
+- Trial 3: Verse 50 fixed.
+
+The policy currently requires gameplay RNG for randomized schedule entries and is not yet wired into `GameState` construction.
+
+### Legacy compatibility read model
+
+`game/src/core/legacy_trial_schedule_compat.js`
+
+This boundary now owns:
+
+- exact legacy Trial distance;
+- legacy notice-active semantics;
+- legacy `within N` semantics;
+- `LegacyTrialTimingReadModel`;
+- the reusable DeckManager-compatible card timing gate;
+- legacy Stage progression compatibility.
+
+This is migration infrastructure, not the long-term timing authority.
+
 ## Confirmed card-condition duplication
 
-Trial-distance card eligibility currently has two rule surfaces:
+Trial-distance card eligibility still has two rule surfaces:
 
-1. generic handlers in `ConditionEvaluator`;
+1. generic handlers in `ConditionEvaluator`, now routed through the compatibility read model;
 2. direct field-specific checks in `DeckManager.isCardEligible()`.
-
-This duplication must be removed before timing semantics are migrated. Otherwise a new Warning-aware condition could be correct in one layer while Offering eligibility still follows the old exact countdown in the other.
 
 `DeckManager` currently resolves:
 
@@ -48,7 +91,7 @@ This duplication must be removed before timing semantics are migrated. Otherwise
 - `reqTrialNotice`: `getTrialNotice().active || (nextTrialTurn - turn <= 5)`;
 - `reqTrialWithin`: `(nextTrialTurn - turn) <= card.reqTrialWithin`.
 
-The old schedule therefore remains gameplay-authoritative for Offering eligibility even though its UI countdown is hidden.
+`passesLegacyTrialCardTimingRequirements(card, state)` now preserves those exact semantics in one compatibility function. The remaining migration step is to route DeckManager through it without changing eligibility behavior.
 
 ## Confirmed active card-data dependencies
 
@@ -75,21 +118,25 @@ These cards make the old countdown model gameplay-relevant even though the visib
 
 ## What can be removed now?
 
-Nothing in the schedule state itself is proven removable yet.
+Nothing in the legacy schedule state itself is proven removable yet.
 
 What *has* been safely changed:
 
-1. Production-facing Trial UI now exposes `startTrialSession(...)` / `stopTrialSession()`.
+1. Production-facing Trial UI exposes `startTrialSession(...)` / `stopTrialSession()`.
 2. Preview-named start/stop methods remain deprecated compatibility aliases.
 3. Development Trial preview calls the production-facing session API.
 4. Verse lifecycle no longer contains inline Trial-schedule stage-expansion rules; that legacy coupling is isolated in `core/legacy_trial_schedule_compat.js`.
-5. A diagnostic covers the preserved Stage 1 -> 2 and Stage 2 -> 3 compatibility behavior.
+5. Generic `ConditionEvaluator` Trial-distance handlers no longer duplicate raw schedule arithmetic.
+6. Compatibility diagnostics cover Stage progression, timing predicates, card timing gate semantics, internal timing authority lifecycle, restore, and first-run timing policy.
+7. Exact timing and player-facing Warning responsibilities are documented as separate layers.
 
 ## Required replacement contracts before deletion
 
-### A. Trial timing authority
+### A. Connect Trial timing authority
 
-One authoritative runtime service must own when the next Trial actually occurs. First-run Trial 1 can be fixed at Verse 15 while later-run schedule policy can remain configurable, but callers must not infer timing independently.
+`TrialTimingAuthorityService` must become the production source of exact Trial timing. Connection must happen through GameEngine/runtime orchestration, not UI.
+
+The service should advance its current Trial index from actual Trial settlement, not from Stage changes and not merely because a scheduled Verse was reached.
 
 ### B. Board-stage progression authority
 
@@ -99,24 +146,26 @@ Until that design is implemented, `legacy_trial_schedule_compat.js` preserves cu
 
 ### C. Card semantic conditions
 
-First consolidate card eligibility so there is one predicate authority. Then replace old exact-distance predicates with semantic conditions compatible with Warning / Investigation, for example concepts such as:
+First finish routing DeckManager through the compatibility gate. Then replace old exact-distance predicates with semantic conditions compatible with Warning / Investigation, for example concepts such as:
 
-- omen discovered
-- threat/watch phase reached
-- invasion confirmed
-- warning severity/state
+- omen discovered;
+- threat/watch phase reached;
+- invasion confirmed;
+- warning severity/state.
 
 Do not mechanically map `<= 3`, `<= 6`, or `<= 10` to a new Warning state without card-by-card design review; those values currently encode different intended availability windows.
 
 ### D. Save/restore schema migration
 
-Serializer and hydrator must migrate together. Old restore points containing `trialSchedule` / `nextTrialTurn` need an explicit compatibility policy before those fields disappear from the schema.
+Serializer and hydrator must migrate together. New restore state should preserve `TrialTimingAuthorityService` state. Old restore points containing `trialSchedule` / `nextTrialTurn` need an explicit compatibility policy before those fields disappear from the schema.
 
 ## Safe next sequence
 
-1. Consolidate DeckManager Trial-timing eligibility behind one compatibility predicate boundary without changing card behavior.
-2. Define the modern Trial timing/progression read model; do not wire UI countdown to it.
-3. Move board expansion from legacy schedule threshold to the chosen progression event.
-4. Replace card-data timing predicates with semantic Warning/Trial predicates.
-5. Migrate serializer/hydrator schema and compatibility.
-6. Remove `getTrialNotice()`, `nextTrialTurn`, and finally `trialSchedule` only when no production consumer remains.
+1. Route DeckManager Trial-timing eligibility through `passesLegacyTrialCardTimingRequirements(...)` with no behavior change.
+2. Connect `TrialTimingAuthorityService` to GameEngine as internal exact timing state.
+3. Persist/restore timing authority state alongside Threat and TrueEnemy state.
+4. Trigger Trial production flow from timing authority due-state, not legacy `nextTrialTurn`.
+5. Move board expansion to the chosen post-Trial/progression event.
+6. Replace card-data timing predicates with semantic Warning/Trial predicates.
+7. Migrate serializer/hydrator schema compatibility.
+8. Remove `getTrialNotice()`, `nextTrialTurn`, and finally `trialSchedule` only when no production consumer remains.
