@@ -1,14 +1,35 @@
 /**
  * Legacy Trial schedule compatibility boundary.
  *
- * The modern Trial runtime must not use GameState.trialSchedule as its
- * authoritative trigger. This module temporarily owns the remaining legacy
- * dependency where board stage expansion is keyed directly to the old Trial
- * schedule.
+ * The modern Trial runtime must not use GameState.trialSchedule / nextTrialTurn
+ * as authoritative player-facing knowledge. This module temporarily owns the
+ * remaining production reads so they can be migrated from one place later.
  *
- * Keep behavior identical until stage progression is moved to an explicit
- * post-Trial progression contract.
+ * Keep behavior identical until timing, card eligibility, stage progression,
+ * and save/restore have explicit modern contracts.
  */
+
+export function getLegacyTrialDistance(state, { fallbackNextTrialTurn = 20 } = {}) {
+    const nextTrialTurn = state?.nextTrialTurn || fallbackNextTrialTurn;
+    const currentTurn = state?.turn || 1;
+    return nextTrialTurn - currentTurn;
+}
+
+export function isLegacyTrialNoticeActive(state, { fallbackThreshold = null } = {}) {
+    if (!state) return false;
+    const notice = typeof state.getTrialNotice === "function"
+        ? state.getTrialNotice()
+        : { active: false };
+    if (notice?.active) return true;
+    if (!Number.isFinite(fallbackThreshold)) return false;
+    return getLegacyTrialDistance(state) <= fallbackThreshold;
+}
+
+export function isLegacyTrialWithin(state, within = 5) {
+    if (!state) return false;
+    return getLegacyTrialDistance(state) <= within;
+}
+
 export function applyLegacyTrialScheduleStageProgression(engine, { translate = null } = {}) {
     const state = engine?.state || null;
     if (!state?.trialSchedule) return { changed: false, stageId: state?.stage?.id ?? null };
