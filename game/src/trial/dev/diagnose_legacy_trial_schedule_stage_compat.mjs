@@ -4,7 +4,8 @@ import {
     createLegacyTrialTimingReadModel,
     getLegacyTrialDistance,
     isLegacyTrialNoticeActive,
-    isLegacyTrialWithin
+    isLegacyTrialWithin,
+    passesLegacyTrialCardTimingRequirements
 } from "../../core/legacy_trial_schedule_compat.js";
 
 function createEngine({ turn, stageId }) {
@@ -63,6 +64,31 @@ function createEngine({ turn, stageId }) {
     assert.equal(timing.getScheduledVerse(2), 30);
     assert.equal(timing.getScheduledVerse(3), 50);
     assert.equal(timing.getScheduledVerse(4), null);
+}
+
+{
+    const state = {
+        turn: 10,
+        nextTrialTurn: 15,
+        currentDefense: 40,
+        getTrialNotice: () => ({ active: false, remaining: 5 })
+    };
+    assert.equal(passesLegacyTrialCardTimingRequirements({ reqTrialNotice: true }, state), true);
+    assert.equal(passesLegacyTrialCardTimingRequirements({ reqTrialWithin: 5 }, state), true);
+    assert.equal(passesLegacyTrialCardTimingRequirements({ reqTrialWithin: 4 }, state), false);
+    assert.equal(passesLegacyTrialCardTimingRequirements({ reqTrialOrLowDefense: true }, state), false);
+    state.currentDefense = 30;
+    assert.equal(passesLegacyTrialCardTimingRequirements({ reqTrialOrLowDefense: true }, state), true);
+}
+
+{
+    const state = {
+        turn: 1,
+        nextTrialTurn: 50,
+        currentDefense: 40,
+        getTrialNotice: () => ({ active: true, remaining: 49 })
+    };
+    assert.equal(passesLegacyTrialCardTimingRequirements({ reqTrialOrLowDefense: true }, state), true);
 }
 
 {
