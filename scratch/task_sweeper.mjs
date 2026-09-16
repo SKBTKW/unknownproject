@@ -4,6 +4,7 @@ import path from 'path';
 import process from 'process';
 import readline from 'readline/promises';
 import { fileURLToPath } from 'url';
+import { expectedTaskBranchPattern, isCanonicalTaskBranch } from './task_branch_contract.mjs';
 
 const TASK_PREFIX = 'aot-task/';
 
@@ -59,7 +60,7 @@ function resolveTarget(explicitTarget, cwd) {
     const authorized = readConfig('aot.authorizedBranch', cwd);
     if (authorized) return authorized;
     const current = git(['branch', '--show-current'], { cwd, allowFailure: true });
-    if (/^AoT\d{6,}$/.test(current)) return current;
+    if (/^AoT\d{6}$/.test(current)) return current;
     throw new Error('Target branch is ambiguous. Use --target AoTYYMMDD or configure aot.authorizedBranch.');
 }
 
@@ -106,6 +107,7 @@ function listTaskBranches(target, cwd) {
         branch,
         localExists: locals.has(branch),
         remoteExists: remotes.has(branch),
+        canonicalName: isCanonicalTaskBranch(branch, target),
     }));
 }
 
@@ -140,6 +142,7 @@ async function findMergedPullRequest({ owner, repo, branch, target, remoteSha })
 
 export function classifyTaskCandidate(state) {
     const blockers = [];
+    if (state.canonicalName === false) blockers.push(`branch name is not canonical; expected ${expectedTaskBranchPattern(state.target || 'AoTYYMMDD')}`);
     if (state.currentWorktree) blockers.push('currently executing from this TASK worktree');
     if (state.lockedWorktree) blockers.push('worktree is locked');
     if (state.dirtyWorktree) blockers.push('worktree has uncommitted or untracked files');
@@ -193,6 +196,8 @@ async function inspectCandidate(candidate, context) {
     }
 
     const classification = classifyTaskCandidate({
+        target,
+        canonicalName: candidate.canonicalName,
         currentWorktree,
         lockedWorktree: Boolean(worktree?.locked),
         dirtyWorktree,
@@ -309,7 +314,7 @@ async function main() {
 
     const cwd = git(['rev-parse', '--show-toplevel'], { cwd: process.cwd() });
     const target = resolveTarget(args.target, cwd);
-    if (!/^AoT\d{6,}$/.test(target)) throw new Error(`Refusing non-AoT integration target: ${target}`);
+    if (!/^AoT\d{6}$/.test(target)) throw new Error(`Refusing non-AoT integration target: ${target}`);
 
     console.log(`Refreshing origin refs for ${target}...`);
     git(['fetch', 'origin', '--prune'], { cwd });
