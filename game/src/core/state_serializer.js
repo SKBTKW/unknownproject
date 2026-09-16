@@ -31,7 +31,11 @@ export function serializeGameState(state) {
             : null,
         knownEnemyState: serializeKnownEnemyState(state),
         lastInvestigationReport: cloneData(state?.lastInvestigationReport),
-        lastInvestigationComparison: cloneData(state?.lastInvestigationComparison)
+        lastInvestigationComparison: cloneData(state?.lastInvestigationComparison),
+        scheduledGlobalEvents: cloneData(
+            Array.isArray(state?.scheduledGlobalEvents) ? state.scheduledGlobalEvents : [],
+            []
+        )
     };
 }
 
