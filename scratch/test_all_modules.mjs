@@ -48,6 +48,28 @@ function assert(condition, testName) {
     }
 }
 
+function captureRuntimeGuardState(engine) {
+    return JSON.stringify({
+        food: engine.state.food,
+        wood: engine.state.wood,
+        material: engine.state.material,
+        mystic: engine.state.mystic,
+        ember: engine.state.ember,
+        hasPickedThisTurn: engine.state.hasPickedThisTurn,
+        handOffering: engine.state.handOffering,
+        gameLogCount: engine.state.gameLogs.length,
+        buffIds: engine.buffSystem.getDisplayBuffs().map(buff => buff.id).sort()
+    });
+}
+
+function assertCommandRuntimeDisabled(engine, card, label, ...args) {
+    const before = captureRuntimeGuardState(engine);
+    const result = engine.deckManager.playCommandCard(card, ...args);
+    assert(result?.success === false && result?.reason === 'CARD_RUNTIME_DISABLED', `${label} はruntime policyで拒否されること`);
+    assert(captureRuntimeGuardState(engine) === before, `${label} の拒否時にゲーム状態を変更しないこと`);
+    return result;
+}
+
 // --- 1. GameEngine & GameState 初期化テスト ---
 console.log('\n📦 [1/6] GameEngine & GameState 初期化');
 const engine = GameEngine.createGame();
@@ -225,25 +247,22 @@ assert(prods.netFood === prods.grossFood - prods.foodCost, `食料純収支が�
 assert(prods.totalMystic >= 2, `神秘産出に残り火旺盛ボーナスが加算されていること (実際: ${prods.totalMystic})`);
 engine.state.ember = 20; // 標準状態に復帰
 
-// --- 4. DeckManager ＆ コマンドカード「農地改革」テスト ---
-console.log('\n🃏 [4/6] DeckManager ＆ コマンドカード発動');
+// --- 4. DeckManager ＆ dormant COMMAND runtime policy テスト ---
+console.log('\n🃏 [4/6] DeckManager ＆ dormant COMMAND runtime policy');
 const hand = engine.deckManager.generateOfferingCards();
 assert(hand.length === 3, '手札オファリングが 3 枚生成されること');
 
-const woodBefore = engine.state.wood;
 const prodsBeforeReform = engine.state.calculateTotalProduction();
-const playRes = engine.deckManager.playCommandCard({
+assertCommandRuntimeDisabled(engine, {
     id: 'CMD_AGRICULTURAL_POLICY',
     category: 'COMMAND',
     nameKey: 'CMD_AGRICULTURAL_POLICY_NAME',
     cost: { wood: 20 },
     rarity: 'R',
     isUnique: true
-});
-assert(playRes.success === true, '農地改革の発動が成功すること');
-assert(engine.state.wood === woodBefore - 20, 'コスト 🧱-20 が正しく消費されていること');
+}, '農地改革');
 const prodsAfterReform = engine.state.calculateTotalProduction();
-assert(prodsAfterReform.totalFood > prodsBeforeReform.totalFood, '農地改革により草原産出が増加していること');
+assert(prodsAfterReform.totalFood === prodsBeforeReform.totalFood, '拒否された農地改革が草原産出を変更しないこと');
 
 // --- 5. TerritoryBadgeComponent ステージ連動テスト ---
 console.log('\n🏛️ [5/6] TerritoryBadgeComponent ステージ連動');
@@ -419,39 +438,22 @@ assert(returnRes === true, '保留カードが手札0番目へ復元成功する
 assert(resEngine.state.reserveSlots[0] === null, '復元後に保留枠が空 (null) に戻ること');
 assert(resEngine.state.handOffering[0] === firstCard, '手札0番目が元通りのカードに復元されること');
 
-// --- 13. 選別バフマネージャー登録 (試練対策・免除・ドロー偏向・告知) 検問 ---
-console.log('\n✨ [13/13] 選別バフマネージャー登録 ＆ ライフサイクル検証');
+// --- 13. dormant COMMAND が旧Buff経路へ到達しないことの検問 ---
+console.log('\n✨ [13/13] dormant COMMAND Buff経路遮断');
 const buffEngine = new GameEngine();
-
-// ① 大型バリスタ配備 (試練対策バフ)
 buffEngine.state.wood = 50;
-const ballistaCard = { id: 'CMD_BALLISTA_SET', category: 'MILITARY', cost: { wood: 30 }, nameKey: 'CMD_BALLISTA_SET' };
-buffEngine.deckManager.playCommandCard(ballistaCard);
-assert(buffEngine.buffSystem.hasBuff('CMD_BALLISTA_SET') === true, 'CMD_BALLISTA_SET が BuffSystem に登録されていること');
-assert(buffEngine.state.nextTrialDamageMitigation === 0.5, '試練被ダメージ半減フラグが 0.5 にセットされていること');
-
-// ② 残り火の再点火 (3T期限付き保留無料化バフ)
 buffEngine.state.mystic = 20;
 buffEngine.state.ember = 4;
-const rekindleCard = { id: 'CMD_REKINDLE_EMBER', category: 'MYSTIC', cost: { mystic: 10 }, nameKey: 'CMD_REKINDLE_EMBER' };
-buffEngine.deckManager.playCommandCard(rekindleCard);
-assert(buffEngine.buffSystem.hasBuff('CMD_REKINDLE_EMBER') === true, 'CMD_REKINDLE_EMBER が BuffSystem に登録されていること');
-assert(buffEngine.state.reserveFeeWaivedTurns === 3, '保留無料化ターン数が 3 に設定されていること');
-
-// ③ ドロー偏向バフ (土地探索注力)
 buffEngine.state.food = 20;
-buffEngine.state.wood = 20;
-const landFocusCard = { id: 'CMD_LAND_FOCUS', category: 'ECONOMY', cost: { food: 10, wood: 10 }, nameKey: 'CMD_LAND_FOCUS' };
-buffEngine.deckManager.playCommandCard(landFocusCard);
-assert(buffEngine.buffSystem.hasBuff('CMD_LAND_FOCUS') === true, 'CMD_LAND_FOCUS が BuffSystem に登録されていること');
-
-// ④ ターン経過 (tickTurn) による期限バフの失効 (次のターンから3ターンの完全サイクル)
-buffEngine.buffSystem.tickTurn(); // 発動ターン終了: startsNextTurn 解除 (残り 3T 維持)
-assert(buffEngine.buffSystem.hasBuff('CMD_REKINDLE_EMBER') === true, '発動ターン終了時も残り3Tを維持すること');
-buffEngine.buffSystem.tickTurn(); // 次ターン終了: 残り 2T
-buffEngine.buffSystem.tickTurn(); // 翌々ターン終了: 残り 1T
-buffEngine.buffSystem.tickTurn(); // 満了ターン終了: 残り 0T (失効)
-assert(buffEngine.buffSystem.hasBuff('CMD_REKINDLE_EMBER') === false, '次ターンから丸々3ターン経過後に CMD_REKINDLE_EMBER が自動失効すること');
+buffEngine.state.wood = 50;
+for (const card of [
+    { id: 'CMD_BALLISTA_SET', category: 'MILITARY', cost: { wood: 30 } },
+    { id: 'CMD_REKINDLE_EMBER', category: 'MYSTIC', cost: { mystic: 10 } },
+    { id: 'CMD_LAND_FOCUS', category: 'ECONOMY', cost: { food: 10, wood: 10 } }
+]) {
+    assertCommandRuntimeDisabled(buffEngine, card, card.id);
+    assert(buffEngine.buffSystem.hasBuff(card.id) === false, `${card.id} がBuffSystemへ登録されないこと`);
+}
 
 // --- 14. 地勢GL隣接制限 (GL0砂漠 ✕ GL1平地/丘陵は可、GL0 ✕ GL2+森林/山岳は禁止) 検問 ---
 console.log('\n🗺️ [14/15] 地勢レベル(GL)隣接制限 (GL0-GL1可 / GL0-GL2不可) 検証');
@@ -534,18 +536,17 @@ mergeAdjEngine.state.hasPickedThisTurn = false;
 const c3Check = mergeAdjEngine.gridEngine.canPlaceShape(2, 2, [[1]], pTerrainForMerge);
 assert(c3Check.can === false && c3Check.reasons.includes('SAME_TERRAIN_MERGED_NEIGHBOR_FORBIDDEN'), 'C3への配置は同属性2x2マージ同士の面隣接(SAME_TERRAIN_MERGED_NEIGHBOR_FORBIDDEN)で禁止されること');
 
-// --- 15. コマンドカード発動時の空きスロット化 ＆ 詳細効果ログ記録 検問 ---
-console.log('\n📜 [15/15] コマンドカード使用後スロット空き化 ＆ 詳細ログ記録 検証');
+// --- 15. dormant COMMAND拒否時の手札・行動・ログ不変検問 ---
+console.log('\n📜 [15/15] dormant COMMAND拒否時の副作用遮断');
 const cmdEngine = new GameEngine();
 cmdEngine.deckManager.generateOfferingCards();
 const originalCmdCard = { id: 'CMD_AGRICULTURAL_POLICY', category: 'ECONOMY', cost: { wood: 20 }, nameKey: 'CMD_AGRICULTURAL_POLICY' };
 cmdEngine.state.handOffering[0] = originalCmdCard;
 cmdEngine.state.wood = 30;
 
-cmdEngine.deckManager.playCommandCard(originalCmdCard, null, 0);
-assert(cmdEngine.state.handOffering[0].isBlank === true, '使用された手札0番目が空きスロット (isBlank: true) に変更されていること');
-assert(cmdEngine.state.hasPickedThisTurn === true, 'コマンド使用後に hasPickedThisTurn が true になること');
-assert(cmdEngine.state.gameLogs.length > 0, 'ゲームログが記録されていること');
+assertCommandRuntimeDisabled(cmdEngine, originalCmdCard, '手札内の農地改革', null, 0);
+assert(cmdEngine.state.handOffering[0] === originalCmdCard, '拒否されたCOMMANDが手札スロットに残ること');
+assert(cmdEngine.state.hasPickedThisTurn === false, '拒否されたCOMMANDがVerse行動を消費しないこと');
 // --- 16. 同一コマンドカード重複ピック禁止 (手札内 ＆ 保留枠との重複排除) 検問 ---
 console.log('\n🚫 [16/16] 同一コマンドカード重複ピック禁止 検証');
 const uniqCmdEngine = new GameEngine();
@@ -700,9 +701,31 @@ assert(progressiveEngine.gridEngine.getPlacementEmberCost() === 2, '16ブロッ�
 progressiveEngine.state.placedBlockCount = 31;
 assert(progressiveEngine.gridEngine.getPlacementEmberCost() === 3, '31ブロック配置時は コスト 🔥3 であること');
 
-// --- 21. 🧘 守備的・節約コマンドカード 4 種 検問 ---
-console.log('\n🧘 [21/21] 守備的・節約コマンドカード 4 種 (残火の節約・節約配給・瞑想・警戒態勢) 検証');
+// --- 21. dormant COMMAND群のfail-closed検問 ---
+console.log('\n🧘 [21/21] dormant COMMAND群のfail-closed検証');
 const saveEngine = new GameEngine();
+saveEngine.state.food = 100;
+saveEngine.state.wood = 100;
+saveEngine.state.mystic = 100;
+for (const card of [
+    { id: 'CMD_CONSERVE_EMBER', category: 'COMMAND', cost: {} },
+    { id: 'CMD_RATIONING', category: 'COMMAND', cost: {} },
+    { id: 'CMD_MEDITATION', category: 'COMMAND', cost: {} },
+    { id: 'CMD_VIGILANCE', category: 'COMMAND', cost: { wood: 15 } },
+    { id: 'CMD_GRAND_CULTIVATION', category: 'COMMAND', cost: { wood: 35 } },
+    { id: 'CMD_EMERGENCY_LEVY', category: 'COMMAND', cost: { food: 20 } },
+    { id: 'CMD_MANIFEST_MIRACLE', category: 'COMMAND', cost: { mystic: 10 } },
+    { id: 'CMD_FILL_THE_VOID', category: 'COMMAND', cost: {} },
+    { id: 'CMD_SCORCHED_RETREAT', category: 'COMMAND', cost: { food: 20 } },
+    { id: 'CMD_LAND_FOCUS', category: 'COMMAND', cost: { food: 10, wood: 10 } },
+    { id: 'CMD_MILITARY_FOCUS', category: 'COMMAND', cost: { wood: 20 } }
+]) {
+    assertCommandRuntimeDisabled(saveEngine, card, card.id);
+}
+
+// Legacy effect assertions remain as migration reference and are deliberately
+// dormant until an explicit runtime policy change re-enables COMMAND cards.
+if (false) {
 
 // ① CMD_CONSERVE_EMBER (残火の節約)
 saveEngine.deckManager.playCommandCard({ id: 'CMD_CONSERVE_EMBER', category: 'COMMAND', cost: {} }, null, 0);
@@ -799,6 +822,7 @@ condEngine.state.defenseSystem.increaseMaxCapacity(15);
 condEngine.state.checkConditionalBuffs();
 assert(!condEngine.state.buffSystem.hasBuff('CMD_MILITARY_FOCUS'), '最大防衛力20達成で CMD_MILITARY_FOCUS が自動解除されること');
 assert(condEngine.state.activeDrawBias === null, 'CMD_MILITARY_FOCUS 解除後に activeDrawBias が null になること');
+}
 
 // ====================================================
 // 22. 🟨 丘陵（L字）＆ 🛡️ 山岳（凸字）異形マージ ＆ ★覚醒ソケット検証
@@ -881,13 +905,37 @@ const oasisProds = oasisEngine.state.calculateTotalProduction();
 assert(oasisProds.foodLakeIrrigation === 2, 'オアシスの隣接平地(食料4)に灌漑バフ +2 (50%) が加算されること');
 assert(oasisProds.grossFood === 17, '食料総産出(gross)にオアシスの灌漑バフが含まれること');
 
-console.log('\n🌟 [23/23] 新規登録バフ 8 種 (人口移住令・大防塁・前哨塔・誘導防衛・高地布陣・騎馬軍・天啓・二つの未来) 検証');
+console.log('\n🌟 [23/23] dormant COMMAND追加群のfail-closed検証');
 
 const newBuffEngine = new GameEngine();
 newBuffEngine.state.food = 500;
 newBuffEngine.state.wood = 500;
 newBuffEngine.state.mystic = 500;
 newBuffEngine.state.ember = 20;
+
+for (const card of [
+    { id: 'CMD_RESETTLEMENT', category: 'COMMAND', cost: { food: 15, wood: 10 } },
+    { id: 'CMD_GREAT_RAMPART_PROJECT', category: 'COMMAND', cost: { wood: 45 } },
+    { id: 'CMD_OUTPOST', category: 'COMMAND', cost: { wood: 25 } },
+    { id: 'CMD_GUIDED_DEFENSE', category: 'COMMAND', cost: { wood: 20 } },
+    { id: 'CMD_HIGH_GROUND_FORMATION', category: 'COMMAND', cost: { wood: 10 } },
+    { id: 'CMD_CAVALRY_HOST', category: 'COMMAND', cost: { food: 30, wood: 20 } },
+    { id: 'CMD_REVELATION_CHOICE', category: 'COMMAND', cost: { mystic: 15 } },
+    { id: 'CMD_TWO_FUTURES', category: 'COMMAND', cost: { mystic: 20 } },
+    { id: 'CMD_PASTORAL_EXPANSION', category: 'COMMAND', cost: { wood: 10 } },
+    { id: 'CMD_LIME_CONSTRUCTION', category: 'COMMAND', cost: { food: 10 } },
+    { id: 'CMD_CAVALRY_SCOUTS', category: 'COMMAND', cost: { food: 10 } },
+    { id: 'CMD_LOCAL_IRON_ARMAMENT', category: 'COMMAND', cost: { wood: 15 } },
+    { id: 'CMD_STONE_STRONGPOINT', category: 'COMMAND', cost: { wood: 20 } },
+    { id: 'CMD_LEYLINE_RESONANCE', category: 'COMMAND', cost: { mystic: 8 } },
+    { id: 'CMD_VOICE_BENEATH_EARTH', category: 'COMMAND', cost: { mystic: 5 } }
+]) {
+    assertCommandRuntimeDisabled(newBuffEngine, card, card.id);
+}
+
+// Legacy effect assertions remain as migration reference and are deliberately
+// dormant until an explicit runtime policy change re-enables COMMAND cards.
+if (false) {
 
 // 1. 人口移住令 (CMD_RESETTLEMENT)
 const resRes = newBuffEngine.deckManager.playCommandCard({ id: 'CMD_RESETTLEMENT', category: 'COMMAND', cost: { food: 15, wood: 10 } });
@@ -978,6 +1026,7 @@ const voiceRes = newBuffEngine.deckManager.playCommandCard({ id: 'CMD_VOICE_BENE
 assert(voiceRes.success === true, '大地の囁きが正常に発動すること');
 assert(newBuffEngine.state.buffSystem.hasBuff('CMD_VOICE_BENEATH_EARTH'), 'バフマネージャーに CMD_VOICE_BENEATH_EARTH が登録されること');
 assert(newBuffEngine.state.voiceBeneathEarthTurns === 1, '大地の囁き持続ターンが 1 になること');
+}
 
 console.log('\n🌍 [24/24] ConditionEvaluator ＆ EffectResolver ＆ ChronicleSystem ＆ GlobalEvent (寒波テストケース) 検証');
 
@@ -1060,7 +1109,7 @@ assert(typeof hqComp.checkAndTriggerDeltaPopup === 'function', 'HqComponent.chec
 
 // --- 8. 否定・肯定条件（reqNoHillOrMountainAroundHQ）4パターン厳密テスト ---
 console.log('\n⛰️ [8/8] 否定・肯定条件（reqNoHillOrMountainAroundHQ）4パターン厳密テスト');
-const testCardNoHM = { id: 'TEST_NO_HM', reqNoHillOrMountainAroundHQ: true, minStage: 1 };
+const testCardNoHM = { id: 'TEST_NO_HM', category: 'LAND', reqNoHillOrMountainAroundHQ: true, minStage: 1 };
 
 // ケース 1: 丘陵・山岳 0個 ➔ true
 const testEngine1 = GameEngine.createGame();
@@ -1083,7 +1132,7 @@ testEngine4.state.grid[3][2] = { r: 3, c: 2, placed: true, terrain: { id: 'E3_MO
 assert(testEngine4.deckManager.isCardEligible(testCardNoHM, 1, 0) === false, 'ケース4: 本営周囲に丘陵+山岳の時、reqNoHillOrMountainAroundHQ が false (除外) であること');
 
 // 肯定条件 reqHillOrMountainAroundHQ の検証
-const testCardHasHM = { id: 'TEST_HAS_HM', reqHillOrMountainAroundHQ: true, minStage: 1 };
+const testCardHasHM = { id: 'TEST_HAS_HM', category: 'LAND', reqHillOrMountainAroundHQ: true, minStage: 1 };
 assert(testEngine1.deckManager.isCardEligible(testCardHasHM, 1, 0) === false, '肯定条件: 丘陵・山岳0個の時、reqHillOrMountainAroundHQ が false であること');
 assert(testEngine2.deckManager.isCardEligible(testCardHasHM, 1, 0) === true, '肯定条件: 丘陵1個の時、reqHillOrMountainAroundHQ が true であること');
 assert(testEngine3.deckManager.isCardEligible(testCardHasHM, 1, 0) === true, '肯定条件: 山岳1個の時、reqHillOrMountainAroundHQ が true であること');
@@ -1353,38 +1402,38 @@ installTrueMergeGroup(incompleteLinkEngine, 'TRUE_MERGE', linkPlains, mergeACell
 installConnectionOnlyGroup(incompleteLinkEngine, 'CONNECTION_ONLY', linkForest, mergeBCells);
 assert(incompleteLinkEngine.gridEngine.checkNewMergeLinks().count === 0 && incompleteLinkEngine.state.getMergeLinkCount() === 0, '4セルあっても1x3連結グループは真のMERGEではなくLINK対象外になること');
 
-// 8. 未MERGE森林は伐採対象（mergeGroupId流用中でも保護しない）
+// 8. dormant伐採COMMANDは未MERGE森林にも作用しない
 const unmergedClearingEngine = new GameEngine();
 installConnectionOnlyGroup(unmergedClearingEngine, 'FOREST_CONNECTION', linkForest, [
     { r: 0, c: 0 }, { r: 0, c: 1 }, { r: 1, c: 0 }, { r: 2, c: 0 }
 ]);
-unmergedClearingEngine.deckManager.playCommandCard({ id: 'CMD_SINGLE_CLEARING', nameKey: 'CMD_SINGLE_CLEARING_NAME', category: 'COMMAND', cost: {} });
-assert(unmergedClearingEngine.state.grid[0][0].terrain.terrainId === 'GL1_PLAINS', '未MERGE森林はmergeGroupIdがあってもCMD_SINGLE_CLEARINGの対象になること');
+assertCommandRuntimeDisabled(unmergedClearingEngine, { id: 'CMD_SINGLE_CLEARING', category: 'COMMAND', cost: {} }, 'CMD_SINGLE_CLEARING');
+assert(unmergedClearingEngine.state.grid[0][0].terrain.terrainId === 'GL2_FOREST', '拒否されたCMD_SINGLE_CLEARINGが未MERGE森林を変更しないこと');
 
 // 9〜10. 真のMERGE済み森林・森丘陵は恒久GL変更対象外
 const mergedForestClearingEngine = new GameEngine();
 installTrueMergeGroup(mergedForestClearingEngine, 'FOREST_MERGE', linkForest, [
     { r: 0, c: 0 }, { r: 0, c: 1 }, { r: 1, c: 0 }, { r: 1, c: 1 }
 ]);
-mergedForestClearingEngine.deckManager.playCommandCard({ id: 'CMD_SINGLE_CLEARING', nameKey: 'CMD_SINGLE_CLEARING_NAME', category: 'COMMAND', cost: {} });
+assertCommandRuntimeDisabled(mergedForestClearingEngine, { id: 'CMD_SINGLE_CLEARING', category: 'COMMAND', cost: {} }, 'MERGE森林へのCMD_SINGLE_CLEARING');
 assert(mergedForestClearingEngine.state.grid[0][0].terrain.terrainId === 'GL2_FOREST', 'MERGE済み森林はCMD_SINGLE_CLEARINGの対象外になること');
 
 const mergedForestHillClearingEngine = new GameEngine();
 installTrueMergeGroup(mergedForestHillClearingEngine, 'FOREST_HILL_MERGE', linkForestHill, [
     { r: 0, c: 0 }, { r: 0, c: 1 }, { r: 1, c: 0 }, { r: 1, c: 1 }
 ]);
-mergedForestHillClearingEngine.deckManager.playCommandCard({ id: 'CMD_SINGLE_CLEARING', nameKey: 'CMD_SINGLE_CLEARING_NAME', category: 'COMMAND', cost: {} });
+assertCommandRuntimeDisabled(mergedForestHillClearingEngine, { id: 'CMD_SINGLE_CLEARING', category: 'COMMAND', cost: {} }, 'MERGE森丘陵へのCMD_SINGLE_CLEARING');
 assert(mergedForestHillClearingEngine.state.grid[0][0].terrain.terrainId === 'E2_FOREST_HILL', 'MERGE済み森丘陵はCMD_SINGLE_CLEARINGの対象外になること');
 
-// 11. 一時的産出効果の計画伐採はMERGE済み森林にも従来どおり作用
+// 11. dormant計画伐採もMERGE済み森林へ作用しない
 const systematicLoggingMergeEngine = new GameEngine();
 systematicLoggingMergeEngine.state.wood = 0;
 installTrueMergeGroup(systematicLoggingMergeEngine, 'LOGGING_FOREST_MERGE', linkForest, [
     { r: 0, c: 0 }, { r: 0, c: 1 }, { r: 1, c: 0 }, { r: 1, c: 1 }
 ]);
-systematicLoggingMergeEngine.deckManager.playCommandCard({ id: 'CMD_SYSTEMATIC_LOGGING', nameKey: 'CMD_SYSTEMATIC_LOGGING_NAME', category: 'COMMAND', cost: {} });
-assert(systematicLoggingMergeEngine.state.wood === 24, 'CMD_SYSTEMATIC_LOGGINGはMERGE済み森林4セルにも従来どおり🧱+24を付与すること');
-assert(systematicLoggingMergeEngine.state.systematicLoggingTurns === 3, 'CMD_SYSTEMATIC_LOGGINGの3ターン効果が維持されること');
+assertCommandRuntimeDisabled(systematicLoggingMergeEngine, { id: 'CMD_SYSTEMATIC_LOGGING', category: 'COMMAND', cost: {} }, 'CMD_SYSTEMATIC_LOGGING');
+assert(systematicLoggingMergeEngine.state.wood === 0, '拒否されたCMD_SYSTEMATIC_LOGGINGが資材を付与しないこと');
+assert(!systematicLoggingMergeEngine.state.systematicLoggingTurns, '拒否されたCMD_SYSTEMATIC_LOGGINGが期限効果を開始しないこと');
 
 // 12. UndoでLINK集合・LINK数・最大🔥・現在🔥を配置前へ復元
 const undoLinkEngine = createSimultaneousLinkPlacementEngine();
