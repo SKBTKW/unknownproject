@@ -101,6 +101,7 @@ function restoreTrialBoundary(service, savedState) {
 
 function rollbackFailedRestore(engine, history, checkpoint, resolveCardMaster) {
     bestEffort(() => hydrateGameState(engine.state, checkpoint.gameState, { resolveCardMaster }));
+    bestEffort(() => engine.state.defenseSystem?.reconcileWithMax?.());
     bestEffort(() => restoreCheckState(engine.checkSystem, checkpoint.checkState));
     bestEffort(() => restoreGameplayState(engine.gameplayRandom, checkpoint.gameplayState));
     bestEffort(() => engine.chronicleSystem.restoreEvents(cloneData(checkpoint.chronicle, [])));
@@ -207,6 +208,7 @@ export class HistoryRestoreService {
             hydrateGameState(engine.state, restorePoint.gameState, {
                 resolveCardMaster
             });
+            engine.state.defenseSystem?.reconcileWithMax?.();
             engine.checkSystem.setState(restorePoint.rngState);
             engine.gameplayRandom.setState(restorePoint.gameplayRngState);
             engine.chronicleSystem.restoreEvents(restorePoint.chronicle);
