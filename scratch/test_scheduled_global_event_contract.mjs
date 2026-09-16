@@ -45,6 +45,14 @@ const duplicate = manager.scheduleEvent("EVENT_DEMIHUMAN_TRACES", 7);
 assert(duplicate.success === true && duplicate.alreadyScheduled === true, "same GE/Verse reservation must be idempotent");
 assert(state.scheduledGlobalEvents.length === 1, "duplicate reservation must not duplicate queue state");
 
+const duplicateOtherVerse = manager.scheduleEvent("EVENT_DEMIHUMAN_TRACES", 8);
+assert(
+    duplicateOtherVerse.success === false
+        && duplicateOtherVerse.reason === "GLOBAL_EVENT_ALREADY_SCHEDULED",
+    "one-shot GE must reject reservation on a second Verse"
+);
+assert(state.scheduledGlobalEvents.length === 1, "one-shot GE must retain only one reservation");
+
 assert(manager.scheduleEvent("EVENT_DOES_NOT_EXIST", 7).reason === "GLOBAL_EVENT_NOT_FOUND", "unknown GE must be rejected");
 assert(manager.scheduleEvent("EVENT_DEMIHUMAN_TRACES", 5).reason === "GLOBAL_EVENT_SCHEDULE_VERSE_PASSED", "past Verse must be rejected");
 
@@ -69,6 +77,14 @@ assert(onDue?.definitionId === "EVENT_DEMIHUMAN_TRACES", "scheduled GE must fire
 assert(starts === 1 && startTurn === 7, "scheduled GE must emit exactly one START lifecycle at the due Verse");
 assert(state.scheduledGlobalEvents.length === 0, "fired reservation must be consumed");
 assert(state.lastGlobalEventTurn === 7, "scheduled GE must update ordinary GE timing state");
+
+const rescheduledAfterFire = manager.scheduleEvent("EVENT_DEMIHUMAN_TRACES", 8);
+assert(
+    rescheduledAfterFire.success === false
+        && rescheduledAfterFire.reason === "GLOBAL_EVENT_ALREADY_TRIGGERED",
+    "one-shot GE must reject reservation after it has fired"
+);
+assert(manager.triggerEvent("EVENT_DEMIHUMAN_TRACES") === null, "one-shot GE must reject direct retrigger after firing");
 
 manager.director.shouldTriggerEvent = () => false;
 assert(manager.onTurnStart() === null, "consumed reservation must not retrigger");
