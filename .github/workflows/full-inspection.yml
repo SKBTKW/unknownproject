@@ -29,6 +29,25 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Validate TASK branch contract
+        shell: bash
+        env:
+          AOT_HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          AOT_BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { expectedTaskBranchPattern, isCanonicalTaskBranch } from './scratch/task_branch_contract.mjs';
+
+          const head = process.env.AOT_HEAD_BRANCH;
+          const base = process.env.AOT_BASE_BRANCH;
+          if (!isCanonicalTaskBranch(head, base)) {
+            console.error(`Invalid TASK branch '${head}'.`);
+            console.error(`Expected: ${expectedTaskBranchPattern(base)}`);
+            process.exit(1);
+          }
+          console.log(`TASK branch contract OK: ${head}`);
+          NODE
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
