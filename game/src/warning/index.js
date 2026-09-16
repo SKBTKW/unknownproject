@@ -17,6 +17,8 @@ export { InvestigationOfferingAdapter } from './systems/investigation_offering_a
 export { InvestigationCardExecutionService } from './systems/investigation_card_execution_service.js';
 export { InvestigationUnlockBridge, DEFAULT_UNLOCK_EVENT_IDS } from './systems/investigation_unlock_bridge.js';
 export { WarningStateService } from './systems/warning_state_service.js';
+export { WarningOmenBridge, DEFAULT_OMEN_EVENT_IDS } from './systems/warning_omen_bridge.js';
+export { WarningSettlementBridge } from './systems/warning_settlement_bridge.js';
 export { attachInvestigationRuntime } from './integration/investigation_runtime_bridge.js';
 export { attachInvestigationSubsystem } from './integration/investigation_bootstrap.js';
 export { InvestigationReportPresenter } from './presentation/investigation_report_presenter.js';
