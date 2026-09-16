@@ -72,10 +72,9 @@ export function attachTrialLaunchSubsystem(engine, ui, {
         routeGenerator: resolvedRouteGenerator
     });
 
-    const activePredicate = isTrialActive || (() => {
-        const phase = ui.trialController?.getState?.()?.phase;
-        return Boolean(phase && phase !== "RESULT");
-    });
+    // TrialController keeps state through RESULT/settlement until the session is
+    // explicitly released. Any existing state therefore blocks a new launch.
+    const activePredicate = isTrialActive || (() => Boolean(ui.trialController?.state));
     const blockedPredicate = isPresentationBlocked || (() => {
         const manager = engine.globalEventManager;
         return Boolean(manager?.active || manager?.getPendingChoice?.());
