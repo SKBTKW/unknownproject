@@ -1,5 +1,6 @@
 import assert from 'assert/strict';
 import { classifyTaskCandidate, parseGitHubRepo } from './task_sweeper.mjs';
+import { extractTargets, isCleanConfirmation } from './task_sweeper_launcher.mjs';
 
 const base = {
     currentWorktree: false,
@@ -37,4 +38,21 @@ assert.deepEqual(parseGitHubRepo('git@github.com:SKBTKW/unknownproject.git'), { 
 assert.deepEqual(parseGitHubRepo('https://github.com/SKBTKW/unknownproject.git'), { owner: 'SKBTKW', repo: 'unknownproject' });
 assert.equal(parseGitHubRepo('https://example.com/SKBTKW/unknownproject.git'), null);
 
-console.log(`✅ AoT Task Sweeper safety contract: ${passed}/9 classifications PASS + remote parsing PASS`);
+assert.deepEqual(
+    extractTargets([
+        'aot-task/AoT260916/tutorial/first-run',
+        'origin/aot-task/AoT260917/tooling/task-sweeper',
+        'origin/aot-task/AoT260916/layout/trial-responsive-clearance',
+        'origin/main',
+    ]),
+    ['AoT260917', 'AoT260916'],
+);
+
+for (const value of ['CLEAN', 'clean', 'Clean', 'cLeAn', ' CLEAN ']) {
+    assert.equal(isCleanConfirmation(value), true, `${value} should authorize cleanup`);
+}
+for (const value of ['', 'delete', 'yes', 'clean now']) {
+    assert.equal(isCleanConfirmation(value), false, `${value} should not authorize cleanup`);
+}
+
+console.log(`✅ AoT Task Sweeper safety contract: ${passed}/9 classifications PASS + launcher target/confirmation PASS`);

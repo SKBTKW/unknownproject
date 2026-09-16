@@ -16,7 +16,7 @@ if errorlevel 1 (
   exit /b 1
 )
 
-node scratch\task_sweeper.mjs --interactive
+node scratch\task_sweeper_launcher.mjs
 set "EXIT_CODE=%ERRORLEVEL%"
 
 echo.
