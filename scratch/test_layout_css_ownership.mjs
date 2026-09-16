@@ -149,9 +149,10 @@ check('Offering geometry is owned by CSS without runtime inline configuration', 
     assert.equal(Object.hasOwn(UILayoutConfig, 'playerTray'), false);
     assert.equal(Object.hasOwn(UILayoutConfig, 'offeringCardArea'), false);
 });
-check('Focus layer state leaves Player Tray and Offering z-index to CSS', () => {
+check('Focus layer state leaves Board, Player Tray, and Offering z-index to CSS', () => {
     assert.doesNotMatch(focusSource, /playerTray\.style\.zIndex/);
     assert.doesNotMatch(focusSource, /offeringSectionEl\.style\.zIndex/);
+    assert.doesNotMatch(focusSource, /boardContainerEl\.style\.zIndex/);
     assert.match(focusSource, /offeringSectionEl\.classList\.add\('layer-active-front'\)/);
     assert.match(focusSource, /offeringSectionEl\.classList\.add\('layer-dim-blur'\)/);
 });

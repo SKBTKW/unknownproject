@@ -170,7 +170,6 @@ class FocusLayerManager {
         if (isFront) {
             this.boardContainerEl.classList.add('layer-active-front');
             this.boardContainerEl.classList.remove('layer-dim-blur');
-            this.boardContainerEl.style.zIndex = '100';
             if (gridEl) gridEl.classList.remove('board-dim-blur');
 
             // 🌟 カード選択中であっても手札トレイ（保留スロット含む）のクリックを盤面で覆い隠さない
@@ -186,7 +185,6 @@ class FocusLayerManager {
                 this.boardContainerEl.classList.remove('layer-dim-blur');
                 if (gridEl) gridEl.classList.remove('board-dim-blur');
             }
-            this.boardContainerEl.style.zIndex = '10';
         }
     }
 
@@ -201,8 +199,6 @@ class FocusLayerManager {
         if (isFront) {
             this.offeringSectionEl.classList.add('layer-active-front');
             this.offeringSectionEl.classList.remove('layer-dim-blur');
-
-            if (this.boardContainerEl) this.boardContainerEl.style.zIndex = '10';
         } else {
             this.offeringSectionEl.classList.remove('layer-active-front');
             if (isBlurEnabled) {
@@ -219,7 +215,6 @@ class FocusLayerManager {
     resetToNeutral() {
         if (this.boardContainerEl) {
             this.boardContainerEl.classList.remove('layer-active-front', 'layer-dim-blur');
-            this.boardContainerEl.style.zIndex = '10';
         }
         if (this.offeringSectionEl) {
             this.offeringSectionEl.classList.remove('layer-active-front', 'layer-dim-blur');
