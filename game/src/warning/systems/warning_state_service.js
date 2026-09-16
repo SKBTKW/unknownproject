@@ -1,6 +1,7 @@
 import {
     WARNING_STATES,
     canAdvanceWarningState,
+    getWarningStateRank,
     isWarningState
 } from "../domain/warning_state.js";
 
@@ -62,20 +63,30 @@ export class WarningStateService {
         return { changed: true, readModel: this.getReadModel() };
     }
 
+    advanceAtLeast(minimumState, context = {}) {
+        if (!isWarningState(minimumState)) {
+            throw new TypeError("WARNING_STATE_TARGET_INVALID");
+        }
+        if (getWarningStateRank(this.state) >= getWarningStateRank(minimumState)) {
+            return { changed: false, readModel: this.getReadModel() };
+        }
+        return this.advanceTo(minimumState, context);
+    }
+
     markOmen(context = {}) {
-        return this.advanceTo(WARNING_STATES.OMEN, context);
+        return this.advanceAtLeast(WARNING_STATES.OMEN, context);
     }
 
     markWatch(context = {}) {
-        return this.advanceTo(WARNING_STATES.WATCH, context);
+        return this.advanceAtLeast(WARNING_STATES.WATCH, context);
     }
 
     markTense(context = {}) {
-        return this.advanceTo(WARNING_STATES.TENSE, context);
+        return this.advanceAtLeast(WARNING_STATES.TENSE, context);
     }
 
     markImminent(context = {}) {
-        return this.advanceTo(WARNING_STATES.IMMINENT, context);
+        return this.advanceAtLeast(WARNING_STATES.IMMINENT, context);
     }
 
     resetForNextTrial({ source = "TRIAL_SETTLED", verse = null } = {}) {
