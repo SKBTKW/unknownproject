@@ -23,17 +23,27 @@ export class TrialResultUIController extends BoardAwareUIController {
         this.globalEventChoiceRuntime?.resumePending?.();
     }
 
-    startTrialInterceptionPreview(scenario, options = {}) {
-        const state = super.startTrialInterceptionPreview(scenario, options);
+    startTrialSession(scenario, options = {}) {
+        const state = super.startTrialSession(scenario, options);
         this.engine?.trialSessionBoundaryService?.beginTrial?.({
             startVerse: this.state?.turn
         });
         return state;
     }
 
-    stopTrialInterceptionPreview() {
+    /** @deprecated Use startTrialSession(). */
+    startTrialInterceptionPreview(scenario, options = {}) {
+        return this.startTrialSession(scenario, options);
+    }
+
+    stopTrialSession() {
         this.engine?.trialSessionBoundaryService?.abortTrial?.();
-        return super.stopTrialInterceptionPreview();
+        return super.stopTrialSession();
+    }
+
+    /** @deprecated Use stopTrialSession(). */
+    stopTrialInterceptionPreview() {
+        return this.stopTrialSession();
     }
 
     releaseSettledTrialPresentation() {
