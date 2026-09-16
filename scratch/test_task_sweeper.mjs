@@ -1,8 +1,11 @@
 import assert from 'assert/strict';
 import { classifyTaskCandidate, parseGitHubRepo } from './task_sweeper.mjs';
 import { extractTargets, isCleanConfirmation } from './task_sweeper_launcher.mjs';
+import { expectedTaskBranchPattern, isCanonicalTaskBranch } from './task_branch_contract.mjs';
 
 const base = {
+    target: 'AoT260917',
+    canonicalName: true,
     currentWorktree: false,
     lockedWorktree: false,
     dirtyWorktree: false,
@@ -18,6 +21,7 @@ const base = {
 const tests = [
     ['empty task is safe', { ...base }, 'SAFE'],
     ['verified squash-merged task is safe', { ...base, uniqueCommits: 3, mergedPrVerified: true, mergedPrNumber: 42 }, 'SAFE'],
+    ['non-canonical task name blocks', { ...base, canonicalName: false }, 'BLOCKED'],
     ['dirty worktree blocks', { ...base, dirtyWorktree: true }, 'BLOCKED'],
     ['current task worktree blocks', { ...base, currentWorktree: true }, 'BLOCKED'],
     ['locked worktree blocks', { ...base, lockedWorktree: true }, 'BLOCKED'],
@@ -38,6 +42,14 @@ assert.deepEqual(parseGitHubRepo('git@github.com:SKBTKW/unknownproject.git'), { 
 assert.deepEqual(parseGitHubRepo('https://github.com/SKBTKW/unknownproject.git'), { owner: 'SKBTKW', repo: 'unknownproject' });
 assert.equal(parseGitHubRepo('https://example.com/SKBTKW/unknownproject.git'), null);
 
+assert.equal(isCanonicalTaskBranch('aot-task/AoT260917/tooling/task-sweeper', 'AoT260917'), true);
+assert.equal(isCanonicalTaskBranch('aot-task/AoT260917/trial/route-fix', 'AoT260917'), true);
+assert.equal(isCanonicalTaskBranch('TASK/trial-260917', 'AoT260917'), false);
+assert.equal(isCanonicalTaskBranch('aot-task/AoT260917/tooling/foo/bar', 'AoT260917'), false);
+assert.equal(isCanonicalTaskBranch('aot-task/AoT260916/tooling/task-sweeper', 'AoT260917'), false);
+assert.equal(isCanonicalTaskBranch('aot-task/AoT260917/Tooling/task-sweeper', 'AoT260917'), false);
+assert.equal(expectedTaskBranchPattern('AoT260917'), 'aot-task/AoT260917/<domain>/<task-id>');
+
 assert.deepEqual(
     extractTargets([
         'aot-task/AoT260916/tutorial/first-run',
@@ -55,4 +67,4 @@ for (const value of ['', 'delete', 'yes', 'clean now']) {
     assert.equal(isCleanConfirmation(value), false, `${value} should not authorize cleanup`);
 }
 
-console.log(`✅ AoT Task Sweeper safety contract: ${passed}/9 classifications PASS + launcher target/confirmation PASS`);
+console.log(`✅ AoT Task Sweeper safety contract: ${passed}/10 classifications PASS + naming/launcher contract PASS`);
