@@ -88,10 +88,13 @@ check(tokensCss.includes("--layout-right-context-max-height: calc(")
 "Right Context max height is derived from the same Layout-owned boundaries");
 check(tokensCss.includes("--layout-right-context-mobile-top")
     && tokensCss.includes("--layout-right-context-mobile-max-height")
-    && layerContractCss.includes("bottom: auto !important")
-    && layerContractCss.includes("var(--layout-right-context-mobile-top)")
-    && layerContractCss.includes("var(--layout-right-context-mobile-max-height)"),
+    && layoutConfig.includes('top: "var(--layout-right-context-mobile-top)"')
+    && layoutConfig.includes('bottom: "auto"')
+    && layoutConfig.includes('maxHeight: "var(--layout-right-context-mobile-max-height)"'),
 "mobile Right Context is reserved in the upper band instead of overlapping the Trial Action Tray");
+check(!layerContractCss.includes("var(--layout-right-context-mobile-top)")
+    && !layerContractCss.includes("var(--layout-right-context-mobile-max-height)"),
+"global layer contract does not duplicate mobile Right Context geometry");
 
 check(layoutConfig.includes('right: "var(--layout-right-context-right)"')
     && layoutConfig.includes('width: "var(--layout-right-context-width)"')
@@ -109,15 +112,15 @@ check(layoutConfig.includes('right: "var(--layout-advisor-right)"')
     && layoutConfig.includes('bottom: "var(--layout-advisor-bottom)"')
     && layoutConfig.includes('zIndex: "var(--z-advisor)"'),
 "Advisor dock config consumes shared Layout geometry and layer tokens");
-check(layoutConfig.includes('top: "var(--layout-system-overlay-inset)"')
-    && layoutConfig.includes('left: "var(--layout-system-overlay-inset)"')
-    && layoutConfig.includes('zIndex: "var(--z-overlay)"'),
-"System Overlay config consumes shared Layout geometry and layer tokens");
-check(layoutConfig.includes('zIndex: "var(--z-world)"')
-    && baseLayoutCss.includes("--z-world:")
+check(layerContractCss.includes("#layerSystemOverlay.layer-system-overlay")
+    && layerContractCss.includes("position: fixed !important")
+    && layerContractCss.includes("inset: var(--layout-system-overlay-inset) !important")
+    && layerContractCss.includes("z-index: var(--z-overlay) !important"),
+"System Overlay layer contract consumes shared Layout geometry and layer tokens");
+check(baseLayoutCss.includes("--z-world:")
     && legacyLayoutCss.includes(".layer-world-board-container")
     && legacyLayoutCss.includes("z-index: var(--z-world)"),
-"World Board config and runtime CSS consume the shared world layer token");
+"World Board runtime CSS consumes the shared world layer token");
 
 check(layerContractCss.includes("#layerPlayerTray.layer-player-tray")
     && layerContractCss.includes("var(--z-player)"),
