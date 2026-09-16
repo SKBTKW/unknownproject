@@ -21,6 +21,7 @@ export const ADVISOR_CHARACTER_REQUIRED_FIELDS = Object.freeze([
     "speechStyle",
     "characterRules",
     "reactions",
+    "adviceDialogue",
     "dutyDialogue",
     "initialSkills"
 ]);
@@ -53,6 +54,7 @@ export function createAdvisorCharacterDefinition(definition = {}) {
         speechStyle: frozenObject(definition.speechStyle),
         characterRules: frozenObject(definition.characterRules),
         reactions: frozenObject(definition.reactions),
+        adviceDialogue: frozenObject(definition.adviceDialogue),
         dutyDialogue: frozenObject(definition.dutyDialogue),
         initialSkills: frozenArray(definition.initialSkills)
     });

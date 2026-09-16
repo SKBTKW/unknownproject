@@ -4,6 +4,13 @@ function defaultPickLine(lines) {
     return Array.isArray(lines) && lines.length > 0 ? lines[0] : null;
 }
 
+function defaultReactionPriority(scene) {
+    if (scene === "GAME_OVER" || scene === "RUN_CLEAR" || scene === "THIRD_TRIAL_VICTORY") return 100;
+    if (scene?.startsWith?.("TRIAL_")) return 90;
+    if (scene === "CIVILIANS_LOST" || scene === "FOOD_CRITICAL") return 90;
+    return 70;
+}
+
 // Character Reaction only. Required Advisor Duty / warnings are intentionally outside this service.
 export class AdvisorReactionService {
     constructor({
@@ -42,6 +49,7 @@ export class AdvisorReactionService {
             scene: cue.type,
             expression: reaction.expression || "NORMAL",
             line,
+            priority: Number.isFinite(reaction.priority) ? reaction.priority : defaultReactionPriority(cue.type),
             payload: cue.payload || {}
         });
 
