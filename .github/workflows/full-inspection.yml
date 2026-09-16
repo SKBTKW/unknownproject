@@ -1,0 +1,87 @@
+name: AoT Full Inspection
+
+on:
+  pull_request:
+    branches:
+      - "AoT*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: full-inspection-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  full-inspection:
+    name: Full Inspection
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout PR merge result
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Prepare AoT PR inspection state
+        shell: bash
+        env:
+          AOT_REPOSITORY: ${{ github.repository }}
+          AOT_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          AOT_HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          AOT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          AOT_BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
+          AOT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+
+          if [ "${AOT_HEAD_REPOSITORY}" != "${AOT_REPOSITORY}" ]; then
+            echo "AoT Full Inspection currently requires a same-repository TASK branch."
+            exit 1
+          fi
+
+          MERGE_SHA="$(git rev-parse HEAD)"
+
+          git fetch --no-tags origin \
+            "+refs/heads/${AOT_HEAD_BRANCH}:refs/remotes/origin/${AOT_HEAD_BRANCH}" \
+            "+refs/heads/${AOT_BASE_BRANCH}:refs/remotes/origin/${AOT_BASE_BRANCH}"
+
+          # The checked-out PR merge result must contain both the exact base and head
+          # revisions advertised by the pull_request event.
+          git merge-base --is-ancestor "${AOT_BASE_SHA}" "${MERGE_SHA}"
+          git merge-base --is-ancestor "${AOT_HEAD_SHA}" "${MERGE_SHA}"
+
+          # GIT001 expects a named branch with a same-name origin upstream.
+          # Keep the merge-result files in the working tree, but move HEAD/index to
+          # the PR base so the existing diff-aware linter sees committed PR changes
+          # exactly as local added lines without introducing a CI-only lint bypass.
+          git switch -C "${AOT_HEAD_BRANCH}" "${MERGE_SHA}"
+          git branch --set-upstream-to="origin/${AOT_HEAD_BRANCH}" "${AOT_HEAD_BRANCH}"
+
+          git config --local aot.authorizedBranch "${AOT_HEAD_BRANCH}"
+          git config --local aot.workMode DIRECT
+          git config --local --unset-all aot.authorizedWorkBranch || true
+          git config --local --unset-all aot.authorizedTaskBranch || true
+          git config --local --unset-all aot.authorizedBaseCommit || true
+
+          git reset --mixed "${AOT_BASE_SHA}"
+
+          test "$(git rev-parse --abbrev-ref HEAD)" = "${AOT_HEAD_BRANCH}"
+          test "$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}')" = "origin/${AOT_HEAD_BRANCH}"
+
+          echo "PR merge result prepared as working-tree diff against ${AOT_BASE_SHA}."
+          git status --short
+
+      - name: Run AoT Full Inspection
+        run: node scratch/run_full_inspection.mjs
