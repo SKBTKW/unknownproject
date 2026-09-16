@@ -72,22 +72,28 @@ Development-only harnesses and diagnostics.
 
 ## Current production-facing UI boundary
 
-`UIController` currently owns a `TrialController`, `TrialPresentationState`, and `DevelopmentTrialPreviewHarness`.
+The production-facing UI subclasses expose:
 
-The method currently named `startTrialInterceptionPreview(...)` starts the real Trial controller/session presentation path even though its name still reflects the earlier preview phase. Treat this as a compatibility surface pending a dedicated production start API. Do not add new gameplay rules to this method.
+- `startTrialSession(...)`
+- `stopTrialSession()`
 
-The desired eventual split is:
+The older `startTrialInterceptionPreview(...)` / `stopTrialInterceptionPreview()` names remain as deprecated compatibility aliases while the base UI implementation and older callers are migrated.
+
+The development preview harness now calls the same production-facing session API rather than owning an alternate start/stop path.
+
+The current split is therefore:
 
 ```text
-production trigger
-    -> production Trial session start API
+production caller
+    -> startTrialSession(...)
     -> TrialController
 
 dev harness
-    -> same production Trial session start API
+    -> startTrialSession(...)
+    -> TrialController
 ```
 
-The dev harness should become a caller of the production boundary, not an alternate Trial implementation.
+Do not add gameplay rules to the deprecated preview-named aliases.
 
 ## Known legacy surfaces outside this directory
 
@@ -100,11 +106,23 @@ The dev harness should become a caller of the production boundary, not an altern
 
 These are legacy scheduling/presentation surfaces and are not the authority for the newer Warning / Investigation design. Do not extend them with new Trial behavior.
 
-They must not be deleted until all references are audited. The cleanup order is:
+### Confirmed live legacy dependency
+
+The legacy schedule is **not dead yet**.
+
+Board stage expansion currently depends on `trialSchedule.trial1` / `trialSchedule.trial2`. At the matching Verse boundary the normal turn lifecycle expands Stage 1 -> 2 (7x7) and Stage 2 -> 3 (9x9), and updates `nextTrialTurn`.
+
+That behavior has been moved behind:
+
+`game/src/core/legacy_trial_schedule_compat.js`
+
+This is an isolation boundary only. It intentionally preserves the old behavior until board-stage progression is migrated to an explicit post-Trial progression contract. New systems must not consume this compatibility module as a source of Trial timing truth.
+
+The remaining legacy data must not be deleted until all references are audited. The cleanup order is:
 
 1. find every read/write reference;
 2. classify each reference as production, compatibility, test, or dead;
-3. introduce the replacement production trigger contract;
+3. introduce the replacement production trigger/progression contract;
 4. migrate callers;
 5. remove legacy schedule/countdown data only after reference count reaches zero.
 
@@ -126,9 +144,9 @@ They must not be deleted until all references are audited. The cleanup order is:
 Do cleanup in small, rollback-safe steps:
 
 1. **Reference audit** — legacy schedule/countdown and preview-named production entry points.
-2. **Production start boundary** — add a correctly named Trial session start API without removing compatibility callers.
-3. **Dev harness convergence** — route development preview through the production start boundary.
-4. **Legacy schedule isolation** — stop production code from consuming direct countdown state.
-5. **Legacy removal** — only after tests/diagnostics prove no required references remain.
+2. **Production start boundary** — expose a correctly named Trial session start API without removing compatibility callers. **Done.**
+3. **Dev harness convergence** — route development preview through the production start boundary. **Done.**
+4. **Legacy schedule isolation** — move confirmed old consumers behind an explicit compatibility boundary. **In progress; stage expansion isolated.**
+5. **Legacy removal** — only after tests/diagnostics prove no required references remain and stage progression has a replacement authority.
 
 No gameplay rebalance, Trial rule redesign, or Warning/Investigation behavior change belongs in these cleanup commits.
