@@ -1,6 +1,6 @@
 ## Task identity
 
-- Target branch: `AoT260916`
+- Target branch: `<target>`
 - Task branch: `aot-task/<target>/<domain>/<task-id>`
 - Recorded base commit:
 - Task owner:
