@@ -4,6 +4,7 @@ import { GLOBAL_EVENT_TIMINGS } from "../../systems/global_event_system.js";
 import { WARNING_STATES } from "../../warning/domain/warning_state.js";
 import { WarningStateService } from "../../warning/systems/warning_state_service.js";
 import { WarningOmenBridge } from "../../warning/systems/warning_omen_bridge.js";
+import { WarningInvestigationBridge } from "../../warning/systems/warning_investigation_bridge.js";
 import { WarningSettlementBridge } from "../../warning/systems/warning_settlement_bridge.js";
 
 class FakeGlobalEventManager {
@@ -37,6 +38,36 @@ class FakeGlobalEventManager {
     assert.equal(warning.getReadModel().history.at(-1).verse, 7);
 
     omenBridge.detach();
+}
+
+{
+    const warning = new WarningStateService();
+    warning.markOmen({ source: "EVENT_DEMIHUMAN_TRACES", verse: 7 });
+    const hub = new GameFactHub();
+    const investigationBridge = new WarningInvestigationBridge({
+        gameFactHub: hub,
+        warningStateService: warning
+    });
+
+    hub.emit(GAME_FACT_TYPES.INVESTIGATION_RECORDED, {
+        trialIndex: 1,
+        verse: 9,
+        cardId: "INV_BORDER_PATROL",
+        reportId: "investigation_1"
+    });
+    assert.equal(warning.getState(), WARNING_STATES.WATCH);
+    assert.equal(warning.getReadModel().history.at(-1).verse, 9);
+
+    warning.markTense({ source: "TEST", verse: 12 });
+    hub.emit(GAME_FACT_TYPES.INVESTIGATION_RECORDED, {
+        trialIndex: 1,
+        verse: 13,
+        cardId: "INV_FOLLOW_TRACKS",
+        reportId: "investigation_2"
+    });
+    assert.equal(warning.getState(), WARNING_STATES.TENSE);
+
+    investigationBridge.dispose();
 }
 
 {
