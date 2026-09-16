@@ -6,6 +6,7 @@ import {
 } from '../presentation/board_presentation_state.js';
 import { BoardPresentationDataService } from '../presentation/board_presentation_data_service.js';
 import { TrialBoardSemanticAdapter } from '../presentation/trial_board_semantic_adapter.js';
+import { PlacementPreviewResolver } from '../presentation/placement_preview_resolver.js';
 import { BoardPresentationGridComponent } from './board_presentation_grid_component.js';
 
 /**
@@ -20,6 +21,7 @@ export class BoardAwareUIController extends LegacyUIController {
         this.boardPresentationState = new BoardPresentationState();
         this.layoutStateManager.bindBoardPresentationState(this.boardPresentationState);
         this.boardPresentationDataService = new BoardPresentationDataService();
+        this.placementPreviewResolver = new PlacementPreviewResolver();
         this.preTrialBoardContextMode = null;
         if (typeof document !== 'undefined') {
             this.boardGridComponent = new BoardPresentationGridComponent(this);
@@ -115,11 +117,36 @@ export class BoardAwareUIController extends LegacyUIController {
         });
     }
 
+    getPlacementPreviewPresentationData() {
+        if (this.boardPresentationState.contextMode === BOARD_CONTEXT_MODES.TRIAL) {
+            return Object.freeze({ active: false, candidates: Object.freeze([]), hover: null });
+        }
+        if (!this.selectedCard || this.state?.hasPickedThisTurn) {
+            return Object.freeze({ active: false, candidates: Object.freeze([]), hover: null });
+        }
+
+        const hovered = this.boardPresentationState.hoveredCell;
+        const candidates = this.placementPreviewResolver.resolveCandidates(this.selectedCard, this.state);
+        const hover = hovered
+            ? this.placementPreviewResolver.resolveHover(this.selectedCard, this.state, hovered.r, hovered.c)
+            : null;
+
+        return Object.freeze({
+            active: true,
+            candidates,
+            hover
+        });
+    }
+
     getBoardPresentationData() {
-        return this.boardPresentationDataService.getBoard(this.state, {
+        const board = this.boardPresentationDataService.getBoard(this.state, {
             presentationState: this.boardPresentationState,
             trialSemanticData: this.getTrialBoardSemanticData(),
             gridOverride: this.getBoardDisplayGrid()
+        });
+        return Object.freeze({
+            ...board,
+            placementPreview: this.getPlacementPreviewPresentationData()
         });
     }
 
