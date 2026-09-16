@@ -22,6 +22,7 @@ export { WarningInvestigationBridge } from './systems/warning_investigation_brid
 export { WarningSettlementBridge } from './systems/warning_settlement_bridge.js';
 export { attachInvestigationRuntime } from './integration/investigation_runtime_bridge.js';
 export { attachInvestigationSubsystem } from './integration/investigation_bootstrap.js';
+export { attachWarningSubsystem } from './integration/warning_bootstrap.js';
 export { InvestigationReportPresenter } from './presentation/investigation_report_presenter.js';
 export { InvestigationReportTextRenderer } from './presentation/investigation_report_text_renderer.js';
 export { InvestigationNarrativeComposer } from './presentation/investigation_narrative_composer.js';
