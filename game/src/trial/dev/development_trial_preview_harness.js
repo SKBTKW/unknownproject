@@ -84,7 +84,7 @@ export class DevelopmentTrialPreviewHarness {
             definition: scenarioDefinition,
             displayGrid: createScenarioGrid(scenarioDefinition)
         };
-        this.ui.startTrialInterceptionPreview(scenario, {
+        this.ui.startTrialSession(scenario, {
             deployedDefense: scenarioDefinition.deployedDefense,
             routeId: routes[0]?.id || scenarioDefinition.routeId
         });
@@ -94,7 +94,7 @@ export class DevelopmentTrialPreviewHarness {
     stop() {
         if (!this.session) return false;
         this.session = null;
-        this.ui.stopTrialInterceptionPreview();
+        this.ui.stopTrialSession();
         return true;
     }
 
