@@ -27,10 +27,28 @@ The old model exposes exact Trial distance. The modern Warning / Investigation m
 | `ConditionEvaluator.TRIAL_DISTANCE_ABOVE` | production rule predicate | Reads `nextTrialTurn - turn` | Do not extend; migrate to modern semantic condition later |
 | `ConditionEvaluator.TRIAL_NOTICE` | production rule predicate | Calls `getTrialNotice()` and falls back to `nextTrialTurn - turn <= 5` | Do not remove while cards use `reqTrialNotice` |
 | `ConditionEvaluator.TRIAL_WITHIN` | production rule predicate | Reads exact `nextTrialTurn - turn <= N` | Do not remove while cards use `reqTrialWithin` |
+| `DeckManager.isCardEligible()` | production gameplay, duplicate timing authority | Reimplements `reqTrialNotice`, `reqTrialWithin`, and `reqTrialOrLowDefense` directly from `getTrialNotice()` / `nextTrialTurn` | Consolidate before replacing timing semantics |
 | `state_serializer_base.js` | save/history compatibility | Serializes `trialSchedule` and `nextTrialTurn` | Keep until restore schema migration |
 | `hydrate_game_state_base.js` | restore compatibility | Hydrates `trialSchedule` and `nextTrialTurn` | Keep until restore schema migration |
 | `TopHeaderComponent` | presentation legacy residue | Countdown badge exists but is forced hidden | Safe presentation residue; not timing authority |
 | Warning / Investigation subsystem | modern production subsystem | No confirmed dependency on old schedule/countdown in inspected integration path | Keep independent |
+
+## Confirmed card-condition duplication
+
+Trial-distance card eligibility currently has two rule surfaces:
+
+1. generic handlers in `ConditionEvaluator`;
+2. direct field-specific checks in `DeckManager.isCardEligible()`.
+
+This duplication must be removed before timing semantics are migrated. Otherwise a new Warning-aware condition could be correct in one layer while Offering eligibility still follows the old exact countdown in the other.
+
+`DeckManager` currently resolves:
+
+- `reqTrialOrLowDefense`: `getTrialNotice().active || defense <= 30`;
+- `reqTrialNotice`: `getTrialNotice().active || (nextTrialTurn - turn <= 5)`;
+- `reqTrialWithin`: `(nextTrialTurn - turn) <= card.reqTrialWithin`.
+
+The old schedule therefore remains gameplay-authoritative for Offering eligibility even though its UI countdown is hidden.
 
 ## Confirmed active card-data dependencies
 
@@ -49,9 +67,11 @@ Current generated command-card data still uses old Trial-distance predicates.
 - `CMD_LOCAL_IRON_ARMAMENT`: 6
 - `CMD_OMEN_DREAM`: 10
 
-These cards make the old countdown model gameplay-relevant even though the visible countdown badge is disabled.
+### `reqTrialOrLowDefense`
 
-`CMD_VIGILANCE` also has `reqTrialOrLowDefense`; its exact resolver path should be treated as part of the same follow-up card-condition audit before the old timing state is removed.
+- `CMD_VIGILANCE`
+
+These cards make the old countdown model gameplay-relevant even though the visible countdown badge is disabled.
 
 ## What can be removed now?
 
@@ -79,7 +99,7 @@ Until that design is implemented, `legacy_trial_schedule_compat.js` preserves cu
 
 ### C. Card semantic conditions
 
-Old exact-distance predicates need semantic replacements compatible with Warning / Investigation, for example concepts such as:
+First consolidate card eligibility so there is one predicate authority. Then replace old exact-distance predicates with semantic conditions compatible with Warning / Investigation, for example concepts such as:
 
 - omen discovered
 - threat/watch phase reached
@@ -94,7 +114,7 @@ Serializer and hydrator must migrate together. Old restore points containing `tr
 
 ## Safe next sequence
 
-1. Finish audit of compound card conditions such as `reqTrialOrLowDefense` and any DeckManager-specific direct schedule reads.
+1. Consolidate DeckManager Trial-timing eligibility behind one compatibility predicate boundary without changing card behavior.
 2. Define the modern Trial timing/progression read model; do not wire UI countdown to it.
 3. Move board expansion from legacy schedule threshold to the chosen progression event.
 4. Replace card-data timing predicates with semantic Warning/Trial predicates.
