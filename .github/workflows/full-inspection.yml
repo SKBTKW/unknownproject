@@ -83,5 +83,8 @@ jobs:
           echo "PR merge result prepared as working-tree diff against ${AOT_BASE_SHA}."
           git status --short
 
+      - name: Run Task Sweeper safety contract
+        run: node scratch/test_task_sweeper.mjs
+
       - name: Run AoT Full Inspection
         run: node scratch/run_full_inspection.mjs
