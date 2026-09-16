@@ -30,6 +30,9 @@ export function attachTrialTimingSubsystem(engine, {
         if (!isFreshState) {
             return { success: false, reason: "TRIAL_TIMING_EXPLICIT_STATE_REQUIRED" };
         }
+        if (!engine.state.trialSchedule) {
+            return { success: false, reason: "TRIAL_TIMING_LEGACY_SCHEDULE_REQUIRED" };
+        }
         authority = createLegacyCompatibleTrialTimingAuthority(engine.state, {
             currentTrialIndex
         });
