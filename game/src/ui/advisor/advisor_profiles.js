@@ -1,4 +1,5 @@
 import { STAFF_OFFICER_REACTIONS } from '../../data/advisor_staff_officer_reactions.js';
+import { STAFF_OFFICER_DIALOGUES } from '../../data/advisor_staff_officer_dialogues.js';
 import { createAdvisorCharacterDefinition } from './advisor_character_contract.js';
 
 const ADVISOR_ASSET_BASE = '../../../assets/advisor/';
@@ -88,6 +89,7 @@ const GENERAL_OLD_01 = createAdvisorCharacterDefinition({
         ])
     },
     reactions: {},
+    adviceDialogue: {},
     dutyDialogue: {},
     initialSkills: []
 });
@@ -151,10 +153,27 @@ const STAFF_OFFICER_FEMALE_01 = createAdvisorCharacterDefinition({
             "glory_for_glory",
             "mystical_certainty"
         ]),
-        lexicalPreferences: Object.freeze([]),
-        lexicalAvoid: Object.freeze([])
+        lexicalPreferences: Object.freeze([
+            "報告",
+            "確認",
+            "備蓄",
+            "損耗",
+            "維持",
+            "撤収",
+            "配置",
+            "必要"
+        ]),
+        lexicalAvoid: Object.freeze([
+            "素晴らしい",
+            "完璧",
+            "絶対",
+            "奇跡",
+            "運命",
+            "栄光"
+        ])
     },
     reactions: STAFF_OFFICER_REACTIONS.reactions,
+    adviceDialogue: STAFF_OFFICER_DIALOGUES,
     dutyDialogue: {},
     initialSkills: []
 });

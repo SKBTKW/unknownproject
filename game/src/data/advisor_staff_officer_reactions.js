@@ -6,21 +6,13 @@ import { ADVISOR_EXPRESSIONS, ADVISOR_SCENES } from "./advisor_scene_catalog.js"
 export const STAFF_OFFICER_REACTIONS = Object.freeze({
     id: "STAFF_OFFICER",
     reactions: Object.freeze({
-        [ADVISOR_SCENES.SEVERAL_LANDS_PLACED]: {
-            expression: ADVISOR_EXPRESSIONS.NORMAL,
-            lines: ["順調です。このまま進めましょう。"]
-        },
         [ADVISOR_SCENES.LARGE_EXPANSION]: {
             expression: ADVISOR_EXPRESSIONS.CONCERNED,
             lines: ["広がりましたね。……補給が追いつけばよいのですが。"]
         },
-        [ADVISOR_SCENES.FOOD_CRITICAL]: {
-            expression: ADVISOR_EXPRESSIONS.CONCERNED,
-            lines: ["食料が危険域です。ほかに優先すべきものはありません。"]
-        },
         [ADVISOR_SCENES.REFUGEES_FOUND]: {
             expression: ADVISOR_EXPRESSIONS.CONCERNED,
-            lines: ["収容可能数を確認します。……まず、入れるだけ入れましょう。"]
+            lines: ["収容可能数を確認します。……受け入れられる人数から。"]
         },
         [ADVISOR_SCENES.CIVILIANS_LOST]: {
             expression: ADVISOR_EXPRESSIONS.CONCERNED,
@@ -36,7 +28,7 @@ export const STAFF_OFFICER_REACTIONS = Object.freeze({
         },
         [ADVISOR_SCENES.TRIAL_REGION_ABANDONED]: {
             expression: ADVISOR_EXPRESSIONS.CONCERNED,
-            lines: ["……撤収を開始します。残せる者が出ないように。"]
+            lines: ["……撤収を開始します。取り残される者が出ないように。"]
         },
         [ADVISOR_SCENES.TRIAL_PREPARED_DEFENSE_SUCCESS]: {
             expression: ADVISOR_EXPRESSIONS.SATISFIED,
@@ -44,7 +36,7 @@ export const STAFF_OFFICER_REACTIONS = Object.freeze({
         },
         [ADVISOR_SCENES.TRIAL_SURVIVED_UNDAMAGED]: {
             expression: ADVISOR_EXPRESSIONS.SATISFIED,
-            lines: ["残火への損害はありません。……よい備えでした。"]
+            lines: ["残火への損害はありません。……備えが効きました。"]
         },
         [ADVISOR_SCENES.TRIAL_SURVIVED_DAMAGED]: {
             expression: ADVISOR_EXPRESSIONS.CONCERNED,
