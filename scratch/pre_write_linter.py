@@ -171,11 +171,11 @@ def validate_git_branch_tracking(
 
     expected_prefix = f"aot-task/{authorized_branch}/"
     task_suffix = authorized_task_branch[len(expected_prefix):] if authorized_task_branch.startswith(expected_prefix) else ""
-    if not re.fullmatch(r"[^/]+/[^/]+(?:/[^/]+)*", task_suffix):
+    if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9]+(?:-[a-z0-9]+)*", task_suffix):
         return [LintViolation(
             "GIT001", "ERROR", ".git/config", 0,
             f"TASK branch must use '{expected_prefix}<domain>/<task-id>'.",
-            "Correct the authorized task branch name",
+            "Use exactly two lowercase kebab-case segments after the target",
         )]
     if branch != authorized_task_branch:
         return [LintViolation(

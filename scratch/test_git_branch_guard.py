@@ -82,6 +82,16 @@ check("<domain>/<task-id>" in validate_git_branch_tracking(**{
       "branch": "aot-task/AoT260916/no-domain",
       "authorized_task_branch": "aot-task/AoT260916/no-domain"})[0].message,
       "TASK requires domain and task-id path segments")
+check("<domain>/<task-id>" in validate_git_branch_tracking(**{
+      **task_defaults,
+      "branch": "aot-task/AoT260916/tooling/foo/bar",
+      "authorized_task_branch": "aot-task/AoT260916/tooling/foo/bar"})[0].message,
+      "TASK rejects extra path segments after task-id")
+check("<domain>/<task-id>" in validate_git_branch_tracking(**{
+      **task_defaults,
+      "branch": "aot-task/AoT260916/Tooling/task-name",
+      "authorized_task_branch": "aot-task/AoT260916/Tooling/task-name"})[0].message,
+      "TASK requires lowercase kebab-case domain and task-id")
 check("not authorized TASK" in validate_git_branch_tracking(**{
       **task_defaults, "branch": f"{TASK}-other"})[0].message,
       "TASK rejects switching branches")
@@ -114,4 +124,4 @@ violations, branch, upstream, authorized, mode = inspect_git_branch_policy(Path.
 check(not violations,
       f"live repository branch is authorized ({mode}: {branch}; upstream={upstream or '(none)'}; target={authorized})")
 
-print("GIT001 branch authorization: 26/26 PASS")
+print("GIT001 branch authorization: 28/28 PASS")
