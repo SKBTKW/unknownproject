@@ -55,7 +55,8 @@ export class HistorySnapshotService {
                 lastTurnMaintenanceResult: cloneData(engine.lastTurnMaintenanceResult),
                 trialThreatState: cloneData(engine.trialThreatStateService?.getRestoreState?.()),
                 trueEnemyState: cloneData(engine.trueEnemyStateService?.getRestoreState?.()),
-                trialTimingState: cloneData(engine.trialTimingAuthorityService?.getRestoreState?.())
+                trialTimingState: cloneData(engine.trialTimingAuthorityService?.getRestoreState?.()),
+                warningState: cloneData(engine.warningStateService?.getRestoreState?.())
             }
         });
 
@@ -108,7 +109,8 @@ export class HistorySnapshotService {
                 lastTurnMaintenanceResult: cloneData(engine.lastTurnMaintenanceResult),
                 trialThreatState: cloneData(engine.trialThreatStateService?.getRestoreState?.()),
                 trueEnemyState: cloneData(engine.trueEnemyStateService?.getRestoreState?.()),
-                trialTimingState: cloneData(engine.trialTimingAuthorityService?.getRestoreState?.())
+                trialTimingState: cloneData(engine.trialTimingAuthorityService?.getRestoreState?.()),
+                warningState: cloneData(engine.warningStateService?.getRestoreState?.())
             }
         });
 
