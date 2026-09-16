@@ -1,5 +1,6 @@
 import { GameFactHub } from "../../core/game_fact.js";
 import { attachWarningSubsystem } from "../../warning/integration/warning_bootstrap.js";
+import { WarningTimingBridge } from "../../warning/systems/warning_timing_bridge.js";
 import { attachTrialTimingSubsystem } from "./trial_timing_bootstrap.js";
 
 /**
@@ -18,7 +19,8 @@ import { attachTrialTimingSubsystem } from "./trial_timing_bootstrap.js";
 export function attachTrialRuntimeSubsystems(engine, {
     gameFactHub = null,
     timingOptions = {},
-    warningOptions = {}
+    warningOptions = {},
+    warningTimingOptions = {}
 } = {}) {
     if (!engine?.state) {
         return { success: false, reason: "TRIAL_RUNTIME_ENGINE_REQUIRED" };
@@ -46,6 +48,15 @@ export function attachTrialRuntimeSubsystems(engine, {
         };
     }
 
+    if (!engine.warningTimingBridge) {
+        engine.warningTimingBridge = new WarningTimingBridge({
+            gameFactHub: factHub,
+            timingAuthority: engine.trialTimingAuthorityService,
+            warningStateService: engine.warningStateService,
+            ...warningTimingOptions
+        });
+    }
+
     // The constructor-side Investigation bootstrap may have reported failure
     // only because Warning lacked a shared GameFactHub. Preserve the already
     // attached Investigation runtime/unlock and reflect the now-complete state.
@@ -64,7 +75,8 @@ export function attachTrialRuntimeSubsystems(engine, {
         gameFactHub: factHub,
         timingAuthority: engine.trialTimingAuthorityService,
         timingAttached: true,
-        warningAttached: true
+        warningAttached: true,
+        warningTimingAttached: true
     };
 }
 
