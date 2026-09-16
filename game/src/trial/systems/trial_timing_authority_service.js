@@ -151,7 +151,7 @@ export class TrialTimingAuthorityService {
     }
 }
 
-export function createLegacyCompatibleTrialTimingAuthority(gameState) {
+export function createLegacyCompatibleTrialTimingAuthority(gameState, { currentTrialIndex = 1 } = {}) {
     if (!gameState?.trialSchedule) {
         throw new TypeError("TRIAL_TIMING_LEGACY_SCHEDULE_REQUIRED");
     }
@@ -161,7 +161,7 @@ export function createLegacyCompatibleTrialTimingAuthority(gameState) {
             trial2: gameState.trialSchedule.trial2,
             trial3: gameState.trialSchedule.trial3
         },
-        currentTrialIndex: Math.max(1, Math.floor(Number(gameState.stage?.id) || 1))
+        currentTrialIndex
     });
 }
 
