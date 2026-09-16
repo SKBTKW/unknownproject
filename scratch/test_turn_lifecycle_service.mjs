@@ -46,7 +46,6 @@ const engine = {
     state,
     i18n: {
         t(key, params = {}) {
-            if (key === 'LOG_STAGE_EXPAND') return `stage:${params.stage}:${params.size}`;
             if (key === 'LOG_TURN_START') return `turn:${params.turn}`;
             return key;
         }
@@ -89,17 +88,17 @@ assert(
 assert(state.food === 15, 'applies gross production before maintenance');
 assert(state.wood === 11 && state.material === 11, 'keeps wood/material alias synchronized');
 assert(state.mystic === 3, 'applies mystic production');
-assert(state.stage.id === 2 && state.nextTrialTurn === 30, 'runs stage transition after advancing the turn');
+assert(
+    state.stage.id === 1 && state.nextTrialTurn === 5,
+    'Verse advance does not progress Stage before Trial settlement'
+);
+assert(!calls.some(call => call.startsWith('grid.expand:')), 'TurnLifecycleService does not own Trial Stage expansion');
 assert(calls.includes('deck.offering'), 'DeckManager is used only to regenerate the offering');
 assert(!calls.includes('deck.next'), 'TurnLifecycleService no longer delegates turn ownership to DeckManager.onNextTurn');
 assert(
     calls.indexOf('global.tick') < calls.indexOf('deck.offering')
         && calls.indexOf('deck.offering') < calls.indexOf('global.start'),
     'preserves global-event tick -> turn advance/offering -> turn-start order'
-);
-assert(
-    calls.indexOf('global.start') < calls.indexOf('grid.expand:7'),
-    'preserves turn-start event evaluation before stage expansion'
 );
 
 console.log(`TurnLifecycleService: ${passed}/${total} PASS`);
