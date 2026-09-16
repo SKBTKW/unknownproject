@@ -30,6 +30,27 @@ export function isLegacyTrialWithin(state, within = 5) {
     return getLegacyTrialDistance(state) <= within;
 }
 
+export function passesLegacyTrialCardTimingRequirements(card, state) {
+    if (!card || !state) return true;
+
+    if (card.reqTrialOrLowDefense) {
+        const defense = typeof state.getCurrentDefense === "function"
+            ? state.getCurrentDefense()
+            : (state.currentDefense ?? state.defense ?? 0);
+        if (!isLegacyTrialNoticeActive(state) && defense > 30) return false;
+    }
+
+    if (card.reqTrialNotice && !isLegacyTrialNoticeActive(state, { fallbackThreshold: 5 })) {
+        return false;
+    }
+
+    if (card.reqTrialWithin !== undefined && !isLegacyTrialWithin(state, card.reqTrialWithin)) {
+        return false;
+    }
+
+    return true;
+}
+
 /**
  * Internal compatibility read model for the pre-Warning Trial schedule.
  *
