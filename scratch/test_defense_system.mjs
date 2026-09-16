@@ -139,6 +139,30 @@ assert(action.success === true && undoEngine.state.currentDefense === 11 && undo
 const undo = undoEngine.undoLastAction();
 assert(undo.success === true && undoEngine.state.currentDefense === 8 && undoEngine.state.maxDefense === 10, 'Undoで現在🛡️と最大🛡️を配置前へ復元する');
 
+// J-2: History RestoreはDefenseSystem内部の配置カウンタも復元盤面へ再同期する。
+const restorePlacementEngine = GameEngine.createGame();
+const beforeRestorePlacement = restorePlacementEngine.gridEngine.placeShape(1, 2, [[1]], defenseLand(3));
+assert(
+    beforeRestorePlacement.success === true
+        && restorePlacementEngine.state.currentDefense === 13
+        && restorePlacementEngine.state.maxDefense === 13,
+    'History Restore前の防衛土地配置で13/13になる'
+);
+const restoredPlacement = restorePlacementEngine.historyRestoreService.restoreVerse(1);
+assert(
+    restoredPlacement.success === true
+        && restorePlacementEngine.state.currentDefense === 10
+        && restorePlacementEngine.state.maxDefense === 10,
+    'Verse 1 Restoreで防衛値を10/10へ復元する'
+);
+const afterRestorePlacement = restorePlacementEngine.gridEngine.placeShape(1, 2, [[1]], defenseLand(3));
+assert(
+    afterRestorePlacement.success === true
+        && restorePlacementEngine.state.currentDefense === 13
+        && restorePlacementEngine.state.maxDefense === 13,
+    'History Restore後の再配置でも配置増分3を現在🛡️へ再充填する'
+);
+
 const serialized = serializeGameState(undoEngine.state);
 assert(serialized.currentDefense === 8 && serialized.maxDefense === 10, '直列化結果に現在🛡️と最大🛡️を保存する');
 
