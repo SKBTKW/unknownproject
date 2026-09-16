@@ -1,0 +1,5 @@
+[
+  { "id": "CMD_VIGILANCE", "category": "COMMAND", "nameKey": "CMD_VIGILANCE_NAME", "descriptionKey": "CMD_VIGILANCE_DESC", "cost": { "wood": 15 }, "reqTrialOrLowDefense": true, "minStage": 1, "rarity": "C", "weight": 0.35, "cyclePolicy": "RARITY" },
+  { "id": "CMD_MILITARY_FOCUS", "category": "MILITARY", "nameKey": "CMD_MILITARY_FOCUS_NAME", "descriptionKey": "CMD_MILITARY_FOCUS_DESC", "cost": { "wood": 20 }, "maxDefense": 20, "minStage": 1, "rarity": "UC", "weight": 0.30, "cyclePolicy": "RARITY" },
+  { "id": "CMD_IRON_RAMPART", "category": "MILITARY", "nameKey": "CMD_IRON_RAMPART_NAME", "descriptionKey": "CMD_IRON_RAMPART_DESC", "cost": { "wood": 20 }, "reqWood": 20, "minStage": 2, "rarity": "UC", "weight": 0.30, "cyclePolicy": "RARITY" }
+]

@@ -1,0 +1,130 @@
+/* =============================================================
+   0_global_common / layer_contract.css
+   Final screen-space layer ownership contract.
+
+   Component styles may define their internal z-indexes, but the major
+   screen-space regions are normalized here so feature CSS cannot quietly
+   reorder or reposition the global composition.
+   ============================================================= */
+
+/* Header shell geometry belongs to Layout; top_header.css owns its contents. */
+.top-bar {
+    position: relative !important;
+    height: var(--layout-header-height) !important;
+    flex-shrink: 0;
+    z-index: var(--z-hud) !important;
+}
+
+/* Main play area owns the board/Verse shared top edge below the header. */
+.middle-layout {
+    display: grid;
+    grid-template-areas: "main-stack";
+    align-items: start;
+    justify-items: center;
+}
+
+#layerWorldBoard.layer-world-board {
+    grid-area: main-stack;
+    width: 100%;
+    height: 100%;
+    align-self: stretch;
+    justify-self: stretch;
+    justify-content: flex-start;
+}
+
+#layerPlayerTray.layer-player-tray {
+    z-index: var(--z-player) !important;
+}
+
+.top-bar #bgTurnWatermark.bg-turn-watermark {
+    position: relative;
+    top: auto;
+    right: auto;
+    margin-left: auto;
+    z-index: 2;
+}
+
+.board-container-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    margin-top: 60px;
+    margin-bottom: auto;
+}
+
+/* Buff expansion is bounded by the same headroom token used by the board anchor. */
+.buff-dropup-panel {
+    max-height: var(--layout-buff-dropup-max-height);
+    overflow-y: auto;
+}
+
+/* Legacy sidebar width/spacing remains Layout-owned even while old CSS survives. */
+.right-sidebar {
+    width: var(--layout-right-sidebar-width) !important;
+    gap: var(--layout-right-sidebar-gap) !important;
+    padding: var(--layout-right-sidebar-padding-block) var(--layout-right-sidebar-padding-inline) !important;
+}
+
+/* Advisor dock placement belongs to Layout; advisor_ui.css owns its internals. */
+#advisorDockContainer {
+    position: fixed !important;
+    right: var(--layout-advisor-right) !important;
+    bottom: var(--layout-advisor-bottom) !important;
+    z-index: var(--z-advisor) !important;
+}
+
+/* Keep dormant diagnostics mounted without exposing them in the play layout. */
+#logComponentContainer,
+#devDiceControlsRoot {
+    display: none;
+    pointer-events: none;
+}
+
+/*
+ * Trial keeps the board shell mounted, but normal progression controls are not
+ * actionable while the Trial board context is active. Layout owns this
+ * screen/action visibility so Board Presentation CSS remains semantic-only.
+ */
+body[data-board-context="trial"] #gridBoard .footer-left-slot,
+body[data-board-context="trial"] #gridBoard .footer-right-slot,
+body[data-board-context="trial"] #gridBoard #cornerTileStyleToggleBtn {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* System Overlay is a viewport-sized screen-space region. */
+#layerSystemOverlay.layer-system-overlay {
+    position: fixed !important;
+    inset: var(--layout-system-overlay-inset) !important;
+    width: 100% !important;
+    height: 100% !important;
+    pointer-events: none;
+    z-index: var(--z-overlay) !important;
+}
+
+/* Right Context intentionally sits just above the Player HUD band. */
+.trial-defense-allocation-panel {
+    z-index: var(--z-right-context) !important;
+}
+
+@media (max-width: 768px) {
+    #advisorDockContainer {
+        right: var(--layout-advisor-mobile-right) !important;
+        bottom: var(--layout-advisor-mobile-bottom) !important;
+    }
+
+    #bgTurnWatermark.bg-turn-watermark {
+        margin-right: var(--layout-mobile-edge-gap);
+    }
+
+    /*
+     * On compact screens the point-specific Trial Action Tray occupies the
+     * lower band, so the global Trial summary moves into an upper-right band.
+     * Screen-space geometry is owned by UILayoutConfig SSOT and updated via applyLayoutGeometry.
+     */
+    .trial-defense-allocation-panel {
+        overflow-y: auto;
+    }
+}

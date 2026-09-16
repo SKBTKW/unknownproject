@@ -1,0 +1,195 @@
+/* =============================================================
+   game/src/app.js
+   Pure ES Module Master Entry Point for Trial of Ages : Last Ember
+   ============================================================= */
+
+import { I18n } from './i18n.js';
+import { LAND_SYSTEM_DATA, TERRAIN_MATRIX, TerrainParameterEngine } from './data/land_system.js';
+import { DIRECTIVES, DirectiveSystem } from './systems/directive_system.js';
+import { DeckManager, Step1DrawSystem } from './systems/deck_manager.js';
+import { ProductionCalculator } from './systems/production_calculator.js';
+import { UndoLandSystem } from './systems/undo_land_system.js';
+import { GridEngine } from './systems/grid_engine.js';
+import { BuffSystem } from './systems/buff_system.js';
+import { GameState, Step1Engine, rotateShapeMatrix } from './v2_unity_ready_main.js';
+import { GameEngine } from './core/game_engine.js';
+import { ModalSystem } from './ui/modal_system.js';
+import { LogComponent } from './ui/log_component.js';
+import { BuffPanelComponent } from './ui/buff_panel_component.js';
+import { territoryBadgeInstance as TerritoryBadgeComponent, TerritoryBadgeComponent as TerritoryBadgeComponentClass } from './ui/territory_badge_component.js';
+import { UILayoutConfig, UI_FEATURE_FLAGS } from './ui/layout_config.js';
+import { BlockPlacementSystem } from './ui/block_placement_system.js';
+import { TrialResultUIController as UIController } from './ui/trial_result_ui_controller.js';
+import { FocusLayerManager, focusLayerManager } from './ui/focus_layer_system.js';
+import { BoardCameraSystem, boardCameraSystem } from './ui/board_camera_system.js';
+import { GameSettings, gameSettings, RESOLUTION_PRESETS, SettingsModalSystem, settingsModalInstance } from './ui/settings_modal_system.js';
+import { DisplaySettingsAdapter, displaySettingsAdapter } from './ui/display_settings_adapter.js';
+import { EmberStatusComponent } from './ui/ember_status_component.js';
+import { HandCardsComponent } from './ui/hand_cards_component.js';
+import { ReserveSlotComponent } from './ui/reserve_slot_component.js';
+import { TopHeaderComponent } from './ui/top_header_component.js';
+import { BoardGridComponent } from './ui/board_grid_component.js';
+import { HqComponent } from './ui/hq_component.js';
+import { TooltipSystem, tooltipSystemInstance } from './ui/tooltip_system.js';
+import { ConditionEvaluator } from './core/condition_evaluator.js';
+import { EffectResolver } from './core/effect_resolver.js';
+import { ChronicleSystem, CHRONICLE_IMPORTANCE } from './systems/chronicle_system.js';
+import { GlobalEventManager, GlobalEventDirector, GlobalEventSelector } from './systems/global_event_system.js';
+import { GLOBAL_EVENTS_MASTER } from './data/global_events.js';
+import { EmberSystem } from './systems/ember_system.js';
+import { DefenseSystem, BASE_HQ_DEFENSE } from './systems/defense_system.js';
+import { CardCycleSystem, CYCLE_POLICIES } from './systems/card_cycle_system.js';
+import {
+    MATERIAL_COST_PER_FOOD,
+    MYSTIC_FOOD_RATE,
+    MaintenanceFallbackSystem
+} from './systems/maintenance_fallback_system.js';
+import { BUILD_IDENTITY_CONFIG, BUILD_IDENTITY_MODES } from './config/build_identity_config.js';
+import { BuildIdentityService, normalizeBuildIdentity } from './services/build_identity_service.js';
+import { BuildIdentityBadgeComponent } from './ui/build_identity_badge_component.js';
+import {
+    TrialInterceptionPreviewComponent,
+    resolveModifierTag
+} from './ui/trial_interception_preview_component.js';
+import { TrialDefenseAllocationComponent } from './ui/trial_defense_allocation_component.js';
+import { AdvisorDockComponent } from './ui/advisor/advisor_dock_component.js?v=20260909_advisor2';
+import { LayoutStateManager, UI_LAYOUT_STATES, RIGHT_CONTEXT_OWNERS, HAND_LAYOUT_STATES } from './ui/layout_state_manager.js';
+import { AdvisorDialogueSystem } from './ui/advisor/advisor_dialogue_system.js';
+import { AdvisorEventBridge } from './ui/advisor/advisor_event_bridge.js';
+import { resolveAdvisorStatus } from './ui/advisor/advisor_status_resolver.js';
+import { resolveAdvisorAdvice } from './ui/advisor/advisor_advice_resolver.js';
+import { getAdvisorRecords } from './ui/advisor/advisor_record_adapter.js';
+import { DevelopmentTrialPreviewHarness } from './trial/dev/development_trial_preview_harness.js';
+import { TRIAL_PREVIEW_SCENARIOS, getTrialPreviewScenario } from './trial/dev/trial_preview_scenarios.js';
+import { isDevelopmentMode } from './config/dev_mode.js';
+import {
+    DEFAULT_PLACEMENT_ANCHOR,
+    normalizePlacementAnchor,
+    resolvePlacementAnchor,
+    resolvePlacementGeometry,
+    resolvePlacementShape,
+    rotatePlacementClockwise
+} from './core/placement_geometry.js';
+import { ElevationVisualService } from './ui/elevation_visual_service.js';
+import { AreaInfluenceVisualService } from './ui/area_influence_visual_service.js';
+import { SFX } from './audio/sfx_manifest.js';
+import { sfxManager } from './audio/sfx_manager.js';
+import { resolveLandSelectSfx } from './audio/land_sfx_resolver.js';
+import { GAME_FACT_TYPES, GameFactHub } from './core/game_fact.js';
+import { GAME_FEEL } from './core/game_feel.js';
+import { TRIAL_PLAN_REASONS, TRIAL_ROUTE_PLAN_STATUSES, TRIAL_BATTLE_STATUSES, TRIAL_OUTCOMES, TRIAL_COMPLETION_OUTCOMES } from './trial/domain/trial_types.js';
+import { TrialPlanningDraftService } from './trial/domain/trial_planning_draft_service.js';
+import { TrialBattleSequenceService } from './trial/systems/trial_battle_sequence_service.js';
+import { TrialEnemyAdvanceService } from './trial/systems/trial_enemy_advance_service.js';
+import { TrialHqDamageResolver } from './trial/systems/trial_hq_damage_resolver.js';
+import { TrialCompletionService } from './trial/systems/trial_completion_service.js';
+
+export {
+    I18n,
+    LAND_SYSTEM_DATA,
+    TERRAIN_MATRIX,
+    TerrainParameterEngine,
+    DIRECTIVES,
+    DirectiveSystem,
+    DeckManager,
+    Step1DrawSystem,
+    ProductionCalculator,
+    UndoLandSystem,
+    GridEngine,
+    BuffSystem,
+    GameState,
+    Step1Engine,
+    rotateShapeMatrix,
+    GameEngine,
+    ModalSystem,
+    LogComponent,
+    BuffPanelComponent,
+    TerritoryBadgeComponent,
+    UILayoutConfig,
+    UI_FEATURE_FLAGS,
+    BlockPlacementSystem,
+    UIController,
+    FocusLayerManager,
+    focusLayerManager,
+    BoardCameraSystem,
+    boardCameraSystem,
+    GameSettings,
+    gameSettings,
+    RESOLUTION_PRESETS,
+    SettingsModalSystem,
+    settingsModalInstance,
+    DisplaySettingsAdapter,
+    displaySettingsAdapter,
+    EmberStatusComponent,
+    HandCardsComponent,
+    ReserveSlotComponent,
+    TopHeaderComponent,
+    BoardGridComponent,
+    HqComponent,
+    ElevationVisualService,
+    AreaInfluenceVisualService,
+    SFX,
+    sfxManager,
+    resolveLandSelectSfx,
+    GAME_FACT_TYPES,
+    GameFactHub,
+    GAME_FEEL,
+    TRIAL_PLAN_REASONS,
+    TRIAL_ROUTE_PLAN_STATUSES,
+    TRIAL_BATTLE_STATUSES,
+    TRIAL_OUTCOMES,
+    TRIAL_COMPLETION_OUTCOMES,
+    TrialPlanningDraftService,
+    TrialBattleSequenceService,
+    TrialEnemyAdvanceService,
+    TrialHqDamageResolver,
+    TrialCompletionService,
+    TooltipSystem,
+    tooltipSystemInstance,
+    ConditionEvaluator,
+    EffectResolver,
+    ChronicleSystem,
+    CHRONICLE_IMPORTANCE,
+    GlobalEventManager,
+    GlobalEventDirector,
+    GlobalEventSelector,
+    GLOBAL_EVENTS_MASTER,
+    EmberSystem,
+    DefenseSystem,
+    BASE_HQ_DEFENSE,
+    CardCycleSystem,
+    CYCLE_POLICIES,
+    MATERIAL_COST_PER_FOOD,
+    MYSTIC_FOOD_RATE,
+    MaintenanceFallbackSystem,
+    BUILD_IDENTITY_CONFIG,
+    BUILD_IDENTITY_MODES,
+    BuildIdentityService,
+    normalizeBuildIdentity,
+    BuildIdentityBadgeComponent,
+    TrialInterceptionPreviewComponent,
+    TrialDefenseAllocationComponent,
+    AdvisorDockComponent,
+    LayoutStateManager,
+    UI_LAYOUT_STATES,
+    RIGHT_CONTEXT_OWNERS,
+    HAND_LAYOUT_STATES,
+    AdvisorDialogueSystem,
+    AdvisorEventBridge,
+    resolveAdvisorStatus,
+    resolveAdvisorAdvice,
+    getAdvisorRecords,
+    resolveModifierTag,
+    DevelopmentTrialPreviewHarness,
+    TRIAL_PREVIEW_SCENARIOS,
+    getTrialPreviewScenario,
+    isDevelopmentMode,
+    DEFAULT_PLACEMENT_ANCHOR,
+    normalizePlacementAnchor,
+    resolvePlacementAnchor,
+    resolvePlacementGeometry,
+    resolvePlacementShape,
+    rotatePlacementClockwise
+};
+
+console.log('🎮 [App] Clean True ES Modules Master Entrypoint Loaded Successfully.');

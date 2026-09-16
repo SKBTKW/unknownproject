@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Stage 3 (8x8 Grid) 2D Top-Down Master UI Preview</title>
+  <style>
+    :root {
+      --bg-primary: #090d16;
+      --bg-secondary: #1e293b;
+      --accent-gold: #fbbf24;
+      --text-main: #f8fafc;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      background: var(--bg-secondary);
+      border-bottom: 2px solid #334155;
+    }
+    .res-item {
+      font-size: 1rem;
+      font-weight: bold;
+      margin-right: 15px;
+    }
+    .buff-badge {
+      background: #10b981;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+    }
+    .warning-box {
+      background: #7f1d1d;
+      border: 1px solid #ef4444;
+      color: #fca5a5;
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: bold;
+    }
+    main {
+      display: flex;
+      flex: 1;
+      gap: 15px;
+      padding: 15px;
+    }
+    .panel {
+      background: var(--bg-secondary);
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 15px;
+    }
+    #left-panel { width: 220px; }
+    #right-panel { width: 220px; }
+    #center-board {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    /* 8x8 格子エリア */
+    #grid-8x8 {
+      display: grid;
+      grid-template-columns: repeat(8, 52px);
+      grid-template-rows: repeat(8, 52px);
+      gap: 4px;
+      padding: 8px;
+      background: #020617;
+      border: 3px solid #334155;
+      border-radius: 8px;
+    }
+    .cell {
+      width: 52px;
+      height: 52px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      font-weight: bold;
+      text-align: center;
+      user-select: none;
+      box-sizing: border-box;
+    }
+    /* 2x2 完全中央本営 (x3~x4, y3~y4) */
+    .cell.hq {
+      background: radial-gradient(circle, #f59e0b 0%, #78350f 100%);
+      border: 2px solid #fbbf24;
+      color: white;
+    }
+    /* 地形ブロック */
+    .cell.flat { background: #15803d; border: 1px solid #22c55e; color: white; }
+    .cell.hill { background: #854d0e; border: 1px solid #eab308; color: white; }
+    .cell.mtn { background: #4b5563; border: 1px solid #9ca3af; color: white; }
+    .cell.river { background: #1e3a8a; border: 1px solid #38bdf8; color: #60a5fa; }
+    .cell.headwaters { background: radial-gradient(circle, #06b6d4 0%, #1e3a8a 100%); border: 2px solid #22d3ee; color: white; }
+    .cell.legendary { background: #047857; border: 1.5px solid #10b981; color: white; }
+
+    /* 下部手札ドック (170px 幅) */
+    #bottom-dock {
+      height: 150px;
+      background: var(--bg-secondary);
+      border-top: 2px solid #334155;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+    }
+    .hand-card {
+      width: 170px;
+      height: 120px;
+      background: #0f172a;
+      border: 2px solid #334155;
+      border-radius: 8px;
+      padding: 8px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .hand-card.selected {
+      border-color: var(--accent-gold);
+      box-shadow: 0 0 12px var(--accent-gold);
+    }
+    .card-mini-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 10px);
+      grid-template-rows: repeat(4, 10px);
+      gap: 2px;
+      background: #020617;
+      padding: 3px;
+      border-radius: 4px;
+    }
+    .dot { width: 10px; height: 10px; border-radius: 1px; }
+    .dot.filled { background: var(--accent-gold); }
+    .rotate-btn {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      cursor: pointer;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <span class="res-item" style="color:#fbbf24">🔥 残り火 28/30</span>
+    <span class="buff-badge">⭐ +20% バフ</span>
+    <span class="res-item" style="color:#34d399; margin-left:15px;">🌾 520 (+1🔥/T)</span>
+    <span class="res-item" style="color:#cbd5e1">🧱 340</span>
+    <span class="res-item" style="color:#60a5fa">🛡️ 420</span>
+    <span class="res-item" style="color:#c084fc">✨ 18</span>
+    <span class="res-item" style="color:#f1f5f9; margin-left:15px;">Turn 45/50</span>
+  </div>
+  <div class="warning-box">
+    ⚠️ 最終試練まで残り 5T (目標 🛡️850)
+  </div>
+</header>
+
+<main>
+  <div class="panel" id="left-panel">
+    <h3 style="color:#fbbf24; margin-top:0;">👑 指導者: 🪓 開拓者</h3>
+    <p style="font-size:0.8rem; color:#94a3b8;">・初期資材+30<br>・探索コスト 0🔥</p>
+    <hr style="border-color:#334155;">
+    <h4 style="margin-bottom:8px;">⚡ 発動中シナジー</h4>
+    <p style="font-size:0.8rem; color:#34d399; margin:4px 0;"><b>🌊 水利バフ</b>: 🌾+50%</p>
+    <p style="font-size:0.8rem; color:#fbbf24; margin:4px 0;"><b>🏁 充填率</b>: +30% (85%突破)</p>
+  </div>
+
+  <div class="panel" id="center-board">
+    <h3 style="color:#fbbf24; margin-top:0; margin-bottom:10px;">Stage 3 (8×8 盤面) 2D真上視点 (純粋トップダウン)</h3>
+    <div id="grid-8x8">
+      <!-- Row 0 -->
+      <div class="cell flat">🌾1x1</div>
+      <div class="cell hill">⛰️1x2</div>
+      <div class="cell hill">⛰️1x2</div>
+      <div class="cell mtn">🏔️1x3</div>
+      <div class="cell mtn">🏔️1x3</div>
+      <div class="cell mtn">🏔️1x3</div>
+      <div class="cell river">💧本流</div>
+      <div class="cell headwaters">💎源流</div>
+
+      <!-- Row 1 -->
+      <div class="cell hill">⛰️1x3</div>
+      <div class="cell legendary">💎2x2</div>
+      <div class="cell legendary">💎2x2</div>
+      <div class="cell flat">🌾1x1</div>
+      <div class="cell flat">🌾1x1</div>
+      <div class="cell mtn">🏔️1x4</div>
+      <div class="cell mtn">🏔️1x4</div>
+      <div class="cell mtn">🏔️1x4</div>
+
+      <!-- Row 2 -->
+      <div class="cell hill">⛰️1x3</div>
+      <div class="cell legendary">💎2x2</div>
+      <div class="cell legendary">💎2x2</div>
+      <div class="cell flat">🌾1x2</div>
+      <div class="cell flat">🌾1x2</div>
+      <div class="cell mtn">🏔️1x4</div>
+      <div class="cell flat">🌾1x1</div>
+      <div class="cell flat">🌾1x1</div>
+
+      <!-- Row 3 (HQ Center) -->
+      <div class="cell hill">⛰️1x3</div>
+      <div class="cell flat">🌾1x1</div>
+      <div class="cell flat">🌾1x1</div>
+      <div class="cell hq">🏰本営</div>
+      <div class="cell hq">🏰本営</div>
+      <div class="cell hill">⛰️1x4</div>
+      <div class="cell hill">⛰️1x4</div>
+      <div class="cell hill">⛰️1x4</div>
+
+      <!-- Row 4 (HQ Center) -->
+      <div class="cell hill">⛰️1x4</div>
+      <div class="cell flat">🌾1x1</div>
+      <div class="cell flat">🌾1x1</div>
+      <div class="cell hq">🏰本営</div>
+      <div class="cell hq">🏰本営</div>
+      <div class="cell hill">⛰️1x4</div>
+      <div class="cell flat">🌾1x1</div>
+      <div class="cell flat">🌾1x1</div>
+
+      <!-- Row 5 -->
+      <div class="cell hill">⛰️1x4</div>
+      <div class="cell hill">⛰️1x4</div>
+      <div class="cell hill">⛰️1x4</div>
+      <div class="cell flat">🌾1x3</div>
+      <div class="cell flat">🌾1x3</div>
+      <div class="cell flat">🌾1x3</div>
+      <div class="cell mtn">🏔️1x4</div>
+      <div class="cell mtn">🏔️1x4</div>
+
+      <!-- Row 6 -->
+      <div class="cell flat">🌾2x2</div>
+      <div class="cell flat">🌾2x2</div>
+      <div class="cell hill">⛰️1x2</div>
+      <div class="cell hill">⛰️1x2</div>
+      <div class="cell mtn">🏔️1x4</div>
+      <div class="cell mtn">🏔️1x4</div>
+      <div class="cell mtn">🏔️1x4</div>
+      <div class="cell mtn">🏔️1x4</div>
+
+      <!-- Row 7 -->
+      <div class="cell flat">🌾2x2</div>
+      <div class="cell flat">🌾2x2</div>
+      <div class="cell flat">🌾1x1</div>
+      <div class="cell flat">🌾1x1</div>
+      <div class="cell flat">🌾1x1</div>
+      <div class="cell flat">🌾1x1</div>
+      <div class="cell flat">🌾1x1</div>
+      <div class="cell flat">🌾1x1</div>
+    </div>
+  </div>
+
+  <div class="panel" id="right-panel">
+    <h3 style="color:#fbbf24; margin-top:0;">🔍 タイル詳細</h3>
+    <h4 style="margin:5px 0;">🏔️ 山岳 (高度3)</h4>
+    <p style="font-size:0.8rem; color:#94a3b8; margin:2px 0;">・GL: なし (固定)</p>
+    <p style="font-size:0.8rem; color:#94a3b8; margin:2px 0;">・産出: 🧱20 🛡️40 /T</p>
+    <p style="font-size:0.8rem; color:#94a3b8; margin:2px 0;">・防衛倍率: 2.0x</p>
+    <hr style="border-color:#334155;">
+    <div style="background:#020617; padding:8px; border-radius:6px; font-size:0.75rem; color:#60a5fa; text-align:center;">
+      Shift+クリック:<br>🎲 2D6ダイス探索判定
+    </div>
+  </div>
+</main>
+
+<div id="bottom-dock">
+  <div class="hand-card selected">
+    <span style="font-size:0.65rem; background:#10b981; padding:1px 4px; border-radius:3px;">土地 [L]</span>
+    <div style="font-size:0.8rem; color:#fbbf24; font-weight:bold;">💎 古代の湧水源</div>
+    <div class="card-mini-grid">
+      <div class="dot filled"></div><div class="dot filled"></div><div class="dot"></div><div class="dot"></div>
+      <div class="dot filled"></div><div class="dot filled"></div><div class="dot"></div><div class="dot"></div>
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    </div>
+    <div style="font-size:0.7rem; color:#34d399; font-weight:bold;">🌾+15 🛡️+15</div>
+    <button class="rotate-btn">🔄 回転(R)</button>
+  </div>
+
+  <div class="hand-card">
+    <span style="font-size:0.65rem; background:#10b981; padding:1px 4px; border-radius:3px;">土地 [R]</span>
+    <div style="font-size:0.8rem; color:#fbbf24; font-weight:bold;">🏔️ 山岳要塞 (凸型)</div>
+    <div class="card-mini-grid">
+      <div class="dot filled"></div><div class="dot filled"></div><div class="dot filled"></div><div class="dot"></div>
+      <div class="dot"></div><div class="dot filled"></div><div class="dot"></div><div class="dot"></div>
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    </div>
+    <div style="font-size:0.7rem; color:#34d399; font-weight:bold;">🧱+20 🛡️+40</div>
+    <button class="rotate-btn">🔄 回転(R)</button>
+  </div>
+
+  <div class="hand-card">
+    <span style="font-size:0.65rem; background:#ef4444; padding:1px 4px; border-radius:3px;">施設</span>
+    <div style="font-size:0.8rem; color:#fbbf24; font-weight:bold;">⚔️ 兵舎建設</div>
+    <div style="font-size:0.7rem; color:#94a3b8;">コスト: 🧱60</div>
+    <div style="font-size:0.7rem; color:#34d399; font-weight:bold;">効果: 🛡️+15/T</div>
+  </div>
+</div>
+
+</body>
+</html>

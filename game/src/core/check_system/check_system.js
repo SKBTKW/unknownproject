@@ -1,0 +1,120 @@
+/**
+ * 🏛️ CheckSystem (判定システム Facade モジュール)
+ * 
+ * 責務:
+ * 1. RandomSource, DicePool, CheckDefinitions, CheckResolver を統括する公開インターフェース。
+ * 2. 外部 (ActionTransaction / Tactics / Events) からの resolve 要求を即座に同期解決する。
+ * 3. 演出や DOM を一切知らず、純粋な CheckResult を返す。
+ * 4. getState / setState により、ゲームステート全体の決定論的直列化 (serializeGameState) に対応する。
+ */
+
+import { RandomSource } from './random_source.js';
+import { DicePool } from './dice_pool.js';
+import { CHECK_DEFINITIONS } from './check_definitions.js';
+import { CheckResolver, CheckModifier } from './check_resolver.js';
+import { TargetBuilder } from './target_builder.js';
+import { validateCheckDefinitions, validateDefinition } from './check_validator.js';
+
+export class CheckSystem {
+    /**
+     * @param {Object} [options={}]
+     * @param {number} [options.seed] - シード値
+     * @param {boolean} [options.debugRngTrace=false] - デバッグ用トレース
+     * @param {Object} [options.customDefinitions={}] - 追加定義
+     */
+    constructor(options = {}) {
+        this.rng = new RandomSource(options.seed, { debugRngTrace: options.debugRngTrace });
+        this.definitions = { ...CHECK_DEFINITIONS, ...(options.customDefinitions || {}) };
+
+        // 🛡️ 初期化時の定義整合性完全検証 (不正定義・重複・穴の即時検出)
+        validateCheckDefinitions(this.definitions);
+    }
+
+    /**
+     * ⚖️ 判定の実行 (同期即時解決)
+     * @param {Object} params
+     * @param {string} params.checkId - 判定定義ID ("standard_2d6", "trial_intercept" 等)
+     * @param {Array<CheckModifier|Object>} [params.modifiers=[]] - 修正値リスト
+     * @param {string|number|null} [params.actionId=null] - Action 識別子
+     * @param {number} [params.checkSequence=1] - Action 内連番
+     * @param {Object|null} [params.target=null] - 動的目標値設定 ({ successAt, greatSuccessAt, mixedAt, comparison })
+     * @returns {Object} CheckResult
+     */
+    resolve({ checkId = "standard_2d6", modifiers = [], actionId = null, checkSequence = 1, target = null } = {}) {
+        const checkDef = this.definitions[checkId];
+        if (!checkDef) {
+            throw new Error(`[CheckSystem] Unknown checkId: ${checkId}`);
+        }
+
+        return CheckResolver.resolve({
+            checkDef,
+            rng: this.rng,
+            modifiers,
+            actionId,
+            checkSequence,
+            target
+        });
+    }
+
+    /**
+     * 📸 状態取得 (Undo / Replay / Save 用)
+     * @returns {Object}
+     */
+    /** Resolve a caller-provided DiceSpec and OutcomeTable on the CheckSystem stream. */
+    resolveDefinition({ definition, modifiers = [], actionId = null, checkSequence = 1 } = {}) {
+        if (!definition || typeof definition !== "object") {
+            throw new Error("[CheckSystem] resolveDefinition failed: definition must be an object.");
+        }
+        const runtimeDef = {
+            ...definition,
+            id: definition.id || "runtime_check",
+            resolution: definition.resolution || { type: "sum" }
+        };
+        if (!runtimeDef.resolution || typeof runtimeDef.resolution !== "object") {
+            throw new Error("[CheckSystem] resolveDefinition failed: resolution must be an object.");
+        }
+        if (runtimeDef.resolution.type !== "sum") {
+            throw new Error(
+                `[CheckSystem] Unsupported resolution type: "${runtimeDef.resolution.type}". ` +
+                'Initial supported type is "sum".'
+            );
+        }
+        validateDefinition(runtimeDef.id, runtimeDef);
+        return CheckResolver.resolve({
+            checkDef: runtimeDef,
+            rng: this.rng,
+            modifiers,
+            actionId,
+            checkSequence
+        });
+    }
+
+    getState() {
+        return {
+            rng: this.rng.getState()
+        };
+    }
+
+    /**
+     * ↩️ 状態復元 (Undo / Replay 用: Fail-Fast)
+     * @param {Object} savedState
+     */
+    setState(savedState) {
+        if (!savedState || typeof savedState !== "object") {
+            throw new Error("[CheckSystem] setState failed: savedState must be an object.");
+        }
+        if (!savedState.rng || typeof savedState.rng !== "object") {
+            throw new Error("[CheckSystem] setState failed: savedState.rng is missing or invalid.");
+        }
+        this.rng.setState(savedState.rng);
+    }
+}
+
+export { RandomSource, DicePool, CHECK_DEFINITIONS, CheckResolver, CheckModifier, TargetBuilder };
+
+if (typeof window !== "undefined") {
+    window.CheckSystem = CheckSystem;
+}
+if (typeof globalThis !== "undefined") {
+    globalThis.CheckSystem = CheckSystem;
+}

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trial of Ages : Last Ember (Bottom Card Layout Option)</title>
+    <link rel="stylesheet" href="css/0_global_common/global_animations.css">
+    <link rel="stylesheet" href="css/0_global_common/typography_theme.css">
+    <link rel="stylesheet" href="css/0_global_common/base_layout.css">
+    <link rel="stylesheet" href="css/1_top_header/top_header.css">
+    <link rel="stylesheet" href="css/2_center_area/land_grid.css">
+    <link rel="stylesheet" href="css/3_bottom_area/bottom_cards.css">
+    <!-- 🃏 個別分離管理されたドローカード選択エリア専用CSS -->
+    <link rel="stylesheet" href="css/3_bottom_area/draw_card_select_area.css">
+    <link rel="stylesheet" href="css/4_right_sidebar/right_sidebar.css">
+    <!-- 🎨 抽出・一括管理された外部レイアウトスタイルシート -->
+    <link rel="stylesheet" href="css/layout.css">
+    
+</head>
+<body>
+
+    <div class="app-wrapper">
+        <!-- 1. Top Header Bar (🔥 True Center Position & Right Aligned Data Panel) -->
+        <div class="top-bar">
+            <!-- 左: タイトルロゴ ＆ 30px右に配置されたロールアイコン -->
+            <div class="app-title-box" style="display:flex; align-items:center;">
+                <img src="assets/title_logo.png" alt="THE AGE OF TRIALS" id="imgTitleLogo" style="height: 60px; object-fit: contain; cursor: pointer;">
+                <div class="role-avatar-box" style="margin-left: 30px; display:flex; align-items:center; cursor:pointer;" id="roleAvatarBox">
+                    <img src="images/role_general.png" alt="Role Icon" id="imgRoleIcon" style="width: 48px; height: 48px; border-radius: 8px; border: 2px solid #1abc9c; box-shadow: 0 0 12px rgba(26, 188, 156, 0.6); transition: transform 0.15s ease;" onmouseenter="this.style.transform='scale(1.08)'" onmouseleave="this.style.transform='scale(1.0)'">
+                </div>
+            </div>
+            
+            <!-- 🔥 画面真中央: 目立つサイズでセンタリング -->
+            <div class="ember-center-box-master" id="emberCenterBoxMaster">
+                <span class="ember-icon" style="font-size:44px;">🔥</span>
+                <span>: <span id="valEmber">20</span></span>
+            </div>
+
+            <!-- 📊 ヘッダー右端: 各種データ表示パネル (限界超大型拡大 ✕ テキスト排除) -->
+            <div class="header-resource-data-panel" id="headerDataPanel" onmouseenter="showDataPanelTooltip(event)" onmouseleave="hideDataPanelTooltip()">
+                <div class="header-data-item">
+                    <span class="icon">🌾</span>
+                    <span class="val" id="valFood">30</span>
+                    <span class="prod">(<span id="valFoodProd">+10</span>/T)</span>
+                </div>
+                <div style="width:1.5px; height:24px; background:#2c3e50;"></div>
+                <div class="header-data-item">
+                    <span class="icon">🧱</span>
+                    <span class="val" id="valWood">30</span>
+                    <span class="prod">(<span id="valWoodProd">+10</span>/T)</span>
+                </div>
+                <div style="width:1.5px; height:24px; background:#2c3e50;"></div>
+                <div class="header-data-item">
+                    <span class="icon">🛡️</span>
+                    <span class="val" id="valDefense">10</span>
+                </div>
+                <div style="width:1.5px; height:24px; background:#2c3e50;"></div>
+                <div class="header-data-item">
+                    <span class="icon">✨</span>
+                    <span class="val" id="valMystic">0</span>
+                    <span class="prod">(<span id="valMysticProd">+0</span>/T)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🕹️ 2. Middle Board Area (Horizontal Partition - Relocated Modular Log & Buff Dropup) -->
+        <div class="middle-layout" style="position:relative; overflow:visible !important;">
+            <div class="board-container">
+                <!-- 📜 メインエリア左上隅: モジュール化 0.75x ログコンテナ -->
+                <div id="logComponentContainer"></div>
+
+                <!-- 🏷️ 盤面エリア右上隅バッジ -->
+                <div class="main-area-badge"><span id="lblMainBadge"></span> <span id="valPlacedCount">1</span>/24</div>
+
+                <!-- 🧩 盤面中央エリアコンテナ (UILayoutConfigによる集中一元管理) -->
+                <div class="board-container-wrapper">
+                    <!-- ✨ 盤面直上: モジュール化 上方向トグル展開バフコンテナ -->
+                    <div id="buffComponentContainer"></div>
+
+                    <div id="gridBoard" class="grid-with-headers"></div>
+                </div>
+
+                <div id="tileTooltip" class="tile-tooltip"></div>
+                <div id="cardRotateCursorTooltip" class="card-rotate-cursor-tooltip"></div>
+
+                <!-- 🃏 画面左下隅: 手札ドローカード選択エリア (メインエリア枠内内包) -->
+                <div class="offering-section">
+                    <div class="section-title-offering">
+                        <span id="lblOfferingTitle">手札オファリング</span>
+                    </div>
+                    <div id="cardRow" class="cards-row-wrapper"></div>
+                </div>
+
+                <!-- 🎮 画面右下隅: 統合操作グループ (メインエリア枠内内包) -->
+                <div class="footer-controls-partition" id="footerControlsPartition">
+                    <div class="turn-box-inside">
+                        <div class="turn-label" id="lblTurnHeader">ターン表示</div>
+                        <div class="turn-num"><span id="valTurn">1</span> <span style="font-size:14px; color:#a4b0be; font-weight:normal;">/ 50</span></div>
+                    </div>
+                    <button class="btn-mulligan" onclick="mulligan()" id="btnMulligan"></button>
+                    <button class="btn-turn-end" onclick="nextTurn()" id="btnTurnEnd"></button>
+                </div>
+
+                <!-- 4x Large Card Hover Preview Modal Container (Bottom-Right Corner Positioned) -->
+                <div id="cardHoverPreviewModal" style="display:none; position:absolute; bottom:12px; right:12px; width:260px; height:390px; z-index:900; pointer-events:none; box-shadow:0 14px 40px rgba(0,0,0,0.9), 0 0 25px rgba(26,188,156,0.85); border-radius:14px; border:3px solid #1abc9c; background:#11141a; padding:10px; transition:opacity 0.15s ease;">
+                    <div id="cardHoverPreviewContent" style="width:100%; height:100%; display:flex; flex-direction:column; justify-content:space-between;"></div>
+                </div>
+            </div>
+        </div>
+    <!-- 🏛️ 4大文明方針 変更モーダル画面 (バッジクリック一発ポップアップ) -->
+    <div id="directiveModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.75); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
+        <div style="background:#161922; border:2px solid #1abc9c; border-radius:12px; width:680px; max-width:92vw; padding:20px; box-shadow:0 10px 40px rgba(0,0,0,0.9); color:#e0e0e0; display:flex; flex-direction:column; gap:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #2a2e3d; padding-bottom:10px;">
+                <h3 style="margin:0; font-size:18px; color:#1abc9c; display:flex; align-items:center; gap:8px;">
+                    <span>🏛️</span> 文明方針の発令・変更 (Four Directives)
+                </h3>
+                <button onclick="closeDirectiveModal()" style="background:none; border:none; color:#a0a0a0; font-size:20px; cursor:pointer; font-weight:bold;">✕</button>
+            </div>
+            
+            <div style="font-size:12px; color:#a0a0a0; line-height:1.4;">
+                文明の注力方針を選択します。初回変更は <strong style="color:#1abc9c;">無料</strong>、2回目以降は変更コストとして <strong style="color:#e74c3c;" id="directiveChangeCostVal">🔥 -1</strong> を消費します。（発令後 3 ターンは固定）
+            </div>
+
+            <div id="directiveOptionsList" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:4px;"></div>
+
+            <div style="display:flex; justify-content:flex-end; border-top:1px solid #2a2e3d; padding-top:12px;">
+                <button onclick="closeDirectiveModal()" style="background:#2c3e50; color:#fff; border:none; padding:8px 20px; border-radius:6px; font-weight:bold; cursor:pointer;">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🌐 True ES Module Single Entrypoint Bootstrap -->
+    <script type="module">
+        import { GameEngine, UIController, UndoLandSystem } from './src/app.js?v=20260820_esm_live';
+
+        function bootstrap() {
+            // 🎮 GameEngine ＆ UIController の完全モジュールマウント起動
+            const engine = GameEngine.createGame();
+            const ui = new UIController(engine);
+
+            if (UndoLandSystem && ui.state) {
+                window.undoSys = new UndoLandSystem(ui.state);
+            }
+
+            // 即座に初期化（ログコンポーネントマウント ＆ 初期ログ描画）
+            ui.init();
+
+            // カードマスターデータの非同期ロード ＆ 画面更新
+            fetch('src/data/land_cards.json')
+                .then(res => res.json())
+                .then(data => {
+                    window.LAND_CARDS_DATA = data;
+                    if (ui.drawSys && typeof ui.drawSys.getLandCardMaster === 'function') {
+                        ui.drawSys._landCardMasterCache = null;
+                    }
+                    ui.render();
+                })
+                .catch(err => {
+                    console.warn("Using built-in fallback land card data:", err);
+                });
+        }
+
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", bootstrap);
+        } else {
+            bootstrap();
+        }
+    </script>
+</body>
+</html>

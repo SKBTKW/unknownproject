@@ -1,0 +1,74 @@
+[game\src\systems\deck_manager.js]: 52 violations
+  L423: this.state.addLog(`📜【${cName}】発動 (コスト: 🧱-20) ➔ 全ての草原マスの食料産出が 🌾+1/T 永続加算されました！`);
+  L428: this.state.addLog(`📜【${cName}】発動 (コスト: 🌾-25) ➔ 🧱+35 ＆ ✨+10 を一括獲得しました！`);
+  L433: this.state.addLog(`🛡️【${cName}】発動 (コスト: 🧱-20) ➔ 防衛力 🛡️+25 獲得 ＆ 本営近郊8マスの防衛力が 🛡️+2/T 永続加算されました！`);
+  L440: name: "🏹 大型バリスタ配備",
+  L441: shortName: "防衛+40/軽減50%",
+  L443: description: "防衛力 🛡️+40 ＆ 次回試練ダメージ50%軽減",
+  L444: badgeText: "試練対策",
+  L447: this.state.addLog(`🏹【${cName}】発動 (コスト: 🧱-30) ➔ 防衛力 🛡️+40 獲得 ＆ 次回の試練被ダメージを 50% 軽減（半減無効化）！`);
+  L454: name: "✨ 🔥の再点火",
+  L455: shortName: "保留費無料化",
+  L457: description: "保留スロット利用料 3T無料化",
+  L458: badgeText: "残り 3T",
+  L462: this.state.addLog(`✨【${cName}】発動 (コスト: ✨-10) ➔ 🔥+3 回復 ＆ 3ターンの間手札保留スロット利用料を無料化しました！`);
+  L468: this.state.addLog(`💎【${cName}】発動 (コスト: ✨-20) ➔ 土地 (${targetTile.r}, ${targetTile.c}) を聖なる光脈 (✨+5 ＆ 🔥+1/T) へ変容しました！`);
+  L471: this.state.addLog(`💎【${cName}】発動 (コスト: ✨-20) ➔ ✨+10 を獲得しました！`);
+  L477: this.state.addLog(`🏛️【${cName}】発動 (コスト: 🧱-15) ➔ 大風車の建設を開始しました (3ターン継続投資)！`);
+  L483: this.state.addLog(`🔥【${cName}】発動 ➔ 🔥+5 獲得 ＆ 手札オファリング枠が永久に4枚へ拡張されました！`);
+  L489: name: "📜 土地探索注力",
+  L490: shortName: "土地確率2倍",
+  L492: description: "盤面6ブロック到達まで土地出現率2倍",
+  L493: badgeText: "ドロー制御",
+  L496: this.state.addLog(`📜【${cName}】発動 (コスト: 🌾-10 🧱-10) ➔ 盤面6ブロック到達まで土地出現率が 2倍 になりました！`);
+  L502: name: "🛡️ 軍備強化注力",
+  L503: shortName: "軍事確率2倍",
+  L505: description: "防衛力20到達まで軍事出現率2倍",
+  L506: badgeText: "ドロー制御",
+  L509: this.state.addLog(`⚔️【${cName}】発動 (コスト: 🧱-20) ➔ 防衛力20到達まで軍事カード出現率が 2倍 になりました！`);
+  L515: name: "✨ 神秘探求注力",
+  L516: shortName: "神秘確率2倍",
+  L518: description: "3ターンの間神秘出現率2倍",
+  L519: badgeText: "残り 3T",
+  L528: name: "🔥 残火の節約",
+  L529: shortName: "自然減衰-1軽減",
+  L531: description: "次ターンの🔥消費(自然減衰)を 1 軽減",
+  L532: badgeText: "残り 1T",
+  L536: this.state.addLog(`🔥【${cName}】発動 (コスト: 無料) ➔ 次ターンの🔥自然減衰を 1 軽減 (消費0) します！`);
+  L543: name: "🌾 節約配給",
+  L544: shortName: "食料維持費50%減",
+  L546: description: "今ターンの食料維持費を50%軽減 ＆ 🌾+5 獲得",
+  L547: badgeText: "残り 1T",
+  L551: this.state.addLog(`🌾【${cName}】発動 (コスト: 無料) ➔ 今ターンの食料維持費を 50% 軽減し、🌾+5 を緊急獲得しました！`);
+  L558: name: "🧘 静かなる瞑想",
+  L559: shortName: "✨+3 / 次T土地優先",
+  L561: description: "✨+3 獲得 ＆ 次ターンの土地出現を優先保証",
+  L562: badgeText: "残り 1T",
+  L566: this.state.addLog(`🧘【${cName}】発動 (コスト: 無料) ➔ ✨+3 を獲得し、次ターンの手札に土地カードを優先保証しました！`);
+  L573: name: "🛡️ 警戒態勢",
+  L574: shortName: "全🛡️獲得+3",
+  L576: description: "2ターンの間、獲得する全ての🛡️に+3ボーナス",
+  L577: badgeText: "残り 2T",
+  L581: this.state.addLog(`🛡️【${cName}】発動 (コスト: 🧱-15) ➔ 2ターンの間、獲得する全ての 🛡️ に +3 の追加ボーナスが付与されます！`);
+  L600: this.state.addLog(`📜 ${cName}を発動！ コスト (🌾-30 🧱-30 🔥-1) を払い位置 (${String.fromCharCode(65+chosen.c)}${chosen.r+1}) で2D6探索を開始！`);
+[game\src\systems\buff_system.js]: 13 violations
+  L35: name: "🔥 旺盛バフ",
+  L36: shortName: "旺盛 (+10%)",
+  L38: description: "🔥旺盛により全リソース産出 +10% ＆ 自動 ✨+2/T",
+  L39: badgeText: "環境バフ",
+  L48: name: "🔥 危機 (微火)",
+  L49: shortName: "微火 (維持費減)",
+  L51: description: "🔥危機により省エネ復興中 (食料維持費 🌾15/T へ減圧)",
+  L52: badgeText: "環境バフ",
+  L102: name: `⚔️ 試練襲来まで あと ${notice.remaining} ターン`,
+  L103: shortName: `試練接近 (${notice.remaining}T)`,
+  L105: description: `迫り来る大試練に備えて防衛力 (🛡️) を高めてください。`,
+  L106: badgeText: `残り ${notice.remaining}T`,
+  L170: buff.badgeText = `残り ${buff.remainingTurns}T`;
+[game\src\systems\grid_engine.js]: 6 violations
+  L316: spawnedSocket = { id: "SOCKET_LAKE", nameKey: "SOCKET_LAKE", category: "水脈", icon: "💧", bonusFood: 2, bonusWood: 0, bonusDefense: 0, bonusMystic: 0 };
+  L318: spawnedSocket = { id: "SOCKET_OASIS", nameKey: "SOCKET_OASIS", category: "水脈", icon: "🌴", bonusFood: 1, bonusWood: 0, bonusDefense: 0, bonusMystic: 0 };
+  L716: this.state.addLog(`🟨【丘陵】L字異形マージ完成！ (${bText}) ＆ 最後のマスが『★隠匿鉱床 (🧱+2 🛡️+1/T)』に覚醒！`);
+  L719: this.state.toastQueue.push({ r: coords[0].r, c: coords[0].c, text: `🟨 L字マージ覚醒! (${bText})` });
+  L791: this.state.addLog(`🛡️【山岳】凸字異形マージ完成！ (${bText}) ＆ 最後のマスが『★主峰砦 (🛡️+3 ✨+2/T)』に覚醒！`);
+  L794: this.state.toastQueue.push({ r: coords[0].r, c: coords[0].c, text: `🛡️ 凸字マージ覚醒! (${bText})` });

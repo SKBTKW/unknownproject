@@ -1,0 +1,102 @@
+/* =============================================================
+   0_global_common / layout_tokens.css
+   Screen-space layout tokens owned by Layout Refactor.
+
+   Important boundary:
+   - Board Presentation may expose semantic state (view/context),
+     but it must not own screen-space geometry.
+   - These tokens control where HUD regions are placed, not what
+     the board means or which semantic data is visible.
+   ============================================================= */
+
+:root {
+    /* Shared app-shell geometry */
+    --layout-header-height: 120px;
+    --layout-app-gap: 4px;
+    --layout-body-padding: 10px;
+    --layout-body-gap: 10px;
+    --layout-app-max-width: 2100px;
+    --layout-edge-gap: 16px;
+    --layout-mobile-edge-gap: 8px;
+    --layout-system-overlay-inset: 0px;
+
+    /* Board / Verse top-alignment geometry */
+    --layout-verse-right: 24px;
+    --layout-buff-summary-height: 52px;
+    --layout-buff-dropup-gap: 8px;
+    --layout-buff-dropup-max-height: min(320px, calc(100vh - var(--layout-header-height) - 32px));
+    --layout-buff-panel-headroom: calc(
+        var(--layout-buff-summary-height)
+        + var(--layout-buff-dropup-gap)
+        + var(--layout-buff-dropup-max-height)
+    );
+
+    /* Legacy right sidebar shell geometry. Internal panel styling stays feature-owned. */
+    --layout-right-sidebar-width: 280px;
+    --layout-right-sidebar-gap: 14px;
+    --layout-right-sidebar-padding-block: 14px;
+    --layout-right-sidebar-padding-inline: 12px;
+
+    /* Layout-owned layer placement between Player HUD and System Overlay. */
+    --z-right-context: 720;
+
+    /* Player Action Host geometry */
+    --layout-player-tray-bottom: var(--layout-edge-gap);
+    --layout-player-tray-top-left: 50%;
+    --layout-player-tray-quarter-left: var(--layout-edge-gap);
+    --layout-player-tray-mobile-left: var(--layout-mobile-edge-gap);
+    --layout-player-tray-mobile-bottom: var(--layout-mobile-edge-gap);
+    --layout-player-tray-motion-ms: 320ms;
+    --layout-player-tray-motion-easing: cubic-bezier(0.16, 1, 0.3, 1);
+
+    /*
+     * 2.5D hand docking experiment.
+     * STANDARD uses the lower-left reading dock. MINIMIZED returns to the
+     * board-adjacent lower center for quick card-to-board interaction.
+     * These are screen-space anchors only; hand contents remain view-agnostic.
+     */
+    --layout-quarter-hand-standard-left: var(--layout-edge-gap);
+    --layout-quarter-hand-standard-translate-x: 0%;
+    --layout-quarter-hand-minimal-left: 50%;
+    --layout-quarter-hand-minimal-translate-x: -50%;
+
+    /* Trial Action Tray geometry */
+    --layout-trial-action-tray-width: min(680px, calc(100vw - 48px));
+    --layout-trial-action-tray-width-compact: min(620px, calc(100vw - 32px));
+    --layout-trial-action-tray-width-mobile: calc(100vw - 16px);
+    --layout-trial-action-tray-min-height: 164px;
+    --layout-trial-action-tray-max-height-compact: 44vh;
+    --layout-trial-action-tray-clearance: 20px;
+
+    /* Advisor dock geometry. Advisor internals remain feature-owned. */
+    --layout-advisor-right: var(--layout-edge-gap);
+    --layout-advisor-bottom: var(--layout-edge-gap);
+    --layout-advisor-mobile-right: var(--layout-mobile-edge-gap);
+    --layout-advisor-mobile-bottom: var(--layout-mobile-edge-gap);
+
+    /*
+     * Right Context geometry.
+     * Its bottom edge stays above the desktop Player Action Host so the
+     * global Trial summary never competes with point-specific controls.
+     * Content remains owned by its feature; only geometry is defined here.
+     */
+    --layout-right-context-right: 24px;
+    --layout-right-context-top: 96px;
+    --layout-right-context-bottom: calc(
+        var(--layout-player-tray-bottom)
+        + var(--layout-trial-action-tray-min-height)
+        + var(--layout-trial-action-tray-clearance)
+    );
+    --layout-right-context-width: min(360px, calc(100vw - 48px));
+    --layout-right-context-max-height: calc(
+        100vh
+        - var(--layout-right-context-top)
+        - var(--layout-right-context-bottom)
+    );
+
+    /* Mobile keeps the global Trial summary in the upper screen band. */
+    --layout-right-context-mobile-right: 12px;
+    --layout-right-context-mobile-top: 72px;
+    --layout-right-context-mobile-width: min(300px, calc(100vw - 24px));
+    --layout-right-context-mobile-max-height: 34vh;
+}

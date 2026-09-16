@@ -1,0 +1,14 @@
+/* Board Presentation context rules. Screen-space UI visibility belongs to LayoutStateManager. */
+
+body[data-board-context="trial"] #gridBoard .tile-yield-line,
+body[data-board-context="trial"] #gridBoard .socket-yield-line,
+body[data-board-context="trial"] #gridBoard .searched-badge {
+    display: none;
+}
+
+body[data-board-context="trial"] #gridBoard .trial-route-cell,
+body[data-board-context="trial"] #gridBoard .trial-interception-candidate,
+body[data-board-context="trial"] #gridBoard .trial-interception-planned,
+body[data-board-context="trial"] #gridBoard .trial-battle-active {
+    isolation: isolate;
+}

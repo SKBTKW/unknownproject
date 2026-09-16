@@ -1,0 +1,51 @@
+/* =============================================================
+   game/src/app.js
+   Pure ES Module Master Entry Point for Trial of Ages : Last Ember
+   ============================================================= */
+
+import { I18n } from './i18n.js';
+import { LAND_SYSTEM_DATA } from './data/land_system.js';
+import { DIRECTIVES, DirectiveSystem } from './systems/directive_system.js';
+import { DeckManager, Step1DrawSystem } from './systems/deck_manager.js';
+import { ProductionCalculator } from './systems/production_calculator.js';
+import { UndoLandSystem } from './systems/undo_land_system.js';
+import { GridEngine } from './systems/grid_engine.js';
+import { BuffSystem } from './systems/buff_system.js';
+import { GameState, Step1Engine, rotateShapeMatrix } from './v2_unity_ready_main.js';
+import { GameEngine } from './core/game_engine.js';
+import { ModalSystem } from './ui/modal_system.js';
+import { LogComponent } from './ui/log_component.js';
+import { BuffPanelComponent } from './ui/buff_panel_component.js';
+import { territoryBadgeInstance as TerritoryBadgeComponent, TerritoryBadgeComponent as TerritoryBadgeComponentClass } from './ui/territory_badge_component.js';
+import { UILayoutConfig, UI_FEATURE_FLAGS } from './ui/layout_config.js';
+import { BlockPlacementSystem } from './ui/block_placement_system.js';
+import { V2UIRenderer } from './ui/v2_ui_renderer.js';
+import { UIController } from './ui/ui_controller.js';
+
+export {
+    I18n,
+    LAND_SYSTEM_DATA,
+    DIRECTIVES,
+    DirectiveSystem,
+    DeckManager,
+    Step1DrawSystem,
+    ProductionCalculator,
+    UndoLandSystem,
+    GridEngine,
+    BuffSystem,
+    GameState,
+    Step1Engine,
+    rotateShapeMatrix,
+    GameEngine,
+    ModalSystem,
+    LogComponent,
+    BuffPanelComponent,
+    TerritoryBadgeComponent,
+    UILayoutConfig,
+    UI_FEATURE_FLAGS,
+    BlockPlacementSystem,
+    V2UIRenderer,
+    UIController
+};
+
+console.log('🎮 [App] Clean True ES Modules Master Entrypoint Loaded Successfully.');

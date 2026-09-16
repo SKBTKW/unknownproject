@@ -1,0 +1,135 @@
+/* =============================================================
+   1_top_header / top_header.css
+   最上部ヘッダー（リソース・ターン表示）専用スタイル
+   ============================================================= */
+
+.top-bar {
+    background: #161922;
+    border: 1px solid #2a2e3d;
+    border-radius: 10px;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+    flex-shrink: 0;
+    height: var(--layout-header-height);
+    position: relative;
+    overflow: visible;
+}
+
+.app-title-box {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-weight: bold;
+    font-size: 16px;
+    z-index: 2;
+}
+
+.role-avatar-box {
+    background: #1abc9c;
+    color: #0b0d11;
+    padding: 6px 12px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* リソース表示はヘッダーの幾何学中心へ固定 */
+.header-resource-data-panel {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+}
+
+/* 旧ヘッダー設定ボタンは廃止。設定はAdvisor / Escから開ける */
+#btnOpenSettings,
+.btn-settings-header {
+    display: none !important;
+}
+
+/* 🌾 ヘッダーリソース数値・アイコン */
+.header-data-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #e0e0e0;
+}
+
+.header-data-item .icon {
+    font-size: 22px;
+}
+
+.header-data-item .val {
+    font-size: 22px;
+    font-weight: 900;
+    color: #ffffff;
+}
+
+.header-data-item .prod {
+    font-size: 14px;
+    color: #2ecc71;
+    font-weight: bold;
+}
+
+/* 🌌 ヘッダー右隅 ターン表示 (Verse HUD) */
+.top-bar .bg-turn-watermark.header-turn-display {
+    position: relative;
+    margin-left: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    height: 110px;
+    box-sizing: border-box;
+    padding: 4px 20px;
+    background: rgba(14, 17, 24, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+    z-index: 2;
+    pointer-events: none;
+    user-select: none;
+}
+
+.top-bar .bg-turn-watermark.header-turn-display .bg-turn-label {
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    color: #1abc9c;
+    text-transform: uppercase;
+    margin-bottom: -4px;
+    text-shadow: 0 0 8px rgba(26, 188, 156, 0.5);
+}
+
+.top-bar .bg-turn-watermark.header-turn-display .bg-turn-num {
+    font-size: 80px;
+    font-weight: 900;
+    line-height: 0.92;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Impact", sans-serif;
+    color: #ffffff;
+    text-shadow: 0 0 20px rgba(26, 188, 156, 0.45);
+    letter-spacing: 0.5px;
+}
+
+.top-bar .bg-turn-watermark.header-turn-display .bg-turn-num small {
+    font-size: 40px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.70);
+    margin-left: 4px;
+}
+
+/* ⚠️ 試練カウントダウンバッジ（現フェーズ停止・非表示） */
+.top-bar #trialCountdownBadge,
+.trial-countdown-badge[hidden] {
+    display: none;
+}
+

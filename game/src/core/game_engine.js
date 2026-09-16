@@ -1,0 +1,448 @@
+import { I18n } from '../i18n.js';
+import { LAND_SYSTEM_DATA } from '../data/land_system.js';
+import { DIRECTIVES, DirectiveSystem } from '../systems/directive_system.js';
+import { DeckManager } from '../systems/deck_manager.js';
+import { ProductionCalculator } from '../systems/production_calculator.js';
+import { UndoLandSystem } from '../systems/undo_land_system.js';
+import { GridEngine } from '../systems/grid_engine.js';
+import { BuffSystem } from '../systems/buff_system.js';
+import { ChronicleSystem } from '../systems/chronicle_system.js';
+import { GlobalEventManager } from '../systems/global_event_system.js';
+import { EmberSystem } from '../systems/ember_system.js';
+import { CardCycleSystem } from '../systems/card_cycle_system.js';
+import { MaintenanceFallbackSystem } from '../systems/maintenance_fallback_system.js';
+import { DefenseSystem } from '../systems/defense_system.js';
+import { CellViewDataService } from '../services/cell_view_data_service.js';
+import { ActionTransactionManager } from './transaction_manager.js';
+import { resolvePlacementGeometry } from './placement_geometry.js';
+import { CheckSystem } from './check_system/check_system.js';
+import { GameplayRandomService } from './gameplay_random_service.js';
+import { TurnLifecycleService } from './turn_lifecycle_service.js';
+import { HistoryRestoreService } from './history_restore_service.js';
+import { GameState } from '../v2_unity_ready_main.js';
+import { EnemyObservationProjector } from '../warning/systems/enemy_observation_projector.js';
+import { attachInvestigationSubsystem } from '../warning/integration/investigation_bootstrap.js';
+
+function normalizeRunSeed(seed) {
+    if (!Number.isFinite(seed)) return null;
+    return Math.trunc(seed) >>> 0;
+}
+
+function createRunSeed() {
+    if (typeof globalThis !== "undefined" && globalThis.crypto && typeof globalThis.crypto.getRandomValues === "function") {
+        const values = new Uint32Array(1);
+        globalThis.crypto.getRandomValues(values);
+        return values[0] >>> 0;
+    }
+    return (Date.now() ^ Math.floor(Math.random() * 0x100000000)) >>> 0;
+}
+
+class GameEngine {
+    /**
+     * @param {Object} [dependencies={}] - 注入するサブシステム依存群
+     */
+    constructor(dependencies = {}) {
+        // 1. 外部サービス / 共通モジュールの解決
+        this.i18n = dependencies.i18n || I18n;
+        this.productionCalculator = dependencies.productionCalculator || ProductionCalculator;
+        this.landData = dependencies.landData || LAND_SYSTEM_DATA;
+        this.cellViewDataService = dependencies.cellViewDataService || new CellViewDataService(this.productionCalculator);
+        this.transactionManager = dependencies.transactionManager || new ActionTransactionManager(this);
+
+        const injectedCheckSystem = dependencies.checkSystem || dependencies.state?.checkSystem || null;
+        const injectedRngState = injectedCheckSystem && typeof injectedCheckSystem.getState === "function"
+            ? injectedCheckSystem.getState()?.rng
+            : null;
+        this.runSeed = normalizeRunSeed(dependencies.runSeed)
+            ?? normalizeRunSeed(dependencies.state?.runSeed)
+            ?? normalizeRunSeed(injectedRngState?.seed)
+            ?? createRunSeed();
+        const CheckSystemClass = dependencies.CheckSystemClass || CheckSystem;
+        this.checkSystem = injectedCheckSystem || new CheckSystemClass({ seed: this.runSeed });
+
+        // Gameplay-facing randomness is deliberately independent from CheckSystem dice/check RNG.
+        // It must exist before GameState construction because GameState creates world-start randomness.
+        const GameplayRandomServiceClass = dependencies.GameplayRandomServiceClass || GameplayRandomService;
+        this.gameplayRandom = dependencies.gameplayRandom
+            || new GameplayRandomServiceClass(this.runSeed);
+
+        // 2. GameState (データストア) の初期化
+        if (dependencies.state) {
+            this.state = dependencies.state;
+        } else {
+            const GameStateClass = dependencies.GameStateClass || GameState;
+            this.state = GameStateClass ? new GameStateClass({ engine: this }) : { turn: 1, ember: 20, food: 50, wood: 30, defense: 10, currentDefense: 10, maxDefense: 10, mystic: 0, handOffering: [], reserveSlots: [null] };
+        }
+
+        // 3. ドメインサブシステムの初期化と注入
+        const GridEngineClass = dependencies.GridEngineClass || GridEngine;
+        this.gridEngine = dependencies.gridEngine || (GridEngineClass ? new GridEngineClass(this.state, this) : null);
+
+        const DeckManagerClass = dependencies.DeckManagerClass || DeckManager;
+        this.deckManager = dependencies.deckManager || (DeckManagerClass ? new DeckManagerClass(this.state, this) : null);
+
+        const DirectiveSystemClass = dependencies.DirectiveSystemClass || DirectiveSystem;
+        this.directiveSystem = dependencies.directiveSystem || (DirectiveSystemClass ? new DirectiveSystemClass(this.state, this) : null);
+
+        const BuffSystemClass = dependencies.BuffSystemClass || BuffSystem;
+        this.buffSystem = dependencies.buffSystem || (BuffSystemClass ? new BuffSystemClass(this.state, this) : null);
+
+        const UndoLandSystemClass = dependencies.UndoLandSystemClass || UndoLandSystem;
+        this.undoSystem = dependencies.undoSystem || (UndoLandSystemClass ? new UndoLandSystemClass(this.state) : null);
+
+        const ChronicleSystemClass = dependencies.ChronicleSystemClass || ChronicleSystem;
+        this.chronicleSystem = dependencies.chronicleSystem || (ChronicleSystemClass ? new ChronicleSystemClass(this.state) : null);
+
+        const GlobalEventManagerClass = dependencies.GlobalEventManagerClass || GlobalEventManager;
+        this.globalEventManager = dependencies.globalEventManager || (GlobalEventManagerClass ? new GlobalEventManagerClass(this.state, this) : null);
+
+        const EmberSystemClass = dependencies.EmberSystemClass || EmberSystem;
+        this.emberSystem = dependencies.emberSystem || (EmberSystemClass ? new EmberSystemClass(this.state, this) : null);
+
+        const DefenseSystemClass = dependencies.DefenseSystemClass || DefenseSystem;
+        this.defenseSystem = dependencies.defenseSystem || (DefenseSystemClass ? new DefenseSystemClass(this.state, {
+            rebuildCostResolver: dependencies.defenseRebuildCostResolver || null,
+            mysticFallbackResolver: dependencies.defenseMysticFallbackResolver || null
+        }) : null);
+
+        const CardCycleSystemClass = dependencies.CardCycleSystemClass || CardCycleSystem;
+        this.cardCycleSystem = dependencies.cardCycleSystem || (CardCycleSystemClass ? new CardCycleSystemClass(this.state, this) : null);
+
+        const TurnLifecycleServiceClass = dependencies.TurnLifecycleServiceClass || TurnLifecycleService;
+        this.turnLifecycleService = dependencies.turnLifecycleService
+            || (TurnLifecycleServiceClass ? new TurnLifecycleServiceClass(this) : null);
+
+        const observationProjector = dependencies.enemyObservationProjector || new EnemyObservationProjector();
+        this.investigationSubsystem = attachInvestigationSubsystem(this, {
+            observableProfileProvider: () => {
+                const truthSnapshot = this.enemyTruthReadModel?.getSnapshot?.();
+                return observationProjector.project(truthSnapshot);
+            }
+        });
+
+        // 4. GameState への双方向リンク確立
+        if (this.state) {
+            this.state.engine = this;
+            this.state.runSeed = this.runSeed;
+            this.state.checkSystem = this.checkSystem;
+            if (this.gridEngine) this.state.gridEngine = this.gridEngine;
+            if (this.deckManager) this.state.deckManager = this.deckManager;
+            if (this.directiveSystem) this.state.directiveSystem = this.directiveSystem;
+            if (this.buffSystem) this.state.buffSystem = this.buffSystem;
+            if (this.chronicleSystem) this.state.chronicleSystem = this.chronicleSystem;
+            if (this.globalEventManager) this.state.globalEventManager = this.globalEventManager;
+            if (this.emberSystem) this.state.emberSystem = this.emberSystem;
+            if (this.defenseSystem) this.state.defenseSystem = this.defenseSystem;
+            if (this.cardCycleSystem) this.state.cardCycleSystem = this.cardCycleSystem;
+        }
+
+        // 5. ゲーム開始時の初期オファリング生成 (UIではなくEngineの責務)
+        if (this.deckManager && (!this.state.handOffering || this.state.handOffering.length === 0)) {
+            this.deckManager.generateOfferingCards();
+        }
+
+        // Verse 1 begins only after initial world/socket and Offering generation.
+        // An injected already-started state must not be re-captured as Verse 1.
+        if (this.state?.turn === 1 &&
+            !this.historySnapshotService?.getRestorePoint?.(1)) {
+            this.historySnapshotService?.captureRestorePoint?.({
+                verse: 1,
+                sourceCompletedTurn: null
+            });
+        }
+        this.historyRestoreService = new HistoryRestoreService(this);
+    }
+
+    /**
+     * 🏭 新規ゲーム作成ファクトリ
+     */
+    static createGame(options = {}) {
+        return new GameEngine(options);
+    }
+
+    /**
+     * 🔄 ターン送り
+     */
+    nextTurn({
+        autoFallbackEnabled = true,
+        useHypotheticalFallback = false
+    } = {}) {
+        if (!this.turnLifecycleService || typeof this.turnLifecycleService.advance !== "function") {
+            throw new Error("TURN_LIFECYCLE_SERVICE_REQUIRED");
+        }
+        return this.turnLifecycleService.advance({
+            autoFallbackEnabled,
+            useHypotheticalFallback
+        });
+    }
+
+    previewTurnEndMaintenance({ autoFallbackEnabled = true } = {}) {
+        return MaintenanceFallbackSystem.previewTurnEndMaintenance(this.state, {
+            autoFallbackEnabled
+        });
+    }
+
+    /**
+     * 🛡️ Action トランザクション実行 (G3: Validate ➔ Snapshot ➔ Execute ➔ Derived Effects ➔ Commit ➔ Rollback ➔ History)
+     * @param {string} actionType - アクション識別子 ("PLACE_LAND", "RESERVE_CARD", etc.)
+     * @param {Object|Function} pipeline - パイプライン定義または実行関数
+     * @param {Object} [payload={}] - アクション引数コンテキスト
+     * @returns {Object} { success: boolean, ... }
+     */
+    executeAction(actionType, pipeline, payload = {}) {
+        if (!this.state) return { success: false, reason: "NO_STATE" };
+
+        if (this.transactionManager && typeof this.transactionManager.execute === "function") {
+            const p = typeof pipeline === "function" ? { execute: pipeline } : pipeline;
+            const res = this.transactionManager.execute(actionType, p, payload);
+            if (res && res.result && typeof res.result === "object") {
+                if (res.result.diceCheck) res.diceCheck = res.result.diceCheck;
+                if (res.result.placementOutcome) res.placementOutcome = res.result.placementOutcome;
+                else if (res.result.result && res.result.result.placementOutcome) res.placementOutcome = res.result.result.placementOutcome;
+            }
+            return res;
+        }
+
+        // フォールバック
+        return { success: false, reason: "NO_TRANSACTION_MANAGER" };
+    }
+
+    /**
+     * 🗺️ 土地配置 Action API (トランザクションパイプライン)
+     * @param {number} r - Anchorを置くクリック行
+     * @param {number} c - Anchorを置くクリック列
+     * @param {Object} card - カードオブジェクト
+     * @param {number} [rotation=0] - 回転角度
+     * @param {Object} [source={ type: "OFFERING", index: 0 }] - 出現元情報
+     */
+    placeLand(r, c, card, rotation = 0, source = { type: "OFFERING", index: 0 }) {
+        if (!card) return { success: false, reason: "NO_CARD" };
+
+        const placement = resolvePlacementGeometry(card, r, c);
+        const { shape, startR, startC } = placement;
+        const terrain = card.terrain || card;
+        const currentIdx = source.type === "OFFERING" ? source.index : -1;
+        const placedCoords = placement.cells;
+
+        return this.executeAction("PLACE_LAND", {
+            // 1. 🔍 Validate (事前バリデーション: 失敗時は一切ステートに触れず拒絶)
+            validate: (state) => {
+                if (!state) return { can: false, reason: "NO_STATE" };
+                if (state.hasPickedThisTurn) return { can: false, reason: "ALREADY_PICKED" };
+                if (typeof state.canPlaceShape === "function") {
+                    const check = state.canPlaceShape(startR, startC, shape, terrain);
+                    if (!check || !check.can) return check || { can: false, reason: "CANNOT_PLACE" };
+                }
+                return { can: true };
+            },
+            // 2. ⚙️ Execute (コア変更: 土地配置と保留枠消化)
+            execute: (state) => {
+                const res = (typeof state.placeShape === "function")
+                    ? state.placeShape(startR, startC, shape, terrain, currentIdx)
+                    : { can: false };
+
+                if (!res || (!res.can && !res.success)) {
+                    return { success: false, reason: res ? res.reason : "CANNOT_PLACE" };
+                }
+
+                if (source.type === "RESERVE" && source.index !== -1 && state.reserveSlots) {
+                    state.reserveSlots[source.index] = null;
+                }
+
+                return { success: true, result: res };
+            },
+            // 3. 🌟 Derived Effects (派生効果: UNIQUEカード消費、マージチェック)
+            applyDerivedEffects: (state) => {
+                if (this.cardCycleSystem && typeof this.cardCycleSystem.consumeUnique === "function") {
+                    this.cardCycleSystem.consumeUnique(card);
+                }
+                if (typeof state.checkMergePatterns === "function") {
+                    state.checkMergePatterns();
+                }
+                return { success: true };
+            }
+        }, { r, c, startR, startC, card, shape, anchor: placement.anchor, rotation, source, placedCoords });
+    }
+
+    /**
+     * 🃏 手札オファリングから保留枠へのカード移動 Action API
+     * @param {number} offeringIdx - オファリング枠インデックス
+     * @param {number} [targetReserveIdx=0] - 保留枠インデックス
+     */
+    reserveOfferingCard(offeringIdx, targetReserveIdx = 0) {
+        return this.executeAction("RESERVE_CARD", () => {
+            if (this.deckManager && typeof this.deckManager.moveToReserve === "function") {
+                const ok = this.deckManager.moveToReserve(offeringIdx);
+                return { success: !!ok, reason: ok ? null : "MOVE_TO_RESERVE_FAILED" };
+            }
+            if (typeof this.state.moveToReserve === "function") {
+                const ok = this.state.moveToReserve(offeringIdx);
+                return { success: !!ok, reason: ok ? null : "MOVE_TO_RESERVE_FAILED" };
+            }
+            return { success: false, reason: "NO_RESERVE_LOGIC" };
+        });
+    }
+
+    returnReservedCard(reserveIdx = 0, targetHandIdx = -1) {
+        return this.executeAction("RETURN_RESERVE_CARD", () => {
+            if (this.deckManager && typeof this.deckManager.returnFromReserve === "function") {
+                const ok = this.deckManager.returnFromReserve(reserveIdx, targetHandIdx);
+                return { success: !!ok, reason: ok ? null : "RETURN_FROM_RESERVE_FAILED" };
+            }
+            if (typeof this.state.returnFromReserve === "function") {
+                const ok = this.state.returnFromReserve(reserveIdx, targetHandIdx);
+                return { success: !!ok, reason: ok ? null : "RETURN_FROM_RESERVE_FAILED" };
+            }
+            return { success: false, reason: "NO_RETURN_LOGIC" };
+        });
+    }
+
+    discardReservedCard(reserveIdx = 0) {
+        return this.executeAction("DISCARD_RESERVE_CARD", () => {
+            if (this.deckManager && typeof this.deckManager.discardFromReserve === "function") {
+                const ok = this.deckManager.discardFromReserve(reserveIdx);
+                return { success: !!ok, reason: ok ? null : "DISCARD_FROM_RESERVE_FAILED" };
+            }
+            if (typeof this.state.discardFromReserve === "function") {
+                const ok = this.state.discardFromReserve(reserveIdx);
+                return { success: !!ok, reason: ok ? null : "DISCARD_FROM_RESERVE_FAILED" };
+            }
+            return { success: false, reason: "NO_DISCARD_LOGIC" };
+        });
+    }
+
+    playCommandCard(card, source = { type: "OFFERING", index: -1 }) {
+        return this.executeAction("PLAY_COMMAND_CARD", () => {
+            if (this.deckManager && typeof this.deckManager.playCommandCard === "function") {
+                const cardObj = card.terrain || card;
+                const offeringIdx = source.type === "OFFERING" ? source.index : -1;
+                const reserveIdx = source.type === "RESERVE" ? source.index : -1;
+                const ok = this.deckManager.playCommandCard(cardObj, null, offeringIdx, reserveIdx);
+                const isSuccess = (ok && typeof ok === "object") ? ok.success !== false : ok !== false;
+                const diceCheck = (ok && typeof ok === "object") ? ok.diceCheck : null;
+                return { success: isSuccess, card, diceCheck, reason: isSuccess ? null : ok?.reason };
+            }
+            if (typeof this.state.playCommandCard === "function") {
+                const cardObj = card.terrain || card;
+                const offeringIdx = source.type === "OFFERING" ? source.index : -1;
+                const reserveIdx = source.type === "RESERVE" ? source.index : -1;
+                const ok = this.state.playCommandCard(cardObj, null, offeringIdx, reserveIdx);
+                const isSuccess = (ok && typeof ok === "object") ? ok.success !== false : ok !== false;
+                const diceCheck = (ok && typeof ok === "object") ? ok.diceCheck : null;
+                return { success: isSuccess, card, diceCheck, reason: isSuccess ? null : ok?.reason };
+            }
+            return { success: false, reason: "NO_COMMAND_LOGIC" };
+        });
+    }
+
+    /**
+     * 🎲 マリガン Action API
+     */
+    mulligan() {
+        return this.executeAction("MULLIGAN", () => {
+            if (!this.state) return { success: false, reason: "NO_STATE" };
+            if (this.state.hasPickedThisTurn || this.state.hasMulliganedThisTurn || this.state.ember < 1) {
+                return { success: false, reason: "MULLIGAN_BLOCKED" };
+            }
+
+            this.state.ember -= 1;
+            this.state.hasMulliganedThisTurn = true;
+
+            if (this.deckManager && typeof this.deckManager.drawOffering === "function") {
+                this.deckManager.drawOffering();
+            } else if (typeof this.state.drawOffering === "function") {
+                this.state.drawOffering();
+            }
+
+            if (typeof this.state.addLog === "function") {
+                const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
+                this.state.addLog(I18n.t("LOG_MULLIGAN_EXECUTED") || "🎲 マリガン実行: 🔥 -1 を消費して手札を再抽選しました。");
+            }
+
+            return { success: true };
+        });
+    }
+
+    /**
+     * ↩️ 直前 Action の巻き戻し API
+     */
+    undoLastAction() {
+        if (this.transactionManager && typeof this.transactionManager.undo === "function") {
+            return this.transactionManager.undo();
+        }
+        if (this.undoSystem && typeof this.undoSystem.undo !== "function") {
+            return { success: false, reason: "NO_UNDO_SYSTEM" };
+        }
+        const success = this.undoSystem.undo();
+        return { success };
+    }
+
+    getTrialAvailableDefense() {
+        return this.defenseSystem ? this.defenseSystem.getTrialAvailableDefense() : 0;
+    }
+
+    applyTrialDefenseLoss(amount) {
+        if (!this.defenseSystem) return { before: 0, after: 0, reduced: 0, maxDefense: 0 };
+        return this.defenseSystem.reduceCurrentDefense(amount);
+    }
+
+    recoverCurrentDefense(amount) {
+        if (!this.defenseSystem) return { before: 0, after: 0, recovered: 0, maxDefense: 0 };
+        return this.defenseSystem.recoverCurrentDefense(amount);
+    }
+
+    getDefenseRebuildPlan(options = {}) {
+        return this.defenseSystem
+            ? this.defenseSystem.getDefenseRebuildPlan(options)
+            : { canRebuild: false, reason: "NO_DEFENSE_SYSTEM" };
+    }
+
+    rebuildDefense(options = {}) {
+        return this.defenseSystem
+            ? this.defenseSystem.rebuildDefense(options)
+            : { success: false, reason: "NO_DEFENSE_SYSTEM" };
+    }
+
+    /**
+     * 🍞 トーストキューの一括引き抜き (UI 表示用ドレイン)
+     * @returns {Array<Object>}
+     */
+    drainToasts() {
+        if (!this.state || !Array.isArray(this.state.toastQueue) || this.state.toastQueue.length === 0) {
+            return [];
+        }
+        const toasts = [...this.state.toastQueue];
+        this.state.toastQueue = [];
+        return toasts;
+    }
+
+    /**
+     * 🏁 ターン終了 API (nextTurn のエイリアス)
+     */
+    endTurn() {
+        return this.nextTurn();
+    }
+
+    /**
+     * 🗺️ 単一マスの表示用純粋事実データ取得 (Facade API)
+     * @param {number} r - 行
+     * @param {number} c - 列
+     * @returns {Object|null}
+     */
+    getCellViewData(r, c) {
+        if (!this.cellViewDataService || typeof this.cellViewDataService.getCellViewData !== "function") {
+            return null;
+        }
+        return this.cellViewDataService.getCellViewData(this.state, r, c);
+    }
+}
+
+if (typeof window !== "undefined") {
+    window.GameEngine = GameEngine;
+}
+if (typeof globalThis !== "undefined") {
+    globalThis.GameEngine = GameEngine;
+}
+
+export { GameEngine };
+export default GameEngine;

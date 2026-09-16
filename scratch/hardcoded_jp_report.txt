@@ -1,0 +1,2278 @@
+=== DIRECT JAPANESE TEXT AUDIT REPORT ===
+Total files with violations: 29
+
+[game\src\cards.js]: 64 violations
+  L16: { id: 'land-plains-jungle', name: '森林', type: CARD_CATEGORIES.LAND, terrain: TERRAINS.PLAINS, attribute: ATTRIBUTES.JUNGLE, rarity: 'r', weight: 4, desc: '森林を獲得。食料🌾+5、資材🧱+5、防衛🛡️+20、神秘✨+5。' },
+  L17: { id: 'land-plains-forest', name: '森', type: CARD_CATEGORIES.LAND, terrain: TERRAINS.PLAINS, attribute: ATTRIBUTES.FOREST, rarity: 'uc', weight: 12, desc: '森を獲得。食料🌾+10、資材🧱+10、防衛🛡️+10。' },
+  L18: { id: 'land-plains-standard', name: '平地', type: CARD_CATEGORIES.LAND, terrain: TERRAINS.PLAINS, attribute: null, rarity: 'c', weight: 30, desc: '平地を獲得。食料🌾+20。' },
+  L19: { id: 'land-plains-desert', name: '砂漠', type: CARD_CATEGORIES.LAND, terrain: TERRAINS.PLAINS, attribute: ATTRIBUTES.DESERT, rarity: 'r', weight: 3, desc: '砂漠を獲得。神秘✨+10。' },
+  L20: { id: 'land-hills-jungle', name: '森林丘陵', type: CARD_CATEGORIES.LAND, terrain: TERRAINS.HILLS, attribute: ATTRIBUTES.JUNGLE, rarity: 'r', weight: 4, desc: '森林丘陵を獲得。食料🌾-5、資材🧱+15、防衛🛡️+30、神秘✨+5。' },
+  L21: { id: 'land-hills-forest', name: '森丘陵', type: CARD_CATEGORIES.LAND, terrain: TERRAINS.HILLS, attribute: ATTRIBUTES.FOREST, rarity: 'uc', weight: 7, desc: '森丘陵を獲得。資材🧱+20、防衛🛡️+20。' },
+  L22: { id: 'land-hills-standard', name: '丘陵', type: CARD_CATEGORIES.LAND, terrain: TERRAINS.HILLS, attribute: null, rarity: 'c', weight: 10, desc: '丘陵を獲得。食料🌾+10、資材🧱+10、防衛🛡️+10。' },
+  L23: { id: 'land-hills-desert', name: '砂丘', type: CARD_CATEGORIES.LAND, terrain: TERRAINS.HILLS, attribute: ATTRIBUTES.DESERT, rarity: 'r', weight: 2, desc: '砂丘を獲得。食料🌾-10、資材🧱+10、防衛🛡️+10、神秘✨+10。' },
+  L24: { id: 'land-mountains-jungle', name: '森林山岳', type: CARD_CATEGORIES.LAND, terrain: TERRAINS.MOUNTAINS, attribute: ATTRIBUTES.JUNGLE, rarity: 'r', weight: 1, desc: '森林山岳を獲得。食料🌾-15、資材🧱+25、防衛🛡️+40、神秘✨+5。' },
+  L25: { id: 'land-mountains-forest', name: '森山岳', type: CARD_CATEGORIES.LAND, terrain: TERRAINS.MOUNTAINS, attribute: ATTRIBUTES.FOREST, rarity: 'uc', weight: 3, desc: '森山岳を獲得。食料🌾-10、資材🧱+30、防衛🛡️+30。' },
+  L26: { id: 'land-mountains-standard', name: '山岳', type: CARD_CATEGORIES.LAND, terrain: TERRAINS.MOUNTAINS, attribute: null, rarity: 'uc', weight: 6, desc: '山岳を獲得。資材🧱+20、防衛🛡️+20。' },
+  L27: { id: 'land-mountains-desert', name: '砂漠山岳', type: CARD_CATEGORIES.LAND, terrain: TERRAINS.MOUNTAINS, attribute: ATTRIBUTES.DESERT, rarity: 'r', weight: 1, desc: '砂漠山岳を獲得。食料🌾-20、資材🧱+20、防衛🛡️+20、神秘✨+10。' },
+  L28: { id: 'land-lake', name: '清らかな湖', type: CARD_CATEGORIES.LAND, terrain: TERRAINS.LAKE, attribute: null, rarity: 'r', weight: 4, desc: '湖を獲得（開発不可）。食料🌾+10、防衛🛡️+10。周辺強化（水源）。' }
+  L31: { id: 'bonus-fruit', name: '野生果実の発見', type: CARD_CATEGORIES.ATTRIBUTE, bonus: BONUSES.FRUIT, rarity: 'c', desc: '土地を調査し、野生の「果実」を発見します。食料🌾+15。' },
+  L32: { id: 'bonus-grain', name: '野生穀物の発見', type: CARD_CATEGORIES.ATTRIBUTE, bonus: BONUSES.GRAIN, rarity: 'c', desc: '平地を調査し、野生の「穀物」を発見します。食料🌾+15。' },
+  L33: { id: 'bonus-livestock', name: '野生ヤギの発見', type: CARD_CATEGORIES.ATTRIBUTE, bonus: BONUSES.LIVESTOCK, rarity: 'c', desc: '平地を調査し、飼育可能な「野生ヤギ（家畜）」を発見します。食料🌾+15。' },
+  L34: { id: 'bonus-vein', name: '有望な鉱脈の発見', type: CARD_CATEGORIES.ATTRIBUTE, bonus: BONUSES.VEIN, rarity: 'uc', desc: '丘陵/山岳を調査し、隠れた「鉱脈」を発見します。資材🧱+15。' },
+  L35: { id: 'bonus-timber', name: '巨木群の発見', type: CARD_CATEGORIES.ATTRIBUTE, bonus: BONUSES.TIMBER, rarity: 'uc', desc: '森/森林を調査し、建築に適した「高級木材」を発見します。資材🧱+20。' },
+  L36: { id: 'bonus-precious', name: '貴金属床の発見', type: CARD_CATEGORIES.ATTRIBUTE, bonus: BONUSES.PRECIOUS, rarity: 'r', desc: '丘陵/山岳を調査し、希少な「貴金属」を発見します。資材🧱+10、神秘✨+5。' },
+  L37: { id: 'bonus-marine', name: '豊か漁場の発見', type: CARD_CATEGORIES.ATTRIBUTE, bonus: BONUSES.MARINE, rarity: 'uc', desc: '川/湖を調査し、豊富な「水産資源」を発見します。食料🌾+15。' }
+  L41: { id: 'soc-migration', name: '民の移住', type: CARD_CATEGORIES.SOCIETY, rarity: 'uc', desc: '平地3枚以上で発生可。最後の平地に人々が集まり希望の灯が強まる。(🌾+30, 🔥+3)' },
+  L42: { id: 'soc-trade', name: '交易の風', type: CARD_CATEGORIES.SOCIETY, rarity: 'uc', desc: '神秘5以上or果実/穀物で発生可。砂漠の交易ルートより物資と情報を獲得。(🌾+35か🧱+30、✨+5)' },
+  L43: { id: 'soc-hero', name: '英雄の帰還', type: CARD_CATEGORIES.SOCIETY, rarity: 'r', desc: '直近の試練防衛成功で発生可。試練を生き延びた若者が希望となる。(🔥+5, 🛡️+50, 無料軍事カード獲得)' },
+  L44: { id: 'soc-prophet', name: '預言者の託宣', type: CARD_CATEGORIES.SOCIETY, rarity: 'uc', desc: '神秘15以上で発生可。民が集まり預言者が大地の声を聞く。(✨+10, 無料神秘カード獲得)' },
+  L45: { id: 'soc-clearing', name: '開拓者の開墾祭', type: CARD_CATEGORIES.SOCIETY, rarity: 'uc', desc: '平地/森4枚以上で発生可。民が一丸となって土地を豊かにする。(🌾+25, ランダム土地開発度+1)' },
+  L46: { id: 'soc-ghost', name: '亡者の記憶', type: CARD_CATEGORIES.SOCIETY, rarity: 'r', desc: '砂漠ありで発生。亜人の遺跡から禁断の知識が漏れ出す。(✨+20, 🔥-2)' },
+  L47: { id: 'soc-bonds', name: '家族の絆', type: CARD_CATEGORIES.SOCIETY, rarity: 'c', desc: '残り火12以下で発生可。苦境の中で家族や共同体が結束を強める。(🔥+6, 🌾+15)' },
+  L48: { id: 'soc-artisans', name: '職人の目覚め', type: CARD_CATEGORIES.SOCIETY, rarity: 'uc', desc: '資材30以上で発生可。民の職人が失われた技術を蘇らせる。(🧱+30, 次の施設建設コスト-20)' },
+  L49: { id: 'soc-feast', name: '最後の宴', type: CARD_CATEGORIES.SOCIETY, rarity: 'r', desc: 'T40以降且つ食料100以上で発生。最後の希望を胸に宴を開く。(🌾-50, 🔥+10, 🛡️+100)' },
+  L50: { id: 'soc-refugees', name: '流民の受け入れ', type: CARD_CATEGORIES.SOCIETY, rarity: 'uc', unique: true, desc: '流民を受け入れる。食料🌾-25、残り火🔥+2、資材🧱+20。' },
+  L51: { id: 'soc-communal-fusion', name: '共同体の融和', type: CARD_CATEGORIES.SOCIETY, rarity: 'uc', unique: true, desc: 'マージを活性化。このターンの土地開発（マージ）コストが0🔥になる。食料🌾+15。' },
+  L52: { id: 'soc-festival', name: '残り火の祝祭', type: CARD_CATEGORIES.SOCIETY, rarity: 'r', unique: true, desc: '祝祭を開催。食料🌾-30、次の試練防衛力🛡️+20。' },
+  L53: { id: 'soc-artisan-eye', name: '職人の目利き', type: CARD_CATEGORIES.SOCIETY, rarity: 'uc', unique: true, desc: '手札の素材を価値ある物資へ。資材🧱+30。' },
+  L54: { id: 'soc-restoration', name: '宮廷の復興', type: CARD_CATEGORIES.SOCIETY, rarity: 'r', unique: true, desc: '本拠地周辺★1以上が3つ以上で発生可。本拠地を修築する。資材🧱-40、本拠地全資源産出恒久+5。' }
+  L57: { id: 'mys-revelation', name: '天の神託', type: CARD_CATEGORIES.MYSTIC, rarity: 'uc', desc: '祈りにより天啓を受ける。神秘✨+25。' },
+  L58: { id: 'mys-shrine', name: '古の祠の再建', type: CARD_CATEGORIES.MYSTIC, rarity: 'uc', desc: '古い信仰を修復する。資材🧱-20、神秘✨+40。' },
+  L59: { id: 'mys-blessing', name: '精霊の加護', type: CARD_CATEGORIES.MYSTIC, rarity: 'r', desc: '土地の精霊の祝福。神秘✨+30、およびランダムな土地の生産力を3ターン+30%。' },
+  L60: { id: 'mys-fire-ritual', name: '火精の儀式', type: CARD_CATEGORIES.MYSTIC, rarity: 'uc', unique: true, desc: '火の精霊の祈祷。神秘✨-20、残り火🔥+5。' },
+  L61: { id: 'mys-soothing', name: '大地の怒りの鎮め', type: CARD_CATEGORIES.MYSTIC, rarity: 'r', unique: true, desc: '盤面に荒廃した土地があるとき発生可。地脈を癒す。神秘✨-15、全土地の荒廃を解除。' },
+  L62: { id: 'mys-mana-well', name: 'マナの湧出', type: CARD_CATEGORIES.MYSTIC, rarity: 'uc', unique: true, desc: '盤面に「湖」か「川」があるとき発生可。水源から霊気を得る。神秘✨+30。' },
+  L63: { id: 'mys-revelation-extra', name: '天啓の予知', type: CARD_CATEGORIES.MYSTIC, rarity: 'uc', unique: true, desc: '未来を垣間見る。神秘✨-10。次のターン、ドラフト提示枠が5枚に増加。' },
+  L64: { id: 'mys-soul-smelt', name: '魂の還元', type: CARD_CATEGORIES.MYSTIC, rarity: 'uc', unique: true, desc: '還元の効率を上げる。神秘✨-15。3ターンの間、カード還元時に得られる残り火が+2🔥になる。' }
+  L67: { id: 'mil-scouts', name: '斥候の派遣', type: CARD_CATEGORIES.MILITARY, rarity: 'c', desc: '外の世界を偵察する。防衛力🛡️+20、および次の試練の敵戦力を少し弱体化。' },
+  L68: { id: 'mil-recruits', name: '義勇兵の招集', type: CARD_CATEGORIES.MILITARY, rarity: 'c', desc: '若者を訓練する。食料🌾-15、防衛力🛡️+40。' },
+  L69: { id: 'mil-fortify', name: '柵の急造', type: CARD_CATEGORIES.MILITARY, rarity: 'c', desc: '防塁を補強する。資材🧱-15、防衛力🛡️+45。' },
+  L70: { id: 'mil-tactician', name: '百戦錬磨の戦術家', type: CARD_CATEGORIES.MILITARY, rarity: 'r', desc: '優秀な軍師を雇う。資材🧱-25、食料🌾-25。試練期間中、防衛力🛡️+100。' },
+  L71: { id: 'mil-barricade-reinforce', name: '前線防壁の強化', type: CARD_CATEGORIES.MILITARY, rarity: 'uc', unique: true, desc: '監視塔または砦があるとき発生可。防塁を強固にする。防衛力🛡️+35。' },
+  L72: { id: 'mil-hasty-outpost', name: '前線砦の突貫工事', type: CARD_CATEGORIES.MILITARY, rarity: 'uc', unique: true, desc: '試練まで5ターン以内で発生可。防衛陣地を急造する。資材🧱-30、防衛力🛡️+60。' },
+  L73: { id: 'mil-scorched-prep', name: '焦土の備え', type: CARD_CATEGORIES.MILITARY, rarity: 'r', unique: true, desc: '防衛を固め、焦土作戦の荒廃期間を恒久的に1ターンへ短縮。防衛力🛡️+40。' },
+  L74: { id: 'mil-river-trap', name: '渡河の罠', type: CARD_CATEGORIES.MILITARY, rarity: 'uc', unique: true, desc: '盤面に川か湖があるとき発生可。即座に防衛力🛡️+50。' },
+  L75: { id: 'mil-conscription', name: '緊急徴兵', type: CARD_CATEGORIES.MILITARY, rarity: 'c', unique: true, desc: '残り火を削り兵を募る。残り火🔥-3、防衛力🛡️+60。' }
+  L82: name: '川の発見',
+  L85: desc: '【特別イベント】川特性（開発不可、🌾+10、🛡️+20）を持つ土地を1枚発見。下流探索への投資が可能になる。'
+  L90: name: '豊かな川の発見',
+  L93: desc: '【特別イベント】川（開発不可）とランダムな資源を持つ土地を獲得。'
+  L450: desc: `【特別イベント】川（開発不可）と「${getBonusName(chosenBonus)}」を持つ土地を獲得。`
+  L465: case BONUSES.FRUIT: return '果実';
+  L466: case BONUSES.GRAIN: return '穀物';
+  L467: case BONUSES.LIVESTOCK: return '家畜';
+  L468: case BONUSES.VEIN: return '鉱脈';
+  L469: case BONUSES.PRECIOUS: return '貴金属';
+  L470: case BONUSES.TIMBER: return '高級木材';
+  L471: case BONUSES.MARINE: return '水産物';
+  L472: default: return '資源';
+
+[game\src\clean_main.js]: 223 violations
+  L174: state.addLog(`土地 (${getTerrainDisplayName(land.terrain, land.attribute)}) の災害被害が復興しました！生産力が元に戻ります。`, 'system');
+  L180: state.addLog(`被災地 (${getTerrainDisplayName(land.terrain, land.attribute)}) が復興しました！生産力に「戦場の記憶」Lv.${land.overlayLevel} バフが乗ります！`, 'system');
+  L195: state.addLog(`警告：保留ゾーンにカードが残っているため、残り火が 1 🔥 減少しました。`, 'warning');
+  L221: el.interactionTitle.innerText = `※ドローエリア (カードを盤面にドラッグするか、保留スロットにドロップできます)`;
+  L265: el.interactionTitle.innerText = `※ドローエリア (カードを盤面にドラッグするか、保留スロットにドロップできます)`;
+  L284: state.addLog(`カード「${card.name}」を獲得しました。`, 'action');
+  L290: el.interactionTitle.innerText = `配置フェイズ：盤面の空きスロット (+) を選択して配置してください (コスト: 1 🔥)`;
+  L339: el.interactionTitle.innerText = `資源調査フェイズ：調査・発見を行いたい土地を選択してください (コスト: 1 🔥)`;
+  L371: el.interactionTitle.innerText = `アクションフェイズ：土地の開発（ニコイチ）や保留、施設の建設を行えます`;
+  L372: el.cardOfferingsZone.innerHTML = `<div class="info-text">TURN RND を押すと、資源生産を獲得して次のターンに進みます。</div>`;
+  L519: state.addLog(`領土スロット ${draggedSourceIndex} を位置 (${Math.round(dropX)}%, ${Math.round(dropY)}%) へ移動しました。`, 'system');
+  L579: state.addLog(`還元炉：カード「${cardName}」を破棄し、残り火をエネルギーに還元しました (+1 🔥)。`, 'action');
+  L591: state.addLog('還元するカードを選択（クリック）してから還元炉をクリックしてください。', 'system');
+  L727: state.addLog('残り火 🔥 が不足しているため、土地を配置できません！', 'warning');
+  L731: state.addLog('残り火 🔥 が不足しているため、土地を配置できません！', 'warning');
+  L756: state.addLog(`スロット ${targetIndex} に ${getTerrainDisplayName(draggedCard.terrain, draggedCard.attribute)} を配置しました (-${cost} 🔥)。配置時即時産出：🌾 +${landYield.food} / 🧱 +${landYield.materials} / 🛡️ +${landYield.defense} / ✨ +${landYield.mystic}`, 'action');
+  L761: state.addLog('川を配置しました！「下流探索プロジェクト」が開始されました。', 'system');
+  L769: state.addLog('同じ開発段階（レアリティ）の土地同士でのみ開発（結合）が可能です！', 'warning');
+  L785: state.addLog('残り火 🔥 が不足しているため、土地を上書き配置できません！', 'warning');
+  L813: state.addLog('川を配置しました！「下流探索プロジェクト」が開始されました。', 'system');
+  L825: state.addLog('残り火 🔥 が不足しているため、土地の資源調査を行えません！', 'warning');
+  L833: state.addLog(`${getTerrainDisplayName(targetSlot.terrain, targetSlot.attribute)} を調査し、新たに環境特性「${getAttributeName(targetSlot.attribute)}」を発見しました！ (-${cost} 🔥)`, 'action');
+  L836: state.addLog(`${getTerrainDisplayName(targetSlot.terrain, targetSlot.attribute)} を調査し、隠された資源「${getBonusName(targetSlot.bonus)}」を発見しました！ (-${cost} 🔥)`, 'action');
+  L857: state.addLog(`カード「${draggedCard.name}」を保留スロット ${reserveIndex + 1} にキープしました。`, 'action');
+  L871: name: `${getTerrainDisplayName(land.terrain, land.attribute)}の開拓`,
+  L875: desc: `手札に戻された開拓地。開発度: ★${land.devLevel}`
+  L892: state.addLog(`スロット ${draggedSourceIndex} の土地を保留スロット ${reserveIndex + 1} に戻しました。`, 'action');
+  L913: el.interactionTitle.innerText = `配置フェイズ：盤面の空きスロット (+) を選択して配置してください (コスト: 1 🔥)`;
+  L918: el.interactionTitle.innerText = `資源調査フェイズ：調査・発見を行いたい土地を選択してください (コスト: 1 🔥)`;
+  L961: state.addLog(`スロット ${index} (${getTerrainDisplayName(slot.terrain, slot.attribute)}) に「${getFacilityName(fac.id)}」を建設しました！ (-${fac.cost} 🧱, -${fac.fireCost} 🔥)`, 'reward');
+  L1013: state.addLog(`結合候補 A: ${getTerrainDisplayName(slot.terrain, slot.attribute)} を選択。重ねたい土地を選択してください。`, 'system');
+  L1018: state.addLog('結合をキャンセルしました。', 'system');
+  L1054: state.addLog(`残り火が不足しています！開発には ${mergeCost} 🔥 が必要です。`, 'warning');
+  L1062: <h4>スロット ${idxA}</h4>
+  L1064: <p>開発度: ★${landA.devLevel}</p>
+  L1067: <h4>スロット ${idxB}</h4>
+  L1069: <p>開発度: ★${landB.devLevel}</p>
+  L1085: optionsList.innerHTML = '<div class="empty-text">引き継ぐ特性はありません。</div>';
+  L1134: el.btnConfirmMerge.innerText = `開発を実行 (${mergeCost} 🔥)`;
+  L1152: state.addLog(`残り火が不足しています！開発には ${mergeCost} 🔥 が必要です。`, 'warning');
+  L1159: <h4>スロット ${targetIndex}</h4>
+  L1161: <p>開発度: ★${landA.devLevel}</p>
+  L1164: <h4>ドロー/手札カード</h4>
+  L1166: <p>開発度: ★0</p>
+  L1171: if (landA.attribute) traits.push({ type: 'attr', val: landA.attribute, source: '盤面' });
+  L1172: if (landA.bonus) traits.push({ type: 'bonus', val: landA.bonus, source: '盤面' });
+  L1173: if (card.attribute) traits.push({ type: 'attr', val: card.attribute, source: 'カード' });
+  L1174: if (card.bonus) traits.push({ type: 'bonus', val: card.bonus, source: 'カード' });
+  L1182: optionsList.innerHTML = '<div class="empty-text">引き継ぐ特性はありません。</div>';
+  L1221: el.btnConfirmMerge.innerText = `直接開発を実行 (${mergeCost} 🔥)`;
+  L1257: state.addLog(`直接開発：カードからスロット ${targetIndex} の ${getTerrainDisplayName(landA.terrain, landA.attribute)} を直接開発（★ ${landA.devLevel}）しました。開発時即時産出：🌾 +${landYield.food} / 🧱 +${landYield.materials} / 🛡️ +${landYield.defense} / ✨ +${landYield.mystic}`, 'reward');
+  L1271: infoDiv.innerText = `✦ 重複ボーナス発生！ 「${selected[0].type === 'attr' ? getAttributeName(selected[0].val) : getBonusName(selected[0].val)}」の効果が大幅強化されます（効果1.5倍）！`;
+  L1292: state.addLog(`土地開発：スロット ${idxA} と ${idxB} を結合し、開発度★ ${landA.devLevel} へ強化しました (-${cost} 🔥)。開発時即時産出：🌾 +${landYield.food} / 🧱 +${landYield.materials} / 🛡️ +${landYield.defense} / ✨ +${landYield.mystic}`, 'reward');
+  L1340: state.addLog('マリガン：提示されたカードをすべて引き直しました (-2 🔥)。', 'action');
+  L1351: state.addLog(`追加ドロー：新たなカードの選択肢を生成しました (-1 🔥)。`, 'action');
+  L1370: text = "豊かな実りに感謝する大祭が執り行われました。民衆の笑顔が広がり、食料が 40 蓄積されます。(🌾 +40)";
+  L1374: text = "勇敢な杣人たちが森の奥深くから良質な木材を大量に持ち帰りました。資材が 40 蓄積されます。(🧱 +40)";
+  L1378: text = "集落を取り囲む防壁と見張り台の総点検が実施されました。防衛体制が 30 強化されます。(🛡️ +30)";
+  L1384: text = "荒野から逃れてきた人々を同胞の労働者として受け入れました。彼らの熱心な労働により、資材が獲得されました。(🌾 -15, 🧱 +40)";
+  L1386: state.addLog('食料不足により労働力の受け入れに失敗しました（食料🌾が15必要でした）。', 'warning');
+  L1387: text = "労働を希望する難民の集団がやってきましたが、食料が不足しているため受け入れることができませんでした...(食料が15必要でした)";
+  L1393: text = "全員が団結し、集落を発展させるために新しい資源を開拓しました。食料と資材を獲得します。(🌾 +25, 🧱 +25)";
+  L1397: text = "天より聖なる光の柱が降り注ぎ、神聖なる予言がもたらされました。神秘が 25 高まります。(✨ +25)";
+  L1417: state.addLog('マリガン：提示されたカードをすべて引き直しました (-2 🔥)。', 'action');
+  L1428: state.addLog(`追加ドロー：新たなカードの選択肢を生成しました (-1 🔥)。`, 'action');
+  L1448: text = "平野に集まった移民たちが残り火の周囲で結束しました。食料🌾+30、残り火🔥+3を獲得します。(🌾+30, 🔥+3)";
+  L1454: text = "交易商人から大量の穀物と乾物を買い付けました。食料🌾+35、神秘✨+5を獲得。(🌾+35, ✨+5)";
+  L1457: text = "交易路から貴重な建築材や鉱石を調達しました。資材🧱+30、神秘✨+5を獲得。(🧱+30, ✨+5)";
+  L1464: let milCardText = "保留ゾーンが満杯のため軍事カードを獲得できませんでした。";
+  L1470: let milCardText = "保留ゾーンが満杯のため軍事カードを獲得できませんでした。";
+  L1476: milCardText = `無料の軍事カード「${freeCard.name}」が保留スロット ${emptyIdx + 1} に追加されました！`;
+  L1478: text = `試練を防衛した英雄たちが熱狂と安全をもたらしました。残り火🔥+5、防衛力🛡️+50を獲得。さらに${milCardText} (🔥+5, 🛡️+50)`;
+  L1484: text = "過密な集落内で疫病の影が広がりました。食料🌾-20、残り火🔥-2の被害を受けますが、教訓として「衛生知識 (災害率半減)」レガシーを獲得します。(🌾-20, 🔥-2)";
+  L1488: let mysCardText = "保留ゾーンが満杯のため神秘カードを獲得できませんでした。";
+  L1495: let devText = "対象となる土地がないため開発度は上昇しませんでした。";
+  L1500: devText = `さらに、${getTerrainDisplayName(targetSlot.terrain, targetSlot.attribute)} の開発レベルが ★${targetSlot.devLevel} に上昇しました！`;
+  L1502: text = `開拓者主導の開墾祭により、食料🌾+25を獲得。${devText} (🌾+25)`;
+  L1507: text = "砂漠に眠る古代の遺跡から亜人の記憶が漏れ出し、民衆を惑わせました。残り火🔥-2のペナルティを受ける代わりに、神秘✨+20を獲得。(✨+20, 🔥-2)";
+  L1512: text = "残り火が消えかける極限状態の中で、人々が互いに食料を分け合い結束を高めました。残り火🔥+6、食料🌾+15を獲得！(🔥+6, 🌾+15)";
+  L1517: text = "腕利きの職人たちが目覚め、技術を共有しました。資材🧱+30を獲得し、さらに次の施設建設の資材コストが 🧱-20 割引されます。(🧱+30, 施設割引獲得)";
+  L1523: text = "50ターンの結末を見据え、人々が最後の希望を胸に大いなる宴を開きました。食料を50消費し、残り火🔥+10、防衛力🛡️+100を獲得！(🌾-50, 🔥+10, 🛡️+100)";
+  L1527: text = "天より聖なる光の柱が降り注ぎ、神聖なる予言がもたらされました。神秘が 25 高まります。(✨ +25)";
+  L1533: text = "精霊を祀る厳かな石碑の祭壇が建立されました。精霊の守護により、神秘が 40 向上します。(🧱 -20, ✨ +40)";
+  L1539: text = "森の精霊たちの温かい加護が集落全体を包み込みました。3ターンの間、集落の活動が祝福されます。(✨ +30, 祝福レガシー獲得)";
+  L1545: text = "熟練の斥候が敵軍の野営地を奇襲し、偵察データを持ち帰りました。次の試練の敵戦力が 30 低下します。(🛡️ +20, 敵戦力 -30)";
+  L1550: text = "若者たちが志願し、防衛義勇軍の訓練が開始されました。防衛力が 40 向上します。(🌾 -15, 🛡️ +40)";
+  L1553: btn.innerText = state.polityCooldown > 0 ? `制限中 (${state.polityCooldown}T)` : `有効化する (🔥 ${displayCost})`;
+  L1560: state.addLog(`政体を「${data.name}」に変更しました (-${displayCost} 🔥)。`, 'action');
+  L1571: <span>地殻の急成長（任意の土地1スロットを、即座に最大開発段階「レジェンダリ★4」へ昇格する）</span>
+  L1577: state.addLog('奇跡発動：次の試練の敵戦闘力を 30% 減弱しました！', 'reward');
+  L1584: state.addLog('奇跡発動：最大開発する土地を盤面からクリックしてください。', 'system');
+  L1591: state.addLog(`奇跡適用：${getTerrainDisplayName(land.terrain)} を最大開発段階（L★4）に昇格しました！`, 'reward');
+  L1602: 受け入れる
+  L1617: showGrandEventModal(`災厄発生: ${result.name}`, result.desc, 'crisis.png', () => {
+  L1636: el.modalRiverEvent.querySelector('#river-event-title').innerText = '🌊 世界の果て：海の発見！';
+  L1638: 探索隊は川を下り、無限に広がる水平線――**「海」**に到達しました！<br>
+  L1639: 超強力なレジェンダリー地形「海 (Sea)」がデッキに解禁されます！(スロットを2つ消費します)
+  L1641: state.addLog(`奇跡発動：社会制度「${lockedPol}」が天啓により即時解禁されました！`, 'reward');
+  L1643: state.addLog('奇跡発動：すべての制度が解禁済みなため、資材 +100 を獲得しました。', 'reward');
+  L1659: document.getElementById('generic-event-title').innerText = '神秘の奇跡（上級）';
+  L1660: document.getElementById('generic-event-text').innerText = '世界の残り火と一体となり、運命を改変する奇跡を引き起こします。';
+  L1665: <span>神罰の雷（次の試練の敵戦闘力を -30% 永久低下させる）</span>
+  L1668: <span>地殻の急成長（任意の土地1スロットを、即座に最大開発段階「レジェンダリ★4」へ昇格する）</span>
+  L1674: state.addLog('奇跡発動：次の試練の敵戦闘力を 30% 減弱しました！', 'reward');
+  L1681: state.addLog('奇跡発動：最大開発する土地を盤面からクリックしてください。', 'system');
+  L1688: state.addLog(`奇跡適用：${getTerrainDisplayName(land.terrain)} を最大開発段階（L★4）に昇格しました！`, 'reward');
+  L1732: state.addLog(`社会制度「${policyId}」を解禁しました (-${cost} 🧱)。`, 'reward');
+  L1737: state.addLog('新たな政体「専制君主制」が選択可能になりました！', 'system');
+  L1740: state.addLog('新たな政体「神聖君主制」が選択可能になりました！', 'system');
+  L1743: state.addLog('新たな政体「開拓民主制」が選択可能になりました！', 'system');
+  L1756: state.addLog('警告：カードを選択してターンを開始してください！', 'warning');
+  L1767: state.addLog(`第 ${state.currentTurn} ターン終了。生産物回収：🌾 +${yields.food} / 🧱 +${yields.materials} / 🛡️ +${yields.defense} / ✨ +${yields.mystic}`, 'action');
+  L1775: foodCorrectionText = " (大豊作による活力補正: +1 🔥)";
+  L1778: foodCorrectionText = " (十分な食料による維持補正: 0 🔥)";
+  L1780: state.addLog('奇跡発動：次の試練の敵戦闘力を 30% 減弱しました！', 'reward');
+  L1787: state.addLog('奇跡発動：最大開発する土地を盤面からクリックしてください。', 'system');
+  L1794: state.addLog(`奇跡適用：${getTerrainDisplayName(land.terrain, land.attribute)} を最大開発段階（L★4）に昇格しました！`, 'reward');
+  L1802: state.addLog('奇跡発動：次の試練の敵戦闘力を 30% 減弱しました！', 'reward');
+  L1809: state.addLog('奇跡発動：最大開発する土地を盤面からクリックしてください。', 'system');
+  L1816: state.addLog(`奇跡適用：${getTerrainDisplayName(land.terrain, land.attribute)} を最大開発段階（L★4）に昇格しました！`, 'reward');
+  L1833: state.addLog('警告：カードを選択してターンを開始してください！', 'warning');
+  L1843: state.addLog(`社会制度「${policyId}」を解禁しました (-${cost} 🧱)。`, 'reward');
+  L1855: state.addLog(`施設「${facilityId}」を建設しました (-${cost} 🧱)。`, 'reward');
+  L1868: state.addLog(`第 ${state.currentTurn} ターン終了。生産物回収：🌾 +${yields.food} / 🧱 +${yields.materials} / ✨ +${yields.mystic} (総防衛力: 🛡️ ${state.defense})`, 'action');
+  L1876: foodCorrectionText = " (大豊作による活力補正: +1 🔥)";
+  L1879: foodCorrectionText = " (十分な食料による維持補正: 0 🔥)";
+  L1916: name: '共同体の融和',
+  L1918: desc: 'ベース土地カード (🧭) の出現ウェイトが +15% 上昇します。',
+  L1921: req: '初期状態'
+  L1924: name: '専制君主制',
+  L1926: desc: '試練戦闘時、防衛力 (🛡️) +20%。ただし毎ターンの資材 (🧱) 産出 -15%。',
+  L1929: req: '社会制度「戦術（tactics）」解禁で開放'
+  L1932: name: '神聖君主制',
+  L1934: desc: '毎ターン神秘 (✨) +5。神秘の奇跡コストが -10% 低減されます。',
+  L1937: req: '社会制度「神秘（mysticism）」解禁で開放'
+  L1940: name: '開拓民主制',
+  L1942: desc: '土地のニコイチ開発コストが -1 🔥 低減される。ただし毎ターンの食料 (🌾) 産出 -15%。',
+  L1945: req: '社会制度「農業（agriculture）」解禁で開放'
+  L1955: <h3 style="font-size: 0.9rem; color: #f97316; margin-bottom: 4px;">現在のアクティブ政体: ${activeData.icon} ${activeData.name}</h3>
+  L1958: 切り替え制限: ${state.polityCooldown > 0 ? `あと ${state.polityCooldown} ターン変更不可` : '変更可能'}
+  L1982: state.addLog('土地の最大上限数(7枚)に達しています！これ以上配置できません。', 'warning');
+  L1990: state.addLog('残り火 🔥 が不足しているため、土地を配置できません！', 'warning');
+  L2006: state.addLog(`試練報酬：天啓により社会制度「${lockedPol}」を獲得しました！`, 'reward');
+  L2020: state.addLog(`試練報酬：レアカード「${chosenCard.name}」の天啓を受けました！`, 'reward');
+  L2025: state.addLog(`試練報酬：新たなレガシー「${chosenLegacy}」を獲得しました！`, 'reward');
+  L2059: el.gameEndDesc.innerText = '残り火が完全に消え去り、集落は凍える闇の中に飲み込まれました。あなたの旅はここで終わります...';
+  L2065: <div class="score-row"><span>残り火:</span> <span class="text-danger">0 (消滅)</span></div>
+  L2066: <div class="score-row"><span>生存ターン (T ${state.currentTurn} x 100):</span> <span>+${turnScore}</span></div>
+  L2067: <div class="score-row total"><span>最終スコア:</span> <span>${totalScore}</span></div>
+  L2084: state.addLog('警告：カードを選択してターンを開始してください！', 'warning');
+  L2099: state.addLog(`第 ${state.currentTurn} ターン終了。生産物回収：🌾 +${yields.food} / 🧱 +${yields.materials} / ✨ +${yields.mystic} (総防衛力: 🛡️ ${state.defense})`, 'action');
+  L2104: foodCorrectionText = ` (深刻な食料不足による残り火の衰退: -2 🔥 / 消費コスト ${foodMaintenance} に対して残高 ${originalFood} 🌾)`;
+  L2107: foodCorrectionText = " (大豊作による残り火の自動増加: +1 🔥)";
+  L2110: foodCorrectionText = " (十分な食料蓄積による残り火維持: 0 🔥)";
+  L2113: foodCorrectionText = " (食料不足による残り火減衰: -1 🔥)";
+  L2118: state.addLog(`残り火減衰：残り火が ${fireDecay} 🔥 減少しました。${foodCorrectionText}`, 'warning');
+  L2120: state.addLog(`残り火維持：残り火は減少せず維持されました。${foodCorrectionText}`, 'system');
+  L2122: state.addLog(`残り火増幅：活力が満ち、残り火が ${Math.abs(fireDecay)} 🔥 増加しました！${foodCorrectionText}`, 'reward');
+  L2127: state.addLog(`残り火減衰：残り火が ${fireDecay} 🔥 減少しました。${foodCorrectionText}`, 'warning');
+  L2129: state.addLog(`残り火維持：残り火は減少せず維持されました。${foodCorrectionText}`, 'system');
+  L2131: state.addLog(`残り火増幅：活力が満ち、残り火が ${Math.abs(fireDecay)} 🔥 増加しました！${foodCorrectionText}`, 'reward');
+  L2207: el.trialResultTitle.innerText = `第 ${trialResult.trialIndex} の試練で防衛線が崩壊しました`;
+  L2208: el.trialResultDesc.innerText = `亜人軍勢の略奪により、戦場となった一部の領土が荒廃（生産半減）しました。しかし、民は屈せず、不屈の精神を高めています。(防衛力: ${trialResult.playerDefense} vs 敵勢力: ${trialResult.enemyPower})`;
+  L2232: state.addLog('試練報酬：残り火の最大値が 1 🔥 上昇しました！', 'reward');
+  L2239: state.addLog('土地の最大上限数(7枚)に達しています！これ以上配置できません。', 'warning');
+  L2247: state.addLog('残り火 🔥 が不足しているため、土地を配置できません！', 'warning');
+  L2302: <div class="score-row"><span>残り火:</span> <span class="text-danger">0 (消滅)</span></div>
+  L2303: <div class="score-row"><span>生存ターン (T ${state.currentTurn} x 100):</span> <span>+${turnScore}</span></div>
+  L2304: <div class="score-row total"><span>最終スコア:</span> <span>${totalScore}</span></div>
+  L2320: state.addLog('土地の最大上限数(7枚)に達しています！これ以上配置できません。', 'warning');
+  L2328: state.addLog('残り火 🔥 が不足しているため、土地を配置できません！', 'warning');
+  L2423: el.trialCountdown.innerText = '警告: 試練襲来中！';
+  L2425: el.trialCountdown.innerText = `試練まで ${turnsToTrial} ターン`;
+  L2430: <strong>試練の強さ:</strong> ${state.upcomingTrial.basePower} 戦力<br>
+  L2532: breakdown = `現在の当ターン防衛力: <b>🛡️ ${state.defense}</b><br>` +
+  L2533: `毎ターン自動で得られる生産量: <b>🛡️ +${yields.defense}</b><br><br>` +
+  L2534: `<b>生産内訳:</b><br>` +
+  L2538: title = "✨ 神秘 (Mystic)";
+  L2539: desc = "精霊との交信や奇跡の発動に必要な信仰力。一定値まで貯めることで、いつでも「神秘の奇跡」ボタンから強力なグローバル奇跡（予知、豊穣、神罰など）を発動できます。";
+  L2541: div.innerHTML = `<span>⚠ ${getTerrainDisplayName(land.terrain, land.attribute)}の荒廃</span> <span class="d-turns">${turnsRemaining - 1}T</span>`;
+  L2581: el.disastersList.innerHTML = '<div class="empty-text">災害なし</div>';
+  L2587: div.innerHTML = `<span>⚠ ${getTerrainDisplayName(land.terrain, land.attribute)}の荒廃</span> <span class="d-turns">${turnsRemaining - 1}T</span>`;
+  L2630: state.addLog('新たな政体「専制君主制」が選択可能になりました！', 'system');
+  L2633: state.addLog('新たな政体「神聖君主制」が選択可能になりました！', 'system');
+  L2636: state.addLog('新たな政体「開拓民主制」が選択可能になりました！', 'system');
+  L2716: title = "🔥 残り火 (Fire)";
+  L2717: desc = "集落の生命活動を維持するための残り火。毎ターン終了時に一定量減少し、0 になるとゲームオーバーになります。<br><br>" +
+  L2718: "・最大上限: 30 🔥<br>" +
+  L2719: "・基本減衰: -1 🔥/ターン (保留エリアにカードが残っている場合、さらに -1 🔥 のペナルティがあります)。<br>" +
+  L2720: "・食料🌾備蓄補正:<br>" +
+  L2721: "  - 🌾 240 以上: +1 🔥 (残り火が増加します)<br>" +
+  L2722: "  - 🌾 120 以上: 0 🔥 (残り火は減少しません)<br>" +
+  L2723: "  - 🌾 30 未満: -2 🔥 (深刻な食料不足による急激な減衰)";
+  L2738: breakdown = `現在の残り火: <b>${state.fire} / ${state.maxFire} 🔥</b><br><br>` +
+  L2739: `<b>毎ターン終了時の変化見込み: ${sign}${netChange} 🔥</b><br>` +
+  L2740: `・食料備蓄補正: ${foodBonus >= 0 ? "+" : ""}${foodBonus} 🔥 (備蓄: 🌾${state.food})<br>` +
+  L2741: `・保留ペナルティ: -${reservePenalty} 🔥 (保留カード数: ${state.reserve.filter(c => c !== null).length}枚)<br><br>` +
+  L2742: `<span style="color: #f87171; font-size: 0.72rem;">※不要なカードを「残り火へ還元」スロットに捨てることで、いつでも +1 🔥 を得ることができます。</span>`;
+  L2745: title = "🌾 食料 (Food)";
+  L2746: desc = "集落の生存維持に必要な食料。蓄積量が多いほど残り火の減衰を抑えたり、回復させたりすることができます。(240以上で+1🔥, 120以上で減少なし, 30未満で-2🔥)";
+  L2749: breakdown = `現在の備蓄量: <b>🌾 ${state.food}</b><br>` +
+  L2750: `現在の毎ターン総生産量: <b>🌾 +${yields.food}</b><br><br>` +
+  L2751: `<b>生産内訳:</b><br>` +
+  L2755: title = "🧱 資材 (Materials)";
+  L2756: desc = "施設の建設や社会制度のアンロック、土地の結合（レベルアップ）などに消費される重要な資材資源です。";
+  L2759: breakdown = `現在の備蓄量: <b>🧱 ${state.materials}</b><br>` +
+  L2760: `現在の毎ターン総生産量: <b>🧱 +${yields.materials}</b><br><br>` +
+  L2761: `<b>生産内訳:</b><br>` +
+  L2765: title = "🛡️ 防衛力 (Defense)";
+  L2766: desc = "試練（襲来する脅威）から集落を守るための戦闘力。<b>防衛力は蓄積されず、毎ターン開始時に 0 にリセットされます。</b><br><br>" +
+  L2767: "各ターン終了時に土地や施設から生産される防衛力と、そのターン中に使用した軍事カードの効果の合計値が、そのターンの「総防衛力」となり、試練襲来時の防御判定に使用されます。";
+  L2770: breakdown = `現在の当ターン防衛力: <b>🛡️ ${state.defense}</b><br>` +
+  L2771: `毎ターン自動で得られる生産量: <b>🛡️ +${yields.defense}</b><br><br>` +
+  L2772: `<b>生産内訳:</b><br>` +
+  L2776: title = "✨ 神秘 (Mystic)";
+  L2777: desc = "精霊との交信や奇跡の発動に必要な信仰力。一定値まで貯めることで、いつでも「神秘の奇跡」ボタンから強力なグローバル奇跡（予知、豊穣、神罰など）を発動できます。";
+  L2780: breakdown = `現在の備蓄量: <b>✨ ${state.mystic}</b><br>` +
+  L2781: `現在の毎ターン総生産量: <b>✨ +${yields.mystic}</b><br><br>` +
+  L2782: `<b>生産内訳:</b><br>` +
+  L2799: listHtml += `・スロット ${index} (${terrainName}): +${val}<br>`;
+  L2805: listHtml += `・レガシー「不屈の精神」: +50<br>`;
+  L2808: listHtml += `・レガシー「将軍の凱旋」: +30<br>`;
+  L2812: return listHtml || "・生産源なし (毎ターンの生産はありません)<br>";
+
+[game\src\clean_main_fixed.js]: 223 violations
+  L175: state.addLog(`土地 (${getTerrainDisplayName(land.terrain, land.attribute)}) の災害被害が復興しました！生産力が元に戻ります。`, 'system');
+  L181: state.addLog(`被災地 (${getTerrainDisplayName(land.terrain, land.attribute)}) が復興しました！生産力に「戦場の記憶」Lv.${land.overlayLevel} バフが乗ります！`, 'system');
+  L196: state.addLog(`警告：保留ゾーンにカードが残っているため、残り火が 1 🔥 減少しました。`, 'warning');
+  L222: el.interactionTitle.innerText = `※ドローエリア (カードを盤面にドラッグするか、保留スロットにドロップできます)`;
+  L266: el.interactionTitle.innerText = `※ドローエリア (カードを盤面にドラッグするか、保留スロットにドロップできます)`;
+  L285: state.addLog(`カード「${card.name}」を獲得しました。`, 'action');
+  L291: el.interactionTitle.innerText = `配置フェイズ：盤面の空きスロット (+) を選択して配置してください (コスト: 1 🔥)`;
+  L340: el.interactionTitle.innerText = `資源調査フェイズ：調査・発見を行いたい土地を選択してください (コスト: 1 🔥)`;
+  L372: el.interactionTitle.innerText = `アクションフェイズ：土地の開発（ニコイチ）や保留、施設の建設を行えます`;
+  L373: el.cardOfferingsZone.innerHTML = `<div class="info-text">TURN RND を押すと、資源生産を獲得して次のターンに進みます。</div>`;
+  L520: state.addLog(`領土スロット ${draggedSourceIndex} を位置 (${Math.round(dropX)}%, ${Math.round(dropY)}%) へ移動しました。`, 'system');
+  L580: state.addLog(`還元炉：カード「${cardName}」を破棄し、残り火をエネルギーに還元しました (+1 🔥)。`, 'action');
+  L592: state.addLog('還元するカードを選択（クリック）してから還元炉をクリックしてください。', 'system');
+  L728: state.addLog('残り火 🔥 が不足しているため、土地を配置できません！', 'warning');
+  L732: state.addLog('残り火 🔥 が不足しているため、土地を配置できません！', 'warning');
+  L757: state.addLog(`スロット ${targetIndex} に ${getTerrainDisplayName(draggedCard.terrain, draggedCard.attribute)} を配置しました (-${cost} 🔥)。配置時即時産出：🌾 +${landYield.food} / 🧱 +${landYield.materials} / 🛡️ +${landYield.defense} / ✨ +${landYield.mystic}`, 'action');
+  L762: state.addLog('川を配置しました！「下流探索プロジェクト」が開始されました。', 'system');
+  L770: state.addLog('同じ開発段階（レアリティ）の土地同士でのみ開発（結合）が可能です！', 'warning');
+  L786: state.addLog('残り火 🔥 が不足しているため、土地を上書き配置できません！', 'warning');
+  L814: state.addLog('川を配置しました！「下流探索プロジェクト」が開始されました。', 'system');
+  L826: state.addLog('残り火 🔥 が不足しているため、土地の資源調査を行えません！', 'warning');
+  L834: state.addLog(`${getTerrainDisplayName(targetSlot.terrain, targetSlot.attribute)} を調査し、新たに環境特性「${getAttributeName(targetSlot.attribute)}」を発見しました！ (-${cost} 🔥)`, 'action');
+  L837: state.addLog(`${getTerrainDisplayName(targetSlot.terrain, targetSlot.attribute)} を調査し、隠された資源「${getBonusName(targetSlot.bonus)}」を発見しました！ (-${cost} 🔥)`, 'action');
+  L858: state.addLog(`カード「${draggedCard.name}」を保留スロット ${reserveIndex + 1} にキープしました。`, 'action');
+  L872: name: `${getTerrainDisplayName(land.terrain, land.attribute)}の開拓`,
+  L876: desc: `手札に戻された開拓地。開発度: ★${land.devLevel}`
+  L893: state.addLog(`スロット ${draggedSourceIndex} の土地を保留スロット ${reserveIndex + 1} に戻しました。`, 'action');
+  L914: el.interactionTitle.innerText = `配置フェイズ：盤面の空きスロット (+) を選択して配置してください (コスト: 1 🔥)`;
+  L919: el.interactionTitle.innerText = `資源調査フェイズ：調査・発見を行いたい土地を選択してください (コスト: 1 🔥)`;
+  L962: state.addLog(`スロット ${index} (${getTerrainDisplayName(slot.terrain, slot.attribute)}) に「${getFacilityName(fac.id)}」を建設しました！ (-${fac.cost} 🧱, -${fac.fireCost} 🔥)`, 'reward');
+  L1014: state.addLog(`結合候補 A: ${getTerrainDisplayName(slot.terrain, slot.attribute)} を選択。重ねたい土地を選択してください。`, 'system');
+  L1019: state.addLog('結合をキャンセルしました。', 'system');
+  L1055: state.addLog(`残り火が不足しています！開発には ${mergeCost} 🔥 が必要です。`, 'warning');
+  L1063: <h4>スロット ${idxA}</h4>
+  L1065: <p>開発度: ★${landA.devLevel}</p>
+  L1068: <h4>スロット ${idxB}</h4>
+  L1070: <p>開発度: ★${landB.devLevel}</p>
+  L1086: optionsList.innerHTML = '<div class="empty-text">引き継ぐ特性はありません。</div>';
+  L1135: el.btnConfirmMerge.innerText = `開発を実行 (${mergeCost} 🔥)`;
+  L1153: state.addLog(`残り火が不足しています！開発には ${mergeCost} 🔥 が必要です。`, 'warning');
+  L1160: <h4>スロット ${targetIndex}</h4>
+  L1162: <p>開発度: ★${landA.devLevel}</p>
+  L1165: <h4>ドロー/手札カード</h4>
+  L1167: <p>開発度: ★0</p>
+  L1172: if (landA.attribute) traits.push({ type: 'attr', val: landA.attribute, source: '盤面' });
+  L1173: if (landA.bonus) traits.push({ type: 'bonus', val: landA.bonus, source: '盤面' });
+  L1174: if (card.attribute) traits.push({ type: 'attr', val: card.attribute, source: 'カード' });
+  L1175: if (card.bonus) traits.push({ type: 'bonus', val: card.bonus, source: 'カード' });
+  L1183: optionsList.innerHTML = '<div class="empty-text">引き継ぐ特性はありません。</div>';
+  L1222: el.btnConfirmMerge.innerText = `直接開発を実行 (${mergeCost} 🔥)`;
+  L1258: state.addLog(`直接開発：カードからスロット ${targetIndex} の ${getTerrainDisplayName(landA.terrain, landA.attribute)} を直接開発（★ ${landA.devLevel}）しました。開発時即時産出：🌾 +${landYield.food} / 🧱 +${landYield.materials} / 🛡️ +${landYield.defense} / ✨ +${landYield.mystic}`, 'reward');
+  L1272: infoDiv.innerText = `✦ 重複ボーナス発生！ 「${selected[0].type === 'attr' ? getAttributeName(selected[0].val) : getBonusName(selected[0].val)}」の効果が大幅強化されます（効果1.5倍）！`;
+  L1293: state.addLog(`土地開発：スロット ${idxA} と ${idxB} を結合し、開発度★ ${landA.devLevel} へ強化しました (-${cost} 🔥)。開発時即時産出：🌾 +${landYield.food} / 🧱 +${landYield.materials} / 🛡️ +${landYield.defense} / ✨ +${landYield.mystic}`, 'reward');
+  L1341: state.addLog('マリガン：提示されたカードをすべて引き直しました (-2 🔥)。', 'action');
+  L1352: state.addLog(`追加ドロー：新たなカードの選択肢を生成しました (-1 🔥)。`, 'action');
+  L1371: text = "豊かな実りに感謝する大祭が執り行われました。民衆の笑顔が広がり、食料が 40 蓄積されます。(🌾 +40)";
+  L1375: text = "勇敢な杣人たちが森の奥深くから良質な木材を大量に持ち帰りました。資材が 40 蓄積されます。(🧱 +40)";
+  L1379: text = "集落を取り囲む防壁と見張り台の総点検が実施されました。防衛体制が 30 強化されます。(🛡️ +30)";
+  L1385: text = "荒野から逃れてきた人々を同胞の労働者として受け入れました。彼らの熱心な労働により、資材が獲得されました。(🌾 -15, 🧱 +40)";
+  L1387: state.addLog('食料不足により労働力の受け入れに失敗しました（食料🌾が15必要でした）。', 'warning');
+  L1388: text = "労働を希望する難民の集団がやってきましたが、食料が不足しているため受け入れることができませんでした...(食料が15必要でした)";
+  L1394: text = "全員が団結し、集落を発展させるために新しい資源を開拓しました。食料と資材を獲得します。(🌾 +25, 🧱 +25)";
+  L1398: text = "天より聖なる光の柱が降り注ぎ、神聖なる予言がもたらされました。神秘が 25 高まります。(✨ +25)";
+  L1418: state.addLog('マリガン：提示されたカードをすべて引き直しました (-2 🔥)。', 'action');
+  L1429: state.addLog(`追加ドロー：新たなカードの選択肢を生成しました (-1 🔥)。`, 'action');
+  L1449: text = "平野に集まった移民たちが残り火の周囲で結束しました。食料🌾+30、残り火🔥+3を獲得します。(🌾+30, 🔥+3)";
+  L1455: text = "交易商人から大量の穀物と乾物を買い付けました。食料🌾+35、神秘✨+5を獲得。(🌾+35, ✨+5)";
+  L1458: text = "交易路から貴重な建築材や鉱石を調達しました。資材🧱+30、神秘✨+5を獲得。(🧱+30, ✨+5)";
+  L1465: let milCardText = "保留ゾーンが満杯のため軍事カードを獲得できませんでした。";
+  L1471: let milCardText = "保留ゾーンが満杯のため軍事カードを獲得できませんでした。";
+  L1477: milCardText = `無料の軍事カード「${freeCard.name}」が保留スロット ${emptyIdx + 1} に追加されました！`;
+  L1479: text = `試練を防衛した英雄たちが熱狂と安全をもたらしました。残り火🔥+5、防衛力🛡️+50を獲得。さらに${milCardText} (🔥+5, 🛡️+50)`;
+  L1485: text = "過密な集落内で疫病の影が広がりました。食料🌾-20、残り火🔥-2の被害を受けますが、教訓として「衛生知識 (災害率半減)」レガシーを獲得します。(🌾-20, 🔥-2)";
+  L1489: let mysCardText = "保留ゾーンが満杯のため神秘カードを獲得できませんでした。";
+  L1496: let devText = "対象となる土地がないため開発度は上昇しませんでした。";
+  L1501: devText = `さらに、${getTerrainDisplayName(targetSlot.terrain, targetSlot.attribute)} の開発レベルが ★${targetSlot.devLevel} に上昇しました！`;
+  L1503: text = `開拓者主導の開墾祭により、食料🌾+25を獲得。${devText} (🌾+25)`;
+  L1508: text = "砂漠に眠る古代の遺跡から亜人の記憶が漏れ出し、民衆を惑わせました。残り火🔥-2のペナルティを受ける代わりに、神秘✨+20を獲得。(✨+20, 🔥-2)";
+  L1513: text = "残り火が消えかける極限状態の中で、人々が互いに食料を分け合い結束を高めました。残り火🔥+6、食料🌾+15を獲得！(🔥+6, 🌾+15)";
+  L1518: text = "腕利きの職人たちが目覚め、技術を共有しました。資材🧱+30を獲得し、さらに次の施設建設の資材コストが 🧱-20 割引されます。(🧱+30, 施設割引獲得)";
+  L1524: text = "50ターンの結末を見据え、人々が最後の希望を胸に大いなる宴を開きました。食料を50消費し、残り火🔥+10、防衛力🛡️+100を獲得！(🌾-50, 🔥+10, 🛡️+100)";
+  L1528: text = "天より聖なる光の柱が降り注ぎ、神聖なる予言がもたらされました。神秘が 25 高まります。(✨ +25)";
+  L1534: text = "精霊を祀る厳かな石碑の祭壇が建立されました。精霊の守護により、神秘が 40 向上します。(🧱 -20, ✨ +40)";
+  L1540: text = "森の精霊たちの温かい加護が集落全体を包み込みました。3ターンの間、集落の活動が祝福されます。(✨ +30, 祝福レガシー獲得)";
+  L1546: text = "熟練の斥候が敵軍の野営地を奇襲し、偵察データを持ち帰りました。次の試練の敵戦力が 30 低下します。(🛡️ +20, 敵戦力 -30)";
+  L1551: text = "若者たちが志願し、防衛義勇軍の訓練が開始されました。防衛力が 40 向上します。(🌾 -15, 🛡️ +40)";
+  L1554: btn.innerText = state.polityCooldown > 0 ? `制限中 (${state.polityCooldown}T)` : `有効化する (🔥 ${displayCost})`;
+  L1561: state.addLog(`政体を「${data.name}」に変更しました (-${displayCost} 🔥)。`, 'action');
+  L1572: <span>地殻の急成長（任意の土地1スロットを、即座に最大開発段階「レジェンダリ★4」へ昇格する）</span>
+  L1578: state.addLog('奇跡発動：次の試練の敵戦闘力を 30% 減弱しました！', 'reward');
+  L1585: state.addLog('奇跡発動：最大開発する土地を盤面からクリックしてください。', 'system');
+  L1592: state.addLog(`奇跡適用：${getTerrainDisplayName(land.terrain)} を最大開発段階（L★4）に昇格しました！`, 'reward');
+  L1603: 受け入れる
+  L1618: showGrandEventModal(`災厄発生: ${result.name}`, result.desc, 'crisis.png', () => {
+  L1637: el.modalRiverEvent.querySelector('#river-event-title').innerText = '🌊 世界の果て：海の発見！';
+  L1639: 探索隊は川を下り、無限に広がる水平線――**「海」**に到達しました！<br>
+  L1640: 超強力なレジェンダリー地形「海 (Sea)」がデッキに解禁されます！(スロットを2つ消費します)
+  L1642: state.addLog(`奇跡発動：社会制度「${lockedPol}」が天啓により即時解禁されました！`, 'reward');
+  L1644: state.addLog('奇跡発動：すべての制度が解禁済みなため、資材 +100 を獲得しました。', 'reward');
+  L1660: document.getElementById('generic-event-title').innerText = '神秘の奇跡（上級）';
+  L1661: document.getElementById('generic-event-text').innerText = '世界の残り火と一体となり、運命を改変する奇跡を引き起こします。';
+  L1666: <span>神罰の雷（次の試練の敵戦闘力を -30% 永久低下させる）</span>
+  L1669: <span>地殻の急成長（任意の土地1スロットを、即座に最大開発段階「レジェンダリ★4」へ昇格する）</span>
+  L1675: state.addLog('奇跡発動：次の試練の敵戦闘力を 30% 減弱しました！', 'reward');
+  L1682: state.addLog('奇跡発動：最大開発する土地を盤面からクリックしてください。', 'system');
+  L1689: state.addLog(`奇跡適用：${getTerrainDisplayName(land.terrain)} を最大開発段階（L★4）に昇格しました！`, 'reward');
+  L1733: state.addLog(`社会制度「${policyId}」を解禁しました (-${cost} 🧱)。`, 'reward');
+  L1738: state.addLog('新たな政体「専制君主制」が選択可能になりました！', 'system');
+  L1741: state.addLog('新たな政体「神聖君主制」が選択可能になりました！', 'system');
+  L1744: state.addLog('新たな政体「開拓民主制」が選択可能になりました！', 'system');
+  L1757: state.addLog('警告：カードを選択してターンを開始してください！', 'warning');
+  L1768: state.addLog(`第 ${state.currentTurn} ターン終了。生産物回収：🌾 +${yields.food} / 🧱 +${yields.materials} / 🛡️ +${yields.defense} / ✨ +${yields.mystic}`, 'action');
+  L1776: foodCorrectionText = " (大豊作による活力補正: +1 🔥)";
+  L1779: foodCorrectionText = " (十分な食料による維持補正: 0 🔥)";
+  L1781: state.addLog('奇跡発動：次の試練の敵戦闘力を 30% 減弱しました！', 'reward');
+  L1788: state.addLog('奇跡発動：最大開発する土地を盤面からクリックしてください。', 'system');
+  L1795: state.addLog(`奇跡適用：${getTerrainDisplayName(land.terrain, land.attribute)} を最大開発段階（L★4）に昇格しました！`, 'reward');
+  L1803: state.addLog('奇跡発動：次の試練の敵戦闘力を 30% 減弱しました！', 'reward');
+  L1810: state.addLog('奇跡発動：最大開発する土地を盤面からクリックしてください。', 'system');
+  L1817: state.addLog(`奇跡適用：${getTerrainDisplayName(land.terrain, land.attribute)} を最大開発段階（L★4）に昇格しました！`, 'reward');
+  L1834: state.addLog('警告：カードを選択してターンを開始してください！', 'warning');
+  L1844: state.addLog(`社会制度「${policyId}」を解禁しました (-${cost} 🧱)。`, 'reward');
+  L1856: state.addLog(`施設「${facilityId}」を建設しました (-${cost} 🧱)。`, 'reward');
+  L1869: state.addLog(`第 ${state.currentTurn} ターン終了。生産物回収：🌾 +${yields.food} / 🧱 +${yields.materials} / ✨ +${yields.mystic} (総防衛力: 🛡️ ${state.defense})`, 'action');
+  L1877: foodCorrectionText = " (大豊作による活力補正: +1 🔥)";
+  L1880: foodCorrectionText = " (十分な食料による維持補正: 0 🔥)";
+  L1917: name: '共同体の融和',
+  L1919: desc: 'ベース土地カード (🧭) の出現ウェイトが +15% 上昇します。',
+  L1922: req: '初期状態'
+  L1925: name: '専制君主制',
+  L1927: desc: '試練戦闘時、防衛力 (🛡️) +20%。ただし毎ターンの資材 (🧱) 産出 -15%。',
+  L1930: req: '社会制度「戦術（tactics）」解禁で開放'
+  L1933: name: '神聖君主制',
+  L1935: desc: '毎ターン神秘 (✨) +5。神秘の奇跡コストが -10% 低減されます。',
+  L1938: req: '社会制度「神秘（mysticism）」解禁で開放'
+  L1941: name: '開拓民主制',
+  L1943: desc: '土地のニコイチ開発コストが -1 🔥 低減される。ただし毎ターンの食料 (🌾) 産出 -15%。',
+  L1946: req: '社会制度「農業（agriculture）」解禁で開放'
+  L1956: <h3 style="font-size: 0.9rem; color: #f97316; margin-bottom: 4px;">現在のアクティブ政体: ${activeData.icon} ${activeData.name}</h3>
+  L1959: 切り替え制限: ${state.polityCooldown > 0 ? `あと ${state.polityCooldown} ターン変更不可` : '変更可能'}
+  L1983: state.addLog('土地の最大上限数(7枚)に達しています！これ以上配置できません。', 'warning');
+  L1991: state.addLog('残り火 🔥 が不足しているため、土地を配置できません！', 'warning');
+  L2007: state.addLog(`試練報酬：天啓により社会制度「${lockedPol}」を獲得しました！`, 'reward');
+  L2021: state.addLog(`試練報酬：レアカード「${chosenCard.name}」の天啓を受けました！`, 'reward');
+  L2026: state.addLog(`試練報酬：新たなレガシー「${chosenLegacy}」を獲得しました！`, 'reward');
+  L2060: el.gameEndDesc.innerText = '残り火が完全に消え去り、集落は凍える闇の中に飲み込まれました。あなたの旅はここで終わります...';
+  L2066: <div class="score-row"><span>残り火:</span> <span class="text-danger">0 (消滅)</span></div>
+  L2067: <div class="score-row"><span>生存ターン (T ${state.currentTurn} x 100):</span> <span>+${turnScore}</span></div>
+  L2068: <div class="score-row total"><span>最終スコア:</span> <span>${totalScore}</span></div>
+  L2085: state.addLog('警告：カードを選択してターンを開始してください！', 'warning');
+  L2100: state.addLog(`第 ${state.currentTurn} ターン終了。生産物回収：🌾 +${yields.food} / 🧱 +${yields.materials} / ✨ +${yields.mystic} (総防衛力: 🛡️ ${state.defense})`, 'action');
+  L2105: foodCorrectionText = ` (深刻な食料不足による残り火の衰退: -2 🔥 / 消費コスト ${foodMaintenance} に対して残高 ${originalFood} 🌾)`;
+  L2108: foodCorrectionText = " (大豊作による残り火の自動増加: +1 🔥)";
+  L2111: foodCorrectionText = " (十分な食料蓄積による残り火維持: 0 🔥)";
+  L2114: foodCorrectionText = " (食料不足による残り火減衰: -1 🔥)";
+  L2119: state.addLog(`残り火減衰：残り火が ${fireDecay} 🔥 減少しました。${foodCorrectionText}`, 'warning');
+  L2121: state.addLog(`残り火維持：残り火は減少せず維持されました。${foodCorrectionText}`, 'system');
+  L2123: state.addLog(`残り火増幅：活力が満ち、残り火が ${Math.abs(fireDecay)} 🔥 増加しました！${foodCorrectionText}`, 'reward');
+  L2128: state.addLog(`残り火減衰：残り火が ${fireDecay} 🔥 減少しました。${foodCorrectionText}`, 'warning');
+  L2130: state.addLog(`残り火維持：残り火は減少せず維持されました。${foodCorrectionText}`, 'system');
+  L2132: state.addLog(`残り火増幅：活力が満ち、残り火が ${Math.abs(fireDecay)} 🔥 増加しました！${foodCorrectionText}`, 'reward');
+  L2208: el.trialResultTitle.innerText = `第 ${trialResult.trialIndex} の試練で防衛線が崩壊しました`;
+  L2209: el.trialResultDesc.innerText = `亜人軍勢の略奪により、戦場となった一部の領土が荒廃（生産半減）しました。しかし、民は屈せず、不屈の精神を高めています。(防衛力: ${trialResult.playerDefense} vs 敵勢力: ${trialResult.enemyPower})`;
+  L2233: state.addLog('試練報酬：残り火の最大値が 1 🔥 上昇しました！', 'reward');
+  L2240: state.addLog('土地の最大上限数(7枚)に達しています！これ以上配置できません。', 'warning');
+  L2248: state.addLog('残り火 🔥 が不足しているため、土地を配置できません！', 'warning');
+  L2303: <div class="score-row"><span>残り火:</span> <span class="text-danger">0 (消滅)</span></div>
+  L2304: <div class="score-row"><span>生存ターン (T ${state.currentTurn} x 100):</span> <span>+${turnScore}</span></div>
+  L2305: <div class="score-row total"><span>最終スコア:</span> <span>${totalScore}</span></div>
+  L2321: state.addLog('土地の最大上限数(7枚)に達しています！これ以上配置できません。', 'warning');
+  L2329: state.addLog('残り火 🔥 が不足しているため、土地を配置できません！', 'warning');
+  L2424: el.trialCountdown.innerText = '警告: 試練襲来中！';
+  L2426: el.trialCountdown.innerText = `試練まで ${turnsToTrial} ターン`;
+  L2431: <strong>試練の強さ:</strong> ${state.upcomingTrial.basePower} 戦力<br>
+  L2533: breakdown = `現在の当ターン防衛力: <b>🛡️ ${state.defense}</b><br>` +
+  L2534: `毎ターン自動で得られる生産量: <b>🛡️ +${yields.defense}</b><br><br>` +
+  L2535: `<b>生産内訳:</b><br>` +
+  L2539: title = "✨ 神秘 (Mystic)";
+  L2540: desc = "精霊との交信や奇跡の発動に必要な信仰力。一定値まで貯めることで、いつでも「神秘の奇跡」ボタンから強力なグローバル奇跡（予知、豊穣、神罰など）を発動できます。";
+  L2542: div.innerHTML = `<span>⚠ ${getTerrainDisplayName(land.terrain, land.attribute)}の荒廃</span> <span class="d-turns">${turnsRemaining - 1}T</span>`;
+  L2582: el.disastersList.innerHTML = '<div class="empty-text">災害なし</div>';
+  L2588: div.innerHTML = `<span>⚠ ${getTerrainDisplayName(land.terrain, land.attribute)}の荒廃</span> <span class="d-turns">${turnsRemaining - 1}T</span>`;
+  L2631: state.addLog('新たな政体「専制君主制」が選択可能になりました！', 'system');
+  L2634: state.addLog('新たな政体「神聖君主制」が選択可能になりました！', 'system');
+  L2637: state.addLog('新たな政体「開拓民主制」が選択可能になりました！', 'system');
+  L2717: title = "🔥 残り火 (Fire)";
+  L2718: desc = "集落の生命活動を維持するための残り火。毎ターン終了時に一定量減少し、0 になるとゲームオーバーになります。<br><br>" +
+  L2719: "・最大上限: 30 🔥<br>" +
+  L2720: "・基本減衰: -1 🔥/ターン (保留エリアにカードが残っている場合、さらに -1 🔥 のペナルティがあります)。<br>" +
+  L2721: "・食料🌾備蓄補正:<br>" +
+  L2722: "  - 🌾 240 以上: +1 🔥 (残り火が増加します)<br>" +
+  L2723: "  - 🌾 120 以上: 0 🔥 (残り火は減少しません)<br>" +
+  L2724: "  - 🌾 30 未満: -2 🔥 (深刻な食料不足による急激な減衰)";
+  L2739: breakdown = `現在の残り火: <b>${state.fire} / ${state.maxFire} 🔥</b><br><br>` +
+  L2740: `<b>毎ターン終了時の変化見込み: ${sign}${netChange} 🔥</b><br>` +
+  L2741: `・食料備蓄補正: ${foodBonus >= 0 ? "+" : ""}${foodBonus} 🔥 (備蓄: 🌾${state.food})<br>` +
+  L2742: `・保留ペナルティ: -${reservePenalty} 🔥 (保留カード数: ${state.reserve.filter(c => c !== null).length}枚)<br><br>` +
+  L2743: `<span style="color: #f87171; font-size: 0.72rem;">※不要なカードを「残り火へ還元」スロットに捨てることで、いつでも +1 🔥 を得ることができます。</span>`;
+  L2746: title = "🌾 食料 (Food)";
+  L2747: desc = "集落の生存維持に必要な食料。蓄積量が多いほど残り火の減衰を抑えたり、回復させたりすることができます。(240以上で+1🔥, 120以上で減少なし, 30未満で-2🔥)";
+  L2750: breakdown = `現在の備蓄量: <b>🌾 ${state.food}</b><br>` +
+  L2751: `現在の毎ターン総生産量: <b>🌾 +${yields.food}</b><br><br>` +
+  L2752: `<b>生産内訳:</b><br>` +
+  L2756: title = "🧱 資材 (Materials)";
+  L2757: desc = "施設の建設や社会制度のアンロック、土地の結合（レベルアップ）などに消費される重要な資材資源です。";
+  L2760: breakdown = `現在の備蓄量: <b>🧱 ${state.materials}</b><br>` +
+  L2761: `現在の毎ターン総生産量: <b>🧱 +${yields.materials}</b><br><br>` +
+  L2762: `<b>生産内訳:</b><br>` +
+  L2766: title = "🛡️ 防衛力 (Defense)";
+  L2767: desc = "試練（襲来する脅威）から集落を守るための戦闘力。<b>防衛力は蓄積されず、毎ターン開始時に 0 にリセットされます。</b><br><br>" +
+  L2768: "各ターン終了時に土地や施設から生産される防衛力と、そのターン中に使用した軍事カードの効果の合計値が、そのターンの「総防衛力」となり、試練襲来時の防御判定に使用されます。";
+  L2771: breakdown = `現在の当ターン防衛力: <b>🛡️ ${state.defense}</b><br>` +
+  L2772: `毎ターン自動で得られる生産量: <b>🛡️ +${yields.defense}</b><br><br>` +
+  L2773: `<b>生産内訳:</b><br>` +
+  L2777: title = "✨ 神秘 (Mystic)";
+  L2778: desc = "精霊との交信や奇跡の発動に必要な信仰力。一定値まで貯めることで、いつでも「神秘の奇跡」ボタンから強力なグローバル奇跡（予知、豊穣、神罰など）を発動できます。";
+  L2781: breakdown = `現在の備蓄量: <b>✨ ${state.mystic}</b><br>` +
+  L2782: `現在の毎ターン総生産量: <b>✨ +${yields.mystic}</b><br><br>` +
+  L2783: `<b>生産内訳:</b><br>` +
+  L2800: listHtml += `・スロット ${index} (${terrainName}): +${val}<br>`;
+  L2806: listHtml += `・レガシー「不屈の精神」: +50<br>`;
+  L2809: listHtml += `・レガシー「将軍の凱旋」: +30<br>`;
+  L2813: return listHtml || "・生産源なし (毎ターンの生産はありません)<br>";
+
+[game\src\clean_main_fixed_test.js]: 223 violations
+  L175: state.addLog(`土地 (${getTerrainDisplayName(land.terrain, land.attribute)}) の災害被害が復興しました！生産力が元に戻ります。`, 'system');
+  L181: state.addLog(`被災地 (${getTerrainDisplayName(land.terrain, land.attribute)}) が復興しました！生産力に「戦場の記憶」Lv.${land.overlayLevel} バフが乗ります！`, 'system');
+  L196: state.addLog(`警告：保留ゾーンにカードが残っているため、残り火が 1 🔥 減少しました。`, 'warning');
+  L222: el.interactionTitle.innerText = `※ドローエリア (カードを盤面にドラッグするか、保留スロットにドロップできます)`;
+  L267: el.interactionTitle.innerText = `※ドローエリア (カードを盤面にドラッグするか、保留スロットにドロップできます)`;
+  L286: state.addLog(`カード「${card.name}」を獲得しました。`, 'action');
+  L292: el.interactionTitle.innerText = `配置フェイズ：盤面の空きスロット (+) を選択して配置してください (コスト: 1 🔥)`;
+  L341: el.interactionTitle.innerText = `資源調査フェイズ：調査・発見を行いたい土地を選択してください (コスト: 1 🔥)`;
+  L373: el.interactionTitle.innerText = `アクションフェイズ：土地の開発（ニコイチ）や保留、施設の建設を行えます`;
+  L374: el.cardOfferingsZone.innerHTML = `<div class="info-text">TURN RND を押すと、資源生産を獲得して次のターンに進みます。</div>`;
+  L521: state.addLog(`領土スロット ${draggedSourceIndex} を位置 (${Math.round(dropX)}%, ${Math.round(dropY)}%) へ移動しました。`, 'system');
+  L581: state.addLog(`還元炉：カード「${cardName}」を破棄し、残り火をエネルギーに還元しました (+1 🔥)。`, 'action');
+  L593: state.addLog('還元するカードを選択（クリック）してから還元炉をクリックしてください。', 'system');
+  L729: state.addLog('残り火 🔥 が不足しているため、土地を配置できません！', 'warning');
+  L733: state.addLog('残り火 🔥 が不足しているため、土地を配置できません！', 'warning');
+  L758: state.addLog(`スロット ${targetIndex} に ${getTerrainDisplayName(draggedCard.terrain, draggedCard.attribute)} を配置しました (-${cost} 🔥)。配置時即時産出：🌾 +${landYield.food} / 🧱 +${landYield.materials} / 🛡️ +${landYield.defense} / ✨ +${landYield.mystic}`, 'action');
+  L763: state.addLog('川を配置しました！「下流探索プロジェクト」が開始されました。', 'system');
+  L771: state.addLog('同じ開発段階（レアリティ）の土地同士でのみ開発（結合）が可能です！', 'warning');
+  L787: state.addLog('残り火 🔥 が不足しているため、土地を上書き配置できません！', 'warning');
+  L815: state.addLog('川を配置しました！「下流探索プロジェクト」が開始されました。', 'system');
+  L827: state.addLog('残り火 🔥 が不足しているため、土地の資源調査を行えません！', 'warning');
+  L835: state.addLog(`${getTerrainDisplayName(targetSlot.terrain, targetSlot.attribute)} を調査し、新たに環境特性「${getAttributeName(targetSlot.attribute)}」を発見しました！ (-${cost} 🔥)`, 'action');
+  L838: state.addLog(`${getTerrainDisplayName(targetSlot.terrain, targetSlot.attribute)} を調査し、隠された資源「${getBonusName(targetSlot.bonus)}」を発見しました！ (-${cost} 🔥)`, 'action');
+  L859: state.addLog(`カード「${draggedCard.name}」を保留スロット ${reserveIndex + 1} にキープしました。`, 'action');
+  L873: name: `${getTerrainDisplayName(land.terrain, land.attribute)}の開拓`,
+  L877: desc: `手札に戻された開拓地。開発度: ★${land.devLevel}`
+  L894: state.addLog(`スロット ${draggedSourceIndex} の土地を保留スロット ${reserveIndex + 1} に戻しました。`, 'action');
+  L915: el.interactionTitle.innerText = `配置フェイズ：盤面の空きスロット (+) を選択して配置してください (コスト: 1 🔥)`;
+  L920: el.interactionTitle.innerText = `資源調査フェイズ：調査・発見を行いたい土地を選択してください (コスト: 1 🔥)`;
+  L963: state.addLog(`スロット ${index} (${getTerrainDisplayName(slot.terrain, slot.attribute)}) に「${getFacilityName(fac.id)}」を建設しました！ (-${fac.cost} 🧱, -${fac.fireCost} 🔥)`, 'reward');
+  L1015: state.addLog(`結合候補 A: ${getTerrainDisplayName(slot.terrain, slot.attribute)} を選択。重ねたい土地を選択してください。`, 'system');
+  L1020: state.addLog('結合をキャンセルしました。', 'system');
+  L1056: state.addLog(`残り火が不足しています！開発には ${mergeCost} 🔥 が必要です。`, 'warning');
+  L1064: <h4>スロット ${idxA}</h4>
+  L1066: <p>開発度: ★${landA.devLevel}</p>
+  L1069: <h4>スロット ${idxB}</h4>
+  L1071: <p>開発度: ★${landB.devLevel}</p>
+  L1087: optionsList.innerHTML = '<div class="empty-text">引き継ぐ特性はありません。</div>';
+  L1136: el.btnConfirmMerge.innerText = `開発を実行 (${mergeCost} 🔥)`;
+  L1154: state.addLog(`残り火が不足しています！開発には ${mergeCost} 🔥 が必要です。`, 'warning');
+  L1161: <h4>スロット ${targetIndex}</h4>
+  L1163: <p>開発度: ★${landA.devLevel}</p>
+  L1166: <h4>ドロー/手札カード</h4>
+  L1168: <p>開発度: ★0</p>
+  L1173: if (landA.attribute) traits.push({ type: 'attr', val: landA.attribute, source: '盤面' });
+  L1174: if (landA.bonus) traits.push({ type: 'bonus', val: landA.bonus, source: '盤面' });
+  L1175: if (card.attribute) traits.push({ type: 'attr', val: card.attribute, source: 'カード' });
+  L1176: if (card.bonus) traits.push({ type: 'bonus', val: card.bonus, source: 'カード' });
+  L1184: optionsList.innerHTML = '<div class="empty-text">引き継ぐ特性はありません。</div>';
+  L1223: el.btnConfirmMerge.innerText = `直接開発を実行 (${mergeCost} 🔥)`;
+  L1259: state.addLog(`直接開発：カードからスロット ${targetIndex} の ${getTerrainDisplayName(landA.terrain, landA.attribute)} を直接開発（★ ${landA.devLevel}）しました。開発時即時産出：🌾 +${landYield.food} / 🧱 +${landYield.materials} / 🛡️ +${landYield.defense} / ✨ +${landYield.mystic}`, 'reward');
+  L1273: infoDiv.innerText = `✦ 重複ボーナス発生！ 「${selected[0].type === 'attr' ? getAttributeName(selected[0].val) : getBonusName(selected[0].val)}」の効果が大幅強化されます（効果1.5倍）！`;
+  L1294: state.addLog(`土地開発：スロット ${idxA} と ${idxB} を結合し、開発度★ ${landA.devLevel} へ強化しました (-${cost} 🔥)。開発時即時産出：🌾 +${landYield.food} / 🧱 +${landYield.materials} / 🛡️ +${landYield.defense} / ✨ +${landYield.mystic}`, 'reward');
+  L1342: state.addLog('マリガン：提示されたカードをすべて引き直しました (-2 🔥)。', 'action');
+  L1353: state.addLog(`追加ドロー：新たなカードの選択肢を生成しました (-1 🔥)。`, 'action');
+  L1372: text = "豊かな実りに感謝する大祭が執り行われました。民衆の笑顔が広がり、食料が 40 蓄積されます。(🌾 +40)";
+  L1376: text = "勇敢な杣人たちが森の奥深くから良質な木材を大量に持ち帰りました。資材が 40 蓄積されます。(🧱 +40)";
+  L1380: text = "集落を取り囲む防壁と見張り台の総点検が実施されました。防衛体制が 30 強化されます。(🛡️ +30)";
+  L1386: text = "荒野から逃れてきた人々を同胞の労働者として受け入れました。彼らの熱心な労働により、資材が獲得されました。(🌾 -15, 🧱 +40)";
+  L1388: state.addLog('食料不足により労働力の受け入れに失敗しました（食料🌾が15必要でした）。', 'warning');
+  L1389: text = "労働を希望する難民の集団がやってきましたが、食料が不足しているため受け入れることができませんでした...(食料が15必要でした)";
+  L1395: text = "全員が団結し、集落を発展させるために新しい資源を開拓しました。食料と資材を獲得します。(🌾 +25, 🧱 +25)";
+  L1399: text = "天より聖なる光の柱が降り注ぎ、神聖なる予言がもたらされました。神秘が 25 高まります。(✨ +25)";
+  L1419: state.addLog('マリガン：提示されたカードをすべて引き直しました (-2 🔥)。', 'action');
+  L1430: state.addLog(`追加ドロー：新たなカードの選択肢を生成しました (-1 🔥)。`, 'action');
+  L1450: text = "平野に集まった移民たちが残り火の周囲で結束しました。食料🌾+30、残り火🔥+3を獲得します。(🌾+30, 🔥+3)";
+  L1456: text = "交易商人から大量の穀物と乾物を買い付けました。食料🌾+35、神秘✨+5を獲得。(🌾+35, ✨+5)";
+  L1459: text = "交易路から貴重な建築材や鉱石を調達しました。資材🧱+30、神秘✨+5を獲得。(🧱+30, ✨+5)";
+  L1466: let milCardText = "保留ゾーンが満杯のため軍事カードを獲得できませんでした。";
+  L1472: let milCardText = "保留ゾーンが満杯のため軍事カードを獲得できませんでした。";
+  L1478: milCardText = `無料の軍事カード「${freeCard.name}」が保留スロット ${emptyIdx + 1} に追加されました！`;
+  L1480: text = `試練を防衛した英雄たちが熱狂と安全をもたらしました。残り火🔥+5、防衛力🛡️+50を獲得。さらに${milCardText} (🔥+5, 🛡️+50)`;
+  L1486: text = "過密な集落内で疫病の影が広がりました。食料🌾-20、残り火🔥-2の被害を受けますが、教訓として「衛生知識 (災害率半減)」レガシーを獲得します。(🌾-20, 🔥-2)";
+  L1490: let mysCardText = "保留ゾーンが満杯のため神秘カードを獲得できませんでした。";
+  L1497: let devText = "対象となる土地がないため開発度は上昇しませんでした。";
+  L1502: devText = `さらに、${getTerrainDisplayName(targetSlot.terrain, targetSlot.attribute)} の開発レベルが ★${targetSlot.devLevel} に上昇しました！`;
+  L1504: text = `開拓者主導の開墾祭により、食料🌾+25を獲得。${devText} (🌾+25)`;
+  L1509: text = "砂漠に眠る古代の遺跡から亜人の記憶が漏れ出し、民衆を惑わせました。残り火🔥-2のペナルティを受ける代わりに、神秘✨+20を獲得。(✨+20, 🔥-2)";
+  L1514: text = "残り火が消えかける極限状態の中で、人々が互いに食料を分け合い結束を高めました。残り火🔥+6、食料🌾+15を獲得！(🔥+6, 🌾+15)";
+  L1519: text = "腕利きの職人たちが目覚め、技術を共有しました。資材🧱+30を獲得し、さらに次の施設建設の資材コストが 🧱-20 割引されます。(🧱+30, 施設割引獲得)";
+  L1525: text = "50ターンの結末を見据え、人々が最後の希望を胸に大いなる宴を開きました。食料を50消費し、残り火🔥+10、防衛力🛡️+100を獲得！(🌾-50, 🔥+10, 🛡️+100)";
+  L1529: text = "天より聖なる光の柱が降り注ぎ、神聖なる予言がもたらされました。神秘が 25 高まります。(✨ +25)";
+  L1535: text = "精霊を祀る厳かな石碑の祭壇が建立されました。精霊の守護により、神秘が 40 向上します。(🧱 -20, ✨ +40)";
+  L1541: text = "森の精霊たちの温かい加護が集落全体を包み込みました。3ターンの間、集落の活動が祝福されます。(✨ +30, 祝福レガシー獲得)";
+  L1547: text = "熟練の斥候が敵軍の野営地を奇襲し、偵察データを持ち帰りました。次の試練の敵戦力が 30 低下します。(🛡️ +20, 敵戦力 -30)";
+  L1552: text = "若者たちが志願し、防衛義勇軍の訓練が開始されました。防衛力が 40 向上します。(🌾 -15, 🛡️ +40)";
+  L1555: btn.innerText = state.polityCooldown > 0 ? `制限中 (${state.polityCooldown}T)` : `有効化する (🔥 ${displayCost})`;
+  L1562: state.addLog(`政体を「${data.name}」に変更しました (-${displayCost} 🔥)。`, 'action');
+  L1573: <span>地殻の急成長（任意の土地1スロットを、即座に最大開発段階「レジェンダリ★4」へ昇格する）</span>
+  L1579: state.addLog('奇跡発動：次の試練の敵戦闘力を 30% 減弱しました！', 'reward');
+  L1586: state.addLog('奇跡発動：最大開発する土地を盤面からクリックしてください。', 'system');
+  L1593: state.addLog(`奇跡適用：${getTerrainDisplayName(land.terrain)} を最大開発段階（L★4）に昇格しました！`, 'reward');
+  L1604: 受け入れる
+  L1619: showGrandEventModal(`災厄発生: ${result.name}`, result.desc, 'crisis.png', () => {
+  L1638: el.modalRiverEvent.querySelector('#river-event-title').innerText = '🌊 世界の果て：海の発見！';
+  L1640: 探索隊は川を下り、無限に広がる水平線――**「海」**に到達しました！<br>
+  L1641: 超強力なレジェンダリー地形「海 (Sea)」がデッキに解禁されます！(スロットを2つ消費します)
+  L1643: state.addLog(`奇跡発動：社会制度「${lockedPol}」が天啓により即時解禁されました！`, 'reward');
+  L1645: state.addLog('奇跡発動：すべての制度が解禁済みなため、資材 +100 を獲得しました。', 'reward');
+  L1661: document.getElementById('generic-event-title').innerText = '神秘の奇跡（上級）';
+  L1662: document.getElementById('generic-event-text').innerText = '世界の残り火と一体となり、運命を改変する奇跡を引き起こします。';
+  L1667: <span>神罰の雷（次の試練の敵戦闘力を -30% 永久低下させる）</span>
+  L1670: <span>地殻の急成長（任意の土地1スロットを、即座に最大開発段階「レジェンダリ★4」へ昇格する）</span>
+  L1676: state.addLog('奇跡発動：次の試練の敵戦闘力を 30% 減弱しました！', 'reward');
+  L1683: state.addLog('奇跡発動：最大開発する土地を盤面からクリックしてください。', 'system');
+  L1690: state.addLog(`奇跡適用：${getTerrainDisplayName(land.terrain)} を最大開発段階（L★4）に昇格しました！`, 'reward');
+  L1734: state.addLog(`社会制度「${policyId}」を解禁しました (-${cost} 🧱)。`, 'reward');
+  L1739: state.addLog('新たな政体「専制君主制」が選択可能になりました！', 'system');
+  L1742: state.addLog('新たな政体「神聖君主制」が選択可能になりました！', 'system');
+  L1745: state.addLog('新たな政体「開拓民主制」が選択可能になりました！', 'system');
+  L1758: state.addLog('警告：カードを選択してターンを開始してください！', 'warning');
+  L1769: state.addLog(`第 ${state.currentTurn} ターン終了。生産物回収：🌾 +${yields.food} / 🧱 +${yields.materials} / 🛡️ +${yields.defense} / ✨ +${yields.mystic}`, 'action');
+  L1777: foodCorrectionText = " (大豊作による活力補正: +1 🔥)";
+  L1780: foodCorrectionText = " (十分な食料による維持補正: 0 🔥)";
+  L1782: state.addLog('奇跡発動：次の試練の敵戦闘力を 30% 減弱しました！', 'reward');
+  L1789: state.addLog('奇跡発動：最大開発する土地を盤面からクリックしてください。', 'system');
+  L1796: state.addLog(`奇跡適用：${getTerrainDisplayName(land.terrain, land.attribute)} を最大開発段階（L★4）に昇格しました！`, 'reward');
+  L1804: state.addLog('奇跡発動：次の試練の敵戦闘力を 30% 減弱しました！', 'reward');
+  L1811: state.addLog('奇跡発動：最大開発する土地を盤面からクリックしてください。', 'system');
+  L1818: state.addLog(`奇跡適用：${getTerrainDisplayName(land.terrain, land.attribute)} を最大開発段階（L★4）に昇格しました！`, 'reward');
+  L1835: state.addLog('警告：カードを選択してターンを開始してください！', 'warning');
+  L1845: state.addLog(`社会制度「${policyId}」を解禁しました (-${cost} 🧱)。`, 'reward');
+  L1857: state.addLog(`施設「${facilityId}」を建設しました (-${cost} 🧱)。`, 'reward');
+  L1870: state.addLog(`第 ${state.currentTurn} ターン終了。生産物回収：🌾 +${yields.food} / 🧱 +${yields.materials} / ✨ +${yields.mystic} (総防衛力: 🛡️ ${state.defense})`, 'action');
+  L1878: foodCorrectionText = " (大豊作による活力補正: +1 🔥)";
+  L1881: foodCorrectionText = " (十分な食料による維持補正: 0 🔥)";
+  L1918: name: '共同体の融和',
+  L1920: desc: 'ベース土地カード (🧭) の出現ウェイトが +15% 上昇します。',
+  L1923: req: '初期状態'
+  L1926: name: '専制君主制',
+  L1928: desc: '試練戦闘時、防衛力 (🛡️) +20%。ただし毎ターンの資材 (🧱) 産出 -15%。',
+  L1931: req: '社会制度「戦術（tactics）」解禁で開放'
+  L1934: name: '神聖君主制',
+  L1936: desc: '毎ターン神秘 (✨) +5。神秘の奇跡コストが -10% 低減されます。',
+  L1939: req: '社会制度「神秘（mysticism）」解禁で開放'
+  L1942: name: '開拓民主制',
+  L1944: desc: '土地のニコイチ開発コストが -1 🔥 低減される。ただし毎ターンの食料 (🌾) 産出 -15%。',
+  L1947: req: '社会制度「農業（agriculture）」解禁で開放'
+  L1957: <h3 style="font-size: 0.9rem; color: #f97316; margin-bottom: 4px;">現在のアクティブ政体: ${activeData.icon} ${activeData.name}</h3>
+  L1960: 切り替え制限: ${state.polityCooldown > 0 ? `あと ${state.polityCooldown} ターン変更不可` : '変更可能'}
+  L1984: state.addLog('土地の最大上限数(7枚)に達しています！これ以上配置できません。', 'warning');
+  L1992: state.addLog('残り火 🔥 が不足しているため、土地を配置できません！', 'warning');
+  L2008: state.addLog(`試練報酬：天啓により社会制度「${lockedPol}」を獲得しました！`, 'reward');
+  L2022: state.addLog(`試練報酬：レアカード「${chosenCard.name}」の天啓を受けました！`, 'reward');
+  L2027: state.addLog(`試練報酬：新たなレガシー「${chosenLegacy}」を獲得しました！`, 'reward');
+  L2061: el.gameEndDesc.innerText = '残り火が完全に消え去り、集落は凍える闇の中に飲み込まれました。あなたの旅はここで終わります...';
+  L2067: <div class="score-row"><span>残り火:</span> <span class="text-danger">0 (消滅)</span></div>
+  L2068: <div class="score-row"><span>生存ターン (T ${state.currentTurn} x 100):</span> <span>+${turnScore}</span></div>
+  L2069: <div class="score-row total"><span>最終スコア:</span> <span>${totalScore}</span></div>
+  L2086: state.addLog('警告：カードを選択してターンを開始してください！', 'warning');
+  L2101: state.addLog(`第 ${state.currentTurn} ターン終了。生産物回収：🌾 +${yields.food} / 🧱 +${yields.materials} / ✨ +${yields.mystic} (総防衛力: 🛡️ ${state.defense})`, 'action');
+  L2106: foodCorrectionText = ` (深刻な食料不足による残り火の衰退: -2 🔥 / 消費コスト ${foodMaintenance} に対して残高 ${originalFood} 🌾)`;
+  L2109: foodCorrectionText = " (大豊作による残り火の自動増加: +1 🔥)";
+  L2112: foodCorrectionText = " (十分な食料蓄積による残り火維持: 0 🔥)";
+  L2115: foodCorrectionText = " (食料不足による残り火減衰: -1 🔥)";
+  L2120: state.addLog(`残り火減衰：残り火が ${fireDecay} 🔥 減少しました。${foodCorrectionText}`, 'warning');
+  L2122: state.addLog(`残り火維持：残り火は減少せず維持されました。${foodCorrectionText}`, 'system');
+  L2124: state.addLog(`残り火増幅：活力が満ち、残り火が ${Math.abs(fireDecay)} 🔥 増加しました！${foodCorrectionText}`, 'reward');
+  L2129: state.addLog(`残り火減衰：残り火が ${fireDecay} 🔥 減少しました。${foodCorrectionText}`, 'warning');
+  L2131: state.addLog(`残り火維持：残り火は減少せず維持されました。${foodCorrectionText}`, 'system');
+  L2133: state.addLog(`残り火増幅：活力が満ち、残り火が ${Math.abs(fireDecay)} 🔥 増加しました！${foodCorrectionText}`, 'reward');
+  L2209: el.trialResultTitle.innerText = `第 ${trialResult.trialIndex} の試練で防衛線が崩壊しました`;
+  L2210: el.trialResultDesc.innerText = `亜人軍勢の略奪により、戦場となった一部の領土が荒廃（生産半減）しました。しかし、民は屈せず、不屈の精神を高めています。(防衛力: ${trialResult.playerDefense} vs 敵勢力: ${trialResult.enemyPower})`;
+  L2234: state.addLog('試練報酬：残り火の最大値が 1 🔥 上昇しました！', 'reward');
+  L2241: state.addLog('土地の最大上限数(7枚)に達しています！これ以上配置できません。', 'warning');
+  L2249: state.addLog('残り火 🔥 が不足しているため、土地を配置できません！', 'warning');
+  L2304: <div class="score-row"><span>残り火:</span> <span class="text-danger">0 (消滅)</span></div>
+  L2305: <div class="score-row"><span>生存ターン (T ${state.currentTurn} x 100):</span> <span>+${turnScore}</span></div>
+  L2306: <div class="score-row total"><span>最終スコア:</span> <span>${totalScore}</span></div>
+  L2322: state.addLog('土地の最大上限数(7枚)に達しています！これ以上配置できません。', 'warning');
+  L2330: state.addLog('残り火 🔥 が不足しているため、土地を配置できません！', 'warning');
+  L2425: el.trialCountdown.innerText = '警告: 試練襲来中！';
+  L2427: el.trialCountdown.innerText = `試練まで ${turnsToTrial} ターン`;
+  L2432: <strong>試練の強さ:</strong> ${state.upcomingTrial.basePower} 戦力<br>
+  L2534: breakdown = `現在の当ターン防衛力: <b>🛡️ ${state.defense}</b><br>` +
+  L2535: `毎ターン自動で得られる生産量: <b>🛡️ +${yields.defense}</b><br><br>` +
+  L2536: `<b>生産内訳:</b><br>` +
+  L2540: title = "✨ 神秘 (Mystic)";
+  L2541: desc = "精霊との交信や奇跡の発動に必要な信仰力。一定値まで貯めることで、いつでも「神秘の奇跡」ボタンから強力なグローバル奇跡（予知、豊穣、神罰など）を発動できます。";
+  L2543: div.innerHTML = `<span>⚠ ${getTerrainDisplayName(land.terrain, land.attribute)}の荒廃</span> <span class="d-turns">${turnsRemaining - 1}T</span>`;
+  L2583: el.disastersList.innerHTML = '<div class="empty-text">災害なし</div>';
+  L2589: div.innerHTML = `<span>⚠ ${getTerrainDisplayName(land.terrain, land.attribute)}の荒廃</span> <span class="d-turns">${turnsRemaining - 1}T</span>`;
+  L2632: state.addLog('新たな政体「専制君主制」が選択可能になりました！', 'system');
+  L2635: state.addLog('新たな政体「神聖君主制」が選択可能になりました！', 'system');
+  L2638: state.addLog('新たな政体「開拓民主制」が選択可能になりました！', 'system');
+  L2718: title = "🔥 残り火 (Fire)";
+  L2719: desc = "集落の生命活動を維持するための残り火。毎ターン終了時に一定量減少し、0 になるとゲームオーバーになります。<br><br>" +
+  L2720: "・最大上限: 30 🔥<br>" +
+  L2721: "・基本減衰: -1 🔥/ターン (保留エリアにカードが残っている場合、さらに -1 🔥 のペナルティがあります)。<br>" +
+  L2722: "・食料🌾備蓄補正:<br>" +
+  L2723: "  - 🌾 240 以上: +1 🔥 (残り火が増加します)<br>" +
+  L2724: "  - 🌾 120 以上: 0 🔥 (残り火は減少しません)<br>" +
+  L2725: "  - 🌾 30 未満: -2 🔥 (深刻な食料不足による急激な減衰)";
+  L2740: breakdown = `現在の残り火: <b>${state.fire} / ${state.maxFire} 🔥</b><br><br>` +
+  L2741: `<b>毎ターン終了時の変化見込み: ${sign}${netChange} 🔥</b><br>` +
+  L2742: `・食料備蓄補正: ${foodBonus >= 0 ? "+" : ""}${foodBonus} 🔥 (備蓄: 🌾${state.food})<br>` +
+  L2743: `・保留ペナルティ: -${reservePenalty} 🔥 (保留カード数: ${state.reserve.filter(c => c !== null).length}枚)<br><br>` +
+  L2744: `<span style="color: #f87171; font-size: 0.72rem;">※不要なカードを「残り火へ還元」スロットに捨てることで、いつでも +1 🔥 を得ることができます。</span>`;
+  L2747: title = "🌾 食料 (Food)";
+  L2748: desc = "集落の生存維持に必要な食料。蓄積量が多いほど残り火の減衰を抑えたり、回復させたりすることができます。(240以上で+1🔥, 120以上で減少なし, 30未満で-2🔥)";
+  L2751: breakdown = `現在の備蓄量: <b>🌾 ${state.food}</b><br>` +
+  L2752: `現在の毎ターン総生産量: <b>🌾 +${yields.food}</b><br><br>` +
+  L2753: `<b>生産内訳:</b><br>` +
+  L2757: title = "🧱 資材 (Materials)";
+  L2758: desc = "施設の建設や社会制度のアンロック、土地の結合（レベルアップ）などに消費される重要な資材資源です。";
+  L2761: breakdown = `現在の備蓄量: <b>🧱 ${state.materials}</b><br>` +
+  L2762: `現在の毎ターン総生産量: <b>🧱 +${yields.materials}</b><br><br>` +
+  L2763: `<b>生産内訳:</b><br>` +
+  L2767: title = "🛡️ 防衛力 (Defense)";
+  L2768: desc = "試練（襲来する脅威）から集落を守るための戦闘力。<b>防衛力は蓄積されず、毎ターン開始時に 0 にリセットされます。</b><br><br>" +
+  L2769: "各ターン終了時に土地や施設から生産される防衛力と、そのターン中に使用した軍事カードの効果の合計値が、そのターンの「総防衛力」となり、試練襲来時の防御判定に使用されます。";
+  L2772: breakdown = `現在の当ターン防衛力: <b>🛡️ ${state.defense}</b><br>` +
+  L2773: `毎ターン自動で得られる生産量: <b>🛡️ +${yields.defense}</b><br><br>` +
+  L2774: `<b>生産内訳:</b><br>` +
+  L2778: title = "✨ 神秘 (Mystic)";
+  L2779: desc = "精霊との交信や奇跡の発動に必要な信仰力。一定値まで貯めることで、いつでも「神秘の奇跡」ボタンから強力なグローバル奇跡（予知、豊穣、神罰など）を発動できます。";
+  L2782: breakdown = `現在の備蓄量: <b>✨ ${state.mystic}</b><br>` +
+  L2783: `現在の毎ターン総生産量: <b>✨ +${yields.mystic}</b><br><br>` +
+  L2784: `<b>生産内訳:</b><br>` +
+  L2801: listHtml += `・スロット ${index} (${terrainName}): +${val}<br>`;
+  L2807: listHtml += `・レガシー「不屈の精神」: +50<br>`;
+  L2810: listHtml += `・レガシー「将軍の凱旋」: +30<br>`;
+  L2814: return listHtml || "・生産源なし (毎ターンの生産はありません)<br>";
+
+[game\src\components.js]: 54 violations
+  L18: case 'granary': return '穀物庫';
+  L19: case 'workshop': return '作業場';
+  L20: case 'temple': return '木造の神殿';
+  L21: case 'watchtower': return '監視塔';
+  L22: case 'barracks': return '兵舎';
+  L198: <div class="card-slots-indicator" title="空き容量: 資源/施設スロット">
+  L210: ${slot.disasterTurns > 0 || slot.damagedTurns > 0 ? `<span class="badge disaster-warn">⚠ 荒廃</span>` : ''}
+  L224: { id: 'granary', name: '穀物庫', cost: 60, fireCost: 1, icon: '🌾', effect: '食料🌾産出 +15 / ターン', desc: '集落に安定した食料供給をもたらす。', policy: 'agriculture', policyName: '集約農業' },
+  L225: { id: 'watchtower', name: '監視塔', cost: 70, fireCost: 1, icon: '📡', effect: '防衛🛡️ +10 / ターン、試練の事前予知 +1T', desc: '遠方の敵をいち早く警戒する。', policy: 'forestry', policyName: '近代林業' },
+  L226: { id: 'workshop', name: '作業場', cost: 80, fireCost: 1, icon: '🧱', effect: '資材🧱産出 +15 / ターン', desc: '道具を改良し、インフラ開発力を高める。', policy: 'masonry', policyName: '石造建築' },
+  L227: { id: 'barracks', name: '兵舎', cost: 90, fireCost: 2, icon: '⚔️', effect: '防衛🛡️ +15 / ターン、軍備カードの優先出現', desc: '衛兵を訓練し、試練に備える。', policy: 'tactics', policyName: '防衛戦術' },
+  L228: { id: 'temple', name: '木造の神殿', cost: 100, fireCost: 2, icon: '✨', effect: '神秘✨産出 +5 / ターン', desc: '信仰心を高め、残り火の奇跡を引き寄せる。', policy: 'mysticism', policyName: '神秘主義' }
+  L257: <div class="fac-name">${fac.icon} ${fac.name} <span class="built-tag">✓ 建設済</span></div>
+  L264: <div class="fac-name" style="color: #9ca3af;">🔒 ${fac.icon} ${fac.name} (ロック中)</div>
+  L265: <div class="fac-effect" style="color: #6b7280; font-size: 0.65rem;">要: 制度「${fac.policyName}」の解禁 または イベント</div>
+  L275: 建設
+  L295: { id: 'agriculture', name: '集約農業 (Agriculture)', cost: 50, desc: '平地(Plains)地形からの食料🌾産出量を +25% 増加する。' },
+  L296: { id: 'forestry', name: '近代林業 (Forestry)', cost: 60, desc: '森林(Forest)属性の土地からの資材🧱産出量を +25% 増加する。' },
+  L297: { id: 'masonry', name: '石造建築 (Masonry)', cost: 70, desc: '丘陵・山岳地形からの資材🧱産出量を +25% 増加する。' },
+  L298: { id: 'mysticism', name: '神秘主義 (Mysticism)', cost: 80, desc: '神秘✨を産出するすべての土地の効果を +25% 強化する。' },
+  L299: { id: 'tactics', name: '防衛戦術 (Tactics)', cost: 90, desc: '防衛力🛡️を産出するすべての土地・施設の効果を +25% 強化する。' }
+  L317: ${isUnlocked ? '<span class="status text-food">解禁済</span>' : `<span class="pol-cost">🧱 ${pol.cost}</span>`}
+  L335: case 'c': return 'コモン';
+  L336: case 'uc': return 'アンコモン';
+  L337: case 'r': return 'レア';
+  L338: case 'l': return 'レジェンダリ';
+  L339: default: return 'ノーマル';
+  L356: if (terrain === TERRAINS.PALACE) return '宮殿';
+  L357: if (terrain === TERRAINS.LAKE) return '湖';
+  L358: if (terrain === TERRAINS.SEA) return '海';
+  L361: if (attribute === ATTRIBUTES.DESERT) return '砂漠';
+  L362: if (attribute === ATTRIBUTES.FOREST) return '森';
+  L363: if (attribute === ATTRIBUTES.JUNGLE) return '森林';
+  L364: return '平地';
+  L367: if (attribute === ATTRIBUTES.DESERT) return '砂丘';
+  L368: if (attribute === ATTRIBUTES.FOREST) return '森丘陵';
+  L369: if (attribute === ATTRIBUTES.JUNGLE) return '森林丘陵';
+  L370: return '丘陵';
+  L373: if (attribute === ATTRIBUTES.DESERT) return '砂漠山岳';
+  L374: if (attribute === ATTRIBUTES.FOREST) return '森山岳';
+  L375: if (attribute === ATTRIBUTES.JUNGLE) return '森林山岳';
+  L376: return '山岳';
+  L378: return '未知';
+  L383: case ATTRIBUTES.FOREST: return '森';
+  L384: case ATTRIBUTES.JUNGLE: return '森林';
+  L385: case ATTRIBUTES.DESERT: return '砂漠';
+  L386: case ATTRIBUTES.RIVER: return '川';
+  L393: case BONUSES.FRUIT: return '果実';
+  L394: case BONUSES.GRAIN: return '穀物';
+  L395: case BONUSES.LIVESTOCK: return '家畜';
+  L396: case BONUSES.VEIN: return '鉱脈';
+  L397: case BONUSES.PRECIOUS: return '貴金属';
+  L398: case BONUSES.TIMBER: return '高級木材';
+  L399: case BONUSES.MARINE: return '水産物';
+
+[game\src\main.js]: 58 violations
+  L38: UC_1x2: { name: '1×2 直線 (UC)', rarity: 'UC', cells: [{ dx: 0, dy: 0 }, { dx: 1, dy: 0 }] },
+  L39: UC_1x3_LINE: { name: '1×3 直線 (UC)', rarity: 'UC', cells: [{ dx: 0, dy: 0 }, { dx: 1, dy: 0 }, { dx: 2, dy: 0 }] },
+  L40: UC_1x3_CORNER: { name: '1×3 L字/角型 (UC)', rarity: 'UC', cells: [{ dx: 0, dy: 0 }, { dx: 1, dy: 0 }, { dx: 0, dy: 1 }] },
+  L41: R_T_SHAPE: { name: '1×4 T型/凸型 (R)', rarity: 'R', cells: [{ dx: 0, dy: 0 }, { dx: 1, dy: 0 }, { dx: 2, dy: 0 }, { dx: 1, dy: 1 }] },
+  L42: R_L_SHAPE: { name: '1×4 L型/靴型 (R)', rarity: 'R', cells: [{ dx: 0, dy: 0 }, { dx: 1, dy: 0 }, { dx: 2, dy: 0 }, { dx: 1, dy: -1 }] },
+  L43: R_SZ_SHAPE: { name: '1×4 S/Z型 (R)', rarity: 'R', cells: [{ dx: 0, dy: 0 }, { dx: 1, dy: 0 }, { dx: 1, dy: 1 }, { dx: 2, dy: 1 }] },
+  L44: R_LINE: { name: '1×4 直線 (R)', rarity: 'R', cells: [{ dx: 0, dy: 0 }, { dx: 1, dy: 0 }, { dx: 2, dy: 0 }, { dx: 3, dy: 0 }] },
+  L45: L_2x2: { name: '2×2 正方形 (L)', rarity: 'L', cells: [{ dx: 0, dy: 0 }, { dx: 1, dy: 0 }, { dx: 0, dy: 1 }, { dx: 1, dy: 1 }] }
+  L49: { elev: 1, gl: 1, weight: 32, label: '🌾 平地標準 (GL1)', type: '土地' },
+  L50: { elev: 1, gl: 2, weight: 20, label: '🌲 平地森 (GL2)', type: '土地' },
+  L51: { elev: 1, gl: 3, weight: 8,  label: '🌳 平地森林 (GL3)', type: '土地' },
+  L52: { elev: 1, gl: 0, weight: 5,  label: '🏜️ 平地砂漠 (GL0)', type: '土地' },
+  L54: { elev: 2, gl: 1, weight: 12, label: '⛰️ 丘陵標準 (GL1)', type: '土地' },
+  L55: { elev: 2, gl: 2, weight: 8,  label: '🪵 丘陵森 (GL2)', type: '土地' },
+  L56: { elev: 2, gl: 3, weight: 3,  label: '🌲 丘陵森林 (GL3)', type: '土地' },
+  L57: { elev: 2, gl: 0, weight: 2,  label: '⛏️ 丘陵砂漠 (GL0)', type: '土地' },
+  L59: { elev: 3, gl: null, weight: 6, label: '🏔️ 山岳標準 (高度3)', type: '土地' },
+  L60: { elev: 3, gl: null, weight: 2, label: '🏔️ 山岳森 (高度3)', type: '土地' },
+  L61: { elev: 3, gl: null, weight: 1, label: '🏔️ 山岳森林 (高度3)', type: '土地' },
+  L62: { elev: 3, gl: null, weight: 1, label: '🏔️ 山岳砂漠 (高度3)', type: '土地' }
+  L96: { category: 'MILITARY', label: '⚔️ 兵舎建設 (🛡️+15/T)', cost: '🧱60', type: '施設' },
+  L97: { category: 'MILITARY', label: '🏰 監視塔建設 (🛡️+10/T)', cost: '🧱40', type: '施設' },
+  L98: { category: 'MILITARY', label: '🛡️ 防御陣形 (戦術)', cost: '🔥0', type: '戦術' }
+  L101: { category: 'SOCIETY', label: '🌾 農業革新 (全食料+25%)', cost: '🧱50', type: '技術' },
+  L102: { category: 'SOCIETY', label: '🧱 採石術 (全資材+25%)', cost: '🧱50', type: '技術' },
+  L103: { category: 'SOCIETY', label: '✨ 予知の神託 (試練予知)', cost: '✨30', type: '神秘' }
+  L127: state.addLog(`UI配置を切替: ${uiPositionTop ? '上部固定' : '下部ドック集約'}`);
+  L148: state.addLog('残り火(🔥)が足りず探索を実行できません。', 'warning');
+  L172: if (el.diceSumDisplay) el.diceSumDisplay.innerText = `出目合計: 🎲${d1} + 🎲${d2} = ${sum}`;
+  L175: el.diceOutcomeText.innerText = '🏛️ 【ゾロ目6】 古代遺跡を発見！ 神秘 ✨+10 獲得！';
+  L178: el.diceOutcomeText.innerText = '💎 【豊かな土地】 レア資源発見！ 食料 🌾+30 獲得！';
+  L181: el.diceOutcomeText.innerText = '🌾 【通常発見】 通常資源発見。資材 🧱+10 獲得！';
+  L184: el.diceOutcomeText.innerText = '💀 【不発】 特段の発見はなかった。';
+  L196: state.addLog(`🔄 ${card.label} (${card.shape.name}) を90度回転！`, 'info');
+  L205: el.activeRoleDisplay.innerText = role === ROLES.GENERAL ? '将軍' : (role === ROLES.PROPHET ? '預言者' : '開拓者');
+  L302: state.addLog(`選択中: ${card.label} (${card.shape.name})`);
+  L305: state.addLog(`カード発動: ${card.label} (${card.type}) を発動！`, 'success');
+  L335: shapePreviewHTML = `<div class="card-shape-preview-grid" title="ブロック形状ミニプレビュー (Rキーで回転)">${gridCellsHTML}</div>`;
+  L343: if (yieldParts.length === 0) yieldParts.push(`🌾0 (砂漠)`);
+  L345: yieldSummaryHTML = `<div class="card-yield-summary" title="毎ターンの見込み合計産出量">${yieldParts.join(' ')}</div>`;
+  L350: rotateBtnHTML = `<button id="btn-rotate-card" style="margin-top:6px; padding:3px 8px; font-size:0.7rem; background:#3b82f6; border:none; border-radius:4px; color:#fff; cursor:pointer; font-weight:bold;">🔄 回転 (R)</button>`;
+  L383: el.gridStageLabel.innerText = `Stage ${state.stage} (${activeSize}×${activeSize} 領域)`;
+  L406: cellEl.innerHTML = '<span style="font-weight:bold; color:#fff;">🏰本営</span>';
+  L430: let lakeTag = tile.isHeadwaters ? '💎 源流' : name.split(' ')[0];
+  L433: cellEl.title = `${name} (産出 🌾${y.food} 🧱${y.wood} 🛡️${y.def} ✨${y.spirit}) | [Shift+クリックで1🔥消費し🎲2D6ダイス探索判定]`;
+  L447: cellEl.title = '★ 未開放ソケット！土地ブロックを重ねると固有ボーナスが発動！';
+  L469: state.addLog('配置不可！本営または既存ブロックに隣接させて重ねずに配置してください。', 'warning');
+  L503: let statusText = "標準減衰 (-1🔥)";
+  L507: statusText = "蓄積500達成! 飽食熱気 (+1🔥自動回復)";
+  L510: statusText = "蓄積200達成! 活気満腹 (🔥減衰ゼロ)";
+  L517: state.addLog(`Turn ${state.currentTurn - 1} 終了: 🌾+${turnFood} (維持費🌾-20消費 ➔ 純増🌾+${netFoodHarvest}), 食料蓄積 ${state.food} [${statusText}], 🧱+${turnWood}, 🛡️${turnDef} 回収。`);
+  L525: state.addLog(`✨ ${activeTrial.name} 完全防衛成功！`, 'success');
+  L527: state.addLog(`🚨 ${activeTrial.name} 防衛失敗！ (残り火 -${result.fireLoss}🔥)`, 'warning');
+  L532: state.addLog(state.fire > 0 ? "🎉 50ターン突破！ゲームクリア！" : "☠️ 残り火が消滅しました...", 'system');
+  L557: <li>🌊 水利ボーナス: ${synergy.hasRiverAdjacent ? '<span style="color:#10b981">🌾+50% 発動中 (Civ式境界線川)</span>' : '待機中'}</li>
+  L558: <li>🏁 盤面充填率: <span style="color:#fbbf24">${synergy.fillBonusDesc}</span></li>
+  L570: el.trialCountdown.innerHTML = `<span style="color:#ef4444; font-weight:bold;">⚠️ 【試練予報発令】${nextTrial.name} まで残り ${diff} ターン (目標防衛力: 🛡️${nextTrial.power})</span>`;
+  L572: el.trialCountdown.innerHTML = `<span style="color:#9ca3af;">平穏な日々... (次回の試練予報待機中)</span>`;
+
+[game\src\main_hybrid.js]: 253 violations
+  L197: state.addLog('将軍：本拠地を「司令部」に変更。防衛力+30で開始！', 'system');
+  L200: state.addLog('預言者：本拠地を「聖堂」に変更。神秘産出+30%で開始！', 'system');
+  L233: state.addLog(`土地 (${getTerrainDisplayName(land.terrain, land.attribute)}) の災害被害が復興しました！生産力が元に戻ります。`, 'system');
+  L239: state.addLog(`被災地 (${getTerrainDisplayName(land.terrain, land.attribute)}) が復興しました！生産力に「戦場の記憶」Lv.${land.overlayLevel} バフが乗ります！`, 'system');
+  L254: state.addLog(`警告：保留ゾーンにカードが残っているため、残り火が 1 🔥 減少しました。`, 'warning');
+  L316: <strong>⚠️ 警告：亜人集団の急襲！</strong><br>
+  L317: スロット ${targetSlot} の開拓地（${getTerrainDisplayName(land.terrain, land.attribute)}）が略奪のターゲットに指定されました！<br>
+  L318: 敵の襲撃に対抗するため、戦術を選択して防衛を行ってください。
+  L336: result.success ? '✨ 撃退成功！' : '💥 略奪被災',
+  L350: btnNone.innerHTML = `❌ <strong>戦術なし (防衛施設と地形のみ)</strong><br><span style="font-size: 0.65rem; opacity: 0.85;">何の戦術も取らずに、防衛力のみで耐えます。</span>`;
+  L356: result.success ? '✨ 撃退成功！' : '💥 略奪被災',
+  L386: el.interactionTitle.innerText = `資源調査フェイズ：調査・発見を行いたい土地を選択してください (コスト: 1 🔥)`;
+  L413: el.interactionTitle.innerText = `※ドローエリア (カードを盤面にドラッグするか、保留スロットにドロップできます)`;
+  L568: state.addLog(`領土スロット ${draggedSourceIndex} を位置 (${Math.round(dropX)}%, ${Math.round(dropY)}%) へ移動しました。`, 'system');
+  L795: state.addLog('残り火 🔥 が不足しているため、土地を配置できません！', 'warning');
+  L821: state.addLog(`スロット ${targetIndex} に ${getTerrainDisplayName(draggedCard.terrain, draggedCard.attribute)} を配置しました (-${cost} 🔥)。配置時即時産出：🌾 +${landYield.food} / 🧱 +${landYield.materials} / 🛡️ +${landYield.defense} / ✨ +${landYield.mystic}`, 'action');
+  L826: state.addLog('川を配置しました！「下流探索プロジェクト」が開始されました。', 'system');
+  L838: state.addLog('同じ開発段階（レアリティ）の土地同士でのみ開発（結合）が可能です！', 'warning');
+  L862: state.addLog('川を配置しました！「下流探索プロジェクト」が開始されました。', 'system');
+  L874: state.addLog('残り火 🔥 が不足しているため、土地の資源調査を行えません！', 'warning');
+  L882: state.addLog(`${getTerrainDisplayName(targetSlot.terrain, targetSlot.attribute)} を調査し、新たに環境特性「${getAttributeName(targetSlot.attribute)}」を発見しました！ (-${cost} 🔥)`, 'action');
+  L885: state.addLog(`${getTerrainDisplayName(targetSlot.terrain, targetSlot.attribute)} を調査し、隠された資源「${getBonusName(targetSlot.bonus)}」を発見しました！ (-${cost} 🔥)`, 'action');
+  L906: state.addLog(`カード「${draggedCard.name}」を保留スロット ${reserveIndex + 1} にキープしました。`, 'action');
+  L920: name: `${getTerrainDisplayName(land.terrain, land.attribute)}の開拓`,
+  L924: desc: `手札に戻された開拓地。開発度: ★${land.devLevel}`
+  L941: state.addLog(`スロット ${draggedSourceIndex} の土地を保留スロット ${reserveIndex + 1} に戻しました。`, 'action');
+  L962: el.interactionTitle.innerText = `配置フェイズ：盤面の空きスロット (+) を選択して配置してください (コスト: 1 🔥)`;
+  L967: el.interactionTitle.innerText = `資源調査フェイズ：調査・発見を行いたい土地を選択してください (コスト: 1 🔥)`;
+  L1010: state.addLog(`スロット ${index} (${getTerrainDisplayName(slot.terrain, slot.attribute)}) に「${getFacilityName(fac.id)}」を建設しました！ (-${fac.cost} 🧱, -${fac.fireCost} 🔥)`, 'reward');
+  L1031: state.addLog(`スロット ${index} (${getTerrainDisplayName(slot.terrain, slot.attribute)}) に「${getFacilityName(fac.id)}」を建設しました！ (-${fac.cost} 🧱, -${fac.fireCost} 🔥)`, 'reward');
+  L1083: state.addLog(`結合候補 A: ${getTerrainDisplayName(slot.terrain, slot.attribute)} を選択。重ねたい土地を選択してください。`, 'system');
+  L1088: state.addLog('結合をキャンセルしました。', 'system');
+  L1111: <h4>スロット ${idxA}</h4>
+  L1113: <p>開発度: ★${landA.devLevel}</p>
+  L1124: state.addLog(`残り火が不足しています！開発には ${mergeCost} 🔥 が必要です。`, 'warning');
+  L1132: <h4>スロット ${idxA}</h4>
+  L1134: <p>開発度: ★${landA.devLevel}</p>
+  L1137: <h4>スロット ${idxB}</h4>
+  L1139: <p>開発度: ★${landB.devLevel}</p>
+  L1155: optionsList.innerHTML = '<div class="empty-text">引き継ぐ特性はありません。</div>';
+  L1183: el.btnConfirmMerge.innerText = `開発を実行 (${mergeCost} 🔥)`;
+  L1204: el.btnConfirmMerge.innerText = `開発を実行 (${mergeCost} 🔥)`;
+  L1222: state.addLog(`残り火が不足しています！開発には ${mergeCost} 🔥 が必要です。`, 'warning');
+  L1229: <h4>スロット ${targetIndex}</h4>
+  L1231: <p>開発度: ★${landA.devLevel}</p>
+  L1234: <h4>ドロー/手札カード</h4>
+  L1236: <p>開発度: ★0</p>
+  L1241: if (landA.attribute) traits.push({ type: 'attr', val: landA.attribute, source: '盤面' });
+  L1242: if (landA.bonus) traits.push({ type: 'bonus', val: landA.bonus, source: '盤面' });
+  L1243: if (card.attribute) traits.push({ type: 'attr', val: card.attribute, source: 'カード' });
+  L1244: if (card.bonus) traits.push({ type: 'bonus', val: card.bonus, source: 'カード' });
+  L1270: el.btnConfirmMerge.innerText = `直接開発を実行 (${mergeCost} 🔥)`;
+  L1301: el.btnConfirmMerge.innerText = `直接開発を実行 (${mergeCost} 🔥)`;
+  L1335: state.addLog(`注意：容量低下により、施設「${getFacilityName(oldFac)}」が崩壊・撤去されました。`, 'warning');
+  L1347: state.addLog(`直接開発：カードからスロット ${targetIndex} の ${getTerrainDisplayName(landA.terrain, landA.attribute)} を直接開発（★ ${landA.devLevel}）しました。開発時即時産出：🌾 +${landYield.food} / 🧱 +${landYield.materials} / 🛡️ +${landYield.defense} / ✨ +${landYield.mystic}`, 'reward');
+  L1414: state.addLog(`注意：容量低下により、施設「${getFacilityName(oldFac)}」が崩壊・撤去されました。`, 'warning');
+  L1435: state.addLog(`土地開発：スロット ${idxA} と ${idxB} を結合し、開発度★ ${landA.devLevel} へ強化しました (-${cost} 🔥)。開発時即時産出：🌾 +${landYield.food} / 🧱 +${landYield.materials} / 🛡️ +${landYield.defense} / ✨ +${landYield.mystic}`, 'reward');
+  L1446: text = "天より聖なる光の柱が降り注ぎ、神聖なる予言がもたらされました。神秘が 25 高まります。(✨ +25)";
+  L1466: state.addLog('マリガン：提示されたカードをすべて引き直しました (-2 🔥)。', 'action');
+  L1477: state.addLog(`追加ドロー：新たなカードの選択肢を生成しました (-1 🔥)。`, 'action');
+  L1497: text = "平野に集まった移民たちが残り火の周囲で結束しました。食料🌾+30、残り火🔥+3を獲得します。(🌾+30, 🔥+3)";
+  L1503: text = "交易商人から大量の穀物と乾物を買い付けました。食料🌾+35、神秘✨+5を獲得。(🌾+35, ✨+5)";
+  L1506: text = "交易路から貴重な建築材や鉱石を調達しました。資材🧱+30、神秘✨+5を獲得。(🧱+30, ✨+5)";
+  L1513: let milCardText = "保留ゾーンが満杯のため軍事カードを獲得できませんでした。";
+  L1519: let milCardText = "保留ゾーンが満杯のため軍事カードを獲得できませんでした。";
+  L1525: milCardText = `無料の軍事カード「${freeCard.name}」が保留スロット ${emptyIdx + 1} に追加されました！`;
+  L1527: text = `試練を防衛した英雄たちが熱狂と安全をもたらしました。残り火🔥+5、防衛力🛡️+50を獲得。さらに${milCardText} (🔥+5, 🛡️+50)`;
+  L1533: text = "過密な集落内で疫病の影が広がりました。食料🌾-20、残り火🔥-2の被害を受けますが、教訓として「衛生知識 (災害率半減)」レガシーを獲得します。(🌾-20, 🔥-2)";
+  L1537: let mysCardText = "保留ゾーンが満杯のため神秘カードを獲得できませんでした。";
+  L1544: let devText = "対象となる土地がないため開発度は上昇しませんでした。";
+  L1549: devText = `さらに、${getTerrainDisplayName(targetSlot.terrain, targetSlot.attribute)} の開発レベルが ★${targetSlot.devLevel} に上昇しました！`;
+  L1551: text = `開拓者主導の開墾祭により、食料🌾+25を獲得。${devText} (🌾+25)`;
+  L1556: text = "砂漠に眠る古代の遺跡から亜人の記憶が漏れ出し、民衆を惑わせました。残り火🔥-2のペナルティを受ける代わりに、神秘✨+20を獲得。(✨+20, 🔥-2)";
+  L1561: text = "残り火が消えかける極限状態の中で、人々が互いに食料を分け合い結束を高めました。残り火🔥+6、食料🌾+15を獲得！(🔥+6, 🌾+15)";
+  L1566: text = "腕利きの職人たちが目覚め、技術を共有しました。資材🧱+30を獲得し、さらに次の施設建設の資材コストが 🧱-20 割引されます。(🧱+30, 施設割引獲得)";
+  L1572: text = "50ターンの結末を見据え、人々が最後の希望を胸に大いなる宴を開きました。食料を50消費し、残り火🔥+10、防衛力🛡️+100を獲得！(🌾-50, 🔥+10, 🛡️+100)";
+  L1576: text = "天より聖なる光の柱が降り注ぎ、神聖なる予言がもたらされました。神秘が 25 高まります。(✨ +25)";
+  L1582: text = "精霊を祀る厳かな石碑の祭壇が建立されました。精霊の守護により、神秘が 40 向上します。(🧱 -20, ✨ +40)";
+  L1588: text = "森の精霊たちの温かい加護が集落全体を包み込みました。3ターンの間、集落の活動が祝福されます。(✨ +30, 祝福レガシー獲得)";
+  L1594: text = "熟練の斥候が敵軍の野営地を奇襲し、偵察データを持ち帰りました。次の試練の敵戦力が 30 低下します。(🛡️ +20, 敵戦力 -30)";
+  L1599: text = "若者たちが志願し、防衛義勇軍の訓練が開始されました。防衛力が 40 向上します。(🌾 -15, 🛡️ +40)";
+  L1602: btn.innerText = state.polityCooldown > 0 ? `制限中 (${state.polityCooldown}T)` : `有効化する (🔥 ${displayCost})`;
+  L1609: state.addLog(`政体を「${data.name}」に変更しました (-${displayCost} 🔥)。`, 'action');
+  L1620: <span>地殻の急成長（任意の土地1スロットを、即座に最大開発段階「レジェンダリ★4」へ昇格する）</span>
+  L1626: state.addLog('奇跡発動：次の試練の敵戦闘力を 30% 減弱しました！', 'reward');
+  L1651: 受け入れる
+  L1666: showGrandEventModal(`災厄発生: ${result.name}`, result.desc, 'crisis.png', () => {
+  L1685: el.modalRiverEvent.querySelector('#river-event-title').innerText = '🌊 世界の果て：海の発見！';
+  L1687: 探索隊は川を下り、無限に広がる水平線――**「海」**に到達しました！<br>
+  L1688: 超強力なレジェンダリー地形「海 (Sea)」がデッキに解禁されます！(スロットを2つ消費します)
+  L1690: state.addLog(`奇跡発動：社会制度「${lockedPol}」が天啓により即時解禁されました！`, 'reward');
+  L1692: state.addLog('奇跡発動：すべての制度が解禁済みなため、資材 +100 を獲得しました。', 'reward');
+  L1708: document.getElementById('generic-event-title').innerText = '神秘の奇跡（上級）';
+  L1709: document.getElementById('generic-event-text').innerText = '世界の残り火と一体となり、運命を改変する奇跡を引き起こします。';
+  L1714: <span>神罰の雷（次の試練の敵戦闘力を -30% 永久低下させる）</span>
+  L1717: <span>地殻の急成長（任意の土地1スロットを、即座に最大開発段階「レジェンダリ★4」へ昇格する）</span>
+  L1723: state.addLog('奇跡発動：次の試練の敵戦闘力を 30% 減弱しました！', 'reward');
+  L1730: state.addLog('奇跡発動：最大開発する土地を盤面からクリックしてください。', 'system');
+  L1737: state.addLog(`奇跡適用：${getTerrainDisplayName(land.terrain)} を最大開発段階（L★4）に昇格しました！`, 'reward');
+  L1766: optFood.innerHTML = `🌾 食料-20 で買収する ${!canBribeFood ? '<span style="color:#ef4444;">(不足)</span>' : ''}`;
+  L1769: state.addLog('【買収成功】亜人集団に食料🌾-20を支払い、襲撃を回避しました。', 'system');
+  L1780: optMat.innerHTML = `🧱 資材-20 で買収する ${!canBribeMaterials ? '<span style="color:#ef4444;">(不足)</span>' : ''}`;
+  L1783: state.addLog('【買収成功】亜人集団に資材🧱-20を支払い、襲撃を回避しました。', 'system');
+  L1795: optRefuse.innerHTML = `拒否する / 支払えない（略奪を受ける）`;
+  L1802: '略奪被害発生',
+  L1803: `亜人集団の襲撃に抵抗できず、以下の被害を受けました：<br><br>` +
+  L1804: `・土地荒廃: <b>${penalty.landName}</b> (3T生産半減)<br>` +
+  L1805: `・略奪資源: <b>🌾-${penalty.stolenFood}</b> / <b>🧱-${penalty.stolenMaterials}</b><br><br>` +
+  L1806: `民はこの略奪の教訓から「亜人襲撃の経験 (次回災害率減少)」レガシーを獲得しました。`,
+  L1826: showGrandEventModal(`災厄発生: ${result.name}`, result.desc, 'crisis.png', () => {
+  L1851: state.addLog('奇跡発動：次の試練の敵戦闘力を 30% 減弱しました！', 'reward');
+  L1858: state.addLog('奇跡発動：最大開発する土地を盤面からクリックしてください。', 'system');
+  L1865: state.addLog(`奇跡適用：${getTerrainDisplayName(land.terrain, land.attribute)} を最大開発段階（L★4）に昇格しました！`, 'reward');
+  L1882: state.addLog('警告：カードを選択してターンを開始してください！', 'warning');
+  L1892: state.addLog(`社会制度「${policyId}」を解禁しました (-${cost} 🧱)。`, 'reward');
+  L1904: state.addLog(`施設「${facilityId}」を建設しました (-${cost} 🧱)。`, 'reward');
+  L1917: state.addLog(`第 ${state.currentTurn} ターン終了。生産物回収：🌾 +${yields.food} / 🧱 +${yields.materials} / ✨ +${yields.mystic} (総防衛力: 🛡️ ${state.defense})`, 'action');
+  L1925: foodCorrectionText = " (大豊作による活力補正: +1 🔥)";
+  L1928: foodCorrectionText = " (十分な食料による維持補正: 0 🔥)";
+  L1965: name: '共同体の融和',
+  L1967: desc: 'ベース土地カード (🧭) の出現ウェイトが +15% 上昇します。',
+  L1970: req: '初期状態'
+  L1973: name: '専制君主制',
+  L1975: desc: '試練戦闘時、防衛力 (🛡️) +20%。ただし毎ターンの資材 (🧱) 産出 -15%。',
+  L1978: req: '社会制度「戦術（tactics）」解禁で開放'
+  L1981: name: '神聖君主制',
+  L1983: desc: '毎ターン神秘 (✨) +5。神秘の奇跡コストが -10% 低減されます。',
+  L1986: req: '社会制度「神秘（mysticism）」解禁で開放'
+  L1989: name: '開拓民主制',
+  L1991: desc: '土地のニコイチ開発コストが -1 🔥 低減される。ただし毎ターンの食料 (🌾) 産出 -15%。',
+  L1994: req: '社会制度「農業（agriculture）」解禁で開放'
+  L2004: <h3 style="font-size: 0.9rem; color: #f97316; margin-bottom: 4px;">現在のアクティブ政体: ${activeData.icon} ${activeData.name}</h3>
+  L2007: 切り替え制限: ${state.polityCooldown > 0 ? `あと ${state.polityCooldown} ターン変更不可` : '変更可能'}
+  L2041: name: '共同体の融和',
+  L2043: desc: 'ベース土地カード (🧭) の出現ウェイトが +15% 上昇します。',
+  L2046: req: '初期状態'
+  L2049: name: '専制君主制',
+  L2051: desc: '試練戦闘時、防衛力 (🛡️) +20%。ただし毎ターンの資材 (🧱) 産出 -15%。',
+  L2054: req: '社会制度「戦術（tactics）」解禁で開放'
+  L2057: name: '神聖君主制',
+  L2059: desc: '毎ターン神秘 (✨) +5。神秘の奇跡コストが -10% 低減されます。',
+  L2069: state.addLog(`試練報酬：レアカード「${chosenCard.name}」の天啓を受けました！`, 'reward');
+  L2074: state.addLog(`試練報酬：新たなレガシー「${chosenLegacy}」を獲得しました！`, 'reward');
+  L2082: ${isUnlocked && !isActive ? `<div class="polity-cost-info">有効化コス�?: ?�� ${displayCost}</div>` : ''}
+  L2108: el.gameEndDesc.innerText = '残り火が完全に消え去り、集落は凍える闇の中に飲み込まれました。あなたの旅はここで終わります...';
+  L2114: <div class="score-row"><span>残り火:</span> <span class="text-danger">0 (消滅)</span></div>
+  L2115: <div class="score-row"><span>生存ターン (T ${state.currentTurn} x 100):</span> <span>+${turnScore}</span></div>
+  L2116: <div class="score-row total"><span>最終スコア:</span> <span>${totalScore}</span></div>
+  L2133: state.addLog('警告：カードを選択してターンを開始してください！', 'warning');
+  L2148: state.addLog(`第 ${state.currentTurn} ターン終了。生産物回収：🌾 +${yields.food} / 🧱 +${yields.materials} / ✨ +${yields.mystic} (総防衛力: 🛡️ ${state.defense})`, 'action');
+  L2153: foodCorrectionText = ` (深刻な食料不足による残り火の衰退: -2 🔥 / 消費コスト ${foodMaintenance} に対して残高 ${originalFood} 🌾)`;
+  L2156: foodCorrectionText = " (大豊作による残り火の自動増加: +1 🔥)";
+  L2159: foodCorrectionText = " (十分な食料蓄積による残り火維持: 0 🔥)";
+  L2162: foodCorrectionText = " (食料不足による残り火減衰: -1 🔥)";
+  L2167: state.addLog(`残り火減衰：残り火が ${fireDecay} 🔥 減少しました。${foodCorrectionText}`, 'warning');
+  L2169: state.addLog(`残り火維持：残り火は減少せず維持されました。${foodCorrectionText}`, 'system');
+  L2171: state.addLog(`残り火増幅：活力が満ち、残り火が ${Math.abs(fireDecay)} 🔥 増加しました！${foodCorrectionText}`, 'reward');
+  L2176: state.addLog(`残り火減衰：残り火が ${fireDecay} 🔥 減少しました。${foodCorrectionText}`, 'warning');
+  L2178: state.addLog(`残り火維持：残り火は減少せず維持されました。${foodCorrectionText}`, 'system');
+  L2180: state.addLog(`残り火増幅：活力が満ち、残り火が ${Math.abs(fireDecay)} 🔥 増加しました！${foodCorrectionText}`, 'reward');
+  L2271: state.addLog(`軍備：集落防衛のための義勇兵（兵士トークン）が ${replenishedSoldiersCount} 名補充されました。`, 'system');
+  L2320: el.trialBattleTitle.innerText = `🔥 第 ${state.nextTrialIndex} の試練 襲来 🔥`;
+  L2321: el.trialBattleTactic.innerText = `敵軍戦術: ${tactic.name} (${tactic.desc})`;
+  L2324: if (tactic.name.includes('強襲')) modifiedPower = Math.round(modifiedPower * 1.2);
+  L2325: if (tactic.name.includes('火攻め')) modifiedPower = Math.round(modifiedPower * 1.1);
+  L2326: el.trialBattlePower.innerText = `総敵戦力: ⚔️ ${modifiedPower}`;
+  L2331: el.trialUnassignedSoldiers.innerHTML = `<div style="font-size: 0.7rem; color: #9ca3af; padding: 4px; width: 100%;">待機兵力なし。緊急徴兵するか、戦場から配備解除してください。</div>`;
+  L2342: badge.innerHTML = `⚔️ 兵士 (ID: ${s.id}) Lv ${s.level}`;
+  L2343: badge.title = "クリックして最初の戦場へ配備";
+  L2371: state.addLog(`新兵を1名徴兵しました！ (-1 🔥)`, 'action');
+  L2402: el.trialBattleTitle.innerText = `🔥 第 ${state.nextTrialIndex} の試練 襲来 🔥`;
+  L2403: el.trialBattleTactic.innerText = `敵軍戦術: ${tactic.name} (${tactic.desc})`;
+  L2406: if (tactic.name.includes('強襲')) modifiedPower = Math.round(modifiedPower * 1.2);
+  L2407: if (tactic.name.includes('火攻め')) modifiedPower = Math.round(modifiedPower * 1.1);
+  L2408: el.trialBattlePower.innerText = `総敵戦力: ⚔️ ${modifiedPower}`;
+  L2413: el.trialUnassignedSoldiers.innerHTML = `<div style="font-size: 0.7rem; color: #9ca3af; padding: 4px; width: 100%;">待機兵力なし。緊急徴兵するか、戦場から配備解除してください。</div>`;
+  L2424: badge.innerHTML = `⚔️ 兵士 (ID: ${s.id}) Lv ${s.level}`;
+  L2425: badge.title = "クリックして最初の戦場へ配備";
+  L2453: state.addLog(`新兵を1名徴兵しました！ (-1 🔥)`, 'action');
+  L2483: <strong style="color: #f97316;">${bf.name} (スロット ${bf.index})</strong>
+  L2484: <span style="font-weight: bold; color: #34d399;">🛡️ 防衛力: ${bfDefense}</span>
+  L2499: list.innerHTML = `<span style="font-size: 0.68rem; color: #6b7280; padding: 4px;">配備中の兵士なし</span>`;
+  L2511: soldierBadge.title = "クリックして配備解除";
+  L2534: assignBtn.innerText = '待機兵をここに配備';
+  L2576: if (line.innerText.includes('[防衛成功]')) {
+  L2578: } else if (line.innerText.includes('[警告]') || line.innerText.includes('☠️') || line.innerText.includes('💥')) {
+  L2590: div.innerHTML = `<span>⚠ ${getTerrainDisplayName(land.terrain, land.attribute)}の荒廃</span> <span class="d-turns">${turnsRemaining - 1}T</span>`;
+  L2630: el.disastersList.innerHTML = '<div class="empty-text">災害なし</div>';
+  L2636: div.innerHTML = `<span>⚠ ${getTerrainDisplayName(land.terrain, land.attribute)}の荒廃</span> <span class="d-turns">${turnsRemaining - 1}T</span>`;
+  L2674: <div class="score-row total"><span>最終スコア:</span> <span>${totalScore}</span></div>
+  L2690: state.addLog('土地の最大上限数(7枚)に達しています！これ以上配置できません。', 'warning');
+  L2698: state.addLog('残り火 🔥 が不足しているため、土地を配置できません！', 'warning');
+  L2765: title = "🔥 残り火 (Fire)";
+  L2766: desc = "集落の生命活動を維持するための残り火。毎ターン終了時に一定量減少し、0 になるとゲームオーバーになります。<br><br>" +
+  L2767: "・最大上限: 30 🔥<br>" +
+  L2768: "・基本減衰: -1 🔥/ターン (保留エリアにカードが残っている場合、さらに -1 🔥 のペナルティがあります)。<br>" +
+  L2769: "・食料🌾備蓄補正:<br>" +
+  L2770: "  - 🌾 240 以上: +1 🔥 (残り火が増加します)<br>" +
+  L2771: "  - 🌾 120 以上: 0 🔥 (残り火は減少しません)<br>" +
+  L2772: "  - 🌾 30 未満: -2 🔥 (深刻な食料不足による急激な減衰)";
+  L2782: state.addLog('残り火 🔥 が不足しているため、徴兵できません！', 'warning');
+  L2786: state.addLog('兵士の収容上限に達しているため、これ以上徴兵できません！(兵舎等を建設してください)', 'warning');
+  L2797: state.addLog(`新兵を1名徴兵しました！ (-1 🔥)`, 'action');
+  L2815: el.trialCountdown.innerText = '警告: 試練襲来中！';
+  L2817: el.trialCountdown.innerText = `試練まで ${turnsToTrial} ターン`;
+  L2913: el.legacyList.innerHTML = '<div class="empty-text">レガシーなし</div>';
+  L2928: el.disastersList.innerHTML = '<div class="empty-text">災害なし</div>';
+  L2934: div.innerHTML = `<span>⚠ ${getTerrainDisplayName(land.terrain, land.attribute)}の荒廃</span> <span class="d-turns">${turnsRemaining - 1}T</span>`;
+  L2970: title = "?�� 残り火 (Fire)";
+  L2971: desc = "�?��の生命活動を維持するため�?残り火。毎ターン終�?��に一定量減少し�?0 になるとゲー�?オーバ�?になります�?<br><br>" +
+  L2972: "・最大上限: 30 ?��<br>" +
+  L2973: "・基本減衰: -1 ?��/ターン (保留エリアにカードが残って�?��場合、さらに -1 ?�� のペナル�?��がありま�?)�?<br>" +
+  L2983: soldiersCountText.innerText = `兵士数: ${state.soldiers.length} / ${state.soldierCapacity}`;
+  L2993: soldiersContainer.innerHTML = `<div style="font-size: 0.65rem; color: #9ca3af; text-align: center; padding: 4px;">兵士なし</div>`;
+  L3003: item.innerHTML = `<span>⚔️ 兵士 (ID: ${s.id})</span> <span>Lv ${s.level} (XP: ${s.xp}/100)</span>`;
+  L3010: "  - ?�� 500 以�?: +1 ?�� (残り火増加)<br>" +
+  L3011: "  - ?�� 200 以�?: 0 ?�� (残り火維�?)<br>" +
+  L3012: "  - ?�� 200 未満: -1 ?�� (通常減衰)<br>" +
+  L3013: "  - 開始時に ?�� 20 未満: -2 ?�� (飢餓による衰退)";
+  L3016: breakdown = `現在の備蓄�?: <b>?�� ${state.food}</b><br>` +
+  L3017: `現在の毎ターン総生産�?: <b>?�� +${yields.food}</b><br><br>` +
+  L3018: `<b>生産�?��:</b><br>` +
+  L3023: desc = "施設の建設�?��会制度のアンロ�?��、土地の結合?�レベルア�???�などに消費される重要な�?���?��です�?";
+  L3026: breakdown = `現在の備蓄�?: <b>?�� ${state.materials}</b><br>` +
+  L3027: `現在の毎ターン総生産�?: <b>?�� +${yields.materials}</b><br><br>` +
+  L3028: `<b>生産�?��:</b><br>` +
+  L3032: title = "?��?? 防衛力 (Defense)";
+  L3033: desc = "試練?�襲来する�?�?��から集落を守るための戦闘力�?<b>防衛力は�?��されず、毎ターン開始時に 0 にリセ�?��されます�?</b><br><br>" +
+  L3034: "�?��ーン終�?��に土地�?��設から生産される防衛力と、そのターン中に使用した軍事カード�?効果�?合計値が、そのターンの「総防衛力」となり、試練襲来時�?防御判定に使用されます�?";
+  L3037: breakdown = `現在の当ターン防衛力: <b>?��?? ${state.defense}</b><br>` +
+  L3038: `毎ターン自動で得られる生産�?: <b>?��?? +${yields.defense}</b><br><br>` +
+  L3039: `<b>生産�?��:</b><br>` +
+  L3043: title = "✨ 神�? (Mystic)";
+  L3044: desc = "精霊との交信�?�?��の発動に�?��な信仰力。一定値まで貯めることで、いつでも「神秘�?�?��」�?タンから強力なグローバル�?��?�予知、豊穣、神罰など?�を発動できます�?";
+  L3047: breakdown = `現在の備蓄�?: <b>✨ ${state.mystic}</b><br>` +
+  L3048: `現在の毎ターン総生産�?: <b>✨ +${yields.mystic}</b><br><br>` +
+  L3049: `<b>生産�?��:</b><br>` +
+  L3066: listHtml += `・スロ�?�� ${index} (${terrainName}): +${val}<br>`;
+  L3072: listHtml += `・レガシー「不屈�?精神�?: +50<br>`;
+  L3075: listHtml += `・レガシー「�?���?凱旋�?: +30<br>`;
+  L3079: return listHtml || "・生産源な�? (毎ターンの生産はありません)<br>";
+  L3128: const title = `?�� 警告：第 ${state.upcomingTrial.index} の試練襲来?`;
+  L3131: �??? 亜人軍勢の襲来が検知されました �???
+  L3133: 今ターン終�?���?��落の防衛�?力を問う「試練」が発生します！準備を�?れ�?�??�土の崩壊を招きます�?<br><br>
+  L3135: <b>⚔�? 襲来�??�:</b><br>
+  L3136: ・予測敵勢�?: <span style="color: #ef4444; font-weight: bold;">${state.upcomingTrial.power}</span><br>
+  L3137: ・敵戦�? (Tactic): <span style="color: #fca5a5; font-weight: bold;">${state.upcomingTrial.tactic.name}</span><br>
+  L3138: <span style="font-size: 0.72rem; color: #d1d5db;">?�効�?: ${state.upcomingTrial.tactic.desc}??</span>
+  L3141: ※ドローカードから軍事防御カードをプレイするか、残り火を消費して施設建設�?��体�?変更を行い�?��衛力を極限まで高めてください??
+  L3150: 防衛体制を整える
+  L3162: state.addLog('新たな政体「専制君主制」が選択可能になりました??', 'system');
+  L3165: state.addLog('新たな政体「神聖君主制」が選択可能になりました??', 'system');
+  L3168: state.addLog('新たな政体「開拓民主制」が選択可能になりました??', 'system');
+
+[game\src\main_hybrid_fixed.js]: 253 violations
+  L197: state.addLog('将軍：本拠地を「司令部」に変更。防衛力+30で開始！', 'system');
+  L200: state.addLog('預言者：本拠地を「聖堂」に変更。神秘産出+30%で開始！', 'system');
+  L233: state.addLog(`土地 (${getTerrainDisplayName(land.terrain, land.attribute)}) の災害被害が復興しました！生産力が元に戻ります。`, 'system');
+  L239: state.addLog(`被災地 (${getTerrainDisplayName(land.terrain, land.attribute)}) が復興しました！生産力に「戦場の記憶」Lv.${land.overlayLevel} バフが乗ります！`, 'system');
+  L254: state.addLog(`警告：保留ゾーンにカードが残っているため、残り火が 1 🔥 減少しました。`, 'warning');
+  L301: <strong>⚠️ 警告：亜人集団の急襲！</strong><br>
+  L302: スロット ${targetSlot} の開拓地（${getTerrainDisplayName(land.terrain, land.attribute)}）が略奪のターゲットに指定されました！<br>
+  L303: 敵の襲撃に対抗するため、戦術を選択して防衛を行ってください。
+  L321: result.success ? '✨ 撃退成功！' : '💥 略奪被災',
+  L335: btnNone.innerHTML = `❌ <strong>戦術なし (防衛施設と地形のみ)</strong><br><span style="font-size: 0.65rem; opacity: 0.85;">何の戦術も取らずに、防衛力のみで耐えます。</span>`;
+  L341: result.success ? '✨ 撃退成功！' : '💥 略奪被災',
+  L371: el.interactionTitle.innerText = `資源調査フェイズ：調査・発見を行いたい土地を選択してください (コスト: 1 🔥)`;
+  L396: el.interactionTitle.innerText = `※ドローエリア (カードを盤面にドラッグするか、保留スロットにドロップできます)`;
+  L551: state.addLog(`領土スロット ${draggedSourceIndex} を位置 (${Math.round(dropX)}%, ${Math.round(dropY)}%) へ移動しました。`, 'system');
+  L778: state.addLog('残り火 🔥 が不足しているため、土地を配置できません！', 'warning');
+  L804: state.addLog(`スロット ${targetIndex} に ${getTerrainDisplayName(draggedCard.terrain, draggedCard.attribute)} を配置しました (-${cost} 🔥)。配置時即時産出：🌾 +${landYield.food} / 🧱 +${landYield.materials} / 🛡️ +${landYield.defense} / ✨ +${landYield.mystic}`, 'action');
+  L809: state.addLog('川を配置しました！「下流探索プロジェクト」が開始されました。', 'system');
+  L821: state.addLog('同じ開発段階（レアリティ）の土地同士でのみ開発（結合）が可能です！', 'warning');
+  L845: state.addLog('川を配置しました！「下流探索プロジェクト」が開始されました。', 'system');
+  L857: state.addLog('残り火 🔥 が不足しているため、土地の資源調査を行えません！', 'warning');
+  L865: state.addLog(`${getTerrainDisplayName(targetSlot.terrain, targetSlot.attribute)} を調査し、新たに環境特性「${getAttributeName(targetSlot.attribute)}」を発見しました！ (-${cost} 🔥)`, 'action');
+  L868: state.addLog(`${getTerrainDisplayName(targetSlot.terrain, targetSlot.attribute)} を調査し、隠された資源「${getBonusName(targetSlot.bonus)}」を発見しました！ (-${cost} 🔥)`, 'action');
+  L889: state.addLog(`カード「${draggedCard.name}」を保留スロット ${reserveIndex + 1} にキープしました。`, 'action');
+  L903: name: `${getTerrainDisplayName(land.terrain, land.attribute)}の開拓`,
+  L907: desc: `手札に戻された開拓地。開発度: ★${land.devLevel}`
+  L924: state.addLog(`スロット ${draggedSourceIndex} の土地を保留スロット ${reserveIndex + 1} に戻しました。`, 'action');
+  L945: el.interactionTitle.innerText = `配置フェイズ：盤面の空きスロット (+) を選択して配置してください (コスト: 1 🔥)`;
+  L950: el.interactionTitle.innerText = `資源調査フェイズ：調査・発見を行いたい土地を選択してください (コスト: 1 🔥)`;
+  L993: state.addLog(`スロット ${index} (${getTerrainDisplayName(slot.terrain, slot.attribute)}) に「${getFacilityName(fac.id)}」を建設しました！ (-${fac.cost} 🧱, -${fac.fireCost} 🔥)`, 'reward');
+  L1014: state.addLog(`スロット ${index} (${getTerrainDisplayName(slot.terrain, slot.attribute)}) に「${getFacilityName(fac.id)}」を建設しました！ (-${fac.cost} 🧱, -${fac.fireCost} 🔥)`, 'reward');
+  L1066: state.addLog(`結合候補 A: ${getTerrainDisplayName(slot.terrain, slot.attribute)} を選択。重ねたい土地を選択してください。`, 'system');
+  L1071: state.addLog('結合をキャンセルしました。', 'system');
+  L1094: <h4>スロット ${idxA}</h4>
+  L1096: <p>開発度: ★${landA.devLevel}</p>
+  L1107: state.addLog(`残り火が不足しています！開発には ${mergeCost} 🔥 が必要です。`, 'warning');
+  L1115: <h4>スロット ${idxA}</h4>
+  L1117: <p>開発度: ★${landA.devLevel}</p>
+  L1120: <h4>スロット ${idxB}</h4>
+  L1122: <p>開発度: ★${landB.devLevel}</p>
+  L1138: optionsList.innerHTML = '<div class="empty-text">引き継ぐ特性はありません。</div>';
+  L1166: el.btnConfirmMerge.innerText = `開発を実行 (${mergeCost} 🔥)`;
+  L1187: el.btnConfirmMerge.innerText = `開発を実行 (${mergeCost} 🔥)`;
+  L1205: state.addLog(`残り火が不足しています！開発には ${mergeCost} 🔥 が必要です。`, 'warning');
+  L1212: <h4>スロット ${targetIndex}</h4>
+  L1214: <p>開発度: ★${landA.devLevel}</p>
+  L1217: <h4>ドロー/手札カード</h4>
+  L1219: <p>開発度: ★0</p>
+  L1224: if (landA.attribute) traits.push({ type: 'attr', val: landA.attribute, source: '盤面' });
+  L1225: if (landA.bonus) traits.push({ type: 'bonus', val: landA.bonus, source: '盤面' });
+  L1226: if (card.attribute) traits.push({ type: 'attr', val: card.attribute, source: 'カード' });
+  L1227: if (card.bonus) traits.push({ type: 'bonus', val: card.bonus, source: 'カード' });
+  L1253: el.btnConfirmMerge.innerText = `直接開発を実行 (${mergeCost} 🔥)`;
+  L1284: el.btnConfirmMerge.innerText = `直接開発を実行 (${mergeCost} 🔥)`;
+  L1318: state.addLog(`注意：容量低下により、施設「${getFacilityName(oldFac)}」が崩壊・撤去されました。`, 'warning');
+  L1330: state.addLog(`直接開発：カードからスロット ${targetIndex} の ${getTerrainDisplayName(landA.terrain, landA.attribute)} を直接開発（★ ${landA.devLevel}）しました。開発時即時産出：🌾 +${landYield.food} / 🧱 +${landYield.materials} / 🛡️ +${landYield.defense} / ✨ +${landYield.mystic}`, 'reward');
+  L1397: state.addLog(`注意：容量低下により、施設「${getFacilityName(oldFac)}」が崩壊・撤去されました。`, 'warning');
+  L1418: state.addLog(`土地開発：スロット ${idxA} と ${idxB} を結合し、開発度★ ${landA.devLevel} へ強化しました (-${cost} 🔥)。開発時即時産出：🌾 +${landYield.food} / 🧱 +${landYield.materials} / 🛡️ +${landYield.defense} / ✨ +${landYield.mystic}`, 'reward');
+  L1429: text = "天より聖なる光の柱が降り注ぎ、神聖なる予言がもたらされました。神秘が 25 高まります。(✨ +25)";
+  L1449: state.addLog('マリガン：提示されたカードをすべて引き直しました (-2 🔥)。', 'action');
+  L1460: state.addLog(`追加ドロー：新たなカードの選択肢を生成しました (-1 🔥)。`, 'action');
+  L1480: text = "平野に集まった移民たちが残り火の周囲で結束しました。食料🌾+30、残り火🔥+3を獲得します。(🌾+30, 🔥+3)";
+  L1486: text = "交易商人から大量の穀物と乾物を買い付けました。食料🌾+35、神秘✨+5を獲得。(🌾+35, ✨+5)";
+  L1489: text = "交易路から貴重な建築材や鉱石を調達しました。資材🧱+30、神秘✨+5を獲得。(🧱+30, ✨+5)";
+  L1496: let milCardText = "保留ゾーンが満杯のため軍事カードを獲得できませんでした。";
+  L1502: let milCardText = "保留ゾーンが満杯のため軍事カードを獲得できませんでした。";
+  L1508: milCardText = `無料の軍事カード「${freeCard.name}」が保留スロット ${emptyIdx + 1} に追加されました！`;
+  L1510: text = `試練を防衛した英雄たちが熱狂と安全をもたらしました。残り火🔥+5、防衛力🛡️+50を獲得。さらに${milCardText} (🔥+5, 🛡️+50)`;
+  L1516: text = "過密な集落内で疫病の影が広がりました。食料🌾-20、残り火🔥-2の被害を受けますが、教訓として「衛生知識 (災害率半減)」レガシーを獲得します。(🌾-20, 🔥-2)";
+  L1520: let mysCardText = "保留ゾーンが満杯のため神秘カードを獲得できませんでした。";
+  L1527: let devText = "対象となる土地がないため開発度は上昇しませんでした。";
+  L1532: devText = `さらに、${getTerrainDisplayName(targetSlot.terrain, targetSlot.attribute)} の開発レベルが ★${targetSlot.devLevel} に上昇しました！`;
+  L1534: text = `開拓者主導の開墾祭により、食料🌾+25を獲得。${devText} (🌾+25)`;
+  L1539: text = "砂漠に眠る古代の遺跡から亜人の記憶が漏れ出し、民衆を惑わせました。残り火🔥-2のペナルティを受ける代わりに、神秘✨+20を獲得。(✨+20, 🔥-2)";
+  L1544: text = "残り火が消えかける極限状態の中で、人々が互いに食料を分け合い結束を高めました。残り火🔥+6、食料🌾+15を獲得！(🔥+6, 🌾+15)";
+  L1549: text = "腕利きの職人たちが目覚め、技術を共有しました。資材🧱+30を獲得し、さらに次の施設建設の資材コストが 🧱-20 割引されます。(🧱+30, 施設割引獲得)";
+  L1555: text = "50ターンの結末を見据え、人々が最後の希望を胸に大いなる宴を開きました。食料を50消費し、残り火🔥+10、防衛力🛡️+100を獲得！(🌾-50, 🔥+10, 🛡️+100)";
+  L1559: text = "天より聖なる光の柱が降り注ぎ、神聖なる予言がもたらされました。神秘が 25 高まります。(✨ +25)";
+  L1565: text = "精霊を祀る厳かな石碑の祭壇が建立されました。精霊の守護により、神秘が 40 向上します。(🧱 -20, ✨ +40)";
+  L1571: text = "森の精霊たちの温かい加護が集落全体を包み込みました。3ターンの間、集落の活動が祝福されます。(✨ +30, 祝福レガシー獲得)";
+  L1577: text = "熟練の斥候が敵軍の野営地を奇襲し、偵察データを持ち帰りました。次の試練の敵戦力が 30 低下します。(🛡️ +20, 敵戦力 -30)";
+  L1582: text = "若者たちが志願し、防衛義勇軍の訓練が開始されました。防衛力が 40 向上します。(🌾 -15, 🛡️ +40)";
+  L1585: btn.innerText = state.polityCooldown > 0 ? `制限中 (${state.polityCooldown}T)` : `有効化する (🔥 ${displayCost})`;
+  L1592: state.addLog(`政体を「${data.name}」に変更しました (-${displayCost} 🔥)。`, 'action');
+  L1603: <span>地殻の急成長（任意の土地1スロットを、即座に最大開発段階「レジェンダリ★4」へ昇格する）</span>
+  L1609: state.addLog('奇跡発動：次の試練の敵戦闘力を 30% 減弱しました！', 'reward');
+  L1634: 受け入れる
+  L1649: showGrandEventModal(`災厄発生: ${result.name}`, result.desc, 'crisis.png', () => {
+  L1668: el.modalRiverEvent.querySelector('#river-event-title').innerText = '🌊 世界の果て：海の発見！';
+  L1670: 探索隊は川を下り、無限に広がる水平線――**「海」**に到達しました！<br>
+  L1671: 超強力なレジェンダリー地形「海 (Sea)」がデッキに解禁されます！(スロットを2つ消費します)
+  L1673: state.addLog(`奇跡発動：社会制度「${lockedPol}」が天啓により即時解禁されました！`, 'reward');
+  L1675: state.addLog('奇跡発動：すべての制度が解禁済みなため、資材 +100 を獲得しました。', 'reward');
+  L1691: document.getElementById('generic-event-title').innerText = '神秘の奇跡（上級）';
+  L1692: document.getElementById('generic-event-text').innerText = '世界の残り火と一体となり、運命を改変する奇跡を引き起こします。';
+  L1697: <span>神罰の雷（次の試練の敵戦闘力を -30% 永久低下させる）</span>
+  L1700: <span>地殻の急成長（任意の土地1スロットを、即座に最大開発段階「レジェンダリ★4」へ昇格する）</span>
+  L1706: state.addLog('奇跡発動：次の試練の敵戦闘力を 30% 減弱しました！', 'reward');
+  L1713: state.addLog('奇跡発動：最大開発する土地を盤面からクリックしてください。', 'system');
+  L1720: state.addLog(`奇跡適用：${getTerrainDisplayName(land.terrain)} を最大開発段階（L★4）に昇格しました！`, 'reward');
+  L1749: optFood.innerHTML = `🌾 食料-20 で買収する ${!canBribeFood ? '<span style="color:#ef4444;">(不足)</span>' : ''}`;
+  L1752: state.addLog('【買収成功】亜人集団に食料🌾-20を支払い、襲撃を回避しました。', 'system');
+  L1763: optMat.innerHTML = `🧱 資材-20 で買収する ${!canBribeMaterials ? '<span style="color:#ef4444;">(不足)</span>' : ''}`;
+  L1766: state.addLog('【買収成功】亜人集団に資材🧱-20を支払い、襲撃を回避しました。', 'system');
+  L1778: optRefuse.innerHTML = `拒否する / 支払えない（略奪を受ける）`;
+  L1785: '略奪被害発生',
+  L1786: `亜人集団の襲撃に抵抗できず、以下の被害を受けました：<br><br>` +
+  L1787: `・土地荒廃: <b>${penalty.landName}</b> (3T生産半減)<br>` +
+  L1788: `・略奪資源: <b>🌾-${penalty.stolenFood}</b> / <b>🧱-${penalty.stolenMaterials}</b><br><br>` +
+  L1789: `民はこの略奪の教訓から「亜人襲撃の経験 (次回災害率減少)」レガシーを獲得しました。`,
+  L1809: showGrandEventModal(`災厄発生: ${result.name}`, result.desc, 'crisis.png', () => {
+  L1834: state.addLog('奇跡発動：次の試練の敵戦闘力を 30% 減弱しました！', 'reward');
+  L1841: state.addLog('奇跡発動：最大開発する土地を盤面からクリックしてください。', 'system');
+  L1848: state.addLog(`奇跡適用：${getTerrainDisplayName(land.terrain, land.attribute)} を最大開発段階（L★4）に昇格しました！`, 'reward');
+  L1865: state.addLog('警告：カードを選択してターンを開始してください！', 'warning');
+  L1875: state.addLog(`社会制度「${policyId}」を解禁しました (-${cost} 🧱)。`, 'reward');
+  L1887: state.addLog(`施設「${facilityId}」を建設しました (-${cost} 🧱)。`, 'reward');
+  L1900: state.addLog(`第 ${state.currentTurn} ターン終了。生産物回収：🌾 +${yields.food} / 🧱 +${yields.materials} / ✨ +${yields.mystic} (総防衛力: 🛡️ ${state.defense})`, 'action');
+  L1908: foodCorrectionText = " (大豊作による活力補正: +1 🔥)";
+  L1911: foodCorrectionText = " (十分な食料による維持補正: 0 🔥)";
+  L1948: name: '共同体の融和',
+  L1950: desc: 'ベース土地カード (🧭) の出現ウェイトが +15% 上昇します。',
+  L1953: req: '初期状態'
+  L1956: name: '専制君主制',
+  L1958: desc: '試練戦闘時、防衛力 (🛡️) +20%。ただし毎ターンの資材 (🧱) 産出 -15%。',
+  L1961: req: '社会制度「戦術（tactics）」解禁で開放'
+  L1964: name: '神聖君主制',
+  L1966: desc: '毎ターン神秘 (✨) +5。神秘の奇跡コストが -10% 低減されます。',
+  L1969: req: '社会制度「神秘（mysticism）」解禁で開放'
+  L1972: name: '開拓民主制',
+  L1974: desc: '土地のニコイチ開発コストが -1 🔥 低減される。ただし毎ターンの食料 (🌾) 産出 -15%。',
+  L1977: req: '社会制度「農業（agriculture）」解禁で開放'
+  L1987: <h3 style="font-size: 0.9rem; color: #f97316; margin-bottom: 4px;">現在のアクティブ政体: ${activeData.icon} ${activeData.name}</h3>
+  L1990: 切り替え制限: ${state.polityCooldown > 0 ? `あと ${state.polityCooldown} ターン変更不可` : '変更可能'}
+  L2024: name: '共同体の融和',
+  L2026: desc: 'ベース土地カード (🧭) の出現ウェイトが +15% 上昇します。',
+  L2029: req: '初期状態'
+  L2032: name: '専制君主制',
+  L2034: desc: '試練戦闘時、防衛力 (🛡️) +20%。ただし毎ターンの資材 (🧱) 産出 -15%。',
+  L2037: req: '社会制度「戦術（tactics）」解禁で開放'
+  L2040: name: '神聖君主制',
+  L2042: desc: '毎ターン神秘 (✨) +5。神秘の奇跡コストが -10% 低減されます。',
+  L2052: state.addLog(`試練報酬：レアカード「${chosenCard.name}」の天啓を受けました！`, 'reward');
+  L2057: state.addLog(`試練報酬：新たなレガシー「${chosenLegacy}」を獲得しました！`, 'reward');
+  L2065: ${isUnlocked && !isActive ? `<div class="polity-cost-info">有効化コス�?: ?�� ${displayCost}</div>` : ''}
+  L2091: el.gameEndDesc.innerText = '残り火が完全に消え去り、集落は凍える闇の中に飲み込まれました。あなたの旅はここで終わります...';
+  L2097: <div class="score-row"><span>残り火:</span> <span class="text-danger">0 (消滅)</span></div>
+  L2098: <div class="score-row"><span>生存ターン (T ${state.currentTurn} x 100):</span> <span>+${turnScore}</span></div>
+  L2099: <div class="score-row total"><span>最終スコア:</span> <span>${totalScore}</span></div>
+  L2116: state.addLog('警告：カードを選択してターンを開始してください！', 'warning');
+  L2131: state.addLog(`第 ${state.currentTurn} ターン終了。生産物回収：🌾 +${yields.food} / 🧱 +${yields.materials} / ✨ +${yields.mystic} (総防衛力: 🛡️ ${state.defense})`, 'action');
+  L2136: foodCorrectionText = ` (深刻な食料不足による残り火の衰退: -2 🔥 / 消費コスト ${foodMaintenance} に対して残高 ${originalFood} 🌾)`;
+  L2139: foodCorrectionText = " (大豊作による残り火の自動増加: +1 🔥)";
+  L2142: foodCorrectionText = " (十分な食料蓄積による残り火維持: 0 🔥)";
+  L2145: foodCorrectionText = " (食料不足による残り火減衰: -1 🔥)";
+  L2150: state.addLog(`残り火減衰：残り火が ${fireDecay} 🔥 減少しました。${foodCorrectionText}`, 'warning');
+  L2152: state.addLog(`残り火維持：残り火は減少せず維持されました。${foodCorrectionText}`, 'system');
+  L2154: state.addLog(`残り火増幅：活力が満ち、残り火が ${Math.abs(fireDecay)} 🔥 増加しました！${foodCorrectionText}`, 'reward');
+  L2159: state.addLog(`残り火減衰：残り火が ${fireDecay} 🔥 減少しました。${foodCorrectionText}`, 'warning');
+  L2161: state.addLog(`残り火維持：残り火は減少せず維持されました。${foodCorrectionText}`, 'system');
+  L2163: state.addLog(`残り火増幅：活力が満ち、残り火が ${Math.abs(fireDecay)} 🔥 増加しました！${foodCorrectionText}`, 'reward');
+  L2254: state.addLog(`軍備：集落防衛のための義勇兵（兵士トークン）が ${replenishedSoldiersCount} 名補充されました。`, 'system');
+  L2303: el.trialBattleTitle.innerText = `🔥 第 ${state.nextTrialIndex} の試練 襲来 🔥`;
+  L2304: el.trialBattleTactic.innerText = `敵軍戦術: ${tactic.name} (${tactic.desc})`;
+  L2307: if (tactic.name.includes('強襲')) modifiedPower = Math.round(modifiedPower * 1.2);
+  L2308: if (tactic.name.includes('火攻め')) modifiedPower = Math.round(modifiedPower * 1.1);
+  L2309: el.trialBattlePower.innerText = `総敵戦力: ⚔️ ${modifiedPower}`;
+  L2314: el.trialUnassignedSoldiers.innerHTML = `<div style="font-size: 0.7rem; color: #9ca3af; padding: 4px; width: 100%;">待機兵力なし。緊急徴兵するか、戦場から配備解除してください。</div>`;
+  L2325: badge.innerHTML = `⚔️ 兵士 (ID: ${s.id}) Lv ${s.level}`;
+  L2326: badge.title = "クリックして最初の戦場へ配備";
+  L2354: state.addLog(`新兵を1名徴兵しました！ (-1 🔥)`, 'action');
+  L2385: el.trialBattleTitle.innerText = `🔥 第 ${state.nextTrialIndex} の試練 襲来 🔥`;
+  L2386: el.trialBattleTactic.innerText = `敵軍戦術: ${tactic.name} (${tactic.desc})`;
+  L2389: if (tactic.name.includes('強襲')) modifiedPower = Math.round(modifiedPower * 1.2);
+  L2390: if (tactic.name.includes('火攻め')) modifiedPower = Math.round(modifiedPower * 1.1);
+  L2391: el.trialBattlePower.innerText = `総敵戦力: ⚔️ ${modifiedPower}`;
+  L2396: el.trialUnassignedSoldiers.innerHTML = `<div style="font-size: 0.7rem; color: #9ca3af; padding: 4px; width: 100%;">待機兵力なし。緊急徴兵するか、戦場から配備解除してください。</div>`;
+  L2407: badge.innerHTML = `⚔️ 兵士 (ID: ${s.id}) Lv ${s.level}`;
+  L2408: badge.title = "クリックして最初の戦場へ配備";
+  L2436: state.addLog(`新兵を1名徴兵しました！ (-1 🔥)`, 'action');
+  L2466: <strong style="color: #f97316;">${bf.name} (スロット ${bf.index})</strong>
+  L2467: <span style="font-weight: bold; color: #34d399;">🛡️ 防衛力: ${bfDefense}</span>
+  L2482: list.innerHTML = `<span style="font-size: 0.68rem; color: #6b7280; padding: 4px;">配備中の兵士なし</span>`;
+  L2494: soldierBadge.title = "クリックして配備解除";
+  L2517: assignBtn.innerText = '待機兵をここに配備';
+  L2559: if (line.innerText.includes('[防衛成功]')) {
+  L2561: } else if (line.innerText.includes('[警告]') || line.innerText.includes('☠️') || line.innerText.includes('💥')) {
+  L2573: div.innerHTML = `<span>⚠ ${getTerrainDisplayName(land.terrain, land.attribute)}の荒廃</span> <span class="d-turns">${turnsRemaining - 1}T</span>`;
+  L2613: el.disastersList.innerHTML = '<div class="empty-text">災害なし</div>';
+  L2619: div.innerHTML = `<span>⚠ ${getTerrainDisplayName(land.terrain, land.attribute)}の荒廃</span> <span class="d-turns">${turnsRemaining - 1}T</span>`;
+  L2657: <div class="score-row total"><span>最終スコア:</span> <span>${totalScore}</span></div>
+  L2673: state.addLog('土地の最大上限数(7枚)に達しています！これ以上配置できません。', 'warning');
+  L2681: state.addLog('残り火 🔥 が不足しているため、土地を配置できません！', 'warning');
+  L2748: title = "🔥 残り火 (Fire)";
+  L2749: desc = "集落の生命活動を維持するための残り火。毎ターン終了時に一定量減少し、0 になるとゲームオーバーになります。<br><br>" +
+  L2750: "・最大上限: 30 🔥<br>" +
+  L2751: "・基本減衰: -1 🔥/ターン (保留エリアにカードが残っている場合、さらに -1 🔥 のペナルティがあります)。<br>" +
+  L2752: "・食料🌾備蓄補正:<br>" +
+  L2753: "  - 🌾 240 以上: +1 🔥 (残り火が増加します)<br>" +
+  L2754: "  - 🌾 120 以上: 0 🔥 (残り火は減少しません)<br>" +
+  L2755: "  - 🌾 30 未満: -2 🔥 (深刻な食料不足による急激な減衰)";
+  L2765: state.addLog('残り火 🔥 が不足しているため、徴兵できません！', 'warning');
+  L2769: state.addLog('兵士の収容上限に達しているため、これ以上徴兵できません！(兵舎等を建設してください)', 'warning');
+  L2780: state.addLog(`新兵を1名徴兵しました！ (-1 🔥)`, 'action');
+  L2798: el.trialCountdown.innerText = '警告: 試練襲来中！';
+  L2800: el.trialCountdown.innerText = `試練まで ${turnsToTrial} ターン`;
+  L2896: el.legacyList.innerHTML = '<div class="empty-text">レガシーなし</div>';
+  L2911: el.disastersList.innerHTML = '<div class="empty-text">災害なし</div>';
+  L2917: div.innerHTML = `<span>⚠ ${getTerrainDisplayName(land.terrain, land.attribute)}の荒廃</span> <span class="d-turns">${turnsRemaining - 1}T</span>`;
+  L2953: title = "?�� 残り火 (Fire)";
+  L2954: desc = "�?��の生命活動を維持するため�?残り火。毎ターン終�?��に一定量減少し�?0 になるとゲー�?オーバ�?になります�?<br><br>" +
+  L2955: "・最大上限: 30 ?��<br>" +
+  L2956: "・基本減衰: -1 ?��/ターン (保留エリアにカードが残って�?��場合、さらに -1 ?�� のペナル�?��がありま�?)�?<br>" +
+  L2966: soldiersCountText.innerText = `兵士数: ${state.soldiers.length} / ${state.soldierCapacity}`;
+  L2976: soldiersContainer.innerHTML = `<div style="font-size: 0.65rem; color: #9ca3af; text-align: center; padding: 4px;">兵士なし</div>`;
+  L2986: item.innerHTML = `<span>⚔️ 兵士 (ID: ${s.id})</span> <span>Lv ${s.level} (XP: ${s.xp}/100)</span>`;
+  L2993: "  - ?�� 500 以�?: +1 ?�� (残り火増加)<br>" +
+  L2994: "  - ?�� 200 以�?: 0 ?�� (残り火維�?)<br>" +
+  L2995: "  - ?�� 200 未満: -1 ?�� (通常減衰)<br>" +
+  L2996: "  - 開始時に ?�� 20 未満: -2 ?�� (飢餓による衰退)";
+  L2999: breakdown = `現在の備蓄�?: <b>?�� ${state.food}</b><br>` +
+  L3000: `現在の毎ターン総生産�?: <b>?�� +${yields.food}</b><br><br>` +
+  L3001: `<b>生産�?��:</b><br>` +
+  L3006: desc = "施設の建設�?��会制度のアンロ�?��、土地の結合?�レベルア�???�などに消費される重要な�?���?��です�?";
+  L3009: breakdown = `現在の備蓄�?: <b>?�� ${state.materials}</b><br>` +
+  L3010: `現在の毎ターン総生産�?: <b>?�� +${yields.materials}</b><br><br>` +
+  L3011: `<b>生産�?��:</b><br>` +
+  L3015: title = "?��?? 防衛力 (Defense)";
+  L3016: desc = "試練?�襲来する�?�?��から集落を守るための戦闘力�?<b>防衛力は�?��されず、毎ターン開始時に 0 にリセ�?��されます�?</b><br><br>" +
+  L3017: "�?��ーン終�?��に土地�?��設から生産される防衛力と、そのターン中に使用した軍事カード�?効果�?合計値が、そのターンの「総防衛力」となり、試練襲来時�?防御判定に使用されます�?";
+  L3020: breakdown = `現在の当ターン防衛力: <b>?��?? ${state.defense}</b><br>` +
+  L3021: `毎ターン自動で得られる生産�?: <b>?��?? +${yields.defense}</b><br><br>` +
+  L3022: `<b>生産�?��:</b><br>` +
+  L3026: title = "✨ 神�? (Mystic)";
+  L3027: desc = "精霊との交信�?�?��の発動に�?��な信仰力。一定値まで貯めることで、いつでも「神秘�?�?��」�?タンから強力なグローバル�?��?�予知、豊穣、神罰など?�を発動できます�?";
+  L3030: breakdown = `現在の備蓄�?: <b>✨ ${state.mystic}</b><br>` +
+  L3031: `現在の毎ターン総生産�?: <b>✨ +${yields.mystic}</b><br><br>` +
+  L3032: `<b>生産�?��:</b><br>` +
+  L3049: listHtml += `・スロ�?�� ${index} (${terrainName}): +${val}<br>`;
+  L3055: listHtml += `・レガシー「不屈�?精神�?: +50<br>`;
+  L3058: listHtml += `・レガシー「�?���?凱旋�?: +30<br>`;
+  L3062: return listHtml || "・生産源な�? (毎ターンの生産はありません)<br>";
+  L3111: const title = `?�� 警告：第 ${state.upcomingTrial.index} の試練襲来?`;
+  L3114: �??? 亜人軍勢の襲来が検知されました �???
+  L3116: 今ターン終�?���?��落の防衛�?力を問う「試練」が発生します！準備を�?れ�?�??�土の崩壊を招きます�?<br><br>
+  L3118: <b>⚔�? 襲来�??�:</b><br>
+  L3119: ・予測敵勢�?: <span style="color: #ef4444; font-weight: bold;">${state.upcomingTrial.power}</span><br>
+  L3120: ・敵戦�? (Tactic): <span style="color: #fca5a5; font-weight: bold;">${state.upcomingTrial.tactic.name}</span><br>
+  L3121: <span style="font-size: 0.72rem; color: #d1d5db;">?�効�?: ${state.upcomingTrial.tactic.desc}??</span>
+  L3124: ※ドローカードから軍事防御カードをプレイするか、残り火を消費して施設建設�?��体�?変更を行い�?��衛力を極限まで高めてください??
+  L3133: 防衛体制を整える
+  L3145: state.addLog('新たな政体「専制君主制」が選択可能になりました??', 'system');
+  L3148: state.addLog('新たな政体「神聖君主制」が選択可能になりました??', 'system');
+  L3151: state.addLog('新たな政体「開拓民主制」が選択可能になりました??', 'system');
+
+[game\src\main_reconstructed.js]: 208 violations
+  L197: state.addLog('将軍：本拠地を「司令部」に変更。防衛力+30で開始！', 'system');
+  L200: state.addLog('預言者：本拠地を「聖堂」に変更。神秘産出+30%で開始！', 'system');
+  L233: state.addLog(`土地 (${getTerrainDisplayName(land.terrain, land.attribute)}) の災害被害が復興しました！生産力が元に戻ります。`, 'system');
+  L239: state.addLog(`被災地 (${getTerrainDisplayName(land.terrain, land.attribute)}) が復興しました！生産力に「戦場の記憶」Lv.${land.overlayLevel} バフが乗ります！`, 'system');
+  L254: state.addLog(`警告：保留ゾーンにカードが残っているため、残り火が 1 🔥 減少しました。`, 'warning');
+  L310: <strong>⚠️ 警告：亜人集団の急襲！</strong><br>
+  L339: el.interactionTitle.innerText = `資源調査フェイズ：調査・発見を行いたい土地を選択してください (コスト: 1 🔥)`;
+  L364: el.interactionTitle.innerText = `※ドローエリア (カードを盤面にドラッグするか、保留スロットにドロップできます)`;
+  L519: state.addLog(`領土スロット ${draggedSourceIndex} を位置 (${Math.round(dropX)}%, ${Math.round(dropY)}%) へ移動しました。`, 'system');
+  L746: state.addLog('残り火 🔥 が不足しているため、土地を配置できません！', 'warning');
+  L772: state.addLog(`スロット ${targetIndex} に ${getTerrainDisplayName(draggedCard.terrain, draggedCard.attribute)} を配置しました (-${cost} 🔥)。配置時即時産出：🌾 +${landYield.food} / 🧱 +${landYield.materials} / 🛡️ +${landYield.defense} / ✨ +${landYield.mystic}`, 'action');
+  L777: state.addLog('川を配置しました！「下流探索プロジェクト」が開始されました。', 'system');
+  L789: state.addLog('同じ開発段階（レアリティ）の土地同士でのみ開発（結合）が可能です！', 'warning');
+  L813: state.addLog('川を配置しました！「下流探索プロジェクト」が開始されました。', 'system');
+  L825: state.addLog('残り火 🔥 が不足しているため、土地の資源調査を行えません！', 'warning');
+  L833: state.addLog(`${getTerrainDisplayName(targetSlot.terrain, targetSlot.attribute)} を調査し、新たに環境特性「${getAttributeName(targetSlot.attribute)}」を発見しました！ (-${cost} 🔥)`, 'action');
+  L836: state.addLog(`${getTerrainDisplayName(targetSlot.terrain, targetSlot.attribute)} を調査し、隠された資源「${getBonusName(targetSlot.bonus)}」を発見しました！ (-${cost} 🔥)`, 'action');
+  L857: state.addLog(`カード「${draggedCard.name}」を保留スロット ${reserveIndex + 1} にキープしました。`, 'action');
+  L871: name: `${getTerrainDisplayName(land.terrain, land.attribute)}の開拓`,
+  L875: desc: `手札に戻された開拓地。開発度: ★${land.devLevel}`
+  L892: state.addLog(`スロット ${draggedSourceIndex} の土地を保留スロット ${reserveIndex + 1} に戻しました。`, 'action');
+  L913: el.interactionTitle.innerText = `配置フェイズ：盤面の空きスロット (+) を選択して配置してください (コスト: 1 🔥)`;
+  L918: el.interactionTitle.innerText = `資源調査フェイズ：調査・発見を行いたい土地を選択してください (コスト: 1 🔥)`;
+  L961: state.addLog(`スロット ${index} (${getTerrainDisplayName(slot.terrain, slot.attribute)}) に「${getFacilityName(fac.id)}」を建設しました！ (-${fac.cost} 🧱, -${fac.fireCost} 🔥)`, 'reward');
+  L982: state.addLog(`スロット ${index} (${getTerrainDisplayName(slot.terrain, slot.attribute)}) に「${getFacilityName(fac.id)}」を建設しました！ (-${fac.cost} 🧱, -${fac.fireCost} 🔥)`, 'reward');
+  L1034: state.addLog(`結合候補 A: ${getTerrainDisplayName(slot.terrain, slot.attribute)} を選択。重ねたい土地を選択してください。`, 'system');
+  L1039: state.addLog('結合をキャンセルしました。', 'system');
+  L1062: <h4>スロット ${idxA}</h4>
+  L1064: <p>開発度: ★${landA.devLevel}</p>
+  L1075: state.addLog(`残り火が不足しています！開発には ${mergeCost} 🔥 が必要です。`, 'warning');
+  L1083: <h4>スロット ${idxA}</h4>
+  L1085: <p>開発度: ★${landA.devLevel}</p>
+  L1088: <h4>スロット ${idxB}</h4>
+  L1090: <p>開発度: ★${landB.devLevel}</p>
+  L1106: optionsList.innerHTML = '<div class="empty-text">引き継ぐ特性はありません。</div>';
+  L1134: el.btnConfirmMerge.innerText = `開発を実行 (${mergeCost} 🔥)`;
+  L1155: el.btnConfirmMerge.innerText = `開発を実行 (${mergeCost} 🔥)`;
+  L1173: state.addLog(`残り火が不足しています！開発には ${mergeCost} 🔥 が必要です。`, 'warning');
+  L1180: <h4>スロット ${targetIndex}</h4>
+  L1182: <p>開発度: ★${landA.devLevel}</p>
+  L1185: <h4>ドロー/手札カード</h4>
+  L1187: <p>開発度: ★0</p>
+  L1192: if (landA.attribute) traits.push({ type: 'attr', val: landA.attribute, source: '盤面' });
+  L1193: if (landA.bonus) traits.push({ type: 'bonus', val: landA.bonus, source: '盤面' });
+  L1194: if (card.attribute) traits.push({ type: 'attr', val: card.attribute, source: 'カード' });
+  L1195: if (card.bonus) traits.push({ type: 'bonus', val: card.bonus, source: 'カード' });
+  L1221: el.btnConfirmMerge.innerText = `直接開発を実行 (${mergeCost} 🔥)`;
+  L1252: el.btnConfirmMerge.innerText = `直接開発を実行 (${mergeCost} 🔥)`;
+  L1286: state.addLog(`注意：容量低下により、施設「${getFacilityName(oldFac)}」が崩壊・撤去されました。`, 'warning');
+  L1298: state.addLog(`直接開発：カードからスロット ${targetIndex} の ${getTerrainDisplayName(landA.terrain, landA.attribute)} を直接開発（★ ${landA.devLevel}）しました。開発時即時産出：🌾 +${landYield.food} / 🧱 +${landYield.materials} / 🛡️ +${landYield.defense} / ✨ +${landYield.mystic}`, 'reward');
+  L1365: state.addLog(`注意：容量低下により、施設「${getFacilityName(oldFac)}」が崩壊・撤去されました。`, 'warning');
+  L1386: state.addLog(`土地開発：スロット ${idxA} と ${idxB} を結合し、開発度★ ${landA.devLevel} へ強化しました (-${cost} 🔥)。開発時即時産出：🌾 +${landYield.food} / 🧱 +${landYield.materials} / 🛡️ +${landYield.defense} / ✨ +${landYield.mystic}`, 'reward');
+  L1397: text = "天より聖なる光の柱が降り注ぎ、神聖なる予言がもたらされました。神秘が 25 高まります。(✨ +25)";
+  L1417: state.addLog('マリガン：提示されたカードをすべて引き直しました (-2 🔥)。', 'action');
+  L1428: state.addLog(`追加ドロー：新たなカードの選択肢を生成しました (-1 🔥)。`, 'action');
+  L1448: text = "平野に集まった移民たちが残り火の周囲で結束しました。食料🌾+30、残り火🔥+3を獲得します。(🌾+30, 🔥+3)";
+  L1454: text = "交易商人から大量の穀物と乾物を買い付けました。食料🌾+35、神秘✨+5を獲得。(🌾+35, ✨+5)";
+  L1457: text = "交易路から貴重な建築材や鉱石を調達しました。資材🧱+30、神秘✨+5を獲得。(🧱+30, ✨+5)";
+  L1464: let milCardText = "保留ゾーンが満杯のため軍事カードを獲得できませんでした。";
+  L1470: let milCardText = "保留ゾーンが満杯のため軍事カードを獲得できませんでした。";
+  L1476: milCardText = `無料の軍事カード「${freeCard.name}」が保留スロット ${emptyIdx + 1} に追加されました！`;
+  L1478: text = `試練を防衛した英雄たちが熱狂と安全をもたらしました。残り火🔥+5、防衛力🛡️+50を獲得。さらに${milCardText} (🔥+5, 🛡️+50)`;
+  L1484: text = "過密な集落内で疫病の影が広がりました。食料🌾-20、残り火🔥-2の被害を受けますが、教訓として「衛生知識 (災害率半減)」レガシーを獲得します。(🌾-20, 🔥-2)";
+  L1488: let mysCardText = "保留ゾーンが満杯のため神秘カードを獲得できませんでした。";
+  L1495: let devText = "対象となる土地がないため開発度は上昇しませんでした。";
+  L1500: devText = `さらに、${getTerrainDisplayName(targetSlot.terrain, targetSlot.attribute)} の開発レベルが ★${targetSlot.devLevel} に上昇しました！`;
+  L1502: text = `開拓者主導の開墾祭により、食料🌾+25を獲得。${devText} (🌾+25)`;
+  L1507: text = "砂漠に眠る古代の遺跡から亜人の記憶が漏れ出し、民衆を惑わせました。残り火🔥-2のペナルティを受ける代わりに、神秘✨+20を獲得。(✨+20, 🔥-2)";
+  L1512: text = "残り火が消えかける極限状態の中で、人々が互いに食料を分け合い結束を高めました。残り火🔥+6、食料🌾+15を獲得！(🔥+6, 🌾+15)";
+  L1517: text = "腕利きの職人たちが目覚め、技術を共有しました。資材🧱+30を獲得し、さらに次の施設建設の資材コストが 🧱-20 割引されます。(🧱+30, 施設割引獲得)";
+  L1523: text = "50ターンの結末を見据え、人々が最後の希望を胸に大いなる宴を開きました。食料を50消費し、残り火🔥+10、防衛力🛡️+100を獲得！(🌾-50, 🔥+10, 🛡️+100)";
+  L1527: text = "天より聖なる光の柱が降り注ぎ、神聖なる予言がもたらされました。神秘が 25 高まります。(✨ +25)";
+  L1533: text = "精霊を祀る厳かな石碑の祭壇が建立されました。精霊の守護により、神秘が 40 向上します。(🧱 -20, ✨ +40)";
+  L1539: text = "森の精霊たちの温かい加護が集落全体を包み込みました。3ターンの間、集落の活動が祝福されます。(✨ +30, 祝福レガシー獲得)";
+  L1545: text = "熟練の斥候が敵軍の野営地を奇襲し、偵察データを持ち帰りました。次の試練の敵戦力が 30 低下します。(🛡️ +20, 敵戦力 -30)";
+  L1550: text = "若者たちが志願し、防衛義勇軍の訓練が開始されました。防衛力が 40 向上します。(🌾 -15, 🛡️ +40)";
+  L1553: btn.innerText = state.polityCooldown > 0 ? `制限中 (${state.polityCooldown}T)` : `有効化する (🔥 ${displayCost})`;
+  L1560: state.addLog(`政体を「${data.name}」に変更しました (-${displayCost} 🔥)。`, 'action');
+  L1571: <span>地殻の急成長（任意の土地1スロットを、即座に最大開発段階「レジェンダリ★4」へ昇格する）</span>
+  L1577: state.addLog('奇跡発動：次の試練の敵戦闘力を 30% 減弱しました！', 'reward');
+  L1602: 受け入れる
+  L1617: showGrandEventModal(`災厄発生: ${result.name}`, result.desc, 'crisis.png', () => {
+  L1636: el.modalRiverEvent.querySelector('#river-event-title').innerText = '🌊 世界の果て：海の発見！';
+  L1638: 探索隊は川を下り、無限に広がる水平線――**「海」**に到達しました！<br>
+  L1639: 超強力なレジェンダリー地形「海 (Sea)」がデッキに解禁されます！(スロットを2つ消費します)
+  L1641: state.addLog(`奇跡発動：社会制度「${lockedPol}」が天啓により即時解禁されました！`, 'reward');
+  L1643: state.addLog('奇跡発動：すべての制度が解禁済みなため、資材 +100 を獲得しました。', 'reward');
+  L1659: document.getElementById('generic-event-title').innerText = '神秘の奇跡（上級）';
+  L1660: document.getElementById('generic-event-text').innerText = '世界の残り火と一体となり、運命を改変する奇跡を引き起こします。';
+  L1665: <span>神罰の雷（次の試練の敵戦闘力を -30% 永久低下させる）</span>
+  L1668: <span>地殻の急成長（任意の土地1スロットを、即座に最大開発段階「レジェンダリ★4」へ昇格する）</span>
+  L1674: state.addLog('奇跡発動：次の試練の敵戦闘力を 30% 減弱しました！', 'reward');
+  L1681: state.addLog('奇跡発動：最大開発する土地を盤面からクリックしてください。', 'system');
+  L1688: state.addLog(`奇跡適用：${getTerrainDisplayName(land.terrain)} を最大開発段階（L★4）に昇格しました！`, 'reward');
+  L1717: optFood.innerHTML = `🌾 食料-20 で買収する ${!canBribeFood ? '<span style="color:#ef4444;">(不足)</span>' : ''}`;
+  L1720: state.addLog('【買収成功】亜人集団に食料🌾-20を支払い、襲撃を回避しました。', 'system');
+  L1731: optMat.innerHTML = `🧱 資材-20 で買収する ${!canBribeMaterials ? '<span style="color:#ef4444;">(不足)</span>' : ''}`;
+  L1734: state.addLog('【買収成功】亜人集団に資材🧱-20を支払い、襲撃を回避しました。', 'system');
+  L1746: optRefuse.innerHTML = `拒否する / 支払えない（略奪を受ける）`;
+  L1753: '略奪被害発生',
+  L1754: `亜人集団の襲撃に抵抗できず、以下の被害を受けました：<br><br>` +
+  L1755: `・土地荒廃: <b>${penalty.landName}</b> (3T生産半減)<br>` +
+  L1756: `・略奪資源: <b>🌾-${penalty.stolenFood}</b> / <b>🧱-${penalty.stolenMaterials}</b><br><br>` +
+  L1757: `民はこの略奪の教訓から「亜人襲撃の経験 (次回災害率減少)」レガシーを獲得しました。`,
+  L1777: showGrandEventModal(`災厄発生: ${result.name}`, result.desc, 'crisis.png', () => {
+  L1802: state.addLog('奇跡発動：次の試練の敵戦闘力を 30% 減弱しました！', 'reward');
+  L1809: state.addLog('奇跡発動：最大開発する土地を盤面からクリックしてください。', 'system');
+  L1816: state.addLog(`奇跡適用：${getTerrainDisplayName(land.terrain, land.attribute)} を最大開発段階（L★4）に昇格しました！`, 'reward');
+  L1833: state.addLog('警告：カードを選択してターンを開始してください！', 'warning');
+  L1843: state.addLog(`社会制度「${policyId}」を解禁しました (-${cost} 🧱)。`, 'reward');
+  L1855: state.addLog(`施設「${facilityId}」を建設しました (-${cost} 🧱)。`, 'reward');
+  L1868: state.addLog(`第 ${state.currentTurn} ターン終了。生産物回収：🌾 +${yields.food} / 🧱 +${yields.materials} / ✨ +${yields.mystic} (総防衛力: 🛡️ ${state.defense})`, 'action');
+  L1876: foodCorrectionText = " (大豊作による活力補正: +1 🔥)";
+  L1879: foodCorrectionText = " (十分な食料による維持補正: 0 🔥)";
+  L1916: name: '共同体の融和',
+  L1918: desc: 'ベース土地カード (🧭) の出現ウェイトが +15% 上昇します。',
+  L1921: req: '初期状態'
+  L1924: name: '専制君主制',
+  L1926: desc: '試練戦闘時、防衛力 (🛡️) +20%。ただし毎ターンの資材 (🧱) 産出 -15%。',
+  L1929: req: '社会制度「戦術（tactics）」解禁で開放'
+  L1932: name: '神聖君主制',
+  L1934: desc: '毎ターン神秘 (✨) +5。神秘の奇跡コストが -10% 低減されます。',
+  L1937: req: '社会制度「神秘（mysticism）」解禁で開放'
+  L1940: name: '開拓民主制',
+  L1942: desc: '土地のニコイチ開発コストが -1 🔥 低減される。ただし毎ターンの食料 (🌾) 産出 -15%。',
+  L1945: req: '社会制度「農業（agriculture）」解禁で開放'
+  L1955: <h3 style="font-size: 0.9rem; color: #f97316; margin-bottom: 4px;">現在のアクティブ政体: ${activeData.icon} ${activeData.name}</h3>
+  L1958: 切り替え制限: ${state.polityCooldown > 0 ? `あと ${state.polityCooldown} ターン変更不可` : '変更可能'}
+  L1992: name: '共同体の融和',
+  L1994: desc: 'ベース土地カード (🧭) の出現ウェイトが +15% 上昇します。',
+  L1997: req: '初期状態'
+  L2000: name: '専制君主制',
+  L2002: desc: '試練戦闘時、防衛力 (🛡️) +20%。ただし毎ターンの資材 (🧱) 産出 -15%。',
+  L2005: req: '社会制度「戦術（tactics）」解禁で開放'
+  L2008: name: '神聖君主制',
+  L2010: desc: '毎ターン神秘 (✨) +5。神秘の奇跡コストが -10% 低減されます。',
+  L2020: state.addLog(`試練報酬：レアカード「${chosenCard.name}」の天啓を受けました！`, 'reward');
+  L2025: state.addLog(`試練報酬：新たなレガシー「${chosenLegacy}」を獲得しました！`, 'reward');
+  L2059: el.gameEndDesc.innerText = '残り火が完全に消え去り、集落は凍える闇の中に飲み込まれました。あなたの旅はここで終わります...';
+  L2065: <div class="score-row"><span>残り火:</span> <span class="text-danger">0 (消滅)</span></div>
+  L2066: <div class="score-row"><span>生存ターン (T ${state.currentTurn} x 100):</span> <span>+${turnScore}</span></div>
+  L2067: <div class="score-row total"><span>最終スコア:</span> <span>${totalScore}</span></div>
+  L2084: state.addLog('警告：カードを選択してターンを開始してください！', 'warning');
+  L2099: state.addLog(`第 ${state.currentTurn} ターン終了。生産物回収：🌾 +${yields.food} / 🧱 +${yields.materials} / ✨ +${yields.mystic} (総防衛力: 🛡️ ${state.defense})`, 'action');
+  L2104: foodCorrectionText = ` (深刻な食料不足による残り火の衰退: -2 🔥 / 消費コスト ${foodMaintenance} に対して残高 ${originalFood} 🌾)`;
+  L2107: foodCorrectionText = " (大豊作による残り火の自動増加: +1 🔥)";
+  L2110: foodCorrectionText = " (十分な食料蓄積による残り火維持: 0 🔥)";
+  L2113: foodCorrectionText = " (食料不足による残り火減衰: -1 🔥)";
+  L2118: state.addLog(`残り火減衰：残り火が ${fireDecay} 🔥 減少しました。${foodCorrectionText}`, 'warning');
+  L2120: state.addLog(`残り火維持：残り火は減少せず維持されました。${foodCorrectionText}`, 'system');
+  L2122: state.addLog(`残り火増幅：活力が満ち、残り火が ${Math.abs(fireDecay)} 🔥 増加しました！${foodCorrectionText}`, 'reward');
+  L2127: state.addLog(`残り火減衰：残り火が ${fireDecay} 🔥 減少しました。${foodCorrectionText}`, 'warning');
+  L2129: state.addLog(`残り火維持：残り火は減少せず維持されました。${foodCorrectionText}`, 'system');
+  L2131: state.addLog(`残り火増幅：活力が満ち、残り火が ${Math.abs(fireDecay)} 🔥 増加しました！${foodCorrectionText}`, 'reward');
+  L2222: state.addLog(`軍備：集落防衛のための義勇兵（兵士トークン）が ${replenishedSoldiersCount} 名補充されました。`, 'system');
+  L2271: el.trialBattleTitle.innerText = `🔥 第 ${state.nextTrialIndex} の試練 襲来 🔥`;
+  L2272: el.trialBattleTactic.innerText = `敵軍戦術: ${tactic.name} (${tactic.desc})`;
+  L2275: if (tactic.name.includes('強襲')) modifiedPower = Math.round(modifiedPower * 1.2);
+  L2276: if (tactic.name.includes('火攻め')) modifiedPower = Math.round(modifiedPower * 1.1);
+  L2277: el.trialBattlePower.innerText = `総敵戦力: ⚔️ ${modifiedPower}`;
+  L2282: el.trialUnassignedSoldiers.innerHTML = `<div style="font-size: 0.7rem; color: #9ca3af; padding: 4px; width: 100%;">待機兵力なし。緊急徴兵するか、戦場から配備解除してください。</div>`;
+  L2293: badge.innerHTML = `⚔️ 兵士 (ID: ${s.id}) Lv ${s.level}`;
+  L2294: badge.title = "クリックして最初の戦場へ配備";
+  L2322: state.addLog(`新兵を1名徴兵しました！ (-1 🔥)`, 'action');
+  L2353: el.trialBattleTitle.innerText = `🔥 第 ${state.nextTrialIndex} の試練 襲来 🔥`;
+  L2354: el.trialBattleTactic.innerText = `敵軍戦術: ${tactic.name} (${tactic.desc})`;
+  L2357: if (tactic.name.includes('強襲')) modifiedPower = Math.round(modifiedPower * 1.2);
+  L2358: if (tactic.name.includes('火攻め')) modifiedPower = Math.round(modifiedPower * 1.1);
+  L2359: el.trialBattlePower.innerText = `総敵戦力: ⚔️ ${modifiedPower}`;
+  L2364: el.trialUnassignedSoldiers.innerHTML = `<div style="font-size: 0.7rem; color: #9ca3af; padding: 4px; width: 100%;">待機兵力なし。緊急徴兵するか、戦場から配備解除してください。</div>`;
+  L2375: badge.innerHTML = `⚔️ 兵士 (ID: ${s.id}) Lv ${s.level}`;
+  L2376: badge.title = "クリックして最初の戦場へ配備";
+  L2404: state.addLog(`新兵を1名徴兵しました！ (-1 🔥)`, 'action');
+  L2434: <strong style="color: #f97316;">${bf.name} (スロット ${bf.index})</strong>
+  L2435: <span style="font-weight: bold; color: #34d399;">🛡️ 防衛力: ${bfDefense}</span>
+  L2450: list.innerHTML = `<span style="font-size: 0.68rem; color: #6b7280; padding: 4px;">配備中の兵士なし</span>`;
+  L2462: soldierBadge.title = "クリックして配備解除";
+  L2485: assignBtn.innerText = '待機兵をここに配備';
+  L2527: if (line.innerText.includes('[防衛成功]')) {
+  L2529: } else if (line.innerText.includes('[警告]') || line.innerText.includes('☠️') || line.innerText.includes('💥')) {
+  L2541: div.innerHTML = `<span>⚠ ${getTerrainDisplayName(land.terrain, land.attribute)}の荒廃</span> <span class="d-turns">${turnsRemaining - 1}T</span>`;
+  L2581: el.disastersList.innerHTML = '<div class="empty-text">災害なし</div>';
+  L2587: div.innerHTML = `<span>⚠ ${getTerrainDisplayName(land.terrain, land.attribute)}の荒廃</span> <span class="d-turns">${turnsRemaining - 1}T</span>`;
+  L2625: <div class="score-row total"><span>最終スコア:</span> <span>${totalScore}</span></div>
+  L2641: state.addLog('土地の最大上限数(7枚)に達しています！これ以上配置できません。', 'warning');
+  L2649: state.addLog('残り火 🔥 が不足しているため、土地を配置できません！', 'warning');
+  L2716: title = "🔥 残り火 (Fire)";
+  L2717: desc = "集落の生命活動を維持するための残り火。毎ターン終了時に一定量減少し、0 になるとゲームオーバーになります。<br><br>" +
+  L2718: "・最大上限: 30 🔥<br>" +
+  L2719: "・基本減衰: -1 🔥/ターン (保留エリアにカードが残っている場合、さらに -1 🔥 のペナルティがあります)。<br>" +
+  L2720: "・食料🌾備蓄補正:<br>" +
+  L2721: "  - 🌾 240 以上: +1 🔥 (残り火が増加します)<br>" +
+  L2722: "  - 🌾 120 以上: 0 🔥 (残り火は減少しません)<br>" +
+  L2723: "  - 🌾 30 未満: -2 🔥 (深刻な食料不足による急激な減衰)";
+  L2733: state.addLog('残り火 🔥 が不足しているため、徴兵できません！', 'warning');
+  L2737: state.addLog('兵士の収容上限に達しているため、これ以上徴兵できません！(兵舎等を建設してください)', 'warning');
+  L2748: state.addLog(`新兵を1名徴兵しました！ (-1 🔥)`, 'action');
+  L2766: el.trialCountdown.innerText = '警告: 試練襲来中！';
+  L2768: el.trialCountdown.innerText = `試練まで ${turnsToTrial} ターン`;
+  L2864: el.legacyList.innerHTML = '<div class="empty-text">レガシーなし</div>';
+  L2879: el.disastersList.innerHTML = '<div class="empty-text">災害なし</div>';
+  L2885: div.innerHTML = `<span>⚠ ${getTerrainDisplayName(land.terrain, land.attribute)}の荒廃</span> <span class="d-turns">${turnsRemaining - 1}T</span>`;
+  L2934: soldiersCountText.innerText = `兵士数: ${state.soldiers.length} / ${state.soldierCapacity}`;
+  L2944: soldiersContainer.innerHTML = `<div style="font-size: 0.65rem; color: #9ca3af; text-align: center; padding: 4px;">兵士なし</div>`;
+  L2954: item.innerHTML = `<span>⚔️ 兵士 (ID: ${s.id})</span> <span>Lv ${s.level} (XP: ${s.xp}/100)</span>`;
+  L3248: state.addLog('新たな政体「専制君主制」が選択可能になりました！', 'system');
+  L3251: state.addLog('新たな政体「神聖君主制」が選択可能になりました！', 'system');
+  L3254: state.addLog('新たな政体「開拓民主制」が選択可能になりました！', 'system');
+
+[game\src\main_reconstructed_fixed.js]: 208 violations
+  L197: state.addLog('将軍：本拠地を「司令部」に変更。防衛力+30で開始！', 'system');
+  L200: state.addLog('預言者：本拠地を「聖堂」に変更。神秘産出+30%で開始！', 'system');
+  L233: state.addLog(`土地 (${getTerrainDisplayName(land.terrain, land.attribute)}) の災害被害が復興しました！生産力が元に戻ります。`, 'system');
+  L239: state.addLog(`被災地 (${getTerrainDisplayName(land.terrain, land.attribute)}) が復興しました！生産力に「戦場の記憶」Lv.${land.overlayLevel} バフが乗ります！`, 'system');
+  L254: state.addLog(`警告：保留ゾーンにカードが残っているため、残り火が 1 🔥 減少しました。`, 'warning');
+  L303: <strong>⚠️ 警告：亜人集団の急襲！</strong><br>
+  L332: el.interactionTitle.innerText = `資源調査フェイズ：調査・発見を行いたい土地を選択してください (コスト: 1 🔥)`;
+  L357: el.interactionTitle.innerText = `※ドローエリア (カードを盤面にドラッグするか、保留スロットにドロップできます)`;
+  L512: state.addLog(`領土スロット ${draggedSourceIndex} を位置 (${Math.round(dropX)}%, ${Math.round(dropY)}%) へ移動しました。`, 'system');
+  L739: state.addLog('残り火 🔥 が不足しているため、土地を配置できません！', 'warning');
+  L765: state.addLog(`スロット ${targetIndex} に ${getTerrainDisplayName(draggedCard.terrain, draggedCard.attribute)} を配置しました (-${cost} 🔥)。配置時即時産出：🌾 +${landYield.food} / 🧱 +${landYield.materials} / 🛡️ +${landYield.defense} / ✨ +${landYield.mystic}`, 'action');
+  L770: state.addLog('川を配置しました！「下流探索プロジェクト」が開始されました。', 'system');
+  L782: state.addLog('同じ開発段階（レアリティ）の土地同士でのみ開発（結合）が可能です！', 'warning');
+  L806: state.addLog('川を配置しました！「下流探索プロジェクト」が開始されました。', 'system');
+  L818: state.addLog('残り火 🔥 が不足しているため、土地の資源調査を行えません！', 'warning');
+  L826: state.addLog(`${getTerrainDisplayName(targetSlot.terrain, targetSlot.attribute)} を調査し、新たに環境特性「${getAttributeName(targetSlot.attribute)}」を発見しました！ (-${cost} 🔥)`, 'action');
+  L829: state.addLog(`${getTerrainDisplayName(targetSlot.terrain, targetSlot.attribute)} を調査し、隠された資源「${getBonusName(targetSlot.bonus)}」を発見しました！ (-${cost} 🔥)`, 'action');
+  L850: state.addLog(`カード「${draggedCard.name}」を保留スロット ${reserveIndex + 1} にキープしました。`, 'action');
+  L864: name: `${getTerrainDisplayName(land.terrain, land.attribute)}の開拓`,
+  L868: desc: `手札に戻された開拓地。開発度: ★${land.devLevel}`
+  L885: state.addLog(`スロット ${draggedSourceIndex} の土地を保留スロット ${reserveIndex + 1} に戻しました。`, 'action');
+  L906: el.interactionTitle.innerText = `配置フェイズ：盤面の空きスロット (+) を選択して配置してください (コスト: 1 🔥)`;
+  L911: el.interactionTitle.innerText = `資源調査フェイズ：調査・発見を行いたい土地を選択してください (コスト: 1 🔥)`;
+  L954: state.addLog(`スロット ${index} (${getTerrainDisplayName(slot.terrain, slot.attribute)}) に「${getFacilityName(fac.id)}」を建設しました！ (-${fac.cost} 🧱, -${fac.fireCost} 🔥)`, 'reward');
+  L975: state.addLog(`スロット ${index} (${getTerrainDisplayName(slot.terrain, slot.attribute)}) に「${getFacilityName(fac.id)}」を建設しました！ (-${fac.cost} 🧱, -${fac.fireCost} 🔥)`, 'reward');
+  L1027: state.addLog(`結合候補 A: ${getTerrainDisplayName(slot.terrain, slot.attribute)} を選択。重ねたい土地を選択してください。`, 'system');
+  L1032: state.addLog('結合をキャンセルしました。', 'system');
+  L1055: <h4>スロット ${idxA}</h4>
+  L1057: <p>開発度: ★${landA.devLevel}</p>
+  L1068: state.addLog(`残り火が不足しています！開発には ${mergeCost} 🔥 が必要です。`, 'warning');
+  L1076: <h4>スロット ${idxA}</h4>
+  L1078: <p>開発度: ★${landA.devLevel}</p>
+  L1081: <h4>スロット ${idxB}</h4>
+  L1083: <p>開発度: ★${landB.devLevel}</p>
+  L1099: optionsList.innerHTML = '<div class="empty-text">引き継ぐ特性はありません。</div>';
+  L1127: el.btnConfirmMerge.innerText = `開発を実行 (${mergeCost} 🔥)`;
+  L1148: el.btnConfirmMerge.innerText = `開発を実行 (${mergeCost} 🔥)`;
+  L1166: state.addLog(`残り火が不足しています！開発には ${mergeCost} 🔥 が必要です。`, 'warning');
+  L1173: <h4>スロット ${targetIndex}</h4>
+  L1175: <p>開発度: ★${landA.devLevel}</p>
+  L1178: <h4>ドロー/手札カード</h4>
+  L1180: <p>開発度: ★0</p>
+  L1185: if (landA.attribute) traits.push({ type: 'attr', val: landA.attribute, source: '盤面' });
+  L1186: if (landA.bonus) traits.push({ type: 'bonus', val: landA.bonus, source: '盤面' });
+  L1187: if (card.attribute) traits.push({ type: 'attr', val: card.attribute, source: 'カード' });
+  L1188: if (card.bonus) traits.push({ type: 'bonus', val: card.bonus, source: 'カード' });
+  L1214: el.btnConfirmMerge.innerText = `直接開発を実行 (${mergeCost} 🔥)`;
+  L1245: el.btnConfirmMerge.innerText = `直接開発を実行 (${mergeCost} 🔥)`;
+  L1279: state.addLog(`注意：容量低下により、施設「${getFacilityName(oldFac)}」が崩壊・撤去されました。`, 'warning');
+  L1291: state.addLog(`直接開発：カードからスロット ${targetIndex} の ${getTerrainDisplayName(landA.terrain, landA.attribute)} を直接開発（★ ${landA.devLevel}）しました。開発時即時産出：🌾 +${landYield.food} / 🧱 +${landYield.materials} / 🛡️ +${landYield.defense} / ✨ +${landYield.mystic}`, 'reward');
+  L1358: state.addLog(`注意：容量低下により、施設「${getFacilityName(oldFac)}」が崩壊・撤去されました。`, 'warning');
+  L1379: state.addLog(`土地開発：スロット ${idxA} と ${idxB} を結合し、開発度★ ${landA.devLevel} へ強化しました (-${cost} 🔥)。開発時即時産出：🌾 +${landYield.food} / 🧱 +${landYield.materials} / 🛡️ +${landYield.defense} / ✨ +${landYield.mystic}`, 'reward');
+  L1390: text = "天より聖なる光の柱が降り注ぎ、神聖なる予言がもたらされました。神秘が 25 高まります。(✨ +25)";
+  L1410: state.addLog('マリガン：提示されたカードをすべて引き直しました (-2 🔥)。', 'action');
+  L1421: state.addLog(`追加ドロー：新たなカードの選択肢を生成しました (-1 🔥)。`, 'action');
+  L1441: text = "平野に集まった移民たちが残り火の周囲で結束しました。食料🌾+30、残り火🔥+3を獲得します。(🌾+30, 🔥+3)";
+  L1447: text = "交易商人から大量の穀物と乾物を買い付けました。食料🌾+35、神秘✨+5を獲得。(🌾+35, ✨+5)";
+  L1450: text = "交易路から貴重な建築材や鉱石を調達しました。資材🧱+30、神秘✨+5を獲得。(🧱+30, ✨+5)";
+  L1457: let milCardText = "保留ゾーンが満杯のため軍事カードを獲得できませんでした。";
+  L1463: let milCardText = "保留ゾーンが満杯のため軍事カードを獲得できませんでした。";
+  L1469: milCardText = `無料の軍事カード「${freeCard.name}」が保留スロット ${emptyIdx + 1} に追加されました！`;
+  L1471: text = `試練を防衛した英雄たちが熱狂と安全をもたらしました。残り火🔥+5、防衛力🛡️+50を獲得。さらに${milCardText} (🔥+5, 🛡️+50)`;
+  L1477: text = "過密な集落内で疫病の影が広がりました。食料🌾-20、残り火🔥-2の被害を受けますが、教訓として「衛生知識 (災害率半減)」レガシーを獲得します。(🌾-20, 🔥-2)";
+  L1481: let mysCardText = "保留ゾーンが満杯のため神秘カードを獲得できませんでした。";
+  L1488: let devText = "対象となる土地がないため開発度は上昇しませんでした。";
+  L1493: devText = `さらに、${getTerrainDisplayName(targetSlot.terrain, targetSlot.attribute)} の開発レベルが ★${targetSlot.devLevel} に上昇しました！`;
+  L1495: text = `開拓者主導の開墾祭により、食料🌾+25を獲得。${devText} (🌾+25)`;
+  L1500: text = "砂漠に眠る古代の遺跡から亜人の記憶が漏れ出し、民衆を惑わせました。残り火🔥-2のペナルティを受ける代わりに、神秘✨+20を獲得。(✨+20, 🔥-2)";
+  L1505: text = "残り火が消えかける極限状態の中で、人々が互いに食料を分け合い結束を高めました。残り火🔥+6、食料🌾+15を獲得！(🔥+6, 🌾+15)";
+  L1510: text = "腕利きの職人たちが目覚め、技術を共有しました。資材🧱+30を獲得し、さらに次の施設建設の資材コストが 🧱-20 割引されます。(🧱+30, 施設割引獲得)";
+  L1516: text = "50ターンの結末を見据え、人々が最後の希望を胸に大いなる宴を開きました。食料を50消費し、残り火🔥+10、防衛力🛡️+100を獲得！(🌾-50, 🔥+10, 🛡️+100)";
+  L1520: text = "天より聖なる光の柱が降り注ぎ、神聖なる予言がもたらされました。神秘が 25 高まります。(✨ +25)";
+  L1526: text = "精霊を祀る厳かな石碑の祭壇が建立されました。精霊の守護により、神秘が 40 向上します。(🧱 -20, ✨ +40)";
+  L1532: text = "森の精霊たちの温かい加護が集落全体を包み込みました。3ターンの間、集落の活動が祝福されます。(✨ +30, 祝福レガシー獲得)";
+  L1538: text = "熟練の斥候が敵軍の野営地を奇襲し、偵察データを持ち帰りました。次の試練の敵戦力が 30 低下します。(🛡️ +20, 敵戦力 -30)";
+  L1543: text = "若者たちが志願し、防衛義勇軍の訓練が開始されました。防衛力が 40 向上します。(🌾 -15, 🛡️ +40)";
+  L1546: btn.innerText = state.polityCooldown > 0 ? `制限中 (${state.polityCooldown}T)` : `有効化する (🔥 ${displayCost})`;
+  L1553: state.addLog(`政体を「${data.name}」に変更しました (-${displayCost} 🔥)。`, 'action');
+  L1564: <span>地殻の急成長（任意の土地1スロットを、即座に最大開発段階「レジェンダリ★4」へ昇格する）</span>
+  L1570: state.addLog('奇跡発動：次の試練の敵戦闘力を 30% 減弱しました！', 'reward');
+  L1595: 受け入れる
+  L1610: showGrandEventModal(`災厄発生: ${result.name}`, result.desc, 'crisis.png', () => {
+  L1629: el.modalRiverEvent.querySelector('#river-event-title').innerText = '🌊 世界の果て：海の発見！';
+  L1631: 探索隊は川を下り、無限に広がる水平線――**「海」**に到達しました！<br>
+  L1632: 超強力なレジェンダリー地形「海 (Sea)」がデッキに解禁されます！(スロットを2つ消費します)
+  L1634: state.addLog(`奇跡発動：社会制度「${lockedPol}」が天啓により即時解禁されました！`, 'reward');
+  L1636: state.addLog('奇跡発動：すべての制度が解禁済みなため、資材 +100 を獲得しました。', 'reward');
+  L1652: document.getElementById('generic-event-title').innerText = '神秘の奇跡（上級）';
+  L1653: document.getElementById('generic-event-text').innerText = '世界の残り火と一体となり、運命を改変する奇跡を引き起こします。';
+  L1658: <span>神罰の雷（次の試練の敵戦闘力を -30% 永久低下させる）</span>
+  L1661: <span>地殻の急成長（任意の土地1スロットを、即座に最大開発段階「レジェンダリ★4」へ昇格する）</span>
+  L1667: state.addLog('奇跡発動：次の試練の敵戦闘力を 30% 減弱しました！', 'reward');
+  L1674: state.addLog('奇跡発動：最大開発する土地を盤面からクリックしてください。', 'system');
+  L1681: state.addLog(`奇跡適用：${getTerrainDisplayName(land.terrain)} を最大開発段階（L★4）に昇格しました！`, 'reward');
+  L1710: optFood.innerHTML = `🌾 食料-20 で買収する ${!canBribeFood ? '<span style="color:#ef4444;">(不足)</span>' : ''}`;
+  L1713: state.addLog('【買収成功】亜人集団に食料🌾-20を支払い、襲撃を回避しました。', 'system');
+  L1724: optMat.innerHTML = `🧱 資材-20 で買収する ${!canBribeMaterials ? '<span style="color:#ef4444;">(不足)</span>' : ''}`;
+  L1727: state.addLog('【買収成功】亜人集団に資材🧱-20を支払い、襲撃を回避しました。', 'system');
+  L1739: optRefuse.innerHTML = `拒否する / 支払えない（略奪を受ける）`;
+  L1746: '略奪被害発生',
+  L1747: `亜人集団の襲撃に抵抗できず、以下の被害を受けました：<br><br>` +
+  L1748: `・土地荒廃: <b>${penalty.landName}</b> (3T生産半減)<br>` +
+  L1749: `・略奪資源: <b>🌾-${penalty.stolenFood}</b> / <b>🧱-${penalty.stolenMaterials}</b><br><br>` +
+  L1750: `民はこの略奪の教訓から「亜人襲撃の経験 (次回災害率減少)」レガシーを獲得しました。`,
+  L1770: showGrandEventModal(`災厄発生: ${result.name}`, result.desc, 'crisis.png', () => {
+  L1795: state.addLog('奇跡発動：次の試練の敵戦闘力を 30% 減弱しました！', 'reward');
+  L1802: state.addLog('奇跡発動：最大開発する土地を盤面からクリックしてください。', 'system');
+  L1809: state.addLog(`奇跡適用：${getTerrainDisplayName(land.terrain, land.attribute)} を最大開発段階（L★4）に昇格しました！`, 'reward');
+  L1826: state.addLog('警告：カードを選択してターンを開始してください！', 'warning');
+  L1836: state.addLog(`社会制度「${policyId}」を解禁しました (-${cost} 🧱)。`, 'reward');
+  L1848: state.addLog(`施設「${facilityId}」を建設しました (-${cost} 🧱)。`, 'reward');
+  L1861: state.addLog(`第 ${state.currentTurn} ターン終了。生産物回収：🌾 +${yields.food} / 🧱 +${yields.materials} / ✨ +${yields.mystic} (総防衛力: 🛡️ ${state.defense})`, 'action');
+  L1869: foodCorrectionText = " (大豊作による活力補正: +1 🔥)";
+  L1872: foodCorrectionText = " (十分な食料による維持補正: 0 🔥)";
+  L1909: name: '共同体の融和',
+  L1911: desc: 'ベース土地カード (🧭) の出現ウェイトが +15% 上昇します。',
+  L1914: req: '初期状態'
+  L1917: name: '専制君主制',
+  L1919: desc: '試練戦闘時、防衛力 (🛡️) +20%。ただし毎ターンの資材 (🧱) 産出 -15%。',
+  L1922: req: '社会制度「戦術（tactics）」解禁で開放'
+  L1925: name: '神聖君主制',
+  L1927: desc: '毎ターン神秘 (✨) +5。神秘の奇跡コストが -10% 低減されます。',
+  L1930: req: '社会制度「神秘（mysticism）」解禁で開放'
+  L1933: name: '開拓民主制',
+  L1935: desc: '土地のニコイチ開発コストが -1 🔥 低減される。ただし毎ターンの食料 (🌾) 産出 -15%。',
+  L1938: req: '社会制度「農業（agriculture）」解禁で開放'
+  L1948: <h3 style="font-size: 0.9rem; color: #f97316; margin-bottom: 4px;">現在のアクティブ政体: ${activeData.icon} ${activeData.name}</h3>
+  L1951: 切り替え制限: ${state.polityCooldown > 0 ? `あと ${state.polityCooldown} ターン変更不可` : '変更可能'}
+  L1985: name: '共同体の融和',
+  L1987: desc: 'ベース土地カード (🧭) の出現ウェイトが +15% 上昇します。',
+  L1990: req: '初期状態'
+  L1993: name: '専制君主制',
+  L1995: desc: '試練戦闘時、防衛力 (🛡️) +20%。ただし毎ターンの資材 (🧱) 産出 -15%。',
+  L1998: req: '社会制度「戦術（tactics）」解禁で開放'
+  L2001: name: '神聖君主制',
+  L2003: desc: '毎ターン神秘 (✨) +5。神秘の奇跡コストが -10% 低減されます。',
+  L2013: state.addLog(`試練報酬：レアカード「${chosenCard.name}」の天啓を受けました！`, 'reward');
+  L2018: state.addLog(`試練報酬：新たなレガシー「${chosenLegacy}」を獲得しました！`, 'reward');
+  L2052: el.gameEndDesc.innerText = '残り火が完全に消え去り、集落は凍える闇の中に飲み込まれました。あなたの旅はここで終わります...';
+  L2058: <div class="score-row"><span>残り火:</span> <span class="text-danger">0 (消滅)</span></div>
+  L2059: <div class="score-row"><span>生存ターン (T ${state.currentTurn} x 100):</span> <span>+${turnScore}</span></div>
+  L2060: <div class="score-row total"><span>最終スコア:</span> <span>${totalScore}</span></div>
+  L2077: state.addLog('警告：カードを選択してターンを開始してください！', 'warning');
+  L2092: state.addLog(`第 ${state.currentTurn} ターン終了。生産物回収：🌾 +${yields.food} / 🧱 +${yields.materials} / ✨ +${yields.mystic} (総防衛力: 🛡️ ${state.defense})`, 'action');
+  L2097: foodCorrectionText = ` (深刻な食料不足による残り火の衰退: -2 🔥 / 消費コスト ${foodMaintenance} に対して残高 ${originalFood} 🌾)`;
+  L2100: foodCorrectionText = " (大豊作による残り火の自動増加: +1 🔥)";
+  L2103: foodCorrectionText = " (十分な食料蓄積による残り火維持: 0 🔥)";
+  L2106: foodCorrectionText = " (食料不足による残り火減衰: -1 🔥)";
+  L2111: state.addLog(`残り火減衰：残り火が ${fireDecay} 🔥 減少しました。${foodCorrectionText}`, 'warning');
+  L2113: state.addLog(`残り火維持：残り火は減少せず維持されました。${foodCorrectionText}`, 'system');
+  L2115: state.addLog(`残り火増幅：活力が満ち、残り火が ${Math.abs(fireDecay)} 🔥 増加しました！${foodCorrectionText}`, 'reward');
+  L2120: state.addLog(`残り火減衰：残り火が ${fireDecay} 🔥 減少しました。${foodCorrectionText}`, 'warning');
+  L2122: state.addLog(`残り火維持：残り火は減少せず維持されました。${foodCorrectionText}`, 'system');
+  L2124: state.addLog(`残り火増幅：活力が満ち、残り火が ${Math.abs(fireDecay)} 🔥 増加しました！${foodCorrectionText}`, 'reward');
+  L2215: state.addLog(`軍備：集落防衛のための義勇兵（兵士トークン）が ${replenishedSoldiersCount} 名補充されました。`, 'system');
+  L2264: el.trialBattleTitle.innerText = `🔥 第 ${state.nextTrialIndex} の試練 襲来 🔥`;
+  L2265: el.trialBattleTactic.innerText = `敵軍戦術: ${tactic.name} (${tactic.desc})`;
+  L2268: if (tactic.name.includes('強襲')) modifiedPower = Math.round(modifiedPower * 1.2);
+  L2269: if (tactic.name.includes('火攻め')) modifiedPower = Math.round(modifiedPower * 1.1);
+  L2270: el.trialBattlePower.innerText = `総敵戦力: ⚔️ ${modifiedPower}`;
+  L2275: el.trialUnassignedSoldiers.innerHTML = `<div style="font-size: 0.7rem; color: #9ca3af; padding: 4px; width: 100%;">待機兵力なし。緊急徴兵するか、戦場から配備解除してください。</div>`;
+  L2286: badge.innerHTML = `⚔️ 兵士 (ID: ${s.id}) Lv ${s.level}`;
+  L2287: badge.title = "クリックして最初の戦場へ配備";
+  L2315: state.addLog(`新兵を1名徴兵しました！ (-1 🔥)`, 'action');
+  L2346: el.trialBattleTitle.innerText = `🔥 第 ${state.nextTrialIndex} の試練 襲来 🔥`;
+  L2347: el.trialBattleTactic.innerText = `敵軍戦術: ${tactic.name} (${tactic.desc})`;
+  L2350: if (tactic.name.includes('強襲')) modifiedPower = Math.round(modifiedPower * 1.2);
+  L2351: if (tactic.name.includes('火攻め')) modifiedPower = Math.round(modifiedPower * 1.1);
+  L2352: el.trialBattlePower.innerText = `総敵戦力: ⚔️ ${modifiedPower}`;
+  L2357: el.trialUnassignedSoldiers.innerHTML = `<div style="font-size: 0.7rem; color: #9ca3af; padding: 4px; width: 100%;">待機兵力なし。緊急徴兵するか、戦場から配備解除してください。</div>`;
+  L2368: badge.innerHTML = `⚔️ 兵士 (ID: ${s.id}) Lv ${s.level}`;
+  L2369: badge.title = "クリックして最初の戦場へ配備";
+  L2397: state.addLog(`新兵を1名徴兵しました！ (-1 🔥)`, 'action');
+  L2427: <strong style="color: #f97316;">${bf.name} (スロット ${bf.index})</strong>
+  L2428: <span style="font-weight: bold; color: #34d399;">🛡️ 防衛力: ${bfDefense}</span>
+  L2443: list.innerHTML = `<span style="font-size: 0.68rem; color: #6b7280; padding: 4px;">配備中の兵士なし</span>`;
+  L2455: soldierBadge.title = "クリックして配備解除";
+  L2478: assignBtn.innerText = '待機兵をここに配備';
+  L2520: if (line.innerText.includes('[防衛成功]')) {
+  L2522: } else if (line.innerText.includes('[警告]') || line.innerText.includes('☠️') || line.innerText.includes('💥')) {
+  L2534: div.innerHTML = `<span>⚠ ${getTerrainDisplayName(land.terrain, land.attribute)}の荒廃</span> <span class="d-turns">${turnsRemaining - 1}T</span>`;
+  L2574: el.disastersList.innerHTML = '<div class="empty-text">災害なし</div>';
+  L2580: div.innerHTML = `<span>⚠ ${getTerrainDisplayName(land.terrain, land.attribute)}の荒廃</span> <span class="d-turns">${turnsRemaining - 1}T</span>`;
+  L2618: <div class="score-row total"><span>最終スコア:</span> <span>${totalScore}</span></div>
+  L2634: state.addLog('土地の最大上限数(7枚)に達しています！これ以上配置できません。', 'warning');
+  L2642: state.addLog('残り火 🔥 が不足しているため、土地を配置できません！', 'warning');
+  L2709: title = "🔥 残り火 (Fire)";
+  L2710: desc = "集落の生命活動を維持するための残り火。毎ターン終了時に一定量減少し、0 になるとゲームオーバーになります。<br><br>" +
+  L2711: "・最大上限: 30 🔥<br>" +
+  L2712: "・基本減衰: -1 🔥/ターン (保留エリアにカードが残っている場合、さらに -1 🔥 のペナルティがあります)。<br>" +
+  L2713: "・食料🌾備蓄補正:<br>" +
+  L2714: "  - 🌾 240 以上: +1 🔥 (残り火が増加します)<br>" +
+  L2715: "  - 🌾 120 以上: 0 🔥 (残り火は減少しません)<br>" +
+  L2716: "  - 🌾 30 未満: -2 🔥 (深刻な食料不足による急激な減衰)";
+  L2726: state.addLog('残り火 🔥 が不足しているため、徴兵できません！', 'warning');
+  L2730: state.addLog('兵士の収容上限に達しているため、これ以上徴兵できません！(兵舎等を建設してください)', 'warning');
+  L2741: state.addLog(`新兵を1名徴兵しました！ (-1 🔥)`, 'action');
+  L2759: el.trialCountdown.innerText = '警告: 試練襲来中！';
+  L2761: el.trialCountdown.innerText = `試練まで ${turnsToTrial} ターン`;
+  L2857: el.legacyList.innerHTML = '<div class="empty-text">レガシーなし</div>';
+  L2872: el.disastersList.innerHTML = '<div class="empty-text">災害なし</div>';
+  L2878: div.innerHTML = `<span>⚠ ${getTerrainDisplayName(land.terrain, land.attribute)}の荒廃</span> <span class="d-turns">${turnsRemaining - 1}T</span>`;
+  L2927: soldiersCountText.innerText = `兵士数: ${state.soldiers.length} / ${state.soldierCapacity}`;
+  L2937: soldiersContainer.innerHTML = `<div style="font-size: 0.65rem; color: #9ca3af; text-align: center; padding: 4px;">兵士なし</div>`;
+  L2947: item.innerHTML = `<span>⚔️ 兵士 (ID: ${s.id})</span> <span>Lv ${s.level} (XP: ${s.xp}/100)</span>`;
+  L3241: state.addLog('新たな政体「専制君主制」が選択可能になりました！', 'system');
+  L3244: state.addLog('新たな政体「神聖君主制」が選択可能になりました！', 'system');
+  L3247: state.addLog('新たな政体「開拓民主制」が選択可能になりました！', 'system');
+
+[game\src\main_smart.js]: 208 violations
+  L197: state.addLog('将軍：本拠地を「司令部」に変更。防衛力+30で開始！', 'system');
+  L200: state.addLog('預言者：本拠地を「聖堂」に変更。神秘産出+30%で開始！', 'system');
+  L233: state.addLog(`土地 (${getTerrainDisplayName(land.terrain, land.attribute)}) の災害被害が復興しました！生産力が元に戻ります。`, 'system');
+  L239: state.addLog(`被災地 (${getTerrainDisplayName(land.terrain, land.attribute)}) が復興しました！生産力に「戦場の記憶」Lv.${land.overlayLevel} バフが乗ります！`, 'system');
+  L254: state.addLog(`警告：保留ゾーンにカードが残っているため、残り火が 1 🔥 減少しました。`, 'warning');
+  L310: <strong>⚠️ 警告：亜人集団の急襲！</strong><br>
+  L339: el.interactionTitle.innerText = `資源調査フェイズ：調査・発見を行いたい土地を選択してください (コスト: 1 🔥)`;
+  L364: el.interactionTitle.innerText = `※ドローエリア (カードを盤面にドラッグするか、保留スロットにドロップできます)`;
+  L519: state.addLog(`領土スロット ${draggedSourceIndex} を位置 (${Math.round(dropX)}%, ${Math.round(dropY)}%) へ移動しました。`, 'system');
+  L746: state.addLog('残り火 🔥 が不足しているため、土地を配置できません！', 'warning');
+  L772: state.addLog(`スロット ${targetIndex} に ${getTerrainDisplayName(draggedCard.terrain, draggedCard.attribute)} を配置しました (-${cost} 🔥)。配置時即時産出：🌾 +${landYield.food} / 🧱 +${landYield.materials} / 🛡️ +${landYield.defense} / ✨ +${landYield.mystic}`, 'action');
+  L777: state.addLog('川を配置しました！「下流探索プロジェクト」が開始されました。', 'system');
+  L789: state.addLog('同じ開発段階（レアリティ）の土地同士でのみ開発（結合）が可能です！', 'warning');
+  L813: state.addLog('川を配置しました！「下流探索プロジェクト」が開始されました。', 'system');
+  L825: state.addLog('残り火 🔥 が不足しているため、土地の資源調査を行えません！', 'warning');
+  L833: state.addLog(`${getTerrainDisplayName(targetSlot.terrain, targetSlot.attribute)} を調査し、新たに環境特性「${getAttributeName(targetSlot.attribute)}」を発見しました！ (-${cost} 🔥)`, 'action');
+  L836: state.addLog(`${getTerrainDisplayName(targetSlot.terrain, targetSlot.attribute)} を調査し、隠された資源「${getBonusName(targetSlot.bonus)}」を発見しました！ (-${cost} 🔥)`, 'action');
+  L857: state.addLog(`カード「${draggedCard.name}」を保留スロット ${reserveIndex + 1} にキープしました。`, 'action');
+  L871: name: `${getTerrainDisplayName(land.terrain, land.attribute)}の開拓`,
+  L875: desc: `手札に戻された開拓地。開発度: ★${land.devLevel}`
+  L892: state.addLog(`スロット ${draggedSourceIndex} の土地を保留スロット ${reserveIndex + 1} に戻しました。`, 'action');
+  L913: el.interactionTitle.innerText = `配置フェイズ：盤面の空きスロット (+) を選択して配置してください (コスト: 1 🔥)`;
+  L918: el.interactionTitle.innerText = `資源調査フェイズ：調査・発見を行いたい土地を選択してください (コスト: 1 🔥)`;
+  L961: state.addLog(`スロット ${index} (${getTerrainDisplayName(slot.terrain, slot.attribute)}) に「${getFacilityName(fac.id)}」を建設しました！ (-${fac.cost} 🧱, -${fac.fireCost} 🔥)`, 'reward');
+  L982: state.addLog(`スロット ${index} (${getTerrainDisplayName(slot.terrain, slot.attribute)}) に「${getFacilityName(fac.id)}」を建設しました！ (-${fac.cost} 🧱, -${fac.fireCost} 🔥)`, 'reward');
+  L1034: state.addLog(`結合候補 A: ${getTerrainDisplayName(slot.terrain, slot.attribute)} を選択。重ねたい土地を選択してください。`, 'system');
+  L1039: state.addLog('結合をキャンセルしました。', 'system');
+  L1062: <h4>スロット ${idxA}</h4>
+  L1064: <p>開発度: ★${landA.devLevel}</p>
+  L1075: state.addLog(`残り火が不足しています！開発には ${mergeCost} 🔥 が必要です。`, 'warning');
+  L1083: <h4>スロット ${idxA}</h4>
+  L1085: <p>開発度: ★${landA.devLevel}</p>
+  L1088: <h4>スロット ${idxB}</h4>
+  L1090: <p>開発度: ★${landB.devLevel}</p>
+  L1106: optionsList.innerHTML = '<div class="empty-text">引き継ぐ特性はありません。</div>';
+  L1134: el.btnConfirmMerge.innerText = `開発を実行 (${mergeCost} 🔥)`;
+  L1155: el.btnConfirmMerge.innerText = `開発を実行 (${mergeCost} 🔥)`;
+  L1173: state.addLog(`残り火が不足しています！開発には ${mergeCost} 🔥 が必要です。`, 'warning');
+  L1180: <h4>スロット ${targetIndex}</h4>
+  L1182: <p>開発度: ★${landA.devLevel}</p>
+  L1185: <h4>ドロー/手札カード</h4>
+  L1187: <p>開発度: ★0</p>
+  L1192: if (landA.attribute) traits.push({ type: 'attr', val: landA.attribute, source: '盤面' });
+  L1193: if (landA.bonus) traits.push({ type: 'bonus', val: landA.bonus, source: '盤面' });
+  L1194: if (card.attribute) traits.push({ type: 'attr', val: card.attribute, source: 'カード' });
+  L1195: if (card.bonus) traits.push({ type: 'bonus', val: card.bonus, source: 'カード' });
+  L1221: el.btnConfirmMerge.innerText = `直接開発を実行 (${mergeCost} 🔥)`;
+  L1252: el.btnConfirmMerge.innerText = `直接開発を実行 (${mergeCost} 🔥)`;
+  L1286: state.addLog(`注意：容量低下により、施設「${getFacilityName(oldFac)}」が崩壊・撤去されました。`, 'warning');
+  L1298: state.addLog(`直接開発：カードからスロット ${targetIndex} の ${getTerrainDisplayName(landA.terrain, landA.attribute)} を直接開発（★ ${landA.devLevel}）しました。開発時即時産出：🌾 +${landYield.food} / 🧱 +${landYield.materials} / 🛡️ +${landYield.defense} / ✨ +${landYield.mystic}`, 'reward');
+  L1365: state.addLog(`注意：容量低下により、施設「${getFacilityName(oldFac)}」が崩壊・撤去されました。`, 'warning');
+  L1386: state.addLog(`土地開発：スロット ${idxA} と ${idxB} を結合し、開発度★ ${landA.devLevel} へ強化しました (-${cost} 🔥)。開発時即時産出：🌾 +${landYield.food} / 🧱 +${landYield.materials} / 🛡️ +${landYield.defense} / ✨ +${landYield.mystic}`, 'reward');
+  L1397: text = "天より聖なる光の柱が降り注ぎ、神聖なる予言がもたらされました。神秘が 25 高まります。(✨ +25)";
+  L1417: state.addLog('マリガン：提示されたカードをすべて引き直しました (-2 🔥)。', 'action');
+  L1428: state.addLog(`追加ドロー：新たなカードの選択肢を生成しました (-1 🔥)。`, 'action');
+  L1448: text = "平野に集まった移民たちが残り火の周囲で結束しました。食料🌾+30、残り火🔥+3を獲得します。(🌾+30, 🔥+3)";
+  L1454: text = "交易商人から大量の穀物と乾物を買い付けました。食料🌾+35、神秘✨+5を獲得。(🌾+35, ✨+5)";
+  L1457: text = "交易路から貴重な建築材や鉱石を調達しました。資材🧱+30、神秘✨+5を獲得。(🧱+30, ✨+5)";
+  L1464: let milCardText = "保留ゾーンが満杯のため軍事カードを獲得できませんでした。";
+  L1470: let milCardText = "保留ゾーンが満杯のため軍事カードを獲得できませんでした。";
+  L1476: milCardText = `無料の軍事カード「${freeCard.name}」が保留スロット ${emptyIdx + 1} に追加されました！`;
+  L1478: text = `試練を防衛した英雄たちが熱狂と安全をもたらしました。残り火🔥+5、防衛力🛡️+50を獲得。さらに${milCardText} (🔥+5, 🛡️+50)`;
+  L1484: text = "過密な集落内で疫病の影が広がりました。食料🌾-20、残り火🔥-2の被害を受けますが、教訓として「衛生知識 (災害率半減)」レガシーを獲得します。(🌾-20, 🔥-2)";
+  L1488: let mysCardText = "保留ゾーンが満杯のため神秘カードを獲得できませんでした。";
+  L1495: let devText = "対象となる土地がないため開発度は上昇しませんでした。";
+  L1500: devText = `さらに、${getTerrainDisplayName(targetSlot.terrain, targetSlot.attribute)} の開発レベルが ★${targetSlot.devLevel} に上昇しました！`;
+  L1502: text = `開拓者主導の開墾祭により、食料🌾+25を獲得。${devText} (🌾+25)`;
+  L1507: text = "砂漠に眠る古代の遺跡から亜人の記憶が漏れ出し、民衆を惑わせました。残り火🔥-2のペナルティを受ける代わりに、神秘✨+20を獲得。(✨+20, 🔥-2)";
+  L1512: text = "残り火が消えかける極限状態の中で、人々が互いに食料を分け合い結束を高めました。残り火🔥+6、食料🌾+15を獲得！(🔥+6, 🌾+15)";
+  L1517: text = "腕利きの職人たちが目覚め、技術を共有しました。資材🧱+30を獲得し、さらに次の施設建設の資材コストが 🧱-20 割引されます。(🧱+30, 施設割引獲得)";
+  L1523: text = "50ターンの結末を見据え、人々が最後の希望を胸に大いなる宴を開きました。食料を50消費し、残り火🔥+10、防衛力🛡️+100を獲得！(🌾-50, 🔥+10, 🛡️+100)";
+  L1527: text = "天より聖なる光の柱が降り注ぎ、神聖なる予言がもたらされました。神秘が 25 高まります。(✨ +25)";
+  L1533: text = "精霊を祀る厳かな石碑の祭壇が建立されました。精霊の守護により、神秘が 40 向上します。(🧱 -20, ✨ +40)";
+  L1539: text = "森の精霊たちの温かい加護が集落全体を包み込みました。3ターンの間、集落の活動が祝福されます。(✨ +30, 祝福レガシー獲得)";
+  L1545: text = "熟練の斥候が敵軍の野営地を奇襲し、偵察データを持ち帰りました。次の試練の敵戦力が 30 低下します。(🛡️ +20, 敵戦力 -30)";
+  L1550: text = "若者たちが志願し、防衛義勇軍の訓練が開始されました。防衛力が 40 向上します。(🌾 -15, 🛡️ +40)";
+  L1553: btn.innerText = state.polityCooldown > 0 ? `制限中 (${state.polityCooldown}T)` : `有効化する (🔥 ${displayCost})`;
+  L1560: state.addLog(`政体を「${data.name}」に変更しました (-${displayCost} 🔥)。`, 'action');
+  L1571: <span>地殻の急成長（任意の土地1スロットを、即座に最大開発段階「レジェンダリ★4」へ昇格する）</span>
+  L1577: state.addLog('奇跡発動：次の試練の敵戦闘力を 30% 減弱しました！', 'reward');
+  L1602: 受け入れる
+  L1617: showGrandEventModal(`災厄発生: ${result.name}`, result.desc, 'crisis.png', () => {
+  L1636: el.modalRiverEvent.querySelector('#river-event-title').innerText = '🌊 世界の果て：海の発見！';
+  L1638: 探索隊は川を下り、無限に広がる水平線――**「海」**に到達しました！<br>
+  L1639: 超強力なレジェンダリー地形「海 (Sea)」がデッキに解禁されます！(スロットを2つ消費します)
+  L1641: state.addLog(`奇跡発動：社会制度「${lockedPol}」が天啓により即時解禁されました！`, 'reward');
+  L1643: state.addLog('奇跡発動：すべての制度が解禁済みなため、資材 +100 を獲得しました。', 'reward');
+  L1659: document.getElementById('generic-event-title').innerText = '神秘の奇跡（上級）';
+  L1660: document.getElementById('generic-event-text').innerText = '世界の残り火と一体となり、運命を改変する奇跡を引き起こします。';
+  L1665: <span>神罰の雷（次の試練の敵戦闘力を -30% 永久低下させる）</span>
+  L1668: <span>地殻の急成長（任意の土地1スロットを、即座に最大開発段階「レジェンダリ★4」へ昇格する）</span>
+  L1674: state.addLog('奇跡発動：次の試練の敵戦闘力を 30% 減弱しました！', 'reward');
+  L1681: state.addLog('奇跡発動：最大開発する土地を盤面からクリックしてください。', 'system');
+  L1688: state.addLog(`奇跡適用：${getTerrainDisplayName(land.terrain)} を最大開発段階（L★4）に昇格しました！`, 'reward');
+  L1717: optFood.innerHTML = `🌾 食料-20 で買収する ${!canBribeFood ? '<span style="color:#ef4444;">(不足)</span>' : ''}`;
+  L1720: state.addLog('【買収成功】亜人集団に食料🌾-20を支払い、襲撃を回避しました。', 'system');
+  L1731: optMat.innerHTML = `🧱 資材-20 で買収する ${!canBribeMaterials ? '<span style="color:#ef4444;">(不足)</span>' : ''}`;
+  L1734: state.addLog('【買収成功】亜人集団に資材🧱-20を支払い、襲撃を回避しました。', 'system');
+  L1746: optRefuse.innerHTML = `拒否する / 支払えない（略奪を受ける）`;
+  L1753: '略奪被害発生',
+  L1754: `亜人集団の襲撃に抵抗できず、以下の被害を受けました：<br><br>` +
+  L1755: `・土地荒廃: <b>${penalty.landName}</b> (3T生産半減)<br>` +
+  L1756: `・略奪資源: <b>🌾-${penalty.stolenFood}</b> / <b>🧱-${penalty.stolenMaterials}</b><br><br>` +
+  L1757: `民はこの略奪の教訓から「亜人襲撃の経験 (次回災害率減少)」レガシーを獲得しました。`,
+  L1777: showGrandEventModal(`災厄発生: ${result.name}`, result.desc, 'crisis.png', () => {
+  L1802: state.addLog('奇跡発動：次の試練の敵戦闘力を 30% 減弱しました！', 'reward');
+  L1809: state.addLog('奇跡発動：最大開発する土地を盤面からクリックしてください。', 'system');
+  L1816: state.addLog(`奇跡適用：${getTerrainDisplayName(land.terrain, land.attribute)} を最大開発段階（L★4）に昇格しました！`, 'reward');
+  L1833: state.addLog('警告：カードを選択してターンを開始してください！', 'warning');
+  L1843: state.addLog(`社会制度「${policyId}」を解禁しました (-${cost} 🧱)。`, 'reward');
+  L1855: state.addLog(`施設「${facilityId}」を建設しました (-${cost} 🧱)。`, 'reward');
+  L1868: state.addLog(`第 ${state.currentTurn} ターン終了。生産物回収：🌾 +${yields.food} / 🧱 +${yields.materials} / ✨ +${yields.mystic} (総防衛力: 🛡️ ${state.defense})`, 'action');
+  L1876: foodCorrectionText = " (大豊作による活力補正: +1 🔥)";
+  L1879: foodCorrectionText = " (十分な食料による維持補正: 0 🔥)";
+  L1916: name: '共同体の融和',
+  L1918: desc: 'ベース土地カード (🧭) の出現ウェイトが +15% 上昇します。',
+  L1921: req: '初期状態'
+  L1924: name: '専制君主制',
+  L1926: desc: '試練戦闘時、防衛力 (🛡️) +20%。ただし毎ターンの資材 (🧱) 産出 -15%。',
+  L1929: req: '社会制度「戦術（tactics）」解禁で開放'
+  L1932: name: '神聖君主制',
+  L1934: desc: '毎ターン神秘 (✨) +5。神秘の奇跡コストが -10% 低減されます。',
+  L1937: req: '社会制度「神秘（mysticism）」解禁で開放'
+  L1940: name: '開拓民主制',
+  L1942: desc: '土地のニコイチ開発コストが -1 🔥 低減される。ただし毎ターンの食料 (🌾) 産出 -15%。',
+  L1945: req: '社会制度「農業（agriculture）」解禁で開放'
+  L1955: <h3 style="font-size: 0.9rem; color: #f97316; margin-bottom: 4px;">現在のアクティブ政体: ${activeData.icon} ${activeData.name}</h3>
+  L1958: 切り替え制限: ${state.polityCooldown > 0 ? `あと ${state.polityCooldown} ターン変更不可` : '変更可能'}
+  L1992: name: '共同体の融和',
+  L1994: desc: 'ベース土地カード (🧭) の出現ウェイトが +15% 上昇します。',
+  L1997: req: '初期状態'
+  L2000: name: '専制君主制',
+  L2002: desc: '試練戦闘時、防衛力 (🛡️) +20%。ただし毎ターンの資材 (🧱) 産出 -15%。',
+  L2005: req: '社会制度「戦術（tactics）」解禁で開放'
+  L2008: name: '神聖君主制',
+  L2010: desc: '毎ターン神秘 (✨) +5。神秘の奇跡コストが -10% 低減されます。',
+  L2020: state.addLog(`試練報酬：レアカード「${chosenCard.name}」の天啓を受けました！`, 'reward');
+  L2025: state.addLog(`試練報酬：新たなレガシー「${chosenLegacy}」を獲得しました！`, 'reward');
+  L2059: el.gameEndDesc.innerText = '残り火が完全に消え去り、集落は凍える闇の中に飲み込まれました。あなたの旅はここで終わります...';
+  L2065: <div class="score-row"><span>残り火:</span> <span class="text-danger">0 (消滅)</span></div>
+  L2066: <div class="score-row"><span>生存ターン (T ${state.currentTurn} x 100):</span> <span>+${turnScore}</span></div>
+  L2067: <div class="score-row total"><span>最終スコア:</span> <span>${totalScore}</span></div>
+  L2084: state.addLog('警告：カードを選択してターンを開始してください！', 'warning');
+  L2099: state.addLog(`第 ${state.currentTurn} ターン終了。生産物回収：🌾 +${yields.food} / 🧱 +${yields.materials} / ✨ +${yields.mystic} (総防衛力: 🛡️ ${state.defense})`, 'action');
+  L2104: foodCorrectionText = ` (深刻な食料不足による残り火の衰退: -2 🔥 / 消費コスト ${foodMaintenance} に対して残高 ${originalFood} 🌾)`;
+  L2107: foodCorrectionText = " (大豊作による残り火の自動増加: +1 🔥)";
+  L2110: foodCorrectionText = " (十分な食料蓄積による残り火維持: 0 🔥)";
+  L2113: foodCorrectionText = " (食料不足による残り火減衰: -1 🔥)";
+  L2118: state.addLog(`残り火減衰：残り火が ${fireDecay} 🔥 減少しました。${foodCorrectionText}`, 'warning');
+  L2120: state.addLog(`残り火維持：残り火は減少せず維持されました。${foodCorrectionText}`, 'system');
+  L2122: state.addLog(`残り火増幅：活力が満ち、残り火が ${Math.abs(fireDecay)} 🔥 増加しました！${foodCorrectionText}`, 'reward');
+  L2127: state.addLog(`残り火減衰：残り火が ${fireDecay} 🔥 減少しました。${foodCorrectionText}`, 'warning');
+  L2129: state.addLog(`残り火維持：残り火は減少せず維持されました。${foodCorrectionText}`, 'system');
+  L2131: state.addLog(`残り火増幅：活力が満ち、残り火が ${Math.abs(fireDecay)} 🔥 増加しました！${foodCorrectionText}`, 'reward');
+  L2222: state.addLog(`軍備：集落防衛のための義勇兵（兵士トークン）が ${replenishedSoldiersCount} 名補充されました。`, 'system');
+  L2271: el.trialBattleTitle.innerText = `🔥 第 ${state.nextTrialIndex} の試練 襲来 🔥`;
+  L2272: el.trialBattleTactic.innerText = `敵軍戦術: ${tactic.name} (${tactic.desc})`;
+  L2275: if (tactic.name.includes('強襲')) modifiedPower = Math.round(modifiedPower * 1.2);
+  L2276: if (tactic.name.includes('火攻め')) modifiedPower = Math.round(modifiedPower * 1.1);
+  L2277: el.trialBattlePower.innerText = `総敵戦力: ⚔️ ${modifiedPower}`;
+  L2282: el.trialUnassignedSoldiers.innerHTML = `<div style="font-size: 0.7rem; color: #9ca3af; padding: 4px; width: 100%;">待機兵力なし。緊急徴兵するか、戦場から配備解除してください。</div>`;
+  L2293: badge.innerHTML = `⚔️ 兵士 (ID: ${s.id}) Lv ${s.level}`;
+  L2294: badge.title = "クリックして最初の戦場へ配備";
+  L2322: state.addLog(`新兵を1名徴兵しました！ (-1 🔥)`, 'action');
+  L2353: el.trialBattleTitle.innerText = `🔥 第 ${state.nextTrialIndex} の試練 襲来 🔥`;
+  L2354: el.trialBattleTactic.innerText = `敵軍戦術: ${tactic.name} (${tactic.desc})`;
+  L2357: if (tactic.name.includes('強襲')) modifiedPower = Math.round(modifiedPower * 1.2);
+  L2358: if (tactic.name.includes('火攻め')) modifiedPower = Math.round(modifiedPower * 1.1);
+  L2359: el.trialBattlePower.innerText = `総敵戦力: ⚔️ ${modifiedPower}`;
+  L2364: el.trialUnassignedSoldiers.innerHTML = `<div style="font-size: 0.7rem; color: #9ca3af; padding: 4px; width: 100%;">待機兵力なし。緊急徴兵するか、戦場から配備解除してください。</div>`;
+  L2375: badge.innerHTML = `⚔️ 兵士 (ID: ${s.id}) Lv ${s.level}`;
+  L2376: badge.title = "クリックして最初の戦場へ配備";
+  L2404: state.addLog(`新兵を1名徴兵しました！ (-1 🔥)`, 'action');
+  L2434: <strong style="color: #f97316;">${bf.name} (スロット ${bf.index})</strong>
+  L2435: <span style="font-weight: bold; color: #34d399;">🛡️ 防衛力: ${bfDefense}</span>
+  L2450: list.innerHTML = `<span style="font-size: 0.68rem; color: #6b7280; padding: 4px;">配備中の兵士なし</span>`;
+  L2462: soldierBadge.title = "クリックして配備解除";
+  L2485: assignBtn.innerText = '待機兵をここに配備';
+  L2527: if (line.innerText.includes('[防衛成功]')) {
+  L2529: } else if (line.innerText.includes('[警告]') || line.innerText.includes('☠️') || line.innerText.includes('💥')) {
+  L2541: div.innerHTML = `<span>⚠ ${getTerrainDisplayName(land.terrain, land.attribute)}の荒廃</span> <span class="d-turns">${turnsRemaining - 1}T</span>`;
+  L2581: el.disastersList.innerHTML = '<div class="empty-text">災害なし</div>';
+  L2587: div.innerHTML = `<span>⚠ ${getTerrainDisplayName(land.terrain, land.attribute)}の荒廃</span> <span class="d-turns">${turnsRemaining - 1}T</span>`;
+  L2625: <div class="score-row total"><span>最終スコア:</span> <span>${totalScore}</span></div>
+  L2641: state.addLog('土地の最大上限数(7枚)に達しています！これ以上配置できません。', 'warning');
+  L2649: state.addLog('残り火 🔥 が不足しているため、土地を配置できません！', 'warning');
+  L2716: title = "🔥 残り火 (Fire)";
+  L2717: desc = "集落の生命活動を維持するための残り火。毎ターン終了時に一定量減少し、0 になるとゲームオーバーになります。<br><br>" +
+  L2718: "・最大上限: 30 🔥<br>" +
+  L2719: "・基本減衰: -1 🔥/ターン (保留エリアにカードが残っている場合、さらに -1 🔥 のペナルティがあります)。<br>" +
+  L2720: "・食料🌾備蓄補正:<br>" +
+  L2721: "  - 🌾 240 以上: +1 🔥 (残り火が増加します)<br>" +
+  L2722: "  - 🌾 120 以上: 0 🔥 (残り火は減少しません)<br>" +
+  L2723: "  - 🌾 30 未満: -2 🔥 (深刻な食料不足による急激な減衰)";
+  L2733: state.addLog('残り火 🔥 が不足しているため、徴兵できません！', 'warning');
+  L2737: state.addLog('兵士の収容上限に達しているため、これ以上徴兵できません！(兵舎等を建設してください)', 'warning');
+  L2748: state.addLog(`新兵を1名徴兵しました！ (-1 🔥)`, 'action');
+  L2766: el.trialCountdown.innerText = '警告: 試練襲来中！';
+  L2768: el.trialCountdown.innerText = `試練まで ${turnsToTrial} ターン`;
+  L2864: el.legacyList.innerHTML = '<div class="empty-text">レガシーなし</div>';
+  L2879: el.disastersList.innerHTML = '<div class="empty-text">災害なし</div>';
+  L2885: div.innerHTML = `<span>⚠ ${getTerrainDisplayName(land.terrain, land.attribute)}の荒廃</span> <span class="d-turns">${turnsRemaining - 1}T</span>`;
+  L2934: soldiersCountText.innerText = `兵士数: ${state.soldiers.length} / ${state.soldierCapacity}`;
+  L2944: soldiersContainer.innerHTML = `<div style="font-size: 0.65rem; color: #9ca3af; text-align: center; padding: 4px;">兵士なし</div>`;
+  L2954: item.innerHTML = `<span>⚔️ 兵士 (ID: ${s.id})</span> <span>Lv ${s.level} (XP: ${s.xp}/100)</span>`;
+  L3248: state.addLog('新たな政体「専制君主制」が選択可能になりました！', 'system');
+  L3251: state.addLog('新たな政体「神聖君主制」が選択可能になりました！', 'system');
+  L3254: state.addLog('新たな政体「開拓民主制」が選択可能になりました！', 'system');
+
+[game\src\state.js]: 19 violations
+  L103: if (this.isHQ) return '🏰 本営';
+  L104: if (this.isHeadwaters) return '💎 清冽な源流 (食料2倍+✨1)';
+  L106: const elevNames = { 1: '平地', 2: '丘陵', 3: '山岳' };
+  L107: const glNames = { 0: '砂漠', 1: '標準', 2: '森', 3: '森林' };
+  L110: const gName = (this.elevation === 3) ? '岩山' : glNames[this.greenLevel];
+  L153: { turn: 10, name: '⚔️ 蛮族の夜襲 (Stage 1)', power: 50 },
+  L154: { turn: 25, name: '🛡️ 帝国遠征軍の侵攻 (Stage 2)', power: 200 },
+  L155: { turn: 50, name: '🔥 終焉の長夜 (最終試練)', power: 800 }
+  L158: this.addLog('✨ ゲーム開始！5×5初期盤面 (中央 (2,2) 🏰 1×1本営)');
+  L185: let fillBonusDesc = 'なし';
+  L189: fillBonusDesc = '+20% (充填率80%+ 達成)';
+  L192: fillBonusDesc = '+10% (充填率50%+ 達成)';
+  L262: this.addLog(`★ 【ソケットボーナス解禁】 (${gx},${gy}) に固有バフ解禁！`, 'success');
+  L286: this.addLog(`💎 【1プレイ1回限定】 奇跡の『清冽な源流』を発見！(規模: ${length}辺) 水利バフ🌾+100%＆✨+1発動！`, 'success');
+  L288: this.addLog(`🌊 【1プレイ1回限定】 『本流』を発見！(Civ式 規模: ${length}辺) 水利バフ🌾+50%発動！`, 'success');
+  L302: this.addLog(`🪓 伐採を実行: (${x},${y}) の緑化度を低下させ、資材 🧱+15 を獲得。`);
+  L321: this.addLog(`🏛️ 2D6探索 [出目12 ゾロ目!] (${x},${y}) で古代遺跡を発見！ 神秘 ✨+10 獲得！`, 'success');
+  L324: this.addLog(`💎 2D6探索 [出目${sum}] レア資源発見！ 食料 🌾+30 獲得。`, 'info');
+  L327: this.addLog(`🌾 2D6探索 [出目${sum}] 通常発見。資材 🧱+10 獲得。`, 'info');
+
+[game\src\trials.js]: 12 violations
+  L3: { id: 'et-assault', name: '強襲', desc: '制圧力 +10%', condition: null },
+  L4: { id: 'et-surprise', name: '奇襲', desc: '防衛力 -10', condition: '森' }
+  L10: name: '防御陣形',
+  L13: desc: '防衛力+10 / 「強襲」が無効化された時、敵制圧力-10%',
+  L20: name: '伏兵',
+  L22: condition: '森',
+  L23: desc: '使用条件：森 / 敵戦術を無効化 ＆ 敵制圧力-20%',
+  L76: zoneName: '北翼戦線 (上部)',
+  L84: zoneName: '中央戦線 (本営正面)',
+  L92: zoneName: '南翼戦線 (下部)',
+  L150: state.addLog(`🚨 試練結果: 3戦線差分合計 ${totalDiffSum}。残り火 -${fireLoss}🔥 被害！`, 'warning');
+  L153: state.addLog(`✨ 試練結果: 3戦線完全防衛成功！ (差分合計 +${totalDiffSum})`, 'success');
+
+[game\src\v2_unity_ready_main.js]: 9 violations
+  L266: bonusText = " (🛡️警戒態勢ボーナス +3)";
+  L270: this.addLog(`🛡️ 防衛力獲得: +${finalAmount}${bonusText} [${reason}] (現在: 🛡️${this.calculateTotalDefense()})`);
+  L299: this.addLog(`🌾 節約配給適用中: 食料維持費が ${foodCost} に軽減されました。`);
+  L309: this.addLog(`⚠️ 食料不足！ ペナルティとして 🔥-2 (現在: 🔥${this.ember})`);
+  L319: this.addLog(`🔥 領土大繁栄 (${tileCount} >= ${thresholds.autoHeat}マス)！ 自家発熱により 🔥+1 回復！`);
+  L322: this.addLog(`🛡️ 領土定着 (${tileCount} >= ${thresholds.decayStop}マス)！ 🔥の自然減衰がストップしました。`);
+  L329: this.addLog(`🔥 残火の節約適用中: 自然減衰が 1 軽減 (消費 0) されました。`);
+  L343: this.addLog(`📥 保留スロット維持費: 🔥-1 (現在: 🔥${this.ember})`);
+  L351: this.addLog(`🛡️ 警戒態勢の効果（全🛡️獲得+3ボーナス）が終了しました。`);
+
+[game\src\systems\grid_engine.js]: 6 violations
+  L316: spawnedSocket = { id: "SOCKET_LAKE", nameKey: "SOCKET_LAKE", category: "水脈", icon: "💧", bonusFood: 2, bonusWood: 0, bonusDefense: 0, bonusMystic: 0 };
+  L318: spawnedSocket = { id: "SOCKET_OASIS", nameKey: "SOCKET_OASIS", category: "水脈", icon: "🌴", bonusFood: 1, bonusWood: 0, bonusDefense: 0, bonusMystic: 0 };
+  L716: this.state.addLog(`🟨【丘陵】L字異形マージ完成！ (${bText}) ＆ 最後のマスが『★隠匿鉱床 (🧱+2 🛡️+1/T)』に覚醒！`);
+  L719: this.state.toastQueue.push({ r: coords[0].r, c: coords[0].c, text: `🟨 L字マージ覚醒! (${bText})` });
+  L791: this.state.addLog(`🛡️【山岳】凸字異形マージ完成！ (${bText}) ＆ 最後のマスが『★主峰砦 (🛡️+3 ✨+2/T)』に覚醒！`);
+  L794: this.state.toastQueue.push({ r: coords[0].r, c: coords[0].c, text: `🛡️ 凸字マージ覚醒! (${bText})` });
+
+[game\src\systems\buff_system.js]: 13 violations
+  L35: name: "🔥 旺盛バフ",
+  L36: shortName: "旺盛 (+10%)",
+  L38: description: "🔥旺盛により全リソース産出 +10% ＆ 自動 ✨+2/T",
+  L39: badgeText: "環境バフ",
+  L48: name: "🔥 危機 (微火)",
+  L49: shortName: "微火 (維持費減)",
+  L51: description: "🔥危機により省エネ復興中 (食料維持費 🌾15/T へ減圧)",
+  L52: badgeText: "環境バフ",
+  L102: name: `⚔️ 試練襲来まで あと ${notice.remaining} ターン`,
+  L103: shortName: `試練接近 (${notice.remaining}T)`,
+  L105: description: `迫り来る大試練に備えて防衛力 (🛡️) を高めてください。`,
+  L106: badgeText: `残り ${notice.remaining}T`,
+  L170: buff.badgeText = `残り ${buff.remainingTurns}T`;
+
+[game\src\systems\deck_manager.js]: 52 violations
+  L423: this.state.addLog(`📜【${cName}】発動 (コスト: 🧱-20) ➔ 全ての草原マスの食料産出が 🌾+1/T 永続加算されました！`);
+  L428: this.state.addLog(`📜【${cName}】発動 (コスト: 🌾-25) ➔ 🧱+35 ＆ ✨+10 を一括獲得しました！`);
+  L433: this.state.addLog(`🛡️【${cName}】発動 (コスト: 🧱-20) ➔ 防衛力 🛡️+25 獲得 ＆ 本営近郊8マスの防衛力が 🛡️+2/T 永続加算されました！`);
+  L440: name: "🏹 大型バリスタ配備",
+  L441: shortName: "防衛+40/軽減50%",
+  L443: description: "防衛力 🛡️+40 ＆ 次回試練ダメージ50%軽減",
+  L444: badgeText: "試練対策",
+  L447: this.state.addLog(`🏹【${cName}】発動 (コスト: 🧱-30) ➔ 防衛力 🛡️+40 獲得 ＆ 次回の試練被ダメージを 50% 軽減（半減無効化）！`);
+  L454: name: "✨ 🔥の再点火",
+  L455: shortName: "保留費無料化",
+  L457: description: "保留スロット利用料 3T無料化",
+  L458: badgeText: "残り 3T",
+  L462: this.state.addLog(`✨【${cName}】発動 (コスト: ✨-10) ➔ 🔥+3 回復 ＆ 3ターンの間手札保留スロット利用料を無料化しました！`);
+  L468: this.state.addLog(`💎【${cName}】発動 (コスト: ✨-20) ➔ 土地 (${targetTile.r}, ${targetTile.c}) を聖なる光脈 (✨+5 ＆ 🔥+1/T) へ変容しました！`);
+  L471: this.state.addLog(`💎【${cName}】発動 (コスト: ✨-20) ➔ ✨+10 を獲得しました！`);
+  L477: this.state.addLog(`🏛️【${cName}】発動 (コスト: 🧱-15) ➔ 大風車の建設を開始しました (3ターン継続投資)！`);
+  L483: this.state.addLog(`🔥【${cName}】発動 ➔ 🔥+5 獲得 ＆ 手札オファリング枠が永久に4枚へ拡張されました！`);
+  L489: name: "📜 土地探索注力",
+  L490: shortName: "土地確率2倍",
+  L492: description: "盤面6ブロック到達まで土地出現率2倍",
+  L493: badgeText: "ドロー制御",
+  L496: this.state.addLog(`📜【${cName}】発動 (コスト: 🌾-10 🧱-10) ➔ 盤面6ブロック到達まで土地出現率が 2倍 になりました！`);
+  L502: name: "🛡️ 軍備強化注力",
+  L503: shortName: "軍事確率2倍",
+  L505: description: "防衛力20到達まで軍事出現率2倍",
+  L506: badgeText: "ドロー制御",
+  L509: this.state.addLog(`⚔️【${cName}】発動 (コスト: 🧱-20) ➔ 防衛力20到達まで軍事カード出現率が 2倍 になりました！`);
+  L515: name: "✨ 神秘探求注力",
+  L516: shortName: "神秘確率2倍",
+  L518: description: "3ターンの間神秘出現率2倍",
+  L519: badgeText: "残り 3T",
+  L528: name: "🔥 残火の節約",
+  L529: shortName: "自然減衰-1軽減",
+  L531: description: "次ターンの🔥消費(自然減衰)を 1 軽減",
+  L532: badgeText: "残り 1T",
+  L536: this.state.addLog(`🔥【${cName}】発動 (コスト: 無料) ➔ 次ターンの🔥自然減衰を 1 軽減 (消費0) します！`);
+  L543: name: "🌾 節約配給",
+  L544: shortName: "食料維持費50%減",
+  L546: description: "今ターンの食料維持費を50%軽減 ＆ 🌾+5 獲得",
+  L547: badgeText: "残り 1T",
+  L551: this.state.addLog(`🌾【${cName}】発動 (コスト: 無料) ➔ 今ターンの食料維持費を 50% 軽減し、🌾+5 を緊急獲得しました！`);
+  L558: name: "🧘 静かなる瞑想",
+  L559: shortName: "✨+3 / 次T土地優先",
+  L561: description: "✨+3 獲得 ＆ 次ターンの土地出現を優先保証",
+  L562: badgeText: "残り 1T",
+  L566: this.state.addLog(`🧘【${cName}】発動 (コスト: 無料) ➔ ✨+3 を獲得し、次ターンの手札に土地カードを優先保証しました！`);
+  L573: name: "🛡️ 警戒態勢",
+  L574: shortName: "全🛡️獲得+3",
+  L576: description: "2ターンの間、獲得する全ての🛡️に+3ボーナス",
+  L577: badgeText: "残り 2T",
+  L581: this.state.addLog(`🛡️【${cName}】発動 (コスト: 🧱-15) ➔ 2ターンの間、獲得する全ての 🛡️ に +3 の追加ボーナスが付与されます！`);
+  L600: this.state.addLog(`📜 ${cName}を発動！ コスト (🌾-30 🧱-30 🔥-1) を払い位置 (${String.fromCharCode(65+chosen.c)}${chosen.r+1}) で2D6探索を開始！`);
+
+[game\src\ui\buff_panel_component.js]: 6 violations
+  L55: <span id="buffDropupTitleText">✨ 発動中のバフ一覧</span>
+  L57: <button class="sort-select-btn" id="btnBuffSortToggle">並び替え: 獲得順 🔄</button>
+  L71: <span id="buffSummaryCountText">✨ 発動中のバフ (0)</span>
+  L110: if (countText) countText.innerText = `✨ 発動中のバフ (${this.activeBuffs.length})`;
+  L146: <span class="buff-card-badge">${buff.badgeText || "パッシブ"}</span>
+  L159: sortBtn.innerText = `並び替え: ${this.sortMode === "ACQUIRED" ? "獲得順 (新➔古)" : "カテゴリ順"} 🔄`;
+
+[game\src\ui\log_component.js]: 4 violations
+  L36: this.btnEl.innerHTML = `📜 <span id="lblLogTitleHeader">ログ</span> <span id="logHeaderArrow" style="margin-left:4px; font-weight:900;">▽</span>`;
+  L46: <span id="lblLogDropdownTitle" style="font-weight: bold; color: #1abc9c;">📜 システム・内政ログ</span>
+  L130: titleEl.innerText = `ログ${countText}`;
+  L142: targetEl.innerHTML = `<div style="color:#7f8c8d; font-size:14px; padding:4px;">※内政・操作ログがここに記録されます。</div>`;
+
+[game\src\ui\modal_system.js]: 2 violations
+  L188: const confirmBtnText = confirmLabel || "⚡ 発動する";
+  L189: const cancelBtnText = cancelLabel || "✖ キャンセル";
+
+[game\src\ui\territory_badge_component.js]: 2 violations
+  L31: this.badgeEl.title = "🏛️ 領土開墾進捗 (クリックで文明方針変更)";
+  L109: this.badgeEl.title = `Stage ${this.stage} 支配地占有率: ${pct}% (開拓済み: ${this.currentCount}マス / 最大: ${this.maxCount}マス / 残り: ${this.maxCount - this.currentCount}マス)`;
+
+[game\src\ui\ui_controller.js]: 44 violations
+  L316: <span>🔄 マリガン</span> <span class="btn-mulligan-ember-cost">🔥-1</span>
+  L321: <span class="reserve-header-cost-badge" title="保留枠にカードが存在するターン終了時、🔥-1 を消費します">
+  L359: <span>🔄</span> 手札を引き直しますか？
+  L362: 🔥 残り火を 1 消費して新カード 3 枚を引き直します。
+  L366: 次回から確認しない
+  L369: <button id="btnCancelMulliganPop" class="mulligan-popover-btn-cancel">キャンセル</button>
+  L370: <button id="btnConfirmMulliganPop" class="mulligan-popover-btn-confirm">引き直す (🔥-1)</button>
+  L407: window.showToast(this.isMinimalMode ? "手札をミニマル表示（ホバー拡大）に切り替えました" : "手札を標準表示に切り替えました");
+  L445: <button class="btn-minimal-mulligan" id="btnMulligan" data-tooltip-title="🔄 マリガン (手札引き直し)" data-tooltip="${mulliganTooltip}" ${canMulligan ? "" : "disabled style='opacity:0.45; cursor:not-allowed; filter:grayscale(0.8);'"}>
+  L490: <button class="btn-mulligan-compact" id="btnMulligan" data-tooltip-title="🔄 マリガン (手札引き直し)" data-tooltip="${mulliganTooltip}" ${canMulligan ? "" : "disabled style='opacity:0.45; cursor:not-allowed; filter:grayscale(0.8);'"}>
+  L491: <span>🔄 マリガン</span> <span class="btn-mulligan-ember-cost">🔥-1</span>
+  L614: title: `📜 ${cName} を発動しますか？`,
+  L617: confirmLabel: "⚡ 発動する",
+  L618: cancelLabel: "✖ キャンセル",
+  L893: let title = `土地 [${coordStr}]`;
+  L895: ? "🏛️ <strong>本営近郊エリア</strong><br>本営に隣接する特別な地脈です。<br><span style='color:#1abc9c; font-weight:bold;'>ここに配置された土地が産出しているすべての数値（>0）にそれぞれ +1 ボーナス</span> が付与されます。<br><small style='color:#a4b0be;'>（例: 🌾2 ➔ 🌾3 / ✨5 ➔ ✨6、0の項目は0のまま）</small>"
+  L896: : "未開拓の土地";
+  L899: title = `🏛️ 本営 HQ [${coordStr}]`;
+  L900: desc = "基礎産出: 🌾+10 🧱+10 🛡️10 ✨+1";
+  L902: title = `★ 資源ソケット [${coordStr}]`;
+  L903: desc = "<div style='color:#f1c40f; font-weight:900; font-size:16px; margin-bottom:4px;'>★ 土地ブロック配置時ボーナス資源発見</div><div style='color:#ced6e0; font-size:14px; line-height:1.4;'>このマスに土地を配置すると、地形に応じた固有の特産品（★）が開花し、毎ターン追加の持続ボーナスを獲得します。</div>";
+  L907: const placedTag = isPlacedThisTurn ? ` <span style="font-size:12px; background:#e74c3c; color:#fff; padding:2px 6px; border-radius:4px; margin-left:6px; font-weight:bold;">当ターン配置</span>` : "";
+  L935: bonusParts.push("本営近郊(+1)");
+  L943: bonusParts.push(`平地強化(+${this.state.permanentPlainsFoodBonus})`);
+  L952: const yieldStr = yieldParts.length > 0 ? yieldParts.join(" ") : "産出なし";
+  L954: desc = `毎ターン産出: <strong>${yieldStr}</strong>${bonusStr}`;
+  L961: <span><strong>このマスをクリック</strong>すると、配置を取り消して手札へ戻し置き直せます</span>
+  L1012: title: "⚠️ 土地カードが未配置です",
+  L1013: message: "今ターンはまだ土地カードを配置していません。このままターンを終了しますか？",
+  L1014: confirmText: "ターン終了",
+  L1015: cancelText: "戻る",
+  L1045: window.LogComponent.addLog(`ターン ${this.state.turn} を開始しました。手札オファリングを補充しました。`, this.state.turn);
+  L1189: const emberStr = emberPct > 0 ? ` | 🔥残り火加護: +${emberPct}%` : "";
+  L1193: <span>📊</span> 毎ターンの産出詳細内訳
+  L1199: <span>🌾 食料 (現在在庫: ${state.food})</span>
+  L1200: <span style="color:${netFoodColor}; font-size:16px;">${netFoodSign} /T (純収支)</span>
+  L1203: 総産出: +${grossFood} (本営: +10 | 土地: +${foodTiles} | ★ソケット: +${foodSockets} | 近郊: +${foodVicinity}${emberStr})<br>
+  L1204: <span style="color:#ff9f43; font-weight:bold;">🔥 食料維持費: -${foodCost} / T</span>
+  L1211: <span>🧱 資材 (現在在庫: ${state.wood})</span>
+  L1215: 本営基礎: +10 | 土地配置: +${woodTiles} | ソケット: +${woodSockets} | 本営近郊: +${woodVicinity}${emberStr}
+  L1222: <span>🛡️ 防衛力 (試練対策)</span>
+  L1226: 本営基礎: 10 | 土地配置: +${defTiles} | ソケット: +${defSockets}
+  L1233: <span>✨ 神秘 (現在在庫: ${state.mystic})</span>
+  L1237: 本営基礎: +1 | 土地配置: +${mysticTiles} | ソケット: +${mysticSockets} | 残り火自動付与: +${emberMystic}${emberStr}
+
+[game\src\ui\settings_modal_system.js]: 17 violations
+  L130: btn.title = "⚙️ 環境設定 (Esc)";
+  L153: <span>⚙️</span> ゲーム環境設定 (Game Preferences)
+  L159: プレイスタイルや好みに合わせて操作感や画面演出をカスタマイズします。設定はブラウザに自動保存されます。
+  L166: <div style="font-weight: bold; color: #ffffff; font-size: 14px;">🔄 マリガン確認ダイアログ</div>
+  L167: <div style="font-size: 12px; color: #a4b0be; margin-top: 2px;">手札引き直し時に手札直上で確認するか、即時引き直すかを選択</div>
+  L170: <option value="true">吹き出し確認あり</option>
+  L171: <option value="false">確認なし即時実行</option>
+  L178: <div style="font-weight: bold; color: #ffffff; font-size: 14px;">⚠️ 土地未配置時のターン終了警告</div>
+  L179: <div style="font-size: 12px; color: #a4b0be; margin-top: 2px;">当ターン土地を置かずにターン終了を押した際に警告を表示</div>
+  L182: <option value="true">警告を出す (推奨)</option>
+  L183: <option value="false">即時ターン終了</option>
+  L190: <div style="font-weight: bold; color: #ffffff; font-size: 14px;">🌓 2層フォーカス演出 (DoFボケ)</div>
+  L191: <div style="font-size: 12px; color: #a4b0be; margin-top: 2px;">土地カード選択中に手札をボカして盤面を際立たせる演出</div>
+  L194: <option value="true">ON (映画風演出)</option>
+  L195: <option value="false">OFF (常時クッキリ)</option>
+  L201: <button id="btnResetSettings" style="background: transparent; color: #e74c3c; border: 1px solid #e74c3c; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;">初期設定に戻す</button>
+  L202: <button class="directive-modal-btn-close" id="btnSaveCloseSettings">閉じる</button>
+
+[game\src\ui\ember_status_component.js]: 26 violations
+  L39: statusTitle: '🔥 標準',
+  L41: statusEffectText: '通常状態 (安定燃焼)',
+  L44: emberDeltaText: '標準燃焼 (-1 🔥/T)',
+  L46: reserveCostText: '保留枠 空 (0 🔥)',
+  L48: nextMilestoneText: '食料 200 で減衰ストップ！',
+  L58: let statusTitle = '🔥 標準';
+  L60: let statusEffectText = '通常維持状態 (食料維持費 🌾20/T)';
+  L65: statusTitle = '🔥 旺盛';
+  L67: statusEffectText = '全産出 +10% ブースト ＆ 毎ターン ✨+2/T';
+  L71: statusTitle = '🔥 危機 (微火)';
+  L73: statusEffectText = '省エネ復興中 (食料維持費 🌾15/T 減圧)';
+  L82: let emberDeltaText = '標準燃焼 (-1 🔥/T)';
+  L83: let nextMilestoneText = 'あと ' + Math.max(0, thresholds.decayStop - tileCount) + ' マスで減衰ストップ！';
+  L88: emberDeltaText = '自家発熱 (+1 🔥/T 自動回復！)';
+  L89: nextMilestoneText = '最高段階 (領土大繁栄中！)';
+  L93: emberDeltaText = '減衰ストップ (0 🔥/T 維持)';
+  L94: nextMilestoneText = 'あと ' + Math.max(0, thresholds.autoHeat - tileCount) + ' マスで自家発熱 (+1 🔥/T)！';
+  L100: let reserveCostText = '保留枠 空 (0 🔥)';
+  L105: reserveCostText = '免除中 (残り ' + state.reserveFeeWaivedTurns + 'T)';
+  L108: reserveCostText = 'カード保留維持費 (-1 🔥/T)';
+  L200: <div class="ember-tooltip-section-title">📊 毎ターンの維持 ＆ 収支内訳</div>
+  L202: <span class="row-label">🌾 食料維持費:</span>
+  L206: <span class="row-label">🔥 食料蓄積効果:</span>
+  L210: <span class="row-label">📥 保留枠維持費:</span>
+  L217: <span class="row-label font-bold">🔥 ターン終了時 収支予測:</span>
+  L222: <div class="milestone-label">🌾 目標: ${info.nextMilestoneText}</div>
+
+[game\src\ui\hand_cards_component.js]: 6 violations
+  L178: let catTitle = "土地";
+  L179: if (category === "ECONOMY" || category === "COMMAND") { catIcon = "📜"; catTitle = "経済・政策"; }
+  L180: else if (category === "MILITARY") { catIcon = "⚔️"; catTitle = "軍事・防衛"; }
+  L181: else if (category === "MYSTIC") { catIcon = "✨"; catTitle = "神秘・奇跡"; }
+  L182: else if (category === "SOCIETY") { catIcon = "👥"; catTitle = "社会・士気"; }
+  L266: const yieldText = `<span style="font-size:16px; color:#ffffff; font-weight:bold; margin-right:6px;">産出:</span> <span style="font-size:20px; font-weight:900; letter-spacing:0.8px; color:#ffffff;">${yieldContent}</span>`;
+
+[game\src\ui\reserve_slot_component.js]: 12 violations
+  L62: let catTitle = "土地";
+  L63: if (category === "ECONOMY" || category === "COMMAND") { catIcon = "📜"; catTitle = "経済・政策"; }
+  L64: else if (category === "MILITARY") { catIcon = "⚔️"; catTitle = "軍事・防衛"; }
+  L65: else if (category === "MYSTIC") { catIcon = "✨"; catTitle = "神秘・奇跡"; }
+  L66: else if (category === "SOCIETY") { catIcon = "👥"; catTitle = "社会・士気"; }
+  L205: const yieldText = `<span style="font-size:16px; color:#ffffff; font-weight:bold; margin-right:6px;">産出:</span> <span style="font-size:20px; font-weight:900; letter-spacing:0.8px; color:#ffffff;">${yieldContent}</span>`;
+  L253: emptySlotEl.setAttribute("data-tooltip-title", "📦 保留スロット (HOLD)");
+  L254: emptySlotEl.setAttribute("data-tooltip", "手札カードを1枚キープできます<br>維持費: ターン終了時 🔥-1");
+  L258: const subText = canDepositSelected ? "手札を選択中: クリックで保留" : "手札を選択してクリック<br>またはドラッグでキープ";
+  L264: <div class="tcg-title-pill" style="font-size:18px; font-weight:900; text-align:center; flex:1; letter-spacing:0.5px; color:#2c3e50;">${holdLabel}スロット</div>
+  L272: <div style="font-size:22px; font-weight:900; color:#f39c12; letter-spacing:1.5px; margin-bottom:8px; text-shadow:0 0 10px rgba(243,156,18,0.5);">${holdLabel}枠 (空き)</div>
+  L280: <span>維持費: ターン終了時 🔥-1</span>
+
+[game\src\ui\board_grid_component.js]: 3 violations
+  L154: if (cellData.mergeType === "L_SHAPE") mergeLabel = `🟨 ${tName} (L字)`;
+  L155: else if (cellData.mergeType === "T_SHAPE") mergeLabel = `🛡️ ${tName} (凸字)`;
+  L193: undoBadge.title = "↩ クリックで配置を取り消す";
+
+[game\src\core\game_engine.js]: 3 violations
+  L101: this.state.addLog(`⚔️ [第1試練 到達] テストモードにより試練をスキップし、Stage 2 (7×7 盤面 / 48マス) へ拡張しました！`);
+  L111: this.state.addLog(`⚔️ [第2試練 到達] テストモードにより試練をスキップし、Stage 3 (9×9 盤面 / 80マス) へ拡張しました！`);
+  L118: this.state.addLog(`ターン ${this.state.turn} を開始しました。手札オファリングを補充しました。`);
+
+[game\index.html]: 5 violations
+  L106: <span>⚠️ 試練まで あと</span> <strong id="valTrialCountdown" class="trial-countdown-val">3</strong> <span>ターン</span>
+  L126: <span>🏛️</span> 文明方針の発令・変更 (Four Directives)
+  L131: 現在の文明方針（ディレクティブ）を変更できます。<br>
+  L132: 国家方針に即したボーナスを獲得し、過酷な試練を乗り越えましょう。
+  L136: <button class="directive-cancel-btn" onclick="closeDirectiveModal()">キャンセル</button>
+
+TOTAL VIOLATIONS: 2216

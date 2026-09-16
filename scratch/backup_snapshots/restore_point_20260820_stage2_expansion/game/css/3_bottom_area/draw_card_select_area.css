@@ -1,0 +1,178 @@
+/* =============================================================
+   game/css/3_bottom_area/draw_card_select_area.css
+   パターンA: メインエリア枠内包 ✕ 太枠フレーム (4px~5px)
+   ============================================================= */
+
+/* 🃏 メインエリア枠内 左下隅: ドローカード選択エリア (重なり防止 ＆ 3.5px 太枠) */
+.offering-section {
+    position: absolute;
+    bottom: 12px;
+    left: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 90;
+    padding: 10px 12px;
+    background: rgba(19, 22, 31, 0.94);
+    border: 3.5px solid #2e384e;
+    border-radius: 14px;
+    box-shadow: 0 6px 30px rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(6px);
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+    pointer-events: auto;
+}
+
+/* 🌟 左下カードエリアホバー時の強烈発光フォーカス */
+.offering-section.card-container-active-focus,
+.offering-section:hover {
+    border-color: #1abc9c !important;
+    box-shadow: 0 0 35px rgba(26, 188, 156, 0.6), 0 8px 35px rgba(0,0,0,0.9) !important;
+}
+
+.section-title-offering {
+    font-size: 13px;
+    font-weight: bold;
+    color: #1abc9c;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    white-space: nowrap;
+    letter-spacing: 0.5px;
+}
+.cards-row-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+/* 🃏 カードフレーム: 4.5px 存在感ある超太枠表示 ✕ 超大型 240px x 350px */
+.card-frame-tcg,
+.card-slot-box {
+    width: 240px !important;
+    height: 350px !important;
+    min-width: 240px !important;
+    min-height: 350px !important;
+    background: #11141a;
+    border: 4.5px solid #1abc9c !important; /* 4.5px 超太枠フレーム */
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 12px;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    user-select: none;
+    position: relative;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+    box-sizing: border-box;
+}
+
+.card-frame-tcg:hover,
+.card-slot-box:hover {
+    transform: scale(1.2) translateY(-16px) !important; /* 🌟 ユーザー指示: マウスオーバーで20%拡大表示 */
+    border-color: #2ecc71 !important;
+    box-shadow: 0 16px 40px rgba(46, 204, 113, 0.7) !important;
+    z-index: 500 !important;
+}
+
+.card-frame-tcg.selected,
+.card-slot-box.selected {
+    border-color: #f1c40f !important;
+    box-shadow: 0 0 35px rgba(241, 196, 15, 0.9) !important;
+    transform: scale(1.15) translateY(-12px) !important;
+    z-index: 400 !important;
+}
+
+/* 🎮 メインエリア枠内 右下隅: 統合操作グループ (3.5px 太目枠) */
+.footer-controls-partition {
+    position: absolute;
+    bottom: 16px;
+    right: 20px;
+    width: 240px;
+    height: auto !important;
+    background: #161922;
+    border: 3.5px solid #2e384e; /* 3.5px 太枠 */
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 10px;
+    box-sizing: border-box;
+    z-index: 100;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+}
+
+.turn-box-inside {
+    background: rgba(24, 34, 50, 0.6);
+    border: 2px solid #2c3e50;
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.btn-mulligan {
+    background: #e74c3c;
+    color: #fff;
+    border: none;
+    padding: 10px;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.15s;
+    width: 100%;
+}
+.btn-mulligan:hover {
+    background: #c0392b;
+    transform: translateY(-1px);
+}
+
+.btn-turn-end {
+    background: #1abc9c;
+    color: #0d0f14;
+    border: none;
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(26,188,156,0.3);
+    transition: transform 0.15s, background 0.15s;
+    width: 100%;
+}
+.btn-turn-end:hover {
+    background: #16a085;
+    color: #ffffff;
+    transform: translateY(-2px);
+}
+
+/* 🌀 左下カードエリアホバー時：土地盤面グリッドのみが奥へボヤける */
+.board-container-wrapper {
+    transition: filter 0.25s ease, opacity 0.25s ease;
+}
+.board-blur-focus .board-container-wrapper {
+    filter: blur(3px) brightness(0.68) !important;
+}
+
+/* 🎯 配置ブロックプレビューハイライト (.preview-valid / .preview-invalid)
+   近郊マス(.hq-vicinity-unplaced)やソケットマスの上であっても、緑/赤枠プレビューが確実に最前面に美しく表示される */
+.cell.preview-valid {
+    background: rgba(26, 188, 156, 0.55) !important;
+    border: 2.5px solid #1abc9c !important;
+    box-shadow: 0 0 18px rgba(26, 188, 156, 0.9) !important;
+    z-index: 100 !important;
+    filter: blur(0px) brightness(1.25) !important;
+}
+
+.cell.preview-invalid {
+    background: rgba(231, 76, 60, 0.55) !important;
+    border: 2.5px solid #e74c3c !important;
+    box-shadow: 0 0 18px rgba(231, 76, 60, 0.9) !important;
+    z-index: 100 !important;
+    filter: blur(0px) brightness(1.25) !important;
+}

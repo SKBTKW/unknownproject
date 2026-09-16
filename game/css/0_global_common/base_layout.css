@@ -1,0 +1,319 @@
+/* =============================================================
+   0_global_common / base_layout.css
+   アプリケーション全体の基本枠組み・リセット・メイングリッド配置定義
+
+   Screen-space metrics are owned by layout_tokens.css. This file owns
+   only the base shell structure and logical z-index bands.
+   ============================================================= */
+
+:root {
+    /* 🏛️ 論理レイヤー帯域 (Logical Layer z-index Bands) */
+    --z-world: 10;
+    --z-hud: 200;
+    --z-advisor: 420;
+    --z-player: 700;
+    --z-overlay: 900;
+    --z-modal: 9999;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #0d0f14;
+    color: #e0e0e0;
+    padding: var(--layout-body-padding);
+    display: flex;
+    flex-direction: column;
+    gap: var(--layout-body-gap);
+    height: 100vh;
+    overflow: hidden;
+}
+
+.app-wrapper {
+    max-width: var(--layout-app-max-width);
+    margin: 0 auto;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--layout-app-gap);
+    position: relative;
+}
+
+/* 2. 中間レイアウト構造 (SSOT: ワールド盤面・手札トレイ・オーバーレイの親コンテナ) */
+.middle-layout {
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    overflow: visible;
+}
+
+/* Settings modal scoped styles */
+.settings-modal-window {
+    width: var(--settings-modal-width, min(840px, 94vw));
+    max-width: 94vw;
+    height: var(--settings-modal-height, min(720px, calc(100vh - 48px)));
+    max-height: calc(100vh - 48px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 24px 28px;
+    background: #151a23;
+    border: 1px solid #283244;
+    border-radius: 12px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.75);
+}
+
+.settings-modal-window > .settings-modal-header,
+.settings-modal-window > .settings-modal-desc,
+.settings-modal-window > .settings-tab-bar,
+.settings-modal-window > .settings-modal-footer {
+    flex: 0 0 auto;
+}
+
+.settings-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #232b3b;
+}
+
+.settings-modal-title {
+    margin: 0;
+    font-size: 21px;
+    font-weight: 700;
+    color: #f1f5f9;
+    letter-spacing: 0.03em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.settings-modal-desc {
+    font-size: 13px;
+    color: #94a3b8;
+    line-height: 1.5;
+    margin: 10px 0 0;
+}
+
+/* 🗂️ Underline Tabs */
+.settings-tab-bar {
+    display: flex;
+    gap: 24px;
+    margin: 16px 0 0;
+    padding-bottom: 0;
+    border-bottom: 1px solid #232b3b;
+}
+
+.settings-tab-btn {
+    flex: 0 0 auto;
+    padding: 8px 4px 12px;
+    border: none;
+    border-bottom: 3px solid transparent;
+    border-radius: 0;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.settings-tab-btn:hover {
+    color: #e2e8f0;
+}
+
+.settings-tab-btn.active {
+    background: transparent;
+    color: #1abc9c;
+    border-bottom-color: #1abc9c;
+}
+
+/* 📜 Content Area */
+.settings-tab-content-container {
+    flex: 1 1 auto;
+    min-height: 0;
+    margin: 12px 0;
+    padding: 4px 12px 4px 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+}
+
+.settings-tab-pane {
+    display: none;
+    flex-direction: column;
+}
+
+.settings-tab-pane.active {
+    display: flex;
+}
+
+/* 📋 Flat Row Layout */
+.setting-item-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 14px 4px;
+    border: none;
+    border-bottom: 1px solid #1e2636;
+    border-radius: 0;
+    background: transparent;
+}
+
+.setting-item-row:last-child {
+    border-bottom: none;
+}
+
+.setting-item-copy {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.setting-item-title {
+    color: #f8fafc;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.setting-item-desc {
+    margin-top: 4px;
+    color: #94a3b8;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.setting-item-control {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+/* 🔘 Toggle Switch Control */
+.setting-toggle {
+    position: relative;
+    width: 48px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid #334155;
+    border-radius: 13px;
+    background: #1e293b;
+    cursor: pointer;
+    outline: none;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.setting-toggle:hover {
+    border-color: #475569;
+}
+
+.setting-toggle:focus-visible {
+    box-shadow: 0 0 0 2px #1abc9c;
+}
+
+.setting-toggle[aria-checked="true"],
+.setting-toggle.is-active {
+    background: #1abc9c;
+    border-color: #16a085;
+}
+
+.setting-toggle-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #cbd5e1;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease;
+    pointer-events: none;
+}
+
+.setting-toggle[aria-checked="true"] .setting-toggle-thumb,
+.setting-toggle.is-active .setting-toggle-thumb {
+    transform: translateX(22px);
+    background: #ffffff;
+}
+
+/* 🔽 Select Dropdown Control */
+.setting-select-control {
+    padding: 7px 12px;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    background: #1e293b;
+    color: #e2e8f0;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.setting-select-control:hover {
+    border-color: #475569;
+    background: #243147;
+}
+
+.setting-select-control:focus-visible {
+    border-color: #1abc9c;
+}
+
+.setting-select-resolution {
+    min-width: 220px;
+}
+
+/* 🦶 Footer */
+.settings-modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 14px;
+    border-top: 1px solid #232b3b;
+    margin-top: 0;
+}
+
+.settings-reset-btn {
+    padding: 7px 16px;
+    border: 1px solid #475569;
+    border-radius: 6px;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.settings-reset-btn:hover {
+    border-color: #ef4444;
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.08);
+}
+
+.settings-btn-close {
+    background: #2563eb;
+    color: #ffffff;
+    border: none;
+    padding: 8px 24px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.settings-btn-close:hover {
+    background: #1d4ed8;
+}

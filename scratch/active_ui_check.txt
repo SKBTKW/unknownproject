@@ -1,0 +1,84 @@
+Files with violations: 9
+[game\src\ui\board_grid_component.js]: 3 violations
+  L154: if (cellData.mergeType === "L_SHAPE") mergeLabel = `🟨 ${tName} (L字)`;
+  L155: else if (cellData.mergeType === "T_SHAPE") mergeLabel = `🛡️ ${tName} (凸字)`;
+  L193: undoBadge.title = "↩ クリックで配置を取り消す";
+[game\src\ui\modal_system.js]: 2 violations
+  L188: const confirmBtnText = confirmLabel || "⚡ 発動する";
+  L189: const cancelBtnText = cancelLabel || "✖ キャンセル";
+[game\src\ui\territory_badge_component.js]: 2 violations
+  L31: this.badgeEl.title = "🏛️ 領土開墾進捗 (クリックで文明方針変更)";
+  L109: this.badgeEl.title = `Stage ${this.stage} 支配地占有率: ${pct}% (開拓済み: ${this.currentCount}マス / 最大: ${this.maxCount}マス / 残り: ${this.maxCount - this.currentCount}マス)`;
+[game\src\ui\settings_modal_system.js]: 17 violations
+  L130: btn.title = "⚙️ 環境設定 (Esc)";
+  L153: <span>⚙️</span> ゲーム環境設定 (Game Preferences)
+  L159: プレイスタイルや好みに合わせて操作感や画面演出をカスタマイズします。設定はブラウザに自動保存されます。
+  L166: <div style="font-weight: bold; color: #ffffff; font-size: 14px;">🔄 マリガン確認ダイアログ</div>
+  L167: <div style="font-size: 12px; color: #a4b0be; margin-top: 2px;">手札引き直し時に手札直上で確認するか、即時引き直すかを選択</div>
+  L170: <option value="true">吹き出し確認あり</option>
+  L171: <option value="false">確認なし即時実行</option>
+  L178: <div style="font-weight: bold; color: #ffffff; font-size: 14px;">⚠️ 土地未配置時のターン終了警告</div>
+  L179: <div style="font-size: 12px; color: #a4b0be; margin-top: 2px;">当ターン土地を置かずにターン終了を押した際に警告を表示</div>
+  L182: <option value="true">警告を出す (推奨)</option>
+  L183: <option value="false">即時ターン終了</option>
+  L190: <div style="font-weight: bold; color: #ffffff; font-size: 14px;">🌓 2層フォーカス演出 (DoFボケ)</div>
+  L191: <div style="font-size: 12px; color: #a4b0be; margin-top: 2px;">土地カード選択中に手札をボカして盤面を際立たせる演出</div>
+  L194: <option value="true">ON (映画風演出)</option>
+  L195: <option value="false">OFF (常時クッキリ)</option>
+  L201: <button id="btnResetSettings" style="background: transparent; color: #e74c3c; border: 1px solid #e74c3c; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;">初期設定に戻す</button>
+  L202: <button class="directive-modal-btn-close" id="btnSaveCloseSettings">閉じる</button>
+[game\src\ui\reserve_slot_component.js]: 2 violations
+  L254: emptySlotEl.setAttribute("data-tooltip-title", "📦 保留スロット (HOLD)");
+  L255: emptySlotEl.setAttribute("data-tooltip", "手札カードを1枚キープできます<br>維持費: ターン終了時 🔥-1");
+[game\src\ui\ember_status_component.js]: 6 violations
+  L200: <div class="ember-tooltip-section-title">📊 毎ターンの維持 ＆ 収支内訳</div>
+  L202: <span class="row-label">🌾 食料維持費:</span>
+  L206: <span class="row-label">🔥 食料蓄積効果:</span>
+  L210: <span class="row-label">📥 保留枠維持費:</span>
+  L217: <span class="row-label font-bold">🔥 ターン終了時 収支予測:</span>
+  L222: <div class="milestone-label">🌾 目標: ${info.nextMilestoneText}</div>
+[game\src\ui\buff_panel_component.js]: 1 violations
+  L163: sortBtn.innerText = `並び替え: ${this.sortMode === "ACQUIRED" ? "獲得順 (新➔古)" : "カテゴリ順"} 🔄`;
+[game\src\ui\ui_controller.js]: 36 violations
+  L422: window.showToast(this.isMinimalMode ? "手札をミニマル表示（ホバー拡大）に切り替えました" : "手札を標準表示に切り替えました");
+  L460: <button class="btn-minimal-mulligan" id="btnMulligan" data-tooltip-title="🔄 マリガン (手札引き直し)" data-tooltip="${mulliganTooltip}" ${canMulligan ? "" : "disabled style='opacity:0.45; cursor:not-allowed; filter:grayscale(0.8);'"}>
+  L505: <button class="btn-mulligan-compact" id="btnMulligan" data-tooltip-title="🔄 マリガン (手札引き直し)" data-tooltip="${mulliganTooltip}" ${canMulligan ? "" : "disabled style='opacity:0.45; cursor:not-allowed; filter:grayscale(0.8);'"}>
+  L629: title: `📜 ${cName} を発動しますか？`,
+  L632: confirmLabel: "⚡ 発動する",
+  L633: cancelLabel: "✖ キャンセル",
+  L908: let title = `土地 [${coordStr}]`;
+  L910: ? "🏛️ <strong>本営近郊エリア</strong><br>本営に隣接する特別な地脈です。<br><span style='color:#1abc9c; font-weight:bold;'>ここに配置された土地が産出しているすべての数値（>0）にそれぞれ +1 ボーナス</span> が付与されます。<br><small style='color:#a4b0be;'>（例: 🌾2 ➔ 🌾3 / ✨5 ➔ ✨6、0の項目は0のまま）</small>"
+  L911: : "未開拓の土地";
+  L914: title = `🏛️ 本営 HQ [${coordStr}]`;
+  L915: desc = "基礎産出: 🌾+10 🧱+10 🛡️10 ✨+1";
+  L917: title = `★ 資源ソケット [${coordStr}]`;
+  L918: desc = "<div style='color:#f1c40f; font-weight:900; font-size:16px; margin-bottom:4px;'>★ 土地ブロック配置時ボーナス資源発見</div><div style='color:#ced6e0; font-size:14px; line-height:1.4;'>このマスに土地を配置すると、地形に応じた固有の特産品（★）が開花し、毎ターン追加の持続ボーナスを獲得します。</div>";
+  L922: const placedTag = isPlacedThisTurn ? ` <span style="font-size:12px; background:#e74c3c; color:#fff; padding:2px 6px; border-radius:4px; margin-left:6px; font-weight:bold;">当ターン配置</span>` : "";
+  L950: bonusParts.push("本営近郊(+1)");
+  L958: bonusParts.push(`平地強化(+${this.state.permanentPlainsFoodBonus})`);
+  L967: const yieldStr = yieldParts.length > 0 ? yieldParts.join(" ") : "産出なし";
+  L969: desc = `毎ターン産出: <strong>${yieldStr}</strong>${bonusStr}`;
+  L976: <span><strong>このマスをクリック</strong>すると、配置を取り消して手札へ戻し置き直せます</span>
+  L1027: title: "⚠️ 土地カードが未配置です",
+  L1028: message: "今ターンはまだ土地カードを配置していません。このままターンを終了しますか？",
+  L1029: confirmText: "ターン終了",
+  L1030: cancelText: "戻る",
+  L1060: window.LogComponent.addLog(`ターン ${this.state.turn} を開始しました。手札オファリングを補充しました。`, this.state.turn);
+  L1204: const emberStr = emberPct > 0 ? ` | 🔥残り火加護: +${emberPct}%` : "";
+  L1208: <span>📊</span> 毎ターンの産出詳細内訳
+  L1214: <span>🌾 食料 (現在在庫: ${state.food})</span>
+  L1215: <span style="color:${netFoodColor}; font-size:16px;">${netFoodSign} /T (純収支)</span>
+  L1218: 総産出: +${grossFood} (本営: +10 | 土地: +${foodTiles} | ★ソケット: +${foodSockets} | 近郊: +${foodVicinity}${emberStr})<br>
+  L1219: <span style="color:#ff9f43; font-weight:bold;">🔥 食料維持費: -${foodCost} / T</span>
+  L1226: <span>🧱 資材 (現在在庫: ${state.wood})</span>
+  L1230: 本営基礎: +10 | 土地配置: +${woodTiles} | ソケット: +${woodSockets} | 本営近郊: +${woodVicinity}${emberStr}
+  L1237: <span>🛡️ 防衛力 (試練対策)</span>
+  L1241: 本営基礎: 10 | 土地配置: +${defTiles} | ソケット: +${defSockets}
+  L1248: <span>✨ 神秘 (現在在庫: ${state.mystic})</span>
+  L1252: 本営基礎: +1 | 土地配置: +${mysticTiles} | ソケット: +${mysticSockets} | 残り火自動付与: +${emberMystic}${emberStr}
+[game\index.html]: 5 violations
+  L106: <span data-i18n="UI_TRIAL_COUNTDOWN_PREFIX">⚠️ 試練まで あと</span> <strong id="valTrialCountdown" class="trial-countdown-val">3</strong> <span data-i18n="UI_TRIAL_COUNTDOWN_SUFFIX">ターン</span>
+  L126: <span>🏛️</span> <span data-i18n="UI_DIRECTIVE_MODAL_TITLE">国家方針の発令・変更 (Four Directives)</span>
+  L131: 現在の国家方針（ディレクティブ）を変更できます。<br>
+  L132: 国家方針に即したボーナスを獲得し、過酷な試練を乗り越えましょう。
+  L136: <button class="directive-cancel-btn" onclick="closeDirectiveModal()" data-i18n="UI_CANCEL">キャンセル</button>

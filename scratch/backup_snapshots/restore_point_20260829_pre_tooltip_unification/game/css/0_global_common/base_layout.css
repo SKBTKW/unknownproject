@@ -1,0 +1,43 @@
+/* =============================================================
+   0_global_common / base_layout.css
+   アプリケーション全体の基本枠組み・リセット・メイングリッド配置定義
+   ============================================================= */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #0d0f14;
+    color: #e0e0e0;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.app-wrapper {
+    max-width: 2100px;
+    margin: 0 auto;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: relative;
+}
+
+/* 2. 中間レイアウト構造 (中央広大盤面 ✕ 右データ・ログパネル) */
+.middle-layout {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 10px;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}

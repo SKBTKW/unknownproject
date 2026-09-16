@@ -1,0 +1,66 @@
+/* =============================================================
+   1_top_header / top_header.css
+   最上部ヘッダー（アプリタイトル・役割アバター・残り火中央固定・ターン表示）専用スタイル
+   ============================================================= */
+
+.top-bar {
+    background: #161922;
+    border: 1px solid #2a2e3d;
+    border-radius: 10px;
+    padding: 0 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    flex-shrink: 0;
+    height: 80px; /* 80px 拡大化 */
+    position: relative;
+    overflow: hidden;
+}
+
+.app-title-box {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-weight: bold;
+    font-size: 16px;
+    z-index: 2;
+}
+
+.role-avatar-box {
+    background: #1abc9c;
+    color: #0b0d11;
+    padding: 6px 12px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* 🌾 ヘッダーリソース数値・アイコンの全体的拡大 ＆ 視認性大幅向上 */
+.header-data-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #e0e0e0;
+}
+
+.header-data-item .icon {
+    font-size: 22px;
+}
+
+.header-data-item .val {
+    font-size: 22px;
+    font-weight: 900;
+    color: #ffffff;
+}
+
+.header-data-item .prod {
+    font-size: 14px;
+    color: #2ecc71;
+    font-weight: bold;
+}

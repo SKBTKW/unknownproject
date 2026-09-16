@@ -1,0 +1,80 @@
+/* =============================================================
+   0_global_common / global_animations.css
+   汎用アニメーション・高度H1/H2/H3立体アニメーション専用定義
+   ============================================================= */
+
+/* ✨ 本営周囲8マス (拠点隣接) エメラルド点滅オーラ */
+@keyframes vicinityPulse {
+    0%, 100% {
+        border-color: #1abc9c;
+        box-shadow: inset 0 0 12px rgba(26, 188, 156, 0.4);
+    }
+    50% {
+        border-color: #2ecc71;
+        box-shadow: inset 0 0 18px rgba(46, 204, 113, 0.6);
+    }
+}
+
+/* 🌾 トースト数値フロートアップ ＆ フェードアウト */
+@keyframes floatUpAndFade {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, 0) scale(0.8);
+    }
+    20% {
+        opacity: 1;
+        transform: translate(-50%, -10px) scale(1.1);
+    }
+    80% {
+        opacity: 1;
+        transform: translate(-50%, -25px) scale(1.0);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -35px) scale(0.9);
+    }
+}
+
+/* ⛰️ H1（標準低地） */
+.cell.placed.h-1 {
+    transform: translateY(0) !important;
+}
+
+/* ⛰️ H2 (丘陵) 浮遊呼吸アニメーション (緩やかな上下グラデーション揺らめき) */
+@keyframes hillBreathe {
+    0%, 100% {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+        border-bottom: 3px solid rgba(0, 0, 0, 0.45);
+    }
+    50% {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+        border-bottom: 3px solid rgba(0, 0, 0, 0.65);
+    }
+}
+
+/* 🏔️ H3 (山脈) 頂上プラチナ/ゴールド脈動シャインアニメーション */
+@keyframes mountainShimmer {
+    0%, 100% {
+        transform: translateY(-3px);
+        border-color: #f1c40f !important;
+        border-bottom: 5px solid rgba(0, 0, 0, 0.65) !important;
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.75), 0 0 12px rgba(241, 196, 15, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.45);
+    }
+    50% {
+        transform: translateY(-5px);
+        border-color: #f39c12 !important;
+        border-bottom: 5px solid rgba(0, 0, 0, 0.85) !important;
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.85), 0 0 20px rgba(241, 196, 15, 0.9), inset 0 2px 2px rgba(255, 255, 255, 0.7);
+    }
+}
+
+/* ⛰️ アニメーション付き高低差クラス割り当て */
+.cell.placed.h-2 {
+    animation: hillBreathe 3s infinite ease-in-out !important;
+}
+
+.cell.placed.h-3 {
+    animation: mountainShimmer 2.5s infinite ease-in-out !important;
+}

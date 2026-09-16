@@ -1,0 +1,95 @@
+/* =============================================================
+   3_bottom_area / player_tray_view_mode.css
+   Screen-space Player Tray placement owned by Layout Refactor.
+
+   The board-view value is an input only. This stylesheet decides
+   where the Player Action Host sits; it does not own view semantics.
+
+   IMPORTANT:
+   - This file is the final placement authority for #layerPlayerTray.
+   - Legacy hand CSS may style tray contents, but must not be required
+     for host placement to be correct.
+   - NORMAL / TRIAL changes the tray contents, never its screen anchor.
+
+   TOP     : bottom-center for direct 2D board interaction.
+   QUARTER : bottom-left for future 2.5D quarter-view composition.
+   ============================================================= */
+
+#layerPlayerTray.layer-player-tray {
+    position: absolute;
+    grid-area: main-stack;
+    left: var(--layout-player-tray-top-left);
+    right: auto;
+    bottom: var(--layout-player-tray-bottom);
+    width: auto;
+    height: auto;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    transform: translateX(-50%);
+    pointer-events: none;
+    transition:
+        left var(--layout-player-tray-motion-ms) var(--layout-player-tray-motion-easing),
+        transform var(--layout-player-tray-motion-ms) var(--layout-player-tray-motion-easing),
+        bottom var(--layout-player-tray-motion-ms) var(--layout-player-tray-motion-easing);
+    will-change: left, transform;
+}
+
+body[data-board-view="top"] #layerPlayerTray.layer-player-tray {
+    left: var(--layout-player-tray-top-left);
+    justify-content: center;
+    transform: translateX(-50%);
+}
+
+body[data-board-view="quarter"] #layerPlayerTray.layer-player-tray {
+    left: var(--layout-player-tray-quarter-left);
+    justify-content: flex-start;
+    transform: translateX(0);
+}
+
+@media (min-width: 769px) {
+    body[data-board-view="quarter"] #layerPlayerTray.layer-player-tray {
+        right: auto;
+        bottom: var(--layout-player-tray-bottom);
+        transition:
+            left var(--layout-player-tray-motion-ms) var(--layout-player-tray-motion-easing),
+            transform var(--layout-player-tray-motion-ms) var(--layout-player-tray-motion-easing);
+        will-change: left, transform;
+    }
+
+    body[data-board-view="quarter"][data-hand-state="expanded"] #layerPlayerTray.layer-player-tray {
+        left: var(--layout-quarter-hand-standard-left);
+        transform: translateX(var(--layout-quarter-hand-standard-translate-x));
+    }
+
+    body[data-board-view="quarter"][data-hand-state="collapsed"] #layerPlayerTray.layer-player-tray {
+        left: var(--layout-quarter-hand-minimal-left);
+        transform: translateX(var(--layout-quarter-hand-minimal-translate-x));
+    }
+}
+
+/* Tray contents remain interactive while the screen-space host stays transparent. */
+#layerPlayerTray > .offering-section,
+#layerPlayerTray > #trialActionTrayHost {
+    pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #layerPlayerTray.layer-player-tray,
+    body[data-board-view="quarter"] #layerPlayerTray.layer-player-tray {
+        transition: none;
+    }
+}
+
+/* Mobile placement is a Layout decision and intentionally ignores board-view placement. */
+@media (max-width: 768px) {
+    #layerPlayerTray.layer-player-tray,
+    body[data-board-view] #layerPlayerTray.layer-player-tray {
+        left: var(--layout-player-tray-mobile-left);
+        right: auto;
+        bottom: var(--layout-player-tray-mobile-bottom);
+        width: auto;
+        transform: translateX(0);
+        justify-content: flex-start;
+    }
+}

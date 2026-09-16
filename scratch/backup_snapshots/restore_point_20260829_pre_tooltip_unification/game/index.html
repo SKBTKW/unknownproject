@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trial of Ages : Last Ember</title>
+    <link rel="stylesheet" href="css/0_global_common/global_animations.css?v=20260827_v38">
+    <link rel="stylesheet" href="css/0_global_common/typography_theme.css?v=20260827_v38">
+    <link rel="stylesheet" href="css/0_global_common/base_layout.css?v=20260827_v38">
+    <link rel="stylesheet" href="css/1_top_header/top_header.css?v=20260827_v38">
+    <link rel="stylesheet" href="css/2_center_area/land_grid.css?v=20260827_v38">
+    <link rel="stylesheet" href="css/3_bottom_area/draw_card_select_area.css?v=20260827_v38">
+    <link rel="stylesheet" href="css/4_right_sidebar/right_sidebar.css?v=20260827_v38">
+    <link rel="stylesheet" href="css/layout.css?v=20260827_v38">
+</head>
+<body>
+
+    <div class="app-wrapper">
+        <!-- 🌌 ゲーム背景ウォールペーパーアート (左側配置) -->
+        <div class="game-wallpaper-art" id="gameWallpaperArt">
+            <img src="assets/title_logo.png" alt="THE AGE OF TRIALS" class="wallpaper-logo-img">
+        </div>
+
+        <!-- 1. Top Header Bar (🔥 True Center Position & Right Aligned Data Panel) -->
+        <div class="top-bar">
+            <!-- 左: ロールアイコン -->
+            <div class="app-title-box">
+                <div class="role-avatar-box role-avatar-box-custom" id="roleAvatarBox">
+                    <img src="images/role_general.png" alt="Role Icon" id="imgRoleIcon" class="role-avatar-img">
+                </div>
+            </div>
+            
+            <!-- 📊 ヘッダー右端: 各種データ表示パネル -->
+            <div class="header-resource-data-panel" id="headerDataPanel" onmouseenter="showDataPanelTooltip(event)" onmouseleave="hideDataPanelTooltip()">
+                <div class="header-data-item">
+                    <span class="icon">🌾</span>
+                    <span class="val" id="valFood">30</span>
+                    <span class="prod">(<span id="valFoodProd">+12</span>/T)</span>
+                </div>
+                <div class="header-data-divider"></div>
+                <div class="header-data-item">
+                    <span class="icon">🧱</span>
+                    <span class="val" id="valWood">30</span>
+                    <span class="prod">(<span id="valWoodProd">+12</span>/T)</span>
+                </div>
+                <div class="header-data-divider"></div>
+                <div class="header-data-item">
+                    <span class="icon">🛡️</span>
+                    <span class="val" id="valDefense">10</span>
+                </div>
+                <div class="header-data-divider"></div>
+                <div class="header-data-item">
+                    <span class="icon">✨</span>
+                    <span class="val" id="valMystic">0</span>
+                    <span class="prod">(<span id="valMysticProd">+3</span>/T)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🕹️ 2. Middle Board Area (4大責務レイヤー構造: WorldBoard, PlayerTray, SystemOverlay) -->
+        <div class="middle-layout">
+            
+            <!-- 🗺️ [Layer 2: World Board Area] 画面中央・盤面ワールド層 (z-index: 10) -->
+            <div id="layerWorldBoard" class="layer-world-board layer-world-board-container">
+                <!-- 🧩 盤面中央エリアコンテナ (UILayoutConfigによる集中一元管理) -->
+                <div class="board-container-wrapper board-wrapper-anchor">
+                    <!-- ✨ 盤面直上: モジュール化 上方向トグル展開バフコンテナ -->
+                    <div id="buffComponentContainer"></div>
+
+                    <!-- 🎯 土地グリッド専用アンカーラッパー (底面フッターに領土バッジ ＆ ターンエンドボタンを完全統合) -->
+                    <div class="grid-board-anchor grid-anchor-box">
+                        <div id="gridBoard" class="grid-with-headers"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 🃏 [Layer 3: Player Action Tray Area] 画面下部・浮遊操作トレイ層 (z-index: 500) -->
+            <div id="layerPlayerTray" class="layer-player-tray layer-player-tray-anchor">
+                <!-- 🃏 画面左下隅: 手札ドローカード選択エリア (ヘッダー・マリガンはUIControllerが動的描画) -->
+                <div class="offering-section pointer-events-auto">
+                    <!-- 🃏 [手札真上] フローティング拡大プレビューコンテナ (トレイ真上・完全自動追従センタリング) -->
+                    <div id="cardFloatingPreview" class="card-floating-preview-container"></div>
+                    <div id="cardRow" class="cards-row-wrapper"></div>
+                </div>
+            </div>
+
+            <!-- 🌌 [Layer 4: System Overlay Area] 四隅・最前面ポップアップ層 (z-index: 900) -->
+            <div id="layerSystemOverlay" class="layer-system-overlay layer-system-overlay-anchor">
+                <!-- 📜 メインエリア左上隅: モジュール化 0.75x ログコンテナ (pointer-events: auto) -->
+                <div id="logComponentContainer" class="pointer-events-auto" data-tooltip="TOOLTIP_LOG_PANEL"></div>
+
+                <!-- 🌌 メインエリア背景 ウォーターマーク ターン表示 ＆ 試練カウントダウン (右上) -->
+                <div id="bgTurnWatermark" class="bg-turn-watermark">
+                    <div class="bg-turn-label">TURN</div>
+                    <div class="bg-turn-num"><span id="valTurnBg">01</span><small>/50</small></div>
+                    <div id="trialCountdownBadge" class="trial-countdown-badge" style="display:none;">
+                        <span data-i18n="UI_TRIAL_COUNTDOWN_PREFIX"></span> <strong id="valTrialCountdown" class="trial-countdown-val"></strong> <span data-i18n="UI_TRIAL_COUNTDOWN_SUFFIX"></span>
+                    </div>
+                </div>
+
+                <div id="tileTooltip" class="tile-tooltip"></div>
+                <div id="cardRotateCursorTooltip" class="card-rotate-cursor-tooltip"></div>
+
+                <!-- 4x Large Card Hover Preview Modal Container -->
+                <div id="cardHoverPreviewModal" class="card-hover-preview-modal-box">
+                    <div id="cardHoverPreviewContent" class="card-hover-preview-content-box"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🏛️ 4大文明方針 変更モーダル画面 -->
+    <div id="directiveModal" class="directive-modal-overlay">
+        <div class="directive-modal-window">
+            <div class="directive-modal-header">
+                <h3 class="directive-modal-title">
+                    <span>🏛️</span> <span data-i18n="UI_DIRECTIVE_MODAL_TITLE"></span>
+                </h3>
+                <span class="directive-modal-close" onclick="closeDirectiveModal()">✕</span>
+            </div>
+            <div class="directive-modal-desc" data-i18n="UI_DIRECTIVE_MODAL_DESC"></div>
+            <div class="directive-options-container" id="directiveOptions"></div>
+            <div class="directive-modal-footer">
+                <button class="directive-cancel-btn" onclick="closeDirectiveModal()" data-i18n="UI_CANCEL"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🌐 True ES Module Single Entrypoint Bootstrap (Zero-Latency Instant Launch) -->
+    <script type="module">
+        import { GameEngine, UIController, UndoLandSystem, BuffSystem, TerritoryBadgeComponent, ModalSystem, FocusLayerManager, BoardCameraSystem, SettingsModalSystem, settingsModalInstance, gameSettings, EmberStatusComponent, HandCardsComponent, ReserveSlotComponent, TopHeaderComponent, BoardGridComponent, HqComponent, TooltipSystem, tooltipSystemInstance, EmberSystem } from './src/app.js?v=20260829_v50';
+
+        function bootstrap() {
+            try {
+                // 🎮 GameEngine ＆ UIController の完全モジュールマウント起動 (ゼロ遅延・即時起動 - Stage 1: 5x5 標準復元)
+                const engine = GameEngine.createGame();
+                const ui = new UIController(engine);
+
+                window.gameEngine = engine;
+                window.ui = ui;
+
+                if (UndoLandSystem && ui.state) {
+                    window.undoSys = new UndoLandSystem(ui.state);
+                }
+
+                ui.init();
+            } catch (err) {
+                console.error("🔥 [Bootstrap Error]", err);
+                const errBox = document.createElement("div");
+                errBox.style.cssText = "position:fixed; top:20px; left:20px; z-index:99999; background:rgba(180,0,0,0.9); color:#fff; padding:16px; border-radius:8px; font-family:monospace; font-size:14px; max-width:80%;";
+                errBox.innerHTML = `<strong>Launch Error:</strong><br>${err.message}<br><pre style="white-space:pre-wrap; font-size:12px; margin-top:8px;">${err.stack}</pre>`;
+                document.body.appendChild(errBox);
+            }
+        }
+
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", bootstrap);
+        } else {
+            bootstrap();
+        }
+    </script>
+</body>
+</html>
