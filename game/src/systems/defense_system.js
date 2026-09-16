@@ -28,6 +28,7 @@ export class DefenseSystem {
         this.state = state;
         this.rebuildCostResolver = rebuildCostResolver;
         this.mysticFallbackResolver = mysticFallbackResolver;
+        this._lastPlacedBlockCount = toNonNegativeInteger(this.state?.placedBlockCount);
 
         if (this.state) {
             const legacyDefense = toNonNegativeInteger(this.state.defense, BASE_HQ_DEFENSE);
@@ -138,6 +139,11 @@ export class DefenseSystem {
         }
 
         const previousCurrent = this.state.currentDefense;
+        const previousMax = Number.isFinite(this.state.maxDefense)
+            ? toNonNegativeInteger(this.state.maxDefense)
+            : null;
+        const currentPlacedBlockCount = toNonNegativeInteger(this.state.placedBlockCount);
+        const placementAdded = currentPlacedBlockCount > this._lastPlacedBlockCount;
         const maxDefense = this.calculateMaxDefense();
         let currentDefense;
 
@@ -145,8 +151,12 @@ export class DefenseSystem {
             currentDefense = maxDefense;
         } else {
             currentDefense = Math.min(toNonNegativeInteger(previousCurrent), maxDefense);
+            if (placementAdded && previousMax !== null && maxDefense > previousMax) {
+                currentDefense = Math.min(currentDefense + (maxDefense - previousMax), maxDefense);
+            }
         }
 
+        this._lastPlacedBlockCount = currentPlacedBlockCount;
         this.state.maxDefense = maxDefense;
         this.state.currentDefense = currentDefense;
         return {

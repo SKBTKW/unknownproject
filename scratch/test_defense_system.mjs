@@ -48,16 +48,28 @@ const initialEngine = GameEngine.createGame();
 assert(initialEngine.defenseSystem.getCurrentDefense() === 10, '新規ゲームの現在🛡️は10');
 assert(initialEngine.defenseSystem.getMaxDefense() === 10, '新規ゲームの最大🛡️は10');
 
-// B/C: 最大値増加は現在値を回復しない。
+// B: 土地配置で増えた最大🛡️は同量だけ現在🛡️にも即時反映する。
 const placed = initialEngine.gridEngine.placeShape(1, 2, [[1]], defenseLand(3));
 assert(placed.success === true, '防衛値を持つ土地を配置できる');
-assert(initialEngine.defenseSystem.getMaxDefense() === 13, '土地配置で最大🛡️だけが13へ増える');
-assert(initialEngine.defenseSystem.getCurrentDefense() === 10, '最大🛡️増加後も現在🛡️は10のまま');
+assert(initialEngine.defenseSystem.getMaxDefense() === 13, '土地配置で最大🛡️が13へ増える');
+assert(initialEngine.defenseSystem.getCurrentDefense() === 13, '土地配置で増えた3点を現在🛡️にも反映する');
 
+// C: 既存損耗は維持し、配置で増えた最大値の差分だけ現在値へ足す。
+const damagedPlacementEngine = GameEngine.createGame();
+damagedPlacementEngine.defenseSystem.setCurrentDefense(8);
+const damagedPlaced = damagedPlacementEngine.gridEngine.placeShape(1, 2, [[1]], defenseLand(3));
+assert(damagedPlaced.success === true, '損耗中でも防衛値を持つ土地を配置できる');
+assert(
+    damagedPlacementEngine.defenseSystem.getCurrentDefense() === 11
+        && damagedPlacementEngine.defenseSystem.getMaxDefense() === 13,
+    '8/10から🛡️+3土地配置で11/13となり既存損耗2を維持する'
+);
+
+// Stage拡張によるHQ強化は土地配置ではないため現在値を自動充填しない。
 const expandedEngine = GameEngine.createGame();
 expandedEngine.gridEngine.expandGrid(7);
 assert(expandedEngine.defenseSystem.getMaxDefense() === 14, 'Stage盤面拡張後は強化本営から最大🛡️14を再計算する');
-assert(expandedEngine.defenseSystem.getCurrentDefense() === 10, 'Stage盤面拡張でも現在🛡️は自動回復しない');
+assert(expandedEngine.defenseSystem.getCurrentDefense() === 10, 'Stage盤面拡張では現在🛡️を自動回復しない');
 
 // D/F/G: 損耗・回復・最大低下時クランプ。
 initialEngine.defenseSystem.setCurrentDefense(13);
@@ -123,7 +135,7 @@ const undoEngine = GameEngine.createGame();
 undoEngine.defenseSystem.setCurrentDefense(8);
 undoEngine.state.handOffering[0] = { id: 'TEST_DEFENSE_LAND', terrain: defenseLand(3), currentShape: [[1]] };
 const action = undoEngine.placeLand(1, 2, undoEngine.state.handOffering[0], 0, { type: 'OFFERING', index: 0 });
-assert(action.success === true && undoEngine.state.currentDefense === 8 && undoEngine.state.maxDefense === 13, '配置Actionでも現在維持・最大増加となる');
+assert(action.success === true && undoEngine.state.currentDefense === 11 && undoEngine.state.maxDefense === 13, '配置Actionでも増加分だけ現在🛡️へ反映する');
 const undo = undoEngine.undoLastAction();
 assert(undo.success === true && undoEngine.state.currentDefense === 8 && undoEngine.state.maxDefense === 10, 'Undoで現在🛡️と最大🛡️を配置前へ復元する');
 
