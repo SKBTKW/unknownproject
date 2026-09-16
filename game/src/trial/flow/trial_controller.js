@@ -134,6 +134,7 @@ export class TrialController extends TrialControllerBase {
 
         this.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, {
             scenarioId: this.state.scenarioId || null,
+            trialIndex: this.state.trialIndex,
             outcome: this.state.result?.outcome || null,
             result: this.state.result ? JSON.parse(JSON.stringify(this.state.result)) : null,
             settlement: settled.settlement
