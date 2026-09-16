@@ -66,6 +66,7 @@ export class GlobalEventManager {
         this.state.activeGlobalEvents ||= [];
         this.state.eventCooldowns ||= {};
         this.state.temporaryWeightModifiers ||= [];
+        this.state.scheduledGlobalEvents ||= [];
         this.state.lastGlobalEventTurn ||= 0;
     }
     subscribe(listener) {
@@ -98,8 +99,75 @@ export class GlobalEventManager {
         inst.runtimeState.choice = { ...choice, status: "RESOLVED", choiceId: resolution.choiceId || null, publicOutcomeTags: [...(resolution.publicOutcomeTags || [])] };
         return true;
     }
+    scheduleEvent(eventId, verse) {
+        if (!this.state) return { success: false, reason: "GLOBAL_EVENT_STATE_REQUIRED" };
+        const def = GLOBAL_EVENTS_MASTER.find(candidate => candidate.id === eventId);
+        if (!def) {
+            return { success: false, reason: "GLOBAL_EVENT_NOT_FOUND" };
+        }
+        if (!Number.isInteger(verse) || verse < 1) {
+            return { success: false, reason: "GLOBAL_EVENT_SCHEDULE_VERSE_INVALID" };
+        }
+        if (verse < (this.state.turn || 1)) {
+            return { success: false, reason: "GLOBAL_EVENT_SCHEDULE_VERSE_PASSED" };
+        }
+        if (def.oneShot && Number.isFinite(this.state.eventCooldowns?.[eventId])) {
+            return { success: false, reason: "GLOBAL_EVENT_ALREADY_TRIGGERED" };
+        }
+
+        const existing = this.state.scheduledGlobalEvents.find(
+            scheduled => scheduled?.eventId === eventId && scheduled?.verse === verse
+        );
+        if (existing) {
+            return {
+                success: true,
+                alreadyScheduled: true,
+                scheduledEvent: { ...existing }
+            };
+        }
+
+        if (def.oneShot) {
+            const existingOneShot = this.state.scheduledGlobalEvents.find(
+                scheduled => scheduled?.eventId === eventId
+            );
+            if (existingOneShot) {
+                return {
+                    success: false,
+                    reason: "GLOBAL_EVENT_ALREADY_SCHEDULED",
+                    scheduledEvent: { ...existingOneShot }
+                };
+            }
+        }
+
+        const scheduledEvent = { eventId, verse };
+        this.state.scheduledGlobalEvents.push(scheduledEvent);
+        this.state.scheduledGlobalEvents.sort(
+            (a, b) => (a.verse - b.verse) || a.eventId.localeCompare(b.eventId)
+        );
+        return {
+            success: true,
+            alreadyScheduled: false,
+            scheduledEvent: { ...scheduledEvent }
+        };
+    }
+    _triggerScheduledEventForCurrentTurn() {
+        if (!this.state || this.getPendingChoice()) return null;
+        const turn = this.state.turn || 1;
+        const index = this.state.scheduledGlobalEvents.findIndex(
+            scheduled => Number.isInteger(scheduled?.verse) && scheduled.verse <= turn
+        );
+        if (index < 0) return null;
+        const scheduled = this.state.scheduledGlobalEvents[index];
+        const instance = this.triggerEvent(scheduled.eventId);
+        if (!instance) return null;
+        this.state.scheduledGlobalEvents.splice(index, 1);
+        return instance;
+    }
     onTurnStart() {
-        if (!this.state || this.getPendingChoice() || !this.director.shouldTriggerEvent(this.state)) return null;
+        if (!this.state || this.getPendingChoice()) return null;
+        const scheduled = this._triggerScheduledEventForCurrentTurn();
+        if (scheduled) return scheduled;
+        if (!this.director.shouldTriggerEvent(this.state)) return null;
         const def = this.selector.selectEvent(this.state, GLOBAL_EVENTS_MASTER);
         return def ? this.triggerEvent(def.id) : null;
     }
@@ -107,9 +175,10 @@ export class GlobalEventManager {
         if (!this.state) return null;
         const def = GLOBAL_EVENTS_MASTER.find(d => d.id === eventId);
         if (!def) return null;
+        if (def.oneShot && Number.isFinite(this.state.eventCooldowns?.[def.id])) return null;
         const turn = this.state.turn || 1;
         this.state.lastGlobalEventTurn = turn;
-        if (def.cooldownTurns) this.state.eventCooldowns[def.id] = turn;
+        if (def.cooldownTurns || def.oneShot) this.state.eventCooldowns[def.id] = turn;
         const inst = { definitionId: def.id, remainingTurns: def.duration || 1, runtimeState: {} };
         if (def.choiceEventId) inst.runtimeState.choice = { eventId: def.choiceEventId, status: "PENDING", publicContext: createGlobalEventChoicePublicContext(def.choiceEventId, { state: this.state, randomSource: this.randomSource }) };
         this.state.activeGlobalEvents.push(inst);

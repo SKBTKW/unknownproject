@@ -31,7 +31,7 @@ export const GLOBAL_EVENTS_MASTER = [
         conditions: [{ type: "STAGE_AT_LEAST", value: 1 }, { type: "HISTORY_CHECK", checkType: "TRIAL_DAMAGE_TAKEN" }], effects: [{ type: "OFFERING_WEIGHT_TAG_BOOST", tag: "RECOVERY", multiplier: 2.0 }], endEffects: []
     },
     {
-        id: "EVENT_DEMIHUMAN_TRACES", category: "THREAT", nameKey: "EVENT_DEMIHUMAN_TRACES_NAME", descKey: "EVENT_DEMIHUMAN_TRACES_DESC", icon: "🐾", minStage: 1, duration: 1, baseWeight: 1, importance: "MAJOR", cooldownTurns: 999, randomEligible: false,
+        id: "EVENT_DEMIHUMAN_TRACES", category: "THREAT", nameKey: "EVENT_DEMIHUMAN_TRACES_NAME", descKey: "EVENT_DEMIHUMAN_TRACES_DESC", icon: "🐾", minStage: 1, duration: 1, baseWeight: 1, importance: "MAJOR", cooldownTurns: 999, randomEligible: false, oneShot: true,
         conditions: [], effects: [], endEffects: []
     },
     {
