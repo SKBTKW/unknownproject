@@ -26,18 +26,38 @@ export class BoardAwareUIController extends LegacyUIController {
         }
     }
 
-    startTrialInterceptionPreview(scenario, options = {}) {
+    /**
+     * Production-facing Trial session entry.
+     *
+     * The legacy UIController still exposes startTrialInterceptionPreview().
+     * Keep that method as the compatibility implementation for now while new
+     * runtime callers use this session-level name.
+     */
+    startTrialSession(scenario, options = {}) {
         this.preTrialBoardContextMode = this.boardPresentationState.contextMode;
         this.boardPresentationState.setContextMode(BOARD_CONTEXT_MODES.TRIAL);
         return super.startTrialInterceptionPreview(scenario, options);
     }
 
-    stopTrialInterceptionPreview() {
+    /** @deprecated Use startTrialSession(). */
+    startTrialInterceptionPreview(scenario, options = {}) {
+        return this.startTrialSession(scenario, options);
+    }
+
+    /**
+     * Production-facing Trial session teardown.
+     */
+    stopTrialSession() {
         if (this.preTrialBoardContextMode) {
             this.boardPresentationState.setContextMode(this.preTrialBoardContextMode);
         }
         this.preTrialBoardContextMode = null;
         return super.stopTrialInterceptionPreview();
+    }
+
+    /** @deprecated Use stopTrialSession(). */
+    stopTrialInterceptionPreview() {
+        return this.stopTrialSession();
     }
 
     getBoardPresentationSnapshot() {
