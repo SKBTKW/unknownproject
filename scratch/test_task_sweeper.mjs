@@ -1,0 +1,40 @@
+import assert from 'assert/strict';
+import { classifyTaskCandidate, parseGitHubRepo } from './task_sweeper.mjs';
+
+const base = {
+    currentWorktree: false,
+    lockedWorktree: false,
+    dirtyWorktree: false,
+    localRemoteMismatch: false,
+    unpushedCommits: 0,
+    uniqueCommits: 0,
+    remoteExists: true,
+    mergedPrVerified: false,
+    mergedPrNumber: undefined,
+    prReason: '',
+};
+
+const tests = [
+    ['empty task is safe', { ...base }, 'SAFE'],
+    ['verified squash-merged task is safe', { ...base, uniqueCommits: 3, mergedPrVerified: true, mergedPrNumber: 42 }, 'SAFE'],
+    ['dirty worktree blocks', { ...base, dirtyWorktree: true }, 'BLOCKED'],
+    ['current task worktree blocks', { ...base, currentWorktree: true }, 'BLOCKED'],
+    ['locked worktree blocks', { ...base, lockedWorktree: true }, 'BLOCKED'],
+    ['local/remote mismatch blocks', { ...base, localRemoteMismatch: true }, 'BLOCKED'],
+    ['unpushed commits block', { ...base, unpushedCommits: 1 }, 'BLOCKED'],
+    ['local-only unique commits block', { ...base, remoteExists: false, uniqueCommits: 1 }, 'BLOCKED'],
+    ['unverified unique remote commits block', { ...base, uniqueCommits: 1, prReason: 'No merged PR' }, 'BLOCKED'],
+];
+
+let passed = 0;
+for (const [label, state, expected] of tests) {
+    const actual = classifyTaskCandidate(state).status;
+    assert.equal(actual, expected, label);
+    passed += 1;
+}
+
+assert.deepEqual(parseGitHubRepo('git@github.com:SKBTKW/unknownproject.git'), { owner: 'SKBTKW', repo: 'unknownproject' });
+assert.deepEqual(parseGitHubRepo('https://github.com/SKBTKW/unknownproject.git'), { owner: 'SKBTKW', repo: 'unknownproject' });
+assert.equal(parseGitHubRepo('https://example.com/SKBTKW/unknownproject.git'), null);
+
+console.log(`✅ AoT Task Sweeper safety contract: ${passed}/9 classifications PASS + remote parsing PASS`);
