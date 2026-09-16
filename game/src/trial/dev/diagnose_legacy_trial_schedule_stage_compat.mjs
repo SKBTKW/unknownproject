@@ -1,5 +1,10 @@
 import assert from "node:assert/strict";
-import { applyLegacyTrialScheduleStageProgression } from "../../core/legacy_trial_schedule_compat.js";
+import {
+    applyLegacyTrialScheduleStageProgression,
+    getLegacyTrialDistance,
+    isLegacyTrialNoticeActive,
+    isLegacyTrialWithin
+} from "../../core/legacy_trial_schedule_compat.js";
 
 function createEngine({ turn, stageId }) {
     const expandedSizes = [];
@@ -18,6 +23,25 @@ function createEngine({ turn, stageId }) {
         expandedSizes,
         logs
     };
+}
+
+{
+    const state = { turn: 10, nextTrialTurn: 15 };
+    assert.equal(getLegacyTrialDistance(state), 5);
+    assert.equal(isLegacyTrialWithin(state, 5), true);
+    assert.equal(isLegacyTrialWithin(state, 4), false);
+    assert.equal(isLegacyTrialNoticeActive(state, { fallbackThreshold: 5 }), true);
+    assert.equal(isLegacyTrialNoticeActive(state), false);
+}
+
+{
+    const state = {
+        turn: 1,
+        nextTrialTurn: 50,
+        getTrialNotice: () => ({ active: true, remaining: 49 })
+    };
+    assert.equal(isLegacyTrialNoticeActive(state), true);
+    assert.equal(isLegacyTrialNoticeActive(state, { fallbackThreshold: 5 }), true);
 }
 
 {
