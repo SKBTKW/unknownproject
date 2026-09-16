@@ -1,7 +1,6 @@
 import { GAME_FACT_TYPES, GameFactHub } from './game_fact.js';
 import { HistorySnapshotService } from './history_snapshot_service.js';
 import { RunTerminationService } from './run_termination_service.js';
-import { applyLegacyTrialScheduleStageProgression } from './legacy_trial_schedule_compat.js';
 import { attachTrialTimingSubsystem } from '../trial/integration/trial_timing_bootstrap.js';
 import { TrialThreatStateService } from '../trial/systems/trial_threat_state_service.js';
 import { TrueEnemyStateService } from '../trial/systems/true_enemy_state_service.js';
@@ -97,9 +96,6 @@ export class TurnLifecycleService {
         this._advanceTurnState();
         if (engine.deckManager && typeof engine.deckManager.generateOfferingCards === "function") engine.deckManager.generateOfferingCards();
         if (engine.globalEventManager) engine.globalEventManager.onTurnStart();
-        applyLegacyTrialScheduleStageProgression(engine, {
-            translate: (key, params, fallback) => this._translate(key, params, fallback)
-        });
         if (state && typeof state.addLog === "function") state.addLog(this._translate("LOG_TURN_START", { turn: state.turn }, `Turn ${state.turn} started.`));
     }
 

@@ -105,5 +105,13 @@ jobs:
       - name: Run Task Sweeper safety contract
         run: node scratch/test_task_sweeper.mjs
 
+      - name: Run Trial runtime focused tests
+        run: |
+          node game/src/trial/dev/diagnose_warning_timing_bridge.mjs
+          node game/src/trial/dev/diagnose_trial_due_state_service.mjs
+          node game/src/trial/dev/diagnose_trial_launch_coordinator.mjs
+          node game/src/trial/dev/diagnose_trial_launch_bootstrap.mjs
+          node game/src/trial/dev/diagnose_trial_stage_progression_service.mjs
+
       - name: Run AoT Full Inspection
         run: node scratch/run_full_inspection.mjs

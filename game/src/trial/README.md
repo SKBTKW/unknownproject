@@ -1,6 +1,6 @@
 # Trial subsystem boundary
 
-This directory contains the runtime Trial subsystem. The purpose of this note is to make the current ownership boundaries explicit before further cleanup. It does not change gameplay behavior.
+This directory contains the runtime Trial subsystem. This note records current ownership boundaries and migration status; it must not be used to smuggle balance rules into presentation code.
 
 ## Runtime ownership
 
@@ -22,6 +22,7 @@ Owns conversion from normal-game truth/state into a Trial scenario.
 - Enemy truth is authoritative for actual enemy composition and suppression when supplied.
 - Warning / investigation presentation knowledge is not authoritative input for enemy truth.
 - Ingress selection and route generation belong here, not in UI.
+- Ingress count and route movement-cost policy remain explicit injected production dependencies. No dev fixture or arbitrary fallback may be used to make production launch appear ready.
 
 The intended production boundary is:
 
@@ -29,7 +30,7 @@ The intended production boundary is:
 GameState + EnemyTruth + Trial index
     -> TrialScenarioFactory
     -> Trial scenario
-    -> TrialController.startScenario(...)
+    -> startTrialSession(...)
 ```
 
 ### `systems/`
@@ -48,8 +49,10 @@ Examples:
 - HQ damage
 - completion and settlement prerequisites
 - exact internal Trial timing
+- semantic due request creation
+- settlement-authorized Stage progression
 
-`trial_timing_authority_service.js` is the replacement boundary for the exact internal Trial clock. It knows scheduled Verse values and the current Trial index, but it is **not** a Warning/Advisor/UI presentation API.
+`trial_timing_authority_service.js` owns the exact internal Trial clock. It knows scheduled Verse values and the current Trial index, but it is **not** a Warning/Advisor/UI presentation API.
 
 `trial_timing_policy.js` owns schedule generation policy. The current target policy is:
 
@@ -58,9 +61,11 @@ Examples:
 - Trial 2: Verse 27..33;
 - Trial 3: Verse 50.
 
-The timing authority/policy are foundation only until the normal Verse runtime is explicitly migrated to them.
+`trial_due_state_service.js` converts exact timing into an exactly-once semantic pending request containing only `trialIndex`. It never opens UI and never exposes remaining Verse counts.
 
-UI must not reproduce these calculations or expose exact remaining Verse counts from the timing authority.
+`trial_stage_progression_service.js` owns Trial settlement -> Stage progression. Settlement only authorizes a transition; physical board expansion is deferred until Trial presentation/session cleanup has completed. Therefore Trial 1 is fought on Stage 1 / 5x5, then Stage 2 / 7x7 is created after successful settlement and exit. Trial 2 follows the same contract for Stage 2 -> Stage 3 / 9x9.
+
+UI must not reproduce timing calculations or expose exact remaining Verse counts from the timing authority.
 
 ### `flow/`
 
@@ -69,6 +74,17 @@ Owns orchestration and Trial lifecycle boundaries.
 - `trial_controller.js` is the main runtime facade used by presentation code.
 - `trial_session_boundary_service.js` owns begin / abort / release boundaries around a Trial session.
 - Result settlement is required before a normal Trial exit.
+
+### `integration/`
+
+Owns runtime composition boundaries.
+
+- `trial_timing_bootstrap.js` attaches the exact timing authority and settlement fact bridge.
+- `trial_runtime_bootstrap.js` composes the shared GameFactHub, timing, semantic Warning timing, due request state, and Stage progression without duplicating Investigation bootstrap.
+- `trial_launch_coordinator.js` consumes a due request, validates authoritative EnemyTruth/scenario readiness, starts the Trial session, and acknowledges the request only after a successful start.
+- `trial_launch_bootstrap.js` is idempotent and fail-closed. It does not invent ingress-count or movement-cost policy.
+
+The production browser does **not** attach Trial launch merely to make the pipeline look complete. Launch composition remains intentionally unattached until the production ingress-count and route-cost policies are supplied. Missing policy is a readiness failure, not permission to use dev fixtures.
 
 ### `presentation/`
 
@@ -91,9 +107,7 @@ The production-facing UI subclasses expose:
 
 The older `startTrialInterceptionPreview(...)` / `stopTrialInterceptionPreview()` names remain as deprecated compatibility aliases while the base UI implementation and older callers are migrated.
 
-The development preview harness now calls the same production-facing session API rather than owning an alternate start/stop path.
-
-The current split is therefore:
+The development preview harness calls the same production-facing session API rather than owning an alternate start/stop path.
 
 ```text
 production caller
@@ -107,40 +121,6 @@ dev harness
 
 Do not add gameplay rules to the deprecated preview-named aliases.
 
-## Known legacy surfaces outside this directory
-
-`game/src/v2_unity_ready_main.js` still contains the older Trial schedule/countdown model:
-
-- `trialSchedule`
-- `nextTrialTurn`
-- `warningDuration`
-- `getTrialNotice()` returning direct remaining-turn information
-
-These remain live compatibility state while migration is incomplete. They are not the intended long-term authority and must not be extended with new Trial behavior.
-
-### Confirmed live legacy dependency
-
-The legacy schedule is **not dead yet**.
-
-Board stage expansion currently depends on `trialSchedule.trial1` / `trialSchedule.trial2`. At the matching Verse boundary the normal turn lifecycle expands Stage 1 -> 2 (7x7) and Stage 2 -> 3 (9x9), and updates `nextTrialTurn`.
-
-That behavior has been moved behind:
-
-`game/src/core/legacy_trial_schedule_compat.js`
-
-The same compatibility boundary now owns reusable legacy timing predicates used during migration. `ConditionEvaluator` consumes that boundary; `DeckManager` still has direct legacy timing checks and remains the main unresolved duplicate consumer.
-
-This is an isolation boundary only. It intentionally preserves old behavior until board-stage progression, card eligibility, and save/restore migrate to explicit modern contracts.
-
-The remaining legacy data must not be deleted until all references are audited. The cleanup order is:
-
-1. find every read/write reference;
-2. classify each reference as production, compatibility, test, or dead;
-3. connect `TrialTimingAuthorityService` as the production timing source;
-4. migrate stage progression and card predicates;
-5. migrate save/restore;
-6. remove legacy schedule/countdown data only after reference count reaches zero.
-
 ## Timing vs Warning invariant
 
 The exact clock and player-facing warning state are intentionally different layers:
@@ -148,20 +128,73 @@ The exact clock and player-facing warning state are intentionally different laye
 ```text
 TrialTimingAuthorityService
     exact internal Verse / due state
-            ↓
-Warning semantic state
-    OMEN / WATCH / TENSE / IMMINENT
-            ↓
-Advisor / atmosphere / UI
+            |
+            +-> TrialDueStateService
+            |      semantic pending { trialIndex }
+            |
+            +-> WarningTimingBridge
+                   TENSE / IMMINENT only
+                         |
+                         v
+                 WarningStateService
+             OMEN / WATCH / TENSE / IMMINENT
+                         |
+                         v
+                 Advisor / atmosphere / UI
 ```
 
-Warning/Advisor/UI must never infer or display exact remaining Verse counts merely because the internal timing authority can calculate them.
+`WarningTimingBridge` may read exact distance because it is the explicit simulation-to-semantic boundary. The Warning read model, Advisor, and UI must never receive or reconstruct that exact countdown.
+
+OMEN/WATCH remain owned by the existing Warning lifecycle bridges. Trial timing owns neither omen discovery nor investigation state.
+
+## Stage progression invariant
+
+Board Stage is no longer advanced merely because the scheduled Trial Verse has been reached.
+
+```text
+Trial fought on current Stage
+    -> TRIAL_RESULT_SETTLED
+    -> TrialStageProgressionService queues transition
+    -> Trial session/presentation cleanup
+    -> applyPending()
+    -> GridEngine.expandGrid(...)
+    -> next Stage
+```
+
+A failed/terminated run does not progress to the next Stage. Duplicate settlement facts do not schedule the same transition twice.
+
+`nextTrialTurn` may still be mirrored after Stage progression for legacy card eligibility compatibility. That mirror is not the modern timing authority.
+
+## Known legacy surfaces
+
+`game/src/v2_unity_ready_main.js` still contains older Trial schedule/countdown state such as:
+
+- `trialSchedule`
+- `nextTrialTurn`
+- `warningDuration`
+- `getTrialNotice()`
+
+These remain live compatibility state while card predicates and save/restore migration are incomplete. They are not the intended long-term authority and must not be extended with new Trial behavior.
+
+`game/src/core/legacy_trial_schedule_compat.js` still owns legacy exact-timing predicates consumed by old card/condition paths. Stage progression has migrated away from that compatibility path; its old stage helper is retained only as a temporary compatibility surface until all external references are proven absent.
+
+The remaining legacy cleanup order is:
+
+1. migrate remaining card eligibility reads to an approved modern contract;
+2. migrate save/restore ownership for exact Trial timing;
+3. remove obsolete `getTrialNotice()`, `nextTrialTurn`, `trialSchedule`, and retired compatibility helpers only after reference count reaches zero.
+
+Do not reinterpret old exact-timing card conditions as Warning states without an explicit gameplay decision.
 
 ## Invariants to preserve during cleanup
 
 - Trial combat rules stay independent from Warning / Investigation presentation knowledge.
 - Actual enemy state and player-known enemy state remain separate.
 - Exact Trial timing remains internal simulation data, not player-facing knowledge.
+- Warning timing bridge advances only semantic TENSE / IMMINENT state.
+- A due Trial request contains only the Trial index and does not open UI during `VERSE_COMMITTED`.
+- Production Trial launch remains fail-closed if authoritative truth or required scenario policies are unavailable.
+- Unresolved Global Event choices may block Trial presentation; ordinary active timed Global Events do not automatically own presentation.
 - A route receives at most one deliberate interception in the current rules.
 - INTERCEPT and SKIP remain explicit route decisions.
 - Defense allocation is committed when the confirmed plan is activated, not while drafting.
@@ -169,18 +202,20 @@ Warning/Advisor/UI must never infer or display exact remaining Verse counts mere
 - HQ arrivals are aggregated before Ember damage conversion.
 - Trial completion requires resolved battles/traversal and HQ damage resolution.
 - Result settlement precedes normal Trial exit.
-- Trial presentation cleanup must restore the normal board/layout context without mutating underlying normal-game board state.
+- Trial presentation cleanup restores the normal board/layout context before pending Stage expansion is applied.
+- Normal-game board state is preserved when the grid expands around the existing board.
 
-## Cleanup sequence
+## Migration status
 
-Do cleanup in small, rollback-safe steps:
+1. **Reference audit** — legacy schedule/countdown and preview-named production entry points: done for confirmed runtime surfaces.
+2. **Production session boundary** — `startTrialSession(...)` / `stopTrialSession()`: done.
+3. **Dev harness convergence** — development preview uses production session entry: done.
+4. **Exact timing authority** — connected to runtime and advanced by Trial settlement facts: done.
+5. **Semantic Warning timing** — exact timing -> TENSE/IMMINENT bridge without countdown leakage: done.
+6. **Due request boundary** — exact clock -> semantic pending Trial index: done.
+7. **Stage progression migration** — scheduled-Verse expansion retired from TurnLifecycle; settlement/post-cleanup progression active: done.
+8. **Production launch coordinator/bootstrap** — contract implemented and fail-closed; browser composition waits for approved ingress-count and route-cost production policies.
+9. **Legacy card/save migration** — still pending.
+10. **Legacy schedule/countdown removal** — blocked until remaining production references are migrated.
 
-1. **Reference audit** — legacy schedule/countdown and preview-named production entry points. **Done for confirmed runtime surfaces.**
-2. **Production start boundary** — expose a correctly named Trial session start API without removing compatibility callers. **Done.**
-3. **Dev harness convergence** — route development preview through the production start boundary. **Done.**
-4. **Legacy schedule isolation** — move confirmed old consumers behind an explicit compatibility boundary. **In progress; stage expansion and generic ConditionEvaluator predicates isolated, DeckManager remains.**
-5. **Timing authority foundation** — define exact internal timing service and first-run policy without exposing countdown UI. **Done, not yet connected to GameEngine.**
-6. **Production timing migration** — connect Verse runtime, Trial settlement, card eligibility, and save/restore to the timing authority.
-7. **Legacy removal** — remove `getTrialNotice()`, `nextTrialTurn`, and `trialSchedule` only when no production consumer remains.
-
-No gameplay rebalance, Trial combat-rule redesign, or player-facing Warning behavior change belongs in these cleanup commits.
+No gameplay rebalance, Trial combat-rule redesign, or direct player-facing countdown belongs in these migration commits.

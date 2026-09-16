@@ -87,12 +87,20 @@ export class TrialResultUIController extends BoardAwareUIController {
         this.trialPresentationState.clearPlanningState();
         this.hideCellTooltip();
         this.layoutStateManager.exitTrial();
+
+        const stageProgression = this.engine?.trialStageProgressionService?.getPending?.()
+            ? this.engine.trialStageProgressionService.applyPending({
+                translate: (key, params, fallback) => this.engine?.i18n?.t?.(key, params) || fallback
+            })
+            : null;
+
         this.render();
         return {
             success: true,
             lifecycle,
             sessionBoundaryRelease,
-            developmentSessionRelease
+            developmentSessionRelease,
+            stageProgression
         };
     }
 
