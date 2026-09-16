@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {
     applyLegacyTrialScheduleStageProgression,
+    createLegacyTrialTimingReadModel,
     getLegacyTrialDistance,
     isLegacyTrialNoticeActive,
     isLegacyTrialWithin
@@ -42,6 +43,26 @@ function createEngine({ turn, stageId }) {
     };
     assert.equal(isLegacyTrialNoticeActive(state), true);
     assert.equal(isLegacyTrialNoticeActive(state, { fallbackThreshold: 5 }), true);
+}
+
+{
+    const state = {
+        turn: 10,
+        nextTrialTurn: 15,
+        trialSchedule: { trial1: 15, trial2: 30, trial3: 50 },
+        getTrialNotice: () => ({ active: false, remaining: 5 })
+    };
+    const timing = createLegacyTrialTimingReadModel(state);
+    assert.equal(timing.getCurrentVerse(), 10);
+    assert.equal(timing.getNextScheduledVerse(), 15);
+    assert.equal(timing.getDistance(), 5);
+    assert.equal(timing.isWithin(5), true);
+    assert.equal(timing.isWithin(4), false);
+    assert.equal(timing.isNoticeActive({ fallbackThreshold: 5 }), true);
+    assert.equal(timing.getScheduledVerse(1), 15);
+    assert.equal(timing.getScheduledVerse(2), 30);
+    assert.equal(timing.getScheduledVerse(3), 50);
+    assert.equal(timing.getScheduledVerse(4), null);
 }
 
 {
