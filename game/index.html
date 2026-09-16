@@ -120,6 +120,7 @@
         import { attachBoardPresentationRuntime } from './src/ui/board_presentation_runtime_bridge.js?v=20260913_v1';
         import { attachWeb25DValidationRuntime } from './src/ui/web25d_validation_runtime_bridge.js?v=20260915_v1';
         import { attachTrialActionTray } from './src/ui/trial_action_tray_runtime_bridge.js?v=20260913_v1';
+        import { attachTrialRuntimeSubsystems } from './src/trial/integration/trial_runtime_bootstrap.js?v=20260916_v1';
 
         class BrowserGameState extends PlatformNeutralGameState {
             constructor(dependencies = {}) {
@@ -130,6 +131,10 @@
         function bootstrap() {
             try {
                 const engine = GameEngine.createGame({ GameStateClass: BrowserGameState });
+                const trialRuntime = attachTrialRuntimeSubsystems(engine);
+                if (!trialRuntime.success) {
+                    throw new Error(`TRIAL_RUNTIME_BOOTSTRAP_FAILED:${trialRuntime.reason || 'UNKNOWN'}`);
+                }
                 const ui = new UIController(engine);
                 attachBoardPresentationRuntime(ui);
                 attachWeb25DValidationRuntime(ui);
