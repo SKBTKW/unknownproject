@@ -1,7 +1,7 @@
 import { BOARD_VIEW_MODES } from '../presentation/board_presentation_state.js';
 import { BoardRendererBridge } from '../presentation/board_renderer_bridge.js';
 import { Web25DProjectionAdapter } from '../presentation/web25d_projection_adapter.js';
-import { Web25DPhaseCRenderer } from '../presentation/web25d_phase_c_renderer.js';
+import { Web25DPlacementPreviewCompositeRenderer } from '../presentation/web25d_placement_preview_composite_renderer.js';
 
 const DEFAULT_CANVAS_WIDTH = 584;
 const DEFAULT_CANVAS_HEIGHT = 584;
@@ -71,7 +71,7 @@ export function attachWeb25DValidationRuntime(uiController, {
         }
     };
 
-    const renderer = new Web25DPhaseCRenderer({
+    const renderer = new Web25DPlacementPreviewCompositeRenderer({
         canvas,
         bridge: dispatchBridge,
         projectionAdapter: new Web25DProjectionAdapter({
