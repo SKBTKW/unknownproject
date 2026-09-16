@@ -10,6 +10,23 @@ export class TrialResultUIController extends BoardAwareUIController {
         if (this.engine && !this.engine.trialSessionBoundaryService) {
             this.engine.trialSessionBoundaryService = new TrialSessionBoundaryService(this.engine);
         }
+
+        // Migration boundary: the legacy UI-owned TrialController still owns a
+        // local fact hub because base UI construction predates the live engine
+        // hub. Forward its facts into the engine SSOT so Trial settlement can
+        // advance timing authority without breaking existing UI/Advisor listeners.
+        const trialFactHub = this.trialController?.gameFactHub || null;
+        const runtimeFactHub = this.engine?.gameFactHub || null;
+        this.unsubscribeTrialFactForwarder = null;
+        if (trialFactHub && runtimeFactHub && trialFactHub !== runtimeFactHub
+            && typeof trialFactHub.subscribe === 'function'
+            && typeof runtimeFactHub.emit === 'function') {
+            this.unsubscribeTrialFactForwarder = trialFactHub.subscribe(fact => {
+                if (!fact?.type) return;
+                runtimeFactHub.emit(fact.type, fact.payload || {});
+            });
+        }
+
         this.trialResultExitAdapter = new TrialResultExitAdapter({
             gameFactHub: this.trialController.gameFactHub,
             lifecycleProvider: () => this.trialController.getLifecycleReadModel(),
