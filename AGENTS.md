@@ -29,12 +29,42 @@
 2. `git fetch origin <branch>`: リモートの最新リビジョン情報を安全に取得する（ワーキングツリーは変更しない）。
 3. `git status -uno`: local と remote の関係（up to date / ahead / behind / diverged）を確認する。
    - **diverged (ahead/behind 分岐)** または **behind** を検知した場合、勝手に pull や rebase を実行せず、必ず状況をユーザーへ報告して指示を仰ぐ。
-4. ユーザーが指定した作業ブランチをclone-local設定へ記録する: `git config --local aot.authorizedBranch <branch>`。
+4. ユーザーが指定した統合先ブランチをclone-local設定へ記録する: `git config --local aot.authorizedBranch <branch>`。
    - この設定の新規作成・変更は、ユーザーが作業ブランチを明示した場合に限る。
 5. ファイル編集前に `python scratch/pre_write_linter.py` を実行し、`GIT001` が出た場合は作業を開始せずユーザーへ確認する。
 
-### 2.2 ブランチ・履歴保全
-- 指定された作業ブランチ（例: `AGtest260906`）から勝手に別ブランチを作成・切り替えて作業してはならない。
+### 2.2 作業モード（DIRECT / ISOLATED / TASK）
+- **DIRECT**: 小規模な単独作業用。`aot.authorizedBranch` と同名の `origin/<branch>` を追跡する統合先ブランチで直接作業する。
+- **ISOLATED**: 未コミット資産保護または破棄可能な実験用。`aot-tmp/<target>/<task-id>` を別worktreeで使用し、remote upstreamを設定・pushしてはならない。
+- **TASK（並行作業の既定）**: 統合対象となる短命作業用。`aot-task/<target>/<domain>/<task-id>` を最新 `origin/<target>` から別worktreeに作成する。
+- ブランチ／worktreeの作成はユーザーがそのタスクを承認した場合に限る。lintは検証のみを行い、作成・同期・統合・削除を実行しない。
+- 複数worktreeの認可情報を衝突させないため、`extensions.worktreeConfig=true` を使用し、モード固有値は `git config --worktree` へ記録する。
+  - `aot.workMode=DIRECT|ISOLATED|TASK`
+  - `aot.authorizedWorkBranch=<ISOLATED branch>`
+  - `aot.authorizedTaskBranch=<TASK branch>`
+  - `aot.authorizedBaseCommit=<verified origin target HEAD>`
+- TASKは初回push前のみupstreamなしを許容する。push後は同名の `origin/aot-task/...` だけを追跡でき、`origin/<target>` をupstreamにしてはならない。
+
+### 2.3 TASK ライフサイクルと統合キュー
+1. `git fetch origin <target>` 後の `origin/<target>` SHAを基点として記録し、専用worktreeを作る。
+2. 作業開始前に、Task ID、担当、目的、対象ファイル、共有ファイル、対象外を申告する。
+3. タスク外の修正を混ぜない。本番変更とテスト基盤修正は意味単位でコミットを分ける。
+4. focused test後、未追跡・未コミットファイルのないcleanなTASK worktreeでFull Inspectionを実行する。
+5. タスクブランチpush後は統合キューで `READY / WAITING_FOR_BASE_UPDATE / CONFLICT / TEST_FAILED / APPROVED / MERGED` のいずれかを管理する。
+6. 統合直前に再fetchし、TASKが最新 `origin/<target>` を包含していることを `python scratch/pre_write_linter.py --integration-ready` で確認する。
+7. 本流が進んでいた場合、勝手にrebaseや競合解消を行わない。最新本流の取り込み方法をユーザーまたは統合担当へ確認し、取り込み後は全検査を再実行する。
+8. 統合担当者は同時に一人とし、APPROVEDタスクを一件ずつ統合する。履歴ノイズを本流へ持ち込まないため、原則squash mergeでタスクを一つの意味的コミットにする。
+9. 統合後に対象ブランチ上でFull Inspectionを再実行し、remote HEAD一致を確認する。
+10. TASKブランチ／worktreeは、統合・remote反映・検査合格を確認した後だけ削除する。未統合ブランチの強制削除を禁止する。
+- `AGENTS.md`、`game/src/i18n.js`、`layout_config.js`、GameEngine、共通JSON、統合テストなどの共有ファイルは同時編集を避け、統合順を先に決める。
+- TASK branchへのpush承認と、統合先branchへのpush承認は別の承認として扱う。
+
+### 2.4 ブランチ・履歴保全
+- 指定・認可されたモード以外のブランチを勝手に作成・切り替えてはならない。
+- `git pull`、`git rebase`、通常merge、競合解消、force pushを自動実行してはならない。
+- ISOLATEDの自動統合は、記録した基点から対象ブランチが動いておらず、対象worktreeがcleanで全検査合格の場合の `git merge --ff-only` だけを許可する。
+- TASKの統合は統合担当と承認ゲートを経由し、作業担当が直接 `AoT260916` へpushしてはならない。
+- `git branch -D` による未統合ブランチの削除を禁止する。
 
 ---
 
@@ -147,7 +177,7 @@ AoT のドメインロジックにおいて、以下の異なる概念を同一�
 - **CSS003**: JS 内での直接スタイル操作の警告（WARN）。
 - **CARD001〜003**: ロジック層でのカード直書き、`land_cards.json` 純化、削除旧カード残存の検知。
 - **ARCH001**: ドメインロジック層からの DOM API アクセス遮断。
-- **GIT001**: 現在ブランチがclone-localの `aot.authorizedBranch` と一致し、同名の `origin/<branch>` を追跡していることを必須化。無許可ブランチ切替、detached HEAD、upstreamなしの新規ローカルブランチ、別名・別remote追跡を遮断する。
+- **GIT001**: DIRECT / ISOLATED / TASKの認可、命名、worktree分離、upstream、基点祖先関係を検証する。`--integration-ready` ではTASKの同名remote追跡、最新本流包含、clean状態も必須化する。
 
 ### 8.2 自動仕様突合アサーション (`scratch/verify_all_rule_files.py`)
 - 仕様書が要求する定数（土地産出値、初期リソース、マージ倍率等）と、エンジン・データ資産の実数値を 1:1 で厳密比較検証する。
@@ -155,6 +185,7 @@ AoT のドメインロジックにおいて、以下の異なる概念を同一�
 ### 8.3 統合検問パイプライン (`scratch/run_full_inspection.mjs`)
 あらゆる作業の最終完了時に実行する一方向パイプライン。
 - `Layer 1: Static Lint` ➔ `Layer 2: Spec Assertions` ➔ `Layer 3: Domain Unit Tests` ➔ `Layer 4: Trial Tests` ➔ `Layer 5: UI Lifecycle Tests` ➔ `Layer 6: Integration & Settlement Tests` を順次実行し、全レイヤーの合格を確認する。
+- TASKの統合判定に使うFull Inspectionは、対象TASK以外の未コミット差分や未追跡ファイルが存在しない専用worktreeで実行する。dirtyな統合先worktreeの結果を代用してはならない。
 
 ---
 
@@ -188,14 +219,20 @@ Git Push を安全に行うための機械的・運用的プロトコル。
 Push を提案する際は、必ず以下の情報をユーザーへ完全提示する。
 ```text
 【Git Push 事前確認】
+- Push種別: TASK branch / integration target
 - 対象ブランチ: <branch_name>
+- 統合先ブランチ: <target_branch>
+- 基点コミット: <base_hash>
 - コミットハッシュ: <short_hash>
 - コミットメッセージ: <commit_message>
 - 変更ファイル統計: <git diff --stat の出力概要>
 - 自動検査結果: Layer 1〜6 ALL PASS
+- 実ブラウザ検証: <確認済み / 未確認>
+- 既知の制約: <none または列挙>
 ```
 
 ### 10.2 機械的承認ゲート
 - ユーザーの直前発言に「push」の明示的文字列が含まれていない場合、システム的に `git push` コマンドの発行を自動拒否する。
 - いかなる緊急時であっても、ユーザーの明示承認なしに Push を強行してはならない。
+- TASK branchへのpush承認は統合先へのpushを許可しない。統合先への反映には、統合差分と統合後検査結果を提示した別の明示承認が必要である。
 

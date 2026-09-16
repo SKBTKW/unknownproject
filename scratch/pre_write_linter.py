@@ -24,7 +24,7 @@ if hasattr(sys.stdout, 'reconfigure'):
 # CARD002: Contaminated land_cards.json (non-LAND card)
 # CARD003: Banned legacy card ID in data assets
 # ARCH001: Domain layer DOM access (document/window in core or trial domain)
-# GIT001:  Work must stay on the locally authorized, same-name origin branch
+# GIT001:  Work must stay in an authorized DIRECT / ISOLATED / TASK workflow
 
 class LintViolation:
     def __init__(self, rule_id, level, filepath, line_num, message, fix_hint):
@@ -41,7 +41,22 @@ class LintViolation:
         return f"  {icon} [{self.rule_id}] ({self.level}) {loc}\n      {self.message}\n      👉 Fix: {self.fix_hint}"
 
 
-def validate_git_branch_tracking(branch, upstream, authorized_branch):
+def validate_git_branch_tracking(
+    branch,
+    upstream,
+    authorized_branch,
+    mode="DIRECT",
+    authorized_work_branch="",
+    authorized_task_branch="",
+    authorized_base_commit="",
+    target_head="",
+    work_descends_from_base=False,
+    target_descends_from_base=False,
+    is_linked_worktree=False,
+    integration_ready=False,
+    target_is_ancestor=False,
+    worktree_clean=True,
+):
     """Return GIT001 violations for unauthorized or incorrectly tracked work."""
     if not authorized_branch:
         return [LintViolation(
@@ -66,51 +81,156 @@ def validate_git_branch_tracking(branch, upstream, authorized_branch):
             fix_hint="Ask the user which existing origin branch to use before editing",
         )]
 
-    if branch != authorized_branch:
+    mode = (mode or "DIRECT").upper()
+    if mode not in {"DIRECT", "ISOLATED", "TASK"}:
         return [LintViolation(
             rule_id="GIT001",
             level="ERROR",
             filepath=".git/config",
             line_num=0,
-            message=(
-                f"Current branch '{branch}' is not the user-authorized branch "
-                f"'{authorized_branch}'."
-            ),
-            fix_hint="Stop work and ask the user before switching or authorizing another branch",
+            message=f"Unknown work mode '{mode}'.",
+            fix_hint="Use only DIRECT, ISOLATED, or TASK after explicit user authorization",
         )]
 
-    expected_upstream = f"origin/{branch}"
-    if not upstream:
+    if mode == "DIRECT":
+        if authorized_work_branch or authorized_task_branch or authorized_base_commit:
+            return [LintViolation(
+                "GIT001", "ERROR", ".git/config", 0,
+                "DIRECT mode has stale isolated/task authorization metadata.",
+                "Clear worktree-scoped task metadata before direct work",
+            )]
+        if branch != authorized_branch:
+            return [LintViolation(
+                "GIT001", "ERROR", ".git/config", 0,
+                f"Current branch '{branch}' is not the authorized DIRECT branch '{authorized_branch}'.",
+                "Stop work and ask the user before switching branches",
+            )]
+        expected_upstream = f"origin/{branch}"
+        if upstream != expected_upstream:
+            return [LintViolation(
+                "GIT001", "ERROR", ".git", 0,
+                f"DIRECT branch '{branch}' must track '{expected_upstream}', not '{upstream or '(none)'}'.",
+                "Restore the authorized same-name origin tracking relationship",
+            )]
+        return []
+
+    if not is_linked_worktree:
         return [LintViolation(
             rule_id="GIT001",
             level="ERROR",
             filepath=".git",
             line_num=0,
-            message=f"Branch '{branch}' has no upstream and may be an unauthorized local branch.",
-            fix_hint="Do not create a branch autonomously; ask the user to select or authorize a branch",
+            message=f"{mode} work is authorized only in a separate linked worktree.",
+            fix_hint="Create the authorized branch in a dedicated worktree",
         )]
 
-    if upstream != expected_upstream:
+    if not re.fullmatch(r"[0-9a-fA-F]{40,64}", authorized_base_commit):
         return [LintViolation(
             rule_id="GIT001",
             level="ERROR",
             filepath=".git",
             line_num=0,
-            message=(
-                f"Branch '{branch}' tracks '{upstream}', not its same-name "
-                f"authorized remote branch '{expected_upstream}'."
-            ),
-            fix_hint="Stop and ask the user to confirm the intended existing origin branch",
+            message=f"{mode} mode has no valid recorded base commit.",
+            fix_hint="Record the verified origin target HEAD before creating the worktree",
         )]
 
+    if not work_descends_from_base:
+        return [LintViolation(
+            "GIT001", "ERROR", ".git", 0,
+            f"{mode} branch '{branch}' is not a descendant of its recorded base.",
+            "Stop; do not merge, rebase, or rewrite history automatically",
+        )]
+
+    if mode == "ISOLATED":
+        expected_prefix = f"aot-tmp/{authorized_branch}/"
+        if not authorized_work_branch.startswith(expected_prefix):
+            return [LintViolation(
+                "GIT001", "ERROR", ".git/config", 0,
+                f"ISOLATED branch must use '{expected_prefix}<task-id>'.",
+                "Correct the authorized temporary branch name",
+            )]
+        if branch != authorized_work_branch:
+            return [LintViolation(
+                "GIT001", "ERROR", ".git/config", 0,
+                f"Current branch '{branch}' is not authorized ISOLATED branch '{authorized_work_branch}'.",
+                "Stop; do not switch branches inside an isolated worktree",
+            )]
+        if upstream:
+            return [LintViolation(
+                "GIT001", "ERROR", ".git", 0,
+                f"ISOLATED branch must not track '{upstream}'.",
+                "Keep ISOLATED work local",
+            )]
+        if target_head != authorized_base_commit:
+            return [LintViolation(
+                "GIT001", "ERROR", ".git", 0,
+                f"Target branch moved from '{authorized_base_commit}' to '{target_head or '(missing)'}'.",
+                "Stop and ask how to reconcile the moved target",
+            )]
+        return []
+
+    expected_prefix = f"aot-task/{authorized_branch}/"
+    task_suffix = authorized_task_branch[len(expected_prefix):] if authorized_task_branch.startswith(expected_prefix) else ""
+    if not re.fullmatch(r"[^/]+/[^/]+(?:/[^/]+)*", task_suffix):
+        return [LintViolation(
+            "GIT001", "ERROR", ".git/config", 0,
+            f"TASK branch must use '{expected_prefix}<domain>/<task-id>'.",
+            "Correct the authorized task branch name",
+        )]
+    if branch != authorized_task_branch:
+        return [LintViolation(
+            "GIT001", "ERROR", ".git/config", 0,
+            f"Current branch '{branch}' is not authorized TASK branch '{authorized_task_branch}'.",
+            "Stop; do not switch branches inside a task worktree",
+        )]
+    expected_task_upstream = f"origin/{branch}"
+    if upstream and upstream != expected_task_upstream:
+        return [LintViolation(
+            "GIT001", "ERROR", ".git", 0,
+            f"TASK branch tracks '{upstream}', not '{expected_task_upstream}'.",
+            "Remove the wrong upstream; TASK may track only its same-name origin branch",
+        )]
+    if not target_descends_from_base:
+        return [LintViolation(
+            "GIT001", "ERROR", ".git", 0,
+            f"Recorded TASK base '{authorized_base_commit}' is not in origin/{authorized_branch} history.",
+            "Fetch the target and stop if its history was rewritten",
+        )]
+    if integration_ready:
+        if upstream != expected_task_upstream:
+            return [LintViolation(
+                "GIT001", "ERROR", ".git", 0,
+                "TASK integration readiness requires its same-name remote upstream.",
+                "Push the task branch with explicit approval and set its same-name upstream",
+            )]
+        if not target_is_ancestor:
+            return [LintViolation(
+                "GIT001", "ERROR", ".git", 0,
+                f"TASK branch does not contain the latest origin/{authorized_branch}.",
+                "Update from the fetched target, rerun tests, and request integration again",
+            )]
+        if not worktree_clean:
+            return [LintViolation(
+                "GIT001", "ERROR", ".git", 0,
+                "TASK integration candidate has uncommitted or untracked files.",
+                "Commit the intended task changes or remove unintended files before integration review",
+            )]
     return []
 
 
-def inspect_git_branch_policy(root_dir):
+def inspect_git_branch_policy(root_dir, integration_ready=False):
     """Read the current Git branch/upstream and enforce GIT001 fail-closed."""
     try:
+        def config_value(key):
+            result = subprocess.run(
+                ["git", "config", "--get", key],
+                cwd=root_dir, capture_output=True, text=True,
+                encoding="utf-8", errors="ignore",
+            )
+            return result.stdout.strip() if result.returncode == 0 else ""
+
         authorized_result = subprocess.run(
-            ["git", "config", "--local", "--get", "aot.authorizedBranch"],
+            ["git", "config", "--get", "aot.authorizedBranch"],
             cwd=root_dir,
             capture_output=True,
             text=True,
@@ -121,7 +241,12 @@ def inspect_git_branch_policy(root_dir):
             authorized_result.stdout.strip() if authorized_result.returncode == 0 else ""
         )
         if not authorized_branch:
-            return validate_git_branch_tracking("", "", ""), "", "", ""
+            return validate_git_branch_tracking("", "", ""), "", "", "", "DIRECT"
+
+        mode = (config_value("aot.workMode") or "DIRECT").upper()
+        authorized_work_branch = config_value("aot.authorizedWorkBranch")
+        authorized_task_branch = config_value("aot.authorizedTaskBranch")
+        authorized_base_commit = config_value("aot.authorizedBaseCommit")
 
         branch_result = subprocess.run(
             ["git", "symbolic-ref", "--quiet", "--short", "HEAD"],
@@ -134,10 +259,11 @@ def inspect_git_branch_policy(root_dir):
         branch = branch_result.stdout.strip() if branch_result.returncode == 0 else ""
         if not branch:
             return (
-                validate_git_branch_tracking("", "", authorized_branch),
+                validate_git_branch_tracking("", "", authorized_branch, mode),
                 "",
                 "",
                 authorized_branch,
+                mode,
             )
 
         upstream_result = subprocess.run(
@@ -149,11 +275,54 @@ def inspect_git_branch_policy(root_dir):
             errors="ignore",
         )
         upstream = upstream_result.stdout.strip() if upstream_result.returncode == 0 else ""
+        def git_success(*args):
+            return subprocess.run(
+                ["git", *args], cwd=root_dir, capture_output=True,
+                text=True, encoding="utf-8", errors="ignore",
+            ).returncode == 0
+
+        target_ref = f"refs/heads/{authorized_branch}"
+        target_result = subprocess.run(
+            ["git", "rev-parse", "--verify", target_ref], cwd=root_dir,
+            capture_output=True, text=True, encoding="utf-8", errors="ignore",
+        )
+        target_head = target_result.stdout.strip() if target_result.returncode == 0 else ""
+        work_descends_from_base = bool(authorized_base_commit) and git_success(
+            "merge-base", "--is-ancestor", authorized_base_commit, "HEAD"
+        )
+        remote_target = f"refs/remotes/origin/{authorized_branch}"
+        target_descends_from_base = bool(authorized_base_commit) and git_success(
+            "merge-base", "--is-ancestor", authorized_base_commit, remote_target
+        )
+        target_is_ancestor = git_success("merge-base", "--is-ancestor", remote_target, "HEAD")
+        git_dir = subprocess.run(
+            ["git", "rev-parse", "--path-format=absolute", "--git-dir"], cwd=root_dir,
+            capture_output=True, text=True, encoding="utf-8", errors="ignore",
+        ).stdout.strip()
+        common_dir = subprocess.run(
+            ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"], cwd=root_dir,
+            capture_output=True, text=True, encoding="utf-8", errors="ignore",
+        ).stdout.strip()
+        is_linked_worktree = bool(git_dir and common_dir) and (
+            os.path.normcase(os.path.abspath(git_dir)) != os.path.normcase(os.path.abspath(common_dir))
+        )
+        status_result = subprocess.run(
+            ["git", "status", "--porcelain"], cwd=root_dir, capture_output=True,
+            text=True, encoding="utf-8", errors="ignore",
+        )
+        worktree_clean = status_result.returncode == 0 and not status_result.stdout.strip()
+
         return (
-            validate_git_branch_tracking(branch, upstream, authorized_branch),
+            validate_git_branch_tracking(
+                branch, upstream, authorized_branch, mode,
+                authorized_work_branch, authorized_task_branch, authorized_base_commit,
+                target_head, work_descends_from_base, target_descends_from_base,
+                is_linked_worktree, integration_ready, target_is_ancestor, worktree_clean,
+            ),
             branch,
             upstream,
             authorized_branch,
+            mode,
         )
     except (OSError, subprocess.SubprocessError) as error:
         violation = LintViolation(
@@ -164,7 +333,7 @@ def inspect_git_branch_policy(root_dir):
             message=f"Git branch authorization could not be verified: {error}",
             fix_hint="Run this inspection inside the repository on a user-selected origin branch",
         )
-        return [violation], "", "", ""
+        return [violation], "", "", "", "UNKNOWN"
 
 
 def get_git_diff_added_lines(root_dir):
@@ -584,8 +753,9 @@ def main():
     strict_all_mode = "--all" in sys.argv
 
     all_violations = []
-    branch_violations, current_branch, current_upstream, authorized_branch = (
-        inspect_git_branch_policy(root_dir)
+    integration_ready = "--integration-ready" in sys.argv
+    branch_violations, current_branch, current_upstream, authorized_branch, branch_mode = (
+        inspect_git_branch_policy(root_dir, integration_ready=integration_ready)
     )
     all_violations.extend(branch_violations)
 
@@ -603,7 +773,8 @@ def main():
         + ("; --all treats every violation as an error." if strict_all_mode else ".")
     )
     print(
-        f"Git branch authorization: branch={current_branch or '(detached)'} "
+        f"Git branch authorization: mode={branch_mode} "
+        f"branch={current_branch or '(detached)'} "
         f"upstream={current_upstream or '(none)'} "
         f"authorized={authorized_branch or '(none)'}"
     )
