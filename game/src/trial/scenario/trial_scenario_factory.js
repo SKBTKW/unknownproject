@@ -130,6 +130,7 @@ export class TrialScenarioFactory {
 
         const scenario = {
             id: `TRIAL_${trialIndex}`,
+            trialIndex,
             enemySuppression,
             routes: cloneData(routes),
             ...human,
