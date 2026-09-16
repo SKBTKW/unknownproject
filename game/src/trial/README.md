@@ -34,7 +34,7 @@ GameState + EnemyTruth + Trial index
 
 ### `systems/`
 
-Owns Trial resolution rules after a scenario exists.
+Owns Trial resolution rules and internal Trial simulation services.
 
 Examples:
 
@@ -47,8 +47,20 @@ Examples:
 - HQ arrival aggregation
 - HQ damage
 - completion and settlement prerequisites
+- exact internal Trial timing
 
-UI must not reproduce these calculations.
+`trial_timing_authority_service.js` is the replacement boundary for the exact internal Trial clock. It knows scheduled Verse values and the current Trial index, but it is **not** a Warning/Advisor/UI presentation API.
+
+`trial_timing_policy.js` owns schedule generation policy. The current target policy is:
+
+- first-run Trial 1: Verse 15 exactly;
+- later-run Trial 1: Verse 12..18;
+- Trial 2: Verse 27..33;
+- Trial 3: Verse 50.
+
+The timing authority/policy are foundation only until the normal Verse runtime is explicitly migrated to them.
+
+UI must not reproduce these calculations or expose exact remaining Verse counts from the timing authority.
 
 ### `flow/`
 
@@ -62,7 +74,7 @@ Owns orchestration and Trial lifecycle boundaries.
 
 Owns presentation-only Trial state and read models.
 
-Draft hover state, selected cells, preview values, display mode, and UI-facing lifecycle projection belong here. Presentation state must not become the authoritative source for combat or scenario truth.
+Draft hover state, selected cells, preview values, display mode, and UI-facing lifecycle projection belong here. Presentation state must not become the authoritative source for combat, scenario truth, or exact Trial timing.
 
 ### `dev/`
 
@@ -104,7 +116,7 @@ Do not add gameplay rules to the deprecated preview-named aliases.
 - `warningDuration`
 - `getTrialNotice()` returning direct remaining-turn information
 
-These are legacy scheduling/presentation surfaces and are not the authority for the newer Warning / Investigation design. Do not extend them with new Trial behavior.
+These remain live compatibility state while migration is incomplete. They are not the intended long-term authority and must not be extended with new Trial behavior.
 
 ### Confirmed live legacy dependency
 
@@ -116,20 +128,40 @@ That behavior has been moved behind:
 
 `game/src/core/legacy_trial_schedule_compat.js`
 
-This is an isolation boundary only. It intentionally preserves the old behavior until board-stage progression is migrated to an explicit post-Trial progression contract. New systems must not consume this compatibility module as a source of Trial timing truth.
+The same compatibility boundary now owns reusable legacy timing predicates used during migration. `ConditionEvaluator` consumes that boundary; `DeckManager` still has direct legacy timing checks and remains the main unresolved duplicate consumer.
+
+This is an isolation boundary only. It intentionally preserves old behavior until board-stage progression, card eligibility, and save/restore migrate to explicit modern contracts.
 
 The remaining legacy data must not be deleted until all references are audited. The cleanup order is:
 
 1. find every read/write reference;
 2. classify each reference as production, compatibility, test, or dead;
-3. introduce the replacement production trigger/progression contract;
-4. migrate callers;
-5. remove legacy schedule/countdown data only after reference count reaches zero.
+3. connect `TrialTimingAuthorityService` as the production timing source;
+4. migrate stage progression and card predicates;
+5. migrate save/restore;
+6. remove legacy schedule/countdown data only after reference count reaches zero.
+
+## Timing vs Warning invariant
+
+The exact clock and player-facing warning state are intentionally different layers:
+
+```text
+TrialTimingAuthorityService
+    exact internal Verse / due state
+            ↓
+Warning semantic state
+    OMEN / WATCH / TENSE / IMMINENT
+            ↓
+Advisor / atmosphere / UI
+```
+
+Warning/Advisor/UI must never infer or display exact remaining Verse counts merely because the internal timing authority can calculate them.
 
 ## Invariants to preserve during cleanup
 
 - Trial combat rules stay independent from Warning / Investigation presentation knowledge.
 - Actual enemy state and player-known enemy state remain separate.
+- Exact Trial timing remains internal simulation data, not player-facing knowledge.
 - A route receives at most one deliberate interception in the current rules.
 - INTERCEPT and SKIP remain explicit route decisions.
 - Defense allocation is committed when the confirmed plan is activated, not while drafting.
@@ -143,10 +175,12 @@ The remaining legacy data must not be deleted until all references are audited. 
 
 Do cleanup in small, rollback-safe steps:
 
-1. **Reference audit** — legacy schedule/countdown and preview-named production entry points.
+1. **Reference audit** — legacy schedule/countdown and preview-named production entry points. **Done for confirmed runtime surfaces.**
 2. **Production start boundary** — expose a correctly named Trial session start API without removing compatibility callers. **Done.**
 3. **Dev harness convergence** — route development preview through the production start boundary. **Done.**
-4. **Legacy schedule isolation** — move confirmed old consumers behind an explicit compatibility boundary. **In progress; stage expansion isolated.**
-5. **Legacy removal** — only after tests/diagnostics prove no required references remain and stage progression has a replacement authority.
+4. **Legacy schedule isolation** — move confirmed old consumers behind an explicit compatibility boundary. **In progress; stage expansion and generic ConditionEvaluator predicates isolated, DeckManager remains.**
+5. **Timing authority foundation** — define exact internal timing service and first-run policy without exposing countdown UI. **Done, not yet connected to GameEngine.**
+6. **Production timing migration** — connect Verse runtime, Trial settlement, card eligibility, and save/restore to the timing authority.
+7. **Legacy removal** — remove `getTrialNotice()`, `nextTrialTurn`, and `trialSchedule` only when no production consumer remains.
 
-No gameplay rebalance, Trial rule redesign, or Warning/Investigation behavior change belongs in these cleanup commits.
+No gameplay rebalance, Trial combat-rule redesign, or player-facing Warning behavior change belongs in these cleanup commits.
