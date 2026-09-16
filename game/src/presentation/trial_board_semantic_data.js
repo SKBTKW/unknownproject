@@ -32,6 +32,7 @@ export function createTrialBoardSemanticData({
     available = false,
     activeRouteId = null,
     selectedInterceptCell = null,
+    hoveredInterceptCell = null,
     routes = [],
     interceptionCandidates = [],
     plannedIntercepts = [],
@@ -68,6 +69,7 @@ export function createTrialBoardSemanticData({
         available: Boolean(available),
         activeRouteId: activeRouteId ?? null,
         selectedInterceptCell: normalizeRouteCell(selectedInterceptCell),
+        hoveredInterceptCell: normalizeRouteCell(hoveredInterceptCell),
         routes: freezeArray(normalizedRoutes),
         interceptionCandidates: freezeArray(
             interceptionCandidates.map(normalizeMarkedCell).filter(Boolean)
