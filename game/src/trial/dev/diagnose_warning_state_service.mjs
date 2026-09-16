@@ -7,13 +7,17 @@ import { WarningStateService } from "../../warning/systems/warning_state_service
     assert.equal(warning.getState(), WARNING_STATES.CALM);
 
     assert.equal(warning.markOmen({ source: "OMEN_EVENT", verse: 7 }).changed, true);
-    assert.equal(warning.markWatch({ source: "INVESTIGATION_UNLOCK", verse: 7 }).changed, true);
+    assert.equal(warning.markWatch({ source: "INVESTIGATION_RECORDED", verse: 7 }).changed, true);
     assert.equal(warning.markTense({ source: "THREAT_APPROACH", verse: 10 }).changed, true);
     assert.equal(warning.markImminent({ source: "INVASION_CONFIRMED", verse: 14 }).changed, true);
     assert.equal(warning.getState(), WARNING_STATES.IMMINENT);
 
+    const laterStateSignal = warning.markWatch({ source: "LATE_INVESTIGATION", verse: 14 });
+    assert.equal(laterStateSignal.changed, false);
+    assert.equal(warning.getState(), WARNING_STATES.IMMINENT);
+
     assert.throws(
-        () => warning.markWatch({ source: "INVALID_REGRESSION" }),
+        () => warning.advanceTo(WARNING_STATES.WATCH, { source: "EXPLICIT_REGRESSION" }),
         /WARNING_STATE_REGRESSION_FORBIDDEN/
     );
 

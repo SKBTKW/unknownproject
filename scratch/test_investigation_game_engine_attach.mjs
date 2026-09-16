@@ -1,4 +1,6 @@
+import { GAME_FACT_TYPES } from '../game/src/core/game_fact.js';
 import { GameEngine } from '../game/src/core/game_engine.js';
+import { WARNING_STATES } from '../game/src/warning/domain/warning_state.js';
 
 const engine = GameEngine.createGame({ runSeed: 20260915 });
 
@@ -9,8 +11,26 @@ if (engine.investigationSubsystem?.success !== true) {
 if (engine.investigationSubsystem?.cardRuntimePolicyAttached !== true) {
     throw new Error('card runtime policy was not composed before live Offering generation');
 }
+if (engine.investigationSubsystem?.warningAttached !== true) {
+    throw new Error('semantic Warning subsystem was not composed with Investigation');
+}
 if (engine.__investigationRuntimeAttached !== true) {
     throw new Error('investigation runtime attach marker missing');
+}
+if (engine.__warningSubsystemAttached !== true) {
+    throw new Error('Warning runtime attach marker missing');
+}
+if (!engine.warningStateService || engine.warningStateService.getState() !== WARNING_STATES.CALM) {
+    throw new Error('Warning state service missing or did not start at CALM');
+}
+if (!engine.trialTimingAuthorityService || typeof engine.trialTimingAuthorityService.getCurrentTrialIndex !== 'function') {
+    throw new Error('fresh-run Trial timing authority was not attached');
+}
+if (engine.trialTimingAuthorityService.getCurrentTrialIndex() !== 1) {
+    throw new Error('fresh-run Trial timing authority did not start at Trial 1');
+}
+if (engine.trialTimingAuthorityService.getNextScheduledVerse() !== engine.state.trialSchedule?.trial1) {
+    throw new Error('timing authority did not mirror the current legacy schedule during migration');
 }
 if (engine.deckManager?.__cardRuntimePolicyAttached !== true) {
     throw new Error('DeckManager runtime category gate marker missing');
@@ -24,6 +44,17 @@ if (typeof engine.getAdditionalCardMastersForRestore !== 'function') {
 if (!engine.enemyTruthReadModel || typeof engine.enemyTruthReadModel.getSnapshot !== 'function') {
     throw new Error('enemy truth read model missing before investigation composition');
 }
+
+engine.gameFactHub.emit(GAME_FACT_TYPES.INVESTIGATION_RECORDED, {
+    trialIndex: 1,
+    verse: engine.state.turn,
+    cardId: 'TEST_INVESTIGATION',
+    reportId: 'TEST_REPORT'
+});
+if (engine.warningStateService.getState() !== WARNING_STATES.WATCH) {
+    throw new Error('committed investigation fact did not advance live Warning state to WATCH');
+}
+engine.warningStateService.resetForNextTrial({ source: 'TEST_RESET', verse: engine.state.turn });
 
 const deck = engine.deckManager;
 const land = { id: 'TEST_RUNTIME_LAND', category: 'LAND', minStage: 1 };

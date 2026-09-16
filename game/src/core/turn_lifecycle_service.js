@@ -2,6 +2,7 @@ import { GAME_FACT_TYPES, GameFactHub } from './game_fact.js';
 import { HistorySnapshotService } from './history_snapshot_service.js';
 import { RunTerminationService } from './run_termination_service.js';
 import { applyLegacyTrialScheduleStageProgression } from './legacy_trial_schedule_compat.js';
+import { attachTrialTimingSubsystem } from '../trial/integration/trial_timing_bootstrap.js';
 import { TrialThreatStateService } from '../trial/systems/trial_threat_state_service.js';
 import { TrueEnemyStateService } from '../trial/systems/true_enemy_state_service.js';
 import { EnemyTruthReadModel } from '../trial/systems/enemy_truth_read_model.js';
@@ -16,6 +17,14 @@ export class TurnLifecycleService {
         this.gameFactHub = engine.gameFactHub || new GameFactHub();
         this.engine.gameFactHub = this.gameFactHub;
         this.engine.chronicleSystem?.attachGameFactHub?.(this.gameFactHub);
+
+        // Exact Trial timing becomes live internal state on fresh runs, but it is
+        // not yet used as the production Trial trigger. Mid-run injected states
+        // are never guessed from Stage/nextTrialTurn; they require explicit state.
+        this.trialTimingAttachment = attachTrialTimingSubsystem(engine, {
+            timingAuthority: engine.trialTimingAuthorityService || null
+        });
+
         this.threatStateService = engine.trialThreatStateService || new TrialThreatStateService({
             gameState: engine.state,
             gameFactHub: this.gameFactHub
