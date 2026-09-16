@@ -29,6 +29,7 @@ export function hydrateGameState(state, serialized, options = {}) {
         knownEnemyState = null,
         lastInvestigationReport = null,
         lastInvestigationComparison = null,
+        scheduledGlobalEvents = [],
         ...baseSerialized
     } = serialized;
 
@@ -42,6 +43,9 @@ export function hydrateGameState(state, serialized, options = {}) {
     hydrated.knownEnemyState = hydrateKnownEnemyState(knownEnemyState);
     hydrated.lastInvestigationReport = cloneData(lastInvestigationReport) ?? null;
     hydrated.lastInvestigationComparison = cloneData(lastInvestigationComparison) ?? null;
+    hydrated.scheduledGlobalEvents = Array.isArray(scheduledGlobalEvents)
+        ? (cloneData(scheduledGlobalEvents) || [])
+        : [];
     return hydrated;
 }
 
