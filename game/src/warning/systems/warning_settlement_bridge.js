@@ -24,9 +24,7 @@ export class WarningSettlementBridge {
         if (!fact || fact.type !== GAME_FACT_TYPES.TRIAL_RESULT_SETTLED) return;
         this.warningStateService.resetForNextTrial({
             source: "TRIAL_RESULT_SETTLED",
-            verse: Number.isInteger(fact.payload?.settlement?.settledTurn)
-                ? fact.payload.settlement.settledTurn
-                : null
+            verse: Number.isInteger(fact.payload?.turn) ? fact.payload.turn : null
         });
     }
 
