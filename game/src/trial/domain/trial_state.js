@@ -9,6 +9,9 @@ export class TrialState {
     constructor(scenario = {}) {
         this.phase = TRIAL_PHASES.SETUP;
         this.scenarioId = scenario.id || null;
+        this.trialIndex = Number.isInteger(scenario.trialIndex) && scenario.trialIndex >= 1
+            ? scenario.trialIndex
+            : null;
         this.enemy = {
             strategicSuppression: Number(scenario.enemySuppression) || 0,
             totalSuppression: 0,
