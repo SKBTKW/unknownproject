@@ -57,7 +57,7 @@ check(tokensCss.includes("--layout-player-tray-bottom")
 
 check(trayViewCss.includes("position: absolute")
     && trayViewCss.includes("display: flex")
-    && trayViewCss.includes("width: auto !important")
+    && trayViewCss.includes("width: auto")
     && trayViewCss.includes("var(--layout-player-tray-bottom)")
     && trayViewCss.includes("var(--layout-player-tray-motion-ms)"),
 "Player Tray placement file is self-contained as the final screen-space geometry authority");

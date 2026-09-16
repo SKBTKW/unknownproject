@@ -47,11 +47,11 @@ check(manager.getBoardViewMode() === BOARD_VIEW_MODES.STRATEGIC_2D, "Board view 
 check(root.dataset.boardView === "top" && body.dataset.boardView === "top", "root datasets expose TOP board-view mode");
 check(indexHtml.includes("player_tray_view_mode.css"), "Player Tray board-view positioning stylesheet is loaded");
 check(trayViewCss.includes('body[data-board-view="top"] #layerPlayerTray.layer-player-tray')
-    && trayViewCss.includes("left: var(--layout-player-tray-top-left) !important")
+    && trayViewCss.includes("left: var(--layout-player-tray-top-left)")
     && trayViewCss.includes("translateX(-50%)"),
 "TOP view anchors Player Tray at bottom-center");
 check(trayViewCss.includes('body[data-board-view="quarter"] #layerPlayerTray.layer-player-tray')
-    && trayViewCss.includes("left: var(--layout-player-tray-quarter-left) !important")
+    && trayViewCss.includes("left: var(--layout-player-tray-quarter-left)")
     && trayViewCss.includes("translateX(0)"),
 "QUARTER view anchors Player Tray at bottom-left");
 check(trayViewCss.includes("transition:")

@@ -17,33 +17,55 @@
 
 #layerPlayerTray.layer-player-tray {
     position: absolute;
-    left: var(--layout-player-tray-top-left) !important;
-    right: auto !important;
-    bottom: var(--layout-player-tray-bottom) !important;
-    width: auto !important;
+    grid-area: main-stack;
+    left: var(--layout-player-tray-top-left);
+    right: auto;
+    bottom: var(--layout-player-tray-bottom);
+    width: auto;
     height: auto;
     display: flex;
-    justify-content: center !important;
+    justify-content: center;
     align-items: flex-end;
     transform: translateX(-50%);
     pointer-events: none;
     transition:
-        left var(--layout-player-tray-motion-ms) cubic-bezier(0.16, 1, 0.3, 1),
-        transform var(--layout-player-tray-motion-ms) cubic-bezier(0.16, 1, 0.3, 1),
-        bottom var(--layout-player-tray-motion-ms) cubic-bezier(0.16, 1, 0.3, 1);
+        left var(--layout-player-tray-motion-ms) var(--layout-player-tray-motion-easing),
+        transform var(--layout-player-tray-motion-ms) var(--layout-player-tray-motion-easing),
+        bottom var(--layout-player-tray-motion-ms) var(--layout-player-tray-motion-easing);
     will-change: left, transform;
 }
 
 body[data-board-view="top"] #layerPlayerTray.layer-player-tray {
-    left: var(--layout-player-tray-top-left) !important;
-    justify-content: center !important;
+    left: var(--layout-player-tray-top-left);
+    justify-content: center;
     transform: translateX(-50%);
 }
 
 body[data-board-view="quarter"] #layerPlayerTray.layer-player-tray {
-    left: var(--layout-player-tray-quarter-left) !important;
-    justify-content: flex-start !important;
+    left: var(--layout-player-tray-quarter-left);
+    justify-content: flex-start;
     transform: translateX(0);
+}
+
+@media (min-width: 769px) {
+    body[data-board-view="quarter"] #layerPlayerTray.layer-player-tray {
+        right: auto;
+        bottom: var(--layout-player-tray-bottom);
+        transition:
+            left var(--layout-player-tray-motion-ms) var(--layout-player-tray-motion-easing),
+            transform var(--layout-player-tray-motion-ms) var(--layout-player-tray-motion-easing);
+        will-change: left, transform;
+    }
+
+    body[data-board-view="quarter"][data-hand-state="expanded"] #layerPlayerTray.layer-player-tray {
+        left: var(--layout-quarter-hand-standard-left);
+        transform: translateX(var(--layout-quarter-hand-standard-translate-x));
+    }
+
+    body[data-board-view="quarter"][data-hand-state="collapsed"] #layerPlayerTray.layer-player-tray {
+        left: var(--layout-quarter-hand-minimal-left);
+        transform: translateX(var(--layout-quarter-hand-minimal-translate-x));
+    }
 }
 
 /* Tray contents remain interactive while the screen-space host stays transparent. */
@@ -53,7 +75,8 @@ body[data-board-view="quarter"] #layerPlayerTray.layer-player-tray {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    #layerPlayerTray.layer-player-tray {
+    #layerPlayerTray.layer-player-tray,
+    body[data-board-view="quarter"] #layerPlayerTray.layer-player-tray {
         transition: none;
     }
 }
@@ -62,11 +85,11 @@ body[data-board-view="quarter"] #layerPlayerTray.layer-player-tray {
 @media (max-width: 768px) {
     #layerPlayerTray.layer-player-tray,
     body[data-board-view] #layerPlayerTray.layer-player-tray {
-        left: var(--layout-player-tray-mobile-left) !important;
-        right: auto !important;
-        bottom: var(--layout-player-tray-mobile-bottom) !important;
-        width: auto !important;
+        left: var(--layout-player-tray-mobile-left);
+        right: auto;
+        bottom: var(--layout-player-tray-mobile-bottom);
+        width: auto;
         transform: translateX(0);
-        justify-content: flex-start !important;
+        justify-content: flex-start;
     }
 }

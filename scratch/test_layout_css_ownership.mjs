@@ -9,6 +9,7 @@ const layerContract = read('../game/css/0_global_common/layer_contract.css');
 const header = read('../game/css/1_top_header/top_header.css');
 const legacy = read('../game/css/layout.css');
 const tray = read('../game/css/3_bottom_area/draw_card_select_area.css');
+const trayPlacement = read('../game/css/3_bottom_area/player_tray_view_mode.css');
 const html = read('../game/index.html');
 const layoutSource = read('../game/src/ui/layout_config.js');
 const focusSource = read('../game/src/ui/focus_layer_system.js');
@@ -92,28 +93,45 @@ check('Legacy board container runtime is removed from Layout config', () => {
 });
 check('Player Tray has one geometry owner in the dedicated stylesheet', () => {
     assert.ok(html.indexOf('base_layout.css') < html.indexOf('draw_card_select_area.css'));
+    assert.ok(html.indexOf('draw_card_select_area.css') < html.indexOf('player_tray_view_mode.css'));
     assert.ok(html.indexOf('draw_card_select_area.css') < html.indexOf('css/layout.css'));
     assert.doesNotMatch(base, /#layerPlayerTray\.layer-player-tray\s*\{/);
     assert.doesNotMatch(base, /#layerPlayerTray \.offering-section\s*\{/);
     assert.doesNotMatch(legacy, /\.layer-player-tray-anchor\s*\{/);
+    assert.doesNotMatch(tray, /(?:^|\n)\s*\.layer-player-tray\s*\{/);
+    assert.doesNotMatch(tray, /\.layer-player-tray-anchor\s*\{/);
+    assert.doesNotMatch(tray, /#layerPlayerTray\.layer-player-tray\s*\{/);
     assert.match(html, /id="layerPlayerTray" class="layer-player-tray layer-player-tray-anchor"/);
 });
-check('Player Tray anchor declarations remain unchanged', () => {
-    assert.deepEqual(rule(tray, 'layer-player-tray-anchor'), {
-        position: 'absolute', bottom: '0', left: '0', width: '100%',
-        height: '0', 'z-index': '500', 'pointer-events': 'none'
-    });
+check('Player Tray placement owner contains the complete host shell', () => {
+    const style = namedRule(trayPlacement.slice(0, trayPlacement.indexOf('body[data-board-view="top"]')), '#layerPlayerTray.layer-player-tray');
+    assert.equal(style.position, 'absolute');
+    assert.equal(style['grid-area'], 'main-stack');
+    assert.equal(style.left, 'var(--layout-player-tray-top-left)');
+    assert.equal(style.right, 'auto');
+    assert.equal(style.bottom, 'var(--layout-player-tray-bottom)');
+    assert.equal(style.width, 'auto');
+    assert.equal(style.height, 'auto');
+    assert.equal(style.display, 'flex');
+    assert.equal(style['justify-content'], 'center');
+    assert.equal(style.transform, 'translateX(-50%)');
+    assert.equal(style['pointer-events'], 'none');
 });
-check('Player Tray ID override retains exact geometry, specificity and priority', () => {
-    assert.deepEqual(namedRule(tray.slice(0, tray.indexOf('@media (max-width: 768px)')), '#layerPlayerTray.layer-player-tray'), {
-        left: 'var(--layout-edge-gap)', right: 'auto !important',
-        bottom: 'var(--layout-edge-gap)', width: 'auto !important',
-        'justify-content': 'flex-start !important', 'z-index': '700 !important'
-    });
+check('Player Tray quarter hand anchors and transition belong to the placement owner', () => {
+    assert.match(trayPlacement, /@media \(min-width: 769px\)[\s\S]*?data-board-view="quarter"[\s\S]*?data-hand-state="expanded"[\s\S]*?var\(--layout-quarter-hand-standard-left\)/);
+    assert.match(trayPlacement, /data-board-view="quarter"\]\[data-hand-state="collapsed"\][\s\S]*?var\(--layout-quarter-hand-minimal-left\)/);
+    assert.match(trayPlacement, /transition:[\s\S]*?var\(--layout-player-tray-motion-easing\)/);
 });
-check('Player Tray narrow-viewport override is relocated without changing its conditions', () => {
-    assert.doesNotMatch(base, /#layerPlayerTray\.layer-player-tray\s*\{/);
-    assert.match(tray, /@media \(max-width: 768px\)\s*\{\s*#layerPlayerTray\.layer-player-tray\s*\{\s*left:\s*8px !important;\s*bottom:\s*8px !important;\s*\}\s*\}/);
+check('Player Tray responsive geometry and reduced motion remain placement-owned', () => {
+    assert.match(trayPlacement, /@media \(max-width: 768px\)[\s\S]*?var\(--layout-player-tray-mobile-left\)[\s\S]*?var\(--layout-player-tray-mobile-bottom\)/);
+    assert.match(trayPlacement, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?transition:\s*none/);
+    assert.doesNotMatch(trayPlacement, /!important/);
+});
+check('Global layer contract owns only the Player Tray stacking band', () => {
+    assert.deepEqual(namedRule(layerContract, '#layerPlayerTray.layer-player-tray'), {
+        'z-index': 'var(--z-player) !important'
+    });
+    assert.doesNotMatch(layerContract, /data-board-view="quarter"[^\{]*#layerPlayerTray/);
 });
 check('Offering geometry is owned by CSS without runtime inline configuration', () => {
     assert.deepEqual(namedRule(tray, '#layerPlayerTray .offering-section'), {

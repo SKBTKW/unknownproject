@@ -3,51 +3,10 @@
    パターンA: メインエリア枠内包 ✕ 太枠フレーム (4px~5px)
    ============================================================= */
 
-/* 🃏 メインエリア枠内 画面下部中央: ドローカード選択エリア (Layer 3: プレイヤートレイ層) */
-.layer-player-tray {
-    position: absolute;
-    bottom: 16px;
-    left: 0;
-    right: 0;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: flex-end;
-    z-index: 500;
-    pointer-events: none;
-}
-
-/* ─── ブロック C: プレイヤー操作トレイ ─── */
-.layer-player-tray-anchor {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 0;
-    z-index: 500;
-    pointer-events: none;
-}
-
-/* 手札トレイは左下。Advisorより常に前面にする */
-#layerPlayerTray.layer-player-tray {
-    left: var(--layout-edge-gap);
-    right: auto !important;
-    bottom: var(--layout-edge-gap);
-    width: auto !important;
-    justify-content: flex-start !important;
-    z-index: 700 !important;
-}
-
+/* Player Tray host placement belongs to player_tray_view_mode.css. */
 #layerPlayerTray .offering-section {
     margin: 0 !important;
     z-index: 700 !important;
-}
-
-@media (max-width: 768px) {
-    #layerPlayerTray.layer-player-tray {
-        left: 8px !important;
-        bottom: 8px !important;
-    }
 }
 
 /* 🃏 ドローカード選択エリア本体 (中央自動センタリング) */

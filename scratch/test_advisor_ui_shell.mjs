@@ -78,7 +78,7 @@ const contentSource = fs.readFileSync(path.join(ROOT, "game/src/ui/advisor/advis
 const css = fs.readFileSync(path.join(ROOT, "game/css/4_right_sidebar/advisor_ui.css"), "utf8");
 const layoutCss = fs.readFileSync(path.join(ROOT, "game/css/0_global_common/base_layout.css"), "utf8");
 const layerContractCss = fs.readFileSync(path.join(ROOT, "game/css/0_global_common/layer_contract.css"), "utf8");
-const trayCss = fs.readFileSync(path.join(ROOT, "game/css/3_bottom_area/draw_card_select_area.css"), "utf8");
+const trayPlacementCss = fs.readFileSync(path.join(ROOT, "game/css/3_bottom_area/player_tray_view_mode.css"), "utf8");
 
 check(new URL(DEFAULT_ADVISOR_PROFILE.portraitCollapsed).pathname.endsWith("/assets/advisor/advisor01_small.png"), "格納時portraitはadvisor01_small.pngを参照する");
 check(new URL(DEFAULT_ADVISOR_PROFILE.portraitExpanded).pathname.endsWith("/assets/advisor/advisor01.png"), "展開時portraitはadvisor01.pngを参照する");
@@ -102,7 +102,8 @@ check(css.includes(".advisor-navigation.advisor-nav--horizontal .advisor-nav-lab
 check(css.includes("--advisor-collapsed-width") && css.includes("--advisor-expanded-width") && css.includes("--advisor-nav-width") && css.includes("--advisor-side-panel-width"), "主要AdvisorサイズをCSS変数化する");
 check(css.includes("pointer-events: none") && css.includes("pointer-events: auto"), "透明wrapperは盤面入力を奪わず操作部だけを有効にする");
 check(css.includes("object-fit: contain") && css.includes("object-position: center bottom") && css.includes("overflow: hidden"), "portrait viewportで画像サイズ差を吸収する");
-check(trayCss.includes("#layerPlayerTray.layer-player-tray") && trayCss.includes("justify-content: flex-start !important") && trayCss.includes("z-index: 700 !important"), "手札を左下へ寄せる");
+check(trayPlacementCss.includes('body[data-board-view="quarter"] #layerPlayerTray.layer-player-tray')
+    && trayPlacementCss.includes("justify-content: flex-start"), "quarter viewで手札を左下へ寄せる");
 check(layoutCss.includes("--z-advisor: 420")
     && layoutCss.includes("--z-player: 700")
     && layerContractCss.includes("#advisorDockContainer")
