@@ -30,6 +30,8 @@ export class BoardInputDispatcher {
             case BOARD_INPUT_COMMANDS.CLEAR_FOCUS: this.presentationState.clearFocus(); return this._ok(command, this.presentationState.snapshot());
             case BOARD_INPUT_COMMANDS.SELECT_TRIAL_ROUTE: return this._delegate("selectTrialRoute", command);
             case BOARD_INPUT_COMMANDS.SELECT_TRIAL_INTERCEPTION: return this._delegate("selectTrialInterception", command);
+            case BOARD_INPUT_COMMANDS.HOVER_TRIAL_INTERCEPTION: return this._delegate("hoverTrialInterception", command);
+            case BOARD_INPUT_COMMANDS.CLEAR_TRIAL_HOVER: return this._delegate("clearTrialHover", command);
             default: return { success: false, type, reason: "UNHANDLED_BOARD_INPUT_COMMAND" };
         }
     }

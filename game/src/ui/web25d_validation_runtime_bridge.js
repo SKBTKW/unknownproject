@@ -1,7 +1,7 @@
 import { BOARD_VIEW_MODES } from '../presentation/board_presentation_state.js';
 import { BoardRendererBridge } from '../presentation/board_renderer_bridge.js';
 import { Web25DProjectionAdapter } from '../presentation/web25d_projection_adapter.js';
-import { Web25DPhaseCRenderer } from '../presentation/web25d_phase_c_renderer.js';
+import { Web25DPhaseFRenderer } from '../presentation/web25d_phase_f_renderer.js';
 
 const DEFAULT_CANVAS_WIDTH = 584;
 const DEFAULT_CANVAS_HEIGHT = 584;
@@ -50,14 +50,20 @@ export function attachWeb25DValidationRuntime(uiController, {
                 return uiController.onCellClick(cell.r, cell.c);
             },
             selectTrialInterception: (payload) => {
-                if (payload?.cell) {
-                    uiController.selectTrialInterceptionCell?.(payload.cell.r, payload.cell.c);
-                }
+                if (!payload?.cell) return false;
+                return uiController.selectTrialInterceptionCell?.(payload.cell.r, payload.cell.c) ?? false;
+            },
+            hoverTrialInterception: (payload) => {
+                if (!payload?.cell) return false;
+                return uiController.updateTrialInterceptionPreview?.(payload.cell.r, payload.cell.c) ?? false;
+            },
+            clearTrialHover: () => {
+                uiController.trialPresentationState?.clearHoveredCell?.();
+                return uiController.refreshTrialInterceptionPreview?.() ?? true;
             },
             selectTrialRoute: (payload) => {
-                if (payload?.routeId) {
-                    uiController.selectTrialRoute?.(payload.routeId);
-                }
+                if (!payload?.routeId) return false;
+                return uiController.selectTrialRoute?.(payload.routeId) ?? false;
             }
         }
     });
@@ -71,7 +77,7 @@ export function attachWeb25DValidationRuntime(uiController, {
         }
     };
 
-    const renderer = new Web25DPhaseCRenderer({
+    const renderer = new Web25DPhaseFRenderer({
         canvas,
         bridge: dispatchBridge,
         projectionAdapter: new Web25DProjectionAdapter({
