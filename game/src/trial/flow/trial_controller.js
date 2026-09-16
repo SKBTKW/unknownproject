@@ -119,10 +119,13 @@ export class TrialController extends TrialControllerBase {
         if (!this.state) return { success: false, errors: ["TRIAL_NOT_STARTED"] };
 
         const engine = this.emberSystem?.engine || null;
+        const settlementTurn = Number.isInteger(engine?.state?.turn)
+            ? engine.state.turn
+            : null;
         const settled = this.resultSettlementService.settle(this.state, {
             runTerminationService: engine?.runTerminationService || null,
             chronicleSystem: engine?.chronicleSystem || null,
-            turn: engine?.state?.turn ?? null
+            turn: settlementTurn
         });
         if (!settled.success) return settled;
         if (settled.alreadySettled) {
@@ -135,6 +138,7 @@ export class TrialController extends TrialControllerBase {
         this.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, {
             scenarioId: this.state.scenarioId || null,
             trialIndex: this.state.trialIndex,
+            turn: settlementTurn,
             outcome: this.state.result?.outcome || null,
             result: this.state.result ? JSON.parse(JSON.stringify(this.state.result)) : null,
             settlement: settled.settlement

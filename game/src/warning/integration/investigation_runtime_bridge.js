@@ -1,3 +1,4 @@
+import { GAME_FACT_TYPES } from "../../core/game_fact.js";
 import { INVESTIGATION_CARDS_MASTER } from "../../data/investigation_cards_data.js";
 import { createKnownEnemyState } from "../domain/known_enemy_state.js";
 import { InvestigationResolver } from "../systems/investigation_resolver.js";
@@ -115,6 +116,14 @@ export function attachInvestigationRuntime(engine, {
         if (engine.cardCycleSystem?.registerOffering) {
             engine.cardCycleSystem.registerOffering([actualCard], Number.isInteger(state.turn) ? state.turn : 1);
         }
+
+        engine.gameFactHub?.emit?.(GAME_FACT_TYPES.INVESTIGATION_RECORDED, {
+            trialIndex: Number.isInteger(profile.trialIndex) ? profile.trialIndex : null,
+            verse,
+            cardId: definition.id || null,
+            reportId: result.report?.id || reportId,
+            sourceType: definition.investigationSourceType || null
+        });
 
         return result;
     };

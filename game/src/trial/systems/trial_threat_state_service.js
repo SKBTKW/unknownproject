@@ -1,6 +1,7 @@
 import { GAME_FACT_TYPES } from "../../core/game_fact.js";
 import { CivilizationDevelopmentSnapshotService } from "./civilization_development_snapshot_service.js";
 import { TrialThreatResolver } from "./trial_threat_resolver.js";
+import { createCurrentTrialIndexResolver } from "./trial_index_resolver.js";
 
 function cloneData(value) {
     if (value === undefined) return undefined;
@@ -9,10 +10,6 @@ function cloneData(value) {
 
 function normalizeTrialIndex(value) {
     return Math.max(1, Math.floor(Number(value) || 1));
-}
-
-function defaultTrialIndexResolver(gameState) {
-    return normalizeTrialIndex(gameState?.stage?.id);
 }
 
 /**
@@ -30,7 +27,8 @@ export class TrialThreatStateService {
         gameFactHub,
         developmentSnapshotService = new CivilizationDevelopmentSnapshotService(),
         threatResolver = new TrialThreatResolver(),
-        trialIndexResolver = defaultTrialIndexResolver
+        timingAuthority = null,
+        trialIndexResolver = null
     } = {}) {
         if (!gameState) throw new TypeError("TRIAL_THREAT_GAME_STATE_REQUIRED");
         if (!gameFactHub || typeof gameFactHub.subscribe !== "function") {
@@ -42,7 +40,9 @@ export class TrialThreatStateService {
         if (!threatResolver || typeof threatResolver.resolve !== "function") {
             throw new TypeError("TRIAL_THREAT_RESOLVER_REQUIRED");
         }
-        if (typeof trialIndexResolver !== "function") {
+        const resolvedTrialIndexResolver = trialIndexResolver
+            || createCurrentTrialIndexResolver({ timingAuthority });
+        if (typeof resolvedTrialIndexResolver !== "function") {
             throw new TypeError("TRIAL_THREAT_INDEX_RESOLVER_REQUIRED");
         }
 
@@ -50,7 +50,7 @@ export class TrialThreatStateService {
         this.gameFactHub = gameFactHub;
         this.developmentSnapshotService = developmentSnapshotService;
         this.threatResolver = threatResolver;
-        this.trialIndexResolver = trialIndexResolver;
+        this.trialIndexResolver = resolvedTrialIndexResolver;
 
         this.dirty = false;
         this.revision = 0;
