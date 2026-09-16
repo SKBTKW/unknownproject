@@ -15,6 +15,7 @@ function captureRollbackCheckpoint(engine, history) {
         chronicle: cloneData(engine.chronicleSystem.getAllEvents(), []),
         trialThreatState: cloneData(engine.trialThreatStateService?.getRestoreState?.()),
         trueEnemyState: cloneData(engine.trueEnemyStateService?.getRestoreState?.()),
+        trialTimingState: cloneData(engine.trialTimingAuthorityService?.getRestoreState?.()),
         runSeed: engine.runSeed,
         stateRunSeed: state.runSeed,
         gameLogs: cloneData(state.gameLogs, []),
@@ -108,6 +109,9 @@ function rollbackFailedRestore(engine, history, checkpoint, resolveCardMaster) {
     if (checkpoint.trueEnemyState !== null) {
         bestEffort(() => engine.trueEnemyStateService?.restoreState?.(cloneData(checkpoint.trueEnemyState)));
     }
+    if (checkpoint.trialTimingState !== null) {
+        bestEffort(() => engine.trialTimingAuthorityService?.restoreState?.(cloneData(checkpoint.trialTimingState)));
+    }
 
     const state = engine.state;
     bestEffort(() => { engine.runSeed = checkpoint.runSeed; });
@@ -169,6 +173,7 @@ export class HistoryRestoreService {
         const runtime = restorePoint.runtime || {};
         const hasThreatRestoreState = runtime.trialThreatState !== undefined;
         const hasEnemyRestoreState = runtime.trueEnemyState !== undefined;
+        const hasTimingRestoreState = runtime.trialTimingState !== undefined;
         if (!engine.state || !engine.checkSystem?.getState || !engine.checkSystem?.setState ||
             !engine.gameplayRandom?.getState || !engine.gameplayRandom?.setState ||
             !engine.chronicleSystem?.getAllEvents || !engine.chronicleSystem?.restoreEvents ||
@@ -176,7 +181,8 @@ export class HistoryRestoreService {
             !restorePoint.rngState || !restorePoint.gameplayRngState ||
             !Array.isArray(restorePoint.chronicle) || !restorePoint.gameState ||
             (hasThreatRestoreState && !engine.trialThreatStateService?.restoreState) ||
-            (hasEnemyRestoreState && !engine.trueEnemyStateService?.restoreState)) {
+            (hasEnemyRestoreState && !engine.trueEnemyStateService?.restoreState) ||
+            (hasTimingRestoreState && !engine.trialTimingAuthorityService?.restoreState)) {
             return { success: false, reason: 'HISTORY_RESTORE_DEPENDENCY_MISSING' };
         }
 
@@ -200,12 +206,15 @@ export class HistoryRestoreService {
             engine.chronicleSystem.restoreEvents(restorePoint.chronicle);
 
             // Service-owned simulation state is restored directly. Never replay facts or recalculate
-            // Threat/Enemy Truth during history restore: the Restore Point is the observed authority.
+            // Threat/Enemy Truth/Trial timing during history restore: the Restore Point is the observed authority.
             if (hasThreatRestoreState) {
                 engine.trialThreatStateService.restoreState(runtime.trialThreatState);
             }
             if (hasEnemyRestoreState) {
                 engine.trueEnemyStateService.restoreState(runtime.trueEnemyState);
+            }
+            if (hasTimingRestoreState) {
+                engine.trialTimingAuthorityService.restoreState(runtime.trialTimingState);
             }
 
             // GameState event runtime is authoritative; derived buffs are rebuilt once.
