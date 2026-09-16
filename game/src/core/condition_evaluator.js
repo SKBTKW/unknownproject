@@ -3,6 +3,10 @@
    ゲームルールの条件判定を処理する汎用Registry型評価エンジン (Pure & Unity Ready)
    ============================================================= */
 
+import {
+    createLegacyTrialTimingReadModel
+} from './legacy_trial_schedule_compat.js';
+
 /**
  * 🔍 条件判定ハンドラ Registry
  */
@@ -57,10 +61,8 @@ const CONDITION_HANDLERS = {
     // ⏳ 試練までの残りターン判定 (>)
     TRIAL_DISTANCE_ABOVE: (params, context) => {
         if (!context || !context.state) return false;
-        const nextTrialTurn = context.state.nextTrialTurn || 20;
-        const currentTurn = context.state.turn || 1;
-        const dist = nextTrialTurn - currentTurn;
-        return dist > (params.value || 0);
+        const timing = createLegacyTrialTimingReadModel(context.state);
+        return timing.getDistance() > (params.value || 0);
     },
 
     // 💎 ソケット資源の発見済み判定
@@ -132,19 +134,15 @@ const CONDITION_HANDLERS = {
     // ⚠️ 試練予告中判定 (<= 5T または notice.active)
     TRIAL_NOTICE: (params, context) => {
         if (!context || !context.state) return false;
-        const notice = (typeof context.state.getTrialNotice === 'function') ? context.state.getTrialNotice() : { active: false };
-        if (notice && notice.active) return true;
-        const nextTrialTurn = context.state.nextTrialTurn || 20;
-        const currentTurn = context.state.turn || 1;
-        return (nextTrialTurn - currentTurn) <= 5;
+        const timing = createLegacyTrialTimingReadModel(context.state);
+        return timing.isNoticeActive({ fallbackThreshold: 5 });
     },
 
     // ⏳ 試練までのターン数判定 (<= N)
     TRIAL_WITHIN: (params, context) => {
         if (!context || !context.state) return false;
-        const nextTrialTurn = context.state.nextTrialTurn || 20;
-        const currentTurn = context.state.turn || 1;
-        return (nextTrialTurn - currentTurn) <= (params.value || 5);
+        const timing = createLegacyTrialTimingReadModel(context.state);
+        return timing.isWithin(params.value || 5);
     },
 
     // 🗺️ 盤面に丘陵または山岳が存在するか判定
