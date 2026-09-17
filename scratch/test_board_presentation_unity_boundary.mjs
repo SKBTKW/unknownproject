@@ -3,6 +3,8 @@ import { BoardPresentationDataService } from "../game/src/presentation/board_pre
 import { BoardPresentationState } from "../game/src/presentation/board_presentation_state.js";
 import { createBoardPresentationDto } from "../game/src/presentation/board_presentation_contract.js";
 import { BOARD_INPUT_COMMANDS, createBoardInputCommand, serializeBoardInputCommand } from "../game/src/presentation/board_input_contract.js";
+import { GameRuntimeSnapshotDataService } from "../game/src/presentation/game_runtime_snapshot_data_service.js";
+import { createGameRuntimeSnapshotDto } from "../game/src/presentation/game_runtime_snapshot_contract.js";
 
 let passed = 0;
 function test(name, callback) {
@@ -73,7 +75,15 @@ const state = {
     },
     mergeLinks: new Set(),
     isHQVicinity: () => false,
-    isWaterSourceInfluence: () => false
+    isWaterSourceInfluence: () => false,
+    turn: 12,
+    stage: { id: 2, name: "Stage 2", size: 2, maxTiles: 24 },
+    ember: 7,
+    maxEmber: 13,
+    food: 9,
+    wood: 5,
+    currentDefense: 6,
+    mystic: 4
 };
 
 const presentationState = new BoardPresentationState();
@@ -116,6 +126,24 @@ test("logical board input serializes without renderer-specific coordinates", () 
     assert.deepEqual(JSON.parse(serialized).payload.cell, { r: 1, c: 0 });
     assert.equal(serialized.includes("screen"), false);
     assert.equal(serialized.includes("world"), false);
+});
+
+test("runtime HUD snapshot is JSON-safe and does not expose GameState internals", () => {
+    const runtimeService = new GameRuntimeSnapshotDataService();
+    const runtimeDto = createGameRuntimeSnapshotDto(runtimeService.getSnapshot(state));
+    assert.deepEqual(runtimeDto.progression, {
+        verse: 12,
+        stage: { id: 2, name: "Stage 2", size: 2, maxTiles: 24 }
+    });
+    assert.deepEqual(runtimeDto.resources.ember, { current: 7, max: 13 });
+    assert.deepEqual(runtimeDto.resources.food, { current: 9 });
+    assert.deepEqual(runtimeDto.resources.material, { current: 5 });
+    assert.deepEqual(runtimeDto.resources.defense, { current: 6, max: 10 });
+    assert.deepEqual(runtimeDto.resources.mystic, { current: 4 });
+    const serialized = JSON.stringify(runtimeDto);
+    for (const forbidden of ["grid", "mergedBlocks", "mergeLinks", "directiveSystem", "document", "window", "GameObject", "Transform"]) {
+        assert.equal(serialized.includes(forbidden), false, `runtime snapshot leaked internal field: ${forbidden}`);
+    }
 });
 
 console.log(`\n✅ Portable board presentation / Unity boundary: ${passed}/${passed} tests passed`);
