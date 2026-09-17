@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 
 import {
     buildTrialRouteCellIndex,
@@ -99,5 +100,25 @@ assert.equal(firstRouteIndex.has('1:1'), true);
 assert.equal(firstRouteIndex.has('1:2'), true);
 assert.equal(firstRouteIndex.has('8:8'), false);
 assert.equal(firstRouteIndex.has('8:7'), false);
+
+const boardGridSource = await readFile(
+    new URL('../game/src/ui/board_grid_component.js', import.meta.url),
+    'utf8'
+);
+assert.match(
+    boardGridSource,
+    /getTrialRouteCellVisualState/,
+    'BoardGrid must consume the shared Trial route presentation helper'
+);
+assert.doesNotMatch(
+    boardGridSource,
+    /\.getTrialRouteVisualState\s*\(/,
+    'BoardGrid must not delegate Trial route visual semantics back to UIController'
+);
+assert.match(
+    boardGridSource,
+    /singletonDirectionFallback:\s*["']east["']/,
+    'legacy one-cell east fallback must remain explicit at the 2D renderer boundary'
+);
 
 console.log('trial route visual semantic checks passed');
