@@ -186,10 +186,20 @@ export class PostTrialProgressionService {
             settlement: cloneData(payload.settlement),
             state: this.engine.state
         };
-        const rewardPayload = this._resolvePolicyPayload(this.rewardStepPolicy, context);
-        const unlockPayload = this._resolvePolicyPayload(this.unlockStepPolicy, context);
-        const skillPayload = this._resolvePolicyPayload(this.skillProgressionStepPolicy, context);
-        const stagePending = this.stageProgressionService?.getPending?.() || null;
+        // A terminated Run never enters the normal continuation/reward chain.
+        // Defeat/meta progression, if introduced later, must use a separate authority.
+        const rewardPayload = context.runTerminated
+            ? null
+            : this._resolvePolicyPayload(this.rewardStepPolicy, context);
+        const unlockPayload = context.runTerminated
+            ? null
+            : this._resolvePolicyPayload(this.unlockStepPolicy, context);
+        const skillPayload = context.runTerminated
+            ? null
+            : this._resolvePolicyPayload(this.skillProgressionStepPolicy, context);
+        const stagePending = context.runTerminated
+            ? null
+            : (this.stageProgressionService?.getPending?.() || null);
         const steps = [];
 
         if (rewardPayload !== null) {
