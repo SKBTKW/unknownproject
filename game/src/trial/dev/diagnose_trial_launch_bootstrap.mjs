@@ -29,10 +29,13 @@ const truth = {
     getSnapshot: () => ({ trialIndex: 1, strategicSuppression: 10 })
 };
 
-assert.equal(
-    attachTrialLaunchSubsystem(baseEngine(), ui, { enemyTruthReadModel: truth }).reason,
-    "TRIAL_LAUNCH_ROUTE_COST_POLICY_REQUIRED"
-);
+const defaultPolicyEngine = baseEngine();
+const defaultPolicyAttached = attachTrialLaunchSubsystem(defaultPolicyEngine, ui, {
+    enemyTruthReadModel: truth
+});
+assert.equal(defaultPolicyAttached.success, true);
+assert.equal(typeof defaultPolicyAttached.routeCostPolicy?.resolve, "function");
+assert.equal(defaultPolicyEngine.trialLaunchRouteCostPolicy, defaultPolicyAttached.routeCostPolicy);
 
 const engine = baseEngine();
 const attached = attachTrialLaunchSubsystem(engine, ui, {
