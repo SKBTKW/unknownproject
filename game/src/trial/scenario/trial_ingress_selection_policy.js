@@ -16,35 +16,101 @@ function fallbackShuffle(items, randomService) {
     return copy;
 }
 
+function resolveArmyStructure({ armyStructure, armyStructureResolver, threat, enemyTruth, trialIndex, gameState }) {
+    if (armyStructure && typeof armyStructure === "object") return armyStructure;
+    if (enemyTruth?.armyStructure && typeof enemyTruth.armyStructure === "object") {
+        return enemyTruth.armyStructure;
+    }
+    if (!armyStructureResolver || typeof armyStructureResolver.resolve !== "function") return null;
+    return armyStructureResolver.resolve({
+        strategicSuppression: threat?.strategicSuppression ?? enemyTruth?.strategicSuppression ?? 0,
+        trialIndex,
+        enemyTruth,
+        gameState
+    });
+}
+
 /**
- * 合法な侵入口候補から、今回Trialの確定侵入口を選ぶポリシー。
+ * 合法な侵入口候補から今回Trialの確定侵入口を選ぶ。
  *
- * 侵入口数はゲームデザイン未確定のため countResolver に委譲する。
- * Warning / Intel は入力契約に含めない。
+ * 原則:
+ * - armyStructure がある場合、route数 = 部隊数。
+ * - 高Lv指揮官の侵入口判断は ingressScoreResolver 経由のみで行う。
+ * - 判断能力が無い、または評価resolver未接続ならランダム選択へfallback。
+ * - Warning / KnownEnemyState は参照しない。
+ *
+ * countResolver は旧/診断互換のfallbackとしてのみ残す。
  */
 export class TrialIngressSelectionPolicy {
     constructor({
         countResolver = null,
+        armyStructureResolver = null,
+        ingressScoreResolver = null,
         randomService = null
     } = {}) {
         this.countResolver = countResolver;
+        this.armyStructureResolver = armyStructureResolver;
+        this.ingressScoreResolver = ingressScoreResolver;
         this.randomService = randomService;
     }
 
-    select({ candidates = [], trialIndex = 1, gameState = null, threat = null } = {}) {
+    select({
+        candidates = [],
+        trialIndex = 1,
+        gameState = null,
+        threat = null,
+        enemyTruth = null,
+        armyStructure = null
+    } = {}) {
         if (!Array.isArray(candidates) || candidates.length === 0) return [];
-        if (typeof this.countResolver !== "function") return [];
 
-        const requestedCount = this.countResolver({
-            trialIndex,
-            gameState,
+        const resolvedArmy = resolveArmyStructure({
+            armyStructure,
+            armyStructureResolver: this.armyStructureResolver,
             threat,
-            candidateCount: candidates.length
+            enemyTruth,
+            trialIndex,
+            gameState
         });
+
+        const requestedCount = resolvedArmy?.routeCount ?? resolvedArmy?.forceCount ?? (
+            typeof this.countResolver === "function"
+                ? this.countResolver({ trialIndex, gameState, threat, candidateCount: candidates.length })
+                : 0
+        );
         const count = clampCount(requestedCount, candidates.length);
         if (count === 0) return [];
 
         const rng = this.randomService || gameState?.engine?.gameplayRandom || null;
+        const commanderCanJudge = Boolean(resolvedArmy?.commander?.capabilities?.ingressJudgement);
+        const canScore = commanderCanJudge && typeof this.ingressScoreResolver === "function";
+
+        if (canScore) {
+            // Shuffle first so equal-score candidates remain gameplay-RNG driven
+            // instead of inheriting board scan order as a hidden preference.
+            const ranked = fallbackShuffle(candidates, rng)
+                .map((candidate, index) => ({
+                    candidate: { ...candidate },
+                    index,
+                    score: Number(this.ingressScoreResolver({
+                        candidate: { ...candidate },
+                        candidates: candidates.map(item => ({ ...item })),
+                        armyStructure: resolvedArmy,
+                        commander: resolvedArmy.commander,
+                        trialIndex,
+                        gameState,
+                        threat,
+                        enemyTruth
+                    }))
+                }))
+                .filter(entry => Number.isFinite(entry.score))
+                .sort((a, b) => b.score - a.score || a.index - b.index);
+
+            if (ranked.length >= count) {
+                return ranked.slice(0, count).map(entry => ({ ...entry.candidate }));
+            }
+        }
+
         const ordered = fallbackShuffle(candidates, rng);
         return ordered.slice(0, count).map(candidate => ({ ...candidate }));
     }
