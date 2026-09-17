@@ -5,6 +5,7 @@ import { TrialDueStateService } from "../systems/trial_due_state_service.js";
 import { TrialStageProgressionService } from "../systems/trial_stage_progression_service.js";
 import { PostTrialProgressionService } from "../systems/post_trial_progression_service.js";
 import { PostTrialSkillProgressionRouter } from "../systems/post_trial_skill_progression_router.js";
+import { PostTrialStepAuthorityRouter } from "../systems/post_trial_step_authority_router.js";
 import { PostTrialAftermathCaptureBridge } from "../systems/post_trial_aftermath_capture_bridge.js";
 import { attachTrialTimingSubsystem } from "./trial_timing_bootstrap.js";
 
@@ -20,6 +21,7 @@ import { attachTrialTimingSubsystem } from "./trial_timing_bootstrap.js";
  *                                      -> pending Trial start request
  *                                      -> settled Trial Stage progression
  *                                      -> Post-Trial transition authority
+ *                                      -> Reward/Unlock/Final authority ports
  *                                      -> owner-routed Skill progression port
  *                                      -> immutable aftermath snapshot
  *
@@ -82,11 +84,26 @@ export function attachTrialRuntimeSubsystems(engine, {
     }
 
     const {
+        stepAuthorityRouter = null,
+        rewardAuthority = null,
+        unlockAuthority = null,
+        finalRunCompletionAuthority = null,
         skillProgressionRouter = null,
         advisorSkillProgressionAuthority = null,
         playerSkillProgressionAuthority = null,
         ...postTrialProgressionOptions
     } = postTrialOptions || {};
+
+    if (!engine.postTrialStepAuthorityRouter) {
+        engine.postTrialStepAuthorityRouter = stepAuthorityRouter
+            || new PostTrialStepAuthorityRouter({
+                rewardAuthority: rewardAuthority || engine.postTrialRewardAuthority || null,
+                unlockAuthority: unlockAuthority || engine.postTrialUnlockAuthority || null,
+                finalRunCompletionAuthority: finalRunCompletionAuthority
+                    || engine.postTrialFinalRunCompletionAuthority
+                    || null
+            });
+    }
 
     if (!engine.postTrialSkillProgressionRouter) {
         engine.postTrialSkillProgressionRouter = skillProgressionRouter
@@ -107,6 +124,7 @@ export function attachTrialRuntimeSubsystems(engine, {
             ...postTrialProgressionOptions,
             gameFactHub: factHub,
             stageProgressionService: engine.trialStageProgressionService,
+            stepAuthorityRouter: engine.postTrialStepAuthorityRouter,
             skillProgressionRouter: engine.postTrialSkillProgressionRouter
         });
     }
@@ -143,6 +161,7 @@ export function attachTrialRuntimeSubsystems(engine, {
         warningTimingAttached: true,
         trialDueAttached: true,
         trialStageProgressionAttached: true,
+        postTrialStepAuthorityRouterAttached: true,
         postTrialSkillProgressionRouterAttached: true,
         postTrialProgressionAttached: true,
         postTrialAftermathCaptureAttached: true
