@@ -8,6 +8,7 @@ const largeHeavyForest = resolver.resolve({
     equipment: ["HEAVY"],
     terrainId: "GL2_FOREST"
 });
+assert.equal(largeHeavyForest.equipmentClass, "HEAVY");
 assert.equal(largeHeavyForest.deployment, "CONSTRAINED");
 assert.equal(largeHeavyForest.mobility, "DISADVANTAGE");
 assert.equal(largeHeavyForest.ambushExposure, "HIGH");
@@ -19,26 +20,40 @@ const smallLightForest = resolver.resolve({
     equipment: ["LIGHT"],
     terrainId: "GL3_DEEP_FOREST"
 });
+assert.equal(smallLightForest.equipmentClass, "LIGHT");
 assert.equal(smallLightForest.mobility, "ADVANTAGE");
 assert.equal(smallLightForest.ambushExposure, "LOW");
 assert.ok(smallLightForest.combatTraits.includes("INFILTRATION_FRIENDLY"));
 assert.ok(smallLightForest.combatTraits.includes("ROUGH_TERRAIN_FRIENDLY"));
 
-const mountedOpen = resolver.resolve({
+const standardOpen = resolver.resolve({
     bodySize: "MEDIUM",
-    equipment: ["MOUNTED"],
+    equipment: ["STANDARD"],
     terrainId: "GL1_PLAINS"
 });
-assert.ok(mountedOpen.combatTraits.includes("OPEN_GROUND_MOBILITY"));
-assert.ok(mountedOpen.combatTraits.includes("FLANKING_CAPABLE"));
-assert.equal(mountedOpen.movementConstraints.length, 0);
+assert.equal(standardOpen.equipmentClass, "STANDARD");
+assert.equal(standardOpen.logistics, "STANDARD");
+assert.deepEqual(standardOpen.movementConstraints, []);
 
-const baggageWetland = resolver.resolve({
+const legacyMediumEquipment = resolver.resolve({
     bodySize: "MEDIUM",
-    equipment: ["BAGGAGE"],
-    terrainId: "E0_WETLAND"
+    equipment: ["MEDIUM"],
+    terrainId: "GL1_PLAINS"
 });
-assert.equal(baggageWetland.logistics, "EXTENDED");
-assert.ok(baggageWetland.movementConstraints.includes("BAGGAGE_SLOWS_COLUMN"));
+assert.equal(legacyMediumEquipment.equipmentClass, "STANDARD");
+
+const reservedOnly = resolver.resolve({
+    bodySize: "MEDIUM",
+    equipment: ["MOUNTED", "BAGGAGE", "PROJECTILE"],
+    terrainId: "GL1_PLAINS"
+});
+assert.equal(reservedOnly.equipmentClass, "STANDARD");
+assert.deepEqual(
+    reservedOnly.reservedEquipment,
+    ["MOUNTED", "BAGGAGE", "PROJECTILE"]
+);
+assert.equal(reservedOnly.combatTraits.includes("OPEN_GROUND_MOBILITY"), false);
+assert.equal(reservedOnly.combatTraits.includes("EXTENDED_LOGISTICS"), false);
+assert.equal(reservedOnly.combatTraits.includes("PRE_CONTACT_PRESSURE"), false);
 
 console.log("diagnose_enemy_force_terrain_interaction: PASS");
