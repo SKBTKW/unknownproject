@@ -92,7 +92,7 @@ export class BoardPresentationDataService {
             });
         }
 
-        const cells = grid.map((row, r) => Object.freeze(row.map((_, c) => {
+        const cells = grid.map((row, r) => Object.freeze(row.map((sourceCell, c) => {
             const facts = this.cellViewDataService.getCellViewData(sourceState, r, c);
             if (!facts) return null;
 
@@ -102,10 +102,15 @@ export class BoardPresentationDataService {
             const planned = plannedIndex.get(key) || null;
             const battle = battleIndex.get(key) || null;
             const semantic = this.semanticService.getCellSemantic(sourceState, facts, linkIndex);
+            const display = Object.freeze({
+                ...(semantic.display || {}),
+                searched: Boolean(sourceCell?.searched)
+            });
 
             return Object.freeze({
                 ...facts,
                 ...semantic,
+                display,
                 interaction: Object.freeze({
                     selected: sameCell(presentationState.selectedCell, r, c),
                     hovered: sameCell(presentationState.hoveredCell, r, c),
