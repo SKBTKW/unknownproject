@@ -31,21 +31,12 @@ const truth = {
 
 assert.equal(
     attachTrialLaunchSubsystem(baseEngine(), ui, { enemyTruthReadModel: truth }).reason,
-    "TRIAL_LAUNCH_INGRESS_COUNT_POLICY_REQUIRED"
-);
-
-assert.equal(
-    attachTrialLaunchSubsystem(baseEngine(), ui, {
-        enemyTruthReadModel: truth,
-        ingressCountResolver: () => 1
-    }).reason,
     "TRIAL_LAUNCH_ROUTE_COST_POLICY_REQUIRED"
 );
 
 const engine = baseEngine();
 const attached = attachTrialLaunchSubsystem(engine, ui, {
     enemyTruthReadModel: truth,
-    ingressCountResolver: () => 1,
     routeCostResolver: () => 1
 });
 assert.equal(attached.success, true);
@@ -64,7 +55,6 @@ assert.deepEqual(engine.lastTrialLaunchAttempt, {
 
 const repeated = attachTrialLaunchSubsystem(engine, ui, {
     enemyTruthReadModel: truth,
-    ingressCountResolver: () => 99,
     routeCostResolver: () => 99
 });
 assert.equal(repeated.success, true);
