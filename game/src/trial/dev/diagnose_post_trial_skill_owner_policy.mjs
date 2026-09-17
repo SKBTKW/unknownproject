@@ -116,7 +116,7 @@ for (const owner of [
     const step = h.postTrialProgressionService.getCurrentPendingStep();
     assert.equal(step.type, POST_TRIAL_STEP_TYPES.SKILL_PROGRESSION);
     assert.equal(step.payload.owner, POST_TRIAL_SKILL_OWNER_TYPES.ADVISOR);
-    assert.equal(h.engine.state.postTrialTransition.schemaVersion, 5);
+    assert.equal(h.engine.state.postTrialTransition.schemaVersion, 4);
 
     const legacyApi = h.postTrialProgressionService.completeAdvisorProgression({
         result: { selectedSkillId: "legacy-compatible" }
