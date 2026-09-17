@@ -7,6 +7,7 @@ import { PostTrialProgressionService } from "../systems/post_trial_progression_s
 import { PostTrialSkillProgressionRouter } from "../systems/post_trial_skill_progression_router.js";
 import { PostTrialStepAuthorityRouter } from "../systems/post_trial_step_authority_router.js";
 import { PostTrialAftermathCaptureBridge } from "../systems/post_trial_aftermath_capture_bridge.js";
+import { PostTrialProgressionReadService } from "../presentation/post_trial_progression_read_service.js";
 import { attachTrialTimingSubsystem } from "./trial_timing_bootstrap.js";
 
 /**
@@ -24,6 +25,7 @@ import { attachTrialTimingSubsystem } from "./trial_timing_bootstrap.js";
  *                                      -> Reward/Unlock/Final authority ports
  *                                      -> owner-routed Skill progression port
  *                                      -> immutable aftermath snapshot
+ *                                      -> stable read-only projection
  *
  * It deliberately does not re-run Investigation bootstrap, avoiding duplicate
  * unlock/event bridges during the migration.
@@ -129,6 +131,12 @@ export function attachTrialRuntimeSubsystems(engine, {
         });
     }
 
+    if (!engine.postTrialProgressionReadService) {
+        engine.postTrialProgressionReadService = new PostTrialProgressionReadService(
+            engine.postTrialProgressionService
+        );
+    }
+
     // Subscribe after PostTrialProgressionService so a settled fact creates the
     // transition first, then this bridge writes the immutable aftermath snapshot
     // into that transition. The transition serializer already persists this field.
@@ -164,6 +172,7 @@ export function attachTrialRuntimeSubsystems(engine, {
         postTrialStepAuthorityRouterAttached: true,
         postTrialSkillProgressionRouterAttached: true,
         postTrialProgressionAttached: true,
+        postTrialProgressionReadAttached: true,
         postTrialAftermathCaptureAttached: true
     };
 }
