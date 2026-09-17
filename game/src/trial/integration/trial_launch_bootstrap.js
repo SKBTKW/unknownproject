@@ -1,7 +1,10 @@
 import { TrialIngressResolver } from "../scenario/trial_ingress_resolver.js";
 import { TrialIngressSelectionPolicy } from "../scenario/trial_ingress_selection_policy.js";
+import { TrialIngressJudgementResolver } from "../scenario/trial_ingress_judgement_resolver.js";
 import { TrialRouteGenerator } from "../scenario/trial_route_generator.js";
+import { TrialRouteSuppressionAllocator } from "../scenario/trial_route_suppression_allocator.js";
 import { TrialScenarioFactory } from "../scenario/trial_scenario_factory.js";
+import { EnemyArmyStructureResolver } from "../systems/enemy_army_structure_resolver.js";
 import { TrialLaunchCoordinator } from "./trial_launch_coordinator.js";
 
 function hasFunction(value) {
@@ -30,18 +33,21 @@ function attemptPendingTrialLaunch(engine, coordinator) {
 /**
  * Presentation composition boundary for production Trial launch.
  *
- * Balance-sensitive policies deliberately have no fallback values here.
- * Until ingress count and movement-cost rules are explicitly supplied by
- * production composition, this function refuses to attach rather than silently
- * creating an arbitrary Trial.
+ * Enemy army scale/route count/commander hierarchy are now derived from
+ * strategicSuppression through EnemyArmyStructureResolver. Movement-cost rules
+ * deliberately still have no fallback value: until a production route cost
+ * policy is supplied, launch remains fail-closed.
  */
 export function attachTrialLaunchSubsystem(engine, ui, {
     enemyTruthReadModel = null,
     ingressCountResolver = null,
     routeCostResolver = null,
+    armyStructureResolver = null,
+    ingressJudgementResolver = null,
     ingressSelectionPolicy = null,
     ingressResolver = null,
     routeGenerator = null,
+    suppressionAllocator = null,
     scenarioFactory = null,
     isTrialActive = null,
     isPresentationBlocked = null
@@ -67,6 +73,8 @@ export function attachTrialLaunchSubsystem(engine, ui, {
             scenarioFactory: engine.trialLaunchScenarioFactory || null,
             ingressResolver: engine.trialLaunchIngressResolver || null,
             routeGenerator: engine.trialLaunchRouteGenerator || null,
+            armyStructureResolver: engine.trialLaunchArmyStructureResolver || null,
+            suppressionAllocator: engine.trialLaunchSuppressionAllocator || null,
             retryPendingTrialLaunch: engine.retryPendingTrialLaunch
         };
     }
@@ -76,18 +84,19 @@ export function attachTrialLaunchSubsystem(engine, ui, {
         return { success: false, reason: "TRIAL_LAUNCH_ENEMY_TRUTH_REQUIRED" };
     }
 
+    const resolvedArmyStructureResolver = armyStructureResolver || new EnemyArmyStructureResolver();
+    const resolvedIngressJudgementResolver = ingressJudgementResolver || new TrialIngressJudgementResolver();
+
     let resolvedIngressResolver = ingressResolver;
     if (!resolvedIngressResolver) {
-        let selectionPolicy = ingressSelectionPolicy;
-        if (!selectionPolicy) {
-            if (!hasFunction(ingressCountResolver)) {
-                return { success: false, reason: "TRIAL_LAUNCH_INGRESS_COUNT_POLICY_REQUIRED" };
-            }
-            selectionPolicy = new TrialIngressSelectionPolicy({
-                countResolver: ingressCountResolver,
-                randomService: engine.gameplayRandom || null
-            });
-        }
+        const selectionPolicy = ingressSelectionPolicy || new TrialIngressSelectionPolicy({
+            // countResolver is retained only as legacy/dev fallback. Production
+            // count comes from armyStructure.routeCount (= forceCount).
+            countResolver: ingressCountResolver,
+            armyStructureResolver: resolvedArmyStructureResolver,
+            ingressScoreResolver: context => resolvedIngressJudgementResolver.resolve(context),
+            randomService: engine.gameplayRandom || null
+        });
         resolvedIngressResolver = new TrialIngressResolver({
             selector: context => selectionPolicy.select(context)
         });
@@ -103,10 +112,13 @@ export function attachTrialLaunchSubsystem(engine, ui, {
         });
     }
 
+    const resolvedSuppressionAllocator = suppressionAllocator || new TrialRouteSuppressionAllocator();
     const resolvedScenarioFactory = scenarioFactory || new TrialScenarioFactory({
         enemyTruthReadModel: truthReadModel,
+        armyStructureResolver: resolvedArmyStructureResolver,
         ingressResolver: resolvedIngressResolver,
-        routeGenerator: resolvedRouteGenerator
+        routeGenerator: resolvedRouteGenerator,
+        suppressionAllocator: resolvedSuppressionAllocator
     });
 
     // TrialController keeps state through RESULT/settlement until the session is
@@ -134,6 +146,8 @@ export function attachTrialLaunchSubsystem(engine, ui, {
     engine.trialLaunchScenarioFactory = resolvedScenarioFactory;
     engine.trialLaunchIngressResolver = resolvedIngressResolver;
     engine.trialLaunchRouteGenerator = resolvedRouteGenerator;
+    engine.trialLaunchArmyStructureResolver = resolvedArmyStructureResolver;
+    engine.trialLaunchSuppressionAllocator = resolvedSuppressionAllocator;
     engine.retryPendingTrialLaunch = () => attemptPendingTrialLaunch(engine, coordinator);
     engine.__trialLaunchSubsystemAttached = true;
 
@@ -143,6 +157,8 @@ export function attachTrialLaunchSubsystem(engine, ui, {
         scenarioFactory: resolvedScenarioFactory,
         ingressResolver: resolvedIngressResolver,
         routeGenerator: resolvedRouteGenerator,
+        armyStructureResolver: resolvedArmyStructureResolver,
+        suppressionAllocator: resolvedSuppressionAllocator,
         retryPendingTrialLaunch: engine.retryPendingTrialLaunch
     };
 }
