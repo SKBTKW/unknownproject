@@ -26,12 +26,23 @@ function resolveApply(authority) {
     return null;
 }
 
+function createOperationId(owner, context) {
+    if (typeof context?.operationId === "string" && context.operationId.length > 0) {
+        return context.operationId;
+    }
+    if (typeof context?.transitionId !== "string" || context.transitionId.length === 0) {
+        return null;
+    }
+    return `${context.transitionId}:SKILL_PROGRESSION:${owner}`;
+}
+
 /**
  * Owner-routing boundary for post-Trial skill progression.
  *
  * This router never stores or mutates skills itself. ADVISOR and PLAYER are
- * deliberately symmetric ports. The authority behind the selected owner is the
- * only component allowed to perform the actual skill mutation/persistence.
+ * deliberately symmetric ports. The selected owner authority receives a stable
+ * operationId so save/load retries can be idempotent regardless of which owner
+ * model is ultimately adopted.
  */
 export class PostTrialSkillProgressionRouter {
     constructor({ advisorAuthority = null, playerAuthority = null } = {}) {
@@ -60,12 +71,22 @@ export class PostTrialSkillProgressionRouter {
             };
         }
 
+        const operationId = createOperationId(normalizedOwner, context);
+        if (!operationId) {
+            return {
+                success: false,
+                reason: "POST_TRIAL_SKILL_OPERATION_ID_REQUIRED",
+                owner: normalizedOwner
+            };
+        }
+
         const authority = this.getAuthority(normalizedOwner);
         if (!authority) {
             return {
                 success: false,
                 reason: "POST_TRIAL_SKILL_AUTHORITY_REQUIRED",
-                owner: normalizedOwner
+                owner: normalizedOwner,
+                operationId
             };
         }
 
@@ -74,15 +95,20 @@ export class PostTrialSkillProgressionRouter {
             return {
                 success: false,
                 reason: "POST_TRIAL_SKILL_AUTHORITY_INVALID",
-                owner: normalizedOwner
+                owner: normalizedOwner,
+                operationId
             };
         }
 
         const request = Object.freeze({
+            operationId,
             owner: normalizedOwner,
             payload: cloneData(payload),
             result: cloneData(result),
-            context: cloneData(context)
+            context: {
+                ...cloneData(context, {}),
+                operationId
+            }
         });
 
         let authorityResult;
@@ -93,6 +119,7 @@ export class PostTrialSkillProgressionRouter {
                 success: false,
                 reason: "POST_TRIAL_SKILL_AUTHORITY_THREW",
                 owner: normalizedOwner,
+                operationId,
                 errorName: error?.name || "Error",
                 errorMessage: error?.message || String(error)
             };
@@ -103,6 +130,7 @@ export class PostTrialSkillProgressionRouter {
                 success: false,
                 reason: authorityResult?.reason || "POST_TRIAL_SKILL_AUTHORITY_REJECTED",
                 owner: normalizedOwner,
+                operationId,
                 authorityResult: cloneData(authorityResult)
             };
         }
@@ -110,6 +138,7 @@ export class PostTrialSkillProgressionRouter {
         return {
             success: true,
             owner: normalizedOwner,
+            operationId,
             authorityResult: cloneData(authorityResult)
         };
     }
