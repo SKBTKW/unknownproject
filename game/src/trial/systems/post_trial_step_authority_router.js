@@ -17,13 +17,24 @@ function resolveAuthorityApply(authority) {
     return null;
 }
 
+function createOperationId(type, context) {
+    if (typeof context?.operationId === "string" && context.operationId.length > 0) {
+        return context.operationId;
+    }
+    if (typeof context?.transitionId !== "string" || context.transitionId.length === 0) {
+        return null;
+    }
+    return `${context.transitionId}:${type}`;
+}
+
 /**
  * Routes semantic Post-Trial steps to their actual mutation authorities.
  *
  * The router never applies rewards, unlocks, or Run completion itself. It only
  * chooses the configured authority for the requested step and reports whether
- * that authority confirmed success. PostTrialProgressionService may mark a step
- * APPLIED only after this boundary succeeds.
+ * that authority confirmed success. Each request carries a deterministic
+ * operationId derived from transitionId + step type. Authorities must treat this
+ * key idempotently so a save/load retry cannot duplicate a committed mutation.
  */
 export class PostTrialStepAuthorityRouter {
     constructor({
@@ -55,12 +66,22 @@ export class PostTrialStepAuthorityRouter {
             };
         }
 
+        const operationId = createOperationId(type, context);
+        if (!operationId) {
+            return {
+                success: false,
+                reason: "POST_TRIAL_STEP_OPERATION_ID_REQUIRED",
+                stepType: type
+            };
+        }
+
         const authority = this.getAuthority(type);
         if (!authority) {
             return {
                 success: false,
                 reason: "POST_TRIAL_STEP_AUTHORITY_REQUIRED",
-                stepType: type
+                stepType: type,
+                operationId
             };
         }
 
@@ -69,15 +90,20 @@ export class PostTrialStepAuthorityRouter {
             return {
                 success: false,
                 reason: "POST_TRIAL_STEP_AUTHORITY_INVALID",
-                stepType: type
+                stepType: type,
+                operationId
             };
         }
 
         const request = Object.freeze({
+            operationId,
             type,
             payload: cloneData(payload),
             result: cloneData(result),
-            context: cloneData(context)
+            context: {
+                ...cloneData(context, {}),
+                operationId
+            }
         });
 
         let authorityResult;
@@ -88,6 +114,7 @@ export class PostTrialStepAuthorityRouter {
                 success: false,
                 reason: "POST_TRIAL_STEP_AUTHORITY_THREW",
                 stepType: type,
+                operationId,
                 errorName: error?.name || "Error",
                 errorMessage: error?.message || String(error)
             };
@@ -98,6 +125,7 @@ export class PostTrialStepAuthorityRouter {
                 success: false,
                 reason: authorityResult?.reason || "POST_TRIAL_STEP_AUTHORITY_REJECTED",
                 stepType: type,
+                operationId,
                 authorityResult: cloneData(authorityResult)
             };
         }
@@ -105,6 +133,7 @@ export class PostTrialStepAuthorityRouter {
         return {
             success: true,
             stepType: type,
+            operationId,
             authorityResult: cloneData(authorityResult)
         };
     }
