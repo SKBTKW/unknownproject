@@ -97,6 +97,31 @@ assert.equal(engine.trialStageProgressionService.getPending()?.toStageId, 2);
 assert.deepEqual(expandCalls, []);
 assert.equal(authorityCalls.length, 0);
 
+const serviceBeforeReattach = engine.postTrialProgressionService;
+const readBeforeReattach = engine.postTrialProgressionReadService;
+const stepRouterBeforeReattach = engine.postTrialStepAuthorityRouter;
+const skillRouterBeforeReattach = engine.postTrialSkillProgressionRouter;
+const stageBeforeReattach = engine.trialStageProgressionService;
+
+// Composition is idempotent. Re-attaching cannot replace the restored services
+// or silently swap in different mutation authorities.
+const reattached = attachTrialRuntimeSubsystems(engine, {
+    postTrialOptions: {
+        rewardAuthority() {
+            throw new Error("reattach must not replace existing reward authority");
+        }
+    }
+});
+assert.equal(reattached.success, true);
+assert.equal(engine.postTrialProgressionService, serviceBeforeReattach);
+assert.equal(engine.postTrialProgressionReadService, readBeforeReattach);
+assert.equal(engine.postTrialStepAuthorityRouter, stepRouterBeforeReattach);
+assert.equal(engine.postTrialSkillProgressionRouter, skillRouterBeforeReattach);
+assert.equal(engine.trialStageProgressionService, stageBeforeReattach);
+assert.equal(engine.trialStageProgressionService.getPending()?.toStageId, 2);
+assert.deepEqual(expandCalls, []);
+assert.equal(authorityCalls.length, 0);
+
 const before = engine.postTrialProgressionReadService.read();
 assert.equal(before.available, true);
 assert.equal(before.status, POST_TRIAL_TRANSITION_STATUS.PENDING_STEPS);
