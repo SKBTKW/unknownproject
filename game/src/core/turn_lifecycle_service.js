@@ -102,7 +102,19 @@ export class TurnLifecycleService {
 
     _tryStartPendingTrial() {
         if (typeof this.engine.retryPendingTrialLaunch === "function") {
-            return this.engine.retryPendingTrialLaunch();
+            try {
+                const result = this.engine.retryPendingTrialLaunch();
+                this.engine.lastTrialLaunchAttempt = result;
+                return result;
+            } catch (error) {
+                const result = {
+                    started: false,
+                    reason: "TRIAL_LAUNCH_UNEXPECTED_ERROR",
+                    errorMessage: error?.message || String(error)
+                };
+                this.engine.lastTrialLaunchAttempt = result;
+                return result;
+            }
         }
 
         const coordinator = this.engine.trialLaunchCoordinator;
