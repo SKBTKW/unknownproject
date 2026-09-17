@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
+import { createBoardPresentationDto } from '../game/src/presentation/board_presentation_contract.js';
 import {
     buildTrialRouteCellIndex,
     createTrialBoardSemanticData,
@@ -100,6 +101,40 @@ assert.equal(firstRouteIndex.has('1:1'), true);
 assert.equal(firstRouteIndex.has('1:2'), true);
 assert.equal(firstRouteIndex.has('8:8'), false);
 assert.equal(firstRouteIndex.has('8:7'), false);
+
+const portableTrialDto = createBoardPresentationDto({
+    presentation: {
+        viewMode: '2D',
+        contextMode: 'TRIAL',
+        selectedCell: null,
+        hoveredCell: null,
+        focusCell: null
+    },
+    profile: {},
+    board: { rows: 1, columns: 2 },
+    trial: {
+        available: true,
+        activeRouteId: 'route-a',
+        selectedInterceptCell: { r: 0, c: 1 },
+        hoveredInterceptCell: { r: 0, c: 0 },
+        routes: [],
+        interceptionCandidates: [],
+        plannedIntercepts: [],
+        battleMarkers: [],
+        enemyState: null
+    },
+    cells: [[]]
+});
+assert.deepEqual(
+    portableTrialDto.trial.selectedInterceptCell,
+    { r: 0, c: 1 },
+    'portable Trial DTO must preserve selected interception cell for every renderer'
+);
+assert.deepEqual(
+    portableTrialDto.trial.hoveredInterceptCell,
+    { r: 0, c: 0 },
+    'portable Trial DTO must preserve hovered interception cell for every renderer'
+);
 
 const boardGridSource = await readFile(
     new URL('../game/src/ui/board_grid_component.js', import.meta.url),
