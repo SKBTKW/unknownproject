@@ -114,6 +114,7 @@ jobs:
           node game/src/trial/dev/diagnose_trial_launch_trigger_order.mjs
           node game/src/trial/dev/diagnose_trial_stage_progression_service.mjs
           node game/src/trial/dev/diagnose_post_trial_progression_service.mjs
+          node game/src/trial/dev/diagnose_post_trial_skill_owner_policy.mjs
 
       - name: Run Advisor dialogue focused tests
         run: |
