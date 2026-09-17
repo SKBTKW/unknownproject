@@ -1,4 +1,5 @@
 import { WarningStateService } from "../systems/warning_state_service.js";
+import { WarningStateFactBridge } from "../systems/warning_state_fact_bridge.js";
 import { WarningOmenBridge } from "../systems/warning_omen_bridge.js";
 import { WarningInvestigationBridge } from "../systems/warning_investigation_bridge.js";
 import { WarningSettlementBridge } from "../systems/warning_settlement_bridge.js";
@@ -28,12 +29,19 @@ export function attachWarningSubsystem(engine, {
     const stateService = warningStateService
         || engine.warningStateService
         || new WarningStateService();
+    const stateFactBridge = new WarningStateFactBridge({
+        gameFactHub: engine.gameFactHub,
+        warningStateService: stateService
+    });
 
     const omen = omenBridge.attach({
         warningStateService: stateService,
         globalEventManager: engine.globalEventManager
     });
-    if (!omen.success) return omen;
+    if (!omen.success) {
+        stateFactBridge.dispose();
+        return omen;
+    }
 
     const investigationBridge = new WarningInvestigationBridge({
         gameFactHub: engine.gameFactHub,
@@ -45,6 +53,7 @@ export function attachWarningSubsystem(engine, {
     });
 
     engine.warningStateService = stateService;
+    engine.warningStateFactBridge = stateFactBridge;
     engine.warningOmenBridge = omenBridge;
     engine.warningInvestigationBridge = investigationBridge;
     engine.warningSettlementBridge = settlementBridge;
@@ -53,6 +62,7 @@ export function attachWarningSubsystem(engine, {
     return {
         success: true,
         warningStateService: stateService,
+        stateFactAttached: true,
         omenAttached: true,
         investigationAttached: true,
         settlementAttached: true
