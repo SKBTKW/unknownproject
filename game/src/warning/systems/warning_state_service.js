@@ -115,7 +115,7 @@ export class WarningStateService {
             verse: Number.isInteger(verse) ? verse : null
         });
         this.history.push(transition);
-        this._notify(transition);
+        if (previous !== WARNING_STATES.CALM) this._notify(transition);
         return this.getReadModel();
     }
 
