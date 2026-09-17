@@ -5,6 +5,7 @@ import { TrialDueStateService } from "../systems/trial_due_state_service.js";
 import { TrialStageProgressionService } from "../systems/trial_stage_progression_service.js";
 import { PostTrialProgressionService } from "../systems/post_trial_progression_service.js";
 import { PostTrialSkillProgressionRouter } from "../systems/post_trial_skill_progression_router.js";
+import { PostTrialAftermathCaptureBridge } from "../systems/post_trial_aftermath_capture_bridge.js";
 import { attachTrialTimingSubsystem } from "./trial_timing_bootstrap.js";
 
 /**
@@ -20,6 +21,7 @@ import { attachTrialTimingSubsystem } from "./trial_timing_bootstrap.js";
  *                                      -> settled Trial Stage progression
  *                                      -> Post-Trial transition authority
  *                                      -> owner-routed Skill progression port
+ *                                      -> immutable aftermath snapshot
  *
  * It deliberately does not re-run Investigation bootstrap, avoiding duplicate
  * unlock/event bridges during the migration.
@@ -109,6 +111,16 @@ export function attachTrialRuntimeSubsystems(engine, {
         });
     }
 
+    // Subscribe after PostTrialProgressionService so a settled fact creates the
+    // transition first, then this bridge writes the immutable aftermath snapshot
+    // into that transition. The transition serializer already persists this field.
+    if (!engine.postTrialAftermathCaptureBridge) {
+        engine.postTrialAftermathCaptureBridge = new PostTrialAftermathCaptureBridge({
+            gameFactHub: factHub,
+            state: engine.state
+        });
+    }
+
     // The constructor-side Investigation bootstrap may have reported failure
     // only because Warning lacked a shared GameFactHub. Preserve the already
     // attached Investigation runtime/unlock and reflect the now-complete state.
@@ -132,7 +144,8 @@ export function attachTrialRuntimeSubsystems(engine, {
         trialDueAttached: true,
         trialStageProgressionAttached: true,
         postTrialSkillProgressionRouterAttached: true,
-        postTrialProgressionAttached: true
+        postTrialProgressionAttached: true,
+        postTrialAftermathCaptureAttached: true
     };
 }
 
