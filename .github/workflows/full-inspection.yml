@@ -114,5 +114,16 @@ jobs:
           node game/src/trial/dev/diagnose_trial_launch_trigger_order.mjs
           node game/src/trial/dev/diagnose_trial_stage_progression_service.mjs
 
+      - name: Run Advisor dialogue focused tests
+        run: |
+          node scratch/test_advisor_character_contract.mjs
+          node scratch/test_advisor_character_dialogue_override.mjs
+          node scratch/test_advisor_character_differentiation.mjs
+          node scratch/test_advisor_character_voice_contrast.mjs
+          node scratch/test_advisor_reaction_dialogue_integration.mjs
+          node scratch/test_advisor_staff_officer_golden_lines.mjs
+          node scratch/test_advisor_staff_officer_reaction_boundaries.mjs
+          node scratch/test_advisor_reaction_scene_coverage.mjs
+
       - name: Run AoT Full Inspection
         run: node scratch/run_full_inspection.mjs
