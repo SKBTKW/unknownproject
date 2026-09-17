@@ -3,7 +3,22 @@ import { GAME_FACT_TYPES } from "../../core/game_fact.js";
 import { TRIAL_PLAN_REASONS } from "../domain/trial_types.js";
 import { TrialHqResolutionService } from "../systems/trial_hq_resolution_service.js";
 import { TrialResultSettlementService } from "../systems/trial_result_settlement_service.js";
+import { EnemyForceTerrainInteractionResolver } from "../systems/enemy_force_terrain_interaction_resolver.js";
+import { EnemyForceDeploymentResolver } from "../systems/enemy_force_deployment_resolver.js";
 import { TrialLifecycleReadService } from "../presentation/trial_lifecycle_read_service.js";
+
+function resolveTerrainId(cell) {
+    const terrain = cell?.terrain || cell || {};
+    return terrain.terrainId || terrain.id || cell?.terrainId || null;
+}
+
+function resolveForceProfile(route) {
+    const profile = route?.forceProfile || route?.profile || null;
+    return {
+        bodySize: profile?.bodySize || route?.bodySize || "MEDIUM",
+        equipment: profile?.equipment || route?.equipment || ["STANDARD"]
+    };
+}
 
 export class TrialController extends TrialControllerBase {
     constructor(options = {}) {
@@ -13,6 +28,10 @@ export class TrialController extends TrialControllerBase {
             powerResolver: this.powerResolver
         });
         this.resultSettlementService = options.resultSettlementService || new TrialResultSettlementService();
+        this.forceTerrainInteractionResolver = options.forceTerrainInteractionResolver
+            || new EnemyForceTerrainInteractionResolver();
+        this.forceDeploymentResolver = options.forceDeploymentResolver
+            || new EnemyForceDeploymentResolver();
         this.lifecycleReadService = options.lifecycleReadService || new TrialLifecycleReadService();
     }
 
@@ -23,7 +42,28 @@ export class TrialController extends TrialControllerBase {
         const route = this.getRoute(routeId);
         const strategicSuppression = Number(route?.strategicSuppression);
         if (Number.isFinite(strategicSuppression) && strategicSuppression >= 0) {
-            resolved.input.enemySuppression = this.powerResolver.resolveSuppression(strategicSuppression);
+            const profile = resolveForceProfile(route);
+            const terrainId = resolveTerrainId(resolved.input.interceptCell);
+            const interaction = this.forceTerrainInteractionResolver.resolve({
+                bodySize: profile.bodySize,
+                equipment: profile.equipment,
+                terrainId
+            });
+            const deployment = this.forceDeploymentResolver.resolve({
+                forceSuppression: strategicSuppression,
+                interaction
+            });
+
+            resolved.input.enemySuppression = this.powerResolver.resolveSuppression(
+                deployment.deployedSuppression
+            );
+            resolved.input.enemyStrategicSuppression = strategicSuppression;
+            resolved.input.enemyReserveSuppression = deployment.reserveSuppression;
+            resolved.input.enemyDeployment = {
+                profile,
+                interaction,
+                deployment
+            };
         }
         return resolved;
     }
