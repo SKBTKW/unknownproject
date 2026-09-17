@@ -8,8 +8,10 @@ export const POST_TRIAL_TRANSITION_STATUS = Object.freeze({
 
 export const POST_TRIAL_STEP_TYPES = Object.freeze({
     REWARD_SELECTION: "REWARD_SELECTION",
+    ADVISOR_PROGRESSION: "ADVISOR_PROGRESSION",
     UNLOCK_APPLY: "UNLOCK_APPLY",
-    STAGE_ADVANCE: "STAGE_ADVANCE"
+    STAGE_ADVANCE: "STAGE_ADVANCE",
+    FINAL_RUN_COMPLETION: "FINAL_RUN_COMPLETION"
 });
 
 export const POST_TRIAL_STEP_STATUS = Object.freeze({
@@ -42,15 +44,17 @@ function normalizePolicyPayload(value) {
  *
  * This service owns which post-Trial work remains before normal progression may
  * resume. It does not calculate Trial results and it does not own presentation.
- * Reward / unlock content is intentionally injected as policy; this boundary
- * only owns whether those semantic steps are pending or applied.
+ * Reward / Advisor / unlock content is intentionally injected as policy; this
+ * boundary only owns whether those semantic steps are pending or applied.
  * Stage progression remains delegated to TrialStageProgressionService.
+ * Trial 3 creates a final Run-completion handoff instead of a Stage 4.
  */
 export class PostTrialProgressionService {
     constructor(engine, {
         gameFactHub = null,
         stageProgressionService = null,
         rewardStepPolicy = null,
+        advisorProgressionStepPolicy = null,
         unlockStepPolicy = null
     } = {}) {
         if (!engine?.state) throw new TypeError("POST_TRIAL_PROGRESSION_ENGINE_REQUIRED");
@@ -65,9 +69,15 @@ export class PostTrialProgressionService {
             || engine.trialStageProgressionService
             || null;
         this.rewardStepPolicy = rewardStepPolicy || engine.postTrialRewardStepPolicy || null;
+        this.advisorProgressionStepPolicy = advisorProgressionStepPolicy
+            || engine.postTrialAdvisorProgressionStepPolicy
+            || null;
         this.unlockStepPolicy = unlockStepPolicy || engine.postTrialUnlockStepPolicy || null;
         if (this.rewardStepPolicy && typeof this.rewardStepPolicy !== "function") {
             throw new TypeError("POST_TRIAL_REWARD_POLICY_INVALID");
+        }
+        if (this.advisorProgressionStepPolicy && typeof this.advisorProgressionStepPolicy !== "function") {
+            throw new TypeError("POST_TRIAL_ADVISOR_PROGRESSION_POLICY_INVALID");
         }
         if (this.unlockStepPolicy && typeof this.unlockStepPolicy !== "function") {
             throw new TypeError("POST_TRIAL_UNLOCK_POLICY_INVALID");
@@ -117,6 +127,7 @@ export class PostTrialProgressionService {
             state: this.engine.state
         };
         const rewardPayload = this._resolvePolicyPayload(this.rewardStepPolicy, context);
+        const advisorProgressionPayload = this._resolvePolicyPayload(this.advisorProgressionStepPolicy, context);
         const unlockPayload = this._resolvePolicyPayload(this.unlockStepPolicy, context);
         const stagePending = this.stageProgressionService?.getPending?.() || null;
         const steps = [];
@@ -126,6 +137,13 @@ export class PostTrialProgressionService {
                 type: POST_TRIAL_STEP_TYPES.REWARD_SELECTION,
                 status: POST_TRIAL_STEP_STATUS.PENDING,
                 payload: rewardPayload
+            });
+        }
+        if (advisorProgressionPayload !== null) {
+            steps.push({
+                type: POST_TRIAL_STEP_TYPES.ADVISOR_PROGRESSION,
+                status: POST_TRIAL_STEP_STATUS.PENDING,
+                payload: advisorProgressionPayload
             });
         }
         if (unlockPayload !== null) {
@@ -142,14 +160,24 @@ export class PostTrialProgressionService {
                 payload: cloneData(stagePending)
             });
         }
+        if (trialIndex === 3 && !context.runTerminated) {
+            steps.push({
+                type: POST_TRIAL_STEP_TYPES.FINAL_RUN_COMPLETION,
+                status: POST_TRIAL_STEP_STATUS.PENDING,
+                payload: {
+                    trialIndex,
+                    scenarioId: context.scenarioId
+                }
+            });
+        }
 
         const transition = {
-            schemaVersion: 2,
+            schemaVersion: 3,
             transitionId,
             trialIndex,
             scenarioId: payload.scenarioId || null,
             outcome: payload.outcome || null,
-            runTerminated: Boolean(payload.settlement?.runTerminated),
+            runTerminated: context.runTerminated,
             presentationCleanupComplete: false,
             status: POST_TRIAL_TRANSITION_STATUS.WAITING_FOR_PRESENTATION_CLEANUP,
             steps
@@ -209,11 +237,19 @@ export class PostTrialProgressionService {
         });
     }
 
+    completeAdvisorProgression({ result = null } = {}) {
+        return this._completeExternalStep(POST_TRIAL_STEP_TYPES.ADVISOR_PROGRESSION, { result });
+    }
+
     completeUnlockApply({ result = null } = {}) {
         return this._completeExternalStep(POST_TRIAL_STEP_TYPES.UNLOCK_APPLY, {
             result,
             factType: GAME_FACT_TYPES.POST_TRIAL_UNLOCK_APPLIED
         });
+    }
+
+    completeFinalRunCompletion({ result = null } = {}) {
+        return this._completeExternalStep(POST_TRIAL_STEP_TYPES.FINAL_RUN_COMPLETION, { result });
     }
 
     completeAfterPresentationCleanup({ translate = null } = {}) {
