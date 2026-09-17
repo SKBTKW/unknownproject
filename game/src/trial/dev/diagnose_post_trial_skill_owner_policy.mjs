@@ -94,8 +94,8 @@ function settleAndReachSkill(h, scenarioId) {
     return h.postTrialProgressionService.getCurrentPendingStep();
 }
 
-function expectedOperationId(scenarioId, owner) {
-    return `POST_TRIAL_1_${scenarioId}:SKILL_PROGRESSION:${owner}`;
+function expectedOperationId(scenarioId) {
+    return `POST_TRIAL_1_${scenarioId}:SKILL_PROGRESSION`;
 }
 
 function dispose(h) {
@@ -104,7 +104,7 @@ function dispose(h) {
 }
 
 // Both owners use exactly the same Post-Trial route, but only their own authority
-// receives the mutation request. The owner is part of the stable idempotency key.
+// receives the mutation request. Operation identity remains independent of owner.
 for (const owner of [
     POST_TRIAL_SKILL_OWNER_TYPES.ADVISOR,
     POST_TRIAL_SKILL_OWNER_TYPES.PLAYER
@@ -129,13 +129,11 @@ for (const owner of [
     const authorityCall = owner === POST_TRIAL_SKILL_OWNER_TYPES.ADVISOR
         ? h.calls.advisor[0]
         : h.calls.player[0];
-    const operationId = expectedOperationId(scenarioId, owner);
+    const operationId = expectedOperationId(scenarioId);
     assert.equal(authorityCall.operationId, operationId);
     assert.equal(authorityCall.context.operationId, operationId);
     assert.equal(applied.step.result.authorityResult.authority, owner);
 
-    // Completion is idempotent at the orchestration boundary: the real owner
-    // authority is not called twice.
     const repeated = h.postTrialProgressionService.completeSkillProgression({
         owner,
         result: { selectedSkillId: "duplicate" }
@@ -168,7 +166,7 @@ for (const owner of [
 }
 
 // Ownership can remain undecided at settlement time. The explicit owner supplied
-// at completion determines both mutation authority and operation id.
+// at completion determines mutation authority, not operation identity.
 {
     const h = createHarness({ owner: null, policyEnabled: true });
     const scenarioId = "trial-1-late-owner";
@@ -181,11 +179,50 @@ for (const owner of [
     assert.equal(applied.success, true);
     assert.equal(h.calls.advisor.length, 0);
     assert.equal(h.calls.player.length, 1);
-    assert.equal(
-        h.calls.player[0].operationId,
-        expectedOperationId(scenarioId, POST_TRIAL_SKILL_OWNER_TYPES.PLAYER)
-    );
+    assert.equal(h.calls.player[0].operationId, expectedOperationId(scenarioId));
     dispose(h);
+}
+
+// The same logical pending Skill step produces the same operation id regardless
+// of whether a future implementation routes ownership to Advisor or Player.
+{
+    const restoredTransition = {
+        schemaVersion: 5,
+        transitionId: "POST_TRIAL_1_owner-neutral",
+        trialIndex: 1,
+        scenarioId: "owner-neutral",
+        outcome: "VICTORY",
+        runTerminated: false,
+        presentationCleanupComplete: true,
+        status: "PENDING_STEPS",
+        steps: [
+            {
+                type: POST_TRIAL_STEP_TYPES.SKILL_PROGRESSION,
+                status: POST_TRIAL_STEP_STATUS.PENDING,
+                payload: { selectionRequired: true }
+            }
+        ]
+    };
+
+    const advisorOwned = createHarness({ restoredTransition, policyEnabled: false });
+    const advisorApplied = advisorOwned.postTrialProgressionService.completeSkillProgression({
+        owner: POST_TRIAL_SKILL_OWNER_TYPES.ADVISOR,
+        result: { selectedSkillId: "same-logical-step" }
+    });
+    assert.equal(advisorApplied.success, true);
+    const advisorOperationId = advisorOwned.calls.advisor[0].operationId;
+    dispose(advisorOwned);
+
+    const playerOwned = createHarness({ restoredTransition, policyEnabled: false });
+    const playerApplied = playerOwned.postTrialProgressionService.completeSkillProgression({
+        owner: POST_TRIAL_SKILL_OWNER_TYPES.PLAYER,
+        result: { selectedSkillId: "same-logical-step" }
+    });
+    assert.equal(playerApplied.success, true);
+    const playerOperationId = playerOwned.calls.player[0].operationId;
+    assert.equal(playerOperationId, advisorOperationId);
+    assert.equal(playerOperationId, expectedOperationId("owner-neutral"));
+    dispose(playerOwned);
 }
 
 // Missing owner authority fails closed. The transition remains pending and can be
@@ -203,10 +240,7 @@ for (const owner of [
     });
     assert.equal(blocked.success, false);
     assert.equal(blocked.reason, "POST_TRIAL_SKILL_AUTHORITY_REQUIRED");
-    assert.equal(
-        blocked.delegation.operationId,
-        expectedOperationId(scenarioId, POST_TRIAL_SKILL_OWNER_TYPES.ADVISOR)
-    );
+    assert.equal(blocked.delegation.operationId, expectedOperationId(scenarioId));
     assert.equal(h.postTrialProgressionService.getCurrentPendingStep().status, POST_TRIAL_STEP_STATUS.PENDING);
     dispose(h);
 }
@@ -226,10 +260,7 @@ for (const owner of [
     });
     assert.equal(rejected.success, false);
     assert.equal(rejected.reason, "TEST_PLAYER_REJECTED");
-    assert.equal(
-        rejected.delegation.operationId,
-        expectedOperationId(scenarioId, POST_TRIAL_SKILL_OWNER_TYPES.PLAYER)
-    );
+    assert.equal(rejected.delegation.operationId, expectedOperationId(scenarioId));
     assert.equal(h.postTrialProgressionService.getCurrentPendingStep().status, POST_TRIAL_STEP_STATUS.PENDING);
     dispose(h);
 }
@@ -273,10 +304,7 @@ for (const owner of [
     });
     assert.equal(replayApplied.success, true);
     assert.equal(replay.calls.player[0].operationId, firstOperationId);
-    assert.equal(
-        firstOperationId,
-        expectedOperationId("crash-skill", POST_TRIAL_SKILL_OWNER_TYPES.PLAYER)
-    );
+    assert.equal(firstOperationId, expectedOperationId("crash-skill"));
     dispose(replay);
 }
 
@@ -316,10 +344,7 @@ for (const owner of [
     assert.equal(legacyApi.transition.status, "COMPLETED");
     assert.equal(h.calls.advisor.length, 1);
     assert.equal(h.calls.player.length, 0);
-    assert.equal(
-        h.calls.advisor[0].operationId,
-        expectedOperationId("legacy-advisor", POST_TRIAL_SKILL_OWNER_TYPES.ADVISOR)
-    );
+    assert.equal(h.calls.advisor[0].operationId, expectedOperationId("legacy-advisor"));
     dispose(h);
 }
 
