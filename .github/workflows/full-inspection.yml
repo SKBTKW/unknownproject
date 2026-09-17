@@ -107,6 +107,7 @@ jobs:
           node game/src/trial/dev/diagnose_trial_launch_bootstrap.mjs
           node game/src/trial/dev/diagnose_trial_launch_trigger_order.mjs
           node game/src/trial/dev/diagnose_trial_stage_progression_service.mjs
+          node scratch/test_trial_route_visual_semantics.mjs
 
       - name: Run Warning focused tests
         run: |
