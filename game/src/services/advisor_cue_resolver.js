@@ -36,6 +36,16 @@ export class AdvisorCueResolver {
 
         if (outcome !== "SURVIVED") return null;
 
+        // Trial owns the one-based trialIndex in TRIAL_RESULT_SETTLED. The final
+        // Trial victory is therefore an objective semantic event and should take
+        // precedence over the generic damaged/undamaged survival reactions.
+        if (Number(payload?.trialIndex) === 3) {
+            return {
+                type: ADVISOR_SCENES.THIRD_TRIAL_VICTORY,
+                payload
+            };
+        }
+
         // These two scenes are purely objective: the Trial-owned result says whether
         // the Last Ember actually took damage. Richer labels such as pyrrhic victory,
         // civilian loss, or desperate stand remain undefined until game-owned facts exist.
