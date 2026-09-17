@@ -101,6 +101,10 @@ export class TurnLifecycleService {
     }
 
     _tryStartPendingTrial() {
+        if (typeof this.engine.retryPendingTrialLaunch === "function") {
+            return this.engine.retryPendingTrialLaunch();
+        }
+
         const coordinator = this.engine.trialLaunchCoordinator;
         if (!coordinator || typeof coordinator.tryStartPending !== "function") return null;
 
