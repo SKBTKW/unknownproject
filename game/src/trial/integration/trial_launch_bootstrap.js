@@ -2,6 +2,7 @@ import { TrialIngressResolver } from "../scenario/trial_ingress_resolver.js";
 import { TrialIngressSelectionPolicy } from "../scenario/trial_ingress_selection_policy.js";
 import { TrialIngressJudgementResolver } from "../scenario/trial_ingress_judgement_resolver.js";
 import { TrialRouteGenerator } from "../scenario/trial_route_generator.js";
+import { TrialRouteCostPolicy } from "../scenario/trial_route_cost_policy.js";
 import { TrialRouteSuppressionAllocator } from "../scenario/trial_route_suppression_allocator.js";
 import { TrialScenarioFactory } from "../scenario/trial_scenario_factory.js";
 import { EnemyArmyStructureResolver } from "../systems/enemy_army_structure_resolver.js";
@@ -33,15 +34,17 @@ function attemptPendingTrialLaunch(engine, coordinator) {
 /**
  * Presentation composition boundary for production Trial launch.
  *
- * Enemy army scale/route count/commander hierarchy are now derived from
- * strategicSuppression through EnemyArmyStructureResolver. Movement-cost rules
- * deliberately still have no fallback value: until a production route cost
- * policy is supplied, launch remains fail-closed.
+ * Enemy army scale/route count/commander hierarchy are derived from
+ * strategicSuppression. Production route costs now have a canonical default
+ * policy that accounts for terrain, body size, equipment and terrain affinity.
+ * Road effects remain opt-in until GameState owns a canonical road model.
  */
 export function attachTrialLaunchSubsystem(engine, ui, {
     enemyTruthReadModel = null,
     ingressCountResolver = null,
     routeCostResolver = null,
+    routeCostPolicy = null,
+    roadResolver = null,
     armyStructureResolver = null,
     ingressJudgementResolver = null,
     ingressSelectionPolicy = null,
@@ -73,6 +76,7 @@ export function attachTrialLaunchSubsystem(engine, ui, {
             scenarioFactory: engine.trialLaunchScenarioFactory || null,
             ingressResolver: engine.trialLaunchIngressResolver || null,
             routeGenerator: engine.trialLaunchRouteGenerator || null,
+            routeCostPolicy: engine.trialLaunchRouteCostPolicy || null,
             armyStructureResolver: engine.trialLaunchArmyStructureResolver || null,
             suppressionAllocator: engine.trialLaunchSuppressionAllocator || null,
             retryPendingTrialLaunch: engine.retryPendingTrialLaunch
@@ -102,13 +106,17 @@ export function attachTrialLaunchSubsystem(engine, ui, {
         });
     }
 
+    let resolvedRouteCostPolicy = routeCostPolicy;
+    let resolvedRouteCostResolver = routeCostResolver;
+    if (!hasFunction(resolvedRouteCostResolver)) {
+        resolvedRouteCostPolicy = resolvedRouteCostPolicy || new TrialRouteCostPolicy({ roadResolver });
+        resolvedRouteCostResolver = context => resolvedRouteCostPolicy.resolve(context);
+    }
+
     let resolvedRouteGenerator = routeGenerator;
     if (!resolvedRouteGenerator) {
-        if (!hasFunction(routeCostResolver)) {
-            return { success: false, reason: "TRIAL_LAUNCH_ROUTE_COST_POLICY_REQUIRED" };
-        }
         resolvedRouteGenerator = new TrialRouteGenerator({
-            costResolver: routeCostResolver
+            costResolver: resolvedRouteCostResolver
         });
     }
 
@@ -146,6 +154,7 @@ export function attachTrialLaunchSubsystem(engine, ui, {
     engine.trialLaunchScenarioFactory = resolvedScenarioFactory;
     engine.trialLaunchIngressResolver = resolvedIngressResolver;
     engine.trialLaunchRouteGenerator = resolvedRouteGenerator;
+    engine.trialLaunchRouteCostPolicy = resolvedRouteCostPolicy || null;
     engine.trialLaunchArmyStructureResolver = resolvedArmyStructureResolver;
     engine.trialLaunchSuppressionAllocator = resolvedSuppressionAllocator;
     engine.retryPendingTrialLaunch = () => attemptPendingTrialLaunch(engine, coordinator);
@@ -157,6 +166,7 @@ export function attachTrialLaunchSubsystem(engine, ui, {
         scenarioFactory: resolvedScenarioFactory,
         ingressResolver: resolvedIngressResolver,
         routeGenerator: resolvedRouteGenerator,
+        routeCostPolicy: resolvedRouteCostPolicy || null,
         armyStructureResolver: resolvedArmyStructureResolver,
         suppressionAllocator: resolvedSuppressionAllocator,
         retryPendingTrialLaunch: engine.retryPendingTrialLaunch
