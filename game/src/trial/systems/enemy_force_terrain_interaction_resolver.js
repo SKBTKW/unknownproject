@@ -117,40 +117,55 @@ function resolveBodyInteraction(bodySize, family) {
 }
 
 function resolveEquipmentInteraction(equipmentClass, family) {
-    const traits = [];
-    const movementConstraints = [];
-    let logistics = "STANDARD";
+    const roughTerrain = ["FOREST", "DEEP_FOREST", "WETLAND", "HILL", "MOUNTAIN"].includes(family);
+    const result = {
+        terrainDeployment: "STANDARD",
+        terrainMobility: "NEUTRAL",
+        contactProfile: "BALANCED",
+        logistics: "STANDARD",
+        traits: [],
+        movementConstraints: []
+    };
 
     if (equipmentClass === "LIGHT") {
-        traits.push("RAPID_MANEUVER");
-        if (["FOREST", "DEEP_FOREST", "WETLAND", "MOUNTAIN"].includes(family)) {
-            traits.push("ROUGH_TERRAIN_FRIENDLY");
+        result.contactProfile = "MANEUVER";
+        result.logistics = "LIGHT";
+        result.traits.push("RAPID_MANEUVER");
+        if (roughTerrain) {
+            result.terrainDeployment = "FLEXIBLE";
+            result.terrainMobility = "ADVANTAGE";
+            result.traits.push("ROUGH_TERRAIN_FRIENDLY");
         }
-        logistics = "LIGHT";
+        return result;
     }
 
     if (equipmentClass === "HEAVY") {
-        traits.push("FRONTAL_BREAKTHROUGH");
-        logistics = "HEAVY";
-        if (["FOREST", "DEEP_FOREST", "WETLAND", "MOUNTAIN"].includes(family)) {
-            movementConstraints.push("HEAVY_EQUIPMENT_ROUGH_TERRAIN");
+        result.contactProfile = "FRONTAL";
+        result.logistics = "HEAVY";
+        result.traits.push("FRONTAL_BREAKTHROUGH");
+        if (roughTerrain) {
+            result.terrainDeployment = "CONSTRAINED";
+            result.terrainMobility = "DISADVANTAGE";
+            result.movementConstraints.push("HEAVY_EQUIPMENT_ROUGH_TERRAIN");
+        } else if (family === "OPEN") {
+            result.traits.push("HEAVY_FORMATION_AVAILABLE");
         }
+        return result;
     }
 
-    return {
-        traits,
-        movementConstraints,
-        logistics
-    };
+    // STANDARD is intentionally the baseline: no terrain bonus, no terrain
+    // penalty and no special contact profile. Its value is consistency.
+    return result;
 }
 
 /**
  * Resolves semantic battlefield consequences of body size and active equipment.
  *
  * Active equipment is deliberately limited to LIGHT / STANDARD / HEAVY.
+ * Body and equipment effects stay separate: a LARGE+LIGHT force and a
+ * SMALL+HEAVY force must remain distinguishable to downstream Trial combat.
  * Reserved equipment identities remain visible as data but have no runtime
- * effect. This resolver intentionally does not output attack/defense
- * multipliers; Trial combat translates these semantics at the proper stage.
+ * effect. No attack/defense multiplier is produced here.
  */
 export class EnemyForceTerrainInteractionResolver {
     resolve({ bodySize = "MEDIUM", equipment = [], terrainId = null } = {}) {
@@ -166,10 +181,19 @@ export class EnemyForceTerrainInteractionResolver {
             bodySize: normalizedBodySize,
             equipmentClass,
             reservedEquipment,
+
+            // Body-size interaction.
             deployment: body.deployment,
             mobility: body.mobility,
             ambushExposure: body.ambushExposure,
+
+            // Equipment-class interaction. Kept separate from body semantics so
+            // downstream combat can resolve combinations without lossy merging.
+            equipmentDeployment: gear.terrainDeployment,
+            equipmentMobility: gear.terrainMobility,
+            contactProfile: gear.contactProfile,
             logistics: gear.logistics,
+
             combatTraits: [...body.traits, ...gear.traits],
             movementConstraints: [...gear.movementConstraints]
         };
