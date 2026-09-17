@@ -58,6 +58,45 @@ export class TrialStageProgressionService {
         return this.pending ? { ...this.pending } : null;
     }
 
+    restorePending(candidate) {
+        if (!candidate || typeof candidate !== "object") {
+            return { success: false, reason: "TRIAL_STAGE_PROGRESSION_RESTORE_REQUIRED" };
+        }
+
+        const trialIndex = normalizeTrialIndex(candidate.trialIndex);
+        const expected = trialIndex ? STAGE_TRANSITIONS[trialIndex] || null : null;
+        if (!expected) {
+            return { success: false, reason: "TRIAL_STAGE_PROGRESSION_RESTORE_INVALID" };
+        }
+
+        const matchesExpected = expected.fromStageId === Number(candidate.fromStageId)
+            && expected.toStageId === Number(candidate.toStageId)
+            && expected.size === Number(candidate.size)
+            && expected.maxTiles === Number(candidate.maxTiles)
+            && expected.nextTrialIndex === Number(candidate.nextTrialIndex);
+        if (!matchesExpected) {
+            return { success: false, reason: "TRIAL_STAGE_PROGRESSION_RESTORE_MISMATCH" };
+        }
+
+        const currentStageId = Number(this.engine.state?.stage?.id) || null;
+        if (currentStageId !== expected.fromStageId) {
+            return { success: false, reason: "TRIAL_STAGE_PROGRESSION_STAGE_MISMATCH" };
+        }
+
+        if (this.pending) {
+            const pending = this.getPending();
+            return {
+                success: pending?.trialIndex === trialIndex,
+                alreadyPending: true,
+                pending
+            };
+        }
+
+        this.pending = Object.freeze({ trialIndex, ...expected });
+        this.settledTrialIndexes.add(trialIndex);
+        return { success: true, alreadyPending: false, pending: this.getPending() };
+    }
+
     applyPending({ translate = null } = {}) {
         const pending = this.pending;
         if (!pending) {
