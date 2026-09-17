@@ -26,23 +26,24 @@ function resolveApply(authority) {
     return null;
 }
 
-function createOperationId(owner, context) {
+function createOperationId(context) {
     if (typeof context?.operationId === "string" && context.operationId.length > 0) {
         return context.operationId;
     }
     if (typeof context?.transitionId !== "string" || context.transitionId.length === 0) {
         return null;
     }
-    return `${context.transitionId}:SKILL_PROGRESSION:${owner}`;
+    return `${context.transitionId}:SKILL_PROGRESSION`;
 }
 
 /**
  * Owner-routing boundary for post-Trial skill progression.
  *
  * This router never stores or mutates skills itself. ADVISOR and PLAYER are
- * deliberately symmetric ports. The selected owner authority receives a stable
- * operationId so save/load retries can be idempotent regardless of which owner
- * model is ultimately adopted.
+ * deliberately symmetric ports. The operation identity is owner-agnostic because
+ * ownership remains a replaceable implementation choice: the same logical
+ * Post-Trial Skill progression must retain one idempotency key even if ownership
+ * policy changes between ADVISOR and PLAYER implementations.
  */
 export class PostTrialSkillProgressionRouter {
     constructor({ advisorAuthority = null, playerAuthority = null } = {}) {
@@ -71,7 +72,7 @@ export class PostTrialSkillProgressionRouter {
             };
         }
 
-        const operationId = createOperationId(normalizedOwner, context);
+        const operationId = createOperationId(context);
         if (!operationId) {
             return {
                 success: false,
