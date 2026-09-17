@@ -45,6 +45,7 @@ assert.equal(heavy.input.enemyStrategicSuppression, 100);
 assert.equal(heavy.input.enemyReserveSuppression, 55);
 assert.equal(heavy.input.enemyDeployment.deployment.deploymentRatio, 0.45);
 assert.deepEqual(heavy.input.enemyDeployment.tactics, []);
+assert.equal(heavy.input.enemyDeployment.selectedTactic, null);
 assert.equal(
     heavy.input.enemySuppression,
     heavyController.powerResolver.resolveSuppression(45)
@@ -79,6 +80,36 @@ assert.equal(
     infiltrator.input.enemyDeployment.tactics.some(tactic => tactic.id === ENEMY_TACTICS.FLANKING),
     true
 );
+assert.equal(infiltrator.input.enemyDeployment.selectedTactic.id, ENEMY_TACTICS.FLANKING);
+assert.equal(infiltrator.input.enemySelectedTactic.id, ENEMY_TACTICS.FLANKING);
+assert.equal(
+    infiltrator.input.enemyDeployment.tacticAlternatives.some(tactic => tactic.id === ENEMY_TACTICS.DISPERSED_INFILTRATION),
+    true
+);
+
+const coordinatedArmy = {
+    forceCount: 3,
+    commander: { level: 4 },
+    forces: [{ id: "FORCE_1" }, { id: "FORCE_2" }, { id: "FORCE_3" }]
+};
+const coordinatedController = createController({
+    id: "R_COORDINATED",
+    cells: [{ r: 0, c: 0 }, { r: 0, c: 1 }],
+    strategicSuppression: 40,
+    forceId: "FORCE_1",
+    commander: { level: 4 },
+    forceProfile: {
+        bodySize: "SMALL",
+        equipment: ["LIGHT"]
+    }
+}, coordinatedArmy);
+const coordinated = coordinatedController.createRouteInterceptionInput(
+    "R_COORDINATED",
+    { r: 0, c: 1 },
+    10
+);
+assert.equal(coordinated.success, true);
+assert.equal(coordinated.input.enemyDeployment.selectedTactic.id, ENEMY_TACTICS.MAIN_FEINT);
 
 const baselineController = createController({
     id: "R_BASELINE",
@@ -94,6 +125,7 @@ assert.equal(baseline.success, true);
 assert.equal(baseline.input.enemyDeployment.profile.bodySize, "MEDIUM");
 assert.deepEqual(baseline.input.enemyDeployment.profile.equipment, ["STANDARD"]);
 assert.equal(baseline.input.enemyReserveSuppression, 0);
+assert.equal(baseline.input.enemyDeployment.selectedTactic, null);
 assert.equal(
     baseline.input.enemySuppression,
     baselineController.powerResolver.resolveSuppression(100)
