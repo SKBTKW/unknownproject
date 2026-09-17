@@ -11,10 +11,13 @@ export const POST_TRIAL_STEP_TYPES = Object.freeze({
     UNLOCK_APPLY: "UNLOCK_APPLY",
     STAGE_ADVANCE: "STAGE_ADVANCE",
     SKILL_PROGRESSION: "SKILL_PROGRESSION",
-    // Legacy save compatibility only. New transitions never create this type.
-    ADVISOR_PROGRESSION: "ADVISOR_PROGRESSION",
+    // Source-level compatibility alias. New and updated callers resolve to the
+    // generic skill step even if they still use the old property name.
+    ADVISOR_PROGRESSION: "SKILL_PROGRESSION",
     FINAL_RUN_COMPLETION: "FINAL_RUN_COMPLETION"
 });
+
+const LEGACY_ADVISOR_PROGRESSION_STEP_TYPE = "ADVISOR_PROGRESSION";
 
 export const POST_TRIAL_SKILL_OWNER_TYPES = Object.freeze({
     ADVISOR: "ADVISOR",
@@ -263,7 +266,7 @@ export class PostTrialProgressionService {
     }
 
     getPendingSteps(type = null) {
-        const normalizedType = type === POST_TRIAL_STEP_TYPES.ADVISOR_PROGRESSION
+        const normalizedType = type === LEGACY_ADVISOR_PROGRESSION_STEP_TYPE
             ? POST_TRIAL_STEP_TYPES.SKILL_PROGRESSION
             : type;
         const steps = Array.isArray(this.engine.state.postTrialTransition?.steps)
@@ -535,7 +538,7 @@ export class PostTrialProgressionService {
         const transition = this.engine.state.postTrialTransition;
         if (!transition || !Array.isArray(transition.steps)) return;
         transition.steps.forEach(step => {
-            if (step?.type !== POST_TRIAL_STEP_TYPES.ADVISOR_PROGRESSION) return;
+            if (step?.type !== LEGACY_ADVISOR_PROGRESSION_STEP_TYPE) return;
             step.type = POST_TRIAL_STEP_TYPES.SKILL_PROGRESSION;
             step.payload = normalizeSkillProgressionPayload(step.payload, { legacyAdvisor: true });
         });
