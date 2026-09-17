@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { BoardPresentationDataService } from "../game/src/presentation/board_presentation_data_service.js";
+import { BoardPresentationRuntimeAdapter } from "../game/src/presentation/board_presentation_runtime_adapter.js";
 import { BoardPresentationState } from "../game/src/presentation/board_presentation_state.js";
 import { createBoardPresentationDto } from "../game/src/presentation/board_presentation_contract.js";
 import { BOARD_INPUT_COMMANDS, createBoardInputCommand, serializeBoardInputCommand } from "../game/src/presentation/board_input_contract.js";
@@ -111,6 +112,68 @@ test("socket semantics remain presentation data instead of renderer inference", 
     assert.equal(socket.display.role, "SOCKET");
     assert.equal(socket.display.production, null);
     assert.equal(socket.socketResource.id, "SOCKET_WOOD");
+});
+
+test("runtime adapter is the shared runtime-to-presentation entrypoint", () => {
+    let capturedTrialInput = null;
+    const runtimeAdapter = new BoardPresentationRuntimeAdapter({
+        dataService: service,
+        trialAdapter: {
+            fromRuntime(input) {
+                capturedTrialInput = input;
+                return {
+                    available: false,
+                    activeRouteId: null,
+                    selectedInterceptCell: null,
+                    hoveredInterceptCell: null,
+                    routes: [],
+                    interceptionCandidates: [],
+                    plannedIntercepts: [],
+                    battleMarkers: [],
+                    enemyState: null
+                };
+            }
+        }
+    });
+    const runtimeReadModel = runtimeAdapter.getBoard(state, {
+        presentationState,
+        trialState: { phase: "SETUP" },
+        trialPresentationState: { activeEnemyRoute: null }
+    });
+
+    assert.deepEqual(capturedTrialInput.boardSize, { rows: 2, columns: 2 });
+    assert.equal(capturedTrialInput.trialState.phase, "SETUP");
+    assert.equal(runtimeReadModel.cells[0][0].display.role, "LAND_PRIMARY");
+    assert.equal(runtimeReadModel.cells[0][1].display.role, "CLEAN");
+});
+
+test("runtime adapter uses grid override as presentation board without mutating GameState", () => {
+    const overrideGrid = [[grid[0][0]]];
+    let capturedBoardSize = null;
+    const runtimeAdapter = new BoardPresentationRuntimeAdapter({
+        dataService: service,
+        trialAdapter: {
+            fromRuntime(input) {
+                capturedBoardSize = input.boardSize;
+                return {
+                    available: false,
+                    activeRouteId: null,
+                    selectedInterceptCell: null,
+                    hoveredInterceptCell: null,
+                    routes: [],
+                    interceptionCandidates: [],
+                    plannedIntercepts: [],
+                    battleMarkers: [],
+                    enemyState: null
+                };
+            }
+        }
+    });
+    const runtimeReadModel = runtimeAdapter.getBoard(state, { presentationState, gridOverride: overrideGrid });
+
+    assert.deepEqual(capturedBoardSize, { rows: 1, columns: 1 });
+    assert.deepEqual(runtimeReadModel.board, { rows: 1, columns: 1 });
+    assert.equal(state.grid, grid);
 });
 
 test("portable board DTO contains no screen/world/DOM coordinates", () => {
