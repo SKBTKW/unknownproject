@@ -76,15 +76,9 @@ jobs:
             "+refs/heads/${AOT_HEAD_BRANCH}:refs/remotes/origin/${AOT_HEAD_BRANCH}" \
             "+refs/heads/${AOT_BASE_BRANCH}:refs/remotes/origin/${AOT_BASE_BRANCH}"
 
-          # The checked-out PR merge result must contain both the exact base and head
-          # revisions advertised by the pull_request event.
           git merge-base --is-ancestor "${AOT_BASE_SHA}" "${MERGE_SHA}"
           git merge-base --is-ancestor "${AOT_HEAD_SHA}" "${MERGE_SHA}"
 
-          # GIT001 expects a named branch with a same-name origin upstream.
-          # Keep the merge-result files in the working tree, but move HEAD/index to
-          # the PR base so the existing diff-aware linter sees committed PR changes
-          # exactly as local added lines without introducing a CI-only lint bypass.
           git switch -C "${AOT_HEAD_BRANCH}" "${MERGE_SHA}"
           git branch --set-upstream-to="origin/${AOT_HEAD_BRANCH}" "${AOT_HEAD_BRANCH}"
 
@@ -116,6 +110,10 @@ jobs:
           node game/src/trial/dev/diagnose_post_trial_progression_service.mjs
           node game/src/trial/dev/diagnose_post_trial_skill_owner_policy.mjs
           node game/src/trial/dev/diagnose_post_trial_aftermath_capture.mjs
+
+      - name: Run Warning focused tests
+        run: |
+          node scratch/test_warning_state_fact_bridge.mjs
 
       - name: Run Advisor dialogue focused tests
         run: |
