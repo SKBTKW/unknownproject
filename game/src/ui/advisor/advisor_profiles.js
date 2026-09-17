@@ -153,23 +153,24 @@ const STAFF_OFFICER_FEMALE_01 = createAdvisorCharacterDefinition({
             "glory_for_glory",
             "mystical_certainty"
         ]),
+        // Internal authoring vocabulary uses semantic ids; localized wording stays in dialogue data.
         lexicalPreferences: Object.freeze([
-            "報告",
-            "確認",
-            "備蓄",
-            "損耗",
-            "維持",
-            "撤収",
-            "配置",
-            "必要"
+            "reporting",
+            "verification",
+            "stockpiles",
+            "attrition",
+            "maintenance",
+            "withdrawal",
+            "deployment",
+            "necessity"
         ]),
         lexicalAvoid: Object.freeze([
-            "素晴らしい",
-            "完璧",
-            "絶対",
-            "奇跡",
-            "運命",
-            "栄光"
+            "lavish_praise",
+            "perfection",
+            "absolutism",
+            "miracle",
+            "fate",
+            "glory"
         ])
     },
     reactions: STAFF_OFFICER_REACTIONS.reactions,
