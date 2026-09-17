@@ -4,6 +4,7 @@ import { WarningTimingBridge } from "../../warning/systems/warning_timing_bridge
 import { TrialDueStateService } from "../systems/trial_due_state_service.js";
 import { TrialStageProgressionService } from "../systems/trial_stage_progression_service.js";
 import { PostTrialProgressionService } from "../systems/post_trial_progression_service.js";
+import { PostTrialSkillProgressionRouter } from "../systems/post_trial_skill_progression_router.js";
 import { attachTrialTimingSubsystem } from "./trial_timing_bootstrap.js";
 
 /**
@@ -18,6 +19,7 @@ import { attachTrialTimingSubsystem } from "./trial_timing_bootstrap.js";
  *                                      -> pending Trial start request
  *                                      -> settled Trial Stage progression
  *                                      -> Post-Trial transition authority
+ *                                      -> owner-routed Skill progression port
  *
  * It deliberately does not re-run Investigation bootstrap, avoiding duplicate
  * unlock/event bridges during the migration.
@@ -77,13 +79,33 @@ export function attachTrialRuntimeSubsystems(engine, {
         });
     }
 
+    const {
+        skillProgressionRouter = null,
+        advisorSkillProgressionAuthority = null,
+        playerSkillProgressionAuthority = null,
+        ...postTrialProgressionOptions
+    } = postTrialOptions || {};
+
+    if (!engine.postTrialSkillProgressionRouter) {
+        engine.postTrialSkillProgressionRouter = skillProgressionRouter
+            || new PostTrialSkillProgressionRouter({
+                advisorAuthority: advisorSkillProgressionAuthority
+                    || engine.advisorSkillProgressionAuthority
+                    || null,
+                playerAuthority: playerSkillProgressionAuthority
+                    || engine.playerSkillProgressionAuthority
+                    || null
+            });
+    }
+
     // Attach after Stage progression so RESULT_SETTLED first establishes the
     // delegated Stage pending state, then Post-Trial snapshots it into its SSOT.
     if (!engine.postTrialProgressionService) {
         engine.postTrialProgressionService = new PostTrialProgressionService(engine, {
-            ...postTrialOptions,
+            ...postTrialProgressionOptions,
             gameFactHub: factHub,
-            stageProgressionService: engine.trialStageProgressionService
+            stageProgressionService: engine.trialStageProgressionService,
+            skillProgressionRouter: engine.postTrialSkillProgressionRouter
         });
     }
 
@@ -109,6 +131,7 @@ export function attachTrialRuntimeSubsystems(engine, {
         warningTimingAttached: true,
         trialDueAttached: true,
         trialStageProgressionAttached: true,
+        postTrialSkillProgressionRouterAttached: true,
         postTrialProgressionAttached: true
     };
 }
