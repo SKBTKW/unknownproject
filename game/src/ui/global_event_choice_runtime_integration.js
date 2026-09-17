@@ -15,7 +15,11 @@ export class GlobalEventChoiceRuntimeIntegration {
         this.active = null;
         this.system = new GlobalEventChoiceSystem({ factHub: uiController?.trialController?.gameFactHub || null });
         this.component = typeof document !== 'undefined'
-            ? new GlobalEventChoiceComponent({ i18n: I18n, onChoose: choiceId => this.resolve(choiceId) })
+            ? new GlobalEventChoiceComponent({
+                i18n: I18n,
+                onChoose: choiceId => this.resolve(choiceId),
+                onClose: () => this.retryPendingTrialLaunch()
+            })
             : null;
         this.component?.mount(document.body);
 
@@ -61,6 +65,11 @@ export class GlobalEventChoiceRuntimeIntegration {
         this.active = null;
         this.component.showResolution(resolution);
         return resolution;
+    }
+
+    retryPendingTrialLaunch() {
+        if (typeof this.engine?.retryPendingTrialLaunch !== 'function') return null;
+        return this.engine.retryPendingTrialLaunch();
     }
 
     resumePending() {
