@@ -1,9 +1,15 @@
 import assert from "node:assert/strict";
 import { TrialController } from "../flow/trial_controller.js";
+import { ENEMY_TACTICS } from "../systems/enemy_tactic_resolver.js";
 
-function createController(route) {
+function createController(route, armyStructure = null) {
     const controller = new TrialController();
-    controller.state = { routes: [route] };
+    controller.state = {
+        routes: [route],
+        armyStructure,
+        commander: armyStructure?.commander || null,
+        forces: armyStructure?.forces || []
+    };
     controller.cellResolver = (r, c) => ({
         r,
         c,
@@ -22,6 +28,8 @@ const heavyController = createController({
     id: "R_HEAVY",
     cells: [{ r: 0, c: 0 }, { r: 0, c: 1 }],
     strategicSuppression: 100,
+    forceId: "FORCE_1",
+    commander: { level: 2 },
     forceProfile: {
         bodySize: "LARGE",
         equipment: ["HEAVY"]
@@ -36,9 +44,40 @@ assert.equal(heavy.success, true);
 assert.equal(heavy.input.enemyStrategicSuppression, 100);
 assert.equal(heavy.input.enemyReserveSuppression, 55);
 assert.equal(heavy.input.enemyDeployment.deployment.deploymentRatio, 0.45);
+assert.deepEqual(heavy.input.enemyDeployment.tactics, []);
 assert.equal(
     heavy.input.enemySuppression,
     heavyController.powerResolver.resolveSuppression(45)
+);
+
+const infiltratorController = createController({
+    id: "R_LIGHT",
+    cells: [{ r: 0, c: 0 }, { r: 0, c: 1 }],
+    strategicSuppression: 40,
+    forceId: "FORCE_1",
+    commander: { level: 2 },
+    forceProfile: {
+        bodySize: "SMALL",
+        equipment: ["LIGHT"],
+        terrainAffinity: { FOREST: "HIGH" },
+        marchTraits: ["ROUGH_TERRAIN"]
+    }
+});
+const infiltrator = infiltratorController.createRouteInterceptionInput(
+    "R_LIGHT",
+    { r: 0, c: 1 },
+    10
+);
+assert.equal(infiltrator.success, true);
+assert.equal(infiltrator.input.enemyDeployment.profile.terrainAffinity.FOREST, "HIGH");
+assert.deepEqual(infiltrator.input.enemyDeployment.profile.marchTraits, ["ROUGH_TERRAIN"]);
+assert.equal(
+    infiltrator.input.enemyDeployment.tactics.some(tactic => tactic.id === ENEMY_TACTICS.DISPERSED_INFILTRATION),
+    true
+);
+assert.equal(
+    infiltrator.input.enemyDeployment.tactics.some(tactic => tactic.id === ENEMY_TACTICS.FLANKING),
+    true
 );
 
 const baselineController = createController({
