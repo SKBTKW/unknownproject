@@ -3,16 +3,18 @@ import { ADVISOR_SCENES } from '../../data/advisor_scene_catalog.js';
 import { AdvisorReactionService } from '../../services/advisor_reaction_service.js';
 import { ADVISOR_EVENTS } from './advisor_dialogue_database.js';
 import { AdvisorRuntimeState } from './advisor_runtime_state.js';
-import { createAdvisorPeaceSnapshot, resolveAdvisorPeaceStates } from './advisor_peace_state_resolver.js';
+import { ADVISOR_TOPICS, createAdvisorPeaceSnapshot, resolveAdvisorPeaceStates } from './advisor_peace_state_resolver.js';
 import { AdvisorReactionEvaluator } from './advisor_reaction_evaluator.js';
 import { resolveAdvisorGlobalEventChoiceReaction } from './advisor_global_event_choice_reaction_resolver.js';
 import { ADVISOR_GLOBAL_EVENT_CHOICE_TIMINGS } from './advisor_global_event_choice_reactions.js';
+import { resolveAdvisorSemanticScene } from './advisor_semantic_scene_consumer.js';
 
 export class AdvisorEventBridge {
     constructor(dialogueSystem, gameFactHub = null, { profile = null, enabledProvider = () => true, rng = Math.random } = {}) {
         this.dialogueSystem = dialogueSystem;
         this.profile = profile;
         this.enabledProvider = enabledProvider;
+        this.snapshotMilestonesEnabled = true;
         this.choiceReactionSink = null;
         this.runtime = new AdvisorRuntimeState();
         this.evaluator = new AdvisorReactionEvaluator({ rng });
@@ -88,7 +90,7 @@ export class AdvisorEventBridge {
             if (enabled && peaceActive && this.dialogueSystem.emit(ADVISOR_EVENTS.GAME_START, current)) this.runtime.recordSpeech("game_start", current.turn);
         } else {
             if (enabled && peaceActive) {
-                this.observeMilestones(current);
+                if (this.snapshotMilestonesEnabled) this.observeMilestones(current);
                 if (current.turn !== this.previous.turn) this.evaluateTurn(current);
             }
             if (enabled && current.trialActive && !this.previous.trialActive) this.dialogueSystem.emit(ADVISOR_EVENTS.TRIAL_START, current);
@@ -117,6 +119,33 @@ export class AdvisorEventBridge {
         if (current.zoneCount > this.previous.zoneCount) this.emitImmediate(this.evaluator.evaluateMilestone("ZONE_COMPLETED", this.runtime), current.turn);
         if (current.linkCount > this.previous.linkCount) this.emitImmediate(this.evaluator.evaluateMilestone("LINK_COMPLETED", this.runtime), current.turn);
     }
+
+    setSnapshotMilestonesEnabled(enabled) {
+        this.snapshotMilestonesEnabled = Boolean(enabled);
+    }
+
+    consumeSemanticScene(scene = {}) {
+        const resolved = resolveAdvisorSemanticScene(scene);
+        if (!resolved) return false;
+
+        // Compatibility bookkeeping only. FirstRun owns occurrence and dedupe.
+        // Mark the legacy milestone as consumed even when Advisor speech is disabled,
+        // so the snapshot lane cannot later reinterpret it as FIRST_*.
+        if (resolved.legacyMilestone === "zone") this.runtime.firstZoneReacted = true;
+        if (resolved.legacyMilestone === "link") this.runtime.firstLinkReacted = true;
+
+        if (!this.enabledProvider()) return false;
+
+        const turn = resolved.verse ?? Number(this.previous?.turn || 1);
+        const topic = resolved.topic === "development" ? ADVISOR_TOPICS.DEVELOPMENT : ADVISOR_TOPICS.CONNECTION;
+        return this.emitImmediate({
+            id: resolved.advisorEvent,
+            topic,
+            severity: 1,
+            context: resolved.context
+        }, turn);
+    }
+
     observeMilitaryAction(actionType, turn) {
         if (!this.enabledProvider()) return false;
         return this.emitImmediate(this.evaluator.evaluateMilitaryAction(actionType, this.runtime), turn);
