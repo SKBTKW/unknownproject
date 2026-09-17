@@ -112,6 +112,10 @@ export class TrialResultUIController extends BoardAwareUIController {
         return this.trialController?.getLifecycleReadModel?.() || null;
     }
 
+    getPostTrialProgressionReadModel() {
+        return this.engine?.postTrialProgressionReadService?.read?.() || null;
+    }
+
     settleCurrentTrialResult() {
         if (!this.trialPreviewConfig || !this.trialController?.state) {
             return { success: false, errors: ["TRIAL_NOT_STARTED"] };
