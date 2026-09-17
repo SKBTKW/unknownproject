@@ -542,7 +542,7 @@ export class PostTrialProgressionService {
             step.type = POST_TRIAL_STEP_TYPES.SKILL_PROGRESSION;
             step.payload = normalizeSkillProgressionPayload(step.payload, { legacyAdvisor: true });
         });
-        transition.schemaVersion = Math.max(Number(transition.schemaVersion) || 1, 5);
+        transition.schemaVersion = Math.max(Number(transition.schemaVersion) || 1, 4);
     }
 
     _normalizeRestoredStepOrder() {
@@ -560,7 +560,7 @@ export class PostTrialProgressionService {
                 return aOrder - bOrder || a.originalIndex - b.originalIndex;
             })
             .map(entry => entry.step);
-        transition.schemaVersion = Math.max(Number(transition.schemaVersion) || 1, 5);
+        transition.schemaVersion = Math.max(Number(transition.schemaVersion) || 1, 4);
     }
 
     _reconcileRestoredTransitionStatus() {
