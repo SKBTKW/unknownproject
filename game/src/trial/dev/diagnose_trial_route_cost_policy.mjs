@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { TrialRouteCostPolicy } from "../scenario/trial_route_cost_policy.js";
+import { TRIAL_MARCH_TRAITS, TrialRouteCostPolicy } from "../scenario/trial_route_cost_policy.js";
 import { TrialRouteGenerator } from "../scenario/trial_route_generator.js";
 
 const terrain = id => ({ id, terrainId: id });
@@ -80,6 +80,46 @@ assert.deepEqual(forestAdaptedLargeHeavy.cells, [
     { r: 1, c: 3 }
 ]);
 assert.ok(forestAdaptedLargeHeavy.movementCost < largeHeavy.movementCost);
+
+const mediumStandardForest = policy.resolve({
+    gameState,
+    fromCell: grid[1][0],
+    toCell: grid[1][1],
+    from: { r: 1, c: 0 },
+    to: { r: 1, c: 1 },
+    force: { profile: { bodySize: "MEDIUM", equipment: ["STANDARD"] } }
+});
+const roughTerrainForest = policy.resolve({
+    gameState,
+    fromCell: grid[1][0],
+    toCell: grid[1][1],
+    from: { r: 1, c: 0 },
+    to: { r: 1, c: 1 },
+    force: {
+        profile: {
+            bodySize: "MEDIUM",
+            equipment: ["STANDARD"],
+            marchTraits: [TRIAL_MARCH_TRAITS.ROUGH_TERRAIN]
+        }
+    }
+});
+assert.ok(roughTerrainForest < mediumStandardForest);
+
+const forcedMarchWithoutTradeoff = policy.resolve({
+    gameState,
+    fromCell: grid[1][0],
+    toCell: grid[1][1],
+    from: { r: 1, c: 0 },
+    to: { r: 1, c: 1 },
+    force: {
+        profile: {
+            bodySize: "MEDIUM",
+            equipment: ["STANDARD"],
+            marchTraits: [TRIAL_MARCH_TRAITS.FORCED_MARCH]
+        }
+    }
+});
+assert.equal(forcedMarchWithoutTradeoff, mediumStandardForest);
 
 const noRoad = policy.resolve({
     gameState,
