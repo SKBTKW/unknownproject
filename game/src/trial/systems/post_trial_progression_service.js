@@ -1,4 +1,7 @@
 import { GAME_FACT_TYPES } from "../../core/game_fact.js";
+import { POST_TRIAL_SKILL_OWNER_TYPES } from "./post_trial_skill_progression_router.js";
+
+export { POST_TRIAL_SKILL_OWNER_TYPES };
 
 export const POST_TRIAL_TRANSITION_STATUS = Object.freeze({
     WAITING_FOR_PRESENTATION_CLEANUP: "WAITING_FOR_PRESENTATION_CLEANUP",
@@ -18,11 +21,6 @@ export const POST_TRIAL_STEP_TYPES = Object.freeze({
 });
 
 const LEGACY_ADVISOR_PROGRESSION_STEP_TYPE = "ADVISOR_PROGRESSION";
-
-export const POST_TRIAL_SKILL_OWNER_TYPES = Object.freeze({
-    ADVISOR: "ADVISOR",
-    PLAYER: "PLAYER"
-});
 
 export const POST_TRIAL_STEP_STATUS = Object.freeze({
     PENDING: "PENDING",
@@ -85,7 +83,8 @@ function normalizeSkillProgressionPayload(payload, { legacyAdvisor = false } = {
  * This service owns the ordered post-Trial transition only. Reward, Unlock and
  * Skill content remain external policy/authority concerns. Skill progression is
  * deliberately owner-agnostic: the policy may target either ADVISOR or PLAYER,
- * while the actual skill mutation remains delegated to that owner's authority.
+ * while the actual skill mutation is delegated through skillProgressionRouter to
+ * that owner's authority. Post-Trial never stores owner skills itself.
  * Stage progression remains delegated to TrialStageProgressionService, and
  * physical grid expansion is never allowed before Trial presentation cleanup is
  * complete.
@@ -97,6 +96,7 @@ export class PostTrialProgressionService {
     constructor(engine, {
         gameFactHub = null,
         stageProgressionService = null,
+        skillProgressionRouter = null,
         rewardStepPolicy = null,
         skillProgressionStepPolicy = null,
         advisorProgressionStepPolicy = null,
@@ -113,6 +113,9 @@ export class PostTrialProgressionService {
         this.stageProgressionService = stageProgressionService
             || engine.trialStageProgressionService
             || null;
+        this.skillProgressionRouter = skillProgressionRouter
+            || engine.postTrialSkillProgressionRouter
+            || null;
         this.rewardStepPolicy = rewardStepPolicy || engine.postTrialRewardStepPolicy || null;
         this.skillProgressionStepPolicy = skillProgressionStepPolicy
             || engine.postTrialSkillProgressionStepPolicy
@@ -121,6 +124,10 @@ export class PostTrialProgressionService {
             || null;
         this.unlockStepPolicy = unlockStepPolicy || engine.postTrialUnlockStepPolicy || null;
 
+        if (this.skillProgressionRouter
+            && typeof this.skillProgressionRouter.apply !== "function") {
+            throw new TypeError("POST_TRIAL_SKILL_ROUTER_INVALID");
+        }
         if (this.rewardStepPolicy && typeof this.rewardStepPolicy !== "function") {
             throw new TypeError("POST_TRIAL_REWARD_POLICY_INVALID");
         }
@@ -307,7 +314,8 @@ export class PostTrialProgressionService {
     }
 
     completeSkillProgression({ owner = null, result = null } = {}) {
-        const step = this.engine.state.postTrialTransition?.steps?.find(candidate =>
+        const transition = this.engine.state.postTrialTransition || null;
+        const step = transition?.steps?.find(candidate =>
             candidate?.type === POST_TRIAL_STEP_TYPES.SKILL_PROGRESSION
         ) || null;
         if (!step) {
@@ -320,6 +328,14 @@ export class PostTrialProgressionService {
 
         const expectedOwner = normalizeSkillOwner(step.payload?.owner);
         const suppliedOwner = normalizeSkillOwner(owner);
+        if (owner !== null && owner !== undefined && !suppliedOwner) {
+            return {
+                success: false,
+                reason: "POST_TRIAL_SKILL_OWNER_INVALID",
+                suppliedOwner: owner,
+                transition: this.getTransition()
+            };
+        }
         if (expectedOwner && suppliedOwner && expectedOwner !== suppliedOwner) {
             return {
                 success: false,
@@ -330,10 +346,73 @@ export class PostTrialProgressionService {
             };
         }
 
+        const resolvedOwner = suppliedOwner || expectedOwner || null;
+        if (!resolvedOwner) {
+            return {
+                success: false,
+                reason: "POST_TRIAL_SKILL_OWNER_REQUIRED",
+                transition: this.getTransition()
+            };
+        }
+
+        // Idempotence: once the step is applied, the owner authority must never be
+        // invoked again. _completeExternalStep returns the already-applied snapshot.
+        if (step.status === POST_TRIAL_STEP_STATUS.APPLIED) {
+            return this._completeExternalStep(POST_TRIAL_STEP_TYPES.SKILL_PROGRESSION, {
+                result: {
+                    owner: resolvedOwner,
+                    value: cloneData(result)
+                }
+            });
+        }
+
+        const current = this._getCurrentPendingStepRef();
+        if (current !== step) {
+            return {
+                success: false,
+                reason: "POST_TRIAL_STEP_OUT_OF_ORDER",
+                stepType: POST_TRIAL_STEP_TYPES.SKILL_PROGRESSION,
+                currentStepType: current?.type || null,
+                transition: this.getTransition()
+            };
+        }
+
+        if (!this.skillProgressionRouter
+            || typeof this.skillProgressionRouter.apply !== "function") {
+            return {
+                success: false,
+                reason: "POST_TRIAL_SKILL_ROUTER_REQUIRED",
+                owner: resolvedOwner,
+                transition: this.getTransition()
+            };
+        }
+
+        const delegation = this.skillProgressionRouter.apply({
+            owner: resolvedOwner,
+            payload: cloneData(step.payload),
+            result: cloneData(result),
+            context: {
+                transitionId: transition?.transitionId || null,
+                trialIndex: transition?.trialIndex || null,
+                scenarioId: transition?.scenarioId || null,
+                outcome: transition?.outcome || null
+            }
+        });
+        if (!delegation?.success) {
+            return {
+                success: false,
+                reason: delegation?.reason || "POST_TRIAL_SKILL_DELEGATION_FAILED",
+                owner: resolvedOwner,
+                delegation: cloneData(delegation),
+                transition: this.getTransition()
+            };
+        }
+
         return this._completeExternalStep(POST_TRIAL_STEP_TYPES.SKILL_PROGRESSION, {
             result: {
-                owner: suppliedOwner || expectedOwner || null,
-                value: cloneData(result)
+                owner: resolvedOwner,
+                value: cloneData(result),
+                authorityResult: cloneData(delegation.authorityResult)
             }
         });
     }
