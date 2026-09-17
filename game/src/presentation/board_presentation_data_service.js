@@ -1,6 +1,6 @@
 import { CellViewDataService } from '../services/cell_view_data_service.js';
 import { getBoardPresentationProfile } from './board_presentation_profile.js';
-import { emptyTrialBoardSemanticData } from './trial_board_semantic_data.js';
+import { buildTrialRouteCellIndex, emptyTrialBoardSemanticData } from './trial_board_semantic_data.js';
 import { BoardPresentationSemanticService } from './board_presentation_semantic_service.js';
 
 function sameCell(a, r, c) {
@@ -17,39 +17,6 @@ function createStateGridView(state, gridOverride) {
         writable: false
     });
     return stateView;
-}
-
-function buildRouteIndex(trialSemanticData) {
-    const byCell = new Map();
-    const routes = trialSemanticData.routes || [];
-    const activeRoutes = trialSemanticData.activeRouteId != null
-        ? routes.filter(route => route.routeId === trialSemanticData.activeRouteId)
-        : routes.slice(0, 1);
-    for (const route of activeRoutes) {
-        route.cells.forEach((cell, index) => {
-            const next = route.cells[index + 1] || null;
-            const previous = route.cells[index - 1] || null;
-            const directionTarget = next || previous;
-            let direction = null;
-            if (directionTarget) {
-                const deltaR = next ? directionTarget.r - cell.r : cell.r - directionTarget.r;
-                const deltaC = next ? directionTarget.c - cell.c : cell.c - directionTarget.c;
-                direction = Math.abs(deltaC) >= Math.abs(deltaR)
-                    ? (deltaC >= 0 ? "east" : "west")
-                    : (deltaR >= 0 ? "south" : "north");
-            }
-
-            byCell.set(`${cell.r}:${cell.c}`, Object.freeze({
-                routeId: route.routeId,
-                routeIndex: index,
-                isRouteEntry: index === 0,
-                isRouteEnd: index === route.cells.length - 1,
-                routeDirection: direction,
-                isActiveRoute: Boolean(route.isActive)
-            }));
-        });
-    }
-    return byCell;
 }
 
 function buildMarkedCellIndex(items) {
@@ -103,7 +70,7 @@ export class BoardPresentationDataService {
             enemyState: showTrialOperationalData ? trial.enemyState : null
         });
 
-        const routeIndex = showRoutes ? buildRouteIndex(visibleTrial) : new Map();
+        const routeIndex = showRoutes ? buildTrialRouteCellIndex(visibleTrial) : new Map();
         const interceptionIndex = showInterception
             ? buildMarkedCellIndex(visibleTrial.interceptionCandidates)
             : new Map();
