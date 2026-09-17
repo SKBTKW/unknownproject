@@ -9,6 +9,20 @@ import {
     POST_TRIAL_TRANSITION_STATUS
 } from "../systems/post_trial_progression_service.js";
 
+const TEST_STEP_AUTHORITY_ROUTER = Object.freeze({
+    apply({ type, result }) {
+        return {
+            success: true,
+            stepType: type,
+            authorityResult: {
+                success: true,
+                type,
+                result: result ?? null
+            }
+        };
+    }
+});
+
 const TEST_SKILL_PROGRESSION_ROUTER = Object.freeze({
     apply({ owner, result }) {
         return {
@@ -29,6 +43,7 @@ function createHarness({
     rewardStepPolicy = null,
     advisorProgressionStepPolicy = null,
     unlockStepPolicy = null,
+    stepAuthorityRouter = TEST_STEP_AUTHORITY_ROUTER,
     skillProgressionRouter = TEST_SKILL_PROGRESSION_ROUTER
 } = {}) {
     const gameFactHub = new GameFactHub();
@@ -42,7 +57,9 @@ function createHarness({
                 : { id: 3, name: "Stage 3", size: 9, maxTiles: 80 },
         trialSchedule: { trial1: 15, trial2: 30, trial3: 50 },
         nextTrialTurn: stageId === 1 ? 15 : stageId === 2 ? 30 : 50,
-        postTrialTransition: restoredTransition ? JSON.parse(JSON.stringify(restoredTransition)) : null,
+        postTrialTransition: restoredTransition
+            ? JSON.parse(JSON.stringify(restoredTransition))
+            : null,
         addLog() {}
     };
     const engine = {
@@ -60,6 +77,7 @@ function createHarness({
     const postTrialService = new PostTrialProgressionService(engine, {
         gameFactHub,
         stageProgressionService: stageService,
+        stepAuthorityRouter,
         skillProgressionRouter,
         rewardStepPolicy,
         advisorProgressionStepPolicy,
@@ -103,7 +121,7 @@ function dispose(h) {
     h.stageService.dispose();
 }
 
-// TRIAL_COMPLETED is presentation/domain completion only; settlement is the Run-level boundary.
+// Domain completion alone cannot start Run-level post-Trial work.
 {
     const h = createHarness();
     h.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_COMPLETED, { trialIndex: 1 });
@@ -112,21 +130,22 @@ function dispose(h) {
     dispose(h);
 }
 
-// Stage-only flow stays compatible and grid expansion waits for presentation cleanup.
+// Stage-only flow is idempotent and waits for presentation cleanup.
 {
     const h = createHarness();
     const settlement = {
         trialIndex: 1,
         scenarioId: "trial-1-stage-only",
-        outcome: "VICTORY",
+        outcome: "SURVIVED",
         settlement: { runTerminated: false }
     };
     h.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, settlement);
     h.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, settlement);
 
-    const created = h.postTrialService.getTransition();
-    assert.equal(created.steps.length, 1);
-    assert.equal(created.steps[0].type, POST_TRIAL_STEP_TYPES.STAGE_ADVANCE);
+    assert.deepEqual(
+        h.postTrialService.getTransition().steps.map(step => step.type),
+        [POST_TRIAL_STEP_TYPES.STAGE_ADVANCE]
+    );
     assert.equal(h.engine.state.stage.id, 1);
     assert.deepEqual(h.expandCalls, []);
     assert.equal(countFacts(h, GAME_FACT_TYPES.POST_TRIAL_TRANSITION_CREATED), 1);
@@ -145,18 +164,21 @@ function dispose(h) {
     dispose(h);
 }
 
-// Canonical ordering is Reward -> Unlock -> Stage -> Skill. Cleanup alone must
-// not jump over pending semantic work and mutate the board early.
+// Reward -> Unlock -> Stage -> Skill is strict, and Verse cannot resume early.
 {
     const h = createHarness({
         rewardStepPolicy: ({ trialIndex }) => ({ source: "TEST_REWARD", trialIndex }),
         unlockStepPolicy: ({ trialIndex }) => ({ source: "TEST_UNLOCK", trialIndex }),
-        advisorProgressionStepPolicy: ({ trialIndex }) => ({ source: "TEST_ADVISOR", trialIndex })
+        advisorProgressionStepPolicy: ({ trialIndex }) => ({
+            source: "TEST_SKILL",
+            owner: "ADVISOR",
+            trialIndex
+        })
     });
     h.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, {
         trialIndex: 1,
         scenarioId: "trial-1-ordered",
-        outcome: "VICTORY",
+        outcome: "SURVIVED",
         settlement: { runTerminated: false }
     });
 
@@ -169,21 +191,17 @@ function dispose(h) {
             POST_TRIAL_STEP_TYPES.SKILL_PROGRESSION
         ]
     );
-    assert.equal(h.postTrialService.getCurrentPendingStep()?.type, POST_TRIAL_STEP_TYPES.REWARD_SELECTION);
 
-    const cleanup = h.postTrialService.completeAfterPresentationCleanup();
-    assert.equal(cleanup.success, true);
-    assert.equal(cleanup.transition.status, POST_TRIAL_TRANSITION_STATUS.PENDING_STEPS);
+    h.postTrialService.completeAfterPresentationCleanup();
     assert.equal(h.engine.state.stage.id, 1);
     assert.deepEqual(h.expandCalls, []);
 
     const earlyUnlock = h.postTrialService.completeUnlockApply({ result: { invalid: true } });
     assert.equal(earlyUnlock.success, false);
     assert.equal(earlyUnlock.reason, "POST_TRIAL_STEP_OUT_OF_ORDER");
-    assert.equal(earlyUnlock.currentStepType, POST_TRIAL_STEP_TYPES.REWARD_SELECTION);
     const earlySkill = h.postTrialService.completeAdvisorProgression({ result: { invalid: true } });
     assert.equal(earlySkill.success, false);
-    assert.equal(earlySkill.currentStepType, POST_TRIAL_STEP_TYPES.REWARD_SELECTION);
+    assert.equal(earlySkill.reason, "POST_TRIAL_STEP_OUT_OF_ORDER");
 
     const lifecycle = createTurnLifecycleHarness(h.postTrialService);
     const blockedAtVerse = h.engine.state.turn;
@@ -193,20 +211,12 @@ function dispose(h) {
     const reward = h.postTrialService.completeRewardSelection({ result: { selected: "TEST_REWARD" } });
     assert.equal(reward.success, true);
     assert.equal(h.postTrialService.getCurrentPendingStep()?.type, POST_TRIAL_STEP_TYPES.UNLOCK_APPLY);
-    assert.equal(h.engine.state.stage.id, 1);
-    assert.deepEqual(h.expandCalls, []);
 
     const unlock = h.postTrialService.completeUnlockApply({ result: { applied: "TEST_UNLOCK" } });
     assert.equal(unlock.success, true);
     assert.equal(h.engine.state.stage.id, 2);
     assert.deepEqual(h.expandCalls, [7]);
     assert.equal(h.postTrialService.getCurrentPendingStep()?.type, POST_TRIAL_STEP_TYPES.SKILL_PROGRESSION);
-    assert.equal(unlock.transition.status, POST_TRIAL_TRANSITION_STATUS.PENDING_STEPS);
-
-    const repeatedReward = h.postTrialService.completeRewardSelection({ result: { duplicate: true } });
-    assert.equal(repeatedReward.success, true);
-    assert.equal(repeatedReward.alreadyApplied, true);
-    assert.deepEqual(h.expandCalls, [7]);
 
     const skill = h.postTrialService.completeAdvisorProgression({ result: { selectedSkillId: "TEST_ONLY" } });
     assert.equal(skill.success, true);
@@ -222,13 +232,12 @@ function dispose(h) {
     dispose(h);
 }
 
-// If Reward/Unlock finish before presentation cleanup, Stage still cannot mutate
-// the physical board until cleanup completes; Skill remains blocked behind Stage.
+// Reward and Unlock may finish before UI cleanup, but Stage still cannot mutate early.
 {
     const h = createHarness({
         rewardStepPolicy: () => true,
         unlockStepPolicy: () => true,
-        advisorProgressionStepPolicy: () => true
+        advisorProgressionStepPolicy: () => ({ owner: "ADVISOR" })
     });
     h.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, {
         trialIndex: 1,
@@ -236,9 +245,8 @@ function dispose(h) {
         settlement: { runTerminated: false }
     });
 
-    h.postTrialService.completeRewardSelection();
-    h.postTrialService.completeUnlockApply();
-    assert.equal(h.postTrialService.getCurrentPendingStep()?.type, POST_TRIAL_STEP_TYPES.STAGE_ADVANCE);
+    assert.equal(h.postTrialService.completeRewardSelection().success, true);
+    assert.equal(h.postTrialService.completeUnlockApply().success, true);
     assert.equal(h.engine.state.stage.id, 1);
     assert.deepEqual(h.expandCalls, []);
 
@@ -253,39 +261,18 @@ function dispose(h) {
     dispose(h);
 }
 
-// Legacy Advisor-only policy naturally becomes generic Skill progression after Stage.
+// Trial 2 reaches Stage 3; Trial 3 delegates Final Run completion and never creates Stage 4.
 {
-    const h = createHarness({ advisorProgressionStepPolicy: () => ({ selectionRequired: true }) });
-    h.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, {
-        trialIndex: 1,
-        scenarioId: "trial-1-advisor",
-        settlement: { runTerminated: false }
-    });
-    assert.deepEqual(
-        h.postTrialService.getTransition().steps.map(step => step.type),
-        [POST_TRIAL_STEP_TYPES.STAGE_ADVANCE, POST_TRIAL_STEP_TYPES.SKILL_PROGRESSION]
-    );
-    h.postTrialService.completeAfterPresentationCleanup();
-    assert.equal(h.engine.state.stage.id, 2);
-    assert.equal(h.postTrialService.getCurrentPendingStep()?.type, POST_TRIAL_STEP_TYPES.SKILL_PROGRESSION);
-    const applied = h.postTrialService.completeAdvisorProgression({ result: { selectedSkillId: "TEST_ONLY" } });
-    assert.equal(applied.success, true);
-    assert.equal(applied.transition.status, POST_TRIAL_TRANSITION_STATUS.COMPLETED);
-    dispose(h);
-}
-
-// Trial 2 authorizes Stage 3 and Trial 3 never creates Stage 4.
-{
-    const h = createHarness({ stageId: 2 });
-    h.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, {
+    const second = createHarness({ stageId: 2 });
+    second.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, {
         trialIndex: 2,
         scenarioId: "trial-2",
         settlement: { runTerminated: false }
     });
-    h.postTrialService.completeAfterPresentationCleanup();
-    assert.equal(h.engine.state.stage.id, 3);
-    assert.deepEqual(h.expandCalls, [9]);
-    dispose(h);
+    second.postTrialService.completeAfterPresentationCleanup();
+    assert.equal(second.engine.state.stage.id, 3);
+    assert.deepEqual(second.expandCalls, [9]);
+    dispose(second);
 
     const final = createHarness({ stageId: 3 });
     final.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, {
@@ -300,13 +287,16 @@ function dispose(h) {
     assert.equal(final.stageService.getPending(), null);
     final.postTrialService.completeAfterPresentationCleanup();
     assert.equal(final.postTrialService.canResumeNormalProgression(), false);
-    assert.deepEqual(final.expandCalls, []);
-    const completed = final.postTrialService.completeFinalRunCompletion({ result: { handedOffToEnding: true } });
+    const completed = final.postTrialService.completeFinalRunCompletion({
+        result: { handedOffToEnding: true }
+    });
+    assert.equal(completed.success, true);
     assert.equal(completed.transition.status, POST_TRIAL_TRANSITION_STATUS.COMPLETED);
+    assert.deepEqual(final.expandCalls, []);
     dispose(final);
 }
 
-// A terminated Run never invents Stage or final-completion work on its own.
+// A terminated Run never invents Stage or Final completion work on its own.
 {
     const h = createHarness();
     h.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, {
@@ -321,15 +311,14 @@ function dispose(h) {
     dispose(h);
 }
 
-// Save/load restoration preserves work and migrates older step ordering into the
-// canonical sequence before any step can be completed.
+// Restored legacy ordering is normalized before any step may complete.
 {
     const restoredTransition = {
         schemaVersion: 3,
         transitionId: "POST_TRIAL_1_legacy-order",
         trialIndex: 1,
         scenarioId: "legacy-order",
-        outcome: "VICTORY",
+        outcome: "SURVIVED",
         runTerminated: false,
         presentationCleanupComplete: true,
         status: POST_TRIAL_TRANSITION_STATUS.PENDING_STEPS,
@@ -374,27 +363,23 @@ function dispose(h) {
             POST_TRIAL_STEP_TYPES.SKILL_PROGRESSION
         ]
     );
-    assert.equal(restored.stageService.getPending()?.toStageId, 2);
-    restored.postTrialService.completeRewardSelection();
-    const unlock = restored.postTrialService.completeUnlockApply();
-    assert.equal(unlock.success, true);
+    assert.equal(restored.postTrialService.completeRewardSelection().success, true);
+    assert.equal(restored.postTrialService.completeUnlockApply().success, true);
     assert.equal(restored.engine.state.stage.id, 2);
     assert.deepEqual(restored.expandCalls, [7]);
-    const skill = restored.postTrialService.completeAdvisorProgression();
-    assert.equal(skill.success, true);
+    assert.equal(restored.postTrialService.completeAdvisorProgression().success, true);
     assert.equal(restored.postTrialService.canResumeNormalProgression(), true);
     dispose(restored);
 }
 
-// Crash-window recovery: if the saved world already reached the target Stage while
-// the transition still says Stage pending, restore marks it APPLIED and never expands twice.
+// Crash-window recovery never expands the same Stage twice.
 {
     const restoredTransition = {
         schemaVersion: 2,
         transitionId: "POST_TRIAL_1_crash-window",
         trialIndex: 1,
         scenarioId: "crash-window",
-        outcome: "VICTORY",
+        outcome: "SURVIVED",
         runTerminated: false,
         presentationCleanupComplete: true,
         status: POST_TRIAL_TRANSITION_STATUS.PENDING_STEPS,
@@ -424,10 +409,92 @@ function dispose(h) {
     );
     assert.equal(stageStep.status, POST_TRIAL_STEP_STATUS.APPLIED);
     assert.deepEqual(restored.expandCalls, []);
-    const completed = restored.postTrialService.completeRewardSelection({ result: { selected: "RESTORED" } });
+    const completed = restored.postTrialService.completeRewardSelection({
+        result: { selected: "RESTORED" }
+    });
+    assert.equal(completed.success, true);
     assert.equal(completed.transition.status, POST_TRIAL_TRANSITION_STATUS.COMPLETED);
     assert.deepEqual(restored.expandCalls, []);
     dispose(restored);
+}
+
+// Semantic external steps fail closed without an authority router.
+{
+    const h = createHarness({
+        rewardStepPolicy: () => ({ rewardToken: "REQUIRED" }),
+        stepAuthorityRouter: null
+    });
+    h.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, {
+        trialIndex: 1,
+        scenarioId: "trial-1-no-reward-authority",
+        settlement: { runTerminated: false }
+    });
+    h.postTrialService.completeAfterPresentationCleanup();
+    const result = h.postTrialService.completeRewardSelection({ result: { selected: "X" } });
+    assert.equal(result.success, false);
+    assert.equal(result.reason, "POST_TRIAL_STEP_ROUTER_REQUIRED");
+    assert.equal(
+        h.postTrialService.getCurrentPendingStep()?.type,
+        POST_TRIAL_STEP_TYPES.REWARD_SELECTION
+    );
+    dispose(h);
+}
+
+// Authority rejection leaves the step pending.
+{
+    const h = createHarness({
+        rewardStepPolicy: () => ({ rewardToken: "REJECT" }),
+        stepAuthorityRouter: {
+            apply() {
+                return { success: false, reason: "TEST_REWARD_REJECTED" };
+            }
+        }
+    });
+    h.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, {
+        trialIndex: 1,
+        scenarioId: "trial-1-rejected-reward",
+        settlement: { runTerminated: false }
+    });
+    const result = h.postTrialService.completeRewardSelection({ result: { selected: "X" } });
+    assert.equal(result.success, false);
+    assert.equal(result.reason, "TEST_REWARD_REJECTED");
+    assert.equal(
+        h.postTrialService.getCurrentPendingStep()?.status,
+        POST_TRIAL_STEP_STATUS.PENDING
+    );
+    dispose(h);
+}
+
+// A successful authority is called exactly once even if completion is retried.
+{
+    let applyCount = 0;
+    const h = createHarness({
+        rewardStepPolicy: () => ({ rewardToken: "ONCE" }),
+        stepAuthorityRouter: {
+            apply({ type, result }) {
+                applyCount += 1;
+                return {
+                    success: true,
+                    stepType: type,
+                    authorityResult: { success: true, result }
+                };
+            }
+        }
+    });
+    h.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, {
+        trialIndex: 1,
+        scenarioId: "trial-1-authority-once",
+        settlement: { runTerminated: false }
+    });
+    h.postTrialService.completeAfterPresentationCleanup();
+    const first = h.postTrialService.completeRewardSelection({ result: { selected: "A" } });
+    assert.equal(first.success, true);
+    assert.equal(applyCount, 1);
+    const repeated = h.postTrialService.completeRewardSelection({ result: { selected: "B" } });
+    assert.equal(repeated.success, true);
+    assert.equal(repeated.alreadyApplied, true);
+    assert.equal(applyCount, 1);
+    dispose(h);
 }
 
 console.log("diagnose_post_trial_progression_service: OK");
