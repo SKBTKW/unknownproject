@@ -28,7 +28,8 @@ function findHq(grid) {
  * Trial正解データとして、各侵入口からHQまでの最小進軍コスト経路を生成する。
  *
  * 経路探索アルゴリズムだけを担当し、地形コスト値・街道効果・敵特性は costResolver に委譲する。
- * Warning / Intel は参照しない。
+ * ingress配列とarmyStructure.forcesは同じ順序で1:1対応し、部隊ごとの体格・装備・適性を
+ * costResolverへ渡す。Warning / Intel は参照しない。
  */
 export class TrialRouteGenerator {
     constructor({
@@ -39,27 +40,30 @@ export class TrialRouteGenerator {
         this.costResolver = costResolver;
     }
 
-    generate({ gameState, ingresses = [], trialIndex = null, threat = null } = {}) {
+    generate({ gameState, ingresses = [], trialIndex = null, threat = null, armyStructure = null } = {}) {
         const grid = gameState?.grid;
         if (!Array.isArray(grid) || grid.length === 0) return [];
         if (typeof this.costResolver !== "function") return [];
 
         const hq = findHq(grid);
         if (!hq) return [];
+        const forces = Array.isArray(armyStructure?.forces) ? armyStructure.forces : [];
+        if (forces.length > 0 && forces.length !== ingresses.length) return [];
 
         return ingresses
-            .map(ingress => this.#buildRoute({
+            .map((ingress, index) => this.#buildRoute({
                 gameState,
                 grid,
                 ingress,
                 hq,
                 trialIndex,
-                threat
+                threat,
+                force: forces[index] || null
             }))
             .filter(Boolean);
     }
 
-    #buildRoute({ gameState, grid, ingress, hq, trialIndex, threat }) {
+    #buildRoute({ gameState, grid, ingress, hq, trialIndex, threat, force }) {
         if (!Number.isInteger(ingress?.r) || !Number.isInteger(ingress?.c)) return null;
         if (!grid?.[ingress.r]?.[ingress.c]) return null;
 
@@ -98,7 +102,8 @@ export class TrialRouteGenerator {
                     to: { r: nr, c: nc },
                     ingress,
                     trialIndex,
-                    threat
+                    threat,
+                    force
                 }));
                 if (!Number.isFinite(stepCost) || stepCost < 0) continue;
 
@@ -130,6 +135,7 @@ export class TrialRouteGenerator {
             id: `ROUTE_${ingress.id || `${ingress.r}_${ingress.c}`}`,
             ingressId: ingress.id || null,
             ingress: { r: ingress.r, c: ingress.c, edges: Array.isArray(ingress.edges) ? [...ingress.edges] : [] },
+            forceId: force?.id || null,
             cells,
             movementCost: dist.get(targetKey)
         };
