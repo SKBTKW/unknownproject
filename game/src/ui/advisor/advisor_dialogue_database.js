@@ -92,5 +92,7 @@ export const ADVISOR_DIALOGUES = Object.freeze([
 ]);
 
 export function findAdvisorDialogue(event, profile, database = ADVISOR_DIALOGUES) {
+    const characterEntry = profile?.adviceDialogue?.[event];
+    if (characterEntry) return { event, ...characterEntry };
     return database.find(entry => entry.event === event && (!entry.personality || entry.personality === profile?.personality)) || null;
 }
