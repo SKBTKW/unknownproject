@@ -10,6 +10,14 @@ function positive(value, fallback = 1) {
     return Number.isFinite(num) && num > 0 ? num : fallback;
 }
 
+export const TRIAL_MARCH_TRAITS = Object.freeze({
+    ROUGH_TERRAIN: "ROUGH_TERRAIN",
+    LONG_DISTANCE: "LONG_DISTANCE",
+    FORCED_MARCH: "FORCED_MARCH",
+    NIGHT_MARCH: "NIGHT_MARCH",
+    LOGISTICS_DEPENDENT: "LOGISTICS_DEPENDENT"
+});
+
 export const DEFAULT_TRIAL_ROUTE_COST_POLICY = Object.freeze({
     terrainCost: Object.freeze({
         GL1_PLAINS: 1,
@@ -40,6 +48,7 @@ export const DEFAULT_TRIAL_ROUTE_COST_POLICY = Object.freeze({
         NORMAL: 1,
         LOW: 1.35
     }),
+    roughTerrainMarchMultiplier: 0.8,
     roadMultiplier: 0.6,
     minimumStepCost: 0.25
 });
@@ -67,12 +76,27 @@ function multiplier(table, key, fallback = 1) {
     return positive(value, fallback);
 }
 
+function marchTraits(profile) {
+    const values = Array.isArray(profile?.marchTraits)
+        ? profile.marchTraits
+        : (profile?.marchTrait ? [profile.marchTrait] : []);
+    return new Set(values.map(value => String(value || "").toUpperCase()).filter(Boolean));
+}
+
+function isRoughTerrain(interaction) {
+    return ["FOREST", "DEEP_FOREST", "WETLAND", "HILL", "MOUNTAIN"]
+        .includes(interaction?.terrainFamily);
+}
+
 /**
  * Production route-cost policy for demi-human forces.
  *
  * Body/equipment are baseline tendencies, not absolute species laws.
  * terrainAffinity may counteract them, allowing unusual demi-human armies to
  * move naturally through terrain that would hinder a conventional force.
+ * ROUGH_TERRAIN is the only march trait with a runtime route-cost meaning for
+ * now. LONG_DISTANCE / FORCED_MARCH / NIGHT_MARCH / LOGISTICS_DEPENDENT remain
+ * data-only until their costs and trade-offs have dedicated systems.
  * Roads are intentionally injected through roadResolver because GameState does
  * not yet own a canonical road representation.
  */
@@ -130,6 +154,10 @@ export class TrialRouteCostPolicy {
         const affinityMultiplier = typeof affinity === "number"
             ? affinity
             : multiplier(this.policy.affinityMultiplier, affinity, 1);
+        const traits = marchTraits(profile);
+        const marchTraitMultiplier = traits.has(TRIAL_MARCH_TRAITS.ROUGH_TERRAIN) && isRoughTerrain(interaction)
+            ? positive(this.policy.roughTerrainMarchMultiplier, 1)
+            : 1;
         const usesRoad = typeof this.roadResolver === "function"
             ? Boolean(this.roadResolver({ gameState, fromCell, toCell, from, to, force }))
             : false;
@@ -137,7 +165,7 @@ export class TrialRouteCostPolicy {
 
         return Math.max(
             positive(this.policy.minimumStepCost, 0.25),
-            baseCost * bodyMultiplier * equipmentMultiplier * affinityMultiplier * roadMultiplier
+            baseCost * bodyMultiplier * equipmentMultiplier * affinityMultiplier * marchTraitMultiplier * roadMultiplier
         );
     }
 }
