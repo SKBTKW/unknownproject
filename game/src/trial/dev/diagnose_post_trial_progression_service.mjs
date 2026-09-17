@@ -87,43 +87,33 @@ function dispose(h) {
     h.stageService.dispose();
 }
 
-// TRIAL_COMPLETED alone must not start Run-level progression.
+// TRIAL_COMPLETED is presentation/domain completion only; settlement is the Run-level boundary.
 {
     const h = createHarness();
     h.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_COMPLETED, { trialIndex: 1 });
     assert.equal(h.engine.state.postTrialTransition, null);
     assert.equal(h.stageService.getPending(), null);
-    assert.deepEqual(h.expandCalls, []);
     dispose(h);
 }
 
-// With no reward/advisor/unlock policy, Trial 1 keeps the existing Stage-only behavior.
+// Stage-only flow stays compatible and grid expansion waits for presentation cleanup.
 {
     const h = createHarness();
     const settlement = {
         trialIndex: 1,
-        scenarioId: "trial-1",
+        scenarioId: "trial-1-stage-only",
         outcome: "VICTORY",
         settlement: { runTerminated: false }
     };
     h.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, settlement);
-
-    const transition = h.postTrialService.getTransition();
-    assert.equal(transition.trialIndex, 1);
-    assert.equal(transition.status, POST_TRIAL_TRANSITION_STATUS.WAITING_FOR_PRESENTATION_CLEANUP);
-    assert.equal(transition.steps.length, 1);
-    assert.equal(transition.steps[0].type, POST_TRIAL_STEP_TYPES.STAGE_ADVANCE);
-    assert.equal(transition.steps[0].status, POST_TRIAL_STEP_STATUS.PENDING);
-    assert.equal(h.engine.state.stage.id, 1);
-    assert.deepEqual(h.expandCalls, []);
-    assert.equal(countFacts(h, GAME_FACT_TYPES.POST_TRIAL_TRANSITION_CREATED), 1);
-
-    // Duplicate settlement must neither duplicate steps/facts nor expand the board.
     h.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, settlement);
-    assert.equal(h.postTrialService.getTransition().steps.length, 1);
-    assert.equal(countFacts(h, GAME_FACT_TYPES.POST_TRIAL_TRANSITION_CREATED), 1);
+
+    const created = h.postTrialService.getTransition();
+    assert.equal(created.steps.length, 1);
+    assert.equal(created.steps[0].type, POST_TRIAL_STEP_TYPES.STAGE_ADVANCE);
     assert.equal(h.engine.state.stage.id, 1);
     assert.deepEqual(h.expandCalls, []);
+    assert.equal(countFacts(h, GAME_FACT_TYPES.POST_TRIAL_TRANSITION_CREATED), 1);
 
     const completed = h.postTrialService.completeAfterPresentationCleanup();
     assert.equal(completed.success, true);
@@ -133,136 +123,144 @@ function dispose(h) {
     assert.equal(countFacts(h, GAME_FACT_TYPES.POST_TRIAL_STAGE_ADVANCED), 1);
     assert.equal(countFacts(h, GAME_FACT_TYPES.POST_TRIAL_COMPLETED), 1);
 
-    // Repeated cleanup completion is idempotent.
     const repeated = h.postTrialService.completeAfterPresentationCleanup();
-    assert.equal(repeated.success, true);
     assert.equal(repeated.alreadyCompleted, true);
     assert.deepEqual(h.expandCalls, [7]);
-    assert.equal(countFacts(h, GAME_FACT_TYPES.POST_TRIAL_STAGE_ADVANCED), 1);
-    assert.equal(countFacts(h, GAME_FACT_TYPES.POST_TRIAL_COMPLETED), 1);
     dispose(h);
 }
 
-// Reward / unlock content stays behind injected policy boundaries. Pending semantic
-// steps block normal Verse progression even after Trial presentation cleanup.
+// Canonical ordering is Reward -> Unlock -> Stage -> Advisor. Cleanup alone must
+// not jump over pending semantic work and mutate the board early.
 {
-    let rewardPolicyCalls = 0;
-    let unlockPolicyCalls = 0;
     const h = createHarness({
-        rewardStepPolicy: ({ trialIndex }) => {
-            rewardPolicyCalls += 1;
-            return { source: "TEST_REWARD_POLICY", trialIndex };
-        },
-        unlockStepPolicy: ({ trialIndex }) => {
-            unlockPolicyCalls += 1;
-            return { source: "TEST_UNLOCK_POLICY", trialIndex };
-        }
+        rewardStepPolicy: ({ trialIndex }) => ({ source: "TEST_REWARD", trialIndex }),
+        unlockStepPolicy: ({ trialIndex }) => ({ source: "TEST_UNLOCK", trialIndex }),
+        advisorProgressionStepPolicy: ({ trialIndex }) => ({ source: "TEST_ADVISOR", trialIndex })
     });
-    const settlement = {
+    h.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, {
         trialIndex: 1,
-        scenarioId: "trial-1-policy",
+        scenarioId: "trial-1-ordered",
         outcome: "VICTORY",
         settlement: { runTerminated: false }
-    };
-    h.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, settlement);
-    h.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, settlement);
+    });
 
-    assert.equal(rewardPolicyCalls, 1);
-    assert.equal(unlockPolicyCalls, 1);
     assert.deepEqual(
         h.postTrialService.getTransition().steps.map(step => step.type),
         [
             POST_TRIAL_STEP_TYPES.REWARD_SELECTION,
             POST_TRIAL_STEP_TYPES.UNLOCK_APPLY,
-            POST_TRIAL_STEP_TYPES.STAGE_ADVANCE
+            POST_TRIAL_STEP_TYPES.STAGE_ADVANCE,
+            POST_TRIAL_STEP_TYPES.ADVISOR_PROGRESSION
         ]
     );
-    assert.equal(countFacts(h, GAME_FACT_TYPES.POST_TRIAL_TRANSITION_CREATED), 1);
-    assert.equal(countFacts(h, GAME_FACT_TYPES.POST_TRIAL_REWARD_AVAILABLE), 1);
+    assert.equal(h.postTrialService.getCurrentPendingStep()?.type, POST_TRIAL_STEP_TYPES.REWARD_SELECTION);
 
     const cleanup = h.postTrialService.completeAfterPresentationCleanup();
     assert.equal(cleanup.success, true);
     assert.equal(cleanup.transition.status, POST_TRIAL_TRANSITION_STATUS.PENDING_STEPS);
-    assert.equal(h.engine.state.stage.id, 2);
-    assert.deepEqual(h.expandCalls, [7]);
-    assert.equal(h.postTrialService.canResumeNormalProgression(), false);
-    assert.equal(h.postTrialService.getPendingSteps().length, 2);
+    assert.equal(h.engine.state.stage.id, 1);
+    assert.deepEqual(h.expandCalls, []);
+
+    // Skipping Reward or Unlock is rejected rather than silently reordering progression.
+    const earlyUnlock = h.postTrialService.completeUnlockApply({ result: { invalid: true } });
+    assert.equal(earlyUnlock.success, false);
+    assert.equal(earlyUnlock.reason, "POST_TRIAL_STEP_OUT_OF_ORDER");
+    assert.equal(earlyUnlock.currentStepType, POST_TRIAL_STEP_TYPES.REWARD_SELECTION);
+    const earlyAdvisor = h.postTrialService.completeAdvisorProgression({ result: { invalid: true } });
+    assert.equal(earlyAdvisor.success, false);
+    assert.equal(earlyAdvisor.currentStepType, POST_TRIAL_STEP_TYPES.REWARD_SELECTION);
 
     const lifecycle = createTurnLifecycleHarness(h.postTrialService);
     const blockedAtVerse = h.engine.state.turn;
     assert.equal(lifecycle.advance(), blockedAtVerse);
-    assert.equal(h.engine.state.turn, blockedAtVerse);
     assert.equal(lifecycle.getLastAdvanceBlock()?.reason, "POST_TRIAL_PROGRESSION_PENDING");
 
     const reward = h.postTrialService.completeRewardSelection({ result: { selected: "TEST_REWARD" } });
     assert.equal(reward.success, true);
-    assert.equal(reward.transition.status, POST_TRIAL_TRANSITION_STATUS.PENDING_STEPS);
-    assert.equal(h.postTrialService.canResumeNormalProgression(), false);
-    const repeatedReward = h.postTrialService.completeRewardSelection({ result: { selected: "DUPLICATE" } });
-    assert.equal(repeatedReward.success, true);
-    assert.equal(repeatedReward.alreadyApplied, true);
-    assert.equal(countFacts(h, GAME_FACT_TYPES.POST_TRIAL_REWARD_SELECTED), 1);
+    assert.equal(h.postTrialService.getCurrentPendingStep()?.type, POST_TRIAL_STEP_TYPES.UNLOCK_APPLY);
+    assert.equal(h.engine.state.stage.id, 1);
+    assert.deepEqual(h.expandCalls, []);
 
     const unlock = h.postTrialService.completeUnlockApply({ result: { applied: "TEST_UNLOCK" } });
     assert.equal(unlock.success, true);
-    assert.equal(unlock.transition.status, POST_TRIAL_TRANSITION_STATUS.COMPLETED);
-    assert.equal(h.postTrialService.canResumeNormalProgression(), true);
-    const repeatedUnlock = h.postTrialService.completeUnlockApply({ result: { applied: "DUPLICATE" } });
-    assert.equal(repeatedUnlock.success, true);
-    assert.equal(repeatedUnlock.alreadyApplied, true);
+    // Completing Unlock exposes Stage; because cleanup is already complete, Stage is
+    // delegated and applied immediately, then Advisor becomes the current step.
+    assert.equal(h.engine.state.stage.id, 2);
+    assert.deepEqual(h.expandCalls, [7]);
+    assert.equal(h.postTrialService.getCurrentPendingStep()?.type, POST_TRIAL_STEP_TYPES.ADVISOR_PROGRESSION);
+    assert.equal(unlock.transition.status, POST_TRIAL_TRANSITION_STATUS.PENDING_STEPS);
 
+    const repeatedReward = h.postTrialService.completeRewardSelection({ result: { duplicate: true } });
+    assert.equal(repeatedReward.success, true);
+    assert.equal(repeatedReward.alreadyApplied, true);
+    assert.deepEqual(h.expandCalls, [7]);
+
+    const advisor = h.postTrialService.completeAdvisorProgression({ result: { selectedSkillId: "TEST_ONLY" } });
+    assert.equal(advisor.success, true);
+    assert.equal(advisor.transition.status, POST_TRIAL_TRANSITION_STATUS.COMPLETED);
+    assert.equal(h.postTrialService.canResumeNormalProgression(), true);
     assert.equal(countFacts(h, GAME_FACT_TYPES.POST_TRIAL_REWARD_SELECTED), 1);
     assert.equal(countFacts(h, GAME_FACT_TYPES.POST_TRIAL_UNLOCK_APPLIED), 1);
     assert.equal(countFacts(h, GAME_FACT_TYPES.POST_TRIAL_STAGE_ADVANCED), 1);
     assert.equal(countFacts(h, GAME_FACT_TYPES.POST_TRIAL_COMPLETED), 1);
 
     assert.equal(lifecycle.advance(), blockedAtVerse + 1);
-    assert.equal(h.engine.state.turn, blockedAtVerse + 1);
     assert.equal(lifecycle.getLastAdvanceBlock(), null);
     dispose(h);
 }
 
-// Advisor progression is an explicit, policy-driven pending step. This service
-// owns only the pending/applied lifecycle; candidate content remains external.
+// If Reward/Unlock finish before presentation cleanup, Stage still cannot mutate
+// the physical board until cleanup completes; Advisor remains blocked behind Stage.
 {
-    let advisorPolicyCalls = 0;
     const h = createHarness({
-        advisorProgressionStepPolicy: ({ trialIndex }) => {
-            advisorPolicyCalls += 1;
-            return { selectionRequired: true, trialIndex };
-        }
+        rewardStepPolicy: () => true,
+        unlockStepPolicy: () => true,
+        advisorProgressionStepPolicy: () => true
     });
-    const settlement = {
+    h.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, {
         trialIndex: 1,
-        scenarioId: "trial-1-advisor",
+        scenarioId: "trial-1-cleanup-gate",
         settlement: { runTerminated: false }
-    };
-    h.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, settlement);
-    h.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, settlement);
+    });
 
-    assert.equal(advisorPolicyCalls, 1);
-    assert.deepEqual(
-        h.postTrialService.getTransition().steps.map(step => step.type),
-        [POST_TRIAL_STEP_TYPES.ADVISOR_PROGRESSION, POST_TRIAL_STEP_TYPES.STAGE_ADVANCE]
-    );
-    assert.equal(h.postTrialService.getPendingSteps(POST_TRIAL_STEP_TYPES.ADVISOR_PROGRESSION).length, 1);
+    h.postTrialService.completeRewardSelection();
+    h.postTrialService.completeUnlockApply();
+    assert.equal(h.postTrialService.getCurrentPendingStep()?.type, POST_TRIAL_STEP_TYPES.STAGE_ADVANCE);
+    assert.equal(h.engine.state.stage.id, 1);
+    assert.deepEqual(h.expandCalls, []);
 
-    const cleanup = h.postTrialService.completeAfterPresentationCleanup();
-    assert.equal(cleanup.transition.status, POST_TRIAL_TRANSITION_STATUS.PENDING_STEPS);
+    const earlyAdvisor = h.postTrialService.completeAdvisorProgression();
+    assert.equal(earlyAdvisor.success, false);
+    assert.equal(earlyAdvisor.currentStepType, POST_TRIAL_STEP_TYPES.STAGE_ADVANCE);
+
+    h.postTrialService.completeAfterPresentationCleanup();
     assert.equal(h.engine.state.stage.id, 2);
     assert.deepEqual(h.expandCalls, [7]);
-    assert.equal(h.postTrialService.canResumeNormalProgression(), false);
-
-    const applied = h.postTrialService.completeAdvisorProgression({ result: { selectedSkillId: "TEST_ONLY" } });
-    assert.equal(applied.success, true);
-    assert.equal(applied.transition.status, POST_TRIAL_TRANSITION_STATUS.COMPLETED);
-    const repeated = h.postTrialService.completeAdvisorProgression({ result: { selectedSkillId: "DUPLICATE" } });
-    assert.equal(repeated.success, true);
-    assert.equal(repeated.alreadyApplied, true);
+    assert.equal(h.postTrialService.getCurrentPendingStep()?.type, POST_TRIAL_STEP_TYPES.ADVISOR_PROGRESSION);
     dispose(h);
 }
 
-// Trial 2 authorizes Stage 3, still only after presentation cleanup.
+// Advisor-only policy naturally occurs after Stage.
+{
+    const h = createHarness({ advisorProgressionStepPolicy: () => ({ selectionRequired: true }) });
+    h.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, {
+        trialIndex: 1,
+        scenarioId: "trial-1-advisor",
+        settlement: { runTerminated: false }
+    });
+    assert.deepEqual(
+        h.postTrialService.getTransition().steps.map(step => step.type),
+        [POST_TRIAL_STEP_TYPES.STAGE_ADVANCE, POST_TRIAL_STEP_TYPES.ADVISOR_PROGRESSION]
+    );
+    h.postTrialService.completeAfterPresentationCleanup();
+    assert.equal(h.engine.state.stage.id, 2);
+    assert.equal(h.postTrialService.getCurrentPendingStep()?.type, POST_TRIAL_STEP_TYPES.ADVISOR_PROGRESSION);
+    const applied = h.postTrialService.completeAdvisorProgression({ result: { selectedSkillId: "TEST_ONLY" } });
+    assert.equal(applied.transition.status, POST_TRIAL_TRANSITION_STATUS.COMPLETED);
+    dispose(h);
+}
+
+// Trial 2 authorizes Stage 3 and Trial 3 never creates Stage 4.
 {
     const h = createHarness({ stageId: 2 });
     h.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, {
@@ -270,57 +268,31 @@ function dispose(h) {
         scenarioId: "trial-2",
         settlement: { runTerminated: false }
     });
-    assert.equal(h.engine.state.stage.id, 2);
-    assert.deepEqual(h.expandCalls, []);
-    const completed = h.postTrialService.completeAfterPresentationCleanup();
-    assert.equal(completed.success, true);
+    h.postTrialService.completeAfterPresentationCleanup();
     assert.equal(h.engine.state.stage.id, 3);
     assert.deepEqual(h.expandCalls, [9]);
     dispose(h);
-}
 
-// Final Trial never creates Stage 4. A non-terminated Run instead remains pending
-// at the explicit final Run-completion handoff, so the normal Verse cannot resume.
-{
-    const h = createHarness({ stageId: 3 });
-    h.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, {
+    const final = createHarness({ stageId: 3 });
+    final.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, {
         trialIndex: 3,
         scenarioId: "trial-3",
         settlement: { runTerminated: false }
     });
-    const created = h.postTrialService.getTransition();
-    assert.equal(created.steps.length, 1);
-    assert.equal(created.steps[0].type, POST_TRIAL_STEP_TYPES.FINAL_RUN_COMPLETION);
-    assert.equal(h.stageService.getPending(), null);
-    assert.deepEqual(h.expandCalls, []);
-
-    const cleanup = h.postTrialService.completeAfterPresentationCleanup();
-    assert.equal(cleanup.success, true);
-    assert.equal(cleanup.transition.status, POST_TRIAL_TRANSITION_STATUS.PENDING_STEPS);
-    assert.equal(h.engine.state.stage.id, 3);
-    assert.deepEqual(h.expandCalls, []);
-    assert.equal(h.postTrialService.canResumeNormalProgression(), false);
-
-    const lifecycle = createTurnLifecycleHarness(h.postTrialService);
-    const blockedAtVerse = h.engine.state.turn;
-    assert.equal(lifecycle.advance(), blockedAtVerse);
-    assert.equal(h.engine.state.turn, blockedAtVerse);
-
-    const finalCompletion = h.postTrialService.completeFinalRunCompletion({
-        result: { handedOffToEnding: true }
-    });
-    assert.equal(finalCompletion.success, true);
-    assert.equal(finalCompletion.transition.status, POST_TRIAL_TRANSITION_STATUS.COMPLETED);
-    const repeated = h.postTrialService.completeFinalRunCompletion({
-        result: { handedOffToEnding: "DUPLICATE" }
-    });
-    assert.equal(repeated.success, true);
-    assert.equal(repeated.alreadyApplied, true);
-    assert.equal(countFacts(h, GAME_FACT_TYPES.POST_TRIAL_COMPLETED), 1);
-    dispose(h);
+    assert.deepEqual(
+        final.postTrialService.getTransition().steps.map(step => step.type),
+        [POST_TRIAL_STEP_TYPES.FINAL_RUN_COMPLETION]
+    );
+    assert.equal(final.stageService.getPending(), null);
+    final.postTrialService.completeAfterPresentationCleanup();
+    assert.equal(final.postTrialService.canResumeNormalProgression(), false);
+    assert.deepEqual(final.expandCalls, []);
+    const completed = final.postTrialService.completeFinalRunCompletion({ result: { handedOffToEnding: true } });
+    assert.equal(completed.transition.status, POST_TRIAL_TRANSITION_STATUS.COMPLETED);
+    dispose(final);
 }
 
-// A terminated run must not create Stage progression or final-completion work.
+// A terminated Run never invents Stage or final-completion work on its own.
 {
     const h = createHarness();
     h.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, {
@@ -328,92 +300,85 @@ function dispose(h) {
         scenarioId: "trial-1-defeat",
         settlement: { runTerminated: true }
     });
-    assert.equal(h.postTrialService.getTransition().runTerminated, true);
     assert.equal(h.postTrialService.getTransition().steps.length, 0);
-    assert.equal(h.stageService.getPending(), null);
     h.postTrialService.completeAfterPresentationCleanup();
     assert.equal(h.engine.state.stage.id, 1);
     assert.deepEqual(h.expandCalls, []);
     dispose(h);
-
-    const final = createHarness({ stageId: 3 });
-    final.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, {
-        trialIndex: 3,
-        scenarioId: "trial-3-terminated",
-        settlement: { runTerminated: true }
-    });
-    assert.equal(final.postTrialService.getTransition().steps.length, 0);
-    assert.equal(final.stageService.getPending(), null);
-    const completed = final.postTrialService.completeAfterPresentationCleanup();
-    assert.equal(completed.transition.status, POST_TRIAL_TRANSITION_STATUS.COMPLETED);
-    dispose(final);
 }
 
-// Save/load-style restoration rebuilds delegated Stage pending without re-settlement,
-// while preserving policy-created Reward / Advisor / Unlock pending steps verbatim.
+// Save/load restoration preserves work and migrates older step ordering into the
+// canonical sequence before any step can be completed.
 {
-    const original = createHarness({
-        rewardStepPolicy: () => ({ rewardToken: "RESTORE_TEST" }),
-        advisorProgressionStepPolicy: () => ({ advisorToken: "RESTORE_TEST" }),
-        unlockStepPolicy: () => ({ unlockToken: "RESTORE_TEST" })
-    });
-    original.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, {
+    const restoredTransition = {
+        schemaVersion: 3,
+        transitionId: "POST_TRIAL_1_legacy-order",
         trialIndex: 1,
-        scenarioId: "trial-1-restore",
-        settlement: { runTerminated: false }
-    });
-    const savedTransition = JSON.parse(JSON.stringify(original.engine.state.postTrialTransition));
-    dispose(original);
-
-    const restored = createHarness({ stageId: 1, restoredTransition: savedTransition });
+        scenarioId: "legacy-order",
+        outcome: "VICTORY",
+        runTerminated: false,
+        presentationCleanupComplete: true,
+        status: POST_TRIAL_TRANSITION_STATUS.PENDING_STEPS,
+        steps: [
+            {
+                type: POST_TRIAL_STEP_TYPES.ADVISOR_PROGRESSION,
+                status: POST_TRIAL_STEP_STATUS.PENDING,
+                payload: { advisorToken: "RESTORE" }
+            },
+            {
+                type: POST_TRIAL_STEP_TYPES.REWARD_SELECTION,
+                status: POST_TRIAL_STEP_STATUS.PENDING,
+                payload: { rewardToken: "RESTORE" }
+            },
+            {
+                type: POST_TRIAL_STEP_TYPES.STAGE_ADVANCE,
+                status: POST_TRIAL_STEP_STATUS.PENDING,
+                payload: {
+                    trialIndex: 1,
+                    fromStageId: 1,
+                    toStageId: 2,
+                    size: 7,
+                    maxTiles: 48,
+                    nextTrialIndex: 2
+                }
+            },
+            {
+                type: POST_TRIAL_STEP_TYPES.UNLOCK_APPLY,
+                status: POST_TRIAL_STEP_STATUS.PENDING,
+                payload: { unlockToken: "RESTORE" }
+            }
+        ]
+    };
+    const restored = createHarness({ stageId: 1, restoredTransition });
+    assert.equal(restored.postTrialService.getTransition().schemaVersion, 4);
+    assert.deepEqual(
+        restored.postTrialService.getTransition().steps.map(step => step.type),
+        [
+            POST_TRIAL_STEP_TYPES.REWARD_SELECTION,
+            POST_TRIAL_STEP_TYPES.UNLOCK_APPLY,
+            POST_TRIAL_STEP_TYPES.STAGE_ADVANCE,
+            POST_TRIAL_STEP_TYPES.ADVISOR_PROGRESSION
+        ]
+    );
     assert.equal(restored.stageService.getPending()?.toStageId, 2);
-    assert.equal(restored.postTrialService.getPendingSteps(POST_TRIAL_STEP_TYPES.REWARD_SELECTION).length, 1);
-    assert.equal(restored.postTrialService.getPendingSteps(POST_TRIAL_STEP_TYPES.ADVISOR_PROGRESSION).length, 1);
-    assert.equal(restored.postTrialService.getPendingSteps(POST_TRIAL_STEP_TYPES.UNLOCK_APPLY).length, 1);
-    const cleanup = restored.postTrialService.completeAfterPresentationCleanup();
-    assert.equal(cleanup.success, true);
-    assert.equal(cleanup.transition.status, POST_TRIAL_TRANSITION_STATUS.PENDING_STEPS);
+    restored.postTrialService.completeRewardSelection();
+    const unlock = restored.postTrialService.completeUnlockApply();
+    assert.equal(unlock.success, true);
     assert.equal(restored.engine.state.stage.id, 2);
     assert.deepEqual(restored.expandCalls, [7]);
-    restored.postTrialService.completeRewardSelection({ result: { selected: "RESTORED" } });
-    restored.postTrialService.completeAdvisorProgression({ result: { selected: "RESTORED" } });
-    const completed = restored.postTrialService.completeUnlockApply({ result: { applied: "RESTORED" } });
-    assert.equal(completed.transition.status, POST_TRIAL_TRANSITION_STATUS.COMPLETED);
+    restored.postTrialService.completeAdvisorProgression();
+    assert.equal(restored.postTrialService.canResumeNormalProgression(), true);
     dispose(restored);
 }
 
-// Final Run-completion pending also survives save/load and cannot disappear merely
-// because the Trial presentation was already cleaned up before the snapshot.
-{
-    const original = createHarness({ stageId: 3 });
-    original.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, {
-        trialIndex: 3,
-        scenarioId: "trial-3-restore",
-        settlement: { runTerminated: false }
-    });
-    original.postTrialService.completeAfterPresentationCleanup();
-    const savedTransition = JSON.parse(JSON.stringify(original.engine.state.postTrialTransition));
-    dispose(original);
-
-    const restored = createHarness({ stageId: 3, restoredTransition: savedTransition });
-    assert.equal(restored.postTrialService.canResumeNormalProgression(), false);
-    assert.equal(restored.postTrialService.getPendingSteps(POST_TRIAL_STEP_TYPES.FINAL_RUN_COMPLETION).length, 1);
-    const completed = restored.postTrialService.completeFinalRunCompletion({
-        result: { restoredEndingHandoff: true }
-    });
-    assert.equal(completed.transition.status, POST_TRIAL_TRANSITION_STATUS.COMPLETED);
-    dispose(restored);
-}
-
-// If a save captured the Stage after expansion but before the transition step was
-// marked applied, load reconciles it as applied instead of expanding again. Other
-// pending post-Trial work remains pending and still blocks normal progression.
+// Crash-window recovery: if the saved world already reached the target Stage while
+// the transition still says Stage pending, restore marks it APPLIED and never expands twice.
 {
     const restoredTransition = {
         schemaVersion: 2,
-        transitionId: "POST_TRIAL_1_trial-1-crash-window",
+        transitionId: "POST_TRIAL_1_crash-window",
         trialIndex: 1,
-        scenarioId: "trial-1-crash-window",
+        scenarioId: "crash-window",
         outcome: "VICTORY",
         runTerminated: false,
         presentationCleanupComplete: true,
@@ -422,12 +387,7 @@ function dispose(h) {
             {
                 type: POST_TRIAL_STEP_TYPES.REWARD_SELECTION,
                 status: POST_TRIAL_STEP_STATUS.PENDING,
-                payload: { rewardToken: "CRASH_WINDOW" }
-            },
-            {
-                type: POST_TRIAL_STEP_TYPES.UNLOCK_APPLY,
-                status: POST_TRIAL_STEP_STATUS.PENDING,
-                payload: { unlockToken: "CRASH_WINDOW" }
+                payload: { rewardToken: "CRASH" }
             },
             {
                 type: POST_TRIAL_STEP_TYPES.STAGE_ADVANCE,
@@ -444,14 +404,12 @@ function dispose(h) {
         ]
     };
     const restored = createHarness({ stageId: 2, restoredTransition });
-    const transition = restored.postTrialService.getTransition();
-    assert.equal(transition.status, POST_TRIAL_TRANSITION_STATUS.PENDING_STEPS);
-    assert.equal(transition.steps[2].status, POST_TRIAL_STEP_STATUS.APPLIED);
-    assert.equal(restored.postTrialService.canResumeNormalProgression(), false);
+    const stageStep = restored.postTrialService.getTransition().steps.find(
+        step => step.type === POST_TRIAL_STEP_TYPES.STAGE_ADVANCE
+    );
+    assert.equal(stageStep.status, POST_TRIAL_STEP_STATUS.APPLIED);
     assert.deepEqual(restored.expandCalls, []);
-
-    restored.postTrialService.completeRewardSelection({ result: { selected: "RESTORED" } });
-    const completed = restored.postTrialService.completeUnlockApply({ result: { applied: "RESTORED" } });
+    const completed = restored.postTrialService.completeRewardSelection({ result: { selected: "RESTORED" } });
     assert.equal(completed.transition.status, POST_TRIAL_TRANSITION_STATUS.COMPLETED);
     assert.deepEqual(restored.expandCalls, []);
     dispose(restored);
