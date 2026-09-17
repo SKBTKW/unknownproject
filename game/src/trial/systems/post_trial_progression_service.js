@@ -20,6 +20,7 @@ export const POST_TRIAL_STEP_TYPES = Object.freeze({
 });
 
 const LEGACY_ADVISOR_PROGRESSION_STEP_TYPE = "ADVISOR_PROGRESSION";
+const CURRENT_POST_TRIAL_SCHEMA_VERSION = 5;
 
 export const POST_TRIAL_STEP_STATUS = Object.freeze({
     PENDING: "PENDING",
@@ -231,7 +232,7 @@ export class PostTrialProgressionService {
         }
 
         const transition = {
-            schemaVersion: 5,
+            schemaVersion: CURRENT_POST_TRIAL_SCHEMA_VERSION,
             transitionId,
             trialIndex,
             scenarioId: payload.scenarioId || null,
@@ -669,7 +670,10 @@ export class PostTrialProgressionService {
             step.type = POST_TRIAL_STEP_TYPES.SKILL_PROGRESSION;
             step.payload = normalizeSkillProgressionPayload(step.payload, { legacyAdvisor: true });
         });
-        transition.schemaVersion = Math.max(Number(transition.schemaVersion) || 1, 4);
+        transition.schemaVersion = Math.max(
+            Number(transition.schemaVersion) || 1,
+            CURRENT_POST_TRIAL_SCHEMA_VERSION
+        );
     }
 
     _normalizeRestoredStepOrder() {
@@ -687,7 +691,10 @@ export class PostTrialProgressionService {
                 return aOrder - bOrder || a.originalIndex - b.originalIndex;
             })
             .map(entry => entry.step);
-        transition.schemaVersion = Math.max(Number(transition.schemaVersion) || 1, 4);
+        transition.schemaVersion = Math.max(
+            Number(transition.schemaVersion) || 1,
+            CURRENT_POST_TRIAL_SCHEMA_VERSION
+        );
     }
 
     _reconcileRestoredTransitionStatus() {
