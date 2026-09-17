@@ -99,6 +99,10 @@ jobs:
       - name: Run Task Sweeper safety contract
         run: node scratch/test_task_sweeper.mjs
 
+      - name: Run Presentation boundary focused tests
+        run: |
+          node scratch/test_board_presentation_unity_boundary.mjs
+
       - name: Run Trial runtime focused tests
         run: |
           node game/src/trial/dev/diagnose_warning_timing_bridge.mjs
