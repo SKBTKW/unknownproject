@@ -10,8 +10,15 @@ export const POST_TRIAL_STEP_TYPES = Object.freeze({
     REWARD_SELECTION: "REWARD_SELECTION",
     UNLOCK_APPLY: "UNLOCK_APPLY",
     STAGE_ADVANCE: "STAGE_ADVANCE",
+    SKILL_PROGRESSION: "SKILL_PROGRESSION",
+    // Legacy save compatibility only. New transitions never create this type.
     ADVISOR_PROGRESSION: "ADVISOR_PROGRESSION",
     FINAL_RUN_COMPLETION: "FINAL_RUN_COMPLETION"
+});
+
+export const POST_TRIAL_SKILL_OWNER_TYPES = Object.freeze({
+    ADVISOR: "ADVISOR",
+    PLAYER: "PLAYER"
 });
 
 export const POST_TRIAL_STEP_STATUS = Object.freeze({
@@ -23,7 +30,7 @@ export const POST_TRIAL_STEP_ORDER = Object.freeze([
     POST_TRIAL_STEP_TYPES.REWARD_SELECTION,
     POST_TRIAL_STEP_TYPES.UNLOCK_APPLY,
     POST_TRIAL_STEP_TYPES.STAGE_ADVANCE,
-    POST_TRIAL_STEP_TYPES.ADVISOR_PROGRESSION,
+    POST_TRIAL_STEP_TYPES.SKILL_PROGRESSION,
     POST_TRIAL_STEP_TYPES.FINAL_RUN_COMPLETION
 ]);
 
@@ -51,22 +58,44 @@ function normalizePolicyPayload(value) {
     return cloneData(value);
 }
 
+function normalizeSkillOwner(value, fallback = null) {
+    if (value === POST_TRIAL_SKILL_OWNER_TYPES.ADVISOR) {
+        return POST_TRIAL_SKILL_OWNER_TYPES.ADVISOR;
+    }
+    if (value === POST_TRIAL_SKILL_OWNER_TYPES.PLAYER) {
+        return POST_TRIAL_SKILL_OWNER_TYPES.PLAYER;
+    }
+    return fallback;
+}
+
+function normalizeSkillProgressionPayload(payload, { legacyAdvisor = false } = {}) {
+    const normalized = cloneData(payload, {}) || {};
+    const fallbackOwner = legacyAdvisor ? POST_TRIAL_SKILL_OWNER_TYPES.ADVISOR : null;
+    const owner = normalizeSkillOwner(normalized.owner, fallbackOwner);
+    if (owner) normalized.owner = owner;
+    return normalized;
+}
+
 /**
  * Run-level authority beginning at TRIAL_RESULT_SETTLED.
  *
  * This service owns the ordered post-Trial transition only. Reward, Unlock and
- * Advisor content remain external policy/authority concerns. Stage progression
- * remains delegated to TrialStageProgressionService, and physical grid expansion
- * is never allowed before Trial presentation cleanup is complete.
+ * Skill content remain external policy/authority concerns. Skill progression is
+ * deliberately owner-agnostic: the policy may target either ADVISOR or PLAYER,
+ * while the actual skill mutation remains delegated to that owner's authority.
+ * Stage progression remains delegated to TrialStageProgressionService, and
+ * physical grid expansion is never allowed before Trial presentation cleanup is
+ * complete.
  *
  * Canonical semantic order:
- * Reward -> Unlock -> Stage -> Advisor -> Final Run Completion.
+ * Reward -> Unlock -> Stage -> Skill -> Final Run Completion.
  */
 export class PostTrialProgressionService {
     constructor(engine, {
         gameFactHub = null,
         stageProgressionService = null,
         rewardStepPolicy = null,
+        skillProgressionStepPolicy = null,
         advisorProgressionStepPolicy = null,
         unlockStepPolicy = null
     } = {}) {
@@ -82,7 +111,9 @@ export class PostTrialProgressionService {
             || engine.trialStageProgressionService
             || null;
         this.rewardStepPolicy = rewardStepPolicy || engine.postTrialRewardStepPolicy || null;
-        this.advisorProgressionStepPolicy = advisorProgressionStepPolicy
+        this.skillProgressionStepPolicy = skillProgressionStepPolicy
+            || engine.postTrialSkillProgressionStepPolicy
+            || advisorProgressionStepPolicy
             || engine.postTrialAdvisorProgressionStepPolicy
             || null;
         this.unlockStepPolicy = unlockStepPolicy || engine.postTrialUnlockStepPolicy || null;
@@ -90,14 +121,15 @@ export class PostTrialProgressionService {
         if (this.rewardStepPolicy && typeof this.rewardStepPolicy !== "function") {
             throw new TypeError("POST_TRIAL_REWARD_POLICY_INVALID");
         }
-        if (this.advisorProgressionStepPolicy && typeof this.advisorProgressionStepPolicy !== "function") {
-            throw new TypeError("POST_TRIAL_ADVISOR_PROGRESSION_POLICY_INVALID");
+        if (this.skillProgressionStepPolicy && typeof this.skillProgressionStepPolicy !== "function") {
+            throw new TypeError("POST_TRIAL_SKILL_PROGRESSION_POLICY_INVALID");
         }
         if (this.unlockStepPolicy && typeof this.unlockStepPolicy !== "function") {
             throw new TypeError("POST_TRIAL_UNLOCK_POLICY_INVALID");
         }
 
         this.unsubscribe = factHub.subscribe(fact => this._onFact(fact));
+        this._migrateRestoredSkillProgressionStep();
         this._normalizeRestoredStepOrder();
         this._restoreDelegatedStagePending();
         this._reconcileRestoredTransitionStatus();
@@ -144,8 +176,8 @@ export class PostTrialProgressionService {
         };
         const rewardPayload = this._resolvePolicyPayload(this.rewardStepPolicy, context);
         const unlockPayload = this._resolvePolicyPayload(this.unlockStepPolicy, context);
-        const advisorProgressionPayload = this._resolvePolicyPayload(
-            this.advisorProgressionStepPolicy,
+        const skillProgressionPayload = this._resolvePolicyPayload(
+            this.skillProgressionStepPolicy,
             context
         );
         const stagePending = this.stageProgressionService?.getPending?.() || null;
@@ -172,11 +204,11 @@ export class PostTrialProgressionService {
                 payload: cloneData(stagePending)
             });
         }
-        if (advisorProgressionPayload !== null) {
+        if (skillProgressionPayload !== null) {
             steps.push({
-                type: POST_TRIAL_STEP_TYPES.ADVISOR_PROGRESSION,
+                type: POST_TRIAL_STEP_TYPES.SKILL_PROGRESSION,
                 status: POST_TRIAL_STEP_STATUS.PENDING,
-                payload: advisorProgressionPayload
+                payload: normalizeSkillProgressionPayload(skillProgressionPayload)
             });
         }
         if (trialIndex === 3 && !context.runTerminated) {
@@ -191,7 +223,7 @@ export class PostTrialProgressionService {
         }
 
         const transition = {
-            schemaVersion: 4,
+            schemaVersion: 5,
             transitionId,
             trialIndex,
             scenarioId: payload.scenarioId || null,
@@ -231,11 +263,15 @@ export class PostTrialProgressionService {
     }
 
     getPendingSteps(type = null) {
+        const normalizedType = type === POST_TRIAL_STEP_TYPES.ADVISOR_PROGRESSION
+            ? POST_TRIAL_STEP_TYPES.SKILL_PROGRESSION
+            : type;
         const steps = Array.isArray(this.engine.state.postTrialTransition?.steps)
             ? this.engine.state.postTrialTransition.steps
             : [];
         return steps
-            .filter(step => step?.status === POST_TRIAL_STEP_STATUS.PENDING && (!type || step.type === type))
+            .filter(step => step?.status === POST_TRIAL_STEP_STATUS.PENDING
+                && (!normalizedType || step.type === normalizedType))
             .map(step => cloneData(step));
     }
 
@@ -267,8 +303,45 @@ export class PostTrialProgressionService {
         });
     }
 
+    completeSkillProgression({ owner = null, result = null } = {}) {
+        const step = this.engine.state.postTrialTransition?.steps?.find(candidate =>
+            candidate?.type === POST_TRIAL_STEP_TYPES.SKILL_PROGRESSION
+        ) || null;
+        if (!step) {
+            return {
+                success: false,
+                reason: "POST_TRIAL_STEP_NOT_FOUND",
+                stepType: POST_TRIAL_STEP_TYPES.SKILL_PROGRESSION
+            };
+        }
+
+        const expectedOwner = normalizeSkillOwner(step.payload?.owner);
+        const suppliedOwner = normalizeSkillOwner(owner);
+        if (expectedOwner && suppliedOwner && expectedOwner !== suppliedOwner) {
+            return {
+                success: false,
+                reason: "POST_TRIAL_SKILL_OWNER_MISMATCH",
+                expectedOwner,
+                suppliedOwner,
+                transition: this.getTransition()
+            };
+        }
+
+        return this._completeExternalStep(POST_TRIAL_STEP_TYPES.SKILL_PROGRESSION, {
+            result: {
+                owner: suppliedOwner || expectedOwner || null,
+                value: cloneData(result)
+            }
+        });
+    }
+
+    // Legacy compatibility: old callers remain valid, but new code should call
+    // completeSkillProgression() with an explicit owner where the policy knows it.
     completeAdvisorProgression({ result = null } = {}) {
-        return this._completeExternalStep(POST_TRIAL_STEP_TYPES.ADVISOR_PROGRESSION, { result });
+        return this.completeSkillProgression({
+            owner: POST_TRIAL_SKILL_OWNER_TYPES.ADVISOR,
+            result
+        });
     }
 
     completeFinalRunCompletion({ result = null } = {}) {
@@ -458,6 +531,17 @@ export class PostTrialProgressionService {
         return { completed: true, alreadyCompleted: false };
     }
 
+    _migrateRestoredSkillProgressionStep() {
+        const transition = this.engine.state.postTrialTransition;
+        if (!transition || !Array.isArray(transition.steps)) return;
+        transition.steps.forEach(step => {
+            if (step?.type !== POST_TRIAL_STEP_TYPES.ADVISOR_PROGRESSION) return;
+            step.type = POST_TRIAL_STEP_TYPES.SKILL_PROGRESSION;
+            step.payload = normalizeSkillProgressionPayload(step.payload, { legacyAdvisor: true });
+        });
+        transition.schemaVersion = Math.max(Number(transition.schemaVersion) || 1, 5);
+    }
+
     _normalizeRestoredStepOrder() {
         const transition = this.engine.state.postTrialTransition;
         if (!transition || !Array.isArray(transition.steps)) return;
@@ -473,7 +557,7 @@ export class PostTrialProgressionService {
                 return aOrder - bOrder || a.originalIndex - b.originalIndex;
             })
             .map(entry => entry.step);
-        transition.schemaVersion = Math.max(Number(transition.schemaVersion) || 1, 4);
+        transition.schemaVersion = Math.max(Number(transition.schemaVersion) || 1, 5);
     }
 
     _reconcileRestoredTransitionStatus() {
