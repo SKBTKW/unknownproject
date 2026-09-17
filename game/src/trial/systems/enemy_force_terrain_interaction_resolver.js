@@ -1,14 +1,24 @@
 const BODY_SIZES = new Set(["SMALL", "MEDIUM", "LARGE"]);
-const EQUIPMENT_TYPES = new Set([
+
+export const ACTIVE_EQUIPMENT_TYPES = Object.freeze([
     "LIGHT",
-    "MEDIUM",
-    "HEAVY",
+    "STANDARD",
+    "HEAVY"
+]);
+
+// Reserved data only. These identities stay representable in enemy data, but
+// they do not alter Trial runtime behaviour until their rules are explicitly
+// promoted from backlog into the active equipment contract.
+export const RESERVED_EQUIPMENT_TYPES = Object.freeze([
     "PROJECTILE",
     "LARGE_SHIELD",
     "POLEARM",
     "MOUNTED",
     "BAGGAGE"
 ]);
+
+const ACTIVE_EQUIPMENT_SET = new Set(ACTIVE_EQUIPMENT_TYPES);
+const RESERVED_EQUIPMENT_SET = new Set(RESERVED_EQUIPMENT_TYPES);
 
 function normalizeBodySize(value) {
     const normalized = String(value || "MEDIUM").toUpperCase();
@@ -17,9 +27,24 @@ function normalizeBodySize(value) {
 
 function normalizeEquipment(value) {
     const values = Array.isArray(value) ? value : (value ? [value] : []);
-    return [...new Set(values
+    const recognized = [...new Set(values
         .map(item => String(item || "").toUpperCase())
-        .filter(item => EQUIPMENT_TYPES.has(item)))];
+        .map(item => item === "MEDIUM" ? "STANDARD" : item)
+        .filter(item => ACTIVE_EQUIPMENT_SET.has(item) || RESERVED_EQUIPMENT_SET.has(item)))];
+
+    const active = recognized.filter(item => ACTIVE_EQUIPMENT_SET.has(item));
+    const reserved = recognized.filter(item => RESERVED_EQUIPMENT_SET.has(item));
+
+    // LIGHT / STANDARD / HEAVY are mutually exclusive operating classes.
+    // If malformed data supplies more than one, prefer the heaviest explicit
+    // class so runtime remains deterministic rather than stacking classes.
+    const equipmentClass = active.includes("HEAVY")
+        ? "HEAVY"
+        : active.includes("LIGHT")
+            ? "LIGHT"
+            : "STANDARD";
+
+    return { equipmentClass, reservedEquipment: reserved };
 }
 
 function terrainFamily(terrainId) {
@@ -91,12 +116,12 @@ function resolveBodyInteraction(bodySize, family) {
     return result;
 }
 
-function resolveEquipmentInteraction(equipment, family) {
+function resolveEquipmentInteraction(equipmentClass, family) {
     const traits = [];
     const movementConstraints = [];
     let logistics = "STANDARD";
 
-    if (equipment.includes("LIGHT")) {
+    if (equipmentClass === "LIGHT") {
         traits.push("RAPID_MANEUVER");
         if (["FOREST", "DEEP_FOREST", "WETLAND", "MOUNTAIN"].includes(family)) {
             traits.push("ROUGH_TERRAIN_FRIENDLY");
@@ -104,45 +129,12 @@ function resolveEquipmentInteraction(equipment, family) {
         logistics = "LIGHT";
     }
 
-    if (equipment.includes("HEAVY")) {
+    if (equipmentClass === "HEAVY") {
         traits.push("FRONTAL_BREAKTHROUGH");
         logistics = "HEAVY";
         if (["FOREST", "DEEP_FOREST", "WETLAND", "MOUNTAIN"].includes(family)) {
             movementConstraints.push("HEAVY_EQUIPMENT_ROUGH_TERRAIN");
         }
-    }
-
-    if (equipment.includes("PROJECTILE")) {
-        traits.push("PRE_CONTACT_PRESSURE");
-        if (["DEEP_FOREST", "MOUNTAIN"].includes(family)) {
-            movementConstraints.push("LIMITED_PROJECTILE_ARC");
-        }
-    }
-
-    if (equipment.includes("LARGE_SHIELD")) {
-        traits.push("MISSILE_SCREEN", "FRONTAL_BULWARK");
-        movementConstraints.push("REDUCED_MANEUVERABILITY");
-    }
-
-    if (equipment.includes("POLEARM")) {
-        traits.push("ANTI_LARGE", "ANTI_MOUNTED");
-        if (["DEEP_FOREST", "MOUNTAIN"].includes(family)) {
-            movementConstraints.push("LIMITED_POLEARM_HANDLING");
-        }
-    }
-
-    if (equipment.includes("MOUNTED")) {
-        if (family === "OPEN") {
-            traits.push("OPEN_GROUND_MOBILITY", "FLANKING_CAPABLE");
-        } else {
-            movementConstraints.push("MOUNTED_TERRAIN_RESTRICTION");
-        }
-    }
-
-    if (equipment.includes("BAGGAGE")) {
-        traits.push("EXTENDED_LOGISTICS");
-        movementConstraints.push("BAGGAGE_SLOWS_COLUMN");
-        logistics = "EXTENDED";
     }
 
     return {
@@ -153,26 +145,27 @@ function resolveEquipmentInteraction(equipment, family) {
 }
 
 /**
- * Resolves semantic battlefield consequences of body size and equipment.
+ * Resolves semantic battlefield consequences of body size and active equipment.
  *
- * This resolver intentionally does not output attack/defense multipliers.
- * Terrain interaction is expressed as deployment, mobility, exposure and
- * combat/logistics traits so Trial combat can translate those semantics at the
- * appropriate stage without turning force identity into a flat strength buff.
+ * Active equipment is deliberately limited to LIGHT / STANDARD / HEAVY.
+ * Reserved equipment identities remain visible as data but have no runtime
+ * effect. This resolver intentionally does not output attack/defense
+ * multipliers; Trial combat translates these semantics at the proper stage.
  */
 export class EnemyForceTerrainInteractionResolver {
     resolve({ bodySize = "MEDIUM", equipment = [], terrainId = null } = {}) {
         const normalizedBodySize = normalizeBodySize(bodySize);
-        const normalizedEquipment = normalizeEquipment(equipment);
+        const { equipmentClass, reservedEquipment } = normalizeEquipment(equipment);
         const family = terrainFamily(terrainId);
         const body = resolveBodyInteraction(normalizedBodySize, family);
-        const gear = resolveEquipmentInteraction(normalizedEquipment, family);
+        const gear = resolveEquipmentInteraction(equipmentClass, family);
 
         return {
             terrainId,
             terrainFamily: family,
             bodySize: normalizedBodySize,
-            equipment: normalizedEquipment,
+            equipmentClass,
+            reservedEquipment,
             deployment: body.deployment,
             mobility: body.mobility,
             ambushExposure: body.ambushExposure,
