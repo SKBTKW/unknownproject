@@ -15,17 +15,6 @@ function cloneData(value) {
     return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
 }
 
-/**
- * PROTOTYPE balance values for the adopted enemy-army structure contract.
- *
- * The semantics are canonical:
- * - suppression controls force count and top commander level
- * - force count equals invasion-route count
- * - the main commander force owns the largest suppression share
- * - higher command levels unlock subordinate command and judgement capabilities
- *
- * The numeric thresholds remain balance-tunable from this single policy object.
- */
 export const DEFAULT_ENEMY_ARMY_STRUCTURE_POLICY = Object.freeze({
     commanderLevelThresholds: Object.freeze([1, 30, 60, 100, 150]),
     suppressionPerForce: 35,
@@ -70,17 +59,22 @@ function defaultForceQuality({ effectiveCommanderLevel, adaptiveComposition }) {
     };
 }
 
+function defaultForceProfile() {
+    return {
+        bodySize: "MEDIUM",
+        equipment: ["STANDARD"]
+    };
+}
+
 /**
  * strategicSuppression を「軍の規模と指揮構造」へ投影する純粋resolver。
- *
  * Warning / KnownEnemyState / presentation は参照しない。
- * 盤面対応の高度な編成最適化は capability と resolver hook だけを公開し、
- * この層では具体的な盤面攻略AIを固定しない。
  */
 export class EnemyArmyStructureResolver {
     constructor({
         policy = {},
         forceQualityResolver = null,
+        forceProfileResolver = null,
         subordinateCommanderResolver = null
     } = {}) {
         this.policy = {
@@ -91,15 +85,13 @@ export class EnemyArmyStructureResolver {
                 : [...DEFAULT_ENEMY_ARMY_STRUCTURE_POLICY.commanderLevelThresholds]
         };
         this.forceQualityResolver = forceQualityResolver;
+        this.forceProfileResolver = forceProfileResolver;
         this.subordinateCommanderResolver = subordinateCommanderResolver;
     }
 
     resolve({ strategicSuppression = 0, trialIndex = 1, enemyTruth = null, gameState = null } = {}) {
         const suppression = nonNegative(strategicSuppression);
-        const commanderLevel = resolveCommanderLevel(
-            suppression,
-            this.policy.commanderLevelThresholds
-        );
+        const commanderLevel = resolveCommanderLevel(suppression, this.policy.commanderLevelThresholds);
         const forceCount = resolveForceCount(
             suppression,
             positiveInt(this.policy.suppressionPerForce, 35),
@@ -121,11 +113,7 @@ export class EnemyArmyStructureResolver {
             };
         }
 
-        const allocations = allocateSuppression(
-            suppression,
-            forceCount,
-            this.policy.mainForceWeight
-        );
+        const allocations = allocateSuppression(suppression, forceCount, this.policy.mainForceWeight);
         const canDelegate = commanderLevel >= positiveInt(this.policy.subordinateCommanderMinLevel, 3);
         const canJudgeIngress = commanderLevel >= positiveInt(this.policy.ingressJudgementMinLevel, 2);
         const canAdaptComposition = commanderLevel >= positiveInt(this.policy.adaptiveCompositionMinLevel, 5);
@@ -162,7 +150,7 @@ export class EnemyArmyStructureResolver {
                 ? commanderLevel
                 : (subordinateCommander?.level ?? commanderLevel);
 
-            const qualityContext = {
+            const context = {
                 commanderLevel,
                 effectiveCommanderLevel,
                 adaptiveComposition: canAdaptComposition,
@@ -174,15 +162,17 @@ export class EnemyArmyStructureResolver {
                 enemyTruth: cloneData(enemyTruth),
                 gameState
             };
-            const quality = this.forceQualityResolver?.(qualityContext)
-                ?? defaultForceQuality(qualityContext);
+            const quality = this.forceQualityResolver?.(context) ?? defaultForceQuality(context);
+            const profile = this.forceProfileResolver?.({ ...context, quality: cloneData(quality) })
+                ?? defaultForceProfile();
 
             return {
                 id: `FORCE_${index + 1}`,
                 role: isMainForce ? "MAIN" : "DETACHMENT",
                 strategicSuppression: forceSuppression,
                 commander: isMainForce ? cloneData(commander) : cloneData(subordinateCommander),
-                quality: cloneData(quality)
+                quality: cloneData(quality),
+                profile: cloneData(profile)
             };
         });
 
