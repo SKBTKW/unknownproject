@@ -51,7 +51,8 @@ export function drawWeb25DZoneLinkOverlay({
     projection,
     readModel,
     resolveTerrainTopFill = () => 'rgba(116, 126, 112, 0.72)',
-    shouldDrawCell = () => true
+    shouldDrawCell = () => true,
+    shouldDrawEdge = () => true
 } = {}) {
     if (!ctx || !projection || !readModel) return;
 
@@ -67,6 +68,7 @@ export function drawWeb25DZoneLinkOverlay({
 
             for (const edge of visuals.edges) {
                 if (edge.kind === ZONE_LINK_EDGE_KINDS.NONE) continue;
+                if (!shouldDrawEdge(cell, edge)) continue;
                 if (!shouldDrawSharedEdge(cell, edge.neighbor)) continue;
 
                 const screenEdge = projected.projectedEdges?.[edge.direction];

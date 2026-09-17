@@ -95,6 +95,14 @@ export class Web25DMaterializationRenderer extends Web25DPhaseERenderer {
         return !state?.active;
     }
 
+    shouldDrawZoneLinkEdge(cell, edge) {
+        const sourceState = this.getMaterializationCellState(cell);
+        const neighborState = edge?.neighbor
+            ? this.getMaterializationCellState(edge.neighbor)
+            : null;
+        return !sourceState?.active && !neighborState?.active;
+    }
+
     drawPlacedTerrain(cell, projected) {
         const state = this.getMaterializationCellState(cell);
         this.materializationCell = cell;

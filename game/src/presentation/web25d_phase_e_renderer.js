@@ -12,6 +12,10 @@ export class Web25DPhaseERenderer extends Web25DPhaseCRenderer {
         return true;
     }
 
+    shouldDrawZoneLinkEdge() {
+        return true;
+    }
+
     render() {
         super.render();
         drawWeb25DZoneLinkOverlay({
@@ -19,7 +23,8 @@ export class Web25DPhaseERenderer extends Web25DPhaseCRenderer {
             projection: this.projection,
             readModel: this.readModel,
             resolveTerrainTopFill: cell => this.resolveTerrainTopFill(cell),
-            shouldDrawCell: cell => this.shouldDrawZoneLinkCell(cell)
+            shouldDrawCell: cell => this.shouldDrawZoneLinkCell(cell),
+            shouldDrawEdge: (cell, edge) => this.shouldDrawZoneLinkEdge(cell, edge)
         });
     }
 }
