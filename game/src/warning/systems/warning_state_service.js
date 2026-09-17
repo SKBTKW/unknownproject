@@ -25,6 +25,7 @@ export class WarningStateService {
         this.state = initialState;
         this.revision = 0;
         this.history = [];
+        this.listeners = new Set();
     }
 
     getState() {
@@ -37,6 +38,17 @@ export class WarningStateService {
             revision: this.revision,
             history: cloneData(this.history) || []
         };
+    }
+
+    subscribe(listener) {
+        if (typeof listener !== "function") throw new TypeError("WARNING_STATE_LISTENER_REQUIRED");
+        this.listeners.add(listener);
+        return () => this.listeners.delete(listener);
+    }
+
+    _notify(transition) {
+        const snapshot = Object.freeze(cloneData(transition));
+        this.listeners.forEach(listener => listener(snapshot));
     }
 
     advanceTo(nextState, { source = null, verse = null } = {}) {
@@ -53,13 +65,15 @@ export class WarningStateService {
         const previous = this.state;
         this.state = nextState;
         this.revision += 1;
-        this.history.push(Object.freeze({
+        const transition = Object.freeze({
             revision: this.revision,
             previous,
             current: nextState,
             source: source || null,
             verse: Number.isInteger(verse) ? verse : null
-        }));
+        });
+        this.history.push(transition);
+        this._notify(transition);
         return { changed: true, readModel: this.getReadModel() };
     }
 
@@ -93,13 +107,15 @@ export class WarningStateService {
         const previous = this.state;
         this.state = WARNING_STATES.CALM;
         this.revision += 1;
-        this.history.push(Object.freeze({
+        const transition = Object.freeze({
             revision: this.revision,
             previous,
             current: WARNING_STATES.CALM,
             source,
             verse: Number.isInteger(verse) ? verse : null
-        }));
+        });
+        this.history.push(transition);
+        if (previous !== WARNING_STATES.CALM) this._notify(transition);
         return this.getReadModel();
     }
 
