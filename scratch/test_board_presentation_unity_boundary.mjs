@@ -6,6 +6,7 @@ import { createBoardPresentationDto } from "../game/src/presentation/board_prese
 import { BOARD_INPUT_COMMANDS, createBoardInputCommand, serializeBoardInputCommand } from "../game/src/presentation/board_input_contract.js";
 import { GameRuntimeSnapshotDataService } from "../game/src/presentation/game_runtime_snapshot_data_service.js";
 import { createGameRuntimeSnapshotDto } from "../game/src/presentation/game_runtime_snapshot_contract.js";
+import { LegacyWeb2DBoardInputAdapter } from "../game/src/ui/legacy_web2d_board_input_adapter.js";
 
 let passed = 0;
 function test(name, callback) {
@@ -189,6 +190,43 @@ test("logical board input serializes without renderer-specific coordinates", () 
     assert.deepEqual(JSON.parse(serialized).payload.cell, { r: 1, c: 0 });
     assert.equal(serialized.includes("screen"), false);
     assert.equal(serialized.includes("world"), false);
+});
+
+test("legacy Web 2D consumes SELECT_CELL through the portable command boundary", () => {
+    const calls = [];
+    const adapter = new LegacyWeb2DBoardInputAdapter({
+        isTrialInteractionActive: () => false,
+        onCellClick(r, c) { calls.push({ r, c }); return true; }
+    });
+    const result = adapter.dispatch(createBoardInputCommand(
+        BOARD_INPUT_COMMANDS.SELECT_CELL,
+        { cell: { r: 1, c: 0 } }
+    ));
+
+    assert.equal(result.success, true);
+    assert.deepEqual(calls, [{ r: 1, c: 0 }]);
+});
+
+test("legacy Web 2D Trial input preserves explicit route identity", () => {
+    const calls = [];
+    const adapter = new LegacyWeb2DBoardInputAdapter({
+        isTrialInteractionActive: () => true,
+        getActiveTrialRoute: () => ({ id: "route-a" }),
+        selectTrialInterceptionCell(r, c) { calls.push({ r, c }); return true; }
+    });
+    const rejected = adapter.dispatch(createBoardInputCommand(
+        BOARD_INPUT_COMMANDS.SELECT_TRIAL_INTERCEPTION,
+        { routeId: "route-b", cell: { r: 0, c: 0 } }
+    ));
+    const accepted = adapter.dispatch(createBoardInputCommand(
+        BOARD_INPUT_COMMANDS.SELECT_TRIAL_INTERCEPTION,
+        { routeId: "route-a", cell: { r: 0, c: 1 } }
+    ));
+
+    assert.equal(rejected.success, false);
+    assert.equal(rejected.reason, "TRIAL_ROUTE_NOT_ACTIVE");
+    assert.equal(accepted.success, true);
+    assert.deepEqual(calls, [{ r: 0, c: 1 }]);
 });
 
 test("runtime HUD snapshot is JSON-safe and does not expose GameState internals", () => {
