@@ -8,6 +8,13 @@ const hub = new GameFactHub();
 const state = new WarningStateService();
 const bridge = new WarningStateFactBridge({ gameFactHub: hub, warningStateService: state });
 
+state.resetForNextTrial({ source: 'NO_OP_RESET', verse: 1 });
+assert.equal(
+    hub.getFacts().filter(fact => fact.type === GAME_FACT_TYPES.WARNING_STATE_CHANGED).length,
+    0,
+    'CALM to CALM reset must not publish a state-changed fact'
+);
+
 state.markOmen({ source: 'EVENT_DEMIHUMAN_TRACES', verse: 8 });
 state.markWatch({ source: 'INVESTIGATION_RECORDED', verse: 9 });
 state.markTense({ source: 'TRIAL_TIMING_TENSE', verse: 10 });
