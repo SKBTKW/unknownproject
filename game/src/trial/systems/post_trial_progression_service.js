@@ -14,8 +14,7 @@ export const POST_TRIAL_STEP_TYPES = Object.freeze({
     UNLOCK_APPLY: "UNLOCK_APPLY",
     STAGE_ADVANCE: "STAGE_ADVANCE",
     SKILL_PROGRESSION: "SKILL_PROGRESSION",
-    // Source-level compatibility alias. New and updated callers resolve to the
-    // generic skill step even if they still use the old property name.
+    // Source-level compatibility alias. New callers resolve to generic Skill.
     ADVISOR_PROGRESSION: "SKILL_PROGRESSION",
     FINAL_RUN_COMPLETION: "FINAL_RUN_COMPLETION"
 });
@@ -80,14 +79,10 @@ function normalizeSkillProgressionPayload(payload, { legacyAdvisor = false } = {
 /**
  * Run-level authority beginning at TRIAL_RESULT_SETTLED.
  *
- * This service owns the ordered post-Trial transition only. Reward, Unlock and
- * Skill content remain external policy/authority concerns. Skill progression is
- * deliberately owner-agnostic: the policy may target either ADVISOR or PLAYER,
- * while the actual skill mutation is delegated through skillProgressionRouter to
- * that owner's authority. Post-Trial never stores owner skills itself.
- * Stage progression remains delegated to TrialStageProgressionService, and
- * physical grid expansion is never allowed before Trial presentation cleanup is
- * complete.
+ * This service owns ordering/idempotence only. Actual Reward, Unlock, Skill, and
+ * Final Run mutations stay behind injected authorities. Stage progression remains
+ * delegated to TrialStageProgressionService. Physical grid expansion is never
+ * allowed before Trial presentation cleanup is complete.
  *
  * Canonical semantic order:
  * Reward -> Unlock -> Stage -> Skill -> Final Run Completion.
@@ -96,6 +91,7 @@ export class PostTrialProgressionService {
     constructor(engine, {
         gameFactHub = null,
         stageProgressionService = null,
+        stepAuthorityRouter = null,
         skillProgressionRouter = null,
         rewardStepPolicy = null,
         skillProgressionStepPolicy = null,
@@ -113,6 +109,9 @@ export class PostTrialProgressionService {
         this.stageProgressionService = stageProgressionService
             || engine.trialStageProgressionService
             || null;
+        this.stepAuthorityRouter = stepAuthorityRouter
+            || engine.postTrialStepAuthorityRouter
+            || null;
         this.skillProgressionRouter = skillProgressionRouter
             || engine.postTrialSkillProgressionRouter
             || null;
@@ -124,8 +123,10 @@ export class PostTrialProgressionService {
             || null;
         this.unlockStepPolicy = unlockStepPolicy || engine.postTrialUnlockStepPolicy || null;
 
-        if (this.skillProgressionRouter
-            && typeof this.skillProgressionRouter.apply !== "function") {
+        if (this.stepAuthorityRouter && typeof this.stepAuthorityRouter.apply !== "function") {
+            throw new TypeError("POST_TRIAL_STEP_ROUTER_INVALID");
+        }
+        if (this.skillProgressionRouter && typeof this.skillProgressionRouter.apply !== "function") {
             throw new TypeError("POST_TRIAL_SKILL_ROUTER_INVALID");
         }
         if (this.rewardStepPolicy && typeof this.rewardStepPolicy !== "function") {
@@ -186,10 +187,7 @@ export class PostTrialProgressionService {
         };
         const rewardPayload = this._resolvePolicyPayload(this.rewardStepPolicy, context);
         const unlockPayload = this._resolvePolicyPayload(this.unlockStepPolicy, context);
-        const skillProgressionPayload = this._resolvePolicyPayload(
-            this.skillProgressionStepPolicy,
-            context
-        );
+        const skillPayload = this._resolvePolicyPayload(this.skillProgressionStepPolicy, context);
         const stagePending = this.stageProgressionService?.getPending?.() || null;
         const steps = [];
 
@@ -214,11 +212,11 @@ export class PostTrialProgressionService {
                 payload: cloneData(stagePending)
             });
         }
-        if (skillProgressionPayload !== null) {
+        if (skillPayload !== null) {
             steps.push({
                 type: POST_TRIAL_STEP_TYPES.SKILL_PROGRESSION,
                 status: POST_TRIAL_STEP_STATUS.PENDING,
-                payload: normalizeSkillProgressionPayload(skillProgressionPayload)
+                payload: normalizeSkillProgressionPayload(skillPayload)
             });
         }
         if (trialIndex === 3 && !context.runTerminated) {
@@ -300,14 +298,14 @@ export class PostTrialProgressionService {
     }
 
     completeRewardSelection({ result = null } = {}) {
-        return this._completeExternalStep(POST_TRIAL_STEP_TYPES.REWARD_SELECTION, {
+        return this._completeDelegatedStep(POST_TRIAL_STEP_TYPES.REWARD_SELECTION, {
             result,
             factType: GAME_FACT_TYPES.POST_TRIAL_REWARD_SELECTED
         });
     }
 
     completeUnlockApply({ result = null } = {}) {
-        return this._completeExternalStep(POST_TRIAL_STEP_TYPES.UNLOCK_APPLY, {
+        return this._completeDelegatedStep(POST_TRIAL_STEP_TYPES.UNLOCK_APPLY, {
             result,
             factType: GAME_FACT_TYPES.POST_TRIAL_UNLOCK_APPLIED
         });
@@ -315,9 +313,7 @@ export class PostTrialProgressionService {
 
     completeSkillProgression({ owner = null, result = null } = {}) {
         const transition = this.engine.state.postTrialTransition || null;
-        const step = transition?.steps?.find(candidate =>
-            candidate?.type === POST_TRIAL_STEP_TYPES.SKILL_PROGRESSION
-        ) || null;
+        const step = this._getStepRef(POST_TRIAL_STEP_TYPES.SKILL_PROGRESSION);
         if (!step) {
             return {
                 success: false,
@@ -355,8 +351,6 @@ export class PostTrialProgressionService {
             };
         }
 
-        // Idempotence: once the step is applied, the owner authority must never be
-        // invoked again. _completeExternalStep returns the already-applied snapshot.
         if (step.status === POST_TRIAL_STEP_STATUS.APPLIED) {
             return this._completeExternalStep(POST_TRIAL_STEP_TYPES.SKILL_PROGRESSION, {
                 result: {
@@ -366,19 +360,10 @@ export class PostTrialProgressionService {
             });
         }
 
-        const current = this._getCurrentPendingStepRef();
-        if (current !== step) {
-            return {
-                success: false,
-                reason: "POST_TRIAL_STEP_OUT_OF_ORDER",
-                stepType: POST_TRIAL_STEP_TYPES.SKILL_PROGRESSION,
-                currentStepType: current?.type || null,
-                transition: this.getTransition()
-            };
-        }
+        const orderError = this._requireCurrentStep(step);
+        if (orderError) return orderError;
 
-        if (!this.skillProgressionRouter
-            || typeof this.skillProgressionRouter.apply !== "function") {
+        if (!this.skillProgressionRouter || typeof this.skillProgressionRouter.apply !== "function") {
             return {
                 success: false,
                 reason: "POST_TRIAL_SKILL_ROUTER_REQUIRED",
@@ -391,12 +376,7 @@ export class PostTrialProgressionService {
             owner: resolvedOwner,
             payload: cloneData(step.payload),
             result: cloneData(result),
-            context: {
-                transitionId: transition?.transitionId || null,
-                trialIndex: transition?.trialIndex || null,
-                scenarioId: transition?.scenarioId || null,
-                outcome: transition?.outcome || null
-            }
+            context: this._createDelegationContext(transition)
         });
         if (!delegation?.success) {
             return {
@@ -417,8 +397,7 @@ export class PostTrialProgressionService {
         });
     }
 
-    // Legacy compatibility: old callers remain valid, but new code should call
-    // completeSkillProgression() with an explicit owner where the policy knows it.
+    // Legacy compatibility only. New code should use completeSkillProgression().
     completeAdvisorProgression({ result = null } = {}) {
         return this.completeSkillProgression({
             owner: POST_TRIAL_SKILL_OWNER_TYPES.ADVISOR,
@@ -427,7 +406,7 @@ export class PostTrialProgressionService {
     }
 
     completeFinalRunCompletion({ result = null } = {}) {
-        return this._completeExternalStep(POST_TRIAL_STEP_TYPES.FINAL_RUN_COMPLETION, { result });
+        return this._completeDelegatedStep(POST_TRIAL_STEP_TYPES.FINAL_RUN_COMPLETION, { result });
     }
 
     completeAfterPresentationCleanup({ translate = null } = {}) {
@@ -476,14 +455,63 @@ export class PostTrialProgressionService {
         }));
     }
 
+    _completeDelegatedStep(type, { result = null, factType = null } = {}) {
+        const transition = this.engine.state.postTrialTransition || null;
+        const step = this._getStepRef(type);
+        if (!transition) {
+            return { success: false, reason: "POST_TRIAL_TRANSITION_NOT_FOUND" };
+        }
+        if (!step) {
+            return { success: false, reason: "POST_TRIAL_STEP_NOT_FOUND", stepType: type };
+        }
+
+        if (step.status === POST_TRIAL_STEP_STATUS.APPLIED) {
+            return this._completeExternalStep(type, { result, factType });
+        }
+
+        const orderError = this._requireCurrentStep(step);
+        if (orderError) return orderError;
+
+        if (!this.stepAuthorityRouter || typeof this.stepAuthorityRouter.apply !== "function") {
+            return {
+                success: false,
+                reason: "POST_TRIAL_STEP_ROUTER_REQUIRED",
+                stepType: type,
+                transition: this.getTransition()
+            };
+        }
+
+        const delegation = this.stepAuthorityRouter.apply({
+            type,
+            payload: cloneData(step.payload),
+            result: cloneData(result),
+            context: this._createDelegationContext(transition)
+        });
+        if (!delegation?.success) {
+            return {
+                success: false,
+                reason: delegation?.reason || "POST_TRIAL_STEP_DELEGATION_FAILED",
+                stepType: type,
+                delegation: cloneData(delegation),
+                transition: this.getTransition()
+            };
+        }
+
+        return this._completeExternalStep(type, {
+            result: {
+                value: cloneData(result),
+                authorityResult: cloneData(delegation.authorityResult)
+            },
+            factType
+        });
+    }
+
     _completeExternalStep(type, { result = null, factType = null } = {}) {
         const transition = this.engine.state.postTrialTransition;
         if (!transition) {
             return { success: false, reason: "POST_TRIAL_TRANSITION_NOT_FOUND" };
         }
-        const step = Array.isArray(transition.steps)
-            ? transition.steps.find(candidate => candidate?.type === type)
-            : null;
+        const step = this._getStepRef(type);
         if (!step) {
             return { success: false, reason: "POST_TRIAL_STEP_NOT_FOUND", stepType: type };
         }
@@ -497,16 +525,8 @@ export class PostTrialProgressionService {
             };
         }
 
-        const current = this._getCurrentPendingStepRef();
-        if (current !== step) {
-            return {
-                success: false,
-                reason: "POST_TRIAL_STEP_OUT_OF_ORDER",
-                stepType: type,
-                currentStepType: current?.type || null,
-                transition: this.getTransition()
-            };
-        }
+        const orderError = this._requireCurrentStep(step);
+        if (orderError) return orderError;
 
         step.status = POST_TRIAL_STEP_STATUS.APPLIED;
         step.result = cloneData(result);
@@ -578,11 +598,40 @@ export class PostTrialProgressionService {
         return { success: true, stageProgression };
     }
 
+    _getStepRef(type) {
+        const steps = Array.isArray(this.engine.state.postTrialTransition?.steps)
+            ? this.engine.state.postTrialTransition.steps
+            : [];
+        return steps.find(step => step?.type === type) || null;
+    }
+
     _getCurrentPendingStepRef() {
         const steps = Array.isArray(this.engine.state.postTrialTransition?.steps)
             ? this.engine.state.postTrialTransition.steps
             : [];
         return steps.find(step => step?.status === POST_TRIAL_STEP_STATUS.PENDING) || null;
+    }
+
+    _requireCurrentStep(step) {
+        const current = this._getCurrentPendingStepRef();
+        if (current === step) return null;
+        return {
+            success: false,
+            reason: "POST_TRIAL_STEP_OUT_OF_ORDER",
+            stepType: step?.type || null,
+            currentStepType: current?.type || null,
+            transition: this.getTransition()
+        };
+    }
+
+    _createDelegationContext(transition = null) {
+        return {
+            transitionId: transition?.transitionId || null,
+            trialIndex: transition?.trialIndex || null,
+            scenarioId: transition?.scenarioId || null,
+            outcome: transition?.outcome || null,
+            runTerminated: Boolean(transition?.runTerminated)
+        };
     }
 
     _tryCompleteTransition({ emitFact = true } = {}) {
@@ -596,8 +645,7 @@ export class PostTrialProgressionService {
             return { completed: false, reason: "POST_TRIAL_PRESENTATION_CLEANUP_PENDING" };
         }
 
-        const hasPendingStep = Boolean(this._getCurrentPendingStepRef());
-        if (hasPendingStep) {
+        if (this._getCurrentPendingStepRef()) {
             transition.status = POST_TRIAL_TRANSITION_STATUS.PENDING_STEPS;
             return { completed: false, reason: "POST_TRIAL_STEPS_PENDING" };
         }
