@@ -353,7 +353,7 @@ function dispose(h) {
         ]
     };
     const restored = createHarness({ stageId: 1, restoredTransition });
-    assert.equal(restored.postTrialService.getTransition().schemaVersion, 4);
+    assert.equal(restored.postTrialService.getTransition().schemaVersion, 5);
     assert.deepEqual(
         restored.postTrialService.getTransition().steps.map(step => step.type),
         [
