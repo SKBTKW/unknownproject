@@ -93,6 +93,8 @@ function toTrialDto(trial) {
     return {
         available: Boolean(trial?.available),
         activeRouteId: trial?.activeRouteId ?? null,
+        selectedInterceptCell: toCellRef(trial?.selectedInterceptCell),
+        hoveredInterceptCell: toCellRef(trial?.hoveredInterceptCell),
         routes: Array.isArray(trial?.routes) ? trial.routes.map(toRouteDto) : [],
         interceptionCandidates: cloneJsonSafe(trial?.interceptionCandidates ?? []),
         plannedIntercepts: cloneJsonSafe(trial?.plannedIntercepts ?? []),
