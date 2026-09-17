@@ -1,4 +1,5 @@
 import { findAdvisorDialogue } from './advisor_dialogue_database.js';
+import { ADVISOR_DIALOGUE_CHANNELS, getAdvisorEventResponsibility } from '../../data/advisor_dialogue_responsibility.js';
 
 const defaultSetTimer = (callback, delay) => setTimeout(callback, delay);
 const defaultClearTimer = timerId => clearTimeout(timerId);
@@ -69,9 +70,12 @@ export class AdvisorDialogueSystem {
 
     resolveDialogueMode(entry, requestedMode = this.dialogueMode) {
         const normalizedRequestedMode = normalizeDialogueMode(requestedMode);
-        if (!entry?.policyKey) return normalizedRequestedMode;
+        const responsibility = getAdvisorEventResponsibility(entry?.event);
+        if (responsibility?.channel !== ADVISOR_DIALOGUE_CHANNELS.ADVICE || !responsibility.policyKey) {
+            return normalizedRequestedMode;
+        }
 
-        const policyValue = this.profile?.policy?.[entry.policyKey];
+        const policyValue = this.profile?.policy?.[responsibility.policyKey];
         if (!Number.isFinite(policyValue)) return normalizedRequestedMode;
 
         return shallowerMode(normalizedRequestedMode, policyValueToMode(policyValue));
