@@ -24,6 +24,7 @@ export function hydrateGameState(state, serialized, options = {}) {
     const {
         isGameOver = false,
         runTermination = null,
+        postTrialTransition = null,
         investigationUnlocked = false,
         investigationUnlockedAtVerse = null,
         knownEnemyState = null,
@@ -36,6 +37,7 @@ export function hydrateGameState(state, serialized, options = {}) {
     const hydrated = hydrateBaseGameState(state, baseSerialized, options);
     hydrated.isGameOver = !!isGameOver;
     hydrated.runTermination = cloneData(runTermination) ?? null;
+    hydrated.postTrialTransition = cloneData(postTrialTransition) ?? null;
     hydrated.investigationUnlocked = !!investigationUnlocked;
     hydrated.investigationUnlockedAtVerse = Number.isInteger(investigationUnlockedAtVerse)
         ? investigationUnlockedAtVerse
