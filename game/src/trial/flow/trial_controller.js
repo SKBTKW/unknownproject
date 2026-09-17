@@ -5,6 +5,7 @@ import { TrialHqResolutionService } from "../systems/trial_hq_resolution_service
 import { TrialResultSettlementService } from "../systems/trial_result_settlement_service.js";
 import { EnemyForceTerrainInteractionResolver } from "../systems/enemy_force_terrain_interaction_resolver.js";
 import { EnemyForceDeploymentResolver } from "../systems/enemy_force_deployment_resolver.js";
+import { EnemyTacticResolver } from "../systems/enemy_tactic_resolver.js";
 import { TrialLifecycleReadService } from "../presentation/trial_lifecycle_read_service.js";
 
 function resolveTerrainId(cell) {
@@ -15,6 +16,7 @@ function resolveTerrainId(cell) {
 function resolveForceProfile(route) {
     const profile = route?.forceProfile || route?.profile || null;
     return {
+        ...(profile && typeof profile === "object" ? JSON.parse(JSON.stringify(profile)) : {}),
         bodySize: profile?.bodySize || route?.bodySize || "MEDIUM",
         equipment: profile?.equipment || route?.equipment || ["STANDARD"]
     };
@@ -32,6 +34,9 @@ export class TrialController extends TrialControllerBase {
             || new EnemyForceTerrainInteractionResolver();
         this.forceDeploymentResolver = options.forceDeploymentResolver
             || new EnemyForceDeploymentResolver();
+        this.enemyTacticResolver = options.enemyTacticResolver || new EnemyTacticResolver({
+            interactionResolver: this.forceTerrainInteractionResolver
+        });
         this.lifecycleReadService = options.lifecycleReadService || new TrialLifecycleReadService();
     }
 
@@ -53,6 +58,19 @@ export class TrialController extends TrialControllerBase {
                 forceSuppression: strategicSuppression,
                 interaction
             });
+            const tacticResolution = this.enemyTacticResolver.resolve({
+                terrainId,
+                force: {
+                    id: route?.forceId || null,
+                    commander: route?.commander || null,
+                    profile
+                },
+                armyStructure: this.state?.armyStructure || {
+                    commander: this.state?.commander || null,
+                    forces: this.state?.forces || [],
+                    forceCount: Array.isArray(this.state?.forces) ? this.state.forces.length : 0
+                }
+            });
 
             resolved.input.enemySuppression = this.powerResolver.resolveSuppression(
                 deployment.deployedSuppression
@@ -64,8 +82,10 @@ export class TrialController extends TrialControllerBase {
             resolved.input.enemyDeployment = {
                 profile,
                 interaction,
-                deployment
+                deployment,
+                tactics: tacticResolution.tactics
             };
+            resolved.input.enemyTactics = tacticResolution.tactics;
         }
         return resolved;
     }
