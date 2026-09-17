@@ -1,9 +1,10 @@
-import { isBoardContextMode, isBoardViewMode, normalizeBoardCell } from './board_presentation_state.js';
+import { isBoardContextMode, isBoardViewMode, isBoardViewPreset, normalizeBoardCell } from './board_presentation_state.js';
 
 export const BOARD_INPUT_CONTRACT_VERSION = "board-input-v1";
 export const BOARD_INPUT_COMMANDS = Object.freeze({
     SET_VIEW_MODE: "SET_VIEW_MODE",
     TOGGLE_VIEW_MODE: "TOGGLE_VIEW_MODE",
+    SET_VIEW_PRESET: "SET_VIEW_PRESET",
     SET_CONTEXT_MODE: "SET_CONTEXT_MODE",
     TOGGLE_CONTEXT_MODE: "TOGGLE_CONTEXT_MODE",
     SELECT_CELL: "SELECT_CELL",
@@ -62,6 +63,9 @@ export function createBoardInputCommand(type, payload = {}) {
         case BOARD_INPUT_COMMANDS.SET_VIEW_MODE:
             if (!isBoardViewMode(payload.viewMode)) throw new Error(`INVALID_BOARD_VIEW_MODE:${payload.viewMode}`);
             normalizedPayload = { viewMode: payload.viewMode }; break;
+        case BOARD_INPUT_COMMANDS.SET_VIEW_PRESET:
+            if (!isBoardViewPreset(payload.viewPreset)) throw new Error(`INVALID_BOARD_VIEW_PRESET:${payload.viewPreset}`);
+            normalizedPayload = { viewPreset: payload.viewPreset }; break;
         case BOARD_INPUT_COMMANDS.SET_CONTEXT_MODE:
             if (!isBoardContextMode(payload.contextMode)) throw new Error(`INVALID_BOARD_CONTEXT_MODE:${payload.contextMode}`);
             normalizedPayload = { contextMode: payload.contextMode }; break;
