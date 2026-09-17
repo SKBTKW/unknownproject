@@ -1,4 +1,5 @@
 import { STAFF_OFFICER_REACTIONS } from '../../data/advisor_staff_officer_reactions.js';
+import { STAFF_OFFICER_DIALOGUES } from '../../data/advisor_staff_officer_dialogues.js';
 import { createAdvisorCharacterDefinition } from './advisor_character_contract.js';
 
 const ADVISOR_ASSET_BASE = '../../../assets/advisor/';
@@ -88,6 +89,7 @@ const GENERAL_OLD_01 = createAdvisorCharacterDefinition({
         ])
     },
     reactions: {},
+    adviceDialogue: {},
     dutyDialogue: {},
     initialSkills: []
 });
@@ -151,10 +153,28 @@ const STAFF_OFFICER_FEMALE_01 = createAdvisorCharacterDefinition({
             "glory_for_glory",
             "mystical_certainty"
         ]),
-        lexicalPreferences: Object.freeze([]),
-        lexicalAvoid: Object.freeze([])
+        // Internal authoring vocabulary uses semantic ids; localized wording stays in dialogue data.
+        lexicalPreferences: Object.freeze([
+            "reporting",
+            "verification",
+            "stockpiles",
+            "attrition",
+            "maintenance",
+            "withdrawal",
+            "deployment",
+            "necessity"
+        ]),
+        lexicalAvoid: Object.freeze([
+            "lavish_praise",
+            "perfection",
+            "absolutism",
+            "miracle",
+            "fate",
+            "glory"
+        ])
     },
     reactions: STAFF_OFFICER_REACTIONS.reactions,
+    adviceDialogue: STAFF_OFFICER_DIALOGUES,
     dutyDialogue: {},
     initialSkills: []
 });
