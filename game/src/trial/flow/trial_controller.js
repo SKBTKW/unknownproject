@@ -6,6 +6,7 @@ import { TrialResultSettlementService } from "../systems/trial_result_settlement
 import { EnemyForceTerrainInteractionResolver } from "../systems/enemy_force_terrain_interaction_resolver.js";
 import { EnemyForceDeploymentResolver } from "../systems/enemy_force_deployment_resolver.js";
 import { EnemyTacticResolver } from "../systems/enemy_tactic_resolver.js";
+import { EnemyTacticSelectionResolver } from "../systems/enemy_tactic_selection_resolver.js";
 import { TrialLifecycleReadService } from "../presentation/trial_lifecycle_read_service.js";
 
 function resolveTerrainId(cell) {
@@ -37,6 +38,8 @@ export class TrialController extends TrialControllerBase {
         this.enemyTacticResolver = options.enemyTacticResolver || new EnemyTacticResolver({
             interactionResolver: this.forceTerrainInteractionResolver
         });
+        this.enemyTacticSelectionResolver = options.enemyTacticSelectionResolver
+            || new EnemyTacticSelectionResolver();
         this.lifecycleReadService = options.lifecycleReadService || new TrialLifecycleReadService();
     }
 
@@ -71,6 +74,7 @@ export class TrialController extends TrialControllerBase {
                     forceCount: Array.isArray(this.state?.forces) ? this.state.forces.length : 0
                 }
             });
+            const tacticSelection = this.enemyTacticSelectionResolver.resolve(tacticResolution);
 
             resolved.input.enemySuppression = this.powerResolver.resolveSuppression(
                 deployment.deployedSuppression
@@ -83,9 +87,13 @@ export class TrialController extends TrialControllerBase {
                 profile,
                 interaction,
                 deployment,
-                tactics: tacticResolution.tactics
+                tactics: tacticResolution.tactics,
+                selectedTactic: tacticSelection.selectedTactic,
+                tacticAlternatives: tacticSelection.alternatives,
+                tacticSelectionReason: tacticSelection.selectionReason
             };
             resolved.input.enemyTactics = tacticResolution.tactics;
+            resolved.input.enemySelectedTactic = tacticSelection.selectedTactic;
         }
         return resolved;
     }
