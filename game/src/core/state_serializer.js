@@ -25,6 +25,7 @@ export function serializeGameState(state) {
         ...serialized,
         isGameOver: !!state?.isGameOver,
         runTermination: cloneData(state?.runTermination),
+        postTrialTransition: cloneData(state?.postTrialTransition),
         investigationUnlocked: !!state?.investigationUnlocked,
         investigationUnlockedAtVerse: Number.isInteger(state?.investigationUnlockedAtVerse)
             ? state.investigationUnlockedAtVerse
