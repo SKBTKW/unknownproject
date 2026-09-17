@@ -42,6 +42,7 @@ const state = {
     }
 };
 
+let lifecycle = null;
 const engine = {
     state,
     i18n: {
@@ -68,10 +69,26 @@ const engine = {
     },
     gridEngine: {
         expandGrid: size => calls.push(`grid.expand:${size}`)
+    },
+    historySnapshotService: {
+        capture() {
+            calls.push('history.capture');
+            return { success: true };
+        },
+        captureRestorePoint() {
+            calls.push('history.restore-point');
+            return { success: true };
+        }
+    },
+    trialLaunchCoordinator: {
+        tryStartPending({ gameState }) {
+            calls.push(`trial.launch:${gameState.turn}:${lifecycle?.getPhase()}`);
+            return { started: false, reason: 'TRIAL_LAUNCH_NOT_DUE' };
+        }
     }
 };
 
-const lifecycle = new TurnLifecycleService(engine);
+lifecycle = new TurnLifecycleService(engine);
 const result = lifecycle.advance();
 
 assert(lifecycle.getPhase() === TURN_LIFECYCLE_PHASES.ACTIVE, 'returns to ACTIVE after advancing');
@@ -100,6 +117,29 @@ assert(
         && calls.indexOf('deck.offering') < calls.indexOf('global.start'),
     'preserves global-event tick -> turn advance/offering -> turn-start order'
 );
+assert(
+    calls.indexOf('global.start') < calls.indexOf('history.restore-point')
+        && calls.indexOf('history.restore-point') < calls.indexOf('trial.launch:5:ACTIVE'),
+    'defers Trial launch until turn-start work and restore-point capture are complete'
+);
+assert(
+    engine.lastTrialLaunchAttempt?.reason === 'TRIAL_LAUNCH_NOT_DUE',
+    'records the post-initialization Trial launch attempt without changing timing authority'
+);
+
+engine.trialLaunchCoordinator = {
+    tryStartPending() {
+        throw new Error('launch boom');
+    }
+};
+const failedLaunch = lifecycle._tryStartPendingTrial();
+assert(
+    failedLaunch?.started === false
+        && failedLaunch?.reason === 'TRIAL_LAUNCH_UNEXPECTED_ERROR'
+        && failedLaunch?.errorMessage === 'launch boom',
+    'unexpected Trial launch errors fail closed instead of poisoning Verse lifecycle'
+);
+assert(lifecycle.getPhase() === TURN_LIFECYCLE_PHASES.ACTIVE, 'launch failure leaves Verse lifecycle ACTIVE');
 
 console.log(`TurnLifecycleService: ${passed}/${total} PASS`);
 if (passed !== total) process.exitCode = 1;
