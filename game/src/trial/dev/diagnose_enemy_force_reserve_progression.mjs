@@ -3,7 +3,7 @@ import { createBattleContext } from "../domain/battle_context.js";
 import { TrialCombatResolver } from "../systems/trial_combat_resolver.js";
 import { TrialEnemyAdvanceService } from "../systems/trial_enemy_advance_service.js";
 import { TrialHqArrivalAggregationService } from "../systems/trial_hq_arrival_aggregation_service.js";
-import { TRIAL_BATTLE_STATUSES, TRIAL_ROUTE_PLAN_STATUSES } from "../domain/trial_types.js";
+import { TRIAL_BATTLE_STATUSES, TRIAL_OUTCOMES, TRIAL_ROUTE_PLAN_STATUSES } from "../domain/trial_types.js";
 
 const neutralTerrainResolver = {
     resolve: () => ({
@@ -68,6 +68,23 @@ breakthroughState.battleQueue[0].sequenceAdvanced = true;
 const aggregated = aggregationService.collect(breakthroughState);
 assert.equal(aggregated.success, true);
 assert.equal(aggregated.totalSourcePower, 80);
+
+const exact = combat({ humanPower: 45 });
+assert.equal(exact.prediction.outcome, TRIAL_OUTCOMES.EXACT);
+assert.equal(exact.remainingSuppression, 0);
+assert.equal(exact.reserveSuppression, 55);
+assert.equal(exact.remainingForceSuppression, 55);
+
+const exactState = stateFor(exact);
+const exactAdvance = advanceService.advanceAfterBattle(exactState);
+assert.equal(exactAdvance.success, true);
+assert.equal(exactAdvance.traversalResult.stopped, false);
+assert.equal(exactAdvance.traversalResult.reachedRouteEnd, true);
+assert.equal(exactAdvance.traversalResult.remainingForceSuppression, 55);
+exactState.battleQueue[0].sequenceAdvanced = true;
+const exactAggregation = aggregationService.collect(exactState);
+assert.equal(exactAggregation.success, true);
+assert.equal(exactAggregation.totalSourcePower, 55);
 
 const repelled = combat({ humanPower: 50 });
 assert.equal(repelled.reserveSuppression, 55);
