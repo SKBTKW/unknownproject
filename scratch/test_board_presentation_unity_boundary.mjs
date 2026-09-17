@@ -19,7 +19,7 @@ console.log("🎮 Portable board presentation / Unity boundary tests");
 
 const grid = [
     [
-        { placed: true, merged: true, mergeGroupId: "zone-a", placementGroupId: "placement-a", terrain: { terrainId: "PLAINS", id: "PLAINS", nameKey: "PLAINS", e: 1, gl: 1 } },
+        { placed: true, merged: true, searched: true, mergeGroupId: "zone-a", placementGroupId: "placement-a", terrain: { terrainId: "PLAINS", id: "PLAINS", nameKey: "PLAINS", e: 1, gl: 1 } },
         { placed: true, merged: true, mergeGroupId: "zone-a", placementGroupId: "placement-a", terrain: { terrainId: "PLAINS", id: "PLAINS", nameKey: "PLAINS", e: 1, gl: 1 } }
     ],
     [
@@ -106,6 +106,11 @@ test("merged production is resolved before renderer DTO consumption", () => {
     });
     assert.equal(secondary.display.role, "CLEAN");
     assert.equal(secondary.display.production, null);
+});
+
+test("searched cell fact is portable presentation semantic instead of Web DOM inference", () => {
+    assert.equal(dto.cells[0][0].display.searched, true);
+    assert.equal(dto.cells[0][1].display.searched, false);
 });
 
 test("socket semantics remain presentation data instead of renderer inference", () => {
