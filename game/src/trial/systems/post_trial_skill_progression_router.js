@@ -40,10 +40,12 @@ function createOperationId(context) {
  * Owner-routing boundary for post-Trial skill progression.
  *
  * This router never stores or mutates skills itself. ADVISOR and PLAYER are
- * deliberately symmetric ports. The operation identity is owner-agnostic because
- * ownership remains a replaceable implementation choice: the same logical
- * Post-Trial Skill progression must retain one idempotency key even if ownership
- * policy changes between ADVISOR and PLAYER implementations.
+ * deliberately symmetric ports. The selected owner authority receives the same
+ * logical operationId for this Trial's Skill progression regardless of storage
+ * ownership, so changing ADVISOR/PLAYER ownership does not create a second
+ * logical mutation. Authorities must treat repeated requests with the same
+ * operationId idempotently and return success for an already-committed mutation;
+ * this lets Post-Trial safely close a crash window after save/load replay.
  */
 export class PostTrialSkillProgressionRouter {
     constructor({ advisorAuthority = null, playerAuthority = null } = {}) {
