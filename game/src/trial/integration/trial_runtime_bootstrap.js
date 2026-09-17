@@ -26,7 +26,8 @@ export function attachTrialRuntimeSubsystems(engine, {
     gameFactHub = null,
     timingOptions = {},
     warningOptions = {},
-    warningTimingOptions = {}
+    warningTimingOptions = {},
+    postTrialOptions = {}
 } = {}) {
     if (!engine?.state) {
         return { success: false, reason: "TRIAL_RUNTIME_ENGINE_REQUIRED" };
@@ -80,6 +81,7 @@ export function attachTrialRuntimeSubsystems(engine, {
     // delegated Stage pending state, then Post-Trial snapshots it into its SSOT.
     if (!engine.postTrialProgressionService) {
         engine.postTrialProgressionService = new PostTrialProgressionService(engine, {
+            ...postTrialOptions,
             gameFactHub: factHub,
             stageProgressionService: engine.trialStageProgressionService
         });
