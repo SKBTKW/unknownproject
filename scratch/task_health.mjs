@@ -2,6 +2,7 @@ import { execFileSync } from 'child_process';
 import path from 'path';
 import process from 'process';
 import { fileURLToPath } from 'url';
+import { MERGE_PREVIEW_STATUS, previewMerge } from './task_merge_preview.mjs';
 
 export const TASK_HEALTH = Object.freeze({
     HEALTHY: 'HEALTHY',
@@ -45,7 +46,10 @@ const SHARED_SURFACE_PATHS = new Set([
     'scratch/test_all_modules.mjs',
 ]);
 
-const CONTRACT_WORDS = new Set(['contract', 'service', 'bootstrap', 'event', 'fact']);
+const CONTRACT_SURFACE_PATHS = new Set([
+    'game/src/core/game_fact.js',
+    'scratch/task_branch_contract.mjs',
+]);
 
 function unique(values) {
     return [...new Set(values.filter(Boolean))];
@@ -54,6 +58,11 @@ function unique(values) {
 function isSharedSurface(filepath) {
     return SHARED_SURFACE_PATHS.has(filepath)
         || /^game\/src\/data\/[^/]+\.json$/.test(filepath);
+}
+
+function isContractSurface(filepath) {
+    return CONTRACT_SURFACE_PATHS.has(filepath)
+        || /(^|\/)[^/]*contract[^/]*\.(?:js|mjs|json|md)$/i.test(filepath);
 }
 
 function domainOf(filepath) {
@@ -65,14 +74,10 @@ function domainOf(filepath) {
     return scratch ? `scratch/${scratch[1]}` : '';
 }
 
-function contractWords(filepath) {
-    return filepath.toLowerCase().split(/[^a-z0-9]+/).filter((word) => CONTRACT_WORDS.has(word));
-}
-
 /**
- * Classify only the observed overlap. It intentionally does not infer semantic
- * dependencies from arbitrary source code; those remain a human reconciliation
- * decision at the integration gate.
+ * Classify observed overlap only. Semantic dependency inference belongs to the
+ * human reconciliation step; generic words such as "service" are deliberately
+ * not treated as contract evidence.
  */
 export function classifyOverlap(targetFiles = [], taskFiles = []) {
     const target = unique(targetFiles);
@@ -81,9 +86,8 @@ export function classifyOverlap(targetFiles = [], taskFiles = []) {
     const paths = target.filter((filepath) => taskSet.has(filepath));
     const taskDomains = new Set(task.map(domainOf).filter(Boolean));
     const domains = unique(target.map(domainOf).filter((domain) => taskDomains.has(domain)));
-    const taskWords = new Set(task.flatMap(contractWords));
-    const contracts = unique(target.flatMap(contractWords).filter((word) => taskWords.has(word)));
-    const shared = target.filter(isSharedSurface);
+    const shared = paths.filter(isSharedSurface);
+    const contracts = paths.filter(isContractSurface);
     const findings = [
         [OVERLAP_RISK.CONTRACT_OVERLAP, contracts],
         [OVERLAP_RISK.SHARED_SURFACE, shared],
@@ -115,6 +119,11 @@ export function assessTaskHealth({
     targetIsAncestor = true,
     integrationReady = false,
     overlap = { risk: OVERLAP_RISK.NONE, evidence: [] },
+    mergePreview = {
+        status: MERGE_PREVIEW_STATUS.NOT_REQUIRED,
+        conflictPaths: [],
+        reason: '',
+    },
 } = {}) {
     if (!baseIsTargetAncestor) {
         return {
@@ -154,10 +163,8 @@ export function assessTaskHealth({
         };
     }
 
-    const integrationState = integrationReady && !targetIsAncestor
-        ? INTEGRATION_STATE.WAITING_FOR_BASE_UPDATE
-        : (integrationReady ? INTEGRATION_STATE.READY : INTEGRATION_STATE.WORKING);
     if (!needsReconciliationNow) {
+        const integrationState = integrationReady ? INTEGRATION_STATE.READY : INTEGRATION_STATE.WORKING;
         return {
             health: TASK_HEALTH.HEALTHY,
             integrationState,
@@ -169,23 +176,57 @@ export function assessTaskHealth({
         };
     }
 
+    if (mergePreview.status === MERGE_PREVIEW_STATUS.CONFLICT) {
+        return {
+            health: TASK_HEALTH.RECONCILE_RECOMMENDED,
+            integrationState: integrationReady ? INTEGRATION_STATE.CONFLICT : INTEGRATION_STATE.WORKING,
+            risk: overlap.risk,
+            action: integrationReady ? 'BLOCK' : 'CONTINUE_WITH_RECONCILIATION_PLAN',
+            reason: 'TARGET_DRIFT has a confirmed Git merge conflict.',
+        };
+    }
+
+    if (mergePreview.status === MERGE_PREVIEW_STATUS.UNKNOWN) {
+        return {
+            health: integrationReady ? TASK_HEALTH.BLOCKED : TASK_HEALTH.RECONCILE_RECOMMENDED,
+            integrationState: integrationReady ? INTEGRATION_STATE.WAITING_FOR_BASE_UPDATE : INTEGRATION_STATE.WORKING,
+            risk: overlap.risk,
+            action: integrationReady ? 'BLOCK' : 'CONTINUE_WITH_WARNING',
+            reason: `Merge conflict preview is unavailable: ${mergePreview.reason || 'unknown error'}`,
+        };
+    }
+
+    const integrationState = integrationReady
+        ? INTEGRATION_STATE.WAITING_FOR_BASE_UPDATE
+        : INTEGRATION_STATE.WORKING;
+    const integrationAction = integrationReady ? 'BLOCK' : 'CONTINUE';
+
     if (overlap.risk === OVERLAP_RISK.CONTRACT_OVERLAP) {
         return {
             health: TASK_HEALTH.RECONCILE_RECOMMENDED,
             integrationState,
             risk: overlap.risk,
-            action: 'CONTINUE_WITH_RECONCILIATION_PLAN',
-            reason: 'TARGET_DRIFT includes a possible contract overlap.',
+            action: integrationReady ? 'BLOCK' : 'CONTINUE_WITH_RECONCILIATION_PLAN',
+            reason: 'TARGET_DRIFT includes an explicit contract-surface overlap; Git merge preview is clean.',
         };
     }
+
+    if (overlap.risk !== OVERLAP_RISK.NONE) {
+        return {
+            health: TASK_HEALTH.OVERLAP_DETECTED,
+            integrationState,
+            risk: overlap.risk,
+            action: integrationAction,
+            reason: `TARGET_DRIFT observed ${overlap.risk}; Git merge preview is clean.`,
+        };
+    }
+
     return {
         health: TASK_HEALTH.TARGET_DRIFT,
         integrationState,
-        risk: overlap.risk,
-        action: 'CONTINUE',
-        reason: overlap.risk === OVERLAP_RISK.NONE
-            ? 'TARGET_DRIFT has no observed file or domain overlap.'
-            : `TARGET_DRIFT observed ${overlap.risk}.`,
+        risk: OVERLAP_RISK.NONE,
+        action: integrationAction,
+        reason: 'TARGET_DRIFT has no observed overlap and Git merge preview is clean.',
     };
 }
 
@@ -207,9 +248,14 @@ function gitSuccess(args, cwd) {
     }
 }
 
-function refreshRemoteRefs(cwd, target, branch) {
+export function refreshRemoteRefs(cwd, target, branch) {
     try {
-        execFileSync('git', ['fetch', 'origin', target], { cwd, stdio: 'ignore', windowsHide: true });
+        const targetRefspec = `+refs/heads/${target}:refs/remotes/origin/${target}`;
+        execFileSync('git', ['fetch', '--no-tags', 'origin', targetRefspec], {
+            cwd,
+            stdio: 'ignore',
+            windowsHide: true,
+        });
         const remoteTask = execFileSync('git', ['ls-remote', '--heads', 'origin', branch], {
             cwd,
             encoding: 'utf8',
@@ -217,7 +263,12 @@ function refreshRemoteRefs(cwd, target, branch) {
         }).trim();
         const remoteTaskExists = Boolean(remoteTask);
         if (remoteTaskExists) {
-            execFileSync('git', ['fetch', 'origin', branch], { cwd, stdio: 'ignore', windowsHide: true });
+            const taskRefspec = `+refs/heads/${branch}:refs/remotes/origin/${branch}`;
+            execFileSync('git', ['fetch', '--no-tags', 'origin', taskRefspec], {
+                cwd,
+                stdio: 'ignore',
+                windowsHide: true,
+            });
         }
         return { freshness: REMOTE_FRESHNESS.FRESH, remoteTaskExists, reason: '' };
     } catch (error) {
@@ -257,20 +308,34 @@ function inspectCurrentTask(cwd, options) {
         throw new Error(`UNKNOWN_BRANCH_RELATIONSHIP: ${targetRef} is unavailable after refresh.`);
     }
 
+    const targetSha = git(['rev-parse', targetRef], cwd);
+    const headSha = git(['rev-parse', 'HEAD'], cwd);
     const baseIsTargetAncestor = gitSuccess(['merge-base', '--is-ancestor', base, targetRef], cwd);
     const taskDescendsFromBase = gitSuccess(['merge-base', '--is-ancestor', base, 'HEAD'], cwd);
     const remoteTaskExists = refresh.remoteTaskExists ?? gitSuccess(['rev-parse', '--verify', taskRef], cwd);
     const remoteTaskIsAncestor = !remoteTaskExists || gitSuccess(['merge-base', '--is-ancestor', taskRef, 'HEAD'], cwd);
-    const targetHasAdvancedSinceRecordedBase = git(['rev-parse', targetRef], cwd) !== base;
-    const targetIsAncestor = gitSuccess(['merge-base', '--is-ancestor', targetRef, 'HEAD'], cwd);
+    const targetHasAdvancedSinceRecordedBase = targetSha !== base;
+    const targetIsAncestor = gitSuccess(['merge-base', '--is-ancestor', targetSha, headSha], cwd);
     const needsReconciliationNow = targetHasAdvancedSinceRecordedBase && !targetIsAncestor;
-    const mergeBase = git(['merge-base', targetRef, 'HEAD'], cwd);
-    const ranges = buildTaskFileRanges({ mergeBase, targetRef });
+    const mergeBase = git(['merge-base', targetSha, headSha], cwd);
+    const ranges = buildTaskFileRanges({ mergeBase, targetRef, head: headSha });
     const targetFiles = needsReconciliationNow
         ? git(['diff', '--name-only', ranges.targetOnlyRange], cwd).split(/\r?\n/).filter(Boolean)
         : [];
     const taskFiles = git(['diff', '--name-only', ranges.taskOwnedRange], cwd).split(/\r?\n/).filter(Boolean);
     const overlap = classifyOverlap(targetFiles, taskFiles);
+    const mergePreview = needsReconciliationNow
+        && refresh.freshness === REMOTE_FRESHNESS.FRESH
+        && baseIsTargetAncestor
+        && taskDescendsFromBase
+        && remoteTaskIsAncestor
+        ? previewMerge(cwd, targetSha, headSha)
+        : {
+            status: MERGE_PREVIEW_STATUS.NOT_REQUIRED,
+            conflictPaths: [],
+            mergeTreeSha: '',
+            reason: needsReconciliationNow ? 'Preview skipped until Git history/freshness checks pass.' : 'No reconciliation required.',
+        };
     const assessment = assessTaskHealth({
         baseIsTargetAncestor,
         taskDescendsFromBase,
@@ -281,9 +346,11 @@ function inspectCurrentTask(cwd, options) {
         targetIsAncestor,
         integrationReady: options.integrationReady,
         overlap,
+        mergePreview,
     });
     return {
-        branch, target, base, targetRef, targetFiles, taskFiles, overlap, ranges,
+        branch, target, base, targetRef, targetSha, headSha,
+        targetFiles, taskFiles, overlap, ranges, mergePreview,
         remoteFreshness: refresh.freshness,
         refreshReason: refresh.reason,
         targetHasAdvancedSinceRecordedBase,
@@ -298,21 +365,30 @@ function printReport(report) {
     console.log(`branch: ${report.branch}`);
     console.log(`recorded base: ${report.base}`);
     console.log(`current target: ${report.targetRef}`);
+    console.log(`target sha: ${report.targetSha}`);
+    console.log(`head sha: ${report.headSha}`);
     console.log(`remote freshness: ${report.remoteFreshness}`);
     console.log(`target advanced since base: ${report.targetHasAdvancedSinceRecordedBase ? 'yes' : 'no'}`);
     console.log(`latest target contained: ${report.targetIsAncestor ? 'yes' : 'no'}`);
     console.log(`reconciliation required: ${report.needsReconciliationNow ? 'yes' : 'no'}`);
+    console.log(`merge preview: ${report.mergePreview.status}`);
     console.log(`health: ${report.health}`);
     console.log(`integration state: ${report.integrationState}`);
     console.log(`risk: ${report.risk}`);
     console.log(`action: ${report.action}`);
     console.log(`reason: ${report.reason}`);
     if (report.refreshReason) console.log(`freshness detail: ${report.refreshReason}`);
+    if (report.mergePreview.status === MERGE_PREVIEW_STATUS.UNKNOWN && report.mergePreview.reason) {
+        console.log(`merge preview detail: ${report.mergePreview.reason}`);
+    }
+    if (report.mergePreview.conflictPaths.length > 0) {
+        console.log(`conflict paths: ${report.mergePreview.conflictPaths.join(', ')}`);
+    }
     if (report.targetFiles.length > 0) console.log(`target-only files needing review: ${report.targetFiles.join(', ')}`);
     if (report.taskFiles.length > 0) console.log(`task-owned files: ${report.taskFiles.join(', ')}`);
     if (report.overlap.evidence.length > 0) console.log(`overlap evidence: ${report.overlap.evidence.join(', ')}`);
     if (report.needsReconciliationNow) {
-        console.log('required before integration: reconcile latest target, review overlap, rerun focused tests, rerun Full Inspection');
+        console.log('required before integration: reconcile latest target, review overlap/conflicts, rerun focused tests, rerun Full Inspection');
     }
 }
 
@@ -323,7 +399,7 @@ async function main() {
     const report = inspectCurrentTask(cwd, options);
     printReport(report);
     if (report.action === 'STOP' || report.action === 'BLOCK') process.exitCode = 2;
-    if (options.integrationReady && report.integrationState === INTEGRATION_STATE.WAITING_FOR_BASE_UPDATE) process.exitCode = 2;
+    if (options.integrationReady && report.integrationState !== INTEGRATION_STATE.READY) process.exitCode = 2;
 }
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
