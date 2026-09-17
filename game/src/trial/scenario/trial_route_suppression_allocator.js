@@ -24,7 +24,6 @@ export class TrialRouteSuppressionAllocator {
 
         const forces = Array.isArray(armyStructure?.forces) ? armyStructure.forces : null;
         if (forces) {
-            // route数 = 部隊数 is a domain invariant. Never silently merge/drop a force.
             if (forces.length !== routes.length) return [];
             return routes.map((route, index) => ({
                 ...cloneData(route),
@@ -32,12 +31,11 @@ export class TrialRouteSuppressionAllocator {
                 forceRole: forces[index]?.role || null,
                 commander: cloneData(forces[index]?.commander ?? null),
                 forceQuality: cloneData(forces[index]?.quality ?? null),
+                forceProfile: cloneData(forces[index]?.profile ?? null),
                 strategicSuppression: nonNegative(forces[index]?.strategicSuppression)
             }));
         }
 
-        // Legacy/dev fallback. Production army-structure composition should not
-        // reach this path once Enemy Truth owns force distribution.
         if (typeof this.weightResolver !== "function") return [];
 
         const totalSuppression = nonNegative(enemySuppression);
