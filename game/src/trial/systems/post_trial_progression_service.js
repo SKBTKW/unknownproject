@@ -85,6 +85,7 @@ export class PostTrialProgressionService {
 
         this.unsubscribe = factHub.subscribe(fact => this._onFact(fact));
         this._restoreDelegatedStagePending();
+        this._reconcileRestoredTransitionStatus();
     }
 
     _onFact(fact) {
@@ -392,6 +393,12 @@ export class PostTrialProgressionService {
             });
         }
         return { completed: true, alreadyCompleted: false };
+    }
+
+    _reconcileRestoredTransitionStatus() {
+        const transition = this.engine.state.postTrialTransition;
+        if (!transition || transition.status === POST_TRIAL_TRANSITION_STATUS.COMPLETED) return;
+        this._tryCompleteTransition({ emitFact: false });
     }
 
     _emitStageAdvanced(stageStep, result) {
