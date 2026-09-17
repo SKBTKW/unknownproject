@@ -8,9 +8,9 @@ export const POST_TRIAL_TRANSITION_STATUS = Object.freeze({
 
 export const POST_TRIAL_STEP_TYPES = Object.freeze({
     REWARD_SELECTION: "REWARD_SELECTION",
-    ADVISOR_PROGRESSION: "ADVISOR_PROGRESSION",
     UNLOCK_APPLY: "UNLOCK_APPLY",
     STAGE_ADVANCE: "STAGE_ADVANCE",
+    ADVISOR_PROGRESSION: "ADVISOR_PROGRESSION",
     FINAL_RUN_COMPLETION: "FINAL_RUN_COMPLETION"
 });
 
@@ -18,6 +18,18 @@ export const POST_TRIAL_STEP_STATUS = Object.freeze({
     PENDING: "PENDING",
     APPLIED: "APPLIED"
 });
+
+export const POST_TRIAL_STEP_ORDER = Object.freeze([
+    POST_TRIAL_STEP_TYPES.REWARD_SELECTION,
+    POST_TRIAL_STEP_TYPES.UNLOCK_APPLY,
+    POST_TRIAL_STEP_TYPES.STAGE_ADVANCE,
+    POST_TRIAL_STEP_TYPES.ADVISOR_PROGRESSION,
+    POST_TRIAL_STEP_TYPES.FINAL_RUN_COMPLETION
+]);
+
+const STEP_ORDER_INDEX = new Map(
+    POST_TRIAL_STEP_ORDER.map((type, index) => [type, index])
+);
 
 function cloneData(value, fallback = null) {
     if (value === undefined) return fallback;
@@ -42,12 +54,13 @@ function normalizePolicyPayload(value) {
 /**
  * Run-level authority beginning at TRIAL_RESULT_SETTLED.
  *
- * This service owns which post-Trial work remains before normal progression may
- * resume. It does not calculate Trial results and it does not own presentation.
- * Reward / Advisor / unlock content is intentionally injected as policy; this
- * boundary only owns whether those semantic steps are pending or applied.
- * Stage progression remains delegated to TrialStageProgressionService.
- * Trial 3 creates a final Run-completion handoff instead of a Stage 4.
+ * This service owns the ordered post-Trial transition only. Reward, Unlock and
+ * Advisor content remain external policy/authority concerns. Stage progression
+ * remains delegated to TrialStageProgressionService, and physical grid expansion
+ * is never allowed before Trial presentation cleanup is complete.
+ *
+ * Canonical semantic order:
+ * Reward -> Unlock -> Stage -> Advisor -> Final Run Completion.
  */
 export class PostTrialProgressionService {
     constructor(engine, {
@@ -73,6 +86,7 @@ export class PostTrialProgressionService {
             || engine.postTrialAdvisorProgressionStepPolicy
             || null;
         this.unlockStepPolicy = unlockStepPolicy || engine.postTrialUnlockStepPolicy || null;
+
         if (this.rewardStepPolicy && typeof this.rewardStepPolicy !== "function") {
             throw new TypeError("POST_TRIAL_REWARD_POLICY_INVALID");
         }
@@ -84,6 +98,7 @@ export class PostTrialProgressionService {
         }
 
         this.unsubscribe = factHub.subscribe(fact => this._onFact(fact));
+        this._normalizeRestoredStepOrder();
         this._restoreDelegatedStagePending();
         this._reconcileRestoredTransitionStatus();
     }
@@ -128,8 +143,11 @@ export class PostTrialProgressionService {
             state: this.engine.state
         };
         const rewardPayload = this._resolvePolicyPayload(this.rewardStepPolicy, context);
-        const advisorProgressionPayload = this._resolvePolicyPayload(this.advisorProgressionStepPolicy, context);
         const unlockPayload = this._resolvePolicyPayload(this.unlockStepPolicy, context);
+        const advisorProgressionPayload = this._resolvePolicyPayload(
+            this.advisorProgressionStepPolicy,
+            context
+        );
         const stagePending = this.stageProgressionService?.getPending?.() || null;
         const steps = [];
 
@@ -138,13 +156,6 @@ export class PostTrialProgressionService {
                 type: POST_TRIAL_STEP_TYPES.REWARD_SELECTION,
                 status: POST_TRIAL_STEP_STATUS.PENDING,
                 payload: rewardPayload
-            });
-        }
-        if (advisorProgressionPayload !== null) {
-            steps.push({
-                type: POST_TRIAL_STEP_TYPES.ADVISOR_PROGRESSION,
-                status: POST_TRIAL_STEP_STATUS.PENDING,
-                payload: advisorProgressionPayload
             });
         }
         if (unlockPayload !== null) {
@@ -161,6 +172,13 @@ export class PostTrialProgressionService {
                 payload: cloneData(stagePending)
             });
         }
+        if (advisorProgressionPayload !== null) {
+            steps.push({
+                type: POST_TRIAL_STEP_TYPES.ADVISOR_PROGRESSION,
+                status: POST_TRIAL_STEP_STATUS.PENDING,
+                payload: advisorProgressionPayload
+            });
+        }
         if (trialIndex === 3 && !context.runTerminated) {
             steps.push({
                 type: POST_TRIAL_STEP_TYPES.FINAL_RUN_COMPLETION,
@@ -173,7 +191,7 @@ export class PostTrialProgressionService {
         }
 
         const transition = {
-            schemaVersion: 3,
+            schemaVersion: 4,
             transitionId,
             trialIndex,
             scenarioId: payload.scenarioId || null,
@@ -221,6 +239,10 @@ export class PostTrialProgressionService {
             .map(step => cloneData(step));
     }
 
+    getCurrentPendingStep() {
+        return cloneData(this._getCurrentPendingStepRef());
+    }
+
     hasPendingWork() {
         const transition = this.engine.state.postTrialTransition;
         return Boolean(transition && transition.status !== POST_TRIAL_TRANSITION_STATUS.COMPLETED);
@@ -238,15 +260,15 @@ export class PostTrialProgressionService {
         });
     }
 
-    completeAdvisorProgression({ result = null } = {}) {
-        return this._completeExternalStep(POST_TRIAL_STEP_TYPES.ADVISOR_PROGRESSION, { result });
-    }
-
     completeUnlockApply({ result = null } = {}) {
         return this._completeExternalStep(POST_TRIAL_STEP_TYPES.UNLOCK_APPLY, {
             result,
             factType: GAME_FACT_TYPES.POST_TRIAL_UNLOCK_APPLIED
         });
+    }
+
+    completeAdvisorProgression({ result = null } = {}) {
+        return this._completeExternalStep(POST_TRIAL_STEP_TYPES.ADVISOR_PROGRESSION, { result });
     }
 
     completeFinalRunCompletion({ result = null } = {}) {
@@ -270,47 +292,19 @@ export class PostTrialProgressionService {
         transition.presentationCleanupComplete = true;
         transition.status = POST_TRIAL_TRANSITION_STATUS.PENDING_STEPS;
 
-        let stageProgression = null;
-        const stageStep = Array.isArray(transition.steps)
-            ? transition.steps.find(step =>
-                step?.type === POST_TRIAL_STEP_TYPES.STAGE_ADVANCE
-                && step.status === POST_TRIAL_STEP_STATUS.PENDING
-            )
-            : null;
-        if (stageStep) {
-            const reconciled = this._reconcileAppliedStageStep(stageStep);
-            if (reconciled) {
-                this._emitStageAdvanced(stageStep, stageStep.result);
-            } else {
-                this._restoreDelegatedStagePending();
-                if (!this.stageProgressionService?.getPending?.()) {
-                    return {
-                        success: false,
-                        reason: "POST_TRIAL_STAGE_AUTHORITY_NOT_PENDING",
-                        transition: this.getTransition()
-                    };
-                }
-
-                stageProgression = this.stageProgressionService.applyPending({ translate });
-                if (!stageProgression?.success) {
-                    return {
-                        success: false,
-                        reason: stageProgression?.reason || "POST_TRIAL_STAGE_ADVANCE_FAILED",
-                        stageProgression,
-                        transition: this.getTransition()
-                    };
-                }
-                stageStep.status = POST_TRIAL_STEP_STATUS.APPLIED;
-                stageStep.result = cloneData(stageProgression);
-                this._emitStageAdvanced(stageStep, stageProgression);
-            }
+        const automatic = this._advanceAutomaticSteps({ translate });
+        if (!automatic.success) {
+            return {
+                ...automatic,
+                transition: this.getTransition()
+            };
         }
 
         this._tryCompleteTransition();
         return {
             success: true,
             alreadyCompleted: false,
-            stageProgression,
+            stageProgression: automatic.stageProgression,
             transition: this.getTransition()
         };
     }
@@ -343,7 +337,19 @@ export class PostTrialProgressionService {
                 success: true,
                 alreadyApplied: true,
                 transition: this.getTransition(),
-                step: cloneData(step)
+                step: cloneData(step),
+                stageProgression: null
+            };
+        }
+
+        const current = this._getCurrentPendingStepRef();
+        if (current !== step) {
+            return {
+                success: false,
+                reason: "POST_TRIAL_STEP_OUT_OF_ORDER",
+                stepType: type,
+                currentStepType: current?.type || null,
+                transition: this.getTransition()
             };
         }
 
@@ -357,13 +363,71 @@ export class PostTrialProgressionService {
                 result: step.result
             });
         }
+
+        const automatic = this._advanceAutomaticSteps();
+        if (!automatic.success) {
+            return {
+                ...automatic,
+                step: cloneData(step),
+                transition: this.getTransition()
+            };
+        }
+
         this._tryCompleteTransition();
         return {
             success: true,
             alreadyApplied: false,
             transition: this.getTransition(),
-            step: cloneData(step)
+            step: cloneData(step),
+            stageProgression: automatic.stageProgression
         };
+    }
+
+    _advanceAutomaticSteps({ translate = null } = {}) {
+        const transition = this.engine.state.postTrialTransition;
+        if (!transition?.presentationCleanupComplete) {
+            return { success: true, stageProgression: null };
+        }
+
+        const current = this._getCurrentPendingStepRef();
+        if (!current || current.type !== POST_TRIAL_STEP_TYPES.STAGE_ADVANCE) {
+            return { success: true, stageProgression: null };
+        }
+
+        if (this._reconcileAppliedStageStep(current)) {
+            this._emitStageAdvanced(current, current.result);
+            return { success: true, stageProgression: current.result };
+        }
+
+        this._restoreDelegatedStagePending();
+        if (!this.stageProgressionService?.getPending?.()) {
+            return {
+                success: false,
+                reason: "POST_TRIAL_STAGE_AUTHORITY_NOT_PENDING",
+                stageProgression: null
+            };
+        }
+
+        const stageProgression = this.stageProgressionService.applyPending({ translate });
+        if (!stageProgression?.success) {
+            return {
+                success: false,
+                reason: stageProgression?.reason || "POST_TRIAL_STAGE_ADVANCE_FAILED",
+                stageProgression
+            };
+        }
+
+        current.status = POST_TRIAL_STEP_STATUS.APPLIED;
+        current.result = cloneData(stageProgression);
+        this._emitStageAdvanced(current, stageProgression);
+        return { success: true, stageProgression };
+    }
+
+    _getCurrentPendingStepRef() {
+        const steps = Array.isArray(this.engine.state.postTrialTransition?.steps)
+            ? this.engine.state.postTrialTransition.steps
+            : [];
+        return steps.find(step => step?.status === POST_TRIAL_STEP_STATUS.PENDING) || null;
     }
 
     _tryCompleteTransition({ emitFact = true } = {}) {
@@ -377,8 +441,7 @@ export class PostTrialProgressionService {
             return { completed: false, reason: "POST_TRIAL_PRESENTATION_CLEANUP_PENDING" };
         }
 
-        const hasPendingStep = Array.isArray(transition.steps)
-            && transition.steps.some(step => step?.status === POST_TRIAL_STEP_STATUS.PENDING);
+        const hasPendingStep = Boolean(this._getCurrentPendingStepRef());
         if (hasPendingStep) {
             transition.status = POST_TRIAL_TRANSITION_STATUS.PENDING_STEPS;
             return { completed: false, reason: "POST_TRIAL_STEPS_PENDING" };
@@ -393,6 +456,24 @@ export class PostTrialProgressionService {
             });
         }
         return { completed: true, alreadyCompleted: false };
+    }
+
+    _normalizeRestoredStepOrder() {
+        const transition = this.engine.state.postTrialTransition;
+        if (!transition || !Array.isArray(transition.steps)) return;
+        transition.steps = transition.steps
+            .map((step, originalIndex) => ({ step, originalIndex }))
+            .sort((a, b) => {
+                const aOrder = STEP_ORDER_INDEX.has(a.step?.type)
+                    ? STEP_ORDER_INDEX.get(a.step.type)
+                    : POST_TRIAL_STEP_ORDER.length;
+                const bOrder = STEP_ORDER_INDEX.has(b.step?.type)
+                    ? STEP_ORDER_INDEX.get(b.step.type)
+                    : POST_TRIAL_STEP_ORDER.length;
+                return aOrder - bOrder || a.originalIndex - b.originalIndex;
+            })
+            .map(entry => entry.step);
+        transition.schemaVersion = Math.max(Number(transition.schemaVersion) || 1, 4);
     }
 
     _reconcileRestoredTransitionStatus() {
