@@ -18,6 +18,42 @@ function freezeArray(items) {
     return Object.freeze(items);
 }
 
+export function buildTrialRouteCellIndex(trialSemanticData) {
+    const byCell = new Map();
+    const routes = trialSemanticData?.routes || [];
+    const activeRoutes = trialSemanticData?.activeRouteId != null
+        ? routes.filter(route => route.routeId === trialSemanticData.activeRouteId)
+        : routes.slice(0, 1);
+
+    for (const route of activeRoutes) {
+        (route.cells || []).forEach((cell, index) => {
+            const next = route.cells[index + 1] || null;
+            const previous = route.cells[index - 1] || null;
+            const directionTarget = next || previous;
+            let routeDirection = null;
+
+            if (directionTarget) {
+                const deltaR = next ? directionTarget.r - cell.r : cell.r - directionTarget.r;
+                const deltaC = next ? directionTarget.c - cell.c : cell.c - directionTarget.c;
+                routeDirection = Math.abs(deltaC) >= Math.abs(deltaR)
+                    ? (deltaC >= 0 ? "east" : "west")
+                    : (deltaR >= 0 ? "south" : "north");
+            }
+
+            byCell.set(`${cell.r}:${cell.c}`, Object.freeze({
+                routeId: route.routeId,
+                routeIndex: index,
+                isRouteEntry: index === 0,
+                isRouteEnd: index === route.cells.length - 1,
+                routeDirection,
+                isActiveRoute: Boolean(route.isActive)
+            }));
+        });
+    }
+
+    return byCell;
+}
+
 /**
  * Renderer-neutral Trial facts projected onto board coordinates.
  *
