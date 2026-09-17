@@ -55,6 +55,7 @@ def validate_git_branch_tracking(
     is_linked_worktree=False,
     integration_ready=False,
     target_is_ancestor=False,
+    remote_task_is_ancestor=True,
     worktree_clean=True,
 ):
     """Return GIT001 violations for unauthorized or incorrectly tracked work."""
@@ -190,11 +191,17 @@ def validate_git_branch_tracking(
             f"TASK branch tracks '{upstream}', not '{expected_task_upstream}'.",
             "Remove the wrong upstream; TASK may track only its same-name origin branch",
         )]
+    if not remote_task_is_ancestor:
+        return [LintViolation(
+            "GIT001", "ERROR", ".git", 0,
+            "REMOTE_TASK_DRIFT: origin has commits on this TASK that are not in the local worktree.",
+            "Stop; inspect the same-name remote TASK before any pull, merge, or rebase",
+        )]
     if not target_descends_from_base:
         return [LintViolation(
             "GIT001", "ERROR", ".git", 0,
             f"Recorded TASK base '{authorized_base_commit}' is not in origin/{authorized_branch} history.",
-            "Fetch the target and stop if its history was rewritten",
+            "BASE_REWRITE: fetch the target and stop if its history was rewritten",
         )]
     if integration_ready:
         if upstream != expected_task_upstream:
@@ -295,6 +302,12 @@ def inspect_git_branch_policy(root_dir, integration_ready=False):
             "merge-base", "--is-ancestor", authorized_base_commit, remote_target
         )
         target_is_ancestor = git_success("merge-base", "--is-ancestor", remote_target, "HEAD")
+        remote_task_is_ancestor = True
+        if mode == "TASK" and branch:
+            remote_task = f"refs/remotes/origin/{branch}"
+            remote_task_exists = git_success("rev-parse", "--verify", remote_task)
+            if remote_task_exists:
+                remote_task_is_ancestor = git_success("merge-base", "--is-ancestor", remote_task, "HEAD")
         git_dir = subprocess.run(
             ["git", "rev-parse", "--path-format=absolute", "--git-dir"], cwd=root_dir,
             capture_output=True, text=True, encoding="utf-8", errors="ignore",
@@ -317,7 +330,8 @@ def inspect_git_branch_policy(root_dir, integration_ready=False):
                 branch, upstream, authorized_branch, mode,
                 authorized_work_branch, authorized_task_branch, authorized_base_commit,
                 target_head, work_descends_from_base, target_descends_from_base,
-                is_linked_worktree, integration_ready, target_is_ancestor, worktree_clean,
+                is_linked_worktree, integration_ready, target_is_ancestor,
+                remote_task_is_ancestor, worktree_clean,
             ),
             branch,
             upstream,

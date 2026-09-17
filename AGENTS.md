@@ -28,7 +28,9 @@
 1. `git status` ＆ `git diff`: 作業対象ブランチ、および未コミット差分（`crisis.png` 等）の有無を確認する。
 2. `git fetch origin <branch>`: リモートの最新リビジョン情報を安全に取得する（ワーキングツリーは変更しない）。
 3. `git status -uno`: local と remote の関係（up to date / ahead / behind / diverged）を確認する。
-   - **diverged (ahead/behind 分岐)** または **behind** を検知した場合、勝手に pull や rebase を実行せず、必ず状況をユーザーへ報告して指示を仰ぐ。
+   - **DIRECT**: 同名 `origin/<branch>` に対する behind / diverged は STOP。勝手に pull や rebase をしない。
+   - **ISOLATED**: 記録したtarget基点の不一致は既存の厳格ルールどおり STOP。
+   - **TASK**: `origin/<target>` の前進は `TARGET_DRIFT` として記録し、通常作業は CONTINUE。自動 pull / merge / rebase はしない。同名 `origin/aot-task/...` がlocal TASKに含まれない更新は `REMOTE_TASK_DRIFT` として STOP。記録基点がtarget履歴から失われた `BASE_REWRITE` も STOP。
 4. ユーザーが指定した統合先ブランチをclone-local設定へ記録する: `git config --local aot.authorizedBranch <branch>`。
    - この設定の新規作成・変更は、ユーザーが作業ブランチを明示した場合に限る。
 5. ファイル編集前に `python scratch/pre_write_linter.py` を実行し、`GIT001` が出た場合は作業を開始せずユーザーへ確認する。
@@ -51,11 +53,12 @@
 3. タスク外の修正を混ぜない。本番変更とテスト基盤修正は意味単位でコミットを分ける。
 4. focused test後、未追跡・未コミットファイルのないcleanなTASK worktreeでFull Inspectionを実行する。
 5. タスクブランチpush後は統合キューで `READY / WAITING_FOR_BASE_UPDATE / CONFLICT / TEST_FAILED / APPROVED / MERGED` のいずれかを管理する。
-6. 統合直前に再fetchし、TASKが最新 `origin/<target>` を包含していることを `python scratch/pre_write_linter.py --integration-ready` で確認する。
-7. 本流が進んでいた場合、勝手にrebaseや競合解消を行わない。最新本流の取り込み方法をユーザーまたは統合担当へ確認し、取り込み後は全検査を再実行する。
-8. 統合担当者は同時に一人とし、APPROVEDタスクを一件ずつ統合する。履歴ノイズを本流へ持ち込まないため、原則squash mergeでタスクを一つの意味的コミットにする。
-9. 統合後に対象ブランチ上でFull Inspectionを再実行し、remote HEAD一致を確認する。
-10. TASKブランチ／worktreeは、統合・remote反映・検査合格を確認した後だけ削除する。未統合ブランチの強制削除を禁止する。
+6. 通常作業では `scratch/task_health.mjs` によりTARGET_DRIFTと重なりを観測する。TARGET_DRIFTだけで作業を停止しない。shared surfaceまたはcontract overlapは後続統合のreconciliation対象として記録する。
+7. 統合直前に再fetchし、TASKが最新 `origin/<target>` を包含していることを `python scratch/pre_write_linter.py --integration-ready` で確認する。含まれなければ当該TASKだけを `WAITING_FOR_BASE_UPDATE` とする。
+8. 本流が進んでいた場合、通常作業中の他TASKを止めない。統合順が来たTASKだけ、最新本流との取り込み方法をユーザーまたは統合担当へ確認し、reconcile後は全検査を再実行する。
+9. 統合担当者は同時に一人とし、APPROVEDタスクを一件ずつ統合する。履歴ノイズを本流へ持ち込まないため、原則squash mergeでタスクを一つの意味的コミットにする。
+10. 統合後に対象ブランチ上でFull Inspectionを再実行し、remote HEAD一致を確認する。
+11. TASKブランチ／worktreeは、統合・remote反映・検査合格を確認した後だけ削除する。未統合ブランチの強制削除を禁止する。
 - `AGENTS.md`、`game/src/i18n.js`、`layout_config.js`、GameEngine、共通JSON、統合テストなどの共有ファイルは同時編集を避け、統合順を先に決める。
 - TASK branchへのpush承認と、統合先branchへのpush承認は別の承認として扱う。
 
@@ -177,7 +180,7 @@ AoT のドメインロジックにおいて、以下の異なる概念を同一�
 - **CSS003**: JS 内での直接スタイル操作の警告（WARN）。
 - **CARD001〜003**: ロジック層でのカード直書き、`land_cards.json` 純化、削除旧カード残存の検知。
 - **ARCH001**: ドメインロジック層からの DOM API アクセス遮断。
-- **GIT001**: DIRECT / ISOLATED / TASKの認可、命名、worktree分離、upstream、基点祖先関係を検証する。`--integration-ready` ではTASKの同名remote追跡、最新本流包含、clean状態も必須化する。
+- **GIT001**: DIRECT / ISOLATED / TASKの認可、命名、worktree分離、upstream、基点祖先関係を検証する。TASKの `TARGET_DRIFT` は通常作業を止めないが、`REMOTE_TASK_DRIFT` と `BASE_REWRITE` は停止する。`--integration-ready` ではTASKの同名remote追跡、最新本流包含、clean状態も必須化する。
 
 ### 8.2 自動仕様突合アサーション (`scratch/verify_all_rule_files.py`)
 - 仕様書が要求する定数（土地産出値、初期リソース、マージ倍率等）と、エンジン・データ資産の実数値を 1:1 で厳密比較検証する。
