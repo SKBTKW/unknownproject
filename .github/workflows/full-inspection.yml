@@ -165,6 +165,7 @@ jobs:
           node game/src/trial/dev/diagnose_post_trial_progression_read_service.mjs
           node game/src/trial/dev/diagnose_post_trial_runtime_restore.mjs
           node game/src/trial/dev/diagnose_post_trial_persistence_roundtrip.mjs
+          node game/src/trial/dev/diagnose_post_trial_terminated_policy_gate.mjs
 
       - name: Run Warning focused tests
         run: |
