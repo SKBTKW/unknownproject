@@ -54,7 +54,7 @@
 4. focused test後、未追跡・未コミットファイルのないcleanなTASK worktreeでFull Inspectionを実行する。
 5. タスクブランチpush後は統合キューで `READY / WAITING_FOR_BASE_UPDATE / CONFLICT / TEST_FAILED / APPROVED / MERGED` のいずれかを管理する。
 6. 通常作業では `scratch/task_health.mjs` によりTARGET_DRIFTと重なりを観測する。TARGET_DRIFTだけで作業を停止しない。shared surfaceまたはcontract overlapは後続統合のreconciliation対象として記録する。
-7. 統合直前に再fetchし、TASKが最新 `origin/<target>` を包含していることを `python scratch/pre_write_linter.py --integration-ready` で確認する。含まれなければ当該TASKだけを `WAITING_FOR_BASE_UPDATE` とする。
+7. 統合直前に `node scratch/task_health.mjs --integration-ready` でremote refsを最新化できることを確認し、続けて `python scratch/pre_write_linter.py --integration-ready` でTASKが最新 `origin/<target>` を包含していることを確認する。含まれなければ当該TASKだけを `WAITING_FOR_BASE_UPDATE` とする。
 8. 本流が進んでいた場合、通常作業中の他TASKを止めない。統合順が来たTASKだけ、最新本流との取り込み方法をユーザーまたは統合担当へ確認し、reconcile後は全検査を再実行する。
 9. 統合担当者は同時に一人とし、APPROVEDタスクを一件ずつ統合する。履歴ノイズを本流へ持ち込まないため、原則squash mergeでタスクを一つの意味的コミットにする。
 10. 統合後に対象ブランチ上でFull Inspectionを再実行し、remote HEAD一致を確認する。
@@ -66,7 +66,7 @@
 - 指定・認可されたモード以外のブランチを勝手に作成・切り替えてはならない。
 - `git pull`、`git rebase`、通常merge、競合解消、force pushを自動実行してはならない。
 - ISOLATEDの自動統合は、記録した基点から対象ブランチが動いておらず、対象worktreeがcleanで全検査合格の場合の `git merge --ff-only` だけを許可する。
-- TASKの統合は統合担当と承認ゲートを経由し、作業担当が直接 `AoT260916` へpushしてはならない。
+- TASKの統合は統合担当と承認ゲートを経由し、作業担当が直接 `origin/<target>` へpushしてはならない。
 - `git branch -D` による未統合ブランチの削除を禁止する。
 
 ---

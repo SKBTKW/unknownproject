@@ -6,9 +6,15 @@ import { fileURLToPath } from 'url';
 export const TASK_HEALTH = Object.freeze({
     HEALTHY: 'HEALTHY',
     TARGET_DRIFT: 'TARGET_DRIFT',
+    TARGET_STATE_STALE: 'TARGET_STATE_STALE',
     OVERLAP_DETECTED: 'OVERLAP_DETECTED',
     RECONCILE_RECOMMENDED: 'RECONCILE_RECOMMENDED',
     BLOCKED: 'BLOCKED',
+});
+
+export const REMOTE_FRESHNESS = Object.freeze({
+    FRESH: 'FRESH',
+    UNKNOWN: 'UNKNOWN',
 });
 
 export const INTEGRATION_STATE = Object.freeze({
@@ -71,31 +77,41 @@ function contractWords(filepath) {
 export function classifyOverlap(targetFiles = [], taskFiles = []) {
     const target = unique(targetFiles);
     const task = unique(taskFiles);
-    const shared = target.filter(isSharedSurface);
-    if (shared.length > 0) {
-        return { risk: OVERLAP_RISK.SHARED_SURFACE, evidence: shared };
-    }
-
     const taskSet = new Set(task);
     const paths = target.filter((filepath) => taskSet.has(filepath));
-    if (paths.length > 0) return { risk: OVERLAP_RISK.PATH_OVERLAP, evidence: paths };
-
     const taskDomains = new Set(task.map(domainOf).filter(Boolean));
     const domains = unique(target.map(domainOf).filter((domain) => taskDomains.has(domain)));
-    if (domains.length > 0) return { risk: OVERLAP_RISK.DOMAIN_OVERLAP, evidence: domains };
-
     const taskWords = new Set(task.flatMap(contractWords));
     const contracts = unique(target.flatMap(contractWords).filter((word) => taskWords.has(word)));
-    if (contracts.length > 0) return { risk: OVERLAP_RISK.CONTRACT_OVERLAP, evidence: contracts };
+    const shared = target.filter(isSharedSurface);
+    const findings = [
+        [OVERLAP_RISK.CONTRACT_OVERLAP, contracts],
+        [OVERLAP_RISK.SHARED_SURFACE, shared],
+        [OVERLAP_RISK.PATH_OVERLAP, paths],
+        [OVERLAP_RISK.DOMAIN_OVERLAP, domains],
+    ].filter(([, evidence]) => evidence.length > 0);
+    const [risk = OVERLAP_RISK.NONE] = findings[0] || [];
+    return {
+        risk,
+        risks: findings.map(([kind]) => kind),
+        evidence: unique(findings.flatMap(([, evidence]) => evidence)),
+    };
+}
 
-    return { risk: OVERLAP_RISK.NONE, evidence: [] };
+export function buildTaskFileRanges({ mergeBase, targetRef, head = 'HEAD' }) {
+    return Object.freeze({
+        targetOnlyRange: `${mergeBase}..${targetRef}`,
+        taskOwnedRange: `${mergeBase}..${head}`,
+    });
 }
 
 export function assessTaskHealth({
     baseIsTargetAncestor = true,
     taskDescendsFromBase = true,
     remoteTaskIsAncestor = true,
-    targetAdvanced = false,
+    remoteFreshness = REMOTE_FRESHNESS.FRESH,
+    targetHasAdvancedSinceRecordedBase = false,
+    needsReconciliationNow = false,
     targetIsAncestor = true,
     integrationReady = false,
     overlap = { risk: OVERLAP_RISK.NONE, evidence: [] },
@@ -128,16 +144,28 @@ export function assessTaskHealth({
         };
     }
 
+    if (remoteFreshness !== REMOTE_FRESHNESS.FRESH) {
+        return {
+            health: integrationReady ? TASK_HEALTH.BLOCKED : TASK_HEALTH.TARGET_STATE_STALE,
+            integrationState: integrationReady ? INTEGRATION_STATE.WAITING_FOR_BASE_UPDATE : INTEGRATION_STATE.WORKING,
+            risk: OVERLAP_RISK.NONE,
+            action: integrationReady ? 'BLOCK' : 'CONTINUE_WITH_WARNING',
+            reason: 'Remote refs could not be refreshed; observation may be stale.',
+        };
+    }
+
     const integrationState = integrationReady && !targetIsAncestor
         ? INTEGRATION_STATE.WAITING_FOR_BASE_UPDATE
-        : INTEGRATION_STATE.WORKING;
-    if (!targetAdvanced) {
+        : (integrationReady ? INTEGRATION_STATE.READY : INTEGRATION_STATE.WORKING);
+    if (!needsReconciliationNow) {
         return {
             health: TASK_HEALTH.HEALTHY,
             integrationState,
             risk: OVERLAP_RISK.NONE,
-            action: integrationState === INTEGRATION_STATE.WORKING ? 'CONTINUE' : 'RECONCILE',
-            reason: 'Recorded base matches the current target.',
+            action: integrationState === INTEGRATION_STATE.READY ? 'READY_FOR_INTEGRATION' : 'CONTINUE',
+            reason: targetHasAdvancedSinceRecordedBase
+                ? 'Target advanced since the recorded base, and the latest target is already contained.'
+                : 'Recorded base matches the current target.',
         };
     }
 
@@ -179,6 +207,28 @@ function gitSuccess(args, cwd) {
     }
 }
 
+function refreshRemoteRefs(cwd, target, branch) {
+    try {
+        execFileSync('git', ['fetch', 'origin', target], { cwd, stdio: 'ignore', windowsHide: true });
+        const remoteTask = execFileSync('git', ['ls-remote', '--heads', 'origin', branch], {
+            cwd,
+            encoding: 'utf8',
+            windowsHide: true,
+        }).trim();
+        const remoteTaskExists = Boolean(remoteTask);
+        if (remoteTaskExists) {
+            execFileSync('git', ['fetch', 'origin', branch], { cwd, stdio: 'ignore', windowsHide: true });
+        }
+        return { freshness: REMOTE_FRESHNESS.FRESH, remoteTaskExists, reason: '' };
+    } catch (error) {
+        return {
+            freshness: REMOTE_FRESHNESS.UNKNOWN,
+            remoteTaskExists: null,
+            reason: error?.message?.split(/\r?\n/)[0] || 'remote ref refresh failed',
+        };
+    }
+}
+
 function parseArgs(argv) {
     const options = { target: '', integrationReady: false };
     for (let index = 0; index < argv.length; index += 1) {
@@ -202,27 +252,45 @@ function inspectCurrentTask(cwd, options) {
     if (!branch || !target || !base) throw new Error('TASK branch, authorized target, or recorded base is missing.');
     const targetRef = `origin/${target}`;
     const taskRef = `origin/${branch}`;
-    if (!gitSuccess(['rev-parse', '--verify', targetRef], cwd)) throw new Error(`Missing ${targetRef}; fetch it before observation.`);
+    const refresh = refreshRemoteRefs(cwd, target, branch);
+    if (!gitSuccess(['rev-parse', '--verify', targetRef], cwd)) {
+        throw new Error(`UNKNOWN_BRANCH_RELATIONSHIP: ${targetRef} is unavailable after refresh.`);
+    }
 
     const baseIsTargetAncestor = gitSuccess(['merge-base', '--is-ancestor', base, targetRef], cwd);
     const taskDescendsFromBase = gitSuccess(['merge-base', '--is-ancestor', base, 'HEAD'], cwd);
-    const remoteTaskExists = gitSuccess(['rev-parse', '--verify', taskRef], cwd);
+    const remoteTaskExists = refresh.remoteTaskExists ?? gitSuccess(['rev-parse', '--verify', taskRef], cwd);
     const remoteTaskIsAncestor = !remoteTaskExists || gitSuccess(['merge-base', '--is-ancestor', taskRef, 'HEAD'], cwd);
-    const targetAdvanced = git(['rev-parse', targetRef], cwd) !== base;
+    const targetHasAdvancedSinceRecordedBase = git(['rev-parse', targetRef], cwd) !== base;
     const targetIsAncestor = gitSuccess(['merge-base', '--is-ancestor', targetRef, 'HEAD'], cwd);
-    const targetFiles = targetAdvanced ? git(['diff', '--name-only', `${base}..${targetRef}`], cwd).split(/\r?\n/).filter(Boolean) : [];
-    const taskFiles = git(['diff', '--name-only', `${base}..HEAD`], cwd).split(/\r?\n/).filter(Boolean);
+    const needsReconciliationNow = targetHasAdvancedSinceRecordedBase && !targetIsAncestor;
+    const mergeBase = git(['merge-base', targetRef, 'HEAD'], cwd);
+    const ranges = buildTaskFileRanges({ mergeBase, targetRef });
+    const targetFiles = needsReconciliationNow
+        ? git(['diff', '--name-only', ranges.targetOnlyRange], cwd).split(/\r?\n/).filter(Boolean)
+        : [];
+    const taskFiles = git(['diff', '--name-only', ranges.taskOwnedRange], cwd).split(/\r?\n/).filter(Boolean);
     const overlap = classifyOverlap(targetFiles, taskFiles);
     const assessment = assessTaskHealth({
         baseIsTargetAncestor,
         taskDescendsFromBase,
         remoteTaskIsAncestor,
-        targetAdvanced,
+        remoteFreshness: refresh.freshness,
+        targetHasAdvancedSinceRecordedBase,
+        needsReconciliationNow,
         targetIsAncestor,
         integrationReady: options.integrationReady,
         overlap,
     });
-    return { branch, target, base, targetRef, targetFiles, taskFiles, overlap, ...assessment };
+    return {
+        branch, target, base, targetRef, targetFiles, taskFiles, overlap, ranges,
+        remoteFreshness: refresh.freshness,
+        refreshReason: refresh.reason,
+        targetHasAdvancedSinceRecordedBase,
+        targetIsAncestor,
+        needsReconciliationNow,
+        ...assessment,
+    };
 }
 
 function printReport(report) {
@@ -230,14 +298,20 @@ function printReport(report) {
     console.log(`branch: ${report.branch}`);
     console.log(`recorded base: ${report.base}`);
     console.log(`current target: ${report.targetRef}`);
+    console.log(`remote freshness: ${report.remoteFreshness}`);
+    console.log(`target advanced since base: ${report.targetHasAdvancedSinceRecordedBase ? 'yes' : 'no'}`);
+    console.log(`latest target contained: ${report.targetIsAncestor ? 'yes' : 'no'}`);
+    console.log(`reconciliation required: ${report.needsReconciliationNow ? 'yes' : 'no'}`);
     console.log(`health: ${report.health}`);
     console.log(`integration state: ${report.integrationState}`);
     console.log(`risk: ${report.risk}`);
     console.log(`action: ${report.action}`);
     console.log(`reason: ${report.reason}`);
-    if (report.targetFiles.length > 0) console.log(`changed target files: ${report.targetFiles.join(', ')}`);
+    if (report.refreshReason) console.log(`freshness detail: ${report.refreshReason}`);
+    if (report.targetFiles.length > 0) console.log(`target-only files needing review: ${report.targetFiles.join(', ')}`);
+    if (report.taskFiles.length > 0) console.log(`task-owned files: ${report.taskFiles.join(', ')}`);
     if (report.overlap.evidence.length > 0) console.log(`overlap evidence: ${report.overlap.evidence.join(', ')}`);
-    if (report.health !== TASK_HEALTH.HEALTHY) {
+    if (report.needsReconciliationNow) {
         console.log('required before integration: reconcile latest target, review overlap, rerun focused tests, rerun Full Inspection');
     }
 }
@@ -248,7 +322,7 @@ async function main() {
     const cwd = git(['rev-parse', '--show-toplevel'], process.cwd());
     const report = inspectCurrentTask(cwd, options);
     printReport(report);
-    if (report.action === 'STOP') process.exitCode = 2;
+    if (report.action === 'STOP' || report.action === 'BLOCK') process.exitCode = 2;
     if (options.integrationReady && report.integrationState === INTEGRATION_STATE.WAITING_FOR_BASE_UPDATE) process.exitCode = 2;
 }
 
