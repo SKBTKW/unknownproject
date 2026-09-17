@@ -10,13 +10,13 @@ const staffLexicon = new Set(staff.characterRules.lexicalPreferences);
 
 assert.ok(generalFrames.has('survival') && generalFrames.has('sustainability'));
 assert.ok(staffFrames.has('discipline') && staffFrames.has('civilian_safety'));
-assert.ok(staffLexicon.has('報告') && staffLexicon.has('確認') && staffLexicon.has('備蓄') && staffLexicon.has('損耗') && staffLexicon.has('撤収'));
+assert.ok(staffLexicon.has('reporting') && staffLexicon.has('verification') && staffLexicon.has('stockpiles') && staffLexicon.has('attrition') && staffLexicon.has('withdrawal'));
 assert.ok(generalLexicon.has('備え') && generalLexicon.has('余裕') && generalLexicon.has('立て直す'));
 const overlap = [...staffLexicon].filter(word => generalLexicon.has(word));
 assert.ok(overlap.length <= 2, `advisor core lexicons have drifted too close: ${overlap.join(', ')}`);
 assert.notDeepEqual(staff.characterRules.preferredFrames, general.characterRules.preferredFrames);
 assert.notDeepEqual(staff.characterRules.lexicalPreferences, general.characterRules.lexicalPreferences);
-for (const word of ['素晴らしい', '完璧', '絶対', '奇跡', '運命', '栄光']) {
-    assert.ok(staff.characterRules.lexicalAvoid.includes(word));
+for (const concept of ['lavish_praise', 'perfection', 'absolutism', 'miracle', 'fate', 'glory']) {
+    assert.ok(staff.characterRules.lexicalAvoid.includes(concept));
 }
 console.log('advisor character differentiation: ok');
