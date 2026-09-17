@@ -58,7 +58,9 @@ export class TrialController extends TrialControllerBase {
                 deployment.deployedSuppression
             );
             resolved.input.enemyStrategicSuppression = strategicSuppression;
-            resolved.input.enemyReserveSuppression = deployment.reserveSuppression;
+            resolved.input.enemyReserveSuppression = this.powerResolver.resolveSuppression(
+                deployment.reserveSuppression
+            );
             resolved.input.enemyDeployment = {
                 profile,
                 interaction,
