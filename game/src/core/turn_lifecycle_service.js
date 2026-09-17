@@ -40,12 +40,23 @@ export class TurnLifecycleService {
         this.engine.historySnapshotService = this.historySnapshotService;
         this.phase = TURN_LIFECYCLE_PHASES.ACTIVE;
         this.lastCommittedBoundary = null;
+        this.lastAdvanceBlock = null;
     }
 
     advance({ autoFallbackEnabled = true, useHypotheticalFallback = false } = {}) {
         const existingTermination = this.engine.runTerminationService?.evaluate?.({ source: "VERSE_ADVANCE" }) || null;
         if (existingTermination?.terminated) return this.engine.state ? this.engine.state.turn : 1;
         if (this.phase !== TURN_LIFECYCLE_PHASES.ACTIVE) throw new Error(`TURN_LIFECYCLE_NOT_ACTIVE:${this.phase}`);
+
+        const postTrialProgression = this.engine.postTrialProgressionService || null;
+        if (postTrialProgression?.canResumeNormalProgression?.() === false) {
+            this.lastAdvanceBlock = Object.freeze({
+                reason: "POST_TRIAL_PROGRESSION_PENDING",
+                transition: postTrialProgression.getTransition?.() || null
+            });
+            return this.engine.state ? this.engine.state.turn : 1;
+        }
+        this.lastAdvanceBlock = null;
 
         this.phase = TURN_LIFECYCLE_PHASES.COMMITTING;
         const boundary = this._commitCurrentTurn({ autoFallbackEnabled, useHypotheticalFallback });
@@ -136,6 +147,7 @@ export class TurnLifecycleService {
 
     getPhase() { return this.phase; }
     getLastCommittedBoundary() { return this.lastCommittedBoundary; }
+    getLastAdvanceBlock() { return this.lastAdvanceBlock; }
     _emitCommittedFact(boundary) {
         if (!this.gameFactHub || typeof this.gameFactHub.emit !== "function") return null;
         return this.gameFactHub.emit(GAME_FACT_TYPES.VERSE_COMMITTED, { completedTurn: boundary.completedTurn, nextTurn: boundary.nextTurn });
