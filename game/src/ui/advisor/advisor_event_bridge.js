@@ -108,7 +108,7 @@ export class AdvisorEventBridge {
     withRecoveryStates(states) {
         const next = [...states];
         const currentTopics = new Set(states.map(state => state.topic));
-        [["ember", "EMBER_RECOVERED"], ["survival", "FOOD_RECOVERED"], ["logistics", "FOOD_RECOVERED"]].forEach(([topic, id]) => {
+        [["ember", "EMBER_RECOVERED"], ["logistics", "FOOD_RECOVERED"]].forEach(([topic, id]) => {
             const previous = this.runtime.previousResolvedStates.get(topic);
             if (!currentTopics.has(topic) && previous && /(WARNING|CRITICAL)/.test(previous)) next.push({ id, topic, severity: 1 });
         });
