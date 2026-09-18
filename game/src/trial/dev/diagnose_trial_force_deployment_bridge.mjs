@@ -49,7 +49,11 @@ const heavy = heavyController.createRouteInterceptionInput(
 );
 assert.equal(heavy.success, true);
 assert.equal(heavy.input.enemyStrategicSuppression, 100);
-assertApproxEqual(heavy.input.enemyReserveSuppression, 55);
+assertApproxEqual(heavy.input.enemyDeployment.deployment.reserveSuppression, 55);
+assertApproxEqual(
+    heavy.input.enemyReserveSuppression,
+    heavyController.powerResolver.resolveSuppression(55)
+);
 assertApproxEqual(heavy.input.enemyDeployment.deployment.deploymentRatio, 0.45);
 assert.deepEqual(heavy.input.enemyDeployment.tactics, []);
 assert.equal(heavy.input.enemyDeployment.selectedTactic, null);
