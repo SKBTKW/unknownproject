@@ -51,6 +51,16 @@ const attached = attachTrialLaunchSubsystem(engine, ui, {
 assert.equal(attached.success, true);
 assert.equal(engine.trialLaunchCoordinator, attached.coordinator);
 assert.equal(engine.__trialLaunchSubsystemAttached, true);
+assert.equal(typeof engine.retryPendingTrialLaunch, "function");
+assert.equal(attached.retryPendingTrialLaunch, engine.retryPendingTrialLaunch);
+assert.deepEqual(engine.retryPendingTrialLaunch(), {
+    started: false,
+    reason: "TRIAL_LAUNCH_NOT_DUE"
+});
+assert.deepEqual(engine.lastTrialLaunchAttempt, {
+    started: false,
+    reason: "TRIAL_LAUNCH_NOT_DUE"
+});
 
 const repeated = attachTrialLaunchSubsystem(engine, ui, {
     enemyTruthReadModel: truth,
@@ -60,6 +70,7 @@ const repeated = attachTrialLaunchSubsystem(engine, ui, {
 assert.equal(repeated.success, true);
 assert.equal(repeated.alreadyAttached, true);
 assert.equal(repeated.coordinator, attached.coordinator);
+assert.equal(repeated.retryPendingTrialLaunch, engine.retryPendingTrialLaunch);
 
 const activeUi = {
     ...ui,
@@ -77,7 +88,7 @@ const activeAttached = attachTrialLaunchSubsystem(activeEngine, activeUi, {
 });
 assert.equal(activeAttached.success, true);
 assert.equal(
-    activeAttached.coordinator.tryStartPending({ gameState: activeEngine.state }).reason,
+    activeAttached.retryPendingTrialLaunch().reason,
     "TRIAL_LAUNCH_ALREADY_ACTIVE"
 );
 
@@ -93,7 +104,7 @@ const blockedAttached = attachTrialLaunchSubsystem(blockedEngine, ui, {
     }
 });
 assert.equal(
-    blockedAttached.coordinator.tryStartPending({ gameState: blockedEngine.state }).reason,
+    blockedAttached.retryPendingTrialLaunch().reason,
     "TRIAL_LAUNCH_PRESENTATION_BLOCKED"
 );
 

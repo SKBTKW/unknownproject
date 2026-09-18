@@ -101,6 +101,13 @@ check("not 'origin" in validate_git_branch_tracking(**{
 check("not in origin" in validate_git_branch_tracking(**{
       **task_defaults, "target_descends_from_base": False})[0].message,
       "TASK rejects a rewritten target that lost its recorded base")
+check("REMOTE_TASK_DRIFT" in validate_git_branch_tracking(**{
+      **task_defaults, "remote_task_is_ancestor": False})[0].message,
+      "TASK stops only when its same-name remote contains unrecognized commits")
+check(not validate_git_branch_tracking(**{
+      **task_defaults, "target_head": "2" * 40,
+      "target_descends_from_base": True}),
+      "TASK continues when the target merely advances")
 check("same-name remote upstream" in validate_git_branch_tracking(**{
       **task_defaults, "integration_ready": True, "target_is_ancestor": True})[0].message,
       "integration readiness requires the pushed task branch")
@@ -124,4 +131,4 @@ violations, branch, upstream, authorized, mode = inspect_git_branch_policy(Path.
 check(not violations,
       f"live repository branch is authorized ({mode}: {branch}; upstream={upstream or '(none)'}; target={authorized})")
 
-print("GIT001 branch authorization: 28/28 PASS")
+print("GIT001 branch authorization: TASK target drift / remote drift contract PASS")

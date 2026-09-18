@@ -1,5 +1,7 @@
 # 99. Card Eligibility Audit
 
+> **Labels:** [AUDIT] [REFERENCE]
+
 > **Status:** Audit / Non-Authority
 >
 > 現行カードmasterに存在し、通常Offeringへ到達し得るカードの条件キーと `DeckManager.isCardEligible()` の対応状況を監査する。

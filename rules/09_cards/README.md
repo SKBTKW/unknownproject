@@ -1,5 +1,7 @@
 # 09. カード仕様 — Authority Index
 
+> **Labels:** [INDEX] [IMPLEMENTATION_LEDGER] [REFERENCE]
+
 > **Status:** Rules index / Runtime data lives in `game/src/data/`
 >
 > カード仕様は、設計意図と実行時データを分離して管理する。

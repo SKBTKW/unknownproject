@@ -8,6 +8,25 @@ function hasFunction(value) {
     return typeof value === "function";
 }
 
+function attemptPendingTrialLaunch(engine, coordinator) {
+    if (!coordinator || !hasFunction(coordinator.tryStartPending)) {
+        return { started: false, reason: "TRIAL_LAUNCH_COORDINATOR_UNAVAILABLE" };
+    }
+
+    let result;
+    try {
+        result = coordinator.tryStartPending({ gameState: engine?.state || null });
+    } catch (error) {
+        result = {
+            started: false,
+            reason: "TRIAL_LAUNCH_UNEXPECTED_ERROR",
+            errorMessage: error?.message || String(error)
+        };
+    }
+    if (engine) engine.lastTrialLaunchAttempt = result;
+    return result;
+}
+
 /**
  * Presentation composition boundary for production Trial launch.
  *
@@ -35,13 +54,20 @@ export function attachTrialLaunchSubsystem(engine, ui, {
     }
 
     if (engine.__trialLaunchSubsystemAttached && engine.trialLaunchCoordinator) {
+        if (!hasFunction(engine.retryPendingTrialLaunch)) {
+            engine.retryPendingTrialLaunch = () => attemptPendingTrialLaunch(
+                engine,
+                engine.trialLaunchCoordinator
+            );
+        }
         return {
             success: true,
             alreadyAttached: true,
             coordinator: engine.trialLaunchCoordinator,
             scenarioFactory: engine.trialLaunchScenarioFactory || null,
             ingressResolver: engine.trialLaunchIngressResolver || null,
-            routeGenerator: engine.trialLaunchRouteGenerator || null
+            routeGenerator: engine.trialLaunchRouteGenerator || null,
+            retryPendingTrialLaunch: engine.retryPendingTrialLaunch
         };
     }
 
@@ -89,7 +115,8 @@ export function attachTrialLaunchSubsystem(engine, ui, {
 
     // Current GlobalEventManager exposes unresolved choice ownership through
     // getPendingChoice(). Ordinary active timed events do not own presentation
-    // and therefore must not block Trial launch.
+    // and therefore must not block Trial launch. Result presentation remains
+    // responsible for delaying retries until its UI is explicitly dismissed.
     const blockedPredicate = isPresentationBlocked || (() => Boolean(
         engine.globalEventManager?.getPendingChoice?.()
     ));
@@ -107,6 +134,7 @@ export function attachTrialLaunchSubsystem(engine, ui, {
     engine.trialLaunchScenarioFactory = resolvedScenarioFactory;
     engine.trialLaunchIngressResolver = resolvedIngressResolver;
     engine.trialLaunchRouteGenerator = resolvedRouteGenerator;
+    engine.retryPendingTrialLaunch = () => attemptPendingTrialLaunch(engine, coordinator);
     engine.__trialLaunchSubsystemAttached = true;
 
     return {
@@ -114,7 +142,8 @@ export function attachTrialLaunchSubsystem(engine, ui, {
         coordinator,
         scenarioFactory: resolvedScenarioFactory,
         ingressResolver: resolvedIngressResolver,
-        routeGenerator: resolvedRouteGenerator
+        routeGenerator: resolvedRouteGenerator,
+        retryPendingTrialLaunch: engine.retryPendingTrialLaunch
     };
 }
 

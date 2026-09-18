@@ -17,9 +17,9 @@ export class TurnLifecycleService {
         this.engine.gameFactHub = this.gameFactHub;
         this.engine.chronicleSystem?.attachGameFactHub?.(this.gameFactHub);
 
-        // Exact Trial timing becomes live internal state on fresh runs, but it is
-        // not yet used as the production Trial trigger. Mid-run injected states
-        // are never guessed from Stage/nextTrialTurn; they require explicit state.
+        // Exact Trial timing becomes live internal state on fresh runs. A due
+        // request may be created from VERSE_COMMITTED, but presentation launch
+        // is intentionally deferred until the next Verse is fully initialized.
         this.trialTimingAttachment = attachTrialTimingSubsystem(engine, {
             timingAuthority: engine.trialTimingAuthorityService || null
         });
@@ -63,6 +63,7 @@ export class TurnLifecycleService {
         this._initializeNextTurn();
         this._captureRestorePoint(boundary);
         this.phase = TURN_LIFECYCLE_PHASES.ACTIVE;
+        this._tryStartPendingTrial();
         return this.engine.state ? this.engine.state.turn : 1;
     }
 
@@ -97,6 +98,40 @@ export class TurnLifecycleService {
         if (engine.deckManager && typeof engine.deckManager.generateOfferingCards === "function") engine.deckManager.generateOfferingCards();
         if (engine.globalEventManager) engine.globalEventManager.onTurnStart();
         if (state && typeof state.addLog === "function") state.addLog(this._translate("LOG_TURN_START", { turn: state.turn }, `Turn ${state.turn} started.`));
+    }
+
+    _tryStartPendingTrial() {
+        if (typeof this.engine.retryPendingTrialLaunch === "function") {
+            try {
+                const result = this.engine.retryPendingTrialLaunch();
+                this.engine.lastTrialLaunchAttempt = result;
+                return result;
+            } catch (error) {
+                const result = {
+                    started: false,
+                    reason: "TRIAL_LAUNCH_UNEXPECTED_ERROR",
+                    errorMessage: error?.message || String(error)
+                };
+                this.engine.lastTrialLaunchAttempt = result;
+                return result;
+            }
+        }
+
+        const coordinator = this.engine.trialLaunchCoordinator;
+        if (!coordinator || typeof coordinator.tryStartPending !== "function") return null;
+
+        let result;
+        try {
+            result = coordinator.tryStartPending({ gameState: this.engine.state });
+        } catch (error) {
+            result = {
+                started: false,
+                reason: "TRIAL_LAUNCH_UNEXPECTED_ERROR",
+                errorMessage: error?.message || String(error)
+            };
+        }
+        this.engine.lastTrialLaunchAttempt = result;
+        return result;
     }
 
     getPhase() { return this.phase; }
