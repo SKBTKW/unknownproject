@@ -3,6 +3,11 @@ import { attachWarningSubsystem } from "../../warning/integration/warning_bootst
 import { WarningTimingBridge } from "../../warning/systems/warning_timing_bridge.js";
 import { TrialDueStateService } from "../systems/trial_due_state_service.js";
 import { TrialStageProgressionService } from "../systems/trial_stage_progression_service.js";
+import { PostTrialProgressionService } from "../systems/post_trial_progression_service.js";
+import { PostTrialSkillProgressionRouter } from "../systems/post_trial_skill_progression_router.js";
+import { PostTrialStepAuthorityRouter } from "../systems/post_trial_step_authority_router.js";
+import { PostTrialAftermathCaptureBridge } from "../systems/post_trial_aftermath_capture_bridge.js";
+import { PostTrialProgressionReadService } from "../presentation/post_trial_progression_read_service.js";
 import { attachTrialTimingSubsystem } from "./trial_timing_bootstrap.js";
 
 /**
@@ -16,6 +21,11 @@ import { attachTrialTimingSubsystem } from "./trial_timing_bootstrap.js";
  *   shared GameFactHub -> exact Trial timing -> semantic Warning lifecycle
  *                                      -> pending Trial start request
  *                                      -> settled Trial Stage progression
+ *                                      -> Post-Trial transition authority
+ *                                      -> Reward/Unlock/Final authority ports
+ *                                      -> owner-routed Skill progression port
+ *                                      -> immutable aftermath snapshot
+ *                                      -> stable read-only projection
  *
  * It deliberately does not re-run Investigation bootstrap, avoiding duplicate
  * unlock/event bridges during the migration.
@@ -24,7 +34,8 @@ export function attachTrialRuntimeSubsystems(engine, {
     gameFactHub = null,
     timingOptions = {},
     warningOptions = {},
-    warningTimingOptions = {}
+    warningTimingOptions = {},
+    postTrialOptions = {}
 } = {}) {
     if (!engine?.state) {
         return { success: false, reason: "TRIAL_RUNTIME_ENGINE_REQUIRED" };
@@ -74,6 +85,68 @@ export function attachTrialRuntimeSubsystems(engine, {
         });
     }
 
+    const {
+        stepAuthorityRouter = null,
+        rewardAuthority = null,
+        unlockAuthority = null,
+        finalRunCompletionAuthority = null,
+        skillProgressionRouter = null,
+        advisorSkillProgressionAuthority = null,
+        playerSkillProgressionAuthority = null,
+        ...postTrialProgressionOptions
+    } = postTrialOptions || {};
+
+    if (!engine.postTrialStepAuthorityRouter) {
+        engine.postTrialStepAuthorityRouter = stepAuthorityRouter
+            || new PostTrialStepAuthorityRouter({
+                rewardAuthority: rewardAuthority || engine.postTrialRewardAuthority || null,
+                unlockAuthority: unlockAuthority || engine.postTrialUnlockAuthority || null,
+                finalRunCompletionAuthority: finalRunCompletionAuthority
+                    || engine.postTrialFinalRunCompletionAuthority
+                    || null
+            });
+    }
+
+    if (!engine.postTrialSkillProgressionRouter) {
+        engine.postTrialSkillProgressionRouter = skillProgressionRouter
+            || new PostTrialSkillProgressionRouter({
+                advisorAuthority: advisorSkillProgressionAuthority
+                    || engine.advisorSkillProgressionAuthority
+                    || null,
+                playerAuthority: playerSkillProgressionAuthority
+                    || engine.playerSkillProgressionAuthority
+                    || null
+            });
+    }
+
+    // Attach after Stage progression so RESULT_SETTLED first establishes the
+    // delegated Stage pending state, then Post-Trial snapshots it into its SSOT.
+    if (!engine.postTrialProgressionService) {
+        engine.postTrialProgressionService = new PostTrialProgressionService(engine, {
+            ...postTrialProgressionOptions,
+            gameFactHub: factHub,
+            stageProgressionService: engine.trialStageProgressionService,
+            stepAuthorityRouter: engine.postTrialStepAuthorityRouter,
+            skillProgressionRouter: engine.postTrialSkillProgressionRouter
+        });
+    }
+
+    if (!engine.postTrialProgressionReadService) {
+        engine.postTrialProgressionReadService = new PostTrialProgressionReadService(
+            engine.postTrialProgressionService
+        );
+    }
+
+    // Subscribe after PostTrialProgressionService so a settled fact creates the
+    // transition first, then this bridge writes the immutable aftermath snapshot
+    // into that transition. The transition serializer already persists this field.
+    if (!engine.postTrialAftermathCaptureBridge) {
+        engine.postTrialAftermathCaptureBridge = new PostTrialAftermathCaptureBridge({
+            gameFactHub: factHub,
+            state: engine.state
+        });
+    }
+
     // The constructor-side Investigation bootstrap may have reported failure
     // only because Warning lacked a shared GameFactHub. Preserve the already
     // attached Investigation runtime/unlock and reflect the now-complete state.
@@ -95,7 +168,12 @@ export function attachTrialRuntimeSubsystems(engine, {
         warningAttached: true,
         warningTimingAttached: true,
         trialDueAttached: true,
-        trialStageProgressionAttached: true
+        trialStageProgressionAttached: true,
+        postTrialStepAuthorityRouterAttached: true,
+        postTrialSkillProgressionRouterAttached: true,
+        postTrialProgressionAttached: true,
+        postTrialProgressionReadAttached: true,
+        postTrialAftermathCaptureAttached: true
     };
 }
 
