@@ -41,7 +41,8 @@ check(parsed[1].locked, true, 'worktree parser preserves lock state');
 check(classifyObservedTask({ relationshipKnown:false, mergePreviewStatus:'UNKNOWN' }), GUARD_STATUS.BLOCKED, 'unknown relationship fails closed');
 check(classifyObservedTask({ relationshipKnown:true, targetIsAncestor:false, mergePreviewStatus:'CONFLICT' }), GUARD_STATUS.BLOCKED, 'confirmed conflict blocks');
 check(classifyObservedTask({ relationshipKnown:true, targetIsAncestor:false, mergePreviewStatus:'CLEAN' }), GUARD_STATUS.RECONCILE_REQUIRED, 'target drift requires reconcile');
-check(classifyObservedTask({ relationshipKnown:true, targetIsAncestor:true, mergePreviewStatus:'NOT_REQUIRED' }), GUARD_STATUS.READY, 'contained clean TASK is ready');
+check(classifyObservedTask({ relationshipKnown:true, taskIsAncestor:true, targetIsAncestor:false, mergePreviewStatus:'UNKNOWN' }), GUARD_STATUS.MERGED, 'TASK already contained by target is merged');
+check(classifyObservedTask({ relationshipKnown:true, targetIsAncestor:true, taskIsAncestor:false, mergePreviewStatus:'NOT_REQUIRED' }), GUARD_STATUS.READY, 'contained clean TASK is ready');
 check(buildSessionId(new Date(2026, 8, 18, 22, 30, 40, 123)), '20260918-223040-123', 'session id is deterministic and millisecond precise');
 
 const stableSnapshot = { targetSha: 'a', tasks: { one: 'b' } };
@@ -60,6 +61,7 @@ const backupRoot = path.join(root, 'backups');
 const target = 'AoT260917';
 const taskA = 'aot-task/AoT260917/tooling/guard-a';
 const taskB = 'aot-task/AoT260917/tooling/guard-b';
+const taskMerged = 'aot-task/AoT260917/tooling/guard-merged';
 try {
   git(root, 'init', '--bare', '-q', origin);
   git(root, 'init', '-q', repo);
@@ -90,6 +92,8 @@ try {
   git(repo, 'commit', '-q', '-m', 'target advanced');
   git(repo, 'push', '-q', 'origin', target);
   const targetSha = git(repo, 'rev-parse', 'HEAD');
+  git(repo, 'branch', taskMerged, targetSha);
+  git(repo, 'push', '-q', '-u', 'origin', taskMerged);
   const beforeHead = git(repo, 'rev-parse', 'HEAD');
   const beforeStatus = git(repo, 'status', '--porcelain', '--untracked-files=all');
 
@@ -97,9 +101,13 @@ try {
   const result = await runIntegrationGuard({ cwd: repo, target, backupRoot, now });
   check(result.analysis.targetSha, targetSha, 'E2E analysis pins current target SHA');
   check(result.analysis.backupVerified, true, 'E2E backup is verified before analysis result');
-  check(result.analysis.tasks.length, 2, 'E2E discovers both TASK branches');
+  check(result.analysis.tasks.length, 3, 'E2E discovers stale and merged TASK branches');
+  check(result.analysis.summary.MERGED, 1, 'E2E classifies target-contained TASK as merged');
   check(result.analysis.summary.RECONCILE_REQUIRED, 2, 'E2E marks both stale TASKs for reconciliation');
-  check(result.analysis.tasks.every((task) => task.peerOverlaps.some((peer) => peer.overlap.risk === 'SHARED_SURFACE')), true, 'E2E detects shared-surface peer overlap');
+  const mergedTask = result.analysis.tasks.find((task) => task.branch === taskMerged);
+  check(mergedTask?.taskIsAncestor, true, 'E2E records merged ancestry direction');
+  check(mergedTask?.peerOverlaps, [], 'E2E excludes merged TASK from peer-overlap warnings');
+  check(result.analysis.tasks.filter((task) => task.status !== GUARD_STATUS.MERGED).every((task) => task.peerOverlaps.some((peer) => peer.overlap.risk === 'SHARED_SURFACE')), true, 'E2E still detects overlap between active stale TASKs');
   check(fs.existsSync(result.backup.bundlePath), true, 'E2E writes bundle outside repository');
   check(fs.existsSync(result.backup.manifestPath), true, 'E2E writes backup manifest');
   check(fs.existsSync(path.join(result.backup.sessionDir, 'SHA256SUM.txt')), true, 'E2E writes bundle checksum');
@@ -154,4 +162,4 @@ try {
   fs.rmSync(root, { recursive: true, force: true });
 }
 
-console.log(`Integration Guard V1: ${passed} checks PASS`);
+console.log(`Integration Guard V1.1: ${passed} checks PASS`);
