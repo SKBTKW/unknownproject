@@ -190,6 +190,11 @@ async function main() {
 
     // ⚔️ Layer 4: Trial Phase 1〜2.8G Tests (試練・迎撃・戦闘・完了)
     console.log("\n⚔️  [LAYER 4/6] Trial Subsystem Tests (迎撃・戦闘・完了)...");
+    const trialPresentationBoundaryOk = await runCommand("node", ["scratch/test_trial_core_presentation_boundary.mjs"]);
+    if (!trialPresentationBoundaryOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Trial Core Presentation Boundary) で違反が検出されました。");
+        process.exit(1);
+    }
     const trialFoundationOk = await runCommand("node", ["scratch/test_trial_foundation.mjs"]);
     if (!trialFoundationOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Trial Foundation) で不合格が検出されました。");
