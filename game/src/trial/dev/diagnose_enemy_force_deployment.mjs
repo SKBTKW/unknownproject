@@ -5,6 +5,13 @@ import { EnemyForceDeploymentResolver } from "../systems/enemy_force_deployment_
 const terrainResolver = new EnemyForceTerrainInteractionResolver();
 const deploymentResolver = new EnemyForceDeploymentResolver();
 
+function assertApproxEqual(actual, expected, epsilon = 1e-9) {
+    assert.ok(
+        Math.abs(actual - expected) <= epsilon,
+        `expected ${actual} to be within ${epsilon} of ${expected}`
+    );
+}
+
 function resolveCase({ bodySize, equipment, terrainId, forceSuppression = 100 }) {
     const interaction = terrainResolver.resolve({ bodySize, equipment, terrainId });
     return deploymentResolver.resolve({ forceSuppression, interaction });
@@ -24,9 +31,9 @@ const largeHeavyForest = resolveCase({
     equipment: ["HEAVY"],
     terrainId: "GL2_FOREST"
 });
-assert.equal(largeHeavyForest.deploymentRatio, 0.45);
-assert.equal(largeHeavyForest.deployedSuppression, 45);
-assert.equal(largeHeavyForest.reserveSuppression, 55);
+assertApproxEqual(largeHeavyForest.deploymentRatio, 0.45);
+assertApproxEqual(largeHeavyForest.deployedSuppression, 45);
+assertApproxEqual(largeHeavyForest.reserveSuppression, 55);
 assert.ok(largeHeavyForest.reasons.includes("BODY_DEPLOYMENT_CONSTRAINED"));
 assert.ok(largeHeavyForest.reasons.includes("EQUIPMENT_DEPLOYMENT_CONSTRAINED"));
 
@@ -43,7 +50,7 @@ const largeLightForest = resolveCase({
     equipment: ["LIGHT"],
     terrainId: "GL2_FOREST"
 });
-assert.equal(largeLightForest.deploymentRatio, 0.85);
+assertApproxEqual(largeLightForest.deploymentRatio, 0.85);
 assert.ok(largeLightForest.deploymentRatio > largeHeavyForest.deploymentRatio);
 
 const conserved = resolveCase({

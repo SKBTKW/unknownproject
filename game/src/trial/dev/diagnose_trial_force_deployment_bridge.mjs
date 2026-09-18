@@ -2,6 +2,13 @@ import assert from "node:assert/strict";
 import { TrialController } from "../flow/trial_controller.js";
 import { ENEMY_TACTICS } from "../systems/enemy_tactic_resolver.js";
 
+function assertApproxEqual(actual, expected, epsilon = 1e-9) {
+    assert.ok(
+        Math.abs(actual - expected) <= epsilon,
+        `expected ${actual} to be within ${epsilon} of ${expected}`
+    );
+}
+
 function createController(route, armyStructure = null) {
     const controller = new TrialController();
     controller.state = {
@@ -42,11 +49,11 @@ const heavy = heavyController.createRouteInterceptionInput(
 );
 assert.equal(heavy.success, true);
 assert.equal(heavy.input.enemyStrategicSuppression, 100);
-assert.equal(heavy.input.enemyReserveSuppression, 55);
-assert.equal(heavy.input.enemyDeployment.deployment.deploymentRatio, 0.45);
+assertApproxEqual(heavy.input.enemyReserveSuppression, 55);
+assertApproxEqual(heavy.input.enemyDeployment.deployment.deploymentRatio, 0.45);
 assert.deepEqual(heavy.input.enemyDeployment.tactics, []);
 assert.equal(heavy.input.enemyDeployment.selectedTactic, null);
-assert.equal(
+assertApproxEqual(
     heavy.input.enemySuppression,
     heavyController.powerResolver.resolveSuppression(45)
 );
