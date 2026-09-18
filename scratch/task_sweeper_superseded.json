@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "approvals": [
+    {
+      "target": "AoT260917",
+      "branch": "aot-task/AoT260917/presentation/view-preset-input",
+      "approvedHead": "ffc22a09d44cb409c93e080eecec0622ae7452b3",
+      "reviewedAgainst": "4efe0c3be60b68d95d16784cb8043c16ee12cf3c",
+      "replacement": "aot-task/AoT260917/presentation/view-preset-input-r2",
+      "reason": "superseded by the reconciled renderer-neutral view-preset input branch merged as PR #35"
+    },
+    {
+      "target": "AoT260917",
+      "branch": "aot-task/AoT260917/presentation/web25d",
+      "approvedHead": "35738820a466e60f86c55fcf520f2e79ec150325",
+      "reviewedAgainst": "4efe0c3be60b68d95d16784cb8043c16ee12cf3c",
+      "replacement": "aot-task/AoT260917/presentation/web25d-materialization-r2",
+      "reason": "superseded by the reconciled Web 2.5D materialization branch merged as PR #29"
+    },
+    {
+      "target": "AoT260917",
+      "branch": "aot-task/AoT260917/presentation/web25d-materialization",
+      "approvedHead": "17a54f460cfefa1a100504f47199d957a1861ecf",
+      "reviewedAgainst": "4efe0c3be60b68d95d16784cb8043c16ee12cf3c",
+      "replacement": "aot-task/AoT260917/presentation/web25d-materialization-r2",
+      "reason": "superseded by the reconciled Web 2.5D materialization branch merged as PR #29"
+    },
+    {
+      "target": "AoT260917",
+      "branch": "aot-task/AoT260917/presentation/system-presentation-boundary-r3",
+      "approvedHead": "3067b1819712ca9ca092050dd1db9bc4fb77a343",
+      "reviewedAgainst": "4efe0c3be60b68d95d16784cb8043c16ee12cf3c",
+      "replacement": "aot-task/AoT260917/presentation/system-presentation-boundary-r2",
+      "reason": "temporary reconciliation branch whose resolved tree was folded into PR #37"
+    },
+    {
+      "target": "AoT260917",
+      "branch": "aot-task/AoT260917/rules/status-labels",
+      "approvedHead": "e18174f8b1ed4a946237b97071e3855a952f5bc7",
+      "reviewedAgainst": "4efe0c3be60b68d95d16784cb8043c16ee12cf3c",
+      "replacement": "AoT260917",
+      "reason": "current target contains the newer status-label model including INDEX and AUDIT labels"
+    },
+    {
+      "target": "AoT260917",
+      "branch": "aot-task/AoT260917/trial/post-trial-progression-r2",
+      "approvedHead": "e11218dfd4347eff6d7be05ad323604d506a721c",
+      "reviewedAgainst": "4efe0c3be60b68d95d16784cb8043c16ee12cf3c",
+      "replacement": "aot-task/AoT260917/trial/post-trial-progression",
+      "reason": "temporary reconciliation branch whose resolved tree was folded into PR #23"
+    },
+    {
+      "target": "AoT260917",
+      "branch": "aot-task/AoT260917/unity2d-port-prep",
+      "approvedHead": "585c2ed3644714662ef654858f3fc57f195cd591",
+      "reviewedAgainst": "4efe0c3be60b68d95d16784cb8043c16ee12cf3c",
+      "replacement": "aot-task/AoT260917/presentation/unity2d-port-prep",
+      "reason": "superseded by the presentation-scoped replacement branch merged as PR #26"
+    }
+  ]
+}
