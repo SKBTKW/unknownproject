@@ -82,7 +82,9 @@ export class DevelopmentTrialPreviewHarness {
         };
         this.session = {
             definition: scenarioDefinition,
-            displayGrid: createScenarioGrid(scenarioDefinition)
+            // Development scenario board fixture. Trial input resolution and the
+            // UI may both read it, but it is not renderer-produced state.
+            scenarioGrid: createScenarioGrid(scenarioDefinition)
         };
         this.ui.startTrialSession(scenario, {
             deployedDefense: scenarioDefinition.deployedDefense,
@@ -98,7 +100,12 @@ export class DevelopmentTrialPreviewHarness {
         return true;
     }
 
+    getScenarioGrid() {
+        return this.session?.scenarioGrid || null;
+    }
+
+    // Legacy UI compatibility. New boundaries should use getScenarioGrid().
     getDisplayGrid() {
-        return this.session?.displayGrid || null;
+        return this.getScenarioGrid();
     }
 }

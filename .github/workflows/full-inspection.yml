@@ -150,6 +150,11 @@ jobs:
       - name: Run Task Sweeper safety contract
         run: node scratch/test_task_sweeper.mjs
 
+      - name: Run Presentation boundary focused tests
+        run: |
+          node scratch/test_board_presentation_unity_boundary.mjs
+          node scratch/test_legacy_web2d_board_input_adapter.mjs
+
       - name: Run Trial runtime focused tests
         run: |
           node game/src/trial/dev/diagnose_warning_timing_bridge.mjs
@@ -158,6 +163,7 @@ jobs:
           node game/src/trial/dev/diagnose_trial_launch_bootstrap.mjs
           node game/src/trial/dev/diagnose_trial_launch_trigger_order.mjs
           node game/src/trial/dev/diagnose_trial_stage_progression_service.mjs
+          node scratch/test_trial_route_visual_semantics.mjs
 
       - name: Run Warning focused tests
         run: |
