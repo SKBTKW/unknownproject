@@ -4,12 +4,15 @@ on:
   pull_request:
     branches:
       - "AoT*"
+  push:
+    branches:
+      - "AoT*"
 
 permissions:
   contents: read
 
 concurrency:
-  group: full-inspection-${{ github.event.pull_request.number }}
+  group: full-inspection-${{ github.event_name }}-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('target-{0}', github.ref_name) }}
   cancel-in-progress: true
 
 jobs:
@@ -19,7 +22,7 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - name: Checkout PR merge result
+      - name: Checkout inspection revision
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -29,7 +32,11 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Validate Full Inspection workflow contract
+        run: node scratch/test_full_inspection_workflow_contract.mjs
+
       - name: Validate TASK branch contract
+        if: github.event_name == 'pull_request'
         shell: bash
         env:
           AOT_HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
@@ -54,6 +61,7 @@ jobs:
           python-version: "3.12"
 
       - name: Prepare AoT PR inspection state
+        if: github.event_name == 'pull_request'
         shell: bash
         env:
           AOT_REPOSITORY: ${{ github.repository }}
@@ -95,6 +103,49 @@ jobs:
 
           echo "PR merge result prepared as working-tree diff against ${AOT_BASE_SHA}."
           git status --short
+
+      - name: Prepare AoT target push inspection state
+        if: github.event_name == 'push'
+        shell: bash
+        env:
+          AOT_TARGET_BRANCH: ${{ github.ref_name }}
+          AOT_TARGET_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          case "${AOT_TARGET_BRANCH}" in
+            AoT*) ;;
+            *)
+              echo "Post-merge Full Inspection is restricted to AoT* target branches."
+              exit 1
+              ;;
+          esac
+
+          test "$(git rev-parse HEAD)" = "${AOT_TARGET_SHA}"
+
+          git fetch --no-tags origin \
+            "+refs/heads/${AOT_TARGET_BRANCH}:refs/remotes/origin/${AOT_TARGET_BRANCH}"
+
+          REMOTE_TARGET_SHA="$(git rev-parse "origin/${AOT_TARGET_BRANCH}")"
+          if [ "${REMOTE_TARGET_SHA}" != "${AOT_TARGET_SHA}" ]; then
+            echo "Target advanced during post-merge inspection: expected ${AOT_TARGET_SHA}, found ${REMOTE_TARGET_SHA}."
+            exit 1
+          fi
+
+          git switch -C "${AOT_TARGET_BRANCH}" "${AOT_TARGET_SHA}"
+          git branch --set-upstream-to="origin/${AOT_TARGET_BRANCH}" "${AOT_TARGET_BRANCH}"
+
+          git config --local aot.authorizedBranch "${AOT_TARGET_BRANCH}"
+          git config --local aot.workMode DIRECT
+          git config --local --unset-all aot.authorizedWorkBranch || true
+          git config --local --unset-all aot.authorizedTaskBranch || true
+          git config --local --unset-all aot.authorizedBaseCommit || true
+
+          test "$(git rev-parse --abbrev-ref HEAD)" = "${AOT_TARGET_BRANCH}"
+          test "$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}')" = "origin/${AOT_TARGET_BRANCH}"
+          test -z "$(git status --porcelain)"
+
+          echo "AoT target push prepared for post-merge Full Inspection at ${AOT_TARGET_SHA}."
 
       - name: Run Task Sweeper safety contract
         run: node scratch/test_task_sweeper.mjs
