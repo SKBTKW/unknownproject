@@ -1,5 +1,7 @@
 # 04. Offering ＆ Hold ＆ Card Cycle 正本仕様
 
+> **Labels:** [CURRENT] [PARTIAL]
+
 > 本文書は平時のカード提示・選択・保留・再提示制御の正本である。
 > 旧来のカテゴリ説明、将来案、Trial専用カード構想を現在実装と混同しない。
 

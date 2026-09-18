@@ -1,5 +1,7 @@
 # 00. Master Handover Specification
 
+> **Labels:** [CURRENT] [INDEX] [REFERENCE]
+
 > **役割:** 本文書は詳細数値を重複保持するための仕様書ではない。
 > `rules/` 内の各専門文書を正本として参照するための、全体方針・優先順位・状態管理の入口とする。
 >

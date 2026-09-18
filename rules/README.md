@@ -2,6 +2,9 @@
 
 本ディレクトリ (`rules/`) は、ゲーム **『Trial of the Ages: Last Ember』** の公式確定仕様・ゲームシステム・開発ルールを管理するドキュメントリポジトリです。
 
+> **情報状態ラベル:** rules内の情報は削除ではなく選別・仕分けを基本とする。\
+> `[CURRENT]` / `[FOUNDATION]` / `[RULES_AHEAD]` / `[PARTIAL]` / `[UNRESOLVED]` / `[LEGACY]` 等の定義は [00_rules_information_status_labels.md](00_rules_information_status_labels.md) を参照する。
+
 ---
 
 ## 🚀 決定版マスター仕様書 (Master Specification)

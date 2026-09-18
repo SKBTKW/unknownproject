@@ -8,13 +8,23 @@ import { drawWeb25DZoneLinkOverlay } from './web25d_zone_link_overlay_renderer.j
  * It consumes only renderer-neutral BoardPresentationData edge semantics.
  */
 export class Web25DPhaseERenderer extends Web25DPhaseCRenderer {
+    shouldDrawZoneLinkCell() {
+        return true;
+    }
+
+    shouldDrawZoneLinkEdge() {
+        return true;
+    }
+
     render() {
         super.render();
         drawWeb25DZoneLinkOverlay({
             ctx: this.ctx,
             projection: this.projection,
             readModel: this.readModel,
-            resolveTerrainTopFill: cell => this.resolveTerrainTopFill(cell)
+            resolveTerrainTopFill: cell => this.resolveTerrainTopFill(cell),
+            shouldDrawCell: cell => this.shouldDrawZoneLinkCell(cell),
+            shouldDrawEdge: (cell, edge) => this.shouldDrawZoneLinkEdge(cell, edge)
         });
     }
 }

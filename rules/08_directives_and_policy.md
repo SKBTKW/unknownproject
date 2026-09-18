@@ -1,5 +1,7 @@
 # 08. 文明方針 (Directives) — Dormant / 再設計待ち
 
+> **Labels:** [UNRESOLVED] [REFERENCE]
+
 > **Status:** Dormant implementation / Not current gameplay authority
 >
 > 文明方針システムはコード上の基盤と旧データを保持しているが、現行gameでは効果が停止されている。

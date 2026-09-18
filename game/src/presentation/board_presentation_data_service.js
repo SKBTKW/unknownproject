@@ -45,7 +45,10 @@ export class BoardPresentationDataService {
 
         const sourceState = createStateGridView(state, gridOverride);
         const grid = sourceState?.grid;
-        const profile = getBoardPresentationProfile(presentationState.contextMode);
+        const profile = getBoardPresentationProfile(
+            presentationState.contextMode,
+            presentationState.viewPreset
+        );
         const trial = trialSemanticData || emptyTrialBoardSemanticData();
         const showRoutes = profile.trialRoutes !== "HIDDEN";
         const showInterception = profile.interception !== "HIDDEN";

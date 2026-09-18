@@ -16,6 +16,7 @@ export class BoardInputDispatcher {
         switch (type) {
             case BOARD_INPUT_COMMANDS.SET_VIEW_MODE: return this._ok(command, this.presentationState.setViewMode(payload.viewMode));
             case BOARD_INPUT_COMMANDS.TOGGLE_VIEW_MODE: return this._ok(command, this.presentationState.toggleViewMode());
+            case BOARD_INPUT_COMMANDS.SET_VIEW_PRESET: return this._ok(command, this.presentationState.setViewPreset(payload.viewPreset));
             case BOARD_INPUT_COMMANDS.SET_CONTEXT_MODE: return this._ok(command, this.presentationState.setContextMode(payload.contextMode));
             case BOARD_INPUT_COMMANDS.TOGGLE_CONTEXT_MODE: return this._ok(command, this.presentationState.toggleContextMode());
             case BOARD_INPUT_COMMANDS.SELECT_CELL: {
