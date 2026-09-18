@@ -5,6 +5,7 @@ import { attachTrialTimingSubsystem } from '../trial/integration/trial_timing_bo
 import { TrialThreatStateService } from '../trial/systems/trial_threat_state_service.js';
 import { TrueEnemyStateService } from '../trial/systems/true_enemy_state_service.js';
 import { EnemyTruthReadModel } from '../trial/systems/enemy_truth_read_model.js';
+import { createEnemyStateTransitionResolver } from '../trial/systems/enemy_state_transition_resolver.js';
 
 export const TURN_LIFECYCLE_PHASES = Object.freeze({ ACTIVE: "ACTIVE", COMMITTING: "COMMITTING", COMMITTED: "COMMITTED", INITIALIZING: "INITIALIZING" });
 
@@ -29,10 +30,14 @@ export class TurnLifecycleService {
             gameFactHub: this.gameFactHub
         });
         this.engine.trialThreatStateService = this.threatStateService;
+
+        const enemyStateTransitionResolver = engine.enemyStateTransitionResolver
+            || createEnemyStateTransitionResolver();
+        this.engine.enemyStateTransitionResolver = enemyStateTransitionResolver;
         this.trueEnemyStateService = engine.trueEnemyStateService || new TrueEnemyStateService({
             gameState: engine.state,
             gameFactHub: this.gameFactHub,
-            transitionResolver: engine.enemyStateTransitionResolver || null
+            transitionResolver: enemyStateTransitionResolver
         });
         this.engine.trueEnemyStateService = this.trueEnemyStateService;
         this.engine.enemyTruthReadModel = engine.enemyTruthReadModel || new EnemyTruthReadModel(this.trueEnemyStateService);

@@ -5,6 +5,10 @@ function cloneData(value) {
     return JSON.parse(JSON.stringify(value));
 }
 
+function nonNegative(value) {
+    return Math.max(0, Number(value) || 0);
+}
+
 export class TrialEnemyAdvanceService {
     advanceAfterBattle(state, combatResult = null) {
         if (!state) {
@@ -33,7 +37,6 @@ export class TrialEnemyAdvanceService {
             return { success: false, errors: [TRIAL_PLAN_REASONS.MISSING_BATTLE_RESULT] };
         }
 
-        // Duplicate traversal protection
         if (Array.isArray(state.traversalResults) && state.traversalResults[state.currentBattleIndex]) {
             return { success: false, errors: [TRIAL_PLAN_REASONS.TRAVERSAL_ALREADY_APPLIED] };
         }
@@ -41,7 +44,6 @@ export class TrialEnemyAdvanceService {
             return { success: false, errors: [TRIAL_PLAN_REASONS.TRAVERSAL_ALREADY_APPLIED] };
         }
 
-        // Route validation
         const route = Array.isArray(state.routes) ? state.routes.find(r => r.id === currentBattle.routeId) : null;
         if (!route || !Array.isArray(route.cells) || route.cells.length === 0) {
             return { success: false, errors: [TRIAL_PLAN_REASONS.INVALID_TRAVERSAL_ROUTE] };
@@ -54,9 +56,13 @@ export class TrialEnemyAdvanceService {
             return { success: false, errors: [TRIAL_PLAN_REASONS.CELL_NOT_ON_ROUTE] };
         }
 
-        // Determine outcome: REPEL vs BREAKTHROUGH / NOT_REPEL
         const outcome = battleResult.prediction?.outcome || battleResult.outcome;
         const isRepelled = (outcome === TRIAL_OUTCOMES.REPEL);
+        const remainingForceSuppression = nonNegative(
+            battleResult.remainingForceSuppression
+            ?? battleResult.enemy?.remainingForceSuppression
+            ?? battleResult.remainingSuppression
+        );
 
         const fromIndex = interceptIndex;
         let toIndex = interceptIndex;
@@ -73,9 +79,6 @@ export class TrialEnemyAdvanceService {
             reachedRouteEnd = false;
         } else {
             stopped = false;
-            // A non-repel result means the interception failed to stop the route.
-            // There is no second deliberate interception on the same route, so
-            // survivors continue through all remaining route cells to HQ.
             toIndex = route.cells.length - 1;
             advanced = toIndex > interceptIndex;
             reachedRouteEnd = true;
@@ -97,10 +100,10 @@ export class TrialEnemyAdvanceService {
             toCell,
             stopped,
             advanced,
-            reachedRouteEnd
+            reachedRouteEnd,
+            remainingForceSuppression: isRepelled ? 0 : remainingForceSuppression
         };
 
-        // State commit
         currentBattle.traversalApplied = true;
         currentBattle.traversal = cloneData(traversalResult);
 
@@ -119,7 +122,8 @@ export class TrialEnemyAdvanceService {
             status: stopped ? "STOPPED" : (reachedRouteEnd ? "REACHED_END" : "ADVANCED"),
             stopped,
             advanced,
-            reachedRouteEnd
+            reachedRouteEnd,
+            remainingForceSuppression: isRepelled ? 0 : remainingForceSuppression
         };
 
         return {

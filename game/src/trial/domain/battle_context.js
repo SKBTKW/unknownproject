@@ -18,6 +18,9 @@ export function createBattleContext({
     allocatedDefense,
     baseInterceptionPower,
     enemySuppression,
+    enemyStrategicSuppression = null,
+    enemyReserveSuppression = 0,
+    enemyDeployment = null,
     enemy = {},
     environment = {},
     links = [],
@@ -32,6 +35,11 @@ export function createBattleContext({
         },
         enemy: {
             suppression: Math.max(0, Number(enemySuppression) || 0),
+            strategicSuppression: enemyStrategicSuppression == null
+                ? null
+                : Math.max(0, Number(enemyStrategicSuppression) || 0),
+            reserveSuppression: Math.max(0, Number(enemyReserveSuppression) || 0),
+            deployment: enemyDeployment ? JSON.parse(JSON.stringify(enemyDeployment)) : null,
             species: enemy.species || null,
             commander: enemy.commander || null
         },

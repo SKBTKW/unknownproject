@@ -25,6 +25,7 @@ export class TrialCombatResolver {
             context.enemy.suppression,
             terrain.modifiers.filter(item => item.target === MODIFIER_TARGETS.ENEMY_SUPPRESSION)
         );
+        const reserveSuppression = Math.max(0, Number(context.enemy.reserveSuppression) || 0);
         const damageToSuppression = Math.min(human.value, enemy.value);
         const margin = human.value - enemy.value;
         const outcome = margin > 0
@@ -32,6 +33,8 @@ export class TrialCombatResolver {
             : margin < 0
                 ? TRIAL_OUTCOMES.BREAKTHROUGH
                 : TRIAL_OUTCOMES.EXACT;
+        const remainingSuppression = Math.max(0, enemy.value - damageToSuppression);
+        const remainingForceSuppression = remainingSuppression + reserveSuppression;
         const appliedModifiers = [...human.breakdown, ...enemy.breakdown]
             .sort((a, b) => (a.phase - b.phase) || ((a.priority || 0) - (b.priority || 0)));
         const appliedSources = new Set(appliedModifiers.map(item => item.source));
@@ -44,14 +47,18 @@ export class TrialCombatResolver {
             },
             enemy: {
                 basePower: enemy.baseValue,
-                finalPower: enemy.value
+                finalPower: enemy.value,
+                reserveSuppression,
+                remainingForceSuppression
             },
             appliedModifiers,
             prediction: { outcome, margin },
             humanInterception: human.value,
             enemySuppression: enemy.value,
+            reserveSuppression,
             damageToSuppression,
-            remainingSuppression: Math.max(0, enemy.value - damageToSuppression),
+            remainingSuppression,
+            remainingForceSuppression,
             humanBreakdown: human.breakdown,
             enemyBreakdown: enemy.breakdown,
             modifiers: terrain.modifiers,

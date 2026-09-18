@@ -163,6 +163,14 @@ jobs:
           node game/src/trial/dev/diagnose_trial_launch_bootstrap.mjs
           node game/src/trial/dev/diagnose_trial_launch_trigger_order.mjs
           node game/src/trial/dev/diagnose_trial_stage_progression_service.mjs
+          node game/src/trial/dev/diagnose_enemy_army_structure.mjs
+          node game/src/trial/dev/diagnose_enemy_force_deployment.mjs
+          node game/src/trial/dev/diagnose_enemy_force_reserve_progression.mjs
+          node game/src/trial/dev/diagnose_enemy_force_terrain_interaction.mjs
+          node game/src/trial/dev/diagnose_enemy_tactic_resolver.mjs
+          node game/src/trial/dev/diagnose_enemy_tactic_selection.mjs
+          node game/src/trial/dev/diagnose_trial_force_deployment_bridge.mjs
+          node game/src/trial/dev/diagnose_trial_route_cost_policy.mjs
           node scratch/test_trial_route_visual_semantics.mjs
 
       - name: Run Warning focused tests

@@ -11,8 +11,31 @@ export class TrialRouteSuppressionAllocator {
         this.weightResolver = weightResolver;
     }
 
-    allocate({ routes = [], enemySuppression = 0, trialIndex = 1, threat = null, gameState = null, ingresses = [] } = {}) {
+    allocate({
+        routes = [],
+        enemySuppression = 0,
+        trialIndex = 1,
+        threat = null,
+        gameState = null,
+        ingresses = [],
+        armyStructure = null
+    } = {}) {
         if (!Array.isArray(routes) || routes.length === 0) return [];
+
+        const forces = Array.isArray(armyStructure?.forces) ? armyStructure.forces : null;
+        if (forces) {
+            if (forces.length !== routes.length) return [];
+            return routes.map((route, index) => ({
+                ...cloneData(route),
+                forceId: forces[index]?.id || null,
+                forceRole: forces[index]?.role || null,
+                commander: cloneData(forces[index]?.commander ?? null),
+                forceQuality: cloneData(forces[index]?.quality ?? null),
+                forceProfile: cloneData(forces[index]?.profile ?? null),
+                strategicSuppression: nonNegative(forces[index]?.strategicSuppression)
+            }));
+        }
+
         if (typeof this.weightResolver !== "function") return [];
 
         const totalSuppression = nonNegative(enemySuppression);

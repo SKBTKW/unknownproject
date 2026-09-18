@@ -29,23 +29,17 @@ const truth = {
     getSnapshot: () => ({ trialIndex: 1, strategicSuppression: 10 })
 };
 
-assert.equal(
-    attachTrialLaunchSubsystem(baseEngine(), ui, { enemyTruthReadModel: truth }).reason,
-    "TRIAL_LAUNCH_INGRESS_COUNT_POLICY_REQUIRED"
-);
-
-assert.equal(
-    attachTrialLaunchSubsystem(baseEngine(), ui, {
-        enemyTruthReadModel: truth,
-        ingressCountResolver: () => 1
-    }).reason,
-    "TRIAL_LAUNCH_ROUTE_COST_POLICY_REQUIRED"
-);
+const defaultPolicyEngine = baseEngine();
+const defaultPolicyAttached = attachTrialLaunchSubsystem(defaultPolicyEngine, ui, {
+    enemyTruthReadModel: truth
+});
+assert.equal(defaultPolicyAttached.success, true);
+assert.equal(typeof defaultPolicyAttached.routeCostPolicy?.resolve, "function");
+assert.equal(defaultPolicyEngine.trialLaunchRouteCostPolicy, defaultPolicyAttached.routeCostPolicy);
 
 const engine = baseEngine();
 const attached = attachTrialLaunchSubsystem(engine, ui, {
     enemyTruthReadModel: truth,
-    ingressCountResolver: () => 1,
     routeCostResolver: () => 1
 });
 assert.equal(attached.success, true);
@@ -64,7 +58,6 @@ assert.deepEqual(engine.lastTrialLaunchAttempt, {
 
 const repeated = attachTrialLaunchSubsystem(engine, ui, {
     enemyTruthReadModel: truth,
-    ingressCountResolver: () => 99,
     routeCostResolver: () => 99
 });
 assert.equal(repeated.success, true);
