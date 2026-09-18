@@ -1,5 +1,7 @@
 # The Age of Trials — SFX正式仕様 v1.0
 
+> **Labels:** [CURRENT] [PRESENTATION] [REFERENCE]
+
 ## 基本方針
 AoTのSEは木・石・金属・土・風・水を中心とした短く乾いた手触りを基本とする。
 派手なスマホゲーム音を避け、中世的で暗い世界観を壊さない。

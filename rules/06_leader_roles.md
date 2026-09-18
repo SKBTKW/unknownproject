@@ -1,5 +1,7 @@
 # 06. 指導者ロール (Leader Roles) — 現行方針
 
+> **Labels:** [CURRENT] [CANDIDATE] [REFERENCE]
+
 > **Status:** Design Authority / Concrete balance values TBD
 >
 > 本文書は、プレイヤーが選択する指導者ロールの**役割・プレイスタイル上の方向性**を定義する。

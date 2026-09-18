@@ -1,5 +1,7 @@
 # The Age of Trials — Flexible Dice Check Contract
 
+> **Labels:** [CURRENT] [PARTIAL] [REFERENCE]
+
 > **Status:** Core implemented / extensibility partially planned
 >
 > この文書は探索専用仕様ではなく、ゲーム全体で再利用するダイス判定境界を定義する。

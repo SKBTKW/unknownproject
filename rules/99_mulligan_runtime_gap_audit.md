@@ -1,5 +1,7 @@
 # Mulligan Runtime Gap Audit
 
+> **Labels:** [AUDIT] [REFERENCE]
+
 > **Status:** Audit Ledger / Non-Authority
 >
 > Offering正本は `04_draw_and_hand_system.md`。本書はMulliganの通常UI経路とDeckManager内部APIの不一致を記録する。

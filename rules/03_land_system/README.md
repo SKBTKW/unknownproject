@@ -8,6 +8,24 @@
 
 ---
 
+
+## 情報状態ラベル
+
+本ディレクトリでは [../00_rules_information_status_labels.md](../00_rules_information_status_labels.md) の共通ラベルを使用する。
+
+| ファイル | ラベル | 読み方 |
+| :--- | :--- | :--- |
+| `00_land_foundation_and_resource_sockets.md` | **[CURRENT] [FOUNDATION] [REFERENCE]** | 土地・E/GL・資源ソケット・水源の基礎正本。実装差だけを理由に削除・圧縮しない |
+| `01_land_base.md` | **[IMPLEMENTATION_LEDGER] [REFERENCE]** | 現runtime確認用。00の設計正本を置換しない |
+| `02_outpost_system.md` | **[UNRESOLVED] [REFERENCE]** | 未実装であることは確認できても、旧詳細仕様の廃止根拠にはしない |
+| `03_merge_system.md` | **[CURRENT] [PARTIAL] [REFERENCE]** | 現行の地帯化・連携と、未接続/不一致情報が混在 |
+| `04_exploration_system.md` | **[UNRESOLVED] [REFERENCE]** | 現文書の「Legacy / 廃止方向」は実装到達性だけでは確定しない。旧仕様を保持して採否確認対象とする |
+| `05_special_blocks.md` | **[CURRENT] [PARTIAL] [REFERENCE]** | 採用済み設計と実装途中の施設情報が混在 |
+
+**注意:** この表は情報を消すための分類ではない。ラベル変更も本文削除を意味しない。
+
+---
+
 ## サブ仕様書一覧
 
 ### 0. [`00_land_foundation_and_resource_sockets.md`](./00_land_foundation_and_resource_sockets.md)

@@ -42,11 +42,11 @@ const state = {
     }
 };
 
+let lifecycle = null;
 const engine = {
     state,
     i18n: {
         t(key, params = {}) {
-            if (key === 'LOG_STAGE_EXPAND') return `stage:${params.stage}:${params.size}`;
             if (key === 'LOG_TURN_START') return `turn:${params.turn}`;
             return key;
         }
@@ -69,10 +69,26 @@ const engine = {
     },
     gridEngine: {
         expandGrid: size => calls.push(`grid.expand:${size}`)
+    },
+    historySnapshotService: {
+        capture() {
+            calls.push('history.capture');
+            return { success: true };
+        },
+        captureRestorePoint() {
+            calls.push('history.restore-point');
+            return { success: true };
+        }
+    },
+    trialLaunchCoordinator: {
+        tryStartPending({ gameState }) {
+            calls.push(`trial.launch:${gameState.turn}:${lifecycle?.getPhase()}`);
+            return { started: false, reason: 'TRIAL_LAUNCH_NOT_DUE' };
+        }
     }
 };
 
-const lifecycle = new TurnLifecycleService(engine);
+lifecycle = new TurnLifecycleService(engine);
 const result = lifecycle.advance();
 
 assert(lifecycle.getPhase() === TURN_LIFECYCLE_PHASES.ACTIVE, 'returns to ACTIVE after advancing');
@@ -89,7 +105,11 @@ assert(
 assert(state.food === 15, 'applies gross production before maintenance');
 assert(state.wood === 11 && state.material === 11, 'keeps wood/material alias synchronized');
 assert(state.mystic === 3, 'applies mystic production');
-assert(state.stage.id === 2 && state.nextTrialTurn === 30, 'runs stage transition after advancing the turn');
+assert(
+    state.stage.id === 1 && state.nextTrialTurn === 5,
+    'Verse advance does not progress Stage before Trial settlement'
+);
+assert(!calls.some(call => call.startsWith('grid.expand:')), 'TurnLifecycleService does not own Trial Stage expansion');
 assert(calls.includes('deck.offering'), 'DeckManager is used only to regenerate the offering');
 assert(!calls.includes('deck.next'), 'TurnLifecycleService no longer delegates turn ownership to DeckManager.onNextTurn');
 assert(
@@ -98,9 +118,28 @@ assert(
     'preserves global-event tick -> turn advance/offering -> turn-start order'
 );
 assert(
-    calls.indexOf('global.start') < calls.indexOf('grid.expand:7'),
-    'preserves turn-start event evaluation before stage expansion'
+    calls.indexOf('global.start') < calls.indexOf('history.restore-point')
+        && calls.indexOf('history.restore-point') < calls.indexOf('trial.launch:5:ACTIVE'),
+    'defers Trial launch until turn-start work and restore-point capture are complete'
 );
+assert(
+    engine.lastTrialLaunchAttempt?.reason === 'TRIAL_LAUNCH_NOT_DUE',
+    'records the post-initialization Trial launch attempt without changing timing authority'
+);
+
+engine.trialLaunchCoordinator = {
+    tryStartPending() {
+        throw new Error('launch boom');
+    }
+};
+const failedLaunch = lifecycle._tryStartPendingTrial();
+assert(
+    failedLaunch?.started === false
+        && failedLaunch?.reason === 'TRIAL_LAUNCH_UNEXPECTED_ERROR'
+        && failedLaunch?.errorMessage === 'launch boom',
+    'unexpected Trial launch errors fail closed instead of poisoning Verse lifecycle'
+);
+assert(lifecycle.getPhase() === TURN_LIFECYCLE_PHASES.ACTIVE, 'launch failure leaves Verse lifecycle ACTIVE');
 
 console.log(`TurnLifecycleService: ${passed}/${total} PASS`);
 if (passed !== total) process.exitCode = 1;

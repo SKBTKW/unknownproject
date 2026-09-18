@@ -1,5 +1,7 @@
 # 07. 神秘（✨）＆ 砂漠（GL0）— 現行仕様
 
+> **Labels:** [CURRENT] [PARTIAL] [INTERNAL_CONFLICT]
+
 > **Status:** Current rules aligned with runtime behavior
 >
 > 本文書は、神秘リソース（✨）と砂漠系地形の現在採用している役割を定義する。

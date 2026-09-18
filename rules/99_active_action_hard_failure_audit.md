@@ -1,5 +1,7 @@
 # Active Action Hard Failure Audit
 
+> **Labels:** [AUDIT] [REFERENCE]
+
 > **Status:** Audit Ledger / Non-Authority
 >
 > 現在の通常プレイで、単なる「未接続」より優先して扱うべき、資源損失・Action失敗・壊れた通常経路を整理する。

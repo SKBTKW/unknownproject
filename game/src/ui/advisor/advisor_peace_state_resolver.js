@@ -42,7 +42,7 @@ export function resolveAdvisorPeaceStates(snapshot = {}) {
     const add = (id, topic, severity = ADVISOR_SEVERITY.NORMAL) => states.push({ id, topic, severity });
     if (snapshot.emberRatio <= 0.25) add("EMBER_CRITICAL", ADVISOR_TOPICS.EMBER, ADVISOR_SEVERITY.CRITICAL);
     else if (snapshot.emberRatio <= 0.50) add("EMBER_WARNING", ADVISOR_TOPICS.EMBER, ADVISOR_SEVERITY.WARNING);
-    if (snapshot.foodRunway < 1) add("FOOD_CRITICAL", ADVISOR_TOPICS.SURVIVAL, ADVISOR_SEVERITY.CRITICAL);
+    if (snapshot.foodRunway < 1) add("FOOD_CRITICAL", ADVISOR_TOPICS.LOGISTICS, ADVISOR_SEVERITY.CRITICAL);
     else if (snapshot.foodRunway < 2) add("FOOD_WARNING", ADVISOR_TOPICS.LOGISTICS, ADVISOR_SEVERITY.WARNING);
     if (snapshot.defenseReference > 0) {
         const ratio = snapshot.currentDefense / snapshot.defenseReference;
@@ -55,6 +55,6 @@ export function resolveAdvisorPeaceStates(snapshot = {}) {
         else if (snapshot.linkedZoneRatio >= 0.75) add("CONNECTION_HEALTHY", ADVISOR_TOPICS.CONNECTION);
     }
     if (snapshot.zoneCount === 3 || snapshot.zoneCount === 5 || snapshot.boardOccupancy >= 0.50) add("MAJOR_DEVELOPMENT", ADVISOR_TOPICS.DEVELOPMENT);
-    if (!states.some(state => state.severity >= ADVISOR_SEVERITY.WARNING)) add("STABLE_OVERALL", ADVISOR_TOPICS.STABILITY);
+    if (!states.some(state => state.severity >= ADVISOR_SEVERITY.WARNING)) add("STABLE_OVERALL", ADVISOR_TOPICS.SURVIVAL);
     return states;
 }

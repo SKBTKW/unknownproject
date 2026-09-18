@@ -1,5 +1,8 @@
 import { GameFactHub } from "../../core/game_fact.js";
 import { attachWarningSubsystem } from "../../warning/integration/warning_bootstrap.js";
+import { WarningTimingBridge } from "../../warning/systems/warning_timing_bridge.js";
+import { TrialDueStateService } from "../systems/trial_due_state_service.js";
+import { TrialStageProgressionService } from "../systems/trial_stage_progression_service.js";
 import { attachTrialTimingSubsystem } from "./trial_timing_bootstrap.js";
 
 /**
@@ -11,6 +14,8 @@ import { attachTrialTimingSubsystem } from "./trial_timing_bootstrap.js";
  * completes only the missing live wiring after GameEngine construction:
  *
  *   shared GameFactHub -> exact Trial timing -> semantic Warning lifecycle
+ *                                      -> pending Trial start request
+ *                                      -> settled Trial Stage progression
  *
  * It deliberately does not re-run Investigation bootstrap, avoiding duplicate
  * unlock/event bridges during the migration.
@@ -18,7 +23,8 @@ import { attachTrialTimingSubsystem } from "./trial_timing_bootstrap.js";
 export function attachTrialRuntimeSubsystems(engine, {
     gameFactHub = null,
     timingOptions = {},
-    warningOptions = {}
+    warningOptions = {},
+    warningTimingOptions = {}
 } = {}) {
     if (!engine?.state) {
         return { success: false, reason: "TRIAL_RUNTIME_ENGINE_REQUIRED" };
@@ -46,6 +52,28 @@ export function attachTrialRuntimeSubsystems(engine, {
         };
     }
 
+    if (!engine.warningTimingBridge) {
+        engine.warningTimingBridge = new WarningTimingBridge({
+            gameFactHub: factHub,
+            timingAuthority: engine.trialTimingAuthorityService,
+            warningStateService: engine.warningStateService,
+            ...warningTimingOptions
+        });
+    }
+
+    if (!engine.trialDueStateService) {
+        engine.trialDueStateService = new TrialDueStateService({
+            gameFactHub: factHub,
+            timingAuthority: engine.trialTimingAuthorityService
+        });
+    }
+
+    if (!engine.trialStageProgressionService) {
+        engine.trialStageProgressionService = new TrialStageProgressionService(engine, {
+            gameFactHub: factHub
+        });
+    }
+
     // The constructor-side Investigation bootstrap may have reported failure
     // only because Warning lacked a shared GameFactHub. Preserve the already
     // attached Investigation runtime/unlock and reflect the now-complete state.
@@ -64,7 +92,10 @@ export function attachTrialRuntimeSubsystems(engine, {
         gameFactHub: factHub,
         timingAuthority: engine.trialTimingAuthorityService,
         timingAttached: true,
-        warningAttached: true
+        warningAttached: true,
+        warningTimingAttached: true,
+        trialDueAttached: true,
+        trialStageProgressionAttached: true
     };
 }
 

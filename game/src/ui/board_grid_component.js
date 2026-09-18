@@ -2,6 +2,7 @@ import { boardCameraSystem } from './board_camera_system.js';
 import { ElevationVisualService } from './elevation_visual_service.js';
 import { AreaInfluenceVisualService } from './area_influence_visual_service.js';
 import { isWaterSourceInfluence } from '../core/lake_rules.js';
+import { getTrialRouteCellVisualState } from '../presentation/trial_board_semantic_data.js';
 
 /**
  * 🗺️ BoardGridComponent (盤面グリッド ＆ セル描画・配置プレビュー・マージ演出専門コンポーネント)
@@ -82,6 +83,10 @@ export class BoardGridComponent {
             }
         }
 
+        const activeTrialRoute = this.ui && typeof this.ui.getActiveTrialRoute === "function"
+            ? this.ui.getActiveTrialRoute()
+            : null;
+
         // 🔤 横ヘッダー (A, B, C, D, E...)
         for (let c = 0; c < size; c++) {
             const hCell = document.createElement("div");
@@ -110,9 +115,9 @@ export class BoardGridComponent {
                 const trialCellState = this.ui && typeof this.ui.getTrialInterceptionCellState === "function"
                     ? this.ui.getTrialInterceptionCellState(r, c)
                     : null;
-                const trialRouteVisualState = this.ui && typeof this.ui.getTrialRouteVisualState === "function"
-                    ? this.ui.getTrialRouteVisualState(r, c)
-                    : null;
+                const trialRouteVisualState = getTrialRouteCellVisualState(activeTrialRoute, r, c, {
+                    singletonDirectionFallback: "east"
+                });
                 if (trialCellState?.onRoute) cellEl.classList.add("trial-route-cell");
                 if (trialRouteVisualState?.isRouteEntry) cellEl.classList.add("trial-route-entry");
                 if (trialRouteVisualState?.isRouteEnd) cellEl.classList.add("trial-route-end");
