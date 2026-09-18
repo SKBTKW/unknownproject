@@ -6,6 +6,7 @@ import { execFileSync } from 'node:child_process';
 import {
   GUARD_ACTION,
   GUARD_STATUS,
+  buildIntegrationOrder,
   buildSessionId,
   buildTaskGuidance,
   classifyObservedTask,
@@ -66,6 +67,18 @@ check(buildTaskGuidance({
   localRemoteMismatch: true,
 }).action, GUARD_ACTION.STOP_AND_INSPECT, 'blocked guidance stops for inspection');
 
+check(buildIntegrationOrder([
+  { branch: 'z-ready', status: GUARD_STATUS.READY, guidance: buildTaskGuidance({ status: GUARD_STATUS.READY }), peerOverlaps: [] },
+  { branch: 'a-review', status: GUARD_STATUS.REVIEW_REQUIRED, guidance: buildTaskGuidance({ status: GUARD_STATUS.REVIEW_REQUIRED, overlap: { risk: 'PATH_OVERLAP' }, peerOverlaps: [] }), peerOverlaps: [] },
+  { branch: 'm-merged', status: GUARD_STATUS.MERGED, guidance: buildTaskGuidance({ status: GUARD_STATUS.MERGED }), peerOverlaps: [] },
+  { branch: 'b-blocked', status: GUARD_STATUS.BLOCKED, guidance: buildTaskGuidance({ status: GUARD_STATUS.BLOCKED }), peerOverlaps: [] },
+]).map((entry) => entry.branch), ['z-ready', 'a-review', 'b-blocked'], 'integration order excludes merged and prioritizes ready');
+check(buildIntegrationOrder([
+  { branch: 'b-ready', status: GUARD_STATUS.READY, guidance: buildTaskGuidance({ status: GUARD_STATUS.READY }), peerOverlaps: [{ overlap: { risk: 'PATH_OVERLAP', risks: ['PATH_OVERLAP'] } }] },
+  { branch: 'a-ready', status: GUARD_STATUS.READY, guidance: buildTaskGuidance({ status: GUARD_STATUS.READY }), peerOverlaps: [] },
+]).map((entry) => entry.branch), ['a-ready', 'b-ready'], 'integration order prefers fewer review-grade peer overlaps within status');
+
+
 
 const stableSnapshot = { targetSha: 'a', tasks: { one: 'b' } };
 assertRemoteSnapshotUnchanged(stableSnapshot, { targetSha: 'a', tasks: { one: 'b' } }, 'test');
@@ -123,7 +136,7 @@ try {
   const result = await runIntegrationGuard({ cwd: repo, target, backupRoot, now });
   check(result.analysis.targetSha, targetSha, 'E2E analysis pins current target SHA');
   check(result.analysis.backupVerified, true, 'E2E backup is verified before analysis result');
-  check(result.analysis.schemaVersion, 2, 'E2E analysis uses guidance schema version');
+  check(result.analysis.schemaVersion, 3, 'E2E analysis uses integration-order schema version');
   check(result.analysis.tasks.length, 3, 'E2E discovers stale and merged TASK branches');
   check(result.analysis.summary.MERGED, 1, 'E2E classifies target-contained TASK as merged');
   check(result.analysis.summary.RECONCILE_REQUIRED, 2, 'E2E marks both stale TASKs for reconciliation');
@@ -133,6 +146,8 @@ try {
   check(mergedTask?.guidance?.action, GUARD_ACTION.NONE, 'E2E merged TASK guidance is no action');
   check(result.analysis.tasks.filter((task) => task.status !== GUARD_STATUS.MERGED).every((task) => task.peerOverlaps.some((peer) => peer.overlap.risk === 'SHARED_SURFACE')), true, 'E2E still detects overlap between active stale TASKs');
   check(result.analysis.tasks.filter((task) => task.status === GUARD_STATUS.RECONCILE_REQUIRED).every((task) => task.guidance?.action === GUARD_ACTION.RECONCILE_TARGET), true, 'E2E stale TASKs receive reconciliation guidance');
+  check(result.analysis.integrationOrder.some((entry) => entry.branch === taskMerged), false, 'E2E integration order excludes merged TASK');
+  check(result.analysis.integrationOrder.every((entry, index) => entry.position === index + 1 && entry.provisional === true), true, 'E2E integration order is explicitly provisional and positioned');
   check(fs.existsSync(result.backup.bundlePath), true, 'E2E writes bundle outside repository');
   check(fs.existsSync(result.backup.manifestPath), true, 'E2E writes backup manifest');
   check(fs.existsSync(path.join(result.backup.sessionDir, 'SHA256SUM.txt')), true, 'E2E writes bundle checksum');
@@ -187,4 +202,4 @@ try {
   fs.rmSync(root, { recursive: true, force: true });
 }
 
-console.log(`Integration Guard V1.2: ${passed} checks PASS`);
+console.log(`Integration Guard V1.3: ${passed} checks PASS`);
