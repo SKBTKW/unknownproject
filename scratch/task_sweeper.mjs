@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import { expectedTaskBranchPattern, isCanonicalTaskBranch } from './task_branch_contract.mjs';
 
 const TASK_PREFIX = 'aot-task/';
+const SUPERSEDED_APPROVALS_PATH = 'scratch/task_sweeper_superseded.json';
 
 function git(args, { cwd, allowFailure = false } = {}) {
     try {
@@ -35,6 +36,25 @@ function refExists(ref, cwd) {
 function countCommits(range, cwd) {
     const output = git(['rev-list', '--count', range], { cwd });
     return Number.parseInt(output, 10) || 0;
+}
+
+function isAncestor(ancestor, descendant, cwd) {
+    const result = spawnSync('git', ['merge-base', '--is-ancestor', ancestor, descendant], {
+        cwd,
+        windowsHide: true,
+        stdio: 'ignore',
+    });
+    return result.status === 0;
+}
+
+export function loadSupersededApprovals(cwd) {
+    const manifestPath = path.join(cwd, SUPERSEDED_APPROVALS_PATH);
+    if (!fs.existsSync(manifestPath)) return new Map();
+    const parsed = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    if (parsed?.version !== 1 || !Array.isArray(parsed?.approvals)) {
+        throw new Error(`Invalid superseded TASK approval manifest: ${SUPERSEDED_APPROVALS_PATH}`);
+    }
+    return new Map(parsed.approvals.map((entry) => [entry.branch, entry]));
 }
 
 function parseArgs(argv) {
@@ -149,15 +169,18 @@ export function classifyTaskCandidate(state) {
     if (state.localRemoteMismatch) blockers.push('local and remote TASK heads do not match');
     if (state.unpushedCommits > 0) blockers.push(`${state.unpushedCommits} local commit(s) are not pushed`);
     if (state.uniqueCommits > 0 && !state.remoteExists) blockers.push('local-only TASK has unique commits');
-    if (state.uniqueCommits > 0 && state.remoteExists && !state.mergedPrVerified) {
-        blockers.push(state.prReason || 'unique commits exist and merged PR could not be verified');
+    if (state.uniqueCommits > 0 && state.remoteExists && !state.mergedPrVerified && !state.supersededApproved) {
+        blockers.push(state.prReason || state.supersededReason || 'unique commits exist and merged PR could not be verified');
     }
 
     if (blockers.length > 0) return { status: 'BLOCKED', blockers };
     if (state.uniqueCommits === 0) {
         return { status: 'SAFE', reason: 'no unique commits against target' };
     }
-    return { status: 'SAFE', reason: `merged PR #${state.mergedPrNumber} verified at current remote head` };
+    if (state.mergedPrVerified) {
+        return { status: 'SAFE', reason: `merged PR #${state.mergedPrNumber} verified at current remote head` };
+    }
+    return { status: 'SAFE', reason: state.supersededReason || 'reviewed superseded TASK approval matches current remote head' };
 }
 
 function isWorktreeDirty(worktreePath) {
@@ -166,7 +189,7 @@ function isWorktreeDirty(worktreePath) {
 }
 
 async function inspectCandidate(candidate, context) {
-    const { cwd, target, targetRef, worktreeByBranch, githubRepo } = context;
+    const { cwd, target, targetRef, worktreeByBranch, githubRepo, supersededApprovals } = context;
     const localRef = candidate.localExists ? candidate.branch : '';
     const remoteRef = candidate.remoteExists ? `origin/${candidate.branch}` : '';
     const localSha = localRef ? git(['rev-parse', localRef], { cwd }) : '';
@@ -180,6 +203,23 @@ async function inspectCandidate(candidate, context) {
     const currentWorktree = Boolean(worktreeReal && worktreeReal === currentRoot);
     const dirtyWorktree = Boolean(worktree?.path && fs.existsSync(worktree.path) && isWorktreeDirty(worktree.path));
     const localRemoteMismatch = Boolean(localSha && remoteSha && localSha !== remoteSha);
+
+    let supersededApproval = { approved: false, reason: '' };
+    const approval = supersededApprovals.get(candidate.branch);
+    if (approval) {
+        if (approval.target !== target) {
+            supersededApproval.reason = `superseded approval targets ${approval.target}, not ${target}`;
+        } else if (!candidate.remoteExists || approval.approvedHead !== remoteSha) {
+            supersededApproval.reason = 'superseded approval does not match the current remote TASK head';
+        } else if (!approval.reviewedAgainst || !isAncestor(approval.reviewedAgainst, targetRef, cwd)) {
+            supersededApproval.reason = 'superseded approval review base is not an ancestor of the current target';
+        } else {
+            supersededApproval = {
+                approved: true,
+                reason: `reviewed SUPERSEDED: ${approval.reason}${approval.replacement ? ` -> ${approval.replacement}` : ''}`,
+            };
+        }
+    }
 
     let mergedPr = { verified: false, reason: '' };
     if (uniqueCommits > 0 && candidate.remoteExists) {
@@ -207,6 +247,8 @@ async function inspectCandidate(candidate, context) {
         remoteExists: candidate.remoteExists,
         mergedPrVerified: mergedPr.verified,
         mergedPrNumber: mergedPr.number,
+        supersededApproved: supersededApproval.approved,
+        supersededReason: supersededApproval.reason,
         prReason: mergedPr.reason,
     });
 
@@ -220,6 +262,7 @@ async function inspectCandidate(candidate, context) {
         currentWorktree,
         dirtyWorktree,
         mergedPr,
+        supersededApproval,
         ...classification,
     };
 }
@@ -325,10 +368,11 @@ async function main() {
     const githubRepo = parseGitHubRepo(originUrl);
     const worktrees = parseWorktrees(git(['worktree', 'list', '--porcelain'], { cwd }));
     const worktreeByBranch = new Map(worktrees.filter((entry) => entry.branch).map((entry) => [entry.branch, entry]));
+    const supersededApprovals = loadSupersededApprovals(cwd);
     const candidates = listTaskBranches(target, cwd);
     const inspected = [];
     for (const candidate of candidates) {
-        inspected.push(await inspectCandidate(candidate, { cwd, target, targetRef, worktreeByBranch, githubRepo }));
+        inspected.push(await inspectCandidate(candidate, { cwd, target, targetRef, worktreeByBranch, githubRepo, supersededApprovals }));
     }
 
     printReport(target, inspected);
