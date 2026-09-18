@@ -8,6 +8,7 @@ import { previewMerge, MERGE_PREVIEW_STATUS } from './task_merge_preview.mjs';
 import {
   GUARD_STATUS,
   buildSessionId,
+  buildTaskGuidance,
   classifyObservedTask,
   defaultBackupRoot,
   discoverTaskNames,
@@ -318,7 +319,7 @@ function writeAnalysis(backup, analysis) {
 function printDashboard(analysis, backup) {
   const counts = analysis.summary;
   console.log('\n============================================================');
-  console.log(' AoT Integration Guard V1.1 - READ ONLY');
+  console.log(' AoT Integration Guard V1.2 - READ ONLY');
   console.log('============================================================');
   console.log(`Target:  ${analysis.target}`);
   console.log(`SHA:     ${analysis.targetSha}`);
@@ -336,6 +337,8 @@ function printDashboard(analysis, backup) {
     console.log(`[${task.status}] ${task.branch}`);
     console.log(`  head: ${task.sha}`);
     console.log(`  merge preview: ${task.mergePreview.status}`);
+    console.log(`  next action: ${task.guidance.action}`);
+    console.log(`  reason: ${task.guidance.reason}`);
     if (task.status !== GUARD_STATUS.MERGED && task.overlap.risk !== 'NONE') console.log(`  target overlap: ${task.overlap.risk} (${task.overlap.evidence.join(', ')})`);
     for (const peer of task.peerOverlaps) {
       console.log(`  peer overlap: ${peer.branch} -> ${peer.overlap.risk} (${peer.overlap.evidence.join(', ')})`);
@@ -363,10 +366,11 @@ export async function runIntegrationGuard({ cwd: requestedCwd, target: explicitT
     const backup = createVerifiedBackup({ cwd, backupRoot, repoName, target, targetSha, tasks, worktrees, sessionId, createdAt: now });
     assertRemoteSnapshotUnchanged(expectedRemoteSnapshot, readRemoteSnapshot(cwd, target), 'after backup');
 
-    const inspected = attachPeerOverlaps(tasks.map((task) => inspectTask(cwd, targetSha, task)));
+    const inspected = attachPeerOverlaps(tasks.map((task) => inspectTask(cwd, targetSha, task)))
+      .map((task) => ({ ...task, guidance: buildTaskGuidance(task) }));
     assertRemoteSnapshotUnchanged(expectedRemoteSnapshot, readRemoteSnapshot(cwd, target), 'after analysis');
     const analysis = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       sessionId,
       createdAt: now.toISOString(),
       target,
@@ -378,6 +382,7 @@ export async function runIntegrationGuard({ cwd: requestedCwd, target: explicitT
         sha: task.sha,
         source: task.source,
         status: task.status,
+        guidance: task.guidance,
         targetIsAncestor: task.targetIsAncestor,
         taskIsAncestor: task.taskIsAncestor,
         localRemoteMismatch: task.localRemoteMismatch,
@@ -410,7 +415,7 @@ function parseArgs(argv) {
 
 function printHelp() {
   console.log('Usage: node scratch/integration_guard.mjs [--target AoTYYMMDD] [--backup-root <path>]');
-  console.log('V1.1 is read-only with respect to repository history. It creates a verified external backup and analysis report only.');
+  console.log('V1.2 is read-only with respect to repository history. It creates a verified external backup and analysis report only.');
 }
 
 async function main() {
