@@ -1,4 +1,5 @@
 import { AdvisorCueResolver } from "./advisor_cue_resolver.js";
+import { ADVISOR_DIALOGUE_CHANNELS, getAdvisorSceneResponsibility } from "../data/advisor_dialogue_responsibility.js";
 
 function defaultPickLine(lines) {
     return Array.isArray(lines) && lines.length > 0 ? lines[0] : null;
@@ -37,6 +38,9 @@ export class AdvisorReactionService {
     handleFact(fact) {
         const cue = this.cueResolver.resolve(fact);
         if (!cue) return null;
+
+        const responsibility = getAdvisorSceneResponsibility(cue.type);
+        if (responsibility?.channel !== ADVISOR_DIALOGUE_CHANNELS.REACTION) return null;
 
         const reaction = this.character.reactions?.[cue.type];
         if (!reaction) return null;

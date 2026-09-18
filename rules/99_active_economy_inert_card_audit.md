@@ -1,5 +1,7 @@
 # Active Economy Inert Card Audit
 
+> **Labels:** [AUDIT] [REFERENCE]
+
 > **Status:** Audit Ledger / Non-Authority
 >
 > 現在の通常Offeringから到達でき、コストを支払って発動できる一方、主要なプレイヤー向け効果のconsumerが確認できない経済カードを整理する。
