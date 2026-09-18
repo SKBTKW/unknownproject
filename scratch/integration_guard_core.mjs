@@ -148,6 +148,37 @@ export function buildTaskGuidance(task = {}) {
   }
 }
 
+export const INTEGRATION_ORDER_BUCKET = Object.freeze({
+  READY: 0,
+  REVIEW_REQUIRED: 1,
+  RECONCILE_REQUIRED: 2,
+  BLOCKED: 3,
+});
+
+export function buildIntegrationOrder(tasks = []) {
+  return (tasks || [])
+    .filter((task) => task?.status !== GUARD_STATUS.MERGED)
+    .map((task) => ({
+      branch: task.branch,
+      status: task.status,
+      action: task.guidance?.action || buildTaskGuidance(task).action,
+      reason: task.guidance?.reason || buildTaskGuidance(task).reason,
+      peerOverlapCount: (task.peerOverlaps || []).filter((entry) => shouldPeerOverlapRequireReview(entry.overlap)).length,
+    }))
+    .sort((left, right) => {
+      const leftBucket = INTEGRATION_ORDER_BUCKET[left.status] ?? 99;
+      const rightBucket = INTEGRATION_ORDER_BUCKET[right.status] ?? 99;
+      if (leftBucket !== rightBucket) return leftBucket - rightBucket;
+      if (left.peerOverlapCount !== right.peerOverlapCount) return left.peerOverlapCount - right.peerOverlapCount;
+      return String(left.branch || '').localeCompare(String(right.branch || ''));
+    })
+    .map((entry, index) => ({
+      ...entry,
+      position: index + 1,
+      provisional: true,
+    }));
+}
+
 export function summarizeStatuses(tasks = []) {
   const counts = Object.fromEntries(Object.values(GUARD_STATUS).map((status) => [status, 0]));
   for (const task of tasks) {
