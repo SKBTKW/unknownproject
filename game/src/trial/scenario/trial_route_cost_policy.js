@@ -44,7 +44,7 @@ export const DEFAULT_TRIAL_ROUTE_COST_POLICY = Object.freeze({
         DISADVANTAGE: 1.25
     }),
     affinityMultiplier: Object.freeze({
-        HIGH: 0.6,
+        HIGH: 0.5,
         NORMAL: 1,
         LOW: 1.35
     }),
