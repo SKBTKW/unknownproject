@@ -15,6 +15,8 @@ const base = {
     remoteExists: true,
     mergedPrVerified: false,
     mergedPrNumber: undefined,
+    supersededApproved: false,
+    supersededReason: '',
     prReason: '',
 };
 
@@ -29,6 +31,8 @@ const tests = [
     ['unpushed commits block', { ...base, unpushedCommits: 1 }, 'BLOCKED'],
     ['local-only unique commits block', { ...base, remoteExists: false, uniqueCommits: 1 }, 'BLOCKED'],
     ['unverified unique remote commits block', { ...base, uniqueCommits: 1, prReason: 'No merged PR' }, 'BLOCKED'],
+    ['reviewed superseded unique remote commits are safe', { ...base, uniqueCommits: 2, supersededApproved: true, supersededReason: 'reviewed SUPERSEDED' }, 'SAFE'],
+    ['stale superseded approval still blocks', { ...base, uniqueCommits: 2, supersededApproved: false, supersededReason: 'approval head mismatch' }, 'BLOCKED'],
 ];
 
 let passed = 0;
@@ -67,4 +71,4 @@ for (const value of ['', 'delete', 'yes', 'clean now']) {
     assert.equal(isCleanConfirmation(value), false, `${value} should not authorize cleanup`);
 }
 
-console.log(`✅ AoT Task Sweeper safety contract: ${passed}/10 classifications PASS + naming/launcher contract PASS`);
+console.log(`✅ AoT Task Sweeper safety contract: ${passed}/12 classifications PASS + naming/launcher contract PASS`);
