@@ -42,6 +42,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 1 (Task Health Contract) で不合格が検出されました。");
         process.exit(1);
     }
+    const integrationGuardOk = await runCommand("node", ["scratch/test_integration_guard.mjs"]);
+    if (!integrationGuardOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 1 (Integration Guard Contract) で不合格が検出されました。");
+        process.exit(1);
+    }
     const cssRelocationOk = await runCommand("python", ["-B", "scratch/test_css_important_relocation.py"]);
     if (!cssRelocationOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 1 (CSS001 Relocation Contract) で違反が検出されました。");

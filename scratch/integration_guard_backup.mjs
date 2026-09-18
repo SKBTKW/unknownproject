@@ -30,12 +30,11 @@ function listBundleHeads(cwd, bundlePath) {
   return heads;
 }
 
-function verifyRequiredCommitsFromBundle(bundlePath, requiredShas) {
-  const verifyRoot = mkdtempSync(path.join(os.tmpdir(), 'aot-integration-backup-verify-'));
+export function verifyBundleRestorable(bundlePath, requiredShas) {
+  const verifyParent = mkdtempSync(path.join(os.tmpdir(), 'aot-integration-backup-verify-'));
+  const verifyRepo = path.join(verifyParent, 'mirror.git');
   try {
-    execFileSync('git', ['init', '--bare', '-q', verifyRoot], { windowsHide: true, stdio: 'ignore' });
-    execFileSync('git', ['fetch', '-q', bundlePath, '+refs/*:refs/+'], {
-      cwd: verifyRoot,
+    execFileSync('git', ['clone', '--mirror', '-q', bundlePath, verifyRepo], {
       windowsHide: true,
       stdio: 'ignore',
     });
@@ -43,7 +42,7 @@ function verifyRequiredCommitsFromBundle(bundlePath, requiredShas) {
     for (const sha of requiredShas) {
       try {
         execFileSync('git', ['cat-file', '-e', `${sha}^{commit}`], {
-          cwd: verifyRoot,
+          cwd: verifyRepo,
           windowsHide: true,
           stdio: 'ignore',
         });
@@ -51,71 +50,59 @@ function verifyRequiredCommitsFromBundle(bundlePath, requiredShas) {
         missing.push(sha);
       }
     }
-    return missing;
+    if (missing.length > 0) throw new Error(`Backup restore verification failed; missing commit(s): ${missing.join(', ')}`);
+    return true;
   } finally {
-    rmSync(verifyRoot, { recursive: true, force: true });
+    rmSync(verifyParent, { recursive: true, force: true });
   }
 }
 
 export function createVerifiedBackup({
-  cwd,
-  backupRoot,
-  repoName,
-  target,
-  targetSha,
-  tasks,
-  worktrees,
-  sessionId,
-  createdAt = new Date(),
+  cwd, backupRoot, repoName, target, targetSha, tasks, worktrees, sessionId, createdAt = new Date(),
 }) {
   const sessionDir = path.join(backupRoot, repoName, target, sessionId);
   fs.mkdirSync(sessionDir, { recursive: true });
-
   const bundlePath = path.join(sessionDir, `${repoName}.bundle`);
   const manifestPath = path.join(sessionDir, 'manifest.json');
   const checksumPath = path.join(sessionDir, 'SHA256SUM.txt');
+  const failurePath = path.join(sessionDir, 'BACKUP_FAILED.txt');
 
-  git(cwd, 'bundle', 'create', bundlePath, '--all');
-  git(cwd, 'bundle', 'verify', bundlePath);
+  try {
+    git(cwd, 'bundle', 'create', bundlePath, '--all');
+    git(cwd, 'bundle', 'verify', bundlePath);
+    const bundleHeads = listBundleHeads(cwd, bundlePath);
+    const requiredShas = [targetSha, ...tasks.map((task) => task.sha)].filter(Boolean);
+    verifyBundleRestorable(bundlePath, requiredShas);
 
-  const bundleHeads = listBundleHeads(cwd, bundlePath);
-  const requiredShas = [targetSha, ...tasks.map((task) => task.sha)].filter(Boolean);
-  const missingShas = verifyRequiredCommitsFromBundle(bundlePath, requiredShas);
-  if (missingShas.length > 0) {
-    throw new Error(`Backup verification failed; missing commit(s): ${missingShas.join(', ')}`);
+    const bundleSha256 = sha256File(bundlePath);
+    const manifest = {
+      schemaVersion: 1,
+      sessionId,
+      createdAt: createdAt.toISOString(),
+      target,
+      targetSha,
+      tasks: tasks.map((task) => ({ branch: task.branch, sha: task.sha, source: task.source })),
+      worktrees: worktrees.map((entry) => ({
+        path: entry.path,
+        branch: entry.branch,
+        locked: Boolean(entry.locked),
+        prunable: Boolean(entry.prunable),
+      })),
+      bundle: {
+        filename: path.basename(bundlePath),
+        sha256: bundleSha256,
+        headCount: bundleHeads.size,
+        verified: true,
+        restoreVerified: true,
+      },
+    };
+    fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(checksumPath, `${bundleSha256}  ${path.basename(bundlePath)}\n`, 'utf8');
+    return { sessionDir, bundlePath, manifestPath, checksumPath, failurePath, bundleSha256, manifest };
+  } catch (error) {
+    try {
+      fs.writeFileSync(failurePath, `${new Date().toISOString()}\n${error?.stack || error?.message || String(error)}\n`, 'utf8');
+    } catch {}
+    throw error;
   }
-
-  const bundleSha256 = sha256File(bundlePath);
-  const manifest = {
-    schemaVersion: 1,
-    sessionId,
-    createdAt: createdAt.toISOString(),
-    target,
-    targetSha,
-    tasks: tasks.map((task) => ({ branch: task.branch, sha: task.sha, source: task.source })),
-    worktrees: worktrees.map((entry) => ({
-      path: entry.path,
-      branch: entry.branch,
-      locked: Boolean(entry.locked),
-      prunable: Boolean(entry.prunable),
-    })),
-    bundle: {
-      filename: path.basename(bundlePath),
-      sha256: bundleSha256,
-      headCount: bundleHeads.size,
-      verified: true,
-    },
-  };
-
-  fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
-  fs.writeFileSync(checksumPath, `${bundleSha256}  ${path.basename(bundlePath)}\n`, 'utf8');
-
-  return {
-    sessionDir,
-    bundlePath,
-    manifestPath,
-    checksumPath,
-    bundleSha256,
-    manifest,
-  };
 }

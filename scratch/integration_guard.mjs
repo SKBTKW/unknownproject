@@ -35,13 +35,24 @@ function runGit(cwd, args, { allowFailure = false } = {}) {
   }
 }
 
-function gitSuccess(cwd, args) {
+function gitStatus(cwd, args) {
   const result = spawnSync('git', args, { cwd, windowsHide: true, stdio: 'ignore' });
-  return result.status === 0;
+  if (result.error || result.signal || result.status === null) throw new Error(`git ${args.join(' ')} could not be observed safely.`);
+  return result.status;
 }
 
 function refExists(cwd, ref) {
-  return gitSuccess(cwd, ['show-ref', '--verify', '--quiet', ref]);
+  const status = gitStatus(cwd, ['show-ref', '--verify', '--quiet', ref]);
+  if (status === 0) return true;
+  if (status === 1) return false;
+  throw new Error(`git show-ref failed with status ${status} for ${ref}.`);
+}
+
+function isAncestor(cwd, ancestor, descendant) {
+  const status = gitStatus(cwd, ['merge-base', '--is-ancestor', ancestor, descendant]);
+  if (status === 0) return true;
+  if (status === 1) return false;
+  throw new Error(`git merge-base --is-ancestor failed with status ${status}.`);
 }
 
 function resolveGitPath(cwd, name) {
@@ -76,10 +87,17 @@ function acquireSessionLock(cwd, sessionId, target) {
   const commonDir = path.isAbsolute(commonDirRaw) ? commonDirRaw : path.resolve(cwd, commonDirRaw);
   const lockPath = path.join(commonDir, 'aot-integration-guard.lock');
   if (fs.existsSync(lockPath)) {
-    let previous = null;
-    try { previous = JSON.parse(fs.readFileSync(lockPath, 'utf8')); } catch { previous = null; }
-    if (previous?.pid && isProcessAlive(Number(previous.pid))) {
-      throw new Error(`Integration Guard is already active (PID ${previous.pid}, session ${previous.sessionId || 'unknown'}).`);
+    let previous;
+    try { previous = JSON.parse(fs.readFileSync(lockPath, 'utf8')); }
+    catch { throw new Error(`Integration Guard lock is unreadable: ${lockPath}. Inspect it manually; it was not modified.`); }
+    const validLock = previous
+      && Number.isInteger(Number(previous.pid))
+      && Number(previous.pid) > 0
+      && typeof previous.sessionId === 'string' && previous.sessionId.length > 0
+      && typeof previous.target === 'string' && previous.target.length > 0;
+    if (!validLock) throw new Error(`Integration Guard lock is malformed: ${lockPath}. Inspect it manually; it was not modified.`);
+    if (isProcessAlive(Number(previous.pid))) {
+      throw new Error(`Integration Guard is already active (PID ${previous.pid}, session ${previous.sessionId}).`);
     }
     const stalePath = `${lockPath}.stale-${sessionId}`;
     fs.renameSync(lockPath, stalePath);
@@ -100,7 +118,7 @@ function ensureWorktreesClean(cwd) {
       continue;
     }
     if (entry.locked) problems.push(`${entry.branch || '(detached)'}: worktree is locked`);
-    const status = runGit(entry.path, ['status', '--porcelain', '--untracked-files=all'], { allowFailure: true });
+    const status = runGit(entry.path, ['status', '--porcelain', '--untracked-files=all']);
     if (status) problems.push(`${entry.branch || '(detached)'}: dirty worktree at ${entry.path}`);
   }
   if (problems.length > 0) throw new Error(`Preflight blocked:\n- ${problems.join('\n- ')}`);
@@ -136,7 +154,7 @@ function parseRemoteTasks(raw, target) {
 
 function refreshObservedRefs(cwd, target) {
   runGit(cwd, ['fetch', '--no-tags', 'origin', `+refs/heads/${target}:refs/remotes/origin/${target}`]);
-  const remoteRaw = runGit(cwd, ['ls-remote', '--heads', 'origin', `refs/heads/aot-task/${target}/*`], { allowFailure: true });
+  const remoteRaw = runGit(cwd, ['ls-remote', '--heads', 'origin', `refs/heads/aot-task/${target}/*`]);
   const remote = parseRemoteTasks(remoteRaw, target);
   for (const branch of remote.refs) {
     runGit(cwd, ['fetch', '--no-tags', 'origin', `+refs/heads/${branch}:refs/remotes/origin/${branch}`]);
@@ -144,9 +162,41 @@ function refreshObservedRefs(cwd, target) {
   return remote;
 }
 
+function snapshotFromObserved(targetSha, remote) {
+  return {
+    targetSha,
+    tasks: Object.fromEntries([...remote.shaByBranch.entries()].sort(([a], [b]) => a.localeCompare(b))),
+  };
+}
+
+function readRemoteSnapshot(cwd, target) {
+  const targetRaw = runGit(cwd, ['ls-remote', '--heads', 'origin', `refs/heads/${target}`]);
+  const targetLines = targetRaw.split(/\r?\n/).filter(Boolean);
+  if (targetLines.length !== 1) throw new Error(`Remote target observation failed for ${target}; expected exactly one ref.`);
+  const [targetSha, targetRef] = targetLines[0].trim().split(/\s+/);
+  if (!targetSha || targetRef !== `refs/heads/${target}`) throw new Error(`Remote target observation returned an unexpected ref for ${target}.`);
+  const taskRaw = runGit(cwd, ['ls-remote', '--heads', 'origin', `refs/heads/aot-task/${target}/*`]);
+  return snapshotFromObserved(targetSha, parseRemoteTasks(taskRaw, target));
+}
+
+export function assertRemoteSnapshotUnchanged(expected, actual, phase = 'verification') {
+  if (JSON.stringify(expected) !== JSON.stringify(actual)) {
+    throw new Error(`Remote refs changed during Integration Guard ${phase}; restart from preflight.`);
+  }
+}
+
+function ensureBackupRootOutsideRepository(cwd, backupRoot) {
+  const repoRoot = path.resolve(cwd);
+  const resolved = path.resolve(backupRoot);
+  const relative = path.relative(repoRoot, resolved);
+  if (relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))) {
+    throw new Error(`Backup root must be outside the repository: ${resolved}`);
+  }
+}
+
 function localTaskRefs(cwd, target) {
   const prefix = `refs/heads/aot-task/${target}/`;
-  const raw = runGit(cwd, ['for-each-ref', '--format=%(refname)', prefix], { allowFailure: true });
+  const raw = runGit(cwd, ['for-each-ref', '--format=%(refname)', prefix]);
   return raw ? raw.split(/\r?\n/).filter(Boolean) : [];
 }
 
@@ -220,11 +270,11 @@ function inspectTask(cwd, targetSha, task) {
     };
   }
 
-  const taskFiles = splitLines(runGit(cwd, ['diff', '--name-only', `${mergeBase}..${task.sha}`], { allowFailure: true }));
-  const targetFiles = splitLines(runGit(cwd, ['diff', '--name-only', `${mergeBase}..${targetSha}`], { allowFailure: true }));
+  const taskFiles = splitLines(runGit(cwd, ['diff', '--name-only', `${mergeBase}..${task.sha}`]));
+  const targetFiles = splitLines(runGit(cwd, ['diff', '--name-only', `${mergeBase}..${targetSha}`]));
   const overlap = classifyOverlap(targetFiles, taskFiles);
   const mergePreview = previewMerge(cwd, targetSha, task.sha);
-  const targetIsAncestor = gitSuccess(cwd, ['merge-base', '--is-ancestor', targetSha, task.sha]);
+  const targetIsAncestor = isAncestor(cwd, targetSha, task.sha);
   const status = classifyObservedTask({
     relationshipKnown: true,
     targetIsAncestor,
@@ -302,9 +352,13 @@ export async function runIntegrationGuard({ cwd: requestedCwd, target: explicitT
     const tasks = observedTasks(cwd, target, remote);
     const repoName = path.basename(cwd);
     const backupRoot = explicitBackupRoot || defaultBackupRoot(cwd);
+    ensureBackupRootOutsideRepository(cwd, backupRoot);
+    const expectedRemoteSnapshot = snapshotFromObserved(targetSha, remote);
     const backup = createVerifiedBackup({ cwd, backupRoot, repoName, target, targetSha, tasks, worktrees, sessionId, createdAt: now });
+    assertRemoteSnapshotUnchanged(expectedRemoteSnapshot, readRemoteSnapshot(cwd, target), 'after backup');
 
     const inspected = attachPeerOverlaps(tasks.map((task) => inspectTask(cwd, targetSha, task)));
+    assertRemoteSnapshotUnchanged(expectedRemoteSnapshot, readRemoteSnapshot(cwd, target), 'after analysis');
     const analysis = {
       schemaVersion: 1,
       sessionId,
