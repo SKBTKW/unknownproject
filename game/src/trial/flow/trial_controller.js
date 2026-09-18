@@ -7,7 +7,7 @@ import { EnemyForceTerrainInteractionResolver } from "../systems/enemy_force_ter
 import { EnemyForceDeploymentResolver } from "../systems/enemy_force_deployment_resolver.js";
 import { EnemyTacticResolver } from "../systems/enemy_tactic_resolver.js";
 import { EnemyTacticSelectionResolver } from "../systems/enemy_tactic_selection_resolver.js";
-import { TrialLifecycleReadService } from "../presentation/trial_lifecycle_read_service.js";
+import { TrialLifecycleReadService } from "../read/trial_lifecycle_read_service.js";
 
 function resolveTerrainId(cell) {
     const terrain = cell?.terrain || cell || {};
