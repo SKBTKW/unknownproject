@@ -1,6 +1,7 @@
 import path from 'node:path';
 
 export const GUARD_STATUS = Object.freeze({
+  MERGED: 'MERGED',
   READY: 'READY',
   REVIEW_REQUIRED: 'REVIEW_REQUIRED',
   RECONCILE_REQUIRED: 'RECONCILE_REQUIRED',
@@ -67,11 +68,18 @@ export function shouldPeerOverlapRequireReview(overlap) {
 export function classifyObservedTask({
   relationshipKnown = true,
   targetIsAncestor = false,
+  taskIsAncestor = false,
   mergePreviewStatus = 'UNKNOWN',
   targetOverlapRisk = 'NONE',
   peerOverlaps = [],
 } = {}) {
-  if (!relationshipKnown || mergePreviewStatus === 'UNKNOWN') {
+  if (!relationshipKnown) {
+    return GUARD_STATUS.BLOCKED;
+  }
+  if (taskIsAncestor) {
+    return GUARD_STATUS.MERGED;
+  }
+  if (mergePreviewStatus === 'UNKNOWN') {
     return GUARD_STATUS.BLOCKED;
   }
   if (mergePreviewStatus === 'CONFLICT') {
