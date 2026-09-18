@@ -1,5 +1,7 @@
 # 10. グローバルイベント / Trial接近シーケンス仕様
 
+> **Labels:** [CURRENT] [PARTIAL]
+
 > **Status:** Active Rule + Implementation Notes
 >
 > 通常のGlobal Eventと、Trial接近を知らせる進行シーケンスを分離して扱う。
