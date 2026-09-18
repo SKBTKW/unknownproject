@@ -1,5 +1,7 @@
 # 02. リソース ＆ 🔥残火 — 現行仕様
 
+> **Labels:** [CURRENT] [UNRESOLVED] [REFERENCE]
+
 > **Status:** Current rules aligned with implementation
 >
 > 本文書は、現在の `game/` 実装における資源、🔥残火、維持費、食料不足補填、土地開発コスト、🛡️防衛プールの正本を定義する。

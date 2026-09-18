@@ -1,4 +1,8 @@
 export const BOARD_VIEW_MODES = Object.freeze({
+    TWO_D: "2D",
+    TWO_POINT_FIVE_D: "2_5D",
+
+    // Backward-compatible aliases. These names predate renderer/preset separation.
     STRATEGIC_2D: "2D",
     WORLD_2_5D: "2_5D"
 });
@@ -6,6 +10,13 @@ export const BOARD_VIEW_MODES = Object.freeze({
 export const BOARD_CONTEXT_MODES = Object.freeze({
     NORMAL: "NORMAL",
     TRIAL: "TRIAL"
+});
+
+export const BOARD_VIEW_PRESETS = Object.freeze({
+    WORLD: "WORLD",
+    DATA: "DATA",
+    TACTICAL: "TACTICAL",
+    DEVELOPMENT: "DEVELOPMENT"
 });
 
 function isOneOf(value, values) {
@@ -20,6 +31,10 @@ export function isBoardContextMode(mode) {
     return isOneOf(mode, BOARD_CONTEXT_MODES);
 }
 
+export function isBoardViewPreset(preset) {
+    return isOneOf(preset, BOARD_VIEW_PRESETS);
+}
+
 export function normalizeBoardCell(cell) {
     if (!cell || !Number.isInteger(cell.r) || !Number.isInteger(cell.c)) return null;
     return Object.freeze({ r: cell.r, c: cell.c });
@@ -30,15 +45,17 @@ export function normalizeBoardCell(cell) {
  *
  * IMPORTANT:
  * - viewMode controls renderer choice only.
- * - contextMode controls information context only.
- * - neither field means "the game is currently in Trial".
+ * - viewPreset controls emphasis of already-publishable information only.
+ * - contextMode controls information disclosure only.
+ * - none of these fields means "the game is currently in Trial".
  * - no screen-space/world-space coordinates belong here.
- * - changing either axis must preserve logical board selection/focus.
+ * - changing any axis must preserve logical board selection/focus.
  */
 export class BoardPresentationState {
     constructor({
-        viewMode = BOARD_VIEW_MODES.STRATEGIC_2D,
+        viewMode = BOARD_VIEW_MODES.TWO_D,
         contextMode = BOARD_CONTEXT_MODES.NORMAL,
+        viewPreset = BOARD_VIEW_PRESETS.WORLD,
         selectedCell = null,
         hoveredCell = null,
         focusCell = null
@@ -49,9 +66,13 @@ export class BoardPresentationState {
         if (!isBoardContextMode(contextMode)) {
             throw new Error(`INVALID_BOARD_CONTEXT_MODE:${contextMode}`);
         }
+        if (!isBoardViewPreset(viewPreset)) {
+            throw new Error(`INVALID_BOARD_VIEW_PRESET:${viewPreset}`);
+        }
 
         this.viewMode = viewMode;
         this.contextMode = contextMode;
+        this.viewPreset = viewPreset;
         this.selectedCell = normalizeBoardCell(selectedCell);
         this.hoveredCell = normalizeBoardCell(hoveredCell);
         this.focusCell = normalizeBoardCell(focusCell);
@@ -65,9 +86,9 @@ export class BoardPresentationState {
 
     toggleViewMode() {
         return this.setViewMode(
-            this.viewMode === BOARD_VIEW_MODES.STRATEGIC_2D
-                ? BOARD_VIEW_MODES.WORLD_2_5D
-                : BOARD_VIEW_MODES.STRATEGIC_2D
+            this.viewMode === BOARD_VIEW_MODES.TWO_D
+                ? BOARD_VIEW_MODES.TWO_POINT_FIVE_D
+                : BOARD_VIEW_MODES.TWO_D
         );
     }
 
@@ -83,6 +104,12 @@ export class BoardPresentationState {
                 ? BOARD_CONTEXT_MODES.TRIAL
                 : BOARD_CONTEXT_MODES.NORMAL
         );
+    }
+
+    setViewPreset(preset) {
+        if (!isBoardViewPreset(preset)) throw new Error(`INVALID_BOARD_VIEW_PRESET:${preset}`);
+        this.viewPreset = preset;
+        return this.snapshot();
     }
 
     selectCell(cell) {
@@ -108,6 +135,7 @@ export class BoardPresentationState {
         return Object.freeze({
             viewMode: this.viewMode,
             contextMode: this.contextMode,
+            viewPreset: this.viewPreset,
             selectedCell: this.selectedCell,
             hoveredCell: this.hoveredCell,
             focusCell: this.focusCell
