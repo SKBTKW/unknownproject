@@ -153,15 +153,22 @@ export class GlobalEventManager {
     _triggerScheduledEventForCurrentTurn() {
         if (!this.state || this.getPendingChoice()) return null;
         const turn = this.state.turn || 1;
-        const index = this.state.scheduledGlobalEvents.findIndex(
-            scheduled => Number.isInteger(scheduled?.verse) && scheduled.verse <= turn
-        );
-        if (index < 0) return null;
-        const scheduled = this.state.scheduledGlobalEvents[index];
-        const instance = this.triggerEvent(scheduled.eventId);
-        if (!instance) return null;
-        this.state.scheduledGlobalEvents.splice(index, 1);
-        return instance;
+        while (true) {
+            const index = this.state.scheduledGlobalEvents.findIndex(
+                scheduled => Number.isInteger(scheduled?.verse) && scheduled.verse <= turn
+            );
+            if (index < 0) return null;
+            const scheduled = this.state.scheduledGlobalEvents[index];
+            const def = GLOBAL_EVENTS_MASTER.find(candidate => candidate.id === scheduled.eventId);
+            if (def?.oneShot && Number.isFinite(this.state.eventCooldowns?.[scheduled.eventId])) {
+                this.state.scheduledGlobalEvents.splice(index, 1);
+                continue;
+            }
+            const instance = this.triggerEvent(scheduled.eventId);
+            if (!instance) return null;
+            this.state.scheduledGlobalEvents.splice(index, 1);
+            return instance;
+        }
     }
     onTurnStart() {
         if (!this.state || this.getPendingChoice()) return null;

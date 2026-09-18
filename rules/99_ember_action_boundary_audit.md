@@ -1,5 +1,7 @@
 # Ember Action Boundary Audit
 
+> **Labels:** [AUDIT] [REFERENCE]
+
 > **Status:** Audit Ledger / Non-Authority
 >
 > `rules/02_resources_and_ember.md` の採用ルールと、通常Action経路における🔥支払い・🔥0終端のruntime差分を記録する。ゲームルールの正本ではない。

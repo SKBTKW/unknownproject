@@ -1,0 +1,54 @@
+import assert from "node:assert/strict";
+import { AdvisorEventBridge } from "../game/src/ui/advisor/advisor_event_bridge.js";
+import { ADVISOR_EVENTS } from "../game/src/ui/advisor/advisor_dialogue_database.js";
+
+console.log("\nAdvisor Semantic Scene Consumer tests");
+let passed = 0;
+function check(condition, message) {
+    assert.ok(condition, message);
+    passed += 1;
+    console.log(`  PASS: ${message}`);
+}
+
+const emitted = [];
+let enabled = true;
+const dialogue = {
+    emit: () => false,
+    emitTopic: result => { emitted.push(result); return true; }
+};
+const bridge = new AdvisorEventBridge(dialogue, null, {
+    profile: { policy: { development: 4, connection: 4 } },
+    enabledProvider: () => enabled
+});
+
+bridge.setSnapshotMilestonesEnabled(false);
+bridge.observeSnapshot({ turn: 1, trialActive: false, state: {}, zoneCount: 0, linkCount: 0 });
+
+check(
+    bridge.consumeSemanticScene({
+        sceneId: "ZONE_COMPLETED",
+        verse: 1,
+        context: { mergeType: "2x2", terrainId: "E1_PLAINS" }
+    }),
+    "ZONE_COMPLETED Semantic Sceneを既存Adviceへ渡せる"
+);
+check(emitted.at(-1)?.id === ADVISOR_EVENTS.ZONE_COMPLETED, "Semantic SceneをFIRST_*へ再変換しない");
+check(bridge.runtime.firstZoneReacted === true, "legacy zone初回状態を消費済みに同期する");
+
+const afterZone = emitted.length;
+bridge.observeSnapshot({ turn: 1, trialActive: false, state: {}, zoneCount: 1, linkCount: 0 });
+check(emitted.length === afterZone, "Semantic Scene ownership中はsnapshot milestoneを抑止する");
+
+enabled = false;
+check(
+    bridge.consumeSemanticScene({ sceneId: "LINK_COMPLETED", verse: 1, context: { linkCount: 1 } }) === false,
+    "Advisor OFFではScene occurrenceと独立して発話しない"
+);
+check(bridge.runtime.firstLinkReacted === true, "Advisor OFFでもlegacy link初回状態を消費済みに同期する");
+check(
+    bridge.consumeSemanticScene({ sceneId: "OMEN", verse: 1, context: { eventId: "OMEN_TEST" } }) === false,
+    "未割当Sceneは別の意味へ推測変換しない"
+);
+
+bridge.destroy();
+console.log(`Advisor Semantic Scene Consumer: ${passed}/${passed} PASS`);
