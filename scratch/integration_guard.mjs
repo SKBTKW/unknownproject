@@ -318,7 +318,7 @@ function writeAnalysis(backup, analysis) {
 function printDashboard(analysis, backup) {
   const counts = analysis.summary;
   console.log('\n============================================================');
-  console.log(' AoT Integration Guard V1 - READ ONLY');
+  console.log(' AoT Integration Guard V1.1 - READ ONLY');
   console.log('============================================================');
   console.log(`Target:  ${analysis.target}`);
   console.log(`SHA:     ${analysis.targetSha}`);
@@ -410,7 +410,7 @@ function parseArgs(argv) {
 
 function printHelp() {
   console.log('Usage: node scratch/integration_guard.mjs [--target AoTYYMMDD] [--backup-root <path>]');
-  console.log('V1 is read-only with respect to repository history. It creates a verified external backup and analysis report only.');
+  console.log('V1.1 is read-only with respect to repository history. It creates a verified external backup and analysis report only.');
 }
 
 async function main() {
