@@ -1,5 +1,7 @@
 # Legacy Command Branch Audit
 
+> **Labels:** [AUDIT] [REFERENCE]
+
 > **Status:** Audit Ledger / Non-Authority
 >
 > `DeckManager.playCommandCard()` 等に旧分岐が残っていても、現在の通常Offeringから到達できないものを整理する。
