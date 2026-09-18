@@ -14,6 +14,12 @@ function nonNegative(value) {
 
 function residualFromBattleResult(result) {
     if (!result || typeof result !== "object") return null;
+    if (typeof result.remainingForceSuppression === "number") {
+        return nonNegative(result.remainingForceSuppression);
+    }
+    if (typeof result.enemy?.remainingForceSuppression === "number") {
+        return nonNegative(result.enemy.remainingForceSuppression);
+    }
     if (typeof result.remainingSuppression === "number") {
         return nonNegative(result.remainingSuppression);
     }
@@ -81,9 +87,6 @@ export class TrialHqArrivalAggregationService {
             }
 
             if (!traversal.reachedRouteEnd) {
-                // A stopped traversal is a legitimate zero-arrival result.
-                // A non-stopped traversal that has not reached route end is
-                // incomplete and must never allow Trial completion.
                 if (traversal.stopped) continue;
                 unresolvedRouteIds.push(routeId);
                 continue;
@@ -92,7 +95,9 @@ export class TrialHqArrivalAggregationService {
             const battleResult = Array.isArray(state.battleResults)
                 ? state.battleResults[battleIndex]
                 : null;
-            const sourcePower = residualFromBattleResult(battleResult);
+            const sourcePower = typeof traversal.remainingForceSuppression === "number"
+                ? nonNegative(traversal.remainingForceSuppression)
+                : residualFromBattleResult(battleResult);
             if (sourcePower === null) {
                 unresolvedRouteIds.push(routeId);
                 continue;

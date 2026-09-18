@@ -18,6 +18,67 @@ function freezeArray(items) {
     return Object.freeze(items);
 }
 
+function buildRouteCellVisualState(route, cells, index, singletonDirectionFallback = null) {
+    const cell = cells[index];
+    if (!cell) return null;
+
+    const next = cells[index + 1] || null;
+    const previous = cells[index - 1] || null;
+    const directionTarget = next || previous;
+    let routeDirection = singletonDirectionFallback;
+
+    if (directionTarget) {
+        const deltaR = next ? directionTarget.r - cell.r : cell.r - directionTarget.r;
+        const deltaC = next ? directionTarget.c - cell.c : cell.c - directionTarget.c;
+        routeDirection = Math.abs(deltaC) >= Math.abs(deltaR)
+            ? (deltaC >= 0 ? "east" : "west")
+            : (deltaR >= 0 ? "south" : "north");
+    }
+
+    return Object.freeze({
+        routeId: route?.routeId ?? route?.id ?? null,
+        routeIndex: index,
+        isRouteEntry: index === 0,
+        isRouteEnd: index === cells.length - 1,
+        routeDirection,
+        isActiveRoute: Boolean(route?.isActive)
+    });
+}
+
+export function getTrialRouteCellVisualState(route, r, c, {
+    singletonDirectionFallback = null
+} = {}) {
+    const cells = (route?.cells || route?.path || [])
+        .map(normalizeRouteCell)
+        .filter(Boolean);
+    const index = cells.findIndex(cell => cell.r === r && cell.c === c);
+    if (index < 0) return null;
+    return buildRouteCellVisualState(route, cells, index, singletonDirectionFallback);
+}
+
+export function buildTrialRouteCellIndex(trialSemanticData) {
+    const byCell = new Map();
+    const routes = trialSemanticData?.routes || [];
+    const activeRoutes = trialSemanticData?.activeRouteId != null
+        ? routes.filter(route => route.routeId === trialSemanticData.activeRouteId)
+        : routes.slice(0, 1);
+
+    for (const route of activeRoutes) {
+        const cells = (route.cells || [])
+            .map(normalizeRouteCell)
+            .filter(Boolean);
+
+        cells.forEach((cell, index) => {
+            byCell.set(
+                `${cell.r}:${cell.c}`,
+                buildRouteCellVisualState(route, cells, index)
+            );
+        });
+    }
+
+    return byCell;
+}
+
 /**
  * Renderer-neutral Trial facts projected onto board coordinates.
  *

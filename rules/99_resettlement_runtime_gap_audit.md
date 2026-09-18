@@ -1,5 +1,7 @@
 # Resettlement Runtime Gap Audit
 
+> **Labels:** [AUDIT] [REFERENCE]
+
 > **Status:** Audit Ledger / Non-Authority
 >
 > 現役経済カード `CMD_RESETTLEMENT`（移住）のruntime分岐競合を記録する。

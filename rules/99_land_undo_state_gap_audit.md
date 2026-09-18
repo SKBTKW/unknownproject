@@ -1,5 +1,7 @@
 # Land Undo State Gap Audit
 
+> **Labels:** [AUDIT] [REFERENCE]
+
 > **Status:** Audit Ledger / Non-Authority
 >
 > 土地配置Undoのsnapshot範囲と、土地配置から派生して変化するGameState / Buff状態の差分を記録する。ゲームルールの正本ではない。

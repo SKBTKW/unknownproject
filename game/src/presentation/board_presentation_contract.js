@@ -93,6 +93,8 @@ function toTrialDto(trial) {
     return {
         available: Boolean(trial?.available),
         activeRouteId: trial?.activeRouteId ?? null,
+        selectedInterceptCell: toCellRef(trial?.selectedInterceptCell),
+        hoveredInterceptCell: toCellRef(trial?.hoveredInterceptCell),
         routes: Array.isArray(trial?.routes) ? trial.routes.map(toRouteDto) : [],
         interceptionCandidates: cloneJsonSafe(trial?.interceptionCandidates ?? []),
         plannedIntercepts: cloneJsonSafe(trial?.plannedIntercepts ?? []),
@@ -107,6 +109,7 @@ export function createBoardPresentationDto(readModel) {
         presentation: {
             viewMode: readModel.presentation?.viewMode ?? null,
             contextMode: readModel.presentation?.contextMode ?? null,
+            viewPreset: readModel.presentation?.viewPreset ?? null,
             selectedCell: toCellRef(readModel.presentation?.selectedCell),
             hoveredCell: toCellRef(readModel.presentation?.hoveredCell),
             focusCell: toCellRef(readModel.presentation?.focusCell)

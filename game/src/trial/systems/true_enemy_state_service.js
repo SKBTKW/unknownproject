@@ -19,6 +19,7 @@ function buildInitialState({ trialIndex = 1, verse = null } = {}) {
         strategicSuppression: 0,
         commander: null,
         forces: [],
+        armyStructure: null,
         attributes: {
             body: [],
             equipment: [],
@@ -102,6 +103,7 @@ export class TrueEnemyStateService {
             strategicSuppression: nonNegative(candidate.strategicSuppression ?? this.current?.strategicSuppression),
             commander: cloneData(candidate.commander ?? this.current?.commander ?? null),
             forces: Array.isArray(candidate.forces) ? cloneData(candidate.forces) : cloneData(this.current?.forces || []),
+            armyStructure: cloneData(candidate.armyStructure ?? this.current?.armyStructure ?? null),
             attributes: {
                 body: cloneData(candidate.attributes?.body ?? this.current?.attributes?.body ?? []),
                 equipment: cloneData(candidate.attributes?.equipment ?? this.current?.attributes?.equipment ?? []),

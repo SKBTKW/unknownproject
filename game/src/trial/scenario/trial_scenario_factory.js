@@ -51,6 +51,7 @@ export class TrialScenarioFactory {
         developmentSnapshotService = new CivilizationDevelopmentSnapshotService(),
         threatResolver = new TrialThreatResolver(),
         enemyTruthReadModel = null,
+        armyStructureResolver = null,
         ingressResolver = null,
         routeGenerator = null,
         suppressionAllocator = null,
@@ -61,6 +62,7 @@ export class TrialScenarioFactory {
         this.developmentSnapshotService = developmentSnapshotService;
         this.threatResolver = threatResolver;
         this.enemyTruthReadModel = enemyTruthReadModel;
+        this.armyStructureResolver = armyStructureResolver;
         this.ingressResolver = ingressResolver;
         this.routeGenerator = routeGenerator;
         this.suppressionAllocator = suppressionAllocator;
@@ -85,6 +87,17 @@ export class TrialScenarioFactory {
             return { success: false, errors: [TRIAL_SCENARIO_BUILD_REASONS.THREAT_UNRESOLVED] };
         }
 
+        const armyStructure = cloneData(
+            truth?.armyStructure
+            ?? this.armyStructureResolver?.resolve?.({
+                strategicSuppression: enemySuppression,
+                trialIndex,
+                enemyTruth: truth,
+                gameState
+            })
+            ?? null
+        );
+
         if (!this.ingressResolver || typeof this.ingressResolver.resolve !== "function") {
             return { success: false, errors: [TRIAL_SCENARIO_BUILD_REASONS.INGRESS_RESOLVER_REQUIRED] };
         }
@@ -94,7 +107,8 @@ export class TrialScenarioFactory {
             gameState,
             development,
             threat,
-            enemyTruth: truth
+            enemyTruth: truth,
+            armyStructure
         };
 
         const ingresses = this.ingressResolver.resolve(context);
@@ -128,14 +142,27 @@ export class TrialScenarioFactory {
             return { success: false, errors: [TRIAL_SCENARIO_BUILD_REASONS.HUMAN_STATE_UNRESOLVED] };
         }
 
+        const fallbackCommander = this.commanderResolver?.resolve?.(context) ?? null;
+        const fallbackForces = this.forcesResolver?.resolve?.(context) ?? [];
         const scenario = {
             id: `TRIAL_${trialIndex}`,
             trialIndex,
             enemySuppression,
             routes: cloneData(routes),
             ...human,
-            commander: cloneData(truth?.commander ?? this.commanderResolver?.resolve?.(context) ?? null),
-            forces: cloneData(truth?.forces ?? this.forcesResolver?.resolve?.(context) ?? []),
+            armyStructure: cloneData(armyStructure),
+            commander: cloneData(
+                truth?.commander
+                ?? armyStructure?.commander
+                ?? fallbackCommander
+            ),
+            forces: cloneData(
+                Array.isArray(truth?.forces) && truth.forces.length > 0
+                    ? truth.forces
+                    : (Array.isArray(armyStructure?.forces) && armyStructure.forces.length > 0
+                        ? armyStructure.forces
+                        : fallbackForces)
+            ),
             environment: cloneData(this.environmentResolver?.resolve?.(context) ?? {})
         };
 
@@ -146,6 +173,7 @@ export class TrialScenarioFactory {
                 development: cloneData(development),
                 threat: cloneData(threat),
                 enemyTruth: cloneData(truth),
+                armyStructure: cloneData(armyStructure),
                 ingresses: cloneData(ingresses)
             }
         };

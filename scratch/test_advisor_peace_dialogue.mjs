@@ -26,9 +26,18 @@ check(result === null, "同じCRITICAL状態を毎ターン連発しない");
 const emberPriorityRuntime = new AdvisorRuntimeState({ lastSpokenTurn: 2, previousResolvedStates: [["ember", "EMBER_WARNING"]] });
 result = evaluator.evaluateTurn({ states: [
     { id: "EMBER_WARNING", topic: "ember", severity: 2 },
-    { id: "FOOD_CRITICAL", topic: "survival", severity: 3 }
+    { id: "FOOD_CRITICAL", topic: "logistics", severity: 3 }
 ], runtime: emberPriorityRuntime, profile: DEFAULT_ADVISOR_PROFILE, turn: 3 });
-check(result === null, "継続中の🔥警告がある間は他Topicへ話題を移さない");
+check(result?.id === "FOOD_CRITICAL", "継続中の🔥警告だけで他の重大Topicを封鎖しない");
+
+const lowAttentionProfile = {
+    ...DEFAULT_ADVISOR_PROFILE,
+    policy: { ...DEFAULT_ADVISOR_PROFILE.policy, ember: 1, logistics: 4, defense: 1 }
+};
+result = evaluator.evaluateTurn({ states: [{ id: "EMBER_WARNING", topic: "ember", severity: 2 }], runtime: new AdvisorRuntimeState({ lastSpokenTurn: 1 }), profile: lowAttentionProfile, turn: 6 });
+check(result === null, "Policy 1のWARNINGは原則沈黙する");
+result = evaluator.evaluateTurn({ states: [{ id: "EMBER_CRITICAL", topic: "ember", severity: 3 }], runtime: new AdvisorRuntimeState({ lastSpokenTurn: 1 }), profile: lowAttentionProfile, turn: 6 });
+check(result?.id === "EMBER_CRITICAL", "Policy 1でもCRITICALは例外的に反応候補になれる");
 
 const worseningRuntime = new AdvisorRuntimeState({ lastSpokenTurn: 4, previousResolvedStates: [["ember", "EMBER_WARNING"]] });
 result = evaluator.evaluateTurn({ states: [{ id: "EMBER_CRITICAL", topic: "ember", severity: 3 }], runtime: worseningRuntime, profile: DEFAULT_ADVISOR_PROFILE, turn: 5 });
@@ -54,9 +63,9 @@ result = evaluator.evaluateTurn({ states: tieStates, runtime: recentRuntime, pro
 check(result?.topic === "defense", "同Policy値ではrecentでないTopicを優先する");
 
 const milestoneRuntime = new AdvisorRuntimeState();
-check(evaluator.evaluateMilestone("ZONE_COMPLETED", milestoneRuntime)?.id === "FIRST_ZONE_COMPLETED", "初回Zoneは必須反応");
+check(evaluator.evaluateMilestone("ZONE_COMPLETED", milestoneRuntime)?.id === "FIRST_ZONE_COMPLETED", "初回Zoneは反応候補");
 check(evaluator.evaluateMilestone("ZONE_COMPLETED", milestoneRuntime)?.id === "ZONE_COMPLETED", "2回目Zoneは通常反応候補");
-check(evaluator.evaluateMilestone("LINK_COMPLETED", milestoneRuntime)?.id === "FIRST_LINK_COMPLETED", "初回Linkは必須反応");
+check(evaluator.evaluateMilestone("LINK_COMPLETED", milestoneRuntime)?.id === "FIRST_LINK_COMPLETED", "初回Linkは反応候補");
 check(evaluator.evaluateMilestone("LINK_COMPLETED", milestoneRuntime)?.id === "LINK_COMPLETED", "2回目Linkは通常反応候補");
 check(evaluator.evaluateMilitaryAction("BUILD_DEFENSE", milestoneRuntime)?.id === "MILITARY_ACTION", "軍事ActionTypeへ初回反応する");
 check(evaluator.evaluateMilitaryAction("BUILD_DEFENSE", milestoneRuntime) === null, "同じ軍事ActionTypeへ再反応しない");
@@ -68,6 +77,10 @@ const state = { turn: 3, ember: 5, maxEmber: 20, food: 10, currentDefense: 7, ma
 const snapshot = createAdvisorPeaceSnapshot(state);
 check(snapshot.emberRatio === 0.25 && snapshot.foodRunway === 0.5, "公開GameStateから読み取り専用snapshotを作る");
 check(state.ember === 5 && state.food === 10, "State ResolverがGameStateを書き換えない");
+const criticalFoodState = resolveAdvisorPeaceStates({ emberRatio: 1, foodRunway: 0.5, defenseReference: 0, zoneCount: 0, boardOccupancy: 0 });
+check(criticalFoodState.some(item => item.id === "FOOD_CRITICAL" && item.topic === ADVISOR_TOPICS.LOGISTICS), "FOOD_CRITICALはlogisticsへ統一する");
+const stableState = resolveAdvisorPeaceStates({ emberRatio: 1, foodRunway: 10, defenseReference: 0, zoneCount: 0, boardOccupancy: 0 });
+check(stableState.some(item => item.id === "STABLE_OVERALL" && item.topic === ADVISOR_TOPICS.SURVIVAL), "STABLE_OVERALLはsurvivalへ統一する");
 check(DEFAULT_ADVISOR_PROFILE.policy.ember === 4 && DEFAULT_ADVISOR_PROFILE.policy.mysticism === 1, "老将軍Policyは4段階整数で定義される");
 check(ADVISOR_DIALOGUES.every(entry => !entry.lineKeys.some(key => key === "UI_ADVISOR_DIALOGUE_TURN_START")), "TURN_START固定台詞を平時Databaseから除外する");
 check(ADVISOR_DIALOGUES.flatMap(entry => entry.lineKeys).every(key => !I18n.t(key).includes("残火")), "Dialogue本文に作中禁止語を含めない");

@@ -35,7 +35,12 @@ console.log("⚔️ Trial Phase 2 interception preview tests");
 test("CombatResultが基礎値・最終値・適用内訳・予測を保持する", () => {
     const result = new TrialCombatResolver().resolve(context({ intercept: forestHill, approach: wetland }));
     assert.deepEqual(result.human, { basePower: 80, finalPower: 72 });
-    assert.deepEqual(result.enemy, { basePower: 70, finalPower: 44 });
+    assert.deepEqual(result.enemy, {
+        basePower: 70,
+        finalPower: 44,
+        reserveSuppression: 0,
+        remainingForceSuppression: 0
+    });
     assert.deepEqual(result.appliedModifiers.map(row => [row.source, row.before, row.after]), [
         ["FOREST_DEPLOYMENT", 80, 60],
         ["FOREST_DEPLOYMENT", 70, 55],

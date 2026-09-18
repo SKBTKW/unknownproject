@@ -122,6 +122,44 @@ assert(
     "failed scheduled trigger must remain queued instead of being lost"
 );
 
+const staleState = createState(6);
+const staleManager = new GlobalEventManager(staleState, null);
+assert(
+    staleManager.scheduleEvent("EVENT_DEMIHUMAN_TRACES", 7).success === true,
+    "one-shot GE must be schedulable before an alternate trigger path fires"
+);
+const earlyTrigger = staleManager.triggerEvent("EVENT_DEMIHUMAN_TRACES");
+assert(
+    earlyTrigger?.definitionId === "EVENT_DEMIHUMAN_TRACES",
+    "alternate trigger path must be able to fire the one-shot GE before its scheduled Verse"
+);
+assert(
+    staleState.scheduledGlobalEvents.length === 1,
+    "alternate trigger must not mutate the scheduled queue before the scheduled boundary"
+);
+staleState.turn = 7;
+staleManager.director.shouldTriggerEvent = () => false;
+assert(
+    staleManager.onTurnStart() === null,
+    "already-triggered one-shot reservation must be treated as stale rather than retriggered"
+);
+assert(
+    staleState.scheduledGlobalEvents.length === 0,
+    "already-triggered one-shot reservation must be consumed instead of becoming a dead queue entry"
+);
+
+const repeatableState = createState(6);
+const repeatableManager = new GlobalEventManager(repeatableState, null);
+assert(
+    repeatableManager.scheduleEvent("EVENT_COLD_WAVE", 7).success === true &&
+    repeatableManager.scheduleEvent("EVENT_COLD_WAVE", 8).success === true,
+    "repeatable GE must remain schedulable on multiple Verses"
+);
+assert(
+    repeatableState.scheduledGlobalEvents.length === 2,
+    "one-shot cleanup must not impose eventId-wide uniqueness on repeatable GE"
+);
+
 const persistedState = createState(4);
 const persistedManager = new GlobalEventManager(persistedState, null);
 persistedManager.scheduleEvent("EVENT_DEMIHUMAN_TRACES", 7);

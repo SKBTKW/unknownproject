@@ -43,6 +43,16 @@ test("dev modeで固定5x5地形比較Scenarioを起動できる", () => {
     assert.equal(ui.getActiveTrialRoute().cells.length, 5);
 });
 
+test("開発Scenario盤面はscenarioGridを正本としdisplayGridは互換aliasに限定する", () => {
+    const harness = ui.developmentTrialPreviewHarness;
+    const scenarioGrid = harness.getScenarioGrid();
+    assert.ok(scenarioGrid);
+    assert.equal(scenarioGrid.length, 5);
+    assert.equal(harness.getDisplayGrid(), scenarioGrid);
+    assert.equal(Object.hasOwn(harness.session, "scenarioGrid"), true);
+    assert.equal(Object.hasOwn(harness.session, "displayGrid"), false);
+});
+
 test("湿原はrouteだが迎撃候補ではない", () => {
     const state = ui.getTrialInterceptionCellState(0, 0);
     assert.equal(state?.onRoute, true);
