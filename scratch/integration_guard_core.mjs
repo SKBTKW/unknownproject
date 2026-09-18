@@ -8,6 +8,14 @@ export const GUARD_STATUS = Object.freeze({
   BLOCKED: 'BLOCKED',
 });
 
+export const GUARD_ACTION = Object.freeze({
+  NONE: 'NONE',
+  INTEGRATE_ONE_AT_A_TIME: 'INTEGRATE_ONE_AT_A_TIME',
+  REVIEW_OVERLAP: 'REVIEW_OVERLAP',
+  RECONCILE_TARGET: 'RECONCILE_TARGET',
+  STOP_AND_INSPECT: 'STOP_AND_INSPECT',
+});
+
 export const PEER_REVIEW_RISKS = new Set([
   'PATH_OVERLAP',
   'SHARED_SURFACE',
@@ -95,6 +103,49 @@ export function classifyObservedTask({
     return GUARD_STATUS.REVIEW_REQUIRED;
   }
   return GUARD_STATUS.READY;
+}
+
+export function buildTaskGuidance(task = {}) {
+  switch (task.status) {
+    case GUARD_STATUS.MERGED:
+      return {
+        action: GUARD_ACTION.NONE,
+        reason: 'TASK HEAD is already contained in the target history.',
+      };
+    case GUARD_STATUS.READY:
+      return {
+        action: GUARD_ACTION.INTEGRATE_ONE_AT_A_TIME,
+        reason: 'TASK contains the latest target, merge preview is clean, and no review-grade overlap was observed.',
+      };
+    case GUARD_STATUS.REVIEW_REQUIRED: {
+      const peer = (task.peerOverlaps || []).find((entry) => shouldPeerOverlapRequireReview(entry.overlap));
+      const risk = task.overlap?.risk && task.overlap.risk !== 'NONE'
+        ? task.overlap.risk
+        : peer?.overlap?.risk || 'overlap';
+      return {
+        action: GUARD_ACTION.REVIEW_OVERLAP,
+        reason: `Review ${risk} before integration; no automatic reconciliation or conflict resolution is permitted.`,
+      };
+    }
+    case GUARD_STATUS.RECONCILE_REQUIRED:
+      return {
+        action: GUARD_ACTION.RECONCILE_TARGET,
+        reason: 'Latest target is not contained in TASK HEAD; reconcile the current target, rerun tests, then reassess.',
+      };
+    case GUARD_STATUS.BLOCKED:
+    default: {
+      let reason = 'TASK state is not safe enough to continue automatically.';
+      if (task.localRemoteMismatch) reason = 'Local and origin TASK refs disagree.';
+      else if (task.remoteExists === false) reason = 'TASK has not been pushed to origin.';
+      else if (task.relationshipKnown === false) reason = task.mergePreview?.reason || 'Git history relationship is unknown.';
+      else if (task.mergePreview?.status === 'CONFLICT') reason = 'Virtual merge detected content conflicts.';
+      else if (task.mergePreview?.status === 'UNKNOWN') reason = task.mergePreview?.reason || 'Merge preview is unavailable.';
+      return {
+        action: GUARD_ACTION.STOP_AND_INSPECT,
+        reason,
+      };
+    }
+  }
 }
 
 export function summarizeStatuses(tasks = []) {

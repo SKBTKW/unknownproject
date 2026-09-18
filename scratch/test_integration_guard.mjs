@@ -4,8 +4,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import {
+  GUARD_ACTION,
   GUARD_STATUS,
   buildSessionId,
+  buildTaskGuidance,
   classifyObservedTask,
   discoverTaskNames,
   isAoTTarget,
@@ -44,6 +46,26 @@ check(classifyObservedTask({ relationshipKnown:true, targetIsAncestor:false, mer
 check(classifyObservedTask({ relationshipKnown:true, taskIsAncestor:true, targetIsAncestor:false, mergePreviewStatus:'UNKNOWN' }), GUARD_STATUS.MERGED, 'TASK already contained by target is merged');
 check(classifyObservedTask({ relationshipKnown:true, targetIsAncestor:true, taskIsAncestor:false, mergePreviewStatus:'NOT_REQUIRED' }), GUARD_STATUS.READY, 'contained clean TASK is ready');
 check(buildSessionId(new Date(2026, 8, 18, 22, 30, 40, 123)), '20260918-223040-123', 'session id is deterministic and millisecond precise');
+
+check(buildTaskGuidance({ status: GUARD_STATUS.MERGED }), {
+  action: GUARD_ACTION.NONE,
+  reason: 'TASK HEAD is already contained in the target history.',
+}, 'merged guidance requires no action');
+check(buildTaskGuidance({ status: GUARD_STATUS.READY }), {
+  action: GUARD_ACTION.INTEGRATE_ONE_AT_A_TIME,
+  reason: 'TASK contains the latest target, merge preview is clean, and no review-grade overlap was observed.',
+}, 'ready guidance preserves one-at-a-time integration');
+check(buildTaskGuidance({
+  status: GUARD_STATUS.REVIEW_REQUIRED,
+  overlap: { risk: 'SHARED_SURFACE' },
+  peerOverlaps: [],
+}).action, GUARD_ACTION.REVIEW_OVERLAP, 'review guidance requires overlap review');
+check(buildTaskGuidance({ status: GUARD_STATUS.RECONCILE_REQUIRED }).action, GUARD_ACTION.RECONCILE_TARGET, 'stale TASK guidance requires target reconciliation');
+check(buildTaskGuidance({
+  status: GUARD_STATUS.BLOCKED,
+  localRemoteMismatch: true,
+}).action, GUARD_ACTION.STOP_AND_INSPECT, 'blocked guidance stops for inspection');
+
 
 const stableSnapshot = { targetSha: 'a', tasks: { one: 'b' } };
 assertRemoteSnapshotUnchanged(stableSnapshot, { targetSha: 'a', tasks: { one: 'b' } }, 'test');
@@ -101,13 +123,16 @@ try {
   const result = await runIntegrationGuard({ cwd: repo, target, backupRoot, now });
   check(result.analysis.targetSha, targetSha, 'E2E analysis pins current target SHA');
   check(result.analysis.backupVerified, true, 'E2E backup is verified before analysis result');
+  check(result.analysis.schemaVersion, 2, 'E2E analysis uses guidance schema version');
   check(result.analysis.tasks.length, 3, 'E2E discovers stale and merged TASK branches');
   check(result.analysis.summary.MERGED, 1, 'E2E classifies target-contained TASK as merged');
   check(result.analysis.summary.RECONCILE_REQUIRED, 2, 'E2E marks both stale TASKs for reconciliation');
   const mergedTask = result.analysis.tasks.find((task) => task.branch === taskMerged);
   check(mergedTask?.taskIsAncestor, true, 'E2E records merged ancestry direction');
   check(mergedTask?.peerOverlaps, [], 'E2E excludes merged TASK from peer-overlap warnings');
+  check(mergedTask?.guidance?.action, GUARD_ACTION.NONE, 'E2E merged TASK guidance is no action');
   check(result.analysis.tasks.filter((task) => task.status !== GUARD_STATUS.MERGED).every((task) => task.peerOverlaps.some((peer) => peer.overlap.risk === 'SHARED_SURFACE')), true, 'E2E still detects overlap between active stale TASKs');
+  check(result.analysis.tasks.filter((task) => task.status === GUARD_STATUS.RECONCILE_REQUIRED).every((task) => task.guidance?.action === GUARD_ACTION.RECONCILE_TARGET), true, 'E2E stale TASKs receive reconciliation guidance');
   check(fs.existsSync(result.backup.bundlePath), true, 'E2E writes bundle outside repository');
   check(fs.existsSync(result.backup.manifestPath), true, 'E2E writes backup manifest');
   check(fs.existsSync(path.join(result.backup.sessionDir, 'SHA256SUM.txt')), true, 'E2E writes bundle checksum');
@@ -162,4 +187,4 @@ try {
   fs.rmSync(root, { recursive: true, force: true });
 }
 
-console.log(`Integration Guard V1.1: ${passed} checks PASS`);
+console.log(`Integration Guard V1.2: ${passed} checks PASS`);
