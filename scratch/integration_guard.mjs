@@ -250,6 +250,7 @@ function inspectTask(cwd, targetSha, task) {
       overlap: { risk: 'NONE', risks: [], evidence: [] },
       mergePreview: { status: MERGE_PREVIEW_STATUS.UNKNOWN, conflictPaths: [], reason: task.remoteExists ? 'Local/remote TASK mismatch.' : 'TASK is not pushed to origin.' },
       targetIsAncestor: false,
+      taskIsAncestor: false,
       relationshipKnown: false,
       peerOverlaps: [],
       status: GUARD_STATUS.BLOCKED,
@@ -264,6 +265,7 @@ function inspectTask(cwd, targetSha, task) {
       overlap: { risk: 'NONE', risks: [], evidence: [] },
       mergePreview: { status: MERGE_PREVIEW_STATUS.UNKNOWN, conflictPaths: [], reason: 'No merge base.' },
       targetIsAncestor: false,
+      taskIsAncestor: false,
       relationshipKnown: false,
       peerOverlaps: [],
       status: GUARD_STATUS.BLOCKED,
@@ -275,14 +277,16 @@ function inspectTask(cwd, targetSha, task) {
   const overlap = classifyOverlap(targetFiles, taskFiles);
   const mergePreview = previewMerge(cwd, targetSha, task.sha);
   const targetIsAncestor = isAncestor(cwd, targetSha, task.sha);
+  const taskIsAncestor = isAncestor(cwd, task.sha, targetSha);
   const status = classifyObservedTask({
     relationshipKnown: true,
     targetIsAncestor,
+    taskIsAncestor,
     mergePreviewStatus: mergePreview.status,
     targetOverlapRisk: overlap.risk,
     peerOverlaps: [],
   });
-  return { ...task, mergeBase, taskFiles, targetFiles, overlap, mergePreview, targetIsAncestor, relationshipKnown: true, peerOverlaps: [], status };
+  return { ...task, mergeBase, taskFiles, targetFiles, overlap, mergePreview, targetIsAncestor, taskIsAncestor, relationshipKnown: true, peerOverlaps: [], status };
 }
 
 function attachPeerOverlaps(tasks) {
@@ -290,6 +294,7 @@ function attachPeerOverlaps(tasks) {
     for (let j = i + 1; j < tasks.length; j += 1) {
       const left = tasks[i];
       const right = tasks[j];
+      if (left.status === GUARD_STATUS.MERGED || right.status === GUARD_STATUS.MERGED) continue;
       const overlap = classifyOverlap(left.taskFiles, right.taskFiles);
       if (overlap.risk === 'NONE') continue;
       left.peerOverlaps.push({ branch: right.branch, overlap });
@@ -320,6 +325,7 @@ function printDashboard(analysis, backup) {
   console.log(`Backup:  VERIFIED`);
   console.log(`Location:${backup.sessionDir}`);
   console.log('------------------------------------------------------------');
+  console.log(`MERGED:              ${counts.MERGED}`);
   console.log(`READY:               ${counts.READY}`);
   console.log(`REVIEW_REQUIRED:     ${counts.REVIEW_REQUIRED}`);
   console.log(`RECONCILE_REQUIRED:  ${counts.RECONCILE_REQUIRED}`);
@@ -330,7 +336,7 @@ function printDashboard(analysis, backup) {
     console.log(`[${task.status}] ${task.branch}`);
     console.log(`  head: ${task.sha}`);
     console.log(`  merge preview: ${task.mergePreview.status}`);
-    if (task.overlap.risk !== 'NONE') console.log(`  target overlap: ${task.overlap.risk} (${task.overlap.evidence.join(', ')})`);
+    if (task.status !== GUARD_STATUS.MERGED && task.overlap.risk !== 'NONE') console.log(`  target overlap: ${task.overlap.risk} (${task.overlap.evidence.join(', ')})`);
     for (const peer of task.peerOverlaps) {
       console.log(`  peer overlap: ${peer.branch} -> ${peer.overlap.risk} (${peer.overlap.evidence.join(', ')})`);
     }
@@ -373,6 +379,7 @@ export async function runIntegrationGuard({ cwd: requestedCwd, target: explicitT
         source: task.source,
         status: task.status,
         targetIsAncestor: task.targetIsAncestor,
+        taskIsAncestor: task.taskIsAncestor,
         localRemoteMismatch: task.localRemoteMismatch,
         taskFiles: task.taskFiles,
         targetFiles: task.targetFiles,
