@@ -5,7 +5,7 @@ import { LAND_CARDS_MASTER } from '../data/land_cards_data.js';
 import { COMMAND_CARDS_MASTER } from '../data/command_cards_data.js';
 import { ConditionEvaluator } from '../core/condition_evaluator.js';
 import { CardCycleSystem, CYCLE_POLICIES } from './card_cycle_system.js';
-import { normalizePlacementAnchor } from '../core/placement_geometry.js';
+import { normalizePlacementAnchor, resolvePlacementGeometry } from '../core/placement_geometry.js';
 import { isTrueMergedCell } from '../core/merge_rules.js';
 import { getWaterSourceSpawnChance } from '../core/lake_rules.js';
 
