@@ -193,7 +193,13 @@ test("searched cell fact is portable presentation semantic instead of Web DOM in
 test("socket semantics remain presentation data instead of renderer inference", () => {
     const socket = dto.cells[1][0];
     assert.equal(socket.display.role, "SOCKET");
-    assert.equal(socket.display.production, null);
+    assert.deepEqual(socket.display.production, {
+        food: 0,
+        wood: 2,
+        defense: 0,
+        mystic: 0,
+        primaryYield: { resource: "wood", amount: 2 }
+    });
     assert.equal(socket.socketResource.id, "SOCKET_WOOD");
 });
 
