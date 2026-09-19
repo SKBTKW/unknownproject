@@ -8,8 +8,10 @@ import { previewMerge, MERGE_PREVIEW_STATUS } from './task_merge_preview.mjs';
 import {
   GUARD_STATUS,
   buildIntegrationOrder,
+  buildOverlapGraph,
   buildSessionId,
   buildTaskGuidance,
+  explainIntegrationOrder,
   classifyObservedTask,
   defaultBackupRoot,
   discoverTaskNames,
@@ -320,7 +322,7 @@ function writeAnalysis(backup, analysis) {
 function printDashboard(analysis, backup) {
   const counts = analysis.summary;
   console.log('\n============================================================');
-  console.log(' AoT Integration Guard V1.3 - READ ONLY');
+  console.log(' AoT Integration Guard V1.4 - READ ONLY');
   console.log('============================================================');
   console.log(`Target:  ${analysis.target}`);
   console.log(`SHA:     ${analysis.targetSha}`);
@@ -337,6 +339,15 @@ function printDashboard(analysis, backup) {
     console.log('Provisional integration order:');
     for (const entry of analysis.integrationOrder) {
       console.log(`  ${entry.position}. [${entry.status}] ${entry.branch} -> ${entry.action}`);
+      const explanation = analysis.orderExplanations.find((item) => item.branch === entry.branch);
+      if (explanation) console.log(`     why: ${explanation.rationale}`);
+    }
+    console.log('------------------------------------------------------------');
+  }
+  if (analysis.overlapGraph.edges.length > 0) {
+    console.log('Peer-overlap graph:');
+    for (const edge of analysis.overlapGraph.edges) {
+      console.log(`  ${edge.from} <-> ${edge.to}: ${edge.risk}${edge.reviewRequired ? ' [REVIEW]' : ''}`);
     }
     console.log('------------------------------------------------------------');
   }
@@ -377,15 +388,19 @@ export async function runIntegrationGuard({ cwd: requestedCwd, target: explicitT
     const inspected = attachPeerOverlaps(tasks.map((task) => inspectTask(cwd, targetSha, task)))
       .map((task) => ({ ...task, guidance: buildTaskGuidance(task) }));
     assertRemoteSnapshotUnchanged(expectedRemoteSnapshot, readRemoteSnapshot(cwd, target), 'after analysis');
+    const integrationOrder = buildIntegrationOrder(inspected);
+    const overlapGraph = buildOverlapGraph(inspected);
     const analysis = {
-      schemaVersion: 3,
+      schemaVersion: 4,
       sessionId,
       createdAt: now.toISOString(),
       target,
       targetSha,
       backupVerified: true,
       summary: summarizeStatuses(inspected),
-      integrationOrder: buildIntegrationOrder(inspected),
+      integrationOrder,
+      overlapGraph,
+      orderExplanations: explainIntegrationOrder(integrationOrder, overlapGraph),
       tasks: inspected.map((task) => ({
         branch: task.branch,
         sha: task.sha,
@@ -424,7 +439,7 @@ function parseArgs(argv) {
 
 function printHelp() {
   console.log('Usage: node scratch/integration_guard.mjs [--target AoTYYMMDD] [--backup-root <path>]');
-  console.log('V1.3 is read-only with respect to repository history. It creates a verified external backup and analysis report only.');
+  console.log('V1.4 is read-only with respect to repository history. It creates a verified external backup and analysis report only.');
 }
 
 async function main() {
