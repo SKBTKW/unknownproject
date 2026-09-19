@@ -28,6 +28,7 @@ import {
   unique,
 } from './integration_guard_core.mjs';
 import { createVerifiedBackup } from './integration_guard_backup.mjs';
+import { buildIntegrationProgressGuide, printIntegrationProgressGuide } from './integration_progress_guide.mjs';
 
 function runGit(cwd, args, { allowFailure = false } = {}) {
   try {
@@ -515,8 +516,11 @@ export async function runIntegrationGuard({ cwd: requestedCwd, target: explicitT
         peerOverlaps: task.peerOverlaps,
       })),
     };
+    analysis.progressGuide = buildIntegrationProgressGuide(analysis);
     analysis.analysisPath = writeAnalysis(backup, analysis);
     printDashboard(analysis, backup, { verbose });
+    console.log('------------------------------------------------------------');
+    printIntegrationProgressGuide(analysis.progressGuide);
     return { analysis, backup };
   } finally {
     releaseLock();
