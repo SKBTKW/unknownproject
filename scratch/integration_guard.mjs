@@ -324,10 +324,41 @@ function writeAnalysis(backup, analysis) {
   return filepath;
 }
 
+export function buildExecutiveSummary(analysis = {}) {
+  const counts = analysis.summary || {};
+  const order = analysis.integrationOrder || [];
+  const first = order[0] || null;
+  const lines = [];
+
+  if ((counts.BLOCKED || 0) > 0) {
+    lines.push(`Stop: ${counts.BLOCKED} BLOCKED TASK(s) require inspection before integration.`);
+  } else if ((counts.RECONCILE_REQUIRED || 0) > 0) {
+    lines.push(`Reconcile first: ${counts.RECONCILE_REQUIRED} TASK(s) are stale against the current target.`);
+  } else if ((counts.REVIEW_REQUIRED || 0) > 0) {
+    lines.push(`Review first: ${counts.REVIEW_REQUIRED} TASK(s) require overlap review before integration.`);
+  } else if ((counts.READY || 0) > 0) {
+    lines.push(`Ready: ${counts.READY} TASK(s) are candidates for one-at-a-time integration.`);
+  } else {
+    lines.push('No active TASK requires integration action.');
+  }
+
+  if (first) {
+    lines.push(`Next candidate: [${first.status}] ${first.branch} -> ${first.action}.`);
+  }
+
+  const firstFocus = (analysis.focusedReevaluationSets || []).find((item) => item.afterBranch === first?.branch);
+  if (firstFocus) {
+    const primary = firstFocus.primaryReinspection || [];
+    lines.push(`After that target change: prioritize ${primary.length ? primary.join(', ') : 'no elevated-risk TASK'}; full Guard rerun remains required.`);
+  }
+
+  return lines;
+}
+
 export function printDashboard(analysis, backup, { verbose = false } = {}) {
   const counts = analysis.summary;
   console.log('\n============================================================');
-  console.log(' AoT Integration Guard V1.11 - READ ONLY');
+  console.log(' AoT Integration Guard V1.12 - READ ONLY');
   console.log('============================================================');
   console.log(`Target:  ${analysis.target}`);
   console.log(`SHA:     ${analysis.targetSha}`);
@@ -418,6 +449,9 @@ export function printDashboard(analysis, backup, { verbose = false } = {}) {
   } else {
     console.log('Details: hidden (use --verbose)');
   }
+  console.log('------------------------------------------------------------');
+  console.log('Executive Summary:');
+  for (const line of buildExecutiveSummary(analysis)) console.log(`  ${line}`);
   console.log('\nNo merge, reset, rebase, push, branch deletion, or conflict resolution was performed.');
 }
 
@@ -504,7 +538,7 @@ export function parseArgs(argv) {
 
 function printHelp() {
   console.log('Usage: node scratch/integration_guard.mjs [--target AoTYYMMDD] [--backup-root <path>] [--verbose]');
-  console.log('V1.11 is read-only with respect to repository history. Default output is concise; --verbose shows detailed overlap and TASK evidence.');
+  console.log('V1.12 is read-only with respect to repository history. Default output ends with an Executive Summary; --verbose shows detailed overlap and TASK evidence.');
 }
 
 async function main() {
