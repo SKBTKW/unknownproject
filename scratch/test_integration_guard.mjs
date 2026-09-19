@@ -6,6 +6,7 @@ import { execFileSync } from 'node:child_process';
 import {
   GUARD_ACTION,
   GUARD_STATUS,
+  buildClusterOrders,
   buildClusterStrategies,
   buildIntegrationClusters,
   buildIntegrationOrder,
@@ -154,6 +155,23 @@ check(buildClusterStrategies([
   { branch: 'ready', status: GUARD_STATUS.READY, guidance: buildTaskGuidance({ status: GUARD_STATUS.READY }) },
 ])[0].action, GUARD_ACTION.STOP_AND_INSPECT, 'blocked member stops review-cluster strategy');
 
+const localOrderFixture = buildClusterOrders([
+  { id: 'cluster-1', type: 'REVIEW_CLUSTER', members: ['a', 'b', 'c'] },
+], [
+  { branch: 'a', status: GUARD_STATUS.READY, guidance: buildTaskGuidance({ status: GUARD_STATUS.READY }), taskFiles: ['1.js', '2.js'] },
+  { branch: 'b', status: GUARD_STATUS.READY, guidance: buildTaskGuidance({ status: GUARD_STATUS.READY }), taskFiles: ['1.js'] },
+  { branch: 'c', status: GUARD_STATUS.REVIEW_REQUIRED, guidance: buildTaskGuidance({ status: GUARD_STATUS.REVIEW_REQUIRED, overlap: { risk: 'PATH_OVERLAP' }, peerOverlaps: [] }), taskFiles: ['1.js'] },
+], {
+  edges: [
+    { from: 'a', to: 'c', reviewRequired: true },
+    { from: 'b', to: 'c', reviewRequired: true },
+  ],
+});
+check(localOrderFixture[0].entries.map((entry) => entry.branch), ['b', 'a', 'c'], 'cluster-local order prefers safer status, fewer direct overlaps, then narrower file impact');
+check(localOrderFixture[0].entries.every((entry) => entry.provisional === true), true, 'cluster-local entries remain provisional');
+check(localOrderFixture[0].entries[0].rationale.includes('changed file'), true, 'cluster-local order records rationale');
+
+
 
 
 
@@ -215,7 +233,7 @@ try {
   const result = await runIntegrationGuard({ cwd: repo, target, backupRoot, now });
   check(result.analysis.targetSha, targetSha, 'E2E analysis pins current target SHA');
   check(result.analysis.backupVerified, true, 'E2E backup is verified before analysis result');
-  check(result.analysis.schemaVersion, 6, 'E2E analysis uses cluster-strategy schema version');
+  check(result.analysis.schemaVersion, 7, 'E2E analysis uses cluster-local-order schema version');
   check(result.analysis.tasks.length, 3, 'E2E discovers stale and merged TASK branches');
   check(result.analysis.summary.MERGED, 1, 'E2E classifies target-contained TASK as merged');
   check(result.analysis.summary.RECONCILE_REQUIRED, 2, 'E2E marks both stale TASKs for reconciliation');
@@ -233,6 +251,8 @@ try {
   check(result.analysis.integrationClusters.every((cluster) => cluster.provisional === true), true, 'E2E integration groups are explicitly provisional');
   check(result.analysis.clusterStrategies.length, result.analysis.integrationClusters.length, 'E2E provides one strategy per integration cluster');
   check(result.analysis.clusterStrategies.every((strategy) => strategy.provisional === true), true, 'E2E cluster strategies are explicitly provisional');
+  check(result.analysis.clusterOrders.length, result.analysis.integrationClusters.length, 'E2E provides one local order per cluster');
+  check(result.analysis.clusterOrders.every((group) => group.provisional === true && group.entries.every((entry) => entry.provisional === true)), true, 'E2E cluster-local orders are explicitly provisional');
   check(fs.existsSync(result.backup.bundlePath), true, 'E2E writes bundle outside repository');
   check(fs.existsSync(result.backup.manifestPath), true, 'E2E writes backup manifest');
   check(fs.existsSync(path.join(result.backup.sessionDir, 'SHA256SUM.txt')), true, 'E2E writes bundle checksum');
@@ -287,4 +307,4 @@ try {
   fs.rmSync(root, { recursive: true, force: true });
 }
 
-console.log(`Integration Guard V1.6: ${passed} checks PASS`);
+console.log(`Integration Guard V1.7: ${passed} checks PASS`);
