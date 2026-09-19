@@ -89,7 +89,12 @@ export class PostTrialInterludeProgressService {
         const hasStagePrelude = presentation.scenes.some(
             scene => scene?.id === POST_TRIAL_INTERLUDE_SCENES.STAGE_PRELUDE
         );
-        this.presentationBridge?.setStageGateDeferred?.(active && hasStagePrelude);
+        const stagePreludeCompleted = presentation.completedSceneIds.includes(
+            POST_TRIAL_INTERLUDE_SCENES.STAGE_PRELUDE
+        );
+        this.presentationBridge?.setStageGateDeferred?.(
+            active && hasStagePrelude && !stagePreludeCompleted
+        );
 
         return {
             success: true,
