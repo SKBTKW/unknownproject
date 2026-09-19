@@ -7,6 +7,7 @@ import { classifyOverlap } from './task_health.mjs';
 import { previewMerge, MERGE_PREVIEW_STATUS } from './task_merge_preview.mjs';
 import {
   GUARD_STATUS,
+  buildClusterStrategies,
   buildIntegrationClusters,
   buildIntegrationOrder,
   buildOverlapGraph,
@@ -323,7 +324,7 @@ function writeAnalysis(backup, analysis) {
 function printDashboard(analysis, backup) {
   const counts = analysis.summary;
   console.log('\n============================================================');
-  console.log(' AoT Integration Guard V1.5 - READ ONLY');
+  console.log(' AoT Integration Guard V1.6 - READ ONLY');
   console.log('============================================================');
   console.log(`Target:  ${analysis.target}`);
   console.log(`SHA:     ${analysis.targetSha}`);
@@ -349,6 +350,11 @@ function printDashboard(analysis, backup) {
     console.log('Integration groups:');
     for (const cluster of analysis.integrationClusters) {
       console.log(`  [${cluster.type}] ${cluster.id}: ${cluster.members.join(', ')}`);
+      const strategy = analysis.clusterStrategies.find((item) => item.clusterId === cluster.id);
+      if (strategy) {
+        console.log(`     action: ${strategy.action}`);
+        console.log(`     why: ${strategy.reason}`);
+      }
     }
     console.log('------------------------------------------------------------');
   }
@@ -399,8 +405,9 @@ export async function runIntegrationGuard({ cwd: requestedCwd, target: explicitT
     const integrationOrder = buildIntegrationOrder(inspected);
     const overlapGraph = buildOverlapGraph(inspected);
     const integrationClusters = buildIntegrationClusters(overlapGraph);
+    const clusterStrategies = buildClusterStrategies(integrationClusters, inspected);
     const analysis = {
-      schemaVersion: 5,
+      schemaVersion: 6,
       sessionId,
       createdAt: now.toISOString(),
       target,
@@ -410,6 +417,7 @@ export async function runIntegrationGuard({ cwd: requestedCwd, target: explicitT
       integrationOrder,
       overlapGraph,
       integrationClusters,
+      clusterStrategies,
       orderExplanations: explainIntegrationOrder(integrationOrder, overlapGraph),
       tasks: inspected.map((task) => ({
         branch: task.branch,
@@ -449,7 +457,7 @@ function parseArgs(argv) {
 
 function printHelp() {
   console.log('Usage: node scratch/integration_guard.mjs [--target AoTYYMMDD] [--backup-root <path>]');
-  console.log('V1.5 is read-only with respect to repository history. It creates a verified external backup and analysis report only.');
+  console.log('V1.6 is read-only with respect to repository history. It creates a verified external backup and analysis report only.');
 }
 
 async function main() {

@@ -6,6 +6,7 @@ import { execFileSync } from 'node:child_process';
 import {
   GUARD_ACTION,
   GUARD_STATUS,
+  buildClusterStrategies,
   buildIntegrationClusters,
   buildIntegrationOrder,
   buildOverlapGraph,
@@ -137,6 +138,23 @@ check(clusterFixture[0], {
 }, 'cluster builder groups transitive review overlap');
 check(clusterFixture[1].type, 'INDEPENDENT', 'cluster builder marks isolated task independent');
 
+const strategyFixture = buildClusterStrategies(clusterFixture, [
+  { branch: 'a', status: GUARD_STATUS.READY, guidance: buildTaskGuidance({ status: GUARD_STATUS.READY }) },
+  { branch: 'b', status: GUARD_STATUS.REVIEW_REQUIRED, guidance: buildTaskGuidance({ status: GUARD_STATUS.REVIEW_REQUIRED, overlap: { risk: 'PATH_OVERLAP' }, peerOverlaps: [] }) },
+  { branch: 'c', status: GUARD_STATUS.READY, guidance: buildTaskGuidance({ status: GUARD_STATUS.READY }) },
+  { branch: 'd', status: GUARD_STATUS.RECONCILE_REQUIRED, guidance: buildTaskGuidance({ status: GUARD_STATUS.RECONCILE_REQUIRED }) },
+]);
+check(strategyFixture[0].action, GUARD_ACTION.REVIEW_OVERLAP, 'review cluster strategy requires set-level review');
+check(strategyFixture[1].action, GUARD_ACTION.RECONCILE_TARGET, 'independent stale TASK preserves task-level reconcile action');
+check(strategyFixture.every((entry) => entry.provisional === true), true, 'cluster strategies remain explicitly provisional');
+check(buildClusterStrategies([
+  { id: 'cluster-x', type: 'REVIEW_CLUSTER', members: ['blocked', 'ready'] },
+], [
+  { branch: 'blocked', status: GUARD_STATUS.BLOCKED, guidance: buildTaskGuidance({ status: GUARD_STATUS.BLOCKED }) },
+  { branch: 'ready', status: GUARD_STATUS.READY, guidance: buildTaskGuidance({ status: GUARD_STATUS.READY }) },
+])[0].action, GUARD_ACTION.STOP_AND_INSPECT, 'blocked member stops review-cluster strategy');
+
+
 
 
 
@@ -197,7 +215,7 @@ try {
   const result = await runIntegrationGuard({ cwd: repo, target, backupRoot, now });
   check(result.analysis.targetSha, targetSha, 'E2E analysis pins current target SHA');
   check(result.analysis.backupVerified, true, 'E2E backup is verified before analysis result');
-  check(result.analysis.schemaVersion, 5, 'E2E analysis uses integration-cluster schema version');
+  check(result.analysis.schemaVersion, 6, 'E2E analysis uses cluster-strategy schema version');
   check(result.analysis.tasks.length, 3, 'E2E discovers stale and merged TASK branches');
   check(result.analysis.summary.MERGED, 1, 'E2E classifies target-contained TASK as merged');
   check(result.analysis.summary.RECONCILE_REQUIRED, 2, 'E2E marks both stale TASKs for reconciliation');
@@ -213,6 +231,8 @@ try {
   check(result.analysis.orderExplanations.length, result.analysis.integrationOrder.length, 'E2E explains every provisional order entry');
   check(result.analysis.integrationClusters.some((cluster) => cluster.type === 'REVIEW_CLUSTER'), true, 'E2E groups review-connected TASKs into a cluster');
   check(result.analysis.integrationClusters.every((cluster) => cluster.provisional === true), true, 'E2E integration groups are explicitly provisional');
+  check(result.analysis.clusterStrategies.length, result.analysis.integrationClusters.length, 'E2E provides one strategy per integration cluster');
+  check(result.analysis.clusterStrategies.every((strategy) => strategy.provisional === true), true, 'E2E cluster strategies are explicitly provisional');
   check(fs.existsSync(result.backup.bundlePath), true, 'E2E writes bundle outside repository');
   check(fs.existsSync(result.backup.manifestPath), true, 'E2E writes backup manifest');
   check(fs.existsSync(path.join(result.backup.sessionDir, 'SHA256SUM.txt')), true, 'E2E writes bundle checksum');
@@ -267,4 +287,4 @@ try {
   fs.rmSync(root, { recursive: true, force: true });
 }
 
-console.log(`Integration Guard V1.5: ${passed} checks PASS`);
+console.log(`Integration Guard V1.6: ${passed} checks PASS`);
