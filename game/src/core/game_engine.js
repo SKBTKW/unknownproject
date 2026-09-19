@@ -1,7 +1,7 @@
 import { I18n } from '../i18n.js';
 import { LAND_SYSTEM_DATA } from '../data/land_system.js';
 import { DIRECTIVES, DirectiveSystem } from '../systems/directive_system.js';
-import { DeckManager } from '../systems/deck_manager.js';
+import { DeckManager, OFFERING_GENERATION_REASONS } from '../systems/deck_manager.js';
 import { ProductionCalculator } from '../systems/production_calculator.js';
 import { UndoLandSystem } from '../systems/undo_land_system.js';
 import { GridEngine } from '../systems/grid_engine.js';
@@ -22,6 +22,7 @@ import { HistoryRestoreService } from './history_restore_service.js';
 import { GameState } from '../v2_unity_ready_main.js';
 import { EnemyObservationProjector } from '../warning/systems/enemy_observation_projector.js';
 import { attachInvestigationSubsystem } from '../warning/integration/investigation_bootstrap.js';
+import { FirstRunService } from '../tutorial/first_run_service.js';
 
 function normalizeRunSeed(seed) {
     if (!Number.isFinite(seed)) return null;
@@ -48,6 +49,11 @@ class GameEngine {
         this.landData = dependencies.landData || LAND_SYSTEM_DATA;
         this.cellViewDataService = dependencies.cellViewDataService || new CellViewDataService(this.productionCalculator);
         this.transactionManager = dependencies.transactionManager || new ActionTransactionManager(this);
+        this.firstRunService = dependencies.firstRunService
+            || (dependencies.firstRun === true ? new FirstRunService({ enabled: true }) : null);
+        this.offeringMinimumRequirementProvider = dependencies.offeringMinimumRequirementProvider
+            || this.firstRunService
+            || null;
 
         const injectedCheckSystem = dependencies.checkSystem || dependencies.state?.checkSystem || null;
         const injectedRngState = injectedCheckSystem && typeof injectedCheckSystem.getState === "function"
@@ -96,6 +102,14 @@ class GameEngine {
         const GlobalEventManagerClass = dependencies.GlobalEventManagerClass || GlobalEventManager;
         this.globalEventManager = dependencies.globalEventManager || (GlobalEventManagerClass ? new GlobalEventManagerClass(this.state, this) : null);
 
+        if (this.firstRunService) {
+            const firstRunAttachment = this.firstRunService.attach({ engine: this });
+            if (!firstRunAttachment?.success) {
+                throw new Error(`FIRST_RUN_ATTACH_FAILED:${firstRunAttachment?.reason || "UNKNOWN"}`);
+            }
+            this.firstRunAttachment = firstRunAttachment;
+        }
+
         const EmberSystemClass = dependencies.EmberSystemClass || EmberSystem;
         this.emberSystem = dependencies.emberSystem || (EmberSystemClass ? new EmberSystemClass(this.state, this) : null);
 
@@ -138,7 +152,7 @@ class GameEngine {
 
         // 5. ゲーム開始時の初期オファリング生成 (UIではなくEngineの責務)
         if (this.deckManager && (!this.state.handOffering || this.state.handOffering.length === 0)) {
-            this.deckManager.generateOfferingCards();
+            this.deckManager.generateOfferingCards({ reason: OFFERING_GENERATION_REASONS.INITIAL });
         }
 
         // Verse 1 begins only after initial world/socket and Offering generation.
@@ -348,8 +362,8 @@ class GameEngine {
             this.state.ember -= 1;
             this.state.hasMulliganedThisTurn = true;
 
-            if (this.deckManager && typeof this.deckManager.drawOffering === "function") {
-                this.deckManager.drawOffering();
+            if (this.deckManager && typeof this.deckManager.generateOfferingCards === "function") {
+                this.deckManager.generateOfferingCards({ reason: OFFERING_GENERATION_REASONS.MULLIGAN });
             } else if (typeof this.state.drawOffering === "function") {
                 this.state.drawOffering();
             }
