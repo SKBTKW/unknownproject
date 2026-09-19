@@ -300,12 +300,20 @@ export class PostTrialProgressionService {
 
     hasPendingWork() {
         const transition = this.engine.state.postTrialTransition;
-        return Boolean(transition && transition.status !== POST_TRIAL_TRANSITION_STATUS.COMPLETED);
+        if (!transition) return false;
+        const presentationActive = transition.presentation
+            && transition.presentation.status !== "COMPLETED";
+        return transition.status !== POST_TRIAL_TRANSITION_STATUS.COMPLETED
+            || Boolean(presentationActive);
     }
 
     canResumeNormalProgression() {
         const transition = this.engine.state.postTrialTransition;
-        return !transition || transition.status === POST_TRIAL_TRANSITION_STATUS.COMPLETED;
+        if (!transition) return true;
+        const presentationActive = transition.presentation
+            && transition.presentation.status !== "COMPLETED";
+        return transition.status === POST_TRIAL_TRANSITION_STATUS.COMPLETED
+            && !presentationActive;
     }
 
     completeRewardSelection({ result = null } = {}) {

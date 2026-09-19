@@ -121,18 +121,46 @@ export class TrialResultUIController extends BoardAwareUIController {
         return this.postTrialStageGateDeferred;
     }
 
-    completePostTrialStagePrelude() {
-        const progression = this.engine?.postTrialProgressionService
+    completePostTrialStagePrelude({ render = true } = {}) {
+        const before = this.getPostTrialProgressionReadModel();
+        const stageAdvance = before?.stageAdvance || null;
+        const stageAlreadyApplied = stageAdvance?.status === "APPLIED";
+        const stageIsCurrent = before?.currentStep?.type === "STAGE_ADVANCE";
+        if (!stageAlreadyApplied && !stageIsCurrent) {
+            return {
+                success: false,
+                reason: "POST_TRIAL_STAGE_PRELUDE_NOT_READY",
+                currentStepType: before?.currentStep?.type || null
+            };
+        }
+
+        const progression = stageAlreadyApplied
+            ? {
+                success: true,
+                alreadyApplied: true,
+                stageProgression: stageAdvance?.payload || null,
+                transition: before
+            }
+            : (this.engine?.postTrialProgressionService
             ?.completeAfterPresentationCleanup?.({
                 translate: (key, params, fallback) => this.engine?.i18n?.t?.(key, params) || fallback
-            }) || null;
+            }) || null);
 
         if (progression && progression.success === false) {
             return progression;
         }
 
+        const after = this.getPostTrialProgressionReadModel();
+        if (!stageAlreadyApplied && after?.stageAdvance?.status !== "APPLIED") {
+            return {
+                success: false,
+                reason: "POST_TRIAL_STAGE_PRELUDE_STAGE_NOT_APPLIED",
+                progression
+            };
+        }
+
         this.postTrialStageGateDeferred = false;
-        this.render();
+        if (render) this.render();
         return {
             success: true,
             progression,
