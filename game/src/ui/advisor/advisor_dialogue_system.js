@@ -1,5 +1,6 @@
 import { findAdvisorDialogue } from './advisor_dialogue_database.js';
 import { ADVISOR_DIALOGUE_CHANNELS, getAdvisorEventResponsibility } from '../../data/advisor_dialogue_responsibility.js';
+import { formatAdvisorDialogueTemplate } from './advisor_dialogue_template.js';
 
 const defaultSetTimer = (callback, delay) => setTimeout(callback, delay);
 const defaultClearTimer = timerId => clearTimeout(timerId);
@@ -86,7 +87,7 @@ export class AdvisorDialogueSystem {
         return translated.some((text, index) => text === segmentKeys[index]) ? null : translated;
     }
 
-    resolveLocalizedSegments(entry, mode) {
+    resolveLocalizedSegments(entry, mode, context = {}) {
         const localized = entry?.localizedSegments;
         if (!localized || typeof localized !== "object") return null;
         const lang = this.getLanguage?.() || "ja";
@@ -98,12 +99,14 @@ export class AdvisorDialogueSystem {
         return {
             lineKey,
             segmentKeys: visible.map((_, index) => `${lineKey}:${index + 1}`),
-            text: visible.join(entry.segmentJoiner ?? "")
+            text: visible
+                .map(segment => formatAdvisorDialogueTemplate(segment, context))
+                .join(entry.segmentJoiner ?? "")
         };
     }
 
     resolveLine(entry, context = {}, mode = this.dialogueMode) {
-        const localizedLine = this.resolveLocalizedSegments(entry, mode);
+        const localizedLine = this.resolveLocalizedSegments(entry, mode, context);
         if (localizedLine) return localizedLine;
 
         const segmentGroups = Array.isArray(entry.segmentGroups)

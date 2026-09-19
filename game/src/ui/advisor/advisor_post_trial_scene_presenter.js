@@ -1,6 +1,7 @@
 import { ADVISOR_DIALOGUE_CHANNELS } from "../../data/advisor_dialogue_responsibility.js";
 import { resolveAdvisorPostTrialScene } from "./advisor_post_trial_scene_adapter.js";
 import { resolvePostTrialAdvisorReaction } from "./advisor_post_trial_reaction_variant_resolver.js";
+import { formatAdvisorDialogueTemplate } from "./advisor_dialogue_template.js";
 
 /**
  * Presentation-only bridge for Post-Trial Advisor scenes.
@@ -63,7 +64,10 @@ export class AdvisorPostTrialScenePresenter {
 
             const spoken = Boolean(this.dialogueSystem.emitPresentation?.({
                 scene: resolved.advisorScene,
-                line: presentation.line,
+                line: formatAdvisorDialogueTemplate(
+                    presentation.line,
+                    resolved.payload || {}
+                ),
                 expression: presentation.expression,
                 priority: presentation.priority,
                 durationMs: presentation.durationMs,
