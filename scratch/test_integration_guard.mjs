@@ -8,6 +8,7 @@ import {
   GUARD_STATUS,
   buildClusterOrders,
   buildClusterStrategies,
+  buildFocusedReevaluationSets,
   buildIntegrationClusters,
   buildIntegrationOrder,
   buildOverlapGraph,
@@ -192,6 +193,20 @@ check(reevaluationFixture.find((item) => item.afterBranch === 'b')?.directReview
 check(reevaluationFixture.find((item) => item.afterBranch === 'd')?.reevaluateBranches, [], 'independent TASK has no predicted re-evaluation candidates');
 check(reevaluationFixture.every((item) => item.provisional === true), true, 're-evaluation plan remains explicitly provisional');
 
+const focusedFixture = buildFocusedReevaluationSets(reevaluationFixture, {
+  nodes: [
+    { branch: 'a' },
+    { branch: 'b' },
+    { branch: 'c' },
+    { branch: 'd' },
+  ],
+});
+check(focusedFixture.find((item) => item.afterBranch === 'a')?.primaryReinspection, ['b', 'c'], 'focused rerun set prioritizes predicted affected TASKs');
+check(focusedFixture.find((item) => item.afterBranch === 'a')?.secondaryReinspection, ['d'], 'focused rerun set retains lower-priority remaining TASKs');
+check(focusedFixture.find((item) => item.afterBranch === 'd')?.primaryReinspection, [], 'focused rerun set allows empty primary set');
+check(focusedFixture.every((item) => item.fullGuardRerunRequired === true && item.provisional === true), true, 'focused rerun sets always require full Guard rerun');
+
+
 
 
 
@@ -255,7 +270,7 @@ try {
   const result = await runIntegrationGuard({ cwd: repo, target, backupRoot, now });
   check(result.analysis.targetSha, targetSha, 'E2E analysis pins current target SHA');
   check(result.analysis.backupVerified, true, 'E2E backup is verified before analysis result');
-  check(result.analysis.schemaVersion, 8, 'E2E analysis uses re-evaluation-plan schema version');
+  check(result.analysis.schemaVersion, 9, 'E2E analysis uses focused-rerun schema version');
   check(result.analysis.tasks.length, 3, 'E2E discovers stale and merged TASK branches');
   check(result.analysis.summary.MERGED, 1, 'E2E classifies target-contained TASK as merged');
   check(result.analysis.summary.RECONCILE_REQUIRED, 2, 'E2E marks both stale TASKs for reconciliation');
@@ -277,6 +292,8 @@ try {
   check(result.analysis.clusterOrders.every((group) => group.provisional === true && group.entries.every((entry) => entry.provisional === true)), true, 'E2E cluster-local orders are explicitly provisional');
   check(result.analysis.reevaluationPlan.length, result.analysis.overlapGraph.nodes.length, 'E2E provides re-evaluation prediction for every active TASK');
   check(result.analysis.reevaluationPlan.every((item) => item.provisional === true), true, 'E2E re-evaluation predictions are explicitly provisional');
+  check(result.analysis.focusedReevaluationSets.length, result.analysis.reevaluationPlan.length, 'E2E provides one focused rerun set per re-evaluation prediction');
+  check(result.analysis.focusedReevaluationSets.every((item) => item.fullGuardRerunRequired === true && item.provisional === true), true, 'E2E focused rerun sets preserve full-rerun safety contract');
   check(fs.existsSync(result.backup.bundlePath), true, 'E2E writes bundle outside repository');
   check(fs.existsSync(result.backup.manifestPath), true, 'E2E writes backup manifest');
   check(fs.existsSync(path.join(result.backup.sessionDir, 'SHA256SUM.txt')), true, 'E2E writes bundle checksum');
@@ -331,4 +348,4 @@ try {
   fs.rmSync(root, { recursive: true, force: true });
 }
 
-console.log(`Integration Guard V1.8: ${passed} checks PASS`);
+console.log(`Integration Guard V1.9: ${passed} checks PASS`);
