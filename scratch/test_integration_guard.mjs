@@ -22,7 +22,7 @@ import {
   parseWorktreesPorcelain,
   targetFromTaskBranch,
 } from './integration_guard_core.mjs';
-import { runIntegrationGuard, assertRemoteSnapshotUnchanged, parseArgs, printDashboard } from './integration_guard.mjs';
+import { runIntegrationGuard, assertRemoteSnapshotUnchanged, buildExecutiveSummary, parseArgs, printDashboard } from './integration_guard.mjs';
 import { verifyBundleRestorable } from './integration_guard_backup.mjs';
 
 let passed = 0;
@@ -40,6 +40,29 @@ function git(cwd, ...args) {
   return execFileSync('git', args, { cwd, encoding: 'utf8', windowsHide: true }).trim();
 }
 
+
+
+check(buildExecutiveSummary({
+  summary: { MERGED: 0, READY: 1, REVIEW_REQUIRED: 0, RECONCILE_REQUIRED: 0, BLOCKED: 0 },
+  integrationOrder: [{ branch: 'task-a', status: GUARD_STATUS.READY, action: GUARD_ACTION.INTEGRATE_ONE_AT_A_TIME }],
+  focusedReevaluationSets: [{ afterBranch: 'task-a', primaryReinspection: ['task-b'] }],
+}), [
+  'Ready: 1 TASK(s) are candidates for one-at-a-time integration.',
+  'Next candidate: [READY] task-a -> INTEGRATE_ONE_AT_A_TIME.',
+  'After that target change: prioritize task-b; full Guard rerun remains required.',
+], 'executive summary reports ready next action and rerun focus');
+
+check(buildExecutiveSummary({
+  summary: { MERGED: 0, READY: 2, REVIEW_REQUIRED: 1, RECONCILE_REQUIRED: 1, BLOCKED: 1 },
+  integrationOrder: [],
+  focusedReevaluationSets: [],
+})[0], 'Stop: 1 BLOCKED TASK(s) require inspection before integration.', 'executive summary prioritizes blocked state');
+
+check(buildExecutiveSummary({
+  summary: { MERGED: 2, READY: 0, REVIEW_REQUIRED: 0, RECONCILE_REQUIRED: 0, BLOCKED: 0 },
+  integrationOrder: [],
+  focusedReevaluationSets: [],
+}), ['No active TASK requires integration action.'], 'executive summary handles no active TASKs');
 
 check(parseArgs(['--target', 'AoT260917', '--verbose']), {
   target: 'AoT260917',
@@ -84,6 +107,8 @@ check(conciseDashboard.includes('Peer-overlap graph:'), false, 'concise dashboar
 const verboseDashboard = captureLogs(() => printDashboard(dashboardFixture, dashboardBackup, { verbose: true }));
 check(verboseDashboard.includes('Peer-overlap graph:'), true, 'verbose dashboard shows overlap graph detail');
 check(verboseDashboard.includes('[READY] task-a'), true, 'verbose dashboard shows per-TASK detail');
+check(conciseDashboard.includes('Executive Summary:'), true, 'concise dashboard includes executive summary');
+check(conciseDashboard.includes('Next candidate: [READY] task-a'), true, 'executive summary names next candidate');
 
 check(isAoTTarget('AoT260917'), true, 'AoT target name accepted');
 check(isAoTTarget('main'), false, 'non-AoT target rejected');
@@ -411,4 +436,4 @@ try {
   fs.rmSync(root, { recursive: true, force: true });
 }
 
-console.log(`Integration Guard V1.11: ${passed} checks PASS`);
+console.log(`Integration Guard V1.12: ${passed} checks PASS`);
