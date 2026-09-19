@@ -3,7 +3,11 @@ import { ElevationVisualService } from './elevation_visual_service.js';
 import { AreaInfluenceVisualService } from './area_influence_visual_service.js';
 import { isWaterSourceInfluence } from '../core/lake_rules.js';
 import { getTrialRouteCellVisualState } from '../presentation/trial_board_semantic_data.js';
-import { resolveBoardDisplayRole } from '../presentation/board_presentation_semantic_service.js';
+import {
+    resolveBoardDisplayProduction,
+    resolveBoardDisplayRole,
+    resolveSocketPrimaryYield
+} from '../presentation/board_presentation_semantic_service.js';
 
 /**
  * 🗺️ BoardGridComponent (盤面グリッド ＆ セル描画・配置プレビュー・マージ演出専門コンポーネント)
@@ -476,104 +480,29 @@ export class BoardGridComponent {
     getPrimaryYieldInfo(cellData, isHQVic) {
         if (!cellData || !cellData.terrain) return null;
 
-        const engine = this.ui ? this.ui.engine : null;
-        const activeGroupId = cellData.mergeGroupId || cellData.placementGroupId;
-        const tid = (cellData.terrain.terrainId || cellData.terrain.id || "").toUpperCase();
+        const facts = {
+            r: cellData.r ?? 0,
+            c: cellData.c ?? 0,
+            placed: Boolean(cellData.placed),
+            isHQ: Boolean(cellData.isHQ),
+            terrainId: cellData.terrain.terrainId || cellData.terrain.id || null,
+            socketResource: cellData.socketResource || null,
+            baseYields: null,
+            modifiers: null,
+            mergeGroupId: cellData.mergeGroupId ?? null,
+            placementGroupId: cellData.placementGroupId ?? null
+        };
+        const cellViewDataService = {
+            getCellViewData: (_state, r, c) => this.engine?.getCellViewData?.(r, c) || null
+        };
+        const production = resolveBoardDisplayProduction(this.state, facts, cellViewDataService);
+        const primaryYield = production?.primaryYield || null;
+        if (!primaryYield) return null;
 
-        let f = 0, w = 0, d = 0, m = 0;
-
-        // 🧩 複数マスブロック（マージ大土地 または 1x2/1x3等の同一配置ブロック）の場合は土地総産出を集約
-        if (activeGroupId && this.state && this.state.grid) {
-            const isMerged = !!cellData.merged;
-            let multiplier = 1.0;
-            if (isMerged && this.state.mergedBlocks && this.state.mergedBlocks[cellData.mergeGroupId]) {
-                multiplier = this.state.mergedBlocks[cellData.mergeGroupId].yieldMultiplier || 1.20;
-            }
-
-            const size = this.state.grid.length;
-            for (let r = 0; r < size; r++) {
-                for (let c = 0; c < size; c++) {
-                    const cell = this.state.grid[r][c];
-                    if (cell && cell.placed && (cell.mergeGroupId === activeGroupId || cell.placementGroupId === activeGroupId)) {
-                        const viewData = engine ? engine.getCellViewData(r, c) : null;
-                        if (viewData) {
-                            const base = viewData.baseYields || {};
-                            let cf = base.food || 0;
-                            let cw = base.wood || 0;
-                            let cd = base.defense || 0;
-                            let cm = base.mystic || 0;
-                            if (Array.isArray(viewData.modifiers)) {
-                                for (const mod of viewData.modifiers) {
-                                    if (mod.type !== "SOCKET") {
-                                        if (mod.resource === "food") cf += mod.amount;
-                                        if (mod.resource === "wood") cw += mod.amount;
-                                        if (mod.resource === "defense") cd += mod.amount;
-                                        if (mod.resource === "mystic") cm += mod.amount;
-                                    }
-                                }
-                            }
-                            f += cf;
-                            w += cw;
-                            d += cd;
-                            m += cm;
-                        }
-                    }
-                }
-            }
-
-            f = Math.floor(f * multiplier);
-            w = Math.floor(w * multiplier);
-            d = Math.floor(d * multiplier);
-            m = Math.floor(m * multiplier);
-        } else {
-            // 単マス（1x1 配置）
-            const r = cellData.r !== undefined ? cellData.r : 0;
-            const c = cellData.c !== undefined ? cellData.c : 0;
-            const viewData = engine ? engine.getCellViewData(r, c) : null;
-            if (viewData) {
-                const base = viewData.baseYields || {};
-                f = base.food || 0;
-                w = base.wood || 0;
-                d = base.defense || 0;
-                m = base.mystic || 0;
-                if (Array.isArray(viewData.modifiers)) {
-                    for (const mod of viewData.modifiers) {
-                        if (mod.type !== "SOCKET") {
-                            if (mod.resource === "food") f += mod.amount;
-                            if (mod.resource === "wood") w += mod.amount;
-                            if (mod.resource === "defense") d += mod.amount;
-                            if (mod.resource === "mystic") m += mod.amount;
-                        }
-                    }
-                }
-            }
-        }
-
-        const maxVal = Math.max(f, w, d, m);
-        if (maxVal <= 0) return null;
-
-        // 🏆 同率タイ判定（案 1: 主軸プライオリティ）
-        if (tid.includes("PLAINS")) {
-            if (f === maxVal) return { icon: "🌾", val: f };
-            if (w === maxVal) return { icon: "🧱", val: w };
-            if (d === maxVal) return { icon: "🛡️", val: d };
-            return { icon: "✨", val: m };
-        } else if (tid.includes("FOREST") || tid.includes("DEEP_FOREST")) {
-            if (w === maxVal) return { icon: "🧱", val: w };
-            if (f === maxVal) return { icon: "🌾", val: f };
-            if (d === maxVal) return { icon: "🛡️", val: d };
-            return { icon: "✨", val: m };
-        } else if (tid.includes("HILL") || tid.includes("MOUNTAIN")) {
-            if (d === maxVal) return { icon: "🛡️", val: d };
-            if (w === maxVal) return { icon: "🧱", val: w };
-            if (f === maxVal) return { icon: "🌾", val: f };
-            return { icon: "✨", val: m };
-        } else {
-            if (m === maxVal) return { icon: "✨", val: m };
-            if (f === maxVal) return { icon: "🌾", val: f };
-            if (w === maxVal) return { icon: "🧱", val: w };
-            return { icon: "🛡️", val: d };
-        }
+        return {
+            icon: this.getYieldResourceIcon(primaryYield.resource),
+            val: primaryYield.amount
+        };
     }
 
     /**
@@ -608,38 +537,20 @@ export class BoardGridComponent {
      * 💎 資源ソケット単体の最大産出リソース判定（画像フォーマット準拠）
      */
     getSocketPrimaryYieldInfo(socket) {
-        if (!socket) return null;
-        const f = socket.bonusFood || 0;
-        const w = socket.bonusWood || socket.bonusMaterial || 0;
-        const d = socket.bonusDefense || 0;
-        const m = socket.bonusMystic || 0;
+        const primaryYield = resolveSocketPrimaryYield(socket);
+        if (!primaryYield) return null;
+        return {
+            icon: this.getYieldResourceIcon(primaryYield.resource),
+            val: primaryYield.amount
+        };
+    }
 
-        const maxVal = Math.max(f, w, d, m);
-        if (maxVal <= 0) return null;
-
-        // 同率時は資源の特性（名前キーなど）や汎用優先順位で決定
-        const sk = (socket.nameKey || socket.id || "").toUpperCase();
-        if (sk.includes("MINE") || sk.includes("ORE") || sk.includes("IRON") || sk.includes("HIDDEN")) {
-            if (w === maxVal) return { icon: "🧱", val: w };
-            if (d === maxVal) return { icon: "🛡️", val: d };
-            if (m === maxVal) return { icon: "✨", val: m };
-            return { icon: "🌾", val: f };
-        } else if (sk.includes("FORT") || sk.includes("PEAK") || sk.includes("GUARD")) {
-            if (d === maxVal) return { icon: "🛡️", val: d };
-            if (m === maxVal) return { icon: "✨", val: m };
-            if (w === maxVal) return { icon: "🧱", val: w };
-            return { icon: "🌾", val: f };
-        } else if (sk.includes("LAKE") || sk.includes("WHEAT") || sk.includes("CLEAR") || sk.includes("WILD")) {
-            if (f === maxVal) return { icon: "🌾", val: f };
-            if (w === maxVal) return { icon: "🧱", val: w };
-            if (d === maxVal) return { icon: "🛡️", val: d };
-            return { icon: "✨", val: m };
-        } else {
-            if (m === maxVal) return { icon: "✨", val: m };
-            if (w === maxVal) return { icon: "🧱", val: w };
-            if (d === maxVal) return { icon: "🛡️", val: d };
-            return { icon: "🌾", val: f };
-        }
+    getYieldResourceIcon(resource) {
+        if (resource === "food") return "🌾";
+        if (resource === "wood") return "🧱";
+        if (resource === "defense") return "🛡️";
+        if (resource === "mystic") return "✨";
+        return "";
     }
 
     /**
