@@ -390,6 +390,44 @@ export function buildClusterOrders(clusters = [], tasks = [], graph = { nodes: [
   });
 }
 
+export function buildReevaluationPlan(clusters = [], graph = { nodes: [], edges: [] }) {
+  const clusterByBranch = new Map();
+  for (const cluster of clusters || []) {
+    for (const member of cluster.members || []) clusterByBranch.set(member, cluster);
+  }
+
+  const directReviewPeers = new Map();
+  for (const edge of graph.edges || []) {
+    if (!edge.reviewRequired) continue;
+    if (!directReviewPeers.has(edge.from)) directReviewPeers.set(edge.from, new Set());
+    if (!directReviewPeers.has(edge.to)) directReviewPeers.set(edge.to, new Set());
+    directReviewPeers.get(edge.from).add(edge.to);
+    directReviewPeers.get(edge.to).add(edge.from);
+  }
+
+  return (graph.nodes || [])
+    .map((node) => {
+      const cluster = clusterByBranch.get(node.branch);
+      const direct = [...(directReviewPeers.get(node.branch) || [])].sort();
+      const sameCluster = (cluster?.members || [])
+        .filter((branch) => branch !== node.branch)
+        .sort();
+      const candidates = unique([...direct, ...sameCluster]).sort();
+      return {
+        afterBranch: node.branch,
+        clusterId: cluster?.id || '',
+        directReviewPeers: direct,
+        sameClusterCandidates: sameCluster,
+        reevaluateBranches: candidates,
+        reason: candidates.length > 0
+          ? 'Re-evaluate direct review-grade peers and remaining TASKs in the same review cluster after target history changes.'
+          : 'No review-grade peer or same-cluster TASK requires predicted re-evaluation.',
+        provisional: true,
+      };
+    })
+    .sort((a, b) => a.afterBranch.localeCompare(b.afterBranch));
+}
+
 export function summarizeStatuses(tasks = []) {
   const counts = Object.fromEntries(Object.values(GUARD_STATUS).map((status) => [status, 0]));
   for (const task of tasks) {
