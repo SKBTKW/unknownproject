@@ -5,6 +5,7 @@ import process from 'node:process';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { runIntegrationGuard } from './integration_guard.mjs';
+import { defaultBackupRoot } from './integration_guard_core.mjs';
 import {
   RUNNER_DECISION,
   buildAuditSummary,
@@ -25,6 +26,15 @@ function run(cmd, args, { cwd = process.cwd(), allowFailure = false } = {}) {
     if (allowFailure) return '';
     const detail = error?.stderr?.toString?.().trim() || error?.stdout?.toString?.().trim();
     throw new Error(`${cmd} ${args.join(' ')} failed${detail ? `: ${detail}` : ''}`);
+  }
+}
+
+function commandSucceeded(cmd, args, { cwd = process.cwd() } = {}) {
+  try {
+    execFileSync(cmd, args, { cwd, windowsHide: true, stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -51,7 +61,7 @@ function parseArgs(argv) {
 function printHelp() {
   console.log('AoT Safe Integration Runner');
   console.log('  --plan       inspect and write a merge plan only (default)');
-  console.log('  --merge-next merge at most one READY PR after all gates pass');
+  console.log('  --merge-next merge at most one READY PR after all gates pass (explicit --target required)');
   console.log('  --target AoTYYMMDD');
   console.log('  --backup-root <outside-repo-path>');
   console.log('  --repo owner/name');
@@ -121,10 +131,9 @@ function waitForTargetFullInspection(cwd, repo, targetSha, { attempts = 60, dela
       'run', 'list',
       '--repo', repo,
       '--workflow', 'AoT Full Inspection',
-      '--branch', '',
       '--limit', '50',
       '--json', 'databaseId,headSha,status,conclusion,event,url',
-    ].filter((value, index, array) => !(value === '' && array[index - 1] === '--branch')), { cwd, allowFailure: true });
+    ], { cwd, allowFailure: true });
 
     if (raw) {
       const runs = JSON.parse(raw);
@@ -178,6 +187,9 @@ function printPlan(decision, plan, pr) {
 
 export async function runSafeIntegration(options = {}) {
   const cwd = run(options.cwd || process.cwd(), ['rev-parse', '--show-toplevel']);
+  if ((options.mode || 'plan') === 'merge-next' && !options.target) {
+    throw new Error('--merge-next requires an explicit --target AoTYYMMDD.');
+  }
   ensureGh();
   const repo = resolveRepo(cwd, options.repo || '');
 
@@ -214,59 +226,88 @@ export async function runSafeIntegration(options = {}) {
     return { decision, plan, audit, executed: false, planPath, auditPath };
   }
 
-  assertRemoteStillMatches(cwd, plan);
-  mergeExactlyOne(cwd, repo, plan);
-
-  const targetAfterSha = fetchRemoteSha(cwd, plan.target);
-  if (targetAfterSha === plan.targetBeforeSha) {
-    throw new Error('Merge command returned but target SHA did not change.');
-  }
-  const taskAfterSha = fetchRemoteSha(cwd, plan.taskBranch);
-  if (taskAfterSha !== plan.taskSha) {
-    throw new Error('TASK branch changed during merge execution; post-merge state requires manual inspection.');
-  }
-
-  const ancestorCheck = run('git', ['ls-remote', '--exit-code', '--heads', 'origin', plan.target], { cwd, allowFailure: true });
-  if (!ancestorCheck) throw new Error('Could not re-observe target after merge.');
-
-  const postInspection = waitForTargetFullInspection(cwd, repo, targetAfterSha);
-  const postGuard = await rerunGuardFromFreshClone({
-    cwd,
-    repo,
-    target: plan.target,
-    backupRoot: options.backupRoot || backup.sessionDir.replace(/[\\/]integration-guard-[^\\/]+$/, ''),
-    verbose: Boolean(options.verbose),
-  });
-  if (postGuard.targetSha !== targetAfterSha) {
-    throw new Error(`Post-merge Guard analyzed ${postGuard.targetSha}, expected ${targetAfterSha}.`);
-  }
-
-  const audit = buildAuditSummary({
-    plan,
-    targetAfterSha,
-    postMergeInspection: {
-      runId: postInspection.databaseId,
-      conclusion: postInspection.conclusion,
-      url: postInspection.url || null,
-    },
-    postGuard,
-    executed: true,
-  });
   const auditPath = path.join(backup.sessionDir, 'integration-operation-audit.json');
-  writeJson(auditPath, audit);
+  writeJson(auditPath, buildAuditSummary({ plan, executed: false, status: 'EXECUTION_PENDING' }));
 
-  console.log('\n============================================================');
-  console.log(' SAFE INTEGRATION COMPLETE');
-  console.log('============================================================');
-  console.log(`Merged PR: #${plan.pullRequestNumber}`);
-  console.log(`Target before: ${plan.targetBeforeSha}`);
-  console.log(`Target after:  ${targetAfterSha}`);
-  console.log('Post-merge Full Inspection: SUCCESS');
-  console.log('Post-merge Guard rerun: COMPLETE');
-  console.log('Branch deletion: NOT PERFORMED');
-  console.log(`Audit: ${auditPath}`);
+  let mergeAttempted = false;
+  try {
+    assertRemoteStillMatches(cwd, plan);
+    mergeAttempted = true;
+    mergeExactlyOne(cwd, repo, plan);
 
-  return { decision, plan, audit, executed: true, planPath, auditPath };
+    const targetAfterSha = fetchRemoteSha(cwd, plan.target);
+    if (targetAfterSha === plan.targetBeforeSha) {
+      throw new Error('Merge command returned but target SHA did not change.');
+    }
+    const taskAfterSha = fetchRemoteSha(cwd, plan.taskBranch);
+    if (taskAfterSha !== plan.taskSha) {
+      throw new Error('TASK branch changed during merge execution; post-merge state requires manual inspection.');
+    }
+
+    run('git', ['fetch', '--no-tags', 'origin',
+      `+refs/heads/${plan.target}:refs/remotes/origin/${plan.target}`,
+      `+refs/heads/${plan.taskBranch}:refs/remotes/origin/${plan.taskBranch}`,
+    ], { cwd });
+    const mergedAncestryOk = commandSucceeded('git', [
+      'merge-base', '--is-ancestor',
+      `refs/remotes/origin/${plan.taskBranch}`,
+      `refs/remotes/origin/${plan.target}`,
+    ], { cwd });
+    if (!mergedAncestryOk) {
+      throw new Error('TASK HEAD is not an ancestor of the post-merge target.');
+    }
+
+    const postInspection = waitForTargetFullInspection(cwd, repo, targetAfterSha);
+    const postGuard = await rerunGuardFromFreshClone({
+      cwd,
+      repo,
+      target: plan.target,
+      backupRoot: options.backupRoot || defaultBackupRoot(cwd),
+      verbose: Boolean(options.verbose),
+    });
+    if (postGuard.targetSha !== targetAfterSha) {
+      throw new Error(`Post-merge Guard analyzed ${postGuard.targetSha}, expected ${targetAfterSha}.`);
+    }
+
+    const audit = buildAuditSummary({
+      plan,
+      targetAfterSha,
+      postMergeInspection: {
+        runId: postInspection.databaseId,
+        conclusion: postInspection.conclusion,
+        url: postInspection.url || null,
+      },
+      postGuard,
+      executed: true,
+      status: 'COMPLETE',
+    });
+    writeJson(auditPath, audit);
+
+    console.log('\n============================================================');
+    console.log(' SAFE INTEGRATION COMPLETE');
+    console.log('============================================================');
+    console.log(`Merged PR: #${plan.pullRequestNumber}`);
+    console.log(`Target before: ${plan.targetBeforeSha}`);
+    console.log(`Target after:  ${targetAfterSha}`);
+    console.log('Post-merge Full Inspection: SUCCESS');
+    console.log('Post-merge Guard rerun: COMPLETE');
+    console.log('Branch deletion: NOT PERFORMED');
+    console.log(`Audit: ${auditPath}`);
+
+    return { decision, plan, audit, executed: true, planPath, auditPath };
+  } catch (error) {
+    let observedTargetSha = null;
+    try { observedTargetSha = fetchRemoteSha(cwd, plan.target); } catch {}
+    const failureAudit = buildAuditSummary({
+      plan,
+      targetAfterSha: observedTargetSha,
+      executed: mergeAttempted,
+      status: mergeAttempted ? 'BLOCKED_AFTER_MERGE_ATTEMPT' : 'BLOCKED_BEFORE_MERGE',
+      error: error?.message || String(error),
+    });
+    writeJson(auditPath, failureAudit);
+    throw new Error(`${error.message} Audit preserved at ${auditPath}`);
+  }
 }
 
 async function main() {
