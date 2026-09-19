@@ -22,6 +22,7 @@ import { HistoryRestoreService } from './history_restore_service.js';
 import { GameState } from '../v2_unity_ready_main.js';
 import { EnemyObservationProjector } from '../warning/systems/enemy_observation_projector.js';
 import { attachInvestigationSubsystem } from '../warning/integration/investigation_bootstrap.js';
+import { FirstRunService } from '../tutorial/first_run_service.js';
 
 function normalizeRunSeed(seed) {
     if (!Number.isFinite(seed)) return null;
@@ -48,7 +49,11 @@ class GameEngine {
         this.landData = dependencies.landData || LAND_SYSTEM_DATA;
         this.cellViewDataService = dependencies.cellViewDataService || new CellViewDataService(this.productionCalculator);
         this.transactionManager = dependencies.transactionManager || new ActionTransactionManager(this);
-        this.offeringMinimumRequirementProvider = dependencies.offeringMinimumRequirementProvider || null;
+        this.firstRunService = dependencies.firstRunService
+            || (dependencies.firstRun === true ? new FirstRunService({ enabled: true }) : null);
+        this.offeringMinimumRequirementProvider = dependencies.offeringMinimumRequirementProvider
+            || this.firstRunService
+            || null;
 
         const injectedCheckSystem = dependencies.checkSystem || dependencies.state?.checkSystem || null;
         const injectedRngState = injectedCheckSystem && typeof injectedCheckSystem.getState === "function"
@@ -96,6 +101,14 @@ class GameEngine {
 
         const GlobalEventManagerClass = dependencies.GlobalEventManagerClass || GlobalEventManager;
         this.globalEventManager = dependencies.globalEventManager || (GlobalEventManagerClass ? new GlobalEventManagerClass(this.state, this) : null);
+
+        if (this.firstRunService) {
+            const firstRunAttachment = this.firstRunService.attach({ engine: this });
+            if (!firstRunAttachment?.success) {
+                throw new Error(`FIRST_RUN_ATTACH_FAILED:${firstRunAttachment?.reason || "UNKNOWN"}`);
+            }
+            this.firstRunAttachment = firstRunAttachment;
+        }
 
         const EmberSystemClass = dependencies.EmberSystemClass || EmberSystem;
         this.emberSystem = dependencies.emberSystem || (EmberSystemClass ? new EmberSystemClass(this.state, this) : null);
