@@ -108,8 +108,9 @@ export function buildOperationPlan({ analysis, candidate, pr, backup }) {
   });
 }
 
-export function buildAuditSummary({ plan, targetAfterSha = null, postMergeInspection = null, postGuard = null, executed = false }) {
+export function buildAuditSummary({ plan, targetAfterSha = null, postMergeInspection = null, postGuard = null, executed = false, status = '', error = null }) {
   return {
+    status: status || (executed ? 'COMPLETE' : 'PLAN_ONLY'),
     executed,
     operation: plan.operation,
     target: plan.target,
@@ -122,5 +123,6 @@ export function buildAuditSummary({ plan, targetAfterSha = null, postMergeInspec
     branchDeleted: false,
     postMergeFullInspection: postMergeInspection,
     postMergeGuardRerun: postGuard,
+    error,
   };
 }
