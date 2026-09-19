@@ -33,6 +33,7 @@ export class TrialResultUIController extends BoardAwareUIController {
             onExitReady: () => this.releaseSettledTrialPresentation()
         });
         this.globalEventChoiceRuntime = new GlobalEventChoiceRuntimeIntegration(this);
+        this.postTrialStageGateDeferred = false;
     }
 
     render() {
@@ -88,10 +89,17 @@ export class TrialResultUIController extends BoardAwareUIController {
         this.hideCellTooltip();
         this.layoutStateManager.exitTrial();
 
-        const postTrialProgression = this.engine?.postTrialProgressionService
-            ?.completeAfterPresentationCleanup?.({
-                translate: (key, params, fallback) => this.engine?.i18n?.t?.(key, params) || fallback
-            }) || null;
+        const shouldDeferStageGate = Boolean(this.postTrialStageGateDeferred);
+        const postTrialProgression = shouldDeferStageGate
+            ? {
+                success: true,
+                deferred: true,
+                transition: this.getPostTrialProgressionReadModel()
+            }
+            : (this.engine?.postTrialProgressionService
+                ?.completeAfterPresentationCleanup?.({
+                    translate: (key, params, fallback) => this.engine?.i18n?.t?.(key, params) || fallback
+                }) || null);
         if (postTrialProgression && postTrialProgression.success === false) {
             return postTrialProgression;
         }
@@ -105,6 +113,30 @@ export class TrialResultUIController extends BoardAwareUIController {
             postTrialProgression,
             // Compatibility result shape for callers that still inspect Stage progress.
             stageProgression: postTrialProgression?.stageProgression || null
+        };
+    }
+
+    setPostTrialStageGateDeferred(enabled) {
+        this.postTrialStageGateDeferred = Boolean(enabled);
+        return this.postTrialStageGateDeferred;
+    }
+
+    completePostTrialStagePrelude() {
+        const progression = this.engine?.postTrialProgressionService
+            ?.completeAfterPresentationCleanup?.({
+                translate: (key, params, fallback) => this.engine?.i18n?.t?.(key, params) || fallback
+            }) || null;
+
+        if (progression && progression.success === false) {
+            return progression;
+        }
+
+        this.postTrialStageGateDeferred = false;
+        this.render();
+        return {
+            success: true,
+            progression,
+            stageProgression: progression?.stageProgression || null
         };
     }
 

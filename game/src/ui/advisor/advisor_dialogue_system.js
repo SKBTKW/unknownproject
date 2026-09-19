@@ -171,6 +171,39 @@ export class AdvisorDialogueSystem {
         return this.enqueueItem(item);
     }
 
+    emitDutyScene(scene, context = {}, options = {}) {
+        const definition = this.profile?.dutyDialogue?.[scene] || null;
+        if (!definition) return false;
+
+        const entry = {
+            event: scene,
+            priority: 90,
+            durationMs: 4200,
+            cooldownMs: 0,
+            ...definition
+        };
+        const lastAt = this.cooldowns.get(scene);
+        if (lastAt !== undefined && this.now() - lastAt < Number(entry.cooldownMs || 0)) return false;
+
+        const requestedMode = options.dialogueMode ?? this.dialogueMode;
+        const effectiveMode = normalizeDialogueMode(requestedMode);
+        const resolvedLine = this.resolveLine(entry, context, effectiveMode);
+        if (!resolvedLine) return false;
+
+        this.cooldowns.set(scene, this.now());
+        return this.enqueueItem({
+            event: scene,
+            topic: options.topic || scene,
+            lineKey: resolvedLine.lineKey,
+            segmentKeys: resolvedLine.segmentKeys,
+            text: resolvedLine.text,
+            expression: definition.expression || "NORMAL",
+            dialogueMode: effectiveMode,
+            priority: Number(options.priority ?? entry.priority ?? 90),
+            durationMs: Number(entry.durationMs || 4200)
+        });
+    }
+
     emitResolved(reaction) {
         if (!reaction?.lineKey) return false;
         const context = reaction.context || {};
