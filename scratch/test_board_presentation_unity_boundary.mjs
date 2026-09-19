@@ -1,12 +1,19 @@
 import assert from "node:assert/strict";
 import { BoardPresentationDataService } from "../game/src/presentation/board_presentation_data_service.js";
+import {
+    resolveBoardDisplayProduction,
+    resolveBoardDisplayRole,
+    resolveSocketPrimaryYield
+} from "../game/src/presentation/board_presentation_semantic_service.js";
 import { BoardPresentationRuntimeAdapter } from "../game/src/presentation/board_presentation_runtime_adapter.js";
 import { BoardPresentationState } from "../game/src/presentation/board_presentation_state.js";
 import { createBoardPresentationDto } from "../game/src/presentation/board_presentation_contract.js";
 import { BOARD_INPUT_COMMANDS, createBoardInputCommand, serializeBoardInputCommand } from "../game/src/presentation/board_input_contract.js";
+import { BoardInputDispatcher } from "../game/src/presentation/board_input_dispatcher.js";
 import { GameRuntimeSnapshotDataService } from "../game/src/presentation/game_runtime_snapshot_data_service.js";
 import { createGameRuntimeSnapshotDto } from "../game/src/presentation/game_runtime_snapshot_contract.js";
 import { LegacyWeb2DBoardInputAdapter } from "../game/src/ui/legacy_web2d_board_input_adapter.js";
+import fs from "node:fs";
 
 let passed = 0;
 function test(name, callback) {
@@ -93,6 +100,78 @@ const service = new BoardPresentationDataService({ cellViewDataService });
 const readModel = service.getBoard(state, { presentationState });
 const dto = createBoardPresentationDto(readModel);
 
+test("shared display role is the renderer-neutral SSOT", () => {
+    assert.equal(resolveBoardDisplayRole(state, {
+        r: 0, c: 0, placed: true, isHQ: false,
+        socketResource: null, mergeGroupId: "zone-a", placementGroupId: "placement-a"
+    }), "LAND_PRIMARY");
+    assert.equal(resolveBoardDisplayRole(state, {
+        r: 0, c: 1, placed: true, isHQ: false,
+        socketResource: null, mergeGroupId: "zone-a", placementGroupId: "placement-a"
+    }), "CLEAN");
+    assert.equal(resolveBoardDisplayRole(state, {
+        r: 1, c: 0, placed: true, isHQ: false,
+        socketResource: { id: "SOCKET_WOOD" }, mergeGroupId: null, placementGroupId: null
+    }), "SOCKET");
+});
+
+test("socket primary yield tie-breaks are renderer-neutral semantics", () => {
+    assert.deepEqual(resolveSocketPrimaryYield({
+        id: "IRON_ORE",
+        yields: { food: 0, wood: 3, defense: 3, mystic: 0 }
+    }), { resource: "wood", amount: 3 });
+
+    assert.deepEqual(resolveSocketPrimaryYield({
+        id: "GUARD_POST",
+        yields: { food: 0, wood: 2, defense: 2, mystic: 2 }
+    }), { resource: "defense", amount: 2 });
+
+    assert.deepEqual(resolveSocketPrimaryYield({
+        id: "WHEAT_FIELD",
+        yields: { food: 4, wood: 4, defense: 0, mystic: 0 }
+    }), { resource: "food", amount: 4 });
+});
+
+test("socket with no own yield falls back to shared land production", () => {
+    const fallbackState = {
+        grid: [[{
+            placed: true,
+            merged: false,
+            terrain: { terrainId: "PLAINS" },
+            socketResource: { id: "EMPTY_SOCKET", yields: { food: 0, wood: 0, defense: 0, mystic: 0 } }
+        }]]
+    };
+    const fallbackFacts = {
+        r: 0,
+        c: 0,
+        placed: true,
+        isHQ: false,
+        terrainId: "PLAINS",
+        socketResource: fallbackState.grid[0][0].socketResource,
+        baseYields: { food: 2, wood: 1, defense: 0, mystic: 0 },
+        modifiers: [],
+        mergeGroupId: null,
+        placementGroupId: null
+    };
+    const fallbackService = {
+        getCellViewData() {
+            return fallbackFacts;
+        }
+    };
+    const production = resolveBoardDisplayProduction(
+        fallbackState,
+        fallbackFacts,
+        fallbackService
+    );
+    assert.deepEqual(production, {
+        food: 2,
+        wood: 1,
+        defense: 0,
+        mystic: 0,
+        primaryYield: { resource: "food", amount: 2 }
+    });
+});
+
 test("merged production is resolved before renderer DTO consumption", () => {
     const primary = dto.cells[0][0];
     const secondary = dto.cells[0][1];
@@ -116,8 +195,56 @@ test("searched cell fact is portable presentation semantic instead of Web DOM in
 test("socket semantics remain presentation data instead of renderer inference", () => {
     const socket = dto.cells[1][0];
     assert.equal(socket.display.role, "SOCKET");
-    assert.equal(socket.display.production, null);
+    assert.deepEqual(socket.display.production, {
+        food: 0,
+        wood: 2,
+        defense: 0,
+        mystic: 0,
+        primaryYield: { resource: "wood", amount: 2 }
+    });
     assert.equal(socket.socketResource.id, "SOCKET_WOOD");
+});
+
+test("browser BoardAware UI routes board reads through the shared runtime adapter", () => {
+    const source = fs.readFileSync(
+        new URL("../game/src/ui/board_aware_ui_controller.js", import.meta.url),
+        "utf8"
+    );
+    assert.equal(source.includes("new BoardPresentationRuntimeAdapter"), true);
+    assert.equal(source.includes("this.boardPresentationRuntimeAdapter.getBoard(this.state"), true);
+    assert.equal(source.includes("this.boardPresentationDataService.getBoard(this.state"), false);
+});
+
+test("browser Web2D click path emits portable primary/trial commands", () => {
+    const source = fs.readFileSync(
+        new URL("../game/src/ui/board_aware_ui_controller.js", import.meta.url),
+        "utf8"
+    );
+    assert.equal(source.includes("BOARD_INPUT_COMMANDS.PRIMARY_CELL_ACTION"), true);
+    assert.equal(source.includes("BOARD_INPUT_COMMANDS.SELECT_TRIAL_INTERCEPTION"), true);
+    assert.equal(source.includes("new LegacyWeb2DBoardInputAdapter(this)"), true);
+});
+
+test("placed-this-turn interaction state stays portable", () => {
+    const readModel = new BoardPresentationRuntimeAdapter().getBoard(state, {
+        presentationState,
+        interactionQuery: {
+            isCellPlacedThisTurn: (r, c) => r === 0 && c === 1
+        }
+    });
+    assert.equal(readModel.cells[0][1].interaction.placedThisTurn, true);
+    assert.equal(readModel.cells[0][0].interaction.placedThisTurn, false);
+
+    const dto = createBoardPresentationDto(readModel);
+    assert.equal(dto.cells[0][1].interaction.placedThisTurn, true);
+    assert.equal(dto.cells[0][0].interaction.placedThisTurn, false);
+});
+
+test("placed-this-turn defaults false without runtime query", () => {
+    const readModel = new BoardPresentationRuntimeAdapter().getBoard(state, {
+        presentationState
+    });
+    assert.equal(readModel.cells[0][0].interaction.placedThisTurn, false);
 });
 
 test("runtime adapter is the shared runtime-to-presentation entrypoint", () => {
@@ -197,19 +324,51 @@ test("logical board input serializes without renderer-specific coordinates", () 
     assert.equal(serialized.includes("world"), false);
 });
 
-test("legacy Web 2D consumes SELECT_CELL through the portable command boundary", () => {
-    const calls = [];
+test("legacy Web 2D keeps selection separate from primary gameplay action", () => {
+    const selected = [];
+    const actions = [];
     const adapter = new LegacyWeb2DBoardInputAdapter({
         isTrialInteractionActive: () => false,
-        onCellClick(r, c) { calls.push({ r, c }); return true; }
+        selectBoardPresentationCell(r, c) { selected.push({ r, c }); return { r, c }; },
+        performPrimaryCellAction(r, c) { actions.push({ r, c }); return true; }
     });
-    const result = adapter.dispatch(createBoardInputCommand(
+
+    const selectionResult = adapter.dispatch(createBoardInputCommand(
         BOARD_INPUT_COMMANDS.SELECT_CELL,
         { cell: { r: 1, c: 0 } }
     ));
+    const actionResult = adapter.dispatch(createBoardInputCommand(
+        BOARD_INPUT_COMMANDS.PRIMARY_CELL_ACTION,
+        { cell: { r: 0, c: 1 } }
+    ));
+
+    assert.equal(selectionResult.success, true);
+    assert.equal(actionResult.success, true);
+    assert.deepEqual(selected, [{ r: 1, c: 0 }]);
+    assert.deepEqual(actions, [{ r: 0, c: 1 }]);
+});
+
+test("BoardInputDispatcher delegates primary action without mutating selection", () => {
+    const state = new BoardPresentationState();
+    const calls = [];
+    const dispatcher = new BoardInputDispatcher({
+        presentationState: state,
+        handlers: {
+            primaryCellAction(payload) {
+                calls.push(payload.cell);
+                return { success: true };
+            }
+        }
+    });
+
+    const result = dispatcher.dispatch(createBoardInputCommand(
+        BOARD_INPUT_COMMANDS.PRIMARY_CELL_ACTION,
+        { cell: { r: 1, c: 1 } }
+    ));
 
     assert.equal(result.success, true);
-    assert.deepEqual(calls, [{ r: 1, c: 0 }]);
+    assert.deepEqual(calls, [{ r: 1, c: 1 }]);
+    assert.equal(state.snapshot().selectedCell, null);
 });
 
 test("legacy Web 2D Trial input preserves explicit route identity", () => {

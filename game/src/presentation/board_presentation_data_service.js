@@ -39,7 +39,8 @@ export class BoardPresentationDataService {
     getBoard(state, {
         presentationState,
         trialSemanticData = null,
-        gridOverride = null
+        gridOverride = null,
+        interactionQuery = null
     } = {}) {
         if (!presentationState) throw new Error('BOARD_PRESENTATION_STATE_REQUIRED');
 
@@ -117,7 +118,8 @@ export class BoardPresentationDataService {
                 interaction: Object.freeze({
                     selected: sameCell(presentationState.selectedCell, r, c),
                     hovered: sameCell(presentationState.hoveredCell, r, c),
-                    focused: sameCell(presentationState.focusCell, r, c)
+                    focused: sameCell(presentationState.focusCell, r, c),
+                    placedThisTurn: Boolean(interactionQuery?.isCellPlacedThisTurn?.(r, c))
                 }),
                 trial: Object.freeze({
                     available: visibleTrial.available,
