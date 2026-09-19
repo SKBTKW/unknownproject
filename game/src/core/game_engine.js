@@ -1,7 +1,7 @@
 import { I18n } from '../i18n.js';
 import { LAND_SYSTEM_DATA } from '../data/land_system.js';
 import { DIRECTIVES, DirectiveSystem } from '../systems/directive_system.js';
-import { DeckManager } from '../systems/deck_manager.js';
+import { DeckManager, OFFERING_GENERATION_REASONS } from '../systems/deck_manager.js';
 import { ProductionCalculator } from '../systems/production_calculator.js';
 import { UndoLandSystem } from '../systems/undo_land_system.js';
 import { GridEngine } from '../systems/grid_engine.js';
@@ -48,6 +48,7 @@ class GameEngine {
         this.landData = dependencies.landData || LAND_SYSTEM_DATA;
         this.cellViewDataService = dependencies.cellViewDataService || new CellViewDataService(this.productionCalculator);
         this.transactionManager = dependencies.transactionManager || new ActionTransactionManager(this);
+        this.offeringMinimumRequirementProvider = dependencies.offeringMinimumRequirementProvider || null;
 
         const injectedCheckSystem = dependencies.checkSystem || dependencies.state?.checkSystem || null;
         const injectedRngState = injectedCheckSystem && typeof injectedCheckSystem.getState === "function"
@@ -138,7 +139,7 @@ class GameEngine {
 
         // 5. ゲーム開始時の初期オファリング生成 (UIではなくEngineの責務)
         if (this.deckManager && (!this.state.handOffering || this.state.handOffering.length === 0)) {
-            this.deckManager.generateOfferingCards();
+            this.deckManager.generateOfferingCards({ reason: OFFERING_GENERATION_REASONS.INITIAL });
         }
 
         // Verse 1 begins only after initial world/socket and Offering generation.
@@ -348,8 +349,8 @@ class GameEngine {
             this.state.ember -= 1;
             this.state.hasMulliganedThisTurn = true;
 
-            if (this.deckManager && typeof this.deckManager.drawOffering === "function") {
-                this.deckManager.drawOffering();
+            if (this.deckManager && typeof this.deckManager.generateOfferingCards === "function") {
+                this.deckManager.generateOfferingCards({ reason: OFFERING_GENERATION_REASONS.MULLIGAN });
             } else if (typeof this.state.drawOffering === "function") {
                 this.state.drawOffering();
             }
