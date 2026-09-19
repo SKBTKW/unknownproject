@@ -20,6 +20,7 @@ const scenes = buildPostTrialInterludeSceneSequence(readModel, {
 const meaning = scenes.find(scene => scene.id === POST_TRIAL_INTERLUDE_SCENES.TRIAL_MEANING);
 assert.equal(meaning.required, true);
 assert.equal(meaning.systemFallbackRequired, true);
+assert.equal(requiresPostTrialSystemFallback(meaning), true);
 
 assert.equal(requiresPostTrialSystemFallback(POST_TRIAL_INTERLUDE_SCENES.ASSESSMENT), true);
 assert.equal(requiresPostTrialSystemFallback(POST_TRIAL_INTERLUDE_SCENES.STAGE_PRELUDE), true);
@@ -28,5 +29,6 @@ const ordinary = buildPostTrialInterludeSceneSequence(readModel);
 const ordinaryMeaning = ordinary.find(scene => scene.id === POST_TRIAL_INTERLUDE_SCENES.TRIAL_MEANING);
 assert.equal(ordinaryMeaning.required, false);
 assert.equal(ordinaryMeaning.systemFallbackRequired, false);
+assert.equal(requiresPostTrialSystemFallback(ordinaryMeaning), false);
 
 console.log("diagnose_post_trial_first_run_fallback: OK");

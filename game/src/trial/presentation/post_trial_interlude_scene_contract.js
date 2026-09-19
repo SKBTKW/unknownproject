@@ -122,8 +122,15 @@ export function buildPostTrialInterludeSceneSequence(readModel = {}, {
     return Object.freeze(scenes);
 }
 
-export function requiresPostTrialSystemFallback(sceneId) {
-    return SYSTEM_FALLBACK_REQUIRED.has(sceneId);
+export function requiresPostTrialSystemFallback(sceneOrId) {
+    if (sceneOrId && typeof sceneOrId === "object") {
+        return Boolean(
+            sceneOrId.systemFallbackRequired
+            || sceneOrId.required
+            || SYSTEM_FALLBACK_REQUIRED.has(sceneOrId.id)
+        );
+    }
+    return SYSTEM_FALLBACK_REQUIRED.has(sceneOrId);
 }
 
 export default buildPostTrialInterludeSceneSequence;
