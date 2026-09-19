@@ -8,8 +8,8 @@ const uiController = {
         calls.push(["defer", Boolean(enabled)]);
         return Boolean(enabled);
     },
-    completePostTrialStagePrelude() {
-        calls.push(["stage-prelude-complete"]);
+    completePostTrialStagePrelude(options = {}) {
+        calls.push(["stage-prelude-complete", options.render]);
         return {
             success: true,
             stageProgression: { success: true, stageId: 2 },
@@ -30,6 +30,9 @@ const bridge = new PostTrialInterludePresentationBridge({
 });
 
 assert.equal(bridge.setEnabled(true), true);
+assert.equal(calls.length, 0, "Enabling interlude must not implicitly defer Stage cleanup");
+
+assert.equal(bridge.setStageGateDeferred(true), true);
 assert.deepEqual(calls[0], ["defer", true]);
 
 let result = bridge.presentAdvisorScene({
@@ -48,9 +51,10 @@ result = bridge.completeScene(POST_TRIAL_INTERLUDE_SCENES.STAGE_PRELUDE);
 assert.equal(result.success, true);
 assert.equal(result.stageGateOpened, true);
 assert.equal(result.stageProgression.stageId, 2);
-assert.deepEqual(calls.at(-1), ["stage-prelude-complete"]);
+assert.deepEqual(calls.at(-1), ["stage-prelude-complete", false]);
 
 bridge.setEnabled(false);
+assert.deepEqual(calls.at(-1), ["defer", false]);
 result = bridge.presentAdvisorScene({
     sceneId: POST_TRIAL_INTERLUDE_SCENES.POST_STAGE_COMMENT,
     payload: {}

@@ -115,6 +115,10 @@ export class TrialResultUIController extends BoardAwareUIController {
             this.postTrialInterludeComponent?.close?.();
             return false;
         }
+        if (!transition.presentation && transition.status === "COMPLETED") {
+            this.postTrialInterludeComponent?.close?.();
+            return false;
+        }
 
         const prepared = this.preparePostTrialInterlude();
         if (!prepared?.success) return false;
