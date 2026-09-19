@@ -67,6 +67,8 @@ function makeHarness({ eligible = () => true } = {}) {
 
 {
     const { manager, state, seenReasons } = makeHarness();
+    assert.equal(manager._isCardPlaceableNow(makeCard("LAND_OK", "LAND")), true, "test harness must expose a placeable LAND");
+    assert.equal(manager._isCardPlaceableNow(makeCard("LAND_BLOCKED", "LAND")), false, "test harness must expose a blocked LAND");
     const offering = manager.generateOfferingCards({ reason: OFFERING_GENERATION_REASONS.INITIAL });
     const ids = offering.map(card => card.cardMasterId);
 
