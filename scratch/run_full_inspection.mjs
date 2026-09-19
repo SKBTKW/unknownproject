@@ -158,6 +158,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Offering Minimum Requirement Contract) で不合格が検出されました。");
         process.exit(1);
     }
+    const firstRunOk = await runCommand("node", ["scratch/test_first_run_service.mjs"]);
+    if (!firstRunOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (FirstRun Orchestration Contract) で不合格が検出されました。");
+        process.exit(1);
+    }
     const scheduledGlobalEventOk = await runCommand("node", ["scratch/test_scheduled_global_event_contract.mjs"]);
     if (!scheduledGlobalEventOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Scheduled Global Event Contract) で不合格が検出されました。");
