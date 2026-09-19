@@ -320,20 +320,20 @@ export class PostTrialInterludeComponent {
     }
 
     sceneTitle(scene, readModel) {
-        const titles = {
-            [POST_TRIAL_INTERLUDE_SCENES.AFTERMATH]: "試練の終わり",
-            [POST_TRIAL_INTERLUDE_SCENES.ASSESSMENT]: "戦後報告",
-            [POST_TRIAL_INTERLUDE_SCENES.TRIAL_MEANING]: "この試練が残したもの",
-            [POST_TRIAL_INTERLUDE_SCENES.REWARD]: "戦果",
-            [POST_TRIAL_INTERLUDE_SCENES.UNLOCK]: "新たな可能性",
-            [POST_TRIAL_INTERLUDE_SCENES.STAGE_PRELUDE]: "活動圏の拡張",
-            [POST_TRIAL_INTERLUDE_SCENES.STAGE_REVEAL]: "世界が開かれる",
-            [POST_TRIAL_INTERLUDE_SCENES.POST_STAGE_COMMENT]: "新たな地平",
-            [POST_TRIAL_INTERLUDE_SCENES.SKILL]: "経験の継承",
-            [POST_TRIAL_INTERLUDE_SCENES.FINAL_RUN_COMPLETION]: "三度の試練",
-            [POST_TRIAL_INTERLUDE_SCENES.CLOSE]: "次の節へ"
+        const keys = {
+            [POST_TRIAL_INTERLUDE_SCENES.AFTERMATH]: "UI_POST_TRIAL_TITLE_AFTERMATH",
+            [POST_TRIAL_INTERLUDE_SCENES.ASSESSMENT]: "UI_POST_TRIAL_TITLE_ASSESSMENT",
+            [POST_TRIAL_INTERLUDE_SCENES.TRIAL_MEANING]: "UI_POST_TRIAL_TITLE_MEANING",
+            [POST_TRIAL_INTERLUDE_SCENES.REWARD]: "UI_POST_TRIAL_TITLE_REWARD",
+            [POST_TRIAL_INTERLUDE_SCENES.UNLOCK]: "UI_POST_TRIAL_TITLE_UNLOCK",
+            [POST_TRIAL_INTERLUDE_SCENES.STAGE_PRELUDE]: "UI_POST_TRIAL_TITLE_STAGE_PRELUDE",
+            [POST_TRIAL_INTERLUDE_SCENES.STAGE_REVEAL]: "UI_POST_TRIAL_TITLE_STAGE_REVEAL",
+            [POST_TRIAL_INTERLUDE_SCENES.POST_STAGE_COMMENT]: "UI_POST_TRIAL_TITLE_POST_STAGE",
+            [POST_TRIAL_INTERLUDE_SCENES.SKILL]: "UI_POST_TRIAL_TITLE_SKILL",
+            [POST_TRIAL_INTERLUDE_SCENES.FINAL_RUN_COMPLETION]: "UI_POST_TRIAL_TITLE_FINAL",
+            [POST_TRIAL_INTERLUDE_SCENES.CLOSE]: "UI_POST_TRIAL_TITLE_CLOSE"
         };
-        return titles[scene.id] || scene.id;
+        return this.t(keys[scene.id], {}, scene.id);
     }
 
     sceneFacts(scene, readModel) {
@@ -341,28 +341,38 @@ export class PostTrialInterludeComponent {
         const stage = readModel?.stageAdvance?.payload || null;
         if (scene.id === POST_TRIAL_INTERLUDE_SCENES.AFTERMATH) {
             return [[
-                "結果",
-                readModel?.aftermath?.outcome === "SURVIVED" ? "生存" : "敗北"
+                this.t("UI_POST_TRIAL_FACT_RESULT", {}, "Result"),
+                readModel?.aftermath?.outcome === "SURVIVED"
+                    ? this.t("UI_POST_TRIAL_FACT_SURVIVED", {}, "Survived")
+                    : this.t("UI_POST_TRIAL_FACT_FAILED", {}, "Failed")
             ]];
         }
         if (scene.id === POST_TRIAL_INTERLUDE_SCENES.ASSESSMENT) {
             const facts = [];
-            if (safeNumber(result.emberRemaining) !== null) facts.push(["残火", String(result.emberRemaining)]);
-            if (safeNumber(result.totalEmberDamage) !== null) facts.push(["残火損失", String(result.totalEmberDamage)]);
-            if (safeNumber(result.battleCount) !== null) facts.push(["戦闘", String(result.battleCount)]);
-            if (safeNumber(result.routeEndCount) !== null) facts.push(["本営到達", String(result.routeEndCount)]);
+            if (safeNumber(result.emberRemaining) !== null) {
+                facts.push([this.t("UI_POST_TRIAL_FACT_EMBER", {}, "Ember"), String(result.emberRemaining)]);
+            }
+            if (safeNumber(result.totalEmberDamage) !== null) {
+                facts.push([this.t("UI_POST_TRIAL_FACT_EMBER_LOSS", {}, "Ember Loss"), String(result.totalEmberDamage)]);
+            }
+            if (safeNumber(result.battleCount) !== null) {
+                facts.push([this.t("UI_POST_TRIAL_FACT_BATTLES", {}, "Battles"), String(result.battleCount)]);
+            }
+            if (safeNumber(result.routeEndCount) !== null) {
+                facts.push([this.t("UI_POST_TRIAL_FACT_HQ_REACHED", {}, "Reached HQ"), String(result.routeEndCount)]);
+            }
             return facts;
         }
         if (scene.id === POST_TRIAL_INTERLUDE_SCENES.STAGE_PRELUDE && stage) {
             return [
-                ["現在", `Stage ${stage.fromStageId ?? "?"}`],
-                ["次段階", `Stage ${stage.toStageId ?? "?"}`]
+                [this.t("UI_POST_TRIAL_FACT_CURRENT_STAGE", {}, "Current"), `Stage ${stage.fromStageId ?? "?"}`],
+                [this.t("UI_POST_TRIAL_FACT_NEXT_STAGE", {}, "Next"), `Stage ${stage.toStageId ?? "?"}`]
             ];
         }
         if (scene.id === POST_TRIAL_INTERLUDE_SCENES.STAGE_REVEAL && stage) {
             return [
-                ["Stage", String(stage.toStageId ?? "?")],
-                ["盤面", stage.size ? `${stage.size}×${stage.size}` : "—"]
+                [this.t("UI_POST_TRIAL_FACT_STAGE", {}, "Stage"), String(stage.toStageId ?? "?")],
+                [this.t("UI_POST_TRIAL_FACT_BOARD", {}, "Board"), stage.size ? `${stage.size}×${stage.size}` : "—"]
             ];
         }
         return [];
@@ -371,13 +381,32 @@ export class PostTrialInterludeComponent {
     sceneStatus(scene) {
         if (scene.id === POST_TRIAL_INTERLUDE_SCENES.TRIAL_MEANING
             && !this.advisorEnabledProvider()) {
-            return "戦闘記録が整理された。";
+            if (scene.required && scene.semanticSceneId === "FIRST_TRIAL_AFTERMATH_MEANING") {
+                return this.t(
+                    "UI_POST_TRIAL_FIRST_MEANING_FALLBACK",
+                    {},
+                    "Beyond humanity's sphere lies a force capable of coming into conflict with it. That much is now clear."
+                );
+            }
+            return this.t(
+                "UI_POST_TRIAL_MEANING_NEUTRAL",
+                {},
+                "The confirmed battle record and known information have been organized."
+            );
         }
         if (scene.id === POST_TRIAL_INTERLUDE_SCENES.STAGE_PRELUDE) {
-            return "確定した進行に従い、活動圏を外縁へ広げる。";
+            return this.t(
+                "UI_POST_TRIAL_STAGE_PRELUDE_STATUS",
+                {},
+                "The surrounding area has been checked. Preparations to extend the sphere of activity are complete."
+            );
         }
         if (scene.id === POST_TRIAL_INTERLUDE_SCENES.POST_STAGE_COMMENT) {
-            return "新たな活動圏が開かれた。";
+            return this.t(
+                "UI_POST_TRIAL_POST_STAGE_STATUS",
+                {},
+                "A new area of activity has opened."
+            );
         }
         return "";
     }

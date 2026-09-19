@@ -37,6 +37,7 @@ const scenes = buildPostTrialInterludeSceneSequence(readModel, {
 const meaning = scenes.find(scene => scene.id === POST_TRIAL_INTERLUDE_SCENES.TRIAL_MEANING);
 assert.ok(meaning);
 assert.equal(meaning.required, true);
+assert.equal(meaning.systemFallbackRequired, true);
 assert.equal(meaning.occurrenceOwner, "FIRST_RUN");
 assert.equal(
     meaning.semanticSceneId,

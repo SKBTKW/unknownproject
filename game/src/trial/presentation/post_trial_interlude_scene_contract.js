@@ -46,7 +46,7 @@ function createScene(id, {
         id,
         trialIndex: Number.isInteger(Number(trialIndex)) ? Number(trialIndex) : null,
         meaningVariant,
-        systemFallbackRequired: SYSTEM_FALLBACK_REQUIRED.has(id),
+        systemFallbackRequired: SYSTEM_FALLBACK_REQUIRED.has(id) || Boolean(required),
         opensStageProgressionGate,
         boardReveal,
         semanticSceneId,
