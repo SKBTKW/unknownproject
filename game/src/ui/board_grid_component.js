@@ -480,20 +480,23 @@ export class BoardGridComponent {
     getPrimaryYieldInfo(cellData, isHQVic) {
         if (!cellData || !cellData.terrain) return null;
 
-        const facts = {
-            r: cellData.r ?? 0,
-            c: cellData.c ?? 0,
+        const r = cellData.r ?? 0;
+        const c = cellData.c ?? 0;
+        const viewFacts = this.engine?.getCellViewData?.(r, c) || null;
+        const facts = viewFacts || {
+            r,
+            c,
             placed: Boolean(cellData.placed),
             isHQ: Boolean(cellData.isHQ),
             terrainId: cellData.terrain.terrainId || cellData.terrain.id || null,
             socketResource: cellData.socketResource || null,
-            baseYields: null,
-            modifiers: null,
+            baseYields: {},
+            modifiers: [],
             mergeGroupId: cellData.mergeGroupId ?? null,
             placementGroupId: cellData.placementGroupId ?? null
         };
         const cellViewDataService = {
-            getCellViewData: (_state, r, c) => this.engine?.getCellViewData?.(r, c) || null
+            getCellViewData: (_state, row, column) => this.engine?.getCellViewData?.(row, column) || null
         };
         const production = resolveBoardDisplayProduction(this.state, facts, cellViewDataService);
         const primaryYield = production?.primaryYield || null;
