@@ -179,6 +179,77 @@ export function buildIntegrationOrder(tasks = []) {
     }));
 }
 
+export function buildOverlapGraph(tasks = []) {
+  const active = (tasks || []).filter((task) => task?.status !== GUARD_STATUS.MERGED);
+  const byBranch = new Map(active.map((task) => [task.branch, task]));
+  const nodes = active
+    .map((task) => ({
+      branch: task.branch,
+      status: task.status,
+      action: task.guidance?.action || buildTaskGuidance(task).action,
+      reviewGradePeerCount: (task.peerOverlaps || []).filter((entry) => shouldPeerOverlapRequireReview(entry.overlap)).length,
+    }))
+    .sort((a, b) => String(a.branch).localeCompare(String(b.branch)));
+
+  const edgeByKey = new Map();
+  for (const task of active) {
+    for (const peer of task.peerOverlaps || []) {
+      if (!byBranch.has(peer.branch) || peer.branch === task.branch) continue;
+      const pair = [task.branch, peer.branch].sort();
+      const key = pair.join('\u0000');
+      if (edgeByKey.has(key)) continue;
+      edgeByKey.set(key, {
+        from: pair[0],
+        to: pair[1],
+        risk: peer.overlap?.risk || 'NONE',
+        risks: [...(peer.overlap?.risks || [])],
+        evidence: [...(peer.overlap?.evidence || [])],
+        reviewRequired: shouldPeerOverlapRequireReview(peer.overlap),
+      });
+    }
+  }
+
+  const edges = [...edgeByKey.values()].sort((a, b) =>
+    a.from.localeCompare(b.from) || a.to.localeCompare(b.to)
+  );
+  return {
+    nodes,
+    edges,
+    summary: {
+      nodeCount: nodes.length,
+      edgeCount: edges.length,
+      reviewEdgeCount: edges.filter((edge) => edge.reviewRequired).length,
+    },
+  };
+}
+
+export function explainIntegrationOrder(order = [], graph = { nodes: [], edges: [] }) {
+  const reviewPeers = new Map();
+  for (const edge of graph.edges || []) {
+    if (!edge.reviewRequired) continue;
+    if (!reviewPeers.has(edge.from)) reviewPeers.set(edge.from, []);
+    if (!reviewPeers.has(edge.to)) reviewPeers.set(edge.to, []);
+    reviewPeers.get(edge.from).push(edge.to);
+    reviewPeers.get(edge.to).push(edge.from);
+  }
+  return (order || []).map((entry) => {
+    const peers = [...(reviewPeers.get(entry.branch) || [])].sort();
+    let rationale = `Status ${entry.status} determines the primary ordering bucket.`;
+    if (peers.length === 0) {
+      rationale += ' No review-grade peer overlap was observed.';
+    } else {
+      rationale += ` Review-grade overlap exists with ${peers.join(', ')}; fewer such overlaps are preferred within the same status.`;
+    }
+    return {
+      position: entry.position,
+      branch: entry.branch,
+      rationale,
+      relatedBranches: peers,
+      provisional: true,
+    };
+  });
+}
+
 export function summarizeStatuses(tasks = []) {
   const counts = Object.fromEntries(Object.values(GUARD_STATUS).map((status) => [status, 0]));
   for (const task of tasks) {
