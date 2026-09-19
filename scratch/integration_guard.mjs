@@ -7,6 +7,7 @@ import { classifyOverlap } from './task_health.mjs';
 import { previewMerge, MERGE_PREVIEW_STATUS } from './task_merge_preview.mjs';
 import {
   GUARD_STATUS,
+  buildIntegrationOrder,
   buildSessionId,
   buildTaskGuidance,
   classifyObservedTask,
@@ -319,7 +320,7 @@ function writeAnalysis(backup, analysis) {
 function printDashboard(analysis, backup) {
   const counts = analysis.summary;
   console.log('\n============================================================');
-  console.log(' AoT Integration Guard V1.2 - READ ONLY');
+  console.log(' AoT Integration Guard V1.3 - READ ONLY');
   console.log('============================================================');
   console.log(`Target:  ${analysis.target}`);
   console.log(`SHA:     ${analysis.targetSha}`);
@@ -332,6 +333,13 @@ function printDashboard(analysis, backup) {
   console.log(`RECONCILE_REQUIRED:  ${counts.RECONCILE_REQUIRED}`);
   console.log(`BLOCKED:             ${counts.BLOCKED}`);
   console.log('------------------------------------------------------------');
+  if (analysis.integrationOrder.length > 0) {
+    console.log('Provisional integration order:');
+    for (const entry of analysis.integrationOrder) {
+      console.log(`  ${entry.position}. [${entry.status}] ${entry.branch} -> ${entry.action}`);
+    }
+    console.log('------------------------------------------------------------');
+  }
   if (analysis.tasks.length === 0) console.log('TASK branches: none');
   for (const task of analysis.tasks) {
     console.log(`[${task.status}] ${task.branch}`);
@@ -370,13 +378,14 @@ export async function runIntegrationGuard({ cwd: requestedCwd, target: explicitT
       .map((task) => ({ ...task, guidance: buildTaskGuidance(task) }));
     assertRemoteSnapshotUnchanged(expectedRemoteSnapshot, readRemoteSnapshot(cwd, target), 'after analysis');
     const analysis = {
-      schemaVersion: 2,
+      schemaVersion: 3,
       sessionId,
       createdAt: now.toISOString(),
       target,
       targetSha,
       backupVerified: true,
       summary: summarizeStatuses(inspected),
+      integrationOrder: buildIntegrationOrder(inspected),
       tasks: inspected.map((task) => ({
         branch: task.branch,
         sha: task.sha,
@@ -415,7 +424,7 @@ function parseArgs(argv) {
 
 function printHelp() {
   console.log('Usage: node scratch/integration_guard.mjs [--target AoTYYMMDD] [--backup-root <path>]');
-  console.log('V1.2 is read-only with respect to repository history. It creates a verified external backup and analysis report only.');
+  console.log('V1.3 is read-only with respect to repository history. It creates a verified external backup and analysis report only.');
 }
 
 async function main() {
