@@ -22,7 +22,7 @@ import {
   parseWorktreesPorcelain,
   targetFromTaskBranch,
 } from './integration_guard_core.mjs';
-import { runIntegrationGuard, assertRemoteSnapshotUnchanged } from './integration_guard.mjs';
+import { runIntegrationGuard, assertRemoteSnapshotUnchanged, parseArgs, printDashboard } from './integration_guard.mjs';
 import { verifyBundleRestorable } from './integration_guard_backup.mjs';
 
 let passed = 0;
@@ -39,6 +39,51 @@ async function rejects(fn, pattern, label) {
 function git(cwd, ...args) {
   return execFileSync('git', args, { cwd, encoding: 'utf8', windowsHide: true }).trim();
 }
+
+
+check(parseArgs(['--target', 'AoT260917', '--verbose']), {
+  target: 'AoT260917',
+  backupRoot: '',
+  verbose: true,
+}, 'CLI parser enables verbose dashboard mode');
+
+function captureLogs(fn) {
+  const original = console.log;
+  const lines = [];
+  console.log = (...args) => lines.push(args.join(' '));
+  try { fn(); } finally { console.log = original; }
+  return lines.join('\n');
+}
+
+const dashboardFixture = {
+  target: 'AoT260917',
+  targetSha: 'abc',
+  summary: { MERGED: 0, READY: 1, REVIEW_REQUIRED: 0, RECONCILE_REQUIRED: 0, BLOCKED: 0 },
+  integrationOrder: [{ position: 1, status: GUARD_STATUS.READY, branch: 'task-a', action: GUARD_ACTION.INTEGRATE_ONE_AT_A_TIME }],
+  orderExplanations: [{ branch: 'task-a', rationale: 'fixture rationale' }],
+  integrationClusters: [],
+  clusterStrategies: [],
+  clusterOrders: [],
+  reevaluationPlan: [{ afterBranch: 'task-a', reevaluateBranches: [] }],
+  focusedReevaluationSets: [{ afterBranch: 'task-a', primaryReinspection: [], secondaryReinspection: [], fullGuardRerunRequired: true }],
+  overlapGraph: { edges: [{ from: 'task-a', to: 'task-b', risk: 'PATH_OVERLAP', reviewRequired: true }] },
+  tasks: [{
+    status: GUARD_STATUS.READY,
+    branch: 'task-a',
+    sha: 'abc',
+    mergePreview: { status: 'CLEAN', conflictPaths: [] },
+    guidance: buildTaskGuidance({ status: GUARD_STATUS.READY }),
+    overlap: { risk: 'PATH_OVERLAP', evidence: ['x.js'] },
+    peerOverlaps: [],
+  }],
+};
+const dashboardBackup = { sessionDir: '/tmp/aot-backup-fixture' };
+const conciseDashboard = captureLogs(() => printDashboard(dashboardFixture, dashboardBackup));
+check(conciseDashboard.includes('Details: hidden (use --verbose)'), true, 'concise dashboard hides detailed evidence');
+check(conciseDashboard.includes('Peer-overlap graph:'), false, 'concise dashboard omits overlap graph detail');
+const verboseDashboard = captureLogs(() => printDashboard(dashboardFixture, dashboardBackup, { verbose: true }));
+check(verboseDashboard.includes('Peer-overlap graph:'), true, 'verbose dashboard shows overlap graph detail');
+check(verboseDashboard.includes('[READY] task-a'), true, 'verbose dashboard shows per-TASK detail');
 
 check(isAoTTarget('AoT260917'), true, 'AoT target name accepted');
 check(isAoTTarget('main'), false, 'non-AoT target rejected');
@@ -366,4 +411,4 @@ try {
   fs.rmSync(root, { recursive: true, force: true });
 }
 
-console.log(`Integration Guard V1.10: ${passed} checks PASS`);
+console.log(`Integration Guard V1.11: ${passed} checks PASS`);
