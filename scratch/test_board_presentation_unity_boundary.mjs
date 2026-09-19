@@ -9,6 +9,7 @@ import { BoardPresentationRuntimeAdapter } from "../game/src/presentation/board_
 import { BoardPresentationState } from "../game/src/presentation/board_presentation_state.js";
 import { createBoardPresentationDto } from "../game/src/presentation/board_presentation_contract.js";
 import { BOARD_INPUT_COMMANDS, createBoardInputCommand, serializeBoardInputCommand } from "../game/src/presentation/board_input_contract.js";
+import { BoardInputDispatcher } from "../game/src/presentation/board_input_dispatcher.js";
 import { GameRuntimeSnapshotDataService } from "../game/src/presentation/game_runtime_snapshot_data_service.js";
 import { createGameRuntimeSnapshotDto } from "../game/src/presentation/game_runtime_snapshot_contract.js";
 import { LegacyWeb2DBoardInputAdapter } from "../game/src/ui/legacy_web2d_board_input_adapter.js";
@@ -214,6 +215,16 @@ test("browser BoardAware UI routes board reads through the shared runtime adapte
     assert.equal(source.includes("this.boardPresentationDataService.getBoard(this.state"), false);
 });
 
+test("browser Web2D click path emits portable primary/trial commands", () => {
+    const source = fs.readFileSync(
+        new URL("../game/src/ui/board_aware_ui_controller.js", import.meta.url),
+        "utf8"
+    );
+    assert.equal(source.includes("BOARD_INPUT_COMMANDS.PRIMARY_CELL_ACTION"), true);
+    assert.equal(source.includes("BOARD_INPUT_COMMANDS.SELECT_TRIAL_INTERCEPTION"), true);
+    assert.equal(source.includes("new LegacyWeb2DBoardInputAdapter(this)"), true);
+});
+
 test("placed-this-turn interaction state stays portable", () => {
     const readModel = new BoardPresentationRuntimeAdapter().getBoard(state, {
         presentationState,
@@ -313,19 +324,51 @@ test("logical board input serializes without renderer-specific coordinates", () 
     assert.equal(serialized.includes("world"), false);
 });
 
-test("legacy Web 2D consumes SELECT_CELL through the portable command boundary", () => {
-    const calls = [];
+test("legacy Web 2D keeps selection separate from primary gameplay action", () => {
+    const selected = [];
+    const actions = [];
     const adapter = new LegacyWeb2DBoardInputAdapter({
         isTrialInteractionActive: () => false,
-        onCellClick(r, c) { calls.push({ r, c }); return true; }
+        selectBoardPresentationCell(r, c) { selected.push({ r, c }); return { r, c }; },
+        performPrimaryCellAction(r, c) { actions.push({ r, c }); return true; }
     });
-    const result = adapter.dispatch(createBoardInputCommand(
+
+    const selectionResult = adapter.dispatch(createBoardInputCommand(
         BOARD_INPUT_COMMANDS.SELECT_CELL,
         { cell: { r: 1, c: 0 } }
     ));
+    const actionResult = adapter.dispatch(createBoardInputCommand(
+        BOARD_INPUT_COMMANDS.PRIMARY_CELL_ACTION,
+        { cell: { r: 0, c: 1 } }
+    ));
+
+    assert.equal(selectionResult.success, true);
+    assert.equal(actionResult.success, true);
+    assert.deepEqual(selected, [{ r: 1, c: 0 }]);
+    assert.deepEqual(actions, [{ r: 0, c: 1 }]);
+});
+
+test("BoardInputDispatcher delegates primary action without mutating selection", () => {
+    const state = new BoardPresentationState();
+    const calls = [];
+    const dispatcher = new BoardInputDispatcher({
+        presentationState: state,
+        handlers: {
+            primaryCellAction(payload) {
+                calls.push(payload.cell);
+                return { success: true };
+            }
+        }
+    });
+
+    const result = dispatcher.dispatch(createBoardInputCommand(
+        BOARD_INPUT_COMMANDS.PRIMARY_CELL_ACTION,
+        { cell: { r: 1, c: 1 } }
+    ));
 
     assert.equal(result.success, true);
-    assert.deepEqual(calls, [{ r: 1, c: 0 }]);
+    assert.deepEqual(calls, [{ r: 1, c: 1 }]);
+    assert.equal(state.snapshot().selectedCell, null);
 });
 
 test("legacy Web 2D Trial input preserves explicit route identity", () => {
