@@ -5,6 +5,7 @@ import {
     BOARD_CONTEXT_MODES
 } from '../presentation/board_presentation_state.js';
 import { BoardPresentationDataService } from '../presentation/board_presentation_data_service.js';
+import { BoardPresentationRuntimeAdapter } from '../presentation/board_presentation_runtime_adapter.js';
 import { TrialBoardSemanticAdapter } from '../presentation/trial_board_semantic_adapter.js';
 import { PlacementPreviewResolver } from '../presentation/placement_preview_resolver.js';
 import { BoardPresentationGridComponent } from './board_presentation_grid_component.js';
@@ -21,6 +22,9 @@ export class BoardAwareUIController extends LegacyUIController {
         this.boardPresentationState = new BoardPresentationState();
         this.layoutStateManager.bindBoardPresentationState(this.boardPresentationState);
         this.boardPresentationDataService = new BoardPresentationDataService();
+        this.boardPresentationRuntimeAdapter = new BoardPresentationRuntimeAdapter({
+            dataService: this.boardPresentationDataService
+        });
         this.placementPreviewResolver = new PlacementPreviewResolver();
         this.preTrialBoardContextMode = null;
         if (typeof document !== 'undefined') {
@@ -139,7 +143,7 @@ export class BoardAwareUIController extends LegacyUIController {
     }
 
     getBoardPresentationData() {
-        const board = this.boardPresentationDataService.getBoard(this.state, {
+        const board = this.boardPresentationRuntimeAdapter.getBoard(this.state, {
             presentationState: this.boardPresentationState,
             trialSemanticData: this.getTrialBoardSemanticData(),
             gridOverride: this.getBoardDisplayGrid()
