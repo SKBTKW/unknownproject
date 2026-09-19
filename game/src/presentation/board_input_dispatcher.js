@@ -24,6 +24,7 @@ export class BoardInputDispatcher {
                 this._notify("selectCell", command);
                 return this._ok(command, selected);
             }
+            case BOARD_INPUT_COMMANDS.PRIMARY_CELL_ACTION: return this._delegate("primaryCellAction", command);
             case BOARD_INPUT_COMMANDS.CLEAR_SELECTION: this.presentationState.clearSelection(); return this._ok(command, this.presentationState.snapshot());
             case BOARD_INPUT_COMMANDS.HOVER_CELL: return this._ok(command, this.presentationState.hoverCell(payload.cell));
             case BOARD_INPUT_COMMANDS.CLEAR_HOVER: this.presentationState.clearHover(); return this._ok(command, this.presentationState.snapshot());
