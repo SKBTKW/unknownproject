@@ -346,6 +346,50 @@ export function buildClusterStrategies(clusters = [], tasks = []) {
   }));
 }
 
+export function buildClusterOrders(clusters = [], tasks = [], graph = { nodes: [], edges: [] }) {
+  const taskByBranch = new Map((tasks || []).map((task) => [task.branch, task]));
+  const reviewDegree = new Map();
+  for (const edge of graph.edges || []) {
+    if (!edge.reviewRequired) continue;
+    reviewDegree.set(edge.from, (reviewDegree.get(edge.from) || 0) + 1);
+    reviewDegree.set(edge.to, (reviewDegree.get(edge.to) || 0) + 1);
+  }
+
+  return (clusters || []).map((cluster) => {
+    const entries = (cluster.members || [])
+      .map((branch) => taskByBranch.get(branch))
+      .filter(Boolean)
+      .map((task) => ({
+        branch: task.branch,
+        status: task.status,
+        action: task.guidance?.action || buildTaskGuidance(task).action,
+        reviewDegree: reviewDegree.get(task.branch) || 0,
+        changedFileCount: unique(task.taskFiles || []).length,
+      }))
+      .sort((left, right) => {
+        const leftBucket = INTEGRATION_ORDER_BUCKET[left.status] ?? 99;
+        const rightBucket = INTEGRATION_ORDER_BUCKET[right.status] ?? 99;
+        if (leftBucket !== rightBucket) return leftBucket - rightBucket;
+        if (left.reviewDegree !== right.reviewDegree) return left.reviewDegree - right.reviewDegree;
+        if (left.changedFileCount !== right.changedFileCount) return left.changedFileCount - right.changedFileCount;
+        return String(left.branch || '').localeCompare(String(right.branch || ''));
+      })
+      .map((entry, index) => ({
+        ...entry,
+        position: index + 1,
+        provisional: true,
+        rationale: `Status ${entry.status}; ${entry.reviewDegree} review-grade direct overlap(s); ${entry.changedFileCount} changed file(s).`,
+      }));
+
+    return {
+      clusterId: cluster.id,
+      type: cluster.type,
+      entries,
+      provisional: true,
+    };
+  });
+}
+
 export function summarizeStatuses(tasks = []) {
   const counts = Object.fromEntries(Object.values(GUARD_STATUS).map((status) => [status, 0]));
   for (const task of tasks) {
