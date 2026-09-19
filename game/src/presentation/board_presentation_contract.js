@@ -31,7 +31,12 @@ function toCellRef(cell) {
     return { r: cell.r, c: cell.c };
 }
 function toInteractionDto(interaction) {
-    return { selected: Boolean(interaction?.selected), hovered: Boolean(interaction?.hovered), focused: Boolean(interaction?.focused) };
+    return {
+        selected: Boolean(interaction?.selected),
+        hovered: Boolean(interaction?.hovered),
+        focused: Boolean(interaction?.focused),
+        placedThisTurn: Boolean(interaction?.placedThisTurn)
+    };
 }
 function toTrialCellDto(trial) {
     const route = trial?.route ? {
