@@ -71,7 +71,10 @@ export class TrialResultUIController extends BoardAwareUIController {
         this.postTrialInterludeProgressService = new PostTrialInterludeProgressService({
             state: this.state,
             readService,
-            presentationBridge: this.postTrialInterludePresentationBridge
+            presentationBridge: this.postTrialInterludePresentationBridge,
+            firstRunPolicyProvider: this.engine?.firstRunService?.getPostTrialInterludePolicy
+                ? args => this.engine.firstRunService.getPostTrialInterludePolicy(args)
+                : null
         });
 
         if (typeof document !== "undefined") {

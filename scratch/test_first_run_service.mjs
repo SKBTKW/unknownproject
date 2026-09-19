@@ -2,7 +2,8 @@ import assert from "assert/strict";
 import {
     FirstRunService,
     FIRST_RUN_DEMIHUMAN_TRACES_EVENT_ID,
-    FIRST_RUN_DEMIHUMAN_TRACES_VERSE
+    FIRST_RUN_DEMIHUMAN_TRACES_VERSE,
+    FIRST_RUN_POST_TRIAL_SEMANTIC_SCENES
 } from "../game/src/tutorial/first_run_service.js";
 import { OFFERING_GENERATION_REASONS } from "../game/src/systems/deck_manager.js";
 
@@ -142,4 +143,26 @@ import { OFFERING_GENERATION_REASONS } from "../game/src/systems/deck_manager.js
     }), []);
 }
 
-console.log("✅ FirstRun orchestration contract: Verse1 LAND / Verse7 GE / Verse8 Investigation boundaries PASS");
+{
+    const service = new FirstRunService({ enabled: true });
+    const firstTrial = service.getPostTrialInterludePolicy({
+        readModel: { available: true, trialIndex: 1 }
+    });
+    assert.equal(firstTrial.requiredMeaningScene, true);
+    assert.equal(
+        firstTrial.semanticSceneId,
+        FIRST_RUN_POST_TRIAL_SEMANTIC_SCENES.FIRST_TRIAL_AFTERMATH_MEANING
+    );
+    assert.equal(firstTrial.occurrenceOwner, "FIRST_RUN");
+
+    assert.equal(service.getPostTrialInterludePolicy({
+        readModel: { available: true, trialIndex: 2 }
+    }), null, "FirstRun must not claim later Trial meaning scenes");
+
+    const disabled = new FirstRunService({ enabled: false });
+    assert.equal(disabled.getPostTrialInterludePolicy({
+        readModel: { available: true, trialIndex: 1 }
+    }), null, "non-FirstRun must not claim the first-run semantic scene");
+}
+
+console.log("✅ FirstRun orchestration contract: Verse1 LAND / Verse7 GE / Verse8 Investigation / first Trial aftermath meaning boundaries PASS");

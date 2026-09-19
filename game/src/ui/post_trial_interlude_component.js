@@ -256,7 +256,11 @@ export class PostTrialInterludeComponent {
                     stage: state.stage || null,
                     boardSize: Array.isArray(state.grid) ? state.grid.length : null
                 }
-                : null
+                : null,
+            semanticSceneId: scene.semanticSceneId || null,
+            occurrenceOwner: scene.occurrenceOwner || null,
+            dedupeKey: scene.dedupeKey || null,
+            required: scene.required === true
         });
 
         this.presentationBridge?.presentAdvisorScene?.({

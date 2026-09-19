@@ -34,12 +34,18 @@ function normalizeIndex(value, length) {
  * serializer/hydration round-trips preserve it automatically.
  */
 export class PostTrialInterludeProgressService {
-    constructor({ state, readService, presentationBridge = null } = {}) {
+    constructor({
+        state,
+        readService,
+        presentationBridge = null,
+        firstRunPolicyProvider = null
+    } = {}) {
         if (!state) throw new TypeError("POST_TRIAL_INTERLUDE_STATE_REQUIRED");
         if (!readService?.read) throw new TypeError("POST_TRIAL_INTERLUDE_READ_SERVICE_REQUIRED");
         this.state = state;
         this.readService = readService;
         this.presentationBridge = presentationBridge;
+        this.firstRunPolicyProvider = firstRunPolicyProvider;
     }
 
     ensureSession() {
@@ -49,7 +55,12 @@ export class PostTrialInterludeProgressService {
             return { success: false, reason: "POST_TRIAL_INTERLUDE_TRANSITION_REQUIRED" };
         }
 
-        const canonicalScenes = buildPostTrialInterludeSceneSequence(readModel);
+        const firstRunPolicy = typeof this.firstRunPolicyProvider === "function"
+            ? this.firstRunPolicyProvider({ readModel, state: this.state })
+            : null;
+        const canonicalScenes = buildPostTrialInterludeSceneSequence(readModel, {
+            firstRunPolicy
+        });
         if (!canonicalScenes.length) {
             return { success: false, reason: "POST_TRIAL_INTERLUDE_SCENES_REQUIRED" };
         }

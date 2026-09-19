@@ -36,7 +36,11 @@ function createScene(id, {
     trialIndex = null,
     meaningVariant = null,
     opensStageProgressionGate = false,
-    boardReveal = false
+    boardReveal = false,
+    semanticSceneId = null,
+    occurrenceOwner = null,
+    dedupeKey = null,
+    required = false
 } = {}) {
     return Object.freeze({
         id,
@@ -44,7 +48,11 @@ function createScene(id, {
         meaningVariant,
         systemFallbackRequired: SYSTEM_FALLBACK_REQUIRED.has(id),
         opensStageProgressionGate,
-        boardReveal
+        boardReveal,
+        semanticSceneId,
+        occurrenceOwner,
+        dedupeKey,
+        required: Boolean(required)
     });
 }
 
@@ -56,7 +64,9 @@ function createScene(id, {
  * never mutates progression state. Stage authorization remains owned by
  * PostTrialProgression / TrialStageProgressionService.
  */
-export function buildPostTrialInterludeSceneSequence(readModel = {}) {
+export function buildPostTrialInterludeSceneSequence(readModel = {}, {
+    firstRunPolicy = null
+} = {}) {
     if (!readModel?.available) return [];
 
     const trialIndex = Number.isInteger(Number(readModel.trialIndex))
@@ -71,7 +81,11 @@ export function buildPostTrialInterludeSceneSequence(readModel = {}) {
         createScene(POST_TRIAL_INTERLUDE_SCENES.ASSESSMENT, { trialIndex }),
         createScene(POST_TRIAL_INTERLUDE_SCENES.TRIAL_MEANING, {
             trialIndex,
-            meaningVariant: resolveMeaningVariant(trialIndex)
+            meaningVariant: resolveMeaningVariant(trialIndex),
+            semanticSceneId: firstRunPolicy?.semanticSceneId || null,
+            occurrenceOwner: firstRunPolicy?.occurrenceOwner || null,
+            dedupeKey: firstRunPolicy?.dedupeKey || null,
+            required: firstRunPolicy?.requiredMeaningScene === true
         })
     ];
 

@@ -51,7 +51,11 @@ export function createPostTrialAdvisorSemanticPayload({
     readModel,
     publicFacts = [],
     knownEnemyState = null,
-    postStagePublicState = null
+    postStagePublicState = null,
+    semanticSceneId = null,
+    occurrenceOwner = null,
+    dedupeKey = null,
+    required = false
 } = {}) {
     if (!Object.values(POST_TRIAL_INTERLUDE_SCENES).includes(sceneId)) {
         return null;
@@ -71,7 +75,11 @@ export function createPostTrialAdvisorSemanticPayload({
         result: sanitizePublicData(aftermath.result),
         settlement: sanitizePublicData(aftermath.settlement),
         stageAdvance: sanitizePublicData(readModel.stageAdvance),
-        publicFacts: normalizePublicFacts(publicFacts)
+        publicFacts: normalizePublicFacts(publicFacts),
+        semanticSceneId: typeof semanticSceneId === "string" ? semanticSceneId : null,
+        occurrenceOwner: typeof occurrenceOwner === "string" ? occurrenceOwner : null,
+        dedupeKey: typeof dedupeKey === "string" ? dedupeKey : null,
+        required: Boolean(required)
     };
 
     if (sceneId === POST_TRIAL_INTERLUDE_SCENES.TRIAL_MEANING) {
