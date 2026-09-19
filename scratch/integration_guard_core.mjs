@@ -155,23 +155,40 @@ export const INTEGRATION_ORDER_BUCKET = Object.freeze({
   BLOCKED: 3,
 });
 
+function resolvedGuidance(task = {}) {
+  return task.guidance || buildTaskGuidance(task);
+}
+
+function reviewGradePeerCount(task = {}) {
+  return (task.peerOverlaps || []).filter((entry) => shouldPeerOverlapRequireReview(entry.overlap)).length;
+}
+
+function comparePriority(left, right, {
+  peerCountKey = 'peerOverlapCount',
+  fileCountKey = '',
+} = {}) {
+  const leftBucket = INTEGRATION_ORDER_BUCKET[left.status] ?? 99;
+  const rightBucket = INTEGRATION_ORDER_BUCKET[right.status] ?? 99;
+  if (leftBucket !== rightBucket) return leftBucket - rightBucket;
+  if (peerCountKey && left[peerCountKey] !== right[peerCountKey]) return left[peerCountKey] - right[peerCountKey];
+  if (fileCountKey && left[fileCountKey] !== right[fileCountKey]) return left[fileCountKey] - right[fileCountKey];
+  return String(left.branch || '').localeCompare(String(right.branch || ''));
+}
+
 export function buildIntegrationOrder(tasks = []) {
   return (tasks || [])
     .filter((task) => task?.status !== GUARD_STATUS.MERGED)
-    .map((task) => ({
-      branch: task.branch,
-      status: task.status,
-      action: task.guidance?.action || buildTaskGuidance(task).action,
-      reason: task.guidance?.reason || buildTaskGuidance(task).reason,
-      peerOverlapCount: (task.peerOverlaps || []).filter((entry) => shouldPeerOverlapRequireReview(entry.overlap)).length,
-    }))
-    .sort((left, right) => {
-      const leftBucket = INTEGRATION_ORDER_BUCKET[left.status] ?? 99;
-      const rightBucket = INTEGRATION_ORDER_BUCKET[right.status] ?? 99;
-      if (leftBucket !== rightBucket) return leftBucket - rightBucket;
-      if (left.peerOverlapCount !== right.peerOverlapCount) return left.peerOverlapCount - right.peerOverlapCount;
-      return String(left.branch || '').localeCompare(String(right.branch || ''));
+    .map((task) => {
+      const guidance = resolvedGuidance(task);
+      return {
+        branch: task.branch,
+        status: task.status,
+        action: guidance.action,
+        reason: guidance.reason,
+        peerOverlapCount: reviewGradePeerCount(task),
+      };
     })
+    .sort((left, right) => comparePriority(left, right))
     .map((entry, index) => ({
       ...entry,
       position: index + 1,
@@ -310,8 +327,8 @@ export function buildClusterStrategy(cluster = {}, tasks = []) {
       };
     }
     return {
-      action: task.guidance?.action || buildTaskGuidance(task).action,
-      reason: `Independent TASK can be handled on its own. ${task.guidance?.reason || buildTaskGuidance(task).reason}`,
+      action: resolvedGuidance(task).action,
+      reason: `Independent TASK can be handled on its own. ${resolvedGuidance(task).reason}`,
       provisional: true,
     };
   }
@@ -362,18 +379,14 @@ export function buildClusterOrders(clusters = [], tasks = [], graph = { nodes: [
       .map((task) => ({
         branch: task.branch,
         status: task.status,
-        action: task.guidance?.action || buildTaskGuidance(task).action,
+        action: resolvedGuidance(task).action,
         reviewDegree: reviewDegree.get(task.branch) || 0,
         changedFileCount: unique(task.taskFiles || []).length,
       }))
-      .sort((left, right) => {
-        const leftBucket = INTEGRATION_ORDER_BUCKET[left.status] ?? 99;
-        const rightBucket = INTEGRATION_ORDER_BUCKET[right.status] ?? 99;
-        if (leftBucket !== rightBucket) return leftBucket - rightBucket;
-        if (left.reviewDegree !== right.reviewDegree) return left.reviewDegree - right.reviewDegree;
-        if (left.changedFileCount !== right.changedFileCount) return left.changedFileCount - right.changedFileCount;
-        return String(left.branch || '').localeCompare(String(right.branch || ''));
-      })
+      .sort((left, right) => comparePriority(left, right, {
+        peerCountKey: 'reviewDegree',
+        fileCountKey: 'changedFileCount',
+      }))
       .map((entry, index) => ({
         ...entry,
         position: index + 1,

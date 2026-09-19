@@ -85,6 +85,24 @@ check(buildIntegrationOrder([
   { branch: 'a-ready', status: GUARD_STATUS.READY, guidance: buildTaskGuidance({ status: GUARD_STATUS.READY }), peerOverlaps: [] },
 ]).map((entry) => entry.branch), ['a-ready', 'b-ready'], 'integration order prefers fewer review-grade peer overlaps within status');
 
+check(buildIntegrationOrder([
+  {
+    branch: 'custom-guidance',
+    status: GUARD_STATUS.READY,
+    guidance: { action: 'CUSTOM_ACTION', reason: 'custom reason' },
+    peerOverlaps: [],
+  },
+])[0], {
+  branch: 'custom-guidance',
+  status: GUARD_STATUS.READY,
+  action: 'CUSTOM_ACTION',
+  reason: 'custom reason',
+  peerOverlapCount: 0,
+  position: 1,
+  provisional: true,
+}, 'integration order preserves precomputed guidance after helper refactor');
+
+
 const graphFixture = buildOverlapGraph([
   {
     branch: 'a',
@@ -348,4 +366,4 @@ try {
   fs.rmSync(root, { recursive: true, force: true });
 }
 
-console.log(`Integration Guard V1.9: ${passed} checks PASS`);
+console.log(`Integration Guard V1.10: ${passed} checks PASS`);
