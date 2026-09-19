@@ -17,6 +17,7 @@ function captureRollbackCheckpoint(engine, history) {
         trueEnemyState: cloneData(engine.trueEnemyStateService?.getRestoreState?.()),
         trialTimingState: cloneData(engine.trialTimingAuthorityService?.getRestoreState?.()),
         warningState: cloneData(engine.warningStateService?.getRestoreState?.()),
+        firstRunState: cloneData(engine.firstRunState?.getRestoreState?.()),
         runSeed: engine.runSeed,
         stateRunSeed: state.runSeed,
         gameLogs: cloneData(state.gameLogs, []),
@@ -117,6 +118,9 @@ function rollbackFailedRestore(engine, history, checkpoint, resolveCardMaster) {
     if (checkpoint.warningState !== null) {
         bestEffort(() => engine.warningStateService?.restoreState?.(cloneData(checkpoint.warningState)));
     }
+    if (checkpoint.firstRunState !== null && checkpoint.firstRunState !== undefined) {
+        bestEffort(() => engine.firstRunState?.restoreState?.(cloneData(checkpoint.firstRunState)));
+    }
 
     const state = engine.state;
     bestEffort(() => { engine.runSeed = checkpoint.runSeed; });
@@ -180,6 +184,7 @@ export class HistoryRestoreService {
         const hasEnemyRestoreState = runtime.trueEnemyState !== undefined;
         const hasTimingRestoreState = runtime.trialTimingState !== undefined;
         const hasWarningRestoreState = runtime.warningState !== undefined;
+        const hasFirstRunRestoreState = runtime.firstRunState !== undefined;
         if (!engine.state || !engine.checkSystem?.getState || !engine.checkSystem?.setState ||
             !engine.gameplayRandom?.getState || !engine.gameplayRandom?.setState ||
             !engine.chronicleSystem?.getAllEvents || !engine.chronicleSystem?.restoreEvents ||
@@ -226,6 +231,9 @@ export class HistoryRestoreService {
             }
             if (hasWarningRestoreState) {
                 engine.warningStateService.restoreState(runtime.warningState);
+            }
+            if (hasFirstRunRestoreState && engine.firstRunState?.restoreState) {
+                engine.firstRunState.restoreState(runtime.firstRunState);
             }
 
             // GameState event runtime is authoritative; derived buffs are rebuilt once.

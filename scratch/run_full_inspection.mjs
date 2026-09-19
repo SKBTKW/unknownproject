@@ -168,6 +168,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (FirstRun GameEngine Integration) で不合格が検出されました。");
         process.exit(1);
     }
+    const firstRunTrialTimingOk = await runCommand("node", ["scratch/test_first_run_trial_timing.mjs"]);
+    if (!firstRunTrialTimingOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (FirstRun Trial Timing Contract) で不合格が検出されました。");
+        process.exit(1);
+    }
     const scheduledGlobalEventOk = await runCommand("node", ["scratch/test_scheduled_global_event_contract.mjs"]);
     if (!scheduledGlobalEventOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Scheduled Global Event Contract) で不合格が検出されました。");

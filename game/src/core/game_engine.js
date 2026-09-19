@@ -23,6 +23,8 @@ import { GameState } from '../v2_unity_ready_main.js';
 import { EnemyObservationProjector } from '../warning/systems/enemy_observation_projector.js';
 import { attachInvestigationSubsystem } from '../warning/integration/investigation_bootstrap.js';
 import { FirstRunService } from '../tutorial/first_run_service.js';
+import { FirstRunState } from '../tutorial/first_run_state.js';
+import { TrialTimingAuthorityService } from '../trial/systems/trial_timing_authority_service.js';
 
 function normalizeRunSeed(seed) {
     if (!Number.isFinite(seed)) return null;
@@ -49,8 +51,13 @@ class GameEngine {
         this.landData = dependencies.landData || LAND_SYSTEM_DATA;
         this.cellViewDataService = dependencies.cellViewDataService || new CellViewDataService(this.productionCalculator);
         this.transactionManager = dependencies.transactionManager || new ActionTransactionManager(this);
+        const isExplicitFirstRun = dependencies.firstRun === true
+            || dependencies.firstRunState?.active === true
+            || dependencies.firstRunService?.enabled === true;
+        this.firstRunState = dependencies.firstRunState
+            || new FirstRunState({ active: isExplicitFirstRun });
         this.firstRunService = dependencies.firstRunService
-            || (dependencies.firstRun === true ? new FirstRunService({ enabled: true }) : null);
+            || (this.firstRunState.active ? new FirstRunService({ enabled: true }) : null);
         this.offeringMinimumRequirementProvider = dependencies.offeringMinimumRequirementProvider
             || this.firstRunService
             || null;
@@ -121,6 +128,33 @@ class GameEngine {
 
         const CardCycleSystemClass = dependencies.CardCycleSystemClass || CardCycleSystem;
         this.cardCycleSystem = dependencies.cardCycleSystem || (CardCycleSystemClass ? new CardCycleSystemClass(this.state, this) : null);
+
+        if (dependencies.trialTimingAuthorityService) {
+            this.trialTimingAuthorityService = dependencies.trialTimingAuthorityService;
+        } else if (this.firstRunState?.active && (!dependencies.state || dependencies.state.turn === 1)) {
+            const existingSchedule = this.state?.trialSchedule;
+            if (!existingSchedule || typeof existingSchedule !== "object") {
+                throw new TypeError("FIRST_RUN_TRIAL_SCHEDULE_REQUIRED");
+            }
+            const trial2 = existingSchedule.trial2;
+            const trial3 = existingSchedule.trial3;
+            if (!(15 < trial2 && trial2 < trial3)) {
+                throw new Error(`FIRST_RUN_TRIAL_SCHEDULE_INVARIANT_VIOLATED: expected 15 < ${trial2} < ${trial3}`);
+            }
+            const firstRunSchedule = {
+                trial1: 15,
+                trial2,
+                trial3
+            };
+            const TrialTimingAuthorityServiceClass = dependencies.TrialTimingAuthorityServiceClass || TrialTimingAuthorityService;
+            this.trialTimingAuthorityService = new TrialTimingAuthorityServiceClass({ schedule: firstRunSchedule });
+            if (this.state?.trialSchedule) {
+                this.state.trialSchedule.trial1 = 15;
+                this.state.nextTrialTurn = 15;
+            }
+        } else {
+            this.trialTimingAuthorityService = null;
+        }
 
         const TurnLifecycleServiceClass = dependencies.TurnLifecycleServiceClass || TurnLifecycleService;
         this.turnLifecycleService = dependencies.turnLifecycleService
