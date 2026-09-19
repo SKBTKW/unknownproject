@@ -3,6 +3,7 @@ import { ElevationVisualService } from './elevation_visual_service.js';
 import { AreaInfluenceVisualService } from './area_influence_visual_service.js';
 import { isWaterSourceInfluence } from '../core/lake_rules.js';
 import { getTrialRouteCellVisualState } from '../presentation/trial_board_semantic_data.js';
+import { resolveBoardDisplayRole } from '../presentation/board_presentation_semantic_service.js';
 
 /**
  * 🗺️ BoardGridComponent (盤面グリッド ＆ セル描画・配置プレビュー・マージ演出専門コンポーネント)
@@ -648,37 +649,17 @@ export class BoardGridComponent {
      * - "CLEAN": クリーンな背景（余計なテキストなし）
      */
     getGroupCellRole(r, c, activeGroupId, cellData) {
-        if (!activeGroupId || !cellData) return "LAND_PRIMARY";
-
-        // 1. そのセル自体に資源ソケットがある場合 ➔ 没入感最優先で資源マス表示
-        if (cellData.socketResource) {
-            return "SOCKET";
-        }
-
-        // 2. このグループに属する全マスを走査（左上から順）
-        const size = (this.state && this.state.grid) ? this.state.grid.length : 5;
-        const freeCells = [];
-        for (let row = 0; row < size; row++) {
-            for (let col = 0; col < size; col++) {
-                const cell = this.state.grid[row][col];
-                if (cell) {
-                    const gId = cell.mergeGroupId || cell.placementGroupId;
-                    if (gId === activeGroupId) {
-                        if (!cell.socketResource) {
-                            freeCells.push({ r: row, c: col });
-                        }
-                    }
-                }
-            }
-        }
-
-        // 3. 最初の空きマス（freeCells[0]）であれば、土地名＆総産出を描画
-        if (freeCells.length > 0 && freeCells[0].r === r && freeCells[0].c === c) {
-            return "LAND_PRIMARY";
-        }
-
-        // 4. それ以外の後続空きマスはクリーン背景
-        return "CLEAN";
+        if (!cellData) return "LAND_PRIMARY";
+        const facts = {
+            r,
+            c,
+            placed: Boolean(cellData.placed),
+            isHQ: Boolean(cellData.isHQ),
+            socketResource: cellData.socketResource || null,
+            mergeGroupId: cellData.mergeGroupId ?? activeGroupId ?? null,
+            placementGroupId: cellData.placementGroupId ?? activeGroupId ?? null
+        };
+        return resolveBoardDisplayRole(this.state, facts) || "LAND_PRIMARY";
     }
 
     /**
