@@ -5,9 +5,16 @@ import { LAND_CARDS_MASTER } from '../data/land_cards_data.js';
 import { COMMAND_CARDS_MASTER } from '../data/command_cards_data.js';
 import { ConditionEvaluator } from '../core/condition_evaluator.js';
 import { CardCycleSystem, CYCLE_POLICIES } from './card_cycle_system.js';
-import { normalizePlacementAnchor } from '../core/placement_geometry.js';
+import { normalizePlacementAnchor, resolvePlacementGeometry } from '../core/placement_geometry.js';
 import { isTrueMergedCell } from '../core/merge_rules.js';
 import { getWaterSourceSpawnChance } from '../core/lake_rules.js';
+
+export const OFFERING_GENERATION_REASONS = Object.freeze({
+    INITIAL: "INITIAL",
+    VERSE_START: "VERSE_START",
+    MULLIGAN: "MULLIGAN",
+    UNSPECIFIED: "UNSPECIFIED"
+});
 
 const LAND_EXPLORATION_CHECK = {
     id: "land_exploration",
@@ -499,6 +506,9 @@ class DeckManager {
         const h2Count = (this.state && typeof this.state.countE2HillsOnBoard === 'function') ? this.state.countE2HillsOnBoard() : 0;
 
         let eligible = master.filter(c => this.isCardEligible(c, stageNum, h2Count, options));
+        if (typeof options.candidateFilter === "function") {
+            eligible = eligible.filter(c => options.candidateFilter(c));
+        }
 
         // 🛡️ 同一オファリング内における完全同一カードの重複排除
         if (Array.isArray(excludedCardIds) && excludedCardIds.length > 0) {
@@ -551,10 +561,107 @@ class DeckManager {
         return this._wrapCardInstance(picked);
     }
 
+    _cardDefinition(card) {
+        return card?.terrain || card || null;
+    }
+
+    _cardId(card) {
+        const definition = this._cardDefinition(card);
+        return card?.cardMasterId || definition?.id || card?.id || null;
+    }
+
+    _isCardPlaceableNow(card) {
+        const definition = this._cardDefinition(card);
+        if (!definition || definition.category !== "LAND") return false;
+        if (!this.state?.grid || typeof this.state.canPlaceShape !== "function") return false;
+
+        for (let r = 0; r < this.state.grid.length; r++) {
+            for (let c = 0; c < this.state.grid[r].length; c++) {
+                try {
+                    const placement = resolvePlacementGeometry(definition, r, c);
+                    const result = this.state.canPlaceShape(
+                        placement.startR,
+                        placement.startC,
+                        placement.shape,
+                        definition
+                    );
+                    if (result?.can === true) return true;
+                } catch {
+                    // Malformed/non-placeable candidates do not satisfy placement guarantees.
+                }
+            }
+        }
+        return false;
+    }
+
+    _matchesMinimumRequirement(card, requirement) {
+        const definition = this._cardDefinition(card);
+        if (!definition || !requirement || typeof requirement !== "object") return false;
+        if (requirement.category && definition.category !== requirement.category) return false;
+        if (requirement.requirePlaceable === true && !this._isCardPlaceableNow(definition)) return false;
+        return true;
+    }
+
+    _resolveMinimumRequirements(reason) {
+        const provider = this.engine?.offeringMinimumRequirementProvider;
+        if (!provider) return [];
+
+        const context = Object.freeze({ reason, state: this.state, deckManager: this });
+        const requirements = typeof provider === "function"
+            ? provider(context)
+            : provider.getMinimumRequirements?.(context);
+        return Array.isArray(requirements)
+            ? requirements.filter(requirement => requirement && (requirement.minCount ?? 1) > 0)
+            : [];
+    }
+
+    _enforceMinimumRequirements(cards, excludedCardIds, requirements) {
+        if (!Array.isArray(cards) || cards.length === 0 || !Array.isArray(requirements) || requirements.length === 0) return [];
+
+        const applied = [];
+        for (const requirement of requirements) {
+            const minCount = Math.max(1, Math.trunc(requirement.minCount ?? 1));
+            let matchingCount = cards.filter(card => this._matchesMinimumRequirement(card, requirement)).length;
+
+            while (matchingCount < minCount) {
+                const candidate = this.drawSingleCard(excludedCardIds, {
+                    candidateFilter: card => this._matchesMinimumRequirement(card, requirement)
+                });
+                if (!candidate) break;
+
+                const replaceIndex = cards.findIndex(card => !this._matchesMinimumRequirement(card, requirement));
+                if (replaceIndex < 0) break;
+
+                const replacedId = this._cardId(cards[replaceIndex]);
+                const candidateId = this._cardId(candidate);
+                cards[replaceIndex] = candidate;
+
+                if (replacedId) {
+                    const excludedIndex = excludedCardIds.indexOf(replacedId);
+                    if (excludedIndex >= 0) excludedCardIds.splice(excludedIndex, 1);
+                }
+                if (candidateId && !excludedCardIds.includes(candidateId)) excludedCardIds.push(candidateId);
+
+                matchingCount += 1;
+                applied.push(Object.freeze({
+                    id: requirement.id || null,
+                    category: requirement.category || null,
+                    candidateId,
+                    replacedId
+                }));
+            }
+        }
+        return applied;
+    }
+
     /**
      * 🃏 手札オファリングの生成 (3段階制約緩和フォールバック ＆ 確定3枚の転生CD登録)
+     *
+     * A minimum-requirement provider declares intent only. DeckManager still
+     * owns eligibility, weighted candidate selection, cooldown/hold gates and
+     * any replacement needed to satisfy the minimum.
      */
-    generateOfferingCards() {
+    generateOfferingCards({ reason = OFFERING_GENERATION_REASONS.UNSPECIFIED } = {}) {
         if (this.state) {
             this.state.hasReservedThisTurn = false;
             if (this.state.reserveSlots) {
@@ -631,6 +738,14 @@ class DeckManager {
             console.warn(`[DeckManager] Critical: Offering cards insufficient (${newCards.length}/${offeringSize})`);
         }
 
+        const minimumRequirements = this._resolveMinimumRequirements(reason);
+        const appliedMinimumRequirements = this._enforceMinimumRequirements(newCards, excludedCardIds, minimumRequirements);
+        this.lastOfferingGeneration = Object.freeze({
+            reason,
+            requestedMinimums: minimumRequirements.length,
+            appliedMinimums: appliedMinimumRequirements
+        });
+
         // ⭐ 確定した手札 3 枚に対して転生 Cooldown を登録 (フォールバックで救済されたカードもここで新CD再登録)
         if (this.cycleSystem) {
             this.cycleSystem.registerOffering(newCards, currentTurn);
@@ -658,7 +773,7 @@ class DeckManager {
             this.state.ember -= 1;
         }
         this.state.hasMulliganedThisTurn = true;
-        this.generateOfferingCards();
+        this.generateOfferingCards({ reason: OFFERING_GENERATION_REASONS.MULLIGAN });
 
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' && window.I18n ? window.I18n : { t: k => k });
         if (typeof this.state.addLog === 'function') {

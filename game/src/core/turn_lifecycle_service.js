@@ -6,6 +6,7 @@ import { TrialThreatStateService } from '../trial/systems/trial_threat_state_ser
 import { TrueEnemyStateService } from '../trial/systems/true_enemy_state_service.js';
 import { EnemyTruthReadModel } from '../trial/systems/enemy_truth_read_model.js';
 import { createEnemyStateTransitionResolver } from '../trial/systems/enemy_state_transition_resolver.js';
+import { OFFERING_GENERATION_REASONS } from '../systems/deck_manager.js';
 
 export const TURN_LIFECYCLE_PHASES = Object.freeze({ ACTIVE: "ACTIVE", COMMITTING: "COMMITTING", COMMITTED: "COMMITTED", INITIALIZING: "INITIALIZING" });
 
@@ -111,7 +112,7 @@ export class TurnLifecycleService {
         const engine = this.engine;
         const state = engine.state;
         this._advanceTurnState();
-        if (engine.deckManager && typeof engine.deckManager.generateOfferingCards === "function") engine.deckManager.generateOfferingCards();
+        if (engine.deckManager && typeof engine.deckManager.generateOfferingCards === "function") engine.deckManager.generateOfferingCards({ reason: OFFERING_GENERATION_REASONS.VERSE_START });
         if (engine.globalEventManager) engine.globalEventManager.onTurnStart();
         if (state && typeof state.addLog === "function") state.addLog(this._translate("LOG_TURN_START", { turn: state.turn }, `Turn ${state.turn} started.`));
     }
