@@ -1,6 +1,11 @@
 import { BoardGridComponent as LegacyBoardGridComponent } from './board_grid_component.js';
 import { BOARD_CONTEXT_MODES } from '../presentation/board_presentation_state.js';
 import { applyBoardGroupJoinClasses } from './board_presentation_2d_edge_adapter.js';
+import { BOARD_INPUT_COMMANDS } from '../presentation/board_input_contract.js';
+import {
+    BOARD_POINTER_ACTIONS,
+    resolveBoardPointerCommand
+} from '../presentation/board_input_semantic_resolver.js';
 
 export const TRIAL_VISUAL_CLASSES = Object.freeze([
     'trial-route-cell',
@@ -18,8 +23,75 @@ export const TRIAL_VISUAL_CLASSES = Object.freeze([
 export class BoardPresentationGridComponent extends LegacyBoardGridComponent {
     render(I18n) {
         super.render(I18n);
+        this.bindBoardInput();
         this.applyBoardPresentation();
     }
+
+    bindBoardInput() {
+        if (typeof document === 'undefined') return;
+        const runtime = this.ui?.boardPresentationRuntimeBridge;
+        if (!runtime || typeof runtime.dispatchInput !== 'function') return;
+        const boardEl = document.getElementById('gridBoard');
+        if (!boardEl) return;
+
+        boardEl.querySelectorAll('.cell').forEach(cellEl => {
+            const r = Number(cellEl.getAttribute('data-r'));
+            const c = Number(cellEl.getAttribute('data-c'));
+            if (!Number.isInteger(r) || !Number.isInteger(c)) return;
+
+            const legacyEnter = cellEl.onmouseenter;
+            const legacyLeave = cellEl.onmouseleave;
+
+            cellEl.onclick = () => {
+                const command = resolveBoardPointerCommand(
+                    BOARD_POINTER_ACTIONS.CLICK,
+                    {
+                        readModel: this.ui.getBoardPresentationData?.() || null,
+                        cell: { r, c }
+                    }
+                );
+                if (!command) return null;
+                const result = runtime.dispatchInput(command);
+                this.applyBoardPresentation();
+                return result;
+            };
+
+            cellEl.onmouseenter = event => {
+                const command = resolveBoardPointerCommand(
+                    BOARD_POINTER_ACTIONS.HOVER,
+                    {
+                        readModel: this.ui.getBoardPresentationData?.() || null,
+                        cell: { r, c }
+                    }
+                );
+                if (!command) return null;
+                const result = runtime.dispatchInput(command);
+                if (result?.success !== false
+                    && command.type === BOARD_INPUT_COMMANDS.HOVER_CELL
+                    && typeof legacyEnter === 'function') {
+                    legacyEnter(event);
+                }
+                this.applyBoardPresentation();
+                return result;
+            };
+
+            cellEl.onmouseleave = event => {
+                const command = resolveBoardPointerCommand(
+                    BOARD_POINTER_ACTIONS.LEAVE,
+                    { readModel: this.ui.getBoardPresentationData?.() || null }
+                );
+                const result = runtime.dispatchInput(command);
+                if (result?.success !== false
+                    && command.type === BOARD_INPUT_COMMANDS.CLEAR_HOVER
+                    && typeof legacyLeave === 'function') {
+                    legacyLeave(event);
+                }
+                this.applyBoardPresentation();
+                return result;
+            };
+        });
+    }
+
     applyBoardPresentation() {
         if (typeof document === 'undefined') return;
         if (!this.ui || typeof this.ui.getBoardPresentationData !== 'function') return;
