@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { BoardPresentationDataService } from "../game/src/presentation/board_presentation_data_service.js";
-import { resolveBoardDisplayRole } from "../game/src/presentation/board_presentation_semantic_service.js";
+import {
+    resolveBoardDisplayProduction,
+    resolveBoardDisplayRole,
+    resolveSocketPrimaryYield
+} from "../game/src/presentation/board_presentation_semantic_service.js";
 import { BoardPresentationRuntimeAdapter } from "../game/src/presentation/board_presentation_runtime_adapter.js";
 import { BoardPresentationState } from "../game/src/presentation/board_presentation_state.js";
 import { createBoardPresentationDto } from "../game/src/presentation/board_presentation_contract.js";
@@ -107,6 +111,63 @@ test("shared display role is the renderer-neutral SSOT", () => {
         r: 1, c: 0, placed: true, isHQ: false,
         socketResource: { id: "SOCKET_WOOD" }, mergeGroupId: null, placementGroupId: null
     }), "SOCKET");
+});
+
+test("socket primary yield tie-breaks are renderer-neutral semantics", () => {
+    assert.deepEqual(resolveSocketPrimaryYield({
+        id: "IRON_ORE",
+        yields: { food: 0, wood: 3, defense: 3, mystic: 0 }
+    }), { resource: "wood", amount: 3 });
+
+    assert.deepEqual(resolveSocketPrimaryYield({
+        id: "GUARD_POST",
+        yields: { food: 0, wood: 2, defense: 2, mystic: 2 }
+    }), { resource: "defense", amount: 2 });
+
+    assert.deepEqual(resolveSocketPrimaryYield({
+        id: "WHEAT_FIELD",
+        yields: { food: 4, wood: 4, defense: 0, mystic: 0 }
+    }), { resource: "food", amount: 4 });
+});
+
+test("socket with no own yield falls back to shared land production", () => {
+    const fallbackState = {
+        grid: [[{
+            placed: true,
+            merged: false,
+            terrain: { terrainId: "PLAINS" },
+            socketResource: { id: "EMPTY_SOCKET", yields: { food: 0, wood: 0, defense: 0, mystic: 0 } }
+        }]]
+    };
+    const fallbackFacts = {
+        r: 0,
+        c: 0,
+        placed: true,
+        isHQ: false,
+        terrainId: "PLAINS",
+        socketResource: fallbackState.grid[0][0].socketResource,
+        baseYields: { food: 2, wood: 1, defense: 0, mystic: 0 },
+        modifiers: [],
+        mergeGroupId: null,
+        placementGroupId: null
+    };
+    const fallbackService = {
+        getCellViewData() {
+            return fallbackFacts;
+        }
+    };
+    const production = resolveBoardDisplayProduction(
+        fallbackState,
+        fallbackFacts,
+        fallbackService
+    );
+    assert.deepEqual(production, {
+        food: 2,
+        wood: 1,
+        defense: 0,
+        mystic: 0,
+        primaryYield: { resource: "food", amount: 2 }
+    });
 });
 
 test("merged production is resolved before renderer DTO consumption", () => {
