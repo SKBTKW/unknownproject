@@ -12,6 +12,7 @@ import { BOARD_INPUT_COMMANDS, createBoardInputCommand, serializeBoardInputComma
 import { GameRuntimeSnapshotDataService } from "../game/src/presentation/game_runtime_snapshot_data_service.js";
 import { createGameRuntimeSnapshotDto } from "../game/src/presentation/game_runtime_snapshot_contract.js";
 import { LegacyWeb2DBoardInputAdapter } from "../game/src/ui/legacy_web2d_board_input_adapter.js";
+import fs from "node:fs";
 
 let passed = 0;
 function test(name, callback) {
@@ -201,6 +202,16 @@ test("socket semantics remain presentation data instead of renderer inference", 
         primaryYield: { resource: "wood", amount: 2 }
     });
     assert.equal(socket.socketResource.id, "SOCKET_WOOD");
+});
+
+test("browser BoardAware UI routes board reads through the shared runtime adapter", () => {
+    const source = fs.readFileSync(
+        new URL("../game/src/ui/board_aware_ui_controller.js", import.meta.url),
+        "utf8"
+    );
+    assert.equal(source.includes("new BoardPresentationRuntimeAdapter"), true);
+    assert.equal(source.includes("this.boardPresentationRuntimeAdapter.getBoard(this.state"), true);
+    assert.equal(source.includes("this.boardPresentationDataService.getBoard(this.state"), false);
 });
 
 test("runtime adapter is the shared runtime-to-presentation entrypoint", () => {
