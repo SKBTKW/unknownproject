@@ -11,6 +11,7 @@ import {
   buildIntegrationClusters,
   buildIntegrationOrder,
   buildOverlapGraph,
+  buildReevaluationPlan,
   buildSessionId,
   buildTaskGuidance,
   explainIntegrationOrder,
@@ -171,6 +172,27 @@ check(localOrderFixture[0].entries.map((entry) => entry.branch), ['b', 'a', 'c']
 check(localOrderFixture[0].entries.every((entry) => entry.provisional === true), true, 'cluster-local entries remain provisional');
 check(localOrderFixture[0].entries[0].rationale.includes('changed file'), true, 'cluster-local order records rationale');
 
+const reevaluationFixture = buildReevaluationPlan([
+  { id: 'cluster-1', type: 'REVIEW_CLUSTER', members: ['a', 'b', 'c'] },
+  { id: 'cluster-2', type: 'INDEPENDENT', members: ['d'] },
+], {
+  nodes: [
+    { branch: 'a' },
+    { branch: 'b' },
+    { branch: 'c' },
+    { branch: 'd' },
+  ],
+  edges: [
+    { from: 'a', to: 'b', reviewRequired: true },
+    { from: 'b', to: 'c', reviewRequired: true },
+  ],
+});
+check(reevaluationFixture.find((item) => item.afterBranch === 'a')?.reevaluateBranches, ['b', 'c'], 're-evaluation plan includes direct peer and same-cluster remainder');
+check(reevaluationFixture.find((item) => item.afterBranch === 'b')?.directReviewPeers, ['a', 'c'], 're-evaluation plan records direct review peers');
+check(reevaluationFixture.find((item) => item.afterBranch === 'd')?.reevaluateBranches, [], 'independent TASK has no predicted re-evaluation candidates');
+check(reevaluationFixture.every((item) => item.provisional === true), true, 're-evaluation plan remains explicitly provisional');
+
+
 
 
 
@@ -233,7 +255,7 @@ try {
   const result = await runIntegrationGuard({ cwd: repo, target, backupRoot, now });
   check(result.analysis.targetSha, targetSha, 'E2E analysis pins current target SHA');
   check(result.analysis.backupVerified, true, 'E2E backup is verified before analysis result');
-  check(result.analysis.schemaVersion, 7, 'E2E analysis uses cluster-local-order schema version');
+  check(result.analysis.schemaVersion, 8, 'E2E analysis uses re-evaluation-plan schema version');
   check(result.analysis.tasks.length, 3, 'E2E discovers stale and merged TASK branches');
   check(result.analysis.summary.MERGED, 1, 'E2E classifies target-contained TASK as merged');
   check(result.analysis.summary.RECONCILE_REQUIRED, 2, 'E2E marks both stale TASKs for reconciliation');
@@ -253,6 +275,8 @@ try {
   check(result.analysis.clusterStrategies.every((strategy) => strategy.provisional === true), true, 'E2E cluster strategies are explicitly provisional');
   check(result.analysis.clusterOrders.length, result.analysis.integrationClusters.length, 'E2E provides one local order per cluster');
   check(result.analysis.clusterOrders.every((group) => group.provisional === true && group.entries.every((entry) => entry.provisional === true)), true, 'E2E cluster-local orders are explicitly provisional');
+  check(result.analysis.reevaluationPlan.length, result.analysis.overlapGraph.nodes.length, 'E2E provides re-evaluation prediction for every active TASK');
+  check(result.analysis.reevaluationPlan.every((item) => item.provisional === true), true, 'E2E re-evaluation predictions are explicitly provisional');
   check(fs.existsSync(result.backup.bundlePath), true, 'E2E writes bundle outside repository');
   check(fs.existsSync(result.backup.manifestPath), true, 'E2E writes backup manifest');
   check(fs.existsSync(path.join(result.backup.sessionDir, 'SHA256SUM.txt')), true, 'E2E writes bundle checksum');
@@ -307,4 +331,4 @@ try {
   fs.rmSync(root, { recursive: true, force: true });
 }
 
-console.log(`Integration Guard V1.7: ${passed} checks PASS`);
+console.log(`Integration Guard V1.8: ${passed} checks PASS`);
