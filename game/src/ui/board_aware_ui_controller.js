@@ -146,7 +146,12 @@ export class BoardAwareUIController extends LegacyUIController {
         const board = this.boardPresentationRuntimeAdapter.getBoard(this.state, {
             presentationState: this.boardPresentationState,
             trialSemanticData: this.getTrialBoardSemanticData(),
-            gridOverride: this.getBoardDisplayGrid()
+            gridOverride: this.getBoardDisplayGrid(),
+            interactionQuery: {
+                isCellPlacedThisTurn: (r, c) => Boolean(
+                    this.engine?.undoSystem?.isCellPlacedThisTurn?.(r, c)
+                )
+            }
         });
         return Object.freeze({
             ...board,
