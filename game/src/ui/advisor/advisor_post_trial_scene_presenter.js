@@ -1,10 +1,6 @@
 import { ADVISOR_DIALOGUE_CHANNELS } from "../../data/advisor_dialogue_responsibility.js";
 import { resolveAdvisorPostTrialScene } from "./advisor_post_trial_scene_adapter.js";
-
-function firstReactionLine(reaction) {
-    const lines = Array.isArray(reaction?.lines) ? reaction.lines : [];
-    return lines.find(line => typeof line === "string" && line.trim()) || null;
-}
+import { resolvePostTrialAdvisorReaction } from "./advisor_post_trial_reaction_variant_resolver.js";
 
 /**
  * Presentation-only bridge for Post-Trial Advisor scenes.
@@ -50,8 +46,12 @@ export class AdvisorPostTrialScenePresenter {
 
         if (resolved.channel === ADVISOR_DIALOGUE_CHANNELS.REACTION) {
             const reaction = this.profile?.reactions?.[resolved.advisorScene] || null;
-            const line = firstReactionLine(reaction);
-            if (!line) {
+            const presentation = resolvePostTrialAdvisorReaction({
+                reaction,
+                profile: this.profile,
+                payload: resolved.payload || {}
+            });
+            if (!presentation) {
                 return {
                     success: true,
                     spoken: false,
@@ -63,10 +63,10 @@ export class AdvisorPostTrialScenePresenter {
 
             const spoken = Boolean(this.dialogueSystem.emitPresentation?.({
                 scene: resolved.advisorScene,
-                line,
-                expression: reaction.expression || "NORMAL",
-                priority: reaction.priority,
-                durationMs: reaction.durationMs,
+                line: presentation.line,
+                expression: presentation.expression,
+                priority: presentation.priority,
+                durationMs: presentation.durationMs,
                 payload: resolved.payload || {}
             }));
             return {
@@ -74,7 +74,9 @@ export class AdvisorPostTrialScenePresenter {
                 spoken,
                 reason: spoken ? null : "ADVISOR_REACTION_NOT_PRESENTED",
                 scene: resolved.advisorScene,
-                channel: resolved.channel
+                channel: resolved.channel,
+                policyLens: presentation.policyLens,
+                semanticSceneId: presentation.semanticSceneId
             };
         }
 
