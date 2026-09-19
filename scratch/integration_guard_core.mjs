@@ -428,6 +428,29 @@ export function buildReevaluationPlan(clusters = [], graph = { nodes: [], edges:
     .sort((a, b) => a.afterBranch.localeCompare(b.afterBranch));
 }
 
+export function buildFocusedReevaluationSets(reevaluationPlan = [], graph = { nodes: [] }) {
+  const activeBranches = (graph.nodes || []).map((node) => node.branch).filter(Boolean).sort();
+  return (reevaluationPlan || [])
+    .map((item) => {
+      const primary = unique(item.reevaluateBranches || []).filter((branch) => branch !== item.afterBranch).sort();
+      const primarySet = new Set(primary);
+      const secondary = activeBranches
+        .filter((branch) => branch !== item.afterBranch && !primarySet.has(branch))
+        .sort();
+      return {
+        afterBranch: item.afterBranch,
+        primaryReinspection: primary,
+        secondaryReinspection: secondary,
+        fullGuardRerunRequired: true,
+        reason: primary.length > 0
+          ? 'Prioritize predicted affected TASKs first, then re-run the full Guard across all remaining active TASKs because target history changed.'
+          : 'No elevated-risk TASK was predicted, but re-run the full Guard across all remaining active TASKs because target history changed.',
+        provisional: true,
+      };
+    })
+    .sort((a, b) => a.afterBranch.localeCompare(b.afterBranch));
+}
+
 export function summarizeStatuses(tasks = []) {
   const counts = Object.fromEntries(Object.values(GUARD_STATUS).map((status) => [status, 0]));
   for (const task of tasks) {
