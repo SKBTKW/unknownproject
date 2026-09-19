@@ -3,6 +3,10 @@ import { TrialResultExitAdapter } from './trial_result_exit_adapter.js';
 import { releaseSettledTrialPreviewSession } from '../trial/dev/settled_trial_preview_release.js';
 import { TrialSessionBoundaryService } from '../trial/flow/trial_session_boundary_service.js';
 import { GlobalEventChoiceRuntimeIntegration } from './global_event_choice_runtime_integration.js';
+import { AdvisorPostTrialScenePresenter } from './advisor/advisor_post_trial_scene_presenter.js';
+import { PostTrialInterludeComponent } from './post_trial_interlude_component.js';
+import { PostTrialInterludePresentationBridge } from '../trial/presentation/post_trial_interlude_presentation_bridge.js';
+import { PostTrialInterludeProgressService } from '../trial/systems/post_trial_interlude_progress_service.js';
 
 export class TrialResultUIController extends BoardAwareUIController {
     constructor(engine) {
@@ -30,15 +34,92 @@ export class TrialResultUIController extends BoardAwareUIController {
         this.trialResultExitAdapter = new TrialResultExitAdapter({
             gameFactHub: this.trialController.gameFactHub,
             lifecycleProvider: () => this.trialController.getLifecycleReadModel(),
-            onExitReady: () => this.releaseSettledTrialPresentation()
+            onExitReady: () => this.handleSettledTrialExitReady()
         });
         this.globalEventChoiceRuntime = new GlobalEventChoiceRuntimeIntegration(this);
         this.postTrialStageGateDeferred = false;
+        this.postTrialAdvisorPresenter = null;
+        this.postTrialInterludePresentationBridge = null;
+        this.postTrialInterludeProgressService = null;
+        this.postTrialInterludeComponent = null;
+        this.configurePostTrialInterlude();
     }
 
     render() {
         super.render();
         this.globalEventChoiceRuntime?.resumePending?.();
+        this.resumePostTrialInterludeIfNeeded();
+    }
+
+    configurePostTrialInterlude() {
+        const readService = this.engine?.postTrialProgressionReadService || null;
+        if (!readService?.read || !this.state) return false;
+
+        const advisorDock = this.advisorDockComponent || null;
+        if (advisorDock?.dialogueSystem) {
+            this.postTrialAdvisorPresenter = new AdvisorPostTrialScenePresenter({
+                dialogueSystem: advisorDock.dialogueSystem,
+                profile: advisorDock.profile,
+                enabledProvider: () => advisorDock.isEnabled?.() === true
+            });
+        }
+
+        this.postTrialInterludePresentationBridge = new PostTrialInterludePresentationBridge({
+            uiController: this,
+            advisorPresenter: this.postTrialAdvisorPresenter
+        });
+        this.postTrialInterludeProgressService = new PostTrialInterludeProgressService({
+            state: this.state,
+            readService,
+            presentationBridge: this.postTrialInterludePresentationBridge
+        });
+
+        if (typeof document !== "undefined") {
+            this.postTrialInterludeComponent = new PostTrialInterludeComponent({
+                progressService: this.postTrialInterludeProgressService,
+                readService,
+                presentationBridge: this.postTrialInterludePresentationBridge,
+                stateProvider: () => this.state,
+                advisorEnabledProvider: () => advisorDock?.isEnabled?.() === true,
+                translate: (key, params, fallback) => this.engine?.i18n?.t?.(key, params) || fallback,
+                onRefresh: () => this.render()
+            });
+        }
+        return true;
+    }
+
+    preparePostTrialInterlude() {
+        if (!this.postTrialInterludeProgressService) {
+            return { success: false, reason: "POST_TRIAL_INTERLUDE_RUNTIME_UNAVAILABLE" };
+        }
+        return this.postTrialInterludeProgressService.ensureSession();
+    }
+
+    handleSettledTrialExitReady() {
+        const prepared = this.preparePostTrialInterlude();
+        const released = this.releaseSettledTrialPresentation();
+        if (released?.success && prepared?.success) {
+            this.postTrialInterludeComponent?.open?.();
+        }
+        return released;
+    }
+
+    resumePostTrialInterludeIfNeeded() {
+        if (this.trialPreviewConfig && this.trialController?.state) return false;
+        const transition = this.state?.postTrialTransition || null;
+        if (!transition) {
+            this.postTrialInterludeComponent?.close?.();
+            return false;
+        }
+        if (transition.presentation?.status === "COMPLETED") {
+            this.postTrialInterludeComponent?.close?.();
+            return false;
+        }
+
+        const prepared = this.preparePostTrialInterlude();
+        if (!prepared?.success) return false;
+        this.postTrialInterludeComponent?.open?.();
+        return true;
     }
 
     startTrialSession(scenario, options = {}) {

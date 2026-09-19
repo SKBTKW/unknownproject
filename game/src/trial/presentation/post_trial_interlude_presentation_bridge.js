@@ -18,8 +18,12 @@ export class PostTrialInterludePresentationBridge {
 
     setEnabled(enabled) {
         this.enabled = Boolean(enabled);
-        this.uiController.setPostTrialStageGateDeferred?.(this.enabled);
+        if (!this.enabled) this.setStageGateDeferred(false);
         return this.enabled;
+    }
+
+    setStageGateDeferred(enabled) {
+        return this.uiController.setPostTrialStageGateDeferred?.(Boolean(enabled)) ?? false;
     }
 
     presentAdvisorScene(scene = {}) {
@@ -40,7 +44,7 @@ export class PostTrialInterludePresentationBridge {
             return { success: true, stageGateOpened: false };
         }
 
-        const result = this.uiController.completePostTrialStagePrelude?.();
+        const result = this.uiController.completePostTrialStagePrelude?.({ render: false });
         if (!result) {
             return { success: false, reason: "POST_TRIAL_STAGE_GATE_UNAVAILABLE" };
         }

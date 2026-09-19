@@ -84,9 +84,12 @@ export class PostTrialInterludeProgressService {
             }
         }
 
-        this.presentationBridge?.setEnabled?.(
-            presentation.status !== POST_TRIAL_INTERLUDE_PRESENTATION_STATUS.COMPLETED
+        const active = presentation.status !== POST_TRIAL_INTERLUDE_PRESENTATION_STATUS.COMPLETED;
+        this.presentationBridge?.setEnabled?.(active);
+        const hasStagePrelude = presentation.scenes.some(
+            scene => scene?.id === POST_TRIAL_INTERLUDE_SCENES.STAGE_PRELUDE
         );
+        this.presentationBridge?.setStageGateDeferred?.(active && hasStagePrelude);
 
         return {
             success: true,
@@ -151,6 +154,7 @@ export class PostTrialInterludeProgressService {
             || nextIndex >= presentation.scenes.length) {
             presentation.currentSceneIndex = Math.min(nextIndex, presentation.scenes.length);
             presentation.status = POST_TRIAL_INTERLUDE_PRESENTATION_STATUS.COMPLETED;
+            this.presentationBridge?.setStageGateDeferred?.(false);
             this.presentationBridge?.setEnabled?.(false);
             return {
                 success: true,
