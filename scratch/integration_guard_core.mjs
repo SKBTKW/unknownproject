@@ -295,6 +295,57 @@ export function buildIntegrationClusters(graph = { nodes: [], edges: [] }) {
   return clusters;
 }
 
+export function buildClusterStrategy(cluster = {}, tasks = []) {
+  const taskByBranch = new Map((tasks || []).map((task) => [task.branch, task]));
+  const members = (cluster.members || []).map((branch) => taskByBranch.get(branch)).filter(Boolean);
+  const statuses = new Set(members.map((task) => task.status));
+
+  if (cluster.type === 'INDEPENDENT') {
+    const task = members[0];
+    if (!task) {
+      return {
+        action: GUARD_ACTION.STOP_AND_INSPECT,
+        reason: 'Independent cluster has no matching TASK details.',
+        provisional: true,
+      };
+    }
+    return {
+      action: task.guidance?.action || buildTaskGuidance(task).action,
+      reason: `Independent TASK can be handled on its own. ${task.guidance?.reason || buildTaskGuidance(task).reason}`,
+      provisional: true,
+    };
+  }
+
+  if (statuses.has(GUARD_STATUS.BLOCKED)) {
+    return {
+      action: GUARD_ACTION.STOP_AND_INSPECT,
+      reason: 'Review cluster contains at least one BLOCKED TASK; stop cluster processing until blocked state is resolved.',
+      provisional: true,
+    };
+  }
+  if (statuses.has(GUARD_STATUS.RECONCILE_REQUIRED)) {
+    return {
+      action: GUARD_ACTION.RECONCILE_TARGET,
+      reason: 'Review cluster contains stale TASK state; reconcile affected TASKs with the latest target before deciding cluster order.',
+      provisional: true,
+    };
+  }
+  return {
+    action: GUARD_ACTION.REVIEW_OVERLAP,
+    reason: 'Review cluster should be reviewed as a set before choosing a one-at-a-time integration order.',
+    provisional: true,
+  };
+}
+
+export function buildClusterStrategies(clusters = [], tasks = []) {
+  return (clusters || []).map((cluster) => ({
+    clusterId: cluster.id,
+    type: cluster.type,
+    members: [...(cluster.members || [])],
+    ...buildClusterStrategy(cluster, tasks),
+  }));
+}
+
 export function summarizeStatuses(tasks = []) {
   const counts = Object.fromEntries(Object.values(GUARD_STATUS).map((status) => [status, 0]));
   for (const task of tasks) {
