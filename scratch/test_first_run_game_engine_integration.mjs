@@ -4,7 +4,8 @@ import { OFFERING_GENERATION_REASONS } from "../game/src/systems/deck_manager.js
 import { WARNING_STATES } from "../game/src/warning/domain/warning_state.js";
 import {
     FIRST_RUN_DEMIHUMAN_TRACES_EVENT_ID,
-    FIRST_RUN_DEMIHUMAN_TRACES_VERSE
+    FIRST_RUN_DEMIHUMAN_TRACES_VERSE,
+    FIRST_RUN_POST_TRIAL_SEMANTIC_SCENES
 } from "../game/src/tutorial/first_run_service.js";
 
 const engine = GameEngine.createGame({
@@ -14,6 +15,19 @@ const engine = GameEngine.createGame({
 
 assert.equal(engine.firstRunAttachment?.success, true, "FirstRun must attach on explicit firstRun mode");
 assert.equal(engine.firstRunAttachment?.enabled, true);
+
+const firstTrialMeaningPolicy = engine.firstRunService.getPostTrialInterludePolicy({
+    readModel: {
+        available: true,
+        trialIndex: 1
+    }
+});
+assert.equal(firstTrialMeaningPolicy?.requiredMeaningScene, true);
+assert.equal(
+    firstTrialMeaningPolicy?.semanticSceneId,
+    FIRST_RUN_POST_TRIAL_SEMANTIC_SCENES.FIRST_TRIAL_AFTERMATH_MEANING,
+    "explicit FirstRun mode must expose the mandatory first-Trial aftermath meaning semantic scene"
+);
 
 const scheduled = engine.state.scheduledGlobalEvents || [];
 assert.equal(
@@ -68,4 +82,4 @@ assert.equal(
     "normal Run must not schedule the FirstRun trace event"
 );
 
-console.log("✅ FirstRun GameEngine integration: Verse1 -> Verse7 GE -> OMEN/unlock -> Verse8 Investigation PASS");
+console.log("✅ FirstRun GameEngine integration: Verse1 -> Verse7 GE -> OMEN/unlock -> Verse8 Investigation -> Trial1 meaning policy PASS");
