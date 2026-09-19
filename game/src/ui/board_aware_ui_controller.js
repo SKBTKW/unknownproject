@@ -9,6 +9,11 @@ import { BoardPresentationRuntimeAdapter } from '../presentation/board_presentat
 import { TrialBoardSemanticAdapter } from '../presentation/trial_board_semantic_adapter.js';
 import { PlacementPreviewResolver } from '../presentation/placement_preview_resolver.js';
 import { BoardPresentationGridComponent } from './board_presentation_grid_component.js';
+import { LegacyWeb2DBoardInputAdapter } from './legacy_web2d_board_input_adapter.js';
+import {
+    BOARD_INPUT_COMMANDS,
+    createBoardInputCommand
+} from '../presentation/board_input_contract.js';
 
 /**
  * Browser compatibility subclass that wires the renderer-neutral board
@@ -26,6 +31,7 @@ export class BoardAwareUIController extends LegacyUIController {
             dataService: this.boardPresentationDataService
         });
         this.placementPreviewResolver = new PlacementPreviewResolver();
+        this.legacyWeb2DBoardInputAdapter = new LegacyWeb2DBoardInputAdapter(this);
         this.preTrialBoardContextMode = null;
         if (typeof document !== 'undefined') {
             this.boardGridComponent = new BoardPresentationGridComponent(this);
@@ -199,11 +205,38 @@ export class BoardAwareUIController extends LegacyUIController {
         return super.selectTrialInterceptionCell(r, c);
     }
 
-    onCellClick(r, c) {
+    selectBoardPresentationCell(r, c) {
+        return this.boardPresentationState.selectCell({ r, c });
+    }
+
+    performPrimaryCellAction(r, c) {
         if (this.boardPresentationState.contextMode !== BOARD_CONTEXT_MODES.TRIAL) {
             this.boardPresentationState.focusOnCell({ r, c });
         }
         return super.onCellClick(r, c);
+    }
+
+    onCellClick(r, c) {
+        if (this.boardPresentationState.contextMode === BOARD_CONTEXT_MODES.TRIAL) {
+            const activeRoute = this.getActiveTrialRoute?.() || null;
+            const routeId = activeRoute?.id ?? activeRoute?.routeId ?? null;
+            if (!routeId) return super.onCellClick(r, c);
+            const response = this.legacyWeb2DBoardInputAdapter.dispatch(
+                createBoardInputCommand(
+                    BOARD_INPUT_COMMANDS.SELECT_TRIAL_INTERCEPTION,
+                    { routeId, cell: { r, c } }
+                )
+            );
+            return response.success ? response.result : false;
+        }
+
+        const response = this.legacyWeb2DBoardInputAdapter.dispatch(
+            createBoardInputCommand(
+                BOARD_INPUT_COMMANDS.PRIMARY_CELL_ACTION,
+                { cell: { r, c } }
+            )
+        );
+        return response.success ? response.result : false;
     }
 
     onCellMouseEnter(e, r, c) {
