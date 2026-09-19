@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import {
   RUNNER_DECISION,
   buildAuditSummary,
@@ -152,6 +153,22 @@ for (const mutate of [
   assert.doesNotMatch(runnerSource, /--delete-branch/);
   assert.doesNotMatch(runnerSource, /git\s+branch\s+-D/);
   assert.doesNotMatch(runnerSource, /push[^\n]*--delete/);
+}
+
+
+{
+  const syntax = spawnSync(process.execPath, ['--check', 'scratch/safe_integration_runner.mjs'], {
+    cwd: process.cwd(),
+    encoding: 'utf8',
+  });
+  assert.equal(syntax.status, 0, syntax.stderr || syntax.stdout || 'runner syntax check failed');
+
+  const help = spawnSync(process.execPath, ['scratch/safe_integration_runner.mjs', '--help'], {
+    cwd: process.cwd(),
+    encoding: 'utf8',
+  });
+  assert.equal(help.status, 0, help.stderr || help.stdout || 'runner help invocation failed');
+  assert.match(help.stdout, /ONE MERGE MAX|Safe Integration Runner/i);
 }
 
 console.log('Safe Integration Runner contract: PASS');
