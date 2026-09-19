@@ -74,6 +74,54 @@ import { OFFERING_GENERATION_REASONS } from "../game/src/systems/deck_manager.js
 
 {
     let scheduleCalls = 0;
+    const service = new FirstRunService({ enabled: true });
+    const attachment = service.attach({
+        engine: {
+            state: {
+                turn: 8,
+                investigationUnlocked: true,
+                eventCooldowns: {
+                    [FIRST_RUN_DEMIHUMAN_TRACES_EVENT_ID]: 7
+                }
+            },
+            globalEventManager: {
+                scheduleEvent() {
+                    scheduleCalls += 1;
+                    return { success: false, reason: "SHOULD_NOT_BE_CALLED" };
+                }
+            }
+        }
+    });
+    assert.equal(attachment.success, true);
+    assert.equal(attachment.alreadyTriggered, true);
+    assert.equal(scheduleCalls, 0, "restored FirstRun after Verse7 must not reschedule an already-fired trace event");
+}
+
+{
+    let scheduleCalls = 0;
+    const service = new FirstRunService({ enabled: true });
+    const attachment = service.attach({
+        engine: {
+            state: {
+                turn: 8,
+                investigationUnlocked: false,
+                eventCooldowns: {}
+            },
+            globalEventManager: {
+                scheduleEvent() {
+                    scheduleCalls += 1;
+                    return { success: true };
+                }
+            }
+        }
+    });
+    assert.equal(attachment.success, false);
+    assert.equal(attachment.reason, "FIRST_RUN_TRACE_WINDOW_MISSED");
+    assert.equal(scheduleCalls, 0, "missed FirstRun trace window must fail closed instead of backdating an event");
+}
+
+{
+    let scheduleCalls = 0;
     const service = new FirstRunService({ enabled: false });
     const attachment = service.attach({
         engine: {
