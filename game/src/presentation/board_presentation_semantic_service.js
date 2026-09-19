@@ -61,6 +61,28 @@ function addNonSocketProduction(target, viewData) {
     }
 }
 
+export function resolveBoardDisplayRole(state, facts) {
+    if (!facts?.placed || facts?.isHQ) return null;
+    if (facts.socketResource) return DISPLAY_ROLE.SOCKET;
+
+    const activeGroupId = normalizeGroupId(facts.mergeGroupId || facts.placementGroupId);
+    if (!activeGroupId) return DISPLAY_ROLE.LAND_PRIMARY;
+
+    const grid = state?.grid || [];
+    for (let r = 0; r < grid.length; r++) {
+        for (let c = 0; c < (grid[r]?.length || 0); c++) {
+            const cell = grid[r][c];
+            if (!cell) continue;
+            const cellGroupId = normalizeGroupId(cell.mergeGroupId || cell.placementGroupId);
+            if (cellGroupId !== activeGroupId || cell.socketResource) continue;
+            return r === facts.r && c === facts.c
+                ? DISPLAY_ROLE.LAND_PRIMARY
+                : DISPLAY_ROLE.CLEAN;
+        }
+    }
+    return DISPLAY_ROLE.LAND_PRIMARY;
+}
+
 export class BoardPresentationSemanticService {
     constructor({ cellViewDataService } = {}) {
         this.cellViewDataService = cellViewDataService || null;
@@ -95,25 +117,7 @@ export class BoardPresentationSemanticService {
     }
 
     getDisplayRole(state, facts) {
-        if (!facts?.placed || facts?.isHQ) return null;
-        if (facts.socketResource) return DISPLAY_ROLE.SOCKET;
-
-        const activeGroupId = normalizeGroupId(facts.mergeGroupId || facts.placementGroupId);
-        if (!activeGroupId) return DISPLAY_ROLE.LAND_PRIMARY;
-
-        const grid = state?.grid || [];
-        for (let r = 0; r < grid.length; r++) {
-            for (let c = 0; c < (grid[r]?.length || 0); c++) {
-                const cell = grid[r][c];
-                if (!cell) continue;
-                const cellGroupId = normalizeGroupId(cell.mergeGroupId || cell.placementGroupId);
-                if (cellGroupId !== activeGroupId || cell.socketResource) continue;
-                return r === facts.r && c === facts.c
-                    ? DISPLAY_ROLE.LAND_PRIMARY
-                    : DISPLAY_ROLE.CLEAN;
-            }
-        }
-        return DISPLAY_ROLE.LAND_PRIMARY;
+        return resolveBoardDisplayRole(state, facts);
     }
 
     getDisplayProduction(state, facts) {
