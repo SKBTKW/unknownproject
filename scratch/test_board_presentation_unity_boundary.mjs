@@ -214,6 +214,28 @@ test("browser BoardAware UI routes board reads through the shared runtime adapte
     assert.equal(source.includes("this.boardPresentationDataService.getBoard(this.state"), false);
 });
 
+test("placed-this-turn interaction state stays portable", () => {
+    const readModel = new BoardPresentationRuntimeAdapter().getBoard(state, {
+        presentationState,
+        interactionQuery: {
+            isCellPlacedThisTurn: (r, c) => r === 0 && c === 1
+        }
+    });
+    assert.equal(readModel.cells[0][1].interaction.placedThisTurn, true);
+    assert.equal(readModel.cells[0][0].interaction.placedThisTurn, false);
+
+    const dto = createBoardPresentationDto(readModel);
+    assert.equal(dto.cells[0][1].interaction.placedThisTurn, true);
+    assert.equal(dto.cells[0][0].interaction.placedThisTurn, false);
+});
+
+test("placed-this-turn defaults false without runtime query", () => {
+    const readModel = new BoardPresentationRuntimeAdapter().getBoard(state, {
+        presentationState
+    });
+    assert.equal(readModel.cells[0][0].interaction.placedThisTurn, false);
+});
+
 test("runtime adapter is the shared runtime-to-presentation entrypoint", () => {
     let capturedTrialInput = null;
     const runtimeAdapter = new BoardPresentationRuntimeAdapter({
