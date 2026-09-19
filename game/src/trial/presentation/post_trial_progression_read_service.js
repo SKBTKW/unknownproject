@@ -1,3 +1,5 @@
+const STAGE_ADVANCE_STEP_TYPE = "STAGE_ADVANCE";
+
 function cloneData(value, fallback = null) {
     if (value === undefined) return fallback;
     return JSON.parse(JSON.stringify(value));
@@ -38,16 +40,23 @@ export class PostTrialProgressionReadService {
                 presentationCleanupComplete: false,
                 currentStep: null,
                 pendingStepTypes: [],
+                stepTypes: [],
+                stageAdvance: null,
                 aftermath: null,
                 runTerminated: false,
                 canResumeNormalProgression: true
             });
         }
 
+        const steps = Array.isArray(transition.steps) ? transition.steps : [];
         const currentStep = this.source.getCurrentPendingStep();
         const pendingStepTypes = this.source.getPendingSteps()
             .map(step => step?.type)
             .filter(type => typeof type === "string" && type.length > 0);
+        const stepTypes = steps
+            .map(step => step?.type)
+            .filter(type => typeof type === "string" && type.length > 0);
+        const stageStep = steps.find(step => step?.type === STAGE_ADVANCE_STEP_TYPE) || null;
 
         return cloneFrozen({
             available: true,
@@ -66,6 +75,13 @@ export class PostTrialProgressionReadService {
                 }
                 : null,
             pendingStepTypes,
+            stepTypes,
+            stageAdvance: stageStep
+                ? {
+                    status: stageStep.status || null,
+                    payload: cloneData(stageStep.payload)
+                }
+                : null,
             aftermath: cloneData(transition.aftermath),
             runTerminated: Boolean(transition.runTerminated),
             canResumeNormalProgression: Boolean(this.source.canResumeNormalProgression())
