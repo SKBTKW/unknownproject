@@ -39,6 +39,32 @@ export class FirstRunService {
             return { success: false, reason: "GLOBAL_EVENT_SCHEDULER_REQUIRED" };
         }
 
+        const state = engine.state || null;
+        const currentVerse = Number.isInteger(state?.turn) ? state.turn : 1;
+        const alreadyTriggered = Number.isFinite(state?.eventCooldowns?.[this.tracesEventId])
+            || state?.investigationUnlocked === true;
+        if (currentVerse > this.tracesVerse) {
+            if (alreadyTriggered) {
+                const result = {
+                    success: true,
+                    alreadyTriggered: true,
+                    scheduledEvent: null
+                };
+                this.lastScheduleResult = result;
+                return {
+                    success: true,
+                    enabled: true,
+                    scheduled: false,
+                    alreadyTriggered: true,
+                    scheduleResult: result
+                };
+            }
+            return {
+                success: false,
+                reason: "FIRST_RUN_TRACE_WINDOW_MISSED"
+            };
+        }
+
         const result = engine.globalEventManager.scheduleEvent(this.tracesEventId, this.tracesVerse);
         this.lastScheduleResult = result;
         if (!result?.success) {
