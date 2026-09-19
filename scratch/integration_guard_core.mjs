@@ -250,6 +250,51 @@ export function explainIntegrationOrder(order = [], graph = { nodes: [], edges: 
   });
 }
 
+export function buildIntegrationClusters(graph = { nodes: [], edges: [] }) {
+  const nodeByBranch = new Map((graph.nodes || []).map((node) => [node.branch, node]));
+  const adjacency = new Map([...nodeByBranch.keys()].map((branch) => [branch, new Set()]));
+  for (const edge of graph.edges || []) {
+    if (!edge.reviewRequired) continue;
+    if (!adjacency.has(edge.from) || !adjacency.has(edge.to)) continue;
+    adjacency.get(edge.from).add(edge.to);
+    adjacency.get(edge.to).add(edge.from);
+  }
+
+  const visited = new Set();
+  const clusters = [];
+  for (const branch of [...nodeByBranch.keys()].sort()) {
+    if (visited.has(branch)) continue;
+    const queue = [branch];
+    const members = [];
+    visited.add(branch);
+    while (queue.length > 0) {
+      const current = queue.shift();
+      members.push(current);
+      for (const next of [...(adjacency.get(current) || [])].sort()) {
+        if (visited.has(next)) continue;
+        visited.add(next);
+        queue.push(next);
+      }
+    }
+
+    members.sort();
+    const memberSet = new Set(members);
+    const reviewEdges = (graph.edges || []).filter((edge) =>
+      edge.reviewRequired && memberSet.has(edge.from) && memberSet.has(edge.to)
+    );
+    const type = members.length === 1 && reviewEdges.length === 0 ? 'INDEPENDENT' : 'REVIEW_CLUSTER';
+    clusters.push({
+      id: `cluster-${clusters.length + 1}`,
+      type,
+      members,
+      reviewEdgeCount: reviewEdges.length,
+      statuses: [...new Set(members.map((member) => nodeByBranch.get(member)?.status).filter(Boolean))].sort(),
+      provisional: true,
+    });
+  }
+  return clusters;
+}
+
 export function summarizeStatuses(tasks = []) {
   const counts = Object.fromEntries(Object.values(GUARD_STATUS).map((status) => [status, 0]));
   for (const task of tasks) {
