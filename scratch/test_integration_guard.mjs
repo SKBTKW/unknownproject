@@ -7,8 +7,10 @@ import {
   GUARD_ACTION,
   GUARD_STATUS,
   buildIntegrationOrder,
+  buildOverlapGraph,
   buildSessionId,
   buildTaskGuidance,
+  explainIntegrationOrder,
   classifyObservedTask,
   discoverTaskNames,
   isAoTTarget,
@@ -78,6 +80,39 @@ check(buildIntegrationOrder([
   { branch: 'a-ready', status: GUARD_STATUS.READY, guidance: buildTaskGuidance({ status: GUARD_STATUS.READY }), peerOverlaps: [] },
 ]).map((entry) => entry.branch), ['a-ready', 'b-ready'], 'integration order prefers fewer review-grade peer overlaps within status');
 
+const graphFixture = buildOverlapGraph([
+  {
+    branch: 'a',
+    status: GUARD_STATUS.READY,
+    guidance: buildTaskGuidance({ status: GUARD_STATUS.READY }),
+    peerOverlaps: [{ branch: 'b', overlap: { risk: 'PATH_OVERLAP', risks: ['PATH_OVERLAP'], evidence: ['x.js'] } }],
+  },
+  {
+    branch: 'b',
+    status: GUARD_STATUS.REVIEW_REQUIRED,
+    guidance: buildTaskGuidance({ status: GUARD_STATUS.REVIEW_REQUIRED, overlap: { risk: 'PATH_OVERLAP' }, peerOverlaps: [] }),
+    peerOverlaps: [{ branch: 'a', overlap: { risk: 'PATH_OVERLAP', risks: ['PATH_OVERLAP'], evidence: ['x.js'] } }],
+  },
+  {
+    branch: 'merged',
+    status: GUARD_STATUS.MERGED,
+    guidance: buildTaskGuidance({ status: GUARD_STATUS.MERGED }),
+    peerOverlaps: [],
+  },
+]);
+check(graphFixture.summary, { nodeCount: 2, edgeCount: 1, reviewEdgeCount: 1 }, 'overlap graph dedupes symmetric edges and excludes merged');
+check(graphFixture.edges[0].reviewRequired, true, 'overlap graph marks review-grade edge');
+const explainedFixture = explainIntegrationOrder(
+  buildIntegrationOrder([
+    { branch: 'a', status: GUARD_STATUS.READY, guidance: buildTaskGuidance({ status: GUARD_STATUS.READY }), peerOverlaps: [{ branch: 'b', overlap: { risk: 'PATH_OVERLAP', risks: ['PATH_OVERLAP'] } }] },
+    { branch: 'b', status: GUARD_STATUS.REVIEW_REQUIRED, guidance: buildTaskGuidance({ status: GUARD_STATUS.REVIEW_REQUIRED, overlap: { risk: 'PATH_OVERLAP' }, peerOverlaps: [] }), peerOverlaps: [{ branch: 'a', overlap: { risk: 'PATH_OVERLAP', risks: ['PATH_OVERLAP'] } }] },
+  ]),
+  graphFixture
+);
+check(explainedFixture[0].relatedBranches, ['b'], 'order explanation lists review-grade peers');
+check(explainedFixture.every((entry) => entry.provisional === true), true, 'order explanations remain explicitly provisional');
+
+
 
 
 const stableSnapshot = { targetSha: 'a', tasks: { one: 'b' } };
@@ -136,7 +171,7 @@ try {
   const result = await runIntegrationGuard({ cwd: repo, target, backupRoot, now });
   check(result.analysis.targetSha, targetSha, 'E2E analysis pins current target SHA');
   check(result.analysis.backupVerified, true, 'E2E backup is verified before analysis result');
-  check(result.analysis.schemaVersion, 3, 'E2E analysis uses integration-order schema version');
+  check(result.analysis.schemaVersion, 4, 'E2E analysis uses overlap-graph schema version');
   check(result.analysis.tasks.length, 3, 'E2E discovers stale and merged TASK branches');
   check(result.analysis.summary.MERGED, 1, 'E2E classifies target-contained TASK as merged');
   check(result.analysis.summary.RECONCILE_REQUIRED, 2, 'E2E marks both stale TASKs for reconciliation');
@@ -148,6 +183,8 @@ try {
   check(result.analysis.tasks.filter((task) => task.status === GUARD_STATUS.RECONCILE_REQUIRED).every((task) => task.guidance?.action === GUARD_ACTION.RECONCILE_TARGET), true, 'E2E stale TASKs receive reconciliation guidance');
   check(result.analysis.integrationOrder.some((entry) => entry.branch === taskMerged), false, 'E2E integration order excludes merged TASK');
   check(result.analysis.integrationOrder.every((entry, index) => entry.position === index + 1 && entry.provisional === true), true, 'E2E integration order is explicitly provisional and positioned');
+  check(result.analysis.overlapGraph.summary.reviewEdgeCount > 0, true, 'E2E overlap graph records review-grade peer edges');
+  check(result.analysis.orderExplanations.length, result.analysis.integrationOrder.length, 'E2E explains every provisional order entry');
   check(fs.existsSync(result.backup.bundlePath), true, 'E2E writes bundle outside repository');
   check(fs.existsSync(result.backup.manifestPath), true, 'E2E writes backup manifest');
   check(fs.existsSync(path.join(result.backup.sessionDir, 'SHA256SUM.txt')), true, 'E2E writes bundle checksum');
@@ -202,4 +239,4 @@ try {
   fs.rmSync(root, { recursive: true, force: true });
 }
 
-console.log(`Integration Guard V1.3: ${passed} checks PASS`);
+console.log(`Integration Guard V1.4: ${passed} checks PASS`);
