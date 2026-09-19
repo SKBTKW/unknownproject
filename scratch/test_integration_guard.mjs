@@ -6,6 +6,7 @@ import { execFileSync } from 'node:child_process';
 import {
   GUARD_ACTION,
   GUARD_STATUS,
+  buildIntegrationClusters,
   buildIntegrationOrder,
   buildOverlapGraph,
   buildSessionId,
@@ -112,6 +113,31 @@ const explainedFixture = explainIntegrationOrder(
 check(explainedFixture[0].relatedBranches, ['b'], 'order explanation lists review-grade peers');
 check(explainedFixture.every((entry) => entry.provisional === true), true, 'order explanations remain explicitly provisional');
 
+const clusterFixture = buildIntegrationClusters({
+  nodes: [
+    { branch: 'a', status: GUARD_STATUS.READY },
+    { branch: 'b', status: GUARD_STATUS.REVIEW_REQUIRED },
+    { branch: 'c', status: GUARD_STATUS.READY },
+    { branch: 'd', status: GUARD_STATUS.RECONCILE_REQUIRED },
+  ],
+  edges: [
+    { from: 'a', to: 'b', reviewRequired: true },
+    { from: 'b', to: 'c', reviewRequired: true },
+    { from: 'c', to: 'd', reviewRequired: false },
+  ],
+});
+check(clusterFixture.length, 2, 'cluster builder separates independent tasks from review-connected component');
+check(clusterFixture[0], {
+  id: 'cluster-1',
+  type: 'REVIEW_CLUSTER',
+  members: ['a', 'b', 'c'],
+  reviewEdgeCount: 2,
+  statuses: [GUARD_STATUS.READY, GUARD_STATUS.REVIEW_REQUIRED].sort(),
+  provisional: true,
+}, 'cluster builder groups transitive review overlap');
+check(clusterFixture[1].type, 'INDEPENDENT', 'cluster builder marks isolated task independent');
+
+
 
 
 
@@ -171,7 +197,7 @@ try {
   const result = await runIntegrationGuard({ cwd: repo, target, backupRoot, now });
   check(result.analysis.targetSha, targetSha, 'E2E analysis pins current target SHA');
   check(result.analysis.backupVerified, true, 'E2E backup is verified before analysis result');
-  check(result.analysis.schemaVersion, 4, 'E2E analysis uses overlap-graph schema version');
+  check(result.analysis.schemaVersion, 5, 'E2E analysis uses integration-cluster schema version');
   check(result.analysis.tasks.length, 3, 'E2E discovers stale and merged TASK branches');
   check(result.analysis.summary.MERGED, 1, 'E2E classifies target-contained TASK as merged');
   check(result.analysis.summary.RECONCILE_REQUIRED, 2, 'E2E marks both stale TASKs for reconciliation');
@@ -185,6 +211,8 @@ try {
   check(result.analysis.integrationOrder.every((entry, index) => entry.position === index + 1 && entry.provisional === true), true, 'E2E integration order is explicitly provisional and positioned');
   check(result.analysis.overlapGraph.summary.reviewEdgeCount > 0, true, 'E2E overlap graph records review-grade peer edges');
   check(result.analysis.orderExplanations.length, result.analysis.integrationOrder.length, 'E2E explains every provisional order entry');
+  check(result.analysis.integrationClusters.some((cluster) => cluster.type === 'REVIEW_CLUSTER'), true, 'E2E groups review-connected TASKs into a cluster');
+  check(result.analysis.integrationClusters.every((cluster) => cluster.provisional === true), true, 'E2E integration groups are explicitly provisional');
   check(fs.existsSync(result.backup.bundlePath), true, 'E2E writes bundle outside repository');
   check(fs.existsSync(result.backup.manifestPath), true, 'E2E writes backup manifest');
   check(fs.existsSync(path.join(result.backup.sessionDir, 'SHA256SUM.txt')), true, 'E2E writes bundle checksum');
@@ -239,4 +267,4 @@ try {
   fs.rmSync(root, { recursive: true, force: true });
 }
 
-console.log(`Integration Guard V1.4: ${passed} checks PASS`);
+console.log(`Integration Guard V1.5: ${passed} checks PASS`);
