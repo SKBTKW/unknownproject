@@ -9,6 +9,7 @@ import {
   GUARD_STATUS,
   buildClusterOrders,
   buildClusterStrategies,
+  buildFocusedReevaluationSets,
   buildIntegrationClusters,
   buildIntegrationOrder,
   buildOverlapGraph,
@@ -326,7 +327,7 @@ function writeAnalysis(backup, analysis) {
 function printDashboard(analysis, backup) {
   const counts = analysis.summary;
   console.log('\n============================================================');
-  console.log(' AoT Integration Guard V1.8 - READ ONLY');
+  console.log(' AoT Integration Guard V1.9 - READ ONLY');
   console.log('============================================================');
   console.log(`Target:  ${analysis.target}`);
   console.log(`SHA:     ${analysis.targetSha}`);
@@ -372,6 +373,16 @@ function printDashboard(analysis, backup) {
     console.log('Predicted re-evaluation after integration:');
     for (const item of analysis.reevaluationPlan) {
       console.log(`  after ${item.afterBranch}: ${item.reevaluateBranches.length ? item.reevaluateBranches.join(', ') : 'none'}`);
+    }
+    console.log('------------------------------------------------------------');
+  }
+  if (analysis.focusedReevaluationSets.length > 0) {
+    console.log('Focused next-run reinspection sets:');
+    for (const item of analysis.focusedReevaluationSets) {
+      console.log(`  after ${item.afterBranch}:`);
+      console.log(`    primary: ${item.primaryReinspection.length ? item.primaryReinspection.join(', ') : 'none'}`);
+      console.log(`    secondary: ${item.secondaryReinspection.length ? item.secondaryReinspection.join(', ') : 'none'}`);
+      console.log('    full Guard rerun: REQUIRED');
     }
     console.log('------------------------------------------------------------');
   }
@@ -425,8 +436,9 @@ export async function runIntegrationGuard({ cwd: requestedCwd, target: explicitT
     const clusterStrategies = buildClusterStrategies(integrationClusters, inspected);
     const clusterOrders = buildClusterOrders(integrationClusters, inspected, overlapGraph);
     const reevaluationPlan = buildReevaluationPlan(integrationClusters, overlapGraph);
+    const focusedReevaluationSets = buildFocusedReevaluationSets(reevaluationPlan, overlapGraph);
     const analysis = {
-      schemaVersion: 8,
+      schemaVersion: 9,
       sessionId,
       createdAt: now.toISOString(),
       target,
@@ -439,6 +451,7 @@ export async function runIntegrationGuard({ cwd: requestedCwd, target: explicitT
       clusterStrategies,
       clusterOrders,
       reevaluationPlan,
+      focusedReevaluationSets,
       orderExplanations: explainIntegrationOrder(integrationOrder, overlapGraph),
       tasks: inspected.map((task) => ({
         branch: task.branch,
@@ -478,7 +491,7 @@ function parseArgs(argv) {
 
 function printHelp() {
   console.log('Usage: node scratch/integration_guard.mjs [--target AoTYYMMDD] [--backup-root <path>]');
-  console.log('V1.8 is read-only with respect to repository history. It creates a verified external backup and analysis report only.');
+  console.log('V1.9 is read-only with respect to repository history. It creates a verified external backup and analysis report only.');
 }
 
 async function main() {
