@@ -75,6 +75,19 @@ resolved = resolvePostTrialAdvisorReaction({
 assert.equal(resolved.line, "fallback-only");
 assert.equal(resolved.policyLens, null);
 
+resolved = resolvePostTrialAdvisorReaction({
+    reaction: {
+        lines: ["default-low-attention"],
+        policyVariants: {
+            mysticism: { lines: ["mysticism"] }
+        }
+    },
+    profile: { policy: { mysticism: 1 } },
+    payload: {}
+});
+assert.equal(resolved.line, "default-low-attention");
+assert.equal(resolved.policyLens, null, "policy value 1 must not force an uninterested lens");
+
 assert.equal(resolvePostTrialAdvisorReaction({
     reaction: {},
     profile: {},

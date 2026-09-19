@@ -58,6 +58,7 @@ export function resolvePostTrialAdvisorReaction({
             if (!line) continue;
 
             const score = policyValue(profile, policyKey);
+            if (score < 2) continue;
             if (score > selectedScore) {
                 selectedScore = score;
                 selectedPolicyKey = policyKey;
