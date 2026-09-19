@@ -38,11 +38,14 @@ export class AdvisorReactionService {
     handleFact(fact) {
         const cue = this.cueResolver.resolve(fact);
         if (!cue) return null;
+        return this.consumeScene(cue.type, cue.payload || {});
+    }
 
-        const responsibility = getAdvisorSceneResponsibility(cue.type);
+    consumeScene(scene, payload = {}) {
+        const responsibility = getAdvisorSceneResponsibility(scene);
         if (responsibility?.channel !== ADVISOR_DIALOGUE_CHANNELS.REACTION) return null;
 
-        const reaction = this.character.reactions?.[cue.type];
+        const reaction = this.character.reactions?.[scene];
         if (!reaction) return null;
 
         const line = this.pickLine(reaction.lines || []);
@@ -50,11 +53,11 @@ export class AdvisorReactionService {
 
         const presentation = Object.freeze({
             characterId: this.character.id,
-            scene: cue.type,
+            scene,
             expression: reaction.expression || "NORMAL",
             line,
-            priority: Number.isFinite(reaction.priority) ? reaction.priority : defaultReactionPriority(cue.type),
-            payload: cue.payload || {}
+            priority: Number.isFinite(reaction.priority) ? reaction.priority : defaultReactionPriority(scene),
+            payload: payload || {}
         });
 
         this.listeners.forEach(listener => listener(presentation));

@@ -1,3 +1,5 @@
+import { ADVISOR_DIALOGUE_CHANNELS, getAdvisorEventResponsibility } from '../../data/advisor_dialogue_responsibility.js';
+
 export const ADVISOR_EVENTS = Object.freeze({
     GAME_START: "GAME_START",
     TURN_START: "TURN_START",
@@ -5,6 +7,8 @@ export const ADVISOR_EVENTS = Object.freeze({
     TRIAL_START: "TRIAL_START",
     TRIAL_END: "TRIAL_END",
     TRIAL_PLAN_CONFIRMED: "TRIAL_PLAN_CONFIRMED",
+    ASSESSMENT: "ASSESSMENT",
+    STAGE_PRELUDE: "STAGE_PRELUDE",
     EMBER_WARNING: "EMBER_WARNING", EMBER_CRITICAL: "EMBER_CRITICAL", EMBER_RECOVERED: "EMBER_RECOVERED",
     FOOD_WARNING: "FOOD_WARNING", FOOD_CRITICAL: "FOOD_CRITICAL", FOOD_RECOVERED: "FOOD_RECOVERED",
     DEFENSE_WEAK: "DEFENSE_WEAK", DEFENSE_CRITICAL: "DEFENSE_CRITICAL", DEFENSE_HEALTHY: "DEFENSE_HEALTHY",
@@ -92,7 +96,12 @@ export const ADVISOR_DIALOGUES = Object.freeze([
 ]);
 
 export function findAdvisorDialogue(event, profile, database = ADVISOR_DIALOGUES) {
-    const characterEntry = profile?.adviceDialogue?.[event];
+    const responsibility = getAdvisorEventResponsibility(event);
+    const usesDutyDialogue = responsibility?.channel === ADVISOR_DIALOGUE_CHANNELS.DUTY
+        || responsibility?.fallbackChannel === ADVISOR_DIALOGUE_CHANNELS.DUTY;
+    const characterEntry = usesDutyDialogue
+        ? profile?.dutyDialogue?.[event]
+        : profile?.adviceDialogue?.[event];
     if (characterEntry) return { event, ...characterEntry };
     return database.find(entry => entry.event === event && (!entry.personality || entry.personality === profile?.personality)) || null;
 }

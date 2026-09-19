@@ -40,6 +40,8 @@ export const ADVISOR_EVENT_RESPONSIBILITY = Object.freeze({
     TRIAL_START: duty(),
     TRIAL_END: duty(),
     TRIAL_PLAN_CONFIRMED: reaction(ADVISOR_DIALOGUE_CHANNELS.DUTY),
+    ASSESSMENT: duty(),
+    STAGE_PRELUDE: duty(),
 
     EMBER_WARNING: advice("ember"),
     EMBER_CRITICAL: advice("ember"),
@@ -84,6 +86,12 @@ export const ADVISOR_SCENE_RESPONSIBILITY = Object.freeze({
     [ADVISOR_SCENES.TRIAL_VICTORY_WITH_CIVILIAN_LOSS]: reaction(),
     [ADVISOR_SCENES.TRIAL_DESPERATE_STAND_SUCCESS]: reaction(),
     [ADVISOR_SCENES.TRIAL_COMPLETED]: reaction(),
+    // Post-Trial interlude: immediate survival Reaction has already happened.
+    // These scenes advance from factual report -> interpretation -> transition -> new-state Reaction.
+    [ADVISOR_SCENES.ASSESSMENT]: duty(),
+    [ADVISOR_SCENES.TRIAL_MEANING]: reaction(),
+    [ADVISOR_SCENES.STAGE_PRELUDE]: duty(),
+    [ADVISOR_SCENES.POST_STAGE_COMMENT]: reaction(),
     [ADVISOR_SCENES.THIRD_TRIAL_VICTORY]: reaction(),
     [ADVISOR_SCENES.RUN_CLEAR]: reaction(),
     [ADVISOR_SCENES.GAME_OVER]: reaction()

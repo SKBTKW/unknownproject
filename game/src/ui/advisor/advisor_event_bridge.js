@@ -128,13 +128,22 @@ export class AdvisorEventBridge {
         const resolved = resolveAdvisorSemanticScene(scene);
         if (!resolved) return false;
 
-        // Compatibility bookkeeping only. FirstRun owns occurrence and dedupe.
-        // Mark the legacy milestone as consumed even when Advisor speech is disabled,
-        // so the snapshot lane cannot later reinterpret it as FIRST_*.
+        // Compatibility bookkeeping only. Scene producers own occurrence/dedupe.
+        // Mark legacy milestone state even when Advisor speech is disabled so a
+        // later snapshot cannot reinterpret the same event as FIRST_*.
         if (resolved.legacyMilestone === "zone") this.runtime.firstZoneReacted = true;
         if (resolved.legacyMilestone === "link") this.runtime.firstLinkReacted = true;
 
         if (!this.enabledProvider()) return false;
+
+        if (resolved.channel === "REACTION") {
+            return Boolean(this.reactionService?.consumeScene?.(resolved.sceneId, resolved.context));
+        }
+        if (resolved.channel === "DUTY") {
+            return Boolean(resolved.advisorEvent
+                && this.dialogueSystem.emit(resolved.advisorEvent, resolved.context));
+        }
+        if (resolved.channel !== "ADVICE") return false;
 
         const turn = resolved.verse ?? Number(this.previous?.turn || 1);
         const topic = resolved.topic === "development" ? ADVISOR_TOPICS.DEVELOPMENT : ADVISOR_TOPICS.CONNECTION;
