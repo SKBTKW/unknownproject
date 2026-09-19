@@ -1,7 +1,7 @@
 import {
-    BOARD_INPUT_COMMANDS,
-    createBoardInputCommand
-} from './board_input_contract.js';
+    BOARD_POINTER_ACTIONS,
+    resolveBoardPointerCommand
+} from './board_input_semantic_resolver.js';
 import { Web25DProjectionAdapter } from './web25d_projection_adapter.js';
 
 const ELEVATION_PIXELS = Object.freeze([0, 6, 14, 24]);
@@ -167,26 +167,22 @@ export class Web25DCanvasRenderer {
         if (sameCell(cell, this.lastPointerCell)) return cell;
 
         this.lastPointerCell = cell;
-        if (cell) {
-            this.bridge.dispatch(createBoardInputCommand(
-                BOARD_INPUT_COMMANDS.HOVER_CELL,
-                { cell }
-            ));
-        } else {
-            this.bridge.dispatch(createBoardInputCommand(
-                BOARD_INPUT_COMMANDS.CLEAR_HOVER
-            ));
-        }
+        const command = resolveBoardPointerCommand(
+            BOARD_POINTER_ACTIONS.HOVER,
+            { readModel: this.readModel, cell }
+        );
+        if (command) this.bridge.dispatch(command);
         return cell;
     }
 
     handlePointerLeave() {
-        if (this.lastPointerCell) {
-            this.lastPointerCell = null;
-            this.bridge.dispatch(createBoardInputCommand(
-                BOARD_INPUT_COMMANDS.CLEAR_HOVER
-            ));
-        }
+        if (!this.lastPointerCell) return;
+        this.lastPointerCell = null;
+        const command = resolveBoardPointerCommand(
+            BOARD_POINTER_ACTIONS.LEAVE,
+            { readModel: this.readModel }
+        );
+        if (command) this.bridge.dispatch(command);
     }
 
     handleClick(event) {
@@ -194,26 +190,12 @@ export class Web25DCanvasRenderer {
         const cell = this.getLogicalCellAtCanvasPoint(point.x, point.y);
         if (!cell) return null;
 
-        const isTrial = this.readModel?.presentation?.contextMode === "TRIAL";
-        if (isTrial) {
-            const isLegalCandidate = Boolean(cell.trial?.interceptionCandidate);
-            const routeId = cell.trial?.route?.routeId
-                || this.readModel?.trial?.activeRouteId
-                || null;
-            if (!isLegalCandidate || !routeId) {
-                return null;
-            }
-            this.bridge.dispatch(createBoardInputCommand(
-                BOARD_INPUT_COMMANDS.SELECT_TRIAL_INTERCEPTION,
-                { cell, routeId }
-            ));
-            return cell;
-        }
-
-        this.bridge.dispatch(createBoardInputCommand(
-            BOARD_INPUT_COMMANDS.SELECT_CELL,
-            { cell }
-        ));
+        const command = resolveBoardPointerCommand(
+            BOARD_POINTER_ACTIONS.CLICK,
+            { readModel: this.readModel, cell }
+        );
+        if (!command) return null;
+        this.bridge.dispatch(command);
         return cell;
     }
 
