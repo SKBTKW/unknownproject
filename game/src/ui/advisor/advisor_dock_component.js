@@ -338,7 +338,15 @@ export class AdvisorDockComponent {
         const trialStatus = this.trialStatusProvider?.() || {};
         const turn = Number(state.turn || 1);
         this.root.hidden = !this.isEnabled();
-        this.eventBridge.observeSnapshot({ turn, trialActive: trialStatus.active, state, zoneCount: Object.keys(state.mergedBlocks || {}).length, linkCount: state.mergeLinks instanceof Set ? state.mergeLinks.size : 0, activeGlobalEvents: state.activeGlobalEvents || [] });
+        this.eventBridge.observeSnapshot({
+            turn,
+            trialActive: trialStatus.active,
+            state,
+            zoneCount: Object.keys(state.mergedBlocks || {}).length,
+            linkCount: state.mergeLinks instanceof Set ? state.mergeLinks.size : 0,
+            activeGlobalEvents: state.activeGlobalEvents || [],
+            postTrialInterludeActive: state.postTrialTransition?.presentation?.status === "ACTIVE"
+        });
         if (this.root.hidden) return;
 
         this.root.setAttribute("aria-label", this.i18n.t("UI_ADVISOR_TITLE"));

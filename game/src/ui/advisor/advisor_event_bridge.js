@@ -82,7 +82,8 @@ export class AdvisorEventBridge {
             trialActive: Boolean(snapshot.trialActive),
             state: snapshot.state || {},
             zoneCount: Number(snapshot.zoneCount || 0),
-            linkCount: Number(snapshot.linkCount || 0)
+            linkCount: Number(snapshot.linkCount || 0),
+            postTrialInterludeActive: Boolean(snapshot.postTrialInterludeActive)
         };
         this.ensureGlobalEventSubscription(current.state?.globalEventManager || null);
         const peaceActive = !current.trialActive;
@@ -94,7 +95,12 @@ export class AdvisorEventBridge {
                 if (current.turn !== this.previous.turn) this.evaluateTurn(current);
             }
             if (enabled && current.trialActive && !this.previous.trialActive) this.dialogueSystem.emit(ADVISOR_EVENTS.TRIAL_START, current);
-            if (enabled && !current.trialActive && this.previous.trialActive) this.dialogueSystem.emit(ADVISOR_EVENTS.TRIAL_END, current);
+            if (enabled
+                && !current.trialActive
+                && this.previous.trialActive
+                && !current.postTrialInterludeActive) {
+                this.dialogueSystem.emit(ADVISOR_EVENTS.TRIAL_END, current);
+            }
         }
         this.previous = current;
     }
