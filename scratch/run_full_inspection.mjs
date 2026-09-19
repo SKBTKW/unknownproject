@@ -153,6 +153,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (DeckManager RNG Contract) で不合格が検出されました。");
         process.exit(1);
     }
+    const offeringMinimumOk = await runCommand("node", ["scratch/test_offering_minimum_requirements.mjs"]);
+    if (!offeringMinimumOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Offering Minimum Requirement Contract) で不合格が検出されました。");
+        process.exit(1);
+    }
     const scheduledGlobalEventOk = await runCommand("node", ["scratch/test_scheduled_global_event_contract.mjs"]);
     if (!scheduledGlobalEventOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Scheduled Global Event Contract) で不合格が検出されました。");
