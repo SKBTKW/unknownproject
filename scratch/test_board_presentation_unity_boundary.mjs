@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { BoardPresentationDataService } from "../game/src/presentation/board_presentation_data_service.js";
+import { resolveBoardDisplayRole } from "../game/src/presentation/board_presentation_semantic_service.js";
 import { BoardPresentationRuntimeAdapter } from "../game/src/presentation/board_presentation_runtime_adapter.js";
 import { BoardPresentationState } from "../game/src/presentation/board_presentation_state.js";
 import { createBoardPresentationDto } from "../game/src/presentation/board_presentation_contract.js";
@@ -92,6 +93,21 @@ const presentationState = new BoardPresentationState();
 const service = new BoardPresentationDataService({ cellViewDataService });
 const readModel = service.getBoard(state, { presentationState });
 const dto = createBoardPresentationDto(readModel);
+
+test("shared display role is the renderer-neutral SSOT", () => {
+    assert.equal(resolveBoardDisplayRole(state, {
+        r: 0, c: 0, placed: true, isHQ: false,
+        socketResource: null, mergeGroupId: "zone-a", placementGroupId: "placement-a"
+    }), "LAND_PRIMARY");
+    assert.equal(resolveBoardDisplayRole(state, {
+        r: 0, c: 1, placed: true, isHQ: false,
+        socketResource: null, mergeGroupId: "zone-a", placementGroupId: "placement-a"
+    }), "CLEAN");
+    assert.equal(resolveBoardDisplayRole(state, {
+        r: 1, c: 0, placed: true, isHQ: false,
+        socketResource: { id: "SOCKET_WOOD" }, mergeGroupId: null, placementGroupId: null
+    }), "SOCKET");
+});
 
 test("merged production is resolved before renderer DTO consumption", () => {
     const primary = dto.cells[0][0];
