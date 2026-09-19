@@ -324,10 +324,10 @@ function writeAnalysis(backup, analysis) {
   return filepath;
 }
 
-function printDashboard(analysis, backup) {
+export function printDashboard(analysis, backup, { verbose = false } = {}) {
   const counts = analysis.summary;
   console.log('\n============================================================');
-  console.log(' AoT Integration Guard V1.10 - READ ONLY');
+  console.log(' AoT Integration Guard V1.11 - READ ONLY');
   console.log('============================================================');
   console.log(`Target:  ${analysis.target}`);
   console.log(`SHA:     ${analysis.targetSha}`);
@@ -369,47 +369,59 @@ function printDashboard(analysis, backup) {
     }
     console.log('------------------------------------------------------------');
   }
-  if (analysis.reevaluationPlan.length > 0) {
-    console.log('Predicted re-evaluation after integration:');
-    for (const item of analysis.reevaluationPlan) {
-      console.log(`  after ${item.afterBranch}: ${item.reevaluateBranches.length ? item.reevaluateBranches.join(', ') : 'none'}`);
-    }
-    console.log('------------------------------------------------------------');
-  }
   if (analysis.focusedReevaluationSets.length > 0) {
-    console.log('Focused next-run reinspection sets:');
+    console.log('Next-run focus:');
     for (const item of analysis.focusedReevaluationSets) {
-      console.log(`  after ${item.afterBranch}:`);
-      console.log(`    primary: ${item.primaryReinspection.length ? item.primaryReinspection.join(', ') : 'none'}`);
-      console.log(`    secondary: ${item.secondaryReinspection.length ? item.secondaryReinspection.join(', ') : 'none'}`);
-      console.log('    full Guard rerun: REQUIRED');
+      console.log(`  after ${item.afterBranch}: primary=${item.primaryReinspection.length ? item.primaryReinspection.join(', ') : 'none'}; full rerun REQUIRED`);
     }
     console.log('------------------------------------------------------------');
   }
-  if (analysis.overlapGraph.edges.length > 0) {
-    console.log('Peer-overlap graph:');
-    for (const edge of analysis.overlapGraph.edges) {
-      console.log(`  ${edge.from} <-> ${edge.to}: ${edge.risk}${edge.reviewRequired ? ' [REVIEW]' : ''}`);
+
+  if (verbose) {
+    if (analysis.reevaluationPlan.length > 0) {
+      console.log('Predicted re-evaluation after integration:');
+      for (const item of analysis.reevaluationPlan) {
+        console.log(`  after ${item.afterBranch}: ${item.reevaluateBranches.length ? item.reevaluateBranches.join(', ') : 'none'}`);
+      }
+      console.log('------------------------------------------------------------');
     }
-    console.log('------------------------------------------------------------');
-  }
-  if (analysis.tasks.length === 0) console.log('TASK branches: none');
-  for (const task of analysis.tasks) {
-    console.log(`[${task.status}] ${task.branch}`);
-    console.log(`  head: ${task.sha}`);
-    console.log(`  merge preview: ${task.mergePreview.status}`);
-    console.log(`  next action: ${task.guidance.action}`);
-    console.log(`  reason: ${task.guidance.reason}`);
-    if (task.status !== GUARD_STATUS.MERGED && task.overlap.risk !== 'NONE') console.log(`  target overlap: ${task.overlap.risk} (${task.overlap.evidence.join(', ')})`);
-    for (const peer of task.peerOverlaps) {
-      console.log(`  peer overlap: ${peer.branch} -> ${peer.overlap.risk} (${peer.overlap.evidence.join(', ')})`);
+    if (analysis.focusedReevaluationSets.length > 0) {
+      console.log('Focused next-run reinspection sets (detailed):');
+      for (const item of analysis.focusedReevaluationSets) {
+        console.log(`  after ${item.afterBranch}:`);
+        console.log(`    primary: ${item.primaryReinspection.length ? item.primaryReinspection.join(', ') : 'none'}`);
+        console.log(`    secondary: ${item.secondaryReinspection.length ? item.secondaryReinspection.join(', ') : 'none'}`);
+        console.log('    full Guard rerun: REQUIRED');
+      }
+      console.log('------------------------------------------------------------');
     }
-    if (task.mergePreview.conflictPaths?.length) console.log(`  conflicts: ${task.mergePreview.conflictPaths.join(', ')}`);
+    if (analysis.overlapGraph.edges.length > 0) {
+      console.log('Peer-overlap graph:');
+      for (const edge of analysis.overlapGraph.edges) {
+        console.log(`  ${edge.from} <-> ${edge.to}: ${edge.risk}${edge.reviewRequired ? ' [REVIEW]' : ''}`);
+      }
+      console.log('------------------------------------------------------------');
+    }
+    if (analysis.tasks.length === 0) console.log('TASK branches: none');
+    for (const task of analysis.tasks) {
+      console.log(`[${task.status}] ${task.branch}`);
+      console.log(`  head: ${task.sha}`);
+      console.log(`  merge preview: ${task.mergePreview.status}`);
+      console.log(`  next action: ${task.guidance.action}`);
+      console.log(`  reason: ${task.guidance.reason}`);
+      if (task.status !== GUARD_STATUS.MERGED && task.overlap.risk !== 'NONE') console.log(`  target overlap: ${task.overlap.risk} (${task.overlap.evidence.join(', ')})`);
+      for (const peer of task.peerOverlaps) {
+        console.log(`  peer overlap: ${peer.branch} -> ${peer.overlap.risk} (${peer.overlap.evidence.join(', ')})`);
+      }
+      if (task.mergePreview.conflictPaths?.length) console.log(`  conflicts: ${task.mergePreview.conflictPaths.join(', ')}`);
+    }
+  } else {
+    console.log('Details: hidden (use --verbose)');
   }
   console.log('\nNo merge, reset, rebase, push, branch deletion, or conflict resolution was performed.');
 }
 
-export async function runIntegrationGuard({ cwd: requestedCwd, target: explicitTarget = '', backupRoot: explicitBackupRoot = '', now = new Date() } = {}) {
+export async function runIntegrationGuard({ cwd: requestedCwd, target: explicitTarget = '', backupRoot: explicitBackupRoot = '', now = new Date(), verbose = false } = {}) {
   const cwd = runGit(requestedCwd || process.cwd(), ['rev-parse', '--show-toplevel']);
   ensureNoGitOperationInProgress(cwd);
   const target = resolveTarget(cwd, explicitTarget);
@@ -470,19 +482,20 @@ export async function runIntegrationGuard({ cwd: requestedCwd, target: explicitT
       })),
     };
     analysis.analysisPath = writeAnalysis(backup, analysis);
-    printDashboard(analysis, backup);
+    printDashboard(analysis, backup, { verbose });
     return { analysis, backup };
   } finally {
     releaseLock();
   }
 }
 
-function parseArgs(argv) {
-  const options = { target: '', backupRoot: '' };
+export function parseArgs(argv) {
+  const options = { target: '', backupRoot: '', verbose: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--target') options.target = argv[++i] || '';
     else if (arg === '--backup-root') options.backupRoot = argv[++i] || '';
+    else if (arg === '--verbose' || arg === '-v') options.verbose = true;
     else if (arg === '--help' || arg === '-h') options.help = true;
     else throw new Error(`Unknown argument: ${arg}`);
   }
@@ -490,14 +503,14 @@ function parseArgs(argv) {
 }
 
 function printHelp() {
-  console.log('Usage: node scratch/integration_guard.mjs [--target AoTYYMMDD] [--backup-root <path>]');
-  console.log('V1.10 is read-only with respect to repository history. It creates a verified external backup and analysis report only.');
+  console.log('Usage: node scratch/integration_guard.mjs [--target AoTYYMMDD] [--backup-root <path>] [--verbose]');
+  console.log('V1.11 is read-only with respect to repository history. Default output is concise; --verbose shows detailed overlap and TASK evidence.');
 }
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   if (options.help) return printHelp();
-  await runIntegrationGuard({ target: options.target, backupRoot: options.backupRoot });
+  await runIntegrationGuard({ target: options.target, backupRoot: options.backupRoot, verbose: options.verbose });
 }
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
