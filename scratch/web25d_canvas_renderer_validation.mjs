@@ -76,7 +76,7 @@ assert.equal(commands.at(-1).type, BOARD_INPUT_COMMANDS.HOVER_CELL);
 assert.deepEqual(commands.at(-1).payload.cell, { r: 3, c: 1 });
 
 assert.deepEqual(renderer.handleClick(pointerEvent), { r: 3, c: 1 });
-assert.equal(commands.at(-1).type, BOARD_INPUT_COMMANDS.SELECT_CELL);
+assert.equal(commands.at(-1).type, BOARD_INPUT_COMMANDS.PRIMARY_CELL_ACTION);
 assert.deepEqual(commands.at(-1).payload.cell, { r: 3, c: 1 });
 
 renderer.handlePointerLeave();
