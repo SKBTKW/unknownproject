@@ -10,7 +10,10 @@
    - unresolved production
    ============================================================= */
 
-import { hasMultiplePlacementTerrainAttributes } from './placement_geometry.js';
+import {
+    hasMultiplePlacementTerrainAttributes,
+    resolvePlacementAttributeCells
+} from './placement_geometry.js';
 
 const LAND_PRODUCTION_STATUS = Object.freeze({
     LEGACY: "LEGACY",
@@ -113,10 +116,16 @@ function normalizeProductionContract(card) {
 
     const hasCellSource = Array.isArray(cellYields) && cellYields.length > 0;
     const hasBlockSource = !!blockYields;
+    const attributeCells = resolvePlacementAttributeCells(card) || [];
+    const expectedCellKeys = new Set(attributeCells.map(cell => `${cell.r}:${cell.c}`));
+    const declaredCellKeys = new Set((cellYields || []).map(entry => `${entry.r}:${entry.c}`));
+    const completeCellCoverage = expectedCellKeys.size > 0
+        && expectedCellKeys.size === declaredCellKeys.size
+        && [...expectedCellKeys].every(key => declaredCellKeys.has(key));
     const sourceValid = (
-        (scope === LAND_PRODUCTION_SCOPE.CELL && hasCellSource)
+        (scope === LAND_PRODUCTION_SCOPE.CELL && hasCellSource && completeCellCoverage)
         || (scope === LAND_PRODUCTION_SCOPE.BLOCK && hasBlockSource)
-        || (scope === LAND_PRODUCTION_SCOPE.HYBRID && hasCellSource && hasBlockSource)
+        || (scope === LAND_PRODUCTION_SCOPE.HYBRID && hasCellSource && completeCellCoverage && hasBlockSource)
     );
 
     if (!sourceValid) {
