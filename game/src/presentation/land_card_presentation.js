@@ -1,3 +1,4 @@
+import { hasMultiplePlacementTerrainAttributes } from '../core/placement_geometry.js';
 /* =============================================================
    game/src/presentation/land_card_presentation.js
    LAND card presentation helpers.
@@ -20,7 +21,7 @@ function isMultiAttributeLandCard(card) {
     return Boolean(
         definition
         && (definition.category || "LAND") === "LAND"
-        && getLandCardAttributeCells(card)
+        && hasMultiplePlacementTerrainAttributes(card)
     );
 }
 
