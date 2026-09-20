@@ -69,7 +69,9 @@ export class Web25DCanvasRenderer {
     constructor({
         canvas,
         bridge,
-        projectionAdapter = null
+        projectionAdapter = null,
+        showCoordinates = true,
+        showElevationLabels = false
     } = {}) {
         if (!canvas || typeof canvas.getContext !== 'function') {
             throw new Error('WEB25D_CANVAS_REQUIRED');
@@ -86,6 +88,8 @@ export class Web25DCanvasRenderer {
         this.bridge = bridge;
         this.projection = projectionAdapter || new Web25DProjectionAdapter();
         this.readModel = null;
+        this.showCoordinates = showCoordinates !== false;
+        this.showElevationLabels = Boolean(showElevationLabels);
         this.lastPointerCell = null;
         this.bound = false;
 
@@ -217,7 +221,9 @@ export class Web25DCanvasRenderer {
         for (const item of cells) {
             this.drawCell(item.cell, item.projected);
         }
-        this.drawCoordinateLabels();
+        if (this.showCoordinates) {
+            this.drawCoordinateLabels();
+        }
     }
 
     drawCell(cell, projected) {
@@ -282,7 +288,7 @@ export class Web25DCanvasRenderer {
 
         this.drawGreenery(cell, projected.screenCenter, lift);
 
-        if (Number.isInteger(cell.elevation)) {
+        if (this.showElevationLabels && Number.isInteger(cell.elevation)) {
             ctx.font = '9px sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';

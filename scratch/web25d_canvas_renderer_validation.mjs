@@ -4,6 +4,9 @@ import { Web25DProjectionAdapter } from '../game/src/presentation/web25d_project
 import { BOARD_INPUT_COMMANDS } from '../game/src/presentation/board_input_contract.js';
 
 class FakeContext2D {
+    constructor() {
+        this.texts = [];
+    }
     clearRect() {}
     beginPath() {}
     moveTo() {}
@@ -11,7 +14,7 @@ class FakeContext2D {
     closePath() {}
     fill() {}
     stroke() {}
-    fillText() {}
+    fillText(text) { this.texts.push(String(text)); }
 }
 
 class FakeCanvas {
@@ -43,6 +46,7 @@ const cells = Array.from({ length: 5 }, (_, r) =>
         r,
         c,
         placed: r === 2 && c === 2,
+        elevation: r === 2 && c === 2 ? 1 : undefined,
         interaction: { selected: false, hovered: false, focused: false }
     }))
 );
@@ -52,6 +56,18 @@ renderer.setReadModel({
     cells
 });
 
+assert.equal(canvas.context.texts.includes('A'), true, 'board coordinates render by default');
+assert.equal(canvas.context.texts.includes('1'), true, 'row coordinates render by default');
+assert.equal(canvas.context.texts.includes('E1'), false, 'elevation labels are hidden by default');
+
+canvas.context.texts.length = 0;
+renderer.showCoordinates = false;
+renderer.showElevationLabels = true;
+renderer.render();
+assert.equal(canvas.context.texts.includes('A'), false, 'board coordinates can be hidden');
+assert.equal(canvas.context.texts.includes('1'), false, 'row coordinates can be hidden');
+assert.equal(canvas.context.texts.includes('E1'), true, 'development elevation labels can be enabled');
+
 const target = projection.projectCell(3, 1);
 const pointerEvent = { clientX: target.x, clientY: target.y };
 assert.deepEqual(renderer.getLogicalCellAtCanvasPoint(target.x, target.y), { r: 3, c: 1 });
@@ -60,7 +76,7 @@ assert.equal(commands.at(-1).type, BOARD_INPUT_COMMANDS.HOVER_CELL);
 assert.deepEqual(commands.at(-1).payload.cell, { r: 3, c: 1 });
 
 assert.deepEqual(renderer.handleClick(pointerEvent), { r: 3, c: 1 });
-assert.equal(commands.at(-1).type, BOARD_INPUT_COMMANDS.SELECT_CELL);
+assert.equal(commands.at(-1).type, BOARD_INPUT_COMMANDS.PRIMARY_CELL_ACTION);
 assert.deepEqual(commands.at(-1).payload.cell, { r: 3, c: 1 });
 
 renderer.handlePointerLeave();
