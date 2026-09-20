@@ -14,7 +14,8 @@ export class AreaInfluenceVisualService {
     /**
      * 🏷️ セルに付与する範囲効果クラス名の配列を取得
      * @param {Object} params
-     * @param {boolean} params.isLakeVic - 水源（湖・オアシス）影響圏フラグ
+     * @param {boolean} [params.isIrrigationVic=false] - 灌漑影響圏フラグ
+     * @param {boolean} [params.isLakeVic=false] - 旧API互換の灌漑影響圏フラグ
      * @param {boolean} params.isHQVic - 本営近郊影響圏フラグ
      * @returns {string[]} クラス名配列
      */
@@ -39,7 +40,8 @@ export class AreaInfluenceVisualService {
         if (!state) {
             return {
                 irrigationInfluenceCells,
-                irrigationInfluenceCells: irrigationInfluenceCells,
+                // 旧Presentation/Test互換
+                lakeInfluenceCells: irrigationInfluenceCells,
                 hqInfluenceGameplayCells,
                 hqInfluenceVisualCells,
                 hqInfluenceCells: hqInfluenceVisualCells
@@ -74,10 +76,10 @@ export class AreaInfluenceVisualService {
 
         return {
             irrigationInfluenceCells,
-                irrigationInfluenceCells: irrigationInfluenceCells,
+            // 旧Presentation/Test互換
+            lakeInfluenceCells: irrigationInfluenceCells,
             hqInfluenceGameplayCells,
             hqInfluenceVisualCells,
-            // 下位互換性
             hqInfluenceCells: hqInfluenceVisualCells
         };
     }
@@ -409,8 +411,7 @@ export class AreaInfluenceVisualService {
             }
         }
 
-        const { irrigationInfluenceCells,
-                irrigationInfluenceCells: irrigationInfluenceCells, hqInfluenceVisualCells } = this.buildInfluenceCellSets(state, size);
+        const { irrigationInfluenceCells, hqInfluenceVisualCells } = this.buildInfluenceCellSets(state, size);
         if (irrigationInfluenceCells.size === 0 && hqInfluenceVisualCells.size === 0) {
             overlayEl.innerHTML = "";
             return;
@@ -419,8 +420,7 @@ export class AreaInfluenceVisualService {
         const cellRectsMap = this.getCellRectsFromDom(boardEl, size);
 
         // 🌾 灌漑影響圏 ＆ 🏰 本営近郊: 正規エッジ抽出 ＆ 実測gap中心 ＆ 重複時のみ2レーン分離
-        const irrigationEdges = this.extractBoundaryEdges(irrigationInfluenceCells,
-                irrigationInfluenceCells: irrigationInfluenceCells, size);
+        const irrigationEdges = this.extractBoundaryEdges(irrigationInfluenceCells, size);
         const hqEdges = this.extractBoundaryEdges(hqInfluenceVisualCells, size);
         const { gridLinesX, gridLinesY } = this.resolveBoundaryCoordinates(cellRectsMap, size);
 
