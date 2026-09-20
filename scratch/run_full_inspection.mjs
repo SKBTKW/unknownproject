@@ -336,6 +336,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Advisor UI Shell) で不合格が検出されました。");
         process.exit(1);
     }
+    const postTrialAdvisorMeaningBoundaryOk = await runCommand("node", ["scratch/test_post_trial_advisor_meaning_boundary.mjs"]);
+    if (!postTrialAdvisorMeaningBoundaryOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Post-Trial Advisor Meaning Boundary) で不合格が検出されました。");
+        process.exit(1);
+    }
     const trialUiIsolationTests = [
         ["Trial Normal Input Isolation", "scratch/test_trial_normal_input_isolation.mjs"],
         ["Trial FocusLayer Suppression", "scratch/test_trial_focus_layer_suppression.mjs"],
