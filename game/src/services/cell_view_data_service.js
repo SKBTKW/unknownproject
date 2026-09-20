@@ -8,6 +8,20 @@
  */
 
 import { ProductionCalculator } from '../systems/production_calculator.js';
+import { resolvePlacedBlockProduction } from '../core/land_production_contract.js';
+
+function isPlacementProductionPrimary(state, r, c, placementGroupId) {
+    if (!placementGroupId || !Array.isArray(state?.grid)) return false;
+    for (let row = 0; row < state.grid.length; row++) {
+        for (let col = 0; col < (state.grid[row]?.length || 0); col++) {
+            const cell = state.grid[row][col];
+            if (!cell?.placed || cell.placementGroupId !== placementGroupId) continue;
+            if (cell.socketResource) continue;
+            return row === r && col === c;
+        }
+    }
+    return false;
+}
 
 function normalizeSocketResource(socket) {
     if (!socket) return null;
@@ -54,6 +68,8 @@ export class CellViewDataService {
                 yields: { food: 0, wood: 0, defense: 0, mystic: 0 },
                 productionStatus: null,
                 productionScope: null,
+                blockProduction: null,
+                blockProductionPrimary: false,
                 primaryYield: null,
                 modifiers: [],
                 placementGroupId: null,
@@ -80,6 +96,9 @@ export class CellViewDataService {
         }
 
         const t = cell.terrain || {};
+        const blockProduction = resolvePlacedBlockProduction(state, cell.placementGroupId);
+        const blockProductionPrimary = blockProduction.defined
+            && isPlacementProductionPrimary(state, r, c, cell.placementGroupId);
         return {
             r,
             c,
@@ -96,6 +115,8 @@ export class CellViewDataService {
             baseYields: breakdown.baseYields || { food: 0, wood: 0, defense: 0, mystic: 0 },
             productionStatus: breakdown.productionStatus || null,
             productionScope: breakdown.productionScope || null,
+            blockProduction: blockProductionPrimary ? blockProduction.yields : null,
+            blockProductionPrimary,
             primaryYield,
             modifiers,
             placementGroupId: cell.placementGroupId || null,
