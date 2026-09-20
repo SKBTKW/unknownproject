@@ -738,6 +738,7 @@ class DeckManager {
         if (newCards.length < offeringSize) {
             const baseLandPool = master.filter(c => {
                 if (excludedCardIds.includes(c.id)) return false;
+                if (hasMultiplePlacementTerrainAttributes(c) && c.multiAttributeProductionReady !== true) return false;
                 const policy = c.cyclePolicy || (c.category === "LAND" ? CYCLE_POLICIES.LAND_STANDARD : CYCLE_POLICIES.RARITY);
                 return (policy === CYCLE_POLICIES.LAND_STANDARD || c.category === "LAND") && (c.minStage || 1) <= stageNum;
             });
