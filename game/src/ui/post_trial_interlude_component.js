@@ -222,14 +222,14 @@ export class PostTrialInterludeComponent {
         const blocked = this.isAdvanceBlocked(scene, readModel);
         const status = this.root.querySelector(".post-trial-interlude-status");
         status.textContent = blocked
-            ? this.t("UI_POST_TRIAL_WAITING_FOR_STEP", {}, "処理の完了を待っています。")
+            ? this.t("UI_POST_TRIAL_WAITING_FOR_STEP", {}, "Waiting for the current process to complete.")
             : this.sceneStatus(scene, readModel, advisorPresentation);
 
         const advance = this.root.querySelector(".post-trial-interlude-advance");
         advance.disabled = blocked;
         advance.textContent = scene.id === POST_TRIAL_INTERLUDE_SCENES.CLOSE
-            ? this.t("UI_POST_TRIAL_CLOSE", {}, "盤面へ戻る")
-            : this.t("UI_POST_TRIAL_CONTINUE", {}, "続ける");
+            ? this.t("UI_POST_TRIAL_CLOSE", {}, "Return to Board")
+            : this.t("UI_POST_TRIAL_CONTINUE", {}, "Continue");
 
     }
 
