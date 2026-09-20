@@ -316,6 +316,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Settings Modal) で不合格が検出されました。");
         process.exit(1);
     }
+    const web25DCanvasRendererOk = await runCommand("node", ["scratch/web25d_canvas_renderer_validation.mjs"]);
+    if (!web25DCanvasRendererOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Web 2.5D Canvas Renderer) で不合格が検出されました。");
+        process.exit(1);
+    }
     const advisorFoundationOk = await runCommand("node", ["scratch/test_advisor_foundation.mjs"]);
     if (!advisorFoundationOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Advisor Foundation) で不合格が検出されました。");
