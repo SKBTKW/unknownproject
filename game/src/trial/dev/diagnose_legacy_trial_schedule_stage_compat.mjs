@@ -4,7 +4,8 @@ import {
     getLegacyTrialDistance,
     isLegacyTrialNoticeActive,
     isLegacyTrialWithin,
-    passesLegacyTrialCardTimingRequirements
+    passesLegacyTrialCardTimingRequirements,
+    applyLegacyTrialScheduleStageProgression
 } from "../../core/legacy_trial_schedule_compat.js";
 
 {
@@ -69,6 +70,34 @@ import {
         getTrialNotice: () => ({ active: true, remaining: 49 })
     };
     assert.equal(passesLegacyTrialCardTimingRequirements({ reqTrialOrLowDefense: true }, state), true);
+}
+
+{
+    const expandCalls = [];
+    const state = {
+        turn: 15,
+        stage: { id: 1, name: "Stage 1", size: 5, maxTiles: 24 },
+        trialSchedule: { trial1: 15, trial2: 30, trial3: 50 },
+        nextTrialTurn: 15
+    };
+    const engine = {
+        state,
+        trialStageProgressionService: {},
+        gridEngine: {
+            expandGrid(size) {
+                expandCalls.push(size);
+                return Array.from({ length: size }, () => Array(size).fill(null));
+            }
+        }
+    };
+
+    const result = applyLegacyTrialScheduleStageProgression(engine);
+    assert.equal(result.changed, false);
+    assert.equal(result.reason, "MODERN_TRIAL_STAGE_PROGRESSION_AUTHORITY");
+    assert.equal(state.stage.id, 1);
+    assert.equal(state.stage.size, 5);
+    assert.equal(state.nextTrialTurn, 15);
+    assert.deepEqual(expandCalls, []);
 }
 
 console.log("diagnose_legacy_trial_schedule_stage_compat: OK");
