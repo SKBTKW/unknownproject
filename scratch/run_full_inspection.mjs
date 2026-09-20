@@ -193,6 +193,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (FirstRun Trial UI Boundary) で不合格が検出されました。");
         process.exit(1);
     }
+    const firstRunTrialIngressPolicyOk = await runCommand("node", ["scratch/test_first_run_trial_ingress_policy.mjs"]);
+    if (!firstRunTrialIngressPolicyOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (FirstRun Trial Ingress Policy) で不合格が検出されました。");
+        process.exit(1);
+    }
     const scheduledGlobalEventOk = await runCommand("node", ["scratch/test_scheduled_global_event_contract.mjs"]);
     if (!scheduledGlobalEventOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Scheduled Global Event Contract) で不合格が検出されました。");
@@ -339,6 +344,11 @@ async function main() {
     const advisorFoundationOk = await runCommand("node", ["scratch/test_advisor_foundation.mjs"]);
     if (!advisorFoundationOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Advisor Foundation) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const advisorSemanticSceneOk = await runCommand("node", ["scratch/test_advisor_semantic_scene_consumer.mjs"]);
+    if (!advisorSemanticSceneOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Advisor Semantic Scene Consumer) で不合格が検出されました。");
         process.exit(1);
     }
     const globalEventChoiceRestoreOk = await runCommand("node", ["scratch/test_global_event_choice_restore_reconciliation.mjs"]);
