@@ -166,7 +166,8 @@ export class FirstRunTrialTutorialService {
                 qualitativePreviewOnly: false,
                 allowInterceptionSelection: true,
                 allowDefenseInput: true,
-                allowTrialConfirm: true
+                allowTrialConfirm: true,
+                allowSkipRoute: true
             });
         }
 
@@ -195,7 +196,8 @@ export class FirstRunTrialTutorialService {
             qualitativePreviewOnly: true,
             allowInterceptionSelection: interceptionOpen,
             allowDefenseInput: defenseOpen,
-            allowTrialConfirm: confirmOpen
+            allowTrialConfirm: confirmOpen,
+            allowSkipRoute: false
         });
     }
 
