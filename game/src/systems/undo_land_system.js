@@ -31,13 +31,22 @@
             const mergeLinksCopy = Array.from(this.state.mergeLinks || []);
             const mergedBlocksCopy = JSON.parse(JSON.stringify(this.state.mergedBlocks || {}));
             const handOfferingCopy = (this.state.handOffering || []).map(c => 
-                c ? (c.isBlank ? { ...c, originalCard: c.originalCard ? { ...c.originalCard } : null } : { ...c }) : null
+                c ? (c.isBlank
+                    ? { ...c, originalCard: c.originalCard ? { ...c.originalCard } : null }
+                    : {
+                        ...c,
+                        currentShape: c.currentShape ? JSON.parse(JSON.stringify(c.currentShape)) : null,
+                        currentAnchor: c.currentAnchor ? { ...c.currentAnchor } : null,
+                        currentCells: c.currentCells ? JSON.parse(JSON.stringify(c.currentCells)) : null,
+                        currentCells: c.currentCells ? JSON.parse(JSON.stringify(c.currentCells)) : null
+                    }) : null
             );
             const reserveSlotsCopy = (this.state.reserveSlots || []).map(c => 
                 c ? {
                     ...c,
                     currentShape: c.currentShape ? JSON.parse(JSON.stringify(c.currentShape)) : null,
-                    currentAnchor: c.currentAnchor ? { ...c.currentAnchor } : null
+                    currentAnchor: c.currentAnchor ? { ...c.currentAnchor } : null,
+                    currentCells: c.currentCells ? JSON.parse(JSON.stringify(c.currentCells)) : null
                 } : null
             );
             const checkSystemState = this.state.checkSystem && typeof this.state.checkSystem.getState === "function"
@@ -141,7 +150,14 @@
             this.state.mergeLinks = new Set(s.mergeLinks || []);
             this.state.mergedBlocks = JSON.parse(JSON.stringify(s.mergedBlocks));
             this.state.handOffering = s.handOffering.map(c => 
-                c ? (c.isBlank ? { ...c, originalCard: c.originalCard ? { ...c.originalCard } : null } : { ...c }) : null
+                c ? (c.isBlank
+                    ? { ...c, originalCard: c.originalCard ? { ...c.originalCard } : null }
+                    : {
+                        ...c,
+                        currentShape: c.currentShape ? JSON.parse(JSON.stringify(c.currentShape)) : null,
+                        currentAnchor: c.currentAnchor ? { ...c.currentAnchor } : null,
+                        currentCells: c.currentCells ? JSON.parse(JSON.stringify(c.currentCells)) : null
+                    }) : null
             );
             if (s.reserveSlots) {
                 this.state.reserveSlots = s.reserveSlots.map(c => 
