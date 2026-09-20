@@ -45,9 +45,9 @@ export function attachWeb25DValidationRuntime(uiController, {
     const rendererBridge = new BoardRendererBridge({
         presentationState: uiController.boardPresentationState,
         inputHandlers: {
-            selectCell: ({ cell }) => {
-                if (!cell || typeof uiController.onCellClick !== 'function') return false;
-                return uiController.onCellClick(cell.r, cell.c);
+            primaryCellAction: ({ cell }) => {
+                if (!cell || typeof uiController.performPrimaryCellAction !== 'function') return false;
+                return uiController.performPrimaryCellAction(cell.r, cell.c);
             },
             selectTrialInterception: (payload) => {
                 if (!payload?.cell) return false;
