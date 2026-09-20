@@ -330,6 +330,7 @@ class GridEngine {
         let isOutOfBounds = false;
         let isAlreadyPlaced = false;
         let isMountainNearHQ = false;
+        let isWetlandNearHQ = false;
         let isAdjacent = false;
         let hasInvalidGL = false;
         let isWetlandTooClose = false;
@@ -368,8 +369,9 @@ class GridEngine {
                         if (this.state.grid[r][c].placed) {
                             isAlreadyPlaced = true;
                         }
-                        if (isMountain && this.isHQVicinity(r, c)) {
-                            isMountainNearHQ = true;
+                        if (this.isHQVicinity(r, c)) {
+                            if (isMountain) isMountainNearHQ = true;
+                            if (isWetland) isWetlandNearHQ = true;
                         }
                     }
                 }
@@ -379,6 +381,7 @@ class GridEngine {
         if (isOutOfBounds) reasons.push("OUT_OF_BOUNDS");
         if (isAlreadyPlaced) reasons.push("ALREADY_PLACED");
         if (isMountainNearHQ) reasons.push("MOUNTAIN_NEAR_HQ_FORBIDDEN");
+        if (isWetlandNearHQ) reasons.push("WETLAND_NEAR_HQ_FORBIDDEN");
 
         // 2. 隣接接続判定 ＆ 地勢レベル(GL) / 標高(E) 不適合チェック
         if (!isOutOfBounds) {
