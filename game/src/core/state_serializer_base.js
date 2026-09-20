@@ -1,3 +1,4 @@
+import { hasMultiplePlacementTerrainAttributes } from './placement_geometry.js';
 /**
  * 🌐 StateSerializer (ゲームステート決定論的直列化モジュール)
  * 
@@ -98,7 +99,7 @@ export function serializeGameState(state) {
             cardMasterId: card.cardMasterId || master.id || null,
             category: master.category || card.category || "LAND",
             rarity: master.rarity || card.rarity || "COMMON",
-            terrainId: master.terrainId || (Array.isArray(master.cells) ? null : (master.id || null)),
+            terrainId: master.terrainId || (hasMultiplePlacementTerrainAttributes(master) ? null : (master.id || null)),
             nameKey: master.nameKey || card.nameKey || null,
             currentShape: cloneData(card.currentShape || master.shape || [[1]], [[1]]),
             currentAnchor: cloneData(card.currentAnchor),
