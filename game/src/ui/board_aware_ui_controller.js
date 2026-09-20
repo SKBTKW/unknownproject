@@ -250,14 +250,12 @@ export class BoardAwareUIController extends LegacyUIController {
 
         let title = `[${coordStr}]`;
         let desc = isHQVic
-            ? (I18n ? I18n.t("UI_CELL_HQ_VICINITY_DESC") : "🏛️ 本営近郊エリア")
-            : (I18n ? I18n.t("UI_CELL_UNCLAIMED") : "未開拓の土地");
+            ? (I18n.t("UI_CELL_HQ_VICINITY_DESC"))
+            : (I18n.t("UI_CELL_UNCLAIMED"));
 
         if (waterSourceType && !cell.placed) {
             const isOasis = waterSourceType === "OASIS";
-            const waterTitle = I18n
-                ? I18n.t(isOasis ? "UI_OASIS_VICINITY_TITLE" : "UI_LAKE_VICINITY_TITLE")
-                : "🌊 水脈エリア";
+            const waterTitle = I18n.t(isOasis ? "UI_OASIS_VICINITY_TITLE" : "UI_LAKE_VICINITY_TITLE");
             title = `[${coordStr}] ${waterTitle}`;
             const waterDesc = I18n
                 ? I18n.t(isOasis ? "UI_OASIS_VICINITY_UNPLACED_DESC" : "UI_LAKE_VICINITY_UNPLACED_DESC")
@@ -270,11 +268,11 @@ export class BoardAwareUIController extends LegacyUIController {
             desc = I18n ? I18n.t("UI_CELL_HQ_DESC") : "🌾+10 🧱+10 🛡️10 ✨+1";
         } else if (cell.hasSocket && !cell.placed) {
             title = I18n ? I18n.t("UI_CELL_SOCKET_TITLE", { coord: coordStr }) : `★ [${coordStr}]`;
-            desc = I18n ? I18n.t("UI_CELL_SOCKET_DESC") : "★ 資源ソケット";
+            desc = I18n.t("UI_CELL_SOCKET_DESC");
         } else if (cell.placed && cell.terrainId) {
             const tName = I18n.t(cell.nameKey || cell.terrainId || "TERRAIN_PLAINS");
             const placedTag = isPlacedThisTurn
-                ? ` <span style="font-size:12px; background:#e74c3c; color:#fff; padding:2px 6px; border-radius:4px; margin-left:6px; font-weight:bold;">${I18n ? I18n.t("UI_CELL_PLACED_TAG") : "当ターン配置"}</span>`
+                ? ` <span style="font-size:12px; background:#e74c3c; color:#fff; padding:2px 6px; border-radius:4px; margin-left:6px; font-weight:bold;">${I18n.t("UI_CELL_PLACED_TAG")}</span>`
                 : "";
             title = `🌱 ${tName} [${coordStr}]${placedTag}`;
 
@@ -307,15 +305,15 @@ export class BoardAwareUIController extends LegacyUIController {
                 let hqVicinityReported = false;
                 for (const mod of cell.modifiers) {
                     if (mod.type === "HQ_VICINITY" && !hqVicinityReported) {
-                        bonusParts.push(I18n ? I18n.t("UI_CELL_BONUS_VICINITY") : "本営近郊(+1)");
+                        bonusParts.push(I18n.t("UI_CELL_BONUS_VICINITY"));
                         hqVicinityReported = true;
                     } else if (mod.type === "LAKE_IRRIGATION") {
                         const i18nKey = waterSourceType === "OASIS"
                             ? "UI_CELL_BONUS_OASIS_IRRIGATION"
                             : "UI_CELL_BONUS_LAKE_IRRIGATION";
-                        bonusParts.push(I18n ? I18n.t(i18nKey, { val: mod.amount }) : `灌漑(+${mod.amount})`);
+                        bonusParts.push(I18n.t(i18nKey, { val: mod.amount }));
                     } else if (mod.type === "PERMANENT_PLAINS") {
-                        bonusParts.push(I18n ? I18n.t("UI_CELL_BONUS_PLAINS", { val: mod.amount }) : `平地強化(+${mod.amount})`);
+                        bonusParts.push(I18n.t("UI_CELL_BONUS_PLAINS", { val: mod.amount }));
                     }
                 }
             }
@@ -328,11 +326,11 @@ export class BoardAwareUIController extends LegacyUIController {
 
             const yieldStr = yieldParts.length > 0
                 ? yieldParts.join(" ")
-                : (I18n ? I18n.t("UI_CELL_YIELD_NONE") : "産出なし");
+                : (I18n.t("UI_CELL_YIELD_NONE"));
             const bonusStr = bonusParts.length > 0
                 ? ` <span style="color:#f1c40f;">(${bonusParts.join(", ")})</span>`
                 : "";
-            const perTurnLabel = I18n ? I18n.t("UI_CELL_PER_TURN_YIELD") : "毎ターン産出:";
+            const perTurnLabel = I18n.t("UI_CELL_PER_TURN_YIELD");
             desc = `${perTurnLabel} <strong>${yieldStr}</strong>${bonusStr}`;
             if (sourceWaterDesc) desc += sourceWaterDesc;
 
@@ -348,7 +346,7 @@ export class BoardAwareUIController extends LegacyUIController {
             }
 
             if (isPlacedThisTurn) {
-                const undoHint = I18n ? I18n.t("UI_CELL_UNDO_HINT") : "このマスをクリックすると配置を取り消せます";
+                const undoHint = I18n.t("UI_CELL_UNDO_HINT");
                 desc += `
                     <div class="tooltip-undo-hint-box">
                         <span class="undo-icon">↩</span>
