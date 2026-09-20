@@ -22,6 +22,7 @@ const PLAINS = terrain("GL1_PLAINS", 1, 1, "TERRAIN_PLAINS");
 const HILL = terrain("E2_HILL", 2, 1, "TERRAIN_HILL");
 const DESERT = terrain("GL0_DESERT", 1, 0, "TERRAIN_DESERT");
 const FOREST = terrain("GL2_FOREST", 1, 2, "TERRAIN_FOREST");
+const MOUNTAIN = terrain("E3_MOUNTAIN", 3, 0, "TERRAIN_MOUNTAIN");
 
 function createCell(r, c, extra = {}) {
     return {
@@ -168,6 +169,7 @@ const multiCard = {
     assert.ok(plainsCell.placementGroupId);
     assert.ok(plainsCell.mergeGroupId);
     assert.notEqual(hillCell.mergeGroupId, plainsCell.mergeGroupId);
+    assert.equal(state.mergeLinks.size, 0);
     assert.equal(state.placedBlockCount, 1);
     assert.equal(grid.getPlacedBlockCount(), 1);
 }
