@@ -175,10 +175,71 @@ function resolveCellProductionBase(cell) {
     };
 }
 
-function findContractCellYields(contract, localR, localC) {
+function findContractCellYields(contract, localR, localC, attributeCell = null) {
     if (!contract || !Array.isArray(contract.cellYields)) return null;
-    const match = contract.cellYields.find(entry => entry.r === localR && entry.c === localC);
+    const sourceR = Number.isInteger(attributeCell?.sourceR) ? attributeCell.sourceR : localR;
+    const sourceC = Number.isInteger(attributeCell?.sourceC) ? attributeCell.sourceC : localC;
+    const match = contract.cellYields.find(entry => entry.r === sourceR && entry.c === sourceC);
     return match ? { ...match.yields } : null;
+}
+
+function resolveCardProductionPreview(card) {
+    const definition = card?.terrain || card || null;
+    if (!definition) {
+        return {
+            status: null,
+            scope: null,
+            totalYields: null
+        };
+    }
+
+    if (!hasMultiplePlacementTerrainAttributes(card)) {
+        const shape = card?.currentShape || definition.shape || [[1]];
+        const tileCount = shape.reduce(
+            (sum, row) => sum + row.reduce((rowSum, value) => rowSum + (value === 1 ? 1 : 0), 0),
+            0
+        );
+        const perTile = resolveLegacyTerrainYields(definition);
+        return {
+            status: LAND_PRODUCTION_STATUS.LEGACY,
+            scope: LAND_PRODUCTION_SCOPE.CELL,
+            totalYields: {
+                food: perTile.food * tileCount,
+                wood: perTile.wood * tileCount,
+                defense: perTile.defense * tileCount,
+                mystic: perTile.mystic * tileCount
+            }
+        };
+    }
+
+    const contract = normalizeProductionContract(definition);
+    if (contract.status !== LAND_PRODUCTION_STATUS.RESOLVED) {
+        return {
+            status: LAND_PRODUCTION_STATUS.UNRESOLVED,
+            scope: null,
+            totalYields: null
+        };
+    }
+
+    const total = { ...ZERO_LAND_YIELDS };
+    for (const entry of contract.cellYields || []) {
+        total.food += entry.yields.food;
+        total.wood += entry.yields.wood;
+        total.defense += entry.yields.defense;
+        total.mystic += entry.yields.mystic;
+    }
+    if (contract.blockYields) {
+        total.food += contract.blockYields.food;
+        total.wood += contract.blockYields.wood;
+        total.defense += contract.blockYields.defense;
+        total.mystic += contract.blockYields.mystic;
+    }
+
+    return {
+        status: LAND_PRODUCTION_STATUS.RESOLVED,
+        scope: contract.scope,
+        totalYields: total
+    };
 }
 
 function resolvePlacedBlockProduction(state, placementGroupId) {
@@ -223,6 +284,7 @@ export {
     isMultiAttributeProductionResolved,
     normalizeLandYields,
     normalizeProductionContract,
+    resolveCardProductionPreview,
     resolveCellProductionBase,
     resolveLegacyTerrainYields,
     resolvePlacedBlockProduction,
