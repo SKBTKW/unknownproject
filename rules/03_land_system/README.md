@@ -21,6 +21,7 @@
 | `03_merge_system.md` | **[CURRENT] [PARTIAL] [REFERENCE]** | 現行の地帯化・連携と、未接続/不一致情報が混在 |
 | `04_exploration_system.md` | **[UNRESOLVED] [REFERENCE]** | 現文書の「Legacy / 廃止方向」は実装到達性だけでは確定しない。旧仕様を保持して採否確認対象とする |
 | `05_special_blocks.md` | **[CURRENT] [PARTIAL] [REFERENCE]** | 採用済み設計と実装途中の施設情報が混在 |
+| `06_multi_attribute_blocks.md` | **[CURRENT] [PARTIAL] [REFERENCE]** | 複数属性ブロックのBlock/Cell境界、表示、Offering、Production Gateの正本 |
 
 **注意:** この表は情報を消すための分類ではない。ラベル変更も本文削除を意味しない。
 
@@ -104,6 +105,23 @@
 
 ---
 
+### 6. [`06_multi_attribute_blocks.md`](./06_multi_attribute_blocks.md)
+
+1枚の土地カード・1回のPlacement・1つのBlock identityの内部に、異なるterrain semanticを持つ複数セルを含める土地ブロックを扱う。
+
+- Block identityとCell terrain semanticの分離
+- 内部辺 / 外部辺のPlacement責務
+- Rotation / Anchor
+- Zone / LINK
+- TrialでのBlock単位所有とCell単位terrain interaction
+- 「代表地形名＋（複数）」表示
+- R固定 / Offering weight
+- Production未確定時のOffering Gate
+
+を正本化する。
+
+---
+
 ## 土地システムの基本フロー
 
 ```text
@@ -138,6 +156,7 @@ Trialで盤面そのものを利用
 | :--- | :--- | :--- |
 | E / GL・土地基礎産出・資源ソケット・水源 | `00_land_foundation_and_resource_sockets.md` | `01_land_base.md` / `land_system.js` / card data |
 | 通常土地カードshape / Stage / rarity | `rules/09_cards/01_land_cards.md` | `LAND_CARDS_MASTER` |
+| 複数属性ブロック | `06_multi_attribute_blocks.md` | Placement / GridEngine / card data / preview read model |
 | 配置合法性 | `00_land_foundation_and_resource_sockets.md` ほか土地正本 | `GridEngine.canPlaceShape()` |
 | 総産出 | 土地・地帯・資源正本 | `ProductionCalculator` / `DefenseSystem` |
 | 地帯化 / 連携 | `03_merge_system.md` | `merge_rules.js` / `GridEngine` |
