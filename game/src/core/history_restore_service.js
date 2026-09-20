@@ -16,6 +16,7 @@ function captureRollbackCheckpoint(engine, history) {
         trialThreatState: cloneData(engine.trialThreatStateService?.getRestoreState?.()),
         trueEnemyState: cloneData(engine.trueEnemyStateService?.getRestoreState?.()),
         trialTimingState: cloneData(engine.trialTimingAuthorityService?.getRestoreState?.()),
+        firstRunState: cloneData(engine.firstRunState?.getRestoreState?.()),
         warningState: cloneData(engine.warningStateService?.getRestoreState?.()),
         runSeed: engine.runSeed,
         stateRunSeed: state.runSeed,
@@ -114,6 +115,9 @@ function rollbackFailedRestore(engine, history, checkpoint, resolveCardMaster) {
     if (checkpoint.trialTimingState !== null) {
         bestEffort(() => engine.trialTimingAuthorityService?.restoreState?.(cloneData(checkpoint.trialTimingState)));
     }
+    if (checkpoint.firstRunState !== null) {
+        bestEffort(() => engine.firstRunState?.restoreState?.(cloneData(checkpoint.firstRunState)));
+    }
     if (checkpoint.warningState !== null) {
         bestEffort(() => engine.warningStateService?.restoreState?.(cloneData(checkpoint.warningState)));
     }
@@ -179,6 +183,7 @@ export class HistoryRestoreService {
         const hasThreatRestoreState = runtime.trialThreatState !== undefined;
         const hasEnemyRestoreState = runtime.trueEnemyState !== undefined;
         const hasTimingRestoreState = runtime.trialTimingState !== undefined;
+        const hasFirstRunRestoreState = runtime.firstRunState !== undefined;
         const hasWarningRestoreState = runtime.warningState !== undefined;
         if (!engine.state || !engine.checkSystem?.getState || !engine.checkSystem?.setState ||
             !engine.gameplayRandom?.getState || !engine.gameplayRandom?.setState ||
@@ -189,6 +194,7 @@ export class HistoryRestoreService {
             (hasThreatRestoreState && !engine.trialThreatStateService?.restoreState) ||
             (hasEnemyRestoreState && !engine.trueEnemyStateService?.restoreState) ||
             (hasTimingRestoreState && !engine.trialTimingAuthorityService?.restoreState) ||
+            (hasFirstRunRestoreState && !engine.firstRunState?.restoreState) ||
             (hasWarningRestoreState && !engine.warningStateService?.restoreState)) {
             return { success: false, reason: 'HISTORY_RESTORE_DEPENDENCY_MISSING' };
         }
@@ -223,6 +229,9 @@ export class HistoryRestoreService {
             }
             if (hasTimingRestoreState) {
                 engine.trialTimingAuthorityService.restoreState(runtime.trialTimingState);
+            }
+            if (hasFirstRunRestoreState) {
+                engine.firstRunState.restoreState(runtime.firstRunState);
             }
             if (hasWarningRestoreState) {
                 engine.warningStateService.restoreState(runtime.warningState);
