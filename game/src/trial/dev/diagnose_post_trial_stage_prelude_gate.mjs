@@ -7,7 +7,7 @@ const source = fs.readFileSync(
 );
 
 assert.ok(source.includes("setPostTrialStageGateDeferred(enabled)"));
-assert.ok(source.includes("completePostTrialStagePrelude()"));
+assert.ok(source.includes("completePostTrialStagePrelude({ render = true } = {})"));
 assert.ok(source.includes("const shouldDeferStageGate = Boolean(this.postTrialStageGateDeferred)"));
 assert.ok(source.includes("deferred: true"));
 assert.ok(source.includes("completeAfterPresentationCleanup"));
