@@ -102,6 +102,7 @@ export function serializeGameState(state) {
             nameKey: master.nameKey || card.nameKey || null,
             currentShape: cloneData(card.currentShape || master.shape || [[1]], [[1]]),
             currentAnchor: cloneData(card.currentAnchor),
+            currentCells: cloneData(card.currentCells),
             cyclePolicy: master.cyclePolicy || card.cyclePolicy || null,
             originalHandIdx: Number.isInteger(card.originalHandIdx) ? card.originalHandIdx : null,
             reservedThisTurn: !!card.reservedThisTurn
