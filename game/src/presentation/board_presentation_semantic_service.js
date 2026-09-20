@@ -1,4 +1,5 @@
 import { isWaterSourceInfluence } from '../core/lake_rules.js';
+import { resolvePlacedBlockProduction } from '../core/land_production_contract.js';
 
 const CARDINAL_DIRECTIONS = Object.freeze([
     Object.freeze({ direction: 'NORTH', dr: -1, dc: 0 }),
@@ -140,6 +141,7 @@ export function resolveBoardDisplayProduction(state, facts, cellViewDataService)
 
     if (activeGroupId) {
         const grid = state?.grid || [];
+        const placementGroups = new Set();
         for (let r = 0; r < grid.length; r++) {
             for (let c = 0; c < (grid[r]?.length || 0); c++) {
                 const cell = grid[r][c];
@@ -147,8 +149,18 @@ export function resolveBoardDisplayProduction(state, facts, cellViewDataService)
                 const matchesGroup = normalizeGroupId(cell.mergeGroupId) === activeGroupId
                     || normalizeGroupId(cell.placementGroupId) === activeGroupId;
                 if (!matchesGroup) continue;
+                if (cell.placementGroupId != null) placementGroups.add(String(cell.placementGroupId));
                 addNonSocketProduction(production, cellViewDataService.getCellViewData(state, r, c));
             }
+        }
+
+        for (const placementGroupId of placementGroups) {
+            const blockProduction = resolvePlacedBlockProduction(state, placementGroupId);
+            if (!blockProduction.defined) continue;
+            production.food += blockProduction.yields.food;
+            production.wood += blockProduction.yields.wood;
+            production.defense += blockProduction.yields.defense;
+            production.mystic += blockProduction.yields.mystic;
         }
 
         const sourceCell = state?.grid?.[facts.r]?.[facts.c];
