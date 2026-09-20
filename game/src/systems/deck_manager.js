@@ -119,6 +119,12 @@ class DeckManager {
         const cardStage = c.minStage || 1;
         if (cardStage > stageNum) return false;
 
+        // Multi-Attribute cards must not enter live Offering until their
+        // Production contract is explicitly finalized.
+        if (hasMultiplePlacementTerrainAttributes(c) && c.multiAttributeProductionReady !== true) {
+            return false;
+        }
+
         const currentTurn = (this.state && this.state.turn) ? this.state.turn : 1;
 
         // 🌐 1. Universal Eligibility (共通ゲート)
