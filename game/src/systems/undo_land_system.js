@@ -23,6 +23,7 @@
                     ...cell,
                     cachedSocketSeeds: cell.cachedSocketSeeds ? { ...cell.cachedSocketSeeds } : {},
                     terrain: cell.terrain ? { ...cell.terrain } : null,
+                    production: cell.production ? JSON.parse(JSON.stringify(cell.production)) : null,
                     socketResource: cell.socketResource ? { ...cell.socketResource } : null
                 }))
             );
@@ -37,7 +38,6 @@
                         ...c,
                         currentShape: c.currentShape ? JSON.parse(JSON.stringify(c.currentShape)) : null,
                         currentAnchor: c.currentAnchor ? { ...c.currentAnchor } : null,
-                        currentCells: c.currentCells ? JSON.parse(JSON.stringify(c.currentCells)) : null,
                         currentCells: c.currentCells ? JSON.parse(JSON.stringify(c.currentCells)) : null
                     }) : null
             );
@@ -74,6 +74,7 @@
                 grantedConnectionPairs: connPairsCopy,
                 mergeLinks: mergeLinksCopy,
                 mergedBlocks: mergedBlocksCopy,
+                placedBlockProduction: JSON.parse(JSON.stringify(this.state.placedBlockProduction || {})),
                 handOffering: handOfferingCopy,
                 reserveSlots: reserveSlotsCopy,
                 cardCooldowns: JSON.parse(JSON.stringify(this.state.cardCooldowns || {})),
@@ -141,6 +142,7 @@
                         ...cell,
                         cachedSocketSeeds: currentCell.cachedSocketSeeds || cell.cachedSocketSeeds || {},
                         terrain: cell.terrain ? { ...cell.terrain } : null,
+                        production: cell.production ? JSON.parse(JSON.stringify(cell.production)) : null,
                         socketResource: cell.socketResource ? { ...cell.socketResource } : null
                     };
                 })
@@ -149,6 +151,7 @@
             this.state.grantedConnectionPairs = new Set(s.grantedConnectionPairs);
             this.state.mergeLinks = new Set(s.mergeLinks || []);
             this.state.mergedBlocks = JSON.parse(JSON.stringify(s.mergedBlocks));
+            this.state.placedBlockProduction = JSON.parse(JSON.stringify(s.placedBlockProduction || {}));
             this.state.handOffering = s.handOffering.map(c => 
                 c ? (c.isBlank
                     ? { ...c, originalCard: c.originalCard ? { ...c.originalCard } : null }
@@ -164,7 +167,8 @@
                     c ? {
                         ...c,
                         currentShape: c.currentShape ? JSON.parse(JSON.stringify(c.currentShape)) : null,
-                        currentAnchor: c.currentAnchor ? { ...c.currentAnchor } : null
+                        currentAnchor: c.currentAnchor ? { ...c.currentAnchor } : null,
+                        currentCells: c.currentCells ? JSON.parse(JSON.stringify(c.currentCells)) : null
                     } : null
                 );
             }
