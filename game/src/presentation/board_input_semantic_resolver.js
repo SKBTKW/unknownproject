@@ -70,7 +70,7 @@ export function resolveBoardPointerCommand(action, {
     if (action === BOARD_POINTER_ACTIONS.CLICK) {
         if (!cell) return null;
         if (!trialContext) {
-            return createBoardInputCommand(BOARD_INPUT_COMMANDS.SELECT_CELL, { cell });
+            return createBoardInputCommand(BOARD_INPUT_COMMANDS.PRIMARY_CELL_ACTION, { cell });
         }
 
         const readCell = getReadCell(readModel, cell);

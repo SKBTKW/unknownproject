@@ -30,7 +30,8 @@ export class BoardPresentationRuntimeAdapter {
         trialPresentationState = null,
         trialSemanticData = null,
         gridOverride = null,
-        interceptionCandidates = []
+        interceptionCandidates = [],
+        interactionQuery = null
     } = {}) {
         if (!state) throw new Error('BOARD_RUNTIME_STATE_REQUIRED');
         if (!presentationState) throw new Error('BOARD_PRESENTATION_STATE_REQUIRED');
@@ -46,7 +47,8 @@ export class BoardPresentationRuntimeAdapter {
         return this.dataService.getBoard(state, {
             presentationState,
             trialSemanticData: resolvedTrialSemanticData,
-            gridOverride
+            gridOverride,
+            interactionQuery
         });
     }
 }

@@ -23,7 +23,8 @@ function createUiStub({ trialActive = false, activeRouteId = 'route-a' } = {}) {
         },
         isTrialInteractionActive() { return trialActive; },
         getActiveTrialRoute() { return trialActive ? { id: activeRouteId } : null; },
-        onCellClick(r, c) { calls.push(['onCellClick', r, c]); return { accepted: true }; },
+        selectBoardPresentationCell(r, c) { calls.push(['selectBoardPresentationCell', r, c]); return { r, c }; },
+        performPrimaryCellAction(r, c) { calls.push(['performPrimaryCellAction', r, c]); return { accepted: true }; },
         selectTrialInterceptionCell(r, c) { calls.push(['selectTrialInterceptionCell', r, c]); return true; },
         updateTrialInterceptionPreview(r, c) { calls.push(['updateTrialInterceptionPreview', r, c]); return { r, c }; },
         refreshTrialInterceptionPreview() { calls.push(['refreshTrialInterceptionPreview']); return { refreshed: true }; }
@@ -31,14 +32,24 @@ function createUiStub({ trialActive = false, activeRouteId = 'route-a' } = {}) {
     return ui;
 }
 
-test('normal SELECT_CELL delegates logical cell only to legacy UI entry point', () => {
+test('SELECT_CELL updates presentation selection without invoking gameplay action', () => {
     const ui = createUiStub();
     const adapter = new LegacyWeb2DBoardInputAdapter(ui);
     const command = createBoardInputCommand(BOARD_INPUT_COMMANDS.SELECT_CELL, { cell: { r: 2, c: 3 } });
     const result = adapter.dispatch(command);
 
     assert.equal(result.success, true);
-    assert.deepEqual(ui.calls, [['onCellClick', 2, 3]]);
+    assert.deepEqual(ui.calls, [['selectBoardPresentationCell', 2, 3]]);
+});
+
+test('PRIMARY_CELL_ACTION delegates gameplay action separately', () => {
+    const ui = createUiStub();
+    const adapter = new LegacyWeb2DBoardInputAdapter(ui);
+    const command = createBoardInputCommand(BOARD_INPUT_COMMANDS.PRIMARY_CELL_ACTION, { cell: { r: 1, c: 4 } });
+    const result = adapter.dispatch(command);
+
+    assert.equal(result.success, true);
+    assert.deepEqual(ui.calls, [['performPrimaryCellAction', 1, 4]]);
 });
 
 test('SELECT_CELL is rejected during Trial so renderer must emit Trial command explicitly', () => {
@@ -50,6 +61,20 @@ test('SELECT_CELL is rejected during Trial so renderer must emit Trial command e
     assert.deepEqual(result, {
         success: false,
         type: BOARD_INPUT_COMMANDS.SELECT_CELL,
+        reason: 'TRIAL_INPUT_REQUIRES_TRIAL_COMMAND'
+    });
+    assert.deepEqual(ui.calls, []);
+});
+
+test('PRIMARY_CELL_ACTION is rejected during Trial so renderer must emit Trial command explicitly', () => {
+    const ui = createUiStub({ trialActive: true });
+    const adapter = new LegacyWeb2DBoardInputAdapter(ui);
+    const command = createBoardInputCommand(BOARD_INPUT_COMMANDS.PRIMARY_CELL_ACTION, { cell: { r: 1, c: 1 } });
+    const result = adapter.dispatch(command);
+
+    assert.deepEqual(result, {
+        success: false,
+        type: BOARD_INPUT_COMMANDS.PRIMARY_CELL_ACTION,
         reason: 'TRIAL_INPUT_REQUIRES_TRIAL_COMMAND'
     });
     assert.deepEqual(ui.calls, []);

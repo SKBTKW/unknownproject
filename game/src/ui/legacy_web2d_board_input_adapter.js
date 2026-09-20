@@ -25,6 +25,8 @@ export class LegacyWeb2DBoardInputAdapter {
         switch (type) {
             case BOARD_INPUT_COMMANDS.SELECT_CELL:
                 return this._selectCell(command, payload.cell);
+            case BOARD_INPUT_COMMANDS.PRIMARY_CELL_ACTION:
+                return this._primaryCellAction(command, payload.cell);
             case BOARD_INPUT_COMMANDS.SELECT_TRIAL_INTERCEPTION:
                 return this._selectTrialInterception(command, payload.routeId, payload.cell);
             case BOARD_INPUT_COMMANDS.HOVER_TRIAL_INTERCEPTION:
@@ -40,11 +42,20 @@ export class LegacyWeb2DBoardInputAdapter {
         if (this.ui.isTrialInteractionActive?.()) {
             return this._failure(command, 'TRIAL_INPUT_REQUIRES_TRIAL_COMMAND');
         }
-        if (typeof this.ui.onCellClick !== 'function') {
+        if (typeof this.ui.selectBoardPresentationCell !== 'function') {
             return this._failure(command, 'LEGACY_WEB2D_SELECT_CELL_UNAVAILABLE');
         }
-        const result = this.ui.onCellClick(cell.r, cell.c);
-        return this._success(command, result);
+        return this._success(command, this.ui.selectBoardPresentationCell(cell.r, cell.c));
+    }
+
+    _primaryCellAction(command, cell) {
+        if (this.ui.isTrialInteractionActive?.()) {
+            return this._failure(command, 'TRIAL_INPUT_REQUIRES_TRIAL_COMMAND');
+        }
+        if (typeof this.ui.performPrimaryCellAction !== 'function') {
+            return this._failure(command, 'LEGACY_WEB2D_PRIMARY_CELL_ACTION_UNAVAILABLE');
+        }
+        return this._success(command, this.ui.performPrimaryCellAction(cell.r, cell.c));
     }
 
     _selectTrialInterception(command, routeId, cell) {
