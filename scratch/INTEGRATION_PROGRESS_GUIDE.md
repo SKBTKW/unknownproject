@@ -59,3 +59,18 @@ The intended operating loop is:
 6. Continue until every TASK is MERGED or deliberately closed/cleaned up through separate branch-management review.
 
 Never reuse a READY list produced before the target changed.
+
+
+## Preparation priority
+
+When no TASK is READY, the guide now prefers a low-risk reconciliation candidate when all of the following are true:
+
+- status is `RECONCILE_REQUIRED`
+- target overlap risk is `NONE`
+- merge preview is `CLEAN`
+- local/remote TASK refs agree
+- no review-grade peer overlap is observed
+
+Among equally low-risk candidates, the TASK with fewer target-only commits (`behindCount`) is preferred, then fewer TASK-only commits (`aheadCount`).
+
+This is only a preparation recommendation. It does not perform reconciliation automatically and does not weaken Integration Guard or Safe Integration Runner gates.
