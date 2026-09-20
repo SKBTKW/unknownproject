@@ -47,6 +47,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 1 (Integration Guard Contract) で不合格が検出されました。");
         process.exit(1);
     }
+    const orphanBranchInspectorOk = await runCommand("node", ["scratch/test_orphan_branch_inspector.mjs"]);
+    if (!orphanBranchInspectorOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 1 (Orphan Branch Inspector Contract) で不合格が検出されました。");
+        process.exit(1);
+    }
     const integrationProgressGuideOk = await runCommand("node", ["scratch/test_integration_progress_guide.mjs"]);
     if (!integrationProgressGuideOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 1 (Integration Progress Guide Contract) で不合格が検出されました。");
