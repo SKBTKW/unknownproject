@@ -1,5 +1,4 @@
 import { BOARD_VIEW_MODES } from '../presentation/board_presentation_state.js';
-import { BoardRendererBridge } from '../presentation/board_renderer_bridge.js';
 import { Web25DProjectionAdapter } from '../presentation/web25d_projection_adapter.js';
 import { Web25DPhaseFRenderer } from '../presentation/web25d_phase_f_renderer.js';
 
@@ -29,6 +28,10 @@ export function attachWeb25DValidationRuntime(uiController, {
     if (!uiController.boardPresentationState || typeof uiController.getBoardPresentationData !== 'function') {
         throw new Error('WEB25D_PRESENTATION_BOUNDARY_REQUIRED');
     }
+    const boardInputRuntime = uiController.boardPresentationRuntimeBridge;
+    if (!boardInputRuntime || typeof boardInputRuntime.dispatchInput !== 'function') {
+        throw new Error('WEB25D_INPUT_RUNTIME_REQUIRED');
+    }
 
     const boardEl = document.getElementById(boardElementId);
     if (!boardEl || !boardEl.parentNode) return null;
@@ -42,36 +45,12 @@ export function attachWeb25DValidationRuntime(uiController, {
     canvas.setAttribute('aria-hidden', 'true');
     boardEl.parentNode.insertBefore(canvas, boardEl.nextSibling);
 
-    const rendererBridge = new BoardRendererBridge({
-        presentationState: uiController.boardPresentationState,
-        inputHandlers: {
-            selectCell: ({ cell }) => {
-                if (!cell || typeof uiController.onCellClick !== 'function') return false;
-                return uiController.onCellClick(cell.r, cell.c);
-            },
-            selectTrialInterception: (payload) => {
-                if (!payload?.cell) return false;
-                return uiController.selectTrialInterceptionCell?.(payload.cell.r, payload.cell.c) ?? false;
-            },
-            hoverTrialInterception: (payload) => {
-                if (!payload?.cell) return false;
-                return uiController.updateTrialInterceptionPreview?.(payload.cell.r, payload.cell.c) ?? false;
-            },
-            clearTrialHover: () => {
-                uiController.trialPresentationState?.clearHoveredCell?.();
-                return uiController.refreshTrialInterceptionPreview?.() ?? true;
-            },
-            selectTrialRoute: (payload) => {
-                if (!payload?.routeId) return false;
-                return uiController.selectTrialRoute?.(payload.routeId) ?? false;
-            }
-        }
-    });
+    const rendererBridge = boardInputRuntime.rendererBridge || null;
 
     let runtime = null;
     const dispatchBridge = {
         dispatch(command) {
-            const result = rendererBridge.dispatch(command);
+            const result = boardInputRuntime.dispatchInput(command);
             runtime?.sync?.({ preserveCanvasSize: true });
             return result;
         }
