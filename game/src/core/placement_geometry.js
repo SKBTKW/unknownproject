@@ -1,6 +1,6 @@
 /* =============================================================
    game/src/core/placement_geometry.js
-   土地Shape・Anchor・クリック座標変換の純粋ドメインhelper
+   土地Shape・Anchor・Cell attribute map・クリック座標変換の純粋ドメインhelper
    ============================================================= */
 
 const DEFAULT_PLACEMENT_SHAPE = Object.freeze([Object.freeze([1])]);
@@ -44,6 +44,30 @@ function resolvePlacementAnchor(card, shape = resolvePlacementShape(card)) {
     return normalizePlacementAnchor(anchor, shape);
 }
 
+function normalizeAttributeCell(cell) {
+    if (!cell || typeof cell !== "object") return null;
+    const r = Number.isInteger(cell.r) ? cell.r : cell.dr;
+    const c = Number.isInteger(cell.c) ? cell.c : cell.dc;
+    if (!Number.isInteger(r) || !Number.isInteger(c)) return null;
+    return { ...cell, r, c };
+}
+
+/**
+ * Returns only an explicitly declared per-cell attribute map.
+ * Uniform legacy cards intentionally return null and keep using the card-level
+ * terrain object as their fallback semantic.
+ */
+function resolvePlacementAttributeCells(card) {
+    const source = card && (
+        card.currentCells
+        || card.cells
+        || (card.terrain && card.terrain.cells)
+    );
+    if (!Array.isArray(source)) return null;
+    const normalized = source.map(normalizeAttributeCell).filter(Boolean);
+    return normalized.length > 0 ? normalized : null;
+}
+
 function getPlacementCells(startR, startC, shape) {
     const cells = [];
     for (let dr = 0; dr < shape.length; dr++) {
@@ -59,6 +83,7 @@ function getPlacementCells(startR, startC, shape) {
 function resolvePlacementGeometry(card, clickedR, clickedC) {
     const shape = resolvePlacementShape(card);
     const anchor = resolvePlacementAnchor(card, shape);
+    const attributeCells = resolvePlacementAttributeCells(card);
     const startR = clickedR - anchor.r;
     const startC = clickedC - anchor.c;
 
@@ -69,6 +94,7 @@ function resolvePlacementGeometry(card, clickedR, clickedC) {
         startC,
         shape,
         anchor,
+        attributeCells,
         cells: getPlacementCells(startR, startC, shape)
     };
 }
@@ -89,7 +115,21 @@ function rotateShapeMatrix(matrix) {
     return rotated;
 }
 
-function rotatePlacementClockwise(shape, anchor = DEFAULT_PLACEMENT_ANCHOR) {
+function rotateAttributeCellsClockwise(cells, shape) {
+    if (!Array.isArray(cells)) return null;
+    const resolvedShape = isShapeMatrix(shape) ? shape : DEFAULT_PLACEMENT_SHAPE;
+    const rows = resolvedShape.length;
+    return cells
+        .map(normalizeAttributeCell)
+        .filter(Boolean)
+        .map(cell => ({
+            ...cell,
+            r: cell.c,
+            c: rows - 1 - cell.r
+        }));
+}
+
+function rotatePlacementClockwise(shape, anchor = DEFAULT_PLACEMENT_ANCHOR, attributeCells = null) {
     const resolvedShape = isShapeMatrix(shape) ? shape : DEFAULT_PLACEMENT_SHAPE;
     const resolvedAnchor = normalizePlacementAnchor(anchor, resolvedShape);
     const rows = resolvedShape.length;
@@ -99,7 +139,8 @@ function rotatePlacementClockwise(shape, anchor = DEFAULT_PLACEMENT_ANCHOR) {
         anchor: {
             r: resolvedAnchor.c,
             c: rows - 1 - resolvedAnchor.r
-        }
+        },
+        attributeCells: rotateAttributeCellsClockwise(attributeCells, resolvedShape)
     };
 }
 
@@ -108,8 +149,10 @@ export {
     getPlacementCells,
     normalizePlacementAnchor,
     resolvePlacementAnchor,
+    resolvePlacementAttributeCells,
     resolvePlacementGeometry,
     resolvePlacementShape,
+    rotateAttributeCellsClockwise,
     rotatePlacementClockwise,
     rotateShapeMatrix
 };
