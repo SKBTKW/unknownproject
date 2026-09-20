@@ -8,7 +8,7 @@
  * 3. 湖（セル内側ティール波紋）と本営近郊（外周四隅アンバーL字枠）の視覚分離。
  */
 
-import { isWaterSourceInfluence } from '../core/lake_rules.js';
+import { isIrrigationInfluence } from '../core/irrigation_rules.js';
 
 export class AreaInfluenceVisualService {
     /**
@@ -48,10 +48,10 @@ export class AreaInfluenceVisualService {
         for (let r = 0; r < size; r++) {
             for (let c = 0; c < size; c++) {
                 const key = `${r},${c}`;
-                // 🌊 湖水源影響圏 (lake_rules.js / state SSOT)
+                // 🌊 灌漑影響圏 (irrigation_rules.js / state SSOT)
                 const isLake = (typeof state.isWaterSourceInfluence === "function")
                     ? state.isWaterSourceInfluence(r, c)
-                    : isWaterSourceInfluence(state, r, c);
+                    : isIrrigationInfluence(state, r, c);
                 if (isLake) {
                     lakeInfluenceCells.add(key);
                 }
