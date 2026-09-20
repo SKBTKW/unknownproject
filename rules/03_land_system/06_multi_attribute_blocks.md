@@ -155,22 +155,88 @@ Terrain interaction
 
 `weight: 0` は抽選対象確率0として扱う。
 
-Production契約が未確定の間は、`multiAttributeProductionReady !== true` のカードを通常・Cooldown緩和・最終fallbackのすべてでOfferingから除外する。
+Production契約が `RESOLVED` でないカードを、通常・Cooldown緩和・最終fallbackのすべてでOfferingから除外する。
+
+現行データでは `productionContract.status = "UNRESOLVED"` を用いる。単なるboolean解禁フラグには戻さない。
 
 ---
 
 ## 9. Production
 
-**未確定。**
+### 9.1 数値仕様は未確定
+
+現カード3種の具体的な産出値・採用scopeは未確定である。
 
 以下を担当判断だけで確定しない。
 
 - 全セルへ同じcard-level yieldを複製
 - マス数倍
-- 代表セルのみ産出
+- 代表セルだけをCell Production源とする
 - 各terrain基礎産出の自動合算
 
-複数属性ブロックの本番Offering解禁はProduction契約確定後に行う。
+したがって現カードは `productionContract.status = "UNRESOLVED"` のままとし、Live Offeringへ出さない。
+
+### 9.2 Ownership境界は実装済み
+
+Production値を決める前提として、次のownershipだけを共通境界として定義する。
+
+```text
+Cell Production
+  → 各cellに所有
+  → Zone / HQ近郊 / 灌漑等のcell由来補正へ参加
+
+Block Production
+  → placementGroupIdに所有
+  → cellへ複製しない
+  → Blockにつき1回だけ集計
+
+Hybrid
+  → 上記2つを明示的に併用
+```
+
+runtime上のscope:
+
+- `CELL`
+- `BLOCK`
+- `HYBRID`
+
+これらは「初期3カードにどれを採用するか」を決めたものではない。将来の正式仕様を、terrain semanticやRendererへ押し込まず表現するための受け皿である。
+
+### 9.3 RESOLVED条件
+
+`CELL` または `HYBRID` では、active cell全てについて明示的なcell yield entryを要求する。
+
+一部セルだけを記述し、残りを暗黙にterrain yieldへfallbackすることは禁止する。
+
+`BLOCK` はblock yieldを明示する。
+
+`HYBRID` は全cell yield + block yieldの両方を明示する。
+
+条件を満たさないcontractはruntimeで `UNRESOLVED` として扱う。
+
+### 9.4 Rotation
+
+Cell Productionのownershipは回転前のsource cell identityを保持する。
+
+```text
+source cell identity
+≠
+rotated local coordinate
+```
+
+回転によって草原側に定義されたcell yieldが丘陵側へ移る状態を禁止する。
+
+### 9.5 表示
+
+カード面では、
+
+- 通常土地: 従来の土地産出表示
+- Production RESOLVED Multi-Attribute: contractから合計を表示
+- Production UNRESOLVED Multi-Attribute: **産出「未定」**
+
+とする。
+
+Block ProductionはBoard semantic上でcell productionとは別フィールドとしてReadModelへ渡す。Rendererがblock yieldを各cellへ複製してはならない。
 
 ---
 
@@ -197,8 +263,10 @@ Production契約が未確定の間は、`multiAttributeProductionReady !== true`
 - orientation
 - anchor
 - placement coordinates
+- cell production ownership/status
+- placedBlockProduction（Block Production正本）
 
-Restore後に異なるterrainIdが同一terrainへ潰れることを禁止する。
+Restore後に異なるterrainIdが同一terrainへ潰れること、およびBlock ProductionがCell Productionへ変質することを禁止する。
 
 ---
 
@@ -218,12 +286,25 @@ Renderer側でMulti-Attributeかどうかを推測しない。
 
 Placement preview read modelは、各preview cellの `terrainId` を保持できる。
 
+Board read modelは少なくとも次を区別して保持できる。
+
+- `productionStatus`
+- `productionScope`
+- cell yields
+- `blockProduction`
+- `blockProductionPrimary`
+
+Block Productionを地形semanticの正本や各cell yieldへ混ぜない。
+
 ---
 
 ## 13. 実装確認先
 
 - `game/src/core/placement_geometry.js`
+- `game/src/core/land_production_contract.js`
 - `game/src/systems/grid_engine.js`
+- `game/src/systems/production_calculator.js`
+- `game/src/systems/defense_system.js`
 - `game/src/presentation/land_card_presentation.js`
 - `game/src/presentation/placement_preview_resolver.js`
 - `game/src/systems/deck_manager.js`
