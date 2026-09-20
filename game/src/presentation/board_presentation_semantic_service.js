@@ -154,15 +154,6 @@ export function resolveBoardDisplayProduction(state, facts, cellViewDataService)
             }
         }
 
-        for (const placementGroupId of placementGroups) {
-            const blockProduction = resolvePlacedBlockProduction(state, placementGroupId);
-            if (!blockProduction.defined) continue;
-            production.food += blockProduction.yields.food;
-            production.wood += blockProduction.yields.wood;
-            production.defense += blockProduction.yields.defense;
-            production.mystic += blockProduction.yields.mystic;
-        }
-
         const sourceCell = state?.grid?.[facts.r]?.[facts.c];
         if (sourceCell?.merged && facts.mergeGroupId != null) {
             const group = state?.mergedBlocks?.[facts.mergeGroupId];
@@ -171,6 +162,17 @@ export function resolveBoardDisplayProduction(state, facts, cellViewDataService)
             production.wood = Math.floor(production.wood * multiplier);
             production.defense = Math.floor(production.defense * multiplier);
             production.mystic = Math.floor(production.mystic * multiplier);
+        }
+
+        // Block-owned output is not a cell/Zone output. Add it once per
+        // placementGroup after Zone multipliers so display matches settlement.
+        for (const placementGroupId of placementGroups) {
+            const blockProduction = resolvePlacedBlockProduction(state, placementGroupId);
+            if (!blockProduction.defined) continue;
+            production.food += blockProduction.yields.food;
+            production.wood += blockProduction.yields.wood;
+            production.defense += blockProduction.yields.defense;
+            production.mystic += blockProduction.yields.mystic;
         }
     } else {
         addNonSocketProduction(production, facts);
