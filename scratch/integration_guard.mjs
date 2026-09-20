@@ -28,6 +28,7 @@ import {
   unique,
 } from './integration_guard_core.mjs';
 import { createVerifiedBackup } from './integration_guard_backup.mjs';
+import { buildIntegrationProgressGuide, printIntegrationProgressGuide } from './integration_progress_guide.mjs';
 
 function runGit(cwd, args, { allowFailure = false } = {}) {
   try {
@@ -283,6 +284,8 @@ function inspectTask(cwd, targetSha, task) {
 
   const taskFiles = splitLines(runGit(cwd, ['diff', '--name-only', `${mergeBase}..${task.sha}`]));
   const targetFiles = splitLines(runGit(cwd, ['diff', '--name-only', `${mergeBase}..${targetSha}`]));
+  const aheadCount = Number(runGit(cwd, ['rev-list', '--count', `${targetSha}..${task.sha}`]) || 0);
+  const behindCount = Number(runGit(cwd, ['rev-list', '--count', `${task.sha}..${targetSha}`]) || 0);
   const overlap = classifyOverlap(targetFiles, taskFiles);
   const mergePreview = previewMerge(cwd, targetSha, task.sha);
   const targetIsAncestor = isAncestor(cwd, targetSha, task.sha);
@@ -295,7 +298,7 @@ function inspectTask(cwd, targetSha, task) {
     targetOverlapRisk: overlap.risk,
     peerOverlaps: [],
   });
-  return { ...task, mergeBase, taskFiles, targetFiles, overlap, mergePreview, targetIsAncestor, taskIsAncestor, relationshipKnown: true, peerOverlaps: [], status };
+  return { ...task, mergeBase, taskFiles, targetFiles, aheadCount, behindCount, overlap, mergePreview, targetIsAncestor, taskIsAncestor, relationshipKnown: true, peerOverlaps: [], status };
 }
 
 function attachPeerOverlaps(tasks) {
@@ -508,6 +511,8 @@ export async function runIntegrationGuard({ cwd: requestedCwd, target: explicitT
         targetIsAncestor: task.targetIsAncestor,
         taskIsAncestor: task.taskIsAncestor,
         localRemoteMismatch: task.localRemoteMismatch,
+        aheadCount: Number(task.aheadCount || 0),
+        behindCount: Number(task.behindCount || 0),
         taskFiles: task.taskFiles,
         targetFiles: task.targetFiles,
         overlap: task.overlap,
@@ -515,8 +520,11 @@ export async function runIntegrationGuard({ cwd: requestedCwd, target: explicitT
         peerOverlaps: task.peerOverlaps,
       })),
     };
+    analysis.progressGuide = buildIntegrationProgressGuide(analysis);
     analysis.analysisPath = writeAnalysis(backup, analysis);
     printDashboard(analysis, backup, { verbose });
+    console.log('------------------------------------------------------------');
+    printIntegrationProgressGuide(analysis.progressGuide);
     return { analysis, backup };
   } finally {
     releaseLock();
