@@ -63,6 +63,7 @@ function restoreCard(card, resolveCardMaster) {
         terrain,
         currentShape: cloneData(card.currentShape),
         currentAnchor: cloneData(card.currentAnchor),
+        currentCells: cloneData(card.currentCells),
         ...(Number.isInteger(card.originalHandIdx) ? { originalHandIdx: card.originalHandIdx } : {}),
         reservedThisTurn: !!card.reservedThisTurn
     };
