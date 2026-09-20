@@ -19,6 +19,7 @@
             TERRAIN_DESERT_HILL: "荒野",
             TERRAIN_FOREST_HILL: "森丘陵",
             TERRAIN_DEEP_HILL: "森林丘陵",
+            CARD_MULTI_ATTRIBUTE_SUFFIX: "（複数）",
             CARD_DESC_WETLAND_1X1: "水分が集まる低湿地帯。他の湿原とは直接隣接できず地帯化もできないが、湖に隣接して開発でき、ぬかるみ・水脈・干拓に活用できる。",
             CARD_DESC_DESERT_1X1: "極度に乾燥した広大な砂地。命の恵みは得られないが古代の神秘を漂わせる。",
             CARD_DESC_DESERT_1X2: "広大な砂の流砂地帯。足場は劣悪だが非常に強い神秘を秘めたUR地勢。",
