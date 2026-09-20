@@ -51,7 +51,8 @@ export class PlacementPreviewResolver {
                 placement.startR,
                 placement.startC,
                 placement.shape,
-                terrain
+                terrain,
+                placement.attributeCells
             );
         const check = normalizeCheck(rawCheck);
 
