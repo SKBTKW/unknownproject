@@ -8,6 +8,8 @@ import { hydrateGameState } from "../hydrate_game_state.js";
 import { GridEngine } from "../../systems/grid_engine.js";
 import { CellViewDataService } from "../../services/cell_view_data_service.js";
 import { DeckManager } from "../../systems/deck_manager.js";
+import { LAND_CARDS_MASTER } from "../../data/land_cards_data.js";
+import { PlacementPreviewResolver } from "../../presentation/placement_preview_resolver.js";
 import {
     resolveLandCardCellTerrainId,
     resolveLandCardDisplayName,
@@ -113,6 +115,94 @@ const multiCard = {
         { r: 0, c: 1, ...HILL }
     ]
 };
+
+const actualMultiCards = [
+    LAND_CARDS_MASTER.find(card => card.id === "CARD_MULTI_PLAINS_HILL_1X2"),
+    LAND_CARDS_MASTER.find(card => card.id === "CARD_MULTI_PLAINS_FOREST_1X2"),
+    LAND_CARDS_MASTER.find(card => card.id === "CARD_MULTI_HILL_MOUNTAIN_1X2")
+];
+
+{
+    assert.ok(actualMultiCards.every(Boolean));
+    assert.deepEqual(actualMultiCards.map(card => card.rarity), ["R", "R", "R"]);
+    assert.deepEqual(actualMultiCards.map(card => card.weight), [0.08, 0.08, 0.05]);
+    assert.deepEqual(actualMultiCards.map(card => card.minStage), [1, 1, 2]);
+    assert.ok(actualMultiCards.every(card => card.multiAttributeProductionReady === false));
+
+    const fakeI18n = {
+        t(key) {
+            return {
+                TERRAIN_PLAINS: "草原",
+                TERRAIN_HILL: "丘陵",
+                TERRAIN_FOREST: "森",
+                TERRAIN_MOUNTAIN: "山岳",
+                CARD_MULTI_ATTRIBUTE_SUFFIX: "（複数）"
+            }[key] || key;
+        }
+    };
+
+    assert.equal(resolveLandCardDisplayName({ terrain: actualMultiCards[0] }, fakeI18n), "草原（複数）");
+    assert.equal(resolveLandCardDisplayName({ terrain: actualMultiCards[1] }, fakeI18n), "草原（複数）");
+    assert.equal(resolveLandCardDisplayName({ terrain: actualMultiCards[2] }, fakeI18n), "丘陵（複数）");
+    assert.ok(actualMultiCards.every(card => resolveLandCardRarity({ terrain: card }) === "R"));
+}
+
+{
+    const state = createState();
+    const manager = new DeckManager(state, {
+        gameplayRandom: {
+            nextFloat: () => 0.5,
+            nextId: () => "diagnostic-card"
+        }
+    });
+
+    assert.equal(manager.isCardEligible(actualMultiCards[0], 1, 0, {
+        ignoreCooldown: true,
+        ignoreHold: true
+    }), false);
+
+    const productionReadyPlainsHill = {
+        ...actualMultiCards[0],
+        multiAttributeProductionReady: true
+    };
+    const productionReadyHillMountain = {
+        ...actualMultiCards[2],
+        multiAttributeProductionReady: true
+    };
+
+    assert.equal(manager.isCardEligible(productionReadyPlainsHill, 1, 0, {
+        ignoreCooldown: true,
+        ignoreHold: true
+    }), true);
+    assert.equal(manager.isCardEligible(productionReadyHillMountain, 1, 0, {
+        ignoreCooldown: true,
+        ignoreHold: true
+    }), false);
+    assert.equal(manager.isCardEligible(productionReadyHillMountain, 2, 0, {
+        ignoreCooldown: true,
+        ignoreHold: true
+    }), true);
+}
+
+{
+    const previewResolver = new PlacementPreviewResolver();
+    const previewCard = {
+        terrain: actualMultiCards[0],
+        currentShape: actualMultiCards[0].shape,
+        currentAnchor: actualMultiCards[0].anchor
+    };
+    const previewState = {
+        stage: { size: 5 },
+        grid: createState().grid,
+        hasPickedThisTurn: false,
+        canPlaceShape: () => ({ can: true, reasons: [] })
+    };
+    const preview = previewResolver.resolveHover(previewCard, previewState, 1, 1);
+    assert.deepEqual(
+        preview.placement.cells.map(cell => [cell.r, cell.c, cell.terrainId]),
+        [[1, 1, "GL1_PLAINS"], [1, 2, "E2_HILL"]]
+    );
+}
 
 {
     const geometry = resolvePlacementGeometry(multiCard, 1, 1);
