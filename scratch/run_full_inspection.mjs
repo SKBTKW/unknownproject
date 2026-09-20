@@ -183,6 +183,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (FirstRun Trial1 Verse15 Timing) で不合格が検出されました。");
         process.exit(1);
     }
+    const firstRunTrialTutorialOk = await runCommand("node", ["scratch/test_first_run_trial_tutorial.mjs"]);
+    if (!firstRunTrialTutorialOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (FirstRun Trial Tutorial Contract) で不合格が検出されました。");
+        process.exit(1);
+    }
     const scheduledGlobalEventOk = await runCommand("node", ["scratch/test_scheduled_global_event_contract.mjs"]);
     if (!scheduledGlobalEventOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Scheduled Global Event Contract) で不合格が検出されました。");
