@@ -17,6 +17,11 @@ import {
     isWaterSourceInfluence,
     isWetlandTerrain
 } from '../core/lake_rules.js';
+import {
+    LAND_PRODUCTION_STATUS,
+    findContractCellYields,
+    normalizeProductionContract
+} from '../core/land_production_contract.js';
 function coordinateKey(r, c) {
     return `${r}:${c}`;
 }
@@ -588,6 +593,7 @@ class GridEngine {
         const rows = shapeMatrix.length;
         const cols = shapeMatrix[0].length;
         const terrainAt = createPlacementSemanticResolver(shapeMatrix, terrain, attributeCells);
+        const productionContract = normalizeProductionContract(terrain);
         const pGroupId = `place_${this.state.placementGroupCounter++}`;
 
         let activeCellCount = 0;
@@ -611,6 +617,21 @@ class GridEngine {
                     cell.placed = true;
                     cell.terrain = cellTerrain;
                     cell.placementGroupId = pGroupId;
+                    if (productionContract.status === LAND_PRODUCTION_STATUS.UNRESOLVED) {
+                        cell.production = {
+                            status: LAND_PRODUCTION_STATUS.UNRESOLVED,
+                            scope: null,
+                            cellYields: null
+                        };
+                    } else if (productionContract.status === LAND_PRODUCTION_STATUS.RESOLVED) {
+                        cell.production = {
+                            status: LAND_PRODUCTION_STATUS.RESOLVED,
+                            scope: productionContract.scope,
+                            cellYields: findContractCellYields(productionContract, dr, dc)
+                        };
+                    } else {
+                        cell.production = null;
+                    }
                     cell.isHQVicinity = (Math.abs(r - 2) <= 1 && Math.abs(c - 2) <= 1 && !(r === 2 && c === 2));
 
                     // ★ 水源・ソケット開花判定（失敗結果もキャッシュし、Undo再抽選を防ぐ）
@@ -691,6 +712,17 @@ class GridEngine {
                     }
                 }
             }
+        }
+
+        if (productionContract.status === LAND_PRODUCTION_STATUS.RESOLVED && productionContract.blockYields) {
+            if (!this.state.placedBlockProduction || typeof this.state.placedBlockProduction !== "object") {
+                this.state.placedBlockProduction = {};
+            }
+            this.state.placedBlockProduction[pGroupId] = {
+                status: LAND_PRODUCTION_STATUS.RESOLVED,
+                scope: productionContract.scope,
+                yields: { ...productionContract.blockYields }
+            };
         }
 
         const placementOutcome = {
