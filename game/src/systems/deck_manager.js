@@ -5,7 +5,11 @@ import { LAND_CARDS_MASTER } from '../data/land_cards_data.js';
 import { COMMAND_CARDS_MASTER } from '../data/command_cards_data.js';
 import { ConditionEvaluator } from '../core/condition_evaluator.js';
 import { CardCycleSystem, CYCLE_POLICIES } from './card_cycle_system.js';
-import { normalizePlacementAnchor, resolvePlacementGeometry } from '../core/placement_geometry.js';
+import {
+    hasMultiplePlacementTerrainAttributes,
+    normalizePlacementAnchor,
+    resolvePlacementGeometry
+} from '../core/placement_geometry.js';
 import { isTrueMergedCell } from '../core/merge_rules.js';
 import { getWaterSourceSpawnChance } from '../core/lake_rules.js';
 
@@ -71,7 +75,7 @@ class DeckManager {
         const map = new Map();
         for (const c of baseList) {
             if (c && c.id) {
-                const multiAttribute = Array.isArray(c.cells) && c.cells.length > 0;
+                const multiAttribute = hasMultiplePlacementTerrainAttributes(c);
                 map.set(c.id, {
                     ...c,
                     ...(multiAttribute ? { rarity: "R" } : {}),
