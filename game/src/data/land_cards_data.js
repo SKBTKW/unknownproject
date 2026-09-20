@@ -645,5 +645,132 @@ export const LAND_CARDS_MASTER = [
     "rarity": "UR",
     "weight": 0.01,
     "descriptionKey": "CARD_DESC_DEEP_HILL_1X2"
+  },
+  {
+    "id": "CARD_MULTI_PLAINS_HILL_1X2",
+    "representativeTerrainId": "GL1_PLAINS",
+    "category": "LAND",
+    "shape": [
+      [
+        1,
+        1
+      ]
+    ],
+    "anchor": {
+      "r": 0,
+      "c": 0
+    },
+    "cells": [
+      {
+        "r": 0,
+        "c": 0,
+        "terrainId": "GL1_PLAINS",
+        "nameKey": "TERRAIN_PLAINS",
+        "e": 1,
+        "gl": 1,
+        "category": "BASE",
+        "zoneCategory": "PLAINS",
+        "trialTerrainCategory": "STANDARD_E1"
+      },
+      {
+        "r": 0,
+        "c": 1,
+        "terrainId": "E2_HILL",
+        "nameKey": "TERRAIN_HILL",
+        "e": 2,
+        "gl": 1,
+        "category": "BASE"
+      }
+    ],
+    "minStage": 1,
+    "reqE2": 0,
+    "rarity": "R",
+    "weight": 0.08,
+    "multiAttributeProductionReady": false,
+    "descriptionKey": "CARD_DESC_MULTI_PLAINS_HILL_1X2"
+  },
+  {
+    "id": "CARD_MULTI_PLAINS_FOREST_1X2",
+    "representativeTerrainId": "GL1_PLAINS",
+    "category": "LAND",
+    "shape": [
+      [
+        1,
+        1
+      ]
+    ],
+    "anchor": {
+      "r": 0,
+      "c": 0
+    },
+    "cells": [
+      {
+        "r": 0,
+        "c": 0,
+        "terrainId": "GL1_PLAINS",
+        "nameKey": "TERRAIN_PLAINS",
+        "e": 1,
+        "gl": 1,
+        "category": "BASE",
+        "zoneCategory": "PLAINS",
+        "trialTerrainCategory": "STANDARD_E1"
+      },
+      {
+        "r": 0,
+        "c": 1,
+        "terrainId": "GL2_FOREST",
+        "nameKey": "TERRAIN_FOREST",
+        "e": 1,
+        "gl": 2,
+        "category": "BASE"
+      }
+    ],
+    "minStage": 1,
+    "reqE2": 0,
+    "rarity": "R",
+    "weight": 0.08,
+    "multiAttributeProductionReady": false,
+    "descriptionKey": "CARD_DESC_MULTI_PLAINS_FOREST_1X2"
+  },
+  {
+    "id": "CARD_MULTI_HILL_MOUNTAIN_1X2",
+    "representativeTerrainId": "E2_HILL",
+    "category": "LAND",
+    "shape": [
+      [
+        1,
+        1
+      ]
+    ],
+    "anchor": {
+      "r": 0,
+      "c": 0
+    },
+    "cells": [
+      {
+        "r": 0,
+        "c": 0,
+        "terrainId": "E2_HILL",
+        "nameKey": "TERRAIN_HILL",
+        "e": 2,
+        "gl": 1,
+        "category": "BASE"
+      },
+      {
+        "r": 0,
+        "c": 1,
+        "terrainId": "E3_MOUNTAIN",
+        "nameKey": "TERRAIN_MOUNTAIN",
+        "e": 3,
+        "gl": 0,
+        "category": "BASE"
+      }
+    ],
+    "minStage": 2,
+    "reqE2": 0,
+    "rarity": "R",
+    "weight": 0.05,
+    "multiAttributeProductionReady": false,
+    "descriptionKey": "CARD_DESC_MULTI_HILL_MOUNTAIN_1X2"
   }
 ];
