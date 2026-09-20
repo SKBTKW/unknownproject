@@ -7,6 +7,12 @@ import { serializeGameState } from "../state_serializer.js";
 import { hydrateGameState } from "../hydrate_game_state.js";
 import { GridEngine } from "../../systems/grid_engine.js";
 import { CellViewDataService } from "../../services/cell_view_data_service.js";
+import { DeckManager } from "../../systems/deck_manager.js";
+import {
+    resolveLandCardCellTerrainId,
+    resolveLandCardDisplayName,
+    resolveLandCardRarity
+} from "../../presentation/land_card_presentation.js";
 import { TrialPlanningDraftService } from "../../trial/domain/trial_planning_draft_service.js";
 import { TRIAL_PLAN_REASONS } from "../../trial/domain/trial_types.js";
 
@@ -99,6 +105,7 @@ const multiCard = {
     id: "CARD_TEST_PLAINS_HILL",
     nameKey: "CARD_TEST_PLAINS_HILL",
     category: "LAND",
+    representativeTerrainId: "GL1_PLAINS",
     shape: [[1, 1]],
     anchor: { r: 0, c: 0 },
     cells: [
