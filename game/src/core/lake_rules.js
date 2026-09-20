@@ -126,15 +126,40 @@ export function hasAdjacentWaterSource(state, r, c) {
  * @param {number} c - 列インデックス
  * @returns {boolean}
  */
-export function isWaterSourceInfluence(state, r, c) {
-    if (!state) return false;
+function getWaterSourceTypeFromCell(cell) {
+    if (!isWaterSourceCell(cell)) return null;
+    return cell.socketResource.id === "SOCKET_OASIS" ? "OASIS" : "LAKE";
+}
+
+/**
+ * Renderer-neutral water-source influence type for a board coordinate.
+ * Returns the source kind affecting the target cell, including the source cell itself.
+ * @returns {"LAKE"|"OASIS"|null}
+ */
+export function getWaterSourceInfluenceType(state, r, c) {
+    if (!state) return null;
     const grid = Array.isArray(state.grid) ? state.grid : (Array.isArray(state) ? state : null);
-    if (!grid) return false;
+    if (!grid) return null;
     const row = grid[r];
-    if (!Array.isArray(row)) return false;
-    const targetCell = row[c];
-    if (isWaterSourceCell(targetCell)) return true;
-    return hasAdjacentWaterSource({ grid }, r, c);
+    if (!Array.isArray(row)) return null;
+
+    const ownType = getWaterSourceTypeFromCell(row[c]);
+    if (ownType) return ownType;
+
+    for (let sourceR = Math.max(0, r - 1); sourceR <= Math.min(grid.length - 1, r + 1); sourceR++) {
+        const sourceRow = grid[sourceR];
+        if (!Array.isArray(sourceRow)) continue;
+        for (let sourceC = Math.max(0, c - 1); sourceC <= Math.min(sourceRow.length - 1, c + 1); sourceC++) {
+            if (sourceR === r && sourceC === c) continue;
+            const sourceType = getWaterSourceTypeFromCell(sourceRow[sourceC]);
+            if (sourceType) return sourceType;
+        }
+    }
+    return null;
+}
+
+export function isWaterSourceInfluence(state, r, c) {
+    return getWaterSourceInfluenceType(state, r, c) !== null;
 }
 
 // 既存importとの互換。意味は新仕様どおり「湖+オアシス」の水源合計へ更新する。
