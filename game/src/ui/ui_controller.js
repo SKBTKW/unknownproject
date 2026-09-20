@@ -371,6 +371,12 @@ class UIController {
 
     updateTrialInterceptionPreview(r, c) {
         if (!this.trialPreviewConfig) return null;
+        if (!this.getFirstRunTrialTutorialPolicy().allowInterceptionSelection) {
+            this.trialPresentationState.clearHoveredCell();
+            this.trialPresentationState.clearInterceptionPreview();
+            this.trialDefenseAllocationComponent?.render?.();
+            return null;
+        }
         const cellState = this.getTrialInterceptionCellState(r, c);
         if (!cellState?.canIntercept) {
             this.trialPresentationState.clearHoveredCell();
