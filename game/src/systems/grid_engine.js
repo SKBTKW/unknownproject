@@ -52,6 +52,15 @@ function resolveAttributeTerrain(attributeCell, fallbackTerrain) {
     return hasSemantic ? cloneTerrainSemantic(semantic) : fallbackTerrain;
 }
 
+function findPlacementAttributeCell(attributeCells, localR, localC) {
+    if (!Array.isArray(attributeCells)) return null;
+    return attributeCells.find(cell => {
+        const r = Number.isInteger(cell?.r) ? cell.r : cell?.dr;
+        const c = Number.isInteger(cell?.c) ? cell.c : cell?.dc;
+        return r === localR && c === localC;
+    }) || null;
+}
+
 function createPlacementSemanticResolver(shapeMatrix, fallbackTerrain, attributeCells = null) {
     const byLocalCell = new Map();
     for (const cell of attributeCells || []) {
@@ -627,7 +636,12 @@ class GridEngine {
                         cell.production = {
                             status: LAND_PRODUCTION_STATUS.RESOLVED,
                             scope: productionContract.scope,
-                            cellYields: findContractCellYields(productionContract, dr, dc)
+                            cellYields: findContractCellYields(
+                                productionContract,
+                                dr,
+                                dc,
+                                findPlacementAttributeCell(attributeCells, dr, dc)
+                            )
                         };
                     } else {
                         cell.production = null;
