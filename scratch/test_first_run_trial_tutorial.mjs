@@ -21,6 +21,7 @@ import {
     assert.equal(policy.allowInterceptionSelection, false);
     assert.equal(policy.allowDefenseInput, false);
     assert.equal(policy.allowTrialConfirm, false);
+    assert.equal(policy.allowSkipRoute, false, "FirstRun tutorial must require one interception experience");
 
     state = service.record({
         firstRunState,
@@ -94,6 +95,7 @@ import {
     assert.equal(policy.allowInterceptionSelection, true);
     assert.equal(policy.allowDefenseInput, true);
     assert.equal(policy.allowTrialConfirm, true);
+    assert.equal(policy.allowSkipRoute, true, "completed tutorial must converge to normal Trial controls");
 }
 
 {
@@ -125,6 +127,8 @@ import {
     const service = new FirstRunTrialTutorialService();
     const state = service.begin({ firstRunState: disabledState, trialIndex: 1 });
     assert.equal(state.active, false, "normal Run must not activate the FirstRun tutorial");
+    const policy = service.getPresentationPolicy({ firstRunState: disabledState });
+    assert.equal(policy.allowSkipRoute, true, "normal Run must retain normal SKIP behavior");
 }
 
 {
