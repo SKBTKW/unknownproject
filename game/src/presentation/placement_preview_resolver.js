@@ -46,7 +46,7 @@ export class PlacementPreviewResolver {
         const terrain = card.terrain || card;
         const placement = resolvePlacementGeometry(card, r, c);
         const rawCheck = typeof gameState.canPlaceShape === 'function'
-            ? gameState.canPlaceShape(placement.startR, placement.startC, placement.shape, terrain)
+            ? gameState.canPlaceShape(placement.startR, placement.startC, placement.shape, terrain, placement.attributeCells)
             : gameState.gridEngine?.canPlaceShape?.(
                 placement.startR,
                 placement.startC,
