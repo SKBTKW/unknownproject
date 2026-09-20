@@ -183,6 +183,21 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (FirstRun Trial1 Verse15 Timing) で不合格が検出されました。");
         process.exit(1);
     }
+    const firstRunTrialTutorialOk = await runCommand("node", ["scratch/test_first_run_trial_tutorial.mjs"]);
+    if (!firstRunTrialTutorialOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (FirstRun Trial Tutorial Contract) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const firstRunTrialUiContractOk = await runCommand("node", ["scratch/test_first_run_trial_ui_contract.mjs"]);
+    if (!firstRunTrialUiContractOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (FirstRun Trial UI Boundary) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const firstRunTrialIngressPolicyOk = await runCommand("node", ["scratch/test_first_run_trial_ingress_policy.mjs"]);
+    if (!firstRunTrialIngressPolicyOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (FirstRun Trial Ingress Policy) で不合格が検出されました。");
+        process.exit(1);
+    }
     const scheduledGlobalEventOk = await runCommand("node", ["scratch/test_scheduled_global_event_contract.mjs"]);
     if (!scheduledGlobalEventOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Scheduled Global Event Contract) で不合格が検出されました。");
@@ -228,6 +243,11 @@ async function main() {
     const trialPresentationBoundaryOk = await runCommand("node", ["scratch/test_trial_core_presentation_boundary.mjs"]);
     if (!trialPresentationBoundaryOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Trial Core Presentation Boundary) で違反が検出されました。");
+        process.exit(1);
+    }
+    const trialCausalityPresenterOk = await runCommand("node", ["scratch/test_trial_causality_presenter.mjs"]);
+    if (!trialCausalityPresenterOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Trial Causality Presenter) で不合格が検出されました。");
         process.exit(1);
     }
     const trialFoundationOk = await runCommand("node", ["scratch/test_trial_foundation.mjs"]);
@@ -324,6 +344,11 @@ async function main() {
     const advisorFoundationOk = await runCommand("node", ["scratch/test_advisor_foundation.mjs"]);
     if (!advisorFoundationOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Advisor Foundation) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const advisorSemanticSceneOk = await runCommand("node", ["scratch/test_advisor_semantic_scene_consumer.mjs"]);
+    if (!advisorSemanticSceneOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Advisor Semantic Scene Consumer) で不合格が検出されました。");
         process.exit(1);
     }
     const globalEventChoiceRestoreOk = await runCommand("node", ["scratch/test_global_event_choice_restore_reconciliation.mjs"]);

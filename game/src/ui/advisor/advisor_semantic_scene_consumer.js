@@ -10,6 +10,24 @@ const ADVISOR_SEMANTIC_SCENE_ROUTES = Object.freeze({
         advisorEvent: "LINK_COMPLETED",
         topic: "connection",
         legacyMilestone: "link"
+    }),
+    FIRST_RUN_TRIAL_ROUTE: Object.freeze({
+        advisorEvent: "FIRST_RUN_TRIAL_ROUTE",
+        topic: "defense",
+        legacyMilestone: null,
+        mandatory: true
+    }),
+    FIRST_RUN_TRIAL_TERRAIN: Object.freeze({
+        advisorEvent: "FIRST_RUN_TRIAL_TERRAIN",
+        topic: "defense",
+        legacyMilestone: null,
+        mandatory: true
+    }),
+    FIRST_RUN_TRIAL_DEFENSE: Object.freeze({
+        advisorEvent: "FIRST_RUN_TRIAL_DEFENSE",
+        topic: "defense",
+        legacyMilestone: null,
+        mandatory: true
     })
 });
 
@@ -28,6 +46,7 @@ export function resolveAdvisorSemanticScene(scene = {}) {
         advisorEvent: route.advisorEvent,
         topic: route.topic,
         legacyMilestone: route.legacyMilestone,
+        mandatory: route.mandatory === true,
         verse: Number.isFinite(verse) && verse > 0 ? verse : null,
         context
     });
