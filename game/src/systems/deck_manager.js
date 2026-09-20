@@ -71,7 +71,12 @@ class DeckManager {
         const map = new Map();
         for (const c of baseList) {
             if (c && c.id) {
-                map.set(c.id, { ...c, cyclePolicy: c.cyclePolicy || CYCLE_POLICIES.LAND_STANDARD });
+                const multiAttribute = Array.isArray(c.cells) && c.cells.length > 0;
+                map.set(c.id, {
+                    ...c,
+                    ...(multiAttribute ? { rarity: "R" } : {}),
+                    cyclePolicy: c.cyclePolicy || CYCLE_POLICIES.LAND_STANDARD
+                });
             }
         }
         for (const c of COMMAND_CARDS_MASTER) {
@@ -522,7 +527,7 @@ class DeckManager {
         const activeBiasCategory = (this.state && this.state.activeDrawBias) ? this.state.activeDrawBias.targetCategory : null;
 
         let totalW = eligible.reduce((acc, c) => {
-            let w = c.weight || 0.1;
+            let w = c.weight ?? 0.1;
             const cat = c.category || "LAND";
             let dirMult = 1.0;
             if (this.state && this.state.directiveSystem) {
@@ -539,7 +544,7 @@ class DeckManager {
         let chosen = eligible[0];
 
         for (let c of eligible) {
-            let w = c.weight || 0.1;
+            let w = c.weight ?? 0.1;
             const cat = c.category || "LAND";
             let dirMult = 1.0;
             if (this.state && this.state.directiveSystem) {
@@ -728,10 +733,37 @@ class DeckManager {
             });
 
             while (newCards.length < offeringSize && baseLandPool.length > 0) {
-                const picked = baseLandPool.shift();
+                const activeBiasCategory = this.state?.activeDrawBias?.targetCategory || null;
+                const weighted = baseLandPool.map(card => {
+                    const category = card.category || "LAND";
+                    const directiveMultiplier = this.state?.directiveSystem
+                        ? this.state.directiveSystem.getCategoryWeightMultiplier(category)
+                        : 1.0;
+                    const biasMultiplier = activeBiasCategory && category === activeBiasCategory ? 2.0 : 1.0;
+                    return {
+                        card,
+                        weight: Math.max(0, Number(card.weight ?? 0.1)) * directiveMultiplier * biasMultiplier
+                    };
+                });
+                const totalWeight = weighted.reduce((sum, item) => sum + item.weight, 0);
+                let picked = weighted[0]?.card || baseLandPool[0];
+
+                if (totalWeight > 0) {
+                    let roll = this._nextGameplayFloat() * totalWeight;
+                    for (const item of weighted) {
+                        if (roll <= item.weight) {
+                            picked = item.card;
+                            break;
+                        }
+                        roll -= item.weight;
+                    }
+                }
+
                 const drawn = this._wrapCardInstance(picked);
                 newCards.push(drawn);
                 excludedCardIds.push(picked.id);
+                const pickedIndex = baseLandPool.indexOf(picked);
+                if (pickedIndex >= 0) baseLandPool.splice(pickedIndex, 1);
             }
         }
 
