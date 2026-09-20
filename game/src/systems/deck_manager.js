@@ -583,7 +583,8 @@ class DeckManager {
                         placement.startR,
                         placement.startC,
                         placement.shape,
-                        definition
+                        definition,
+                        placement.attributeCells
                     );
                     if (result?.can === true) return true;
                 } catch {
