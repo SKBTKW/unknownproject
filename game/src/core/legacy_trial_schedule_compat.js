@@ -98,6 +98,18 @@ export function applyLegacyTrialScheduleStageProgression(engine, { translate = n
     const state = engine?.state || null;
     if (!state?.trialSchedule) return { changed: false, stageId: state?.stage?.id ?? null };
 
+    // Modern Trial runtime owns Stage progression from TRIAL_RESULT_SETTLED.
+    // Keep this legacy boundary available only for isolated legacy harnesses.
+    // In production, scheduled Verse arrival must never resize the board before
+    // Trial settlement + presentation/session cleanup.
+    if (engine?.trialStageProgressionService) {
+        return {
+            changed: false,
+            stageId: state?.stage?.id ?? null,
+            reason: "MODERN_TRIAL_STAGE_PROGRESSION_AUTHORITY"
+        };
+    }
+
     const timing = createLegacyTrialTimingReadModel(state);
     const currentTurn = timing.getCurrentVerse();
     const currentStageId = state.stage?.id ?? null;
