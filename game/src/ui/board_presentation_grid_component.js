@@ -116,6 +116,7 @@ export class BoardPresentationGridComponent extends LegacyBoardGridComponent {
             cellEl.classList.toggle('board-logical-hover', !isTrialContext && Boolean(interaction?.hovered));
             cellEl.classList.toggle('board-logical-focus', !isTrialContext && Boolean(interaction?.focused));
             cellEl.classList.toggle('board-logical-selected', !isTrialContext && Boolean(interaction?.selected));
+            cellEl.classList.toggle('cell-placed-this-turn', Boolean(interaction?.placedThisTurn));
             if (!isTrialContext) {
                 TRIAL_VISUAL_CLASSES.forEach(cls => cellEl.classList.remove(cls));
                 cellEl.removeAttribute('data-trial-direction');
