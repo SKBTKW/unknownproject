@@ -215,15 +215,26 @@ test("browser BoardAware UI routes board reads through the shared runtime adapte
     assert.equal(source.includes("this.boardPresentationDataService.getBoard(this.state"), false);
 });
 
-test("Web2.5D SELECT_CELL stays presentation-only", () => {
-    const source = fs.readFileSync(
+test("shared browser runtime keeps selection separate from primary gameplay action", () => {
+    const runtimeSource = fs.readFileSync(
+        new URL("../game/src/ui/board_presentation_runtime_bridge.js", import.meta.url),
+        "utf8"
+    );
+    const web25dSource = fs.readFileSync(
         new URL("../game/src/ui/web25d_validation_runtime_bridge.js", import.meta.url),
         "utf8"
     );
-    assert.equal(source.includes("selectCell: ({ cell }) =>"), false);
-    assert.equal(source.includes("primaryCellAction: ({ cell }) =>"), true);
-    assert.equal(source.includes("uiController.onCellClick(cell.r, cell.c)"), false);
-    assert.equal(source.includes("uiController.performPrimaryCellAction(cell.r, cell.c)"), true);
+    const resolverSource = fs.readFileSync(
+        new URL("../game/src/presentation/board_input_semantic_resolver.js", import.meta.url),
+        "utf8"
+    );
+    assert.equal(runtimeSource.includes("selectCell: ({ cell }) =>"), false);
+    assert.equal(runtimeSource.includes("primaryCellAction: ({ cell }) =>"), true);
+    assert.equal(runtimeSource.includes("uiController.onCellClick(cell.r, cell.c)"), false);
+    assert.equal(runtimeSource.includes("uiController.performPrimaryCellAction(cell.r, cell.c)"), true);
+    assert.equal(web25dSource.includes("boardPresentationRuntimeBridge"), true);
+    assert.equal(web25dSource.includes("new BoardRendererBridge"), false);
+    assert.equal(resolverSource.includes("BOARD_INPUT_COMMANDS.PRIMARY_CELL_ACTION"), true);
 });
 
 test("browser Web2D click path emits portable primary/trial commands", () => {
