@@ -31,6 +31,22 @@ function repairSteps(task = {}) {
   }
 }
 
+function isReviewGradeRisk(risk) {
+  return ['PATH_OVERLAP', 'SHARED_SURFACE', 'CONTRACT_OVERLAP'].includes(String(risk || ''));
+}
+
+function hasReviewGradePeerOverlap(task = {}) {
+  return (task.peerOverlaps || []).some((entry) => isReviewGradeRisk(entry.overlap?.risk));
+}
+
+function isLowRiskReconcile(task = {}) {
+  return task.status === 'RECONCILE_REQUIRED'
+    && task.overlap?.risk === 'NONE'
+    && task.mergePreview?.status === 'CLEAN'
+    && !task.localRemoteMismatch
+    && !hasReviewGradePeerOverlap(task);
+}
+
 export function classifyProgressTask(task = {}) {
   if (task.status === 'MERGED') {
     return {
@@ -65,6 +81,11 @@ export function classifyProgressTask(task = {}) {
     nextAction: task.guidance?.action || 'STOP_AND_INSPECT',
     reason: task.guidance?.reason || 'TASK must be made safe before integration.',
     steps: repairSteps(task),
+    preparationPriority: isLowRiskReconcile(task) ? 'LOW_RISK_RECONCILE' : 'NORMAL',
+    distance: {
+      ahead: Number(task.aheadCount || 0),
+      behind: Number(task.behindCount || 0),
+    },
     evidence: {
       targetOverlap: task.overlap?.risk || 'NONE',
       peerOverlaps: (task.peerOverlaps || []).map((entry) => ({
@@ -80,18 +101,34 @@ export function classifyProgressTask(task = {}) {
 function progressBucket(entry) {
   if (entry.progressClass === PROGRESS_CLASS.INTEGRATE_NOW) return 0;
   if (entry.progressClass === PROGRESS_CLASS.PREPARE_FOR_INTEGRATION) {
-    if (entry.status === 'REVIEW_REQUIRED') return 1;
-    if (entry.status === 'RECONCILE_REQUIRED') return 2;
-    return 3;
+    if (entry.preparationPriority === 'LOW_RISK_RECONCILE') return 1;
+    if (entry.status === 'REVIEW_REQUIRED') return 2;
+    if (entry.status === 'RECONCILE_REQUIRED') return 3;
+    return 4;
   }
-  return 4;
+  return 5;
+}
+
+function compareProgressEntries(a, b) {
+  const bucketDiff = progressBucket(a) - progressBucket(b);
+  if (bucketDiff !== 0) return bucketDiff;
+
+  if (a.progressClass === PROGRESS_CLASS.PREPARE_FOR_INTEGRATION
+      && b.progressClass === PROGRESS_CLASS.PREPARE_FOR_INTEGRATION) {
+    const behindDiff = Number(a.distance?.behind || 0) - Number(b.distance?.behind || 0);
+    if (behindDiff !== 0) return behindDiff;
+    const aheadDiff = Number(a.distance?.ahead || 0) - Number(b.distance?.ahead || 0);
+    if (aheadDiff !== 0) return aheadDiff;
+  }
+
+  return String(a.branch).localeCompare(String(b.branch));
 }
 
 export function buildIntegrationProgressGuide(analysis = {}) {
   const tasks = Array.isArray(analysis.tasks) ? analysis.tasks : [];
   const entries = tasks
     .map(classifyProgressTask)
-    .sort((a, b) => progressBucket(a) - progressBucket(b) || String(a.branch).localeCompare(String(b.branch)));
+    .sort(compareProgressEntries);
 
   const counts = Object.fromEntries(Object.values(PROGRESS_CLASS).map((key) => [key, 0]));
   for (const entry of entries) counts[entry.progressClass] += 1;
@@ -120,6 +157,9 @@ export function printIntegrationProgressGuide(guide = {}) {
   if (guide.next) {
     console.log(`  next: [${guide.next.status}] ${guide.next.branch} -> ${guide.next.nextAction}`);
     console.log(`  why:  ${guide.next.reason}`);
+    if (guide.next.preparationPriority === 'LOW_RISK_RECONCILE') {
+      console.log(`  prep: low-risk reconcile candidate; ahead=${guide.next.distance?.ahead || 0}, behind=${guide.next.distance?.behind || 0}, no review-grade overlap observed`);
+    }
   } else {
     console.log('  next: no active TASK requires integration work');
   }
