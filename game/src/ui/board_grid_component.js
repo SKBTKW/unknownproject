@@ -1,7 +1,7 @@
 import { boardCameraSystem } from './board_camera_system.js';
 import { ElevationVisualService } from './elevation_visual_service.js';
 import { AreaInfluenceVisualService } from './area_influence_visual_service.js';
-import { isWaterSourceInfluence } from '../core/lake_rules.js';
+import { isIrrigationInfluence } from '../core/irrigation_rules.js';
 import { getTrialRouteCellVisualState } from '../presentation/trial_board_semantic_data.js';
 import {
     resolveBoardDisplayProduction,
@@ -146,7 +146,7 @@ export class BoardGridComponent {
                 const isHQVic = (typeof this.state.isHQVicinity === "function") ? this.state.isHQVicinity(r, c) : false;
                 const isLakeVic = (typeof this.state.isWaterSourceInfluence === "function")
                     ? this.state.isWaterSourceInfluence(r, c)
-                    : isWaterSourceInfluence(this.state, r, c);
+                    : isIrrigationInfluence(this.state, r, c);
                 const lakeDirClass = this.getLakeDirectionClass(r, c, lakeCoords);
 
                 let topGroupSame = false;
