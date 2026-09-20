@@ -28,6 +28,12 @@ const ADVISOR_SEMANTIC_SCENE_ROUTES = Object.freeze({
         topic: "defense",
         legacyMilestone: null,
         mandatory: true
+    }),
+    FIRST_RUN_TRIAL_CAUSALITY: Object.freeze({
+        advisorEvent: "FIRST_RUN_TRIAL_CAUSALITY",
+        topic: "defense",
+        legacyMilestone: null,
+        mandatory: true
     })
 });
 
