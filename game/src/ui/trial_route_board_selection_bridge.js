@@ -1,3 +1,9 @@
+import { BOARD_VIEW_MODES } from "../presentation/board_presentation_state.js";
+import {
+    BOARD_INPUT_COMMANDS,
+    createBoardInputCommand
+} from "../presentation/board_input_contract.js";
+
 function resolveEntryCell(route) {
     const cells = route?.cells || route?.path || [];
     const entry = cells[0];
@@ -40,7 +46,8 @@ export function attachTrialRouteBoardSelection(uiController) {
 
             const hasLiveTrial = Boolean(uiController.isTrialInteractionActive?.());
             const isTrialPresentation = uiController.boardPresentationState?.contextMode === "TRIAL";
-            const is2D = !uiController.boardPresentationState?.viewMode || uiController.boardPresentationState?.viewMode === "STRATEGIC_2D";
+            const is2D = !uiController.boardPresentationState?.viewMode
+                || uiController.boardPresentationState?.viewMode === BOARD_VIEW_MODES.TWO_D;
             const active = hasLiveTrial && isTrialPresentation && is2D;
             document.body?.classList.toggle("trial-route-selection-on-board", active);
             if (!active) return;
@@ -49,28 +56,38 @@ export function attachTrialRouteBoardSelection(uiController) {
             const activeRouteId = uiController.getActiveTrialRoute?.()?.id || null;
 
             routes.forEach((route, index) => {
+                const routeId = route?.id ?? route?.routeId ?? null;
                 const entry = resolveEntryCell(route);
-                if (!entry) return;
+                if (!entry || !routeId) return;
                 const cellEl = boardEl.querySelector(`.cell[data-r="${entry.r}"][data-c="${entry.c}"]`);
                 if (!cellEl) return;
 
-                const isActive = route.id === activeRouteId;
+                const isActive = routeId === activeRouteId;
                 cellEl.classList.add("is-trial-route-selector-host");
                 if (isActive) cellEl.classList.add("is-trial-route-selector-active");
-                cellEl.setAttribute("data-trial-route-selector", route.id);
+                cellEl.setAttribute("data-trial-route-selector", routeId);
 
                 const marker = document.createElement("button");
                 marker.type = "button";
                 marker.className = `trial-route-entry-selector${isActive ? " is-active" : ""}`;
-                marker.dataset.routeId = route.id;
+                marker.dataset.routeId = routeId;
                 marker.textContent = getRouteLabel(route, index);
                 marker.setAttribute("aria-pressed", isActive ? "true" : "false");
-                marker.setAttribute("aria-label", route.nameKey || route.id);
-                marker.title = route.nameKey || route.id;
+                marker.setAttribute("aria-label", route.nameKey || routeId);
+                marker.title = route.nameKey || routeId;
                 marker.onclick = event => {
                     event.preventDefault();
                     event.stopPropagation();
-                    if (!isActive) uiController.selectTrialRoute?.(route.id);
+                    if (isActive) return;
+                    const inputRuntime = uiController.boardPresentationRuntimeBridge;
+                    if (inputRuntime?.dispatchInput) {
+                        inputRuntime.dispatchInput(createBoardInputCommand(
+                            BOARD_INPUT_COMMANDS.SELECT_TRIAL_ROUTE,
+                            { routeId }
+                        ));
+                        return;
+                    }
+                    uiController.selectTrialRoute?.(routeId);
                 };
                 cellEl.appendChild(marker);
             });
