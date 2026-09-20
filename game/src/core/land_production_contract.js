@@ -181,6 +181,40 @@ function findContractCellYields(contract, localR, localC) {
     return match ? { ...match.yields } : null;
 }
 
+function resolvePlacedBlockProduction(state, placementGroupId) {
+    const record = state?.placedBlockProduction?.[placementGroupId] || null;
+    if (!record || record.status !== LAND_PRODUCTION_STATUS.RESOLVED || !record.yields) {
+        return {
+            defined: false,
+            status: record?.status || null,
+            scope: record?.scope || null,
+            yields: { ...ZERO_LAND_YIELDS }
+        };
+    }
+    return {
+        defined: true,
+        status: LAND_PRODUCTION_STATUS.RESOLVED,
+        scope: record.scope || LAND_PRODUCTION_SCOPE.BLOCK,
+        yields: normalizeLandYields(record.yields)
+    };
+}
+
+function sumPlacedBlockProduction(state) {
+    const total = { ...ZERO_LAND_YIELDS };
+    const records = state?.placedBlockProduction;
+    if (!records || typeof records !== "object") return total;
+
+    for (const placementGroupId of Object.keys(records)) {
+        const resolved = resolvePlacedBlockProduction(state, placementGroupId);
+        if (!resolved.defined) continue;
+        total.food += resolved.yields.food;
+        total.wood += resolved.yields.wood;
+        total.defense += resolved.yields.defense;
+        total.mystic += resolved.yields.mystic;
+    }
+    return total;
+}
+
 export {
     LAND_PRODUCTION_SCOPE,
     LAND_PRODUCTION_STATUS,
@@ -190,5 +224,7 @@ export {
     normalizeLandYields,
     normalizeProductionContract,
     resolveCellProductionBase,
-    resolveLegacyTerrainYields
+    resolveLegacyTerrainYields,
+    resolvePlacedBlockProduction,
+    sumPlacedBlockProduction
 };
