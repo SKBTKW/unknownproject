@@ -10,6 +10,11 @@ import {
     isWaterSourceCell,
     isWetlandTerrain
 } from '../core/lake_rules.js';
+import {
+    LAND_PRODUCTION_STATUS,
+    resolveCellProductionBase,
+    sumPlacedBlockProduction
+} from '../core/land_production_contract.js';
 
 (function() {
     class ProductionCalculator {
@@ -36,9 +41,10 @@ import {
                     const cell = state.grid[r][c];
                     if (cell && cell.placed && !cell.isHQ && cell.terrain) {
                         const t = cell.terrain;
-                        const tf = (t.food !== undefined) ? t.food : ((t.baseYieldsPerTile && t.baseYieldsPerTile.food) || (t.yields && t.yields.food) || 0);
-                        const tw = (t.material !== undefined) ? t.material : ((t.wood !== undefined) ? t.wood : ((t.baseYieldsPerTile && (t.baseYieldsPerTile.material || t.baseYieldsPerTile.wood)) || (t.yields && (t.yields.material || t.yields.wood)) || 0));
-                        const tm = (t.mystic !== undefined) ? t.mystic : ((t.baseYieldsPerTile && t.baseYieldsPerTile.mystic) || (t.yields && t.yields.mystic) || 0);
+                        const cellProduction = resolveCellProductionBase(cell);
+                        const tf = cellProduction.yields.food;
+                        const tw = cellProduction.yields.wood;
+                        const tm = cellProduction.yields.mystic;
 
                         const isEligibleZoneCell = cell.mergeGroupId
                             && !isWetlandTerrain(t)
@@ -147,15 +153,29 @@ import {
             const hqWood = (hqTerrain.wood !== undefined) ? (hqTerrain.material !== undefined ? hqTerrain.material : hqTerrain.wood) : 10;
             const hqMystic = (hqTerrain.mystic !== undefined) ? hqTerrain.mystic : 1;
 
+            const blockProduction = sumPlacedBlockProduction(state);
             const adjustedPlainsFood = Math.floor((foodTiles + plainsBuffBonus) * plainsFoodMultiplier);
-            const grossFood = Math.floor((hqFood + adjustedPlainsFood + foodSockets + foodVicinity + foodLakeIrrigation) * foodMult * buffFoodMult);
+            const grossFood = Math.floor((hqFood + adjustedPlainsFood + blockProduction.food + foodSockets + foodVicinity + foodLakeIrrigation) * foodMult * buffFoodMult);
             const netFood = grossFood - foodCost;
             const totalFood = netFood; // 表示互換用。実state加算は必ずgrossFoodを使用する。
-            const totalWood = Math.max(0, Math.floor((hqWood + woodTiles + woodSockets + woodVicinity - systematicLoggingPenalty) * woodMult * buffWoodMult));
+            const totalWood = Math.max(0, Math.floor((hqWood + woodTiles + blockProduction.wood + woodSockets + woodVicinity - systematicLoggingPenalty) * woodMult * buffWoodMult));
             const totalMaterial = totalWood;
-            const totalMystic = Math.floor((hqMystic + mysticTiles + mysticSockets + mysticVicinity + flatMysticBonus) * mysticMult * buffMysticMult);
+            const totalMystic = Math.floor((hqMystic + mysticTiles + blockProduction.mystic + mysticSockets + mysticVicinity + flatMysticBonus) * mysticMult * buffMysticMult);
 
-            return { totalFood, netFood, grossFood, foodCost, totalWood, totalMaterial, totalMystic, foodLakeIrrigation, hqFood, hqWood, hqMystic };
+            return {
+                totalFood,
+                netFood,
+                grossFood,
+                foodCost,
+                totalWood,
+                totalMaterial,
+                totalMystic,
+                foodLakeIrrigation,
+                hqFood,
+                hqWood,
+                hqMystic,
+                blockProduction
+            };
         }
 
         static calculateTotalDefense(state) {
@@ -185,10 +205,11 @@ import {
                     const cell = state.grid[r][c];
                     if (cell && cell.placed && !cell.isHQ && cell.terrain) {
                         const t = cell.terrain;
-                        const tf = (t.food !== undefined) ? t.food : ((t.baseYieldsPerTile && t.baseYieldsPerTile.food) || (t.yields && t.yields.food) || 0);
-                        const tw = (t.material !== undefined) ? t.material : ((t.wood !== undefined) ? t.wood : ((t.baseYieldsPerTile && (t.baseYieldsPerTile.material || t.baseYieldsPerTile.wood)) || (t.yields && (t.yields.material || t.yields.wood)) || 0));
-                        const td = (t.defense !== undefined) ? t.defense : ((t.baseYieldsPerTile && t.baseYieldsPerTile.defense) || (t.yields && t.yields.defense) || 0);
-                        const tm = (t.mystic !== undefined) ? t.mystic : ((t.baseYieldsPerTile && t.baseYieldsPerTile.mystic) || (t.yields && t.yields.mystic) || 0);
+                        const cellProduction = resolveCellProductionBase(cell);
+                        const tf = cellProduction.yields.food;
+                        const tw = cellProduction.yields.wood;
+                        const td = cellProduction.yields.defense;
+                        const tm = cellProduction.yields.mystic;
 
                         const isEligibleZoneCell = cell.mergeGroupId
                             && !isWetlandTerrain(t)
@@ -234,6 +255,7 @@ import {
 
             const prods = this.calculateTotalProduction(state);
             const defTotal = this.calculateTotalDefense(state);
+            const blockProduction = sumPlacedBlockProduction(state);
 
             let emberPct = 0;
             let emberMystic = 0;
@@ -243,11 +265,12 @@ import {
             }
 
             return {
-                food: { hqBase: hqFood, tiles: foodTiles, sockets: foodSockets, vicinity: foodVicinity, lakeIrrigation: prods.foodLakeIrrigation || 0, emberPct, gross: prods.grossFood, foodCost: prods.foodCost, net: prods.netFood, total: prods.totalFood },
-                wood: { hqBase: hqWood, tiles: woodTiles, sockets: woodSockets, vicinity: woodVicinity, emberPct, total: prods.totalWood },
+                food: { hqBase: hqFood, tiles: foodTiles, blocks: blockProduction.food, sockets: foodSockets, vicinity: foodVicinity, lakeIrrigation: prods.foodLakeIrrigation || 0, emberPct, gross: prods.grossFood, foodCost: prods.foodCost, net: prods.netFood, total: prods.totalFood },
+                wood: { hqBase: hqWood, tiles: woodTiles, blocks: blockProduction.wood, sockets: woodSockets, vicinity: woodVicinity, emberPct, total: prods.totalWood },
                 defense: {
                     hqBase: hqDefense,
                     tiles: defenseTiles,
+                    blocks: blockProduction.defense,
                     sockets: defenseSockets,
                     total: defTotal,
                     max: defTotal,
@@ -255,7 +278,7 @@ import {
                         ? state.defenseSystem.getCurrentDefense()
                         : Math.min(state?.currentDefense ?? defTotal, defTotal)
                 },
-                mystic: { hqBase: hqMystic, tiles: mysticTiles, sockets: mysticSockets, emberMystic, emberPct, total: prods.totalMystic }
+                mystic: { hqBase: hqMystic, tiles: mysticTiles, blocks: blockProduction.mystic, sockets: mysticSockets, emberMystic, emberPct, total: prods.totalMystic }
             };
         }
 
@@ -268,6 +291,8 @@ import {
          */
         static calculateCellYieldBreakdown(state, r, c) {
             const emptyResult = {
+                productionStatus: null,
+                productionScope: null,
                 baseYields: { food: 0, wood: 0, defense: 0, mystic: 0 },
                 modifiers: [],
                 totalYields: { food: 0, wood: 0, defense: 0, mystic: 0 }
@@ -287,6 +312,8 @@ import {
                 const hqDefense = (hqTerrain.defense !== undefined) ? hqTerrain.defense : 10;
                 const hqMystic = (hqTerrain.mystic !== undefined) ? hqTerrain.mystic : 1;
                 return {
+                    productionStatus: LAND_PRODUCTION_STATUS.LEGACY,
+                    productionScope: "CELL",
                     baseYields: { food: hqFood, wood: hqWood, defense: hqDefense, mystic: hqMystic },
                     modifiers: [],
                     totalYields: { food: hqFood, wood: hqWood, defense: hqDefense, mystic: hqMystic }
@@ -297,10 +324,11 @@ import {
             const t = cell.terrain;
             if (!t) return emptyResult;
 
-            const baseFood = (t.food !== undefined) ? t.food : ((t.baseYieldsPerTile && t.baseYieldsPerTile.food) || (t.yields && t.yields.food) || 0);
-            const baseWood = (t.material !== undefined) ? t.material : ((t.wood !== undefined) ? t.wood : ((t.baseYieldsPerTile && (t.baseYieldsPerTile.material || t.baseYieldsPerTile.wood)) || (t.yields && (t.yields.material || t.yields.wood)) || 0));
-            const baseDefense = (t.defense !== undefined) ? t.defense : ((t.baseYieldsPerTile && t.baseYieldsPerTile.defense) || (t.yields && t.yields.defense) || 0);
-            const baseMystic = (t.mystic !== undefined) ? t.mystic : ((t.baseYieldsPerTile && t.baseYieldsPerTile.mystic) || (t.yields && t.yields.mystic) || 0);
+            const productionBase = resolveCellProductionBase(cell);
+            const baseFood = productionBase.yields.food;
+            const baseWood = productionBase.yields.wood;
+            const baseDefense = productionBase.yields.defense;
+            const baseMystic = productionBase.yields.mystic;
 
             const baseYields = { food: baseFood, wood: baseWood, defense: baseDefense, mystic: baseMystic };
             const modifiers = [];
@@ -351,6 +379,8 @@ import {
             }
 
             return {
+                productionStatus: productionBase.status,
+                productionScope: productionBase.scope,
                 baseYields,
                 modifiers,
                 totalYields: { food: totalFood, wood: totalWood, defense: totalDefense, mystic: totalMystic }
