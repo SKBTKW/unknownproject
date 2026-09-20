@@ -27,6 +27,7 @@ const DEFAULT_SETTINGS = {
     defaultHandMode: "standard",   // 手札の初期表示モード ("standard": 標準, "minimal": 縮小)
     autoRotateOnRightClick: true,  // 右クリックでのカード回転
     focusDoFBlur: false,           // 2層DoFフォーカス演出 (true: 配置中ボケ演出あり, false: 常時クリア)
+    showBoardCoordinates: true,    // 盤外座標ラベル（A/B/C..., 1/2/3...）
     resolution: "1920x1080",      // 表示解像度プリセット（ブラウザ版では表示設定境界へ通知）
     language: "ja",                // 表示言語 ("ja" / "en")
     animSpeed: "normal",           // 演出速度 ("normal" / "fast")
@@ -217,6 +218,8 @@ export class SettingsModalSystem {
         }).join("");
         const fTitle = I18n ? I18n.t("UI_SETTINGS_FOCUS_TITLE") : "DoF Blur";
         const fDesc = I18n ? I18n.t("UI_SETTINGS_FOCUS_DESC") : "";
+        const coordTitle = I18n ? I18n.t("UI_SETTINGS_BOARD_COORDINATES_TITLE") : "Board Coordinates";
+        const coordDesc = I18n ? I18n.t("UI_SETTINGS_BOARD_COORDINATES_DESC") : "";
 
         const langTitle = I18n ? I18n.t("UI_SETTINGS_LANG_TITLE") : "Language";
         const langDesc = I18n ? I18n.t("UI_SETTINGS_LANG_DESC") : "";
@@ -387,6 +390,17 @@ export class SettingsModalSystem {
                             </div>
                         </div>
 
+                        <!-- 盤外座標 -->
+                        <div class="setting-item-row">
+                            <div class="setting-item-copy">
+                                <div class="setting-item-title">${coordTitle}</div>
+                                <div class="setting-item-desc">${coordDesc}</div>
+                            </div>
+                            <div class="setting-item-control">
+                                ${createToggleMarkup("optShowBoardCoordinates", "showBoardCoordinates")}
+                            </div>
+                        </div>
+
                         <!-- 演出速度 -->
                         <div class="setting-item-row">
                             <div class="setting-item-copy">
@@ -490,6 +504,9 @@ export class SettingsModalSystem {
         });
         bindToggle("#optAdvisorHoverExpand", "advisorHoverExpand");
         bindToggle("#optFocusDoFBlur", "focusDoFBlur");
+        bindToggle("#optShowBoardCoordinates", "showBoardCoordinates", () => {
+            if (typeof window !== "undefined" && window.gameUI) window.gameUI.render();
+        });
         bindToggle("#optSeEnabled", "seEnabled");
         bindToggle("#optBgmEnabled", "bgmEnabled");
 
@@ -587,6 +604,7 @@ export class SettingsModalSystem {
         updateToggle("#optAdvisorEnabled", "advisorEnabled");
         updateToggle("#optAdvisorHoverExpand", "advisorHoverExpand");
         updateToggle("#optFocusDoFBlur", "focusDoFBlur");
+        updateToggle("#optShowBoardCoordinates", "showBoardCoordinates");
         updateToggle("#optSeEnabled", "seEnabled");
         updateToggle("#optBgmEnabled", "bgmEnabled");
 
