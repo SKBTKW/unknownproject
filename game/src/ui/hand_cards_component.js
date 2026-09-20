@@ -1,10 +1,13 @@
 import { UILayoutConfig } from './layout_config.js';
 import {
-    isMultiAttributeLandCard,
     resolveLandCardCellTerrainId,
     resolveLandCardDisplayName,
     resolveLandCardRarity
 } from '../presentation/land_card_presentation.js';
+import {
+    LAND_PRODUCTION_STATUS,
+    resolveCardProductionPreview
+} from '../core/land_production_contract.js';
 
 /**
  * 🃏 HandCardsComponent (手札オファリング ＆ カードフレーム描画・操作専門コンポーネント)
@@ -251,16 +254,14 @@ export class HandCardsComponent {
                 cardEl.innerHTML = fullInnerHtml;
             } else {
                 // 🌱 土地カード
-                const multiAttribute = isMultiAttributeLandCard(card);
-                const y = multiAttribute
-                    ? null
-                    : (tObj.yields || { food: tObj.food || 0, wood: tObj.wood || 0, defense: tObj.def || tObj.defense || 0, mystic: tObj.mystic || 0 });
+                const productionPreview = resolveCardProductionPreview(card);
+                const y = productionPreview.totalYields || { food: 0, wood: 0, defense: 0, mystic: 0 };
+                const productionUnresolved = productionPreview.status === LAND_PRODUCTION_STATUS.UNRESOLVED;
                 const shapeMat = card.currentShape || tObj.shape || [[1]];
-                const tileCount = shapeMat.reduce((acc, row) => acc + row.reduce((a, b) => a + b, 0), 0);
-                const totF = y ? (y.food || 0) * tileCount : 0;
-                const totW = y ? (y.wood || 0) * tileCount : 0;
-                const totD = y ? (y.defense || 0) * tileCount : 0;
-                const totM = y ? (y.mystic || 0) * tileCount : 0;
+                const totF = y.food || 0;
+                const totW = y.wood || 0;
+                const totD = y.defense || 0;
+                const totM = y.mystic || 0;
 
                 // 標準用 22px 形状 (インライン display:grid を全廃し CSS で制御)
                 let shapeHtml = `<div class="tcg-shape-grid-standard" style="grid-template-rows:repeat(${shapeMat.length}, 22px); grid-template-columns:repeat(${shapeMat[0].length}, 22px); gap:5px; background:rgba(0,0,0,0.55); padding:10px; border-radius:8px; border:2px solid rgba(255,255,255,0.18);">`;
@@ -298,8 +299,13 @@ export class HandCardsComponent {
                 if (totW > 0) { yieldParts.push(`<span>🧱${totW}</span>`); yieldPlainParts.push(`🧱${totW}`); }
                 if (totD > 0) { yieldParts.push(`<span>🛡️${totD}</span>`); yieldPlainParts.push(`🛡️${totD}`); }
                 if (totM > 0) { yieldParts.push(`<span>✨${totM}</span>`); yieldPlainParts.push(`✨${totM}`); }
-                const yieldContent = yieldParts.length > 0 ? yieldParts.join(" ") : `<span>-</span>`;
-                const yieldPlainText = yieldPlainParts.length > 0 ? yieldPlainParts.join(" ") : "-";
+                const unresolvedLabel = I18n.t("UI_YIELD_UNRESOLVED") || "未定";
+                const yieldContent = productionUnresolved
+                    ? `<span>${unresolvedLabel}</span>`
+                    : (yieldParts.length > 0 ? yieldParts.join(" ") : `<span>-</span>`);
+                const yieldPlainText = productionUnresolved
+                    ? unresolvedLabel
+                    : (yieldPlainParts.length > 0 ? yieldPlainParts.join(" ") : "-");
                 const yieldLabel = I18n.t("UI_YIELD_LABEL") || "産出:";
                 const yieldText = `<span style="font-size:15px; color:#ffffff; font-weight:bold; margin-right:4px; white-space:nowrap;">${yieldLabel}</span> <span style="font-size:17px; font-weight:900; letter-spacing:0.5px; color:#ffffff; white-space:nowrap; display:inline-flex; align-items:center; gap:5px;">${yieldContent}</span>`;
 
