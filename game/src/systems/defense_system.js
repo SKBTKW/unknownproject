@@ -1,3 +1,7 @@
+import {
+    resolveCellProductionBase,
+    sumPlacedBlockProduction
+} from '../core/land_production_contract.js';
 const BASE_HQ_DEFENSE = 10;
 
 function toNonNegativeInteger(value, fallback = 0) {
@@ -6,15 +10,7 @@ function toNonNegativeInteger(value, fallback = 0) {
 }
 
 function resolveTerrainDefense(terrain) {
-    if (!terrain) return 0;
-    if (terrain.defense !== undefined) return toNonNegativeInteger(terrain.defense);
-    if (terrain.baseYieldsPerTile && terrain.baseYieldsPerTile.defense !== undefined) {
-        return toNonNegativeInteger(terrain.baseYieldsPerTile.defense);
-    }
-    if (terrain.yields && terrain.yields.defense !== undefined) {
-        return toNonNegativeInteger(terrain.yields.defense);
-    }
-    return 0;
+    return toNonNegativeInteger(resolveCellProductionBase({ terrain }).yields.defense);
 }
 
 /**
@@ -58,7 +54,7 @@ export class DefenseSystem {
                 const cell = state.grid?.[r]?.[c];
                 if (!cell || !cell.placed || cell.isHQ || !cell.terrain) continue;
 
-                maxDefense += resolveTerrainDefense(cell.terrain);
+                maxDefense += toNonNegativeInteger(resolveCellProductionBase(cell).yields.defense);
                 maxDefense += toNonNegativeInteger(cell.socketResource?.bonusDefense);
                 if (typeof state.isHQVicinity === "function" && state.isHQVicinity(r, c)) {
                     vicinityCount++;
@@ -66,6 +62,7 @@ export class DefenseSystem {
             }
         }
 
+        maxDefense += toNonNegativeInteger(sumPlacedBlockProduction(state).defense);
         maxDefense += toNonNegativeInteger(state.permanentVicinityDefenseBonus) * vicinityCount;
         maxDefense += toNonNegativeInteger(state.defenseCapacityBonus);
 
