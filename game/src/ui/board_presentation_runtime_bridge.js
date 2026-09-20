@@ -3,6 +3,29 @@ import {
     BOARD_VIEW_MODES,
     BOARD_CONTEXT_MODES
 } from "../presentation/board_presentation_state.js";
+import { BoardRendererBridge } from "../presentation/board_renderer_bridge.js";
+import {
+    BOARD_INPUT_COMMANDS,
+    parseBoardInputCommand
+} from "../presentation/board_input_contract.js";
+
+const LIVE_TRIAL_BLOCKED_COMMANDS = new Set([
+    BOARD_INPUT_COMMANDS.SELECT_CELL,
+    BOARD_INPUT_COMMANDS.CLEAR_SELECTION,
+    BOARD_INPUT_COMMANDS.HOVER_CELL,
+    BOARD_INPUT_COMMANDS.CLEAR_HOVER,
+    BOARD_INPUT_COMMANDS.FOCUS_CELL,
+    BOARD_INPUT_COMMANDS.CLEAR_FOCUS
+]);
+
+const ROUTE_SCOPED_TRIAL_COMMANDS = new Set([
+    BOARD_INPUT_COMMANDS.SELECT_TRIAL_INTERCEPTION,
+    BOARD_INPUT_COMMANDS.HOVER_TRIAL_INTERCEPTION
+]);
+
+function failure(command, reason) {
+    return Object.freeze({ success: false, type: command.type, reason });
+}
 
 /**
  * Browser-only bridge between renderer-neutral BoardPresentationState and
@@ -24,7 +47,34 @@ export function attachBoardPresentationRuntime(uiController, {
     uiController.boardPresentationState = state;
     uiController.layoutStateManager?.bindBoardPresentationState?.(state);
 
+    const rendererBridge = new BoardRendererBridge({
+        presentationState: state,
+        inputHandlers: {
+            selectCell: ({ cell }) => {
+                if (!cell || typeof uiController.onCellClick !== "function") return false;
+                return uiController.onCellClick(cell.r, cell.c);
+            },
+            selectTrialRoute: ({ routeId }) => {
+                if (!routeId) return false;
+                return uiController.selectTrialRoute?.(routeId) ?? false;
+            },
+            selectTrialInterception: ({ cell }) => {
+                if (!cell) return false;
+                return uiController.selectTrialInterceptionCell?.(cell.r, cell.c) ?? false;
+            },
+            hoverTrialInterception: ({ cell }) => {
+                if (!cell) return false;
+                return uiController.updateTrialInterceptionPreview?.(cell.r, cell.c) ?? false;
+            },
+            clearTrialHover: () => {
+                uiController.trialPresentationState?.clearHoveredCell?.();
+                return uiController.refreshTrialInterceptionPreview?.() ?? true;
+            }
+        }
+    });
+
     const bridge = {
+        rendererBridge,
         state,
         sync() {
             uiController.layoutStateManager?.applyContract?.();
@@ -46,6 +96,44 @@ export function attachBoardPresentationRuntime(uiController, {
         toggleContextMode() {
             state.toggleContextMode();
             return this.sync();
+        },
+        dispatchInput(input) {
+            const command = parseBoardInputCommand(input);
+            const liveTrial = Boolean(uiController.isTrialInteractionActive?.());
+
+            if (liveTrial && LIVE_TRIAL_BLOCKED_COMMANDS.has(command.type)) {
+                return failure(command, "LIVE_TRIAL_REQUIRES_TRIAL_COMMAND");
+            }
+
+            const isTrialCommand = command.type === BOARD_INPUT_COMMANDS.SELECT_TRIAL_ROUTE
+                || ROUTE_SCOPED_TRIAL_COMMANDS.has(command.type)
+                || command.type === BOARD_INPUT_COMMANDS.CLEAR_TRIAL_HOVER;
+
+            if (isTrialCommand && !liveTrial) {
+                if (command.type === BOARD_INPUT_COMMANDS.CLEAR_TRIAL_HOVER) {
+                    return Object.freeze({
+                        success: true,
+                        type: command.type,
+                        result: null
+                    });
+                }
+                return failure(command, "TRIAL_INTERACTION_INACTIVE");
+            }
+
+            if (ROUTE_SCOPED_TRIAL_COMMANDS.has(command.type)) {
+                const activeRoute = uiController.getActiveTrialRoute?.() || null;
+                const activeRouteId = activeRoute?.id
+                    ?? activeRoute?.routeId
+                    ?? uiController.trialPresentationState?.activeEnemyRoute
+                    ?? null;
+                if (!activeRouteId || command.payload.routeId !== activeRouteId) {
+                    return failure(command, "TRIAL_ROUTE_NOT_ACTIVE");
+                }
+            }
+
+            const result = rendererBridge.dispatch(command);
+            this.sync();
+            return result;
         }
     };
 
