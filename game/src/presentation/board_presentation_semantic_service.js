@@ -46,6 +46,42 @@ function pickPrimaryYield(terrainId, production) {
     return null;
 }
 
+function getSocketYieldValues(socket) {
+    const yields = socket?.yields || {};
+    return {
+        food: yields.food ?? socket?.bonusFood ?? 0,
+        wood: yields.wood ?? yields.material ?? socket?.bonusMaterial ?? socket?.bonusWood ?? 0,
+        defense: yields.defense ?? socket?.bonusDefense ?? 0,
+        mystic: yields.mystic ?? socket?.bonusMystic ?? 0
+    };
+}
+
+export function resolveSocketPrimaryYield(socket) {
+    if (!socket) return null;
+    const production = getSocketYieldValues(socket);
+    const max = Math.max(production.food, production.wood, production.defense, production.mystic);
+    if (max <= 0) return null;
+
+    const key = String(socket.nameKey || socket.id || '').toUpperCase();
+    let order;
+    if (key.includes('MINE') || key.includes('ORE') || key.includes('IRON') || key.includes('HIDDEN')) {
+        order = ['wood', 'defense', 'mystic', 'food'];
+    } else if (key.includes('FORT') || key.includes('PEAK') || key.includes('GUARD')) {
+        order = ['defense', 'mystic', 'wood', 'food'];
+    } else if (key.includes('LAKE') || key.includes('WHEAT') || key.includes('CLEAR') || key.includes('WILD')) {
+        order = ['food', 'wood', 'defense', 'mystic'];
+    } else {
+        order = ['mystic', 'wood', 'defense', 'food'];
+    }
+
+    for (const resource of order) {
+        if (production[resource] === max) {
+            return Object.freeze({ resource, amount: max });
+        }
+    }
+    return null;
+}
+
 function addNonSocketProduction(target, viewData) {
     const base = viewData?.baseYields || {};
     target.food += base.food || 0;
@@ -59,6 +95,79 @@ function addNonSocketProduction(target, viewData) {
         if (!Object.prototype.hasOwnProperty.call(target, resource)) continue;
         target[resource] += modifier.amount || 0;
     }
+}
+
+export function resolveBoardDisplayRole(state, facts) {
+    if (!facts?.placed || facts?.isHQ) return null;
+    if (facts.socketResource) return DISPLAY_ROLE.SOCKET;
+
+    const activeGroupId = normalizeGroupId(facts.mergeGroupId || facts.placementGroupId);
+    if (!activeGroupId) return DISPLAY_ROLE.LAND_PRIMARY;
+
+    const grid = state?.grid || [];
+    for (let r = 0; r < grid.length; r++) {
+        for (let c = 0; c < (grid[r]?.length || 0); c++) {
+            const cell = grid[r][c];
+            if (!cell) continue;
+            const cellGroupId = normalizeGroupId(cell.mergeGroupId || cell.placementGroupId);
+            if (cellGroupId !== activeGroupId || cell.socketResource) continue;
+            return r === facts.r && c === facts.c
+                ? DISPLAY_ROLE.LAND_PRIMARY
+                : DISPLAY_ROLE.CLEAN;
+        }
+    }
+    return DISPLAY_ROLE.LAND_PRIMARY;
+}
+
+export function resolveBoardDisplayProduction(state, facts, cellViewDataService) {
+    if (!facts?.placed || facts?.isHQ || !cellViewDataService) return null;
+    const role = resolveBoardDisplayRole(state, facts);
+    if (role !== DISPLAY_ROLE.LAND_PRIMARY && role !== DISPLAY_ROLE.SOCKET) return null;
+
+    if (role === DISPLAY_ROLE.SOCKET) {
+        const socketProduction = getSocketYieldValues(facts.socketResource);
+        const socketPrimaryYield = resolveSocketPrimaryYield(facts.socketResource);
+        if (socketPrimaryYield) {
+            return Object.freeze({
+                ...socketProduction,
+                primaryYield: socketPrimaryYield
+            });
+        }
+    }
+
+    const activeGroupId = normalizeGroupId(facts.mergeGroupId || facts.placementGroupId);
+    const production = { food: 0, wood: 0, defense: 0, mystic: 0 };
+
+    if (activeGroupId) {
+        const grid = state?.grid || [];
+        for (let r = 0; r < grid.length; r++) {
+            for (let c = 0; c < (grid[r]?.length || 0); c++) {
+                const cell = grid[r][c];
+                if (!cell?.placed) continue;
+                const matchesGroup = normalizeGroupId(cell.mergeGroupId) === activeGroupId
+                    || normalizeGroupId(cell.placementGroupId) === activeGroupId;
+                if (!matchesGroup) continue;
+                addNonSocketProduction(production, cellViewDataService.getCellViewData(state, r, c));
+            }
+        }
+
+        const sourceCell = state?.grid?.[facts.r]?.[facts.c];
+        if (sourceCell?.merged && facts.mergeGroupId != null) {
+            const group = state?.mergedBlocks?.[facts.mergeGroupId];
+            const multiplier = group?.yieldMultiplier || 1.20;
+            production.food = Math.floor(production.food * multiplier);
+            production.wood = Math.floor(production.wood * multiplier);
+            production.defense = Math.floor(production.defense * multiplier);
+            production.mystic = Math.floor(production.mystic * multiplier);
+        }
+    } else {
+        addNonSocketProduction(production, facts);
+    }
+
+    return Object.freeze({
+        ...production,
+        primaryYield: pickPrimaryYield(facts.terrainId, production)
+    });
 }
 
 export class BoardPresentationSemanticService {
@@ -95,66 +204,11 @@ export class BoardPresentationSemanticService {
     }
 
     getDisplayRole(state, facts) {
-        if (!facts?.placed || facts?.isHQ) return null;
-        if (facts.socketResource) return DISPLAY_ROLE.SOCKET;
-
-        const activeGroupId = normalizeGroupId(facts.mergeGroupId || facts.placementGroupId);
-        if (!activeGroupId) return DISPLAY_ROLE.LAND_PRIMARY;
-
-        const grid = state?.grid || [];
-        for (let r = 0; r < grid.length; r++) {
-            for (let c = 0; c < (grid[r]?.length || 0); c++) {
-                const cell = grid[r][c];
-                if (!cell) continue;
-                const cellGroupId = normalizeGroupId(cell.mergeGroupId || cell.placementGroupId);
-                if (cellGroupId !== activeGroupId || cell.socketResource) continue;
-                return r === facts.r && c === facts.c
-                    ? DISPLAY_ROLE.LAND_PRIMARY
-                    : DISPLAY_ROLE.CLEAN;
-            }
-        }
-        return DISPLAY_ROLE.LAND_PRIMARY;
+        return resolveBoardDisplayRole(state, facts);
     }
 
     getDisplayProduction(state, facts) {
-        if (!facts?.placed || facts?.isHQ) return null;
-        const role = this.getDisplayRole(state, facts);
-        if (role !== DISPLAY_ROLE.LAND_PRIMARY) return null;
-        if (!this.cellViewDataService) return null;
-
-        const activeGroupId = normalizeGroupId(facts.mergeGroupId || facts.placementGroupId);
-        const production = { food: 0, wood: 0, defense: 0, mystic: 0 };
-
-        if (activeGroupId) {
-            const grid = state?.grid || [];
-            for (let r = 0; r < grid.length; r++) {
-                for (let c = 0; c < (grid[r]?.length || 0); c++) {
-                    const cell = grid[r][c];
-                    if (!cell?.placed) continue;
-                    const matchesGroup = normalizeGroupId(cell.mergeGroupId) === activeGroupId
-                        || normalizeGroupId(cell.placementGroupId) === activeGroupId;
-                    if (!matchesGroup) continue;
-                    addNonSocketProduction(production, this.cellViewDataService.getCellViewData(state, r, c));
-                }
-            }
-
-            const sourceCell = state?.grid?.[facts.r]?.[facts.c];
-            if (sourceCell?.merged && facts.mergeGroupId != null) {
-                const group = state?.mergedBlocks?.[facts.mergeGroupId];
-                const multiplier = group?.yieldMultiplier || 1.20;
-                production.food = Math.floor(production.food * multiplier);
-                production.wood = Math.floor(production.wood * multiplier);
-                production.defense = Math.floor(production.defense * multiplier);
-                production.mystic = Math.floor(production.mystic * multiplier);
-            }
-        } else {
-            addNonSocketProduction(production, facts);
-        }
-
-        return Object.freeze({
-            ...production,
-            primaryYield: pickPrimaryYield(facts.terrainId, production)
-        });
+        return resolveBoardDisplayProduction(state, facts, this.cellViewDataService);
     }
 
     getInfluence(state, r, c) {

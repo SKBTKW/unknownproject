@@ -8,6 +8,7 @@ export const BOARD_INPUT_COMMANDS = Object.freeze({
     SET_CONTEXT_MODE: "SET_CONTEXT_MODE",
     TOGGLE_CONTEXT_MODE: "TOGGLE_CONTEXT_MODE",
     SELECT_CELL: "SELECT_CELL",
+    PRIMARY_CELL_ACTION: "PRIMARY_CELL_ACTION",
     CLEAR_SELECTION: "CLEAR_SELECTION",
     HOVER_CELL: "HOVER_CELL",
     CLEAR_HOVER: "CLEAR_HOVER",
@@ -70,6 +71,7 @@ export function createBoardInputCommand(type, payload = {}) {
             if (!isBoardContextMode(payload.contextMode)) throw new Error(`INVALID_BOARD_CONTEXT_MODE:${payload.contextMode}`);
             normalizedPayload = { contextMode: payload.contextMode }; break;
         case BOARD_INPUT_COMMANDS.SELECT_CELL:
+        case BOARD_INPUT_COMMANDS.PRIMARY_CELL_ACTION:
         case BOARD_INPUT_COMMANDS.HOVER_CELL:
         case BOARD_INPUT_COMMANDS.FOCUS_CELL:
             normalizedPayload = { cell: requireCell(payload) }; break;
