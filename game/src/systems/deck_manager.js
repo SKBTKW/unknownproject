@@ -555,7 +555,7 @@ class DeckManager {
                 biasMult = 2.0;
             }
             const finalW = w * dirMult * biasMult;
-            if (rand <= finalW) {
+            if (rand < finalW) {
                 chosen = c;
                 break;
             }
@@ -751,7 +751,7 @@ class DeckManager {
                 if (totalWeight > 0) {
                     let roll = this._nextGameplayFloat() * totalWeight;
                     for (const item of weighted) {
-                        if (roll <= item.weight) {
+                        if (roll < item.weight) {
                             picked = item.card;
                             break;
                         }
