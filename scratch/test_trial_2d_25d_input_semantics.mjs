@@ -95,7 +95,7 @@ test("shared resolver maps NORMAL click and hover to portable logical commands",
         BOARD_POINTER_ACTIONS.HOVER,
         { readModel: normalReadModel, cell: { r: 0, c: 0 } }
     );
-    assert.equal(click.type, BOARD_INPUT_COMMANDS.SELECT_CELL);
+    assert.equal(click.type, BOARD_INPUT_COMMANDS.PRIMARY_CELL_ACTION);
     assert.deepEqual(click.payload.cell, { r: 0, c: 0 });
     assert.equal(hover.type, BOARD_INPUT_COMMANDS.HOVER_CELL);
     assert.deepEqual(hover.payload.cell, { r: 0, c: 0 });
@@ -146,13 +146,13 @@ test("leave command follows presentation context without renderer coordinates", 
     assert.equal(serialized.includes("clientX"), false);
 });
 
-test("Browser runtime updates normal selection in peace time and delegates legacy click once", () => {
+test("Browser runtime keeps SELECT_CELL presentation-only", () => {
     const calls = [];
     const ui = {
         boardPresentationState: new BoardPresentationState(),
         isTrialInteractionActive: () => false,
-        onCellClick(r, c) {
-            calls.push(["onCellClick", r, c]);
+        performPrimaryCellAction(r, c) {
+            calls.push(["performPrimaryCellAction", r, c]);
             return true;
         }
     };
@@ -163,7 +163,27 @@ test("Browser runtime updates normal selection in peace time and delegates legac
     ));
     assert.equal(result.success, true);
     assert.deepEqual(ui.boardPresentationState.selectedCell, { r: 2, c: 3 });
-    assert.deepEqual(calls, [["onCellClick", 2, 3]]);
+    assert.deepEqual(calls, []);
+});
+
+test("Browser runtime delegates PRIMARY_CELL_ACTION without mutating selection", () => {
+    const calls = [];
+    const ui = {
+        boardPresentationState: new BoardPresentationState(),
+        isTrialInteractionActive: () => false,
+        performPrimaryCellAction(r, c) {
+            calls.push(["performPrimaryCellAction", r, c]);
+            return true;
+        }
+    };
+    const runtime = attachBoardPresentationRuntime(ui);
+    const result = runtime.dispatchInput(createBoardInputCommand(
+        BOARD_INPUT_COMMANDS.PRIMARY_CELL_ACTION,
+        { cell: { r: 1, c: 4 } }
+    ));
+    assert.equal(result.success, true);
+    assert.equal(ui.boardPresentationState.selectedCell, null);
+    assert.deepEqual(calls, [["performPrimaryCellAction", 1, 4]]);
 });
 
 test("Browser runtime rejects normal board mutation while a live Trial is active", () => {
@@ -171,17 +191,23 @@ test("Browser runtime rejects normal board mutation while a live Trial is active
     const ui = {
         boardPresentationState: state,
         isTrialInteractionActive: () => true,
-        onCellClick() {
-            throw new Error("NORMAL_CLICK_MUST_NOT_REACH_LEGACY_UI");
+        performPrimaryCellAction() {
+            throw new Error("NORMAL_CLICK_MUST_NOT_REACH_GAMEPLAY");
         }
     };
     const runtime = attachBoardPresentationRuntime(ui);
-    const result = runtime.dispatchInput(createBoardInputCommand(
+    const selection = runtime.dispatchInput(createBoardInputCommand(
         BOARD_INPUT_COMMANDS.SELECT_CELL,
         { cell: { r: 4, c: 4 } }
     ));
-    assert.equal(result.success, false);
-    assert.equal(result.reason, "LIVE_TRIAL_REQUIRES_TRIAL_COMMAND");
+    const primary = runtime.dispatchInput(createBoardInputCommand(
+        BOARD_INPUT_COMMANDS.PRIMARY_CELL_ACTION,
+        { cell: { r: 4, c: 4 } }
+    ));
+    assert.equal(selection.success, false);
+    assert.equal(selection.reason, "LIVE_TRIAL_REQUIRES_TRIAL_COMMAND");
+    assert.equal(primary.success, false);
+    assert.equal(primary.reason, "LIVE_TRIAL_REQUIRES_TRIAL_COMMAND");
     assert.deepEqual(state.selectedCell, { r: 1, c: 1 });
 });
 
