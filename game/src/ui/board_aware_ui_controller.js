@@ -216,6 +216,157 @@ export class BoardAwareUIController extends LegacyUIController {
         return super.onCellClick(r, c);
     }
 
+    onCellMouseMove(e, r, c) {
+        if (this.boardPresentationState.contextMode === BOARD_CONTEXT_MODES.TRIAL) {
+            return super.onCellMouseMove(e, r, c);
+        }
+        const cell = this.getBoardPresentationData()?.cells?.[r]?.[c] || null;
+        return this.showBoardPresentationCellTooltip(e, r, c, cell);
+    }
+
+    showBoardPresentationCellTooltip(e, r, c, cell) {
+        if (typeof document === "undefined") return;
+        if (!cell) {
+            this.hideCellTooltip();
+            return;
+        }
+
+        if (this.selectedCard && !cell.placed) return;
+
+        const previewModal = document.getElementById("cardHoverPreviewModal");
+        if (previewModal && previewModal.classList.contains("active")) {
+            this.hideCellTooltip();
+            return;
+        }
+
+        const I18n = (typeof globalThis !== "undefined" && globalThis.I18n)
+            ? globalThis.I18n
+            : (typeof window !== "undefined" && window.I18n ? window.I18n : { t: k => k });
+
+        const coordStr = `${String.fromCharCode(65 + c)}${r + 1}`;
+        const isHQVic = Boolean(cell.influence?.hqVicinity);
+        const waterSourceType = cell.influence?.waterSourceType || null;
+        const isPlacedThisTurn = Boolean(cell.interaction?.placedThisTurn);
+
+        let title = `[${coordStr}]`;
+        let desc = isHQVic
+            ? (I18n ? I18n.t("UI_CELL_HQ_VICINITY_DESC") : "🏛️ 本営近郊エリア")
+            : (I18n ? I18n.t("UI_CELL_UNCLAIMED") : "未開拓の土地");
+
+        if (waterSourceType && !cell.placed) {
+            const isOasis = waterSourceType === "OASIS";
+            const waterTitle = I18n
+                ? I18n.t(isOasis ? "UI_OASIS_VICINITY_TITLE" : "UI_LAKE_VICINITY_TITLE")
+                : "🌊 水脈エリア";
+            title = `[${coordStr}] ${waterTitle}`;
+            const waterDesc = I18n
+                ? I18n.t(isOasis ? "UI_OASIS_VICINITY_UNPLACED_DESC" : "UI_LAKE_VICINITY_UNPLACED_DESC")
+                : "";
+            desc = `${desc}<div style="margin-top:6px;">${waterDesc}</div>`;
+        }
+
+        if (cell.isHQ) {
+            title = I18n ? I18n.t("UI_CELL_HQ_TITLE", { coord: coordStr }) : `🏛️ HQ [${coordStr}]`;
+            desc = I18n ? I18n.t("UI_CELL_HQ_DESC") : "🌾+10 🧱+10 🛡️10 ✨+1";
+        } else if (cell.hasSocket && !cell.placed) {
+            title = I18n ? I18n.t("UI_CELL_SOCKET_TITLE", { coord: coordStr }) : `★ [${coordStr}]`;
+            desc = I18n ? I18n.t("UI_CELL_SOCKET_DESC") : "★ 資源ソケット";
+        } else if (cell.placed && cell.terrainId) {
+            const tName = I18n.t(cell.nameKey || cell.terrainId || "TERRAIN_PLAINS");
+            const placedTag = isPlacedThisTurn
+                ? ` <span style="font-size:12px; background:#e74c3c; color:#fff; padding:2px 6px; border-radius:4px; margin-left:6px; font-weight:bold;">${I18n ? I18n.t("UI_CELL_PLACED_TAG") : "当ターン配置"}</span>`
+                : "";
+            title = `🌱 ${tName} [${coordStr}]${placedTag}`;
+
+            const y = cell.yields || {};
+            const tf = y.food || 0;
+            const tw = y.wood || 0;
+            const td = y.defense || 0;
+            const tm = y.mystic || 0;
+
+            const bonusParts = [];
+            let sourceWaterDesc = "";
+
+            if (cell.socketResource) {
+                const s = cell.socketResource;
+                const sName = I18n.t(s.nameKey || "SOCKET_RESOURCE");
+                const resIcon = (this.boardGridComponent && typeof this.boardGridComponent.getSocketResourceIcon === "function")
+                    ? this.boardGridComponent.getSocketResourceIcon(s)
+                    : "💎";
+                bonusParts.push(`${resIcon} : ${sName}`);
+
+                const sid = s.id || s.nameKey || "";
+                if (sid === "SOCKET_LAKE" || sid === "SOCKET_OASIS") {
+                    sourceWaterDesc = I18n
+                        ? I18n.t(sid === "SOCKET_OASIS" ? "UI_OASIS_SOURCE_DESC" : "UI_LAKE_SOURCE_DESC")
+                        : "";
+                }
+            }
+
+            if (Array.isArray(cell.modifiers)) {
+                let hqVicinityReported = false;
+                for (const mod of cell.modifiers) {
+                    if (mod.type === "HQ_VICINITY" && !hqVicinityReported) {
+                        bonusParts.push(I18n ? I18n.t("UI_CELL_BONUS_VICINITY") : "本営近郊(+1)");
+                        hqVicinityReported = true;
+                    } else if (mod.type === "LAKE_IRRIGATION") {
+                        const i18nKey = waterSourceType === "OASIS"
+                            ? "UI_CELL_BONUS_OASIS_IRRIGATION"
+                            : "UI_CELL_BONUS_LAKE_IRRIGATION";
+                        bonusParts.push(I18n ? I18n.t(i18nKey, { val: mod.amount }) : `灌漑(+${mod.amount})`);
+                    } else if (mod.type === "PERMANENT_PLAINS") {
+                        bonusParts.push(I18n ? I18n.t("UI_CELL_BONUS_PLAINS", { val: mod.amount }) : `平地強化(+${mod.amount})`);
+                    }
+                }
+            }
+
+            const yieldParts = [];
+            if (tf > 0) yieldParts.push(`🌾+${tf}`);
+            if (tw > 0) yieldParts.push(`🧱+${tw}`);
+            if (td > 0) yieldParts.push(`🛡️+${td}`);
+            if (tm > 0) yieldParts.push(`✨+${tm}`);
+
+            const yieldStr = yieldParts.length > 0
+                ? yieldParts.join(" ")
+                : (I18n ? I18n.t("UI_CELL_YIELD_NONE") : "産出なし");
+            const bonusStr = bonusParts.length > 0
+                ? ` <span style="color:#f1c40f;">(${bonusParts.join(", ")})</span>`
+                : "";
+            const perTurnLabel = I18n ? I18n.t("UI_CELL_PER_TURN_YIELD") : "毎ターン産出:";
+            desc = `${perTurnLabel} <strong>${yieldStr}</strong>${bonusStr}`;
+            if (sourceWaterDesc) desc += sourceWaterDesc;
+
+            const influenceNotes = [];
+            if (waterSourceType) {
+                influenceNotes.push(I18n ? I18n.t("TOOLTIP_INFLUENCE_LAKE") : "💧 Lake Influence");
+            }
+            if (isHQVic) {
+                influenceNotes.push(I18n ? I18n.t("TOOLTIP_INFLUENCE_HQ") : "🏘 HQ Vicinity");
+            }
+            if (influenceNotes.length > 0) {
+                desc += `<div class="tooltip-influence-note"><small>${influenceNotes.join("<br>")}</small></div>`;
+            }
+
+            if (isPlacedThisTurn) {
+                const undoHint = I18n ? I18n.t("UI_CELL_UNDO_HINT") : "このマスをクリックすると配置を取り消せます";
+                desc += `
+                    <div class="tooltip-undo-hint-box">
+                        <span class="undo-icon">↩</span>
+                        <span>${undoHint}</span>
+                    </div>
+                `;
+            }
+        }
+
+        if (typeof window !== "undefined"
+            && window.tooltipSystemInstance
+            && typeof window.tooltipSystemInstance.showCustom === "function") {
+            const clientX = e ? (e.clientX !== undefined ? e.clientX : (e.pageX || 0)) : 0;
+            const clientY = e ? (e.clientY !== undefined ? e.clientY : (e.pageY || 0)) : 0;
+            window.tooltipSystemInstance.showCustom(clientX, clientY, title, desc);
+        }
+    }
+
     onCellClick(r, c) {
         if (this.boardPresentationState.contextMode === BOARD_CONTEXT_MODES.TRIAL) {
             const activeRoute = this.getActiveTrialRoute?.() || null;
