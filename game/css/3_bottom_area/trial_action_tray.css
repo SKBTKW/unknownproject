@@ -235,3 +235,15 @@ body[data-player-tray-mode="trial"] .trial-defense-allocation-panel .trial-defen
         grid-template-columns: 34px minmax(100px, 1fr) 34px 50px;
     }
 }
+
+
+.trial-first-run-tutorial-hint {
+    grid-column: 1 / -1;
+    padding: 8px 10px;
+    border: 1px solid rgba(247, 215, 116, 0.45);
+    border-radius: 8px;
+    background: rgba(247, 215, 116, 0.08);
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
