@@ -46,6 +46,7 @@ export function serializeGameState(state) {
                     cachedSocketSeeds: cell.cachedSocketSeeds
                         ? JSON.parse(JSON.stringify(cell.cachedSocketSeeds))
                         : {},
+                    production: cell.production ? cloneData(cell.production) : null,
                     terrain: cell.terrain ? {
                         id: cell.terrain.id || null,
                         terrainId: cell.terrain.terrainId || null,
@@ -188,6 +189,7 @@ export function serializeGameState(state) {
         mergedBlocks: state.mergedBlocks
             ? JSON.parse(JSON.stringify(state.mergedBlocks))
             : {},
+        placedBlockProduction: cloneData(state.placedBlockProduction, {}),
         mergeLinks: Array.from(state.mergeLinks || []).sort(),
         stage: serializedStage
     };
