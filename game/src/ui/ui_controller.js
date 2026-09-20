@@ -36,6 +36,7 @@ import { AdvisorDockComponent } from './advisor/advisor_dock_component.js?v=2026
 import { resolveAdvisorAwareToast } from './advisor/advisor_toast_policy.js';
 import {
     resolvePlacementAnchor,
+    resolvePlacementAttributeCells,
     resolvePlacementShape,
     rotatePlacementClockwise
 } from '../core/placement_geometry.js';
@@ -1468,7 +1469,8 @@ class UIController {
         if (!card) return null;
         const currentShape = resolvePlacementShape(card);
         const currentAnchor = resolvePlacementAnchor(card, currentShape);
-        const rotated = rotatePlacementClockwise(currentShape, currentAnchor);
+        const attributeCells = resolvePlacementAttributeCells(card);
+        const rotated = rotatePlacementClockwise(currentShape, currentAnchor, attributeCells);
 
         // 🔄 実際に形状・向き・アンカーが変化したかを厳密判定（点対称1x1等では鳴らさない）
         const shapeChanged = currentShape.length !== rotated.shape.length ||
@@ -1478,8 +1480,11 @@ class UIController {
 
         card.currentShape = rotated.shape;
         card.currentAnchor = rotated.anchor;
+        if (attributeCells) {
+            card.currentCells = rotated.attributeCells;
+        }
 
-        if (shapeChanged) {
+        if (shapeChanged || attributeCells) {
             sfxManager.play("LAND_ROTATE");
         }
         return rotated;
@@ -1601,6 +1606,9 @@ class UIController {
         if (this.selectedCard && (this.selectedCardIdx === idx || this.selectedCard === card)) {
             this.selectedCard.currentShape = rotated.shape;
             this.selectedCard.currentAnchor = rotated.anchor;
+            if (rotated.attributeCells) {
+                this.selectedCard.currentCells = rotated.attributeCells;
+            }
         }
 
         this.render();
