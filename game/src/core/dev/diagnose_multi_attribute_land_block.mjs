@@ -6,6 +6,8 @@ import {
 import { serializeGameState } from "../state_serializer.js";
 import { hydrateGameState } from "../hydrate_game_state.js";
 import { GridEngine } from "../../systems/grid_engine.js";
+import { ProductionCalculator } from "../../systems/production_calculator.js";
+import { DefenseSystem } from "../../systems/defense_system.js";
 import { CellViewDataService } from "../../services/cell_view_data_service.js";
 import { DeckManager } from "../../systems/deck_manager.js";
 import { LAND_CARDS_MASTER } from "../../data/land_cards_data.js";
@@ -17,6 +19,13 @@ import {
 } from "../../presentation/land_card_presentation.js";
 import { TrialPlanningDraftService } from "../../trial/domain/trial_planning_draft_service.js";
 import { TRIAL_PLAN_REASONS } from "../../trial/domain/trial_types.js";
+import {
+    LAND_PRODUCTION_SCOPE,
+    LAND_PRODUCTION_STATUS,
+    normalizeProductionContract,
+    resolveCardProductionPreview,
+    sumPlacedBlockProduction
+} from "../land_production_contract.js";
 
 const terrain = (id, e, gl, nameKey = id) => ({
     id,
@@ -90,6 +99,13 @@ function createState(size = 5) {
         hasPickedThisTurn: false,
         hasReservedThisTurn: false,
         hasMulliganedThisTurn: false,
+        placedBlockProduction: {},
+        isHQVicinity(r, c) {
+            const center = Math.floor(size / 2);
+            return !(r === center && c === center)
+                && Math.abs(r - center) <= 1
+                && Math.abs(c - center) <= 1;
+        },
         addLog() {},
         toastQueue: []
     };
@@ -127,7 +143,9 @@ const actualMultiCards = [
     assert.deepEqual(actualMultiCards.map(card => card.rarity), ["R", "R", "R"]);
     assert.deepEqual(actualMultiCards.map(card => card.weight), [0.08, 0.08, 0.05]);
     assert.deepEqual(actualMultiCards.map(card => card.minStage), [1, 1, 2]);
-    assert.ok(actualMultiCards.every(card => card.multiAttributeProductionReady === false));
+    assert.ok(actualMultiCards.every(card =>
+        card.productionContract?.status === LAND_PRODUCTION_STATUS.UNRESOLVED
+    ));
 
     const fakeI18n = {
         t(key) {
@@ -163,11 +181,22 @@ const actualMultiCards = [
 
     const productionReadyPlainsHill = {
         ...actualMultiCards[0],
-        multiAttributeProductionReady: true
+        productionContract: {
+            status: LAND_PRODUCTION_STATUS.RESOLVED,
+            scope: LAND_PRODUCTION_SCOPE.CELL,
+            cellYields: [
+                { r: 0, c: 0, yields: { food: 3 } },
+                { r: 0, c: 1, yields: { wood: 2, defense: 1 } }
+            ]
+        }
     };
     const productionReadyHillMountain = {
         ...actualMultiCards[2],
-        multiAttributeProductionReady: true
+        productionContract: {
+            status: LAND_PRODUCTION_STATUS.RESOLVED,
+            scope: LAND_PRODUCTION_SCOPE.BLOCK,
+            blockYields: { wood: 4, defense: 3 }
+        }
     };
 
     assert.equal(manager.isCardEligible(productionReadyPlainsHill, 1, 0, {
@@ -182,6 +211,107 @@ const actualMultiCards = [
         ignoreCooldown: true,
         ignoreHold: true
     }), true);
+}
+
+{
+    const unresolved = normalizeProductionContract(actualMultiCards[0]);
+    assert.equal(unresolved.status, LAND_PRODUCTION_STATUS.UNRESOLVED);
+    assert.equal(resolveCardProductionPreview({ terrain: actualMultiCards[0] }).totalYields, null);
+
+    const cellCard = {
+        ...multiCard,
+        productionContract: {
+            status: LAND_PRODUCTION_STATUS.RESOLVED,
+            scope: LAND_PRODUCTION_SCOPE.CELL,
+            cellYields: [
+                { r: 0, c: 0, yields: { food: 3 } },
+                { r: 0, c: 1, yields: { wood: 2, defense: 1 } }
+            ]
+        }
+    };
+    const blockCard = {
+        ...multiCard,
+        productionContract: {
+            status: LAND_PRODUCTION_STATUS.RESOLVED,
+            scope: LAND_PRODUCTION_SCOPE.BLOCK,
+            blockYields: { food: 1, wood: 4, defense: 3, mystic: 2 }
+        }
+    };
+    const hybridCard = {
+        ...multiCard,
+        productionContract: {
+            status: LAND_PRODUCTION_STATUS.RESOLVED,
+            scope: LAND_PRODUCTION_SCOPE.HYBRID,
+            cellYields: [
+                { r: 0, c: 0, yields: { food: 2 } },
+                { r: 0, c: 1, yields: { wood: 1 } }
+            ],
+            blockYields: { mystic: 2 }
+        }
+    };
+
+    assert.deepEqual(resolveCardProductionPreview({ terrain: cellCard }).totalYields, {
+        food: 3, wood: 2, defense: 1, mystic: 0
+    });
+    assert.deepEqual(resolveCardProductionPreview({ terrain: blockCard }).totalYields, {
+        food: 1, wood: 4, defense: 3, mystic: 2
+    });
+    assert.deepEqual(resolveCardProductionPreview({ terrain: hybridCard }).totalYields, {
+        food: 2, wood: 1, defense: 0, mystic: 2
+    });
+
+    const state = createState();
+    placeExisting(state, 2, 0, PLAINS, "existing");
+    const grid = new GridEngine(state, {
+        gameplayRandom: { nextFloat: () => 0.99 },
+        deckManager: { consumeCardIfUnique() {} }
+    });
+    const geometry = resolvePlacementGeometry(cellCard, 1, 0);
+    const rotated = rotatePlacementClockwise(geometry.shape, geometry.anchor, geometry.attributeCells);
+    const placed = grid.placeShape(1, 0, rotated.shape, cellCard, -1, rotated.attributeCells);
+    assert.equal(placed.success, true);
+
+    const firstCell = state.grid[1][0];
+    const secondCell = state.grid[2][0];
+    assert.deepEqual(firstCell.production.cellYields, { food: 3, wood: 0, defense: 0, mystic: 0 });
+    assert.deepEqual(secondCell.production.cellYields, { food: 0, wood: 2, defense: 1, mystic: 0 });
+
+    const firstBreakdown = ProductionCalculator.calculateCellYieldBreakdown(state, 1, 0);
+    const secondBreakdown = ProductionCalculator.calculateCellYieldBreakdown(state, 2, 0);
+    assert.equal(firstBreakdown.productionScope, LAND_PRODUCTION_SCOPE.CELL);
+    assert.deepEqual(firstBreakdown.baseYields, { food: 3, wood: 0, defense: 0, mystic: 0 });
+    assert.deepEqual(secondBreakdown.baseYields, { food: 0, wood: 2, defense: 1, mystic: 0 });
+}
+
+{
+    const state = createState();
+    placeExisting(state, 2, 0, PLAINS, "existing");
+    const blockCard = {
+        ...multiCard,
+        productionContract: {
+            status: LAND_PRODUCTION_STATUS.RESOLVED,
+            scope: LAND_PRODUCTION_SCOPE.BLOCK,
+            blockYields: { food: 1, wood: 4, defense: 3, mystic: 2 }
+        }
+    };
+    const grid = new GridEngine(state, {
+        gameplayRandom: { nextFloat: () => 0.99 },
+        deckManager: { consumeCardIfUnique() {} }
+    });
+    const result = grid.placeShape(1, 0, blockCard.shape, blockCard, -1, blockCard.cells);
+    assert.equal(result.success, true);
+
+    const groupId = state.grid[1][0].placementGroupId;
+    assert.deepEqual(sumPlacedBlockProduction(state), {
+        food: 1, wood: 4, defense: 3, mystic: 2
+    });
+    assert.equal(state.grid[1][0].production.scope, LAND_PRODUCTION_SCOPE.BLOCK);
+    assert.deepEqual(
+        ProductionCalculator.calculateCellYieldBreakdown(state, 1, 0).baseYields,
+        { food: 0, wood: 0, defense: 0, mystic: 0 }
+    );
+    assert.equal(state.placedBlockProduction[groupId].yields.defense, 3);
+    assert.equal(DefenseSystem.calculateMaxDefense(state), 13);
 }
 
 {
@@ -210,12 +340,20 @@ const actualMultiCards = [
         [0, 0, "GL1_PLAINS"],
         [0, 1, "E2_HILL"]
     ]);
+    assert.deepEqual(geometry.attributeCells.map(cell => [cell.sourceR, cell.sourceC]), [
+        [0, 0],
+        [0, 1]
+    ]);
 
     const once = rotatePlacementClockwise(geometry.shape, geometry.anchor, geometry.attributeCells);
     assert.deepEqual(once.shape, [[1], [1]]);
     assert.deepEqual(once.attributeCells.map(cell => [cell.r, cell.c, cell.terrainId]), [
         [0, 0, "GL1_PLAINS"],
         [1, 0, "E2_HILL"]
+    ]);
+    assert.deepEqual(once.attributeCells.map(cell => [cell.sourceR, cell.sourceC]), [
+        [0, 0],
+        [0, 1]
     ]);
 
     const twice = rotatePlacementClockwise(once.shape, once.anchor, once.attributeCells);
