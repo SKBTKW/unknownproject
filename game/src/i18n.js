@@ -20,6 +20,7 @@
             TERRAIN_FOREST_HILL: "森丘陵",
             TERRAIN_DEEP_HILL: "森林丘陵",
             CARD_MULTI_ATTRIBUTE_SUFFIX: "（複数）",
+            UI_YIELD_UNRESOLVED: "未定",
             CARD_DESC_MULTI_PLAINS_HILL_1X2: "草原と丘陵の境界を1枚の土地として配置する複数属性ブロック。",
             CARD_DESC_MULTI_PLAINS_FOREST_1X2: "草原と森の境界を1枚の土地として配置する複数属性ブロック。",
             CARD_DESC_MULTI_HILL_MOUNTAIN_1X2: "丘陵と山岳の境界を1枚の土地として配置する複数属性ブロック。",
