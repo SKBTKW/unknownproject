@@ -25,6 +25,7 @@ import { DevChronicleRestoreComponent } from './dev_chronicle_restore_component.
 import { BuildIdentityBadgeComponent } from './build_identity_badge_component.js';
 import { TrialController } from '../trial/flow/trial_controller.js';
 import { TrialPresentationState } from '../trial/presentation/trial_presentation_state.js';
+import { TrialCausalityPresenter } from '../trial/presentation/trial_causality_presenter.js';
 import { TrialInterceptionPreviewComponent } from './trial_interception_preview_component.js';
 import { TrialDefenseAllocationComponent } from './trial_defense_allocation_component.js';
 import { LayoutStateManager, UI_LAYOUT_STATES, HAND_LAYOUT_STATES } from './layout_state_manager.js';
@@ -83,6 +84,7 @@ class UIController {
         }) : null;
         this.trialController = new TrialController();
         this.trialPresentationState = new TrialPresentationState();
+        this.trialCausalityPresenter = new TrialCausalityPresenter();
         this.firstRunTrialTutorialService = this.engine?.firstRunState
             ? new FirstRunTrialTutorialService()
             : null;
@@ -233,6 +235,20 @@ class UIController {
     acknowledgeFirstRunTrialRoute() {
         return this.recordFirstRunTrialTutorialEvent(
             FIRST_RUN_TRIAL_TUTORIAL_EVENTS.ROUTE_ACKNOWLEDGED
+        );
+    }
+
+    getCurrentTrialCausality() {
+        return this.trialCausalityPresenter?.project?.(this.getCurrentTrialBattleResult?.()) || {
+            available: false,
+            modifiers: [],
+            outcome: null
+        };
+    }
+
+    acknowledgeFirstRunTrialCausality() {
+        return this.recordFirstRunTrialTutorialEvent(
+            FIRST_RUN_TRIAL_TUTORIAL_EVENTS.CAUSALITY_OBSERVED
         );
     }
 
