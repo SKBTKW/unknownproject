@@ -141,6 +141,7 @@ assert(migratedSettings.get("language") === "en", "旧保存データの既存�
 assert(migratedSettings.get("resolution") === "1920x1080", "旧保存データへ解像度既定値を補完する");
 assert(migratedSettings.get("advisorEnabled") === true, "旧保存データへ側近ON既定値を補完する");
 assert(migratedSettings.get("advisorHoverExpand") === false, "旧保存データへ側近hover展開OFF既定値を補完する");
+assert(migratedSettings.get("showBoardCoordinates") === true, "旧保存データへ盤外座標ON既定値を補完する");
 assert(RESOLUTION_PRESETS.length === 6, "解像度プリセットを6件に一元化する");
 assert(RESOLUTION_PRESETS.find(item => item.recommended)?.value === "1920x1080", "1920x1080だけを推奨プリセットにする");
 
@@ -165,6 +166,7 @@ assert(!modal.modalEl.innerHTML.includes('data-tab="visual"'), "旧visualタブ�
 assert(modal.modalEl.innerHTML.includes('id="optResolution"'), "グラフィックタブに解像度selectを生成する");
 assert(modal.modalEl.innerHTML.includes('id="optAdvisorEnabled"'), "ゲームプレイタブに側近ON/OFFを生成する");
 assert(modal.modalEl.innerHTML.includes('id="optAdvisorHoverExpand"'), "ゲームプレイタブに側近hover展開設定を生成する");
+assert(modal.modalEl.innerHTML.includes('id="optShowBoardCoordinates"'), "グラフィックタブに盤外座標ON/OFFを生成する");
 assert(modal.modalEl.innerHTML.includes("1920 × 1080（推奨）"), "日本語で推奨解像度ラベルを表示する");
 assert(modal.modalEl.style.getPropertyValue("--settings-modal-width") === "min(840px, 94vw)", "モーダル幅をレイアウト設定から受け取る");
 assert(modal.modalEl.style.getPropertyValue("--settings-modal-height") === "min(720px, calc(100vh - 48px))", "モーダル高をレイアウト設定から受け取る");
@@ -178,12 +180,18 @@ const advisorHoverControl = document.controls.get("#optAdvisorHoverExpand");
 advisorHoverControl.onchange({ target: { value: "true" } });
 assert(reloadedSettings.get("advisorHoverExpand") === true, "hover展開設定をGameSettingsへ保存する");
 
+const coordinateControl = document.controls.get("#optShowBoardCoordinates");
+coordinateControl.onchange({ target: { value: "false" } });
+assert(reloadedSettings.get("showBoardCoordinates") === false, "盤外座標OFFをGameSettingsへ保存する");
+const coordinateReload = new GameSettings();
+assert(coordinateReload.get("showBoardCoordinates") === false, "盤外座標OFFをLocalStorageから復元する");
+
 const languageControl = document.controls.get("#optLanguage");
 languageControl.onchange({ target: { value: "en" } });
 assert(reloadedSettings.get("resolution") === "3440x1440", "言語切替によるDOM再生成後も解像度を維持する");
 assert(document.controls.get("#optResolution").value === "3440x1440", "再生成後のselectへ保存値を反映する");
 
-// Booleanトグル9項目のrole="switch"検査
+// Booleanトグル10項目のrole="switch"検査
 const booleanToggleKeys = [
     "mulliganConfirm",
     "turnEndWarning",
@@ -192,6 +200,7 @@ const booleanToggleKeys = [
     "advisorEnabled",
     "advisorHoverExpand",
     "focusDoFBlur",
+    "showBoardCoordinates",
     "seEnabled",
     "bgmEnabled"
 ];
@@ -203,6 +212,7 @@ const toggleIds = [
     "#optAdvisorEnabled",
     "#optAdvisorHoverExpand",
     "#optFocusDoFBlur",
+    "#optShowBoardCoordinates",
     "#optSeEnabled",
     "#optBgmEnabled"
 ];
