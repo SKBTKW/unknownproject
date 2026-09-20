@@ -6,6 +6,7 @@ import {
 import { serializeGameState } from "../state_serializer.js";
 import { hydrateGameState } from "../hydrate_game_state.js";
 import { GridEngine } from "../../systems/grid_engine.js";
+import { CellViewDataService } from "../../services/cell_view_data_service.js";
 import { TrialPlanningDraftService } from "../../trial/domain/trial_planning_draft_service.js";
 import { TRIAL_PLAN_REASONS } from "../../trial/domain/trial_types.js";
 
@@ -158,13 +159,19 @@ const multiCard = {
         gameplayRandom: { nextFloat: () => 0.99 },
         deckManager: { consumeCardIfUnique() {} }
     });
-    const result = grid.placeShape(1, 0, [[1, 1]], multiCard, -1, multiCard.cells);
+    const cardWithUnresolvedBlockYield = {
+        ...multiCard,
+        yields: { food: 99, material: 99, defense: 99, mystic: 99 }
+    };
+    const result = grid.placeShape(1, 0, [[1, 1]], cardWithUnresolvedBlockYield, -1, multiCard.cells);
     assert.equal(result.success, true);
 
     const plainsCell = state.grid[1][0];
     const hillCell = state.grid[1][1];
     assert.equal(plainsCell.terrain.terrainId, "GL1_PLAINS");
     assert.equal(hillCell.terrain.terrainId, "E2_HILL");
+    assert.equal(plainsCell.terrain.yields, undefined);
+    assert.equal(hillCell.terrain.yields, undefined);
     assert.equal(plainsCell.placementGroupId, hillCell.placementGroupId);
     assert.ok(plainsCell.placementGroupId);
     assert.ok(plainsCell.mergeGroupId);
