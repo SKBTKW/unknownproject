@@ -101,6 +101,44 @@ const service = new BoardPresentationDataService({ cellViewDataService });
 const readModel = service.getBoard(state, { presentationState });
 const dto = createBoardPresentationDto(readModel);
 
+test("normal Web2D cell tooltip consumes BoardPresentationData", () => {
+    const source = fs.readFileSync(
+        new URL("../game/src/ui/board_aware_ui_controller.js", import.meta.url),
+        "utf8"
+    );
+    const start = source.indexOf("    showBoardPresentationCellTooltip(e, r, c, cell) {");
+    const end = source.indexOf("\n    onCellClick(r, c) {", start);
+    assert.ok(start >= 0 && end > start);
+    const tooltipSource = source.slice(start, end);
+
+    assert.equal(tooltipSource.includes("cell.interaction?.placedThisTurn"), true);
+    assert.equal(tooltipSource.includes("cell.influence?.hqVicinity"), true);
+    assert.equal(tooltipSource.includes("cell.influence?.waterSourceType"), true);
+    assert.equal(tooltipSource.includes("cell.yields"), true);
+    assert.equal(tooltipSource.includes("cell.modifiers"), true);
+    assert.equal(tooltipSource.includes("cell.socketResource"), true);
+
+    assert.equal(tooltipSource.includes("this.undoSys"), false);
+    assert.equal(tooltipSource.includes("this.state.isHQVicinity"), false);
+    assert.equal(tooltipSource.includes("this.engine.getCellViewData"), false);
+    assert.equal(tooltipSource.includes("this.state.grid"), false);
+});
+
+test("Trial cell tooltip remains on the existing Trial presentation path", () => {
+    const source = fs.readFileSync(
+        new URL("../game/src/ui/board_aware_ui_controller.js", import.meta.url),
+        "utf8"
+    );
+    const start = source.indexOf("    onCellMouseMove(e, r, c) {");
+    const end = source.indexOf("\n    showBoardPresentationCellTooltip", start);
+    assert.ok(start >= 0 && end > start);
+    const moveSource = source.slice(start, end);
+
+    assert.equal(moveSource.includes("BOARD_CONTEXT_MODES.TRIAL"), true);
+    assert.equal(moveSource.includes("super.onCellMouseMove(e, r, c)"), true);
+    assert.equal(moveSource.includes("this.getBoardPresentationData()?.cells?.[r]?.[c]"), true);
+});
+
 test("water source influence type is renderer-neutral", () => {
     const lakeState = {
         grid: [
