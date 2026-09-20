@@ -171,6 +171,20 @@ jobs:
           node game/src/trial/dev/diagnose_post_trial_runtime_restore.mjs
           node game/src/trial/dev/diagnose_post_trial_persistence_roundtrip.mjs
           node game/src/trial/dev/diagnose_post_trial_terminated_policy_gate.mjs
+          node game/src/trial/dev/diagnose_first_run_post_trial_meaning_contract.mjs
+          node game/src/trial/dev/diagnose_post_trial_first_run_fallback.mjs
+          node game/src/trial/dev/diagnose_post_trial_required_meaning_fallback.mjs
+          node game/src/trial/dev/diagnose_post_trial_advisor_runtime.mjs
+          node game/src/trial/dev/diagnose_post_trial_advisor_policy_variants.mjs
+          node game/src/trial/dev/diagnose_post_trial_advisor_template_payload.mjs
+          node game/src/trial/dev/diagnose_post_trial_advisor_legacy_end_suppression.mjs
+          node game/src/trial/dev/diagnose_post_trial_interlude_presentation_bridge.mjs
+          node game/src/trial/dev/diagnose_post_trial_interlude_progress_service.mjs
+          node game/src/trial/dev/diagnose_post_trial_presentation_progression_gate.mjs
+          node game/src/trial/dev/diagnose_post_trial_interlude_runtime_wiring.mjs
+          node game/src/trial/dev/diagnose_post_trial_interlude_legacy_restore_guard.mjs
+          node game/src/trial/dev/diagnose_post_trial_stage_prelude_gate.mjs
+          node game/src/trial/dev/diagnose_post_trial_stage_gate_resume.mjs
           node game/src/trial/dev/diagnose_enemy_army_structure.mjs
           node game/src/trial/dev/diagnose_enemy_force_deployment.mjs
           node game/src/trial/dev/diagnose_enemy_force_reserve_progression.mjs

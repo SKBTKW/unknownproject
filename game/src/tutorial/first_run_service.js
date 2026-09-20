@@ -3,6 +3,9 @@ import { OFFERING_GENERATION_REASONS } from "../systems/deck_manager.js";
 export const FIRST_RUN_DEMIHUMAN_TRACES_EVENT_ID = "EVENT_DEMIHUMAN_TRACES";
 export const FIRST_RUN_DEMIHUMAN_TRACES_VERSE = 7;
 export const FIRST_RUN_INVESTIGATION_GUARANTEE_VERSE = 8;
+export const FIRST_RUN_POST_TRIAL_SEMANTIC_SCENES = Object.freeze({
+    FIRST_TRIAL_AFTERMATH_MEANING: "FIRST_TRIAL_AFTERMATH_MEANING"
+});
 
 /**
  * FirstRun orchestration owns only tutorial/run-specific timing intent.
@@ -81,6 +84,18 @@ export class FirstRunService {
             alreadyScheduled: result.alreadyScheduled === true,
             scheduleResult: result
         };
+    }
+
+    getPostTrialInterludePolicy({ readModel } = {}) {
+        if (!this.enabled || !readModel?.available) return null;
+        if (Number(readModel.trialIndex) !== 1) return null;
+
+        return Object.freeze({
+            requiredMeaningScene: true,
+            semanticSceneId: FIRST_RUN_POST_TRIAL_SEMANTIC_SCENES.FIRST_TRIAL_AFTERMATH_MEANING,
+            occurrenceOwner: "FIRST_RUN",
+            dedupeKey: FIRST_RUN_POST_TRIAL_SEMANTIC_SCENES.FIRST_TRIAL_AFTERMATH_MEANING
+        });
     }
 
     getMinimumRequirements({ reason, state } = {}) {

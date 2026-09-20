@@ -37,6 +37,22 @@ function createBaseState() {
             runTerminated: false,
             presentationCleanupComplete: true,
             status: POST_TRIAL_TRANSITION_STATUS.PENDING_STEPS,
+            presentation: {
+                schemaVersion: 1,
+                transitionId: "POST_TRIAL_1_persistence-roundtrip",
+                status: "ACTIVE",
+                currentSceneIndex: 3,
+                scenes: [
+                    { id: "AFTERMATH" },
+                    { id: "ASSESSMENT" },
+                    { id: "TRIAL_MEANING" },
+                    { id: "STAGE_PRELUDE" },
+                    { id: "STAGE_REVEAL" },
+                    { id: "POST_STAGE_COMMENT" },
+                    { id: "CLOSE" }
+                ],
+                completedSceneIds: ["AFTERMATH", "ASSESSMENT", "TRIAL_MEANING"]
+            },
             aftermath: {
                 trialIndex: 1,
                 scenarioId: "persistence-roundtrip",
@@ -158,6 +174,17 @@ assert.equal(
 assert.deepEqual(expandCalls, [7]);
 assert.equal(engine.state.stage.id, 2);
 assert.equal(completed.transition.status, POST_TRIAL_TRANSITION_STATUS.COMPLETED);
-assert.equal(engine.postTrialProgressionReadService.read().canResumeNormalProgression, true);
+assert.equal(
+    engine.postTrialProgressionReadService.read().canResumeNormalProgression,
+    false,
+    "completed game steps must remain blocked while persisted interlude presentation is ACTIVE"
+);
+
+engine.state.postTrialTransition.presentation.status = "COMPLETED";
+assert.equal(
+    engine.postTrialProgressionReadService.read().canResumeNormalProgression,
+    true,
+    "normal Verse progression resumes only after the persisted interlude is closed"
+);
 
 console.log("diagnose_post_trial_persistence_roundtrip: OK");

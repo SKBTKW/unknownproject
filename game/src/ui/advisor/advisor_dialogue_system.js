@@ -1,5 +1,6 @@
 import { findAdvisorDialogue } from './advisor_dialogue_database.js';
 import { ADVISOR_DIALOGUE_CHANNELS, getAdvisorEventResponsibility } from '../../data/advisor_dialogue_responsibility.js';
+import { formatAdvisorDialogueTemplate } from './advisor_dialogue_template.js';
 
 const defaultSetTimer = (callback, delay) => setTimeout(callback, delay);
 const defaultClearTimer = timerId => clearTimeout(timerId);
@@ -86,7 +87,7 @@ export class AdvisorDialogueSystem {
         return translated.some((text, index) => text === segmentKeys[index]) ? null : translated;
     }
 
-    resolveLocalizedSegments(entry, mode) {
+    resolveLocalizedSegments(entry, mode, context = {}) {
         const localized = entry?.localizedSegments;
         if (!localized || typeof localized !== "object") return null;
         const lang = this.getLanguage?.() || "ja";
@@ -98,12 +99,14 @@ export class AdvisorDialogueSystem {
         return {
             lineKey,
             segmentKeys: visible.map((_, index) => `${lineKey}:${index + 1}`),
-            text: visible.join(entry.segmentJoiner ?? "")
+            text: visible
+                .map(segment => formatAdvisorDialogueTemplate(segment, context))
+                .join(entry.segmentJoiner ?? "")
         };
     }
 
     resolveLine(entry, context = {}, mode = this.dialogueMode) {
-        const localizedLine = this.resolveLocalizedSegments(entry, mode);
+        const localizedLine = this.resolveLocalizedSegments(entry, mode, context);
         if (localizedLine) return localizedLine;
 
         const segmentGroups = Array.isArray(entry.segmentGroups)
@@ -169,6 +172,39 @@ export class AdvisorDialogueSystem {
 
         this.cooldowns.set(event, this.now());
         return this.enqueueItem(item);
+    }
+
+    emitDutyScene(scene, context = {}, options = {}) {
+        const definition = this.profile?.dutyDialogue?.[scene] || null;
+        if (!definition) return false;
+
+        const entry = {
+            event: scene,
+            priority: 90,
+            durationMs: 4200,
+            cooldownMs: 0,
+            ...definition
+        };
+        const lastAt = this.cooldowns.get(scene);
+        if (lastAt !== undefined && this.now() - lastAt < Number(entry.cooldownMs || 0)) return false;
+
+        const requestedMode = options.dialogueMode ?? this.dialogueMode;
+        const effectiveMode = normalizeDialogueMode(requestedMode);
+        const resolvedLine = this.resolveLine(entry, context, effectiveMode);
+        if (!resolvedLine) return false;
+
+        this.cooldowns.set(scene, this.now());
+        return this.enqueueItem({
+            event: scene,
+            topic: options.topic || scene,
+            lineKey: resolvedLine.lineKey,
+            segmentKeys: resolvedLine.segmentKeys,
+            text: resolvedLine.text,
+            expression: definition.expression || "NORMAL",
+            dialogueMode: effectiveMode,
+            priority: Number(options.priority ?? entry.priority ?? 90),
+            durationMs: Number(entry.durationMs || 4200)
+        });
     }
 
     emitResolved(reaction) {
