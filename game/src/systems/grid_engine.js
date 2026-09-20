@@ -453,9 +453,8 @@ class GridEngine {
 
                     for (const [nr, nc] of neighbors) {
                         if (nr < 0 || nr >= size || nc < 0 || nc >= size) continue;
-                        if (placingKeys.has(coordinateKey(nr, nc))) continue;
-
                         const neighborCell = this.state.grid[nr][nc];
+                        if (placingKeys.has(coordinateKey(nr, nc)) && !neighborCell.placed) continue;
                         if (!neighborCell.placed) continue;
                         isAdjacent = true;
 
