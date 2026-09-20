@@ -339,13 +339,13 @@ class GameState {
             return count;
         }
 
-        canPlaceShape(startR, startC, shapeMatrix, terrain = null) {
-            if (this.gridEngine) return this.gridEngine.canPlaceShape(startR, startC, shapeMatrix, terrain);
+        canPlaceShape(startR, startC, shapeMatrix, terrain = null, attributeCells = null) {
+            if (this.gridEngine) return this.gridEngine.canPlaceShape(startR, startC, shapeMatrix, terrain, attributeCells);
             return { can: false, reason: "NO_GRID_ENGINE" };
         }
 
-        placeShape(startR, startC, shapeMatrix, terrain, handIdx = -1) {
-            if (this.gridEngine) return this.gridEngine.placeShape(startR, startC, shapeMatrix, terrain, handIdx);
+        placeShape(startR, startC, shapeMatrix, terrain, handIdx = -1, attributeCells = null) {
+            if (this.gridEngine) return this.gridEngine.placeShape(startR, startC, shapeMatrix, terrain, handIdx, attributeCells);
             return { can: false, reason: "NO_GRID_ENGINE" };
         }
 
