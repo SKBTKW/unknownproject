@@ -173,6 +173,7 @@ jobs:
           node game/src/trial/dev/diagnose_post_trial_terminated_policy_gate.mjs
           node game/src/trial/dev/diagnose_first_run_post_trial_meaning_contract.mjs
           node game/src/trial/dev/diagnose_post_trial_first_run_fallback.mjs
+          node game/src/trial/dev/diagnose_post_trial_required_meaning_fallback.mjs
           node game/src/trial/dev/diagnose_post_trial_advisor_runtime.mjs
           node game/src/trial/dev/diagnose_post_trial_advisor_policy_variants.mjs
           node game/src/trial/dev/diagnose_post_trial_advisor_template_payload.mjs

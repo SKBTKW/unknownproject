@@ -38,6 +38,7 @@ export class PostTrialInterludeComponent {
         this.documentRef = documentRef;
         this.root = null;
         this.lastAdvisorPresentationKey = null;
+        this.lastAdvisorPresentationResult = null;
     }
 
     mount() {
@@ -185,6 +186,7 @@ export class PostTrialInterludeComponent {
             delete this.documentRef.body.dataset.postTrialInterlude;
         }
         this.lastAdvisorPresentationKey = null;
+        this.lastAdvisorPresentationResult = null;
     }
 
     isOpen() {
@@ -216,11 +218,12 @@ export class PostTrialInterludeComponent {
             factsHost.appendChild(row);
         });
 
+        const advisorPresentation = this.presentAdvisorScene(scene, readModel);
         const blocked = this.isAdvanceBlocked(scene, readModel);
         const status = this.root.querySelector(".post-trial-interlude-status");
         status.textContent = blocked
             ? this.t("UI_POST_TRIAL_WAITING_FOR_STEP", {}, "処理の完了を待っています。")
-            : this.sceneStatus(scene, readModel);
+            : this.sceneStatus(scene, readModel, advisorPresentation);
 
         const advance = this.root.querySelector(".post-trial-interlude-advance");
         advance.disabled = blocked;
@@ -228,7 +231,6 @@ export class PostTrialInterludeComponent {
             ? this.t("UI_POST_TRIAL_CLOSE", {}, "盤面へ戻る")
             : this.t("UI_POST_TRIAL_CONTINUE", {}, "続ける");
 
-        this.presentAdvisorScene(scene, readModel);
     }
 
     presentAdvisorScene(scene, readModel) {
@@ -237,11 +239,13 @@ export class PostTrialInterludeComponent {
             POST_TRIAL_INTERLUDE_SCENES.TRIAL_MEANING,
             POST_TRIAL_INTERLUDE_SCENES.STAGE_PRELUDE,
             POST_TRIAL_INTERLUDE_SCENES.POST_STAGE_COMMENT
-        ].includes(scene.id)) return;
+        ].includes(scene.id)) return null;
 
         const presentation = this.progressService.getPresentation();
         const key = `${presentation?.transitionId || ""}:${presentation?.currentSceneIndex}:${scene.id}`;
-        if (key === this.lastAdvisorPresentationKey) return;
+        if (key === this.lastAdvisorPresentationKey) {
+            return this.lastAdvisorPresentationResult;
+        }
         this.lastAdvisorPresentationKey = key;
 
         const state = this.stateProvider?.() || {};
@@ -263,10 +267,12 @@ export class PostTrialInterludeComponent {
             required: scene.required === true
         });
 
-        this.presentationBridge?.presentAdvisorScene?.({
+        const result = this.presentationBridge?.presentAdvisorScene?.({
             sceneId: scene.id,
             payload
-        });
+        }) || null;
+        this.lastAdvisorPresentationResult = result;
+        return result;
     }
 
     isAdvanceBlocked(scene, readModel) {
@@ -305,6 +311,7 @@ export class PostTrialInterludeComponent {
         }
 
         this.lastAdvisorPresentationKey = null;
+        this.lastAdvisorPresentationResult = null;
         if (typeof this.onRefresh === "function") {
             this.onRefresh();
         } else {
@@ -378,21 +385,25 @@ export class PostTrialInterludeComponent {
         return [];
     }
 
-    sceneStatus(scene) {
-        if (scene.id === POST_TRIAL_INTERLUDE_SCENES.TRIAL_MEANING
-            && !this.advisorEnabledProvider()) {
-            if (scene.required && scene.semanticSceneId === "FIRST_TRIAL_AFTERMATH_MEANING") {
+    sceneStatus(scene, _readModel = null, advisorPresentation = null) {
+        if (scene.id === POST_TRIAL_INTERLUDE_SCENES.TRIAL_MEANING) {
+            const advisorSpoken = advisorPresentation?.spoken === true;
+            if (!advisorSpoken
+                && scene.required
+                && scene.semanticSceneId === "FIRST_TRIAL_AFTERMATH_MEANING") {
                 return this.t(
                     "UI_POST_TRIAL_FIRST_MEANING_FALLBACK",
                     {},
                     "Beyond humanity's sphere lies a force capable of coming into conflict with it. That much is now clear."
                 );
             }
-            return this.t(
-                "UI_POST_TRIAL_MEANING_NEUTRAL",
-                {},
-                "The confirmed battle record and known information have been organized."
-            );
+            if (!advisorSpoken && !this.advisorEnabledProvider()) {
+                return this.t(
+                    "UI_POST_TRIAL_MEANING_NEUTRAL",
+                    {},
+                    "The confirmed battle record and known information have been organized."
+                );
+            }
         }
         if (scene.id === POST_TRIAL_INTERLUDE_SCENES.STAGE_PRELUDE) {
             return this.t(
