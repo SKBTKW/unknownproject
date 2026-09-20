@@ -41,6 +41,7 @@ import {
 } from '../core/placement_geometry.js';
 import { sfxManager } from '../audio/sfx_manager.js';
 import { resolveLandSelectSfx } from '../audio/land_sfx_resolver.js';
+import { ADVISOR_SCENES } from '../data/advisor_scene_catalog.js';
 import {
     FirstRunTrialTutorialService,
     FIRST_RUN_TRIAL_TUTORIAL_EVENTS
@@ -164,6 +165,11 @@ class UIController {
         const initialPreviewDefense = tutorialState?.active ? 0 : deployedDefense;
         this.trialPresentationState.setPreviewDefenseAllocation(initialPreviewDefense, availableDefense, 0);
         this.trialPreviewConfig = { active: true };
+        if (tutorialState?.active && tutorialState.currentStep === "ROUTE_INTRO") {
+            this.emitFirstRunTrialAdvisorScene(ADVISOR_SCENES.FIRST_RUN_TRIAL_ROUTE, {
+                trialIndex: scenario?.trialIndex ?? 1
+            });
+        }
         this.layoutStateManager.enterTrial();
         this.render();
         return this.trialController.state;
@@ -236,6 +242,19 @@ class UIController {
         return this.recordFirstRunTrialTutorialEvent(
             FIRST_RUN_TRIAL_TUTORIAL_EVENTS.ROUTE_ACKNOWLEDGED
         );
+    }
+
+    emitFirstRunTrialAdvisorScene(sceneId, context = {}) {
+        const firstRunState = this.engine?.firstRunState;
+        if (!firstRunState?.active || !sceneId) return false;
+        if (firstRunState.hasSceneOccurred?.(sceneId)) return false;
+
+        firstRunState.recordScene?.(sceneId);
+        return this.advisorDockComponent?.consumeSemanticScene?.({
+            sceneId,
+            verse: Number(this.state?.turn || 1),
+            context
+        }) === true;
     }
 
     getCurrentTrialCausality() {
@@ -383,7 +402,18 @@ class UIController {
             return this.refreshTrialInterceptionPreview();
         }
         this.trialPresentationState.setHoveredCell({ r, c });
-        this.recordFirstRunTrialTutorialEvent(FIRST_RUN_TRIAL_TUTORIAL_EVENTS.INTERCEPTION_HOVERED);
+        const tutorialState = this.recordFirstRunTrialTutorialEvent(
+            FIRST_RUN_TRIAL_TUTORIAL_EVENTS.INTERCEPTION_HOVERED
+        );
+        if (tutorialState?.terrainIntroduced) {
+            const cell = this.getBoardDisplayGrid()?.[r]?.[c] || null;
+            this.emitFirstRunTrialAdvisorScene(ADVISOR_SCENES.FIRST_RUN_TRIAL_TERRAIN, {
+                trialIndex: this.trialController?.state?.trialIndex ?? 1,
+                r,
+                c,
+                terrainId: cell?.terrain?.id || cell?.terrain?.terrainId || cell?.terrainId || null
+            });
+        }
         return this.refreshTrialInterceptionPreview();
     }
 
@@ -426,7 +456,16 @@ class UIController {
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
         this.renderBoardGrid(I18n);
         if (this.trialDefenseAllocationComponent) this.trialDefenseAllocationComponent.render();
-        this.recordFirstRunTrialTutorialEvent(FIRST_RUN_TRIAL_TUTORIAL_EVENTS.INTERCEPTION_SELECTED);
+        const tutorialState = this.recordFirstRunTrialTutorialEvent(
+            FIRST_RUN_TRIAL_TUTORIAL_EVENTS.INTERCEPTION_SELECTED
+        );
+        if (tutorialState?.defenseIntroduced) {
+            this.emitFirstRunTrialAdvisorScene(ADVISOR_SCENES.FIRST_RUN_TRIAL_DEFENSE, {
+                trialIndex: this.trialController?.state?.trialIndex ?? 1,
+                r,
+                c
+            });
+        }
         return true;
     }
 
