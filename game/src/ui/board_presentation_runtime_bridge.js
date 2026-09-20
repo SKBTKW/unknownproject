@@ -11,6 +11,7 @@ import {
 
 const LIVE_TRIAL_BLOCKED_COMMANDS = new Set([
     BOARD_INPUT_COMMANDS.SELECT_CELL,
+    BOARD_INPUT_COMMANDS.PRIMARY_CELL_ACTION,
     BOARD_INPUT_COMMANDS.CLEAR_SELECTION,
     BOARD_INPUT_COMMANDS.HOVER_CELL,
     BOARD_INPUT_COMMANDS.CLEAR_HOVER,
@@ -50,9 +51,9 @@ export function attachBoardPresentationRuntime(uiController, {
     const rendererBridge = new BoardRendererBridge({
         presentationState: state,
         inputHandlers: {
-            selectCell: ({ cell }) => {
-                if (!cell || typeof uiController.onCellClick !== "function") return false;
-                return uiController.onCellClick(cell.r, cell.c);
+            primaryCellAction: ({ cell }) => {
+                if (!cell || typeof uiController.performPrimaryCellAction !== "function") return false;
+                return uiController.performPrimaryCellAction(cell.r, cell.c);
             },
             selectTrialRoute: ({ routeId }) => {
                 if (!routeId) return false;
