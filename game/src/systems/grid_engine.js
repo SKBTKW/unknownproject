@@ -374,7 +374,8 @@ class GridEngine {
      * @param {number} startR - 配置開始行
      * @param {number} startC - 配置開始列
      * @param {Array<Array<number>>} shapeMatrix - 形状マトリクス
-     * @param {Object} [terrain] - 配置対象の地勢データ (GL/E判定用)
+     * @param {Object} [terrain] - uniform card用のfallback地勢データ
+     * @param {Array<Object>|null} [attributeCells] - Multi-Attribute cardのlocal cell semantic
      * @returns {{ can: boolean, reason?: string, reasons: Array<string> }}
      */
     canPlaceShape(startR, startC, shapeMatrix, terrain = null, attributeCells = null) {
@@ -883,7 +884,7 @@ class GridEngine {
 
             const size = this.state.grid.length;
 
-            // 1. 新規配置カードの全マス（同 placementGroupId）に targetGroupId を伝播
+            // 1. 新規配置カード内の同Zone互換セルだけに targetGroupId を伝播
             for (let row = 0; row < size; row++) {
                 for (let col = 0; col < size; col++) {
                     const cell = this.state.grid[row][col];
