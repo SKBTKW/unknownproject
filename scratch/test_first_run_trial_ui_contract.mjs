@@ -11,6 +11,8 @@ assert.match(ui, /ROUTE_ACKNOWLEDGED/);
 assert.match(ui, /INTERCEPTION_SELECTED/);
 assert.match(ui, /DEFENSE_CHANGED/);
 assert.match(ui, /RESULT_OBSERVED/);
+assert.match(ui, /FIRST_RUN_TRIAL_CAUSALITY/);
+assert.match(ui, /getCurrentTrialCausality/);
 assert.match(ui, /CAUSALITY_OBSERVED/);
 assert.match(ui, /allowInterceptionSelection/);
 assert.match(ui, /allowDefenseInput/);
