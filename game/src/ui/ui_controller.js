@@ -809,7 +809,16 @@ class UIController {
             return result;
         }
         this.trialPresentationState.planningValidationErrors = [];
-        this.recordFirstRunTrialTutorialEvent(FIRST_RUN_TRIAL_TUTORIAL_EVENTS.RESULT_OBSERVED);
+        const tutorialState = this.recordFirstRunTrialTutorialEvent(
+            FIRST_RUN_TRIAL_TUTORIAL_EVENTS.RESULT_OBSERVED
+        );
+        if (tutorialState?.currentStep === "RESULT_CAUSALITY") {
+            this.emitFirstRunTrialAdvisorScene(ADVISOR_SCENES.FIRST_RUN_TRIAL_CAUSALITY, {
+                trialIndex: this.trialController?.state?.trialIndex ?? 1,
+                battleIndex: this.trialController?.state?.currentBattleIndex ?? null,
+                causality: this.getCurrentTrialCausality()
+            });
+        }
         this.render();
         return result;
     }
