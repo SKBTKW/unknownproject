@@ -68,6 +68,23 @@ function resolvePlacementAttributeCells(card) {
     return normalized.length > 0 ? normalized : null;
 }
 
+function getPlacementAttributeTerrainId(cell) {
+    return cell?.terrain?.terrainId
+        || cell?.terrain?.id
+        || cell?.terrainId
+        || cell?.id
+        || null;
+}
+
+function hasMultiplePlacementTerrainAttributes(card) {
+    const cells = resolvePlacementAttributeCells(card);
+    if (!cells) return false;
+    const terrainIds = new Set(
+        cells.map(getPlacementAttributeTerrainId).filter(Boolean)
+    );
+    return terrainIds.size >= 2;
+}
+
 function getPlacementCells(startR, startC, shape) {
     const cells = [];
     for (let dr = 0; dr < shape.length; dr++) {
@@ -147,6 +164,7 @@ function rotatePlacementClockwise(shape, anchor = DEFAULT_PLACEMENT_ANCHOR, attr
 export {
     DEFAULT_PLACEMENT_ANCHOR,
     getPlacementCells,
+    hasMultiplePlacementTerrainAttributes,
     normalizePlacementAnchor,
     resolvePlacementAnchor,
     resolvePlacementAttributeCells,
