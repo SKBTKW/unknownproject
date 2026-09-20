@@ -11,7 +11,10 @@ const FORBIDDEN_PUBLIC_KEYS = new Set([
     "rngstate",
     "trialschedule",
     "nexttrialturn",
-    "nexttrialverse"
+    "nexttrialverse",
+    "enemyintent",
+    "enemyobjective",
+    "enemytarget"
 ]);
 
 function normalizeKey(key) {
