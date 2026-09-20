@@ -49,7 +49,13 @@ function normalizeAttributeCell(cell) {
     const r = Number.isInteger(cell.r) ? cell.r : cell.dr;
     const c = Number.isInteger(cell.c) ? cell.c : cell.dc;
     if (!Number.isInteger(r) || !Number.isInteger(c)) return null;
-    return { ...cell, r, c };
+    return {
+        ...cell,
+        r,
+        c,
+        sourceR: Number.isInteger(cell.sourceR) ? cell.sourceR : r,
+        sourceC: Number.isInteger(cell.sourceC) ? cell.sourceC : c
+    };
 }
 
 /**
