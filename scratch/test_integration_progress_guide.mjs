@@ -39,8 +39,8 @@ const guide = buildIntegrationProgressGuide({
     { branch: 'z-blocked', status: 'BLOCKED', guidance: { action: 'STOP_AND_INSPECT', reason: 'blocked' }, mergePreview: { status: 'CONFLICT' } },
     { branch: 'a-merged', status: 'MERGED' },
     { branch: 'b-ready', status: 'READY' },
-    { branch: 'c-review', status: 'REVIEW_REQUIRED', guidance: { action: 'REVIEW_OVERLAP', reason: 'review' }, mergePreview: { status: 'CLEAN' } },
-    { branch: 'd-reconcile', status: 'RECONCILE_REQUIRED', guidance: { action: 'RECONCILE_TARGET', reason: 'reconcile' }, mergePreview: { status: 'CLEAN' } },
+    { branch: 'c-review', status: 'REVIEW_REQUIRED', guidance: { action: 'REVIEW_OVERLAP', reason: 'review' }, overlap: { risk: 'PATH_OVERLAP' }, mergePreview: { status: 'CLEAN' } },
+    { branch: 'd-reconcile', status: 'RECONCILE_REQUIRED', guidance: { action: 'RECONCILE_TARGET', reason: 'reconcile' }, overlap: { risk: 'PATH_OVERLAP' }, mergePreview: { status: 'CLEAN' }, aheadCount: 2, behindCount: 8 },
   ],
 });
 
@@ -66,6 +66,61 @@ const noReadyGuide = buildIntegrationProgressGuide({
 });
 assert.equal(noReadyGuide.next.branch, 'review');
 assert.equal(noReadyGuide.next.progressClass, PROGRESS_CLASS.PREPARE_FOR_INTEGRATION);
+
+
+const preparationGuide = buildIntegrationProgressGuide({
+  target: 'AoT260919',
+  targetSha: 'target-sha',
+  tasks: [
+    {
+      branch: 'review-heavy',
+      status: 'REVIEW_REQUIRED',
+      guidance: { action: 'REVIEW_OVERLAP', reason: 'review' },
+      overlap: { risk: 'PATH_OVERLAP' },
+      peerOverlaps: [],
+      mergePreview: { status: 'CLEAN' },
+      aheadCount: 1,
+      behindCount: 2,
+    },
+    {
+      branch: 'reconcile-peer-overlap',
+      status: 'RECONCILE_REQUIRED',
+      guidance: { action: 'RECONCILE_TARGET', reason: 'stale' },
+      overlap: { risk: 'NONE' },
+      peerOverlaps: [{ branch: 'other', overlap: { risk: 'PATH_OVERLAP' } }],
+      mergePreview: { status: 'CLEAN' },
+      aheadCount: 1,
+      behindCount: 1,
+    },
+    {
+      branch: 'reconcile-safe-far',
+      status: 'RECONCILE_REQUIRED',
+      guidance: { action: 'RECONCILE_TARGET', reason: 'stale' },
+      overlap: { risk: 'NONE' },
+      peerOverlaps: [],
+      mergePreview: { status: 'CLEAN' },
+      aheadCount: 2,
+      behindCount: 9,
+    },
+    {
+      branch: 'reconcile-safe-near',
+      status: 'RECONCILE_REQUIRED',
+      guidance: { action: 'RECONCILE_TARGET', reason: 'stale' },
+      overlap: { risk: 'NONE' },
+      peerOverlaps: [],
+      mergePreview: { status: 'CLEAN' },
+      aheadCount: 4,
+      behindCount: 3,
+    },
+  ],
+});
+assert.equal(preparationGuide.next.branch, 'reconcile-safe-near');
+assert.equal(preparationGuide.next.preparationPriority, 'LOW_RISK_RECONCILE');
+assert.deepEqual(preparationGuide.next.distance, { ahead: 4, behind: 3 });
+assert.deepEqual(
+  preparationGuide.entries.map((entry) => entry.branch),
+  ['reconcile-safe-near', 'reconcile-safe-far', 'review-heavy', 'reconcile-peer-overlap'],
+);
 
 const completeGuide = buildIntegrationProgressGuide({
   target: 'AoT260919',
