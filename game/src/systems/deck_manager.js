@@ -10,6 +10,7 @@ import {
     normalizePlacementAnchor,
     resolvePlacementGeometry
 } from '../core/placement_geometry.js';
+import { isMultiAttributeProductionResolved } from '../core/land_production_contract.js';
 import { isTrueMergedCell } from '../core/merge_rules.js';
 import { getWaterSourceSpawnChance } from '../core/lake_rules.js';
 
@@ -121,7 +122,7 @@ class DeckManager {
 
         // Multi-Attribute cards must not enter live Offering until their
         // Production contract is explicitly finalized.
-        if (hasMultiplePlacementTerrainAttributes(c) && c.multiAttributeProductionReady !== true) {
+        if (hasMultiplePlacementTerrainAttributes(c) && !isMultiAttributeProductionResolved(c)) {
             return false;
         }
 
@@ -738,7 +739,7 @@ class DeckManager {
         if (newCards.length < offeringSize) {
             const baseLandPool = master.filter(c => {
                 if (excludedCardIds.includes(c.id)) return false;
-                if (hasMultiplePlacementTerrainAttributes(c) && c.multiAttributeProductionReady !== true) return false;
+                if (hasMultiplePlacementTerrainAttributes(c) && !isMultiAttributeProductionResolved(c)) return false;
                 const policy = c.cyclePolicy || (c.category === "LAND" ? CYCLE_POLICIES.LAND_STANDARD : CYCLE_POLICIES.RARITY);
                 return (policy === CYCLE_POLICIES.LAND_STANDARD || c.category === "LAND") && (c.minStage || 1) <= stageNum;
             });
