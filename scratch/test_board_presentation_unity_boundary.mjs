@@ -215,6 +215,17 @@ test("browser BoardAware UI routes board reads through the shared runtime adapte
     assert.equal(source.includes("this.boardPresentationDataService.getBoard(this.state"), false);
 });
 
+test("Web2.5D SELECT_CELL stays presentation-only", () => {
+    const source = fs.readFileSync(
+        new URL("../game/src/ui/web25d_validation_runtime_bridge.js", import.meta.url),
+        "utf8"
+    );
+    assert.equal(source.includes("selectCell: ({ cell }) =>"), false);
+    assert.equal(source.includes("primaryCellAction: ({ cell }) =>"), true);
+    assert.equal(source.includes("uiController.onCellClick(cell.r, cell.c)"), false);
+    assert.equal(source.includes("uiController.performPrimaryCellAction(cell.r, cell.c)"), true);
+});
+
 test("browser Web2D click path emits portable primary/trial commands", () => {
     const source = fs.readFileSync(
         new URL("../game/src/ui/board_aware_ui_controller.js", import.meta.url),
