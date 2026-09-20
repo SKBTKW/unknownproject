@@ -686,7 +686,9 @@ export const LAND_CARDS_MASTER = [
     "reqE2": 0,
     "rarity": "R",
     "weight": 0.08,
-    "multiAttributeProductionReady": false,
+    "productionContract": {
+      "status": "UNRESOLVED"
+    },
     "descriptionKey": "CARD_DESC_MULTI_PLAINS_HILL_1X2"
   },
   {
@@ -729,7 +731,9 @@ export const LAND_CARDS_MASTER = [
     "reqE2": 0,
     "rarity": "R",
     "weight": 0.08,
-    "multiAttributeProductionReady": false,
+    "productionContract": {
+      "status": "UNRESOLVED"
+    },
     "descriptionKey": "CARD_DESC_MULTI_PLAINS_FOREST_1X2"
   },
   {
@@ -770,7 +774,9 @@ export const LAND_CARDS_MASTER = [
     "reqE2": 0,
     "rarity": "R",
     "weight": 0.05,
-    "multiAttributeProductionReady": false,
+    "productionContract": {
+      "status": "UNRESOLVED"
+    },
     "descriptionKey": "CARD_DESC_MULTI_HILL_MOUNTAIN_1X2"
   }
 ];
