@@ -87,6 +87,7 @@ export function hydrateGameState(state, serialized, { resolveCardMaster } = {}) 
     const values = {};
     for (const field of SCALAR_FIELDS) values[field] = cloneData(serialized[field]);
     for (const field of OBJECT_FIELDS) values[field] = cloneData(serialized[field]);
+    values.placedBlockProduction = cloneData(serialized.placedBlockProduction || {});
     values.grid = cloneData(serialized.grid);
     // Serializer uses null for an absent terrain.material. Live HQ production
     // distinguishes absent material from a value and otherwise overrides wood.
