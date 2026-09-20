@@ -62,7 +62,9 @@ export function attachWeb25DValidationRuntime(uiController, {
         projectionAdapter: new Web25DProjectionAdapter({
             originX: initialSize.width / 2,
             originY: DEFAULT_ORIGIN_Y
-        })
+        }),
+        showCoordinates: true,
+        showElevationLabels: false
     });
 
     runtime = {
@@ -79,6 +81,11 @@ export function attachWeb25DValidationRuntime(uiController, {
             }
 
             if (active) {
+                const browserSettings = (typeof globalThis !== 'undefined')
+                    ? globalThis.gameSettings
+                    : null;
+                renderer.showCoordinates = browserSettings?.get?.('showBoardCoordinates') !== false;
+
                 const size = this.lastBoardSize || initialSize;
                 if (canvas.width !== size.width) canvas.width = size.width;
                 if (canvas.height !== size.height) canvas.height = size.height;
