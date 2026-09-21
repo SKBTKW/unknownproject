@@ -100,6 +100,10 @@ function inspectRepository(cwd, target, config) {
     console.log(`[BLOCK] ${item.branch} - ${item.status}`);
     for (const reason of item.reasons) console.log(`        ${reason}`);
   }
+  for (const item of audit.reviewFindings) {
+    console.log(`[STALE/REVIEW] ${item.branch} - ${item.status}`);
+    for (const reason of item.reasons) console.log(`        ${reason}`);
+  }
   for (const item of audit.warnings) {
     console.log(`[CLEANUP] ${item.branch} - ${item.status}`);
   }

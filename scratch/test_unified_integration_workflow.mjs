@@ -23,8 +23,9 @@ const audit = classifyRepositoryAudit([
   { branch: 'old-safe', status: ORPHAN_STATUS.TARGET_CONTAINED, reasons: ['contained'] },
   { branch: 'old-review', status: ORPHAN_STATUS.REVIEW_REQUIRED, reasons: ['1 unique commit'] },
 ], []);
-check(audit.ok, false, 'unignored REVIEW_REQUIRED branch blocks unified workflow');
-check(audit.blockers.map(item => item.branch), ['old-review'], 'review blocker is surfaced');
+check(audit.ok, true, 'REVIEW_REQUIRED history does not block active integration');
+check(audit.blockers.map(item => item.branch), [], 'historical review finding is not a merge blocker');
+check(audit.reviewFindings.map(item => item.branch), ['old-review'], 'historical review finding remains visible');
 check(audit.warnings.map(item => item.branch), ['old-safe'], 'target-contained branch remains cleanup warning');
 
 const ignoredAudit = classifyRepositoryAudit([
@@ -35,6 +36,17 @@ const ignoredAudit = classifyRepositoryAudit([
 check(ignoredAudit.ok, true, 'explicit archive exclusions do not block integration');
 check(ignoredAudit.ignoredFindings.map(item => item.branch), ['AGtest260915', 'Legacy260911'], 'ignored findings remain visible');
 check(ignoredAudit.warnings.map(item => item.branch), ['noop-contained'], 'duplicate head is reported as cleanup warning');
+
+
+const reviewOnlyAudit = classifyRepositoryAudit([
+  { branch: 'AoT260919', status: ORPHAN_STATUS.REVIEW_REQUIRED, reasons: ['15 unique commits'] },
+  { branch: 'aot-task/AoT260919/tooling/old', status: ORPHAN_STATUS.REVIEW_REQUIRED, reasons: ['stale task namespace'] },
+], []);
+check(reviewOnlyAudit.ok, true, 'stale target history never blocks the current merge gate');
+check(reviewOnlyAudit.reviewFindings.map(item => item.branch), [
+  'AoT260919',
+  'aot-task/AoT260919/tooling/old',
+], 'stale target findings are retained for cleanup review');
 
 const mismatchAudit = classifyRepositoryAudit([
   { branch: 'tmp/local-remote', status: ORPHAN_STATUS.LOCAL_REMOTE_MISMATCH, reasons: ['heads differ'] },
