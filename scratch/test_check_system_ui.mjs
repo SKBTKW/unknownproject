@@ -133,41 +133,53 @@ ui.showDiceCheck(testEvent);
 assert.strictEqual(ui.diceQueue.isPlaying, true, "showDiceCheck 呼び出し後にキューが再生中になること");
 console.log("  ✅ PASS: UIController ↔ DiceQueue 連携正常確認");
 
-// 5. 🎴 実カード経路での連続2D6伝達
-console.log("\n🔍 [UI-5] CMD_ABANDONED_SETTLEMENT 連続実行のUI伝達検問...");
+// 5. 🎴 CheckSystem結果のEngine境界とUI転送境界を分離検証
+console.log("\n🔍 [UI-5] CMD_ABANDONED_SETTLEMENT Engine/UI 境界検問...");
+
 const commandEngine = GameEngine.createGame({ runSeed: 12345678 });
-const commandUi = new UIController(commandEngine);
+const commandCard = commandEngine.deckManager.getLandCardMaster()
+    .find(card => card.id === "CMD_ABANDONED_SETTLEMENT");
+assert.ok(commandCard, "CMD_ABANDONED_SETTLEMENT が現行masterに存在すること");
+commandEngine.state.ember = 100;
+commandEngine.state.hasPickedThisTurn = false;
+commandEngine.state.handOffering[0] = commandCard;
+
+const rngBeforeCommand = commandEngine.checkSystem.getState().rng.callCount;
+const engineCommandResult = commandEngine.playCommandCard(commandCard, { type: "OFFERING", index: 0 });
+assert.strictEqual(engineCommandResult.success, true, "Engine facade経由のカード実行が成功すること");
+assert.ok(engineCommandResult.diceCheck?.result?.dice?.kept, "Engine facadeがdiceCheckを公開すること");
+assert.strictEqual(
+    commandEngine.checkSystem.getState().rng.callCount - rngBeforeCommand,
+    2,
+    "2D6カード1回でCheckSystem RNGが2回だけ進むこと"
+);
+
+// UIは乱数やカード解決を再検証せず、Engineが返したCheckResolvedEventをそのまま演出境界へ渡す。
+const uiEngine = GameEngine.createGame({ runSeed: 87654321 });
+const expectedDiceEvent = {
+    result: {
+        checkId: "standard_2d6",
+        dice: { rolled: [3, 5], kept: [3, 5] },
+        rawTotal: 8,
+        modifierTotal: 0,
+        finalTotal: 8,
+        outcome: { id: "medium" }
+    },
+    context: { sourceType: "CARD_CHECK", sourceId: "abandoned_settlement" },
+    feedback: { importance: "TACTICAL" }
+};
+uiEngine.playCommandCard = () => ({ success: true, diceCheck: expectedDiceEvent });
+const commandUi = new UIController(uiEngine);
 const forwardedChecks = [];
 commandUi.showDiceCheck = event => forwardedChecks.push(event);
 commandUi.render = () => {};
+uiEngine.state.hasPickedThisTurn = false;
+uiEngine.state.handOffering[0] = commandCard;
+commandUi.playCommandCard(commandCard, 0);
 
-const commandCard = {
-    id: "CMD_ABANDONED_SETTLEMENT",
-    category: "COMMAND",
-    nameKey: "CMD_ABANDONED_SETTLEMENT_NAME",
-    descriptionKey: "CMD_ABANDONED_SETTLEMENT_DESC",
-    cost: { ember: 1 }
-};
-
-commandEngine.state.ember = 100;
-for (let i = 0; i < 24; i++) {
-    commandEngine.state.hasPickedThisTurn = false;
-    commandEngine.state.handOffering[0] = commandCard;
-    commandUi.playCommandCard(commandCard, 0);
-}
-
-assert.strictEqual(commandEngine.checkSystem, commandEngine.state.checkSystem, "EngineとStateが同じCheckSystemを参照すること");
-assert.strictEqual(forwardedChecks.length, 24, "24回すべてのdiceCheckがUIのshowDiceCheckへ渡ること");
-assert.strictEqual(commandEngine.checkSystem.getState().rng.callCount, 48, "24回の2D6が同一RNGを48回進めること");
-const forwardedTotals = forwardedChecks.map(event => event.result.finalTotal);
-assert.ok(new Set(forwardedTotals).size > 1, "連続結果が単一値へ固定されないこと");
-assert.ok(forwardedTotals.some(total => total !== 8), "CMD_ABANDONED_SETTLEMENTが毎回8にならないこと");
-for (const event of forwardedChecks) {
-    const kept = event.result.dice.kept;
-    assert.strictEqual(kept.length, 2, "UIへ渡すdice.keptが2要素であること");
-    assert.strictEqual(event.result.finalTotal, kept[0] + kept[1], "UIへ渡すfinalTotalがdice.keptの合計であること");
-}
-console.log("  ✅ PASS: 同一CheckSystemの連続ロールとUI伝達を確認");
+assert.strictEqual(forwardedChecks.length, 1, "EngineのdiceCheckをUIが1回だけshowDiceCheckへ渡すこと");
+assert.strictEqual(forwardedChecks[0], expectedDiceEvent, "UIがCheckResolvedEventを書き換えないこと");
+console.log("  ✅ PASS: Engineの2D6解決とUI転送責務を分離して確認");
 
 // 6. 📊 FloatingFeedbackServiceの既存増減表示
 console.log("\n🔍 [UI-6] FloatingFeedbackService 増減表示検問...");

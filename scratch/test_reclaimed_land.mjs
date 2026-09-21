@@ -6,7 +6,8 @@ import { LAND_SYSTEM_DATA, TerrainParameterEngine } from "../game/src/data/land_
 import { I18n } from "../game/src/i18n.js";
 import { ProductionCalculator } from "../game/src/systems/production_calculator.js";
 import { serializeGameState } from "../game/src/core/state_serializer.js";
-import { getZoneCategory } from "../game/src/core/merge_rules.js";
+import { getZoneCategory, isTrueMergedCell } from "../game/src/core/merge_rules.js";
+import { ConditionEvaluator } from "../game/src/core/condition_evaluator.js";
 import { TrialTerrainEffectResolver } from "../game/src/trial/systems/trial_terrain_effect_resolver.js";
 
 console.log("============================================================");
@@ -38,11 +39,31 @@ engineA.state.grid[0][0] = {
 assert.strictEqual(engineA.deckManager.isCardEligible(cmdReclamation, 1, 0, { ignoreCooldown: true, ignoreHold: true }), false, "湖湿原のみの場合は干拓提示不可");
 
 // ケース3: 通常湿原が存在する場合 ➔ 提示・発動可能
-engineA.state.grid[0][1] = {
-    r: 0, c: 1, placed: true,
-    terrain: { id: "E0_WETLAND", terrainId: "E0_WETLAND", nameKey: "TERRAIN_WETLAND", e: 0, gl: 1 }
-};
-assert.strictEqual(engineA.deckManager.isCardEligible(cmdReclamation, 1, 0, { ignoreCooldown: true, ignoreHold: true }), true, "通常湿原があれば干拓提示可能");
+Object.assign(engineA.state.grid[0][1], {
+    placed: true,
+    isHQ: false,
+    merged: false,
+    mergeGroupId: null,
+    terrain: { id: "E0_WETLAND", terrainId: "E0_WETLAND", nameKey: "TERRAIN_WETLAND", e: 0, gl: 1 },
+    socketResource: null
+});
+assert.strictEqual(
+    ConditionEvaluator.evaluate({ type: "HAS_WETLAND", value: cmdReclamation.reqWetland || 1 }, { state: engineA.state }),
+    true,
+    "ConditionEvaluatorが通常湿原を認識すること"
+);
+assert.strictEqual(isTrueMergedCell(engineA.state, engineA.state.grid[0][1]), false, "対象湿原が真の地帯化済みではないこと");
+assert.strictEqual(engineA.state.wood >= cmdReclamation.reqWood, true, "干拓の資材条件を満たすこと");
+assert.strictEqual(
+    engineA.state.getAllBuffs().some(buff => buff && (buff.id === cmdReclamation.id || buff.sourceCardId === cmdReclamation.id)),
+    false,
+    "干拓カードが既存active buffと衝突していないこと"
+);
+assert.strictEqual(
+    engineA.deckManager.isCardEligible(cmdReclamation, 1, 0, { ignoreCooldown: true, ignoreHold: true }),
+    true,
+    "明示predicateがすべて成立した通常湿原では干拓提示可能"
+);
 console.log("  ✅ PASS: 湖湿原が除外され、通常湿原のみが干拓対象として正しく判定されます！");
 
 // ------------------------------------------------------------

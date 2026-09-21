@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { GameEngine } from "../game/src/app.js";
 import { RETIRED_TRIAL_RESERVED_CARD_IDS } from "../game/src/systems/card_cycle_system.js";
+import { ConditionEvaluator } from "../game/src/core/condition_evaluator.js";
+import { isTrueMergedCell } from "../game/src/core/merge_rules.js";
 
 console.log("Offering eligibility representative active contracts");
 
@@ -16,6 +18,27 @@ const eligible = (card, stage) => deck.isCardEligible(card, stage, 0, {
     ignoreCooldown: true,
     ignoreHold: true
 });
+const assertReclamationPrerequisites = (card) => {
+    assert.ok(card && card.id === "CMD_WETLAND_RECLAMATION");
+    assert.ok((card.minStage || 1) <= 1, "reclamation stage gate must allow Stage 1");
+    assert.ok(engine.state.wood >= (card.reqWood || 0), "reclamation material prerequisite must be met");
+    assert.equal(
+        ConditionEvaluator.evaluate({ type: "HAS_WETLAND", value: card.reqWetland || 1 }, { state: engine.state }),
+        true,
+        "HAS_WETLAND predicate must see the normal wetland"
+    );
+    const reclaimable = engine.state.grid.flat().some(cell => {
+        if (!cell?.placed || cell.isHQ || !cell.terrain) return false;
+        const tid = cell.terrain.terrainId || cell.terrain.id || "";
+        const isLake = Boolean(cell.socketResource && (cell.socketResource.id === "SOCKET_LAKE" || cell.socketResource.isLake));
+        return tid.includes("WETLAND") && !isTrueMergedCell(engine.state, cell) && !isLake;
+    });
+    assert.equal(reclaimable, true, "a non-lake, non-merged wetland must be reclaimable");
+    const sameIdBuff = engine.state.getAllBuffs?.().some(buff =>
+        buff && (buff.id === card.id || buff.sourceCardId === card.id)
+    ) || false;
+    assert.equal(sameIdBuff, false, "reclamation must not already be active as a buff");
+};
 const clearGrid = size => Array.from({ length: size }, (_, r) =>
     Array.from({ length: size }, (_, c) => ({
         r, c, placed: false, isHQ: false, terrain: null, socketResource: null,
@@ -44,7 +67,8 @@ const clearGrid = size => Array.from({ length: size }, (_, r) =>
     engine.state.wood = engine.state.material = 14;
     assert.equal(eligible(card, 1), false, "material threshold remains enforced");
     engine.state.wood = engine.state.material = 15;
-    assert.equal(eligible(card, 1), true);
+    assertReclamationPrerequisites(card);
+    assert.equal(eligible(card, 1), true, "all explicit reclamation predicates pass, so DeckManager must accept the card");
 }
 
 // Granary: simple active plains + material threshold.

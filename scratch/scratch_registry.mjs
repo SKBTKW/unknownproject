@@ -160,7 +160,11 @@ export function main(args = process.argv.slice(2)) {
     else {
         console.log(`Registry: ${validation.counts.existing} existing, ${validation.counts.supplemental} supplemental, ${validation.counts.quarantined} quarantined.`);
         console.log(`Executed: ${results.length}; PASS: ${report.passed}; non-PASS: ${report.failed}; not run: ${report.notRun}.`);
-        console.log('Quarantined tests remain unresolved; registry validation is not a full test pass.');
+        if (validation.counts.quarantined > 0) {
+            console.log('Quarantined tests remain unresolved; registry validation is not a full test pass.');
+        } else {
+            console.log('No quarantined tests registered.');
+        }
     }
     return report.failed ? 1 : 0;
 }

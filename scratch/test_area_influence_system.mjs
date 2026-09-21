@@ -37,11 +37,20 @@ const plains = {
 // Current-run placement must not create retired special water resources.
 {
     const engine = GameEngine.createGame({ runSeed: 0xA0711001 });
-    engine.state.grid[1][2].hasSocket = true;
-    const placed = engine.gridEngine.placeShape(1, 2, [[1]], wetland);
+    Object.assign(engine.state.grid[1][2], {
+        placed: true,
+        isHQ: false,
+        terrain: plains
+    });
+    engine.state.grid[0][2].hasSocket = true;
+    engine.state.hasPickedThisTurn = false;
+
+    const preflight = engine.gridEngine.canPlaceShape(0, 2, [[1]], wetland);
+    assert.equal(preflight.can, true, `wetland fixture must be placeable: ${preflight.reasons.join(",")}`);
+    const placed = engine.gridEngine.placeShape(0, 2, [[1]], wetland);
     assert.equal(placed.success, true);
-    assert.notEqual(engine.state.grid[1][2].socketResource?.id, "SOCKET_LAKE");
-    assert.notEqual(engine.state.grid[1][2].socketResource?.id, "SOCKET_OASIS");
+    assert.notEqual(engine.state.grid[0][2].socketResource?.id, "SOCKET_LAKE");
+    assert.notEqual(engine.state.grid[0][2].socketResource?.id, "SOCKET_OASIS");
 }
 
 // Legacy lake/oasis data remains readable for old saves and influence semantics.
