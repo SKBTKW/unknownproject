@@ -32,6 +32,12 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 1 (Static Lint) で違反が検出されました。");
         process.exit(1);
     }
+    const registryOk = await runCommand("node", ["scratch/scratch_registry.mjs", "--check"]);
+    const registryContractOk = registryOk && await runCommand("node", ["scratch/test_scratch_registry.mjs"]);
+    if (!registryContractOk) {
+        console.error("\n[PIPELINE BLOCKED] Scratch test registry validation failed.");
+        process.exit(1);
+    }
     const gitBranchGuardOk = await runCommand("python", ["-B", "scratch/test_git_branch_guard.py"]);
     if (!gitBranchGuardOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 1 (GIT001 Branch Authorization) で違反が検出されました。");
@@ -416,6 +422,12 @@ async function main() {
     const step6MaintOk = await runCommand("node", ["scratch/test_maintenance_fallback_system.mjs"]);
     if (!step6MaintOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (食料決済・不足補填) で不合格が検出されました。");
+        process.exit(1);
+    }
+
+    const supplementalOk = await runCommand("node", ["scratch/scratch_registry.mjs", "--run", "supplemental"]);
+    if (!supplementalOk) {
+        console.error("\n[PIPELINE BLOCKED] Supplemental scratch tests failed.");
         process.exit(1);
     }
 
