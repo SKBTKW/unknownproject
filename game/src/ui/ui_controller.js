@@ -25,6 +25,7 @@ import { DevChronicleRestoreComponent } from './dev_chronicle_restore_component.
 import { BuildIdentityBadgeComponent } from './build_identity_badge_component.js';
 import { TrialController } from '../trial/flow/trial_controller.js';
 import { TrialPresentationState } from '../trial/presentation/trial_presentation_state.js';
+import { TrialCausalityPresenter } from '../trial/presentation/trial_causality_presenter.js';
 import { TrialInterceptionPreviewComponent } from './trial_interception_preview_component.js';
 import { TrialDefenseAllocationComponent } from './trial_defense_allocation_component.js';
 import { LayoutStateManager, UI_LAYOUT_STATES, HAND_LAYOUT_STATES } from './layout_state_manager.js';
@@ -40,6 +41,11 @@ import {
 } from '../core/placement_geometry.js';
 import { sfxManager } from '../audio/sfx_manager.js';
 import { resolveLandSelectSfx } from '../audio/land_sfx_resolver.js';
+import { ADVISOR_SCENES } from '../data/advisor_scene_catalog.js';
+import {
+    FirstRunTrialTutorialService,
+    FIRST_RUN_TRIAL_TUTORIAL_EVENTS
+} from '../tutorial/first_run_trial_tutorial_service.js';
 
 class UIController {
     /**
@@ -79,6 +85,10 @@ class UIController {
         }) : null;
         this.trialController = new TrialController();
         this.trialPresentationState = new TrialPresentationState();
+        this.trialCausalityPresenter = new TrialCausalityPresenter();
+        this.firstRunTrialTutorialService = this.engine?.firstRunState
+            ? new FirstRunTrialTutorialService()
+            : null;
         this.trialPreviewConfig = null;
         this.developmentTrialPreviewHarness = new DevelopmentTrialPreviewHarness(this);
         this.advisorDockComponent = (typeof document !== 'undefined') ? new AdvisorDockComponent({
@@ -147,8 +157,19 @@ class UIController {
         this.trialController.startScenario({ ...scenario, availableDefense, ember, maxEmber }, { cellResolver: resolvedCellResolver });
         this.trialPresentationState.clearPlanningState();
         this.trialPresentationState.setActiveEnemyRoute(routeId);
-        this.trialPresentationState.setPreviewDefenseAllocation(deployedDefense, availableDefense, 0);
+
+        const tutorialState = this.firstRunTrialTutorialService?.begin?.({
+            firstRunState: this.engine?.firstRunState,
+            trialIndex: scenario?.trialIndex
+        }) || null;
+        const initialPreviewDefense = tutorialState?.active ? 0 : deployedDefense;
+        this.trialPresentationState.setPreviewDefenseAllocation(initialPreviewDefense, availableDefense, 0);
         this.trialPreviewConfig = { active: true };
+        if (tutorialState?.active && tutorialState.currentStep === "ROUTE_INTRO") {
+            this.emitFirstRunTrialAdvisorScene(ADVISOR_SCENES.FIRST_RUN_TRIAL_ROUTE, {
+                trialIndex: scenario?.trialIndex ?? 1
+            });
+        }
         this.layoutStateManager.enterTrial();
         this.render();
         return this.trialController.state;
@@ -183,6 +204,70 @@ class UIController {
         return Boolean(
             (this.trialPreviewConfig?.active && this.trialController?.state)
             || this.developmentTrialPreviewHarness?.isActive?.()
+        );
+    }
+
+    getFirstRunTrialTutorialPolicy() {
+        if (!this.firstRunTrialTutorialService || !this.engine?.firstRunState) {
+            return {
+                tutorialActive: false,
+                allowInterceptionSelection: true,
+                allowDefenseInput: true,
+                allowTrialConfirm: true,
+                allowSkipRoute: true,
+                qualitativePreviewOnly: false
+            };
+        }
+        return this.firstRunTrialTutorialService.getPresentationPolicy({
+            firstRunState: this.engine.firstRunState
+        });
+    }
+
+    recordFirstRunTrialTutorialEvent(event) {
+        if (!this.firstRunTrialTutorialService || !this.engine?.firstRunState) return null;
+        const trialIndex = this.trialController?.state?.trialIndex
+            ?? this.trialController?.state?.scenario?.trialIndex
+            ?? null;
+        const next = this.firstRunTrialTutorialService.record({
+            firstRunState: this.engine.firstRunState,
+            trialIndex,
+            event
+        });
+        this.trialActionTrayComponent?.render?.();
+        this.trialDefenseAllocationComponent?.render?.();
+        return next;
+    }
+
+    acknowledgeFirstRunTrialRoute() {
+        return this.recordFirstRunTrialTutorialEvent(
+            FIRST_RUN_TRIAL_TUTORIAL_EVENTS.ROUTE_ACKNOWLEDGED
+        );
+    }
+
+    emitFirstRunTrialAdvisorScene(sceneId, context = {}) {
+        const firstRunState = this.engine?.firstRunState;
+        if (!firstRunState?.active || !sceneId) return false;
+        if (firstRunState.hasSceneOccurred?.(sceneId)) return false;
+
+        firstRunState.recordScene?.(sceneId);
+        return this.advisorDockComponent?.consumeSemanticScene?.({
+            sceneId,
+            verse: Number(this.state?.turn || 1),
+            context
+        }) === true;
+    }
+
+    getCurrentTrialCausality() {
+        return this.trialCausalityPresenter?.project?.(this.getCurrentTrialBattleResult?.()) || {
+            available: false,
+            modifiers: [],
+            outcome: null
+        };
+    }
+
+    acknowledgeFirstRunTrialCausality() {
+        return this.recordFirstRunTrialTutorialEvent(
+            FIRST_RUN_TRIAL_TUTORIAL_EVENTS.CAUSALITY_OBSERVED
         );
     }
 
@@ -305,12 +390,30 @@ class UIController {
 
     updateTrialInterceptionPreview(r, c) {
         if (!this.trialPreviewConfig) return null;
+        if (!this.getFirstRunTrialTutorialPolicy().allowInterceptionSelection) {
+            this.trialPresentationState.clearHoveredCell();
+            this.trialPresentationState.clearInterceptionPreview();
+            this.trialDefenseAllocationComponent?.render?.();
+            return null;
+        }
         const cellState = this.getTrialInterceptionCellState(r, c);
         if (!cellState?.canIntercept) {
             this.trialPresentationState.clearHoveredCell();
             return this.refreshTrialInterceptionPreview();
         }
         this.trialPresentationState.setHoveredCell({ r, c });
+        const tutorialState = this.recordFirstRunTrialTutorialEvent(
+            FIRST_RUN_TRIAL_TUTORIAL_EVENTS.INTERCEPTION_HOVERED
+        );
+        if (tutorialState?.terrainIntroduced) {
+            const cell = this.getBoardDisplayGrid()?.[r]?.[c] || null;
+            this.emitFirstRunTrialAdvisorScene(ADVISOR_SCENES.FIRST_RUN_TRIAL_TERRAIN, {
+                trialIndex: this.trialController?.state?.trialIndex ?? 1,
+                r,
+                c,
+                terrainId: cell?.terrain?.id || cell?.terrain?.terrainId || cell?.terrainId || null
+            });
+        }
         return this.refreshTrialInterceptionPreview();
     }
 
@@ -343,6 +446,7 @@ class UIController {
 
     selectTrialInterceptionCell(r, c) {
         if (!this.trialPreviewConfig) return false;
+        if (!this.getFirstRunTrialTutorialPolicy().allowInterceptionSelection) return false;
         if (this.trialPresentationState.planningReviewRequested || this.isTrialPlanningConfirmed() || this.isTrialPlanActivated()) return false;
         const cellState = this.getTrialInterceptionCellState(r, c);
         if (!cellState?.canIntercept) return false;
@@ -352,11 +456,24 @@ class UIController {
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
         this.renderBoardGrid(I18n);
         if (this.trialDefenseAllocationComponent) this.trialDefenseAllocationComponent.render();
+        const tutorialState = this.recordFirstRunTrialTutorialEvent(
+            FIRST_RUN_TRIAL_TUTORIAL_EVENTS.INTERCEPTION_SELECTED
+        );
+        if (tutorialState?.defenseIntroduced) {
+            this.emitFirstRunTrialAdvisorScene(ADVISOR_SCENES.FIRST_RUN_TRIAL_DEFENSE, {
+                trialIndex: this.trialController?.state?.trialIndex ?? 1,
+                r,
+                c
+            });
+        }
         return true;
     }
 
     setTrialDefenseAllocation(value) {
         if (!this.trialPreviewConfig) return 0;
+        if (!this.getFirstRunTrialTutorialPolicy().allowDefenseInput) {
+            return this.trialPresentationState.previewDefenseAllocation;
+        }
         if (this.trialPresentationState.planningReviewRequested || this.isTrialPlanningConfirmed() || this.isTrialPlanActivated()) {
             return this.trialPresentationState.previewDefenseAllocation;
         }
@@ -370,6 +487,9 @@ class UIController {
             maxForRoute
         );
         this.refreshTrialInterceptionPreview();
+        if (allocation > 0) {
+            this.recordFirstRunTrialTutorialEvent(FIRST_RUN_TRIAL_TUTORIAL_EVENTS.DEFENSE_CHANGED);
+        }
         return allocation;
     }
 
@@ -396,6 +516,7 @@ class UIController {
 
     selectTrialRoute(routeId) {
         if (!this.trialPreviewConfig) return false;
+        this.acknowledgeFirstRunTrialRoute();
         this.trialPresentationState.setActiveEnemyRoute(routeId);
         this.trialPresentationState.clearHoveredCell();
 
@@ -465,6 +586,9 @@ class UIController {
 
     setTrialActiveRouteSkip() {
         if (!this.trialPreviewConfig) return { success: false, reason: "NOT_IN_TRIAL" };
+        if (!this.getFirstRunTrialTutorialPolicy().allowSkipRoute) {
+            return { success: false, reason: "FIRST_RUN_TUTORIAL_INTERCEPTION_REQUIRED" };
+        }
         if (this.trialPresentationState.planningReviewRequested) return { success: false, reason: "REVIEW_REQUESTED" };
         if (this.isTrialPlanActivated()) return { success: false, reason: "PLAN_ALREADY_ACTIVATED" };
         if (this.isTrialPlanningConfirmed()) return { success: false, reason: "ALREADY_CONFIRMED" };
@@ -513,6 +637,9 @@ class UIController {
     }
 
     finishTrialPlanning() {
+        if (!this.getFirstRunTrialTutorialPolicy().allowTrialConfirm) {
+            return { success: false, errors: ["FIRST_RUN_TUTORIAL_DEFENSE_REQUIRED"], warnings: [] };
+        }
         const validation = this.validateTrialPlanning();
         if (!validation.valid) {
             this.trialPresentationState.planningValidationErrors = validation.errors || [];
@@ -539,6 +666,7 @@ class UIController {
         this.trialPresentationState.planningValidationErrors = [];
         this.trialPresentationState.planningCompletionWarningOpen = false;
         this.trialPresentationState.planningReviewRequested = true;
+        this.recordFirstRunTrialTutorialEvent(FIRST_RUN_TRIAL_TUTORIAL_EVENTS.REVIEW_REACHED);
         this.render();
         return { success: true, reviewRequested: true };
     }
@@ -572,6 +700,9 @@ class UIController {
     confirmTrialPlanning() {
         if (!this.trialPreviewConfig || !this.trialController?.state) {
             return { success: false, errors: ["TRIAL_NOT_STARTED"], warnings: [] };
+        }
+        if (!this.getFirstRunTrialTutorialPolicy().allowTrialConfirm) {
+            return { success: false, errors: ["FIRST_RUN_TUTORIAL_DEFENSE_REQUIRED"], warnings: [] };
         }
         if (this.isTrialPlanningConfirmed()) {
             return { success: false, errors: [TRIAL_PLAN_REASONS.ALREADY_CONFIRMED], warnings: [] };
@@ -662,6 +793,7 @@ class UIController {
             return result;
         }
         this.trialPresentationState.planningValidationErrors = [];
+        this.recordFirstRunTrialTutorialEvent(FIRST_RUN_TRIAL_TUTORIAL_EVENTS.BATTLE_STARTED);
         this.render();
         return result;
     }
@@ -677,6 +809,7 @@ class UIController {
             return result;
         }
         this.trialPresentationState.planningValidationErrors = [];
+        this.recordFirstRunTrialTutorialEvent(FIRST_RUN_TRIAL_TUTORIAL_EVENTS.RESULT_OBSERVED);
         this.render();
         return result;
     }

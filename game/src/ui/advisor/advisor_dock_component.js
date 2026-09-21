@@ -332,6 +332,10 @@ export class AdvisorDockComponent {
         return this.eventBridge.observeMilitaryAction(actionType, Number(state.turn || 1));
     }
 
+    consumeSemanticScene(scene = {}) {
+        return this.eventBridge?.consumeSemanticScene?.(scene) === true;
+    }
+
     render() {
         if (!this.root) return;
         const state = this.stateProvider?.() || {};

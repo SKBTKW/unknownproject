@@ -152,6 +152,8 @@ jobs:
 
       - name: Run Presentation boundary focused tests
         run: |
+          node --test game/src/presentation/board_presentation_state.test.js
+          node scratch/test_board_presentation_axes.mjs
           node scratch/test_board_presentation_unity_boundary.mjs
           node scratch/test_legacy_web2d_board_input_adapter.mjs
 

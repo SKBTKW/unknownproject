@@ -212,3 +212,27 @@
 .turn-end-btn:hover {
     background: #2ecc71;
 }
+
+
+.trial-first-run-causality {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.trial-first-run-causality > strong {
+    display: block;
+    margin-bottom: 6px;
+}
+
+.trial-first-run-causality ul {
+    margin: 0 0 8px 18px;
+    padding: 0;
+}
+
+.trial-first-run-causality li {
+    margin-bottom: 4px;
+    line-height: 1.4;
+}

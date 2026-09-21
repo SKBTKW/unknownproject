@@ -2,7 +2,7 @@ import { I18n } from "../i18n.js";
 import { UILayoutConfig } from "./layout_config.js";
 import { RIGHT_CONTEXT_OWNERS } from "./layout_state_manager.js";
 import { TrialInterceptionPreviewComponent, resolveModifierTag } from "./trial_interception_preview_component.js";
-import { TRIAL_BATTLE_STATUSES } from "../trial/domain/trial_types.js";
+import { MODIFIER_TARGETS, TRIAL_BATTLE_STATUSES } from "../trial/domain/trial_types.js";
 
 export class TrialDefenseAllocationComponent {
     constructor(uiController, { contextOwnerProvider = null } = {}) {
@@ -310,14 +310,46 @@ export class TrialDefenseAllocationComponent {
                     }
                 }
 
+                const tutorialPolicy = this.ui.getFirstRunTrialTutorialPolicy?.() || { tutorialActive: false };
+                const showTutorialCausality = tutorialPolicy.tutorialActive
+                    && tutorialPolicy.step === "RESULT_CAUSALITY";
+                let tutorialCausalityHtml = "";
+                if (showTutorialCausality) {
+                    const causality = this.ui.getCurrentTrialCausality?.() || { available: false, modifiers: [] };
+                    const facts = (causality.modifiers || []).map(row => {
+                        const tag = resolveModifierTag(row);
+                        const effect = tag?.labelKey ? I18n.t(tag.labelKey) : (row.source || "—");
+                        const key = row.target === MODIFIER_TARGETS.ENEMY_SUPPRESSION && row.after < row.before
+                            ? "UI_FIRST_RUN_TRIAL_CAUSALITY_ENEMY_DOWN"
+                            : (row.target === MODIFIER_TARGETS.HUMAN_INTERCEPTION && row.after > row.before
+                                ? "UI_FIRST_RUN_TRIAL_CAUSALITY_HUMAN_UP"
+                                : "UI_FIRST_RUN_TRIAL_CAUSALITY_NEUTRAL");
+                        return `<li>${I18n.t(key, { effect })}</li>`;
+                    });
+                    if (facts.length === 0) {
+                        facts.push(`<li>${I18n.t("UI_FIRST_RUN_TRIAL_CAUSALITY_NO_MODIFIER")}</li>`);
+                    }
+                    tutorialCausalityHtml = `
+                        <div class="trial-first-run-causality" id="trialFirstRunCausality">
+                            <strong>${I18n.t("UI_FIRST_RUN_TRIAL_CAUSALITY_TITLE")}</strong>
+                            <ul>${facts.join("")}</ul>
+                            <button type="button" id="btnFirstRunTrialCausalityConfirm" class="btn-trial-action">
+                                ${I18n.t("UI_FIRST_RUN_TRIAL_CAUSALITY_CONFIRM")}
+                            </button>
+                        </div>
+                    `;
+                }
+
                 const isTraversalApplied = Boolean(this.ui.isTrialTraversalApplied?.());
                 let traversalControlsHtml = "";
                 if (!isTraversalApplied) {
-                    traversalControlsHtml = `
-                        <button type="button" id="btnTrialAdvanceEnemy" class="btn-trial-action btn-advance-enemy">
-                            ${I18n.t("UI_TRIAL_ADVANCE_ENEMY")}
-                        </button>
-                    `;
+                    traversalControlsHtml = showTutorialCausality
+                        ? ""
+                        : `
+                            <button type="button" id="btnTrialAdvanceEnemy" class="btn-trial-action btn-advance-enemy">
+                                ${I18n.t("UI_TRIAL_ADVANCE_ENEMY")}
+                            </button>
+                        `;
                 } else {
                     const traversalResult = this.ui.getCurrentTrialTraversalResult?.();
                     let statusBadgeHtml = "";
@@ -371,6 +403,7 @@ export class TrialDefenseAllocationComponent {
                         ${battleDetailsHtml}
                         ${powerComparisonHtml}
                         ${tagsHtml}
+                        ${tutorialCausalityHtml}
                         ${traversalControlsHtml}
                     </div>
                 `;
@@ -405,6 +438,14 @@ export class TrialDefenseAllocationComponent {
 
             const btnResolveBattle = document.getElementById("btnTrialResolveBattle");
             if (btnResolveBattle) btnResolveBattle.onclick = () => this.ui.resolveCurrentTrialBattle();
+
+            const btnCausalityConfirm = document.getElementById("btnFirstRunTrialCausalityConfirm");
+            if (btnCausalityConfirm) {
+                btnCausalityConfirm.onclick = () => {
+                    this.ui.acknowledgeFirstRunTrialCausality?.();
+                    this.render();
+                };
+            }
 
             const btnAdvanceEnemy = document.getElementById("btnTrialAdvanceEnemy");
             if (btnAdvanceEnemy) btnAdvanceEnemy.onclick = () => this.ui.advanceCurrentTrialBattle();

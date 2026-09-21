@@ -7,6 +7,68 @@ import { Web25DProjectionAdapter } from './web25d_projection_adapter.js';
 const ELEVATION_PIXELS = Object.freeze([0, 6, 14, 24]);
 const GREENERY_DENSITY = Object.freeze([0, 2, 5, 8]);
 
+export const WEB25D_TERRAIN_VISUAL_FAMILIES = Object.freeze({
+    WETLAND: 'WETLAND',
+    PLAINS: 'PLAINS',
+    FOREST: 'FOREST',
+    DEEP_FOREST: 'DEEP_FOREST',
+    HILL: 'HILL',
+    MOUNTAIN: 'MOUNTAIN',
+    DESERT: 'DESERT',
+    DESERT_HILL: 'DESERT_HILL',
+    FOREST_HILL: 'FOREST_HILL',
+    DEEP_HILL: 'DEEP_HILL',
+    UNKNOWN: 'UNKNOWN'
+});
+
+export function resolveWeb25DTerrainVisualFamily(terrainId) {
+    const id = String(terrainId || '').toUpperCase();
+    if (id.includes('WETLAND')) return WEB25D_TERRAIN_VISUAL_FAMILIES.WETLAND;
+    if (id.includes('DEEP_HILL')) return WEB25D_TERRAIN_VISUAL_FAMILIES.DEEP_HILL;
+    if (id.includes('FOREST_HILL')) return WEB25D_TERRAIN_VISUAL_FAMILIES.FOREST_HILL;
+    if (id.includes('DESERT_HILL')) return WEB25D_TERRAIN_VISUAL_FAMILIES.DESERT_HILL;
+    if (id.includes('MOUNTAIN')) return WEB25D_TERRAIN_VISUAL_FAMILIES.MOUNTAIN;
+    if (id.includes('DEEP_FOREST')) return WEB25D_TERRAIN_VISUAL_FAMILIES.DEEP_FOREST;
+    if (id.includes('FOREST')) return WEB25D_TERRAIN_VISUAL_FAMILIES.FOREST;
+    if (id.includes('HILL')) return WEB25D_TERRAIN_VISUAL_FAMILIES.HILL;
+    if (id.includes('DESERT')) return WEB25D_TERRAIN_VISUAL_FAMILIES.DESERT;
+    if (id.includes('PLAINS')) return WEB25D_TERRAIN_VISUAL_FAMILIES.PLAINS;
+    return WEB25D_TERRAIN_VISUAL_FAMILIES.UNKNOWN;
+}
+
+export function resolveWeb25DTerrainTopFill(cell = {}) {
+    switch (resolveWeb25DTerrainVisualFamily(cell.terrainId)) {
+        case WEB25D_TERRAIN_VISUAL_FAMILIES.WETLAND:
+            return 'rgba(62, 91, 84, 0.88)';
+        case WEB25D_TERRAIN_VISUAL_FAMILIES.PLAINS:
+            return 'rgba(109, 124, 82, 0.86)';
+        case WEB25D_TERRAIN_VISUAL_FAMILIES.FOREST:
+            return 'rgba(72, 101, 69, 0.88)';
+        case WEB25D_TERRAIN_VISUAL_FAMILIES.DEEP_FOREST:
+            return 'rgba(45, 73, 55, 0.92)';
+        case WEB25D_TERRAIN_VISUAL_FAMILIES.HILL:
+            return 'rgba(123, 102, 73, 0.88)';
+        case WEB25D_TERRAIN_VISUAL_FAMILIES.MOUNTAIN:
+            return 'rgba(103, 102, 95, 0.90)';
+        case WEB25D_TERRAIN_VISUAL_FAMILIES.DESERT:
+            return 'rgba(148, 126, 84, 0.88)';
+        case WEB25D_TERRAIN_VISUAL_FAMILIES.DESERT_HILL:
+            return 'rgba(137, 112, 73, 0.90)';
+        case WEB25D_TERRAIN_VISUAL_FAMILIES.FOREST_HILL:
+            return 'rgba(78, 92, 66, 0.90)';
+        case WEB25D_TERRAIN_VISUAL_FAMILIES.DEEP_HILL:
+            return 'rgba(49, 69, 53, 0.94)';
+        default:
+            switch (cell.greenery) {
+                case 0: return 'rgba(139, 120, 92, 0.82)';
+                case 1: return 'rgba(104, 126, 88, 0.82)';
+                case 2: return 'rgba(72, 106, 72, 0.86)';
+                case 3: return 'rgba(50, 78, 58, 0.90)';
+                default: return 'rgba(116, 126, 112, 0.72)';
+            }
+    }
+}
+
 const GREENERY_OFFSETS = Object.freeze([
     Object.freeze({ x: -12, y: 3 }),
     Object.freeze({ x: 10, y: 4 }),
@@ -286,6 +348,7 @@ export class Web25DCanvasRenderer {
                 : 'rgba(142, 154, 143, 0.68)');
         ctx.stroke();
 
+        this.drawTerrainSurfaceDetail(cell, projected.screenCenter, lift);
         this.drawGreenery(cell, projected.screenCenter, lift);
 
         if (this.showElevationLabels && Number.isInteger(cell.elevation)) {
@@ -298,12 +361,69 @@ export class Web25DCanvasRenderer {
     }
 
     resolveTerrainTopFill(cell) {
-        switch (cell.greenery) {
-            case 0: return 'rgba(139, 120, 92, 0.82)';
-            case 1: return 'rgba(104, 126, 88, 0.82)';
-            case 2: return 'rgba(72, 106, 72, 0.86)';
-            case 3: return 'rgba(50, 78, 58, 0.90)';
-            default: return 'rgba(116, 126, 112, 0.72)';
+        return resolveWeb25DTerrainTopFill(cell);
+    }
+
+    drawTerrainSurfaceDetail(cell, center, lift) {
+        const family = resolveWeb25DTerrainVisualFamily(cell?.terrainId);
+        const ctx = this.ctx;
+        const x = center.x;
+        const y = center.y - lift;
+
+        if (family === WEB25D_TERRAIN_VISUAL_FAMILIES.WETLAND) {
+            ctx.beginPath();
+            ctx.moveTo(x - 13, y + 2);
+            ctx.lineTo(x - 3, y + 2);
+            ctx.moveTo(x + 2, y - 2);
+            ctx.lineTo(x + 12, y - 2);
+            ctx.strokeStyle = 'rgba(128, 168, 155, 0.58)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            return;
+        }
+
+        if (family === WEB25D_TERRAIN_VISUAL_FAMILIES.MOUNTAIN) {
+            ctx.beginPath();
+            ctx.moveTo(x - 12, y + 4);
+            ctx.lineTo(x - 4, y - 6);
+            ctx.lineTo(x + 1, y);
+            ctx.lineTo(x + 7, y - 7);
+            ctx.lineTo(x + 14, y + 4);
+            ctx.strokeStyle = 'rgba(199, 199, 187, 0.56)';
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+            return;
+        }
+
+        if (family === WEB25D_TERRAIN_VISUAL_FAMILIES.HILL
+            || family === WEB25D_TERRAIN_VISUAL_FAMILIES.DESERT_HILL
+            || family === WEB25D_TERRAIN_VISUAL_FAMILIES.FOREST_HILL
+            || family === WEB25D_TERRAIN_VISUAL_FAMILIES.DEEP_HILL) {
+            ctx.beginPath();
+            ctx.moveTo(x - 14, y + 4);
+            ctx.lineTo(x - 5, y - 2);
+            ctx.lineTo(x + 3, y + 1);
+            ctx.lineTo(x + 13, y - 4);
+            ctx.strokeStyle = family === WEB25D_TERRAIN_VISUAL_FAMILIES.DESERT_HILL
+                ? 'rgba(208, 181, 124, 0.52)'
+                : 'rgba(198, 188, 159, 0.38)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            return;
+        }
+
+        if (family === WEB25D_TERRAIN_VISUAL_FAMILIES.DESERT) {
+            ctx.beginPath();
+            ctx.moveTo(x - 15, y - 2);
+            ctx.lineTo(x - 7, y - 4);
+            ctx.lineTo(x + 1, y - 2);
+            ctx.lineTo(x + 9, y - 4);
+            ctx.moveTo(x - 9, y + 4);
+            ctx.lineTo(x - 1, y + 2);
+            ctx.lineTo(x + 7, y + 4);
+            ctx.strokeStyle = 'rgba(218, 190, 132, 0.54)';
+            ctx.lineWidth = 0.9;
+            ctx.stroke();
         }
     }
 
