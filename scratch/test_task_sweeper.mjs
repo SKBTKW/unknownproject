@@ -1,5 +1,6 @@
 import assert from 'assert/strict';
-import { classifyTaskCandidate, parseGitHubRepo } from './task_sweeper.mjs';
+import fs from 'node:fs';
+import { classifyCleanupRevalidation, classifyTaskCandidate, parseGitHubRepo } from './task_sweeper.mjs';
 import { extractTargets, isCleanConfirmation } from './task_sweeper_launcher.mjs';
 import { expectedTaskBranchPattern, isCanonicalTaskBranch } from './task_branch_contract.mjs';
 
@@ -21,6 +22,7 @@ const base = {
 const tests = [
     ['empty task is safe', { ...base }, 'SAFE'],
     ['verified squash-merged task is safe', { ...base, uniqueCommits: 3, mergedPrVerified: true, mergedPrNumber: 42 }, 'SAFE'],
+    ['verified merged local-only task is safe after remote cleanup', { ...base, remoteExists: false, uniqueCommits: 3, mergedPrVerified: true, mergedPrNumber: 42 }, 'SAFE'],
     ['non-canonical task name blocks', { ...base, canonicalName: false }, 'BLOCKED'],
     ['dirty worktree blocks', { ...base, dirtyWorktree: true }, 'BLOCKED'],
     ['current task worktree blocks', { ...base, currentWorktree: true }, 'BLOCKED'],
@@ -67,4 +69,68 @@ for (const value of ['', 'delete', 'yes', 'clean now']) {
     assert.equal(isCleanConfirmation(value), false, `${value} should not authorize cleanup`);
 }
 
-console.log(`✅ AoT Task Sweeper safety contract: ${passed}/10 classifications PASS + naming/launcher contract PASS`);
+const previousCleanupState = {
+    localSha: 'local-a',
+    remoteSha: 'remote-a',
+};
+const stableCleanupState = {
+    status: 'SAFE',
+    reason: 'still safe',
+    localSha: 'local-a',
+    remoteSha: 'remote-a',
+    blockers: [],
+};
+assert.equal(
+    classifyCleanupRevalidation(previousCleanupState, stableCleanupState).status,
+    'SAFE',
+    'stable SAFE candidate should remain cleanable',
+);
+assert.equal(
+    classifyCleanupRevalidation(previousCleanupState, {
+        ...stableCleanupState,
+        localSha: 'local-b',
+    }).status,
+    'BLOCKED',
+    'local head movement after dry run must block cleanup',
+);
+assert.equal(
+    classifyCleanupRevalidation({ localSha: 'local-a', remoteSha: '' }, {
+        ...stableCleanupState,
+        localSha: 'local-a',
+        remoteSha: 'remote-new',
+    }).status,
+    'BLOCKED',
+    'a remote branch appearing after dry run must block cleanup',
+);
+assert.equal(
+    classifyCleanupRevalidation(previousCleanupState, null).status,
+    'SKIP',
+    'already-absent TASK branches should be idempotently skipped',
+);
+assert.equal(
+    classifyCleanupRevalidation(previousCleanupState, {
+        ...stableCleanupState,
+        remoteSha: '',
+    }).status,
+    'SAFE',
+    'remote disappearance after dry run is safe when the remaining candidate re-inspects SAFE',
+);
+
+const sweeperSource = fs.readFileSync(new URL('./task_sweeper.mjs', import.meta.url), 'utf8');
+assert.equal(
+    sweeperSource.includes("git(['branch', '-D', item.branch]"),
+    true,
+    'local deletion must use force-delete only after Sweeper revalidation',
+);
+assert.equal(
+    sweeperSource.includes("git(['branch', '-d', item.branch]"),
+    false,
+    'cleanup must not delegate safety to git branch -d after Sweeper already revalidated the target',
+);
+assert.equal(
+    sweeperSource.includes('Revalidating SAFE TASK branches immediately before cleanup'),
+    true,
+    'cleanup must refresh and revalidate immediately before mutation',
+);
+
+console.log(`✅ AoT Task Sweeper safety contract: ${passed}/11 classifications PASS + cleanup revalidation + naming/launcher contract PASS`);
