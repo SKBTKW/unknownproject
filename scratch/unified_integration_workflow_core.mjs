@@ -11,6 +11,7 @@ export function classifyRepositoryAudit(items = [], ignoredBranches = []) {
   const ignored = new Set(ignoredBranches);
   const blockers = [];
   const warnings = [];
+  const reviewFindings = [];
   const ignoredFindings = [];
 
   for (const item of items) {
@@ -25,14 +26,26 @@ export function classifyRepositoryAudit(items = [], ignoredBranches = []) {
       continue;
     }
 
+    // Repository history review is deliberately separated from the active merge gate.
+    // Unique history on stale/noncanonical branches must stay visible, but current
+    // AoT TASK safety is owned by Integration Guard / Safe Integration Runner.
+    if (item.status === ORPHAN_STATUS.REVIEW_REQUIRED) {
+      reviewFindings.push({
+        branch: item.branch,
+        status: item.status,
+        reasons: item.reasons || [],
+      });
+      continue;
+    }
+
+    // A local/remote disagreement is an observation integrity failure. Keep this
+    // fail-closed because neither the repository audit nor Guard can safely know
+    // which head the operator intends.
     if (item.status === ORPHAN_STATUS.LOCAL_REMOTE_MISMATCH) {
       blockers.push({ branch: item.branch, status: item.status, reasons: item.reasons || [] });
       continue;
     }
-    if (item.status === ORPHAN_STATUS.REVIEW_REQUIRED) {
-      blockers.push({ branch: item.branch, status: item.status, reasons: item.reasons || [] });
-      continue;
-    }
+
     if ([ORPHAN_STATUS.TARGET_CONTAINED, ORPHAN_STATUS.DUPLICATE_HEAD].includes(item.status)) {
       warnings.push({ branch: item.branch, status: item.status, reasons: item.reasons || [] });
     }
@@ -42,6 +55,7 @@ export function classifyRepositoryAudit(items = [], ignoredBranches = []) {
     ok: blockers.length === 0,
     blockers,
     warnings,
+    reviewFindings,
     ignoredFindings,
   };
 }
