@@ -171,6 +171,50 @@ test("water source influence type is renderer-neutral", () => {
     assert.equal(getWaterSourceInfluenceType({ grid: [[{ placed: false }]] }, 0, 0), null);
 });
 
+test("generic irrigation source keeps null legacy waterSourceType", () => {
+    const genericGrid = [[
+        { placed: true, irrigationSource: true },
+        { placed: false }
+    ]];
+    const genericState = {
+        grid: genericGrid,
+        mergedBlocks: {},
+        mergeLinks: new Set(),
+        isHQVicinity: () => false
+    };
+    const genericService = new BoardPresentationDataService({
+        cellViewDataService: {
+            getCellViewData(_state, r, c) {
+                const source = genericGrid?.[r]?.[c] || {};
+                return {
+                    r, c,
+                    placed: Boolean(source.placed),
+                    isHQ: false,
+                    terrainId: null,
+                    category: "LAND",
+                    nameKey: null,
+                    elevation: null,
+                    greenery: null,
+                    hasSocket: false,
+                    socketResource: null,
+                    yields: {},
+                    baseYields: {},
+                    primaryYield: null,
+                    modifiers: [],
+                    placementGroupId: null,
+                    mergeGroupId: null
+                };
+            }
+        }
+    });
+    const genericReadModel = genericService.getBoard(genericState, {
+        presentationState: new BoardPresentationState()
+    });
+    assert.equal(getWaterSourceInfluenceType(genericState, 0, 0), null);
+    assert.equal(genericReadModel.cells[0][0].influence.waterSource, true);
+    assert.equal(genericReadModel.cells[0][0].influence.waterSourceType, null);
+});
+
 test("BoardPresentationData and DTO preserve water source type", () => {
     const waterGrid = [
         [

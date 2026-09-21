@@ -246,6 +246,7 @@ export class BoardAwareUIController extends LegacyUIController {
         const coordStr = `${String.fromCharCode(65 + c)}${r + 1}`;
         const isHQVic = Boolean(cell.influence?.hqVicinity);
         const waterSourceType = cell.influence?.waterSourceType || null;
+        const hasIrrigationInfluence = Boolean(cell.influence?.waterSource);
         const isPlacedThisTurn = Boolean(cell.interaction?.placedThisTurn);
 
         let title = `[${coordStr}]`;
@@ -307,11 +308,14 @@ export class BoardAwareUIController extends LegacyUIController {
                     if (mod.type === "HQ_VICINITY" && !hqVicinityReported) {
                         bonusParts.push(I18n.t("UI_CELL_BONUS_VICINITY"));
                         hqVicinityReported = true;
-                    } else if (mod.type === "LAKE_IRRIGATION") {
-                        const i18nKey = waterSourceType === "OASIS"
-                            ? "UI_CELL_BONUS_OASIS_IRRIGATION"
-                            : "UI_CELL_BONUS_LAKE_IRRIGATION";
-                        bonusParts.push(I18n.t(i18nKey, { val: mod.amount }));
+                    } else if (mod.type === "IRRIGATION" || mod.type === "LAKE_IRRIGATION") {
+                        if (waterSourceType === "OASIS") {
+                            bonusParts.push(I18n.t("UI_CELL_BONUS_OASIS_IRRIGATION", { val: mod.amount }));
+                        } else if (waterSourceType === "LAKE") {
+                            bonusParts.push(I18n.t("UI_CELL_BONUS_LAKE_IRRIGATION", { val: mod.amount }));
+                        } else {
+                            bonusParts.push(`${I18n.t("CMD_IRRIGATION")}(+${mod.amount})`);
+                        }
                     } else if (mod.type === "PERMANENT_PLAINS") {
                         bonusParts.push(I18n.t("UI_CELL_BONUS_PLAINS", { val: mod.amount }));
                     }
@@ -337,6 +341,8 @@ export class BoardAwareUIController extends LegacyUIController {
             const influenceNotes = [];
             if (waterSourceType) {
                 influenceNotes.push(I18n ? I18n.t("TOOLTIP_INFLUENCE_LAKE") : "💧 Lake Influence");
+            } else if (hasIrrigationInfluence) {
+                influenceNotes.push(I18n ? `💧 ${I18n.t("CMD_IRRIGATION")}` : "💧 Irrigation");
             }
             if (isHQVic) {
                 influenceNotes.push(I18n ? I18n.t("TOOLTIP_INFLUENCE_HQ") : "🏘 HQ Vicinity");

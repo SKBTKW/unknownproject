@@ -1,7 +1,5 @@
-import {
-    getWaterSourceInfluenceType,
-    isWaterSourceInfluence
-} from '../core/lake_rules.js';
+import { isIrrigationInfluence } from '../core/irrigation_rules.js';
+import { getWaterSourceInfluenceType } from '../core/lake_rules.js';
 
 const CARDINAL_DIRECTIONS = Object.freeze([
     Object.freeze({ direction: 'NORTH', dr: -1, dc: 0 }),
@@ -221,10 +219,9 @@ export class BoardPresentationSemanticService {
         const waterSourceType = state
             ? getWaterSourceInfluenceType(state, r, c)
             : null;
-        const waterSource = Boolean(waterSourceType)
-            || (typeof state?.isWaterSourceInfluence === 'function'
-                ? Boolean(state.isWaterSourceInfluence(r, c))
-                : Boolean(state && isWaterSourceInfluence(state, r, c)));
+        const waterSource = typeof state?.isWaterSourceInfluence === 'function'
+            ? Boolean(state.isWaterSourceInfluence(r, c))
+            : Boolean(state && isIrrigationInfluence(state, r, c));
         return Object.freeze({ hqVicinity, waterSource, waterSourceType });
     }
 

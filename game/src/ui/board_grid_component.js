@@ -1,7 +1,7 @@
 import { boardCameraSystem } from './board_camera_system.js';
 import { ElevationVisualService } from './elevation_visual_service.js';
 import { AreaInfluenceVisualService } from './area_influence_visual_service.js';
-import { isWaterSourceInfluence } from '../core/lake_rules.js';
+import { isIrrigationInfluence, isIrrigationSourceCell } from '../core/irrigation_rules.js';
 import { getTrialRouteCellVisualState } from '../presentation/trial_board_semantic_data.js';
 import {
     resolveBoardDisplayProduction,
@@ -74,16 +74,14 @@ export class BoardGridComponent {
             document.body.setAttribute("data-tile-style", currentTileStyle);
         }
 
-        // 🌊 開花した湖・オアシスの座標リストを事前収集 (周囲8マスのティール水脈エフェクト用)
-        const lakeCoords = [];
+        // 🌾 灌漑源の座標リストを事前収集。
+        // 旧Lake/Oasisだけでなく、将来の水利改善湿原も同じ表示契約へ参加する。
+        const irrigationSourceCoords = [];
         for (let r = 0; r < size; r++) {
             for (let c = 0; c < size; c++) {
                 const cell = grid[r][c];
-                if (cell && cell.placed && cell.socketResource) {
-                    const sid = cell.socketResource.id || cell.socketResource.nameKey || "";
-                    if (sid === "SOCKET_LAKE" || sid === "SOCKET_OASIS") {
-                        lakeCoords.push({ r, c });
-                    }
+                if (isIrrigationSourceCell(cell)) {
+                    irrigationSourceCoords.push({ r, c });
                 }
             }
         }
@@ -144,10 +142,10 @@ export class BoardGridComponent {
                 }
 
                 const isHQVic = (typeof this.state.isHQVicinity === "function") ? this.state.isHQVicinity(r, c) : false;
-                const isLakeVic = (typeof this.state.isWaterSourceInfluence === "function")
+                const isIrrigationVic = (typeof this.state.isWaterSourceInfluence === "function")
                     ? this.state.isWaterSourceInfluence(r, c)
-                    : isWaterSourceInfluence(this.state, r, c);
-                const lakeDirClass = this.getLakeDirectionClass(r, c, lakeCoords);
+                    : isIrrigationInfluence(this.state, r, c);
+                const irrigationDirClass = this.getIrrigationDirectionClass(r, c, irrigationSourceCoords);
 
                 let topGroupSame = false;
                 let leftGroupSame = false;
@@ -173,9 +171,9 @@ export class BoardGridComponent {
                     const overlayHtml = ElevationVisualService.createElevationOverlay(e);
 
                     // 🌐 範囲効果（湖水源バフ ＆ 本営近郊バフ）のクラス付与 ＆ オーバーレイ生成 (ゲーム側の判定をSingle Source of Truthとして受容)
-                    const influenceClasses = AreaInfluenceVisualService.getInfluenceClasses({ isLakeVic, isHQVic });
+                    const influenceClasses = AreaInfluenceVisualService.getInfluenceClasses({ isIrrigationVic, isHQVic });
                     influenceClasses.forEach(cls => cellEl.classList.add(cls));
-                    const influenceOverlayHtml = AreaInfluenceVisualService.createInfluenceOverlayHtml({ isLakeVic, isHQVic });
+                    const influenceOverlayHtml = AreaInfluenceVisualService.createInfluenceOverlayHtml({ isIrrigationVic, isHQVic });
 
                     const tid = cellData.terrain ? (cellData.terrain.terrainId || cellData.terrain.id || "") : "";
                     if (tid.includes("WETLAND")) cellEl.classList.add("terrain-wetland");
@@ -274,9 +272,9 @@ export class BoardGridComponent {
                         const dirClass = this.getHQDirectionClass(r, c);
                         if (dirClass) cellEl.classList.add(dirClass);
                     }
-                    if (isLakeVic) {
+                    if (isIrrigationVic) {
                         cellEl.classList.add("influence-lake", "lake-vicinity-unplaced");
-                        if (lakeDirClass) cellEl.classList.add(lakeDirClass);
+                        if (irrigationDirClass) cellEl.classList.add(irrigationDirClass);
                     }
                     cellEl.innerHTML = `<span class="socket-star-icon">★</span>`;
                 } else {
@@ -285,9 +283,9 @@ export class BoardGridComponent {
                         const dirClass = this.getHQDirectionClass(r, c);
                         if (dirClass) cellEl.classList.add(dirClass);
                     }
-                    if (isLakeVic) {
+                    if (isIrrigationVic) {
                         cellEl.classList.add("influence-lake", "lake-vicinity-unplaced");
-                        if (lakeDirClass) cellEl.classList.add(lakeDirClass);
+                        if (irrigationDirClass) cellEl.classList.add(irrigationDirClass);
                     }
                 }
 
@@ -611,17 +609,14 @@ export class BoardGridComponent {
     }
 
     /**
-     * 🌊 湖(Lake)の中心からの8方位クラス名の算出
-     * @param {number} r - 行
-     * @param {number} c - 列
-     * @param {Array<Object>} lakeCoords - 盤面上の湖座標リスト
-     * @returns {string} 方位クラス名 ("lake-dir-n", "lake-dir-ne", etc.)
+     * 🌾 灌漑源中心からの8方位クラス名を算出する。
+     * CSSクラス名 lake-dir-* は既存表示互換のため当面維持する。
      */
-    getLakeDirectionClass(r, c, lakeCoords) {
-        if (!Array.isArray(lakeCoords) || lakeCoords.length === 0) return "";
-        for (let lake of lakeCoords) {
-            const dr = r - lake.r;
-            const dc = c - lake.c;
+    getIrrigationDirectionClass(r, c, irrigationSourceCoords) {
+        if (!Array.isArray(irrigationSourceCoords) || irrigationSourceCoords.length === 0) return "";
+        for (const source of irrigationSourceCoords) {
+            const dr = r - source.r;
+            const dc = c - source.c;
             if (Math.abs(dr) <= 1 && Math.abs(dc) <= 1 && !(dr === 0 && dc === 0)) {
                 if (dr === -1 && dc === 0) return "lake-dir-n";
                 if (dr === -1 && dc === 1) return "lake-dir-ne";
@@ -634,6 +629,11 @@ export class BoardGridComponent {
             }
         }
         return "";
+    }
+
+    // 旧Presentation/Test互換。
+    getLakeDirectionClass(r, c, sourceCoords) {
+        return this.getIrrigationDirectionClass(r, c, sourceCoords);
     }
 
     /**

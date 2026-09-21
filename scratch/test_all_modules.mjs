@@ -505,13 +505,28 @@ assert(mountainNextToHill.can === true, '丘陵(E2)にのみ隣接する山岳(E
 const mountainNearHQ = glEngine.gridEngine.canPlaceShape(1, 3, [[1]], mountainTerrain);
 assert(mountainNearHQ.can === false && mountainNearHQ.reason === 'MOUNTAIN_NEAR_HQ_FORBIDDEN', '本営周囲8マスへの山岳配置は MOUNTAIN_NEAR_HQ_FORBIDDEN で禁止されること');
 
-// ⛰️ 湿原(E0) に隣接して 山岳(E3) を配置しようとする ➔ WETLAND_MOUNTAIN_NEIGHBOR で禁止されること
+// 🌊 本営周囲8マスへの湿原配置は禁止
 const wetlandEngine = new GameEngine();
 const wetlandTerrain = { id: 'E0_WETLAND', gl: 1, e: 0, nameKey: 'TERRAIN_WETLAND' };
-wetlandEngine.gridEngine.placeShape(1, 2, [[1]], wetlandTerrain, 0); // 本営(2,2)の北隣に湿原を配置
-wetlandEngine.state.hasPickedThisTurn = false;
-const mtnNextToWetland = wetlandEngine.gridEngine.canPlaceShape(0, 2, [[1]], mountainTerrain); // (0,2) [非本営近郊] に山岳を配置試行
-assert(mtnNextToWetland.can === false && mtnNextToWetland.reasons.includes('WETLAND_MOUNTAIN_NEIGHBOR'), '湿原(E0)に隣接する山岳(E3)の配置は WETLAND_MOUNTAIN_NEIGHBOR で禁止されること');
+const wetlandNearHQ = wetlandEngine.gridEngine.canPlaceShape(1, 2, [[1]], wetlandTerrain);
+assert(
+    wetlandNearHQ.can === false
+        && wetlandNearHQ.reasons.includes('WETLAND_NEAR_HQ_FORBIDDEN'),
+    '本営周囲8マスへの湿原配置は WETLAND_NEAR_HQ_FORBIDDEN で禁止されること'
+);
+
+// ⛰️ HQ制約とは独立したfixtureで湿原E0 × 山岳E3の高度断絶を検証
+Object.assign(wetlandEngine.state.grid[0][2], {
+    placed: true,
+    isHQ: false,
+    terrain: wetlandTerrain
+});
+const mtnNextToWetland = wetlandEngine.gridEngine.canPlaceShape(0, 1, [[1]], mountainTerrain);
+assert(
+    mtnNextToWetland.can === false
+        && mtnNextToWetland.reasons.includes('WETLAND_MOUNTAIN_NEIGHBOR'),
+    '湿原(E0)に隣接する山岳(E3)の配置は WETLAND_MOUNTAIN_NEIGHBOR で禁止されること'
+);
 
 // 🔒 同属性 2×2 マージ直接面隣接禁止ルール検証 (ユーザー盤面図ケース: 7x7 Stage 2 盤面)
 const mergeAdjEngine = new GameEngine();

@@ -1,9 +1,34 @@
+function finiteCount(value) {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? Math.max(0, Math.floor(numeric)) : null;
+}
+
 export function resolveAdvisorStatus(state, trialStatus = {}) {
     const urgency = [];
     const status = [];
     const outlook = [];
 
-    if (trialStatus.active) urgency.push({ key: "UI_ADVISOR_STATUS_TRIAL_ACTIVE" });
+    if (trialStatus.active) {
+        urgency.push({ key: "UI_ADVISOR_STATUS_TRIAL_ACTIVE" });
+
+        const routeCount = finiteCount(trialStatus.routeCount);
+        const decidedRouteCount = finiteCount(trialStatus.decidedRouteCount);
+        if (routeCount !== null && routeCount > 0 && decidedRouteCount !== null) {
+            status.push({
+                key: "UI_ADVISOR_STATUS_TRIAL_ROUTES",
+                params: { decided: Math.min(routeCount, decidedRouteCount), total: routeCount }
+            });
+        }
+
+        const remainingDefense = finiteCount(trialStatus.remainingDefense);
+        if (remainingDefense !== null) {
+            status.push({
+                key: "UI_ADVISOR_STATUS_TRIAL_DEFENSE_REMAINING",
+                params: { count: remainingDefense }
+            });
+        }
+    }
+
     if (state?.emberSystem?.getStatus?.() === "CRISIS") urgency.push({ key: "UI_ADVISOR_STATUS_EMBER_CRISIS" });
 
     const zoneCount = Object.keys(state?.mergedBlocks || {}).length;

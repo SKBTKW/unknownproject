@@ -1,3 +1,11 @@
+import {
+    LEGACY_IRRIGATION_SOURCE_IDS,
+    hasAdjacentIrrigationSource,
+    isIrrigationInfluence,
+    isIrrigationSourceCell,
+    isLegacyIrrigationResource
+} from './irrigation_rules.js';
+
 /**
  * 🌊 lake_rules.js (湖・オアシス共通の水源ルール Single Source of Truth)
  *
@@ -5,20 +13,22 @@
  * 周囲8マス効果を共通判定する。
  */
 
-const WATER_SOURCE_IDS = Object.freeze([
-    "SOCKET_LAKE",
-    "SOCKET_OASIS"
-]);
+// 旧名互換。新規Runでは湖・オアシスを生成しない。
+const WATER_SOURCE_IDS = LEGACY_IRRIGATION_SOURCE_IDS;
 
 const WATER_SOURCE_EXCLUSION_RANGE = 2;
 const WETLAND_EXCLUSION_RANGE = 1;
 
 export function isWaterSourceResource(resource) {
-    return !!resource && WATER_SOURCE_IDS.includes(resource.id);
+    return isLegacyIrrigationResource(resource);
 }
 
+/**
+ * @deprecated 内部意味は「灌漑源Cell」へ一般化済み。
+ * 既存 import 互換のため旧名を維持する。
+ */
 export function isWaterSourceCell(cell) {
-    return !!cell && !!cell.placed && isWaterSourceResource(cell.socketResource);
+    return isIrrigationSourceCell(cell);
 }
 
 export function isWetlandTerrain(terrain) {
@@ -107,16 +117,7 @@ export function getWaterSourceSpawnChance(state, r, c, baseRate) {
 }
 
 export function hasAdjacentWaterSource(state, r, c) {
-    if (!state || !Array.isArray(state.grid)) return false;
-    for (let sourceR = Math.max(0, r - 1); sourceR <= Math.min(state.grid.length - 1, r + 1); sourceR++) {
-        const row = state.grid[sourceR];
-        if (!Array.isArray(row)) continue;
-        for (let sourceC = Math.max(0, c - 1); sourceC <= Math.min(row.length - 1, c + 1); sourceC++) {
-            if (sourceR === r && sourceC === c) continue;
-            if (isWaterSourceCell(row[sourceC])) return true;
-        }
-    }
-    return false;
+    return hasAdjacentIrrigationSource(state, r, c);
 }
 
 /**
@@ -126,14 +127,15 @@ export function hasAdjacentWaterSource(state, r, c) {
  * @param {number} c - 列インデックス
  * @returns {boolean}
  */
-function getWaterSourceTypeFromCell(cell) {
-    if (!isWaterSourceCell(cell)) return null;
+function getLegacyWaterSourceTypeFromCell(cell) {
+    if (!cell || !cell.placed || !isLegacyIrrigationResource(cell.socketResource)) return null;
     return cell.socketResource.id === "SOCKET_OASIS" ? "OASIS" : "LAKE";
 }
 
 /**
- * Renderer-neutral water-source influence type for a board coordinate.
- * Returns the source kind affecting the target cell, including the source cell itself.
+ * Renderer-neutral legacy water-source influence type.
+ * Generic irrigation sources intentionally return null here while
+ * isWaterSourceInfluence() remains the generic irrigation boolean contract.
  * @returns {"LAKE"|"OASIS"|null}
  */
 export function getWaterSourceInfluenceType(state, r, c) {
@@ -143,7 +145,7 @@ export function getWaterSourceInfluenceType(state, r, c) {
     const row = grid[r];
     if (!Array.isArray(row)) return null;
 
-    const ownType = getWaterSourceTypeFromCell(row[c]);
+    const ownType = getLegacyWaterSourceTypeFromCell(row[c]);
     if (ownType) return ownType;
 
     for (let sourceR = Math.max(0, r - 1); sourceR <= Math.min(grid.length - 1, r + 1); sourceR++) {
@@ -151,7 +153,7 @@ export function getWaterSourceInfluenceType(state, r, c) {
         if (!Array.isArray(sourceRow)) continue;
         for (let sourceC = Math.max(0, c - 1); sourceC <= Math.min(sourceRow.length - 1, c + 1); sourceC++) {
             if (sourceR === r && sourceC === c) continue;
-            const sourceType = getWaterSourceTypeFromCell(sourceRow[sourceC]);
+            const sourceType = getLegacyWaterSourceTypeFromCell(sourceRow[sourceC]);
             if (sourceType) return sourceType;
         }
     }
@@ -159,7 +161,7 @@ export function getWaterSourceInfluenceType(state, r, c) {
 }
 
 export function isWaterSourceInfluence(state, r, c) {
-    return getWaterSourceInfluenceType(state, r, c) !== null;
+    return isIrrigationInfluence(state, r, c);
 }
 
 // 既存importとの互換。意味は新仕様どおり「湖+オアシス」の水源合計へ更新する。
