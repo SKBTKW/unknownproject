@@ -1,6 +1,7 @@
 {
   "ignoredBranches": [
-    "Legacy260911"
+    "Legacy260911",
+    "backup/main-before-aot260920"
   ],
   "reviewedBranches": [
     {
