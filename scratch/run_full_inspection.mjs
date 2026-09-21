@@ -260,6 +260,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Trial Causality Presenter) で不合格が検出されました。");
         process.exit(1);
     }
+    const trialAdvisorPublicReadModelOk = await runCommand("node", ["scratch/test_trial_advisor_public_read_model.mjs"]);
+    if (!trialAdvisorPublicReadModelOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Trial Advisor Public Read Model) で不合格が検出されました。");
+        process.exit(1);
+    }
     const trialFoundationOk = await runCommand("node", ["scratch/test_trial_foundation.mjs"]);
     if (!trialFoundationOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Trial Foundation) で不合格が検出されました。");
