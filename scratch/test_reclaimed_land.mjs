@@ -8,6 +8,7 @@ import { ProductionCalculator } from "../game/src/systems/production_calculator.
 import { serializeGameState } from "../game/src/core/state_serializer.js";
 import { getZoneCategory, isTrueMergedCell } from "../game/src/core/merge_rules.js";
 import { ConditionEvaluator } from "../game/src/core/condition_evaluator.js";
+import { hasMultiplePlacementTerrainAttributes } from "../game/src/core/placement_geometry.js";
 import { TrialTerrainEffectResolver } from "../game/src/trial/systems/trial_terrain_effect_resolver.js";
 
 console.log("============================================================");
@@ -59,6 +60,10 @@ assert.strictEqual(
     false,
     "干拓カードが既存active buffと衝突していないこと"
 );
+assert.strictEqual(hasMultiplePlacementTerrainAttributes(cmdReclamation), false, "干拓がmulti-attribute土地と誤判定されていないこと");
+assert.strictEqual(cmdReclamation.cyclePolicy, "RARITY", "干拓のcyclePolicyがRARITYであること");
+assert.strictEqual(engineA.state.consumedUniqueCards?.includes(cmdReclamation.id) || false, false, "干拓がUNIQUE消費済みではないこと");
+assert.strictEqual(engineA.state.usedUniqueCards?.includes(cmdReclamation.id) || false, false, "干拓が旧UNIQUE履歴にないこと");
 assert.strictEqual(engineA.deckManager.cycleSystem.isRetiredCard(cmdReclamation.id), false, "干拓がretiredカードではないこと");
 assert.strictEqual(engineA.deckManager.isInHold(cmdReclamation.id), false, "干拓がHold済みではないこと");
 assert.strictEqual(

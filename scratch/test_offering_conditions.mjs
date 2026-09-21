@@ -3,6 +3,7 @@ import { GameEngine } from "../game/src/app.js";
 import { RETIRED_TRIAL_RESERVED_CARD_IDS } from "../game/src/systems/card_cycle_system.js";
 import { ConditionEvaluator } from "../game/src/core/condition_evaluator.js";
 import { isTrueMergedCell } from "../game/src/core/merge_rules.js";
+import { hasMultiplePlacementTerrainAttributes } from "../game/src/core/placement_geometry.js";
 
 console.log("Offering eligibility representative active contracts");
 
@@ -38,6 +39,15 @@ const assertReclamationPrerequisites = (card) => {
         buff && (buff.id === card.id || buff.sourceCardId === card.id)
     ) || false;
     assert.equal(sameIdBuff, false, "reclamation must not already be active as a buff");
+    assert.equal(hasMultiplePlacementTerrainAttributes(card), false, "reclamation must not be misclassified as a multi-attribute land card");
+    assert.equal(card.cyclePolicy, "RARITY", "reclamation must remain a normal rarity-cycled command card");
+    assert.equal(engine.state.consumedUniqueCards?.includes(card.id) || false, false, "reclamation must not be consumed as UNIQUE");
+    assert.equal(engine.state.usedUniqueCards?.includes(card.id) || false, false, "reclamation must not be present in legacy UNIQUE history");
+    assert.deepEqual(
+        Object.keys(card).sort(),
+        ["category","cost","cyclePolicy","descriptionKey","id","minStage","nameKey","rarity","reqWetland","reqWood","tags","weight"].sort(),
+        "reclamation master must not acquire hidden eligibility fields"
+    );
     assert.equal(deck.cycleSystem.isRetiredCard(card.id), false, "reclamation must not be retired");
     assert.equal(deck.isInHold(card.id), false, "reclamation must not already be held");
     assert.equal(
