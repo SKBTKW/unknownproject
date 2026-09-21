@@ -7,6 +7,7 @@ import { TrialRouteSuppressionAllocator } from "../scenario/trial_route_suppress
 import { TrialScenarioFactory } from "../scenario/trial_scenario_factory.js";
 import { EnemyArmyStructureResolver } from "../systems/enemy_army_structure_resolver.js";
 import { TrialLaunchCoordinator } from "./trial_launch_coordinator.js";
+import { FirstRunTrialIngressPolicy } from "../../tutorial/first_run_trial_ingress_policy.js";
 
 function hasFunction(value) {
     return typeof value === "function";
@@ -93,7 +94,7 @@ export function attachTrialLaunchSubsystem(engine, ui, {
 
     let resolvedIngressResolver = ingressResolver;
     if (!resolvedIngressResolver) {
-        const selectionPolicy = ingressSelectionPolicy || new TrialIngressSelectionPolicy({
+        const baseSelectionPolicy = ingressSelectionPolicy || new TrialIngressSelectionPolicy({
             // countResolver is retained only as legacy/dev fallback. Production
             // count comes from armyStructure.routeCount (= forceCount).
             countResolver: ingressCountResolver,
@@ -101,6 +102,12 @@ export function attachTrialLaunchSubsystem(engine, ui, {
             ingressScoreResolver: context => resolvedIngressJudgementResolver.resolve(context),
             randomService: engine.gameplayRandom || null
         });
+        const selectionPolicy = engine.firstRunState?.active
+            ? new FirstRunTrialIngressPolicy({
+                basePolicy: baseSelectionPolicy,
+                randomService: engine.gameplayRandom || null
+            })
+            : baseSelectionPolicy;
         resolvedIngressResolver = new TrialIngressResolver({
             selector: context => selectionPolicy.select(context)
         });

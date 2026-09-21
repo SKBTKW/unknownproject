@@ -186,7 +186,7 @@ function printPlan(decision, plan, pr) {
 }
 
 export async function runSafeIntegration(options = {}) {
-  const cwd = run(options.cwd || process.cwd(), ['rev-parse', '--show-toplevel']);
+  const cwd = run('git', ['rev-parse', '--show-toplevel'], { cwd: options.cwd || process.cwd() });
   if ((options.mode || 'plan') === 'merge-next' && !options.target) {
     throw new Error('--merge-next requires an explicit --target AoTYYMMDD.');
   }

@@ -148,6 +148,7 @@ export class AdvisorEventBridge {
             id: resolved.advisorEvent,
             topic,
             severity: 1,
+            mandatory: resolved.mandatory === true,
             context: resolved.context
         }, turn);
     }
