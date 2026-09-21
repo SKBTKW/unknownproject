@@ -2,5 +2,25 @@
   "ignoredBranches": [
     "AGtest260915",
     "Legacy260911"
+  ],
+  "reviewedBranches": [
+    {
+      "branch": "AoT260919",
+      "sha": "cb9c860ee2e1c36c956c9900e5314b9de98aaf49",
+      "disposition": "SUPERSEDED",
+      "reason": "15 unique commits are tooling-only. AoT260920 contains the inspector/workflow implementation; the review-gate divergence is hardened by the current pinned-review contract."
+    },
+    {
+      "branch": "aot-task/AoT260919/tooling/orphan-branch-inspector",
+      "sha": "08e7ce0485be414f4bf97f71438be0a8fbf4c501",
+      "disposition": "SUPERSEDED",
+      "reason": "Inspector implementation and contract tests are present in AoT260920; its Full Inspection wiring is retained."
+    },
+    {
+      "branch": "aot-task/AoT260919/tooling/unified-integration-workflow",
+      "sha": "ef020838def8e7ff85d1ee7c6e053691fe773c21",
+      "disposition": "SUPERSEDED",
+      "reason": "Unified workflow implementation is present in AoT260920. Any future movement of this stale branch requires a new review."
+    }
   ]
 }

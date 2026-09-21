@@ -88,20 +88,24 @@ function refreshRefs(cwd) {
 function inspectRepository(cwd, target, config) {
   refreshRefs(cwd);
   const items = inspectBranches({ cwd, target });
-  const audit = classifyRepositoryAudit(items, config.ignoredBranches);
+  const audit = classifyRepositoryAudit(items, config.ignoredBranches, config.reviewedBranches);
 
   console.log('\n============================================================');
   console.log(' AoT Unified Integration Workflow - REPOSITORY AUDIT');
   console.log('============================================================');
   console.log(`Target: ${target}`);
   console.log(`Ignored archival branches: ${config.ignoredBranches.length ? config.ignoredBranches.join(', ') : '(none)'}`);
+  console.log(`Pinned reviewed branches: ${config.reviewedBranches.length ? config.reviewedBranches.length : 0}`);
 
   for (const item of audit.blockers) {
     console.log(`[BLOCK] ${item.branch} - ${item.status}`);
     for (const reason of item.reasons) console.log(`        ${reason}`);
   }
   for (const item of audit.reviewFindings) {
-    console.log(`[STALE/REVIEW] ${item.branch} - ${item.status}`);
+    console.log(`[REVIEWED/STALE] ${item.branch} - ${item.status}`);
+    console.log(`        pinned HEAD: ${item.reviewedSha}`);
+    console.log(`        disposition: ${item.disposition}`);
+    if (item.reviewReason) console.log(`        ${item.reviewReason}`);
     for (const reason of item.reasons) console.log(`        ${reason}`);
   }
   for (const item of audit.warnings) {
@@ -125,6 +129,7 @@ function printHelp() {
   console.log('');
   console.log('Each merge still uses Safe Integration Runner: one PR max per iteration, verified backup, PR Full Inspection,');
   console.log('target drift check, post-merge Full Inspection, and post-merge Guard rerun. Any ambiguity stops the workflow.');
+  console.log('Unreviewed unique branch history blocks. Reviewed stale history is accepted only at an explicitly pinned HEAD SHA.');
   console.log('Branch deletion is never performed.');
 }
 
