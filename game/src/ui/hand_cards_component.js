@@ -299,7 +299,7 @@ export class HandCardsComponent {
                 if (totW > 0) { yieldParts.push(`<span>🧱${totW}</span>`); yieldPlainParts.push(`🧱${totW}`); }
                 if (totD > 0) { yieldParts.push(`<span>🛡️${totD}</span>`); yieldPlainParts.push(`🛡️${totD}`); }
                 if (totM > 0) { yieldParts.push(`<span>✨${totM}</span>`); yieldPlainParts.push(`✨${totM}`); }
-                const unresolvedLabel = I18n.t("UI_YIELD_UNRESOLVED") || "未定";
+                const unresolvedLabel = I18n.t("UI_YIELD_UNRESOLVED");
                 const yieldContent = productionUnresolved
                     ? `<span>${unresolvedLabel}</span>`
                     : (yieldParts.length > 0 ? yieldParts.join(" ") : `<span>-</span>`);
