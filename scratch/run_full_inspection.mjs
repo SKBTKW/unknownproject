@@ -1,5 +1,4 @@
 import { spawn } from 'child_process';
-import path from 'path';
 
 /**
  * 🛡️ AG_ToA マスター完全統合検問パイプライン (Master Full Inspection Pipeline)
@@ -9,13 +8,49 @@ import path from 'path';
  * 「① 仕様書突合 ➔ ② ゲームロジック ➔ ③ UIライフサイクル ➔ ④ ビルド識別表示 ➔ ⑤ 食料決済」の全5スクリプトを一括実行する。
  */
 
-function runCommand(cmd, args) {
+const DEFAULT_COMMAND_TIMEOUT_MS = 30_000;
+
+function runCommand(cmd, args, { timeoutMs = DEFAULT_COMMAND_TIMEOUT_MS } = {}) {
     return new Promise((resolve) => {
-        const proc = spawn(cmd, args, { stdio: 'inherit', shell: true });
-        proc.on('close', (code) => {
-            resolve(code === 0);
+        let settled = false;
+        const proc = spawn(cmd, args, {
+            stdio: 'inherit',
+            shell: false,
+            windowsHide: true,
         });
+
+        const finish = (ok) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            resolve(ok);
+        };
+
+        const timer = setTimeout(() => {
+            console.error(`\n[TIMEOUT] ${cmd} ${args.join(' ')} exceeded ${timeoutMs} ms.`);
+            try { proc.kill('SIGKILL'); } catch {}
+            finish(false);
+        }, timeoutMs);
+
+        proc.on('error', (error) => {
+            console.error(`\n[STARTUP ERROR] ${cmd} ${args.join(' ')}: ${error.message}`);
+            finish(false);
+        });
+        proc.on('close', (code) => finish(code === 0));
     });
+}
+
+async function runChecks(groupLabel, checks) {
+    console.log(`\n🔎 [${groupLabel}]`);
+    for (const [label, cmd, args] of checks) {
+        console.log(`  → ${label}`);
+        const ok = await runCommand(cmd, args);
+        if (!ok) {
+            console.error(`\n❌ [PIPELINE BLOCKED] ${groupLabel}: ${label}`);
+            return false;
+        }
+    }
+    return true;
 }
 
 async function main() {
@@ -24,6 +59,12 @@ async function main() {
     console.log("============================================================\n");
 
     const startTime = Date.now();
+
+    const toolingSafetyOk = await runChecks("Workflow / Task Safety Contracts", [
+        ["Full Inspection workflow contract", "node", ["scratch/test_full_inspection_workflow_contract.mjs"]],
+        ["Task Sweeper safety contract", "node", ["scratch/test_task_sweeper.mjs"]],
+    ]);
+    if (!toolingSafetyOk) process.exit(1);
 
     // 🛡️ Layer 1: Static Lint (禁止パターン・CSS・境界)
     console.log("🛡️ [LAYER 1/6] Static Lint (Fast Guardrail)...");
@@ -261,6 +302,48 @@ async function main() {
 
     // ⚔️ Layer 4: Trial Phase 1〜2.8G Tests (試練・迎撃・戦闘・完了)
     console.log("\n⚔️  [LAYER 4/6] Trial Subsystem Tests (迎撃・戦闘・完了)...");
+
+    const trialRuntimeFocusedOk = await runChecks("Trial Runtime Focused Contracts", [
+        ["Warning timing bridge", "node", ["game/src/trial/dev/diagnose_warning_timing_bridge.mjs"]],
+        ["Trial due state service", "node", ["game/src/trial/dev/diagnose_trial_due_state_service.mjs"]],
+        ["Trial launch coordinator", "node", ["game/src/trial/dev/diagnose_trial_launch_coordinator.mjs"]],
+        ["Trial launch bootstrap", "node", ["game/src/trial/dev/diagnose_trial_launch_bootstrap.mjs"]],
+        ["Trial launch trigger order", "node", ["game/src/trial/dev/diagnose_trial_launch_trigger_order.mjs"]],
+        ["Trial stage progression service", "node", ["game/src/trial/dev/diagnose_trial_stage_progression_service.mjs"]],
+        ["Post-trial progression service", "node", ["game/src/trial/dev/diagnose_post_trial_progression_service.mjs"]],
+        ["Post-trial step authority router", "node", ["game/src/trial/dev/diagnose_post_trial_step_authority_router.mjs"]],
+        ["Post-trial skill owner policy", "node", ["game/src/trial/dev/diagnose_post_trial_skill_owner_policy.mjs"]],
+        ["Post-trial aftermath capture", "node", ["game/src/trial/dev/diagnose_post_trial_aftermath_capture.mjs"]],
+        ["Post-trial progression read service", "node", ["game/src/trial/dev/diagnose_post_trial_progression_read_service.mjs"]],
+        ["Post-trial runtime restore", "node", ["game/src/trial/dev/diagnose_post_trial_runtime_restore.mjs"]],
+        ["Post-trial persistence roundtrip", "node", ["game/src/trial/dev/diagnose_post_trial_persistence_roundtrip.mjs"]],
+        ["Post-trial terminated policy gate", "node", ["game/src/trial/dev/diagnose_post_trial_terminated_policy_gate.mjs"]],
+        ["First-run post-trial meaning contract", "node", ["game/src/trial/dev/diagnose_first_run_post_trial_meaning_contract.mjs"]],
+        ["Post-trial first-run fallback", "node", ["game/src/trial/dev/diagnose_post_trial_first_run_fallback.mjs"]],
+        ["Post-trial required meaning fallback", "node", ["game/src/trial/dev/diagnose_post_trial_required_meaning_fallback.mjs"]],
+        ["Post-trial advisor runtime", "node", ["game/src/trial/dev/diagnose_post_trial_advisor_runtime.mjs"]],
+        ["Post-trial advisor policy variants", "node", ["game/src/trial/dev/diagnose_post_trial_advisor_policy_variants.mjs"]],
+        ["Post-trial advisor template payload", "node", ["game/src/trial/dev/diagnose_post_trial_advisor_template_payload.mjs"]],
+        ["Post-trial advisor legacy-end suppression", "node", ["game/src/trial/dev/diagnose_post_trial_advisor_legacy_end_suppression.mjs"]],
+        ["Post-trial interlude presentation bridge", "node", ["game/src/trial/dev/diagnose_post_trial_interlude_presentation_bridge.mjs"]],
+        ["Post-trial interlude progress service", "node", ["game/src/trial/dev/diagnose_post_trial_interlude_progress_service.mjs"]],
+        ["Post-trial presentation progression gate", "node", ["game/src/trial/dev/diagnose_post_trial_presentation_progression_gate.mjs"]],
+        ["Post-trial interlude runtime wiring", "node", ["game/src/trial/dev/diagnose_post_trial_interlude_runtime_wiring.mjs"]],
+        ["Post-trial interlude legacy restore guard", "node", ["game/src/trial/dev/diagnose_post_trial_interlude_legacy_restore_guard.mjs"]],
+        ["Post-trial stage prelude gate", "node", ["game/src/trial/dev/diagnose_post_trial_stage_prelude_gate.mjs"]],
+        ["Post-trial stage gate resume", "node", ["game/src/trial/dev/diagnose_post_trial_stage_gate_resume.mjs"]],
+        ["Enemy army structure", "node", ["game/src/trial/dev/diagnose_enemy_army_structure.mjs"]],
+        ["Enemy force deployment", "node", ["game/src/trial/dev/diagnose_enemy_force_deployment.mjs"]],
+        ["Enemy force reserve progression", "node", ["game/src/trial/dev/diagnose_enemy_force_reserve_progression.mjs"]],
+        ["Enemy force terrain interaction", "node", ["game/src/trial/dev/diagnose_enemy_force_terrain_interaction.mjs"]],
+        ["Enemy tactic resolver", "node", ["game/src/trial/dev/diagnose_enemy_tactic_resolver.mjs"]],
+        ["Enemy tactic selection", "node", ["game/src/trial/dev/diagnose_enemy_tactic_selection.mjs"]],
+        ["Trial force deployment bridge", "node", ["game/src/trial/dev/diagnose_trial_force_deployment_bridge.mjs"]],
+        ["Trial route cost policy", "node", ["game/src/trial/dev/diagnose_trial_route_cost_policy.mjs"]],
+        ["Trial route visual semantics", "node", ["scratch/test_trial_route_visual_semantics.mjs"]],
+        ["Warning state fact bridge", "node", ["scratch/test_warning_state_fact_bridge.mjs"]],
+    ]);
+    if (!trialRuntimeFocusedOk) process.exit(1);
     const trialPresentationBoundaryOk = await runCommand("node", ["scratch/test_trial_core_presentation_boundary.mjs"]);
     if (!trialPresentationBoundaryOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Trial Core Presentation Boundary) で違反が検出されました。");
@@ -332,6 +415,26 @@ async function main() {
 
     // 🖥️ Layer 5: UI Lifecycle Tests (DOM構築・多言語・イベント)
     console.log("\n🖥️  [LAYER 5/6] UI Lifecycle Tests (DOMライフサイクル・描画)...");
+
+    const presentationFocusedOk = await runChecks("Presentation Boundary Focused Contracts", [
+        ["Board presentation state", "node", ["--test", "game/src/presentation/board_presentation_state.test.js"]],
+        ["Board presentation axes", "node", ["scratch/test_board_presentation_axes.mjs"]],
+        ["Board presentation Unity boundary", "node", ["scratch/test_board_presentation_unity_boundary.mjs"]],
+        ["Legacy Web2D board input adapter", "node", ["scratch/test_legacy_web2d_board_input_adapter.mjs"]],
+    ]);
+    if (!presentationFocusedOk) process.exit(1);
+
+    const advisorFocusedOk = await runChecks("Advisor Dialogue Focused Contracts", [
+        ["Advisor character contract", "node", ["scratch/test_advisor_character_contract.mjs"]],
+        ["Advisor character dialogue override", "node", ["scratch/test_advisor_character_dialogue_override.mjs"]],
+        ["Advisor character differentiation", "node", ["scratch/test_advisor_character_differentiation.mjs"]],
+        ["Advisor character voice contrast", "node", ["scratch/test_advisor_character_voice_contrast.mjs"]],
+        ["Advisor reaction dialogue integration", "node", ["scratch/test_advisor_reaction_dialogue_integration.mjs"]],
+        ["Advisor staff officer golden lines", "node", ["scratch/test_advisor_staff_officer_golden_lines.mjs"]],
+        ["Advisor staff officer reaction boundaries", "node", ["scratch/test_advisor_staff_officer_reaction_boundaries.mjs"]],
+        ["Advisor reaction scene coverage", "node", ["scratch/test_advisor_reaction_scene_coverage.mjs"]],
+    ]);
+    if (!advisorFocusedOk) process.exit(1);
     const step5Ok = await runCommand("node", ["scratch/test_ui_lifecycle.mjs"]);
     if (!step5Ok) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (UI Lifecycle) で不合格が検出されました。");

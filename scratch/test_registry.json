@@ -6,7 +6,7 @@
       "purpose": "advisor character contract",
       "suite": "existing",
       "entryPoints": [
-        ".github/workflows/full-inspection.yml"
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
@@ -14,7 +14,7 @@
       "purpose": "advisor character dialogue override",
       "suite": "existing",
       "entryPoints": [
-        ".github/workflows/full-inspection.yml"
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
@@ -22,7 +22,7 @@
       "purpose": "advisor character differentiation",
       "suite": "existing",
       "entryPoints": [
-        ".github/workflows/full-inspection.yml"
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
@@ -30,7 +30,7 @@
       "purpose": "advisor character voice contrast",
       "suite": "existing",
       "entryPoints": [
-        ".github/workflows/full-inspection.yml"
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
@@ -83,7 +83,7 @@
       "purpose": "advisor reaction dialogue integration",
       "suite": "existing",
       "entryPoints": [
-        ".github/workflows/full-inspection.yml"
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
@@ -91,7 +91,7 @@
       "purpose": "advisor reaction scene coverage",
       "suite": "existing",
       "entryPoints": [
-        ".github/workflows/full-inspection.yml"
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
@@ -107,7 +107,7 @@
       "purpose": "advisor staff officer golden lines",
       "suite": "existing",
       "entryPoints": [
-        ".github/workflows/full-inspection.yml"
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
@@ -115,7 +115,7 @@
       "purpose": "advisor staff officer reaction boundaries",
       "suite": "existing",
       "entryPoints": [
-        ".github/workflows/full-inspection.yml"
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
@@ -173,7 +173,7 @@
       "purpose": "board presentation axes",
       "suite": "existing",
       "entryPoints": [
-        ".github/workflows/full-inspection.yml"
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
@@ -181,7 +181,7 @@
       "purpose": "board presentation unity boundary",
       "suite": "existing",
       "entryPoints": [
-        ".github/workflows/full-inspection.yml"
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
@@ -344,7 +344,7 @@
       "purpose": "full inspection workflow contract",
       "suite": "existing",
       "entryPoints": [
-        ".github/workflows/full-inspection.yml"
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
@@ -633,7 +633,7 @@
       "purpose": "legacy web2d board input adapter",
       "suite": "existing",
       "entryPoints": [
-        ".github/workflows/full-inspection.yml"
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
@@ -791,7 +791,7 @@
       "purpose": "task sweeper",
       "suite": "existing",
       "entryPoints": [
-        ".github/workflows/full-inspection.yml"
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
@@ -1036,7 +1036,7 @@
       "purpose": "trial route visual semantics",
       "suite": "existing",
       "entryPoints": [
-        ".github/workflows/full-inspection.yml"
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
@@ -1122,7 +1122,7 @@
       "purpose": "warning state fact bridge",
       "suite": "existing",
       "entryPoints": [
-        ".github/workflows/full-inspection.yml"
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {

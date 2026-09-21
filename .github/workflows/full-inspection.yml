@@ -32,9 +32,6 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Validate Full Inspection workflow contract
-        run: node scratch/test_full_inspection_workflow_contract.mjs
-
       - name: Validate TASK branch contract
         if: github.event_name == 'pull_request'
         shell: bash
@@ -146,71 +143,6 @@ jobs:
           test -z "$(git status --porcelain)"
 
           echo "AoT target push prepared for post-merge Full Inspection at ${AOT_TARGET_SHA}."
-
-      - name: Run Task Sweeper safety contract
-        run: node scratch/test_task_sweeper.mjs
-
-      - name: Run Presentation boundary focused tests
-        run: |
-          node --test game/src/presentation/board_presentation_state.test.js
-          node scratch/test_board_presentation_axes.mjs
-          node scratch/test_board_presentation_unity_boundary.mjs
-          node scratch/test_legacy_web2d_board_input_adapter.mjs
-
-      - name: Run Trial runtime focused tests
-        run: |
-          node game/src/trial/dev/diagnose_warning_timing_bridge.mjs
-          node game/src/trial/dev/diagnose_trial_due_state_service.mjs
-          node game/src/trial/dev/diagnose_trial_launch_coordinator.mjs
-          node game/src/trial/dev/diagnose_trial_launch_bootstrap.mjs
-          node game/src/trial/dev/diagnose_trial_launch_trigger_order.mjs
-          node game/src/trial/dev/diagnose_trial_stage_progression_service.mjs
-          node game/src/trial/dev/diagnose_post_trial_progression_service.mjs
-          node game/src/trial/dev/diagnose_post_trial_step_authority_router.mjs
-          node game/src/trial/dev/diagnose_post_trial_skill_owner_policy.mjs
-          node game/src/trial/dev/diagnose_post_trial_aftermath_capture.mjs
-          node game/src/trial/dev/diagnose_post_trial_progression_read_service.mjs
-          node game/src/trial/dev/diagnose_post_trial_runtime_restore.mjs
-          node game/src/trial/dev/diagnose_post_trial_persistence_roundtrip.mjs
-          node game/src/trial/dev/diagnose_post_trial_terminated_policy_gate.mjs
-          node game/src/trial/dev/diagnose_first_run_post_trial_meaning_contract.mjs
-          node game/src/trial/dev/diagnose_post_trial_first_run_fallback.mjs
-          node game/src/trial/dev/diagnose_post_trial_required_meaning_fallback.mjs
-          node game/src/trial/dev/diagnose_post_trial_advisor_runtime.mjs
-          node game/src/trial/dev/diagnose_post_trial_advisor_policy_variants.mjs
-          node game/src/trial/dev/diagnose_post_trial_advisor_template_payload.mjs
-          node game/src/trial/dev/diagnose_post_trial_advisor_legacy_end_suppression.mjs
-          node game/src/trial/dev/diagnose_post_trial_interlude_presentation_bridge.mjs
-          node game/src/trial/dev/diagnose_post_trial_interlude_progress_service.mjs
-          node game/src/trial/dev/diagnose_post_trial_presentation_progression_gate.mjs
-          node game/src/trial/dev/diagnose_post_trial_interlude_runtime_wiring.mjs
-          node game/src/trial/dev/diagnose_post_trial_interlude_legacy_restore_guard.mjs
-          node game/src/trial/dev/diagnose_post_trial_stage_prelude_gate.mjs
-          node game/src/trial/dev/diagnose_post_trial_stage_gate_resume.mjs
-          node game/src/trial/dev/diagnose_enemy_army_structure.mjs
-          node game/src/trial/dev/diagnose_enemy_force_deployment.mjs
-          node game/src/trial/dev/diagnose_enemy_force_reserve_progression.mjs
-          node game/src/trial/dev/diagnose_enemy_force_terrain_interaction.mjs
-          node game/src/trial/dev/diagnose_enemy_tactic_resolver.mjs
-          node game/src/trial/dev/diagnose_enemy_tactic_selection.mjs
-          node game/src/trial/dev/diagnose_trial_force_deployment_bridge.mjs
-          node game/src/trial/dev/diagnose_trial_route_cost_policy.mjs
-          node scratch/test_trial_route_visual_semantics.mjs
-
-      - name: Run Warning focused tests
-        run: |
-          node scratch/test_warning_state_fact_bridge.mjs
-
-      - name: Run Advisor dialogue focused tests
-        run: |
-          node scratch/test_advisor_character_contract.mjs
-          node scratch/test_advisor_character_dialogue_override.mjs
-          node scratch/test_advisor_character_differentiation.mjs
-          node scratch/test_advisor_character_voice_contrast.mjs
-          node scratch/test_advisor_reaction_dialogue_integration.mjs
-          node scratch/test_advisor_staff_officer_golden_lines.mjs
-          node scratch/test_advisor_staff_officer_reaction_boundaries.mjs
-          node scratch/test_advisor_reaction_scene_coverage.mjs
 
       - name: Run AoT Full Inspection
         run: node scratch/run_full_inspection.mjs

@@ -28,7 +28,7 @@ node scratch/scratch_registry.mjs --run quarantined
 `--json`を付けると、実行結果・終了コード・標準出力/標準エラーをJSONで取得できます。
 出力の保存はリダイレクトで行い、保存先にはリポジトリ外の一時ディレクトリ等を指定してください。
 台帳ランナーは作業ディレクトリに依存せずリポジトリを解決し、子プロセスのcwdも固定します。
-各テストは30秒でタイムアウトします。起動失敗・タイムアウト・非ゼロ終了を成功扱いにしません。
+台帳ランナーとFull Inspectionの各子コマンドは30秒でタイムアウトします。起動失敗・タイムアウト・非ゼロ終了を成功扱いにしません。
 
 ## 台帳の意味
 
@@ -72,9 +72,10 @@ node scratch/scratch_registry.mjs --run quarantined
 ## CIとの関係
 
 - 既存の`full-inspection.yml`と`pages.yml`の対象ブランチ、検査順序、公開経路は維持します。
-- `scratch-validation.yml`がmain / AoT*へのPR・pushで台帳検証と追加検査を実行します。手動起動にも対応します。
+- `scratch-validation.yml`はmainへのPR・pushで台帳検証と追加検査を実行します。AoT*では`AoT Full Inspection`内の同一ランナーが台帳検証・追加検査を担当し、二重実行しません。手動起動にも対応します。
 - 追加検査のJSON結果は、失敗時もGitHub Actionsのartifactとして保存します。
-- mainの新CIは追加検査の範囲です。mainで既存Full Inspection全体が自動実行されるようになった、という意味ではありません。
+- `scratch/run_full_inspection.mjs`を継続検査の正規入口とし、AoT CI固有だったfocused checksも同じ入口から実行します。GitHub Actions側に残るのはTASK branch契約やPR/pushのref準備など、イベント固有の検査だけです。
+- mainの`Scratch validation`は台帳検証と追加検査の範囲です。mainでFull Inspection全体が自動実行されるという意味ではありません。
 - 必須チェックへの指定はGitHubのブランチ保護設定で別途行う必要があります。この変更ではリモート設定を変更しません。
 
 ## 運用ツールと退避資料
