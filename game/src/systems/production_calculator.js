@@ -5,11 +5,11 @@
 
 import { MaintenanceFallbackSystem } from './maintenance_fallback_system.js';
 import { DefenseSystem } from './defense_system.js';
+import { isWetlandTerrain } from '../core/lake_rules.js';
 import {
-    hasAdjacentWaterSource,
-    isWaterSourceCell,
-    isWetlandTerrain
-} from '../core/lake_rules.js';
+    hasAdjacentIrrigationSource,
+    isIrrigationSourceCell
+} from '../core/irrigation_rules.js';
 import {
     LAND_PRODUCTION_STATUS,
     resolveCellProductionBase,
@@ -48,7 +48,7 @@ import {
 
                         const isEligibleZoneCell = cell.mergeGroupId
                             && !isWetlandTerrain(t)
-                            && !isWaterSourceCell(cell);
+                            && !isIrrigationSourceCell(cell);
                         if (isEligibleZoneCell) {
                             const gid = cell.mergeGroupId;
                             if (!groupSums[gid]) groupSums[gid] = { food: 0, wood: 0, material: 0, mystic: 0 };
@@ -75,7 +75,7 @@ import {
                         }
 
                         // 🌊 水源周囲8マスの灌漑バフ（範囲が重なっても1回のみ）
-                        if (hasAdjacentWaterSource(state, r, c) && tf > 0) {
+                        if (hasAdjacentIrrigationSource(state, r, c) && tf > 0) {
                             foodLakeIrrigation += Math.max(1, Math.floor(tf * 0.5));
                         }
                     }
@@ -213,7 +213,7 @@ import {
 
                         const isEligibleZoneCell = cell.mergeGroupId
                             && !isWetlandTerrain(t)
-                            && !isWaterSourceCell(cell);
+                            && !isIrrigationSourceCell(cell);
                         if (isEligibleZoneCell) {
                             const gid = cell.mergeGroupId;
                             if (!groupSums[gid]) groupSums[gid] = { food: 0, wood: 0, material: 0, defense: 0, mystic: 0 };
@@ -358,10 +358,10 @@ import {
                 if (baseMystic > 0) { modifiers.push({ type: "HQ_VICINITY", resource: "mystic", amount: 1 }); totalMystic += 1; }
             }
 
-            // ③ 湖/オアシス灌漑ボーナス (+50% 食料、最低+1)
-            if (hasAdjacentWaterSource(state, r, c) && baseFood > 0) {
+            // ③ 灌漑源による灌漑ボーナス (+50% 食料、最低+1)
+            if (hasAdjacentIrrigationSource(state, r, c) && baseFood > 0) {
                 const lakeIrrigation = Math.max(1, Math.floor(baseFood * 0.5));
-                modifiers.push({ type: "LAKE_IRRIGATION", resource: "food", amount: lakeIrrigation });
+                modifiers.push({ type: "IRRIGATION", resource: "food", amount: lakeIrrigation });
                 totalFood += lakeIrrigation;
             }
 
