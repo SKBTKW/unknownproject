@@ -47,6 +47,16 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 1 (Integration Guard Contract) で不合格が検出されました。");
         process.exit(1);
     }
+    const orphanBranchInspectorOk = await runCommand("node", ["scratch/test_orphan_branch_inspector.mjs"]);
+    if (!orphanBranchInspectorOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 1 (Orphan Branch Inspector Contract) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const unifiedIntegrationWorkflowOk = await runCommand("node", ["scratch/test_unified_integration_workflow.mjs"]);
+    if (!unifiedIntegrationWorkflowOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 1 (Unified Integration Workflow Contract) で不合格が検出されました。");
+        process.exit(1);
+    }
     const integrationProgressGuideOk = await runCommand("node", ["scratch/test_integration_progress_guide.mjs"]);
     if (!integrationProgressGuideOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 1 (Integration Progress Guide Contract) で不合格が検出されました。");
@@ -248,6 +258,11 @@ async function main() {
     const trialCausalityPresenterOk = await runCommand("node", ["scratch/test_trial_causality_presenter.mjs"]);
     if (!trialCausalityPresenterOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Trial Causality Presenter) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const trialAdvisorPublicReadModelOk = await runCommand("node", ["scratch/test_trial_advisor_public_read_model.mjs"]);
+    if (!trialAdvisorPublicReadModelOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Trial Advisor Public Read Model) で不合格が検出されました。");
         process.exit(1);
     }
     const trialFoundationOk = await runCommand("node", ["scratch/test_trial_foundation.mjs"]);
