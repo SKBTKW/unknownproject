@@ -92,26 +92,9 @@ def verify_all_specs_against_code(rules_dir, game_dir):
     # Initial resources are verified behaviorally in scratch/test_all_modules.mjs.
     # Keep this Python verifier focused on data/spec assets and fail-closed implementation presence.
 
-    # 2. Spec 03 Merge System 1.2x Multiplier
-    prod_calc_path = os.path.join(src_dir, 'systems', 'production_calculator.js')
-    if not os.path.exists(prod_calc_path):
-        assertions.append({
-            'id': 'SPEC03_PRODUCTION_CALCULATOR_EXISTS',
-            'spec': '03_merge_system.md',
-            'passed': False,
-            'message': 'production_calculator.js is missing'
-        })
-    else:
-        with open(prod_calc_path, 'r', encoding='utf-8') as f:
-            pc_content = f.read()
-        mult_match = re.search(r'(?:1\.2|1\.20)', pc_content)
-        has_group = 'mergeGroupId' in pc_content
-        assertions.append({
-            'id': 'SPEC03_MERGE_MULTIPLIER',
-            'spec': '03_merge_system.md',
-            'passed': bool(mult_match and has_group),
-            'message': '2x2 Merge 1.2x multiplier logic verified in production_calculator.js' if mult_match and has_group else 'Merge 1.2x logic missing'
-        })
+    # Merge yield multiplier and zone behavior are verified behaviorally by
+    # scratch/test_reclaimed_land.mjs and the domain suite. Avoid duplicating
+    # that contract here with source-string presence checks.
 
     # Legacy exploration is intentionally not asserted here.
     # rules/02_resources_and_ember.md explicitly removes the old permanent click-to-explore flow.
