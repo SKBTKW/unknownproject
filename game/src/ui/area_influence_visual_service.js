@@ -3,24 +3,26 @@
  * 
  * 責務:
  * 1. ゲームロジック側（Single Source of Truth）で判定された範囲効果フラグ
- *    (isLakeVic, isHQVic) を受け取り、表示用 CSS クラスおよびオーバーレイ SVG HTML を生成する。
+ *    (isIrrigationVic, isHQVic) を受け取り、表示用 CSS クラスおよびオーバーレイ SVG HTML を生成する。
  * 2. ゲームルール（周囲8マス判定等）の再計算・複製は 100% 禁止。
- * 3. 湖（セル内側ティール波紋）と本営近郊（外周四隅アンバーL字枠）の視覚分離。
+ * 3. 灌漑影響圏（ティール）と本営近郊（アンバー）の視覚分離。
  */
 
-import { isWaterSourceInfluence } from '../core/lake_rules.js';
+import { isIrrigationInfluence } from '../core/irrigation_rules.js';
 
 export class AreaInfluenceVisualService {
     /**
      * 🏷️ セルに付与する範囲効果クラス名の配列を取得
      * @param {Object} params
-     * @param {boolean} params.isLakeVic - 水源（湖・オアシス）影響圏フラグ
+     * @param {boolean} [params.isIrrigationVic=false] - 灌漑影響圏フラグ
+     * @param {boolean} [params.isLakeVic=false] - 旧API互換の灌漑影響圏フラグ
      * @param {boolean} params.isHQVic - 本営近郊影響圏フラグ
      * @returns {string[]} クラス名配列
      */
-    static getInfluenceClasses({ isLakeVic = false, isHQVic = false } = {}) {
+    static getInfluenceClasses({ isIrrigationVic = false, isLakeVic = false, isHQVic = false } = {}) {
         const classes = [];
-        if (isLakeVic) classes.push("influence-lake");
+        const irrigationActive = isIrrigationVic || isLakeVic;
+        if (irrigationActive) classes.push("influence-irrigation", "influence-lake");
         if (isHQVic) classes.push("influence-hq-vicinity");
         return classes;
     }
@@ -29,15 +31,17 @@ export class AreaInfluenceVisualService {
      * 🗺️ Presentation用 Influence Cell Set の構築 (Domain/State SSOT利用)
      * @param {Object} state - GameState
      * @param {number} size - 盤面サイズ
-     * @returns {{ lakeInfluenceCells: Set<string>, hqInfluenceGameplayCells: Set<string>, hqInfluenceVisualCells: Set<string>, hqInfluenceCells: Set<string> }}
+     * @returns {{ irrigationInfluenceCells: Set<string>, hqInfluenceGameplayCells: Set<string>, hqInfluenceVisualCells: Set<string>, hqInfluenceCells: Set<string> }}
      */
     static buildInfluenceCellSets(state, size = 5) {
-        const lakeInfluenceCells = new Set();
+        const irrigationInfluenceCells = new Set();
         const hqInfluenceGameplayCells = new Set();
         const hqInfluenceVisualCells = new Set();
         if (!state) {
             return {
-                lakeInfluenceCells,
+                irrigationInfluenceCells,
+                // 旧Presentation/Test互換
+                lakeInfluenceCells: irrigationInfluenceCells,
                 hqInfluenceGameplayCells,
                 hqInfluenceVisualCells,
                 hqInfluenceCells: hqInfluenceVisualCells
@@ -48,12 +52,12 @@ export class AreaInfluenceVisualService {
         for (let r = 0; r < size; r++) {
             for (let c = 0; c < size; c++) {
                 const key = `${r},${c}`;
-                // 🌊 湖水源影響圏 (lake_rules.js / state SSOT)
-                const isLake = (typeof state.isWaterSourceInfluence === "function")
+                // 🌊 灌漑影響圏 (irrigation_rules.js / state SSOT)
+                const isIrrigation = (typeof state.isWaterSourceInfluence === "function")
                     ? state.isWaterSourceInfluence(r, c)
-                    : isWaterSourceInfluence(state, r, c);
-                if (isLake) {
-                    lakeInfluenceCells.add(key);
+                    : isIrrigationInfluence(state, r, c);
+                if (isIrrigation) {
+                    irrigationInfluenceCells.add(key);
                 }
 
                 // 🏰 本営近郊 Gameplay (周囲8マスのみ・HQ自身は効果対象外)
@@ -71,10 +75,11 @@ export class AreaInfluenceVisualService {
         }
 
         return {
-            lakeInfluenceCells,
+            irrigationInfluenceCells,
+            // 旧Presentation/Test互換
+            lakeInfluenceCells: irrigationInfluenceCells,
             hqInfluenceGameplayCells,
             hqInfluenceVisualCells,
-            // 下位互換性
             hqInfluenceCells: hqInfluenceVisualCells
         };
     }
@@ -406,21 +411,21 @@ export class AreaInfluenceVisualService {
             }
         }
 
-        const { lakeInfluenceCells, hqInfluenceVisualCells } = this.buildInfluenceCellSets(state, size);
-        if (lakeInfluenceCells.size === 0 && hqInfluenceVisualCells.size === 0) {
+        const { irrigationInfluenceCells, hqInfluenceVisualCells } = this.buildInfluenceCellSets(state, size);
+        if (irrigationInfluenceCells.size === 0 && hqInfluenceVisualCells.size === 0) {
             overlayEl.innerHTML = "";
             return;
         }
 
         const cellRectsMap = this.getCellRectsFromDom(boardEl, size);
 
-        // 🌊 湖水源 ＆ 🏰 本営近郊: 正規エッジ抽出 ＆ 実測gap中心 ＆ 重複時のみ2レーン分離
-        const lakeEdges = this.extractBoundaryEdges(lakeInfluenceCells, size);
+        // 🌾 灌漑影響圏 ＆ 🏰 本営近郊: 正規エッジ抽出 ＆ 実測gap中心 ＆ 重複時のみ2レーン分離
+        const irrigationEdges = this.extractBoundaryEdges(irrigationInfluenceCells, size);
         const hqEdges = this.extractBoundaryEdges(hqInfluenceVisualCells, size);
         const { gridLinesX, gridLinesY } = this.resolveBoundaryCoordinates(cellRectsMap, size);
 
-        const lakeSegments = this.buildBoundarySegments({
-            edgesMap: lakeEdges,
+        const irrigationSegments = this.buildBoundarySegments({
+            edgesMap: irrigationEdges,
             otherEdgesMap: hqEdges,
             gridLinesX,
             gridLinesY,
@@ -429,22 +434,22 @@ export class AreaInfluenceVisualService {
 
         const hqSegments = this.buildBoundarySegments({
             edgesMap: hqEdges,
-            otherEdgesMap: lakeEdges,
+            otherEdgesMap: irrigationEdges,
             gridLinesX,
             gridLinesY,
             isLake: false
         });
 
-        const lakePathData = lakeSegments.map(s => `M ${s.x1} ${s.y1} L ${s.x2} ${s.y2}`).join(" ");
+        const irrigationPathData = irrigationSegments.map(s => `M ${s.x1} ${s.y1} L ${s.x2} ${s.y2}`).join(" ");
         const hqPathData = hqSegments.map(s => `M ${s.x1} ${s.y1} L ${s.x2} ${s.y2}`).join(" ");
 
         let svgContent = "";
 
-        if (lakePathData) {
+        if (irrigationPathData) {
             svgContent += `
-                <g class="lake-influence-boundary-group">
-                    <path d="${lakePathData}" class="lake-boundary-path-glow" />
-                    <path d="${lakePathData}" class="lake-boundary-path-core" />
+                <g class="irrigation-influence-boundary-group lake-influence-boundary-group">
+                    <path d="${irrigationPathData}" class="irrigation-boundary-path-glow lake-boundary-path-glow" />
+                    <path d="${irrigationPathData}" class="irrigation-boundary-path-core lake-boundary-path-core" />
                 </g>
             `;
         }
@@ -468,7 +473,7 @@ export class AreaInfluenceVisualService {
     /**
      * 🎨 セル単体内部用オーバーレイ（下位互換性用）
      */
-    static createInfluenceOverlayHtml({ isLakeVic = false, isHQVic = false } = {}) {
+    static createInfluenceOverlayHtml({ isIrrigationVic = false, isLakeVic = false, isHQVic = false } = {}) {
         return "";
     }
 }
