@@ -121,17 +121,15 @@ function acquireSessionLock(cwd, sessionId, target) {
 
 function ensureWorktreesClean(cwd) {
   const worktrees = parseWorktreesPorcelain(runGit(cwd, ['worktree', 'list', '--porcelain']));
-  const problems = [];
-  for (const entry of worktrees) {
-    if (!entry.path || !fs.existsSync(entry.path)) {
-      problems.push(`${entry.branch || '(detached)'}: missing worktree path ${entry.path || '(unknown)'}`);
-      continue;
-    }
-    if (entry.locked) problems.push(`${entry.branch || '(detached)'}: worktree is locked`);
-    const status = runGit(entry.path, ['status', '--porcelain', '--untracked-files=all']);
-    if (status) problems.push(`${entry.branch || '(detached)'}: dirty worktree at ${entry.path}`);
-  }
-  if (problems.length > 0) throw new Error(`Preflight blocked:\n- ${problems.join('\n- ')}`);
+  const cwdReal = fs.realpathSync(cwd);
+  const current = worktrees.find((entry) => {
+    if (!entry.path || !fs.existsSync(entry.path)) return false;
+    return fs.realpathSync(entry.path) === cwdReal;
+  });
+  if (!current) throw new Error(`Preflight blocked: current integration worktree is not registered: ${cwd}`);
+  if (current.locked) throw new Error(`Preflight blocked: current integration worktree is locked: ${current.path}`);
+  const status = runGit(cwd, ['status', '--porcelain', '--untracked-files=all']);
+  if (status) throw new Error(`Preflight blocked: current integration worktree is dirty: ${cwd}`);
   return worktrees;
 }
 
@@ -333,14 +331,21 @@ export function buildExecutiveSummary(analysis = {}) {
   const first = order[0] || null;
   const lines = [];
 
-  if ((counts.BLOCKED || 0) > 0) {
+  if ((counts.READY || 0) > 0) {
+    lines.push(`Ready: ${counts.READY} independent TASK(s) are candidates for one-at-a-time integration.`);
+    const pending = [];
+    if ((counts.BLOCKED || 0) > 0) pending.push(`${counts.BLOCKED} BLOCKED`);
+    if ((counts.RECONCILE_REQUIRED || 0) > 0) pending.push(`${counts.RECONCILE_REQUIRED} RECONCILE_REQUIRED`);
+    if ((counts.REVIEW_REQUIRED || 0) > 0) pending.push(`${counts.REVIEW_REQUIRED} REVIEW_REQUIRED`);
+    if (pending.length > 0) {
+      lines.push(`Other TASKs remain unresolved (${pending.join(', ')}); they do not block an already-independent READY candidate.`);
+    }
+  } else if ((counts.BLOCKED || 0) > 0) {
     lines.push(`Stop: ${counts.BLOCKED} BLOCKED TASK(s) require inspection before integration.`);
   } else if ((counts.RECONCILE_REQUIRED || 0) > 0) {
     lines.push(`Reconcile first: ${counts.RECONCILE_REQUIRED} TASK(s) are stale against the current target.`);
   } else if ((counts.REVIEW_REQUIRED || 0) > 0) {
     lines.push(`Review first: ${counts.REVIEW_REQUIRED} TASK(s) require overlap review before integration.`);
-  } else if ((counts.READY || 0) > 0) {
-    lines.push(`Ready: ${counts.READY} TASK(s) are candidates for one-at-a-time integration.`);
   } else {
     lines.push('No active TASK requires integration action.');
   }
