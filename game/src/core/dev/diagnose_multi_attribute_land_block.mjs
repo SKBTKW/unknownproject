@@ -261,7 +261,7 @@ const actualMultiCards = [
     });
 
     const state = createState();
-    placeExisting(state, 2, 0, PLAINS, "existing");
+    placeExisting(state, 3, 0, PLAINS, "existing");
     const grid = new GridEngine(state, {
         gameplayRandom: { nextFloat: () => 0.99 },
         deckManager: { consumeCardIfUnique() {} }
