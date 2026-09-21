@@ -3,6 +3,40 @@ function cloneData(value) {
     return JSON.parse(JSON.stringify(value));
 }
 
+export const FIRST_RUN_TRIAL_TUTORIAL_STEPS = Object.freeze({
+    INACTIVE: "INACTIVE",
+    ROUTE_INTRO: "ROUTE_INTRO",
+    INTERCEPTION_INTRO: "INTERCEPTION_INTRO",
+    TERRAIN_COMPARE: "TERRAIN_COMPARE",
+    INTERCEPTION_SELECTED: "INTERCEPTION_SELECTED",
+    DEFENSE_ALLOCATION: "DEFENSE_ALLOCATION",
+    FINAL_REVIEW: "FINAL_REVIEW",
+    BATTLE: "BATTLE",
+    RESULT_CAUSALITY: "RESULT_CAUSALITY",
+    COMPLETED: "COMPLETED"
+});
+
+function createTrialTutorialState(candidate = null) {
+    const source = candidate && typeof candidate === "object" ? candidate : {};
+    return {
+        active: source.active === true,
+        trialIndex: Number.isInteger(source.trialIndex) ? source.trialIndex : null,
+        currentStep: Object.values(FIRST_RUN_TRIAL_TUTORIAL_STEPS).includes(source.currentStep)
+            ? source.currentStep
+            : FIRST_RUN_TRIAL_TUTORIAL_STEPS.INACTIVE,
+        routeIntroduced: source.routeIntroduced === true,
+        interceptionIntroduced: source.interceptionIntroduced === true,
+        terrainIntroduced: source.terrainIntroduced === true,
+        interceptionSelected: source.interceptionSelected === true,
+        defenseIntroduced: source.defenseIntroduced === true,
+        defenseAllocated: source.defenseAllocated === true,
+        reviewIntroduced: source.reviewIntroduced === true,
+        resultObserved: source.resultObserved === true,
+        causalityObserved: source.causalityObserved === true,
+        completed: source.completed === true
+    };
+}
+
 /**
  * Service-owned runtime state for FirstRun / tutorial orchestration.
  *
@@ -12,11 +46,13 @@ export class FirstRunState {
     constructor({
         active = false,
         occurredScenes = [],
-        basicLoopComplete = false
+        basicLoopComplete = false,
+        trialTutorial = null
     } = {}) {
         this.active = active === true;
         this.occurredScenes = new Set(Array.isArray(occurredScenes) ? occurredScenes : []);
         this.basicLoopComplete = basicLoopComplete === true;
+        this.trialTutorial = createTrialTutorialState(trialTutorial);
     }
 
     recordScene(sceneId) {
@@ -33,11 +69,21 @@ export class FirstRunState {
         this.basicLoopComplete = value === true;
     }
 
+    getTrialTutorialState() {
+        return cloneData(this.trialTutorial);
+    }
+
+    setTrialTutorialState(candidate) {
+        this.trialTutorial = createTrialTutorialState(candidate);
+        return this.getTrialTutorialState();
+    }
+
     getRestoreState() {
         return {
             active: this.active,
             occurredScenes: Array.from(this.occurredScenes),
-            basicLoopComplete: this.basicLoopComplete
+            basicLoopComplete: this.basicLoopComplete,
+            trialTutorial: this.getTrialTutorialState()
         };
     }
 
@@ -51,6 +97,9 @@ export class FirstRunState {
         }
         if (typeof snapshot.basicLoopComplete === "boolean") {
             this.basicLoopComplete = snapshot.basicLoopComplete;
+        }
+        if (snapshot.trialTutorial && typeof snapshot.trialTutorial === "object") {
+            this.trialTutorial = createTrialTutorialState(snapshot.trialTutorial);
         }
         return this.getRestoreState();
     }

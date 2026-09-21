@@ -78,6 +78,7 @@ export function attachTrialRouteBoardSelection(uiController) {
                 marker.onclick = event => {
                     event.preventDefault();
                     event.stopPropagation();
+                    uiController.acknowledgeFirstRunTrialRoute?.();
                     if (isActive) return;
                     const inputRuntime = uiController.boardPresentationRuntimeBridge;
                     if (inputRuntime?.dispatchInput) {

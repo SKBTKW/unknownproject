@@ -49,6 +49,8 @@ export class TrialActionTrayComponent {
         const currentDecision = activeRouteId
             ? this.ui.trialPresentationState.getRouteDecision(activeRouteId)
             : { status: "UNDECIDED" };
+        const tutorialPolicy = this.ui.getFirstRunTrialTutorialPolicy?.() || { tutorialActive: false };
+        const tutorialStep = tutorialPolicy.step || null;
 
         const planningLocked = Boolean(
             this.ui.trialPresentationState.planningReviewRequested
@@ -73,8 +75,17 @@ export class TrialActionTrayComponent {
             const terrainName = I18n.t(terrainKey);
             const preview = this.ui.trialPresentationState.interceptionPreview;
             const outcome = preview?.prediction?.outcome;
-            const outcomeText = outcome ? I18n.t(`UI_TRIAL_OUTCOME_${outcome}`) : "—";
-            const marginText = preview?.prediction ? `${I18n.t("UI_TRIAL_MARGIN")}: ${preview.prediction.margin}` : "";
+            const qualitativeOutcomeKey = outcome === "REPEL"
+                ? "UI_FIRST_RUN_TRIAL_FAVORABLE"
+                : (outcome === "EXACT"
+                    ? "UI_FIRST_RUN_TRIAL_BALANCED"
+                    : "UI_FIRST_RUN_TRIAL_UNFAVORABLE");
+            const outcomeText = tutorialPolicy.qualitativePreviewOnly
+                ? (outcome ? I18n.t(qualitativeOutcomeKey) : "—")
+                : (outcome ? I18n.t(`UI_TRIAL_OUTCOME_${outcome}`) : "—");
+            const marginText = tutorialPolicy.qualitativePreviewOnly
+                ? ""
+                : (preview?.prediction ? `${I18n.t("UI_TRIAL_MARGIN")}: ${preview.prediction.margin}` : "");
             const modifierTags = (preview?.modifierRows || [])
                 .map(resolveModifierTag)
                 .filter(Boolean)
@@ -92,7 +103,7 @@ export class TrialActionTrayComponent {
                         <strong>${activeRouteName}</strong>
                     </div>
                     <div class="trial-action-prediction-line">
-                        <span>${I18n.t("UI_TRIAL_PREDICTION")}</span>
+                        <span>${I18n.t(tutorialPolicy.qualitativePreviewOnly ? "UI_FIRST_RUN_TRIAL_FORECAST" : "UI_TRIAL_PREDICTION")}</span>
                         <strong>${outcomeText}</strong>
                         <small>${marginText}</small>
                     </div>
@@ -101,18 +112,41 @@ export class TrialActionTrayComponent {
             `;
         }
 
-        const canSetIntercept = Boolean(activeRouteId && selectedCell && allocated >= 1 && !planningLocked);
-        const canSkip = Boolean(activeRouteId && !planningLocked);
+        const canSetIntercept = Boolean(
+            activeRouteId
+            && selectedCell
+            && allocated >= 1
+            && !planningLocked
+            && tutorialPolicy.allowInterceptionSelection !== false
+            && tutorialPolicy.allowDefenseInput !== false
+        );
+        const canSkip = Boolean(activeRouteId && !planningLocked && tutorialPolicy.allowSkipRoute !== false);
         const canClear = Boolean(activeRouteId && currentDecision.status !== "UNDECIDED" && !planningLocked);
-        const disabledSlider = planningLocked || !activeRouteId;
+        const disabledSlider = planningLocked || !activeRouteId || tutorialPolicy.allowDefenseInput === false;
+
+        const tutorialMessageKey = tutorialStep === "ROUTE_INTRO"
+            ? "UI_FIRST_RUN_TRIAL_ROUTE_INTRO"
+            : tutorialStep === "INTERCEPTION_INTRO"
+                ? "UI_FIRST_RUN_TRIAL_INTERCEPTION_INTRO"
+                : tutorialStep === "TERRAIN_COMPARE"
+                    ? "UI_FIRST_RUN_TRIAL_TERRAIN_COMPARE"
+                    : tutorialStep === "DEFENSE_ALLOCATION"
+                        ? "UI_FIRST_RUN_TRIAL_DEFENSE"
+                        : tutorialStep === "FINAL_REVIEW"
+                            ? "UI_FIRST_RUN_TRIAL_REVIEW"
+                            : null;
+        const tutorialMessageHtml = tutorialPolicy.tutorialActive && tutorialMessageKey
+            ? '<div class="trial-first-run-tutorial-hint" data-tutorial-step="' + tutorialStep + '">' + I18n.t(tutorialMessageKey) + '</div>'
+            : "";
 
         root.innerHTML = `
             <section class="trial-action-tray" aria-label="${I18n.t("UI_TRIAL_DEFENSE_ALLOCATION")}">
+                ${tutorialMessageHtml}
                 ${pointHtml}
 
                 <div class="trial-action-control-cluster">
                     <div class="trial-action-budget-line">
-                        <span>${I18n.t("UI_TRIAL_ENEMY_SUPPRESSION")} <strong>${enemySuppression}</strong></span>
+                        ${tutorialPolicy.qualitativePreviewOnly ? "" : '<span>' + I18n.t("UI_TRIAL_ENEMY_SUPPRESSION") + ' <strong>' + enemySuppression + '</strong></span>'}
                         <span>${I18n.t("UI_TRIAL_PLAN_DEFENSE_REMAINING", { remaining })}</span>
                     </div>
                     <div class="trial-action-allocation-value">

@@ -146,6 +146,8 @@ for (const mutate of [
 
 {
   const runnerSource = fs.readFileSync(path.join(process.cwd(), 'scratch', 'safe_integration_runner.mjs'), 'utf8');
+  assert.match(runnerSource, /run\('git', \['rev-parse', '--show-toplevel'\], \{ cwd: options\.cwd \|\| process\.cwd\(\) \}\)/);
+  assert.doesNotMatch(runnerSource, /run\(options\.cwd \|\| process\.cwd\(\), \['rev-parse', '--show-toplevel'\]\)/);
   assert.match(runnerSource, /--match-head-commit/);
   assert.match(runnerSource, /--merge-next requires an explicit --target/);
   assert.match(runnerSource, /Post-merge Full Inspection/);

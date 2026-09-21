@@ -17,7 +17,7 @@ const dialogue = {
     emitTopic: result => { emitted.push(result); return true; }
 };
 const bridge = new AdvisorEventBridge(dialogue, null, {
-    profile: { policy: { development: 4, connection: 4 } },
+    profile: { policy: { development: 4, connection: 4, defense: 1 } },
     enabledProvider: () => enabled
 });
 
@@ -38,6 +38,17 @@ check(bridge.runtime.firstZoneReacted === true, "legacy zone初回状態を消�
 const afterZone = emitted.length;
 bridge.observeSnapshot({ turn: 1, trialActive: false, state: {}, zoneCount: 1, linkCount: 0 });
 check(emitted.length === afterZone, "Semantic Scene ownership中はsnapshot milestoneを抑止する");
+
+check(
+    bridge.consumeSemanticScene({
+        sceneId: "FIRST_RUN_TRIAL_ROUTE",
+        verse: 15,
+        context: { trialIndex: 1 }
+    }),
+    "FirstRun Trial route Sceneはmandatory dutyとして低defense policyでも発話できる"
+);
+check(emitted.at(-1)?.id === ADVISOR_EVENTS.FIRST_RUN_TRIAL_ROUTE, "FirstRun route Sceneを専用Advisor eventへ渡す");
+check(emitted.at(-1)?.mandatory === true, "FirstRun Trial duty Sceneはmandatory意味を保持する");
 
 enabled = false;
 check(
