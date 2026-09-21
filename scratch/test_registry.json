@@ -332,12 +332,8 @@
     },
     {
       "path": "scratch/test_fraud_detection.py",
-      "purpose": "fraud detection",
-      "suite": "quarantined",
-      "reason": "The verifier now returns two values; the test unpacks three.",
-      "nextAction": "Adapt the test to assertion records and verify that corrupted fixture data is actually rejected.",
-      "observedAt": "2026-09-22",
-      "observedEnvironment": "Windows / Node 24.18.0 / Python 3.11.3"
+      "purpose": "spec verifier and lint fail-closed regression",
+      "suite": "supplemental"
     },
     {
       "path": "scratch/test_full_inspection_workflow_contract.mjs",

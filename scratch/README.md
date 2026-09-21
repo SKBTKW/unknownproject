@@ -40,10 +40,10 @@ node scratch/scratch_registry.mjs --run quarantined
 | `supplemental` | 過去に未接続だった追加テスト | 台帳ランナー、Full Inspection末尾、新CI |
 | `quarantined` | 原因調査・修復が必要な既知の失敗 | 明示的な再調査コマンドのみ |
 
-導入時は、既存103本に台帳自体のテスト1本を追加し、追加検査40本、未解決13本を登録しています。
+導入時は、既存103本に台帳自体のテスト1本を追加し、追加検査41本、未解決12本を登録しています。
 未解決の分類は2026-09-22のWindows / Node 24.18.0 / Python 3.11.3での調査結果です。
 分類は合格証明ではありません。実行結果に表示する`notRun`には、そのコマンドで実行しなかったテストが含まれます。
-未解決13本は従来のCI経路にも含まれていなかったもので、既存の必須テストを免除したものではありません。
+未解決12本は従来のCI経路にも含まれていなかったもので、既存の必須テストを免除したものではありません。
 
 台帳検証では次を検出します。
 
@@ -93,7 +93,7 @@ node scratch/scratch_registry.mjs --run quarantined
 `capture_browser_console.js`と`check_all_cards_consistency.py`には導入時点で未解消競合があり、実行不能です。
 これらは今回の自動検査対象に含めていません。手動利用前に修復または廃止を判断してください。
 `verify_browser_playwright.mjs`にも旧`window.gameUI`への依存があります。
-`verify_all_rule_files.py`の成功はコード内期待値との比較結果で、仕様書本文全体との整合性保証ではありません。
+`verify_all_rule_files.py`は必須実装ファイルの欠落を失敗扱いにし、初期資源は現在のGameState正本を参照します。旧click探索の`executeExploration()`存在確認はLegacyコードの有無しか示さないためCurrent Spec検査から除外しています。なお成功はコード内期待値との比較結果で、仕様書本文全体との整合性保証ではありません。
 
 ## 変更の戻し方
 
