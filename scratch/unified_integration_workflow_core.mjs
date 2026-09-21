@@ -7,8 +7,30 @@ export const WORKFLOW_STATUS = Object.freeze({
   BLOCKED: 'BLOCKED',
 });
 
-export function classifyRepositoryAudit(items = [], ignoredBranches = []) {
+function normalizeReviewedBranches(value) {
+  if (!Array.isArray(value)) return [];
+  const byBranch = new Map();
+
+  for (const entry of value) {
+    if (!entry || typeof entry !== 'object') continue;
+    const branch = typeof entry.branch === 'string' ? entry.branch.trim() : '';
+    const sha = typeof entry.sha === 'string' ? entry.sha.trim().toLowerCase() : '';
+    if (!branch || !/^[0-9a-f]{40}$/.test(sha)) continue;
+
+    const disposition = typeof entry.disposition === 'string' && entry.disposition.trim()
+      ? entry.disposition.trim()
+      : 'REVIEWED';
+    const reason = typeof entry.reason === 'string' ? entry.reason.trim() : '';
+
+    byBranch.set(branch, Object.freeze({ branch, sha, disposition, reason }));
+  }
+
+  return [...byBranch.values()];
+}
+
+export function classifyRepositoryAudit(items = [], ignoredBranches = [], reviewedBranches = []) {
   const ignored = new Set(ignoredBranches);
+  const reviewed = new Map(normalizeReviewedBranches(reviewedBranches).map(entry => [entry.branch, entry]));
   const blockers = [];
   const warnings = [];
   const reviewFindings = [];
@@ -26,23 +48,37 @@ export function classifyRepositoryAudit(items = [], ignoredBranches = []) {
       continue;
     }
 
-    // Repository history review is deliberately separated from the active merge gate.
-    // Unique history on stale/noncanonical branches must stay visible, but current
-    // AoT TASK safety is owned by Integration Guard / Safe Integration Runner.
-    if (item.status === ORPHAN_STATUS.REVIEW_REQUIRED) {
-      reviewFindings.push({
-        branch: item.branch,
-        status: item.status,
-        reasons: item.reasons || [],
-      });
+    // Observation integrity failures are never bypassed by a stale-history review.
+    if (item.status === ORPHAN_STATUS.LOCAL_REMOTE_MISMATCH) {
+      blockers.push({ branch: item.branch, status: item.status, reasons: item.reasons || [] });
       continue;
     }
 
-    // A local/remote disagreement is an observation integrity failure. Keep this
-    // fail-closed because neither the repository audit nor Guard can safely know
-    // which head the operator intends.
-    if (item.status === ORPHAN_STATUS.LOCAL_REMOTE_MISMATCH) {
-      blockers.push({ branch: item.branch, status: item.status, reasons: item.reasons || [] });
+    if (item.status === ORPHAN_STATUS.REVIEW_REQUIRED) {
+      const acknowledgement = reviewed.get(item.branch);
+      const observedSha = String(item.remoteSha || item.localSha || '').toLowerCase();
+
+      if (acknowledgement && observedSha && acknowledgement.sha === observedSha) {
+        reviewFindings.push({
+          branch: item.branch,
+          status: item.status,
+          reasons: item.reasons || [],
+          reviewedSha: acknowledgement.sha,
+          disposition: acknowledgement.disposition,
+          reviewReason: acknowledgement.reason,
+        });
+        continue;
+      }
+
+      const reasons = [...(item.reasons || [])];
+      if (!acknowledgement) {
+        reasons.push('unique history has no pinned review acknowledgement');
+      } else if (!observedSha) {
+        reasons.push(`review acknowledgement is pinned to ${acknowledgement.sha}, but no branch HEAD SHA was observed`);
+      } else {
+        reasons.push(`review acknowledgement is pinned to ${acknowledgement.sha}, observed ${observedSha}`);
+      }
+      blockers.push({ branch: item.branch, status: item.status, reasons });
       continue;
     }
 
@@ -81,5 +117,6 @@ export function validateWorkflowConfig(config = {}) {
   const ignoredBranches = Array.isArray(config.ignoredBranches)
     ? [...new Set(config.ignoredBranches.filter(value => typeof value === 'string' && value.trim()).map(value => value.trim()))]
     : [];
-  return Object.freeze({ ignoredBranches });
+  const reviewedBranches = normalizeReviewedBranches(config.reviewedBranches);
+  return Object.freeze({ ignoredBranches, reviewedBranches });
 }
