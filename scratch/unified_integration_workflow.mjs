@@ -127,10 +127,10 @@ function printHelp() {
   console.log('Integrate all currently mergeable TASK PRs, one at a time:');
   console.log('  node scratch/unified_integration_workflow.mjs --target AoTYYMMDD --execute-all --confirm INTEGRATE');
   console.log('');
-  console.log('Each merge still uses Safe Integration Runner: one PR max per iteration, verified backup, PR Full Inspection,');
-  console.log('target drift check, post-merge Full Inspection, and post-merge Guard rerun. Any ambiguity stops the workflow.');
+  console.log('Each merge uses Safe Integration Runner: one PR max per iteration, verified backup, Merge Decision Proof,');
+  console.log('squash merge, post-merge Full Inspection, and proof-bound TASK cleanup. Any ambiguity stops the workflow.');
+  console.log('The next iteration performs the full Guard rerun against the changed target; redundant immediate reruns are avoided.');
   console.log('Unreviewed unique branch history blocks. Reviewed stale history is accepted only at an explicitly pinned HEAD SHA.');
-  console.log('Branch deletion is never performed.');
 }
 
 export async function runUnifiedIntegrationWorkflow(options = {}) {
@@ -201,7 +201,7 @@ export async function runUnifiedIntegrationWorkflow(options = {}) {
       for (const item of merged) {
         console.log(`  PR #${item.pullRequestNumber} ${item.branch}`);
       }
-      console.log('Branch deletion: NOT PERFORMED');
+      console.log('Merged TASK cleanup is part of each successful Safe Integration Runner lifecycle.');
       return {
         status: state.status,
         target,
