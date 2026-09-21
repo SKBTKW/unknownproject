@@ -88,8 +88,12 @@ const plains = {
     assert.equal(isWithinWaterSourceExclusionRange(engine.state, 1, 1), true);
 
     const breakdown = ProductionCalculator.calculateCellYieldBreakdown(engine.state, 1, 1);
-    const irrigation = breakdown.modifiers.filter(mod => mod.type === "LAKE_IRRIGATION");
-    assert.equal(irrigation.length, 1, "overlapping legacy irrigation sources must not stack");
+    assert.equal(Array.isArray(breakdown.modifiers), true, "production breakdown remains readable with legacy water-source data");
+    assert.equal(
+        breakdown.modifiers.some(mod => mod.type === "LAKE_IRRIGATION"),
+        false,
+        "retired lake irrigation production modifier must not be reintroduced by legacy save data"
+    );
 }
 
 // Wetland adjacency remains current gameplay behavior and does not require a legacy spawn roll.

@@ -146,7 +146,11 @@ commandEngine.state.handOffering[0] = commandCard;
 
 const rngBeforeCommand = commandEngine.checkSystem.getState().rng.callCount;
 const engineCommandResult = commandEngine.playCommandCard(commandCard, { type: "OFFERING", index: 0 });
-assert.strictEqual(engineCommandResult.success, true, "Engine facade経由のカード実行が成功すること");
+assert.strictEqual(
+    engineCommandResult.success,
+    true,
+    `Engine facade経由のカード実行が成功すること: reason=${engineCommandResult.reason || "none"} error=${engineCommandResult.error?.message || "none"} resultReason=${engineCommandResult.result?.reason || "none"}`
+);
 assert.ok(engineCommandResult.diceCheck?.result?.dice?.kept, "Engine facadeがdiceCheckを公開すること");
 assert.strictEqual(
     commandEngine.checkSystem.getState().rng.callCount - rngBeforeCommand,

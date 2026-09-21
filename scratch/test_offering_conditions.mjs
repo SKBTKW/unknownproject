@@ -38,6 +38,13 @@ const assertReclamationPrerequisites = (card) => {
         buff && (buff.id === card.id || buff.sourceCardId === card.id)
     ) || false;
     assert.equal(sameIdBuff, false, "reclamation must not already be active as a buff");
+    assert.equal(deck.cycleSystem.isRetiredCard(card.id), false, "reclamation must not be retired");
+    assert.equal(deck.isInHold(card.id), false, "reclamation must not already be held");
+    assert.equal(
+        engine.state.activeConstructionProjects?.some(project => project?.name === card.id) || false,
+        false,
+        "reclamation must not collide with an active construction project"
+    );
 };
 const clearGrid = size => Array.from({ length: size }, (_, r) =>
     Array.from({ length: size }, (_, c) => ({

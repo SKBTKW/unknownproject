@@ -59,6 +59,13 @@ assert.strictEqual(
     false,
     "干拓カードが既存active buffと衝突していないこと"
 );
+assert.strictEqual(engineA.deckManager.cycleSystem.isRetiredCard(cmdReclamation.id), false, "干拓がretiredカードではないこと");
+assert.strictEqual(engineA.deckManager.isInHold(cmdReclamation.id), false, "干拓がHold済みではないこと");
+assert.strictEqual(
+    engineA.state.activeConstructionProjects?.some(project => project?.name === cmdReclamation.id) || false,
+    false,
+    "干拓が建設中projectと衝突していないこと"
+);
 assert.strictEqual(
     engineA.deckManager.isCardEligible(cmdReclamation, 1, 0, { ignoreCooldown: true, ignoreHold: true }),
     true,
