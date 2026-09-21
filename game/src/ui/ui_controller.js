@@ -26,6 +26,7 @@ import { BuildIdentityBadgeComponent } from './build_identity_badge_component.js
 import { TrialController } from '../trial/flow/trial_controller.js';
 import { TrialPresentationState } from '../trial/presentation/trial_presentation_state.js';
 import { TrialCausalityPresenter } from '../trial/presentation/trial_causality_presenter.js';
+import { TrialAdvisorPublicReadModel } from '../trial/presentation/trial_advisor_public_read_model.js';
 import { TrialInterceptionPreviewComponent } from './trial_interception_preview_component.js';
 import { TrialDefenseAllocationComponent } from './trial_defense_allocation_component.js';
 import { LayoutStateManager, UI_LAYOUT_STATES, HAND_LAYOUT_STATES } from './layout_state_manager.js';
@@ -87,6 +88,7 @@ class UIController {
         this.trialController = new TrialController();
         this.trialPresentationState = new TrialPresentationState();
         this.trialCausalityPresenter = new TrialCausalityPresenter();
+        this.trialAdvisorPublicReadModel = new TrialAdvisorPublicReadModel();
         this.firstRunTrialTutorialService = this.engine?.firstRunState
             ? new FirstRunTrialTutorialService()
             : null;
@@ -94,7 +96,7 @@ class UIController {
         this.developmentTrialPreviewHarness = new DevelopmentTrialPreviewHarness(this);
         this.advisorDockComponent = (typeof document !== 'undefined') ? new AdvisorDockComponent({
             stateProvider: () => this.state,
-            trialStatusProvider: () => ({ active: Boolean(this.trialPreviewConfig && this.trialController.state) }),
+            trialStatusProvider: () => this.getAdvisorTrialStatus(),
             settingsModal: settingsModalInstance,
             layoutStateManager: this.layoutStateManager,
             gameFactHub: this.trialController.gameFactHub
@@ -206,6 +208,14 @@ class UIController {
             (this.trialPreviewConfig?.active && this.trialController?.state)
             || this.developmentTrialPreviewHarness?.isActive?.()
         );
+    }
+
+    getAdvisorTrialStatus() {
+        const trialState = this.trialPreviewConfig?.active ? this.trialController?.state : null;
+        return this.trialAdvisorPublicReadModel?.project?.({
+            trialState,
+            presentationState: this.trialPresentationState
+        }) || Object.freeze({ active: false });
     }
 
     getFirstRunTrialTutorialPolicy() {
@@ -810,7 +820,16 @@ class UIController {
             return result;
         }
         this.trialPresentationState.planningValidationErrors = [];
-        this.recordFirstRunTrialTutorialEvent(FIRST_RUN_TRIAL_TUTORIAL_EVENTS.RESULT_OBSERVED);
+        const tutorialState = this.recordFirstRunTrialTutorialEvent(
+            FIRST_RUN_TRIAL_TUTORIAL_EVENTS.RESULT_OBSERVED
+        );
+        if (tutorialState?.currentStep === "RESULT_CAUSALITY") {
+            this.emitFirstRunTrialAdvisorScene(ADVISOR_SCENES.FIRST_RUN_TRIAL_CAUSALITY, {
+                trialIndex: this.trialController?.state?.trialIndex ?? 1,
+                battleIndex: this.trialController?.state?.currentBattleIndex ?? null,
+                causality: this.getCurrentTrialCausality()
+            });
+        }
         this.render();
         return result;
     }
