@@ -19,7 +19,8 @@ const SCALAR_FIELDS = Object.freeze([
 ]);
 const OBJECT_FIELDS = Object.freeze([
     "trialSchedule", "activeConstructionProjects", "activeDrawBias",
-    "cardCooldowns", "usedUniqueCards", "consumedUniqueCards", "mergedBlocks", "stage"
+    "cardCooldowns", "usedUniqueCards", "consumedUniqueCards", "mergedBlocks",
+    "placedBlockProduction", "stage"
 ]);
 const SET_FIELDS = Object.freeze(["mergeLinks", "grantedConnectionPairs"]);
 const ALL_FIELDS = new Set([
@@ -63,6 +64,7 @@ function restoreCard(card, resolveCardMaster) {
         terrain,
         currentShape: cloneData(card.currentShape),
         currentAnchor: cloneData(card.currentAnchor),
+        currentCells: cloneData(card.currentCells),
         ...(Number.isInteger(card.originalHandIdx) ? { originalHandIdx: card.originalHandIdx } : {}),
         reservedThisTurn: !!card.reservedThisTurn
     };
@@ -85,6 +87,7 @@ export function hydrateGameState(state, serialized, { resolveCardMaster } = {}) 
     const values = {};
     for (const field of SCALAR_FIELDS) values[field] = cloneData(serialized[field]);
     for (const field of OBJECT_FIELDS) values[field] = cloneData(serialized[field]);
+    values.placedBlockProduction = cloneData(serialized.placedBlockProduction || {});
     values.grid = cloneData(serialized.grid);
     // Serializer uses null for an absent terrain.material. Live HQ production
     // distinguishes absent material from a value and otherwise overrides wood.

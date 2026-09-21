@@ -19,16 +19,37 @@ function normalizeCheck(check) {
     return Object.freeze({ can: check === true, reasons: Object.freeze([]) });
 }
 
-function freezeCell(cell) {
-    return Object.freeze({ r: cell.r, c: cell.c });
+function attributeTerrainId(cell) {
+    return cell?.terrain?.terrainId
+        || cell?.terrain?.id
+        || cell?.terrainId
+        || cell?.id
+        || null;
 }
 
 function freezePlacement(placement) {
+    const attributeByAbsoluteCell = new Map();
+    for (const attribute of placement.attributeCells || []) {
+        const localR = Number.isInteger(attribute?.r) ? attribute.r : attribute?.dr;
+        const localC = Number.isInteger(attribute?.c) ? attribute.c : attribute?.dc;
+        if (!Number.isInteger(localR) || !Number.isInteger(localC)) continue;
+        attributeByAbsoluteCell.set(
+            `${placement.startR + localR}:${placement.startC + localC}`,
+            attributeTerrainId(attribute)
+        );
+    }
+
+    const cells = (placement.cells || []).map(cell => Object.freeze({
+        r: cell.r,
+        c: cell.c,
+        terrainId: attributeByAbsoluteCell.get(`${cell.r}:${cell.c}`) || null
+    }));
+
     return Object.freeze({
         startR: placement.startR,
         startC: placement.startC,
         shape: placement.shape,
-        cells: Object.freeze((placement.cells || []).map(freezeCell))
+        cells: Object.freeze(cells)
     });
 }
 
@@ -46,12 +67,13 @@ export class PlacementPreviewResolver {
         const terrain = card.terrain || card;
         const placement = resolvePlacementGeometry(card, r, c);
         const rawCheck = typeof gameState.canPlaceShape === 'function'
-            ? gameState.canPlaceShape(placement.startR, placement.startC, placement.shape, terrain)
+            ? gameState.canPlaceShape(placement.startR, placement.startC, placement.shape, terrain, placement.attributeCells)
             : gameState.gridEngine?.canPlaceShape?.(
                 placement.startR,
                 placement.startC,
                 placement.shape,
-                terrain
+                terrain,
+                placement.attributeCells
             );
         const check = normalizeCheck(rawCheck);
 

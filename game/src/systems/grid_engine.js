@@ -19,6 +19,65 @@ import {
     isIrrigationInfluence,
     isLegacyIrrigationResource
 } from '../core/irrigation_rules.js';
+import {
+    LAND_PRODUCTION_STATUS,
+    findContractCellYields,
+    normalizeProductionContract
+} from '../core/land_production_contract.js';
+function coordinateKey(r, c) {
+    return `${r}:${c}`;
+}
+
+function cloneTerrainSemantic(terrain) {
+    if (!terrain || typeof terrain !== "object") return terrain || null;
+    return {
+        ...terrain,
+        ...(terrain.yields ? { yields: { ...terrain.yields } } : {}),
+        ...(terrain.baseYieldsPerTile ? { baseYieldsPerTile: { ...terrain.baseYieldsPerTile } } : {})
+    };
+}
+
+function resolveAttributeTerrain(attributeCell, fallbackTerrain) {
+    if (!attributeCell) return fallbackTerrain;
+    if (attributeCell.terrain && typeof attributeCell.terrain === "object") {
+        return cloneTerrainSemantic(attributeCell.terrain);
+    }
+
+    const {
+        r: _r,
+        c: _c,
+        dr: _dr,
+        dc: _dc,
+        ...semantic
+    } = attributeCell;
+    const hasSemantic = Object.keys(semantic).length > 0;
+    return hasSemantic ? cloneTerrainSemantic(semantic) : fallbackTerrain;
+}
+
+function findPlacementAttributeCell(attributeCells, localR, localC) {
+    if (!Array.isArray(attributeCells)) return null;
+    return attributeCells.find(cell => {
+        const r = Number.isInteger(cell?.r) ? cell.r : cell?.dr;
+        const c = Number.isInteger(cell?.c) ? cell.c : cell?.dc;
+        return r === localR && c === localC;
+    }) || null;
+}
+
+function createPlacementSemanticResolver(shapeMatrix, fallbackTerrain, attributeCells = null) {
+    const byLocalCell = new Map();
+    for (const cell of attributeCells || []) {
+        const r = Number.isInteger(cell?.r) ? cell.r : cell?.dr;
+        const c = Number.isInteger(cell?.c) ? cell.c : cell?.dc;
+        if (!Number.isInteger(r) || !Number.isInteger(c)) continue;
+        byLocalCell.set(coordinateKey(r, c), cell);
+    }
+
+    return (dr, dc) => {
+        if (shapeMatrix?.[dr]?.[dc] !== 1) return null;
+        return resolveAttributeTerrain(byLocalCell.get(coordinateKey(dr, dc)), fallbackTerrain);
+    };
+}
+
 
 class GridEngine {
     constructor(gameState, engine = null) {
@@ -140,6 +199,26 @@ class GridEngine {
             }
         }
         return count;
+    }
+
+    /**
+     * 📦 配置済みBlock数。placementGroupIdをcanonical block identityとして数える。
+     */
+    getPlacedBlockCount() {
+        if (!this.state) return 0;
+        if (Number.isInteger(this.state.placedBlockCount)) return this.state.placedBlockCount;
+        if (!Array.isArray(this.state.grid)) return 0;
+
+        const seen = new Set();
+        let anonymous = 0;
+        for (const row of this.state.grid) {
+            for (const cell of row || []) {
+                if (!cell?.placed || cell.isHQ) continue;
+                if (cell.placementGroupId != null) seen.add(String(cell.placementGroupId));
+                else anonymous++;
+            }
+        }
+        return seen.size + anonymous;
     }
 
     /**
@@ -312,24 +391,28 @@ class GridEngine {
      * @param {number} startR - 配置開始行
      * @param {number} startC - 配置開始列
      * @param {Array<Array<number>>} shapeMatrix - 形状マトリクス
-     * @param {Object} [terrain] - 配置対象の地勢データ (GL/E判定用)
+     * @param {Object} [terrain] - uniform card用のfallback地勢データ
+     * @param {Array<Object>|null} [attributeCells] - Multi-Attribute cardのlocal cell semantic
      * @returns {{ can: boolean, reason?: string, reasons: Array<string> }}
      */
-    canPlaceShape(startR, startC, shapeMatrix, terrain = null) {
+    canPlaceShape(startR, startC, shapeMatrix, terrain = null, attributeCells = null) {
         if (!this.state || !this.state.grid) return { can: false, reason: "NO_GRID", reasons: ["NO_GRID"] };
 
         const rows = shapeMatrix.length;
         const cols = shapeMatrix[0].length;
         const size = (this.state.stage && this.state.stage.size) ? this.state.stage.size : 5;
+        const terrainAt = createPlacementSemanticResolver(shapeMatrix, terrain, attributeCells);
+        const placingKeys = new Set();
 
-        const targetGL = terrain ? (terrain.gl !== undefined ? terrain.gl : (terrain.terrain ? terrain.terrain.gl : null)) : null;
-        const targetE = terrain ? (terrain.e !== undefined ? terrain.e : (terrain.terrain ? terrain.terrain.e : 1)) : null;
-        const targetTid = terrain ? (terrain.terrainId || terrain.id || "") : "";
-        const isMountain = targetE === 3 || targetTid.includes("MOUNTAIN");
-        const isWetland = isWetlandTerrain(terrain);
+        for (let dr = 0; dr < rows; dr++) {
+            for (let dc = 0; dc < cols; dc++) {
+                if (shapeMatrix[dr][dc] === 1) {
+                    placingKeys.add(coordinateKey(startR + dr, startC + dc));
+                }
+            }
+        }
 
         const reasons = [];
-
         let isOutOfBounds = false;
         let isAlreadyPlaced = false;
         let isMountainNearHQ = false;
@@ -339,44 +422,32 @@ class GridEngine {
         let isWetlandTooClose = false;
         const elevationReasons = new Set();
 
-        // 水源化していない湿原同士は上下左右の直辺隣接のみ不可。Shape内の構成セル同士にも適用する。
-        if (isWetland) {
-            const wetlandCoords = [];
-            for (let dr = 0; dr < rows; dr++) {
-                for (let dc = 0; dc < cols; dc++) {
-                    if (shapeMatrix[dr][dc] !== 1) continue;
-                    const r = startR + dr;
-                    const c = startC + dc;
-                    if (isWithinWetlandExclusionRange(this.state, r, c)) isWetlandTooClose = true;
-                    wetlandCoords.push({ r, c });
-                }
-            }
-            for (let i = 0; i < wetlandCoords.length; i++) {
-                for (let j = i + 1; j < wetlandCoords.length; j++) {
-                    const distance = Math.abs(wetlandCoords[i].r - wetlandCoords[j].r)
-                        + Math.abs(wetlandCoords[i].c - wetlandCoords[j].c);
-                    if (distance <= 2) isWetlandTooClose = true;
-                }
-            }
-        }
-
-        // 1. 盤外および既配置マスとの重複判定 ＆ 本営周囲山岳判定
+        // Card-internal edges are owned by the card definition. Only the board
+        // outside the placement footprint participates in normal adjacency rules.
         for (let dr = 0; dr < rows; dr++) {
             for (let dc = 0; dc < cols; dc++) {
-                if (shapeMatrix[dr][dc] === 1) {
-                    const r = startR + dr;
-                    const c = startC + dc;
-                    if (r < 0 || r >= size || c < 0 || c >= size) {
-                        isOutOfBounds = true;
-                    } else {
-                        if (this.state.grid[r][c].placed) {
-                            isAlreadyPlaced = true;
-                        }
-                        if (this.isHQVicinity(r, c)) {
-                            if (isMountain) isMountainNearHQ = true;
-                            if (isWetland) isWetlandNearHQ = true;
-                        }
-                    }
+                if (shapeMatrix[dr][dc] !== 1) continue;
+                const r = startR + dr;
+                const c = startC + dc;
+                const cellTerrain = terrainAt(dr, dc);
+                const targetE = cellTerrain
+                    ? (cellTerrain.e !== undefined ? cellTerrain.e : (cellTerrain.terrain?.e ?? 1))
+                    : null;
+                const targetTid = cellTerrain ? (cellTerrain.terrainId || cellTerrain.id || "") : "";
+                const isMountain = targetE === 3 || targetTid.includes("MOUNTAIN");
+
+                if (r < 0 || r >= size || c < 0 || c >= size) {
+                    isOutOfBounds = true;
+                    continue;
+                }
+                if (this.state.grid[r][c].placed) isAlreadyPlaced = true;
+                const isWetland = isWetlandTerrain(cellTerrain);
+                if (this.isHQVicinity(r, c)) {
+                    if (isMountain) isMountainNearHQ = true;
+                    if (isWetland) isWetlandNearHQ = true;
+                }
+                if (isWetland && isWithinWetlandExclusionRange(this.state, r, c)) {
+                    isWetlandTooClose = true;
                 }
             }
         }
@@ -386,44 +457,48 @@ class GridEngine {
         if (isMountainNearHQ) reasons.push("MOUNTAIN_NEAR_HQ_FORBIDDEN");
         if (isWetlandNearHQ) reasons.push("WETLAND_NEAR_HQ_FORBIDDEN");
 
-        // 2. 隣接接続判定 ＆ 地勢レベル(GL) / 標高(E) 不適合チェック
         if (!isOutOfBounds) {
             for (let dr = 0; dr < rows; dr++) {
                 for (let dc = 0; dc < cols; dc++) {
-                    if (shapeMatrix[dr][dc] === 1) {
-                        const r = startR + dr;
-                        const c = startC + dc;
-                        const neighbors = [
-                            [r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]
-                        ];
-                        for (let [nr, nc] of neighbors) {
-                            if (nr >= 0 && nr < size && nc >= 0 && nc < size) {
-                                const neighborCell = this.state.grid[nr][nc];
-                                if (neighborCell.placed) {
-                                    isAdjacent = true;
+                    if (shapeMatrix[dr][dc] !== 1) continue;
 
-                                    if (!neighborCell.isHQ && neighborCell.terrain) {
-                                        // 🛡️ 気候断絶ルール: 砂漠(GL0) と 森林/深林/山岳(GL2以上) は直接隣接不可 (本営HQは全地勢接続可能)
-                                        if (targetGL !== null) {
-                                            const placedGL = neighborCell.terrain.gl !== undefined ? neighborCell.terrain.gl : 1;
-                                            if ((targetGL === 0 && placedGL >= 2) || (targetGL >= 2 && placedGL === 0)) {
-                                                hasInvalidGL = true;
-                                            }
-                                        }
+                    const r = startR + dr;
+                    const c = startC + dc;
+                    const cellTerrain = terrainAt(dr, dc);
+                    const targetGL = cellTerrain
+                        ? (cellTerrain.gl !== undefined ? cellTerrain.gl : (cellTerrain.terrain?.gl ?? null))
+                        : null;
+                    const targetE = cellTerrain
+                        ? (cellTerrain.e !== undefined ? cellTerrain.e : (cellTerrain.terrain?.e ?? 1))
+                        : null;
+                    const neighbors = [
+                        [r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]
+                    ];
 
-                                        // ⛰️ 高度断絶ルール (断崖): 標高 E0(湿原)/E1(平地) と 標高 E3(山岳) は直接隣接不可 (|E差| >= 2 は禁止)
-                                        if (targetE !== null) {
-                                            const placedE = neighborCell.terrain.e !== undefined ? neighborCell.terrain.e : 1;
-                                            if (Math.abs(targetE - placedE) >= 2) {
-                                                if ((targetE === 0 && placedE === 3) || (targetE === 3 && placedE === 0)) {
-                                                    elevationReasons.add("WETLAND_MOUNTAIN_NEIGHBOR");
-                                                } else if ((targetE === 0 && placedE === 2) || (targetE === 2 && placedE === 0)) {
-                                                    elevationReasons.add("WETLAND_HILL_NEIGHBOR");
-                                                } else {
-                                                    elevationReasons.add("INVALID_ELEVATION_NEIGHBOR");
-                                                }
-                                            }
-                                        }
+                    for (const [nr, nc] of neighbors) {
+                        if (nr < 0 || nr >= size || nc < 0 || nc >= size) continue;
+                        const neighborCell = this.state.grid[nr][nc];
+                        if (placingKeys.has(coordinateKey(nr, nc)) && !neighborCell.placed) continue;
+                        if (!neighborCell.placed) continue;
+                        isAdjacent = true;
+
+                        if (!neighborCell.isHQ && neighborCell.terrain) {
+                            if (targetGL !== null) {
+                                const placedGL = neighborCell.terrain.gl !== undefined ? neighborCell.terrain.gl : 1;
+                                if ((targetGL === 0 && placedGL >= 2) || (targetGL >= 2 && placedGL === 0)) {
+                                    hasInvalidGL = true;
+                                }
+                            }
+
+                            if (targetE !== null) {
+                                const placedE = neighborCell.terrain.e !== undefined ? neighborCell.terrain.e : 1;
+                                if (Math.abs(targetE - placedE) >= 2) {
+                                    if ((targetE === 0 && placedE === 3) || (targetE === 3 && placedE === 0)) {
+                                        elevationReasons.add("WETLAND_MOUNTAIN_NEIGHBOR");
+                                    } else if ((targetE === 0 && placedE === 2) || (targetE === 2 && placedE === 0)) {
+                                        elevationReasons.add("WETLAND_HILL_NEIGHBOR");
+                                    } else {
+                                        elevationReasons.add("INVALID_ELEVATION_NEIGHBOR");
                                     }
                                 }
                             }
@@ -432,54 +507,41 @@ class GridEngine {
                 }
             }
 
-            if (!isAdjacent && !isAlreadyPlaced) {
-                reasons.push("NOT_ADJACENT");
-            }
-            if (hasInvalidGL) {
-                reasons.push("INVALID_GL_NEIGHBOR");
-            }
-            if (isWetlandTooClose) {
-                reasons.push("WETLAND_TOO_CLOSE");
-            }
-            if (elevationReasons.size > 0) {
-                elevationReasons.forEach(rKey => reasons.push(rKey));
-            }
+            if (!isAdjacent && !isAlreadyPlaced) reasons.push("NOT_ADJACENT");
+            if (hasInvalidGL) reasons.push("INVALID_GL_NEIGHBOR");
+            if (isWetlandTooClose) reasons.push("WETLAND_TOO_CLOSE");
+            elevationReasons.forEach(reason => reasons.push(reason));
 
-            // 🔒 3. 同属性 2×2 マージ直接面隣接禁止ルール
-            if (!isOutOfBounds && !isAlreadyPlaced && !isWetland) {
-                const targetTid = terrain ? (terrain.terrainId || terrain.id) : null;
-                const targetZoneCategory = getZoneCategory(terrain);
-                const placingCells = [];
-                for (let dr = 0; dr < rows; dr++) {
-                    for (let dc = 0; dc < cols; dc++) {
-                        if (shapeMatrix[dr][dc] === 1) {
-                            placingCells.push({ r: startR + dr, c: startC + dc });
-                        }
-                    }
-                }
-
+            // Existing "same true-zone adjacency forbidden" contract, evaluated
+            // with each prospective cell's own zone semantic.
+            if (!isAlreadyPlaced) {
                 const getVirtualCell = (vr, vc) => {
                     if (vr < 0 || vr >= size || vc < 0 || vc >= size) return null;
-                    const isPlacing = placingCells.some(p => p.r === vr && p.c === vc);
-                    if (isPlacing) {
+
+                    const localR = vr - startR;
+                    const localC = vc - startC;
+                    if (localR >= 0 && localR < rows && localC >= 0 && localC < cols
+                        && shapeMatrix[localR]?.[localC] === 1) {
+                        const virtualTerrain = terrainAt(localR, localC);
                         return {
                             placed: true,
                             isHQ: false,
-                            terrainId: targetTid,
-                            zoneCategory: targetZoneCategory,
+                            terrain: virtualTerrain,
+                            terrainId: virtualTerrain?.terrainId || virtualTerrain?.id || null,
+                            zoneCategory: getZoneCategory(virtualTerrain),
                             isVirtualPlacing: true
                         };
                     }
+
                     const realCell = this.state.grid[vr][vc];
                     if (realCell && realCell.placed && !realCell.isHQ && realCell.terrain) {
-                        const tid = realCell.terrain.terrainId || realCell.terrain.id;
-                        const isMerged = isTrueMergedCell(this.state, realCell);
                         return {
                             placed: true,
                             isHQ: false,
-                            terrainId: tid,
+                            terrain: realCell.terrain,
+                            terrainId: realCell.terrain.terrainId || realCell.terrain.id,
                             zoneCategory: getZoneCategory(realCell.terrain),
-                            isMerged,
+                            isMerged: isTrueMergedCell(this.state, realCell),
                             mergeGroupId: realCell.mergeGroupId
                         };
                     }
@@ -489,39 +551,34 @@ class GridEngine {
                 let hasMergedAdjacencyConflict = false;
                 for (let topR = 0; topR < size - 1; topR++) {
                     for (let leftC = 0; leftC < size - 1; leftC++) {
-                        const c00 = getVirtualCell(topR, leftC);
-                        const c01 = getVirtualCell(topR, leftC + 1);
-                        const c10 = getVirtualCell(topR + 1, leftC);
-                        const c11 = getVirtualCell(topR + 1, leftC + 1);
+                        const cells = [
+                            getVirtualCell(topR, leftC),
+                            getVirtualCell(topR, leftC + 1),
+                            getVirtualCell(topR + 1, leftC),
+                            getVirtualCell(topR + 1, leftC + 1)
+                        ];
+                        if (cells.some(cell => !cell)) continue;
 
-                        if (c00 && c01 && c10 && c11 &&
-                            c00.zoneCategory === targetZoneCategory &&
-                            c01.zoneCategory === targetZoneCategory &&
-                            c10.zoneCategory === targetZoneCategory &&
-                            c11.zoneCategory === targetZoneCategory) {
+                        const targetZoneCategory = cells[0].zoneCategory;
+                        if (!targetZoneCategory || cells.some(cell => cell.zoneCategory !== targetZoneCategory)) continue;
+                        if (cells.some(cell => isWetlandTerrain(cell.terrain))) continue;
+                        if (!cells.some(cell => cell.isVirtualPlacing)) continue;
 
-                            const includesNewPlacing = (c00.isVirtualPlacing || c01.isVirtualPlacing || c10.isVirtualPlacing || c11.isVirtualPlacing);
-                            if (includesNewPlacing) {
-                                const perimeterNeighbors = [
-                                    [topR - 1, leftC], [topR - 1, leftC + 1],
-                                    [topR + 2, leftC], [topR + 2, leftC + 1],
-                                    [topR, leftC - 1], [topR + 1, leftC - 1],
-                                    [topR, leftC + 2], [topR + 1, leftC + 2]
-                                ];
+                        const perimeterNeighbors = [
+                            [topR - 1, leftC], [topR - 1, leftC + 1],
+                            [topR + 2, leftC], [topR + 2, leftC + 1],
+                            [topR, leftC - 1], [topR + 1, leftC - 1],
+                            [topR, leftC + 2], [topR + 1, leftC + 2]
+                        ];
 
-                                for (let [pr, pc] of perimeterNeighbors) {
-                                    if (pr >= 0 && pr < size && pc >= 0 && pc < size) {
-                                        const realNeighbor = this.state.grid[pr][pc];
-                                        if (realNeighbor && realNeighbor.placed && !realNeighbor.isHQ && realNeighbor.terrain) {
-                                            const isNeighborMerged = isTrueMergedCell(this.state, realNeighbor);
-
-                                            if (areTerrainsZoneCompatible(realNeighbor.terrain, terrain) && isNeighborMerged) {
-                                                hasMergedAdjacencyConflict = true;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
+                        for (const [pr, pc] of perimeterNeighbors) {
+                            if (pr < 0 || pr >= size || pc < 0 || pc >= size) continue;
+                            const realNeighbor = this.state.grid[pr][pc];
+                            if (!realNeighbor?.placed || realNeighbor.isHQ || !realNeighbor.terrain) continue;
+                            if (isTrueMergedCell(this.state, realNeighbor)
+                                && getZoneCategory(realNeighbor.terrain) === targetZoneCategory) {
+                                hasMergedAdjacencyConflict = true;
+                                break;
                             }
                         }
                         if (hasMergedAdjacencyConflict) break;
@@ -536,7 +593,7 @@ class GridEngine {
         }
 
         if (reasons.length > 0) {
-            return { can: false, reason: reasons[0], reasons: reasons };
+            return { can: false, reason: reasons[0], reasons };
         }
         return { can: true, reasons: [] };
     }
@@ -544,15 +601,17 @@ class GridEngine {
     /**
      * 🧩 土地ブロックの配置実行
      */
-    placeShape(startR, startC, shapeMatrix, terrain, handIdx = -1) {
+    placeShape(startR, startC, shapeMatrix, terrain, handIdx = -1, attributeCells = null) {
         if (!this.state) return { can: false, reason: "NO_STATE" };
         if (this.state.hasPickedThisTurn) return { can: false, reason: "ALREADY_PICKED_THIS_TURN" };
 
-        const check = this.canPlaceShape(startR, startC, shapeMatrix, terrain);
+        const check = this.canPlaceShape(startR, startC, shapeMatrix, terrain, attributeCells);
         if (!check.can) return check;
 
         const rows = shapeMatrix.length;
         const cols = shapeMatrix[0].length;
+        const terrainAt = createPlacementSemanticResolver(shapeMatrix, terrain, attributeCells);
+        const productionContract = normalizeProductionContract(terrain);
         const pGroupId = `place_${this.state.placementGroupCounter++}`;
 
         let activeCellCount = 0;
@@ -572,13 +631,34 @@ class GridEngine {
                     const r = startR + dr;
                     const c = startC + dc;
                     const cell = this.state.grid[r][c];
+                    const cellTerrain = terrainAt(dr, dc);
                     cell.placed = true;
-                    cell.terrain = terrain;
+                    cell.terrain = cellTerrain;
                     cell.placementGroupId = pGroupId;
+                    if (productionContract.status === LAND_PRODUCTION_STATUS.UNRESOLVED) {
+                        cell.production = {
+                            status: LAND_PRODUCTION_STATUS.UNRESOLVED,
+                            scope: null,
+                            cellYields: null
+                        };
+                    } else if (productionContract.status === LAND_PRODUCTION_STATUS.RESOLVED) {
+                        cell.production = {
+                            status: LAND_PRODUCTION_STATUS.RESOLVED,
+                            scope: productionContract.scope,
+                            cellYields: findContractCellYields(
+                                productionContract,
+                                dr,
+                                dc,
+                                findPlacementAttributeCell(attributeCells, dr, dc)
+                            )
+                        };
+                    } else {
+                        cell.production = null;
+                    }
                     cell.isHQVicinity = (Math.abs(r - 2) <= 1 && Math.abs(c - 2) <= 1 && !(r === 2 && c === 2));
 
                     // ★ 水源・ソケット開花判定（失敗結果もキャッシュし、Undo再抽選を防ぐ）
-                    if (!cell.socketResource && (cell.hasSocket || isWetlandTerrain(terrain))) {
+                    if (!cell.socketResource && (cell.hasSocket || isWetlandTerrain(cellTerrain))) {
                         const seedKey = `${r}_${c}`;
                         let spawnedSocket = null;
                         const hasCachedOutcome = cell.cachedSocketSeeds
@@ -588,9 +668,8 @@ class GridEngine {
                             spawnedSocket = cell.cachedSocketSeeds[seedKey] || null;
                         } else {
                             if (!cell.cachedSocketSeeds) cell.cachedSocketSeeds = {};
-                            const baseTid = terrain.terrainId || terrain.id || "";
+                            const baseTid = cellTerrain?.terrainId || cellTerrain?.id || "";
                             const getRng = () => this._nextGameplayFloat();
-
                             // 一般資源プール抽選。
                             // 湖・オアシスは新規Runでは生成しない。旧データ定義はセーブ互換のため残す。
                             const socketMaster = (typeof globalThis !== "undefined" && globalThis.SOCKET_RESOURCE_MASTER) ? globalThis.SOCKET_RESOURCE_MASTER : (typeof window !== "undefined" ? window.SOCKET_RESOURCE_MASTER : null);
@@ -628,7 +707,8 @@ class GridEngine {
                             const sName = I18n.t(spawnedSocket.nameKey);
                             const sIcon = spawnedSocket.icon || "💎";
                             if (typeof this.state.addLog === 'function') {
-                                this.state.addLog(I18n.t("LOG_SOCKET_SPAWNED", { pos: posStr, terrainName, socketName: sName, icon: sIcon }));
+                                const cellTerrainName = I18n.t((cellTerrain && (cellTerrain.nameKey || cellTerrain.terrainId || cellTerrain.id)) || "TERRAIN_PLAINS");
+                                this.state.addLog(I18n.t("LOG_SOCKET_SPAWNED", { pos: posStr, terrainName: cellTerrainName, socketName: sName, icon: sIcon }));
                             }
                             if (this.state.toastQueue) {
                                 this.state.toastQueue.push({ r, c, text: I18n.t("TOAST_SOCKET_SPAWNED", { name: sName, icon: sIcon }) });
@@ -637,6 +717,17 @@ class GridEngine {
                     }
                 }
             }
+        }
+
+        if (productionContract.status === LAND_PRODUCTION_STATUS.RESOLVED && productionContract.blockYields) {
+            if (!this.state.placedBlockProduction || typeof this.state.placedBlockProduction !== "object") {
+                this.state.placedBlockProduction = {};
+            }
+            this.state.placedBlockProduction[pGroupId] = {
+                status: LAND_PRODUCTION_STATUS.RESOLVED,
+                scope: productionContract.scope,
+                yields: { ...productionContract.blockYields }
+            };
         }
 
         const placementOutcome = {
@@ -653,7 +744,7 @@ class GridEngine {
                     const r = startR + dr;
                     const c = startC + dc;
                     placedCoords.push({ r, c });
-                    const connRes = this.checkConnectionBonus(r, c, terrain);
+                    const connRes = this.checkConnectionBonus(r, c, this.state.grid[r][c].terrain);
                     if (connRes && connRes.connection1x3) placementOutcome.connection1x3 = true;
                     else if (connRes && connRes.connection1x2) placementOutcome.connection1x2 = true;
                 }
@@ -830,13 +921,14 @@ class GridEngine {
 
             const size = this.state.grid.length;
 
-            // 1. 新規配置カードの全マス（同 placementGroupId）に targetGroupId を伝播
+            // 1. 新規配置カード内の同Zone互換セルだけに targetGroupId を伝播
             for (let row = 0; row < size; row++) {
                 for (let col = 0; col < size; col++) {
                     const cell = this.state.grid[row][col];
                     if (cell
                         && currPlaceId
                         && cell.placementGroupId === currPlaceId
+                        && areTerrainsZoneCompatible(cell.terrain, currentCell.terrain)
                         && !isWetlandTerrain(cell.terrain)
                         && !isIrrigationSourceCell(cell)) {
                         cell.mergeGroupId = targetGroupId;

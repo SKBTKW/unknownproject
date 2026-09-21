@@ -88,6 +88,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Domain Tests) で不合格が検出されました。");
         process.exit(1);
     }
+    const multiAttributeLandBlockOk = await runCommand("node", ["game/src/core/dev/diagnose_multi_attribute_land_block.mjs"]);
+    if (!multiAttributeLandBlockOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Multi-Attribute Land Block Contract) で不合格が検出されました。");
+        process.exit(1);
+    }
     const turnLifecycleOk = await runCommand("node", ["scratch/test_turn_lifecycle_service.mjs"]);
     if (!turnLifecycleOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Turn Lifecycle Contract) で不合格が検出されました。");

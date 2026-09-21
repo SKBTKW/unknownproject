@@ -1,4 +1,13 @@
 import { UILayoutConfig } from './layout_config.js';
+import {
+    resolveLandCardCellTerrainId,
+    resolveLandCardDisplayName,
+    resolveLandCardRarity
+} from '../presentation/land_card_presentation.js';
+import {
+    LAND_PRODUCTION_STATUS,
+    resolveCardProductionPreview
+} from '../core/land_production_contract.js';
 
 /**
  * 🃏 HandCardsComponent (手札オファリング ＆ カードフレーム描画・操作専門コンポーネント)
@@ -96,7 +105,7 @@ export class HandCardsComponent {
             const isLocked = this.state.hasPickedThisTurn;
             const tObj = card.terrain || card;
             const category = tObj.category || "LAND";
-            const rCode = tObj.rarity || "C";
+            const rCode = resolveLandCardRarity(card);
             const rarityClass = `rarity-${rCode.toLowerCase()}`;
             const categoryClass = category !== "LAND" ? `category-${category.toLowerCase()}` : "";
 
@@ -211,7 +220,9 @@ export class HandCardsComponent {
                 }
             });
 
-            const cName = tObj.nameKey ? I18n.t(tObj.nameKey) : (tObj.name || tObj.id || "Card");
+            const cName = category === "LAND"
+                ? resolveLandCardDisplayName(card, I18n)
+                : (tObj.nameKey ? I18n.t(tObj.nameKey) : (tObj.name || tObj.id || "Card"));
             const cDesc = tObj.descriptionKey ? I18n.t(tObj.descriptionKey) : (tObj.description || "");
 
             // 🏷️ カテゴリ判別アイコン
@@ -243,26 +254,23 @@ export class HandCardsComponent {
                 cardEl.innerHTML = fullInnerHtml;
             } else {
                 // 🌱 土地カード
-                const y = tObj.yields || { food: tObj.food || 0, wood: tObj.wood || 0, defense: tObj.def || tObj.defense || 0, mystic: tObj.mystic || 0 };
+                const productionPreview = resolveCardProductionPreview(card);
+                const y = productionPreview.totalYields || { food: 0, wood: 0, defense: 0, mystic: 0 };
+                const productionUnresolved = productionPreview.status === LAND_PRODUCTION_STATUS.UNRESOLVED;
                 const shapeMat = card.currentShape || tObj.shape || [[1]];
-                const tileCount = shapeMat.reduce((acc, row) => acc + row.reduce((a, b) => a + b, 0), 0);
-                const totF = (y.food || 0) * tileCount;
-                const totW = (y.wood || 0) * tileCount;
-                const totD = (y.defense || 0) * tileCount;
-                const totM = (y.mystic || 0) * tileCount;
-
-                const tid = tObj.terrainId || tObj.id || "";
-                const blockTheme = UILayoutConfig.getBlockThemeColor(tid);
-                const blockBg = blockTheme.bg;
-                const blockBorder = blockTheme.border;
-                const blockShadow = blockTheme.shadow;
+                const totF = y.food || 0;
+                const totW = y.wood || 0;
+                const totD = y.defense || 0;
+                const totM = y.mystic || 0;
 
                 // 標準用 22px 形状 (インライン display:grid を全廃し CSS で制御)
                 let shapeHtml = `<div class="tcg-shape-grid-standard" style="grid-template-rows:repeat(${shapeMat.length}, 22px); grid-template-columns:repeat(${shapeMat[0].length}, 22px); gap:5px; background:rgba(0,0,0,0.55); padding:10px; border-radius:8px; border:2px solid rgba(255,255,255,0.18);">`;
                 for (let r = 0; r < shapeMat.length; r++) {
                     for (let c = 0; c < shapeMat[0].length; c++) {
                         if (shapeMat[r][c] === 1) {
-                            shapeHtml += `<div style="width:22px;height:22px;background:${blockBg};border:2px solid ${blockBorder};border-radius:4px;box-shadow:0 0 8px ${blockShadow};"></div>`;
+                            const cellTerrainId = resolveLandCardCellTerrainId(card, r, c);
+                            const cellTheme = UILayoutConfig.getBlockThemeColor(cellTerrainId);
+                            shapeHtml += `<div style="width:22px;height:22px;background:${cellTheme.bg};border:2px solid ${cellTheme.border};border-radius:4px;box-shadow:0 0 8px ${cellTheme.shadow};"></div>`;
                         } else {
                             shapeHtml += `<div style="width:22px;height:22px;background:transparent;"></div>`;
                         }
@@ -275,7 +283,9 @@ export class HandCardsComponent {
                 for (let r = 0; r < shapeMat.length; r++) {
                     for (let c = 0; c < shapeMat[0].length; c++) {
                         if (shapeMat[r][c] === 1) {
-                            miniShapeHtml += `<div class="tcg-mini-shape-cell" style="background:${blockBg};border-color:${blockBorder};"></div>`;
+                            const cellTerrainId = resolveLandCardCellTerrainId(card, r, c);
+                            const cellTheme = UILayoutConfig.getBlockThemeColor(cellTerrainId);
+                            miniShapeHtml += `<div class="tcg-mini-shape-cell" style="background:${cellTheme.bg};border-color:${cellTheme.border};"></div>`;
                         } else {
                             miniShapeHtml += `<div style="width:14px;height:14px;background:transparent;"></div>`;
                         }
@@ -289,8 +299,13 @@ export class HandCardsComponent {
                 if (totW > 0) { yieldParts.push(`<span>🧱${totW}</span>`); yieldPlainParts.push(`🧱${totW}`); }
                 if (totD > 0) { yieldParts.push(`<span>🛡️${totD}</span>`); yieldPlainParts.push(`🛡️${totD}`); }
                 if (totM > 0) { yieldParts.push(`<span>✨${totM}</span>`); yieldPlainParts.push(`✨${totM}`); }
-                const yieldContent = yieldParts.length > 0 ? yieldParts.join(" ") : `<span>-</span>`;
-                const yieldPlainText = yieldPlainParts.length > 0 ? yieldPlainParts.join(" ") : "-";
+                const unresolvedLabel = I18n.t("UI_YIELD_UNRESOLVED");
+                const yieldContent = productionUnresolved
+                    ? `<span>${unresolvedLabel}</span>`
+                    : (yieldParts.length > 0 ? yieldParts.join(" ") : `<span>-</span>`);
+                const yieldPlainText = productionUnresolved
+                    ? unresolvedLabel
+                    : (yieldPlainParts.length > 0 ? yieldPlainParts.join(" ") : "-");
                 const yieldLabel = I18n.t("UI_YIELD_LABEL") || "産出:";
                 const yieldText = `<span style="font-size:15px; color:#ffffff; font-weight:bold; margin-right:4px; white-space:nowrap;">${yieldLabel}</span> <span style="font-size:17px; font-weight:900; letter-spacing:0.5px; color:#ffffff; white-space:nowrap; display:inline-flex; align-items:center; gap:5px;">${yieldContent}</span>`;
 

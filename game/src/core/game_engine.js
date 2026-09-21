@@ -262,7 +262,7 @@ class GameEngine {
         if (!card) return { success: false, reason: "NO_CARD" };
 
         const placement = resolvePlacementGeometry(card, r, c);
-        const { shape, startR, startC } = placement;
+        const { shape, startR, startC, attributeCells } = placement;
         const terrain = card.terrain || card;
         const currentIdx = source.type === "OFFERING" ? source.index : -1;
         const placedCoords = placement.cells;
@@ -273,7 +273,7 @@ class GameEngine {
                 if (!state) return { can: false, reason: "NO_STATE" };
                 if (state.hasPickedThisTurn) return { can: false, reason: "ALREADY_PICKED" };
                 if (typeof state.canPlaceShape === "function") {
-                    const check = state.canPlaceShape(startR, startC, shape, terrain);
+                    const check = state.canPlaceShape(startR, startC, shape, terrain, attributeCells);
                     if (!check || !check.can) return check || { can: false, reason: "CANNOT_PLACE" };
                 }
                 return { can: true };
@@ -281,7 +281,7 @@ class GameEngine {
             // 2. ⚙️ Execute (コア変更: 土地配置と保留枠消化)
             execute: (state) => {
                 const res = (typeof state.placeShape === "function")
-                    ? state.placeShape(startR, startC, shape, terrain, currentIdx)
+                    ? state.placeShape(startR, startC, shape, terrain, currentIdx, attributeCells)
                     : { can: false };
 
                 if (!res || (!res.can && !res.success)) {

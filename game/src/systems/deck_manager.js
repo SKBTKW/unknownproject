@@ -5,7 +5,12 @@ import { LAND_CARDS_MASTER } from '../data/land_cards_data.js';
 import { COMMAND_CARDS_MASTER } from '../data/command_cards_data.js';
 import { ConditionEvaluator } from '../core/condition_evaluator.js';
 import { CardCycleSystem, CYCLE_POLICIES } from './card_cycle_system.js';
-import { normalizePlacementAnchor, resolvePlacementGeometry } from '../core/placement_geometry.js';
+import {
+    hasMultiplePlacementTerrainAttributes,
+    normalizePlacementAnchor,
+    resolvePlacementGeometry
+} from '../core/placement_geometry.js';
+import { isMultiAttributeProductionResolved } from '../core/land_production_contract.js';
 import { isTrueMergedCell } from '../core/merge_rules.js';
 import { getWaterSourceSpawnChance } from '../core/lake_rules.js';
 
@@ -71,7 +76,12 @@ class DeckManager {
         const map = new Map();
         for (const c of baseList) {
             if (c && c.id) {
-                map.set(c.id, { ...c, cyclePolicy: c.cyclePolicy || CYCLE_POLICIES.LAND_STANDARD });
+                const multiAttribute = hasMultiplePlacementTerrainAttributes(c);
+                map.set(c.id, {
+                    ...c,
+                    ...(multiAttribute ? { rarity: "R" } : {}),
+                    cyclePolicy: c.cyclePolicy || CYCLE_POLICIES.LAND_STANDARD
+                });
             }
         }
         for (const c of COMMAND_CARDS_MASTER) {
@@ -109,6 +119,12 @@ class DeckManager {
         if (!c) return false;
         const cardStage = c.minStage || 1;
         if (cardStage > stageNum) return false;
+
+        // Multi-Attribute cards must not enter live Offering until their
+        // Production contract is explicitly finalized.
+        if (hasMultiplePlacementTerrainAttributes(c) && !isMultiAttributeProductionResolved(c)) {
+            return false;
+        }
 
         const currentTurn = (this.state && this.state.turn) ? this.state.turn : 1;
 
@@ -522,7 +538,7 @@ class DeckManager {
         const activeBiasCategory = (this.state && this.state.activeDrawBias) ? this.state.activeDrawBias.targetCategory : null;
 
         let totalW = eligible.reduce((acc, c) => {
-            let w = c.weight || 0.1;
+            let w = c.weight ?? 0.1;
             const cat = c.category || "LAND";
             let dirMult = 1.0;
             if (this.state && this.state.directiveSystem) {
@@ -539,7 +555,7 @@ class DeckManager {
         let chosen = eligible[0];
 
         for (let c of eligible) {
-            let w = c.weight || 0.1;
+            let w = c.weight ?? 0.1;
             const cat = c.category || "LAND";
             let dirMult = 1.0;
             if (this.state && this.state.directiveSystem) {
@@ -550,7 +566,7 @@ class DeckManager {
                 biasMult = 2.0;
             }
             const finalW = w * dirMult * biasMult;
-            if (rand <= finalW) {
+            if (rand < finalW) {
                 chosen = c;
                 break;
             }
@@ -583,7 +599,8 @@ class DeckManager {
                         placement.startR,
                         placement.startC,
                         placement.shape,
-                        definition
+                        definition,
+                        placement.attributeCells
                     );
                     if (result?.can === true) return true;
                 } catch {
@@ -722,15 +739,43 @@ class DeckManager {
         if (newCards.length < offeringSize) {
             const baseLandPool = master.filter(c => {
                 if (excludedCardIds.includes(c.id)) return false;
+                if (hasMultiplePlacementTerrainAttributes(c) && !isMultiAttributeProductionResolved(c)) return false;
                 const policy = c.cyclePolicy || (c.category === "LAND" ? CYCLE_POLICIES.LAND_STANDARD : CYCLE_POLICIES.RARITY);
                 return (policy === CYCLE_POLICIES.LAND_STANDARD || c.category === "LAND") && (c.minStage || 1) <= stageNum;
             });
 
             while (newCards.length < offeringSize && baseLandPool.length > 0) {
-                const picked = baseLandPool.shift();
+                const activeBiasCategory = this.state?.activeDrawBias?.targetCategory || null;
+                const weighted = baseLandPool.map(card => {
+                    const category = card.category || "LAND";
+                    const directiveMultiplier = this.state?.directiveSystem
+                        ? this.state.directiveSystem.getCategoryWeightMultiplier(category)
+                        : 1.0;
+                    const biasMultiplier = activeBiasCategory && category === activeBiasCategory ? 2.0 : 1.0;
+                    return {
+                        card,
+                        weight: Math.max(0, Number(card.weight ?? 0.1)) * directiveMultiplier * biasMultiplier
+                    };
+                });
+                const totalWeight = weighted.reduce((sum, item) => sum + item.weight, 0);
+                let picked = weighted[0]?.card || baseLandPool[0];
+
+                if (totalWeight > 0) {
+                    let roll = this._nextGameplayFloat() * totalWeight;
+                    for (const item of weighted) {
+                        if (roll < item.weight) {
+                            picked = item.card;
+                            break;
+                        }
+                        roll -= item.weight;
+                    }
+                }
+
                 const drawn = this._wrapCardInstance(picked);
                 newCards.push(drawn);
                 excludedCardIds.push(picked.id);
+                const pickedIndex = baseLandPool.indexOf(picked);
+                if (pickedIndex >= 0) baseLandPool.splice(pickedIndex, 1);
             }
         }
 
