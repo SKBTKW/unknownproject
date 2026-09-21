@@ -18,7 +18,7 @@ function makeSystem(policy, dialogueMode = ADVISOR_DIALOGUE_MODES.DETAILED, tran
 }
 
 const detailedEntry = {
-    policyKey: 'topic',
+    event: 'DEFENSE_WEAK',
     segmentGroups: [[
         'SEG_1',
         'SEG_2',
@@ -28,7 +28,7 @@ const detailedEntry = {
 };
 
 {
-    const system = makeSystem({ topic: 4 });
+    const system = makeSystem({ defense: 4 });
     const mode = system.resolveDialogueMode(detailedEntry, ADVISOR_DIALOGUE_MODES.DETAILED);
     const line = system.resolveLine(detailedEntry, {}, mode);
 
@@ -37,7 +37,7 @@ const detailedEntry = {
 }
 
 {
-    const system = makeSystem({ topic: 3 });
+    const system = makeSystem({ defense: 3 });
     const mode = system.resolveDialogueMode(detailedEntry, ADVISOR_DIALOGUE_MODES.DETAILED);
     const line = system.resolveLine(detailedEntry, {}, mode);
 
@@ -46,7 +46,7 @@ const detailedEntry = {
 }
 
 {
-    const system = makeSystem({ topic: 1 });
+    const system = makeSystem({ defense: 1 });
     const mode = system.resolveDialogueMode(detailedEntry, ADVISOR_DIALOGUE_MODES.DETAILED);
     const line = system.resolveLine(detailedEntry, {}, mode);
 
@@ -55,7 +55,7 @@ const detailedEntry = {
 }
 
 {
-    const system = makeSystem({ topic: 4 });
+    const system = makeSystem({ defense: 4 });
     const mode = system.resolveDialogueMode(detailedEntry, ADVISOR_DIALOGUE_MODES.COMPACT);
     const line = system.resolveLine(detailedEntry, {}, mode);
 
@@ -69,7 +69,7 @@ const detailedEntry = {
         if (key === 'LEGACY_LINE') return 'Legacy fallback';
         return `T:${key}`;
     };
-    const system = makeSystem({ topic: 4 }, ADVISOR_DIALOGUE_MODES.DETAILED, translateWithMissingSegment);
+    const system = makeSystem({ defense: 4 }, ADVISOR_DIALOGUE_MODES.DETAILED, translateWithMissingSegment);
     const line = system.resolveLine(detailedEntry, {}, ADVISOR_DIALOGUE_MODES.DETAILED);
 
     assert.equal(line.text, 'Legacy fallback', 'Missing segment translation should fall back to legacy lineKeys');

@@ -53,6 +53,7 @@ globalThis.document = {
     querySelectorAll: (sel) => [],
     createElement: (tag) => new MockElement("", "", tag),
     body: new MockElement("body"),
+    head: new MockElement("head"),
     documentElement: new MockElement("html"),
     addEventListener: () => {}
 };

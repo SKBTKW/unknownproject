@@ -22,7 +22,15 @@ class MockElement {
         return {
             add: (...cls) => cls.forEach(c => this._classes.add(c)),
             remove: (...cls) => cls.forEach(c => this._classes.delete(c)),
-            contains: (c) => this._classes.has(c)
+            contains: (c) => this._classes.has(c),
+            toggle: (c, force) => {
+                if (force === undefined) {
+                    if (this._classes.has(c)) { this._classes.delete(c); return false; }
+                    this._classes.add(c); return true;
+                }
+                if (force) { this._classes.add(c); return true; }
+                this._classes.delete(c); return false;
+            }
         };
     }
     appendChild(child) { this.children.push(child); return child; }

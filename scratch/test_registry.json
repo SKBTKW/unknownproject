@@ -36,11 +36,7 @@
     {
       "path": "scratch/test_advisor_dialogue_depth.mjs",
       "purpose": "advisor dialogue depth",
-      "suite": "quarantined",
-      "reason": "Policy 3 returns detailed; test expects normal.",
-      "nextAction": "Confirm the current dialogue policy before changing implementation or expected value.",
-      "observedAt": "2026-09-22",
-      "observedEnvironment": "Windows / Node 24.18.0 / Python 3.11.3"
+      "suite": "supplemental"
     },
     {
       "path": "scratch/test_advisor_dialogue_responsibility.mjs",
@@ -224,11 +220,7 @@
     {
       "path": "scratch/test_check_system_ui.mjs",
       "purpose": "check system ui",
-      "suite": "quarantined",
-      "reason": "Mock DOM classList lacks toggle.",
-      "nextAction": "Update the mock DOM and rerun the original assertions.",
-      "observedAt": "2026-09-22",
-      "observedEnvironment": "Windows / Node 24.18.0 / Python 3.11.3"
+      "suite": "supplemental"
     },
     {
       "path": "scratch/test_css_important_relocation.py",
@@ -366,11 +358,7 @@
     {
       "path": "scratch/test_g5_legacy.mjs",
       "purpose": "g5 legacy",
-      "suite": "quarantined",
-      "reason": "Mock document lacks the appendChild host used by DiceWidgetComponent.",
-      "nextAction": "Update the DOM fixture and retain legacy isolation assertions.",
-      "observedAt": "2026-09-22",
-      "observedEnvironment": "Windows / Node 24.18.0 / Python 3.11.3"
+      "suite": "supplemental"
     },
     {
       "path": "scratch/test_game_state_grid_rng_routing.mjs",
@@ -600,15 +588,6 @@
       "suite": "supplemental"
     },
     {
-      "path": "scratch/test_layout_sidebar_shell_tokens.mjs",
-      "purpose": "layout sidebar shell tokens",
-      "suite": "quarantined",
-      "reason": "Sidebar CSS contains the padding text forbidden by this test.",
-      "nextAction": "Compare the layout ownership contract and current CSS before choosing a fix.",
-      "observedAt": "2026-09-22",
-      "observedEnvironment": "Windows / Node 24.18.0 / Python 3.11.3"
-    },
-    {
       "path": "scratch/test_layout_state_manager.mjs",
       "purpose": "layout state manager",
       "suite": "existing",
@@ -799,22 +778,9 @@
       ]
     },
     {
-      "path": "scratch/test_trial_action_tray_contract.mjs",
-      "purpose": "trial action tray contract",
-      "suite": "quarantined",
-      "reason": "The source-string assertion expects direct construction replaced by a runtime bridge.",
-      "nextAction": "Replace the obsolete construction check with a behavior or bridge contract.",
-      "observedAt": "2026-09-22",
-      "observedEnvironment": "Windows / Node 24.18.0 / Python 3.11.3"
-    },
-    {
       "path": "scratch/test_trial_action_tray_runtime.mjs",
       "purpose": "trial action tray runtime",
-      "suite": "quarantined",
-      "reason": "Tray activation source text no longer matches the asserted getPlayerTrayMode expression.",
-      "nextAction": "Check current activation behavior and replace brittle source-text expectations.",
-      "observedAt": "2026-09-22",
-      "observedEnvironment": "Windows / Node 24.18.0 / Python 3.11.3"
+      "suite": "supplemental"
     },
     {
       "path": "scratch/test_trial_advisor_public_read_model.mjs",
@@ -1021,11 +987,7 @@
     {
       "path": "scratch/test_trial_route_board_selection_contract.mjs",
       "purpose": "trial route board selection contract",
-      "suite": "quarantined",
-      "reason": "The legacy right-route-list summary source assertion fails.",
-      "nextAction": "Verify current route presentation ownership and update the contract accordingly.",
-      "observedAt": "2026-09-22",
-      "observedEnvironment": "Windows / Node 24.18.0 / Python 3.11.3"
+      "suite": "supplemental"
     },
     {
       "path": "scratch/test_trial_route_visual_semantics.mjs",
