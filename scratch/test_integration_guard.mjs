@@ -47,16 +47,20 @@ check(buildExecutiveSummary({
   integrationOrder: [{ branch: 'task-a', status: GUARD_STATUS.READY, action: GUARD_ACTION.INTEGRATE_ONE_AT_A_TIME }],
   focusedReevaluationSets: [{ afterBranch: 'task-a', primaryReinspection: ['task-b'] }],
 }), [
-  'Ready: 1 TASK(s) are candidates for one-at-a-time integration.',
+  'Ready: 1 independent TASK(s) are candidates for one-at-a-time integration.',
   'Next candidate: [READY] task-a -> INTEGRATE_ONE_AT_A_TIME.',
   'After that target change: prioritize task-b; full Guard rerun remains required.',
 ], 'executive summary reports ready next action and rerun focus');
 
 check(buildExecutiveSummary({
   summary: { MERGED: 0, READY: 2, REVIEW_REQUIRED: 1, RECONCILE_REQUIRED: 1, BLOCKED: 1 },
-  integrationOrder: [],
+  integrationOrder: [{ branch: 'ready-a', status: GUARD_STATUS.READY, action: GUARD_ACTION.INTEGRATE_ONE_AT_A_TIME }],
   focusedReevaluationSets: [],
-})[0], 'Stop: 1 BLOCKED TASK(s) require inspection before integration.', 'executive summary prioritizes blocked state');
+}), [
+  'Ready: 2 independent TASK(s) are candidates for one-at-a-time integration.',
+  'Other TASKs remain unresolved (1 BLOCKED, 1 RECONCILE_REQUIRED, 1 REVIEW_REQUIRED); they do not block an already-independent READY candidate.',
+  'Next candidate: [READY] ready-a -> INTEGRATE_ONE_AT_A_TIME.',
+], 'executive summary keeps an independent READY candidate actionable while surfacing unresolved peers');
 
 check(buildExecutiveSummary({
   summary: { MERGED: 2, READY: 0, REVIEW_REQUIRED: 0, RECONCILE_REQUIRED: 0, BLOCKED: 0 },
@@ -404,8 +408,18 @@ try {
   fs.writeFileSync(corruptBundle, corruptBytes.subarray(0, Math.max(32, Math.floor(corruptBytes.length / 3))));
   await rejects(async () => verifyBundleRestorable(corruptBundle, [targetSha]), /Command failed|fatal|error/i, 'corrupt bundle fails restore verification');
 
+  const dirtyOtherPath = path.join(root, 'dirty-other-worktree');
+  const dirtyOtherBranch = 'local-dirty-other';
+  git(repo, 'branch', dirtyOtherBranch, targetSha);
+  git(repo, 'worktree', 'add', '-q', dirtyOtherPath, dirtyOtherBranch);
+  fs.writeFileSync(path.join(dirtyOtherPath, 'dirty.tmp'), 'dirty\n');
+  const dirtyOtherResult = await runIntegrationGuard({ cwd: repo, target, backupRoot, now: new Date(2026, 8, 18, 23, 0, 0, 500) });
+  check(dirtyOtherResult.analysis.targetSha, targetSha, 'dirty unrelated worktree does not block integration observation');
+  git(repo, 'worktree', 'remove', '--force', dirtyOtherPath);
+  git(repo, 'branch', '-D', dirtyOtherBranch);
+
   fs.writeFileSync(path.join(repo, 'dirty.tmp'), 'dirty\n');
-  await rejects(() => runIntegrationGuard({ cwd: repo, target, backupRoot, now: new Date(2026, 8, 18, 23, 0, 1, 0) }), /dirty worktree/, 'dirty worktree blocks preflight');
+  await rejects(() => runIntegrationGuard({ cwd: repo, target, backupRoot, now: new Date(2026, 8, 18, 23, 0, 1, 0) }), /current integration worktree is dirty/, 'dirty integration worktree blocks preflight');
   fs.unlinkSync(path.join(repo, 'dirty.tmp'));
 
   fs.writeFileSync(lockPath, '{not-json');
