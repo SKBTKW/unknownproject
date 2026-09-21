@@ -50,6 +50,25 @@ check(
 check(emitted.at(-1)?.id === ADVISOR_EVENTS.FIRST_RUN_TRIAL_ROUTE, "FirstRun route Sceneを専用Advisor eventへ渡す");
 check(emitted.at(-1)?.mandatory === true, "FirstRun Trial duty Sceneはmandatory意味を保持する");
 
+check(
+    bridge.consumeSemanticScene({
+        sceneId: "FIRST_RUN_TRIAL_CAUSALITY",
+        verse: 15,
+        context: {
+            trialIndex: 1,
+            battleIndex: 0,
+            causality: {
+                available: true,
+                modifiers: [{ source: "FOREST_DEPLOYMENT", target: "ENEMY_SUPPRESSION", before: 100, after: 70 }]
+            }
+        }
+    }),
+    "FirstRun Trial causality Sceneは確定済み結果の説明Dutyとして発話できる"
+);
+check(emitted.at(-1)?.id === ADVISOR_EVENTS.FIRST_RUN_TRIAL_CAUSALITY, "FirstRun causality Sceneを専用Advisor eventへ渡す");
+check(emitted.at(-1)?.mandatory === true, "FirstRun causality Sceneもmandatory意味を保持する");
+check(emitted.at(-1)?.context?.causality?.available === true, "FirstRun causality Sceneは確定済み因果contextを保持する");
+
 enabled = false;
 check(
     bridge.consumeSemanticScene({ sceneId: "LINK_COMPLETED", verse: 1, context: { linkCount: 1 } }) === false,
