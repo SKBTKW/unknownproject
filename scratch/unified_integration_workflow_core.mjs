@@ -104,8 +104,8 @@ export function classifyRunnerResult(result = {}) {
   if (decision === RUNNER_DECISION.NO_ACTION) {
     return { status: WORKFLOW_STATUS.COMPLETE, continueLoop: false, reason: result?.decision?.reason || 'no READY TASK remains' };
   }
-  if (decision === RUNNER_DECISION.BLOCKED) {
-    return { status: WORKFLOW_STATUS.BLOCKED, continueLoop: false, reason: result?.decision?.reason || 'Safe Integration Runner blocked' };
+  if (decision === RUNNER_DECISION.BLOCKED || decision === RUNNER_DECISION.REVIEW_REQUIRED) {
+    return { status: WORKFLOW_STATUS.BLOCKED, continueLoop: false, reason: result?.decision?.reason || 'Safe Integration Runner requires review' };
   }
   if (decision === RUNNER_DECISION.READY) {
     return { status: WORKFLOW_STATUS.READY, continueLoop: false, reason: 'READY candidate available in plan mode' };

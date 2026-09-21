@@ -55,10 +55,10 @@
 5. タスクブランチpush後は統合キューで `READY / WAITING_FOR_BASE_UPDATE / CONFLICT / TEST_FAILED / APPROVED / MERGED` のいずれかを管理する。
 6. 通常作業では `scratch/task_health.mjs` によりTARGET_DRIFTと重なりを観測する。TARGET_DRIFTだけで作業を停止しない。shared surfaceまたはcontract overlapは後続統合のreconciliation対象として記録する。
 7. 統合直前に `node scratch/task_health.mjs --integration-ready` でremote refsを最新化できることを確認し、続けて `python scratch/pre_write_linter.py --integration-ready` でTASKが最新 `origin/<target>` を包含していることを確認する。含まれなければ当該TASKだけを `WAITING_FOR_BASE_UPDATE` とする。
-8. 本流が進んでいた場合、通常作業中の他TASKを止めない。統合順が来たTASKだけ、最新本流との取り込み方法をユーザーまたは統合担当へ確認し、reconcile後は全検査を再実行する。
-9. 統合担当者は同時に一人とし、APPROVEDタスクを一件ずつ統合する。履歴ノイズを本流へ持ち込まないため、原則squash mergeでタスクを一つの意味的コミットにする。
-10. 統合後に対象ブランチ上でFull Inspectionを再実行し、remote HEAD一致を確認する。
-11. TASKブランチ／worktreeは、統合・remote反映・検査合格を確認した後だけ削除する。未統合ブランチの強制削除を禁止する。
+8. 本流が進んでいた場合、通常作業中の他TASKを止めない。統合順が来たTASKだけ最新本流とreconcileし、全検査を再実行する。Integration Guardがpeer overlapまで確認して独立READYと判定したTASKは、別のREVIEW_REQUIRED / BLOCKED TASKが存在してもそのTASK単体の統合を妨げない。
+9. 統合可否の機械判定SSOTは Merge Decision Proof とする。Proofは対象target SHA、TASK SHA、PR head/base、clean merge preview、PR Full Inspection SUCCESSへ固定し、正常系に人手の再判定を追加しない。人間の判断はREVIEW_REQUIRED / BLOCKED / reconcileが必要な例外へ集中させる。統合実行そのものには従来どおり明示的な統合承認を必要とする。
+10. 統合担当者は同時に一人とし、READY Proofを持つタスクを一件ずつ原則squash mergeする。統合後は対象ブランチ上のFull Inspection SUCCESSとmerged PR head SHA一致を確認する。
+11. Merge Decision Proofと統合後検査が成立し、TASK headがProof生成時から動いておらず、TASK worktreeもcleanである場合、TASK remote branch / worktree / local branchを同じ統合ライフサイクル内で自動削除する。移動・dirty・lockなどの齟齬があれば削除だけを停止する。Task Sweeperはクラッシュ、手動merge、cleanup途中失敗、過去残骸の復旧用とする。未統合ブランチの強制削除を禁止する。
 - `AGENTS.md`、`game/src/i18n.js`、`layout_config.js`、GameEngine、共通JSON、統合テストなどの共有ファイルは同時編集を避け、統合順を先に決める。
 - TASK branchへのpush承認と、統合先branchへのpush承認は別の承認として扱う。
 
@@ -238,4 +238,3 @@ Push を提案する際は、必ず以下の情報をユーザーへ完全提示
 - ユーザーの直前発言に「push」の明示的文字列が含まれていない場合、システム的に `git push` コマンドの発行を自動拒否する。
 - いかなる緊急時であっても、ユーザーの明示承認なしに Push を強行してはならない。
 - TASK branchへのpush承認は統合先へのpushを許可しない。統合先への反映には、統合差分と統合後検査結果を提示した別の明示承認が必要である。
-
