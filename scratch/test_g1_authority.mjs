@@ -39,7 +39,6 @@ console.log("  ✅ PASS: ui_controller.js からの直接 GameState mutation: 0 
 // 2. Action Boundary Skeleton ＆ Deep Equality 検問: 通常土地配置 ➔ Undo
 console.log("🔍 [G1-2] Action Boundary ＆ Undo Deep Equality 検問 (土地配置 ➔ Undo)...");
 const engine = GameEngine.createGame({ runSeed: 0xA0710001 });
-const stateBeforeAction = serializeGameState(engine.state);
 
 // Offering乱数に依存させず、Action Boundaryそのものを検証する固定fixtureを使う。
 const testCard = {
@@ -50,6 +49,7 @@ const testCard = {
 };
 const offeringIdx = 0;
 engine.state.handOffering[offeringIdx] = testCard;
+const stateBeforeAction = serializeGameState(engine.state);
 
 // Engine API 経由で土地配置
 const placeRes = engine.placeLand(1, 2, testCard, 0, { type: "OFFERING", index: offeringIdx });

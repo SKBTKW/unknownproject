@@ -69,7 +69,7 @@ with tempfile.NamedTemporaryFile('w', suffix='.js', delete=False, encoding='utf-
     temp_filepath = tf.name
 
 try:
-    violations = pre_write_linter.scan_file_for_hardcoded_japanese(temp_filepath)
+    violations = pre_write_linter.scan_file_for_japanese(temp_filepath, 'fixture/test_hardcoded_japanese.js')
 finally:
     os.remove(temp_filepath)
 
