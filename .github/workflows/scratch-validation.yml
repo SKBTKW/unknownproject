@@ -1,0 +1,41 @@
+name: Scratch validation
+
+on:
+  pull_request:
+    branches: [main, "AoT*"]
+  push:
+    branches: [main, "AoT*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scratch-validation-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  registry-and-supplemental:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate registered tests and existing entry points
+        run: node scratch/scratch_registry.mjs --check
+      - name: Test registry failure handling
+        run: node scratch/test_scratch_registry.mjs
+      - name: Run supplemental tests
+        run: node scratch/scratch_registry.mjs --run supplemental --json > "${{ runner.temp }}/scratch-validation.json"
+      - name: Preserve supplemental results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scratch-validation-results
+          path: ${{ runner.temp }}/scratch-validation.json
+          if-no-files-found: ignore

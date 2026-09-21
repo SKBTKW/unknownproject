@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const workflowPath = new URL('../.github/workflows/full-inspection.yml', import.meta.url);
-const source = readFileSync(workflowPath, 'utf8');
+const source = readFileSync(workflowPath, 'utf8').replace(/\r\n/g, '\n');
 
 let passed = 0;
 function check(condition, label) {
