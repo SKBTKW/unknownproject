@@ -11,12 +11,14 @@ import {
     isTrueMergedCell
 } from '../core/merge_rules.js';
 import {
-    getWaterSourceSpawnChance,
     isWithinWetlandExclusionRange,
-    isWaterSourceCell,
-    isWaterSourceInfluence,
     isWetlandTerrain
 } from '../core/lake_rules.js';
+import {
+    isIrrigationSourceCell,
+    isIrrigationInfluence,
+    isLegacyIrrigationResource
+} from '../core/irrigation_rules.js';
 import {
     LAND_PRODUCTION_STATUS,
     findContractCellYields,
@@ -175,11 +177,12 @@ class GridEngine {
     }
 
     /**
-     * 🌊 水源影響圏判定（湖・オアシス自身または周囲8マス・SSOT委譲）
+     * 🌾 灌漑影響圏判定。
+     * 旧 public API 名は既存 Presentation 互換のため維持する。
      */
     isWaterSourceInfluence(r, c) {
         if (!this.state || !this.state.grid) return false;
-        return isWaterSourceInfluence(this.state, r, c);
+        return isIrrigationInfluence(this.state, r, c);
     }
 
     /**
@@ -413,6 +416,7 @@ class GridEngine {
         let isOutOfBounds = false;
         let isAlreadyPlaced = false;
         let isMountainNearHQ = false;
+        let isWetlandNearHQ = false;
         let isAdjacent = false;
         let hasInvalidGL = false;
         let isWetlandTooClose = false;
@@ -437,8 +441,12 @@ class GridEngine {
                     continue;
                 }
                 if (this.state.grid[r][c].placed) isAlreadyPlaced = true;
-                if (isMountain && this.isHQVicinity(r, c)) isMountainNearHQ = true;
-                if (isWetlandTerrain(cellTerrain) && isWithinWetlandExclusionRange(this.state, r, c)) {
+                const isWetland = isWetlandTerrain(cellTerrain);
+                if (this.isHQVicinity(r, c)) {
+                    if (isMountain) isMountainNearHQ = true;
+                    if (isWetland) isWetlandNearHQ = true;
+                }
+                if (isWetland && isWithinWetlandExclusionRange(this.state, r, c)) {
                     isWetlandTooClose = true;
                 }
             }
@@ -447,6 +455,7 @@ class GridEngine {
         if (isOutOfBounds) reasons.push("OUT_OF_BOUNDS");
         if (isAlreadyPlaced) reasons.push("ALREADY_PLACED");
         if (isMountainNearHQ) reasons.push("MOUNTAIN_NEAR_HQ_FORBIDDEN");
+        if (isWetlandNearHQ) reasons.push("WETLAND_NEAR_HQ_FORBIDDEN");
 
         if (!isOutOfBounds) {
             for (let dr = 0; dr < rows; dr++) {
@@ -661,34 +670,16 @@ class GridEngine {
                             if (!cell.cachedSocketSeeds) cell.cachedSocketSeeds = {};
                             const baseTid = cellTerrain?.terrainId || cellTerrain?.id || "";
                             const getRng = () => this._nextGameplayFloat();
-
-                            // 1. 湿原: ソケット60%、通常マス20%で湖を発見
-                            if (baseTid.includes("WETLAND")) {
-                                const baseRate = cell.hasSocket ? 0.60 : 0.20;
-                                const spawnChance = getWaterSourceSpawnChance(this.state, r, c, baseRate);
-                                if (spawnChance > 0 && getRng() < spawnChance) {
-                                    spawnedSocket = { id: "SOCKET_LAKE", nameKey: "SOCKET_LAKE", category: "CAT_WATER", icon: "💧", bonusFood: 2, bonusWood: 0, bonusDefense: 0, bonusMystic: 1, isLake: true };
-                                }
-                            }
-                            // 2. 砂漠: オアシス (25% × 水源逓減、距離制約)
-                            else if (cell.hasSocket && baseTid.includes("DESERT")) {
-                                const spawnChance = getWaterSourceSpawnChance(this.state, r, c, 0.25);
-                                if (spawnChance > 0 && getRng() < spawnChance) {
-                                    spawnedSocket = { id: "SOCKET_OASIS", nameKey: "SOCKET_OASIS", category: "CAT_WATER", icon: "🏝️", bonusFood: 1, bonusWood: 0, bonusDefense: 0, bonusMystic: 2, isLake: true };
-                                }
-                            }
-                            // 3. 草原 1x1: 湖 (25% × 水源逓減、距離制約)
-                            else if (cell.hasSocket && baseTid.includes("PLAINS") && activeCellCount === 1) {
-                                const spawnChance = getWaterSourceSpawnChance(this.state, r, c, 0.25);
-                                if (spawnChance > 0 && getRng() < spawnChance) {
-                                    spawnedSocket = { id: "SOCKET_LAKE", nameKey: "SOCKET_LAKE", category: "CAT_WATER", icon: "💧", bonusFood: 2, bonusWood: 0, bonusDefense: 0, bonusMystic: 1, isLake: true };
-                                }
-                            }
-
-                            // 4. 一般資源プール抽選 (湖/オアシス非当選時)
+                            // 一般資源プール抽選。
+                            // 湖・オアシスは新規Runでは生成しない。旧データ定義はセーブ互換のため残す。
                             const socketMaster = (typeof globalThis !== "undefined" && globalThis.SOCKET_RESOURCE_MASTER) ? globalThis.SOCKET_RESOURCE_MASTER : (typeof window !== "undefined" ? window.SOCKET_RESOURCE_MASTER : null);
                             if (!spawnedSocket && cell.hasSocket && socketMaster) {
-                                const pool = socketMaster.filter(s => s.reqTerrains && s.reqTerrains.some(t => baseTid.includes(t)));
+                                const pool = socketMaster.filter(s =>
+                                    !s.isSpecialWater
+                                    && !isLegacyIrrigationResource(s)
+                                    && s.reqTerrains
+                                    && s.reqTerrains.some(t => baseTid.includes(t))
+                                );
                                 if (pool.length > 0) {
                                     const chosen = pool[Math.floor(getRng() * pool.length)];
                                     spawnedSocket = {
@@ -816,7 +807,7 @@ class GridEngine {
     checkConnectionBonus(r, c, terrain) {
         if (!this.state || !this.state.grid) return;
         const currentCell = this.state.grid[r] && this.state.grid[r][c];
-        if (!currentCell || isWetlandTerrain(terrain) || isWaterSourceCell(currentCell)) {
+        if (!currentCell || isWetlandTerrain(terrain) || isIrrigationSourceCell(currentCell)) {
             return { connected: false };
         }
         const baseTerrainId = terrain.terrainId || terrain.id;
@@ -856,7 +847,7 @@ class GridEngine {
             if (nr < 0 || nr >= this.state.grid.length || nc < 0 || nc >= this.state.grid.length) return false;
             const cell = this.state.grid[nr][nc];
             if (!cell.placed || cell.isHQ || !cell.terrain) return false;
-            if (isWetlandTerrain(cell.terrain) || isWaterSourceCell(cell)) return false;
+            if (isWetlandTerrain(cell.terrain) || isIrrigationSourceCell(cell)) return false;
             
             if (currentCell.placementGroupId && cell.placementGroupId && currentCell.placementGroupId === cell.placementGroupId) {
                 return false;
@@ -939,7 +930,7 @@ class GridEngine {
                         && cell.placementGroupId === currPlaceId
                         && areTerrainsZoneCompatible(cell.terrain, currentCell.terrain)
                         && !isWetlandTerrain(cell.terrain)
-                        && !isWaterSourceCell(cell)) {
+                        && !isIrrigationSourceCell(cell)) {
                         cell.mergeGroupId = targetGroupId;
                         cell.mergeType = is1x3 ? "1x3" : "1x2";
                     }
@@ -965,7 +956,7 @@ class GridEngine {
                             && cell.mergeGroupId
                             && oldGroupIds.has(cell.mergeGroupId)
                             && !isWetlandTerrain(cell.terrain)
-                            && !isWaterSourceCell(cell)) {
+                            && !isIrrigationSourceCell(cell)) {
                             cell.mergeGroupId = targetGroupId;
                             cell.mergeType = is1x3 ? "1x3" : "1x2";
                         }
@@ -1155,7 +1146,7 @@ class GridEngine {
 
                     const cells = coords.map(pt => this.state.grid[pt.r][pt.c]);
                     const allPlaced = cells.every(cell =>
-                        cell.placed && !cell.isHQ && !cell.merged && !isWaterSourceCell(cell)
+                        cell.placed && !cell.isHQ && !cell.merged && !isIrrigationSourceCell(cell)
                     );
                     if (allPlaced) {
                         const isAllHill = cells.every(cell => cell.terrain && (cell.terrain.terrainId || cell.terrain.id || "").includes("HILL"));
@@ -1249,7 +1240,7 @@ class GridEngine {
                     const allPlaced = cells.every(cell =>
                         cell.placed
                         && !cell.isHQ
-                        && !isWaterSourceCell(cell)
+                        && !isIrrigationSourceCell(cell)
                         && (!cell.merged || cell.mergeType !== "T_SHAPE")
                     );
                     if (allPlaced) {
