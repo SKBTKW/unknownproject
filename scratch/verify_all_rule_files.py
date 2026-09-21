@@ -89,37 +89,10 @@ def verify_all_specs_against_code(rules_dir, game_dir):
                 'message': f'{terrain_id} yield mismatch: {", ".join(mismatch_props)}' if mismatch_props else f'{terrain_id} yields matched expected values'
             })
 
-    # 2. Spec 02 Initial Resources: current GameState SSOT
-    game_state_path = os.path.join(src_dir, 'v2_unity_ready_main.js')
-    if not os.path.exists(game_state_path):
-        assertions.append({
-            'id': 'SPEC02_GAME_STATE_EXISTS',
-            'spec': '02_resources_and_ember.md',
-            'passed': False,
-            'message': 'Current GameState SSOT game/src/v2_unity_ready_main.js is missing'
-        })
-    else:
-        with open(game_state_path, 'r', encoding='utf-8') as f:
-            gs_content = f.read()
+    # Initial resources are verified behaviorally in scratch/test_all_modules.mjs.
+    # Keep this Python verifier focused on data/spec assets and fail-closed implementation presence.
 
-        resource_patterns = [
-            ('SPEC02_INITIAL_EMBER', 'Ember', 20, r'this\.ember\s*=\s*dependencies\.ember\s*!==\s*undefined\s*\?\s*dependencies\.ember\s*:\s*(\d+)'),
-            ('SPEC02_INITIAL_FOOD', 'Food', 50, r'this\.food\s*=\s*dependencies\.food\s*!==\s*undefined\s*\?\s*dependencies\.food\s*:\s*(\d+)'),
-            ('SPEC02_INITIAL_MATERIAL', 'Material/Wood', 30, r'this\.wood\s*=.*?dependencies\.wood\s*!==\s*undefined\s*\?\s*dependencies\.wood\s*:\s*(\d+)'),
-            ('SPEC02_INITIAL_DEFENSE', 'Defense', 10, r'const\s+legacyDefense\s*=\s*dependencies\.defense\s*!==\s*undefined\s*\?\s*dependencies\.defense\s*:\s*(\d+)'),
-            ('SPEC02_INITIAL_MYSTIC', 'Mystic', 0, r'this\.mystic\s*=\s*dependencies\.mystic\s*!==\s*undefined\s*\?\s*dependencies\.mystic\s*:\s*(\d+)'),
-        ]
-        for assertion_id, label, expected, pattern in resource_patterns:
-            match = re.search(pattern, gs_content, re.DOTALL)
-            actual = int(match.group(1)) if match else None
-            assertions.append({
-                'id': assertion_id,
-                'spec': '02_resources_and_ember.md',
-                'passed': actual == expected,
-                'message': f'Initial {label}: expected {expected}, got {actual}'
-            })
-
-    # 3. Spec 03 Merge System 1.2x Multiplier
+    # 2. Spec 03 Merge System 1.2x Multiplier
     prod_calc_path = os.path.join(src_dir, 'systems', 'production_calculator.js')
     if not os.path.exists(prod_calc_path):
         assertions.append({
