@@ -79,7 +79,7 @@ function toCellDto(cell) {
         zone: cloneJsonSafe(cell.zone ?? null),
         links: cloneJsonSafe(cell.links ?? []),
         display: cloneJsonSafe(cell.display ?? { role: null, production: null }),
-        influence: cloneJsonSafe(cell.influence ?? { hqVicinity: false, waterSource: false }),
+        influence: cloneJsonSafe(cell.influence ?? { hqVicinity: false, waterSource: false, waterSourceType: null }),
         edges: cloneJsonSafe(cell.edges ?? []),
         interaction: toInteractionDto(cell.interaction),
         trial: toTrialCellDto(cell.trial)

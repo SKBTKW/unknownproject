@@ -13,6 +13,7 @@ import { BoardInputDispatcher } from "../game/src/presentation/board_input_dispa
 import { GameRuntimeSnapshotDataService } from "../game/src/presentation/game_runtime_snapshot_data_service.js";
 import { createGameRuntimeSnapshotDto } from "../game/src/presentation/game_runtime_snapshot_contract.js";
 import { LegacyWeb2DBoardInputAdapter } from "../game/src/ui/legacy_web2d_board_input_adapter.js";
+import { getWaterSourceInfluenceType } from "../game/src/core/lake_rules.js";
 import fs from "node:fs";
 
 let passed = 0;
@@ -99,6 +100,169 @@ const presentationState = new BoardPresentationState();
 const service = new BoardPresentationDataService({ cellViewDataService });
 const readModel = service.getBoard(state, { presentationState });
 const dto = createBoardPresentationDto(readModel);
+
+test("normal Web2D cell tooltip consumes BoardPresentationData", () => {
+    const source = fs.readFileSync(
+        new URL("../game/src/ui/board_aware_ui_controller.js", import.meta.url),
+        "utf8"
+    );
+    const start = source.indexOf("    showBoardPresentationCellTooltip(e, r, c, cell) {");
+    const end = source.indexOf("\n    onCellClick(r, c) {", start);
+    assert.ok(start >= 0 && end > start);
+    const tooltipSource = source.slice(start, end);
+
+    assert.equal(tooltipSource.includes("cell.interaction?.placedThisTurn"), true);
+    assert.equal(tooltipSource.includes("cell.influence?.hqVicinity"), true);
+    assert.equal(tooltipSource.includes("cell.influence?.waterSourceType"), true);
+    assert.equal(tooltipSource.includes("cell.yields"), true);
+    assert.equal(tooltipSource.includes("cell.modifiers"), true);
+    assert.equal(tooltipSource.includes("cell.socketResource"), true);
+
+    assert.equal(tooltipSource.includes("this.undoSys"), false);
+    assert.equal(tooltipSource.includes("this.state.isHQVicinity"), false);
+    assert.equal(tooltipSource.includes("this.engine.getCellViewData"), false);
+    assert.equal(tooltipSource.includes("this.state.grid"), false);
+});
+
+test("Trial cell tooltip remains on the existing Trial presentation path", () => {
+    const source = fs.readFileSync(
+        new URL("../game/src/ui/board_aware_ui_controller.js", import.meta.url),
+        "utf8"
+    );
+    const start = source.indexOf("    onCellMouseMove(e, r, c) {");
+    const end = source.indexOf("\n    showBoardPresentationCellTooltip", start);
+    assert.ok(start >= 0 && end > start);
+    const moveSource = source.slice(start, end);
+
+    assert.equal(moveSource.includes("BOARD_CONTEXT_MODES.TRIAL"), true);
+    assert.equal(moveSource.includes("super.onCellMouseMove(e, r, c)"), true);
+    assert.equal(moveSource.includes("this.getBoardPresentationData()?.cells?.[r]?.[c]"), true);
+});
+
+test("water source influence type is renderer-neutral", () => {
+    const lakeState = {
+        grid: [
+            [
+                { placed: true, socketResource: { id: "SOCKET_LAKE" } },
+                { placed: false }
+            ],
+            [
+                { placed: false },
+                { placed: false }
+            ]
+        ]
+    };
+    const oasisState = {
+        grid: [
+            [
+                { placed: false },
+                { placed: false }
+            ],
+            [
+                { placed: false },
+                { placed: true, socketResource: { id: "SOCKET_OASIS" } }
+            ]
+        ]
+    };
+
+    assert.equal(getWaterSourceInfluenceType(lakeState, 0, 0), "LAKE");
+    assert.equal(getWaterSourceInfluenceType(lakeState, 1, 1), "LAKE");
+    assert.equal(getWaterSourceInfluenceType(oasisState, 0, 0), "OASIS");
+    assert.equal(getWaterSourceInfluenceType({ grid: [[{ placed: false }]] }, 0, 0), null);
+});
+
+test("generic irrigation source keeps null legacy waterSourceType", () => {
+    const genericGrid = [[
+        { placed: true, irrigationSource: true },
+        { placed: false }
+    ]];
+    const genericState = {
+        grid: genericGrid,
+        mergedBlocks: {},
+        mergeLinks: new Set(),
+        isHQVicinity: () => false
+    };
+    const genericService = new BoardPresentationDataService({
+        cellViewDataService: {
+            getCellViewData(_state, r, c) {
+                const source = genericGrid?.[r]?.[c] || {};
+                return {
+                    r, c,
+                    placed: Boolean(source.placed),
+                    isHQ: false,
+                    terrainId: null,
+                    category: "LAND",
+                    nameKey: null,
+                    elevation: null,
+                    greenery: null,
+                    hasSocket: false,
+                    socketResource: null,
+                    yields: {},
+                    baseYields: {},
+                    primaryYield: null,
+                    modifiers: [],
+                    placementGroupId: null,
+                    mergeGroupId: null
+                };
+            }
+        }
+    });
+    const genericReadModel = genericService.getBoard(genericState, {
+        presentationState: new BoardPresentationState()
+    });
+    assert.equal(getWaterSourceInfluenceType(genericState, 0, 0), null);
+    assert.equal(genericReadModel.cells[0][0].influence.waterSource, true);
+    assert.equal(genericReadModel.cells[0][0].influence.waterSourceType, null);
+});
+
+test("BoardPresentationData and DTO preserve water source type", () => {
+    const waterGrid = [
+        [
+            { placed: true, socketResource: { id: "SOCKET_OASIS" } },
+            { placed: false }
+        ]
+    ];
+    const waterState = {
+        grid: waterGrid,
+        mergedBlocks: {},
+        mergeLinks: new Set(),
+        isHQVicinity: () => false
+    };
+    const waterService = new BoardPresentationDataService({
+        cellViewDataService: {
+            getCellViewData(_state, r, c) {
+                const source = waterGrid?.[r]?.[c] || {};
+                return {
+                    r, c,
+                    placed: Boolean(source.placed),
+                    isHQ: false,
+                    terrainId: null,
+                    category: "LAND",
+                    nameKey: null,
+                    elevation: null,
+                    greenery: null,
+                    hasSocket: Boolean(source.socketResource),
+                    socketResource: source.socketResource || null,
+                    yields: {},
+                    baseYields: {},
+                    primaryYield: null,
+                    modifiers: [],
+                    placementGroupId: null,
+                    mergeGroupId: null
+                };
+            }
+        }
+    });
+    const waterReadModel = waterService.getBoard(waterState, {
+        presentationState: new BoardPresentationState()
+    });
+    const waterDto = createBoardPresentationDto(waterReadModel);
+
+    assert.equal(waterReadModel.cells[0][0].influence.waterSource, true);
+    assert.equal(waterReadModel.cells[0][0].influence.waterSourceType, "OASIS");
+    assert.equal(waterReadModel.cells[0][1].influence.waterSourceType, "OASIS");
+    assert.equal(waterDto.cells[0][1].influence.waterSourceType, "OASIS");
+});
 
 test("shared display role is the renderer-neutral SSOT", () => {
     assert.equal(resolveBoardDisplayRole(state, {

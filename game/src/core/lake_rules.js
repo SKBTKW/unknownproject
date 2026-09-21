@@ -127,6 +127,39 @@ export function hasAdjacentWaterSource(state, r, c) {
  * @param {number} c - 列インデックス
  * @returns {boolean}
  */
+function getLegacyWaterSourceTypeFromCell(cell) {
+    if (!cell || !cell.placed || !isLegacyIrrigationResource(cell.socketResource)) return null;
+    return cell.socketResource.id === "SOCKET_OASIS" ? "OASIS" : "LAKE";
+}
+
+/**
+ * Renderer-neutral legacy water-source influence type.
+ * Generic irrigation sources intentionally return null here while
+ * isWaterSourceInfluence() remains the generic irrigation boolean contract.
+ * @returns {"LAKE"|"OASIS"|null}
+ */
+export function getWaterSourceInfluenceType(state, r, c) {
+    if (!state) return null;
+    const grid = Array.isArray(state.grid) ? state.grid : (Array.isArray(state) ? state : null);
+    if (!grid) return null;
+    const row = grid[r];
+    if (!Array.isArray(row)) return null;
+
+    const ownType = getLegacyWaterSourceTypeFromCell(row[c]);
+    if (ownType) return ownType;
+
+    for (let sourceR = Math.max(0, r - 1); sourceR <= Math.min(grid.length - 1, r + 1); sourceR++) {
+        const sourceRow = grid[sourceR];
+        if (!Array.isArray(sourceRow)) continue;
+        for (let sourceC = Math.max(0, c - 1); sourceC <= Math.min(sourceRow.length - 1, c + 1); sourceC++) {
+            if (sourceR === r && sourceC === c) continue;
+            const sourceType = getLegacyWaterSourceTypeFromCell(sourceRow[sourceC]);
+            if (sourceType) return sourceType;
+        }
+    }
+    return null;
+}
+
 export function isWaterSourceInfluence(state, r, c) {
     return isIrrigationInfluence(state, r, c);
 }

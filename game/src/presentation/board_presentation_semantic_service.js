@@ -1,4 +1,5 @@
 import { isIrrigationInfluence } from '../core/irrigation_rules.js';
+import { getWaterSourceInfluenceType } from '../core/lake_rules.js';
 
 const CARDINAL_DIRECTIONS = Object.freeze([
     Object.freeze({ direction: 'NORTH', dr: -1, dc: 0 }),
@@ -215,10 +216,13 @@ export class BoardPresentationSemanticService {
         const hqVicinity = typeof state?.isHQVicinity === 'function'
             ? Boolean(state.isHQVicinity(r, c))
             : false;
+        const waterSourceType = state
+            ? getWaterSourceInfluenceType(state, r, c)
+            : null;
         const waterSource = typeof state?.isWaterSourceInfluence === 'function'
             ? Boolean(state.isWaterSourceInfluence(r, c))
             : Boolean(state && isIrrigationInfluence(state, r, c));
-        return Object.freeze({ hqVicinity, waterSource });
+        return Object.freeze({ hqVicinity, waterSource, waterSourceType });
     }
 
     getLogicalEdges(state, facts, linkIndex = null) {
@@ -261,7 +265,7 @@ export class BoardPresentationSemanticService {
 
             const neighborInfluence = neighborCell
                 ? this.getInfluence(state, nr, nc)
-                : Object.freeze({ hqVicinity: false, waterSource: false });
+                : Object.freeze({ hqVicinity: false, waterSource: false, waterSourceType: null });
             const influenceBoundary = [];
             if (currentInfluence.hqVicinity !== neighborInfluence.hqVicinity) {
                 influenceBoundary.push('HQ_VICINITY');
