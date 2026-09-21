@@ -111,7 +111,7 @@ function listTaskBranches(target, cwd) {
     }));
 }
 
-async function findMergedPullRequest({ owner, repo, branch, target, remoteSha }) {
+async function findMergedPullRequest({ owner, repo, branch, target, headSha }) {
     const params = new URLSearchParams({
         state: 'closed',
         head: `${owner}:${branch}`,
@@ -132,7 +132,7 @@ async function findMergedPullRequest({ owner, repo, branch, target, remoteSha })
             return { verified: false, reason: `GitHub PR lookup failed (${response.status})` };
         }
         const pulls = await response.json();
-        const merged = pulls.find((pr) => pr.merged_at && pr.head?.sha === remoteSha);
+        const merged = pulls.find((pr) => pr.merged_at && pr.head?.sha === headSha);
         if (!merged) return { verified: false, reason: 'No merged PR matches the current remote TASK head' };
         return { verified: true, number: merged.number, mergedAt: merged.merged_at };
     } catch (error) {
@@ -148,9 +148,11 @@ export function classifyTaskCandidate(state) {
     if (state.dirtyWorktree) blockers.push('worktree has uncommitted or untracked files');
     if (state.localRemoteMismatch) blockers.push('local and remote TASK heads do not match');
     if (state.unpushedCommits > 0) blockers.push(`${state.unpushedCommits} local commit(s) are not pushed`);
-    if (state.uniqueCommits > 0 && !state.remoteExists) blockers.push('local-only TASK has unique commits');
-    if (state.uniqueCommits > 0 && state.remoteExists && !state.mergedPrVerified) {
-        blockers.push(state.prReason || 'unique commits exist and merged PR could not be verified');
+    if (state.uniqueCommits > 0 && !state.mergedPrVerified) {
+        const fallbackReason = state.remoteExists
+            ? 'unique commits exist and merged PR could not be verified'
+            : 'local-only TASK has unique commits and merged PR could not be verified';
+        blockers.push(state.prReason || fallbackReason);
     }
 
     if (blockers.length > 0) return { status: 'BLOCKED', blockers };
@@ -182,15 +184,18 @@ async function inspectCandidate(candidate, context) {
     const localRemoteMismatch = Boolean(localSha && remoteSha && localSha !== remoteSha);
 
     let mergedPr = { verified: false, reason: '' };
-    if (uniqueCommits > 0 && candidate.remoteExists) {
+    if (uniqueCommits > 0) {
+        const prHeadSha = remoteSha || localSha;
         if (!githubRepo) {
             mergedPr = { verified: false, reason: 'origin is not a supported github.com repository' };
+        } else if (!prHeadSha) {
+            mergedPr = { verified: false, reason: 'TASK head SHA is unavailable for merged PR verification' };
         } else {
             mergedPr = await findMergedPullRequest({
                 ...githubRepo,
                 branch: candidate.branch,
                 target,
-                remoteSha,
+                headSha: prHeadSha,
             });
         }
     }
@@ -259,27 +264,89 @@ function removeWorktree(worktreePath, cwd) {
 }
 
 function deleteLocalBranch(item, cwd) {
-    if (item.uniqueCommits > 0 && item.mergedPr?.verified) {
-        git(['branch', '-D', item.branch], { cwd });
-    } else {
-        git(['branch', '-d', item.branch], { cwd });
-    }
+    git(['branch', '-D', item.branch], { cwd });
 }
 
-function executeCleanup(items, cwd) {
-    for (const item of items) {
-        console.log(`\n🧹 Cleaning ${item.branch}`);
-        if (item.remoteExists) {
-            console.log('   - delete remote TASK branch');
-            deleteRemoteBranch(item.branch, cwd);
+export function classifyCleanupRevalidation(previous, current) {
+    if (!current) return { status: 'SKIP', reason: 'TASK branch is already absent' };
+
+    const blockers = [];
+    if (current.status !== 'SAFE') {
+        blockers.push(...(current.blockers || ['candidate is no longer SAFE']));
+    }
+    if (!previous.localSha && current.localSha) {
+        blockers.push('local TASK branch appeared after dry run');
+    } else if (previous.localSha && current.localSha && previous.localSha !== current.localSha) {
+        blockers.push('local TASK head changed after dry run');
+    }
+    if (!previous.remoteSha && current.remoteSha) {
+        blockers.push('remote TASK branch appeared after dry run');
+    } else if (previous.remoteSha && current.remoteSha && previous.remoteSha !== current.remoteSha) {
+        blockers.push('remote TASK head changed after dry run');
+    }
+
+    if (blockers.length > 0) return { status: 'BLOCKED', blockers };
+    return { status: 'SAFE', reason: current.reason || 'candidate remains SAFE after refresh' };
+}
+
+async function revalidateCleanupItems(items, context) {
+    const { cwd, target, targetRef, githubRepo } = context;
+    console.log('\n🔎 Revalidating SAFE TASK branches immediately before cleanup...');
+    git(['fetch', 'origin', '--prune'], { cwd });
+
+    const worktrees = parseWorktrees(git(['worktree', 'list', '--porcelain'], { cwd }));
+    const worktreeByBranch = new Map(worktrees.filter((entry) => entry.branch).map((entry) => [entry.branch, entry]));
+    const freshCandidates = new Map(listTaskBranches(target, cwd).map((candidate) => [candidate.branch, candidate]));
+    const result = [];
+
+    for (const previous of items) {
+        const candidate = freshCandidates.get(previous.branch) ?? null;
+        if (!candidate) {
+            const revalidation = classifyCleanupRevalidation(previous, null);
+            console.log(`   - ${previous.branch}: SKIP (${revalidation.reason})`);
+            result.push({ previous, current: null, revalidation });
+            continue;
         }
+
+        const current = await inspectCandidate(candidate, {
+            cwd,
+            target,
+            targetRef,
+            worktreeByBranch,
+            githubRepo,
+        });
+        const revalidation = classifyCleanupRevalidation(previous, current);
+        if (revalidation.status === 'BLOCKED') {
+            const details = revalidation.blockers.join('; ');
+            throw new Error(`Cleanup revalidation failed for ${previous.branch}: ${details}`);
+        }
+        console.log(`   - ${previous.branch}: SAFE (${revalidation.reason})`);
+        result.push({ previous, current, revalidation });
+    }
+
+    return result;
+}
+
+async function executeCleanup(items, context) {
+    const { cwd } = context;
+    const revalidated = await revalidateCleanupItems(items, context);
+
+    for (const entry of revalidated) {
+        const item = entry.current;
+        if (!item || entry.revalidation.status === 'SKIP') continue;
+
+        console.log(`\n🧹 Cleaning ${item.branch}`);
         if (item.worktree?.path) {
             console.log('   - remove worktree');
             removeWorktree(item.worktree.path, cwd);
         }
         if (item.localExists) {
-            console.log('   - delete local TASK branch');
+            console.log('   - delete local TASK branch (revalidated SAFE)');
             deleteLocalBranch(item, cwd);
+        }
+        if (item.remoteExists) {
+            console.log('   - delete remote TASK branch');
+            deleteRemoteBranch(item.branch, cwd);
         }
     }
     console.log('\n   - prune remote-tracking refs');
@@ -346,7 +413,12 @@ async function main() {
         return;
     }
 
-    executeCleanup(safeItems, cwd);
+    await executeCleanup(safeItems, {
+        cwd,
+        target,
+        targetRef,
+        githubRepo,
+    });
     console.log('\n✅ SAFE TASK cleanup completed.');
 }
 
