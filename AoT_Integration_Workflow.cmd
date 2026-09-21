@@ -33,8 +33,8 @@ exit /b %EXIT_CODE%
 :EXECUTE
 echo.
 echo This mode may merge multiple READY PRs, but always ONE AT A TIME.
-echo Every merge must pass all existing Guard / CI / post-merge gates.
-echo Branch deletion is NEVER performed.
+echo Every merge must pass Merge Decision Proof / CI / post-merge gates.
+echo Successful merge cleanup removes only the proof-bound TASK branch/worktree.
 echo.
 set /p "CONFIRM=Type INTEGRATE to continue: "
 if not "%CONFIRM%"=="INTEGRATE" (
