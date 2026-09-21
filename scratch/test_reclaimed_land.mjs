@@ -21,9 +21,13 @@ const engineA = new GameEngine();
 engineA.state.wood = 30;
 engineA.state.ember = 20;
 
+// 現行masterを正本として使い、古い手書きfixtureへ条件を複製しない。
+const cmdReclamation = engineA.deckManager.getLandCardMaster()
+    .find(card => card.id === "CMD_WETLAND_RECLAMATION");
+assert.ok(cmdReclamation, "CMD_WETLAND_RECLAMATION が現行masterに存在すること");
+
 // ケース1: 盤面に湿原が全くない場合 ➔ 提示・発動不可
-const cmdReclamation = { id: "CMD_WETLAND_RECLAMATION", reqWetland: 1, reqWood: 15 };
-assert.strictEqual(engineA.deckManager.isCardEligible(cmdReclamation, 1, 0), false, "湿原がなければ干拓提示不可");
+assert.strictEqual(engineA.deckManager.isCardEligible(cmdReclamation, 1, 0, { ignoreCooldown: true, ignoreHold: true }), false, "湿原がなければ干拓提示不可");
 
 // ケース2: 湖が存在する湿原のみの場合 ➔ 提示・発動不可（湖湿原は干拓不可）
 engineA.state.grid[0][0] = {
@@ -31,14 +35,14 @@ engineA.state.grid[0][0] = {
     terrain: { id: "E0_WETLAND", terrainId: "E0_WETLAND", nameKey: "TERRAIN_WETLAND", e: 0, gl: 1 },
     socketResource: { id: "SOCKET_LAKE", nameKey: "SOCKET_LAKE", isLake: true }
 };
-assert.strictEqual(engineA.deckManager.isCardEligible(cmdReclamation, 1, 0), false, "湖湿原のみの場合は干拓提示不可");
+assert.strictEqual(engineA.deckManager.isCardEligible(cmdReclamation, 1, 0, { ignoreCooldown: true, ignoreHold: true }), false, "湖湿原のみの場合は干拓提示不可");
 
 // ケース3: 通常湿原が存在する場合 ➔ 提示・発動可能
 engineA.state.grid[0][1] = {
     r: 0, c: 1, placed: true,
     terrain: { id: "E0_WETLAND", terrainId: "E0_WETLAND", nameKey: "TERRAIN_WETLAND", e: 0, gl: 1 }
 };
-assert.strictEqual(engineA.deckManager.isCardEligible(cmdReclamation, 1, 0), true, "通常湿原があれば干拓提示可能");
+assert.strictEqual(engineA.deckManager.isCardEligible(cmdReclamation, 1, 0, { ignoreCooldown: true, ignoreHold: true }), true, "通常湿原があれば干拓提示可能");
 console.log("  ✅ PASS: 湖湿原が除外され、通常湿原のみが干拓対象として正しく判定されます！");
 
 // ------------------------------------------------------------
@@ -46,7 +50,7 @@ console.log("  ✅ PASS: 湖湿原が除外され、通常湿原のみが干拓�
 // C. 産出が 🌾4 / 🧱1 / 🛡️0 / ✨0 になる
 // ------------------------------------------------------------
 console.log("\n🧪 Test B & C: 《干拓》実行と干拓地データ定義・産出:");
-const resPlay = engineA.deckManager.playCommandCard(cmdReclamation, { type: "OFFERING", index: -1 });
+const resPlay = engineA.playCommandCard(cmdReclamation, { type: "OFFERING", index: -1 });
 assert.strictEqual(resPlay.success, true, "干拓の実行が成功すること");
 
 // (0,0) の湖湿原はそのまま保護されていること
@@ -126,7 +130,9 @@ Object.assign(commandMergeEngine.state.grid[1][1], {
     isHQ: false,
     terrain: { id: "E0_WETLAND", terrainId: "E0_WETLAND", nameKey: "TERRAIN_WETLAND", e: 0, gl: 1 }
 });
-const commandMergeResult = commandMergeEngine.deckManager.playCommandCard(cmdReclamation, { type: "OFFERING", index: -1 });
+commandMergeEngine.state.wood = commandMergeEngine.state.material = 30;
+commandMergeEngine.state.ember = 20;
+const commandMergeResult = commandMergeEngine.playCommandCard(cmdReclamation, { type: "OFFERING", index: -1 });
 assert.strictEqual(commandMergeResult.success, true, "実際の《干拓》コマンドが成功すること");
 assert.strictEqual(Object.keys(commandMergeEngine.state.mergedBlocks).length, 1, "《干拓》直後に混成地帯が自動成立すること");
 assert.strictEqual(commandMergeEngine.state.grid[1][1].merged, true, "干拓したセルが地帯へ参加すること");
@@ -294,6 +300,8 @@ Object.assign(commandUndoEngine.state.grid[1][1], {
     isHQ: false,
     terrain: { id: "E0_WETLAND", terrainId: "E0_WETLAND", nameKey: "TERRAIN_WETLAND", e: 0, gl: 1 }
 });
+commandUndoEngine.state.wood = commandUndoEngine.state.material = 30;
+commandUndoEngine.state.ember = 20;
 assert.strictEqual(commandUndoEngine.playCommandCard(cmdReclamation).success, true, "GameEngine経由の《干拓》が成功すること");
 assert.strictEqual(commandUndoEngine.state.grid[1][1].terrain.terrainId, "E1_RECLAIMED_LAND");
 assert.strictEqual(commandUndoEngine.state.grid[1][1].merged, true);

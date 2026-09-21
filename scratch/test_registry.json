@@ -138,11 +138,7 @@
     {
       "path": "scratch/test_area_influence_system.mjs",
       "purpose": "area influence system",
-      "suite": "quarantined",
-      "reason": "placeShape(...).success is undefined at line 75.",
-      "nextAction": "Update the fixture to the current placement result and RNG contracts, then verify water-source behavior.",
-      "observedAt": "2026-09-22",
-      "observedEnvironment": "Windows / Node 24.18.0 / Python 3.11.3"
+      "suite": "supplemental"
     },
     {
       "path": "scratch/test_area_influence_visuals.mjs",
@@ -201,11 +197,7 @@
     {
       "path": "scratch/test_card_cycle_system.mjs",
       "purpose": "card cycle system",
-      "suite": "quarantined",
-      "reason": "Eligibility after releasing Hold does not match the expected true value.",
-      "nextAction": "Check current offering requirements and construct an eligible released-card fixture.",
-      "observedAt": "2026-09-22",
-      "observedEnvironment": "Windows / Node 24.18.0 / Python 3.11.3"
+      "suite": "supplemental"
     },
     {
       "path": "scratch/test_check_system_core.mjs",
@@ -635,11 +627,7 @@
     {
       "path": "scratch/test_offering_conditions.mjs",
       "purpose": "offering conditions",
-      "suite": "quarantined",
-      "reason": "Migration card eligibility differs from the Stage 2 fixture expectation.",
-      "nextAction": "Review current prerequisites against the fixture and the rules.",
-      "observedAt": "2026-09-22",
-      "observedEnvironment": "Windows / Node 24.18.0 / Python 3.11.3"
+      "suite": "supplemental"
     },
     {
       "path": "scratch/test_offering_duplicate_fallback.mjs",
@@ -673,11 +661,7 @@
     {
       "path": "scratch/test_reclaimed_land.mjs",
       "purpose": "reclaimed land",
-      "suite": "quarantined",
-      "reason": "A normal wetland alone no longer satisfies the fixture eligibility expectation.",
-      "nextAction": "Review current reclamation prerequisites and separate fixture drift from a runtime defect.",
-      "observedAt": "2026-09-22",
-      "observedEnvironment": "Windows / Node 24.18.0 / Python 3.11.3"
+      "suite": "supplemental"
     },
     {
       "path": "scratch/test_safe_integration_runner.mjs",
@@ -1033,15 +1017,6 @@
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
       ]
-    },
-    {
-      "path": "scratch/test_verify_user_issues.mjs",
-      "purpose": "verify user issues",
-      "suite": "quarantined",
-      "reason": "A repeated command execution returns success=false at line 79.",
-      "nextAction": "Check offering context and current command prerequisites before changing behavior.",
-      "observedAt": "2026-09-22",
-      "observedEnvironment": "Windows / Node 24.18.0 / Python 3.11.3"
     },
     {
       "path": "scratch/test_verse1_restore_point.mjs",
