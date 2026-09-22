@@ -10,6 +10,7 @@ import { serializeGameState } from "../state_serializer.js";
 import { hydrateGameState } from "../hydrate_game_state.js";
 import { GridEngine } from "../../systems/grid_engine.js";
 import { GameState } from "../../v2_unity_ready_main.js";
+import { GameEngine } from "../game_engine.js";
 import { ConditionEvaluator } from "../condition_evaluator.js";
 import { ProductionCalculator } from "../../systems/production_calculator.js";
 import { DefenseSystem } from "../../systems/defense_system.js";
@@ -353,6 +354,23 @@ const landSystemJson = JSON.parse(
     );
     assert.equal(check.can, false);
     assert.ok(check.reasons.includes("MOUNTAIN_NEAR_HQ_FORBIDDEN"));
+}
+
+{
+    const engine = Object.create(GameEngine.prototype);
+    engine.state = createState();
+    engine.executeAction = () => ({ success: true });
+
+    for (const card of actualMultiCards) {
+        const blocked = engine.placeLand(0, 0, card, 0);
+        assert.equal(blocked.success, false);
+        assert.equal(blocked.reason, "MULTI_ATTRIBUTE_PRODUCTION_UNRESOLVED");
+    }
+
+    const normalLand = LAND_CARDS_MASTER.find(card => card.id === "CARD_PLAINS_1X1");
+    assert.ok(normalLand);
+    const normalResult = engine.placeLand(0, 0, normalLand, 0);
+    assert.equal(normalResult.success, true);
 }
 
 {
