@@ -98,6 +98,11 @@ const planningProjection = TrialBoardSemanticAdapter.fromRuntime({
 });
 assert.equal(planningProjection.tacticalEffects.length, 1);
 assert.equal(planningProjection.tacticalEffects[0].phase, 'AVAILABLE');
+assert.equal(
+    planningProjection.interceptionCandidates[0].tacticalEffects,
+    undefined,
+    'candidate legality semantic must not retain a second tactical-effect disclosure channel'
+);
 
 const resolvedProjection = TrialBoardSemanticAdapter.fromRuntime({
     trialState: {
