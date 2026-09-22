@@ -109,10 +109,18 @@ export class BoardPresentationGridComponent extends LegacyBoardGridComponent {
             boardEl.setAttribute('data-board-context-mode', state.contextMode);
         }
         const profile = presentation?.profile || {};
-        if (profile.yields) boardEl.setAttribute('data-board-yields-visibility', profile.yields);
-        else boardEl.removeAttribute('data-board-yields-visibility');
-        if (profile.sockets) boardEl.setAttribute('data-board-sockets-visibility', profile.sockets);
-        else boardEl.removeAttribute('data-board-sockets-visibility');
+        const visibilityAttributes = [
+            ['yields', 'data-board-yields-visibility'],
+            ['sockets', 'data-board-sockets-visibility'],
+            ['trialRoutes', 'data-board-trial-routes-visibility'],
+            ['invasionEntry', 'data-board-invasion-entry-visibility'],
+            ['interception', 'data-board-interception-visibility'],
+            ['battleMarkers', 'data-board-battle-markers-visibility']
+        ];
+        for (const [key, attribute] of visibilityAttributes) {
+            if (profile[key]) boardEl.setAttribute(attribute, profile[key]);
+            else boardEl.removeAttribute(attribute);
+        }
         const isTrialContext = state?.contextMode === BOARD_CONTEXT_MODES.TRIAL;
         boardEl.querySelectorAll('.cell').forEach(cellEl => {
             const r = Number(cellEl.getAttribute('data-r'));
