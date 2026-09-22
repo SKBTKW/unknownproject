@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import {
     drawWeb25DTrialOverlay,
+    hitWeb25DTrialRouteSelector,
     resolveWeb25DBattleMarkerVisual,
     resolveWeb25DPlannedInterceptVisual,
-    resolveWeb25DTrialCandidateVisual
+    resolveWeb25DTrialCandidateVisual,
+    resolveWeb25DTrialRouteSelectors
 } from '../game/src/presentation/web25d_trial_overlay_renderer.js';
 
 function createContext() {
@@ -31,6 +33,55 @@ const projection = {
     halfH: 10,
     projectCell(r, c) { return { x: c * 40 + 20, y: r * 20 + 10 }; }
 };
+
+const routeSelectorReadModel = {
+    board: { rows: 2, columns: 3 },
+    cells: [
+        [{ elevation: 0 }, { elevation: 0 }, { elevation: 0 }],
+        [{ elevation: 0 }, { elevation: 0 }, { elevation: 0 }]
+    ],
+    trial: {
+        available: true,
+        activeRouteId: 'route:a',
+        routes: [
+            {
+                routeId: 'route:a',
+                entryCell: { r: 0, c: 0 },
+                entrySide: 'north',
+                cells: [{ r: 0, c: 0 }]
+            },
+            {
+                routeId: 'route:b',
+                entryCell: { r: 1, c: 2 },
+                entrySide: 'east',
+                cells: [{ r: 1, c: 2 }]
+            }
+        ]
+    }
+};
+
+const routeSelectors = resolveWeb25DTrialRouteSelectors({
+    projection,
+    readModel: routeSelectorReadModel
+});
+assert.equal(routeSelectors.length, 2);
+assert.equal(routeSelectors[0].routeId, 'route:a');
+assert.equal(routeSelectors[0].isActive, true);
+assert.equal(routeSelectors[1].routeId, 'route:b');
+assert.equal(routeSelectors[1].isActive, false);
+assert.notDeepEqual(
+    routeSelectors[0].center,
+    projection.projectCell(0, 0),
+    'route selector stays outside the entry cell hit area'
+);
+assert.equal(
+    hitWeb25DTrialRouteSelector({
+        point: routeSelectors[1].center,
+        projection,
+        readModel: routeSelectorReadModel
+    })?.routeId,
+    'route:b'
+);
 
 assert.equal(
     resolveWeb25DTrialCandidateVisual({ cell: { r: 0, c: 0 }, canIntercept: false }),
@@ -152,12 +203,20 @@ drawWeb25DTrialOverlay({
             activeRouteId: 'route:a',
             selectedInterceptCell: { r: 0, c: 1 },
             hoveredInterceptCell: { r: 1, c: 1 },
-            routes: [{
-                routeId: 'route:a',
-                cells: [{ r: 0, c: 0 }, { r: 0, c: 1 }],
-                entryCell: { r: 0, c: 0 },
-                entrySide: 'north'
-            }],
+            routes: [
+                {
+                    routeId: 'route:a',
+                    cells: [{ r: 0, c: 0 }, { r: 0, c: 1 }],
+                    entryCell: { r: 0, c: 0 },
+                    entrySide: 'north'
+                },
+                {
+                    routeId: 'route:b',
+                    cells: [{ r: 1, c: 2 }, { r: 1, c: 1 }],
+                    entryCell: { r: 1, c: 2 },
+                    entrySide: 'east'
+                }
+            ],
             interceptionCandidates: [
                 { cell: { r: 0, c: 1 }, canIntercept: true },
                 { cell: { r: 1, c: 1 }, canIntercept: true },
@@ -238,5 +297,8 @@ assert.equal(
     true,
     'passive legal candidates keep a quieter outline'
 );
+
+const routeSelectorArcs = ctx.ops.filter(op => op[0] === 'arc' && op[3] === 7);
+assert.equal(routeSelectorArcs.length, 2, 'all Trial routes expose a 2.5D route selector marker');
 
 console.log('web25d trial overlay renderer ok');

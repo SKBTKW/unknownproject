@@ -55,6 +55,81 @@ function sameCell(a, b) {
     return Boolean(a && b && a.r === b.r && a.c === b.c);
 }
 
+function inferRouteEntrySide(route, readModel) {
+    if (route?.entrySide) return route.entrySide;
+    const entry = route?.entryCell || route?.cells?.[0] || null;
+    const rows = Number(readModel?.board?.rows) || 0;
+    const columns = Number(readModel?.board?.columns) || 0;
+    if (!entry || rows < 1 || columns < 1) return null;
+    if (entry.r === 0) return 'north';
+    if (entry.r === rows - 1) return 'south';
+    if (entry.c === 0) return 'west';
+    if (entry.c === columns - 1) return 'east';
+    return null;
+}
+
+function routeSelectorOffset(side, projection) {
+    const x = Math.max(8, Number(projection?.halfW) * 0.45 || 8);
+    const y = Math.max(6, Number(projection?.halfH) * 0.90 || 6);
+    switch (side) {
+        case 'north': return { x, y: -y };
+        case 'south': return { x: -x, y };
+        case 'east': return { x, y };
+        case 'west': return { x: -x, y: -y };
+        default: return null;
+    }
+}
+
+export function resolveWeb25DTrialRouteSelectors({
+    projection,
+    readModel
+} = {}) {
+    const trial = readModel?.trial;
+    if (!projection || !trial?.available) return Object.freeze([]);
+
+    const selectors = [];
+    for (const route of trial.routes || []) {
+        const routeId = route?.routeId ?? route?.id ?? null;
+        const entryCell = route?.entryCell || route?.cells?.[0] || null;
+        const entrySide = inferRouteEntrySide(route, readModel);
+        if (!routeId || !entryCell || !entrySide) continue;
+
+        const entryCenter = projectTrialCell(readModel, projection, entryCell);
+        const offset = routeSelectorOffset(entrySide, projection);
+        if (!offset) continue;
+
+        selectors.push(Object.freeze({
+            routeId,
+            entryCell: Object.freeze({ r: entryCell.r, c: entryCell.c }),
+            entrySide,
+            isActive: routeId === trial.activeRouteId,
+            center: Object.freeze({
+                x: entryCenter.x + offset.x,
+                y: entryCenter.y + offset.y
+            }),
+            radius: 7
+        }));
+    }
+
+    return Object.freeze(selectors);
+}
+
+export function hitWeb25DTrialRouteSelector({
+    point,
+    projection,
+    readModel
+} = {}) {
+    if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) return null;
+    const selectors = resolveWeb25DTrialRouteSelectors({ projection, readModel });
+    for (let i = selectors.length - 1; i >= 0; i--) {
+        const selector = selectors[i];
+        const dx = point.x - selector.center.x;
+        const dy = point.y - selector.center.y;
+        if (Math.hypot(dx, dy) <= selector.radius + 2) return selector;
+    }
+    return null;
+}
+
 export function resolveWeb25DTrialCandidateVisual(item, {
     selected = null,
     hovered = null
@@ -237,6 +312,20 @@ export function drawWeb25DTrialOverlay({ ctx, projection, readModel } = {}) {
         ctx.fill();
         ctx.strokeStyle = visual.strokeStyle;
         ctx.lineWidth = visual.lineWidth;
+        ctx.stroke();
+    }
+
+    for (const selector of resolveWeb25DTrialRouteSelectors({ projection, readModel })) {
+        ctx.beginPath();
+        ctx.arc(selector.center.x, selector.center.y, selector.radius, 0, Math.PI * 2);
+        ctx.fillStyle = selector.isActive
+            ? 'rgba(255, 185, 137, 0.96)'
+            : 'rgba(169, 48, 38, 0.72)';
+        ctx.fill();
+        ctx.strokeStyle = selector.isActive
+            ? 'rgba(255, 238, 217, 0.98)'
+            : 'rgba(255, 158, 118, 0.86)';
+        ctx.lineWidth = selector.isActive ? 2 : 1.2;
         ctx.stroke();
     }
 }
