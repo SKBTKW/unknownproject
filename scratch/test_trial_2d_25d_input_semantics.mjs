@@ -14,6 +14,7 @@ import {
     resolveBoardPointerCommand
 } from "../game/src/presentation/board_input_semantic_resolver.js";
 import { Web25DPhaseFRenderer } from "../game/src/presentation/web25d_phase_f_renderer.js";
+import { resolveWeb25DTrialRouteSelectors } from "../game/src/presentation/web25d_trial_overlay_renderer.js";
 import { attachBoardPresentationRuntime } from "../game/src/ui/board_presentation_runtime_bridge.js";
 import { attachTrialRouteBoardSelection } from "../game/src/ui/trial_route_board_selection_bridge.js";
 
@@ -290,6 +291,92 @@ test("2.5D renderer uses the shared resolver for legal and blocked Trial cells",
 
     renderer.handlePointerMove({});
     assert.equal(commands.at(-1).type, BOARD_INPUT_COMMANDS.CLEAR_TRIAL_HOVER);
+});
+
+test("2.5D Trial route selector dispatches SELECT_TRIAL_ROUTE before interception hit testing", () => {
+    const commands = [];
+    const bridge = {
+        dispatch(command) {
+            commands.push(command);
+            return { success: true };
+        }
+    };
+    const canvas = {
+        width: 600,
+        height: 600,
+        getContext: () => ({
+            clearRect() {},
+            beginPath() {},
+            moveTo() {},
+            lineTo() {},
+            closePath() {},
+            fill() {},
+            stroke() {},
+            fillText() {},
+            arc() {}
+        }),
+        addEventListener() {},
+        removeEventListener() {},
+        getBoundingClientRect: () => ({ left: 0, top: 0, width: 600, height: 600 })
+    };
+    const readModel = {
+        presentation: { contextMode: BOARD_CONTEXT_MODES.TRIAL },
+        board: { rows: 2, columns: 2 },
+        cells: [
+            [
+                { r: 0, c: 0, elevation: 0, placed: true, trial: { interceptionCandidate: { canIntercept: true }, route: { routeId: "route-a" } } },
+                { r: 0, c: 1, elevation: 0, placed: true, trial: { interceptionCandidate: null, route: null } }
+            ],
+            [
+                { r: 1, c: 0, elevation: 0, placed: true, trial: { interceptionCandidate: null, route: null } },
+                { r: 1, c: 1, elevation: 0, placed: true, trial: { interceptionCandidate: { canIntercept: true }, route: { routeId: "route-b" } } }
+            ]
+        ],
+        trial: {
+            available: true,
+            activeRouteId: "route-a",
+            routes: [
+                {
+                    routeId: "route-a",
+                    entryCell: { r: 0, c: 0 },
+                    entrySide: "north",
+                    cells: [{ r: 0, c: 0 }]
+                },
+                {
+                    routeId: "route-b",
+                    entryCell: { r: 1, c: 1 },
+                    entrySide: "south",
+                    cells: [{ r: 1, c: 1 }]
+                }
+            ],
+            interceptionCandidates: []
+        }
+    };
+
+    const renderer = new Web25DPhaseFRenderer({ canvas, bridge });
+    renderer.render = () => {};
+    renderer.setReadModel(readModel);
+
+    const selectors = resolveWeb25DTrialRouteSelectors({
+        projection: renderer.projection,
+        readModel
+    });
+    const inactive = selectors.find(item => item.routeId === "route-b");
+    const active = selectors.find(item => item.routeId === "route-a");
+
+    renderer.getCanvasPointFromEvent = () => inactive.center;
+    renderer.getLogicalCellAtCanvasPoint = () => {
+        throw new Error("route selector hit must take priority over cell interception hit testing");
+    };
+    renderer.handleClick({});
+    assert.equal(commands.length, 1);
+    assert.equal(commands[0].type, BOARD_INPUT_COMMANDS.SELECT_TRIAL_ROUTE);
+    assert.equal(commands[0].payload.routeId, "route-b");
+
+    commands.length = 0;
+    renderer.getCanvasPointFromEvent = () => active.center;
+    renderer.handleClick({});
+    assert.equal(commands.length, 0, "active route selector consumes click without redispatching selection");
 });
 
 test("2.5D pointer dedupe resets when active Trial route changes", () => {
