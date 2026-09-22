@@ -1,3 +1,5 @@
+import { resolveWeb25DTerrainTopFill } from './web25d_canvas_renderer.js';
+
 function drawDiamond(ctx, center, halfW, halfH) {
     ctx.beginPath();
     ctx.moveTo(center.x, center.y - halfH);
@@ -61,6 +63,15 @@ export function drawWeb25DPlacementPreview({ ctx, projection, readModel } = {}) 
         const halfH = projection.halfH - 2;
 
         drawDiamond(ctx, center, halfW, halfH);
+
+        if (cell.terrainId) {
+            ctx.save?.();
+            ctx.globalAlpha = valid ? 0.78 : 0.62;
+            ctx.fillStyle = resolveWeb25DTerrainTopFill({ terrainId: cell.terrainId });
+            ctx.fill();
+            ctx.restore?.();
+        }
+
         ctx.strokeStyle = valid
             ? 'rgba(205, 232, 218, 0.94)'
             : 'rgba(218, 218, 207, 0.82)';
