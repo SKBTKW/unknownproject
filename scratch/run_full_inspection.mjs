@@ -471,6 +471,7 @@ async function main() {
         ["Canvas renderer", "node", ["scratch/web25d_canvas_renderer_validation.mjs"]],
         ["Terrain visual families", "node", ["scratch/web25d_phase_b_visual_validation.mjs"]],
         ["Landmark production", "node", ["scratch/web25d_landmark_production_validation.mjs"]],
+        ["Viewport fit", "node", ["scratch/web25d_viewport_fit_validation.mjs"]],
     ]);
     if (!web25DVisualFocusedOk) process.exit(1);
     const advisorFoundationOk = await runCommand("node", ["scratch/test_advisor_foundation.mjs"]);
