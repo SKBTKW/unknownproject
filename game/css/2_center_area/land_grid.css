@@ -631,6 +631,24 @@ body.is-camera-dragging-global * {
     animation: none !important;
 }
 
+/* Multi-Attribute placement preview:
+   terrain owns the fill; legality keeps the existing outer signal. */
+.cell.preview-valid[data-preview-terrain="1"] {
+    background: var(--preview-terrain-bg) !important;
+    box-shadow:
+        0 0 28px rgba(26, 188, 156, 1.0),
+        inset 0 0 0 3px var(--preview-terrain-border),
+        inset 0 0 16px var(--preview-terrain-shadow) !important;
+}
+
+.cell.preview-invalid[data-preview-terrain="1"] {
+    background: var(--preview-terrain-bg) !important;
+    box-shadow:
+        0 0 22px rgba(255, 71, 87, 1.0),
+        inset 0 0 0 3px var(--preview-terrain-border),
+        inset 0 0 12px var(--preview-terrain-shadow) !important;
+}
+
 /* ✨ 2x2マージブロック中央浮遊ラベル */
 .merge-center-label {
     position: absolute !important;
