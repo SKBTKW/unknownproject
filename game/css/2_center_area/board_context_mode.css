@@ -16,8 +16,6 @@
 
 #gridBoard[data-board-sockets-visibility="SECONDARY"] .cell.socket-unopened {
     animation: none;
-    border-color: rgba(46, 204, 113, 0.42) !important;
-    box-shadow: inset 0 0 8px rgba(46, 204, 113, 0.12), 0 0 5px rgba(46, 204, 113, 0.10) !important;
 }
 
 #gridBoard[data-board-sockets-visibility="SECONDARY"] .socket-star-icon {
