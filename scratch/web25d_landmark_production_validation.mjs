@@ -3,8 +3,10 @@ import {
     WEB25D_RESOURCE_VISUAL_FAMILIES,
     Web25DPhaseCRenderer,
     resolveWeb25DProductionMarker,
+    resolveWeb25DProductionMarkerAnchor,
     resolveWeb25DResourceVisualFamily
 } from '../game/src/presentation/web25d_phase_c_renderer.js';
+import { Web25DProjectionAdapter } from '../game/src/presentation/web25d_projection_adapter.js';
 
 const landCell = {
     display: {
@@ -59,6 +61,24 @@ assert.equal(resolveWeb25DProductionMarker({
         production: { primaryYield: { resource: 'food', amount: 0 } }
     }
 }), null);
+
+const projection = new Web25DProjectionAdapter({ originX: 100, originY: 50 });
+const rearProjected = projection.projectCellView({ r: 0, c: 0 });
+const frontProjected = projection.projectCellView({ r: 1, c: 1 });
+const rearProductionAnchor = resolveWeb25DProductionMarkerAnchor(rearProjected);
+const frontProductionAnchor = resolveWeb25DProductionMarkerAnchor(frontProjected);
+
+assert.deepEqual(rearProductionAnchor, { x: 100, y: 50 });
+assert.deepEqual(frontProductionAnchor, { x: 100, y: 80 });
+assert.equal(
+    frontProductionAnchor.y - rearProductionAnchor.y,
+    30,
+    'production metadata must preserve projected base spacing regardless of terrain elevation'
+);
+assert.equal(
+    resolveWeb25DProductionMarkerAnchor({ screenCenter: { x: NaN, y: 0 } }),
+    null
+);
 
 const resourceFamilies = new Map([
     ['CAT_WATER', WEB25D_RESOURCE_VISUAL_FAMILIES.WATER],
@@ -177,6 +197,39 @@ const doubleDigitFill = rectCalls.slice(rectCountBeforeDoubleDigit)
     .find(call => call.type === 'fill');
 assert.equal(doubleDigitFill?.width, 28, 'double-digit production expands chip width');
 assert.equal(doubleDigitFill?.height, 12);
+
+const elevatedCell = {
+    r: 0,
+    c: 0,
+    placed: true,
+    elevation: 3,
+    greenery: 0,
+    terrainId: 'E3_MOUNTAIN',
+    edges: [],
+    interaction: {},
+    display: {
+        role: 'LAND_PRIMARY',
+        production: { primaryYield: { resource: 'food', amount: 4 } }
+    }
+};
+const elevatedProjected = projection.projectCellView(elevatedCell);
+const productionAnchors = [];
+const originalDrawProductionMarker = renderer.drawProductionMarker.bind(renderer);
+renderer.drawProductionMarker = (cell, center) => {
+    productionAnchors.push({ ...center });
+};
+renderer.drawPlacedTerrain(elevatedCell, elevatedProjected);
+renderer.drawProductionMarker = originalDrawProductionMarker;
+assert.deepEqual(
+    productionAnchors.at(-1),
+    elevatedProjected.screenCenter,
+    'E3 terrain keeps production metadata on the unlifted logical cell base'
+);
+assert.equal(
+    productionAnchors.at(-1).y,
+    50,
+    'production anchor must not inherit the 24px E3 visual lift'
+);
 
 for (const category of resourceFamilies.keys()) {
     const before = drawCalls.length;

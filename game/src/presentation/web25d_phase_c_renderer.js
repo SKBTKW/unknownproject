@@ -81,6 +81,13 @@ function resourceGlyph(resource) {
     }
 }
 
+export function resolveWeb25DProductionMarkerAnchor(projected = {}) {
+    const x = Number(projected?.screenCenter?.x);
+    const y = Number(projected?.screenCenter?.y);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+    return Object.freeze({ x, y });
+}
+
 export function resolveWeb25DProductionMarker(cell = {}) {
     const role = cell.display?.role || null;
     if (role !== 'LAND_PRIMARY' && role !== 'SOCKET') return null;
@@ -133,7 +140,12 @@ export class Web25DPhaseCRenderer extends Web25DCanvasRenderer {
             this.drawDormantSocketCore(center);
         }
 
-        this.drawProductionMarker(cell, center);
+        // Production is presentation metadata, not a physical landmark.
+        // Keep it on the unlifted logical cell base so elevation differences
+        // cannot collapse labels from the same projected diagonal.
+        const productionAnchor = resolveWeb25DProductionMarkerAnchor(projected);
+        if (productionAnchor) this.drawProductionMarker(cell, productionAnchor);
+
         this.drawInteractionEmphasis(cell, center, lift);
     }
 
