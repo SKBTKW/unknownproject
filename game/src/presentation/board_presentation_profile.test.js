@@ -28,6 +28,29 @@ test('WORLD preserves the context profile exactly', () => {
     );
 });
 
+test('TRIAL WORLD keeps zones and links available but secondary to Trial operations', () => {
+    const profile = getBoardPresentationProfile(
+        BOARD_CONTEXT_MODES.TRIAL,
+        BOARD_VIEW_PRESETS.WORLD
+    );
+
+    assert.equal(profile.zones, BOARD_VISIBILITY.SECONDARY);
+    assert.equal(profile.links, BOARD_VISIBILITY.SECONDARY);
+    assert.equal(profile.trialRoutes, BOARD_VISIBILITY.PRIMARY);
+    assert.equal(profile.interception, BOARD_VISIBILITY.PRIMARY);
+    assert.equal(profile.battleMarkers, BOARD_VISIBILITY.PRIMARY);
+});
+
+test('TRIAL TACTICAL may explicitly re-emphasize zone and link context', () => {
+    const profile = getBoardPresentationProfile(
+        BOARD_CONTEXT_MODES.TRIAL,
+        BOARD_VIEW_PRESETS.TACTICAL
+    );
+
+    assert.equal(profile.zones, BOARD_VISIBILITY.VISIBLE);
+    assert.equal(profile.links, BOARD_VISIBILITY.VISIBLE);
+});
+
 test('NORMAL plus TACTICAL never discloses Trial-only information', () => {
     const profile = getBoardPresentationProfile(
         BOARD_CONTEXT_MODES.NORMAL,

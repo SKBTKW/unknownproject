@@ -472,6 +472,7 @@ async function main() {
         ["Terrain visual families", "node", ["scratch/web25d_phase_b_visual_validation.mjs"]],
         ["Landmark production", "node", ["scratch/web25d_landmark_production_validation.mjs"]],
         ["HQ beacon priority", "node", ["scratch/web25d_hq_beacon_priority_validation.mjs"]],
+        ["Zone / Link overlay", "node", ["scratch/test_web25d_zone_link_overlay_renderer.mjs"]],
         ["Viewport fit", "node", ["scratch/web25d_viewport_fit_validation.mjs"]],
     ]);
     if (!web25DVisualFocusedOk) process.exit(1);

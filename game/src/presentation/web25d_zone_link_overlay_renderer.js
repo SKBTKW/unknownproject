@@ -3,6 +3,7 @@ import {
     buildZoneLinkVisuals
 } from './board_zone_link_visual_contract.js';
 import { resolveWeb25DElevationPixels } from './web25d_canvas_renderer.js';
+import { BOARD_VISIBILITY } from './board_presentation_profile.js';
 
 function drawDiamond(ctx, center, halfW, halfH) {
     ctx.beginPath();
@@ -40,6 +41,118 @@ function shouldDrawSharedEdge(cell, neighbor) {
     return cell.c <= neighbor.c;
 }
 
+function normalizeVisibility(value) {
+    return Object.values(BOARD_VISIBILITY).includes(value)
+        ? value
+        : BOARD_VISIBILITY.VISIBLE;
+}
+
+function visibilityTier(value) {
+    const visibility = normalizeVisibility(value);
+    if (visibility === BOARD_VISIBILITY.HIDDEN) return 'HIDDEN';
+    if (visibility === BOARD_VISIBILITY.SUPPRESSED) return 'SUPPRESSED';
+    if (visibility === BOARD_VISIBILITY.SECONDARY) return 'SECONDARY';
+    return 'FULL';
+}
+
+export function resolveWeb25DZoneLinkEdgeStyle(edgeKind, {
+    zoneVisibility = BOARD_VISIBILITY.VISIBLE,
+    linkVisibility = BOARD_VISIBILITY.VISIBLE,
+    terrainTopFill = 'rgba(116, 126, 112, 0.72)'
+} = {}) {
+    const zoneTier = visibilityTier(zoneVisibility);
+    const linkTier = visibilityTier(linkVisibility);
+
+    if (edgeKind === ZONE_LINK_EDGE_KINDS.ZONE_INTERNAL) {
+        if (zoneTier === 'HIDDEN') return null;
+        if (zoneTier === 'SUPPRESSED') {
+            return Object.freeze({
+                strokes: Object.freeze([
+                    Object.freeze({ style: 'rgba(212, 220, 202, 0.08)', width: 0.8 })
+                ]),
+                marker: null
+            });
+        }
+        if (zoneTier === 'SECONDARY') {
+            return Object.freeze({
+                strokes: Object.freeze([
+                    Object.freeze({ style: 'rgba(212, 220, 202, 0.16)', width: 1.2 })
+                ]),
+                marker: null
+            });
+        }
+        return Object.freeze({
+            strokes: Object.freeze([
+                Object.freeze({ style: terrainTopFill, width: 3.4 }),
+                Object.freeze({ style: 'rgba(212, 220, 202, 0.10)', width: 0.45 })
+            ]),
+            marker: null
+        });
+    }
+
+    if (edgeKind === ZONE_LINK_EDGE_KINDS.ZONE_BOUNDARY) {
+        if (zoneTier === 'HIDDEN') return null;
+        const stroke = zoneTier === 'SUPPRESSED'
+            ? { style: 'rgba(221, 209, 174, 0.14)', width: 0.8 }
+            : zoneTier === 'SECONDARY'
+                ? { style: 'rgba(221, 209, 174, 0.28)', width: 1.0 }
+                : { style: 'rgba(221, 209, 174, 0.66)', width: 1.8 };
+        return Object.freeze({
+            strokes: Object.freeze([Object.freeze(stroke)]),
+            marker: null
+        });
+    }
+
+    if (edgeKind === ZONE_LINK_EDGE_KINDS.LINK) {
+        if (linkTier === 'HIDDEN') return null;
+        if (linkTier === 'SUPPRESSED') {
+            return Object.freeze({
+                strokes: Object.freeze([
+                    Object.freeze({ style: 'rgba(238, 181, 91, 0.08)', width: 1.6 }),
+                    Object.freeze({ style: 'rgba(255, 211, 128, 0.26)', width: 0.8 })
+                ]),
+                marker: Object.freeze({
+                    halfW: 2.5,
+                    halfH: 1.5,
+                    fillStyle: 'rgba(255, 205, 112, 0.20)',
+                    strokeStyle: 'rgba(255, 232, 176, 0.26)',
+                    lineWidth: 0.6
+                })
+            });
+        }
+        if (linkTier === 'SECONDARY') {
+            return Object.freeze({
+                strokes: Object.freeze([
+                    Object.freeze({ style: 'rgba(238, 181, 91, 0.14)', width: 2.4 }),
+                    Object.freeze({ style: 'rgba(255, 211, 128, 0.56)', width: 1.0 })
+                ]),
+                marker: Object.freeze({
+                    halfW: 3,
+                    halfH: 2,
+                    fillStyle: 'rgba(255, 205, 112, 0.42)',
+                    strokeStyle: 'rgba(255, 232, 176, 0.52)',
+                    lineWidth: 0.7
+                })
+            });
+        }
+        return Object.freeze({
+            strokes: Object.freeze([
+                Object.freeze({ style: 'rgba(238, 181, 91, 0.34)', width: 4.4 }),
+                Object.freeze({ style: 'rgba(255, 211, 128, 0.94)', width: 1.5 })
+            ]),
+            marker: Object.freeze({
+                halfW: 4,
+                halfH: 2.5,
+                fillStyle: 'rgba(255, 205, 112, 0.90)',
+                strokeStyle: 'rgba(255, 232, 176, 0.92)',
+                lineWidth: 0.8
+            })
+        });
+    }
+
+    return null;
+}
+
 /**
  * Disposable Web-only Zone/Link overlay.
  *
@@ -75,38 +188,27 @@ export function drawWeb25DZoneLinkOverlay({
                 if (!screenEdge) continue;
                 const raisedEdge = translateEdge(screenEdge, lift);
 
-                if (edge.kind === ZONE_LINK_EDGE_KINDS.ZONE_INTERNAL) {
-                    ctx.strokeStyle = topFill;
-                    ctx.lineWidth = 3.4;
+                const style = resolveWeb25DZoneLinkEdgeStyle(edge.kind, {
+                    zoneVisibility: readModel.profile?.zones,
+                    linkVisibility: readModel.profile?.links,
+                    terrainTopFill: topFill
+                });
+                if (!style) continue;
+
+                for (const stroke of style.strokes || []) {
+                    ctx.strokeStyle = stroke.style;
+                    ctx.lineWidth = stroke.width;
                     drawLine(ctx, raisedEdge);
-                    ctx.strokeStyle = 'rgba(212, 220, 202, 0.10)';
-                    ctx.lineWidth = 0.45;
-                    drawLine(ctx, raisedEdge);
-                    continue;
                 }
 
-                if (edge.kind === ZONE_LINK_EDGE_KINDS.ZONE_BOUNDARY) {
-                    ctx.strokeStyle = 'rgba(221, 209, 174, 0.66)';
-                    ctx.lineWidth = 1.8;
-                    drawLine(ctx, raisedEdge);
-                    continue;
-                }
-
-                if (edge.kind === ZONE_LINK_EDGE_KINDS.LINK) {
-                    ctx.strokeStyle = 'rgba(238, 181, 91, 0.34)';
-                    ctx.lineWidth = 4.4;
-                    drawLine(ctx, raisedEdge);
-                    ctx.strokeStyle = 'rgba(255, 211, 128, 0.94)';
-                    ctx.lineWidth = 1.5;
-                    drawLine(ctx, raisedEdge);
-
+                if (style.marker) {
                     const center = midpoint(raisedEdge);
                     if (center) {
-                        drawDiamond(ctx, center, 4, 2.5);
-                        ctx.fillStyle = 'rgba(255, 205, 112, 0.90)';
+                        drawDiamond(ctx, center, style.marker.halfW, style.marker.halfH);
+                        ctx.fillStyle = style.marker.fillStyle;
                         ctx.fill();
-                        ctx.strokeStyle = 'rgba(255, 232, 176, 0.92)';
-                        ctx.lineWidth = 0.8;
+                        ctx.strokeStyle = style.marker.strokeStyle;
+                        ctx.lineWidth = style.marker.lineWidth;
                         ctx.stroke();
                     }
                 }
