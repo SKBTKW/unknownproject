@@ -169,6 +169,14 @@
       ]
     },
     {
+      "path": "scratch/test_board_presentation_profile_consumption_contract.mjs",
+      "purpose": "board presentation profile consumer coverage",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_board_presentation_unity_boundary.mjs",
       "purpose": "board presentation unity boundary",
       "suite": "existing",
