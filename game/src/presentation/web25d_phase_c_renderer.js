@@ -106,6 +106,34 @@ export function resolveWeb25DProductionMarker(cell = {}) {
     });
 }
 
+export function resolveWeb25DProductionMarkerMetrics({
+    tileWidth = 60,
+    amount = 1,
+    role = 'LAND_PRIMARY'
+} = {}) {
+    const normalizedTileWidth = Number.isFinite(tileWidth) && tileWidth > 0 ? tileWidth : 60;
+    const digits = Math.max(1, String(Math.max(0, Math.trunc(Number(amount) || 0))).length);
+    const compact = normalizedTileWidth < 48;
+
+    if (compact) {
+        return Object.freeze({
+            compact: true,
+            width: Math.max(18, 14 + digits * 4),
+            height: 8,
+            fontSize: 8,
+            yOffset: 4
+        });
+    }
+
+    return Object.freeze({
+        compact: false,
+        width: Math.max(24, 16 + digits * 6),
+        height: 12,
+        fontSize: 10,
+        yOffset: role === 'SOCKET' ? 8 : 5
+    });
+}
+
 /**
  * Phase 2.5D-C/D visual layer.
  *
@@ -179,21 +207,29 @@ export class Web25DPhaseCRenderer extends Web25DCanvasRenderer {
         if (!marker) return;
 
         const ctx = this.ctx;
-        const width = Math.max(24, 16 + String(marker.amount).length * 6);
-        const x = Math.round(center.x - width / 2);
-        const y = Math.round(center.y + marker.yOffset);
+        const metrics = resolveWeb25DProductionMarkerMetrics({
+            tileWidth: this.projection?.tileWidth,
+            amount: marker.amount,
+            role: marker.role
+        });
+        const x = Math.round(center.x - metrics.width / 2);
+        const y = Math.round(center.y + metrics.yOffset);
 
-        ctx.fillStyle = 'rgba(31, 35, 31, 0.88)';
-        ctx.fillRect(x, y, width, 12);
-        ctx.strokeStyle = 'rgba(218, 224, 207, 0.70)';
-        ctx.lineWidth = 0.8;
-        ctx.strokeRect?.(x, y, width, 12);
+        ctx.fillStyle = metrics.compact
+            ? 'rgba(31, 35, 31, 0.92)'
+            : 'rgba(31, 35, 31, 0.88)';
+        ctx.fillRect(x, y, metrics.width, metrics.height);
+        ctx.strokeStyle = metrics.compact
+            ? 'rgba(218, 224, 207, 0.76)'
+            : 'rgba(218, 224, 207, 0.70)';
+        ctx.lineWidth = metrics.compact ? 0.7 : 0.8;
+        ctx.strokeRect?.(x, y, metrics.width, metrics.height);
 
-        ctx.font = '10px "Segoe UI Emoji", sans-serif';
+        ctx.font = `${metrics.fontSize}px "Segoe UI Emoji", sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = 'rgba(236, 238, 222, 0.92)';
-        ctx.fillText(marker.label, center.x, y + 6);
+        ctx.fillText(marker.label, center.x, y + metrics.height / 2);
     }
 
     // Compatibility alias for the earlier Phase C renderer surface.
