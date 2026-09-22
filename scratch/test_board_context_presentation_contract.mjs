@@ -37,7 +37,10 @@ check(!contextCss.includes("display: none !important")
 "board context styling avoids migration-only forced display overrides");
 check(contextCss.includes("trial-route-cell")
     && contextCss.includes("trial-interception-candidate")
-    && contextCss.includes("trial-battle-active"),
+    && contextCss.includes("trial-battle-pending")
+    && contextCss.includes("trial-battle-active")
+    && contextCss.includes("trial-battle-resolved")
+    && contextCss.includes("trial-battle-current"),
 "Trial spatial semantics remain eligible for board-context emphasis");
 
 console.log(`Board presentation context: ${passed}/${passed} PASS`);
