@@ -26,8 +26,8 @@ export const TRIAL_VISUAL_CLASSES = Object.freeze([
 
 export function resolveTrialDefenseAllocationBadge(trial) {
     const source = trial?.battleMarker || trial?.plannedIntercept || null;
-    const amount = Number(source?.defenseAllocation);
-    if (!source?.cell && !trial?.battleMarker && !trial?.plannedIntercept) return null;
+    if (!source) return null;
+    const amount = Number(source.defenseAllocation);
     if (!Number.isFinite(amount) || amount <= 0) return null;
 
     return Object.freeze({
