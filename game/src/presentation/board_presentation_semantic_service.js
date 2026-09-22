@@ -25,6 +25,53 @@ function normalizeLinkEntries(mergeLinks) {
     return [];
 }
 
+const DISPLAY_GROUP_KIND = Object.freeze({
+    ZONE: 'ZONE',
+    PLACEMENT: 'PLACEMENT'
+});
+
+function resolveDisplayGroup(facts) {
+    const zoneId = normalizeGroupId(facts?.mergeGroupId);
+    if (zoneId) return Object.freeze({ kind: DISPLAY_GROUP_KIND.ZONE, id: zoneId });
+
+    const placementGroupId = normalizeGroupId(facts?.placementGroupId);
+    if (placementGroupId) {
+        return Object.freeze({ kind: DISPLAY_GROUP_KIND.PLACEMENT, id: placementGroupId });
+    }
+
+    return null;
+}
+
+function cellMatchesDisplayGroup(cell, group) {
+    if (!cell || !group) return false;
+
+    if (group.kind === DISPLAY_GROUP_KIND.ZONE) {
+        return normalizeGroupId(cell.mergeGroupId) === group.id;
+    }
+
+    // A cell that already belongs to a Zone is presented by that Zone and must
+    // not also be aggregated through its original placementGroup.
+    return normalizeGroupId(cell.mergeGroupId) === null
+        && normalizeGroupId(cell.placementGroupId) === group.id;
+}
+
+function findPlacementDisplayOwner(state, placementGroupId) {
+    const targetId = normalizeGroupId(placementGroupId);
+    if (!targetId) return null;
+
+    const grid = state?.grid || [];
+    let fallback = null;
+    for (let r = 0; r < grid.length; r++) {
+        for (let c = 0; c < (grid[r]?.length || 0); c++) {
+            const cell = grid[r][c];
+            if (!cell?.placed || normalizeGroupId(cell.placementGroupId) !== targetId) continue;
+            if (!fallback) fallback = { r, c, cell };
+            if (!cell.socketResource) return { r, c, cell };
+        }
+    }
+    return fallback;
+}
+
 function pickPrimaryYield(terrainId, production) {
     const food = production.food || 0;
     const wood = production.wood || 0;
@@ -103,16 +150,14 @@ export function resolveBoardDisplayRole(state, facts) {
     if (!facts?.placed || facts?.isHQ) return null;
     if (facts.socketResource) return DISPLAY_ROLE.SOCKET;
 
-    const activeGroupId = normalizeGroupId(facts.mergeGroupId || facts.placementGroupId);
-    if (!activeGroupId) return DISPLAY_ROLE.LAND_PRIMARY;
+    const activeGroup = resolveDisplayGroup(facts);
+    if (!activeGroup) return DISPLAY_ROLE.LAND_PRIMARY;
 
     const grid = state?.grid || [];
     for (let r = 0; r < grid.length; r++) {
         for (let c = 0; c < (grid[r]?.length || 0); c++) {
             const cell = grid[r][c];
-            if (!cell) continue;
-            const cellGroupId = normalizeGroupId(cell.mergeGroupId || cell.placementGroupId);
-            if (cellGroupId !== activeGroupId || cell.socketResource) continue;
+            if (!cellMatchesDisplayGroup(cell, activeGroup) || cell.socketResource) continue;
             return r === facts.r && c === facts.c
                 ? DISPLAY_ROLE.LAND_PRIMARY
                 : DISPLAY_ROLE.CLEAN;
@@ -137,26 +182,26 @@ export function resolveBoardDisplayProduction(state, facts, cellViewDataService)
         }
     }
 
-    const activeGroupId = normalizeGroupId(facts.mergeGroupId || facts.placementGroupId);
+    const activeGroup = resolveDisplayGroup(facts);
     const production = { food: 0, wood: 0, defense: 0, mystic: 0 };
 
-    if (activeGroupId) {
+    if (activeGroup) {
         const grid = state?.grid || [];
         const placementGroups = new Set();
         for (let r = 0; r < grid.length; r++) {
             for (let c = 0; c < (grid[r]?.length || 0); c++) {
                 const cell = grid[r][c];
                 if (!cell?.placed) continue;
-                const matchesGroup = normalizeGroupId(cell.mergeGroupId) === activeGroupId
-                    || normalizeGroupId(cell.placementGroupId) === activeGroupId;
-                if (!matchesGroup) continue;
+                if (!cellMatchesDisplayGroup(cell, activeGroup)) continue;
                 if (cell.placementGroupId != null) placementGroups.add(String(cell.placementGroupId));
                 addNonSocketProduction(production, cellViewDataService.getCellViewData(state, r, c));
             }
         }
 
         const sourceCell = state?.grid?.[facts.r]?.[facts.c];
-        if (sourceCell?.merged && facts.mergeGroupId != null) {
+        if (activeGroup.kind === DISPLAY_GROUP_KIND.ZONE
+            && sourceCell?.merged
+            && facts.mergeGroupId != null) {
             const group = state?.mergedBlocks?.[facts.mergeGroupId];
             const multiplier = group?.yieldMultiplier || 1.20;
             production.food = Math.floor(production.food * multiplier);
@@ -168,6 +213,9 @@ export function resolveBoardDisplayProduction(state, facts, cellViewDataService)
         // Block-owned output is not a cell/Zone output. Add it once per
         // placementGroup after Zone multipliers so display matches settlement.
         for (const placementGroupId of placementGroups) {
+            const owner = findPlacementDisplayOwner(state, placementGroupId);
+            if (!owner || !cellMatchesDisplayGroup(owner.cell, activeGroup)) continue;
+
             const blockProduction = resolvePlacedBlockProduction(state, placementGroupId);
             if (!blockProduction.defined) continue;
             production.food += blockProduction.yields.food;
