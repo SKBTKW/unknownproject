@@ -350,10 +350,12 @@ export class Web25DPhaseCRenderer extends Web25DCanvasRenderer {
         ctx.fillStyle = 'rgba(255, 219, 126, 0.99)';
         ctx.fill();
 
+        ctx.fillStyle = 'rgba(255, 191, 91, 0.78)';
         ctx.beginPath();
         ctx.arc(center.x + 5, floorY - 13, 1.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
         ctx.arc(center.x - 4, floorY - 16, 1, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255, 191, 91, 0.78)';
         ctx.fill();
     }
 
