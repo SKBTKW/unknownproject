@@ -1,5 +1,32 @@
 import { resolveWeb25DElevationPixels } from './web25d_canvas_renderer.js';
+import { BOARD_VISIBILITY } from './board_presentation_profile.js';
 import { resolveTrialBattleMarkerState } from './trial_board_semantic_data.js';
+
+export function resolveWeb25DTrialOverlayAlpha(visibility) {
+    switch (visibility) {
+        case BOARD_VISIBILITY.HIDDEN:
+            return 0;
+        case BOARD_VISIBILITY.SUPPRESSED:
+            return 0.24;
+        case BOARD_VISIBILITY.SECONDARY:
+            return 0.55;
+        case BOARD_VISIBILITY.PRIMARY:
+        case BOARD_VISIBILITY.VISIBLE:
+        default:
+            return 1;
+    }
+}
+
+function withOverlayAlpha(ctx, alpha, draw) {
+    if (!ctx || typeof draw !== 'function' || !Number.isFinite(alpha) || alpha <= 0) return;
+    const previous = Number.isFinite(ctx.globalAlpha) ? ctx.globalAlpha : 1;
+    ctx.globalAlpha = previous * Math.min(1, alpha);
+    try {
+        draw();
+    } finally {
+        ctx.globalAlpha = previous;
+    }
+}
 
 function drawDiamond(ctx, center, halfW, halfH) {
     ctx.beginPath();
@@ -85,7 +112,8 @@ export function resolveWeb25DTrialRouteSelectors({
     readModel
 } = {}) {
     const trial = readModel?.trial;
-    if (!projection || !trial?.available) return Object.freeze([]);
+    const entryAlpha = resolveWeb25DTrialOverlayAlpha(readModel?.profile?.invasionEntry);
+    if (!projection || !trial?.available || entryAlpha <= 0) return Object.freeze([]);
 
     const selectors = [];
     for (const route of trial.routes || []) {
@@ -223,6 +251,12 @@ export function drawWeb25DTrialOverlay({ ctx, projection, readModel } = {}) {
     const trial = readModel?.trial;
     if (!ctx || !projection || !trial?.available) return;
 
+    const profile = readModel?.profile || {};
+    const routeAlpha = resolveWeb25DTrialOverlayAlpha(profile.trialRoutes);
+    const entryAlpha = resolveWeb25DTrialOverlayAlpha(profile.invasionEntry);
+    const interceptionAlpha = resolveWeb25DTrialOverlayAlpha(profile.interception);
+    const battleAlpha = resolveWeb25DTrialOverlayAlpha(profile.battleMarkers);
+
     const routes = trial.routes || [];
     const route = trial.activeRouteId != null
         ? routes.find(item => item?.routeId === trial.activeRouteId)
@@ -230,7 +264,9 @@ export function drawWeb25DTrialOverlay({ ctx, projection, readModel } = {}) {
 
     if (route?.cells?.length) {
         const points = route.cells.map(cell => projectTrialCell(readModel, projection, cell));
-        if (points.length > 1) {
+
+        withOverlayAlpha(ctx, routeAlpha, () => {
+            if (points.length <= 1) return;
             ctx.beginPath();
             ctx.moveTo(points[0].x, points[0].y);
             for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
@@ -246,88 +282,96 @@ export function drawWeb25DTrialOverlay({ ctx, projection, readModel } = {}) {
             ctx.stroke();
 
             for (let i = 0; i < points.length - 1; i++) drawRouteDirection(ctx, points[i], points[i + 1]);
-        }
+        });
 
         const entry = route.entryCell || route.cells[0];
         if (entry) {
-            const center = points[0] || projectTrialCell(readModel, projection, entry);
-            drawDiamond(ctx, center, 10, 6);
-            ctx.fillStyle = 'rgba(169, 48, 38, 0.16)';
-            ctx.fill();
-            ctx.strokeStyle = 'rgba(255, 145, 110, 0.96)';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            const vector = entryVector(route.entrySide);
-            if (vector) {
-                ctx.beginPath();
-                ctx.moveTo(center.x + vector.x * 22, center.y + vector.y * 14);
-                ctx.lineTo(center.x + vector.x * 8, center.y + vector.y * 5);
-                ctx.strokeStyle = 'rgba(255, 158, 118, 0.88)';
+            withOverlayAlpha(ctx, entryAlpha, () => {
+                const center = points[0] || projectTrialCell(readModel, projection, entry);
+                drawDiamond(ctx, center, 10, 6);
+                ctx.fillStyle = 'rgba(169, 48, 38, 0.16)';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255, 145, 110, 0.96)';
                 ctx.lineWidth = 2;
                 ctx.stroke();
-            }
+
+                const vector = entryVector(route.entrySide);
+                if (vector) {
+                    ctx.beginPath();
+                    ctx.moveTo(center.x + vector.x * 22, center.y + vector.y * 14);
+                    ctx.lineTo(center.x + vector.x * 8, center.y + vector.y * 5);
+                    ctx.strokeStyle = 'rgba(255, 158, 118, 0.88)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            });
         }
     }
 
     const selected = trial.selectedInterceptCell || null;
     const hovered = trial.hoveredInterceptCell || null;
 
-    for (const item of trial.interceptionCandidates || []) {
-        const visual = resolveWeb25DTrialCandidateVisual(item, { selected, hovered });
-        if (!visual) continue;
+    withOverlayAlpha(ctx, interceptionAlpha, () => {
+        for (const item of trial.interceptionCandidates || []) {
+            const visual = resolveWeb25DTrialCandidateVisual(item, { selected, hovered });
+            if (!visual) continue;
 
-        const center = projectTrialCell(readModel, projection, item.cell);
-        drawDiamond(ctx, center, projection.halfW - 5, projection.halfH - 3);
-        ctx.fillStyle = visual.fillStyle;
-        ctx.fill();
-        ctx.strokeStyle = visual.strokeStyle;
-        ctx.lineWidth = visual.lineWidth;
-        ctx.stroke();
-    }
+            const center = projectTrialCell(readModel, projection, item.cell);
+            drawDiamond(ctx, center, projection.halfW - 5, projection.halfH - 3);
+            ctx.fillStyle = visual.fillStyle;
+            ctx.fill();
+            ctx.strokeStyle = visual.strokeStyle;
+            ctx.lineWidth = visual.lineWidth;
+            ctx.stroke();
+        }
 
-    for (const item of trial.plannedIntercepts || []) {
-        const visual = resolveWeb25DPlannedInterceptVisual(item, {
-            activeRouteId: trial.activeRouteId
-        });
-        if (!visual) continue;
+        for (const item of trial.plannedIntercepts || []) {
+            const visual = resolveWeb25DPlannedInterceptVisual(item, {
+                activeRouteId: trial.activeRouteId
+            });
+            if (!visual) continue;
 
-        const center = projectTrialCell(readModel, projection, item.cell);
-        drawDiamond(ctx, center, visual.halfW, visual.halfH);
-        ctx.fillStyle = visual.fillStyle;
-        ctx.fill();
-        ctx.strokeStyle = visual.strokeStyle;
-        ctx.lineWidth = visual.lineWidth;
-        ctx.stroke();
-    }
+            const center = projectTrialCell(readModel, projection, item.cell);
+            drawDiamond(ctx, center, visual.halfW, visual.halfH);
+            ctx.fillStyle = visual.fillStyle;
+            ctx.fill();
+            ctx.strokeStyle = visual.strokeStyle;
+            ctx.lineWidth = visual.lineWidth;
+            ctx.stroke();
+        }
+    });
 
-    for (const marker of trial.battleMarkers || []) {
-        const visual = resolveWeb25DBattleMarkerVisual(marker);
-        if (!visual) continue;
+    withOverlayAlpha(ctx, battleAlpha, () => {
+        for (const marker of trial.battleMarkers || []) {
+            const visual = resolveWeb25DBattleMarkerVisual(marker);
+            if (!visual) continue;
 
-        const center = projectTrialCell(readModel, projection, marker.cell);
-        ctx.beginPath();
-        ctx.arc(center.x, center.y - 4, visual.radius, 0, Math.PI * 2);
-        ctx.fillStyle = visual.fillStyle;
-        ctx.fill();
-        ctx.strokeStyle = visual.strokeStyle;
-        ctx.lineWidth = visual.lineWidth;
-        ctx.stroke();
-    }
+            const center = projectTrialCell(readModel, projection, marker.cell);
+            ctx.beginPath();
+            ctx.arc(center.x, center.y - 4, visual.radius, 0, Math.PI * 2);
+            ctx.fillStyle = visual.fillStyle;
+            ctx.fill();
+            ctx.strokeStyle = visual.strokeStyle;
+            ctx.lineWidth = visual.lineWidth;
+            ctx.stroke();
+        }
+    });
 
-    for (const selector of resolveWeb25DTrialRouteSelectors({ projection, readModel })) {
-        ctx.beginPath();
-        ctx.arc(selector.center.x, selector.center.y, selector.radius, 0, Math.PI * 2);
-        ctx.fillStyle = selector.isActive
-            ? 'rgba(255, 185, 137, 0.96)'
-            : 'rgba(169, 48, 38, 0.72)';
-        ctx.fill();
-        ctx.strokeStyle = selector.isActive
-            ? 'rgba(255, 238, 217, 0.98)'
-            : 'rgba(255, 158, 118, 0.86)';
-        ctx.lineWidth = selector.isActive ? 2 : 1.2;
-        ctx.stroke();
-    }
+    withOverlayAlpha(ctx, entryAlpha, () => {
+        for (const selector of resolveWeb25DTrialRouteSelectors({ projection, readModel })) {
+            ctx.beginPath();
+            ctx.arc(selector.center.x, selector.center.y, selector.radius, 0, Math.PI * 2);
+            ctx.fillStyle = selector.isActive
+                ? 'rgba(255, 185, 137, 0.96)'
+                : 'rgba(169, 48, 38, 0.72)';
+            ctx.fill();
+            ctx.strokeStyle = selector.isActive
+                ? 'rgba(255, 238, 217, 0.98)'
+                : 'rgba(255, 158, 118, 0.86)';
+            ctx.lineWidth = selector.isActive ? 2 : 1.2;
+            ctx.stroke();
+        }
+    });
 }
 
 export default drawWeb25DTrialOverlay;
