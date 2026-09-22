@@ -1,6 +1,7 @@
 import { BoardGridComponent as LegacyBoardGridComponent } from './board_grid_component.js';
 import { BOARD_CONTEXT_MODES } from '../presentation/board_presentation_state.js';
 import { resolveTrialBattleMarkerState } from '../presentation/trial_board_semantic_data.js';
+import { resolveTrialTacticalEffectGlyph } from '../presentation/trial_tactical_effect_semantic.js';
 import { applyBoardGroupJoinClasses } from './board_presentation_2d_edge_adapter.js';
 import { BOARD_INPUT_COMMANDS } from '../presentation/board_input_contract.js';
 import {
@@ -23,6 +24,23 @@ export const TRIAL_VISUAL_CLASSES = Object.freeze([
     'trial-battle-resolved',
     'trial-battle-current'
 ]);
+
+export function resolveTrialTacticalEffectBadges(effects = []) {
+    const seen = new Set();
+    const badges = [];
+    for (const effect of effects || []) {
+        if (!effect?.effectId || seen.has(effect.effectId)) continue;
+        seen.add(effect.effectId);
+        badges.push(Object.freeze({
+            effectId: effect.effectId,
+            glyph: resolveTrialTacticalEffectGlyph(effect.effectId),
+            phase: effect.phase || 'AVAILABLE',
+            polarity: effect.polarity || 'NEUTRAL'
+        }));
+        if (badges.length >= 2) break;
+    }
+    return Object.freeze(badges);
+}
 
 export function resolveTrialDefenseAllocationBadge(trial) {
     const source = trial?.battleMarker || trial?.plannedIntercept || null;
@@ -128,7 +146,8 @@ export class BoardPresentationGridComponent extends LegacyBoardGridComponent {
             ['invasionEntry', 'data-board-invasion-entry-visibility'],
             ['interception', 'data-board-interception-visibility'],
             ['defenseAllocation', 'data-board-defense-allocation-visibility'],
-            ['battleMarkers', 'data-board-battle-markers-visibility']
+            ['battleMarkers', 'data-board-battle-markers-visibility'],
+            ['tacticalEffects', 'data-board-tactical-effects-visibility']
         ];
         for (const [key, attribute] of visibilityAttributes) {
             if (profile[key]) boardEl.setAttribute(attribute, profile[key]);
@@ -143,6 +162,7 @@ export class BoardPresentationGridComponent extends LegacyBoardGridComponent {
             const interaction = cell?.interaction || null;
             const trial = cell?.trial || null;
             cellEl.querySelector?.('.trial-defense-allocation-badge')?.remove?.();
+            cellEl.querySelector?.('.trial-tactical-effect-stack')?.remove?.();
             applyBoardGroupJoinClasses(cellEl, cell?.edges);
             cellEl.classList.toggle('board-logical-hover', !isTrialContext && Boolean(interaction?.hovered));
             cellEl.classList.toggle('board-logical-focus', !isTrialContext && Boolean(interaction?.focused));
@@ -175,6 +195,24 @@ export class BoardPresentationGridComponent extends LegacyBoardGridComponent {
                 badgeEl.textContent = `🛡️${defenseBadge.amount}`;
                 badgeEl.setAttribute('aria-hidden', 'true');
                 cellEl.appendChild(badgeEl);
+            }
+
+            const tacticalBadges = resolveTrialTacticalEffectBadges(trial?.tacticalEffects);
+            if (tacticalBadges.length > 0) {
+                const stackEl = document.createElement('span');
+                stackEl.className = 'trial-tactical-effect-stack';
+                stackEl.setAttribute('aria-hidden', 'true');
+                for (const badge of tacticalBadges) {
+                    const effectEl = document.createElement('span');
+                    effectEl.className = [
+                        'trial-tactical-effect-badge',
+                        `is-${String(badge.phase).toLowerCase()}`,
+                        `is-${String(badge.polarity).toLowerCase()}`
+                    ].join(' ');
+                    effectEl.textContent = badge.glyph;
+                    stackEl.appendChild(effectEl);
+                }
+                cellEl.appendChild(stackEl);
             }
 
             if (trial?.route?.routeDirection) cellEl.setAttribute('data-trial-direction', trial.route.routeDirection);
