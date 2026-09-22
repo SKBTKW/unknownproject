@@ -6,9 +6,14 @@ import { COMMAND_CARDS_MASTER } from '../data/command_cards_data.js';
 import { ConditionEvaluator } from '../core/condition_evaluator.js';
 import { CardCycleSystem, CYCLE_POLICIES } from './card_cycle_system.js';
 import {
+    getPlacementAttributeTerrainId,
     hasMultiplePlacementTerrainAttributes,
     normalizePlacementAnchor,
-    resolvePlacementGeometry
+    resolvePlacementAttributeCells,
+    resolvePlacementGeometry,
+    resolvePlacementShape,
+    rotatePlacementClockwise,
+    validatePlacementAttributeMap
 } from '../core/placement_geometry.js';
 import { isMultiAttributeProductionResolved } from '../core/land_production_contract.js';
 import { isTrueMergedCell } from '../core/merge_rules.js';
@@ -120,6 +125,21 @@ class DeckManager {
         const cardStage = c.minStage || 1;
         if (cardStage > stageNum) return false;
 
+        const explicitAttributeCells = resolvePlacementAttributeCells(c);
+        if (explicitAttributeCells) {
+            const attributeValidation = validatePlacementAttributeMap(
+                resolvePlacementShape(c),
+                explicitAttributeCells
+            );
+            if (!attributeValidation.valid) return false;
+
+            const hasUnknownTerrain = explicitAttributeCells.some(cell => {
+                const terrainId = getPlacementAttributeTerrainId(cell);
+                return !terrainId || !LAND_SYSTEM_DATA?.terrains?.[terrainId];
+            });
+            if (hasUnknownTerrain) return false;
+        }
+
         // Multi-Attribute cards must not enter live Offering until their
         // Production contract is explicitly finalized.
         if (hasMultiplePlacementTerrainAttributes(c) && !isMultiAttributeProductionResolved(c)) {
@@ -171,7 +191,8 @@ class DeckManager {
             }
         }
 
-        if (c.reqE2HillsOnBoard && h2Count < c.reqE2HillsOnBoard) return false;
+        const requiredE2Hills = this._requiredE2Hills(c);
+        if (requiredE2Hills > 0 && h2Count < requiredE2Hills) return false;
 
         // ⛰️ 本営周囲に丘陵・山岳が1個以上あることを要求
         if (c.reqHillOrMountainAroundHQ && this.state) {
@@ -519,9 +540,12 @@ class DeckManager {
     drawSingleCard(excludedCardIds = [], options = {}) {
         const master = this.getLandCardMaster();
         const stageNum = (this.state && this.state.stage) ? (typeof this.state.stage === 'object' ? (this.state.stage.id || 1) : this.state.stage) : 1;
-        const h2Count = (this.state && typeof this.state.countE2HillsOnBoard === 'function') ? this.state.countE2HillsOnBoard() : 0;
+        const h2Count = this._countE2HillsOnBoard();
 
-        let eligible = master.filter(c => this.isCardEligible(c, stageNum, h2Count, options));
+        let eligible = master.filter(c =>
+            this.isCardEligible(c, stageNum, h2Count, options)
+            && this._passesOfferingPlaceabilityGate(c, options.placeabilityCache || null)
+        );
         if (typeof options.candidateFilter === "function") {
             eligible = eligible.filter(c => options.candidateFilter(c));
         }
@@ -586,36 +610,102 @@ class DeckManager {
         return card?.cardMasterId || definition?.id || card?.id || null;
     }
 
+    _requiredE2Hills(card) {
+        const raw = card?.reqE2HillsOnBoard ?? card?.reqE2 ?? 0;
+        const value = Number(raw);
+        return Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : 0;
+    }
+
+    _countE2HillsOnBoard() {
+        if (!this.state) return 0;
+        if (typeof this.state.countE2HillsOnBoard === "function") {
+            return this.state.countE2HillsOnBoard();
+        }
+        if (this.state.gridEngine && typeof this.state.gridEngine.countE2HillsOnBoard === "function") {
+            return this.state.gridEngine.countE2HillsOnBoard();
+        }
+
+        let count = 0;
+        for (const row of this.state.grid || []) {
+            for (const cell of row || []) {
+                const terrainId = cell?.terrain?.terrainId || cell?.terrain?.id || null;
+                if (cell?.placed && terrainId === "E2_HILL") count += 1;
+            }
+        }
+        return count;
+    }
+
     _isCardPlaceableNow(card) {
         const definition = this._cardDefinition(card);
         if (!definition || definition.category !== "LAND") return false;
         if (!this.state?.grid || typeof this.state.canPlaceShape !== "function") return false;
 
-        for (let r = 0; r < this.state.grid.length; r++) {
-            for (let c = 0; c < this.state.grid[r].length; c++) {
-                try {
-                    const placement = resolvePlacementGeometry(definition, r, c);
-                    const result = this.state.canPlaceShape(
-                        placement.startR,
-                        placement.startC,
-                        placement.shape,
-                        definition,
-                        placement.attributeCells
-                    );
-                    if (result?.can === true) return true;
-                } catch {
-                    // Malformed/non-placeable candidates do not satisfy placement guarantees.
+        let shape = resolvePlacementShape(definition);
+        let anchor = normalizePlacementAnchor(
+            definition.currentAnchor
+            || definition.anchor
+            || definition.terrain?.anchor,
+            shape
+        );
+        let attributeCells = resolvePlacementAttributeCells(definition);
+
+        // Offering eligibility means "placeable after normal player rotation",
+        // not merely placeable in the authored/default orientation.
+        for (let rotation = 0; rotation < 4; rotation++) {
+            for (let r = 0; r < this.state.grid.length; r++) {
+                for (let c = 0; c < this.state.grid[r].length; c++) {
+                    try {
+                        const result = this.state.canPlaceShape(
+                            r - anchor.r,
+                            c - anchor.c,
+                            shape,
+                            definition,
+                            attributeCells
+                        );
+                        if (result?.can === true) return true;
+                    } catch {
+                        // Malformed/non-placeable candidates do not satisfy placement guarantees.
+                    }
                 }
             }
+
+            const rotated = rotatePlacementClockwise(shape, anchor, attributeCells);
+            shape = rotated.shape;
+            anchor = rotated.anchor;
+            attributeCells = rotated.attributeCells;
         }
         return false;
     }
 
-    _matchesMinimumRequirement(card, requirement) {
+    _passesOfferingPlaceabilityGate(card, placeabilityCache = null) {
+        const definition = this._cardDefinition(card);
+        if (!definition || definition.category !== "LAND") return true;
+
+        // Live gameplay must never offer a LAND card with no legal placement.
+        // Isolated tests / pre-attach construction may not own the placement
+        // boundary yet; preserve legacy eligibility until it is evaluable.
+        if (!this.state?.grid || typeof this.state.canPlaceShape !== "function") return true;
+
+        if (placeabilityCache instanceof WeakMap && typeof definition === "object") {
+            if (placeabilityCache.has(definition)) {
+                return placeabilityCache.get(definition) === true;
+            }
+            const placeable = this._isCardPlaceableNow(definition);
+            placeabilityCache.set(definition, placeable);
+            return placeable;
+        }
+
+        return this._isCardPlaceableNow(definition);
+    }
+
+    _matchesMinimumRequirement(card, requirement, placeabilityCache = null) {
         const definition = this._cardDefinition(card);
         if (!definition || !requirement || typeof requirement !== "object") return false;
         if (requirement.category && definition.category !== requirement.category) return false;
-        if (requirement.requirePlaceable === true && !this._isCardPlaceableNow(definition)) return false;
+        if (
+            requirement.requirePlaceable === true
+            && !this._passesOfferingPlaceabilityGate(definition, placeabilityCache)
+        ) return false;
         return true;
     }
 
@@ -632,21 +722,27 @@ class DeckManager {
             : [];
     }
 
-    _enforceMinimumRequirements(cards, excludedCardIds, requirements) {
+    _enforceMinimumRequirements(cards, excludedCardIds, requirements, { placeabilityCache = null } = {}) {
         if (!Array.isArray(cards) || cards.length === 0 || !Array.isArray(requirements) || requirements.length === 0) return [];
 
         const applied = [];
         for (const requirement of requirements) {
             const minCount = Math.max(1, Math.trunc(requirement.minCount ?? 1));
-            let matchingCount = cards.filter(card => this._matchesMinimumRequirement(card, requirement)).length;
+            let matchingCount = cards.filter(card =>
+                this._matchesMinimumRequirement(card, requirement, placeabilityCache)
+            ).length;
 
             while (matchingCount < minCount) {
                 const candidate = this.drawSingleCard(excludedCardIds, {
-                    candidateFilter: card => this._matchesMinimumRequirement(card, requirement)
+                    candidateFilter: card =>
+                        this._matchesMinimumRequirement(card, requirement, placeabilityCache),
+                    placeabilityCache
                 });
                 if (!candidate) break;
 
-                const replaceIndex = cards.findIndex(card => !this._matchesMinimumRequirement(card, requirement));
+                const replaceIndex = cards.findIndex(card =>
+                    !this._matchesMinimumRequirement(card, requirement, placeabilityCache)
+                );
                 if (replaceIndex < 0) break;
 
                 const replacedId = this._cardId(cards[replaceIndex]);
@@ -691,10 +787,11 @@ class DeckManager {
         const currentTurn = (this.state && this.state.turn) ? this.state.turn : 1;
         const master = this.getLandCardMaster();
         const stageNum = (this.state && this.state.stage) ? (typeof this.state.stage === 'object' ? (this.state.stage.id || 1) : this.state.stage) : 1;
-        const h2Count = (this.state && typeof this.state.countE2HillsOnBoard === 'function') ? this.state.countE2HillsOnBoard() : 0;
+        const h2Count = this._countE2HillsOnBoard();
 
         const newCards = [];
         const excludedCardIds = [];
+        const placeabilityCache = new WeakMap();
 
         // 📥 保留スロットにあるカードを手札重複から除外
         if (this.state && this.state.reserveSlots) {
@@ -709,7 +806,7 @@ class DeckManager {
 
         // 段階 1: 通常抽選 (Universal ＆ Card-specific 適合 ＆ 非CD ＆ 非Hold)
         for (let i = 0; i < offeringSize; i++) {
-            const drawn = this.drawSingleCard(excludedCardIds);
+            const drawn = this.drawSingleCard(excludedCardIds, { placeabilityCache });
             if (drawn) {
                 newCards.push(drawn);
                 const cId = drawn.cardMasterId || (drawn.terrain ? drawn.terrain.id : null);
@@ -721,7 +818,8 @@ class DeckManager {
         if (newCards.length < offeringSize && this.cycleSystem) {
             const cdCandidates = master.filter(c => {
                 if (excludedCardIds.includes(c.id)) return false;
-                return this.isCardEligible(c, stageNum, h2Count, { ignoreCooldown: true });
+                return this.isCardEligible(c, stageNum, h2Count, { ignoreCooldown: true })
+                    && this._passesOfferingPlaceabilityGate(c, placeabilityCache);
             });
 
             while (newCards.length < offeringSize && cdCandidates.length > 0) {
@@ -740,6 +838,8 @@ class DeckManager {
             const baseLandPool = master.filter(c => {
                 if (excludedCardIds.includes(c.id)) return false;
                 if (hasMultiplePlacementTerrainAttributes(c) && !isMultiAttributeProductionResolved(c)) return false;
+                if (this._requiredE2Hills(c) > h2Count) return false;
+                if (!this._passesOfferingPlaceabilityGate(c, placeabilityCache)) return false;
                 const policy = c.cyclePolicy || (c.category === "LAND" ? CYCLE_POLICIES.LAND_STANDARD : CYCLE_POLICIES.RARITY);
                 return (policy === CYCLE_POLICIES.LAND_STANDARD || c.category === "LAND") && (c.minStage || 1) <= stageNum;
             });
@@ -784,7 +884,12 @@ class DeckManager {
         }
 
         const minimumRequirements = this._resolveMinimumRequirements(reason);
-        const appliedMinimumRequirements = this._enforceMinimumRequirements(newCards, excludedCardIds, minimumRequirements);
+        const appliedMinimumRequirements = this._enforceMinimumRequirements(
+            newCards,
+            excludedCardIds,
+            minimumRequirements,
+            { placeabilityCache }
+        );
         this.lastOfferingGeneration = Object.freeze({
             reason,
             requestedMinimums: minimumRequirements.length,
