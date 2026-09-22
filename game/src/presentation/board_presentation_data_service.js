@@ -28,6 +28,17 @@ function buildMarkedCellIndex(items) {
     return map;
 }
 
+function projectDefenseAllocation(item, disclose) {
+    if (!item) return item;
+    if (disclose) return item;
+    const { defenseAllocation: _hiddenDefenseAllocation, ...visible } = item;
+    return Object.freeze(visible);
+}
+
+function projectDefenseAllocations(items, disclose) {
+    return (items || []).map(item => projectDefenseAllocation(item, disclose));
+}
+
 export class BoardPresentationDataService {
     constructor({ cellViewDataService = null, semanticService = null } = {}) {
         this.cellViewDataService = cellViewDataService || new CellViewDataService();
@@ -53,6 +64,7 @@ export class BoardPresentationDataService {
         const trial = trialSemanticData || emptyTrialBoardSemanticData();
         const showRoutes = profile.trialRoutes !== "HIDDEN";
         const showInterception = profile.interception !== "HIDDEN";
+        const showDefenseAllocation = profile.defenseAllocation !== "HIDDEN";
         const showBattleMarkers = profile.battleMarkers !== "HIDDEN";
         const showTrialOperationalData = showRoutes || showInterception || showBattleMarkers;
 
@@ -66,10 +78,14 @@ export class BoardPresentationDataService {
                 showInterception ? [...(trial.interceptionCandidates || [])] : []
             ),
             plannedIntercepts: Object.freeze(
-                showInterception ? [...(trial.plannedIntercepts || [])] : []
+                showInterception
+                    ? projectDefenseAllocations(trial.plannedIntercepts, showDefenseAllocation)
+                    : []
             ),
             battleMarkers: Object.freeze(
-                showBattleMarkers ? [...(trial.battleMarkers || [])] : []
+                showBattleMarkers
+                    ? projectDefenseAllocations(trial.battleMarkers, showDefenseAllocation)
+                    : []
             ),
             enemyState: showTrialOperationalData ? trial.enemyState : null
         });
