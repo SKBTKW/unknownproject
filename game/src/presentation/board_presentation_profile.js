@@ -38,8 +38,8 @@ export const BOARD_PRESENTATION_PROFILES = Object.freeze({
     }),
     [BOARD_CONTEXT_MODES.TRIAL]: Object.freeze({
         terrain: BOARD_VISIBILITY.PRIMARY,
-        zones: BOARD_VISIBILITY.VISIBLE,
-        links: BOARD_VISIBILITY.VISIBLE,
+        zones: BOARD_VISIBILITY.SECONDARY,
+        links: BOARD_VISIBILITY.SECONDARY,
         roads: BOARD_VISIBILITY.VISIBLE,
         hq: BOARD_VISIBILITY.PRIMARY,
         yields: BOARD_VISIBILITY.SUPPRESSED,
