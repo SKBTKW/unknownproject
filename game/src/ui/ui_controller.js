@@ -285,6 +285,11 @@ class UIController {
     getActiveTrialRoute() {
         if (!this.trialPreviewConfig || !this.trialController.state) return null;
         const routes = this.trialController.state.routes || [];
+        const currentBattleRouteId = this.getCurrentTrialBattle?.()?.routeId ?? null;
+        if (currentBattleRouteId !== null) {
+            const currentBattleRoute = routes.find(route => route.id === currentBattleRouteId);
+            if (currentBattleRoute) return currentBattleRoute;
+        }
         const activeRouteId = this.trialPresentationState.activeEnemyRoute;
         if (activeRouteId !== null) {
             return routes.find(route => route.id === activeRouteId) || null;
@@ -527,6 +532,7 @@ class UIController {
 
     selectTrialRoute(routeId) {
         if (!this.trialPreviewConfig) return false;
+        if (this.getCurrentTrialBattle?.()) return false;
         this.acknowledgeFirstRunTrialRoute();
         this.trialPresentationState.setActiveEnemyRoute(routeId);
         this.trialPresentationState.clearHoveredCell();
@@ -804,6 +810,9 @@ class UIController {
             return result;
         }
         this.trialPresentationState.planningValidationErrors = [];
+        this.trialPresentationState.clearSelectedInterceptCell();
+        this.trialPresentationState.clearHoveredCell();
+        this.trialPresentationState.clearInterceptionPreview();
         this.recordFirstRunTrialTutorialEvent(FIRST_RUN_TRIAL_TUTORIAL_EVENTS.BATTLE_STARTED);
         this.render();
         return result;
