@@ -1,23 +1,39 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import {
     resolvePlacementGeometry,
-    rotatePlacementClockwise
+    rotatePlacementClockwise,
+    validatePlacementAttributeMap
 } from "../placement_geometry.js";
 import { serializeGameState } from "../state_serializer.js";
 import { hydrateGameState } from "../hydrate_game_state.js";
 import { GridEngine } from "../../systems/grid_engine.js";
+import { GameState } from "../../v2_unity_ready_main.js";
+import { ConditionEvaluator } from "../condition_evaluator.js";
 import { ProductionCalculator } from "../../systems/production_calculator.js";
 import { DefenseSystem } from "../../systems/defense_system.js";
+import { UndoLandSystem } from "../../systems/undo_land_system.js";
 import { CellViewDataService } from "../../services/cell_view_data_service.js";
 import { DeckManager } from "../../systems/deck_manager.js";
 import { LAND_CARDS_MASTER } from "../../data/land_cards_data.js";
+import {
+    LAND_SYSTEM_DATA,
+    isCanonicalTerrainId
+} from "../../data/land_system.js";
 import { PlacementPreviewResolver } from "../../presentation/placement_preview_resolver.js";
+import { drawWeb25DPlacementPreview } from "../../presentation/web25d_placement_preview_renderer.js";
+import { resolveWeb25DTerrainTopFill } from "../../presentation/web25d_canvas_renderer.js";
+import {
+    resolveBoardDisplayProduction,
+    resolveBoardDisplayRole
+} from "../../presentation/board_presentation_semantic_service.js";
 import {
     resolveLandCardCellTerrainId,
     resolveLandCardDisplayName,
     resolveLandCardRarity
 } from "../../presentation/land_card_presentation.js";
 import { TrialPlanningDraftService } from "../../trial/domain/trial_planning_draft_service.js";
+import { TrialTerrainEffectResolver } from "../../trial/systems/trial_terrain_effect_resolver.js";
 import { TRIAL_PLAN_REASONS } from "../../trial/domain/trial_types.js";
 import {
     LAND_PRODUCTION_SCOPE,
@@ -138,6 +154,10 @@ const actualMultiCards = [
     LAND_CARDS_MASTER.find(card => card.id === "CARD_MULTI_HILL_MOUNTAIN_1X2")
 ];
 
+const landSystemJson = JSON.parse(
+    fs.readFileSync(new URL("../../data/land_system.json", import.meta.url), "utf8")
+);
+
 {
     assert.ok(actualMultiCards.every(Boolean));
     assert.deepEqual(actualMultiCards.map(card => card.rarity), ["R", "R", "R"]);
@@ -146,6 +166,46 @@ const actualMultiCards = [
     assert.ok(actualMultiCards.every(card =>
         card.productionContract?.status === LAND_PRODUCTION_STATUS.UNRESOLVED
     ));
+    for (const card of actualMultiCards) {
+        const mapValidation = validatePlacementAttributeMap(card.shape, card.cells);
+        assert.equal(mapValidation.valid, true);
+        assert.ok(card.cells.every(cell => isCanonicalTerrainId(cell.terrainId)));
+    }
+
+    const referencedTerrainIds = new Set(
+        actualMultiCards.flatMap(card => card.cells.map(cell => cell.terrainId))
+    );
+    const semanticFields = [
+        "id",
+        "terrainId",
+        "nameKey",
+        "e",
+        "gl",
+        "category",
+        "zoneCategory",
+        "trialTerrainCategory",
+        "isSpecialBlock",
+        "isArtificialTerrain"
+    ];
+    for (const terrainId of referencedTerrainIds) {
+        const runtimeTerrain = LAND_SYSTEM_DATA.terrains[terrainId];
+        const jsonTerrain = landSystemJson.terrains?.[terrainId];
+        assert.ok(runtimeTerrain, `runtime canonical terrain missing: ${terrainId}`);
+        assert.ok(jsonTerrain, `json canonical terrain missing: ${terrainId}`);
+
+        for (const field of semanticFields) {
+            assert.deepEqual(
+                runtimeTerrain[field] ?? null,
+                jsonTerrain[field] ?? null,
+                `land_system.js/json semantic drift: ${terrainId}.${field}`
+            );
+        }
+        assert.deepEqual(
+            runtimeTerrain.baseYieldsPerTile || null,
+            jsonTerrain.baseYieldsPerTile || null,
+            `land_system.js/json yield drift: ${terrainId}`
+        );
+    }
 
     const fakeI18n = {
         t(key) {
@@ -163,6 +223,135 @@ const actualMultiCards = [
     assert.equal(resolveLandCardDisplayName({ terrain: actualMultiCards[1] }, fakeI18n), "草原（複数）");
     assert.equal(resolveLandCardDisplayName({ terrain: actualMultiCards[2] }, fakeI18n), "丘陵（複数）");
     assert.ok(actualMultiCards.every(card => resolveLandCardRarity({ terrain: card }) === "R"));
+
+    const staleOverlayCard = {
+        ...actualMultiCards[0],
+        cells: [
+            { ...actualMultiCards[0].cells[0], nameKey: "STALE_PLAINS_NAME" },
+            actualMultiCards[0].cells[1]
+        ]
+    };
+    assert.equal(
+        resolveLandCardDisplayName({ terrain: staleOverlayCard }, fakeI18n),
+        "草原（複数）"
+    );
+}
+
+{
+    for (const card of actualMultiCards) {
+        for (const cell of card.cells || []) {
+            assert.deepEqual(
+                Object.keys(cell).sort(),
+                ["c", "r", "terrainId"]
+            );
+        }
+    }
+
+    const state = createState();
+    placeExisting(state, 2, 0, PLAINS, "existing");
+    const grid = new GridEngine(state, {
+        gameplayRandom: { nextFloat: () => 0.99 },
+        deckManager: { consumeCardIfUnique() {} }
+    });
+
+    const plainsHill = actualMultiCards[0];
+    const placed = grid.placeShape(
+        1,
+        0,
+        plainsHill.shape,
+        plainsHill,
+        -1,
+        plainsHill.cells
+    );
+    assert.equal(placed.success, true);
+    assert.equal(state.placedBlockCount, 1);
+
+    const plainsCell = state.grid[1][0];
+    const hillCell = state.grid[1][1];
+    assert.equal(plainsCell.terrain.terrainId, "GL1_PLAINS");
+    assert.equal(plainsCell.terrain.nameKey, "TERRAIN_PLAINS");
+    assert.equal(plainsCell.terrain.e, 1);
+    assert.equal(plainsCell.terrain.gl, 1);
+    assert.equal(plainsCell.terrain.zoneCategory, "PLAINS");
+    assert.equal(plainsCell.terrain.trialTerrainCategory, "STANDARD_E1");
+    assert.equal(hillCell.terrain.terrainId, "E2_HILL");
+    assert.equal(hillCell.terrain.nameKey, "TERRAIN_HILL");
+    assert.equal(hillCell.terrain.e, 2);
+    assert.equal(hillCell.terrain.gl, 1);
+
+    assert.ok(plainsCell.mergeGroupId);
+    assert.notEqual(hillCell.mergeGroupId, plainsCell.mergeGroupId);
+    assert.equal(state.mergeLinks.size, 0);
+}
+
+{
+    // Socket resolution must use each occupied cell's actual terrain semantic,
+    // never the card representative terrain.
+    const previousSocketMaster = globalThis.SOCKET_RESOURCE_MASTER;
+    globalThis.SOCKET_RESOURCE_MASTER = [
+        {
+            id: "SOCKET_TEST_PLAINS",
+            nameKey: "SOCKET_TEST_PLAINS",
+            category: "TEST",
+            icon: "P",
+            reqTerrains: ["GL1_PLAINS"],
+            bonusYields: { food: 1, wood: 0, defense: 0, mystic: 0 }
+        },
+        {
+            id: "SOCKET_TEST_HILL",
+            nameKey: "SOCKET_TEST_HILL",
+            category: "TEST",
+            icon: "H",
+            reqTerrains: ["E2_HILL"],
+            bonusYields: { food: 0, wood: 1, defense: 0, mystic: 0 }
+        }
+    ];
+
+    try {
+        const state = createState();
+        state.grid[1][0].hasSocket = true;
+        state.grid[1][1].hasSocket = true;
+        placeExisting(state, 2, 0, PLAINS, "existing");
+
+        const grid = new GridEngine(state, {
+            gameplayRandom: { nextFloat: () => 0 },
+            deckManager: { consumeCardIfUnique() {} }
+        });
+        const plainsHill = actualMultiCards[0];
+        const placed = grid.placeShape(
+            1,
+            0,
+            plainsHill.shape,
+            plainsHill,
+            -1,
+            plainsHill.cells
+        );
+
+        assert.equal(placed.success, true);
+        assert.equal(state.grid[1][0].socketResource?.id, "SOCKET_TEST_PLAINS");
+        assert.equal(state.grid[1][1].socketResource?.id, "SOCKET_TEST_HILL");
+    } finally {
+        if (previousSocketMaster === undefined) {
+            delete globalThis.SOCKET_RESOURCE_MASTER;
+        } else {
+            globalThis.SOCKET_RESOURCE_MASTER = previousSocketMaster;
+        }
+    }
+}
+
+{
+    const state = createState();
+    const grid = new GridEngine(state);
+    const hillMountain = actualMultiCards[2];
+    const check = grid.canPlaceShape(
+        1,
+        1,
+        hillMountain.shape,
+        hillMountain,
+        hillMountain.cells
+    );
+    assert.equal(check.can, false);
+    assert.ok(check.reasons.includes("MOUNTAIN_NEAR_HQ_FORBIDDEN"));
 }
 
 {
@@ -211,6 +400,485 @@ const actualMultiCards = [
         ignoreCooldown: true,
         ignoreHold: true
     }), true);
+}
+
+{
+    const productionReadyMulti = {
+        ...actualMultiCards[0],
+        productionContract: {
+            status: LAND_PRODUCTION_STATUS.RESOLVED,
+            scope: LAND_PRODUCTION_SCOPE.CELL,
+            cellYields: [
+                { r: 0, c: 0, yields: { food: 3 } },
+                { r: 0, c: 1, yields: { wood: 2, defense: 1 } }
+            ]
+        }
+    };
+    const allowedUniform = LAND_CARDS_MASTER.find(card => card.id === "CARD_FOREST_1X1");
+    assert.ok(allowedUniform);
+
+    const makeOfferingState = () => {
+        const state = createState();
+        state.handOfferingSize = 1;
+        state.canPlaceShape = (_r, _c, _shape, definition, attributeCells) => {
+            if (definition?.id === productionReadyMulti.id) {
+                assert.ok(Array.isArray(attributeCells));
+                assert.equal(attributeCells.length, 2);
+                return { can: false, reasons: ["NO_LEGAL_MULTI_POSITION"] };
+            }
+            return { can: definition?.id === allowedUniform.id, reasons: [] };
+        };
+        return state;
+    };
+
+    // Stage 1: ordinary weighted draw.
+    {
+        const state = makeOfferingState();
+        const manager = new DeckManager(state, {
+            gameplayRandom: {
+                nextFloat: () => 0,
+                nextId: () => "placeability-stage1"
+            }
+        });
+        manager.getLandCardMaster = () => [productionReadyMulti, allowedUniform];
+        const drawn = manager.drawSingleCard([]);
+        assert.equal(drawn?.cardMasterId, allowedUniform.id);
+    }
+
+    // Stage 2: cooldown-relaxation fallback.
+    {
+        const state = makeOfferingState();
+        const manager = new DeckManager(state, {
+            gameplayRandom: {
+                nextFloat: () => 0,
+                nextId: () => "placeability-stage2"
+            }
+        });
+        manager.getLandCardMaster = () => [productionReadyMulti, allowedUniform];
+        manager.drawSingleCard = () => null;
+        manager.cycleSystem = {
+            findMinAvailableTurnCard(cards) {
+                assert.deepEqual(cards.map(card => card.id), [allowedUniform.id]);
+                return cards[0] || null;
+            },
+            registerOffering() {}
+        };
+        const offering = manager.generateOfferingCards();
+        assert.equal(offering.length, 1);
+        assert.equal(offering[0].cardMasterId, allowedUniform.id);
+    }
+
+    // Stage 3: final relaxed fallback.
+    {
+        const state = makeOfferingState();
+        const manager = new DeckManager(state, {
+            gameplayRandom: {
+                nextFloat: () => 0,
+                nextId: () => "placeability-stage3"
+            }
+        });
+        manager.getLandCardMaster = () => [productionReadyMulti, allowedUniform];
+        manager.drawSingleCard = () => null;
+        manager.cycleSystem = null;
+        const offering = manager.generateOfferingCards();
+        assert.equal(offering.length, 1);
+        assert.equal(offering[0].cardMasterId, allowedUniform.id);
+    }
+}
+
+{
+    const mountain = LAND_CARDS_MASTER.find(card => card.id === "CARD_MOUNTAIN_1X1");
+    assert.ok(mountain);
+    assert.equal(mountain.reqE2, 3);
+
+    const state = createState();
+    state.stage = { id: 2, size: state.stage.size };
+
+    state.grid[0][0] = createCell(0, 0, {
+        placed: true,
+        terrain: {
+            id: "CARD_HILL_1X1",
+            terrainId: "E2_HILL",
+            e: 2,
+            gl: 1
+        },
+        placementGroupId: "hill_normal_1"
+    });
+    state.grid[0][1] = createCell(0, 1, {
+        placed: true,
+        terrain: {
+            id: "CARD_HILL_1X2",
+            terrainId: "E2_HILL",
+            e: 2,
+            gl: 1
+        },
+        placementGroupId: "hill_normal_2"
+    });
+
+    const grid = new GridEngine(state);
+    assert.equal(grid.countE2HillsOnBoard(), 2);
+
+    // A Multi-Attribute hill cell contributes one hill tile, not one whole block.
+    state.grid[0][2] = createCell(0, 2, {
+        placed: true,
+        terrain: { ...HILL },
+        placementGroupId: "place_multi_hill"
+    });
+    assert.equal(grid.countE2HillsOnBoard(), 3);
+
+    const manager = new DeckManager(state, {
+        gameplayRandom: {
+            nextFloat: () => 0,
+            nextId: () => "mountain-gate"
+        }
+    });
+
+    assert.equal(manager.isCardEligible(mountain, 2, 2, { ignoreCooldown: true }), false);
+    assert.equal(manager.isCardEligible(mountain, 2, 3, { ignoreCooldown: true }), true);
+
+    // Stage-3 fallback must not bypass reqE2: 3.
+    const fallbackState = createState();
+    fallbackState.stage = { id: 2, size: fallbackState.stage.size };
+    fallbackState.handOfferingSize = 1;
+    fallbackState.canPlaceShape = () => ({ can: true, reasons: [] });
+
+    const blockedManager = new DeckManager(fallbackState, {
+        gameplayRandom: {
+            nextFloat: () => 0,
+            nextId: () => "mountain-fallback-blocked"
+        }
+    });
+    blockedManager.getLandCardMaster = () => [mountain];
+    blockedManager.drawSingleCard = () => null;
+    blockedManager.cycleSystem = null;
+
+    const blockedOffering = blockedManager.generateOfferingCards();
+    assert.equal(blockedOffering.length, 0);
+
+    fallbackState.countE2HillsOnBoard = () => 3;
+    const allowedManager = new DeckManager(fallbackState, {
+        gameplayRandom: {
+            nextFloat: () => 0,
+            nextId: () => "mountain-fallback-allowed"
+        }
+    });
+    allowedManager.getLandCardMaster = () => [mountain];
+    allowedManager.drawSingleCard = () => null;
+    allowedManager.cycleSystem = null;
+
+    const allowedOffering = allowedManager.generateOfferingCards();
+    assert.equal(allowedOffering.length, 1);
+    assert.equal(allowedOffering[0].cardMasterId, mountain.id);
+}
+
+{
+    const plains = LAND_CARDS_MASTER.find(card => card.id === "CARD_PLAINS_1X1");
+    assert.ok(plains);
+
+    const state = createState();
+    state.handOfferingSize = 1;
+    let placementChecks = 0;
+    state.canPlaceShape = () => {
+        placementChecks += 1;
+        return { can: true, reasons: [] };
+    };
+
+    const manager = new DeckManager(state, {
+        gameplayRandom: {
+            nextFloat: () => 0,
+            nextId: () => "minimum-cache"
+        },
+        offeringMinimumRequirementProvider: {
+            getMinimumRequirements() {
+                return [{
+                    id: "TEST_PLAYABLE_LAND",
+                    category: "LAND",
+                    minCount: 1,
+                    requirePlaceable: true
+                }];
+            }
+        }
+    });
+    manager.getLandCardMaster = () => [plains];
+    manager.cycleSystem = {
+        isInCooldown() { return false; },
+        registerOffering() {}
+    };
+
+    const offering = manager.generateOfferingCards({
+        reason: OFFERING_GENERATION_REASONS.INITIAL
+    });
+    assert.equal(offering.length, 1);
+    assert.equal(offering[0].cardMasterId, plains.id);
+    assert.equal(placementChecks, 1);
+    assert.equal(manager.lastOfferingGeneration.appliedMinimums.length, 0);
+}
+
+{
+    const wetland = LAND_CARDS_MASTER.find(card => card.id === "CARD_WETLAND_1X1");
+    const plains = LAND_CARDS_MASTER.find(card => card.id === "CARD_PLAINS_1X1");
+    assert.ok(wetland);
+    assert.ok(plains);
+
+    const state = createState();
+    state.handOfferingSize = 1;
+    const grid = new GridEngine(state, {
+        gameplayRandom: {
+            nextFloat: () => 0.99
+        },
+        deckManager: { consumeCardIfUnique() {} }
+    });
+    state.canPlaceShape = (...args) => grid.canPlaceShape(...args);
+
+    const manager = new DeckManager(state, {
+        gameplayRandom: {
+            nextFloat: () => 0,
+            nextId: () => "verse1-placeability"
+        }
+    });
+    manager.getLandCardMaster = () => [wetland, plains];
+
+    assert.equal(manager._isCardPlaceableNow(wetland), false);
+    assert.equal(manager._isCardPlaceableNow(plains), true);
+
+    const drawn = manager.drawSingleCard([]);
+    assert.equal(drawn?.cardMasterId, plains.id);
+}
+
+{
+    const previewCard = {
+        ...actualMultiCards[0],
+        id: "CARD_MULTI_PREVIEW_ROTATION_ONLY",
+        productionContract: {
+            status: LAND_PRODUCTION_STATUS.RESOLVED,
+            scope: LAND_PRODUCTION_SCOPE.CELL,
+            cellYields: [
+                { r: 0, c: 0, yields: { food: 3 } },
+                { r: 0, c: 1, yields: { wood: 2 } }
+            ]
+        }
+    };
+    const state = createState();
+    state.canPlaceShape = (_r, _c, shape, definition, attributeCells) => {
+        if (definition?.id !== previewCard.id) return { can: false, reasons: [] };
+        const vertical = shape.length === 2 && shape[0]?.length === 1;
+        if (!vertical) return { can: false, reasons: ["ROTATE_REQUIRED"] };
+        assert.deepEqual(
+            attributeCells.map(cell => [cell.r, cell.c, cell.terrainId]),
+            [
+                [0, 0, "GL1_PLAINS"],
+                [1, 0, "E2_HILL"]
+            ]
+        );
+        return { can: true, reasons: [] };
+    };
+
+    const resolver = new PlacementPreviewResolver();
+    const before = resolver.resolveCandidates(previewCard, state);
+    assert.equal(before.some(candidate => candidate.valid), false);
+
+    const rotated = rotatePlacementClockwise(
+        previewCard.shape,
+        previewCard.anchor,
+        previewCard.cells
+    );
+    const rotatedCard = {
+        ...previewCard,
+        currentShape: rotated.shape,
+        currentAnchor: rotated.anchor,
+        currentCells: rotated.attributeCells
+    };
+    const after = resolver.resolveCandidates(rotatedCard, state);
+    assert.equal(after.some(candidate => candidate.valid), true);
+}
+
+{
+    const rotatableMulti = {
+        ...actualMultiCards[0],
+        id: "CARD_MULTI_ROTATION_ONLY",
+        productionContract: {
+            status: LAND_PRODUCTION_STATUS.RESOLVED,
+            scope: LAND_PRODUCTION_SCOPE.CELL,
+            cellYields: [
+                { r: 0, c: 0, yields: { food: 3 } },
+                { r: 0, c: 1, yields: { wood: 2 } }
+            ]
+        }
+    };
+
+    const state = createState();
+    state.handOfferingSize = 1;
+    let sawDefaultOrientation = false;
+    let sawRotatedOrientation = false;
+    state.canPlaceShape = (_r, _c, shape, definition, attributeCells) => {
+        if (definition?.id !== rotatableMulti.id) return { can: false, reasons: [] };
+
+        const isHorizontal = shape.length === 1 && shape[0]?.length === 2;
+        const isVertical = shape.length === 2 && shape[0]?.length === 1;
+        if (isHorizontal) {
+            sawDefaultOrientation = true;
+            return { can: false, reasons: ["HORIZONTAL_BLOCKED"] };
+        }
+        if (isVertical) {
+            sawRotatedOrientation = true;
+            assert.deepEqual(
+                attributeCells.map(cell => [cell.r, cell.c, cell.terrainId]),
+                [
+                    [0, 0, "GL1_PLAINS"],
+                    [1, 0, "E2_HILL"]
+                ]
+            );
+            return { can: true, reasons: [] };
+        }
+        return { can: false, reasons: [] };
+    };
+
+    const manager = new DeckManager(state, {
+        gameplayRandom: {
+            nextFloat: () => 0,
+            nextId: () => "rotation-only"
+        }
+    });
+    manager.getLandCardMaster = () => [rotatableMulti];
+
+    const drawn = manager.drawSingleCard([]);
+    assert.equal(drawn?.cardMasterId, rotatableMulti.id);
+    assert.equal(sawDefaultOrientation, true);
+    assert.equal(sawRotatedOrientation, true);
+}
+
+{
+    // Even the final relaxed fallback must keep UNRESOLVED Multi-Attribute
+    // cards out of a live Offering.
+    const state = createState();
+    state.stage.id = 2;
+    const manager = new DeckManager(state, {
+        gameplayRandom: {
+            nextFloat: () => 0,
+            nextId: () => "fallback-card"
+        }
+    });
+
+    manager.drawSingleCard = () => null;
+    manager.cycleSystem = null;
+
+    const offering = manager.generateOfferingCards();
+    assert.equal(offering.length, state.handOfferingSize || 3);
+    assert.ok(offering.every(card =>
+        !String(card.cardMasterId || card.terrain?.id || "").startsWith("CARD_MULTI_")
+    ));
+}
+
+{
+    const missingCellCard = {
+        ...actualMultiCards[0],
+        cells: [
+            { r: 0, c: 0, terrainId: "GL1_PLAINS" }
+        ],
+        productionContract: {
+            status: LAND_PRODUCTION_STATUS.RESOLVED,
+            scope: LAND_PRODUCTION_SCOPE.CELL,
+            cellYields: [
+                { r: 0, c: 0, yields: { food: 3 } }
+            ]
+        }
+    };
+    const unknownTerrainCard = {
+        ...actualMultiCards[0],
+        cells: [
+            { r: 0, c: 0, terrainId: "GL1_PLAINS" },
+            { r: 0, c: 1, terrainId: "E2_HIL_TYPO" }
+        ],
+        productionContract: {
+            status: LAND_PRODUCTION_STATUS.RESOLVED,
+            scope: LAND_PRODUCTION_SCOPE.CELL,
+            cellYields: [
+                { r: 0, c: 0, yields: { food: 3 } },
+                { r: 0, c: 1, yields: { wood: 2 } }
+            ]
+        }
+    };
+
+    const duplicateCellCard = {
+        ...actualMultiCards[0],
+        cells: [
+            { r: 0, c: 0, terrainId: "GL1_PLAINS" },
+            { r: 0, c: 0, terrainId: "E2_HILL" }
+        ],
+        productionContract: {
+            status: LAND_PRODUCTION_STATUS.RESOLVED,
+            scope: LAND_PRODUCTION_SCOPE.CELL,
+            cellYields: [
+                { r: 0, c: 0, yields: { food: 3 } },
+                { r: 0, c: 1, yields: { wood: 2 } }
+            ]
+        }
+    };
+
+    const missingValidation = validatePlacementAttributeMap(
+        missingCellCard.shape,
+        missingCellCard.cells
+    );
+    assert.equal(missingValidation.valid, false);
+    assert.ok(missingValidation.reasons.includes("ATTRIBUTE_CELL_COVERAGE_MISSING"));
+
+    const duplicateValidation = validatePlacementAttributeMap(
+        duplicateCellCard.shape,
+        duplicateCellCard.cells
+    );
+    assert.equal(duplicateValidation.valid, false);
+    assert.ok(duplicateValidation.reasons.includes("ATTRIBUTE_CELL_DUPLICATE"));
+    assert.ok(duplicateValidation.reasons.includes("ATTRIBUTE_CELL_COVERAGE_MISSING"));
+
+    assert.equal(
+        normalizeProductionContract(missingCellCard).status,
+        LAND_PRODUCTION_STATUS.UNRESOLVED
+    );
+    assert.equal(
+        normalizeProductionContract(duplicateCellCard).status,
+        LAND_PRODUCTION_STATUS.UNRESOLVED
+    );
+
+    const state = createState();
+    const grid = new GridEngine(state);
+    const malformedPlacement = grid.canPlaceShape(
+        0,
+        0,
+        duplicateCellCard.shape,
+        duplicateCellCard,
+        duplicateCellCard.cells
+    );
+    assert.equal(malformedPlacement.can, false);
+    assert.equal(malformedPlacement.reason, "INVALID_ATTRIBUTE_MAP");
+
+    const manager = new DeckManager(state, {
+        gameplayRandom: {
+            nextFloat: () => 0.5,
+            nextId: () => "malformed-card"
+        }
+    });
+    assert.equal(manager.isCardEligible(missingCellCard, 1, 0, {
+        ignoreCooldown: true,
+        ignoreHold: true
+    }), false);
+    assert.equal(manager.isCardEligible(duplicateCellCard, 1, 0, {
+        ignoreCooldown: true,
+        ignoreHold: true
+    }), false);
+    assert.equal(manager.isCardEligible(unknownTerrainCard, 1, 0, {
+        ignoreCooldown: true,
+        ignoreHold: true
+    }), false);
+
+    const unknownPlacement = grid.canPlaceShape(
+        0,
+        0,
+        unknownTerrainCard.shape,
+        unknownTerrainCard,
+        unknownTerrainCard.cells
+    );
+    assert.equal(unknownPlacement.can, false);
+    assert.equal(unknownPlacement.reason, "UNKNOWN_ATTRIBUTE_TERRAIN");
 }
 
 {
@@ -273,6 +941,10 @@ const actualMultiCards = [
 
     const firstCell = state.grid[1][0];
     const secondCell = state.grid[2][0];
+    assert.equal(Object.prototype.hasOwnProperty.call(firstCell.terrain, "sourceR"), false);
+    assert.equal(Object.prototype.hasOwnProperty.call(firstCell.terrain, "sourceC"), false);
+    assert.equal(Object.prototype.hasOwnProperty.call(secondCell.terrain, "sourceR"), false);
+    assert.equal(Object.prototype.hasOwnProperty.call(secondCell.terrain, "sourceC"), false);
     assert.deepEqual(firstCell.production.cellYields, { food: 3, wood: 0, defense: 0, mystic: 0 });
     assert.deepEqual(secondCell.production.cellYields, { food: 0, wood: 2, defense: 1, mystic: 0 });
 
@@ -315,6 +987,90 @@ const actualMultiCards = [
 }
 
 {
+    // AoT260922 irrigation integration:
+    // cell-owned food uses the placed cell's actual board position, while
+    // block-owned food is not duplicated into cells and therefore does not
+    // receive adjacency irrigation as a cell modifier.
+    const irrigationTerrain = terrain("TEST_IRRIGATION_SOURCE", 1, 1, "TEST_IRRIGATION_SOURCE");
+
+    const cellCard = {
+        ...multiCard,
+        productionContract: {
+            status: LAND_PRODUCTION_STATUS.RESOLVED,
+            scope: LAND_PRODUCTION_SCOPE.CELL,
+            cellYields: [
+                { r: 0, c: 0, yields: { food: 3 } },
+                { r: 0, c: 1, yields: { wood: 2 } }
+            ]
+        }
+    };
+
+    const cellState = createState();
+    placeExisting(cellState, 0, 0, irrigationTerrain, "irrigation_source");
+    cellState.grid[0][0].irrigationSource = true;
+
+    const cellGrid = new GridEngine(cellState, {
+        gameplayRandom: { nextFloat: () => 0.99 },
+        deckManager: { consumeCardIfUnique() {} }
+    });
+    const geometry = resolvePlacementGeometry(cellCard, 1, 0);
+    const rotated = rotatePlacementClockwise(geometry.shape, geometry.anchor, geometry.attributeCells);
+    const placed = cellGrid.placeShape(1, 0, rotated.shape, cellCard, -1, rotated.attributeCells);
+    assert.equal(placed.success, true);
+
+    const irrigated = ProductionCalculator.calculateCellYieldBreakdown(cellState, 1, 0);
+    const nonFoodCell = ProductionCalculator.calculateCellYieldBreakdown(cellState, 2, 0);
+    assert.deepEqual(irrigated.baseYields, { food: 3, wood: 0, defense: 0, mystic: 0 });
+    assert.deepEqual(irrigated.totalYields, { food: 4, wood: 0, defense: 0, mystic: 0 });
+    assert.ok(irrigated.modifiers.some(modifier =>
+        modifier.type === "IRRIGATION"
+        && modifier.resource === "food"
+        && modifier.amount === 1
+    ));
+    assert.deepEqual(nonFoodCell.totalYields, { food: 0, wood: 2, defense: 0, mystic: 0 });
+
+    const blockCard = {
+        ...multiCard,
+        productionContract: {
+            status: LAND_PRODUCTION_STATUS.RESOLVED,
+            scope: LAND_PRODUCTION_SCOPE.BLOCK,
+            blockYields: { food: 4 }
+        }
+    };
+
+    const blockState = createState();
+    placeExisting(blockState, 0, 0, irrigationTerrain, "irrigation_source");
+    blockState.grid[0][0].irrigationSource = true;
+
+    const blockGrid = new GridEngine(blockState, {
+        gameplayRandom: { nextFloat: () => 0.99 },
+        deckManager: { consumeCardIfUnique() {} }
+    });
+    const blockGeometry = resolvePlacementGeometry(blockCard, 1, 0);
+    const blockRotated = rotatePlacementClockwise(
+        blockGeometry.shape,
+        blockGeometry.anchor,
+        blockGeometry.attributeCells
+    );
+    const blockPlaced = blockGrid.placeShape(
+        1,
+        0,
+        blockRotated.shape,
+        blockCard,
+        -1,
+        blockRotated.attributeCells
+    );
+    assert.equal(blockPlaced.success, true);
+
+    const blockCell = ProductionCalculator.calculateCellYieldBreakdown(blockState, 1, 0);
+    assert.deepEqual(blockCell.baseYields, { food: 0, wood: 0, defense: 0, mystic: 0 });
+    assert.ok(!blockCell.modifiers.some(modifier => modifier.type === "IRRIGATION"));
+
+    const blockTotal = ProductionCalculator.calculateTotalProduction(blockState);
+    assert.equal(blockTotal.blockProduction.food, 4);
+}
+
+{
     const previewResolver = new PlacementPreviewResolver();
     const previewCard = {
         terrain: actualMultiCards[0],
@@ -332,6 +1088,122 @@ const actualMultiCards = [
         preview.placement.cells.map(cell => [cell.r, cell.c, cell.terrainId]),
         [[1, 1, "GL1_PLAINS"], [1, 2, "E2_HILL"]]
     );
+}
+
+{
+    // Partial Zone membership inside one placementGroup must not merge
+    // presentation aggregates back together.
+    const state = createState();
+    const zoneCell = createCell(0, 0, {
+        placed: true,
+        merged: true,
+        mergeGroupId: "zone_plains",
+        placementGroupId: "place_multi",
+        terrain: { ...PLAINS },
+        production: {
+            status: LAND_PRODUCTION_STATUS.RESOLVED,
+            scope: LAND_PRODUCTION_SCOPE.CELL,
+            cellYields: { food: 2, wood: 0, defense: 0, mystic: 0 }
+        }
+    });
+    const remainderCell = createCell(0, 1, {
+        placed: true,
+        merged: false,
+        mergeGroupId: null,
+        placementGroupId: "place_multi",
+        terrain: { ...HILL },
+        production: {
+            status: LAND_PRODUCTION_STATUS.RESOLVED,
+            scope: LAND_PRODUCTION_SCOPE.CELL,
+            cellYields: { food: 0, wood: 3, defense: 0, mystic: 0 }
+        }
+    });
+    const sameZoneOtherBlock = createCell(1, 0, {
+        placed: true,
+        merged: true,
+        mergeGroupId: "zone_plains",
+        placementGroupId: "place_other",
+        terrain: { ...PLAINS },
+        production: {
+            status: LAND_PRODUCTION_STATUS.RESOLVED,
+            scope: LAND_PRODUCTION_SCOPE.CELL,
+            cellYields: { food: 4, wood: 0, defense: 0, mystic: 0 }
+        }
+    });
+
+    state.grid[0][0] = zoneCell;
+    state.grid[0][1] = remainderCell;
+    state.grid[1][0] = sameZoneOtherBlock;
+    state.mergedBlocks.zone_plains = { yieldMultiplier: 1.2 };
+    state.placedBlockProduction.place_multi = {
+        status: LAND_PRODUCTION_STATUS.RESOLVED,
+        scope: LAND_PRODUCTION_SCOPE.BLOCK,
+        yields: { food: 0, wood: 0, defense: 0, mystic: 5 }
+    };
+
+    const cellViewDataService = new CellViewDataService();
+    const zoneFacts = cellViewDataService.getCellViewData(state, 0, 0);
+    const remainderFacts = cellViewDataService.getCellViewData(state, 0, 1);
+    const sameZoneFacts = cellViewDataService.getCellViewData(state, 1, 0);
+
+    assert.equal(resolveBoardDisplayRole(state, zoneFacts), "LAND_PRIMARY");
+    assert.equal(resolveBoardDisplayRole(state, remainderFacts), "LAND_PRIMARY");
+    assert.equal(resolveBoardDisplayRole(state, sameZoneFacts), "CLEAN");
+
+    const zoneProduction = resolveBoardDisplayProduction(state, zoneFacts, cellViewDataService);
+    const remainderProduction = resolveBoardDisplayProduction(state, remainderFacts, cellViewDataService);
+
+    assert.equal(zoneProduction.food, 7);
+    assert.equal(zoneProduction.wood, 0);
+    assert.equal(zoneProduction.mystic, 5);
+    assert.equal(remainderProduction.food, 0);
+    assert.equal(remainderProduction.wood, 3);
+    assert.equal(remainderProduction.mystic, 0);
+}
+
+{
+    const ctx = {
+        fills: [],
+        strokes: [],
+        currentPath: null,
+        globalAlpha: 1,
+        beginPath() { this.currentPath = []; },
+        moveTo(x, y) { this.currentPath.push(["M", x, y]); },
+        lineTo(x, y) { this.currentPath.push(["L", x, y]); },
+        closePath() {},
+        save() { this.savedAlpha = this.globalAlpha; },
+        restore() { this.globalAlpha = this.savedAlpha ?? 1; },
+        fill() { this.fills.push({ fillStyle: this.fillStyle, alpha: this.globalAlpha }); },
+        stroke() { this.strokes.push({ strokeStyle: this.strokeStyle, lineWidth: this.lineWidth }); }
+    };
+    const projection = {
+        halfW: 20,
+        halfH: 10,
+        projectCell(r, c) { return { x: c * 40, y: r * 20 }; }
+    };
+    const readModel = {
+        placementPreview: {
+            active: true,
+            candidates: [],
+            hover: {
+                valid: true,
+                anchor: { r: 1, c: 1 },
+                placement: {
+                    cells: [
+                        { r: 1, c: 1, terrainId: "GL1_PLAINS" },
+                        { r: 1, c: 2, terrainId: "E2_HILL" }
+                    ]
+                }
+            }
+        }
+    };
+
+    drawWeb25DPlacementPreview({ ctx, projection, readModel });
+
+    assert.equal(ctx.fills.length, 2);
+    assert.equal(ctx.fills[0].fillStyle, resolveWeb25DTerrainTopFill({ terrainId: "GL1_PLAINS" }));
+    assert.equal(ctx.fills[1].fillStyle, resolveWeb25DTerrainTopFill({ terrainId: "E2_HILL" }));
+    assert.notEqual(ctx.fills[0].fillStyle, ctx.fills[1].fillStyle);
 }
 
 {
@@ -460,6 +1332,216 @@ const actualMultiCards = [
 
 {
     const state = createState();
+    state.grid[1][0] = createCell(1, 0, {
+        placed: true,
+        placementGroupId: "place_multi",
+        terrain: { ...PLAINS }
+    });
+    state.grid[1][1] = createCell(1, 1, {
+        placed: true,
+        placementGroupId: "place_multi",
+        terrain: { ...HILL }
+    });
+
+    // Deserialized/legacy draft shape: block ids are absent. Validation must
+    // rederive identity from the live board and still reject double-use.
+    const drafts = new Map([
+        ["R1", {
+            routeId: "R1",
+            status: "INTERCEPT",
+            interceptCell: { r: 1, c: 0 },
+            interceptBlockId: null,
+            defenseAllocation: 1
+        }],
+        ["R2", {
+            routeId: "R2",
+            status: "INTERCEPT",
+            interceptCell: { r: 1, c: 1 },
+            interceptBlockId: null,
+            defenseAllocation: 1
+        }]
+    ]);
+    const routes = [
+        { id: "R1", cells: [{ r: 1, c: 0 }] },
+        { id: "R2", cells: [{ r: 1, c: 1 }] }
+    ];
+    const validation = TrialPlanningDraftService.validateDraft(drafts, {
+        routes,
+        availableDefense: 10,
+        cellResolver: (r, c) => state.grid[r][c]
+    });
+
+    assert.equal(validation.valid, false);
+    assert.ok(validation.errors.includes(TRIAL_PLAN_REASONS.BLOCK_ALREADY_PLANNED));
+}
+
+{
+    const state = createState();
+    placeExisting(state, 2, 0, PLAINS, "existing");
+
+    const restoredTrialCard = {
+        id: "CARD_TEST_HILL_MOUNTAIN",
+        nameKey: "CARD_TEST_HILL_MOUNTAIN",
+        category: "LAND",
+        representativeTerrainId: "E2_HILL",
+        shape: [[1, 1]],
+        anchor: { r: 0, c: 0 },
+        cells: [
+            { r: 0, c: 0, ...HILL },
+            { r: 0, c: 1, ...MOUNTAIN }
+        ],
+        productionContract: {
+            status: LAND_PRODUCTION_STATUS.RESOLVED,
+            scope: LAND_PRODUCTION_SCOPE.BLOCK,
+            blockYields: { defense: 3 }
+        }
+    };
+
+    const grid = new GridEngine(state, {
+        gameplayRandom: { nextFloat: () => 0.99 },
+        deckManager: { consumeCardIfUnique() {} }
+    });
+    const placed = grid.placeShape(
+        1,
+        0,
+        restoredTrialCard.shape,
+        restoredTrialCard,
+        -1,
+        restoredTrialCard.cells
+    );
+    assert.equal(placed.success, true);
+
+    const placedGroupId = state.grid[1][0].placementGroupId;
+    assert.equal(state.grid[1][1].placementGroupId, placedGroupId);
+    assert.equal(state.grid[1][0].terrain.terrainId, "E2_HILL");
+    assert.equal(state.grid[1][1].terrain.terrainId, "E3_MOUNTAIN");
+    assert.equal(state.placedBlockProduction[placedGroupId].yields.defense, 3);
+
+    const serialized = serializeGameState(state);
+    const restored = {};
+    hydrateGameState(restored, serialized, {
+        resolveCardMaster: () => restoredTrialCard
+    });
+
+    assert.equal(restored.grid[1][0].placementGroupId, placedGroupId);
+    assert.equal(restored.grid[1][1].placementGroupId, placedGroupId);
+    assert.equal(restored.grid[1][0].terrain.terrainId, "E2_HILL");
+    assert.equal(restored.grid[1][1].terrain.terrainId, "E3_MOUNTAIN");
+    assert.equal(restored.placedBlockProduction[placedGroupId].yields.defense, 3);
+
+    const terrainResolver = new TrialTerrainEffectResolver();
+    assert.equal(terrainResolver.canInterceptAt(restored.grid[1][0]), true);
+    assert.equal(terrainResolver.canInterceptAt(restored.grid[1][1]), false);
+}
+
+{
+    const state = new GameState();
+    state.engine = null;
+    state.gridEngine = null;
+
+    state.grid[0][0] = {
+        ...state.grid[0][0],
+        placed: true,
+        isHQ: false,
+        terrain: { ...PLAINS },
+        placementGroupId: "place_multi_fallback"
+    };
+    state.grid[0][1] = {
+        ...state.grid[0][1],
+        placed: true,
+        isHQ: false,
+        terrain: { ...HILL },
+        placementGroupId: "place_multi_fallback"
+    };
+
+    assert.equal(state.countPlacedBlocks(), 1);
+    assert.equal(
+        ConditionEvaluator.evaluate(
+            { type: "PLACED_BLOCKS_AT_MOST", value: 1 },
+            { state }
+        ),
+        true
+    );
+    assert.equal(
+        ConditionEvaluator.evaluate(
+            { type: "PLACED_BLOCKS_AT_MOST", value: 0 },
+            { state }
+        ),
+        false
+    );
+}
+
+{
+    const state = createState();
+    placeExisting(state, 1, 1, PLAINS, "existing");
+
+    const undoCard = {
+        ...multiCard,
+        id: "CARD_TEST_UNDO_MULTI",
+        productionContract: {
+            status: LAND_PRODUCTION_STATUS.RESOLVED,
+            scope: LAND_PRODUCTION_SCOPE.BLOCK,
+            blockYields: { defense: 3 }
+        }
+    };
+    const rotated = rotatePlacementClockwise(
+        undoCard.shape,
+        undoCard.anchor,
+        undoCard.cells
+    );
+    const handCard = {
+        terrain: undoCard,
+        cardMasterId: undoCard.id,
+        currentShape: rotated.shape,
+        currentAnchor: rotated.anchor,
+        currentCells: rotated.attributeCells
+    };
+    state.handOffering = [handCard];
+
+    const undo = new UndoLandSystem(state);
+    undo.captureSnapshot([
+        { r: 0, c: 0 },
+        { r: 1, c: 0 }
+    ]);
+
+    const grid = new GridEngine(state, {
+        gameplayRandom: { nextFloat: () => 0.99 },
+        deckManager: { consumeCardIfUnique() {} }
+    });
+    const placed = grid.placeShape(
+        0,
+        0,
+        rotated.shape,
+        undoCard,
+        -1,
+        rotated.attributeCells
+    );
+    assert.equal(placed.success, true);
+
+    const groupId = state.grid[0][0].placementGroupId;
+    assert.ok(groupId);
+    assert.equal(state.grid[1][0].placementGroupId, groupId);
+    assert.equal(state.placedBlockProduction[groupId].yields.defense, 3);
+
+    // Simulate post-placement hand consumption before Undo restores snapshot.
+    state.handOffering = [];
+    state.hasPickedThisTurn = true;
+
+    assert.equal(undo.undo(), true);
+    assert.equal(state.grid[0][0].placed, false);
+    assert.equal(state.grid[1][0].placed, false);
+    assert.deepEqual(state.placedBlockProduction, {});
+    assert.equal(state.handOffering.length, 1);
+    assert.deepEqual(state.handOffering[0].currentShape, rotated.shape);
+    assert.deepEqual(state.handOffering[0].currentAnchor, rotated.anchor);
+    assert.deepEqual(
+        state.handOffering[0].currentCells.map(cell => [cell.r, cell.c, cell.terrainId]),
+        rotated.attributeCells.map(cell => [cell.r, cell.c, cell.terrainId])
+    );
+}
+
+{
+    const state = createState();
     const rotated = rotatePlacementClockwise(multiCard.shape, multiCard.anchor, multiCard.cells);
     state.handOffering = [{
         id: "runtime_multi",
@@ -485,6 +1567,24 @@ const actualMultiCards = [
         restored.handOffering[0].currentCells.map(cell => [cell.r, cell.c, cell.terrainId]),
         [[0, 0, "GL1_PLAINS"], [1, 0, "E2_HILL"]]
     );
+
+    const restoredCoverage = validatePlacementAttributeMap(
+        restored.handOffering[0].currentShape,
+        restored.handOffering[0].currentCells
+    );
+    assert.equal(restoredCoverage.valid, true);
+
+    const placementState = createState();
+    placeExisting(placementState, 3, 0, PLAINS, "existing");
+    const restoredGrid = new GridEngine(placementState);
+    const restoredPlaceability = restoredGrid.canPlaceShape(
+        1,
+        0,
+        restored.handOffering[0].currentShape,
+        restored.handOffering[0].terrain,
+        restored.handOffering[0].currentCells
+    );
+    assert.equal(restoredPlaceability.can, true);
 }
 
 console.log("diagnose_multi_attribute_land_block: PASS");

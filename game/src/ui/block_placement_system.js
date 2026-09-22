@@ -1,4 +1,5 @@
 import { PlacementPreviewResolver } from '../presentation/placement_preview_resolver.js';
+import { UILayoutConfig } from './layout_config.js';
 
 /* =============================================================
    game/src/ui/block_placement_system.js
@@ -27,6 +28,10 @@ import { PlacementPreviewResolver } from '../presentation/placement_preview_reso
                     "placeable-candidate",
                     "merge-hover-highlight"
                 );
+                cell.removeAttribute("data-preview-terrain");
+                cell.style.removeProperty("--preview-terrain-bg");
+                cell.style.removeProperty("--preview-terrain-border");
+                cell.style.removeProperty("--preview-terrain-shadow");
             });
             if (typeof window !== "undefined" && window.tooltipSystemInstance && typeof window.tooltipSystemInstance.hide === "function") {
                 window.tooltipSystemInstance.hide();
@@ -40,6 +45,10 @@ import { PlacementPreviewResolver } from '../presentation/placement_preview_reso
             const cells = document.querySelectorAll(".cell");
             cells.forEach(cell => {
                 cell.classList.remove("preview-valid", "preview-invalid", "merge-hover-highlight");
+                cell.removeAttribute("data-preview-terrain");
+                cell.style.removeProperty("--preview-terrain-bg");
+                cell.style.removeProperty("--preview-terrain-border");
+                cell.style.removeProperty("--preview-terrain-shadow");
             });
             if (typeof window !== "undefined" && window.tooltipSystemInstance && typeof window.tooltipSystemInstance.hide === "function") {
                 window.tooltipSystemInstance.hide();
@@ -94,6 +103,18 @@ import { PlacementPreviewResolver } from '../presentation/placement_preview_reso
                     const targetEl = document.querySelector(`.cell[data-r="${cell.r}"][data-c="${cell.c}"]`);
                     if (targetEl) {
                         targetEl.classList.add(isValid ? "preview-valid" : "preview-invalid");
+
+                        // Multi-Attribute preview keeps legality as the outer
+                        // green/red signal while the fill uses the actual cell
+                        // terrain color. Uniform legacy cards have no per-cell
+                        // terrainId here and retain the existing preview style.
+                        if (cell.terrainId) {
+                            const theme = UILayoutConfig.getBlockThemeColor(cell.terrainId);
+                            targetEl.setAttribute("data-preview-terrain", "1");
+                            targetEl.style.setProperty("--preview-terrain-bg", theme.bg);
+                            targetEl.style.setProperty("--preview-terrain-border", theme.border);
+                            targetEl.style.setProperty("--preview-terrain-shadow", theme.shadow);
+                        }
                     }
                 }
             }

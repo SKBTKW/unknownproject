@@ -74,41 +74,29 @@
 
 ### 山岳
 
-山岳カードのデータには `Stage >= 2` に加え `reqE2: 3` が設定されており、**データ上は丘陵3マスを前提とする意図**がある。
+山岳カードは `Stage >= 2` に加え、`reqE2: 3` により**丘陵3マス**をOffering前提とする。
 
-ただし現在の `DeckManager.isCardEligible()` が評価するキーは `reqE2HillsOnBoard` であり、`LAND_CARDS_MASTER` 側の `reqE2` を正規化・参照する処理は確認できない。
+現行runtimeでは次をcanonical契約とする。
 
-さらにEligibilityへ渡す `h2Count` の取得元 `GridEngine.countE2HillsOnBoard()` は、通常配置セルの `terrainId` ではなく `cell.terrain.id === "E2_HILL"` を確認している。
+1. `DeckManager` は `reqE2HillsOnBoard` と `reqE2` の両方を丘陵前提として正規化する。
+2. 丘陵数は `cell.terrain.terrainId || cell.terrain.id` が `E2_HILL` かどうかで数える。
+3. `GameState.countE2HillsOnBoard()` を公開名とし、旧 `countH2HillsOnBoard()` は互換aliasとする。
+4. Stage3 Offering fallbackでも `reqE2` を迂回しない。
+5. Multi-Attribute Block内の丘陵cellも、実cell semanticが `E2_HILL` なら**丘陵1マス**として数える。Block全体を1丘陵と数えたり、非丘陵側まで丘陵扱いしない。
 
-通常土地カード配置では `cell.terrain` にカード定義自体が保存されるため、丘陵カードは通常、
+したがって山岳カードは、
 
 ```text
-id = CARD_HILL_...
-terrainId = E2_HILL
+Stage >= 2
+AND
+E2_HILL cell count >= 3
+AND
+現在盤面に合法配置先あり
 ```
 
-となる。
+を満たした場合のみ通常Offering候補になり得る。
 
-したがって現在の山岳前提条件には、
-
-1. カードデータ側 `reqE2` とEligibility側 `reqE2HillsOnBoard` のキー不一致
-2. 丘陵数カウンタ側 `id` と通常カード側 `terrainId` の識別子不一致
-
-の二重の問題がある。
-
-現runtimeでは、
-
-> **山岳カードの「丘陵3マス」前提はOffering Eligibilityとして信頼できず、Stage 2到達後に早期候補化し得る。**
-
-と扱う。
-
-さらに配置側の `GridEngine.canPlaceShape()` は、E1平地等とE3山岳の直接隣接を `INVALID_ELEVATION_NEIGHBOR` として禁止する。したがってE2接続先が十分に存在しない盤面では、山岳カードがOfferingへ出ても合法配置先を持たない場合がある。
-
-つまり現在の不一致は、
-
-> **Offeringへ候補化された土地カードが実際には置けない「死に札」化を起こし得る。**
-
-という実プレイ影響を持つ。
+配置側の `GridEngine.canPlaceShape()` も引き続きE1平地等とE3山岳の直接隣接を禁止するため、「解禁条件を満たしていても現在の盤面形状では置けない」場合はOfferingの合法配置Gateで除外される。
 
 | ID | Stage | 形状 | Rare | Weight | 1マス産出 |
 | :--- | ---: | :--- | :---: | ---: | :--- |
@@ -174,5 +162,4 @@ terrainId = E2_HILL
 
 1. `land_cards.json` / `land_cards_data.js` / `land_system.js` / `card_database.js` の責務を整理し、土地産出の二重定義を減らす。
 2. 特に砂漠の✨2と✨5の不一致を解消する。
-3. 山岳カードの `reqE2` / `reqE2HillsOnBoard` と丘陵数カウンタの `id` / `terrainId` の二重不一致を解消する。
-4. rulesへカード数値を重複保持しすぎず、実装データとの差分が出た場合は本台帳を更新する。
+3. rulesへカード数値を重複保持しすぎず、実装データとの差分が出た場合は本台帳を更新する。
