@@ -48,6 +48,7 @@ check(!contextCss.includes('body[data-board-context="trial"] #gridBoard .tile-yi
 check(presentationGrid.includes("data-board-trial-routes-visibility")
     && presentationGrid.includes("data-board-invasion-entry-visibility")
     && presentationGrid.includes("data-board-interception-visibility")
+    && presentationGrid.includes("data-board-defense-allocation-visibility")
     && presentationGrid.includes("data-board-battle-markers-visibility"),
 "2D board exposes Trial operational visibility fields from the presentation profile");
 check(contextCss.includes('[data-board-trial-routes-visibility="SECONDARY"] .cell.trial-route-cell')
@@ -62,6 +63,14 @@ check(contextCss.includes('[data-board-interception-visibility="SECONDARY"] .cel
 check(contextCss.includes('[data-board-battle-markers-visibility="SECONDARY"] .cell.trial-battle-active')
     && contextCss.includes('[data-board-battle-markers-visibility="SUPPRESSED"] .cell.trial-battle-active'),
 "2D active battle emphasis consumes battleMarkers profile state");
+
+check(presentationGrid.includes("trial-defense-allocation-badge")
+    && presentationGrid.includes("resolveTrialDefenseAllocationBadge"),
+"2D board materializes defense allocation from renderer-neutral Trial cell data");
+check(contextCss.includes('[data-board-defense-allocation-visibility="SECONDARY"] .trial-defense-allocation-badge')
+    && contextCss.includes('[data-board-defense-allocation-visibility="SUPPRESSED"] .trial-defense-allocation-badge')
+    && contextCss.includes('[data-board-defense-allocation-visibility="HIDDEN"] .trial-defense-allocation-badge'),
+"2D defense allocation badges consume independent profile visibility");
 check(boardAwareUi.includes("shouldShowBoardDevelopmentHints()")
     && boardAwareUi.includes("profile.developmentHints !== BOARD_VISIBILITY.HIDDEN")
     && boardAwareUi.includes("profile.developmentHints !== BOARD_VISIBILITY.SUPPRESSED")

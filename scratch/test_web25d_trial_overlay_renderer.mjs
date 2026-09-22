@@ -4,6 +4,8 @@ import {
     drawWeb25DTrialOverlay,
     hitWeb25DTrialRouteSelector,
     resolveWeb25DBattleMarkerVisual,
+    resolveWeb25DDefenseAllocationMarkers,
+    resolveWeb25DDefenseAllocationMetrics,
     resolveWeb25DPlannedInterceptVisual,
     resolveWeb25DTrialCandidateVisual,
     resolveWeb25DTrialOverlayAlpha,
@@ -22,6 +24,9 @@ function createContext() {
         stroke() { ops.push(['stroke', this.strokeStyle, this.lineWidth, this.globalAlpha]); },
         fill() { ops.push(['fill', this.fillStyle, this.globalAlpha]); },
         arc(x, y, radius) { ops.push(['arc', x, y, radius, this.globalAlpha]); },
+        fillRect(x, y, width, height) { ops.push(['fillRect', x, y, width, height, this.fillStyle, this.globalAlpha]); },
+        strokeRect(x, y, width, height) { ops.push(['strokeRect', x, y, width, height, this.strokeStyle, this.globalAlpha]); },
+        fillText(value, x, y) { ops.push(['fillText', value, x, y, this.fillStyle, this.globalAlpha]); },
         set strokeStyle(value) { this._strokeStyle = value; },
         get strokeStyle() { return this._strokeStyle; },
         set fillStyle(value) { this._fillStyle = value; },
@@ -169,6 +174,35 @@ assert.equal(
 );
 
 
+const allocationMarkers = resolveWeb25DDefenseAllocationMarkers({
+    plannedIntercepts: [
+        { cell: { r: 0, c: 0 }, routeId: 'route:a', defenseAllocation: 2 },
+        { cell: { r: 0, c: 1 }, routeId: 'route:b', defenseAllocation: 4 }
+    ],
+    battleMarkers: [
+        { cell: { r: 0, c: 1 }, routeId: 'route:b', defenseAllocation: 5 }
+    ]
+});
+assert.deepEqual(
+    allocationMarkers.map(marker => [marker.cell.r, marker.cell.c, marker.amount, marker.source]),
+    [
+        [0, 0, 2, 'PLANNED'],
+        [0, 1, 5, 'BATTLE']
+    ],
+    'battle allocation replaces the planned value on the same interception cell'
+);
+assert.deepEqual(
+    resolveWeb25DDefenseAllocationMetrics({ tileWidth: 38, amount: 12 }),
+    { compact: true, width: 24, height: 9, fontSize: 8 },
+    'narrow 9x9 projection uses compact defense allocation chip metrics'
+);
+assert.deepEqual(
+    resolveWeb25DDefenseAllocationMetrics({ tileWidth: 60, amount: 12 }),
+    { compact: false, width: 30, height: 12, fontSize: 9 },
+    'normal projection retains readable defense allocation chip metrics'
+);
+
+
 const pendingBattleVisual = resolveWeb25DBattleMarkerVisual({
     cell: { r: 0, c: 0 },
     status: 'PENDING',
@@ -255,13 +289,13 @@ drawWeb25DTrialOverlay({
                 }
             ],
             plannedIntercepts: [
-                { cell: { r: 1, c: 0 }, routeId: 'route:a' },
-                { cell: { r: 0, c: 2 }, routeId: 'route:b' }
+                { cell: { r: 1, c: 0 }, routeId: 'route:a', defenseAllocation: 3 },
+                { cell: { r: 0, c: 2 }, routeId: 'route:b', defenseAllocation: 2 }
             ],
             battleMarkers: [
-                { cell: { r: 1, c: 1 }, status: 'ACTIVE', isCurrent: true },
-                { cell: { r: 1, c: 2 }, status: 'PENDING', isCurrent: false },
-                { cell: { r: 0, c: 2 }, status: 'RESOLVED', isCurrent: false }
+                { cell: { r: 1, c: 1 }, status: 'ACTIVE', isCurrent: true, defenseAllocation: 4 },
+                { cell: { r: 1, c: 2 }, status: 'PENDING', isCurrent: false, defenseAllocation: 1 },
+                { cell: { r: 0, c: 2 }, status: 'RESOLVED', isCurrent: false, defenseAllocation: 5 }
             ]
         }
     }
@@ -305,6 +339,22 @@ assert.ok(
     'battle markers stay above planned interception markers'
 );
 
+assert.equal(
+    ctx.ops.some(op => op[0] === 'fillText' && op[1] === '🛡️3'),
+    true,
+    'planned interception defense allocation is rendered as a board chip'
+);
+assert.equal(
+    ctx.ops.some(op => op[0] === 'fillText' && op[1] === '🛡️5'),
+    true,
+    'battle allocation replaces the planned allocation on the same cell'
+);
+assert.equal(
+    ctx.ops.filter(op => op[0] === 'fillText' && op[1] === '🛡️2').length,
+    0,
+    'overlapped planned allocation does not produce a duplicate chip under a battle marker'
+);
+
 const candidateStrokes = ctx.ops.filter(
     op => op[0] === 'stroke'
         && (
@@ -340,6 +390,7 @@ drawWeb25DTrialOverlay({
             trialRoutes: BOARD_VISIBILITY.SECONDARY,
             invasionEntry: BOARD_VISIBILITY.SUPPRESSED,
             interception: BOARD_VISIBILITY.SECONDARY,
+            defenseAllocation: BOARD_VISIBILITY.SECONDARY,
             battleMarkers: BOARD_VISIBILITY.SUPPRESSED
         },
         board: { rows: 2, columns: 2 },
@@ -359,8 +410,8 @@ drawWeb25DTrialOverlay({
                 entrySide: 'north'
             }],
             interceptionCandidates: [{ cell: { r: 0, c: 1 }, canIntercept: true }],
-            plannedIntercepts: [],
-            battleMarkers: [{ cell: { r: 1, c: 1 }, status: 'ACTIVE', isCurrent: true }]
+            plannedIntercepts: [{ cell: { r: 0, c: 1 }, routeId: 'route:a', defenseAllocation: 6 }],
+            battleMarkers: [{ cell: { r: 1, c: 1 }, status: 'ACTIVE', isCurrent: true, defenseAllocation: 7 }]
         }
     }
 });
@@ -384,6 +435,12 @@ assert.equal(
     profileCtx.ops.some(op => op[0] === 'fill' && op[1] === 'rgba(255, 196, 96, 0.96)' && op[2] === 0.24),
     true,
     'battle markers consume SUPPRESSED opacity'
+);
+
+assert.equal(
+    profileCtx.ops.some(op => op[0] === 'fillText' && op[1] === '🛡️6' && op[5] === 0.55),
+    true,
+    'defense allocation chips consume their own SECONDARY profile opacity'
 );
 assert.equal(profileCtx.globalAlpha, 1, 'Trial overlay alpha must be restored after layered drawing');
 

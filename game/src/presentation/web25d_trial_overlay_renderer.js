@@ -82,6 +82,52 @@ function sameCell(a, b) {
     return Boolean(a && b && a.r === b.r && a.c === b.c);
 }
 
+function normalizeDefenseAllocation(item, source) {
+    if (!item?.cell) return null;
+    const amount = Number(item.defenseAllocation);
+    if (!Number.isFinite(amount) || amount <= 0) return null;
+    return Object.freeze({
+        cell: Object.freeze({ r: item.cell.r, c: item.cell.c }),
+        routeId: item.routeId ?? null,
+        amount: Math.trunc(amount),
+        source
+    });
+}
+
+export function resolveWeb25DDefenseAllocationMarkers(trial = {}) {
+    const byCell = new Map();
+
+    for (const item of trial.plannedIntercepts || []) {
+        const marker = normalizeDefenseAllocation(item, 'PLANNED');
+        if (!marker) continue;
+        byCell.set(`${marker.cell.r}:${marker.cell.c}`, marker);
+    }
+
+    for (const item of trial.battleMarkers || []) {
+        const marker = normalizeDefenseAllocation(item, 'BATTLE');
+        if (!marker) continue;
+        byCell.set(`${marker.cell.r}:${marker.cell.c}`, marker);
+    }
+
+    return Object.freeze([...byCell.values()]);
+}
+
+export function resolveWeb25DDefenseAllocationMetrics({
+    tileWidth = 60,
+    amount = 1
+} = {}) {
+    const normalizedTileWidth = Number.isFinite(tileWidth) && tileWidth > 0 ? tileWidth : 60;
+    const digits = Math.max(1, String(Math.max(0, Math.trunc(Number(amount) || 0))).length);
+    const compact = normalizedTileWidth < 48;
+
+    return Object.freeze({
+        compact,
+        width: compact ? Math.max(20, 16 + digits * 4) : Math.max(26, 18 + digits * 6),
+        height: compact ? 9 : 12,
+        fontSize: compact ? 8 : 9
+    });
+}
+
 function inferRouteEntrySide(route, readModel) {
     if (route?.entrySide) return route.entrySide;
     const entry = route?.entryCell || route?.cells?.[0] || null;
@@ -210,6 +256,28 @@ export function resolveWeb25DPlannedInterceptVisual(item, {
     });
 }
 
+function drawWeb25DDefenseAllocationMarker(ctx, projection, center, marker) {
+    const metrics = resolveWeb25DDefenseAllocationMetrics({
+        tileWidth: projection?.tileWidth,
+        amount: marker.amount
+    });
+    const anchorX = center.x + Math.max(4, Number(projection?.halfW) * 0.36 || 4);
+    const anchorY = center.y - Math.max(5, Number(projection?.halfH) * 0.72 || 5);
+    const x = Math.round(anchorX - metrics.width / 2);
+    const y = Math.round(anchorY - metrics.height / 2);
+
+    ctx.fillStyle = 'rgba(24, 39, 59, 0.94)';
+    ctx.fillRect?.(x, y, metrics.width, metrics.height);
+    ctx.strokeStyle = 'rgba(174, 216, 239, 0.92)';
+    ctx.lineWidth = metrics.compact ? 0.7 : 0.9;
+    ctx.strokeRect?.(x, y, metrics.width, metrics.height);
+    ctx.font = `${metrics.fontSize}px "Segoe UI Emoji", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(239, 248, 255, 0.98)';
+    ctx.fillText?.(`🛡️${marker.amount}`, anchorX, anchorY + 0.5);
+}
+
 export function resolveWeb25DBattleMarkerVisual(marker) {
     if (!marker?.cell) return null;
 
@@ -257,6 +325,7 @@ export function drawWeb25DTrialOverlay({ ctx, projection, readModel } = {}) {
     const routeAlpha = resolveWeb25DTrialOverlayAlpha(profile.trialRoutes);
     const entryAlpha = resolveWeb25DTrialOverlayAlpha(profile.invasionEntry);
     const interceptionAlpha = resolveWeb25DTrialOverlayAlpha(profile.interception);
+    const defenseAllocationAlpha = resolveWeb25DTrialOverlayAlpha(profile.defenseAllocation);
     const battleAlpha = resolveWeb25DTrialOverlayAlpha(profile.battleMarkers);
 
     const routes = trial.routes || [];
@@ -356,6 +425,13 @@ export function drawWeb25DTrialOverlay({ ctx, projection, readModel } = {}) {
             ctx.strokeStyle = visual.strokeStyle;
             ctx.lineWidth = visual.lineWidth;
             ctx.stroke();
+        }
+    });
+
+    withOverlayAlpha(ctx, defenseAllocationAlpha, () => {
+        for (const marker of resolveWeb25DDefenseAllocationMarkers(trial)) {
+            const center = projectTrialCell(readModel, projection, marker.cell);
+            drawWeb25DDefenseAllocationMarker(ctx, projection, center, marker);
         }
     });
 

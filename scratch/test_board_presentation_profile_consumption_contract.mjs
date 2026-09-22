@@ -49,6 +49,7 @@ const presentationGrid = read('../game/src/ui/board_presentation_grid_component.
 const boardAwareUi = read('../game/src/ui/board_aware_ui_controller.js');
 const legacyGrid = read('../game/src/ui/board_grid_component.js');
 const trialAdapter = read('../game/src/presentation/trial_board_semantic_adapter.js');
+const dataService = read('../game/src/presentation/board_presentation_data_service.js');
 const routeCostPolicy = read('../game/src/trial/scenario/trial_route_cost_policy.js');
 
 assert.match(zoneLink, /readModel\.profile\?\.zones/, 'zones must have an active renderer consumer');
@@ -61,7 +62,7 @@ assert.match(presentationGrid, /data-board-sockets-visibility/, 'sockets must ha
 assert.match(boardAwareUi, /profile\.developmentHints/, 'developmentHints must gate presentation generation');
 assert.match(legacyGrid, /shouldShowBoardDevelopmentHints/, '2D development hints must consume the presentation gate');
 
-for (const key of ['trialRoutes', 'invasionEntry', 'interception', 'battleMarkers']) {
+for (const key of ['trialRoutes', 'invasionEntry', 'interception', 'defenseAllocation', 'battleMarkers']) {
     assert.match(
         trialOverlay,
         new RegExp(`profile\\.${key}`),
@@ -72,6 +73,7 @@ for (const attribute of [
     'data-board-trial-routes-visibility',
     'data-board-invasion-entry-visibility',
     'data-board-interception-visibility',
+    'data-board-defense-allocation-visibility',
     'data-board-battle-markers-visibility'
 ]) {
     assert.match(
@@ -84,12 +86,32 @@ for (const attribute of [
 assert.match(
     trialAdapter,
     /defenseAllocation:/,
-    'defenseAllocation is carried as renderer-neutral Trial board data even though it has no board glyph yet'
+    'defenseAllocation is carried as renderer-neutral Trial board data'
 );
-assert.doesNotMatch(
+assert.match(
+    dataService,
+    /showDefenseAllocation = profile\.defenseAllocation !== "HIDDEN"/,
+    'defenseAllocation disclosure is independently gated before renderer consumption'
+);
+assert.match(
+    dataService,
+    /projectDefenseAllocations\(trial\.plannedIntercepts, showDefenseAllocation\)/,
+    'planned intercept allocations pass through the defense disclosure gate'
+);
+assert.match(
+    dataService,
+    /projectDefenseAllocations\(trial\.battleMarkers, showDefenseAllocation\)/,
+    'battle allocations pass through the defense disclosure gate'
+);
+assert.match(
+    presentationGrid,
+    /trial-defense-allocation-badge/,
+    'defenseAllocation has an active 2D board consumer'
+);
+assert.match(
     trialOverlay,
-    /profile\.defenseAllocation/,
-    'defenseAllocation remains data-carried, not falsely treated as an implemented 2.5D board layer'
+    /resolveWeb25DDefenseAllocationMarkers/,
+    'defenseAllocation has an active 2.5D board consumer'
 );
 
 assert.match(
