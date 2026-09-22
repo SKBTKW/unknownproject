@@ -29,6 +29,52 @@
     display: none;
 }
 
+#gridBoard[data-board-trial-routes-visibility="SECONDARY"] .cell.trial-route-cell {
+    box-shadow: inset 0 0 0 1px rgba(230, 126, 34, 0.28);
+}
+#gridBoard[data-board-trial-routes-visibility="SECONDARY"] .cell.trial-route-cell::before {
+    opacity: 0.55;
+}
+#gridBoard[data-board-trial-routes-visibility="SUPPRESSED"] .cell.trial-route-cell {
+    box-shadow: inset 0 0 0 1px rgba(230, 126, 34, 0.12);
+}
+#gridBoard[data-board-trial-routes-visibility="SUPPRESSED"] .cell.trial-route-cell::before {
+    opacity: 0.24;
+}
+
+#gridBoard[data-board-invasion-entry-visibility="SECONDARY"] .trial-route-entry::after,
+#gridBoard[data-board-invasion-entry-visibility="SECONDARY"] .trial-route-entry-selector {
+    opacity: 0.55;
+}
+#gridBoard[data-board-invasion-entry-visibility="SUPPRESSED"] .trial-route-entry::after,
+#gridBoard[data-board-invasion-entry-visibility="SUPPRESSED"] .trial-route-entry-selector {
+    opacity: 0.24;
+}
+#gridBoard[data-board-invasion-entry-visibility="HIDDEN"] .trial-route-entry::after,
+#gridBoard[data-board-invasion-entry-visibility="HIDDEN"] .trial-route-entry-selector {
+    display: none;
+}
+
+#gridBoard[data-board-interception-visibility="SECONDARY"] .cell.trial-interception-candidate {
+    box-shadow: inset 0 0 0 2px rgba(241, 196, 15, 0.48), 0 0 7px rgba(241, 196, 15, 0.20);
+}
+#gridBoard[data-board-interception-visibility="SECONDARY"] .cell.trial-interception-planned {
+    box-shadow: inset 0 0 0 2px rgba(16, 185, 129, 0.52), 0 0 7px rgba(16, 185, 129, 0.20);
+}
+#gridBoard[data-board-interception-visibility="SUPPRESSED"] .cell.trial-interception-candidate {
+    box-shadow: inset 0 0 0 1px rgba(241, 196, 15, 0.24), 0 0 4px rgba(241, 196, 15, 0.10);
+}
+#gridBoard[data-board-interception-visibility="SUPPRESSED"] .cell.trial-interception-planned {
+    box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.26), 0 0 4px rgba(16, 185, 129, 0.10);
+}
+
+#gridBoard[data-board-battle-markers-visibility="SECONDARY"] .cell.trial-battle-active {
+    box-shadow: 0 0 7px rgba(245, 158, 11, 0.38), inset 0 0 5px rgba(245, 158, 11, 0.28);
+}
+#gridBoard[data-board-battle-markers-visibility="SUPPRESSED"] .cell.trial-battle-active {
+    box-shadow: 0 0 4px rgba(245, 158, 11, 0.18), inset 0 0 3px rgba(245, 158, 11, 0.14);
+}
+
 body[data-board-context="trial"] #gridBoard .searched-badge {
     display: none;
 }
