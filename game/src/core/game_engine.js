@@ -14,7 +14,9 @@ import { MaintenanceFallbackSystem } from '../systems/maintenance_fallback_syste
 import { DefenseSystem } from '../systems/defense_system.js';
 import { CellViewDataService } from '../services/cell_view_data_service.js';
 import { ActionTransactionManager } from './transaction_manager.js';
-import { resolvePlacementGeometry } from './placement_geometry.js';
+import {
+    resolvePlacementGeometryAtRotation
+} from './placement_geometry.js';
 import { CheckSystem } from './check_system/check_system.js';
 import { GameplayRandomService } from './gameplay_random_service.js';
 import { TurnLifecycleService } from './turn_lifecycle_service.js';
@@ -261,7 +263,7 @@ class GameEngine {
     placeLand(r, c, card, rotation = 0, source = { type: "OFFERING", index: 0 }) {
         if (!card) return { success: false, reason: "NO_CARD" };
 
-        const placement = resolvePlacementGeometry(card, r, c);
+        const placement = resolvePlacementGeometryAtRotation(card, r, c, rotation);
         const { shape, startR, startC, attributeCells } = placement;
         const terrain = card.terrain || card;
         const currentIdx = source.type === "OFFERING" ? source.index : -1;
