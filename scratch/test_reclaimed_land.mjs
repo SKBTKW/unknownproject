@@ -36,7 +36,7 @@ Object.assign(engine.state.grid[0][0], {
     mergeGroupId: null
 });
 
-assert.equal(getZoneCategory(engine.state.grid[0][0]), "PLAINS", "reclaimed land remains PLAINS-compatible for zoning");
+assert.equal(getZoneCategory(engine.state.grid[0][0].terrain), "PLAINS", "reclaimed land remains PLAINS-compatible for zoning");
 
 const breakdown = ProductionCalculator.calculateCellYieldBreakdown(engine.state, 0, 0);
 assert.equal(breakdown.baseYields.food, 4, "reclaimed land base food remains 4");
