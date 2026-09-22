@@ -1,6 +1,10 @@
 import { TRIAL_ROUTE_PLAN_STATUSES, TRIAL_BATTLE_STATUSES } from '../trial/domain/trial_types.js';
 import { createTrialBoardSemanticData } from './trial_board_semantic_data.js';
 import {
+    isTrialRouteSelectionEnabled,
+    resolveTrialPresentationRouteId
+} from './trial_route_focus_resolver.js';
+import {
     projectTrialTacticalEffects,
     TRIAL_TACTICAL_EFFECT_PHASES
 } from './trial_tactical_effect_semantic.js';
@@ -110,11 +114,12 @@ function buildEnemyState(trialState) {
 export class TrialBoardSemanticAdapter {
     static fromRuntime({ trialState = null, trialPresentationState = null, boardSize = null, interceptionCandidates = [] } = {}) {
         if (!trialState) return createTrialBoardSemanticData({ available: false, interceptionCandidates });
-        const currentBattle = typeof trialState.getCurrentBattle === "function"
-            ? trialState.getCurrentBattle()
-            : (Array.isArray(trialState.battleQueue) && Number.isInteger(trialState.currentBattleIndex) ? trialState.battleQueue[trialState.currentBattleIndex] || null : null);
-        const planningFocusVisible = trialState?.planActivated !== true;
-        const activeRouteId = currentBattle?.routeId ?? trialPresentationState?.activeEnemyRoute ?? null;
+        const routeSelectionEnabled = isTrialRouteSelectionEnabled(trialState);
+        const planningFocusVisible = routeSelectionEnabled;
+        const activeRouteId = resolveTrialPresentationRouteId({
+            trialState,
+            trialPresentationState
+        });
         const routes = (trialState.routes || []).map(route => {
             const cells = routeCellsOf(route);
             const entryCell = toCell(route?.entryCell) || cells[0] || null;
@@ -127,6 +132,7 @@ export class TrialBoardSemanticAdapter {
         return createTrialBoardSemanticData({
             available: true,
             activeRouteId,
+            routeSelectionEnabled,
             selectedInterceptCell: planningFocusVisible
                 ? (trialPresentationState?.selectedInterceptCell || null)
                 : null,

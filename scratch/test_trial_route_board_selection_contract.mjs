@@ -32,7 +32,11 @@ function makeCell(r, c) {
         classList: makeClassList(["cell"]),
         setAttribute(name, value) { this.attributes[name] = String(value); },
         removeAttribute(name) { delete this.attributes[name]; },
-        appendChild(child) { this.children.push(child); return child; }
+        appendChild(child) {
+            child.parentNode = this;
+            this.children.push(child);
+            return child;
+        }
     };
 }
 
@@ -42,7 +46,19 @@ const cells = new Map([
 ]);
 
 const boardEl = {
-    querySelectorAll() { return []; },
+    querySelectorAll(selector) {
+        if (selector === ".trial-route-entry-selector") {
+            return Array.from(cells.values()).flatMap(cell =>
+                cell.children.filter(child => String(child.className).includes("trial-route-entry-selector"))
+            );
+        }
+        if (selector === ".cell.is-trial-route-selector-host") {
+            return Array.from(cells.values()).filter(cell =>
+                cell.classList.contains("is-trial-route-selector-host")
+            );
+        }
+        return [];
+    },
     querySelector(selector) {
         const match = selector.match(/data-r="(\d+)"\]\[data-c="(\d+)"/);
         return match ? cells.get(`${match[1]},${match[2]}`) || null : null;
@@ -59,7 +75,12 @@ globalThis.document = {
         className: "",
         textContent: "",
         setAttribute(name, value) { this.attributes[name] = String(value); },
-        remove() { this.removed = true; }
+        remove() {
+            this.removed = true;
+            if (!this.parentNode) return;
+            this.parentNode.children = this.parentNode.children.filter(child => child !== this);
+            this.parentNode = null;
+        }
     })
 };
 
@@ -69,8 +90,10 @@ const routes = [
 ];
 const commands = [];
 let acknowledged = 0;
+let planActivated = false;
 const ui = {
     isTrialInteractionActive: () => true,
+    isTrialRouteSelectionEnabled: () => !planActivated,
     boardPresentationState: { contextMode: "TRIAL", viewMode: "2D" },
     getTrialPlanningRoutes: () => routes,
     getActiveTrialRoute: () => routes[0],
@@ -99,6 +122,16 @@ assert.strictEqual(acknowledged, 1, "first-run route tutorial acknowledgement fo
 assert.strictEqual(commands.length, 1, "route click dispatches exactly one board input command");
 assert.strictEqual(commands[0].type, BOARD_INPUT_COMMANDS.SELECT_TRIAL_ROUTE);
 assert.deepStrictEqual(commands[0].payload, { routeId: "route-b" });
+
+planActivated = true;
+bridge.sync();
+assert.strictEqual(cells.get("0,0").children.length, 0, "activated plan removes 2D route selectors");
+assert.strictEqual(cells.get("0,1").children.length, 0, "activated plan removes inactive 2D route selectors");
+assert.strictEqual(
+    bodyClassList.contains("trial-route-selection-on-board"),
+    false,
+    "activated plan exits route-selection board mode"
+);
 
 assert.ok(indexHtml.includes("trial_route_board_selection.css"), "Board route selector stylesheet is loaded");
 assert.ok(routeCss.includes(".trial-route-entry-selector"), "Board route selector has dedicated presentation styles");

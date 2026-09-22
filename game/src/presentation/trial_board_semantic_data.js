@@ -118,6 +118,7 @@ export function buildTrialRouteCellIndex(trialSemanticData) {
 export function createTrialBoardSemanticData({
     available = false,
     activeRouteId = null,
+    routeSelectionEnabled = null,
     selectedInterceptCell = null,
     hoveredInterceptCell = null,
     routes = [],
@@ -156,6 +157,9 @@ export function createTrialBoardSemanticData({
     return Object.freeze({
         available: Boolean(available),
         activeRouteId: activeRouteId ?? null,
+        routeSelectionEnabled: routeSelectionEnabled === null
+            ? Boolean(available)
+            : Boolean(routeSelectionEnabled),
         selectedInterceptCell: normalizeRouteCell(selectedInterceptCell),
         hoveredInterceptCell: normalizeRouteCell(hoveredInterceptCell),
         routes: freezeArray(normalizedRoutes),
