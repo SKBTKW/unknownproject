@@ -1435,6 +1435,79 @@ const landSystemJson = JSON.parse(
 }
 
 {
+    const unresolvedCard = actualMultiCards[0];
+    const resolvedCard = {
+        ...unresolvedCard,
+        productionContract: {
+            status: LAND_PRODUCTION_STATUS.RESOLVED,
+            scope: LAND_PRODUCTION_SCOPE.CELL,
+            cellYields: [
+                { r: 0, c: 0, yields: { food: 3 } },
+                { r: 0, c: 1, yields: { wood: 2 } }
+            ]
+        }
+    };
+
+    const state = new GameState();
+    let canDelegateCalls = 0;
+    let placeDelegateCalls = 0;
+    state.gridEngine = {
+        canPlaceShape() {
+            canDelegateCalls++;
+            return { can: true, reasons: [] };
+        },
+        placeShape() {
+            placeDelegateCalls++;
+            return { can: true, success: true };
+        }
+    };
+
+    const unresolvedCan = state.canPlaceShape(
+        0,
+        0,
+        unresolvedCard.shape,
+        unresolvedCard,
+        unresolvedCard.cells
+    );
+    assert.equal(unresolvedCan.can, false);
+    assert.equal(unresolvedCan.reason, "MULTI_ATTRIBUTE_PRODUCTION_UNRESOLVED");
+    assert.equal(canDelegateCalls, 0);
+
+    const unresolvedPlace = state.placeShape(
+        0,
+        0,
+        unresolvedCard.shape,
+        unresolvedCard,
+        -1,
+        unresolvedCard.cells
+    );
+    assert.equal(unresolvedPlace.success, false);
+    assert.equal(unresolvedPlace.reason, "MULTI_ATTRIBUTE_PRODUCTION_UNRESOLVED");
+    assert.equal(placeDelegateCalls, 0);
+
+    const resolvedCan = state.canPlaceShape(
+        0,
+        0,
+        resolvedCard.shape,
+        resolvedCard,
+        resolvedCard.cells
+    );
+    assert.equal(resolvedCan.can, true);
+    assert.equal(canDelegateCalls, 1);
+
+    const resolvedPlace = state.placeShape(
+        0,
+        0,
+        resolvedCard.shape,
+        resolvedCard,
+        -1,
+        resolvedCard.cells
+    );
+    assert.equal(resolvedPlace.success, true);
+    assert.equal(placeDelegateCalls, 1);
+}
+
+{
     const state = new GameState();
     state.engine = null;
     state.gridEngine = null;
