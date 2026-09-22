@@ -3,8 +3,10 @@ import {
     WEB25D_RESOURCE_VISUAL_FAMILIES,
     Web25DPhaseCRenderer,
     resolveWeb25DProductionMarker,
+    resolveWeb25DProductionMarkerAnchor,
     resolveWeb25DResourceVisualFamily
 } from '../game/src/presentation/web25d_phase_c_renderer.js';
+import { Web25DProjectionAdapter } from '../game/src/presentation/web25d_projection_adapter.js';
 
 const landCell = {
     display: {
@@ -59,6 +61,24 @@ assert.equal(resolveWeb25DProductionMarker({
         production: { primaryYield: { resource: 'food', amount: 0 } }
     }
 }), null);
+
+const projection = new Web25DProjectionAdapter({ originX: 100, originY: 50 });
+const rearProjected = projection.projectCellView({ r: 0, c: 0 });
+const frontProjected = projection.projectCellView({ r: 1, c: 1 });
+const rearProductionAnchor = resolveWeb25DProductionMarkerAnchor(rearProjected);
+const frontProductionAnchor = resolveWeb25DProductionMarkerAnchor(frontProjected);
+
+assert.deepEqual(rearProductionAnchor, { x: 100, y: 50 });
+assert.deepEqual(frontProductionAnchor, { x: 100, y: 80 });
+assert.equal(
+    frontProductionAnchor.y - rearProductionAnchor.y,
+    30,
+    'production metadata must preserve projected base spacing regardless of terrain elevation'
+);
+assert.equal(
+    resolveWeb25DProductionMarkerAnchor({ screenCenter: { x: NaN, y: 0 } }),
+    null
+);
 
 const resourceFamilies = new Map([
     ['CAT_WATER', WEB25D_RESOURCE_VISUAL_FAMILIES.WATER],
