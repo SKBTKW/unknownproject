@@ -266,6 +266,27 @@ Multi-Attributeカードでは各回転後の `attributeCells` を含めて `can
 
 したがって現カードは `productionContract.status = "UNRESOLVED"` のままとし、Live Offeringへ出さない。
 
+さらにLive配置境界でも二重防衛する。
+
+```text
+GameState.canPlaceShape()
+GameState.placeShape()
+```
+
+は、真のMulti-AttributeかつProduction Contractが未解決の場合、
+
+```text
+MULTI_ATTRIBUTE_PRODUCTION_UNRESOLVED
+```
+
+で拒否する。
+
+これにより、旧Save・デバッグ注入・直接APIなどOfferingを経由しない経路でも未確定カードを実戦投入できない。
+
+一方、`GridEngine` 直呼びはPlacement構造・回転・Zone等の低レベル診断に必要なため、Production Gateを持たせない。Live gameplay境界と低レベルDomain検証境界を分離する。
+
+通常LAND、および明示的なcell mapを持っていてもterrainIdが全セル同一のhomogeneous cardはこのGate対象外とする。
+
 ### 9.2 Ownership境界は実装済み
 
 Production値を決める前提として、次のownershipだけを共通境界として定義する。
