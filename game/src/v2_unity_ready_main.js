@@ -294,7 +294,9 @@ class GameState {
                 for (let c = 0; c < this.grid[r].length; c++) {
                     const cell = this.grid[r][c];
                     if (cell.placed && !cell.isHQ && cell.terrain) {
-                        const bId = cell.blockId || `${r}_${c}`;
+                        const bId = cell.placementGroupId
+                            || cell.blockId
+                            || `${r}_${c}`;
                         if (!seenBlocks.has(bId)) {
                             seenBlocks.add(bId);
                             count++;
@@ -325,18 +327,25 @@ class GameState {
             }
         }
 
-        countH2HillsOnBoard() {
-            if (this.gridEngine) return this.gridEngine.countH2HillsOnBoard();
+        countE2HillsOnBoard() {
+            if (this.gridEngine && typeof this.gridEngine.countE2HillsOnBoard === "function") {
+                return this.gridEngine.countE2HillsOnBoard();
+            }
             let count = 0;
-            for (let r = 0; r < 5; r++) {
-                for (let c = 0; c < 5; c++) {
-                    const cell = this.grid[r][c];
-                    if (cell.placed && cell.terrain && cell.terrain.id === "H2_HILL") {
-                        count++;
-                    }
+            const grid = this.grid || [];
+            for (let r = 0; r < grid.length; r++) {
+                for (let c = 0; c < (grid[r]?.length || 0); c++) {
+                    const cell = grid[r][c];
+                    const terrainId = cell?.terrain?.terrainId || cell?.terrain?.id || null;
+                    if (cell?.placed && terrainId === "E2_HILL") count++;
                 }
             }
             return count;
+        }
+
+        // Legacy alias kept while callers migrate to the canonical E2 name.
+        countH2HillsOnBoard() {
+            return this.countE2HillsOnBoard();
         }
 
         canPlaceShape(startR, startC, shapeMatrix, terrain = null, attributeCells = null) {
