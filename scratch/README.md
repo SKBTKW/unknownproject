@@ -101,3 +101,7 @@ node scratch/scratch_registry.mjs --run quarantined
 追加部分を戻す場合は、`run_full_inspection.mjs`に追加した台帳チェック・台帳テスト・追加検査の呼び出しと、
 新しい`scratch-validation.yml`、台帳・ランナー・台帳テスト・このガイドを同じ変更単位で戻します。
 従来の検査呼び出しはそのまま残ります。
+
+## Dormant COMMAND runtime
+
+Current runtime policy activates only `LAND` and `INVESTIGATION`. Legacy `COMMAND` definitions remain in data for restore/reference compatibility but are not live Offering/execution targets. Continuous tests therefore verify the runtime gate itself and retained terrain/data semantics instead of exercising dormant command effects.

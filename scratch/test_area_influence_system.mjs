@@ -99,7 +99,7 @@ const plains = {
 // Wetland adjacency remains current gameplay behavior and does not require a legacy spawn roll.
 {
     const engine = GameEngine.createGame({ runSeed: 0xA0711003 });
-    Object.assign(engine.state.grid[0][0], {
+    Object.assign(engine.state.grid[0][1], {
         placed: true,
         isHQ: false,
         terrain: wetland
@@ -110,12 +110,12 @@ const plains = {
         terrain: plains
     });
 
-    const orthogonal = engine.gridEngine.canPlaceShape(0, 1, [[1]], wetland);
+    const orthogonal = engine.gridEngine.canPlaceShape(0, 0, [[1]], wetland);
     assert.equal(orthogonal.can, false);
     assert.ok(orthogonal.reasons.includes("WETLAND_TOO_CLOSE"));
 
     const diagonal = engine.gridEngine.canPlaceShape(1, 0, [[1]], wetland);
-    assert.equal(diagonal.can, true);
+    assert.equal(diagonal.can, true, `diagonal wetland should remain legal outside HQ vicinity: ${diagonal.reasons.join(",")}`);
 }
 
 console.log("Current irrigation / legacy water-source compatibility: PASS");
