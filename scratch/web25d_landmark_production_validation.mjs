@@ -5,9 +5,21 @@ import {
     resolveWeb25DProductionMarker,
     resolveWeb25DProductionMarkerAnchor,
     resolveWeb25DProductionMarkerMetrics,
+    resolveWeb25DProfileOpacity,
     resolveWeb25DResourceVisualFamily
 } from '../game/src/presentation/web25d_phase_c_renderer.js';
 import { Web25DProjectionAdapter } from '../game/src/presentation/web25d_projection_adapter.js';
+import { BOARD_VISIBILITY } from '../game/src/presentation/board_presentation_profile.js';
+
+assert.equal(resolveWeb25DProfileOpacity(BOARD_VISIBILITY.PRIMARY), 1);
+assert.equal(resolveWeb25DProfileOpacity(BOARD_VISIBILITY.VISIBLE), 1);
+assert.equal(resolveWeb25DProfileOpacity(BOARD_VISIBILITY.SECONDARY), 0.55);
+assert.equal(resolveWeb25DProfileOpacity(BOARD_VISIBILITY.SUPPRESSED), 0);
+assert.equal(resolveWeb25DProfileOpacity(BOARD_VISIBILITY.HIDDEN), 0);
+assert.equal(
+    resolveWeb25DProfileOpacity(BOARD_VISIBILITY.SUPPRESSED, { suppressed: 0.28 }),
+    0.28
+);
 
 const landCell = {
     display: {
@@ -197,6 +209,26 @@ const canvas = {
 };
 const bridge = { dispatch() {} };
 const renderer = new Web25DPhaseCRenderer({ canvas, bridge });
+
+const opacitySamples = [];
+ctx.globalAlpha = 1;
+renderer.drawWithOpacity(0.55, () => opacitySamples.push(ctx.globalAlpha));
+assert.deepEqual(opacitySamples, [0.55]);
+assert.equal(ctx.globalAlpha, 1, 'profile opacity drawing must restore canvas alpha');
+
+const phaseCSource = await import('node:fs/promises').then(fs =>
+    fs.readFile(new URL('../game/src/presentation/web25d_phase_c_renderer.js', import.meta.url), 'utf8')
+);
+assert.match(
+    phaseCSource,
+    /this\.readModel\?\.profile\?\.yields/,
+    '2.5D production visibility must consume the presentation profile'
+);
+assert.match(
+    phaseCSource,
+    /this\.readModel\?\.profile\?\.sockets/,
+    '2.5D socket visibility must consume the presentation profile'
+);
 
 renderer.drawProductionMarker(landCell, { x: 50, y: 50 });
 renderer.drawProductionMarker(socketCell, { x: 50, y: 50 });
