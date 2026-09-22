@@ -5,6 +5,10 @@ import {
     BOARD_CONTEXT_MODES
 } from '../presentation/board_presentation_state.js';
 import { BoardPresentationDataService } from '../presentation/board_presentation_data_service.js';
+import {
+    BOARD_VISIBILITY,
+    getBoardPresentationProfile
+} from '../presentation/board_presentation_profile.js';
 import { BoardPresentationRuntimeAdapter } from '../presentation/board_presentation_runtime_adapter.js';
 import { TrialBoardSemanticAdapter } from '../presentation/trial_board_semantic_adapter.js';
 import { PlacementPreviewResolver } from '../presentation/placement_preview_resolver.js';
@@ -127,8 +131,17 @@ export class BoardAwareUIController extends LegacyUIController {
         });
     }
 
+    shouldShowBoardDevelopmentHints() {
+        const profile = getBoardPresentationProfile(
+            this.boardPresentationState.contextMode,
+            this.boardPresentationState.viewPreset
+        );
+        return profile.developmentHints !== BOARD_VISIBILITY.HIDDEN
+            && profile.developmentHints !== BOARD_VISIBILITY.SUPPRESSED;
+    }
+
     getPlacementPreviewPresentationData() {
-        if (this.boardPresentationState.contextMode === BOARD_CONTEXT_MODES.TRIAL) {
+        if (!this.shouldShowBoardDevelopmentHints()) {
             return Object.freeze({ active: false, candidates: Object.freeze([]), hover: null });
         }
         if (!this.selectedCard || this.state?.hasPickedThisTurn) {
