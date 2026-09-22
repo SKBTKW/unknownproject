@@ -341,6 +341,7 @@ async function main() {
         ["Trial force deployment bridge", "node", ["game/src/trial/dev/diagnose_trial_force_deployment_bridge.mjs"]],
         ["Trial route cost policy", "node", ["game/src/trial/dev/diagnose_trial_route_cost_policy.mjs"]],
         ["Trial route visual semantics", "node", ["scratch/test_trial_route_visual_semantics.mjs"]],
+        ["Trial tactical effect board semantics", "node", ["scratch/test_trial_tactical_effect_board_semantics.mjs"]],
         ["Warning state fact bridge", "node", ["scratch/test_warning_state_fact_bridge.mjs"]],
     ]);
     if (!trialRuntimeFocusedOk) process.exit(1);
