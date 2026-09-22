@@ -62,7 +62,7 @@ assert.match(presentationGrid, /data-board-sockets-visibility/, 'sockets must ha
 assert.match(boardAwareUi, /profile\.developmentHints/, 'developmentHints must gate presentation generation');
 assert.match(legacyGrid, /shouldShowBoardDevelopmentHints/, '2D development hints must consume the presentation gate');
 
-for (const key of ['trialRoutes', 'invasionEntry', 'interception', 'defenseAllocation', 'battleMarkers']) {
+for (const key of ['trialRoutes', 'invasionEntry', 'interception', 'defenseAllocation', 'battleMarkers', 'tacticalEffects']) {
     assert.match(
         trialOverlay,
         new RegExp(`profile\\.${key}`),
@@ -74,7 +74,8 @@ for (const attribute of [
     'data-board-invasion-entry-visibility',
     'data-board-interception-visibility',
     'data-board-defense-allocation-visibility',
-    'data-board-battle-markers-visibility'
+    'data-board-battle-markers-visibility',
+    'data-board-tactical-effects-visibility'
 ]) {
     assert.match(
         presentationGrid,
@@ -125,10 +126,20 @@ assert.match(
     'road reservation must retain its canonical-state boundary explanation'
 );
 
-assert.doesNotMatch(
+assert.match(
+    dataService,
+    /showTacticalEffects = profile\.tacticalEffects !== "HIDDEN"/,
+    'tacticalEffects disclosure is independently gated before renderer consumption'
+);
+assert.match(
+    presentationGrid,
+    /trial-tactical-effect-stack/,
+    'tacticalEffects has an active 2D board consumer'
+);
+assert.match(
     trialOverlay,
-    /profile\.tacticalEffects/,
-    'tacticalEffects remains reserved until renderer-neutral board tactical-effect semantics exist'
+    /resolveWeb25DTacticalEffectMarkers/,
+    'tacticalEffects has an active 2.5D board consumer'
 );
 
 for (const profile of Object.values(BOARD_PRESENTATION_PROFILES)) {
