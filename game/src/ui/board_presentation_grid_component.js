@@ -1,5 +1,6 @@
 import { BoardGridComponent as LegacyBoardGridComponent } from './board_grid_component.js';
 import { BOARD_CONTEXT_MODES } from '../presentation/board_presentation_state.js';
+import { resolveTrialBattleMarkerState } from '../presentation/trial_board_semantic_data.js';
 import { applyBoardGroupJoinClasses } from './board_presentation_2d_edge_adapter.js';
 import { BOARD_INPUT_COMMANDS } from '../presentation/board_input_contract.js';
 import {
@@ -17,7 +18,10 @@ export const TRIAL_VISUAL_CLASSES = Object.freeze([
     'trial-interception-planned-active',
     'trial-interception-planned-other',
     'trial-interception-block-used',
-    'trial-battle-active'
+    'trial-battle-pending',
+    'trial-battle-active',
+    'trial-battle-resolved',
+    'trial-battle-current'
 ]);
 
 export class BoardPresentationGridComponent extends LegacyBoardGridComponent {
@@ -131,7 +135,11 @@ export class BoardPresentationGridComponent extends LegacyBoardGridComponent {
             cellEl.classList.toggle('trial-interception-planned-active', Boolean(trial?.plannedIntercept && trial.plannedIntercept.routeId === presentation?.trial?.activeRouteId));
             cellEl.classList.toggle('trial-interception-planned-other', Boolean(trial?.plannedIntercept && trial.plannedIntercept.routeId !== presentation?.trial?.activeRouteId));
             cellEl.classList.toggle('trial-interception-block-used', Boolean(trial?.interceptionCandidate?.isBlockPlannedByOther));
-            cellEl.classList.toggle('trial-battle-active', Boolean(trial?.battleMarker?.isCurrent));
+            const battleState = resolveTrialBattleMarkerState(trial?.battleMarker);
+            cellEl.classList.toggle('trial-battle-pending', Boolean(battleState?.isPending));
+            cellEl.classList.toggle('trial-battle-active', Boolean(battleState?.isActive));
+            cellEl.classList.toggle('trial-battle-resolved', Boolean(battleState?.isResolved));
+            cellEl.classList.toggle('trial-battle-current', Boolean(battleState?.isCurrent));
             if (trial?.route?.routeDirection) cellEl.setAttribute('data-trial-direction', trial.route.routeDirection);
             else cellEl.removeAttribute('data-trial-direction');
         });
