@@ -12,7 +12,9 @@
 
 import {
     hasMultiplePlacementTerrainAttributes,
-    resolvePlacementAttributeCells
+    resolvePlacementAttributeCells,
+    resolvePlacementShape,
+    validatePlacementAttributeMap
 } from './placement_geometry.js';
 
 const LAND_PRODUCTION_STATUS = Object.freeze({
@@ -74,6 +76,22 @@ function resolveLegacyTerrainYields(terrain) {
 }
 
 function normalizeProductionContract(card) {
+    const explicitAttributeCells = resolvePlacementAttributeCells(card);
+    if (explicitAttributeCells) {
+        const attributeValidation = validatePlacementAttributeMap(
+            resolvePlacementShape(card),
+            explicitAttributeCells
+        );
+        if (!attributeValidation.valid) {
+            return Object.freeze({
+                status: LAND_PRODUCTION_STATUS.UNRESOLVED,
+                scope: null,
+                cellYields: null,
+                blockYields: null
+            });
+        }
+    }
+
     if (!hasMultiplePlacementTerrainAttributes(card)) {
         return Object.freeze({
             status: LAND_PRODUCTION_STATUS.LEGACY,
