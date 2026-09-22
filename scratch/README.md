@@ -40,10 +40,10 @@ node scratch/scratch_registry.mjs --run quarantined
 | `supplemental` | 過去に未接続だった追加テスト | 台帳ランナー、Full Inspection末尾、新CI |
 | `quarantined` | 原因調査・修復が必要な既知の失敗 | 明示的な再調査コマンドのみ |
 
-導入時は、既存103本に台帳自体のテスト1本を追加し、追加検査50本、未解決0本を登録しています。
+導入時は、既存103本に台帳自体のテスト1本を追加し、追加検査49本、未解決0本を登録しています。
 未解決の分類は2026-09-22のWindows / Node 24.18.0 / Python 3.11.3での調査結果です。重複していたTrial Action Tray静的contractと、より広いLayout ownership検査に包含されるsidebar token単独検査は削除し、同じ意図を二重管理しません。
 分類は合格証明ではありません。実行結果に表示する`notRun`には、そのコマンドで実行しなかったテストが含まれます。
-今回の監査後はquarantined 0本です。過去の失敗を期待値変更だけで隠したのではなく、現仕様へ更新した4本をsupplementalへ戻し、専用テストへ分解済みだった歴史的`test_verify_user_issues.mjs`は削除しています。
+今回の監査後はquarantined 0本です。過去の失敗を期待値変更だけで隠さず、継続価値のあるテストは現仕様へ更新し、専用テストへ分解済み・既存検査と重複・休眠runtimeを現役扱いしていたテストは削除しています。
 
 台帳検証では次を検出します。
 
@@ -93,15 +93,15 @@ node scratch/scratch_registry.mjs --run quarantined
 `capture_browser_console.js`と`check_all_cards_consistency.py`には導入時点で未解消競合があり、実行不能です。
 これらは今回の自動検査対象に含めていません。手動利用前に修復または廃止を判断してください。
 `verify_browser_playwright.mjs`にも旧`window.gameUI`への依存があります。
-`verify_all_rule_files.py`は現在、土地データの固定仕様値をfail-closedで検査します。初期資源は`test_all_modules.mjs`、地帯化1.2倍は`test_reclaimed_land.mjs`で実挙動を検証し、同じ仕様を弱い文字列検索で二重管理しません。旧click探索の`executeExploration()`存在確認はLegacyコードの有無しか示さないためCurrent Spec検査から除外しています。なお成功は自動化済み項目の確認結果で、仕様書本文全体との整合性保証ではありません。
+`verify_all_rule_files.py`は現在、土地データの固定仕様値をfail-closedで検査します。初期資源は`test_all_modules.mjs`、地帯化1.2倍は`test_merge_cap.mjs`で実挙動を検証し、同じ仕様を弱い文字列検索で二重管理しません。旧click探索の`executeExploration()`存在確認はLegacyコードの有無しか示さないためCurrent Spec検査から除外しています。なお成功は自動化済み項目の確認結果で、仕様書本文全体との整合性保証ではありません。
 
 ## 変更の戻し方
 
-既存ファイルの移動・削除、ゲーム本体の変更、公開設定の変更はありません。
+ゲーム本体と公開設定は変更しません。監査で検証意図が他の継続テストへ包含されていると確認できた冗長な`scratch/test_*`は、台帳から外したうえで削除しています。
 追加部分を戻す場合は、`run_full_inspection.mjs`に追加した台帳チェック・台帳テスト・追加検査の呼び出しと、
 新しい`scratch-validation.yml`、台帳・ランナー・台帳テスト・このガイドを同じ変更単位で戻します。
 従来の検査呼び出しはそのまま残ります。
 
 ## Dormant COMMAND runtime
 
-Current runtime policy activates only `LAND` and `INVESTIGATION`. Legacy `COMMAND` definitions remain in data for restore/reference compatibility but are not live Offering/execution targets. Continuous tests therefore verify the runtime gate itself and retained terrain/data semantics instead of exercising dormant command effects.
+Current runtime policy activates only `LAND` and `INVESTIGATION`. Legacy `COMMAND` definitions remain in data for restore/reference compatibility but are not live Offering/execution targets. The runtime gate is already covered by `test_investigation_game_engine_attach.mjs` and `test_all_modules.mjs`; supplemental checks do not duplicate it. `test_reclaimed_land.mjs` retains only restored-terrain compatibility semantics.

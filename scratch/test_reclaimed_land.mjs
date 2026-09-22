@@ -3,24 +3,12 @@ import { GameEngine } from "../game/src/core/game_engine.js";
 import { ProductionCalculator } from "../game/src/systems/production_calculator.js";
 import { getZoneCategory } from "../game/src/core/merge_rules.js";
 import { TrialTerrainEffectResolver } from "../game/src/trial/systems/trial_terrain_effect_resolver.js";
-import { isCardRuntimeActive } from "../game/src/systems/card_runtime_policy.js";
 
 console.log("============================================================");
 console.log("🌾 [Reclaimed Land compatibility semantics]");
 console.log("============================================================");
 
 const engine = GameEngine.createGame({ runSeed: 0xA0715001 });
-const command = engine.deckManager.getLandCardMaster()
-    .find(card => card.id === "CMD_WETLAND_RECLAMATION");
-
-assert.ok(command, "legacy reclamation command data remains available for restore/data compatibility");
-assert.equal(command.category, "COMMAND");
-assert.equal(isCardRuntimeActive(command), false, "reclamation command runtime is intentionally dormant");
-assert.equal(
-    engine.deckManager.isCardEligible(command, 3, 0, { ignoreCooldown: true, ignoreHold: true }),
-    false,
-    "dormant reclamation command must not re-enter Offering"
-);
 
 const reclaimedTerrain = {
     id: "E1_RECLAIMED_LAND",

@@ -1,5 +1,5 @@
 import assert from 'node:assert';
-import { GameEngine, GridEngine } from '../game/src/app.js';
+import { GameEngine, GridEngine, ProductionCalculator } from '../game/src/app.js';
 
 console.log("🧪 [1x1ブロック連結4マス上限 ＆ 即時ボーナス検問テスト開始]");
 
@@ -31,7 +31,13 @@ assert.strictEqual(engine.state.mergedBlocks[gId].cells.length, 3, "グループ
 engine.state.hasPickedThisTurn = false;
 engine.state.placeShape(0, 4, [[1]], plains);
 assert.strictEqual(engine.state.mergedBlocks[gId].cells.length, 4, "グループ所属マス数が上限の 4 であること");
-console.log("  ✅ [PASS] 4マスまで同一グループに正常連結");
+const mergedBreakdown = ProductionCalculator.getResourceBreakdown(engine.state);
+assert.strictEqual(
+    mergedBreakdown.food.tiles,
+    10,
+    "食料2×4セルの真MERGEに1.2倍を適用し ceil(8×1.2)=10 になること"
+);
+console.log("  ✅ [PASS] 4マスまで同一グループに正常連結 ＆ MERGE産出1.2倍");
 
 // 5マス目配置 (0,3) -> 4マス上限のため既存グループには入らず単独ブロックとなる
 engine.state.hasPickedThisTurn = false;

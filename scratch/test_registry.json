@@ -613,7 +613,7 @@
     },
     {
       "path": "scratch/test_merge_cap.mjs",
-      "purpose": "merge cap",
+      "purpose": "true merge cap and 1.2x production multiplier",
       "suite": "supplemental"
     },
     {
@@ -623,11 +623,6 @@
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
       ]
-    },
-    {
-      "path": "scratch/test_offering_conditions.mjs",
-      "purpose": "live card runtime policy and dormant COMMAND gate",
-      "suite": "supplemental"
     },
     {
       "path": "scratch/test_offering_duplicate_fallback.mjs",
