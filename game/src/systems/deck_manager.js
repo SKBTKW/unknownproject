@@ -651,20 +651,40 @@ class DeckManager {
 
         // Offering eligibility means "placeable after normal player rotation",
         // not merely placeable in the authored/default orientation.
+        // Skip only truly duplicate orientations. The signature includes the
+        // attribute map so a symmetric shape whose terrain positions rotate
+        // still receives its distinct legality checks.
+        const seenOrientations = new Set();
         for (let rotation = 0; rotation < 4; rotation++) {
-            for (let r = 0; r < this.state.grid.length; r++) {
-                for (let c = 0; c < this.state.grid[r].length; c++) {
-                    try {
-                        const result = this.state.canPlaceShape(
-                            r - anchor.r,
-                            c - anchor.c,
-                            shape,
-                            definition,
-                            attributeCells
-                        );
-                        if (result?.can === true) return true;
-                    } catch {
-                        // Malformed/non-placeable candidates do not satisfy placement guarantees.
+            const orientationSignature = JSON.stringify({
+                shape,
+                anchor,
+                attributeCells: (attributeCells || []).map(cell => ({
+                    r: Number.isInteger(cell?.r) ? cell.r : cell?.dr,
+                    c: Number.isInteger(cell?.c) ? cell.c : cell?.dc,
+                    terrainId: getPlacementAttributeTerrainId(cell),
+                    sourceR: cell?.sourceR ?? null,
+                    sourceC: cell?.sourceC ?? null
+                }))
+            });
+
+            if (!seenOrientations.has(orientationSignature)) {
+                seenOrientations.add(orientationSignature);
+
+                for (let r = 0; r < this.state.grid.length; r++) {
+                    for (let c = 0; c < this.state.grid[r].length; c++) {
+                        try {
+                            const result = this.state.canPlaceShape(
+                                r - anchor.r,
+                                c - anchor.c,
+                                shape,
+                                definition,
+                                attributeCells
+                            );
+                            if (result?.can === true) return true;
+                        } catch {
+                            // Malformed/non-placeable candidates do not satisfy placement guarantees.
+                        }
                     }
                 }
             }
