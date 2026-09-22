@@ -419,6 +419,7 @@ async function main() {
     const presentationFocusedOk = await runChecks("Presentation Boundary Focused Contracts", [
         ["Board presentation state", "node", ["--test", "game/src/presentation/board_presentation_state.test.js"]],
         ["Board presentation axes", "node", ["scratch/test_board_presentation_axes.mjs"]],
+        ["Board profile consumption audit", "node", ["scratch/test_board_presentation_profile_consumption_contract.mjs"]],
         ["Board presentation Unity boundary", "node", ["scratch/test_board_presentation_unity_boundary.mjs"]],
         ["Legacy Web2D board input adapter", "node", ["scratch/test_legacy_web2d_board_input_adapter.mjs"]],
     ]);
