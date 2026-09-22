@@ -80,6 +80,30 @@ export function resolveWeb25DTrialCandidateVisual(item, {
     });
 }
 
+export function resolveWeb25DPlannedInterceptVisual(item, {
+    activeRouteId = null
+} = {}) {
+    if (!item?.cell) return null;
+
+    const hasComparableRoute = item.routeId != null && activeRouteId != null;
+    const isActiveRoute = hasComparableRoute && item.routeId === activeRouteId;
+    const isOtherRoute = hasComparableRoute && item.routeId !== activeRouteId;
+
+    return Object.freeze({
+        isActiveRoute,
+        isOtherRoute,
+        halfW: isOtherRoute ? 6 : 7,
+        halfH: isOtherRoute ? 3.5 : 4,
+        fillStyle: isOtherRoute
+            ? 'rgba(245, 199, 92, 0.12)'
+            : 'rgba(245, 199, 92, 0.94)',
+        strokeStyle: isOtherRoute
+            ? 'rgba(255, 235, 172, 0.56)'
+            : 'rgba(255, 235, 172, 0.96)',
+        lineWidth: isOtherRoute ? 0.8 : 1
+    });
+}
+
 export function drawWeb25DTrialOverlay({ ctx, projection, readModel } = {}) {
     const trial = readModel?.trial;
     if (!ctx || !projection || !trial?.available) return;
@@ -148,13 +172,17 @@ export function drawWeb25DTrialOverlay({ ctx, projection, readModel } = {}) {
     }
 
     for (const item of trial.plannedIntercepts || []) {
-        if (!item?.cell) continue;
+        const visual = resolveWeb25DPlannedInterceptVisual(item, {
+            activeRouteId: trial.activeRouteId
+        });
+        if (!visual) continue;
+
         const center = projectTrialCell(readModel, projection, item.cell);
-        drawDiamond(ctx, center, 7, 4);
-        ctx.fillStyle = 'rgba(245, 199, 92, 0.94)';
+        drawDiamond(ctx, center, visual.halfW, visual.halfH);
+        ctx.fillStyle = visual.fillStyle;
         ctx.fill();
-        ctx.strokeStyle = 'rgba(255, 235, 172, 0.96)';
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = visual.strokeStyle;
+        ctx.lineWidth = visual.lineWidth;
         ctx.stroke();
     }
 
