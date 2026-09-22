@@ -562,6 +562,11 @@
       ]
     },
     {
+      "path": "scratch/test_land_socket_terrain_ids.mjs",
+      "purpose": "land socket terrain id canonicalization",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_layout_css_ownership.mjs",
       "purpose": "layout css ownership",
       "suite": "existing",
