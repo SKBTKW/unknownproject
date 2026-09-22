@@ -51,20 +51,24 @@ Object.assign(engine.state.grid[0][0], {
 assert.equal(getZoneCategory(engine.state.grid[0][0]), "PLAINS", "reclaimed land remains PLAINS-compatible for zoning");
 
 const breakdown = ProductionCalculator.calculateCellYieldBreakdown(engine.state, 0, 0);
-assert.equal(breakdown.base.food, 4, "reclaimed land base food remains 4");
-assert.equal(breakdown.base.wood, 1, "reclaimed land base material remains 1");
-assert.equal(breakdown.base.defense, 0, "reclaimed land base defense remains 0");
-assert.equal(breakdown.base.mystic, 0, "reclaimed land base mystic remains 0");
+assert.equal(breakdown.baseYields.food, 4, "reclaimed land base food remains 4");
+assert.equal(breakdown.baseYields.wood, 1, "reclaimed land base material remains 1");
+assert.equal(breakdown.baseYields.defense, 0, "reclaimed land base defense remains 0");
+assert.equal(breakdown.baseYields.mystic, 0, "reclaimed land base mystic remains 0");
 
 const resolver = new TrialTerrainEffectResolver();
-const trialCategory = typeof resolver.resolveTerrainCategory === "function"
-    ? resolver.resolveTerrainCategory(engine.state.grid[0][0])
-    : reclaimedTerrain.trialTerrainCategory;
-assert.equal(
-    trialCategory || reclaimedTerrain.trialTerrainCategory,
-    "STANDARD_E1",
-    "reclaimed land remains a standard E1 battlefield for Trial compatibility"
-);
+const trialCell = {
+    cellId: "compat_reclaimed",
+    terrain: reclaimedTerrain,
+    elevation: 1
+};
+assert.equal(resolver.canInterceptAt(trialCell), true, "reclaimed land remains interceptable in Trial");
+assert.equal(resolver.canEnterNormalRoute(trialCell), true, "reclaimed land remains traversable by normal Trial routes");
+const trialEffects = resolver.resolve({
+    interceptCell: trialCell,
+    approachCell: { ...trialCell, cellId: "compat_reclaimed_approach" }
+});
+assert.equal(trialEffects.modifiers.length, 0, "reclaimed E1 does not inherit wetland/mountain/special terrain modifiers");
 
 assert.equal(reclaimedTerrain.isArtificialTerrain, true);
 assert.equal(reclaimedTerrain.isSpecialBlock, true);

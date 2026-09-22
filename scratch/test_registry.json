@@ -137,7 +137,7 @@
     },
     {
       "path": "scratch/test_area_influence_system.mjs",
-      "purpose": "area influence system",
+      "purpose": "irrigation source compatibility and wetland adjacency rules",
       "suite": "supplemental"
     },
     {
@@ -211,7 +211,7 @@
     },
     {
       "path": "scratch/test_check_system_ui.mjs",
-      "purpose": "check system ui",
+      "purpose": "CheckSystem result presentation and dice queue boundary",
       "suite": "supplemental"
     },
     {
@@ -626,7 +626,7 @@
     },
     {
       "path": "scratch/test_offering_conditions.mjs",
-      "purpose": "offering conditions",
+      "purpose": "live card runtime policy and dormant COMMAND gate",
       "suite": "supplemental"
     },
     {
@@ -660,7 +660,7 @@
     },
     {
       "path": "scratch/test_reclaimed_land.mjs",
-      "purpose": "reclaimed land",
+      "purpose": "reclaimed-land restore compatibility semantics",
       "suite": "supplemental"
     },
     {

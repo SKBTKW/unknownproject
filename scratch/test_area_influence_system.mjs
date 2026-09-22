@@ -88,11 +88,14 @@ const plains = {
     assert.equal(isWithinWaterSourceExclusionRange(engine.state, 1, 1), true);
 
     const breakdown = ProductionCalculator.calculateCellYieldBreakdown(engine.state, 1, 1);
-    assert.equal(Array.isArray(breakdown.modifiers), true, "production breakdown remains readable with legacy water-source data");
+    const irrigation = breakdown.modifiers.filter(mod => mod.type === "IRRIGATION");
+    assert.equal(irrigation.length, 1, "overlapping legacy lake/oasis sources feed the current irrigation contract only once");
+    assert.equal(irrigation[0].resource, "food");
+    assert.equal(irrigation[0].amount, 2, "GL1 plains receives +50% food from one irrigation influence");
     assert.equal(
         breakdown.modifiers.some(mod => mod.type === "LAKE_IRRIGATION"),
         false,
-        "retired lake irrigation production modifier must not be reintroduced by legacy save data"
+        "legacy modifier naming must not return"
     );
 }
 
