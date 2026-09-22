@@ -386,6 +386,16 @@ export class Web25DPhaseCRenderer extends Web25DCanvasRenderer {
         ctx.fillRect(center.x - 6, floorY + 2, 12, 3);
         ctx.fillRect(center.x - 4, floorY - 1, 8, 3);
 
+        this.drawHQBeacon(center);
+    }
+
+    drawHQBeacon(center) {
+        const ctx = this.ctx;
+        const floorY = center.y + 2;
+
+        // The Last Ember is the persistent HQ identity. Phase E redraws only
+        // this beacon above Zone/Link marks while keeping the ruin itself in
+        // ordinary terrain depth order.
         ctx.beginPath();
         ctx.arc(center.x, floorY - 2, 12, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(240, 121, 57, 0.11)';
