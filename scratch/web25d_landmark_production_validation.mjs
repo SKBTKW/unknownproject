@@ -108,6 +108,7 @@ for (const [resource, glyph] of [
 
 const textCalls = [];
 const drawCalls = [];
+const rectCalls = [];
 const ctx = {
     beginPath() { drawCalls.push('beginPath'); },
     moveTo() { drawCalls.push('moveTo'); },
@@ -117,8 +118,14 @@ const ctx = {
     stroke() { drawCalls.push('stroke'); },
     arc() { drawCalls.push('arc'); },
     ellipse() { drawCalls.push('ellipse'); },
-    fillRect() { drawCalls.push('fillRect'); },
-    strokeRect() { drawCalls.push('strokeRect'); },
+    fillRect(x, y, width, height) {
+        drawCalls.push('fillRect');
+        rectCalls.push({ type: 'fill', x, y, width, height });
+    },
+    strokeRect(x, y, width, height) {
+        drawCalls.push('strokeRect');
+        rectCalls.push({ type: 'stroke', x, y, width, height });
+    },
     save() { drawCalls.push('save'); },
     restore() { drawCalls.push('restore'); },
     fillText(text, x, y) {
@@ -144,8 +151,32 @@ assert.ok(
     'Socket production marker must sit below the resolved-resource landmark'
 );
 
+const productionRects = rectCalls.filter(call => call.type === 'fill').slice(0, 2);
+assert.deepEqual(
+    productionRects.map(call => ({ width: call.width, height: call.height })),
+    [
+        { width: 24, height: 12 },
+        { width: 24, height: 12 }
+    ],
+    'single-digit production chips keep the minimum readable footprint'
+);
+assert.equal(ctx.font, '10px "Segoe UI Emoji", sans-serif');
+
 renderer.drawLandPrimaryMarker(landCell, { x: 50, y: 50 });
 assert.equal(textCalls.at(-1).text, '🌾4', 'legacy marker method remains a compatibility alias');
+
+const doubleDigitCell = {
+    display: {
+        role: 'LAND_PRIMARY',
+        production: { primaryYield: { resource: 'food', amount: 12 } }
+    }
+};
+const rectCountBeforeDoubleDigit = rectCalls.length;
+renderer.drawProductionMarker(doubleDigitCell, { x: 50, y: 50 });
+const doubleDigitFill = rectCalls.slice(rectCountBeforeDoubleDigit)
+    .find(call => call.type === 'fill');
+assert.equal(doubleDigitFill?.width, 28, 'double-digit production expands chip width');
+assert.equal(doubleDigitFill?.height, 12);
 
 for (const category of resourceFamilies.keys()) {
     const before = drawCalls.length;
