@@ -729,7 +729,11 @@ export class BoardGridComponent {
         if (!cellData || !cellData.terrain) return "";
         const activeYield = yieldInfo || { icon: "🌾", val: 0 };
         const attrIcons = this.getTerrainAttributeIcons(cellData);
-        const iconsHtml = attrIcons.map(icon => `<span class="symbolic-attr-icon">${icon}</span>`).join("");
+        const socketIconIndex = cellData.socketResource ? attrIcons.length - 1 : -1;
+        const iconsHtml = attrIcons.map((icon, index) => {
+            const socketClass = index === socketIconIndex ? " symbolic-socket-icon" : "";
+            return `<span class="symbolic-attr-icon${socketClass}">${icon}</span>`;
+        }).join("");
         
         return `<div class="symbolic-tile-container"><div class="symbolic-yield-badge"><span class="symbolic-yield-icon">${activeYield.icon}</span><span class="symbolic-yield-val">${activeYield.val}</span></div><div class="symbolic-icons-tray">${iconsHtml}</div></div>`;
     }
