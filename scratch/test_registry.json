@@ -990,6 +990,14 @@
       ]
     },
     {
+      "path": "scratch/test_trial_tactical_effect_board_semantics.mjs",
+      "purpose": "trial tactical effect board semantics",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_trial_ui_integration.mjs",
       "purpose": "trial ui integration",
       "suite": "existing",
