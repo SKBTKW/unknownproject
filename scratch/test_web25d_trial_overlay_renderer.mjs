@@ -92,6 +92,23 @@ assert.equal(
     'route:b'
 );
 
+assert.deepEqual(
+    resolveWeb25DTrialRouteSelectors({
+        projection,
+        readModel: {
+            ...routeSelectorReadModel,
+            trial: {
+                ...routeSelectorReadModel.trial,
+                battleMarkers: [
+                    { cell: { r: 0, c: 1 }, routeId: 'route:a', status: 'ACTIVE', isCurrent: true }
+                ]
+            }
+        }
+    }),
+    [],
+    'route selectors are hidden while a battle is current'
+);
+
 assert.equal(
     resolveWeb25DTrialCandidateVisual({ cell: { r: 0, c: 0 }, canIntercept: false }),
     null,
@@ -308,7 +325,11 @@ assert.equal(
 );
 
 const routeSelectorArcs = ctx.ops.filter(op => op[0] === 'arc' && op[3] === 7);
-assert.equal(routeSelectorArcs.length, 2, 'all Trial routes expose a 2.5D route selector marker');
+assert.equal(
+    routeSelectorArcs.length,
+    0,
+    'route selectors stay hidden while the draw model has a current battle'
+);
 
 const profileCtx = createContext();
 drawWeb25DTrialOverlay({

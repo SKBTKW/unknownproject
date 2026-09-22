@@ -75,7 +75,8 @@ export class TrialBoardSemanticAdapter {
         const currentBattle = typeof trialState.getCurrentBattle === "function"
             ? trialState.getCurrentBattle()
             : (Array.isArray(trialState.battleQueue) && Number.isInteger(trialState.currentBattleIndex) ? trialState.battleQueue[trialState.currentBattleIndex] || null : null);
-        const activeRouteId = trialPresentationState?.activeEnemyRoute ?? currentBattle?.routeId ?? null;
+        const planningFocusVisible = trialState?.planActivated !== true;
+        const activeRouteId = currentBattle?.routeId ?? trialPresentationState?.activeEnemyRoute ?? null;
         const routes = (trialState.routes || []).map(route => {
             const cells = routeCellsOf(route);
             const entryCell = toCell(route?.entryCell) || cells[0] || null;
@@ -84,10 +85,14 @@ export class TrialBoardSemanticAdapter {
         return createTrialBoardSemanticData({
             available: true,
             activeRouteId,
-            selectedInterceptCell: trialPresentationState?.selectedInterceptCell || null,
-            hoveredInterceptCell: trialPresentationState?.hoveredCell || null,
+            selectedInterceptCell: planningFocusVisible
+                ? (trialPresentationState?.selectedInterceptCell || null)
+                : null,
+            hoveredInterceptCell: planningFocusVisible
+                ? (trialPresentationState?.hoveredCell || null)
+                : null,
             routes,
-            interceptionCandidates,
+            interceptionCandidates: planningFocusVisible ? interceptionCandidates : [],
             plannedIntercepts: buildPlannedIntercepts(trialState, trialPresentationState),
             battleMarkers: buildBattleMarkers(trialState),
             enemyState: buildEnemyState(trialState)

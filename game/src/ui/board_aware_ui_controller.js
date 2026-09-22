@@ -113,8 +113,12 @@ export class BoardAwareUIController extends LegacyUIController {
             ? grid.reduce((max, row) => Math.max(max, row?.length || 0), 0)
             : 0;
         const activeRoute = this.getActiveTrialRoute();
+        const canSelectInterception = Boolean(
+            this.trialPreviewConfig
+            && !this.isTrialPlanActivated?.()
+        );
 
-        const interceptionCandidates = this.trialPreviewConfig
+        const interceptionCandidates = canSelectInterception
             ? this.trialInterceptionSemanticProvider.collect({
                 displayGrid: grid,
                 activeRoute,

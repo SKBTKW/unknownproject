@@ -114,6 +114,8 @@ export function resolveWeb25DTrialRouteSelectors({
     const trial = readModel?.trial;
     const entryAlpha = resolveWeb25DTrialOverlayAlpha(readModel?.profile?.invasionEntry);
     if (!projection || !trial?.available || entryAlpha <= 0) return Object.freeze([]);
+    const hasCurrentBattle = (trial.battleMarkers || []).some(marker => marker?.isCurrent);
+    if (hasCurrentBattle) return Object.freeze([]);
 
     const selectors = [];
     for (const route of trial.routes || []) {
