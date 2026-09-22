@@ -105,6 +105,25 @@ assert.deepEqual(
             ...routeSelectorReadModel,
             trial: {
                 ...routeSelectorReadModel.trial,
+                routeSelectionEnabled: false,
+                battleMarkers: [
+                    { cell: { r: 0, c: 1 }, routeId: 'route:a', status: 'PENDING', isCurrent: false }
+                ]
+            }
+        }
+    }),
+    [],
+    'activated Trial semantics hide route selectors between battles'
+);
+
+assert.deepEqual(
+    resolveWeb25DTrialRouteSelectors({
+        projection,
+        readModel: {
+            ...routeSelectorReadModel,
+            trial: {
+                ...routeSelectorReadModel.trial,
+                routeSelectionEnabled: false,
                 battleMarkers: [
                     { cell: { r: 0, c: 1 }, routeId: 'route:a', status: 'ACTIVE', isCurrent: true }
                 ]
@@ -277,6 +296,7 @@ drawWeb25DTrialOverlay({
         trial: {
             available: true,
             activeRouteId: 'route:a',
+            routeSelectionEnabled: false,
             selectedInterceptCell: { r: 0, c: 1 },
             hoveredInterceptCell: { r: 1, c: 1 },
             routes: [

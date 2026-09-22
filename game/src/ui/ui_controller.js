@@ -27,6 +27,10 @@ import { TrialController } from '../trial/flow/trial_controller.js';
 import { TrialPresentationState } from '../trial/presentation/trial_presentation_state.js';
 import { TrialCausalityPresenter } from '../trial/presentation/trial_causality_presenter.js';
 import { TrialAdvisorPublicReadModel } from '../trial/presentation/trial_advisor_public_read_model.js';
+import {
+    isTrialRouteSelectionEnabled,
+    resolveTrialPresentationRouteId
+} from '../presentation/trial_route_focus_resolver.js';
 import { TrialInterceptionPreviewComponent } from './trial_interception_preview_component.js';
 import { TrialDefenseAllocationComponent } from './trial_defense_allocation_component.js';
 import { LayoutStateManager, UI_LAYOUT_STATES, HAND_LAYOUT_STATES } from './layout_state_manager.js';
@@ -282,17 +286,19 @@ class UIController {
         );
     }
 
+    isTrialRouteSelectionEnabled() {
+        return isTrialRouteSelectionEnabled(this.trialController?.state || null);
+    }
+
     getActiveTrialRoute() {
         if (!this.trialPreviewConfig || !this.trialController.state) return null;
         const routes = this.trialController.state.routes || [];
-        const currentBattleRouteId = this.getCurrentTrialBattle?.()?.routeId ?? null;
-        if (currentBattleRouteId !== null) {
-            const currentBattleRoute = routes.find(route => route.id === currentBattleRouteId);
-            if (currentBattleRoute) return currentBattleRoute;
-        }
-        const activeRouteId = this.trialPresentationState.activeEnemyRoute;
-        if (activeRouteId !== null) {
-            return routes.find(route => route.id === activeRouteId) || null;
+        const focusRouteId = resolveTrialPresentationRouteId({
+            trialState: this.trialController.state,
+            trialPresentationState: this.trialPresentationState
+        });
+        if (focusRouteId !== null) {
+            return routes.find(route => (route?.id ?? route?.routeId) === focusRouteId) || null;
         }
         return routes[0] || null;
     }
@@ -532,7 +538,7 @@ class UIController {
 
     selectTrialRoute(routeId) {
         if (!this.trialPreviewConfig) return false;
-        if (this.getCurrentTrialBattle?.()) return false;
+        if (!this.isTrialRouteSelectionEnabled()) return false;
         this.acknowledgeFirstRunTrialRoute();
         this.trialPresentationState.setActiveEnemyRoute(routeId);
         this.trialPresentationState.clearHoveredCell();

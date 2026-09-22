@@ -83,6 +83,7 @@ export class BoardPresentationDataService {
         const visibleTrial = Object.freeze({
             available: Boolean(trial.available && showTrialOperationalData),
             activeRouteId: showRoutes ? trial.activeRouteId : null,
+            routeSelectionEnabled: Boolean(showRoutes && trial.routeSelectionEnabled),
             selectedInterceptCell: showInterception ? trial.selectedInterceptCell : null,
             hoveredInterceptCell: showInterception ? trial.hoveredInterceptCell : null,
             routes: Object.freeze(showRoutes ? [...(trial.routes || [])] : []),
