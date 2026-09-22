@@ -196,6 +196,59 @@ function resolvePlacementGeometry(card, clickedR, clickedC) {
     };
 }
 
+function normalizePlacementRotationTurns(rotation = 0) {
+    const value = Number(rotation);
+    if (!Number.isFinite(value)) return 0;
+
+    // Accept both explicit quarter-turn counts (1..3) and degree values
+    // (90/180/270). Other angles are outside the grid rotation contract.
+    if (Number.isInteger(value) && Math.abs(value) <= 3) {
+        return ((value % 4) + 4) % 4;
+    }
+    if (Number.isInteger(value) && value % 90 === 0) {
+        const turns = value / 90;
+        return ((turns % 4) + 4) % 4;
+    }
+    return 0;
+}
+
+/**
+ * Resolve an absolute authored-card rotation without mutating the card.
+ *
+ * rotation=0 preserves the card instance's current* fields (Browser UI path).
+ * Non-zero rotation is resolved from the authored/master geometry so external
+ * callers such as Unity do not depend on mutable Browser card state.
+ */
+function resolvePlacementGeometryAtRotation(card, clickedR, clickedC, rotation = 0) {
+    const turns = normalizePlacementRotationTurns(rotation);
+    if (turns === 0) return resolvePlacementGeometry(card, clickedR, clickedC);
+
+    const authored = card?.terrain || card;
+    let shape = resolvePlacementShape(authored);
+    let anchor = resolvePlacementAnchor(authored, shape);
+    let attributeCells = resolvePlacementAttributeCells(authored);
+
+    for (let i = 0; i < turns; i++) {
+        const rotated = rotatePlacementClockwise(shape, anchor, attributeCells);
+        shape = rotated.shape;
+        anchor = rotated.anchor;
+        attributeCells = rotated.attributeCells;
+    }
+
+    const startR = clickedR - anchor.r;
+    const startC = clickedC - anchor.c;
+    return {
+        clickedR,
+        clickedC,
+        startR,
+        startC,
+        shape,
+        anchor,
+        attributeCells,
+        cells: getPlacementCells(startR, startC, shape)
+    };
+}
+
 function rotateShapeMatrix(matrix) {
     const shape = isShapeMatrix(matrix) ? matrix : DEFAULT_PLACEMENT_SHAPE;
     const rows = shape.length;
@@ -250,6 +303,7 @@ export {
     resolvePlacementAnchor,
     resolvePlacementAttributeCells,
     resolvePlacementGeometry,
+    resolvePlacementGeometryAtRotation,
     resolvePlacementShape,
     resolveRepresentativePlacementTerrainId,
     rotateAttributeCellsClockwise,
