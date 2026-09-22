@@ -198,6 +198,39 @@ const doubleDigitFill = rectCalls.slice(rectCountBeforeDoubleDigit)
 assert.equal(doubleDigitFill?.width, 28, 'double-digit production expands chip width');
 assert.equal(doubleDigitFill?.height, 12);
 
+const elevatedCell = {
+    r: 0,
+    c: 0,
+    placed: true,
+    elevation: 3,
+    greenery: 0,
+    terrainId: 'E3_MOUNTAIN',
+    edges: [],
+    interaction: {},
+    display: {
+        role: 'LAND_PRIMARY',
+        production: { primaryYield: { resource: 'food', amount: 4 } }
+    }
+};
+const elevatedProjected = projection.projectCellView(elevatedCell);
+const productionAnchors = [];
+const originalDrawProductionMarker = renderer.drawProductionMarker.bind(renderer);
+renderer.drawProductionMarker = (cell, center) => {
+    productionAnchors.push({ ...center });
+};
+renderer.drawPlacedTerrain(elevatedCell, elevatedProjected);
+renderer.drawProductionMarker = originalDrawProductionMarker;
+assert.deepEqual(
+    productionAnchors.at(-1),
+    elevatedProjected.screenCenter,
+    'E3 terrain keeps production metadata on the unlifted logical cell base'
+);
+assert.equal(
+    productionAnchors.at(-1).y,
+    50,
+    'production anchor must not inherit the 24px E3 visual lift'
+);
+
 for (const category of resourceFamilies.keys()) {
     const before = drawCalls.length;
     assert.doesNotThrow(
