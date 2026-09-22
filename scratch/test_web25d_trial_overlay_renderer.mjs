@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {
     drawWeb25DTrialOverlay,
+    resolveWeb25DPlannedInterceptVisual,
     resolveWeb25DTrialCandidateVisual
 } from '../game/src/presentation/web25d_trial_overlay_renderer.js';
 
@@ -60,6 +61,35 @@ assert.equal(selectedVisual.isSelected, true);
 assert.equal(selectedVisual.isHovered, false, 'selected state has priority over hover');
 assert.equal(selectedVisual.lineWidth, 2.5);
 
+
+const activePlanVisual = resolveWeb25DPlannedInterceptVisual(
+    { cell: { r: 0, c: 0 }, routeId: 'route:a' },
+    { activeRouteId: 'route:a' }
+);
+assert.equal(activePlanVisual.isActiveRoute, true);
+assert.equal(activePlanVisual.isOtherRoute, false);
+assert.equal(activePlanVisual.fillStyle, 'rgba(245, 199, 92, 0.94)');
+assert.equal(activePlanVisual.lineWidth, 1);
+
+const otherPlanVisual = resolveWeb25DPlannedInterceptVisual(
+    { cell: { r: 0, c: 1 }, routeId: 'route:b' },
+    { activeRouteId: 'route:a' }
+);
+assert.equal(otherPlanVisual.isActiveRoute, false);
+assert.equal(otherPlanVisual.isOtherRoute, true);
+assert.equal(otherPlanVisual.fillStyle, 'rgba(245, 199, 92, 0.12)');
+assert.equal(otherPlanVisual.lineWidth, 0.8);
+
+const neutralPlanVisual = resolveWeb25DPlannedInterceptVisual(
+    { cell: { r: 0, c: 2 }, routeId: 'route:b' },
+    { activeRouteId: null }
+);
+assert.equal(
+    neutralPlanVisual.fillStyle,
+    'rgba(245, 199, 92, 0.94)',
+    'when there is no active route, planned intercepts retain their existing primary visibility'
+);
+
 const ctx = createContext();
 drawWeb25DTrialOverlay({
     ctx,
@@ -91,7 +121,10 @@ drawWeb25DTrialOverlay({
                     reason: 'BLOCK_ALREADY_PLANNED'
                 }
             ],
-            plannedIntercepts: [{ cell: { r: 1, c: 0 } }],
+            plannedIntercepts: [
+                { cell: { r: 1, c: 0 }, routeId: 'route:a' },
+                { cell: { r: 0, c: 2 }, routeId: 'route:b' }
+            ],
             battleMarkers: [{ cell: { r: 1, c: 1 }, isCurrent: true }]
         }
     }
@@ -99,7 +132,16 @@ drawWeb25DTrialOverlay({
 
 assert.equal(ctx.ops.some(op => op[0] === 'arc' && op[3] === 6), true);
 assert.equal(ctx.ops.some(op => op[0] === 'stroke' && op[2] === 7), true);
-assert.equal(ctx.ops.some(op => op[0] === 'fill' && String(op[1]).includes('245, 199, 92')), true);
+assert.equal(
+    ctx.ops.some(op => op[0] === 'fill' && op[1] === 'rgba(245, 199, 92, 0.94)'),
+    true,
+    'active-route planned intercept keeps primary emphasis'
+);
+assert.equal(
+    ctx.ops.some(op => op[0] === 'fill' && op[1] === 'rgba(245, 199, 92, 0.12)'),
+    true,
+    'other-route planned intercept stays visible but secondary'
+);
 
 const candidateStrokes = ctx.ops.filter(
     op => op[0] === 'stroke'
