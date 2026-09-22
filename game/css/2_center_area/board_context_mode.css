@@ -9,6 +9,9 @@ body[data-board-context="trial"] #gridBoard .searched-badge {
 body[data-board-context="trial"] #gridBoard .trial-route-cell,
 body[data-board-context="trial"] #gridBoard .trial-interception-candidate,
 body[data-board-context="trial"] #gridBoard .trial-interception-planned,
-body[data-board-context="trial"] #gridBoard .trial-battle-active {
+body[data-board-context="trial"] #gridBoard .trial-battle-pending,
+body[data-board-context="trial"] #gridBoard .trial-battle-active,
+body[data-board-context="trial"] #gridBoard .trial-battle-resolved,
+body[data-board-context="trial"] #gridBoard .trial-battle-current {
     isolation: isolate;
 }
