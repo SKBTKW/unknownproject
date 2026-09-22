@@ -167,21 +167,21 @@ export class Web25DPhaseCRenderer extends Web25DCanvasRenderer {
         if (!marker) return;
 
         const ctx = this.ctx;
-        const width = Math.max(20, 14 + String(marker.amount).length * 6);
+        const width = Math.max(24, 16 + String(marker.amount).length * 6);
         const x = Math.round(center.x - width / 2);
         const y = Math.round(center.y + marker.yOffset);
 
-        ctx.fillStyle = 'rgba(31, 35, 31, 0.78)';
-        ctx.fillRect(x, y, width, 10);
-        ctx.strokeStyle = 'rgba(218, 224, 207, 0.58)';
+        ctx.fillStyle = 'rgba(31, 35, 31, 0.88)';
+        ctx.fillRect(x, y, width, 12);
+        ctx.strokeStyle = 'rgba(218, 224, 207, 0.70)';
         ctx.lineWidth = 0.8;
-        ctx.strokeRect?.(x, y, width, 10);
+        ctx.strokeRect?.(x, y, width, 12);
 
-        ctx.font = '9px "Segoe UI Emoji", sans-serif';
+        ctx.font = '10px "Segoe UI Emoji", sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = 'rgba(236, 238, 222, 0.92)';
-        ctx.fillText(marker.label, center.x, y + 5);
+        ctx.fillText(marker.label, center.x, y + 6);
     }
 
     // Compatibility alias for the earlier Phase C renderer surface.
