@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {
     drawWeb25DTrialOverlay,
+    resolveWeb25DBattleMarkerVisual,
     resolveWeb25DPlannedInterceptVisual,
     resolveWeb25DTrialCandidateVisual
 } from '../game/src/presentation/web25d_trial_overlay_renderer.js';
@@ -90,6 +91,53 @@ assert.equal(
     'when there is no active route, planned intercepts retain their existing primary visibility'
 );
 
+
+const pendingBattleVisual = resolveWeb25DBattleMarkerVisual({
+    cell: { r: 0, c: 0 },
+    status: 'PENDING',
+    isCurrent: false
+});
+assert.equal(pendingBattleVisual.status, 'PENDING');
+assert.equal(pendingBattleVisual.radius, 3.5);
+assert.equal(pendingBattleVisual.fillStyle, 'rgba(210, 109, 79, 0.24)');
+
+const activeBattleVisual = resolveWeb25DBattleMarkerVisual({
+    cell: { r: 0, c: 1 },
+    status: 'ACTIVE',
+    isCurrent: true
+});
+assert.equal(activeBattleVisual.status, 'ACTIVE');
+assert.equal(activeBattleVisual.radius, 6);
+assert.equal(activeBattleVisual.fillStyle, 'rgba(255, 196, 96, 0.96)');
+assert.equal(activeBattleVisual.lineWidth, 1.5);
+
+const resolvedBattleVisual = resolveWeb25DBattleMarkerVisual({
+    cell: { r: 0, c: 2 },
+    status: 'RESOLVED',
+    isCurrent: false
+});
+assert.equal(resolvedBattleVisual.status, 'RESOLVED');
+assert.equal(resolvedBattleVisual.radius, 3.5);
+assert.equal(resolvedBattleVisual.fillStyle, 'rgba(151, 156, 149, 0.28)');
+
+const currentResolvedBattleVisual = resolveWeb25DBattleMarkerVisual({
+    cell: { r: 1, c: 0 },
+    status: 'RESOLVED',
+    isCurrent: true
+});
+assert.equal(
+    currentResolvedBattleVisual.radius,
+    5,
+    'resolved current battle remains visibly tied to the traversal context'
+);
+assert.equal(currentResolvedBattleVisual.lineWidth, 1.1);
+
+assert.equal(
+    resolveWeb25DBattleMarkerVisual({ cell: { r: 1, c: 1 } }).status,
+    'PENDING',
+    'missing status follows the semantic adapter pending fallback'
+);
+
 const ctx = createContext();
 drawWeb25DTrialOverlay({
     ctx,
@@ -125,12 +173,30 @@ drawWeb25DTrialOverlay({
                 { cell: { r: 1, c: 0 }, routeId: 'route:a' },
                 { cell: { r: 0, c: 2 }, routeId: 'route:b' }
             ],
-            battleMarkers: [{ cell: { r: 1, c: 1 }, isCurrent: true }]
+            battleMarkers: [
+                { cell: { r: 1, c: 1 }, status: 'ACTIVE', isCurrent: true },
+                { cell: { r: 1, c: 2 }, status: 'PENDING', isCurrent: false },
+                { cell: { r: 0, c: 2 }, status: 'RESOLVED', isCurrent: false }
+            ]
         }
     }
 });
 
-assert.equal(ctx.ops.some(op => op[0] === 'arc' && op[3] === 6), true);
+assert.equal(
+    ctx.ops.some(op => op[0] === 'arc' && op[3] === 6),
+    true,
+    'active current battle keeps the strongest marker'
+);
+assert.equal(
+    ctx.ops.some(op => op[0] === 'fill' && op[1] === 'rgba(210, 109, 79, 0.24)'),
+    true,
+    'pending battle remains visible as a subdued future marker'
+);
+assert.equal(
+    ctx.ops.some(op => op[0] === 'fill' && op[1] === 'rgba(151, 156, 149, 0.28)'),
+    true,
+    'resolved battle remains visible as a neutral historical marker'
+);
 assert.equal(ctx.ops.some(op => op[0] === 'stroke' && op[2] === 7), true);
 assert.equal(
     ctx.ops.some(op => op[0] === 'fill' && op[1] === 'rgba(245, 199, 92, 0.94)'),
@@ -141,6 +207,17 @@ assert.equal(
     ctx.ops.some(op => op[0] === 'fill' && op[1] === 'rgba(245, 199, 92, 0.12)'),
     true,
     'other-route planned intercept stays visible but secondary'
+);
+
+const activePlanFillIndex = ctx.ops.findIndex(
+    op => op[0] === 'fill' && op[1] === 'rgba(245, 199, 92, 0.94)'
+);
+const activeBattleFillIndex = ctx.ops.findIndex(
+    op => op[0] === 'fill' && op[1] === 'rgba(255, 196, 96, 0.96)'
+);
+assert.ok(
+    activeBattleFillIndex > activePlanFillIndex,
+    'battle markers stay above planned interception markers'
 );
 
 const candidateStrokes = ctx.ops.filter(
