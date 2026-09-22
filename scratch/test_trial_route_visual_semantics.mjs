@@ -5,7 +5,8 @@ import { createBoardPresentationDto } from '../game/src/presentation/board_prese
 import {
     buildTrialRouteCellIndex,
     createTrialBoardSemanticData,
-    getTrialRouteCellVisualState
+    getTrialRouteCellVisualState,
+    resolveTrialBattleMarkerState
 } from '../game/src/presentation/trial_board_semantic_data.js';
 
 function assertDirection(route, r, c, expected) {
@@ -72,6 +73,45 @@ assert.equal(
 );
 assert.equal(getTrialRouteCellVisualState(singletonRoute, 9, 9), null);
 
+
+assert.deepEqual(
+    resolveTrialBattleMarkerState({ status: 'PENDING', isCurrent: false }),
+    {
+        status: 'PENDING',
+        isCurrent: false,
+        isPending: true,
+        isActive: false,
+        isResolved: false
+    }
+);
+assert.deepEqual(
+    resolveTrialBattleMarkerState({ status: 'ACTIVE', isCurrent: true }),
+    {
+        status: 'ACTIVE',
+        isCurrent: true,
+        isPending: false,
+        isActive: true,
+        isResolved: false
+    }
+);
+assert.deepEqual(
+    resolveTrialBattleMarkerState({ status: 'RESOLVED', isCurrent: true }),
+    {
+        status: 'RESOLVED',
+        isCurrent: true,
+        isPending: false,
+        isActive: false,
+        isResolved: true
+    },
+    'resolved current state remains distinct from active battle state'
+);
+assert.equal(
+    resolveTrialBattleMarkerState({ status: 'UNKNOWN', isCurrent: false }).status,
+    'PENDING',
+    'unknown presentation status falls back to pending'
+);
+assert.equal(resolveTrialBattleMarkerState(null), null);
+
 const trialData = createTrialBoardSemanticData({
     available: true,
     activeRouteId: 'singleton',
@@ -134,6 +174,30 @@ assert.deepEqual(
     portableTrialDto.trial.hoveredInterceptCell,
     { r: 0, c: 0 },
     'portable Trial DTO must preserve hovered interception cell for every renderer'
+);
+
+const presentationGridSource = await readFile(
+    new URL('../game/src/ui/board_presentation_grid_component.js', import.meta.url),
+    'utf8'
+);
+const web25DTrialSource = await readFile(
+    new URL('../game/src/presentation/web25d_trial_overlay_renderer.js', import.meta.url),
+    'utf8'
+);
+assert.match(
+    presentationGridSource,
+    /resolveTrialBattleMarkerState/,
+    '2D presentation grid must consume shared battle lifecycle semantics'
+);
+assert.match(
+    web25DTrialSource,
+    /resolveTrialBattleMarkerState/,
+    '2.5D Trial overlay must consume shared battle lifecycle semantics'
+);
+assert.doesNotMatch(
+    presentationGridSource,
+    /trial-battle-active', Boolean\(trial\?\.battleMarker\?\.isCurrent\)/,
+    '2D active battle class must not be derived from current pointer alone'
 );
 
 const boardGridSource = await readFile(
