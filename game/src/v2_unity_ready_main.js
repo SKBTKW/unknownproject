@@ -4,7 +4,11 @@ import { DeckManager } from './systems/deck_manager.js';
 import { DirectiveSystem } from './systems/directive_system.js';
 import { ProductionCalculator } from './systems/production_calculator.js';
 import { MaintenanceFallbackSystem } from './systems/maintenance_fallback_system.js';
-import { rotateShapeMatrix } from './core/placement_geometry.js';
+import {
+    hasMultiplePlacementTerrainAttributes,
+    rotateShapeMatrix
+} from './core/placement_geometry.js';
+import { isMultiAttributeProductionResolved } from './core/land_production_contract.js';
 import { isWaterSourceInfluence } from './core/lake_rules.js';
 
 class GameState {
@@ -348,12 +352,31 @@ class GameState {
             return this.countE2HillsOnBoard();
         }
 
+        _validateLiveLandProduction(terrain) {
+            if (
+                hasMultiplePlacementTerrainAttributes(terrain)
+                && !isMultiAttributeProductionResolved(terrain)
+            ) {
+                return {
+                    can: false,
+                    success: false,
+                    reason: "MULTI_ATTRIBUTE_PRODUCTION_UNRESOLVED",
+                    reasons: ["MULTI_ATTRIBUTE_PRODUCTION_UNRESOLVED"]
+                };
+            }
+            return null;
+        }
+
         canPlaceShape(startR, startC, shapeMatrix, terrain = null, attributeCells = null) {
+            const productionGate = this._validateLiveLandProduction(terrain);
+            if (productionGate) return productionGate;
             if (this.gridEngine) return this.gridEngine.canPlaceShape(startR, startC, shapeMatrix, terrain, attributeCells);
             return { can: false, reason: "NO_GRID_ENGINE" };
         }
 
         placeShape(startR, startC, shapeMatrix, terrain, handIdx = -1, attributeCells = null) {
+            const productionGate = this._validateLiveLandProduction(terrain);
+            if (productionGate) return productionGate;
             if (this.gridEngine) return this.gridEngine.placeShape(startR, startC, shapeMatrix, terrain, handIdx, attributeCells);
             return { can: false, reason: "NO_GRID_ENGINE" };
         }
