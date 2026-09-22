@@ -49,7 +49,8 @@ check(presentationGrid.includes("data-board-trial-routes-visibility")
     && presentationGrid.includes("data-board-invasion-entry-visibility")
     && presentationGrid.includes("data-board-interception-visibility")
     && presentationGrid.includes("data-board-defense-allocation-visibility")
-    && presentationGrid.includes("data-board-battle-markers-visibility"),
+    && presentationGrid.includes("data-board-battle-markers-visibility")
+    && presentationGrid.includes("data-board-tactical-effects-visibility"),
 "2D board exposes Trial operational visibility fields from the presentation profile");
 check(contextCss.includes('[data-board-trial-routes-visibility="SECONDARY"] .cell.trial-route-cell')
     && contextCss.includes('[data-board-trial-routes-visibility="SUPPRESSED"] .cell.trial-route-cell'),
@@ -71,6 +72,14 @@ check(contextCss.includes('[data-board-defense-allocation-visibility="SECONDARY"
     && contextCss.includes('[data-board-defense-allocation-visibility="SUPPRESSED"] .trial-defense-allocation-badge')
     && contextCss.includes('[data-board-defense-allocation-visibility="HIDDEN"] .trial-defense-allocation-badge'),
 "2D defense allocation badges consume independent profile visibility");
+
+check(presentationGrid.includes("trial-tactical-effect-stack")
+    && presentationGrid.includes("resolveTrialTacticalEffectBadges"),
+"2D board materializes tactical effects from renderer-neutral Trial cell data");
+check(contextCss.includes('[data-board-tactical-effects-visibility="SECONDARY"] .trial-tactical-effect-stack')
+    && contextCss.includes('[data-board-tactical-effects-visibility="SUPPRESSED"] .trial-tactical-effect-stack')
+    && contextCss.includes('[data-board-tactical-effects-visibility="HIDDEN"] .trial-tactical-effect-stack'),
+"2D tactical effect markers consume independent profile visibility");
 check(boardAwareUi.includes("shouldShowBoardDevelopmentHints()")
     && boardAwareUi.includes("profile.developmentHints !== BOARD_VISIBILITY.HIDDEN")
     && boardAwareUi.includes("profile.developmentHints !== BOARD_VISIBILITY.SUPPRESSED")

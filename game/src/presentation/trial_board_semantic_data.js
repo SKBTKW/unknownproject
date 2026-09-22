@@ -124,6 +124,7 @@ export function createTrialBoardSemanticData({
     interceptionCandidates = [],
     plannedIntercepts = [],
     battleMarkers = [],
+    tacticalEffects = [],
     enemyState = null
 } = {}) {
     const normalizedRoutes = routes.map(route => {
@@ -166,6 +167,9 @@ export function createTrialBoardSemanticData({
         ),
         battleMarkers: freezeArray(
             battleMarkers.map(normalizeMarkedCell).filter(Boolean)
+        ),
+        tacticalEffects: freezeArray(
+            tacticalEffects.map(normalizeMarkedCell).filter(Boolean)
         ),
         enemyState: enemyState ? Object.freeze({ ...enemyState }) : null
     });

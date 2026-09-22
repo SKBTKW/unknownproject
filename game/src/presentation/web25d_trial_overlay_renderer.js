@@ -1,6 +1,7 @@
 import { resolveWeb25DElevationPixels } from './web25d_canvas_renderer.js';
 import { BOARD_VISIBILITY } from './board_presentation_profile.js';
 import { resolveTrialBattleMarkerState } from './trial_board_semantic_data.js';
+import { resolveTrialTacticalEffectGlyph } from './trial_tactical_effect_semantic.js';
 
 export function resolveWeb25DTrialOverlayAlpha(visibility) {
     switch (visibility) {
@@ -126,6 +127,61 @@ export function resolveWeb25DDefenseAllocationMetrics({
         height: compact ? 9 : 12,
         fontSize: compact ? 8 : 9
     });
+}
+
+export function resolveWeb25DTacticalEffectMarkers(trial = {}) {
+    const byCell = new Map();
+
+    for (const effect of trial.tacticalEffects || []) {
+        if (!effect?.cell || !effect.effectId) continue;
+        const key = `${effect.cell.r}:${effect.cell.c}`;
+        if (!byCell.has(key)) byCell.set(key, []);
+        const list = byCell.get(key);
+        if (list.some(item => item.effectId === effect.effectId)) continue;
+        if (list.length >= 2) continue;
+        list.push(Object.freeze({
+            cell: Object.freeze({ r: effect.cell.r, c: effect.cell.c }),
+            effectId: effect.effectId,
+            phase: effect.phase || 'AVAILABLE',
+            polarity: effect.polarity || 'NEUTRAL',
+            glyph: resolveTrialTacticalEffectGlyph(effect.effectId)
+        }));
+    }
+
+    return Object.freeze([...byCell.values()].flat());
+}
+
+function resolveTacticalEffectStroke(effect) {
+    if (effect.phase !== 'APPLIED') return 'rgba(159, 218, 229, 0.88)';
+    switch (effect.polarity) {
+        case 'ADVANTAGE': return 'rgba(142, 224, 167, 0.94)';
+        case 'DISADVANTAGE': return 'rgba(239, 151, 139, 0.94)';
+        case 'MIXED': return 'rgba(236, 205, 130, 0.94)';
+        default: return 'rgba(199, 211, 216, 0.90)';
+    }
+}
+
+function drawWeb25DTacticalEffectMarker(ctx, projection, center, effect, index) {
+    const compact = Number(projection?.tileWidth) < 48;
+    const size = compact ? 10 : 12;
+    const gap = compact ? 2 : 3;
+    const anchorX = center.x - Math.max(5, Number(projection?.halfW) * 0.38 || 5);
+    const anchorY = center.y - Math.max(5, Number(projection?.halfH) * 0.72 || 5) - index * (size + gap);
+    const x = Math.round(anchorX - size / 2);
+    const y = Math.round(anchorY - size / 2);
+
+    ctx.fillStyle = effect.phase === 'APPLIED'
+        ? 'rgba(40, 38, 29, 0.94)'
+        : 'rgba(25, 42, 49, 0.88)';
+    ctx.fillRect?.(x, y, size, size);
+    ctx.strokeStyle = resolveTacticalEffectStroke(effect);
+    ctx.lineWidth = compact ? 0.7 : 0.9;
+    ctx.strokeRect?.(x, y, size, size);
+    ctx.font = `${compact ? 7 : 9}px "Segoe UI Emoji", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(246, 247, 238, 0.98)';
+    ctx.fillText?.(effect.glyph, anchorX, anchorY + 0.5);
 }
 
 function inferRouteEntrySide(route, readModel) {
@@ -327,6 +383,7 @@ export function drawWeb25DTrialOverlay({ ctx, projection, readModel } = {}) {
     const interceptionAlpha = resolveWeb25DTrialOverlayAlpha(profile.interception);
     const defenseAllocationAlpha = resolveWeb25DTrialOverlayAlpha(profile.defenseAllocation);
     const battleAlpha = resolveWeb25DTrialOverlayAlpha(profile.battleMarkers);
+    const tacticalEffectsAlpha = resolveWeb25DTrialOverlayAlpha(profile.tacticalEffects);
 
     const routes = trial.routes || [];
     const route = trial.activeRouteId != null
@@ -432,6 +489,18 @@ export function drawWeb25DTrialOverlay({ ctx, projection, readModel } = {}) {
         for (const marker of resolveWeb25DDefenseAllocationMarkers(trial)) {
             const center = projectTrialCell(readModel, projection, marker.cell);
             drawWeb25DDefenseAllocationMarker(ctx, projection, center, marker);
+        }
+    });
+
+    withOverlayAlpha(ctx, tacticalEffectsAlpha, () => {
+        const effects = resolveWeb25DTacticalEffectMarkers(trial);
+        const perCellIndex = new Map();
+        for (const effect of effects) {
+            const key = `${effect.cell.r}:${effect.cell.c}`;
+            const index = perCellIndex.get(key) || 0;
+            perCellIndex.set(key, index + 1);
+            const center = projectTrialCell(readModel, projection, effect.cell);
+            drawWeb25DTacticalEffectMarker(ctx, projection, center, effect, index);
         }
     });
 

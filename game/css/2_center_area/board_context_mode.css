@@ -111,6 +111,53 @@
     display: none;
 }
 
+#gridBoard .trial-tactical-effect-stack {
+    position: absolute;
+    left: 3px;
+    top: 3px;
+    z-index: 13;
+    display: inline-flex;
+    gap: 2px;
+    pointer-events: none;
+}
+#gridBoard .trial-tactical-effect-badge {
+    width: 16px;
+    height: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    border: 1px solid rgba(159, 218, 229, 0.88);
+    border-radius: 4px;
+    background: rgba(25, 42, 49, 0.88);
+    color: rgba(246, 247, 238, 0.98);
+    font-size: 10px;
+    font-weight: 900;
+    line-height: 1;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.48);
+}
+#gridBoard .trial-tactical-effect-badge.is-applied {
+    background: rgba(40, 38, 29, 0.94);
+}
+#gridBoard .trial-tactical-effect-badge.is-applied.is-advantage {
+    border-color: rgba(142, 224, 167, 0.94);
+}
+#gridBoard .trial-tactical-effect-badge.is-applied.is-disadvantage {
+    border-color: rgba(239, 151, 139, 0.94);
+}
+#gridBoard .trial-tactical-effect-badge.is-applied.is-mixed {
+    border-color: rgba(236, 205, 130, 0.94);
+}
+#gridBoard[data-board-tactical-effects-visibility="SECONDARY"] .trial-tactical-effect-stack {
+    opacity: 0.55;
+}
+#gridBoard[data-board-tactical-effects-visibility="SUPPRESSED"] .trial-tactical-effect-stack {
+    opacity: 0.24;
+}
+#gridBoard[data-board-tactical-effects-visibility="HIDDEN"] .trial-tactical-effect-stack {
+    display: none;
+}
+
 body[data-board-context="trial"] #gridBoard .searched-badge {
     display: none;
 }

@@ -53,7 +53,8 @@ function toTrialCellDto(trial) {
         route,
         interceptionCandidate: cloneJsonSafe(trial?.interceptionCandidate ?? null),
         plannedIntercept: cloneJsonSafe(trial?.plannedIntercept ?? null),
-        battleMarker: cloneJsonSafe(trial?.battleMarker ?? null)
+        battleMarker: cloneJsonSafe(trial?.battleMarker ?? null),
+        tacticalEffects: cloneJsonSafe(trial?.tacticalEffects ?? [])
     };
 }
 function toCellDto(cell) {
@@ -108,6 +109,7 @@ function toTrialDto(trial) {
         interceptionCandidates: cloneJsonSafe(trial?.interceptionCandidates ?? []),
         plannedIntercepts: cloneJsonSafe(trial?.plannedIntercepts ?? []),
         battleMarkers: cloneJsonSafe(trial?.battleMarkers ?? []),
+        tacticalEffects: cloneJsonSafe(trial?.tacticalEffects ?? []),
         enemyState: cloneJsonSafe(trial?.enemyState ?? null)
     };
 }

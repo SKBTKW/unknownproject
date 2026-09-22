@@ -1,3 +1,8 @@
+import {
+    projectTrialTacticalEffects,
+    TRIAL_TACTICAL_EFFECT_PHASES
+} from '../../presentation/trial_tactical_effect_semantic.js';
+
 function routeCells(route) {
     return route ? (route.cells || route.path || []) : [];
 }
@@ -100,6 +105,11 @@ export class TrialInterceptionSemanticProvider {
 
         const result = previewResolver(input);
         state.canIntercept = result?.success !== false;
+        state.tacticalEffects = projectTrialTacticalEffects(result, {
+            cell: { r, c },
+            routeId: activeRouteId,
+            phase: TRIAL_TACTICAL_EFFECT_PHASES.AVAILABLE
+        });
         if (result?.reason) state.reason = result.reason;
         return state;
     }
