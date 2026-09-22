@@ -367,6 +367,10 @@ const landSystemJson = JSON.parse(
         assert.equal(blocked.reason, "MULTI_ATTRIBUTE_PRODUCTION_UNRESOLVED");
     }
 
+    const invalidRotation = engine.placeLand(0, 0, actualMultiCards[0], 45);
+    assert.equal(invalidRotation.success, false);
+    assert.equal(invalidRotation.reason, "INVALID_PLACEMENT_ROTATION");
+
     const normalLand = LAND_CARDS_MASTER.find(card => card.id === "CARD_PLAINS_1X1");
     assert.ok(normalLand);
     const normalResult = engine.placeLand(0, 0, normalLand, 0);
@@ -1266,6 +1270,20 @@ const landSystemJson = JSON.parse(
             [0, 0, "E2_HILL"],
             [1, 0, "GL1_PLAINS"]
         ]
+    );
+
+    const authored360 = resolvePlacementGeometryAtRotation(apiCard, 2, 2, 360);
+    assert.deepEqual(
+        authored360.attributeCells.map(cell => [cell.r, cell.c, cell.terrainId]),
+        [
+            [0, 0, "GL1_PLAINS"],
+            [0, 1, "E2_HILL"]
+        ]
+    );
+
+    assert.throws(
+        () => resolvePlacementGeometryAtRotation(apiCard, 2, 2, 45),
+        /INVALID_PLACEMENT_ROTATION/
     );
 }
 
