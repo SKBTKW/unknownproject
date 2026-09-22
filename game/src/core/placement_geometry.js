@@ -91,6 +91,80 @@ function hasMultiplePlacementTerrainAttributes(card) {
     return terrainIds.size >= 2;
 }
 
+function resolveRepresentativePlacementTerrainId(card) {
+    const definition = card?.terrain || card || null;
+    if (!definition) return null;
+
+    const cells = resolvePlacementAttributeCells(card);
+    const explicit = definition.representativeTerrainId || null;
+    if (explicit && (!cells || cells.some(cell => getPlacementAttributeTerrainId(cell) === explicit))) {
+        return explicit;
+    }
+
+    if (cells) {
+        const shape = resolvePlacementShape(card);
+        const anchor = resolvePlacementAnchor(card, shape);
+        const anchorCell = cells.find(cell => cell.r === anchor.r && cell.c === anchor.c);
+        const anchorTerrainId = getPlacementAttributeTerrainId(anchorCell);
+        if (anchorTerrainId) return anchorTerrainId;
+
+        const firstTerrainId = cells.map(getPlacementAttributeTerrainId).find(Boolean);
+        if (firstTerrainId) return firstTerrainId;
+    }
+
+    return definition.terrainId || definition.id || null;
+}
+
+function validatePlacementAttributeMap(shape, attributeCells) {
+    if (!Array.isArray(attributeCells)) {
+        return Object.freeze({
+            valid: true,
+            reasons: Object.freeze([]),
+            activeCellCount: 0,
+            attributeCellCount: 0
+        });
+    }
+
+    const resolvedShape = isShapeMatrix(shape) ? shape : DEFAULT_PLACEMENT_SHAPE;
+    const activeKeys = new Set();
+    for (let r = 0; r < resolvedShape.length; r++) {
+        for (let c = 0; c < resolvedShape[r].length; c++) {
+            if (resolvedShape[r][c] === 1) activeKeys.add(`${r}:${c}`);
+        }
+    }
+
+    const reasons = [];
+    const normalized = attributeCells.map(normalizeAttributeCell);
+    if (normalized.some(cell => !cell)) reasons.push("ATTRIBUTE_CELL_COORDINATE_INVALID");
+
+    const validCells = normalized.filter(Boolean);
+    const attributeKeys = new Set();
+    let duplicate = false;
+    let terrainMissing = false;
+
+    for (const cell of validCells) {
+        const key = `${cell.r}:${cell.c}`;
+        if (attributeKeys.has(key)) duplicate = true;
+        attributeKeys.add(key);
+        if (!getPlacementAttributeTerrainId(cell)) terrainMissing = true;
+    }
+
+    if (duplicate) reasons.push("ATTRIBUTE_CELL_DUPLICATE");
+    if (terrainMissing) reasons.push("ATTRIBUTE_TERRAIN_ID_REQUIRED");
+
+    const missing = [...activeKeys].some(key => !attributeKeys.has(key));
+    const extra = [...attributeKeys].some(key => !activeKeys.has(key));
+    if (missing) reasons.push("ATTRIBUTE_CELL_COVERAGE_MISSING");
+    if (extra) reasons.push("ATTRIBUTE_CELL_OUTSIDE_SHAPE");
+
+    return Object.freeze({
+        valid: reasons.length === 0,
+        reasons: Object.freeze(reasons),
+        activeCellCount: activeKeys.size,
+        attributeCellCount: attributeKeys.size
+    });
+}
+
 function getPlacementCells(startR, startC, shape) {
     const cells = [];
     for (let dr = 0; dr < shape.length; dr++) {
@@ -169,6 +243,7 @@ function rotatePlacementClockwise(shape, anchor = DEFAULT_PLACEMENT_ANCHOR, attr
 
 export {
     DEFAULT_PLACEMENT_ANCHOR,
+    getPlacementAttributeTerrainId,
     getPlacementCells,
     hasMultiplePlacementTerrainAttributes,
     normalizePlacementAnchor,
@@ -176,7 +251,9 @@ export {
     resolvePlacementAttributeCells,
     resolvePlacementGeometry,
     resolvePlacementShape,
+    resolveRepresentativePlacementTerrainId,
     rotateAttributeCellsClockwise,
+    validatePlacementAttributeMap,
     rotatePlacementClockwise,
     rotateShapeMatrix
 };
