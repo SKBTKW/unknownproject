@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
-import { drawWeb25DTrialOverlay } from '../game/src/presentation/web25d_trial_overlay_renderer.js';
+import {
+    drawWeb25DTrialOverlay,
+    resolveWeb25DTrialCandidateVisual
+} from '../game/src/presentation/web25d_trial_overlay_renderer.js';
 
 function createContext() {
     const ops = [];
@@ -27,14 +30,44 @@ const projection = {
     projectCell(r, c) { return { x: c * 40 + 20, y: r * 20 + 10 }; }
 };
 
+assert.equal(
+    resolveWeb25DTrialCandidateVisual({ cell: { r: 0, c: 0 }, canIntercept: false }),
+    null,
+    'blocked route cells must not render as interception candidates'
+);
+assert.equal(
+    resolveWeb25DTrialCandidateVisual({ cell: { r: 0, c: 0 } }),
+    null,
+    'candidate rendering requires explicit legal interception semantics'
+);
+
+const passiveVisual = resolveWeb25DTrialCandidateVisual({
+    cell: { r: 0, c: 0 },
+    canIntercept: true
+});
+assert.equal(passiveVisual.lineWidth, 1.2);
+assert.ok(passiveVisual.fillStyle.endsWith('0.03)'));
+assert.ok(passiveVisual.strokeStyle.endsWith('0.62)'));
+
+const selectedVisual = resolveWeb25DTrialCandidateVisual(
+    { cell: { r: 0, c: 0 }, canIntercept: true },
+    {
+        selected: { r: 0, c: 0 },
+        hovered: { r: 0, c: 0 }
+    }
+);
+assert.equal(selectedVisual.isSelected, true);
+assert.equal(selectedVisual.isHovered, false, 'selected state has priority over hover');
+assert.equal(selectedVisual.lineWidth, 2.5);
+
 const ctx = createContext();
 drawWeb25DTrialOverlay({
     ctx,
     projection,
     readModel: {
         cells: [
-            [{ elevation: 0 }, { elevation: 1 }],
-            [{ elevation: 0 }, { elevation: 0 }]
+            [{ elevation: 0 }, { elevation: 1 }, { elevation: 0 }],
+            [{ elevation: 0 }, { elevation: 0 }, { elevation: 0 }]
         ],
         trial: {
             available: true,
@@ -48,8 +81,15 @@ drawWeb25DTrialOverlay({
                 entrySide: 'north'
             }],
             interceptionCandidates: [
-                { cell: { r: 0, c: 1 } },
-                { cell: { r: 1, c: 1 } }
+                { cell: { r: 0, c: 1 }, canIntercept: true },
+                { cell: { r: 1, c: 1 }, canIntercept: true },
+                { cell: { r: 1, c: 2 }, canIntercept: true },
+                {
+                    cell: { r: 0, c: 2 },
+                    canIntercept: false,
+                    isBlockPlannedByOther: true,
+                    reason: 'BLOCK_ALREADY_PLANNED'
+                }
             ],
             plannedIntercepts: [{ cell: { r: 1, c: 0 } }],
             battleMarkers: [{ cell: { r: 1, c: 1 }, isCurrent: true }]
@@ -60,5 +100,24 @@ drawWeb25DTrialOverlay({
 assert.equal(ctx.ops.some(op => op[0] === 'arc' && op[3] === 6), true);
 assert.equal(ctx.ops.some(op => op[0] === 'stroke' && op[2] === 7), true);
 assert.equal(ctx.ops.some(op => op[0] === 'fill' && String(op[1]).includes('245, 199, 92')), true);
+
+const candidateStrokes = ctx.ops.filter(
+    op => op[0] === 'stroke'
+        && (
+            String(op[1]).includes('255, 226, 132')
+            || String(op[1]).includes('204, 247, 250')
+            || String(op[1]).includes('141, 223, 239')
+        )
+);
+assert.equal(
+    candidateStrokes.length,
+    3,
+    'selected, hovered, and passive legal candidates render; blocked route cells stay out of the candidate layer'
+);
+assert.equal(
+    candidateStrokes.some(op => op[2] === 1.2),
+    true,
+    'passive legal candidates keep a quieter outline'
+);
 
 console.log('web25d trial overlay renderer ok');
