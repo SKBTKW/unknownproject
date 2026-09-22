@@ -424,7 +424,11 @@ export class BoardGridComponent {
             }
         };
 
-        if (this.ui.selectedCard && !this.ui.isTrialInteractionActive?.()) {
+        if (
+            this.ui.selectedCard
+            && !this.ui.isTrialInteractionActive?.()
+            && this.ui.shouldShowBoardDevelopmentHints?.() !== false
+        ) {
             this.ui.highlightPlaceableCells();
         }
 
