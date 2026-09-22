@@ -2,6 +2,7 @@ import {
     Web25DCanvasRenderer,
     resolveWeb25DElevationPixels
 } from './web25d_canvas_renderer.js';
+import { BOARD_VISIBILITY } from './board_presentation_profile.js';
 
 function drawDiamond(ctx, center, halfW, halfH) {
     ctx.beginPath();
@@ -37,6 +38,34 @@ export const WEB25D_RESOURCE_VISUAL_FAMILIES = Object.freeze({
     SALT: 'SALT',
     UNKNOWN: 'UNKNOWN'
 });
+
+function normalizeBoardVisibility(value, fallback = BOARD_VISIBILITY.VISIBLE) {
+    return Object.values(BOARD_VISIBILITY).includes(value) ? value : fallback;
+}
+
+export function resolveWeb25DProfileOpacity(
+    visibility,
+    {
+        visible = 1,
+        secondary = 0.55,
+        suppressed = 0,
+        hidden = 0
+    } = {}
+) {
+    switch (normalizeBoardVisibility(visibility)) {
+        case BOARD_VISIBILITY.PRIMARY:
+        case BOARD_VISIBILITY.VISIBLE:
+            return visible;
+        case BOARD_VISIBILITY.SECONDARY:
+            return secondary;
+        case BOARD_VISIBILITY.SUPPRESSED:
+            return suppressed;
+        case BOARD_VISIBILITY.HIDDEN:
+            return hidden;
+        default:
+            return visible;
+    }
+}
 
 export function resolveWeb25DResourceVisualFamily(resource = {}) {
     const category = String(resource?.category || '').toUpperCase();
@@ -146,7 +175,15 @@ export function resolveWeb25DProductionMarkerMetrics({
 export class Web25DPhaseCRenderer extends Web25DCanvasRenderer {
     drawUnplacedCell(cell, projected) {
         super.drawUnplacedCell(cell, projected);
-        if (cell.hasSocket) this.drawDormantSocketCore(projected.screenCenter);
+        const socketOpacity = resolveWeb25DProfileOpacity(
+            this.readModel?.profile?.sockets,
+            { secondary: 0.55, suppressed: 0.28 }
+        );
+        if (cell.hasSocket && socketOpacity > 0) {
+            this.drawWithOpacity(socketOpacity, () => {
+                this.drawDormantSocketCore(projected.screenCenter);
+            });
+        }
         this.drawInteractionEmphasis(cell, projected.screenCenter, 0);
     }
 
@@ -160,21 +197,48 @@ export class Web25DPhaseCRenderer extends Web25DCanvasRenderer {
 
         this.drawPlacementContinuity(cell, projected, lift);
 
+        const socketOpacity = resolveWeb25DProfileOpacity(
+            this.readModel?.profile?.sockets,
+            { secondary: 0.55, suppressed: 0.28 }
+        );
         if (cell.isHQ) {
             this.drawHQ(center);
-        } else if (cell.socketResource) {
-            this.drawResolvedResource(cell.socketResource, center);
-        } else if (cell.hasSocket) {
-            this.drawDormantSocketCore(center);
+        } else if (cell.socketResource && socketOpacity > 0) {
+            this.drawWithOpacity(socketOpacity, () => {
+                this.drawResolvedResource(cell.socketResource, center);
+            });
+        } else if (cell.hasSocket && socketOpacity > 0) {
+            this.drawWithOpacity(socketOpacity, () => {
+                this.drawDormantSocketCore(center);
+            });
         }
 
         // Production is presentation metadata, not a physical landmark.
         // Keep it on the unlifted logical cell base so elevation differences
         // cannot collapse labels from the same projected diagonal.
         const productionAnchor = resolveWeb25DProductionMarkerAnchor(projected);
-        if (productionAnchor) this.drawProductionMarker(cell, productionAnchor);
+        const yieldOpacity = resolveWeb25DProfileOpacity(
+            this.readModel?.profile?.yields,
+            { secondary: 0.55, suppressed: 0 }
+        );
+        if (productionAnchor && yieldOpacity > 0) {
+            this.drawWithOpacity(yieldOpacity, () => {
+                this.drawProductionMarker(cell, productionAnchor);
+            });
+        }
 
         this.drawInteractionEmphasis(cell, center, lift);
+    }
+
+    drawWithOpacity(opacity, draw) {
+        if (typeof draw !== 'function' || !Number.isFinite(opacity) || opacity <= 0) return;
+        const previous = Number.isFinite(this.ctx?.globalAlpha) ? this.ctx.globalAlpha : 1;
+        this.ctx.globalAlpha = previous * Math.min(1, opacity);
+        try {
+            draw();
+        } finally {
+            this.ctx.globalAlpha = previous;
+        }
     }
 
     drawPlacementContinuity(cell, projected, lift) {

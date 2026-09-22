@@ -6,6 +6,8 @@ const read = path => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 const layoutState = read("../game/src/ui/layout_state_manager.js");
 const routeCss = read("../game/css/2_center_area/trial_route_board_selection.css");
 const contextCss = read("../game/css/2_center_area/board_context_mode.css");
+const presentationGrid = read("../game/src/ui/board_presentation_grid_component.js");
+const legacyGrid = read("../game/src/ui/board_grid_component.js");
 
 let passed = 0;
 function check(condition, message) {
@@ -25,9 +27,22 @@ check(layoutState.includes("this.boardPresentationState?.viewMode")
 
 check(routeCss.startsWith('@import url("./board_context_mode.css");'),
 "loaded Trial board stylesheet imports board-context presentation rules");
-check(contextCss.includes('body[data-board-context="trial"] #gridBoard .tile-yield-line')
-    && contextCss.includes('body[data-board-context="trial"] #gridBoard .socket-yield-line'),
-"Trial context may suppress board-internal production labels");
+check(presentationGrid.includes("data-board-yields-visibility")
+    && presentationGrid.includes("data-board-sockets-visibility"),
+"2D board exposes presentation-profile visibility instead of hard-coding Trial disclosure");
+check(contextCss.includes('[data-board-yields-visibility="SUPPRESSED"] .tile-yield-line')
+    && contextCss.includes('[data-board-yields-visibility="SUPPRESSED"] .socket-yield-line')
+    && contextCss.includes('[data-board-yields-visibility="SUPPRESSED"] .symbolic-yield-badge'),
+"2D production labels, including symbolic mode, follow yield visibility");
+check(contextCss.includes('[data-board-sockets-visibility="SECONDARY"] .socket-tile-content-box')
+    && contextCss.includes('[data-board-sockets-visibility="SECONDARY"] .socket-star-icon')
+    && contextCss.includes(".symbolic-socket-icon"),
+"2D socket landmarks support secondary profile emphasis");
+check(legacyGrid.includes("symbolic-socket-icon"),
+"symbolic board marks its resource socket icon separately from terrain attributes");
+check(!contextCss.includes('body[data-board-context="trial"] #gridBoard .tile-yield-line')
+    && !contextCss.includes('body[data-board-context="trial"] #gridBoard .socket-yield-line'),
+"2D yield visibility is no longer permanently suppressed by Trial context");
 check(!contextCss.includes("footer-left-slot")
     && !contextCss.includes("footer-right-slot")
     && !contextCss.includes("corner-toggle-cell"),

@@ -1,7 +1,34 @@
 /* Board Presentation context rules. Screen-space UI visibility belongs to LayoutStateManager. */
 
-body[data-board-context="trial"] #gridBoard .tile-yield-line,
-body[data-board-context="trial"] #gridBoard .socket-yield-line,
+#gridBoard[data-board-yields-visibility="SUPPRESSED"] .tile-yield-line,
+#gridBoard[data-board-yields-visibility="SUPPRESSED"] .socket-yield-line,
+#gridBoard[data-board-yields-visibility="SUPPRESSED"] .symbolic-yield-badge,
+#gridBoard[data-board-yields-visibility="HIDDEN"] .tile-yield-line,
+#gridBoard[data-board-yields-visibility="HIDDEN"] .socket-yield-line,
+#gridBoard[data-board-yields-visibility="HIDDEN"] .symbolic-yield-badge {
+    display: none;
+}
+
+#gridBoard[data-board-sockets-visibility="SECONDARY"] .socket-tile-content-box,
+#gridBoard[data-board-sockets-visibility="SECONDARY"] .symbolic-socket-icon {
+    opacity: 0.58;
+}
+
+#gridBoard[data-board-sockets-visibility="SECONDARY"] .cell.socket-unopened {
+    animation: none;
+}
+
+#gridBoard[data-board-sockets-visibility="SECONDARY"] .socket-star-icon {
+    opacity: 0.48;
+    filter: drop-shadow(0 0 5px rgba(46, 204, 113, 0.45));
+}
+
+#gridBoard[data-board-sockets-visibility="HIDDEN"] .socket-tile-content-box,
+#gridBoard[data-board-sockets-visibility="HIDDEN"] .symbolic-socket-icon,
+#gridBoard[data-board-sockets-visibility="HIDDEN"] .socket-star-icon {
+    display: none;
+}
+
 body[data-board-context="trial"] #gridBoard .searched-badge {
     display: none;
 }

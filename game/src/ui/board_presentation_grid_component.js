@@ -108,6 +108,11 @@ export class BoardPresentationGridComponent extends LegacyBoardGridComponent {
             boardEl.setAttribute('data-board-view-mode', state.viewMode);
             boardEl.setAttribute('data-board-context-mode', state.contextMode);
         }
+        const profile = presentation?.profile || {};
+        if (profile.yields) boardEl.setAttribute('data-board-yields-visibility', profile.yields);
+        else boardEl.removeAttribute('data-board-yields-visibility');
+        if (profile.sockets) boardEl.setAttribute('data-board-sockets-visibility', profile.sockets);
+        else boardEl.removeAttribute('data-board-sockets-visibility');
         const isTrialContext = state?.contextMode === BOARD_CONTEXT_MODES.TRIAL;
         boardEl.querySelectorAll('.cell').forEach(cellEl => {
             const r = Number(cellEl.getAttribute('data-r'));
