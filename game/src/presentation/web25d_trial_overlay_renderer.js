@@ -50,6 +50,36 @@ function projectTrialCell(readModel, projection, cellRef) {
     };
 }
 
+function sameCell(a, b) {
+    return Boolean(a && b && a.r === b.r && a.c === b.c);
+}
+
+export function resolveWeb25DTrialCandidateVisual(item, {
+    selected = null,
+    hovered = null
+} = {}) {
+    if (!item?.cell || item.canIntercept !== true) return null;
+
+    const isSelected = sameCell(item.cell, selected);
+    const isHovered = !isSelected && sameCell(item.cell, hovered);
+
+    return Object.freeze({
+        isSelected,
+        isHovered,
+        fillStyle: isSelected
+            ? 'rgba(235, 203, 101, 0.22)'
+            : isHovered
+                ? 'rgba(146, 221, 231, 0.20)'
+                : 'rgba(111, 195, 216, 0.03)',
+        strokeStyle: isSelected
+            ? 'rgba(255, 226, 132, 0.98)'
+            : isHovered
+                ? 'rgba(204, 247, 250, 0.98)'
+                : 'rgba(141, 223, 239, 0.62)',
+        lineWidth: isSelected ? 2.5 : (isHovered ? 2.2 : 1.2)
+    });
+}
+
 export function drawWeb25DTrialOverlay({ ctx, projection, readModel } = {}) {
     const trial = readModel?.trial;
     if (!ctx || !projection || !trial?.available) return;
@@ -103,26 +133,17 @@ export function drawWeb25DTrialOverlay({ ctx, projection, readModel } = {}) {
 
     const selected = trial.selectedInterceptCell || null;
     const hovered = trial.hoveredInterceptCell || null;
-    const sameCell = (a, b) => Boolean(a && b && a.r === b.r && a.c === b.c);
 
     for (const item of trial.interceptionCandidates || []) {
-        if (!item?.cell) continue;
+        const visual = resolveWeb25DTrialCandidateVisual(item, { selected, hovered });
+        if (!visual) continue;
+
         const center = projectTrialCell(readModel, projection, item.cell);
-        const isSelected = sameCell(item.cell, selected);
-        const isHovered = sameCell(item.cell, hovered);
         drawDiamond(ctx, center, projection.halfW - 5, projection.halfH - 3);
-        ctx.fillStyle = isSelected
-            ? 'rgba(235, 203, 101, 0.22)'
-            : isHovered
-                ? 'rgba(146, 221, 231, 0.20)'
-                : 'rgba(111, 195, 216, 0.10)';
+        ctx.fillStyle = visual.fillStyle;
         ctx.fill();
-        ctx.strokeStyle = isSelected
-            ? 'rgba(255, 226, 132, 0.98)'
-            : isHovered
-                ? 'rgba(204, 247, 250, 0.98)'
-                : 'rgba(141, 223, 239, 0.84)';
-        ctx.lineWidth = isSelected ? 2.5 : (isHovered ? 2.2 : 1.5);
+        ctx.strokeStyle = visual.strokeStyle;
+        ctx.lineWidth = visual.lineWidth;
         ctx.stroke();
     }
 
