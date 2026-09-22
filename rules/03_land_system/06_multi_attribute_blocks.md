@@ -121,6 +121,31 @@ geometry
 
 shapeだけ回転してcell terrainの位置を残すことを禁止する。
 
+### 4.1 Browser current-state / External absolute rotation
+
+Browser UIはカードinstance上の
+
+- `currentShape`
+- `currentAnchor`
+- `currentCells`
+
+を回転状態の正本として保持し、`GameEngine.placeLand(..., rotation=0)` でそのcurrent-stateを使用する。
+
+一方、Unity等の外部callerはmutableなBrowser card stateへ依存せず、`rotation` 引数でauthored/master geometryから絶対向きを指定できる。
+
+対応値:
+
+```text
+quarter turns: -3 .. 3
+degrees: ... -180, -90, 0, 90, 180, 270, 360 ...
+```
+
+`90°`単位でない値（例: `45°`）は `INVALID_PLACEMENT_ROTATION` として拒否する。
+
+非zeroの外部rotation指定では、既存 `currentShape/currentAnchor/currentCells` が存在していてもauthored/master geometryを起点にする。これによりBrowserで一時的に回転されたcard instanceをUnity/API側の絶対向きへ持ち込まない。
+
+`360°` はauthored `0°` として扱い、Browser current-stateの0指定とは区別する。
+
 ---
 
 ## 5. Zone / LINK
@@ -248,6 +273,8 @@ shape
 Multi-Attributeカードでは各回転後の `attributeCells` を含めて `canPlaceShape` を評価し、代表terrainだけで配置可能性を推測しない。
 
 現行データでは `productionContract.status = "UNRESOLVED"` を用いる。単なるboolean解禁フラグには戻さない。
+
+Production GateはOffering生成だけのUI/Deck制約ではない。`GameEngine.placeLand()` のDomain Actionでも同じGateを適用し、外部APIから直接 `UNRESOLVED` Multi-Attributeカードを配置してLive stateへ侵入させない。
 
 ---
 
