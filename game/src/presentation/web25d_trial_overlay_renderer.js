@@ -104,6 +104,44 @@ export function resolveWeb25DPlannedInterceptVisual(item, {
     });
 }
 
+export function resolveWeb25DBattleMarkerVisual(marker) {
+    if (!marker?.cell) return null;
+
+    const status = String(marker.status || 'PENDING').toUpperCase();
+    const isCurrent = Boolean(marker.isCurrent);
+
+    if (status === 'ACTIVE') {
+        return Object.freeze({
+            status,
+            isCurrent,
+            radius: isCurrent ? 6 : 5,
+            fillStyle: 'rgba(255, 196, 96, 0.96)',
+            strokeStyle: 'rgba(255, 228, 176, 0.92)',
+            lineWidth: isCurrent ? 1.5 : 1.2
+        });
+    }
+
+    if (status === 'RESOLVED') {
+        return Object.freeze({
+            status,
+            isCurrent,
+            radius: isCurrent ? 5 : 3.5,
+            fillStyle: 'rgba(151, 156, 149, 0.28)',
+            strokeStyle: 'rgba(211, 215, 204, 0.58)',
+            lineWidth: isCurrent ? 1.1 : 0.8
+        });
+    }
+
+    return Object.freeze({
+        status: 'PENDING',
+        isCurrent,
+        radius: isCurrent ? 4.5 : 3.5,
+        fillStyle: 'rgba(210, 109, 79, 0.24)',
+        strokeStyle: 'rgba(239, 167, 144, 0.54)',
+        lineWidth: isCurrent ? 1 : 0.8
+    });
+}
+
 export function drawWeb25DTrialOverlay({ ctx, projection, readModel } = {}) {
     const trial = readModel?.trial;
     if (!ctx || !projection || !trial?.available) return;
@@ -187,16 +225,16 @@ export function drawWeb25DTrialOverlay({ ctx, projection, readModel } = {}) {
     }
 
     for (const marker of trial.battleMarkers || []) {
-        if (!marker?.cell) continue;
+        const visual = resolveWeb25DBattleMarkerVisual(marker);
+        if (!visual) continue;
+
         const center = projectTrialCell(readModel, projection, marker.cell);
         ctx.beginPath();
-        ctx.arc(center.x, center.y - 4, marker.isCurrent ? 6 : 4, 0, Math.PI * 2);
-        ctx.fillStyle = marker.isCurrent
-            ? 'rgba(255, 196, 96, 0.96)'
-            : 'rgba(210, 109, 79, 0.88)';
+        ctx.arc(center.x, center.y - 4, visual.radius, 0, Math.PI * 2);
+        ctx.fillStyle = visual.fillStyle;
         ctx.fill();
-        ctx.strokeStyle = 'rgba(255, 228, 176, 0.92)';
-        ctx.lineWidth = marker.isCurrent ? 1.5 : 1;
+        ctx.strokeStyle = visual.strokeStyle;
+        ctx.lineWidth = visual.lineWidth;
         ctx.stroke();
     }
 }
