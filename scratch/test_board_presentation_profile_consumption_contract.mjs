@@ -99,7 +99,7 @@ assert.match(
 );
 assert.match(
     routeCostPolicy,
-    /GameState does not yet own a canonical road representation/,
+    /GameState does[\s\S]*not yet own a canonical road representation/,
     'road reservation must retain its canonical-state boundary explanation'
 );
 
