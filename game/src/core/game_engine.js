@@ -16,6 +16,7 @@ import { CellViewDataService } from '../services/cell_view_data_service.js';
 import { ActionTransactionManager } from './transaction_manager.js';
 import {
     hasMultiplePlacementTerrainAttributes,
+    normalizePlacementRotationTurns,
     resolvePlacementGeometryAtRotation
 } from './placement_geometry.js';
 import { isMultiAttributeProductionResolved } from './land_production_contract.js';
@@ -266,6 +267,13 @@ class GameEngine {
         if (!card) return { success: false, reason: "NO_CARD" };
 
         const terrain = card.terrain || card;
+        if (normalizePlacementRotationTurns(rotation) === null) {
+            return {
+                success: false,
+                reason: "INVALID_PLACEMENT_ROTATION"
+            };
+        }
+
         if (hasMultiplePlacementTerrainAttributes(terrain)
             && !isMultiAttributeProductionResolved(terrain)) {
             return {
