@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
+import { BOARD_VISIBILITY } from '../game/src/presentation/board_presentation_profile.js';
 import {
     drawWeb25DTrialOverlay,
     hitWeb25DTrialRouteSelector,
     resolveWeb25DBattleMarkerVisual,
     resolveWeb25DPlannedInterceptVisual,
     resolveWeb25DTrialCandidateVisual,
+    resolveWeb25DTrialOverlayAlpha,
     resolveWeb25DTrialRouteSelectors
 } from '../game/src/presentation/web25d_trial_overlay_renderer.js';
 
@@ -16,9 +18,10 @@ function createContext() {
         moveTo(x, y) { ops.push(['moveTo', x, y]); },
         lineTo(x, y) { ops.push(['lineTo', x, y]); },
         closePath() { ops.push(['closePath']); },
-        stroke() { ops.push(['stroke', this.strokeStyle, this.lineWidth]); },
-        fill() { ops.push(['fill', this.fillStyle]); },
-        arc(x, y, radius) { ops.push(['arc', x, y, radius]); },
+        globalAlpha: 1,
+        stroke() { ops.push(['stroke', this.strokeStyle, this.lineWidth, this.globalAlpha]); },
+        fill() { ops.push(['fill', this.fillStyle, this.globalAlpha]); },
+        arc(x, y, radius) { ops.push(['arc', x, y, radius, this.globalAlpha]); },
         set strokeStyle(value) { this._strokeStyle = value; },
         get strokeStyle() { return this._strokeStyle; },
         set fillStyle(value) { this._fillStyle = value; },
@@ -27,6 +30,12 @@ function createContext() {
         get lineWidth() { return this._lineWidth; }
     };
 }
+
+assert.equal(resolveWeb25DTrialOverlayAlpha(BOARD_VISIBILITY.PRIMARY), 1);
+assert.equal(resolveWeb25DTrialOverlayAlpha(BOARD_VISIBILITY.VISIBLE), 1);
+assert.equal(resolveWeb25DTrialOverlayAlpha(BOARD_VISIBILITY.SECONDARY), 0.55);
+assert.equal(resolveWeb25DTrialOverlayAlpha(BOARD_VISIBILITY.SUPPRESSED), 0.24);
+assert.equal(resolveWeb25DTrialOverlayAlpha(BOARD_VISIBILITY.HIDDEN), 0);
 
 const projection = {
     halfW: 20,
@@ -300,5 +309,71 @@ assert.equal(
 
 const routeSelectorArcs = ctx.ops.filter(op => op[0] === 'arc' && op[3] === 7);
 assert.equal(routeSelectorArcs.length, 2, 'all Trial routes expose a 2.5D route selector marker');
+
+const profileCtx = createContext();
+drawWeb25DTrialOverlay({
+    ctx: profileCtx,
+    projection,
+    readModel: {
+        profile: {
+            trialRoutes: BOARD_VISIBILITY.SECONDARY,
+            invasionEntry: BOARD_VISIBILITY.SUPPRESSED,
+            interception: BOARD_VISIBILITY.SECONDARY,
+            battleMarkers: BOARD_VISIBILITY.SUPPRESSED
+        },
+        board: { rows: 2, columns: 2 },
+        cells: [
+            [{ elevation: 0 }, { elevation: 0 }],
+            [{ elevation: 0 }, { elevation: 0 }]
+        ],
+        trial: {
+            available: true,
+            activeRouteId: 'route:a',
+            selectedInterceptCell: null,
+            hoveredInterceptCell: null,
+            routes: [{
+                routeId: 'route:a',
+                cells: [{ r: 0, c: 0 }, { r: 0, c: 1 }],
+                entryCell: { r: 0, c: 0 },
+                entrySide: 'north'
+            }],
+            interceptionCandidates: [{ cell: { r: 0, c: 1 }, canIntercept: true }],
+            plannedIntercepts: [],
+            battleMarkers: [{ cell: { r: 1, c: 1 }, status: 'ACTIVE', isCurrent: true }]
+        }
+    }
+});
+
+assert.equal(
+    profileCtx.ops.some(op => op[0] === 'stroke' && op[2] === 7 && op[3] === 0.55),
+    true,
+    'Trial route stroke consumes trialRoutes SECONDARY opacity'
+);
+assert.equal(
+    profileCtx.ops.some(op => op[0] === 'stroke' && op[1] === 'rgba(255, 145, 110, 0.96)' && op[3] === 0.24),
+    true,
+    'invasion entry marker consumes SUPPRESSED opacity independently of route path'
+);
+assert.equal(
+    profileCtx.ops.some(op => op[0] === 'stroke' && op[1] === 'rgba(141, 223, 239, 0.62)' && op[3] === 0.55),
+    true,
+    'interception layer consumes SECONDARY opacity'
+);
+assert.equal(
+    profileCtx.ops.some(op => op[0] === 'fill' && op[1] === 'rgba(255, 196, 96, 0.96)' && op[2] === 0.24),
+    true,
+    'battle markers consume SUPPRESSED opacity'
+);
+assert.equal(profileCtx.globalAlpha, 1, 'Trial overlay alpha must be restored after layered drawing');
+
+const hiddenEntryReadModel = {
+    ...routeSelectorReadModel,
+    profile: { invasionEntry: BOARD_VISIBILITY.HIDDEN }
+};
+assert.deepEqual(
+    resolveWeb25DTrialRouteSelectors({ projection, readModel: hiddenEntryReadModel }),
+    [],
+    'hidden invasionEntry removes route selectors from both drawing and hit testing'
+);
 
 console.log('web25d trial overlay renderer ok');

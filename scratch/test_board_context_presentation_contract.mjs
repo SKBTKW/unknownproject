@@ -8,6 +8,7 @@ const routeCss = read("../game/css/2_center_area/trial_route_board_selection.css
 const contextCss = read("../game/css/2_center_area/board_context_mode.css");
 const presentationGrid = read("../game/src/ui/board_presentation_grid_component.js");
 const legacyGrid = read("../game/src/ui/board_grid_component.js");
+const boardAwareUi = read("../game/src/ui/board_aware_ui_controller.js");
 
 let passed = 0;
 function check(condition, message) {
@@ -43,6 +44,29 @@ check(legacyGrid.includes("symbolic-socket-icon"),
 check(!contextCss.includes('body[data-board-context="trial"] #gridBoard .tile-yield-line')
     && !contextCss.includes('body[data-board-context="trial"] #gridBoard .socket-yield-line'),
 "2D yield visibility is no longer permanently suppressed by Trial context");
+
+check(presentationGrid.includes("data-board-trial-routes-visibility")
+    && presentationGrid.includes("data-board-invasion-entry-visibility")
+    && presentationGrid.includes("data-board-interception-visibility")
+    && presentationGrid.includes("data-board-battle-markers-visibility"),
+"2D board exposes Trial operational visibility fields from the presentation profile");
+check(contextCss.includes('[data-board-trial-routes-visibility="SECONDARY"] .cell.trial-route-cell')
+    && contextCss.includes('[data-board-trial-routes-visibility="SUPPRESSED"] .cell.trial-route-cell'),
+"2D Trial route emphasis consumes SECONDARY and SUPPRESSED profile states");
+check(contextCss.includes('[data-board-invasion-entry-visibility="SUPPRESSED"] .trial-route-entry-selector')
+    && contextCss.includes('[data-board-invasion-entry-visibility="HIDDEN"] .trial-route-entry-selector'),
+"2D invasion entry selectors consume profile emphasis and disclosure");
+check(contextCss.includes('[data-board-interception-visibility="SECONDARY"] .cell.trial-interception-candidate')
+    && contextCss.includes('[data-board-interception-visibility="SUPPRESSED"] .cell.trial-interception-planned'),
+"2D interception overlays consume profile emphasis");
+check(contextCss.includes('[data-board-battle-markers-visibility="SECONDARY"] .cell.trial-battle-active')
+    && contextCss.includes('[data-board-battle-markers-visibility="SUPPRESSED"] .cell.trial-battle-active'),
+"2D active battle emphasis consumes battleMarkers profile state");
+check(boardAwareUi.includes("shouldShowBoardDevelopmentHints()")
+    && boardAwareUi.includes("profile.developmentHints !== BOARD_VISIBILITY.HIDDEN")
+    && boardAwareUi.includes("profile.developmentHints !== BOARD_VISIBILITY.SUPPRESSED")
+    && legacyGrid.includes("shouldShowBoardDevelopmentHints?.() !== false"),
+"development hint generation and 2D placement highlighting are profile-gated");
 check(!contextCss.includes("footer-left-slot")
     && !contextCss.includes("footer-right-slot")
     && !contextCss.includes("corner-toggle-cell"),
