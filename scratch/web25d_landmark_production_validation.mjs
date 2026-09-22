@@ -4,6 +4,7 @@ import {
     Web25DPhaseCRenderer,
     resolveWeb25DProductionMarker,
     resolveWeb25DProductionMarkerAnchor,
+    resolveWeb25DProductionMarkerMetrics,
     resolveWeb25DResourceVisualFamily
 } from '../game/src/presentation/web25d_phase_c_renderer.js';
 import { Web25DProjectionAdapter } from '../game/src/presentation/web25d_projection_adapter.js';
@@ -78,6 +79,42 @@ assert.equal(
 assert.equal(
     resolveWeb25DProductionMarkerAnchor({ screenCenter: { x: NaN, y: 0 } }),
     null
+);
+
+
+assert.deepEqual(
+    resolveWeb25DProductionMarkerMetrics({ tileWidth: 60, amount: 4, role: 'LAND_PRIMARY' }),
+    { compact: false, width: 24, height: 12, fontSize: 10, yOffset: 5 }
+);
+assert.deepEqual(
+    resolveWeb25DProductionMarkerMetrics({ tileWidth: 60, amount: 12, role: 'SOCKET' }),
+    { compact: false, width: 28, height: 12, fontSize: 10, yOffset: 8 }
+);
+assert.deepEqual(
+    resolveWeb25DProductionMarkerMetrics({ tileWidth: 38, amount: 4, role: 'LAND_PRIMARY' }),
+    { compact: true, width: 18, height: 8, fontSize: 8, yOffset: 4 }
+);
+assert.deepEqual(
+    resolveWeb25DProductionMarkerMetrics({ tileWidth: 38, amount: 12, role: 'SOCKET' }),
+    { compact: true, width: 22, height: 8, fontSize: 8, yOffset: 4 }
+);
+
+const narrowProjection = new Web25DProjectionAdapter({
+    tileWidth: 38,
+    tileHeight: 19,
+    originX: 100,
+    originY: 50
+});
+const narrowA = narrowProjection.projectCell(0, 0);
+const narrowB = narrowProjection.projectCell(1, 0);
+const narrowMetrics = resolveWeb25DProductionMarkerMetrics({
+    tileWidth: narrowProjection.tileWidth,
+    amount: 12,
+    role: 'SOCKET'
+});
+assert.ok(
+    Math.abs(narrowB.y - narrowA.y) > narrowMetrics.height,
+    'narrow 9x9 production rows keep vertical chip separation'
 );
 
 const resourceFamilies = new Map([
@@ -181,6 +218,33 @@ assert.deepEqual(
     'single-digit production chips keep the minimum readable footprint'
 );
 assert.equal(ctx.font, '10px "Segoe UI Emoji", sans-serif');
+
+
+const narrowRectCalls = [];
+const narrowTextCalls = [];
+const narrowCtx = {
+    fillRect(x, y, width, height) { narrowRectCalls.push({ type: 'fill', x, y, width, height }); },
+    strokeRect(x, y, width, height) { narrowRectCalls.push({ type: 'stroke', x, y, width, height }); },
+    fillText(text, x, y) { narrowTextCalls.push({ text, x, y }); }
+};
+const narrowCanvas = {
+    width: 400,
+    height: 584,
+    getContext() { return narrowCtx; }
+};
+const narrowRenderer = new Web25DPhaseCRenderer({
+    canvas: narrowCanvas,
+    bridge,
+    projectionAdapter: narrowProjection
+});
+narrowRenderer.drawProductionMarker(landCell, { x: 50, y: 50 });
+assert.deepEqual(
+    narrowRectCalls[0],
+    { type: 'fill', x: 41, y: 54, width: 18, height: 8 },
+    'narrow single-digit production uses compact chip geometry'
+);
+assert.equal(narrowCtx.font, '8px "Segoe UI Emoji", sans-serif');
+assert.equal(narrowTextCalls[0]?.text, '🌾4');
 
 renderer.drawLandPrimaryMarker(landCell, { x: 50, y: 50 });
 assert.equal(textCalls.at(-1).text, '🌾4', 'legacy marker method remains a compatibility alias');
