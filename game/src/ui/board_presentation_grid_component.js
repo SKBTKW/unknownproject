@@ -24,6 +24,18 @@ export const TRIAL_VISUAL_CLASSES = Object.freeze([
     'trial-battle-current'
 ]);
 
+export function resolveTrialDefenseAllocationBadge(trial) {
+    const source = trial?.battleMarker || trial?.plannedIntercept || null;
+    const amount = Number(source?.defenseAllocation);
+    if (!source?.cell && !trial?.battleMarker && !trial?.plannedIntercept) return null;
+    if (!Number.isFinite(amount) || amount <= 0) return null;
+
+    return Object.freeze({
+        amount: Math.trunc(amount),
+        source: trial?.battleMarker ? 'BATTLE' : 'PLANNED'
+    });
+}
+
 export class BoardPresentationGridComponent extends LegacyBoardGridComponent {
     render(I18n) {
         super.render(I18n);
@@ -115,6 +127,7 @@ export class BoardPresentationGridComponent extends LegacyBoardGridComponent {
             ['trialRoutes', 'data-board-trial-routes-visibility'],
             ['invasionEntry', 'data-board-invasion-entry-visibility'],
             ['interception', 'data-board-interception-visibility'],
+            ['defenseAllocation', 'data-board-defense-allocation-visibility'],
             ['battleMarkers', 'data-board-battle-markers-visibility']
         ];
         for (const [key, attribute] of visibilityAttributes) {
@@ -129,6 +142,7 @@ export class BoardPresentationGridComponent extends LegacyBoardGridComponent {
             const cell = cells?.[r]?.[c] || null;
             const interaction = cell?.interaction || null;
             const trial = cell?.trial || null;
+            cellEl.querySelector?.('.trial-defense-allocation-badge')?.remove?.();
             applyBoardGroupJoinClasses(cellEl, cell?.edges);
             cellEl.classList.toggle('board-logical-hover', !isTrialContext && Boolean(interaction?.hovered));
             cellEl.classList.toggle('board-logical-focus', !isTrialContext && Boolean(interaction?.focused));
@@ -153,6 +167,16 @@ export class BoardPresentationGridComponent extends LegacyBoardGridComponent {
             cellEl.classList.toggle('trial-battle-active', Boolean(battleState?.isActive));
             cellEl.classList.toggle('trial-battle-resolved', Boolean(battleState?.isResolved));
             cellEl.classList.toggle('trial-battle-current', Boolean(battleState?.isCurrent));
+
+            const defenseBadge = resolveTrialDefenseAllocationBadge(trial);
+            if (defenseBadge) {
+                const badgeEl = document.createElement('span');
+                badgeEl.className = `trial-defense-allocation-badge is-${defenseBadge.source.toLowerCase()}`;
+                badgeEl.textContent = `🛡️${defenseBadge.amount}`;
+                badgeEl.setAttribute('aria-hidden', 'true');
+                cellEl.appendChild(badgeEl);
+            }
+
             if (trial?.route?.routeDirection) cellEl.setAttribute('data-trial-direction', trial.route.routeDirection);
             else cellEl.removeAttribute('data-trial-direction');
         });
