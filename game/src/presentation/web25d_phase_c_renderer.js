@@ -36,11 +36,29 @@ function resourceCode(resource) {
     }
 }
 
+export function resolveWeb25DProductionMarker(cell = {}) {
+    const role = cell.display?.role || null;
+    if (role !== 'LAND_PRIMARY' && role !== 'SOCKET') return null;
+
+    const primary = cell.display?.production?.primaryYield || null;
+    const amount = Number(primary?.amount);
+    if (!primary?.resource || !Number.isFinite(amount) || amount <= 0) return null;
+
+    return Object.freeze({
+        role,
+        resource: primary.resource,
+        amount,
+        label: `${resourceCode(primary.resource)}${amount}`,
+        yOffset: role === 'SOCKET' ? 8 : 5
+    });
+}
+
 /**
  * Phase 2.5D-C/D visual layer.
  *
  * Adds HQ, Resource Socket, interaction emphasis, multi-cell placement
- * continuity and presentation-provided LAND_PRIMARY production markers on top
+ * continuity and presentation-provided LAND_PRIMARY/SOCKET production markers
+ * on top
  * of the Phase B terrain renderer. This file remains disposable Web-only
  * rendering code and never recalculates placement or production semantics.
  */
@@ -69,7 +87,7 @@ export class Web25DPhaseCRenderer extends Web25DCanvasRenderer {
             this.drawDormantSocketCore(center);
         }
 
-        this.drawLandPrimaryMarker(cell, center);
+        this.drawProductionMarker(cell, center);
         this.drawInteractionEmphasis(cell, center, lift);
     }
 
@@ -98,19 +116,14 @@ export class Web25DPhaseCRenderer extends Web25DCanvasRenderer {
         }
     }
 
-    drawLandPrimaryMarker(cell, center) {
-        if (cell.display?.role !== 'LAND_PRIMARY') return;
-
-        const production = cell.display?.production || null;
-        const primary = production?.primaryYield || null;
-        const label = primary
-            ? `${resourceCode(primary.resource)}${primary.amount}`
-            : 'P';
+    drawProductionMarker(cell, center) {
+        const marker = resolveWeb25DProductionMarker(cell);
+        if (!marker) return;
 
         const ctx = this.ctx;
-        const width = Math.max(14, 7 + label.length * 6);
+        const width = Math.max(14, 7 + marker.label.length * 6);
         const x = Math.round(center.x - width / 2);
-        const y = Math.round(center.y + 5);
+        const y = Math.round(center.y + marker.yOffset);
 
         ctx.fillStyle = 'rgba(31, 35, 31, 0.78)';
         ctx.fillRect(x, y, width, 10);
@@ -122,7 +135,12 @@ export class Web25DPhaseCRenderer extends Web25DCanvasRenderer {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = 'rgba(236, 238, 222, 0.92)';
-        ctx.fillText(label, center.x, y + 5);
+        ctx.fillText(marker.label, center.x, y + 5);
+    }
+
+    // Compatibility alias for the earlier Phase C renderer surface.
+    drawLandPrimaryMarker(cell, center) {
+        return this.drawProductionMarker(cell, center);
     }
 
     drawDormantSocketCore(center) {
