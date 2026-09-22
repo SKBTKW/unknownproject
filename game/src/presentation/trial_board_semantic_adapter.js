@@ -69,6 +69,14 @@ function buildPreviewTacticalEffects(interceptionCandidates) {
     );
 }
 
+function stripCandidateTacticalEffects(interceptionCandidates) {
+    return (interceptionCandidates || []).map(candidate => {
+        if (!candidate || typeof candidate !== 'object') return candidate;
+        const { tacticalEffects: _projectedTacticalEffects, ...semantic } = candidate;
+        return semantic;
+    });
+}
+
 function buildResolvedTacticalEffects(trialState) {
     const results = Array.isArray(trialState?.battleResults) ? trialState.battleResults : [];
     const queue = Array.isArray(trialState?.battleQueue) ? trialState.battleQueue : [];
@@ -126,7 +134,9 @@ export class TrialBoardSemanticAdapter {
                 ? (trialPresentationState?.hoveredCell || null)
                 : null,
             routes,
-            interceptionCandidates: planningFocusVisible ? interceptionCandidates : [],
+            interceptionCandidates: planningFocusVisible
+                ? stripCandidateTacticalEffects(interceptionCandidates)
+                : [],
             plannedIntercepts: buildPlannedIntercepts(trialState, trialPresentationState),
             battleMarkers: buildBattleMarkers(trialState),
             tacticalEffects,
