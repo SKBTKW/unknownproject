@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import {
     resolvePlacementGeometry,
+    resolvePlacementGeometryAtRotation,
     rotatePlacementClockwise,
     validatePlacementAttributeMap
 } from "../placement_geometry.js";
@@ -1204,6 +1205,50 @@ const landSystemJson = JSON.parse(
     assert.equal(ctx.fills[0].fillStyle, resolveWeb25DTerrainTopFill({ terrainId: "GL1_PLAINS" }));
     assert.equal(ctx.fills[1].fillStyle, resolveWeb25DTerrainTopFill({ terrainId: "E2_HILL" }));
     assert.notEqual(ctx.fills[0].fillStyle, ctx.fills[1].fillStyle);
+}
+
+{
+    const apiCard = {
+        terrain: multiCard,
+        currentShape: [[1], [1]],
+        currentAnchor: { r: 0, c: 0 },
+        currentCells: [
+            { r: 0, c: 0, terrainId: "E2_HILL" },
+            { r: 1, c: 0, terrainId: "GL1_PLAINS" }
+        ]
+    };
+
+    const authored90 = resolvePlacementGeometryAtRotation(apiCard, 2, 2, 90);
+    assert.deepEqual(authored90.shape, [[1], [1]]);
+    assert.deepEqual(authored90.anchor, { r: 0, c: 0 });
+    assert.deepEqual(
+        authored90.attributeCells.map(cell => [cell.r, cell.c, cell.terrainId]),
+        [
+            [0, 0, "GL1_PLAINS"],
+            [1, 0, "E2_HILL"]
+        ]
+    );
+
+    // API rotation is absolute from the authored/master card and must not
+    // mutate Browser-owned current* orientation.
+    assert.deepEqual(apiCard.currentShape, [[1], [1]]);
+    assert.deepEqual(apiCard.currentAnchor, { r: 0, c: 0 });
+    assert.deepEqual(
+        apiCard.currentCells.map(cell => [cell.r, cell.c, cell.terrainId]),
+        [
+            [0, 0, "E2_HILL"],
+            [1, 0, "GL1_PLAINS"]
+        ]
+    );
+
+    const browserCurrent = resolvePlacementGeometryAtRotation(apiCard, 2, 2, 0);
+    assert.deepEqual(
+        browserCurrent.attributeCells.map(cell => [cell.r, cell.c, cell.terrainId]),
+        [
+            [0, 0, "E2_HILL"],
+            [1, 0, "GL1_PLAINS"]
+        ]
+    );
 }
 
 {
