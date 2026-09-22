@@ -198,10 +198,10 @@ function resolvePlacementGeometry(card, clickedR, clickedC) {
 
 function normalizePlacementRotationTurns(rotation = 0) {
     const value = Number(rotation);
-    if (!Number.isFinite(value)) return 0;
+    if (!Number.isFinite(value)) return null;
 
-    // Accept both explicit quarter-turn counts (1..3) and degree values
-    // (90/180/270). Other angles are outside the grid rotation contract.
+    // Accept both explicit quarter-turn counts (-3..3) and degree values
+    // (...,-180,-90,0,90,180,...). Other angles are outside the grid contract.
     if (Number.isInteger(value) && Math.abs(value) <= 3) {
         return ((value % 4) + 4) % 4;
     }
@@ -209,7 +209,7 @@ function normalizePlacementRotationTurns(rotation = 0) {
         const turns = value / 90;
         return ((turns % 4) + 4) % 4;
     }
-    return 0;
+    return null;
 }
 
 /**
@@ -221,7 +221,12 @@ function normalizePlacementRotationTurns(rotation = 0) {
  */
 function resolvePlacementGeometryAtRotation(card, clickedR, clickedC, rotation = 0) {
     const turns = normalizePlacementRotationTurns(rotation);
-    if (turns === 0) return resolvePlacementGeometry(card, clickedR, clickedC);
+    if (turns === null) {
+        throw new RangeError("INVALID_PLACEMENT_ROTATION");
+    }
+
+    const rawRotation = Number(rotation);
+    if (rawRotation === 0) return resolvePlacementGeometry(card, clickedR, clickedC);
 
     const authored = card?.terrain || card;
     let shape = resolvePlacementShape(authored);
@@ -300,6 +305,7 @@ export {
     getPlacementCells,
     hasMultiplePlacementTerrainAttributes,
     normalizePlacementAnchor,
+    normalizePlacementRotationTurns,
     resolvePlacementAnchor,
     resolvePlacementAttributeCells,
     resolvePlacementGeometry,
