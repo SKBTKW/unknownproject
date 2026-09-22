@@ -1,4 +1,5 @@
 import { resolveWeb25DElevationPixels } from './web25d_canvas_renderer.js';
+import { resolveTrialBattleMarkerState } from './trial_board_semantic_data.js';
 
 function drawDiamond(ctx, center, halfW, halfH) {
     ctx.beginPath();
@@ -107,10 +108,11 @@ export function resolveWeb25DPlannedInterceptVisual(item, {
 export function resolveWeb25DBattleMarkerVisual(marker) {
     if (!marker?.cell) return null;
 
-    const status = String(marker.status || 'PENDING').toUpperCase();
-    const isCurrent = Boolean(marker.isCurrent);
+    const state = resolveTrialBattleMarkerState(marker);
+    if (!state) return null;
+    const { status, isCurrent } = state;
 
-    if (status === 'ACTIVE') {
+    if (state.isActive) {
         return Object.freeze({
             status,
             isCurrent,
@@ -121,7 +123,7 @@ export function resolveWeb25DBattleMarkerVisual(marker) {
         });
     }
 
-    if (status === 'RESOLVED') {
+    if (state.isResolved) {
         return Object.freeze({
             status,
             isCurrent,
