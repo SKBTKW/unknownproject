@@ -1505,6 +1505,41 @@ const landSystemJson = JSON.parse(
     );
     assert.equal(resolvedPlace.success, true);
     assert.equal(placeDelegateCalls, 1);
+
+    const uniformCard = {
+        id: "CARD_TEST_UNIFORM",
+        category: "LAND",
+        terrainId: "GL1_PLAINS",
+        shape: [[1]]
+    };
+    const uniformCan = state.canPlaceShape(
+        0,
+        0,
+        uniformCard.shape,
+        uniformCard,
+        null
+    );
+    assert.equal(uniformCan.can, true);
+    assert.equal(canDelegateCalls, 2);
+
+    const explicitHomogeneous = {
+        id: "CARD_TEST_EXPLICIT_HOMOGENEOUS",
+        category: "LAND",
+        shape: [[1, 1]],
+        cells: [
+            { r: 0, c: 0, terrainId: "GL1_PLAINS" },
+            { r: 0, c: 1, terrainId: "GL1_PLAINS" }
+        ]
+    };
+    const homogeneousCan = state.canPlaceShape(
+        0,
+        0,
+        explicitHomogeneous.shape,
+        explicitHomogeneous,
+        explicitHomogeneous.cells
+    );
+    assert.equal(homogeneousCan.can, true);
+    assert.equal(canDelegateCalls, 3);
 }
 
 {
