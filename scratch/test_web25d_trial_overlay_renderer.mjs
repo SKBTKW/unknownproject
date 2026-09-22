@@ -7,6 +7,7 @@ import {
     resolveWeb25DDefenseAllocationMarkers,
     resolveWeb25DDefenseAllocationMetrics,
     resolveWeb25DPlannedInterceptVisual,
+    resolveWeb25DTacticalEffectMarkers,
     resolveWeb25DTrialCandidateVisual,
     resolveWeb25DTrialOverlayAlpha,
     resolveWeb25DTrialRouteSelectors
@@ -203,6 +204,21 @@ assert.deepEqual(
 );
 
 
+const tacticalMarkers = resolveWeb25DTacticalEffectMarkers({
+    tacticalEffects: [
+        { cell: { r: 0, c: 0 }, effectId: 'HIGH_GROUND', phase: 'AVAILABLE', polarity: 'NEUTRAL' },
+        { cell: { r: 0, c: 0 }, effectId: 'WETLAND_EXIT', phase: 'AVAILABLE', polarity: 'NEUTRAL' },
+        { cell: { r: 0, c: 0 }, effectId: 'DESERT_EXIT', phase: 'AVAILABLE', polarity: 'NEUTRAL' },
+        { cell: { r: 0, c: 0 }, effectId: 'HIGH_GROUND', phase: 'APPLIED', polarity: 'ADVANTAGE' }
+    ]
+});
+assert.deepEqual(
+    tacticalMarkers.map(marker => marker.glyph),
+    ['▲', '≋'],
+    '2.5D tactical markers dedupe by effect and cap cell clutter at two badges'
+);
+
+
 const pendingBattleVisual = resolveWeb25DBattleMarkerVisual({
     cell: { r: 0, c: 0 },
     status: 'PENDING',
@@ -296,6 +312,10 @@ drawWeb25DTrialOverlay({
                 { cell: { r: 1, c: 1 }, status: 'ACTIVE', isCurrent: true, defenseAllocation: 4 },
                 { cell: { r: 1, c: 2 }, status: 'PENDING', isCurrent: false, defenseAllocation: 1 },
                 { cell: { r: 0, c: 2 }, status: 'RESOLVED', isCurrent: false, defenseAllocation: 5 }
+            ],
+            tacticalEffects: [
+                { cell: { r: 1, c: 0 }, effectId: 'HIGH_GROUND', phase: 'AVAILABLE', polarity: 'NEUTRAL' },
+                { cell: { r: 0, c: 2 }, effectId: 'WETLAND_EXIT', phase: 'APPLIED', polarity: 'ADVANTAGE' }
             ]
         }
     }
@@ -355,6 +375,17 @@ assert.equal(
     'overlapped planned allocation does not produce a duplicate chip under a battle marker'
 );
 
+assert.equal(
+    ctx.ops.some(op => op[0] === 'fillText' && op[1] === '▲'),
+    true,
+    'available high-ground tactical effect renders on the board'
+);
+assert.equal(
+    ctx.ops.some(op => op[0] === 'fillText' && op[1] === '≋'),
+    true,
+    'applied wetland tactical effect remains on the resolved battle cell'
+);
+
 const candidateStrokes = ctx.ops.filter(
     op => op[0] === 'stroke'
         && (
@@ -391,7 +422,8 @@ drawWeb25DTrialOverlay({
             invasionEntry: BOARD_VISIBILITY.SUPPRESSED,
             interception: BOARD_VISIBILITY.SECONDARY,
             defenseAllocation: BOARD_VISIBILITY.SECONDARY,
-            battleMarkers: BOARD_VISIBILITY.SUPPRESSED
+            battleMarkers: BOARD_VISIBILITY.SUPPRESSED,
+            tacticalEffects: BOARD_VISIBILITY.SECONDARY
         },
         board: { rows: 2, columns: 2 },
         cells: [
@@ -411,7 +443,13 @@ drawWeb25DTrialOverlay({
             }],
             interceptionCandidates: [{ cell: { r: 0, c: 1 }, canIntercept: true }],
             plannedIntercepts: [{ cell: { r: 0, c: 1 }, routeId: 'route:a', defenseAllocation: 6 }],
-            battleMarkers: [{ cell: { r: 1, c: 1 }, status: 'ACTIVE', isCurrent: true, defenseAllocation: 7 }]
+            battleMarkers: [{ cell: { r: 1, c: 1 }, status: 'ACTIVE', isCurrent: true, defenseAllocation: 7 }],
+            tacticalEffects: [{
+                cell: { r: 0, c: 1 },
+                effectId: 'HIGH_GROUND',
+                phase: 'AVAILABLE',
+                polarity: 'NEUTRAL'
+            }]
         }
     }
 });
@@ -441,6 +479,12 @@ assert.equal(
     profileCtx.ops.some(op => op[0] === 'fillText' && op[1] === '🛡️6' && op[5] === 0.55),
     true,
     'defense allocation chips consume their own SECONDARY profile opacity'
+);
+
+assert.equal(
+    profileCtx.ops.some(op => op[0] === 'fillText' && op[1] === '▲' && op[5] === 0.55),
+    true,
+    'tactical effect markers consume their own SECONDARY profile opacity'
 );
 assert.equal(profileCtx.globalAlpha, 1, 'Trial overlay alpha must be restored after layered drawing');
 
