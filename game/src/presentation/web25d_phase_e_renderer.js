@@ -1,4 +1,5 @@
 import { Web25DPhaseCRenderer } from './web25d_phase_c_renderer.js';
+import { resolveWeb25DElevationPixels } from './web25d_canvas_renderer.js';
 import { drawWeb25DZoneLinkOverlay } from './web25d_zone_link_overlay_renderer.js';
 
 /**
@@ -16,6 +17,20 @@ export class Web25DPhaseERenderer extends Web25DPhaseCRenderer {
         return true;
     }
 
+    redrawPriorityLandmarks() {
+        for (const row of this.readModel?.cells || []) {
+            for (const cell of row || []) {
+                if (!cell?.placed || !cell.isHQ) continue;
+                const projected = this.projection.projectCellView(cell);
+                const lift = resolveWeb25DElevationPixels(cell.elevation);
+                this.drawHQBeacon({
+                    x: projected.screenCenter.x,
+                    y: projected.screenCenter.y - lift
+                });
+            }
+        }
+    }
+
     render() {
         super.render();
         drawWeb25DZoneLinkOverlay({
@@ -26,6 +41,11 @@ export class Web25DPhaseERenderer extends Web25DPhaseCRenderer {
             shouldDrawCell: cell => this.shouldDrawZoneLinkCell(cell),
             shouldDrawEdge: (cell, edge) => this.shouldDrawZoneLinkEdge(cell, edge)
         });
+
+        // Preserve the Last Ember as the board's persistent visual landmark.
+        // Only the beacon is redrawn here: the HQ ruin stays in normal depth
+        // order, while placement/trial overlays still render above this phase.
+        this.redrawPriorityLandmarks();
     }
 }
 
