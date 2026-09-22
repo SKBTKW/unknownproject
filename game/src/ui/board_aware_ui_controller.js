@@ -132,6 +132,7 @@ export class BoardAwareUIController extends LegacyUIController {
     }
 
     shouldShowBoardDevelopmentHints() {
+        if (!this.boardPresentationState) return true;
         const profile = getBoardPresentationProfile(
             this.boardPresentationState.contextMode,
             this.boardPresentationState.viewPreset
