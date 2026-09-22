@@ -87,12 +87,43 @@ assert.equal(
     'resource family resolution must not infer semantics from socket ids'
 );
 
+for (const [resource, glyph] of [
+    ['food', '🌾'],
+    ['wood', '🧱'],
+    ['material', '🧱'],
+    ['defense', '🛡️'],
+    ['mystic', '✨']
+]) {
+    assert.equal(
+        resolveWeb25DProductionMarker({
+            display: {
+                role: 'LAND_PRIMARY',
+                production: { primaryYield: { resource, amount: 3 } }
+            }
+        })?.glyph,
+        glyph,
+        `${resource} production glyph`
+    );
+}
+
 const textCalls = [];
+const drawCalls = [];
 const ctx = {
-    fillRect() {},
-    strokeRect() {},
+    beginPath() { drawCalls.push('beginPath'); },
+    moveTo() { drawCalls.push('moveTo'); },
+    lineTo() { drawCalls.push('lineTo'); },
+    closePath() { drawCalls.push('closePath'); },
+    fill() { drawCalls.push('fill'); },
+    stroke() { drawCalls.push('stroke'); },
+    arc() { drawCalls.push('arc'); },
+    ellipse() { drawCalls.push('ellipse'); },
+    fillRect() { drawCalls.push('fillRect'); },
+    strokeRect() { drawCalls.push('strokeRect'); },
+    save() { drawCalls.push('save'); },
+    restore() { drawCalls.push('restore'); },
     fillText(text, x, y) {
         textCalls.push({ text, x, y });
+        drawCalls.push('fillText');
     }
 };
 const canvas = {
@@ -115,5 +146,25 @@ assert.ok(
 
 renderer.drawLandPrimaryMarker(landCell, { x: 50, y: 50 });
 assert.equal(textCalls.at(-1).text, '🌾4', 'legacy marker method remains a compatibility alias');
+
+for (const category of resourceFamilies.keys()) {
+    const before = drawCalls.length;
+    assert.doesNotThrow(
+        () => renderer.drawResolvedResource({ category }, { x: 50, y: 50 }),
+        `${category} landmark draw`
+    );
+    assert.ok(drawCalls.length > before, `${category} landmark must emit drawing operations`);
+}
+
+const unknownBefore = drawCalls.length;
+assert.doesNotThrow(
+    () => renderer.drawResolvedResource({ category: 'UNKNOWN_CATEGORY' }, { x: 50, y: 50 }),
+    'unknown landmark fallback draw'
+);
+assert.ok(drawCalls.length > unknownBefore, 'unknown resource family must keep a visible fallback');
+
+const hqBefore = drawCalls.length;
+assert.doesNotThrow(() => renderer.drawHQ({ x: 50, y: 50 }), 'HQ silhouette draw');
+assert.ok(drawCalls.length > hqBefore, 'HQ draw must emit drawing operations');
 
 console.log('WEB25D_LANDMARK_PRODUCTION_VALIDATION_OK');
