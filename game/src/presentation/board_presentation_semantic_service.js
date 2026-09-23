@@ -13,6 +13,7 @@ const CARDINAL_DIRECTIONS = Object.freeze([
 const DISPLAY_ROLE = Object.freeze({
     LAND_PRIMARY: 'LAND_PRIMARY',
     SOCKET: 'SOCKET',
+    SPECIAL_BLOCK: 'SPECIAL_BLOCK',
     CLEAN: 'CLEAN'
 });
 
@@ -101,7 +102,9 @@ function addNonSocketProduction(target, viewData) {
 }
 
 export function resolveBoardDisplayRole(state, facts) {
-    if (!facts?.placed || facts?.isHQ) return null;
+    if (!facts || facts.isHQ) return null;
+    if (!facts.placed && facts.specialBlock) return DISPLAY_ROLE.SPECIAL_BLOCK;
+    if (!facts.placed) return null;
     if (facts.socketResource) return DISPLAY_ROLE.SOCKET;
 
     const activeGroupId = normalizeGroupId(facts.mergeGroupId || facts.placementGroupId);
@@ -123,8 +126,21 @@ export function resolveBoardDisplayRole(state, facts) {
 }
 
 export function resolveBoardDisplayProduction(state, facts, cellViewDataService) {
-    if (!facts?.placed || facts?.isHQ || !cellViewDataService) return null;
+    if (!facts || facts.isHQ || !cellViewDataService) return null;
     const role = resolveBoardDisplayRole(state, facts);
+    if (role === DISPLAY_ROLE.SPECIAL_BLOCK) {
+        const production = {
+            food: facts.yields?.food || 0,
+            wood: facts.yields?.wood || 0,
+            defense: facts.yields?.defense || 0,
+            mystic: facts.yields?.mystic || 0
+        };
+        return Object.freeze({
+            ...production,
+            primaryYield: facts.primaryYield || pickPrimaryYield(facts.specialBlock?.type, production)
+        });
+    }
+    if (!facts.placed) return null;
     if (role !== DISPLAY_ROLE.LAND_PRIMARY && role !== DISPLAY_ROLE.SOCKET) return null;
 
     if (role === DISPLAY_ROLE.SOCKET) {
