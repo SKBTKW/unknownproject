@@ -7,6 +7,7 @@
 
 import {
     DOMAIN_ACTION_REQUIRED_IDS,
+    DOMAIN_ACTION_MIGRATION_BLOCKER,
     resolveDomainActionOwner,
     resolveDomainActionMigrationBlocker
 } from "./legacy_command_execution_inventory.js";
@@ -16,7 +17,15 @@ function getCardDomainMigrationBlocker(cardId) {
     const owner = resolveDomainActionOwner(cardId);
     const blocker = resolveDomainActionMigrationBlocker(cardId);
     if (!owner || !blocker) return null;
-    return Object.freeze({ cardId, owner, blocker });
+    const foundationReady =
+        blocker === DOMAIN_ACTION_MIGRATION_BLOCKER.ZONE_CONVERSION_DEFINITION_MISSING;
+    return Object.freeze({
+        cardId,
+        owner,
+        blocker,
+        foundationReady,
+        remainingWork: foundationReady ? "AUTHOR_DOMAIN_DEFINITION" : "DOMAIN_FOUNDATION_OR_SEMANTICS"
+    });
 }
 
 function listCardDomainMigrationBlockers() {
