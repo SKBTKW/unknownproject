@@ -94,11 +94,19 @@ function addNonSocketProduction(target, viewData) {
     target.mystic += base.mystic || 0;
 
     for (const modifier of viewData?.modifiers || []) {
-        if (!modifier || modifier.type === 'SOCKET') continue;
+        if (!modifier || modifier.type === 'SOCKET' || modifier.type === 'SPECIAL_BLOCK') continue;
         const resource = modifier.resource;
         if (!Object.prototype.hasOwnProperty.call(target, resource)) continue;
         target[resource] += modifier.amount || 0;
     }
+}
+
+function addSpecialBlockProduction(target, viewData) {
+    const yields = viewData?.specialBlock?.yields || {};
+    target.food += yields.food || 0;
+    target.wood += yields.wood || 0;
+    target.defense += yields.defense || 0;
+    target.mystic += yields.mystic || 0;
 }
 
 export function resolveBoardDisplayRole(state, facts) {
@@ -156,6 +164,7 @@ export function resolveBoardDisplayProduction(state, facts, cellViewDataService)
 
     const activeGroupId = normalizeGroupId(facts.mergeGroupId || facts.placementGroupId);
     const production = { food: 0, wood: 0, defense: 0, mystic: 0 };
+    const specialProduction = { food: 0, wood: 0, defense: 0, mystic: 0 };
 
     if (activeGroupId) {
         const grid = state?.grid || [];
@@ -168,7 +177,9 @@ export function resolveBoardDisplayProduction(state, facts, cellViewDataService)
                     || normalizeGroupId(cell.placementGroupId) === activeGroupId;
                 if (!matchesGroup) continue;
                 if (cell.placementGroupId != null) placementGroups.add(String(cell.placementGroupId));
-                addNonSocketProduction(production, cellViewDataService.getCellViewData(state, r, c));
+                const cellView = cellViewDataService.getCellViewData(state, r, c);
+                addNonSocketProduction(production, cellView);
+                addSpecialBlockProduction(specialProduction, cellView);
             }
         }
 
@@ -192,8 +203,13 @@ export function resolveBoardDisplayProduction(state, facts, cellViewDataService)
             production.defense += blockProduction.yields.defense;
             production.mystic += blockProduction.yields.mystic;
         }
+        production.food += specialProduction.food;
+        production.wood += specialProduction.wood;
+        production.defense += specialProduction.defense;
+        production.mystic += specialProduction.mystic;
     } else {
         addNonSocketProduction(production, facts);
+        addSpecialBlockProduction(production, facts);
     }
 
     return Object.freeze({
