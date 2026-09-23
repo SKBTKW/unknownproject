@@ -55,6 +55,8 @@ export function evaluateDeploymentProfileAgainstSamples({
                 distance,
                 foodCost: cost.food,
                 materialCost: cost.material,
+                foodRemaining: Math.max(0, (Number(sample.food) || 0) - cost.food),
+                materialRemaining: Math.max(0, (Number(sample.material) || 0) - cost.material),
                 foodSharePct: pct(cost.food, Number(sample.food) || 0),
                 materialSharePct: pct(cost.material, Number(sample.material) || 0),
                 defenseSharePct: pct(requestedDefense, Number(sample.defense) || 0),
@@ -78,7 +80,9 @@ export function summarizeDeploymentBalanceRows(rows = []) {
             rowCount: 0,
             affordableCount: 0,
             maxFoodSharePct: null,
-            maxMaterialSharePct: null
+            maxMaterialSharePct: null,
+            minFoodRemaining: null,
+            minMaterialRemaining: null
         };
     }
 
@@ -88,7 +92,9 @@ export function summarizeDeploymentBalanceRows(rows = []) {
         rowCount: rows.length,
         affordableCount: rows.filter(row => row.affordable).length,
         maxFoodSharePct: finiteFood.length ? Math.max(...finiteFood) : null,
-        maxMaterialSharePct: finiteMaterial.length ? Math.max(...finiteMaterial) : null
+        maxMaterialSharePct: finiteMaterial.length ? Math.max(...finiteMaterial) : null,
+        minFoodRemaining: Math.min(...rows.map(row => row.foodRemaining)),
+        minMaterialRemaining: Math.min(...rows.map(row => row.materialRemaining))
     };
 }
 
@@ -121,6 +127,11 @@ export const STAGE1_TRIAL1_PROBE_PLANS = Object.freeze([
     Object.freeze({
         id: "HEAVY_DEFENSE_FAR",
         requestedDefense: 24,
+        distance: 4
+    }),
+    Object.freeze({
+        id: "ALL_DEFENSE_FAR",
+        requestedDefense: Number.MAX_SAFE_INTEGER,
         distance: 4
     })
 ]);
