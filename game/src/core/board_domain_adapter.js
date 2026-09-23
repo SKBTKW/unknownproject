@@ -65,11 +65,18 @@ function entityIds(entity) {
 }
 
 export class BoardDomainAdapter {
-    constructor({ state, gridEngine, specialBlockService = null, boardDamageService = null } = {}) {
+    constructor({
+        state,
+        gridEngine,
+        specialBlockService = null,
+        boardDamageService = null,
+        trialDeploymentSemanticSource = null
+    } = {}) {
         this.state = state || gridEngine?.state || null;
         this.gridEngine = gridEngine || null;
         this.specialBlockService = specialBlockService || new SpecialBlockService(this.state);
         this.boardDamageService = boardDamageService || new BoardDamageService({ state: this.state });
+        this.trialDeploymentSemanticSource = trialDeploymentSemanticSource || null;
     }
 
 
@@ -209,8 +216,16 @@ export class BoardDomainAdapter {
         if (!cell) return null;
 
         const terrain = cell.terrain || null;
-        const capabilities = [...this.readCapabilities({ r, c })];
-        const trialTraits = this.readTrialTraits({ r, c }) || null;
+        const capabilities = new Set(this.readCapabilities({ r, c }));
+        const baseTrialTraits = this.readTrialTraits({ r, c }) || null;
+        const external = this.trialDeploymentSemanticSource?.readCellDeploymentSemantics?.({ r, c }) || null;
+        for (const capability of external?.capabilities || []) {
+            if (typeof capability === 'string' && capability) capabilities.add(capability);
+        }
+        const trialTraits = {
+            ...(baseTrialTraits || {}),
+            ...(external?.trialTraits || {})
+        };
         return {
             cell: { r, c },
             placed: cell.placed === true,
@@ -220,8 +235,10 @@ export class BoardDomainAdapter {
                 elevation: Number.isFinite(terrain?.e) ? terrain.e : null,
                 growthLevel: Number.isFinite(terrain?.gl) ? terrain.gl : null
             },
-            capabilities,
-            trialTraits: trialTraits ? JSON.parse(JSON.stringify(trialTraits)) : null,
+            capabilities: [...capabilities],
+            trialTraits: Object.keys(trialTraits).length > 0
+                ? JSON.parse(JSON.stringify(trialTraits))
+                : null,
             damaged: Boolean(cell.damageState || cell.damage || cell.isDamaged)
         };
     }
@@ -233,17 +250,55 @@ export class BoardDomainAdapter {
             for (let c = 0; c < (this.state.grid[r]?.length || 0); c++) {
                 const facts = this.readTrialDeploymentFacts({ r, c });
                 if (!facts) continue;
-                const capabilityOrigin = facts.capabilities.includes('REINFORCEMENT_ORIGIN');
+                const capabilityOrigin = facts.capabilities.includes(BOARD_CAPABILITIES.REINFORCEMENT_ORIGIN);
                 const traitOrigin = facts.trialTraits?.reinforcementOrigin === true;
                 if (!facts.isHQ && !capabilityOrigin && !traitOrigin) continue;
                 origins.push({
                     id: facts.isHQ ? `HQ:${r}:${c}` : `ORIGIN:${r}:${c}`,
-                    kind: facts.isHQ ? 'HQ' : 'REINFORCEMENT_ORIGIN',
+                    kind: facts.isHQ ? 'HQ' : BOARD_CAPABILITIES.REINFORCEMENT_ORIGIN,
                     cell: { r, c },
                     capabilities: [...facts.capabilities],
                     trialTraits: facts.trialTraits ? JSON.parse(JSON.stringify(facts.trialTraits)) : null
                 });
             }
+        }
+        const provided = this.trialDeploymentSemanticSource?.listDeploymentOrigins?.() || [];
+        for (const origin of Array.isArray(provided) ? provided : []) {
+            const r = origin?.cell?.r;
+            const c = origin?.cell?.c;
+            if (!Number.isInteger(r) || !Number.isInteger(c)) continue;
+            const capabilities = Array.isArray(origin.capabilities)
+                ? origin.capabilities.filter(value => typeof value === 'string' && value)
+                : [];
+            const trialTraits = origin.trialTraits && typeof origin.trialTraits === 'object'
+                ? JSON.parse(JSON.stringify(origin.trialTraits))
+                : null;
+            const isSemanticOrigin = capabilities.includes(BOARD_CAPABILITIES.REINFORCEMENT_ORIGIN)
+                || trialTraits?.reinforcementOrigin === true
+                || origin.kind === BOARD_CAPABILITIES.REINFORCEMENT_ORIGIN;
+            if (!isSemanticOrigin) continue;
+
+            const normalized = {
+                id: typeof origin.id === 'string' && origin.id
+                    ? origin.id
+                    : `ORIGIN:${r}:${c}`,
+                kind: BOARD_CAPABILITIES.REINFORCEMENT_ORIGIN,
+                cell: { r, c },
+                capabilities: [...new Set([
+                    ...capabilities,
+                    BOARD_CAPABILITIES.REINFORCEMENT_ORIGIN
+                ])],
+                trialTraits
+            };
+            const duplicate = origins.some(existing => (
+                existing.id === normalized.id
+                || (
+                    existing.kind === normalized.kind
+                    && existing.cell.r === r
+                    && existing.cell.c === c
+                )
+            ));
+            if (!duplicate) origins.push(normalized);
         }
         return origins;
     }
