@@ -480,6 +480,14 @@
       ]
     },
     {
+      "path": "scratch/test_global_event_next_event_expiry.mjs",
+      "purpose": "NEXT_GLOBAL_EVENT weight modifiers consume exactly once on successful GE trigger",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_global_event_gameplay_rng.mjs",
       "purpose": "global event gameplay rng",
       "suite": "supplemental"
