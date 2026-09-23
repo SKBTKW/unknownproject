@@ -2048,6 +2048,7 @@ const landSystemJson = JSON.parse(
         state,
         zoneConversionService: service
     });
+    const representativeFacts = board.readTrialDeploymentFacts({ r: 0, c: 0 });
     const zoneFacts = board.readTrialDeploymentFacts({ r: 0, c: 1 });
     const remainderFacts = board.readTrialDeploymentFacts({ r: 0, c: 2 });
 
@@ -2055,9 +2056,14 @@ const landSystemJson = JSON.parse(
         zoneFacts.capabilities.includes(ZONE_CONVERSION_CAPABILITIES.DEFENSE_ANCHOR),
         "converted Zone cell must project its Trial deployment capability"
     );
-    assert.ok(
+    assert.equal(
         zoneFacts.capabilities.includes(ZONE_CONVERSION_CAPABILITIES.REINFORCEMENT_ORIGIN),
-        "converted Garrison Zone must expose reinforcement-origin semantics"
+        false,
+        "reinforcement-origin semantics must stay on the Zone representative cell"
+    );
+    assert.ok(
+        representativeFacts.capabilities.includes(ZONE_CONVERSION_CAPABILITIES.REINFORCEMENT_ORIGIN),
+        "converted Garrison Zone representative must expose reinforcement-origin semantics"
     );
     assert.equal(
         remainderFacts.capabilities.includes(ZONE_CONVERSION_CAPABILITIES.DEFENSE_ANCHOR),
