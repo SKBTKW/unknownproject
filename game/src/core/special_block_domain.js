@@ -32,8 +32,8 @@ export const BASE_TERRAIN_INTERACTIONS = Object.freeze({
 });
 
 const defaultTrialTraits = Object.freeze({
-    interceptionAllowed: true,
-    suppressTerrainTactic: true,
+    interceptionAllowed: null,
+    suppressTerrainTactic: false,
     specialTactics: Object.freeze([]),
     defenseModifier: null,
     resilience: null
@@ -46,17 +46,30 @@ const overlayPlacement = Object.freeze({
     requireEmptySpecialBlock: true
 });
 
+function freezeStringArray(values) {
+    return Array.isArray(values) ? Object.freeze([...values]) : values;
+}
+
 function freezeDefinition(definition) {
+    const placement = {
+        ...(definition.placement || {}),
+        terrainIds: freezeStringArray(definition.placement?.terrainIds),
+        sourceTerrainIds: freezeStringArray(definition.placement?.sourceTerrainIds)
+    };
     return Object.freeze({
         ...definition,
-        placement: Object.freeze({ ...(definition.placement || {}) }),
+        placement: Object.freeze(placement),
         baseTerrainInteraction: Object.freeze({ ...(definition.baseTerrainInteraction || {}) }),
+        production: definition.production
+            ? Object.freeze({ ...definition.production })
+            : null,
         capabilities: Object.freeze([...(definition.capabilities || [])]),
         trialTraits: Object.freeze({
             ...defaultTrialTraits,
             ...(definition.trialTraits || {}),
             specialTactics: Object.freeze([...(definition.trialTraits?.specialTactics || [])])
         }),
+        lifecycle: Object.freeze({ ...(definition.lifecycle || {}) }),
         presentation: Object.freeze({ ...(definition.presentation || {}) })
     });
 }
@@ -151,7 +164,7 @@ export const SPECIAL_BLOCK_DEFINITIONS = Object.freeze({
         capabilities: [BOARD_CAPABILITIES.MILITARY_SITE],
         trialTraits: {
             interceptionAllowed: true,
-            suppressTerrainTactic: true,
+            suppressTerrainTactic: false,
             specialTactics: ['EARTHWORK_DEFENSE']
         },
         lifecycle: { initialState: 'ACTIVE' },
@@ -163,11 +176,7 @@ export const SPECIAL_BLOCK_DEFINITIONS = Object.freeze({
         placement: { ...overlayPlacement },
         baseTerrainInteraction: { kind: BASE_TERRAIN_INTERACTIONS.TERRAIN_USING_OVERLAY },
         production: null,
-        capabilities: [
-            BOARD_CAPABILITIES.MILITARY_SITE,
-            BOARD_CAPABILITIES.INVESTIGATION_SITE,
-            BOARD_CAPABILITIES.OBSERVATION_SITE
-        ],
+        capabilities: [BOARD_CAPABILITIES.OBSERVATION_SITE],
         trialTraits: {},
         lifecycle: { initialState: 'ACTIVE' },
         presentation: { nameKey: 'SPECIAL_BLOCK_WATCHTOWER' }
@@ -218,6 +227,20 @@ export function readCellCapabilities(cell) {
 
 export function hasCellCapability(cell, capability) {
     return readCellCapabilities(cell).has(capability);
+}
+
+export function readEffectiveGreenery(cell) {
+    const base = Number(cell?.terrain?.gl);
+    if (!Number.isFinite(base)) return null;
+
+    // New entities persist the ecological effect explicitly. Legacy saves from
+    // the first Special Block implementation may already have the delta
+    // materialized into terrain.gl and carry no baseTerrainEffect. In that
+    // case, treat the stored GL as authoritative to avoid applying GL-1 twice.
+    const explicitDelta = Number(cell?.specialBlock?.baseTerrainEffect?.glDelta);
+    const delta = Number.isFinite(explicitDelta) ? explicitDelta : 0;
+
+    return Math.max(0, base + delta);
 }
 
 export function readSpecialBlockTrialTraits(entityOrCell) {
