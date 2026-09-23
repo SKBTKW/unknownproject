@@ -334,6 +334,7 @@ async function main() {
         ["Run History Read Model", "scratch/test_run_history_read_model.mjs"],
         ["Global Event Eligibility v1", "scratch/test_global_event_eligibility_v1.mjs"],
         ["Global Event NEXT_GLOBAL_EVENT Expiry", "scratch/test_global_event_next_event_expiry.mjs"],
+        ["Global Event Recovery History Eligibility", "scratch/test_global_event_recovery_history_eligibility.mjs"],
     ];
     for (const [label, testPath] of investigationContracts) {
         const ok = await runCommand("node", [testPath]);
