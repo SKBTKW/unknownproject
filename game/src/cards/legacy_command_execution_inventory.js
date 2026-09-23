@@ -22,9 +22,7 @@ const DOMAIN_ACTION_OWNER = Object.freeze({
     EXPLORATION: "EXPLORATION"
 });
 
-const CURRENT_SSOT_LOCAL_IDS = Object.freeze([
-    "CMD_MILITARY_FOCUS"
-]);
+const CURRENT_SSOT_LOCAL_IDS = Object.freeze([]);
 
 const DOMAIN_ACTION_REQUIRED_IDS = Object.freeze([
     "CMD_IRON_RAMPART",
