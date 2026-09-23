@@ -193,7 +193,7 @@ import { resolveLandDamageEffect } from '../core/board_damage_effect_policy.js';
         static getResourceBreakdown(state) {
             let foodTiles = 0, woodTiles = 0, defenseTiles = 0, mysticTiles = 0;
             let foodSockets = 0, woodSockets = 0, defenseSockets = 0, mysticSockets = 0;
-            let foodVicinity = 0, woodVicinity = 0;
+            let foodVicinity = 0, woodVicinity = 0, mysticVicinity = 0;
             const groupSums = {};
             const size = (state && state.grid && state.grid.length) ? state.grid.length : 5;
             const center = Math.floor(size / 2);
@@ -285,7 +285,7 @@ import { resolveLandDamageEffect } from '../core/board_damage_effect_policy.js';
                         ? state.defenseSystem.getCurrentDefense()
                         : Math.min(state?.currentDefense ?? defTotal, defTotal)
                 },
-                mystic: { hqBase: hqMystic, tiles: mysticTiles, blocks: blockProduction.mystic, specialBlocks: specialBlockProduction.yields.mystic, sockets: mysticSockets, emberMystic, emberPct, total: prods.totalMystic }
+                mystic: { hqBase: hqMystic, tiles: mysticTiles, blocks: blockProduction.mystic, specialBlocks: specialBlockProduction.yields.mystic, sockets: mysticSockets, vicinity: mysticVicinity, emberMystic, emberPct, total: prods.totalMystic }
             };
         }
 
