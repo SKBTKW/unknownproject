@@ -10,6 +10,7 @@ import {
 import { ZoneConversionService } from "../game/src/systems/zone_conversion_service.js";
 import { serializeGameState } from "../game/src/core/state_serializer.js";
 import { hydrateGameState } from "../game/src/core/hydrate_game_state.js";
+import { TurnLifecycleService } from "../game/src/core/turn_lifecycle_service.js";
 
 function makeCell(r, c, terrainId = "E2_HILL") {
     return {
@@ -263,14 +264,12 @@ assert.equal(duePlan.canPay, false);
 assert.deepEqual(duePlan.shortfalls, { food: 1 });
 
 const beforeFailedMaintenanceFood = state.food;
-const failedMaintenance = adapter.applyZoneConversionMaintenanceSettlement("zone_a", {
-    verse: 21,
-    paymentSucceeded: false
-});
-assert.equal(failedMaintenance.success, true);
-assert.equal(failedMaintenance.state, ZONE_CONVERSION_STATES.DYSFUNCTIONAL);
+const failedVerse = service.settleMaintenanceForVerse(21);
+assert.equal(failedVerse.results.length, 1);
+assert.equal(failedVerse.results[0].success, true);
+assert.equal(failedVerse.results[0].state, ZONE_CONVERSION_STATES.DYSFUNCTIONAL);
 assert.equal(adapter.isZoneConversionFunctional("zone_a"), false);
-assert.equal(state.food, beforeFailedMaintenanceFood, "Board records settlement but never spends maintenance resources");
+assert.equal(state.food, beforeFailedMaintenanceFood, "failed maintenance never partially spends resources");
 assert.equal(
     adapter.hasCapability(ZONE_CONVERSION_CAPABILITIES.GARRISON_SITE),
     false,
@@ -296,15 +295,12 @@ state.food = 30;
 const recoveryPlan = adapter.getZoneConversionMaintenancePlan("zone_a", 22);
 assert.equal(recoveryPlan.due, true);
 assert.equal(recoveryPlan.canPay, true);
-const beforeRecoveredMaintenanceFood = state.food;
-const recoveredMaintenance = adapter.applyZoneConversionMaintenanceSettlement("zone_a", {
-    verse: 22,
-    paymentSucceeded: true
-});
-assert.equal(recoveredMaintenance.success, true);
-assert.equal(recoveredMaintenance.state, ZONE_CONVERSION_STATES.ACTIVE);
+const recoveredVerse = service.settleMaintenanceForVerse(22);
+assert.equal(recoveredVerse.results.length, 1);
+assert.equal(recoveredVerse.results[0].success, true);
+assert.equal(recoveredVerse.results[0].state, ZONE_CONVERSION_STATES.ACTIVE);
 assert.equal(adapter.isZoneConversionFunctional("zone_a"), true);
-assert.equal(state.food, beforeRecoveredMaintenanceFood);
+assert.equal(state.food, 28, "successful maintenance spends the full upkeep exactly once");
 assert.equal(adapter.hasCapability(ZONE_CONVERSION_CAPABILITIES.GARRISON_SITE), true);
 assert.equal(
     adapter.readTrialDeploymentFacts({ r: 0, c: 1 }).capabilities.includes(BOARD_CAPABILITIES.DEFENSE_ANCHOR),
@@ -340,5 +336,35 @@ const restored = makeState();
 hydrateGameState(restored, serialized, { resolveCardMaster: () => null });
 assert.equal(restored.mergedBlocks.zone_a.conversion.definitionId, "GARRISON_TEST");
 assert.equal(restored.mergedBlocks.zone_b.conversion.sequence, 2);
+
+// Verse initialization order: increment Verse -> settle Zone upkeep -> generate Offering.
+{
+    const order = [];
+    const lifecycle = Object.create(TurnLifecycleService.prototype);
+    lifecycle.engine = {
+        state: {
+            turn: 30,
+            hasPickedThisTurn: true,
+            hasReservedThisTurn: true,
+            hasMulliganedThisTurn: true
+        },
+        zoneConversionService: {
+            settleMaintenanceForVerse(verse) {
+                order.push(`maintenance:${verse}`);
+                return { verse, results: [] };
+            }
+        },
+        deckManager: {
+            generateOfferingCards() {
+                order.push("offering");
+            }
+        },
+        globalEventManager: null
+    };
+    lifecycle._initializeNextTurn();
+    assert.equal(lifecycle.engine.state.turn, 31);
+    assert.deepEqual(order, ["maintenance:31", "offering"]);
+    assert.equal(lifecycle.engine.lastZoneConversionMaintenanceResult.verse, 31);
+}
 
 console.log("PASS zone conversion foundation");
