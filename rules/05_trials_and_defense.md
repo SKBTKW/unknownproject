@@ -162,9 +162,10 @@ Trialの🛡️配備は、将来的に「無料の数値割当」ではなく�
 現在の実装では以下の境界まで確定している。
 
 - Previewでは資源を消費しない。
-- Commit時に🌾・🧱をatomicに支払う。
-- Commit時はBoard facts / origin / distance / resource残高を再検証する。
-- 配備した🛡️はそのTrial中固定し、v1では再配置・撤収・返金を行わない。
+- Commit時に🌾・🧱を支払い、同じCommitで通常GameStateの`currentDefense`から配備🛡️を予約する。
+- Commit時はBoard facts / origin / distance / resource残高 / 通常GameStateの`currentDefense`を再検証する。
+- 🌾・🧱支払いが失敗した場合、先行した🛡️予約は内部rollbackし、部分Commitを残さない。
+- 配備した🛡️はそのTrial中固定し、Commit成功後の再配置・撤収・返金を行わない。
 - 複数routeを迎撃しても、front数そのものによる追加surchargeは持たない。
 - 配備元はHQ固定ではなく、Boardが公開するsemantic `REINFORCEMENT_ORIGIN` を利用できる。
 - TrialはGarrison等の施設IDを知らず、Board semanticだけを読む。
