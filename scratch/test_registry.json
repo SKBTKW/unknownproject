@@ -280,6 +280,14 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_card_domain_actions_v2_replay.mjs",
+      "purpose": "Card compatibility-handler extraction and canonical domain migration blocker projection",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_check_system_core.mjs",
       "purpose": "check system core",
       "suite": "supplemental"
@@ -951,6 +959,14 @@
       ]
     },
     {
+      "path": "scratch/test_trial_deployment_cost_resolver.mjs",
+      "purpose": "Canonical configurable Trial deployment cost resolver and unresolved-profile fail-closed contract",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_trial_deployment_economy.mjs",
       "purpose": "Trial deployment economy fixed-placement v1, atomic payment, stale-state rejection, semantic origin/capability consumption",
       "suite": "existing",
@@ -1270,14 +1286,6 @@
     {
       "path": "scratch/test_zone_conversion_foundation.mjs",
       "purpose": "Zone conversion foundation, maintenance lifecycle, and Board-to-Trial deployment semantic projection",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
-      "path": "scratch/test_card_domain_actions_v2_replay.mjs",
-      "purpose": "Card compatibility-handler extraction and canonical domain migration blocker projection",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
