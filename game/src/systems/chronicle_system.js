@@ -32,29 +32,64 @@ export class ChronicleSystem {
     }
 
     recordGameFact(fact) {
-        if (fact?.type !== GAME_FACT_TYPES.VERSE_COMMITTED) return null;
+        if (fact?.type === GAME_FACT_TYPES.VERSE_COMMITTED) {
+            const completedTurn = Number(fact.payload?.completedTurn);
+            if (!Number.isInteger(completedTurn) || completedTurn < 1) return null;
 
-        const completedTurn = Number(fact.payload?.completedTurn);
-        if (!Number.isInteger(completedTurn) || completedTurn < 1) return null;
+            const id = `VERSE_COMMITTED_${completedTurn}`;
+            const existing = this.events.find(event => event.id === id);
+            if (existing) return existing;
 
-        const id = `VERSE_COMMITTED_${completedTurn}`;
-        const existing = this.events.find(event => event.id === id);
-        if (existing) return existing;
+            const nextTurnRaw = Number(fact.payload?.nextTurn);
+            const nextTurn = Number.isInteger(nextTurnRaw) ? nextTurnRaw : completedTurn + 1;
 
-        const nextTurnRaw = Number(fact.payload?.nextTurn);
-        const nextTurn = Number.isInteger(nextTurnRaw) ? nextTurnRaw : completedTurn + 1;
+            return this.record({
+                turn: completedTurn,
+                type: GAME_FACT_TYPES.VERSE_COMMITTED,
+                id,
+                nameKey: "CHRONICLE_VERSE_COMMITTED",
+                importance: CHRONICLE_IMPORTANCE.MINOR,
+                meta: {
+                    verse: completedTurn,
+                    nextVerse: nextTurn
+                }
+            });
+        }
 
-        return this.record({
-            turn: completedTurn,
-            type: GAME_FACT_TYPES.VERSE_COMMITTED,
-            id,
-            nameKey: "CHRONICLE_VERSE_COMMITTED",
-            importance: CHRONICLE_IMPORTANCE.MINOR,
-            meta: {
-                verse: completedTurn,
-                nextVerse: nextTurn
-            }
-        });
+        if (fact?.type === GAME_FACT_TYPES.INVESTIGATION_RECORDED) {
+            const reportId = typeof fact.payload?.reportId === "string" && fact.payload.reportId.length > 0
+                ? fact.payload.reportId
+                : null;
+            if (!reportId) return null;
+
+            const id = `INVESTIGATION_RECORDED_${reportId}`;
+            const existing = this.events.find(event => event.id === id);
+            if (existing) return existing;
+
+            const verseRaw = Number(fact.payload?.verse);
+            const verse = Number.isInteger(verseRaw) && verseRaw >= 1
+                ? verseRaw
+                : (Number.isInteger(this.state?.turn) ? this.state.turn : 1);
+
+            return this.record({
+                turn: verse,
+                type: GAME_FACT_TYPES.INVESTIGATION_RECORDED,
+                id,
+                nameKey: "CHRONICLE_INVESTIGATION_RECORDED",
+                importance: CHRONICLE_IMPORTANCE.MINOR,
+                meta: {
+                    verse,
+                    trialIndex: Number.isInteger(fact.payload?.trialIndex)
+                        ? fact.payload.trialIndex
+                        : null,
+                    reportId,
+                    sourceType: fact.payload?.sourceType || null,
+                    cardId: fact.payload?.cardId || null
+                }
+            });
+        }
+
+        return null;
     }
 
     /**
