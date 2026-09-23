@@ -107,7 +107,12 @@ export class TrialDefenseReservation {
             }
             return {
                 success: false,
-                reasons: [TRIAL_DEFENSE_RESERVATION_REASONS.DEFENSE_RESERVATION_FAILED],
+                reasons: [
+                    TRIAL_DEFENSE_RESERVATION_REASONS.DEFENSE_RESERVATION_FAILED,
+                    ...(rollback && rollback.success === false
+                        ? [TRIAL_DEFENSE_RESERVATION_REASONS.DEFENSE_ROLLBACK_FAILED]
+                        : [])
+                ],
                 before,
                 after: this.readBalance(),
                 reserved: 0,
