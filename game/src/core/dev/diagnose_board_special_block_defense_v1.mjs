@@ -408,7 +408,11 @@ console.log('Board / Special Block / Defense v1 contract');
             cellId: '1:1'
         }
     });
-    assert.equal(farmTrial.canIntercept, true, 'Special-only FARM can be an interception site');
+    assert.equal(
+        farmTrial.canIntercept,
+        false,
+        'Special-only FARM does not gain interception permission implicitly'
+    );
 
     const controller = new TrialController();
     controller.state = {
@@ -425,12 +429,31 @@ console.log('Board / Special Block / Defense v1 contract');
     );
     assert.equal(
         farmInterceptionInput.success,
-        true,
-        'TrialController accepts Special-only interception sites'
+        false,
+        'Special-only FARM remains non-interceptable without an explicit Trial trait'
+    );
+
+    const specialOnlyMilitary = cell(1, 2, {
+        specialBlock: {
+            type: SPECIAL_BLOCK_TYPES.PALISADE,
+            definitionId: SPECIAL_BLOCK_TYPES.PALISADE,
+            orientation: 'N',
+            state: 'ACTIVE'
+        }
+    });
+    controller.cellResolver = (r, c) => {
+        if (r === 1 && c === 2) return specialOnlyMilitary;
+        return state.grid?.[r]?.[c] || null;
+    };
+    const explicitSpecialInterception = controller.createRouteInterceptionInput(
+        'farm-route',
+        { r: 1, c: 2 },
+        1
     );
     assert.equal(
-        farmInterceptionInput.input.interceptCell.specialBlock.type,
-        SPECIAL_BLOCK_TYPES.FARM
+        explicitSpecialInterception.success,
+        true,
+        'TrialController honors an explicit Special Block interception trait'
     );
     assert.equal(
         farmTrial.modifiers.some(modifier => modifier.source === TRIAL_TERRAIN_EFFECTS.HIGH_GROUND),
