@@ -223,6 +223,35 @@ const LAND_SYSTEM_DATA = {
   }
 };
 
+export function isCanonicalTerrainId(terrainId) {
+  const id = String(terrainId || "");
+  return Boolean(id && LAND_SYSTEM_DATA.terrains[id]);
+}
+
+export function resolveCanonicalTerrainSemantic(terrainId, overlays = null) {
+  const id = String(terrainId || "");
+  const canonical = LAND_SYSTEM_DATA.terrains[id] || null;
+  const extras = overlays && typeof overlays === "object" ? overlays : {};
+
+  if (!canonical) {
+    return id
+      ? { ...extras, id: extras.id || id, terrainId: extras.terrainId || id }
+      : { ...extras };
+  }
+
+  // Custom per-cell flags may extend the terrain semantic, but canonical
+  // terrain fields win whenever both define the same property.
+  return {
+    ...extras,
+    ...canonical,
+    id: canonical.id || id,
+    terrainId: canonical.terrainId || canonical.id || id,
+    ...(canonical.baseYieldsPerTile
+      ? { baseYieldsPerTile: { ...canonical.baseYieldsPerTile } }
+      : {})
+  };
+}
+
 if (typeof window !== "undefined") {
   window.LAND_SYSTEM_DATA = LAND_SYSTEM_DATA;
   window.TERRAIN_MATRIX = TERRAIN_MATRIX;

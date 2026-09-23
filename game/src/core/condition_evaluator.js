@@ -324,8 +324,15 @@ const CONDITION_HANDLERS = {
     // 📦 盤面に配置済みのブロック数判定 (<= maxCount)
     PLACED_BLOCKS_AT_MOST: (params, context) => {
         if (!context || !context.state) return false;
-        const maxCount = params.value || 5;
-        const count = context.state.placedBlocksCount || (context.state.placedCards ? context.state.placedCards.length : 0);
+        const maxCount = params.value ?? 5;
+        const state = context.state;
+        const count = typeof state.countPlacedBlocks === "function"
+            ? state.countPlacedBlocks()
+            : (Number.isInteger(state.placedBlockCount)
+                ? state.placedBlockCount
+                : (Number.isInteger(state.placedBlocksCount)
+                    ? state.placedBlocksCount
+                    : (Array.isArray(state.placedCards) ? state.placedCards.length : 0)));
         return count <= maxCount;
     },
 
