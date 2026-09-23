@@ -1041,6 +1041,35 @@ console.log('Board / Special Block / Defense v1 contract');
         'RELATION_COUNT respects explicit neighborhood, capability and maxRelations'
     );
 
+    definitions.set('TEST_RELATION_NULL_CAP', {
+        id: 'TEST_RELATION_NULL_CAP',
+        production: {
+            status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
+            kind: SPECIAL_BLOCK_PRODUCTION_KINDS.RELATION_COUNT,
+            relationCapability: BOARD_CAPABILITIES.MYSTIC_SOURCE,
+            relationNeighborhood: SPECIAL_BLOCK_RELATION_NEIGHBORHOODS.ORTHOGONAL,
+            perRelationYields: { mystic: 1 },
+            maxRelations: null
+        }
+    });
+    relationState.grid[3][1] = cell(3, 1, {
+        specialBlock: {
+            type: 'TEST_RELATION_NULL_CAP',
+            definitionId: 'TEST_RELATION_NULL_CAP'
+        }
+    });
+    relationState.grid[2][1] = cell(2, 1, {
+        capabilities: [BOARD_CAPABILITIES.MYSTIC_SOURCE]
+    });
+    relationState.grid[4][1] = cell(4, 1, {
+        capabilities: [BOARD_CAPABILITIES.MYSTIC_SOURCE]
+    });
+    assert.equal(
+        resolver.resolveCell(relationState, relationState.grid[3][1], { r: 3, c: 1 }).yields.mystic,
+        2,
+        'null maxRelations means no explicit cap rather than a zero cap'
+    );
+
     relationState.grid[3][3] = cell(3, 3, {
         specialBlock: {
             type: 'TEST_RELATION_INCOMPLETE',
