@@ -13,7 +13,10 @@ import {
     BOARD_CELL_OCCUPANCY,
     resolveBoardCellOccupancy
 } from '../core/board_cell_occupancy.js';
-import { getSpecialBlockDefinition } from '../core/special_block_domain.js';
+import {
+    getSpecialBlockDefinition,
+    readEffectiveGreenery
+} from '../core/special_block_domain.js';
 import {
     resolveSpecialBlockProduction,
     SPECIAL_BLOCK_PRODUCTION_STATUS
@@ -166,7 +169,7 @@ export class CellViewDataService {
             category: t.category || (cell.isHQ ? "HQ" : "LAND"),
             nameKey: t.nameKey || (cell.isHQ ? "TERRAIN_HQ_NAME" : null),
             elevation: Number.isInteger(t.e) ? t.e : null,
-            greenery: Number.isInteger(t.gl) ? t.gl : null,
+            greenery: readEffectiveGreenery(cell),
             hasSocket: !!cell.hasSocket,
             socketResource: normalizeSocketResource(cell.socketResource),
             specialBlock,
