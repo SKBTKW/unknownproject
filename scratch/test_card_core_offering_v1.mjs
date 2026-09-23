@@ -875,7 +875,70 @@ function makeGrid(rows, cols) {
     assert.equal(state.logs.length, 1);
 }
 
-// U. Migrated effects stay identical between JSON SSOT and generated command master.
+// U. Military Focus migration preserves legacy immediate conditional reconciliation.
+{
+    const card = COMMAND_CARDS_MASTER.find(candidate => candidate.id === "CMD_MILITARY_FOCUS");
+    assert.ok(card?.effects?.length === 4);
+
+    const makeState = defense => ({
+        turn: 1,
+        food: 20,
+        wood: 40,
+        material: 40,
+        mystic: 0,
+        ember: 5,
+        defense,
+        reserveSlots: [],
+        consumedUniqueCards: [],
+        usedUniqueCards: [],
+        activeBuffs: [],
+        logs: [],
+        addBuff(buff) { this.activeBuffs.push(buff); },
+        removeBuff(id) { this.activeBuffs = this.activeBuffs.filter(buff => buff.id !== id); },
+        addLog(log) { this.logs.push(log); },
+        calculateTotalDefense() { return this.defense; },
+        checkConditionalBuffs() {
+            if (this.activeDrawBias?.type === "UNTIL_DEFENSE"
+                && this.calculateTotalDefense() >= (this.activeDrawBias.untilValue || 20)) {
+                this.activeDrawBias = null;
+                this.removeBuff("CMD_MILITARY_FOCUS");
+            }
+        }
+    });
+
+    {
+        const state = makeState(19);
+        const manager = new DeckManager(state, {});
+        manager.cycleSystem = null;
+        const result = manager.playCommandCard(card);
+        assert.equal(result.success, true);
+        assert.equal(state.wood, 20);
+        assert.equal(state.material, 20);
+        assert.deepEqual(state.activeDrawBias, {
+            targetCategory: "MILITARY",
+            type: "UNTIL_DEFENSE",
+            untilValue: 20
+        });
+        assert.equal(state.activeBuffs[0].id, "CMD_MILITARY_FOCUS");
+        assert.equal(state.activeBuffs[0].icon, "🛡️");
+        assert.equal(state.logs.length, 1);
+    }
+
+    {
+        const state = makeState(20);
+        const manager = new DeckManager(state, {});
+        manager.cycleSystem = null;
+        const result = manager.playCommandCard(card);
+        assert.equal(result.success, true);
+        assert.equal(state.activeDrawBias, null,
+            "legacy exact-threshold behavior immediately clears Military Focus bias");
+        assert.equal(state.activeBuffs.length, 0,
+            "legacy exact-threshold behavior immediately removes Military Focus buff");
+        assert.equal(state.logs.length, 1);
+    }
+}
+
+// V. Migrated effects stay identical between JSON SSOT and generated command master.
 
 
 
@@ -908,7 +971,8 @@ function makeGrid(rows, cols) {
         "CMD_VIGILANCE",
         "CMD_MYSTIC_FOCUS",
         "CMD_GRANARY",
-        "CMD_AGRICULTURAL_REFORM"
+        "CMD_AGRICULTURAL_REFORM",
+        "CMD_MILITARY_FOCUS"
     ];
 
     for (const id of migratedIds) {
@@ -924,7 +988,7 @@ function makeGrid(rows, cols) {
     }
 }
 
-// V. Every remaining DeckManager command ID branch belongs to exactly one migration class.
+// W. Every remaining DeckManager command ID branch belongs to exactly one migration class.
 {
     const deckManagerSource = readFileSync(
         new URL("../game/src/systems/deck_manager.js", import.meta.url),
@@ -960,7 +1024,7 @@ function makeGrid(rows, cols) {
     );
 }
 
-// W. SSOT ownership and execution classification must agree.
+// X. SSOT ownership and execution classification must agree.
 {
     const economySource = JSON.parse(readFileSync(
         new URL("../game/src/data/economy_cards.json", import.meta.url),
@@ -1007,7 +1071,7 @@ function makeGrid(rows, cols) {
     }
 }
 
-// X. Every DOMAIN_ACTION_REQUIRED card has exactly one owning domain.
+// Y. Every DOMAIN_ACTION_REQUIRED card has exactly one owning domain.
 {
     const validOwners = new Set(Object.values(DOMAIN_ACTION_OWNER));
     assert.deepEqual(
