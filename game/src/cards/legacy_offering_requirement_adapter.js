@@ -14,10 +14,11 @@ function adaptLegacyOfferingRequirements(card, { h2Count = 0 } = {}) {
 
     const requirements = [];
 
-    push(requirements, card.reqE2HillsOnBoard !== undefined, {
+    const requiredE2Hills = card.reqE2HillsOnBoard ?? card.reqE2;
+    push(requirements, requiredE2Hills !== undefined, {
         id: "LEGACY_REQ_E2_HILLS",
         type: "LEGACY_E2_HILLS_AT_LEAST",
-        value: card.reqE2HillsOnBoard,
+        value: requiredE2Hills,
         actual: h2Count
     });
 

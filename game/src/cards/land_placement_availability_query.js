@@ -21,10 +21,14 @@ class LandPlacementAvailabilityQuery {
         this.state = state;
     }
 
-    hasAnyLegalPlacement(cardDefinition) {
+    hasAnyLegalPlacement(cardDefinition, { cache = null } = {}) {
         const state = this.state;
         if (!cardDefinition || cardDefinition.category !== "LAND") return false;
         if (!state?.grid || typeof state.canPlaceShape !== "function") return false;
+
+        if (cache instanceof WeakMap && typeof cardDefinition === "object") {
+            if (cache.has(cardDefinition)) return cache.get(cardDefinition) === true;
+        }
 
         let shape = resolvePlacementShape(cardDefinition);
         let anchor = resolvePlacementAnchor(cardDefinition, shape);
@@ -36,6 +40,9 @@ class LandPlacementAvailabilityQuery {
             if (!seen.has(key)) {
                 seen.add(key);
                 if (this._hasLegalPlacementForGeometry(cardDefinition, shape, anchor, attributeCells)) {
+                    if (cache instanceof WeakMap && typeof cardDefinition === "object") {
+                        cache.set(cardDefinition, true);
+                    }
                     return true;
                 }
             }
@@ -45,6 +52,9 @@ class LandPlacementAvailabilityQuery {
             attributeCells = rotated.attributeCells;
         }
 
+        if (cache instanceof WeakMap && typeof cardDefinition === "object") {
+            cache.set(cardDefinition, false);
+        }
         return false;
     }
 

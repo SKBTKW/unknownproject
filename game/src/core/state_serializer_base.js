@@ -146,6 +146,14 @@ export function serializeGameState(state) {
         ? [...state.usedUniqueCards].sort()
         : [];
 
+    const serializedPlacedBlockCount = Number.isFinite(state.placedBlockCount)
+        ? state.placedBlockCount
+        : (typeof state.countPlacedBlocks === "function"
+            ? state.countPlacedBlocks()
+            : (typeof state.gridEngine?.getPlacedBlockCount === "function"
+                ? state.gridEngine.getPlacedBlockCount()
+                : 0));
+
     const serializedStage = state.stage ? {
         id: state.stage.id,
         name: state.stage.name,
@@ -175,7 +183,7 @@ export function serializeGameState(state) {
         nextTrialTurn: state.nextTrialTurn !== undefined ? state.nextTrialTurn : null,
         activeConstructionProjects: cloneData(state.activeConstructionProjects, []),
         activeDrawBias: cloneData(state.activeDrawBias),
-        placedBlockCount: Number.isFinite(state.placedBlockCount) ? state.placedBlockCount : 0,
+        placedBlockCount: serializedPlacedBlockCount,
         permanentPlainsFoodBonus: state.permanentPlainsFoodBonus || 0,
         permanentVicinityDefenseBonus: state.permanentVicinityDefenseBonus || 0,
         emberConsumptionReducedTurns: state.emberConsumptionReducedTurns || 0,
