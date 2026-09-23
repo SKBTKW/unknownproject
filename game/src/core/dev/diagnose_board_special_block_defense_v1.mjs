@@ -10,6 +10,7 @@ import {
 import { GridEngine } from '../../systems/grid_engine.js';
 import { SpecialBlockService } from '../../systems/special_block_service.js';
 import { TrialTerrainEffectResolver } from '../../trial/systems/trial_terrain_effect_resolver.js';
+import { TrialCombatResolver } from '../../trial/systems/trial_combat_resolver.js';
 import { createBattleContext } from '../../trial/domain/battle_context.js';
 import { TrialController } from '../../trial/flow/trial_controller_base.js';
 import { TRIAL_TERRAIN_EFFECTS } from '../../trial/domain/trial_types.js';
@@ -246,6 +247,22 @@ console.log('Board / Special Block / Defense v1 contract');
         ),
         true,
         'injected PALISADE multiplier becomes a normal Trial modifier'
+    );
+
+    const combat = new TrialCombatResolver({
+        terrainResolver: new TrialTerrainEffectResolver({
+            palisadeDirectionalMultiplier: 1.25
+        })
+    }).resolve(normalized);
+    assert.equal(combat.success, true);
+    assert.equal(combat.human.basePower, 5);
+    assert.equal(combat.human.finalPower, 6.25);
+    assert.equal(
+        combat.appliedModifiers.some(modifier =>
+            modifier.source === 'PALISADE_DIRECTIONAL_DEFENSE'
+        ),
+        true,
+        'PALISADE direction modifier reaches combat calculation'
     );
 
     const wrongDirection = new TrialTerrainEffectResolver({
