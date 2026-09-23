@@ -36,6 +36,7 @@ import { TrialPlanningDraftService } from "../../trial/domain/trial_planning_dra
 import { TrialTerrainEffectResolver } from "../../trial/systems/trial_terrain_effect_resolver.js";
 import { TRIAL_PLAN_REASONS } from "../../trial/domain/trial_types.js";
 import {
+    LAND_CELL_YIELD_SOURCE,
     LAND_PRODUCTION_SCOPE,
     LAND_PRODUCTION_STATUS,
     normalizeProductionContract,
@@ -170,8 +171,18 @@ const landSystemJson = JSON.parse(
     assert.deepEqual(actualMultiCards.map(card => card.weight), [0.08, 0.08, 0.05]);
     assert.deepEqual(actualMultiCards.map(card => card.minStage), [1, 1, 2]);
     assert.ok(actualMultiCards.every(card =>
-        card.productionContract?.status === LAND_PRODUCTION_STATUS.UNRESOLVED
+        card.productionContract?.status === LAND_PRODUCTION_STATUS.RESOLVED
+        && card.productionContract?.scope === LAND_PRODUCTION_SCOPE.CELL
+        && card.productionContract?.cellYieldSource === LAND_CELL_YIELD_SOURCE.CANONICAL_TERRAIN
     ));
+    assert.deepEqual(
+        actualMultiCards.map(card => resolveCardProductionPreview({ terrain: card }).totalYields),
+        [
+            { food: 6, wood: 1, defense: 1, mystic: 0 },
+            { food: 6, wood: 2, defense: 2, mystic: 0 },
+            { food: 2, wood: 4, defense: 6, mystic: 1 }
+        ]
+    );
     for (const card of actualMultiCards) {
         const mapValidation = validatePlacementAttributeMap(card.shape, card.cells);
         assert.equal(mapValidation.valid, true);
@@ -372,7 +383,7 @@ const landSystemJson = JSON.parse(
     assert.equal(manager.isCardEligible(actualMultiCards[0], 1, 0, {
         ignoreCooldown: true,
         ignoreHold: true
-    }), false);
+    }), true);
 
     const productionReadyPlainsHill = {
         ...actualMultiCards[0],
@@ -790,10 +801,15 @@ const landSystemJson = JSON.parse(
 }
 
 {
-    // Even the final relaxed fallback must keep UNRESOLVED Multi-Attribute
-    // cards out of a live Offering.
+    // The final relaxed fallback must still keep explicitly UNRESOLVED
+    // Multi-Attribute content out even though the shipped v1 cards are resolved.
     const state = createState();
     state.stage.id = 2;
+    const unresolvedSynthetic = {
+        ...actualMultiCards[0],
+        id: "CARD_TEST_UNRESOLVED_MULTI",
+        productionContract: { status: LAND_PRODUCTION_STATUS.UNRESOLVED }
+    };
     const manager = new DeckManager(state, {
         gameplayRandom: {
             nextFloat: () => 0,
@@ -801,14 +817,10 @@ const landSystemJson = JSON.parse(
         }
     });
 
-    manager.drawSingleCard = () => null;
-    manager.cycleSystem = null;
-
-    const offering = manager.generateOfferingCards();
-    assert.equal(offering.length, state.handOfferingSize || 3);
-    assert.ok(offering.every(card =>
-        !String(card.cardMasterId || card.terrain?.id || "").startsWith("CARD_MULTI_")
-    ));
+    assert.equal(manager.isCardEligible(unresolvedSynthetic, 2, 0, {
+        ignoreCooldown: true,
+        ignoreHold: true
+    }), false);
 }
 
 {
@@ -924,9 +936,26 @@ const landSystemJson = JSON.parse(
 }
 
 {
-    const unresolved = normalizeProductionContract(actualMultiCards[0]);
-    assert.equal(unresolved.status, LAND_PRODUCTION_STATUS.UNRESOLVED);
-    assert.equal(resolveCardProductionPreview({ terrain: actualMultiCards[0] }).totalYields, null);
+    const canonicalContract = normalizeProductionContract(actualMultiCards[0]);
+    assert.equal(canonicalContract.status, LAND_PRODUCTION_STATUS.RESOLVED);
+    assert.equal(canonicalContract.scope, LAND_PRODUCTION_SCOPE.CELL);
+    assert.deepEqual(canonicalContract.cellYields, [
+        { r: 0, c: 0, yields: { food: 4, wood: 0, defense: 0, mystic: 0 } },
+        { r: 0, c: 1, yields: { food: 2, wood: 1, defense: 1, mystic: 0 } }
+    ]);
+    assert.deepEqual(resolveCardProductionPreview({ terrain: actualMultiCards[0] }).totalYields, {
+        food: 6, wood: 1, defense: 1, mystic: 0
+    });
+
+    const unresolvedSynthetic = {
+        ...actualMultiCards[0],
+        productionContract: { status: LAND_PRODUCTION_STATUS.UNRESOLVED }
+    };
+    assert.equal(
+        normalizeProductionContract(unresolvedSynthetic).status,
+        LAND_PRODUCTION_STATUS.UNRESOLVED
+    );
+    assert.equal(resolveCardProductionPreview({ terrain: unresolvedSynthetic }).totalYields, null);
 
     const cellCard = {
         ...multiCard,
@@ -1477,18 +1506,12 @@ const landSystemJson = JSON.parse(
 }
 
 {
-    const unresolvedCard = actualMultiCards[0];
-    const resolvedCard = {
-        ...unresolvedCard,
-        productionContract: {
-            status: LAND_PRODUCTION_STATUS.RESOLVED,
-            scope: LAND_PRODUCTION_SCOPE.CELL,
-            cellYields: [
-                { r: 0, c: 0, yields: { food: 3 } },
-                { r: 0, c: 1, yields: { wood: 2 } }
-            ]
-        }
+    const unresolvedCard = {
+        ...actualMultiCards[0],
+        id: "CARD_TEST_LIVE_UNRESOLVED_MULTI",
+        productionContract: { status: LAND_PRODUCTION_STATUS.UNRESOLVED }
     };
+    const resolvedCard = actualMultiCards[0];
 
     const state = new GameState();
     let canDelegateCalls = 0;
