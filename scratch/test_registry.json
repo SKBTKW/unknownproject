@@ -496,6 +496,14 @@
       ]
     },
     {
+      "path": "scratch/test_global_event_offering_weight_hook.mjs",
+      "purpose": "Active Global Event tag multipliers affect canonical Offering weighted draws",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_global_event_gameplay_rng.mjs",
       "purpose": "global event gameplay rng",
       "suite": "supplemental"
