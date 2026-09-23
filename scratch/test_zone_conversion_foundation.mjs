@@ -144,6 +144,17 @@ const definitions = {
         creationCost: { status: ZONE_CONVERSION_COST_STATUS.UNRESOLVED },
         maintenance: { status: ZONE_CONVERSION_COST_STATUS.UNRESOLVED },
         capabilities: []
+    },
+    UNRESOLVED_MAINTENANCE: {
+        id: "UNRESOLVED_MAINTENANCE",
+        eligibleZoneAttributes: ["E2_HILL"],
+        requirements: { resources: { food: 1 } },
+        creationCost: {
+            status: ZONE_CONVERSION_COST_STATUS.RESOLVED,
+            base: {}
+        },
+        maintenance: { status: ZONE_CONVERSION_COST_STATUS.UNRESOLVED },
+        capabilities: []
     }
 };
 
@@ -158,6 +169,13 @@ const adapter = new BoardDomainAdapter({
 assert.equal(service.validateCandidate("GARRISON_TEST", "zone_a").valid, true);
 assert.equal(service.validateCandidate("GARRISON_TEST", "incomplete").valid, false);
 assert.equal(service.validateCandidate("UNRESOLVED_COST", "zone_a").valid, false);
+const unresolvedMaintenance = service.validateCandidate("UNRESOLVED_MAINTENANCE", "zone_a");
+assert.equal(unresolvedMaintenance.valid, false);
+assert.equal(
+    unresolvedMaintenance.reasons.includes("MAINTENANCE_DEFINITION_UNRESOLVED"),
+    true,
+    "candidate fails closed before Offering when maintenance is not defined"
+);
 
 const initialCandidates = service.enumerateCandidates("GARRISON_TEST");
 assert.equal(initialCandidates.length, 2, "both completed eligible Zones are candidates");
