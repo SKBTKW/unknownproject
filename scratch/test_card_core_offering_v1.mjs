@@ -57,6 +57,11 @@ import {
     EXPLORATION_MIGRATION_BLOCKED_IDS,
     getExplorationCardMigrationAudit
 } from "../game/src/cards/exploration_card_migration_audit.js";
+import {
+    CARD_DOMAIN_MIGRATION_BLOCKED_IDS,
+    getCardDomainMigrationBlocker,
+    listCardDomainMigrationBlockers
+} from "../game/src/cards/card_domain_migration_audit.js";
 
 function makeGrid(rows, cols) {
     return Array.from({ length: rows }, () => Array.from({ length: cols }, () => ({})));
@@ -1902,6 +1907,35 @@ function makeGrid(rows, cols) {
         [...DOMAIN_ACTION_REQUIRED_IDS].sort(),
         "every remaining current SSOT legacy branch must have an explicit migration blocker"
     );
+}
+
+// AS. Aggregate migration audit exposes one stable read boundary for tooling/review.
+{
+    assert.deepEqual(
+        [...CARD_DOMAIN_MIGRATION_BLOCKED_IDS].sort(),
+        [...DOMAIN_ACTION_REQUIRED_IDS].sort()
+    );
+
+    const mine = getCardDomainMigrationBlocker("CMD_MINE");
+    assert.equal(mine?.owner, DOMAIN_ACTION_OWNER.SPECIAL_BLOCK);
+    assert.equal(
+        mine?.status,
+        SPECIAL_BLOCK_CARD_MIGRATION_STATUS.BLOCKED_UNRESOLVED_PRODUCTION
+    );
+
+    const resettlement = getCardDomainMigrationBlocker("CMD_RESETTLEMENT");
+    assert.equal(resettlement?.owner, DOMAIN_ACTION_OWNER.BOARD);
+    assert.equal(
+        resettlement?.status,
+        BOARD_CARD_MIGRATION_STATUS.BLOCKED_SHADOWED_LEGACY
+    );
+
+    assert.equal(getCardDomainMigrationBlocker("CMD_IRON_RAMPART"), null,
+        "already migrated cards must not remain in the blocker read model");
+
+    const blockers = listCardDomainMigrationBlockers();
+    assert.equal(blockers.length, DOMAIN_ACTION_REQUIRED_IDS.length);
+    assert.equal(new Set(blockers.map(entry => entry.cardId)).size, blockers.length);
 }
 
 console.log("✅ Card Core / Offering v1 contract tests PASS");
