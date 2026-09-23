@@ -46,11 +46,7 @@ const DOMAIN_ACTION_REQUIRED_IDS = Object.freeze([
     "CMD_ABANDONED_SETTLEMENT"
 ]);
 
-const LEGACY_ONLY_IDS = Object.freeze([
-    "CMD_SINGLE_CLEARING",
-    "CMD_SYSTEMATIC_LOGGING",
-    "CMD_LAND_EXPLORATION"
-]);
+const LEGACY_ONLY_IDS = Object.freeze([]);
 
 // These IDs currently occur more than once in playCommandCard ID references.
 // RESETTLEMENT / GREAT_RAMPART have duplicate effect branches; ABANDONED_SETTLEMENT
