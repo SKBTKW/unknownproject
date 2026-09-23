@@ -9,7 +9,8 @@
 import { isCompletedMergeGroup, resolveMergeTerrainAttribute } from './merge_rules.js';
 
 export const ZONE_CONVERSION_STATES = Object.freeze({
-    ACTIVE: 'ACTIVE'
+    ACTIVE: 'ACTIVE',
+    DYSFUNCTIONAL: 'DYSFUNCTIONAL'
 });
 
 export const ZONE_CONVERSION_COST_STATUS = Object.freeze({
@@ -63,8 +64,13 @@ export function readZoneConversion(state, groupId) {
     return zone?.conversion ? clone(zone.conversion) : null;
 }
 
+export function isZoneConversionFunctional(state, groupId) {
+    return readZoneRecord(state, groupId)?.conversion?.state === ZONE_CONVERSION_STATES.ACTIVE;
+}
+
 export function readZoneConversionCapabilities(state, groupId) {
     const conversion = readZoneRecord(state, groupId)?.conversion;
+    if (!conversion || conversion.state !== ZONE_CONVERSION_STATES.ACTIVE) return new Set();
     return new Set(
         Array.isArray(conversion?.capabilities)
             ? conversion.capabilities.filter(value => typeof value === 'string' && value)
