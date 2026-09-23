@@ -233,6 +233,14 @@
       ]
     },
     {
+      "path": "scratch/test_board_trial_deployment_semantics.mjs",
+      "purpose": "Board semantic projection for Trial deployment facts and reinforcement origins without facility identity coupling",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_board_trial_hover_input.mjs",
       "purpose": "board trial hover input",
       "suite": "supplemental"
@@ -564,6 +572,14 @@
     {
       "path": "scratch/test_investigation_card_execution.mjs",
       "purpose": "investigation card execution",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_investigation_chronicle_bridge.mjs",
+      "purpose": "Investigation GameFacts create truth-safe idempotent Chronicle index entries",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -1245,7 +1261,7 @@
     },
     {
       "path": "scratch/test_zone_conversion_foundation.mjs",
-      "purpose": "zone conversion foundation contract",
+      "purpose": "Zone conversion foundation, maintenance lifecycle, and Board-to-Trial deployment semantic projection",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
