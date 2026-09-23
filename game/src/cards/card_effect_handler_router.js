@@ -1,4 +1,5 @@
 import { CardEffectExecutor } from "./card_effect_executor.js";
+import { LEGACY_COMMAND_COMPATIBILITY_HANDLERS } from "./legacy_command_compatibility_handlers.js";
 
 /* =============================================================
    game/src/cards/card_effect_handler_router.js
@@ -114,8 +115,12 @@ function resolveCardEffectHandlerRouter(engine = null) {
     const effectExecutor = new CardEffectExecutor({
         domainActionExecutor: engine?.cardDomainActionExecutor || null
     });
+    const handlers = {
+        ...LEGACY_COMMAND_COMPATIBILITY_HANDLERS,
+        ...(engine?.cardEffectHandlers || {})
+    };
     return new CardEffectHandlerRouter(
-        engine?.cardEffectHandlers || null,
+        handlers,
         { effectExecutor }
     );
 }
