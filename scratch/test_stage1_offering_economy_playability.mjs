@@ -236,6 +236,8 @@ function chooseAction(engine, { preferInvestigation = false } = {}) {
 function captureVerse(engine, seed) {
     const state = engine.state;
     const poolCounts = resolvePoolCounts(engine);
+    const production = state.calculateTotalProduction();
+    const resourceBreakdown = state.getResourceBreakdown();
     const offering = state.handOffering || [];
     const legalOfferingLandCount = offering.filter(card => {
         const definition = definitionOf(card);
@@ -255,6 +257,13 @@ function captureVerse(engine, seed) {
         maxDefense: readMaxDefense(state),
         mystic: state.mystic,
         ember: state.ember,
+        grossFood: production.grossFood,
+        foodCost: production.foodCost,
+        netFood: production.netFood,
+        materialProduction: production.totalMaterial ?? production.totalWood ?? 0,
+        territoryTiles: state.getTerritoryTileCount(),
+        foodProductionBreakdown: resourceBreakdown?.food || null,
+        materialProductionBreakdown: resourceBreakdown?.wood || null,
         zones: countTrueZones(state),
         links: state.mergeLinks instanceof Set ? state.mergeLinks.size : 0,
         sockets: countDiscoveredSockets(state)
@@ -275,6 +284,9 @@ function printTrace(trace) {
             `🛡️${trace.defense}/${trace.maxDefense}`,
             `✨${trace.mystic}`,
             `🔥${trace.ember}`,
+            `prod=🌾+${trace.grossFood}-${trace.foodCost}=${trace.netFood}`,
+            `🧱+${trace.materialProduction}`,
+            `tiles=${trace.territoryTiles}`,
             `zone=${trace.zones}`,
             `link=${trace.links}`,
             `socket=${trace.sockets}`
@@ -419,6 +431,7 @@ function runSeedTrace(seed) {
         enemyObservationProjector: stage1EconomyObservationProjector
     });
     const trace = [];
+    const settlements = [];
     let investigationExecuted = false;
 
     assert.equal(engine.state.stage.id, 1);
@@ -477,7 +490,41 @@ function runSeedTrace(seed) {
             investigationExecuted = true;
         }
 
+        const beforeSettlement = {
+            food: engine.state.food,
+            material: engine.state.wood ?? engine.state.material ?? 0,
+            mystic: engine.state.mystic
+        };
+        const settlementPreview = engine.previewTurnEndMaintenance();
+        const settlementBreakdown = engine.state.getResourceBreakdown();
         const boundary = engine.nextTurn();
+        settlements.push({
+            verse,
+            territoryTiles: engine.state.getTerritoryTileCount(),
+            foodBefore: beforeSettlement.food,
+            grossFood: settlementPreview.production.grossFood,
+            foodCost: settlementPreview.production.foodCost,
+            netFood: settlementPreview.production.netFood,
+            foodAfter: engine.state.food,
+            materialBefore: beforeSettlement.material,
+            materialProduction: settlementPreview.production.totalMaterial ?? settlementPreview.production.totalWood ?? 0,
+            materialAfter: engine.state.wood ?? engine.state.material ?? 0,
+            mysticBefore: beforeSettlement.mystic,
+            mysticProduction: settlementPreview.production.totalMystic ?? 0,
+            mysticAfter: engine.state.mystic,
+            foodBreakdown: settlementBreakdown?.food || null,
+            materialBreakdown: settlementBreakdown?.wood || null
+        });
+        assert.equal(
+            engine.state.food,
+            beforeSettlement.food + settlementPreview.production.grossFood - settlementPreview.production.foodCost,
+            `seed ${seed} V${verse}: food stock must equal stock + gross production - one maintenance payment`
+        );
+        assert.equal(
+            engine.state.wood ?? engine.state.material ?? 0,
+            beforeSettlement.material + (settlementPreview.production.totalMaterial ?? settlementPreview.production.totalWood ?? 0),
+            `seed ${seed} V${verse}: material stock must equal stock + production when the chosen Stage1 action has no material cost`
+        );
         assert.equal(boundary?.runTermination?.terminated === true, false, `seed ${seed} V${verse}: run must not terminate`);
         assert.equal(engine.state.gameOver === true, false, `seed ${seed} V${verse}: Stage1 must stay alive`);
     }
@@ -502,7 +549,26 @@ function runSeedTrace(seed) {
         `seed ${seed}: representative Stage1 path must execute at least one Investigation after unlock`
     );
 
-    return trace;
+    const totalGrossFood = settlements.reduce((sum, row) => sum + row.grossFood, 0);
+    const totalFoodMaintenance = settlements.reduce((sum, row) => sum + row.foodCost, 0);
+    const totalMaterialProduction = settlements.reduce((sum, row) => sum + row.materialProduction, 0);
+    const firstSettlement = settlements[0];
+    const lastSettlement = settlements[settlements.length - 1];
+    console.log(
+        [
+            `ECON seed=${seed}`,
+            `settlements=${settlements.length}`,
+            `grossFood=${totalGrossFood}`,
+            `foodMaintenance=${totalFoodMaintenance}`,
+            `foodNetSupply=${totalGrossFood - totalFoodMaintenance}`,
+            `materialProduction=${totalMaterialProduction}`,
+            `grossFoodRamp=${firstSettlement?.grossFood ?? 0}->${lastSettlement?.grossFood ?? 0}`,
+            `materialRamp=${firstSettlement?.materialProduction ?? 0}->${lastSettlement?.materialProduction ?? 0}`,
+            `tiles=${firstSettlement?.territoryTiles ?? 0}->${lastSettlement?.territoryTiles ?? 0}`
+        ].join(" ")
+    );
+
+    return { trace, settlements };
 }
 
 console.log("=== Stage1 Offering / Economy / Board Playability Audit ===");
@@ -512,7 +578,8 @@ testReserveDoesNotPoisonOfferingOrOverchargeEmber();
 testStage1MultiAttributeEligibility();
 testZoneAndLinkAreAimableOnFiveByFive();
 
-const traces = TRACE_SEEDS.map(runSeedTrace);
+const runs = TRACE_SEEDS.map(runSeedTrace);
+const traces = runs.map(run => run.trace);
 const finals = traces.map(trace => trace.find(row => row.verse === 15));
 assert.equal(
     finals.some(row => row.defense > 10),
@@ -523,6 +590,23 @@ assert.equal(
     traces.every(trace => trace.every(row => row.offeringCount > 0)),
     true,
     "no observed Stage1 verse may produce an empty Offering"
+);
+assert.equal(
+    runs.every(run => run.settlements.length === 14),
+    true,
+    "Verse1-to-15 audit must account for exactly fourteen Stage1 settlements"
+);
+assert.equal(
+    runs.every(run => run.settlements
+        .filter(row => row.verse >= 4)
+        .every(row => row.grossFood >= row.foodCost)),
+    true,
+    "representative land-building path should expose sustained food self-sufficiency from Verse4 onward while initial stock covers the opening ramp"
+);
+assert.equal(
+    runs.every(run => run.settlements.every(row => row.materialProduction > 0)),
+    true,
+    "representative Stage1 path should expose uninterrupted positive material production"
 );
 
 console.log(
