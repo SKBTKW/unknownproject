@@ -358,7 +358,10 @@ function scoreLandOption(option, state) {
     return score;
 }
 
-function chooseAction(engine, { preferInvestigation = false } = {}) {
+function chooseAction(engine, {
+    preferInvestigation = false,
+    landSelection = "GROWTH"
+} = {}) {
     const state = engine.state;
     const offering = state.handOffering || [];
     const landOptions = [];
@@ -390,7 +393,9 @@ function chooseAction(engine, { preferInvestigation = false } = {}) {
         return { type: "INVESTIGATION", ...investigationOptions[0] };
     }
     if (landOptions.length > 0) {
-        landOptions.sort((a, b) => scoreLandOption(b, state) - scoreLandOption(a, state));
+        if (landSelection === "GROWTH") {
+            landOptions.sort((a, b) => scoreLandOption(b, state) - scoreLandOption(a, state));
+        }
         return { type: "LAND", ...landOptions[0] };
     }
     if (investigationOptions.length > 0) {
@@ -590,7 +595,11 @@ function testZoneAndLinkAreAimableOnFiveByFive() {
     assert.equal(state.maxEmber > 20, true, "Stage1 Link must expand Ember capacity");
 }
 
-function runSeedTrace(seed) {
+function runSeedTrace(seed, {
+    landSelection = "GROWTH",
+    printDiagnostics = true,
+    requireMystic = true
+} = {}) {
     const engine = GameEngine.createGame({
         runSeed: seed,
         firstRun: true,
@@ -635,7 +644,8 @@ function runSeedTrace(seed) {
         if (verse === 15) break;
 
         const action = chooseAction(engine, {
-            preferInvestigation: verse >= 8 && !investigationExecuted
+            preferInvestigation: verse >= 8 && !investigationExecuted,
+            landSelection
         });
         assert.ok(action, `seed ${seed} V${verse}: Offering must contain at least one actionable card`);
 
@@ -719,7 +729,9 @@ function runSeedTrace(seed) {
         assert.equal(engine.state.gameOver === true, false, `seed ${seed} V${verse}: Stage1 must stay alive`);
     }
 
-    for (const row of trace) printTrace(row);
+    if (printDiagnostics) {
+        for (const row of trace) printTrace(row);
+    }
 
     const verse7 = trace.find(row => row.verse === 7);
     const verse8 = trace.find(row => row.verse === 8);
@@ -731,7 +743,9 @@ function runSeedTrace(seed) {
     assert.equal(verse15.food > 0, true, `seed ${seed}: representative Stage1 strategy must retain food at Verse15`);
     assert.equal(verse15.material > 0, true, `seed ${seed}: representative Stage1 strategy must retain material at Verse15`);
     assert.equal(verse15.ember > 0, true, `seed ${seed}: representative Stage1 strategy must retain Ember at Verse15`);
-    assert.equal(verse15.mystic > 0, true, `seed ${seed}: Mystic must be live by Verse15`);
+    if (requireMystic) {
+        assert.equal(verse15.mystic > 0, true, `seed ${seed}: Mystic must be live by Verse15`);
+    }
     assert.equal(verse15.defense >= 10, true, `seed ${seed}: defense must not regress below HQ baseline`);
     assert.equal(
         investigationExecuted,
@@ -749,7 +763,7 @@ function runSeedTrace(seed) {
     const firstSettlement = settlements[0];
     const lastSettlement = settlements[settlements.length - 1];
     const productionContribution = sumContributionRows(settlements);
-    console.log(
+    if (printDiagnostics) console.log(
         [
             `ECON seed=${seed}`,
             `settlements=${settlements.length}`,
@@ -767,7 +781,7 @@ function runSeedTrace(seed) {
         ].join(" ")
     );
 
-    console.log(
+    if (printDiagnostics) console.log(
         [
             `PROD_CONTRIB seed=${seed}`,
             `food=HQ:${productionContribution.hqFood},cells:${productionContribution.baseCellFood},zone:${productionContribution.zoneFood},socket:${productionContribution.socketFood},vicinity:${productionContribution.vicinityFood},irrigation:${productionContribution.irrigationFood},blocks:${productionContribution.blockFood},other:${productionContribution.otherFood}`,
@@ -778,7 +792,7 @@ function runSeedTrace(seed) {
         ].join(" ")
     );
 
-    return { trace, settlements, productionContribution, chosenLandCards };
+    return { trace, settlements, productionContribution, chosenLandCards, landSelection };
 }
 
 
@@ -867,6 +881,55 @@ function printLandPickSummary(runs) {
             `cards=${[...counts.entries()].sort((a, b) => b[1] - a[1]).map(([id, count]) => `${id}:${count}`).join(",")}`
         ].join(" ")
     );
+}
+
+
+function average(values) {
+    const finite = values.filter(Number.isFinite);
+    return finite.length > 0
+        ? finite.reduce((sum, value) => sum + value, 0) / finite.length
+        : Number.NaN;
+}
+
+function strategySnapshot(name, runs) {
+    const finals = runs.map(run => run.trace.find(row => row.verse === 15));
+    const picks = runs.flatMap(run => run.chosenLandCards || []);
+    const twoCell = picks.filter(pick => pick.cells >= 2).length;
+    const multi = picks.filter(pick => pick.multiAttribute).length;
+    return {
+        name,
+        food: finals.map(row => row.food),
+        material: finals.map(row => row.material),
+        defense: finals.map(row => row.defense),
+        mystic: finals.map(row => row.mystic),
+        ember: finals.map(row => row.ember),
+        tiles: finals.map(row => row.territoryTiles),
+        landActions: picks.length,
+        twoCell,
+        multi
+    };
+}
+
+function printStrategySensitivitySummary(growthRuns, neutralRuns) {
+    for (const snapshot of [
+        strategySnapshot("GROWTH", growthRuns),
+        strategySnapshot("FIRST_LEGAL", neutralRuns)
+    ]) {
+        console.log(
+            [
+                "STRATEGY_SUMMARY",
+                `name=${snapshot.name}`,
+                `V15🌾=${formatRange(snapshot.food)} avg=${average(snapshot.food).toFixed(1)}`,
+                `V15🧱=${formatRange(snapshot.material)} avg=${average(snapshot.material).toFixed(1)}`,
+                `V15🛡️=${formatRange(snapshot.defense)}`,
+                `V15✨=${formatRange(snapshot.mystic)}`,
+                `V15🔥=${formatRange(snapshot.ember)}`,
+                `tiles=${formatRange(snapshot.tiles)} avg=${average(snapshot.tiles).toFixed(1)}`,
+                `twoCell=${snapshot.twoCell}/${snapshot.landActions}(${percent(snapshot.twoCell, snapshot.landActions).toFixed(1)}%)`,
+                `multi=${snapshot.multi}/${snapshot.landActions}(${percent(snapshot.multi, snapshot.landActions).toFixed(1)}%)`
+            ].join(" ")
+        );
+    }
 }
 
 function printProductionContributionSummary(runs) {
@@ -996,6 +1059,23 @@ assert.equal(
 printEconomySummary(runs);
 printProductionContributionSummary(runs);
 printLandPickSummary(runs);
+
+const neutralRuns = TRACE_SEEDS.map(seed => runSeedTrace(seed, {
+    landSelection: "FIRST_LEGAL",
+    printDiagnostics: false,
+    requireMystic: false
+}));
+assert.equal(
+    neutralRuns.every(run => run.trace.every(row => row.offeringCount > 0)),
+    true,
+    "neutral Stage1 strategy must not create an Offering dead-end"
+);
+assert.equal(
+    neutralRuns.every(run => run.settlements.length === 14),
+    true,
+    "neutral Stage1 strategy must also reach Verse15 with fourteen settlements"
+);
+printStrategySensitivitySummary(runs, neutralRuns);
 
 console.log(
     `PASS Stage1 playability audit: ${TRACE_SEEDS.length} seeds x Verse1-15 + reserve + food settlement + Multi-Attribute + Zone/Link`
