@@ -30,6 +30,21 @@ class CardEffectHandlerRouter {
         return this.handlers.has(cardId);
     }
 
+    enumerateTargets(cardDefinition, context = {}) {
+        const cardId = cardDefinition?.id;
+        const handler = cardId ? this.handlers.get(cardId) : null;
+        if (typeof handler === "function") {
+            return [];
+        }
+
+        const effects = cardDefinition?.effects;
+        if (!Array.isArray(effects) || effects.length === 0) return [];
+        return this.effectExecutor.enumerateTargets(effects, {
+            cardDefinition,
+            ...context
+        });
+    }
+
     preflight(cardDefinition, context = {}) {
         const cardId = cardDefinition?.id;
         const handler = cardId ? this.handlers.get(cardId) : null;
