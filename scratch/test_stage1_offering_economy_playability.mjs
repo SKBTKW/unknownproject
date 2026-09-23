@@ -10,6 +10,7 @@ import {
     resolvePlacementShape,
     rotatePlacementClockwise
 } from "../game/src/core/placement_geometry.js";
+import { resolveCellProductionBase } from "../game/src/core/land_production_contract.js";
 
 const TRACE_SEEDS = Object.freeze([
     20260920,
@@ -152,6 +153,167 @@ function readMaxDefense(state) {
         return state.defenseSystem.getMaxDefense();
     }
     return Number(state.maxDefense ?? state.defense ?? 0) || 0;
+}
+
+
+function listPlacementGroupIds(state) {
+    const ids = new Set();
+    for (const row of state.grid || []) {
+        for (const cell of row || []) {
+            if (cell?.placed && !cell.isHQ && cell.placementGroupId != null) {
+                ids.add(String(cell.placementGroupId));
+            }
+        }
+    }
+    return ids;
+}
+
+function recordPlacementOrigin(state, beforeIds, action, placementOrigins) {
+    const afterIds = listPlacementGroupIds(state);
+    const newIds = [...afterIds].filter(id => !beforeIds.has(id));
+    assert.equal(
+        newIds.length,
+        1,
+        `expected exactly one new placement group for ${action.definition?.id || "LAND"}, got ${newIds.length}`
+    );
+    const cardId = String(action.definition?.id || "");
+    placementOrigins.set(newIds[0], {
+        cardId,
+        multiAttribute: cardId.startsWith("CARD_MULTI_")
+    });
+}
+
+function terrainContributionKey(cell) {
+    return String(cell?.terrain?.terrainId || cell?.terrain?.id || "UNKNOWN");
+}
+
+function addTerrainContribution(map, key, food, material) {
+    const current = map.get(key) || { food: 0, material: 0 };
+    current.food += food;
+    current.material += material;
+    map.set(key, current);
+}
+
+function analyzeProductionContribution(state, placementOrigins) {
+    const breakdown = state.getResourceBreakdown();
+    let baseCellFood = 0;
+    let baseCellMaterial = 0;
+    let multiCellFood = 0;
+    let multiCellMaterial = 0;
+    const terrain = new Map();
+
+    for (const row of state.grid || []) {
+        for (const cell of row || []) {
+            if (!cell?.placed || cell.isHQ || !cell.terrain) continue;
+            const base = resolveCellProductionBase(cell).yields;
+            const food = Number(base.food) || 0;
+            const material = Number(base.wood) || 0;
+            baseCellFood += food;
+            baseCellMaterial += material;
+            addTerrainContribution(terrain, terrainContributionKey(cell), food, material);
+
+            const origin = cell.placementGroupId != null
+                ? placementOrigins.get(String(cell.placementGroupId))
+                : null;
+            if (origin?.multiAttribute) {
+                multiCellFood += food;
+                multiCellMaterial += material;
+            }
+        }
+    }
+
+    const food = breakdown?.food || {};
+    const material = breakdown?.wood || {};
+    const zoneFood = (Number(food.tiles) || 0) - baseCellFood;
+    const zoneMaterial = (Number(material.tiles) || 0) - baseCellMaterial;
+    assert.equal(zoneFood >= 0, true, "Zone food uplift must not be negative in Stage1 audit");
+    assert.equal(zoneMaterial >= 0, true, "Zone material uplift must not be negative in Stage1 audit");
+
+    const foodKnownBeforeOther =
+        (Number(food.hqBase) || 0)
+        + baseCellFood
+        + zoneFood
+        + (Number(food.blocks) || 0)
+        + (Number(food.specialBlocks) || 0)
+        + (Number(food.sockets) || 0)
+        + (Number(food.vicinity) || 0)
+        + (Number(food.lakeIrrigation) || 0);
+    const materialKnownBeforeOther =
+        (Number(material.hqBase) || 0)
+        + baseCellMaterial
+        + zoneMaterial
+        + (Number(material.blocks) || 0)
+        + (Number(material.specialBlocks) || 0)
+        + (Number(material.sockets) || 0)
+        + (Number(material.vicinity) || 0);
+
+    return {
+        grossFood: Number(food.gross) || 0,
+        totalMaterial: Number(material.total) || 0,
+        hqFood: Number(food.hqBase) || 0,
+        hqMaterial: Number(material.hqBase) || 0,
+        baseCellFood,
+        baseCellMaterial,
+        multiCellFood,
+        multiCellMaterial,
+        zoneFood,
+        zoneMaterial,
+        blockFood: Number(food.blocks) || 0,
+        blockMaterial: Number(material.blocks) || 0,
+        specialFood: Number(food.specialBlocks) || 0,
+        specialMaterial: Number(material.specialBlocks) || 0,
+        socketFood: Number(food.sockets) || 0,
+        socketMaterial: Number(material.sockets) || 0,
+        vicinityFood: Number(food.vicinity) || 0,
+        vicinityMaterial: Number(material.vicinity) || 0,
+        irrigationFood: Number(food.lakeIrrigation) || 0,
+        otherFood: (Number(food.gross) || 0) - foodKnownBeforeOther,
+        otherMaterial: (Number(material.total) || 0) - materialKnownBeforeOther,
+        terrain: Object.fromEntries([...terrain.entries()].sort(([a], [b]) => a.localeCompare(b)))
+    };
+}
+
+function sumContributionRows(rows) {
+    const keys = [
+        "grossFood", "totalMaterial",
+        "hqFood", "hqMaterial",
+        "baseCellFood", "baseCellMaterial",
+        "multiCellFood", "multiCellMaterial",
+        "zoneFood", "zoneMaterial",
+        "blockFood", "blockMaterial",
+        "specialFood", "specialMaterial",
+        "socketFood", "socketMaterial",
+        "vicinityFood", "vicinityMaterial",
+        "irrigationFood", "otherFood", "otherMaterial"
+    ];
+    const total = Object.fromEntries(keys.map(key => [key, 0]));
+    total.terrain = {};
+
+    for (const row of rows) {
+        const contribution = row.productionContribution;
+        for (const key of keys) total[key] += Number(contribution?.[key]) || 0;
+        for (const [terrainId, yields] of Object.entries(contribution?.terrain || {})) {
+            if (!total.terrain[terrainId]) total.terrain[terrainId] = { food: 0, material: 0 };
+            total.terrain[terrainId].food += Number(yields.food) || 0;
+            total.terrain[terrainId].material += Number(yields.material) || 0;
+        }
+    }
+    return total;
+}
+
+function percent(part, whole) {
+    if (!(whole > 0)) return 0;
+    return (part / whole) * 100;
+}
+
+function topTerrainText(terrain, resource, limit = 4) {
+    return Object.entries(terrain || {})
+        .map(([id, yields]) => [id, Number(yields?.[resource]) || 0])
+        .filter(([, value]) => value > 0)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, limit)
+        .map(([id, value]) => `${id}:${value}`)
+        .join(",");
 }
 
 function resolvePoolCounts(engine) {
@@ -432,6 +594,7 @@ function runSeedTrace(seed) {
     });
     const trace = [];
     const settlements = [];
+    const placementOrigins = new Map();
     let investigationExecuted = false;
 
     assert.equal(engine.state.stage.id, 1);
@@ -479,6 +642,7 @@ function runSeedTrace(seed) {
         };
 
         if (action.type === "LAND") {
+            const placementGroupsBefore = listPlacementGroupIds(engine.state);
             const rotated = makeRotatedInstance(action.card, action.placement);
             const result = engine.placeLand(
                 action.placement.clickedR,
@@ -488,6 +652,7 @@ function runSeedTrace(seed) {
                 { type: "OFFERING", index: action.index }
             );
             assert.equal(result?.success, true, `seed ${seed} V${verse}: selected LAND action must commit`);
+            recordPlacementOrigin(engine.state, placementGroupsBefore, action, placementOrigins);
         } else {
             const result = engine.executeInvestigationCard(
                 action.card,
@@ -505,6 +670,7 @@ function runSeedTrace(seed) {
         };
         const settlementPreview = engine.previewTurnEndMaintenance();
         const settlementBreakdown = engine.state.getResourceBreakdown();
+        const productionContribution = analyzeProductionContribution(engine.state, placementOrigins);
         const boundary = engine.nextTurn();
         settlements.push({
             verse,
@@ -526,7 +692,8 @@ function runSeedTrace(seed) {
             mysticProduction: settlementPreview.production.totalMystic ?? 0,
             mysticAfter: engine.state.mystic,
             foodBreakdown: settlementBreakdown?.food || null,
-            materialBreakdown: settlementBreakdown?.wood || null
+            materialBreakdown: settlementBreakdown?.wood || null,
+            productionContribution
         });
         assert.equal(
             engine.state.food,
@@ -571,6 +738,7 @@ function runSeedTrace(seed) {
     const totalActionEmberDelta = settlements.reduce((sum, row) => sum + row.actionEmberDelta, 0);
     const firstSettlement = settlements[0];
     const lastSettlement = settlements[settlements.length - 1];
+    const productionContribution = sumContributionRows(settlements);
     console.log(
         [
             `ECON seed=${seed}`,
@@ -589,7 +757,18 @@ function runSeedTrace(seed) {
         ].join(" ")
     );
 
-    return { trace, settlements };
+    console.log(
+        [
+            `PROD_CONTRIB seed=${seed}`,
+            `food=HQ:${productionContribution.hqFood},cells:${productionContribution.baseCellFood},zone:${productionContribution.zoneFood},socket:${productionContribution.socketFood},vicinity:${productionContribution.vicinityFood},irrigation:${productionContribution.irrigationFood},blocks:${productionContribution.blockFood},other:${productionContribution.otherFood}`,
+            `material=HQ:${productionContribution.hqMaterial},cells:${productionContribution.baseCellMaterial},zone:${productionContribution.zoneMaterial},socket:${productionContribution.socketMaterial},vicinity:${productionContribution.vicinityMaterial},blocks:${productionContribution.blockMaterial},other:${productionContribution.otherMaterial}`,
+            `multiSubset=🌾${productionContribution.multiCellFood}/🧱${productionContribution.multiCellMaterial}`,
+            `topFoodTerrain=${topTerrainText(productionContribution.terrain, "food")}`,
+            `topMaterialTerrain=${topTerrainText(productionContribution.terrain, "material")}`
+        ].join(" ")
+    );
+
+    return { trace, settlements, productionContribution };
 }
 
 
@@ -597,6 +776,58 @@ function formatRange(values) {
     const finite = values.filter(Number.isFinite);
     if (finite.length === 0) return "n/a";
     return `${Math.min(...finite)}..${Math.max(...finite)}`;
+}
+
+
+function printProductionContributionSummary(runs) {
+    const combined = sumContributionRows(runs.flatMap(run => run.settlements));
+    const foodComponents = {
+        hq: combined.hqFood,
+        cells: combined.baseCellFood,
+        zone: combined.zoneFood,
+        sockets: combined.socketFood,
+        vicinity: combined.vicinityFood,
+        irrigation: combined.irrigationFood,
+        blocks: combined.blockFood + combined.specialFood,
+        other: combined.otherFood
+    };
+    const materialComponents = {
+        hq: combined.hqMaterial,
+        cells: combined.baseCellMaterial,
+        zone: combined.zoneMaterial,
+        sockets: combined.socketMaterial,
+        vicinity: combined.vicinityMaterial,
+        blocks: combined.blockMaterial + combined.specialMaterial,
+        other: combined.otherMaterial
+    };
+
+    const formatShares = (components, total) => Object.entries(components)
+        .map(([key, value]) => `${key}=${value}(${percent(value, total).toFixed(1)}%)`)
+        .join(",");
+
+    console.log(
+        [
+            "PROD_CONTRIB_SUMMARY",
+            `foodTotal=${combined.grossFood}`,
+            `foodShares=${formatShares(foodComponents, combined.grossFood)}`,
+            `materialTotal=${combined.totalMaterial}`,
+            `materialShares=${formatShares(materialComponents, combined.totalMaterial)}`,
+            `multiCellSubset=🌾${combined.multiCellFood}(${percent(combined.multiCellFood, combined.baseCellFood).toFixed(1)}%ofCells)/🧱${combined.multiCellMaterial}(${percent(combined.multiCellMaterial, combined.baseCellMaterial).toFixed(1)}%ofCells)`,
+            `topFoodTerrain=${topTerrainText(combined.terrain, "food", 6)}`,
+            `topMaterialTerrain=${topTerrainText(combined.terrain, "material", 6)}`
+        ].join(" ")
+    );
+
+    assert.equal(
+        Object.values(foodComponents).reduce((sum, value) => sum + value, 0),
+        combined.grossFood,
+        "food contribution audit must reconstruct cumulative gross production"
+    );
+    assert.equal(
+        Object.values(materialComponents).reduce((sum, value) => sum + value, 0),
+        combined.totalMaterial,
+        "material contribution audit must reconstruct cumulative production"
+    );
 }
 
 function printEconomySummary(runs) {
@@ -672,6 +903,7 @@ assert.equal(
 );
 
 printEconomySummary(runs);
+printProductionContributionSummary(runs);
 
 console.log(
     `PASS Stage1 playability audit: ${TRACE_SEEDS.length} seeds x Verse1-15 + reserve + food settlement + Multi-Attribute + Zone/Link`
