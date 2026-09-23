@@ -185,6 +185,14 @@
       ]
     },
     {
+      "path": "scratch/test_battle_site_lifecycle.mjs",
+      "purpose": "settled Trial battle sites persist idempotently through Board serialization",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_board_history_query.mjs",
       "purpose": "Board-owned Battle Site history read boundary and RunHistory integration",
       "suite": "existing",

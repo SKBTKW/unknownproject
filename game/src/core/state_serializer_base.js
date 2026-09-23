@@ -49,6 +49,9 @@ export function serializeGameState(state) {
                         : {},
                     production: cell.production ? cloneData(cell.production) : null,
                     specialBlock: cell.specialBlock ? cloneData(cell.specialBlock) : null,
+                    ...(Array.isArray(cell.entities) && cell.entities.length > 0
+                        ? { entities: cloneData(cell.entities, []) }
+                        : {}),
                     terrain: cell.terrain ? {
                         id: cell.terrain.id || null,
                         terrainId: cell.terrain.terrainId || null,

@@ -487,6 +487,8 @@ export class TrialController {
 
         // 4. Emit exactly 1 GameFact
         const factPayload = {
+            scenarioId: this.state.scenarioId || null,
+            trialIndex: this.state.trialIndex,
             battleIndex: this.state.currentBattleIndex,
             routeId: currentBattle.routeId,
             interceptCell: { r: currentBattle.interceptCell.r, c: currentBattle.interceptCell.c },
