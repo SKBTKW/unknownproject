@@ -144,6 +144,10 @@ export class SpecialBlockProductionResolver {
 
 const defaultResolver = new SpecialBlockProductionResolver();
 
+export function resolveSpecialBlockProduction(state, cell, position = {}) {
+    return defaultResolver.resolveCell(state, cell, position);
+}
+
 export function sumSpecialBlockProduction(state) {
     return defaultResolver.sum(state);
 }
