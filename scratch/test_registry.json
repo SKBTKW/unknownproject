@@ -999,6 +999,14 @@
       ]
     },
     {
+      "path": "scratch/test_trial_deployment_engine_attach.mjs",
+      "purpose": "Explicit GameEngine Deployment Economy attachment while default gameplay remains disabled until a resolved profile is supplied",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_trial_focus_layer_suppression.mjs",
       "purpose": "trial focus layer suppression",
       "suite": "existing",
