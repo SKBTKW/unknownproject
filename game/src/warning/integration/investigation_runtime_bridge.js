@@ -86,9 +86,10 @@ export function attachInvestigationRuntime(engine, {
         costPaid = null,
         observationModifiers = null,
         reportId = null,
-        semanticSourceId = null
+        semanticSourceId = null,
+        requireAvailability = true
     } = {}) => {
-        if (!availabilityPolicy.isAvailable(state, {
+        if (requireAvailability && !availabilityPolicy.isAvailable(state, {
             warningStateService: engine.warningStateService || null
         })) {
             return { success: false, reason: "INVESTIGATION_LOCKED" };
@@ -147,6 +148,13 @@ export function attachInvestigationRuntime(engine, {
 
     engine.performInvestigation = function performInvestigation(request = {}) {
         return performDomainInvestigation(request);
+    };
+
+    engine.performGrantedInvestigation = function performGrantedInvestigation(request = {}) {
+        return performDomainInvestigation({
+            ...request,
+            requireAvailability: false
+        });
     };
 
     engine.executeInvestigationCard = function executeInvestigationCard(card, source) {

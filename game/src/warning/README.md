@@ -43,3 +43,19 @@ Successful investigations emit `GAME_FACT_TYPES.INVESTIGATION_RECORDED`.
 Observation snapshots remain owned by `KnownEnemyState.reports`.
 Chronicle does not copy ObservableEnemyProfile, route, ingress, force, suppression,
 or observation contents, so Run history cannot become a second enemy-truth store.
+
+
+## Event-granted Investigation
+
+Some world events may grant a one-off observation opportunity outside normal
+Warning-state availability. This uses the same `InvestigationRequestService`
+and the same redacted `ObservableEnemyProfile`; it does not read Trial truth.
+
+Captured Scout `INTERROGATE` currently grants one normal truthful observation
+with sourceType `CAPTURED_SCOUT_INTERROGATION`.
+
+- normal card/manual Investigation still obeys InvestigationAvailabilityPolicy
+- event-granted Investigation bypasses only that availability gate
+- enhanced 2D6 is not used
+- EXECUTE / RELEASE do not create Investigation reports
+- KnownEnemyState remains the report authority
