@@ -693,7 +693,10 @@ class GridEngine {
                                         bonusFood: (chosen.bonusYields && chosen.bonusYields.food) || 0,
                                         bonusWood: (chosen.bonusYields && (chosen.bonusYields.material !== undefined ? chosen.bonusYields.material : chosen.bonusYields.wood)) || 0,
                                         bonusDefense: (chosen.bonusYields && chosen.bonusYields.defense) || 0,
-                                        bonusMystic: (chosen.bonusYields && chosen.bonusYields.mystic) || 0
+                                        bonusMystic: (chosen.bonusYields && chosen.bonusYields.mystic) || 0,
+                                        capabilities: Array.isArray(chosen.capabilities)
+                                            ? [...chosen.capabilities]
+                                            : []
                                     };
                                 }
                             }
