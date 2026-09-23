@@ -714,7 +714,84 @@ function makeGrid(rows, cols) {
     }
 }
 
-// R. Migrated effects stay identical between JSON SSOT and generated command master.
+// R. Next declarative migrations preserve legacy behavior.
+{
+    const cases = [
+        {
+            id: "CMD_RATIONING",
+            initial: { food: 10, wood: 10, material: 10, mystic: 5, ember: 5 },
+            assertState(state) {
+                assert.equal(state.foodCostRationingActive, true);
+                assert.equal(state.foodCostRationingDiscount, 0.4);
+                assert.equal(state.foodCostHalvedTurns, 1);
+                assert.equal(state.activeBuffs[0].remainingTurns, 1);
+                assert.equal(state.activeBuffs[0].icon, "🌾");
+                assert.equal(state.logs.length, 1);
+            }
+        },
+        {
+            id: "CMD_VIGILANCE",
+            initial: { food: 10, wood: 30, material: 30, mystic: 5, ember: 5 },
+            assertState(state) {
+                assert.equal(state.wood, 15, "vigilance cost drift");
+                assert.equal(state.vigilanceTurns, 2);
+                assert.equal(state.vigilanceStartsNextTurn, true);
+                assert.equal(state.temporaryDefenseTurns, 2);
+                assert.equal(state.activeBuffs[0].remainingTurns, 2);
+                assert.equal(state.activeBuffs[0].startsNextTurn, true);
+                assert.equal(state.activeBuffs[0].icon, "🛡️");
+                assert.equal(state.logs.length, 1);
+            }
+        },
+        {
+            id: "CMD_MYSTIC_FOCUS",
+            initial: { food: 10, wood: 10, material: 10, mystic: 20, ember: 5 },
+            assertState(state) {
+                assert.equal(state.mystic, 10, "mystic focus cost drift");
+                assert.deepEqual(state.activeDrawBias, {
+                    targetCategory: "MYSTIC",
+                    type: "TURNS",
+                    remainingTurns: 3,
+                    startsNextTurn: true
+                });
+                assert.equal(state.activeBuffs[0].remainingTurns, 3);
+                assert.equal(state.activeBuffs[0].startsNextTurn, true);
+                assert.equal(state.activeBuffs[0].icon, "✨");
+                assert.equal(state.logs.length, 0,
+                    "legacy Mystic Focus emits no activation log; preserve during refactor");
+            }
+        }
+    ];
+
+    for (const testCase of cases) {
+        const card = COMMAND_CARDS_MASTER.find(candidate => candidate.id === testCase.id);
+        assert.ok(card, `missing generated master card ${testCase.id}`);
+        assert.ok(Array.isArray(card.effects) && card.effects.length > 0);
+
+        const state = {
+            turn: 1,
+            reserveSlots: [],
+            consumedUniqueCards: [],
+            usedUniqueCards: [],
+            activeBuffs: [],
+            logs: [],
+            addBuff(buff) { this.activeBuffs.push(buff); },
+            addLog(log) { this.logs.push(log); },
+            ...testCase.initial
+        };
+        const manager = new DeckManager(state, {});
+        manager.cycleSystem = null;
+        const result = manager.playCommandCard(card);
+
+        assert.equal(result.success, true, testCase.id);
+        assert.equal(state.activeBuffs[0].id, testCase.id);
+        assert.equal(state.activeBuffs[0].category, "CARD_EFFECT");
+        testCase.assertState(state);
+    }
+}
+
+// S. Migrated effects stay identical between JSON SSOT and generated command master.
+
 
 {
     const economySource = JSON.parse(readFileSync(
@@ -736,7 +813,10 @@ function makeGrid(rows, cols) {
         "CMD_FILL_THE_VOID",
         "CMD_MEDITATION",
         "CMD_REKINDLE_EMBER",
-        "CMD_MANIFEST_MIRACLE"
+        "CMD_MANIFEST_MIRACLE",
+        "CMD_RATIONING",
+        "CMD_VIGILANCE",
+        "CMD_MYSTIC_FOCUS"
     ];
 
     for (const id of migratedIds) {
