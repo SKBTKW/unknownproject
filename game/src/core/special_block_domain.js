@@ -32,8 +32,8 @@ export const BASE_TERRAIN_INTERACTIONS = Object.freeze({
 });
 
 const defaultTrialTraits = Object.freeze({
-    interceptionAllowed: true,
-    suppressTerrainTactic: true,
+    interceptionAllowed: null,
+    suppressTerrainTactic: false,
     specialTactics: Object.freeze([]),
     defenseModifier: null,
     resilience: null
