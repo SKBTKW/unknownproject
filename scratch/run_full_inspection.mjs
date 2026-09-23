@@ -337,6 +337,7 @@ async function main() {
         ["Global Event NEXT_GLOBAL_EVENT Expiry", "scratch/test_global_event_next_event_expiry.mjs"],
         ["Global Event Recovery History Eligibility", "scratch/test_global_event_recovery_history_eligibility.mjs"],
         ["Global Event Offering Weight Hook", "scratch/test_global_event_offering_weight_hook.mjs"],
+        ["Post-Trial Threat History Gate", "scratch/test_post_trial_threat_history_gate.mjs"],
     ];
     for (const [label, testPath] of investigationContracts) {
         const ok = await runCommand("node", [testPath]);
