@@ -18,7 +18,8 @@ import { sumSpecialBlockProduction } from '../special_block_production.js';
 import { CellViewDataService } from '../../services/cell_view_data_service.js';
 import {
     DISPLAY_ROLE,
-    BoardPresentationSemanticService
+    BoardPresentationSemanticService,
+    resolveBoardDisplayProduction
 } from '../../presentation/board_presentation_semantic_service.js';
 
 function cell(r, c, overrides = {}) {
@@ -352,6 +353,51 @@ console.log('Board / Special Block / Defense v1 contract');
         }).reason,
         'SOURCE_TERRAIN_NOT_ISOLATED',
         'connected 1x2+ plains cannot be a FARM source'
+    );
+}
+
+{
+    const state = state5();
+    state.grid[0][0] = cell(0, 0, {
+        placed: true,
+        merged: true,
+        mergeGroupId: 'zone-special',
+        placementGroupId: 'land-special',
+        terrain: { ...PLAINS }
+    });
+    state.mergedBlocks = {
+        'zone-special': {
+            cells: [{ r: 0, c: 0 }],
+            yieldMultiplier: 1.2
+        }
+    };
+    const facts = {
+        r: 0,
+        c: 0,
+        placed: true,
+        isHQ: false,
+        terrainId: PLAINS.terrainId,
+        mergeGroupId: 'zone-special',
+        placementGroupId: 'land-special'
+    };
+    const fakeCellView = {
+        getCellViewData() {
+            return {
+                baseYields: { food: 10, wood: 0, defense: 0, mystic: 0 },
+                modifiers: [
+                    { type: 'SPECIAL_BLOCK', resource: 'food', amount: 5 }
+                ],
+                specialBlock: {
+                    yields: { food: 5, wood: 0, defense: 0, mystic: 0 }
+                }
+            };
+        }
+    };
+    const shown = resolveBoardDisplayProduction(state, facts, fakeCellView);
+    assert.equal(
+        shown.food,
+        17,
+        'Special Block production is added after Zone multiplier: floor(10*1.2)+5'
     );
 }
 
