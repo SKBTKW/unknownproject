@@ -795,19 +795,6 @@ class DeckManager {
             });
             if (typeof this.state.checkConditionalBuffs === "function") this.state.checkConditionalBuffs();
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `📜【${cName}】`);
-        } else if (cId === "CMD_MILITARY_FOCUS") {
-            // ⚔️ 軍事重視: コスト 🧱-20
-            this.state.activeDrawBias = { targetCategory: "MILITARY", type: "UNTIL_DEFENSE", untilValue: 20 };
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🛡️",
-                description: cDesc,
-                category: "CARD_EFFECT"
-            });
-            if (typeof this.state.checkConditionalBuffs === "function") this.state.checkConditionalBuffs();
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `⚔️【${cName}】`);
         } else if (cId === "CMD_CONSERVE_EMBER") {
             // 🔥 節約: コスト 無料 (次ターンの🔥消費-1軽減)
             this.state.emberConsumptionReducedTurns = 1;
