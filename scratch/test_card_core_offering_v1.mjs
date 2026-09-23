@@ -15,7 +15,8 @@ import {
     adaptLegacyOfferingRequirements,
     evaluateLegacyOfferingRequirements
 } from "../game/src/cards/legacy_offering_requirement_adapter.js";
-import { CardEffectHandlerRouter } from "../game/src/cards/card_effect_handler_router.js";
+import { CardEffectHandlerRouter, resolveCardEffectHandlerRouter } from "../game/src/cards/card_effect_handler_router.js";
+import { LEGACY_COMMAND_COMPATIBILITY_IDS } from "../game/src/cards/legacy_command_compatibility_handlers.js";
 import { CARD_EFFECT_TYPES, CardEffectExecutor } from "../game/src/cards/card_effect_executor.js";
 import {
     CARD_DOMAIN_ACTIONS,
@@ -1936,6 +1937,84 @@ function makeGrid(rows, cols) {
     const blockers = listCardDomainMigrationBlockers();
     assert.equal(blockers.length, DOMAIN_ACTION_REQUIRED_IDS.length);
     assert.equal(new Set(blockers.map(entry => entry.cardId)).size, blockers.length);
+}
+
+// AT. Legacy-only compatibility handlers preserve behavior outside DeckManager's giant branch chain.
+{
+    const deckManagerSource = readFileSync(
+        new URL("../game/src/systems/deck_manager.js", import.meta.url),
+        "utf8"
+    );
+    for (const id of LEGACY_COMMAND_COMPATIBILITY_IDS) {
+        assert.equal(
+            deckManagerSource.includes(`cId === "${id}"`),
+            false,
+            `${id} must not remain in DeckManager legacy branches`
+        );
+    }
+
+    const router = resolveCardEffectHandlerRouter({});
+    for (const id of LEGACY_COMMAND_COMPATIBILITY_IDS) {
+        assert.equal(router.has(id), true, `default compatibility handler missing: ${id}`);
+    }
+
+    const makeState = () => ({
+        emberConsumptionReducedTurns: 0,
+        emberConsumptionStartsNextTurn: false,
+        grandCultivationTurns: 0,
+        grandCultivationStartsNextTurn: false,
+        scorchedRetreatTurns: 0,
+        activeBuffs: [],
+        logs: [],
+        addBuff(buff) { this.activeBuffs.push(buff); },
+        addLog(log) { this.logs.push(log); }
+    });
+
+    {
+        const state = makeState();
+        const result = router.execute({ id: "CMD_CONSERVE_EMBER" }, {
+            state,
+            cardName: "節約",
+            cardDescription: "legacy",
+            i18n: null
+        });
+        assert.equal(result.success, true);
+        assert.equal(state.emberConsumptionReducedTurns, 1);
+        assert.equal(state.emberConsumptionStartsNextTurn, true);
+        assert.equal(state.activeBuffs[0].remainingTurns, 1);
+        assert.equal(state.activeBuffs[0].startsNextTurn, true);
+        assert.equal(state.logs.length, 1);
+    }
+
+    {
+        const state = makeState();
+        const result = router.execute({ id: "CMD_GRAND_CULTIVATION" }, {
+            state,
+            cardName: "耕作計画",
+            cardDescription: "legacy",
+            i18n: null
+        });
+        assert.equal(result.success, true);
+        assert.equal(state.grandCultivationTurns, 4);
+        assert.equal(state.grandCultivationStartsNextTurn, true);
+        assert.equal(state.activeBuffs[0].remainingTurns, 4);
+        assert.equal(state.logs.length, 1);
+    }
+
+    {
+        const state = makeState();
+        const result = router.execute({ id: "CMD_SCORCHED_RETREAT" }, {
+            state,
+            cardName: "焦土退却",
+            cardDescription: "legacy",
+            i18n: null
+        });
+        assert.equal(result.success, true);
+        assert.equal(state.scorchedRetreatTurns, 3);
+        assert.equal(state.activeBuffs[0].category, "DEBUFF");
+        assert.equal(state.activeBuffs[0].remainingTurns, 3);
+        assert.equal(state.logs.length, 1);
+    }
 }
 
 console.log("✅ Card Core / Offering v1 contract tests PASS");
