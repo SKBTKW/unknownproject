@@ -254,6 +254,14 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_board_trial_deployment_semantics.mjs",
+      "purpose": "Board semantic projection for Trial deployment facts and reinforcement origins without facility identity coupling",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_board_zone_link_visual_contract.mjs",
       "purpose": "board zone link visual contract",
       "suite": "supplemental"
