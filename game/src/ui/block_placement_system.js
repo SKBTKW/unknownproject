@@ -29,9 +29,7 @@ import { UILayoutConfig } from './layout_config.js';
                     "merge-hover-highlight"
                 );
                 cell.removeAttribute("data-preview-terrain");
-                cell.style.removeProperty("--preview-terrain-bg");
-                cell.style.removeProperty("--preview-terrain-border");
-                cell.style.removeProperty("--preview-terrain-shadow");
+                cell.style.removeProperty("background");
             });
             if (typeof window !== "undefined" && window.tooltipSystemInstance && typeof window.tooltipSystemInstance.hide === "function") {
                 window.tooltipSystemInstance.hide();
@@ -46,9 +44,7 @@ import { UILayoutConfig } from './layout_config.js';
             cells.forEach(cell => {
                 cell.classList.remove("preview-valid", "preview-invalid", "merge-hover-highlight");
                 cell.removeAttribute("data-preview-terrain");
-                cell.style.removeProperty("--preview-terrain-bg");
-                cell.style.removeProperty("--preview-terrain-border");
-                cell.style.removeProperty("--preview-terrain-shadow");
+                cell.style.removeProperty("background");
             });
             if (typeof window !== "undefined" && window.tooltipSystemInstance && typeof window.tooltipSystemInstance.hide === "function") {
                 window.tooltipSystemInstance.hide();
@@ -111,9 +107,7 @@ import { UILayoutConfig } from './layout_config.js';
                         if (cell.terrainId) {
                             const theme = UILayoutConfig.getBlockThemeColor(cell.terrainId);
                             targetEl.setAttribute("data-preview-terrain", "1");
-                            targetEl.style.setProperty("--preview-terrain-bg", theme.bg);
-                            targetEl.style.setProperty("--preview-terrain-border", theme.border);
-                            targetEl.style.setProperty("--preview-terrain-shadow", theme.shadow);
+                            targetEl.style.setProperty("background", theme.bg, "important");
                         }
                     }
                 }
