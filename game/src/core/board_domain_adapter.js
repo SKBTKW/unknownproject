@@ -13,7 +13,8 @@ import { BoardDamageService } from './board_damage_service.js';
 import {
     isZoneConversionFunctional,
     readZoneConversion,
-    readZoneConversionCapabilities
+    readZoneConversionCapabilities,
+    readZoneSemantic
 } from './zone_conversion_domain.js';
 import { SpecialBlockService } from '../systems/special_block_service.js';
 import { ZoneConversionService } from '../systems/zone_conversion_service.js';
@@ -218,6 +219,24 @@ export class BoardDomainAdapter {
 
     validateZoneConversionCandidate(definitionId, groupId) {
         return this.zoneConversionService.validateCandidate(definitionId, groupId);
+    }
+
+    validateZoneConversionCandidateAfterPayment(definitionId, groupId, payment = {}) {
+        return this.zoneConversionService.validateCandidateAfterPayment(definitionId, groupId, payment);
+    }
+
+    resolveZoneConversionGroupId(target) {
+        if (typeof target === 'string' && target) return target;
+        if (target?.groupId !== undefined && target?.groupId !== null) return String(target.groupId);
+        const r = Number.isInteger(target?.r) ? target.r : target?.row;
+        const c = Number.isInteger(target?.c) ? target.c : target?.column;
+        if (!Number.isInteger(r) || !Number.isInteger(c)) return null;
+        const groupId = this.state?.grid?.[r]?.[c]?.mergeGroupId;
+        return groupId !== undefined && groupId !== null ? String(groupId) : null;
+    }
+
+    readZoneSemantic(groupId) {
+        return readZoneSemantic(this.state, groupId);
     }
 
     enumerateZoneConversionCandidates(definitionId) {
