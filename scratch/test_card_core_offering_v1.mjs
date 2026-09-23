@@ -2218,4 +2218,31 @@ function makeGrid(rows, cols) {
     );
 }
 
+// AU. Compatibility-only card ids must never silently return to current JSON SSOT.
+{
+    const economySource = JSON.parse(readFileSync(
+        new URL("../game/src/data/economy_cards.json", import.meta.url),
+        "utf8"
+    ));
+    const militarySource = JSON.parse(readFileSync(
+        new URL("../game/src/data/military_cards.json", import.meta.url),
+        "utf8"
+    ));
+    const mysticSource = JSON.parse(readFileSync(
+        new URL("../game/src/data/mystic_cards.json", import.meta.url),
+        "utf8"
+    ));
+    const ssotIds = new Set(
+        [...economySource, ...militarySource, ...mysticSource].map(card => card.id)
+    );
+
+    for (const id of LEGACY_COMMAND_COMPATIBILITY_IDS) {
+        assert.equal(
+            ssotIds.has(id),
+            false,
+            `${id} is compatibility-only and must not re-enter current SSOT without explicit migration`
+        );
+    }
+}
+
 console.log("✅ Card Core / Offering v1 contract tests PASS");
