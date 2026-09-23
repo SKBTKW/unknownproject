@@ -112,12 +112,106 @@ export class TurnLifecycleService {
         const engine = this.engine;
         const state = engine.state;
         this._advanceTurnState();
-        if (engine.zoneConversionService && typeof engine.zoneConversionService.settleMaintenanceForVerse === "function") {
-            engine.lastZoneConversionMaintenanceResult = engine.zoneConversionService.settleMaintenanceForVerse(state?.turn);
+        if (engine.zoneConversionService) {
+            engine.lastZoneConversionMaintenanceResult = this.settleZoneConversionMaintenanceForVerse(state?.turn);
         }
         if (engine.deckManager && typeof engine.deckManager.generateOfferingCards === "function") engine.deckManager.generateOfferingCards({ reason: OFFERING_GENERATION_REASONS.VERSE_START });
         if (engine.globalEventManager) engine.globalEventManager.onTurnStart();
         if (state && typeof state.addLog === "function") state.addLog(this._translate("LOG_TURN_START", { turn: state.turn }, `Turn ${state.turn} started.`));
+    }
+
+    _readZoneMaintenanceResource(key) {
+        const engine = this.engine;
+        const state = engine?.state;
+        if (!state) return 0;
+        if (key === "wood") return Number(state.wood ?? state.material ?? 0) || 0;
+        if (key === "ember") {
+            if (engine.emberSystem && Number.isFinite(engine.emberSystem.current)) return engine.emberSystem.current;
+            return Number(state.ember ?? 0) || 0;
+        }
+        if (key === "defense") {
+            if (engine.defenseSystem && typeof engine.defenseSystem.getCurrentDefense === "function") {
+                return Number(engine.defenseSystem.getCurrentDefense()) || 0;
+            }
+            return Number(state.currentDefense ?? state.defense ?? 0) || 0;
+        }
+        return Number(state[key] ?? 0) || 0;
+    }
+
+    _canPayZoneMaintenance(resources = {}) {
+        return Object.entries(resources || {}).every(([key, amount]) => {
+            const cost = Number(amount);
+            return Number.isFinite(cost) && cost >= 0 && this._readZoneMaintenanceResource(key) >= cost;
+        });
+    }
+
+    _payZoneMaintenance(resources = {}) {
+        if (!this._canPayZoneMaintenance(resources)) return false;
+
+        const engine = this.engine;
+        const state = engine?.state;
+        if (!state) return false;
+
+        for (const [key, rawAmount] of Object.entries(resources || {})) {
+            const amount = Number(rawAmount) || 0;
+            if (amount <= 0) continue;
+
+            if (key === "wood") {
+                const current = this._readZoneMaintenanceResource(key);
+                state.wood = current - amount;
+                state.material = state.wood;
+                continue;
+            }
+            if (key === "ember") {
+                if (engine.emberSystem && typeof engine.emberSystem.consume === "function") {
+                    if (!engine.emberSystem.consume(amount)) return false;
+                } else {
+                    state.ember = this._readZoneMaintenanceResource(key) - amount;
+                }
+                continue;
+            }
+            if (key === "defense") {
+                if (engine.defenseSystem && typeof engine.defenseSystem.reduceCurrentDefense === "function") {
+                    engine.defenseSystem.reduceCurrentDefense(amount);
+                } else if (Number.isFinite(state.currentDefense)) {
+                    state.currentDefense = this._readZoneMaintenanceResource(key) - amount;
+                } else {
+                    state.defense = this._readZoneMaintenanceResource(key) - amount;
+                }
+                continue;
+            }
+            state[key] = this._readZoneMaintenanceResource(key) - amount;
+        }
+        return true;
+    }
+
+    settleZoneConversionMaintenanceForVerse(verse = this.engine?.state?.turn) {
+        const service = this.engine?.zoneConversionService;
+        if (!service
+            || typeof service.enumerateMaintenanceDue !== "function"
+            || typeof service.applyMaintenanceSettlement !== "function") {
+            return Object.freeze({ verse: Number.isInteger(verse) ? verse : null, results: Object.freeze([]) });
+        }
+
+        const due = service.enumerateMaintenanceDue(verse)
+            .slice()
+            .sort((a, b) => String(a.groupId).localeCompare(String(b.groupId)));
+        const results = [];
+
+        for (const plan of due) {
+            const paymentSucceeded = plan.canPay === true
+                && this._canPayZoneMaintenance(plan.resources)
+                && this._payZoneMaintenance(plan.resources);
+            results.push(service.applyMaintenanceSettlement(plan.groupId, {
+                verse,
+                paymentSucceeded
+            }));
+        }
+
+        return Object.freeze({
+            verse: Number.isInteger(verse) ? verse : null,
+            results: Object.freeze(results.map(result => Object.freeze({ ...result })))
+        });
     }
 
     _tryStartPendingTrial() {
