@@ -735,16 +735,6 @@ class DeckManager {
             this.state.wood += 35;
             this.state.mystic += 10;
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `📜【${cName}】`);
-        } else if (cId === "CMD_IRON_RAMPART") {
-            // 🛡️ 鉄壁の防壁構築: コスト 🧱-20
-            if (this.state.defenseSystem) {
-                this.state.defenseSystem.increaseMaxCapacity(25);
-            } else {
-                this.state.defense += 25;
-            }
-            this.state.permanentVicinityDefenseBonus = (this.state.permanentVicinityDefenseBonus || 0) + 2;
-            if (this.state.defenseSystem) this.state.defenseSystem.reconcileWithMax();
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🛡️【${cName}】`);
         } else if (cId === "CMD_BALLISTA_SET") {
             // 🏹 迎撃用弩砲陣地: コスト 🧱-30
             if (this.state.defenseSystem) {
