@@ -29,6 +29,44 @@
     display: none;
 }
 
+#gridBoard .board-road-segments {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    pointer-events: none;
+}
+#gridBoard .board-road-segment {
+    position: absolute;
+    display: block;
+    background: rgba(177, 154, 116, 0.90);
+    box-shadow: 0 0 0 1px rgba(66, 58, 48, 0.72);
+}
+#gridBoard .board-road-segment.is-north,
+#gridBoard .board-road-segment.is-south {
+    width: 3px;
+    height: 50%;
+    left: calc(50% - 1.5px);
+}
+#gridBoard .board-road-segment.is-east,
+#gridBoard .board-road-segment.is-west {
+    width: 50%;
+    height: 3px;
+    top: calc(50% - 1.5px);
+}
+#gridBoard .board-road-segment.is-north { top: 0; }
+#gridBoard .board-road-segment.is-south { bottom: 0; }
+#gridBoard .board-road-segment.is-east { right: 0; }
+#gridBoard .board-road-segment.is-west { left: 0; }
+#gridBoard[data-board-roads-visibility="SECONDARY"] .board-road-segments {
+    opacity: 0.55;
+}
+#gridBoard[data-board-roads-visibility="SUPPRESSED"] .board-road-segments {
+    opacity: 0.24;
+}
+#gridBoard[data-board-roads-visibility="HIDDEN"] .board-road-segments {
+    display: none;
+}
+
 #gridBoard[data-board-trial-routes-visibility="SECONDARY"] .cell.trial-route-cell {
     box-shadow: inset 0 0 0 1px rgba(230, 126, 34, 0.28);
 }
