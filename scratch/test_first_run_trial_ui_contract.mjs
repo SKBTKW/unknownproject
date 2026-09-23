@@ -42,7 +42,6 @@ for (const forbidden of [
     "startTrialSession(",
     "trialController.startScenario(",
     "trialActive =",
-    ".investigationUnlocked =",
     ".knownEnemyState =",
     "trueEnemyStateService.",
     "warningStateService.markOmen(",
@@ -57,5 +56,16 @@ for (const forbidden of [
         `FirstRun tutorial layer must not own canonical Trial/Stage authority: ${forbidden}`
     );
 }
+
+assert.doesNotMatch(
+    tutorialFiles,
+    /\.investigationUnlocked\s*=(?!=)/,
+    "FirstRun tutorial layer must not assign Investigation unlock authority"
+);
+assert.doesNotMatch(
+    tutorialFiles,
+    /\.knownEnemyState\s*=(?!=)/,
+    "FirstRun tutorial layer must not assign KnownEnemyState authority"
+);
 
 console.log("✅ FirstRun Trial UI boundary contract PASS");
