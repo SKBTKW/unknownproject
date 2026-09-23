@@ -2,6 +2,14 @@
   "schemaVersion": 1,
   "tests": [
     {
+      "path": "scratch/test_trial_board_damage_policy.mjs",
+      "purpose": "Trial non-repel outcomes stage Board damage and commit only after settlement",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_advisor_character_contract.mjs",
       "purpose": "advisor character contract",
       "suite": "existing",
@@ -203,6 +211,22 @@
     {
       "path": "scratch/test_board_damage_contract.mjs",
       "purpose": "Board-owned semantic damage records without gameplay side effects",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_board_damage_presentation.mjs",
+      "purpose": "Board damage semantic state through DTO and 2D/2.5D presentation",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_board_damage_effect_policy.mjs",
+      "purpose": "Unresolved LAND/SPECIAL_BLOCK damage effects surface without changing gameplay values",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"

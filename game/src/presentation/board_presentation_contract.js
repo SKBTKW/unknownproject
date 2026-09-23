@@ -84,7 +84,18 @@ function toCellDto(cell) {
         zone: cloneJsonSafe(cell.zone ?? null),
         links: cloneJsonSafe(cell.links ?? []),
         display: cloneJsonSafe(cell.display ?? { role: null, production: null }),
-        history: cloneJsonSafe(cell.history ?? { battleSite: false, battleSites: [] }),
+        history: cloneJsonSafe(cell.history ?? {
+            battleSite: false,
+            battleSites: [],
+            damage: {
+                any: false,
+                land: false,
+                specialBlock: false,
+                records: [],
+                landRecords: [],
+                specialBlockRecords: []
+            }
+        }),
         influence: cloneJsonSafe(cell.influence ?? { hqVicinity: false, waterSource: false, waterSourceType: null }),
         edges: cloneJsonSafe(cell.edges ?? []),
         interaction: toInteractionDto(cell.interaction),

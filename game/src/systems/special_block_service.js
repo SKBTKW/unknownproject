@@ -345,17 +345,17 @@ export class SpecialBlockService {
         const cell = validation.cell;
         const interaction = definition.baseTerrainInteraction?.kind;
 
+        const entity = createSpecialBlockEntity(definition, r, c, this.state, context);
+
         if (interaction === BASE_TERRAIN_INTERACTIONS.TRANSFORMING_OVERLAY) {
             const delta = Number(definition.baseTerrainInteraction?.glDelta);
             if (Number.isFinite(delta) && Number.isFinite(cell.terrain?.gl)) {
-                cell.terrain = {
-                    ...cell.terrain,
-                    gl: Math.max(0, cell.terrain.gl + delta)
+                entity.baseTerrainEffect = {
+                    glDelta: delta,
+                    sourceGL: cell.terrain.gl
                 };
             }
         }
-
-        const entity = createSpecialBlockEntity(definition, r, c, this.state, context);
         if (validation.sourceGroup) {
             entity.sourceGroupReference = {
                 kind: validation.sourceGroup.kind,
