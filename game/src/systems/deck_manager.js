@@ -25,6 +25,7 @@ import { evaluateLegacyOfferingRequirements } from '../cards/legacy_offering_req
 import { resolveCardOfferingBoardQuery } from '../cards/card_offering_board_query.js';
 import { resolveCardEffectHandlerRouter } from '../cards/card_effect_handler_router.js';
 import { CardExecutionRequirementService } from '../cards/card_execution_requirement_service.js';
+import { isLegacyOnlyCommandExecution } from '../cards/legacy_command_execution_inventory.js';
 
 export const OFFERING_GENERATION_REASONS = Object.freeze({
     INITIAL: "INITIAL",
@@ -173,6 +174,12 @@ class DeckManager {
      */
     isCardEligible(c, stageNum, h2Count, options = {}) {
         if (!c) return false;
+
+        // Legacy-only generated command data may remain for save/runtime compatibility,
+        // but it is not part of the current authored JSON SSOT and must never re-enter
+        // the live Offering population.
+        if (isLegacyOnlyCommandExecution(c.id)) return false;
+
         const cardStage = c.minStage || 1;
         if (cardStage > stageNum) return false;
 
