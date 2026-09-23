@@ -21,6 +21,7 @@
             TERRAIN_DEEP_HILL: "森林丘陵",
             CARD_MULTI_ATTRIBUTE_SUFFIX: "（複数）",
             UI_YIELD_UNRESOLVED: "未定",
+            ERR_MULTI_ATTRIBUTE_PRODUCTION_UNRESOLVED: "この複数属性土地は産出仕様が未確定のため開発できません",
             CARD_DESC_MULTI_PLAINS_HILL_1X2: "草原と丘陵の境界を1枚の土地として配置する複数属性ブロック。",
             CARD_DESC_MULTI_PLAINS_FOREST_1X2: "草原と森の境界を1枚の土地として配置する複数属性ブロック。",
             CARD_DESC_MULTI_HILL_MOUNTAIN_1X2: "丘陵と山岳の境界を1枚の土地として配置する複数属性ブロック。",
@@ -1042,6 +1043,12 @@
             TERRAIN_DESERT_HILL: "Desert Hill",
             TERRAIN_FOREST_HILL: "Forest Hill",
             TERRAIN_DEEP_HILL: "Deep Forest Hill",
+            CARD_MULTI_ATTRIBUTE_SUFFIX: " (Mixed)",
+            UI_YIELD_UNRESOLVED: "TBD",
+            ERR_MULTI_ATTRIBUTE_PRODUCTION_UNRESOLVED: "This multi-attribute land cannot be developed until its production rules are resolved",
+            CARD_DESC_MULTI_PLAINS_HILL_1X2: "A mixed-terrain block that places a Plains and Hill boundary as one land card.",
+            CARD_DESC_MULTI_PLAINS_FOREST_1X2: "A mixed-terrain block that places a Plains and Forest boundary as one land card.",
+            CARD_DESC_MULTI_HILL_MOUNTAIN_1X2: "A mixed-terrain block that places a Hill and Mountain boundary as one land card.",
             CARD_DESC_WETLAND_1X1: "Lowland collecting moisture. Cannot directly border another Wetland or form a zone, but may border a Lake and supports mud, water sources, and reclamation.",
 
             // 📜 Economy & Policy

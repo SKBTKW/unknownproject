@@ -6,6 +6,7 @@ import {
 import { serializeGameState } from "../state_serializer.js";
 import { hydrateGameState } from "../hydrate_game_state.js";
 import { GridEngine } from "../../systems/grid_engine.js";
+import { GameState } from "../../v2_unity_ready_main.js";
 import { ProductionCalculator } from "../../systems/production_calculator.js";
 import { DefenseSystem } from "../../systems/defense_system.js";
 import { CellViewDataService } from "../../services/cell_view_data_service.js";
@@ -491,6 +492,70 @@ const actualMultiCards = [
         restored.handOffering[0].currentCells.map(cell => [cell.r, cell.c, cell.terrainId]),
         [[0, 0, "GL1_PLAINS"], [1, 0, "E2_HILL"]]
     );
+}
+
+{
+    const unresolvedCard = LAND_CARDS_MASTER.find(card =>
+        card.id === "CARD_MULTI_PLAINS_HILL_1X2"
+    );
+    assert.ok(unresolvedCard);
+
+    const resolvedCard = {
+        ...unresolvedCard,
+        productionContract: {
+            status: LAND_PRODUCTION_STATUS.RESOLVED,
+            scope: LAND_PRODUCTION_SCOPE.CELL,
+            cellYields: [
+                { r: 0, c: 0, yields: { food: 3 } },
+                { r: 0, c: 1, yields: { wood: 2 } }
+            ]
+        }
+    };
+
+    const state = new GameState();
+    let canDelegateCalls = 0;
+    let placeDelegateCalls = 0;
+    state.gridEngine = {
+        canPlaceShape() {
+            canDelegateCalls += 1;
+            return { can: true, reasons: [] };
+        },
+        placeShape() {
+            placeDelegateCalls += 1;
+            return { can: true, success: true };
+        }
+    };
+
+    const unresolvedCan = state.canPlaceShape(
+        0, 0, unresolvedCard.shape, unresolvedCard, unresolvedCard.cells
+    );
+    assert.equal(unresolvedCan.can, false);
+    assert.equal(unresolvedCan.reason, "MULTI_ATTRIBUTE_PRODUCTION_UNRESOLVED");
+    assert.equal(canDelegateCalls, 0);
+
+    const preview = new PlacementPreviewResolver().resolveHover(unresolvedCard, state, 0, 0);
+    assert.equal(preview.valid, false);
+    assert.deepEqual(preview.reasons, ["MULTI_ATTRIBUTE_PRODUCTION_UNRESOLVED"]);
+    assert.equal(canDelegateCalls, 0);
+
+    const unresolvedPlace = state.placeShape(
+        0, 0, unresolvedCard.shape, unresolvedCard, -1, unresolvedCard.cells
+    );
+    assert.equal(unresolvedPlace.success, false);
+    assert.equal(unresolvedPlace.reason, "MULTI_ATTRIBUTE_PRODUCTION_UNRESOLVED");
+    assert.equal(placeDelegateCalls, 0);
+
+    const resolvedCan = state.canPlaceShape(
+        0, 0, resolvedCard.shape, resolvedCard, resolvedCard.cells
+    );
+    assert.equal(resolvedCan.can, true);
+    assert.equal(canDelegateCalls, 1);
+
+    const resolvedPlace = state.placeShape(
+        0, 0, resolvedCard.shape, resolvedCard, -1, resolvedCard.cells
+    );
+    assert.equal(resolvedPlace.success, true);
+    assert.equal(placeDelegateCalls, 1);
 }
 
 console.log("diagnose_multi_attribute_land_block: PASS");
