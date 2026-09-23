@@ -1,3 +1,5 @@
+import { isTrueMergedCell } from "../core/merge_rules.js";
+
 /* =============================================================
    game/src/cards/legacy_command_compatibility_handlers.js
 
@@ -191,6 +193,109 @@ const LEGACY_COMMAND_COMPATIBILITY_HANDLERS = Object.freeze({
         icon: "🔮",
         category: "CARD_EFFECT"
     }),
+
+    CMD_SINGLE_CLEARING(context) {
+        let cleared = false;
+        const state = context.state;
+        if (Array.isArray(state.grid)) {
+            for (let r = 0; r < state.grid.length && !cleared; r++) {
+                for (let c = 0; c < (state.grid[r]?.length || 0) && !cleared; c++) {
+                    const cell = state.grid[r][c];
+                    if (!cell?.placed || cell.isHQ || !cell.terrain) continue;
+                    const tid = cell.terrain.terrainId || cell.terrain.id || "";
+                    if (tid.includes("FOREST") && !isTrueMergedCell(state, cell)) {
+                        cell.terrain = {
+                            id: "GL1_PLAINS",
+                            terrainId: "GL1_PLAINS",
+                            nameKey: "TERRAIN_PLAINS",
+                            gl: 1,
+                            e: 1,
+                            food: 4,
+                            wood: 0,
+                            defense: 0,
+                            mystic: 0,
+                            category: "BASE"
+                        };
+                        cleared = true;
+                    }
+                }
+            }
+        }
+        state.wood = (state.wood || 0) + 20;
+        state.food = (state.food || 0) + 3;
+        sourceBuff(context, {
+            icon: "🪓",
+            category: "CARD_EFFECT"
+        });
+        activationLog(context, "🪓");
+        return { success: true };
+    },
+
+    CMD_SYSTEMATIC_LOGGING(context) {
+        const state = context.state;
+        let forestCount = 0;
+        if (Array.isArray(state.grid)) {
+            for (const row of state.grid) {
+                for (const cell of row || []) {
+                    if (!cell?.placed || !cell.terrain) continue;
+                    const tid = cell.terrain.terrainId || cell.terrain.id || "";
+                    if (tid.includes("FOREST")) forestCount++;
+                }
+            }
+        }
+        state.wood = (state.wood || 0) + (forestCount * 6);
+        state.systematicLoggingTurns = 3;
+        state.systematicLoggingStartsNextTurn = true;
+        sourceBuff(context, {
+            icon: "🌲",
+            badgeText: remainingTurnsText(context, 3),
+            category: "DEBUFF",
+            remainingTurns: 3,
+            startsNextTurn: true
+        });
+        activationLog(context, "🌲");
+        return { success: true };
+    },
+
+    CMD_LAND_EXPLORATION(context) {
+        const state = context.state;
+        const deckManager = context.deckManager;
+        const candidates = [];
+        if (Array.isArray(state.grid)) {
+            for (let r = 0; r < Math.min(5, state.grid.length); r++) {
+                for (let c = 0; c < Math.min(5, state.grid[r]?.length || 0); c++) {
+                    const cell = state.grid[r][c];
+                    if (cell?.placed && !cell.isHQ && !cell.searched && !cell.merged) {
+                        candidates.push({ r, c });
+                    }
+                }
+            }
+        }
+
+        if (candidates.length === 0) {
+            return { success: false, reason: "NO_EXPLORABLE_TILES" };
+        }
+        if (!deckManager
+            || typeof deckManager._nextGameplayInt !== "function"
+            || typeof deckManager.executeExploration !== "function") {
+            return { success: false, reason: "LEGACY_EXPLORATION_RUNTIME_UNAVAILABLE" };
+        }
+
+        const chosen = candidates[deckManager._nextGameplayInt(0, candidates.length - 1)];
+        const posStr = `${String.fromCharCode(65 + chosen.c)}${chosen.r + 1}`;
+        if (typeof state.addLog === "function") {
+            const name = context.cardName || context.cardDefinition?.id || "Card";
+            const i18n = context.i18n;
+            state.addLog(
+                i18n?.t
+                    ? i18n.t("LOG_CMD_ACTIVATED", { name, desc: `(${posStr}) 2D6` })
+                    : `📜 ${name}`
+            );
+        }
+
+        const result = deckManager.executeExploration(chosen.r, chosen.c);
+        return { success: result?.success === true };
+    },
 
     CMD_CONSERVE_EMBER(context) {
         context.state.emberConsumptionReducedTurns = 1;
