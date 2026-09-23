@@ -48,6 +48,44 @@ Card
 - `placementGroupId` はZone / mergeGroupではない。
 - 同じカード由来であることを理由に自動地帯化しない。
 - 同じカード由来であることを理由に自動LINKしない。
+- 配置済みBlock数は `placementGroupId` をcanonical identityとして数える。
+- Multi-Attributeの複数セルをBlock数へセル単位で加算しない。
+- live `placedBlockCount`、`GameState.countPlacedBlocks()` fallback、`PLACED_BLOCKS_AT_MOST` 条件評価は同じBlock identityを使用する。
+- 土地配置🔥コストとSave時の `placedBlockCount` fallbackも同じcanonical Block countを使用し、counter欠落時にセル数や0へ退行しない。
+
+### 2.1 Cell定義とterrain正本
+
+Multi-Attributeカードのcell定義は、原則として**座標＋terrainIdだけ**を保持する。
+
+```js
+cells: [
+  { r: 0, c: 0, terrainId: "GL1_PLAINS" },
+  { r: 0, c: 1, terrainId: "E2_HILL" }
+]
+```
+
+`E / GL / nameKey / category / zoneCategory / trialTerrainCategory / base terrain yields` は
+`LAND_SYSTEM_DATA.terrains` をcanonical terrain semanticとして解決する。
+
+カード側へ同じ値を複製して二重管理しない。
+
+cell mapはshapeのactive cellを**完全かつ一意に**覆わなければならない。
+
+禁止例:
+
+- active cellのattribute欠落
+- 同一 `r/c` の重複
+- shape外座標
+- terrainId欠落
+- `LAND_SYSTEM_DATA.terrains` に存在しないterrainId
+
+不正なattribute mapはOffering適格外とし、配置時も `INVALID_ATTRIBUTE_MAP` で拒否する。
+coverageは正しいがterrainIdが未知の場合は `UNKNOWN_ATTRIBUTE_TERRAIN` で拒否する。
+Production Contractも不完全なattribute ownershipでは `UNRESOLVED` として扱う。
+
+cell固有の追加フラグはoverlayとして保持できるが、terrain正本と同名のfieldが存在する場合はcanonical terrain側を優先する。
+
+これにより、地形正本変更時にMulti-Attributeカードだけ `E/GL` やTrial terrainが古い値のまま残る状態を禁止する。
 
 ---
 
@@ -110,6 +148,43 @@ Terrain interaction
 
 一方、進軍・地形効果・迎撃地形判定では実際に通過するcellのterrainを参照する。
 
+### 6.1 迎撃Block identity
+
+迎撃計画では、
+
+```text
+placementGroupIdあり
+→ placement:<placementGroupId>
+
+placementGroupIdなし
+→ cell:<r>:<c>
+```
+
+をBlock identityとして扱う。
+
+Multi-Attribute Blockの別セルを別ルートから選んでも、同一 `placementGroupId` なら `BLOCK_ALREADY_PLANNED` とする。
+
+また、Trial draftの再検証時は保存済み `interceptBlockId` だけを信用しない。live boardの `cellResolver` からBlock identityを再導出し、旧形式・復元draftで `interceptBlockId` が欠落していても同一Block二重利用を禁止する。
+
+### 6.2 Trial terrain
+
+Block identityとterrain判定を混同しない。
+
+例:
+
+```text
+同じplacementGroupId
+[丘陵][山岳]
+
+丘陵cell
+→ 迎撃可能
+
+山岳cell
+→ 山岳の迎撃制約
+```
+
+Trial側は代表地形やカード名ではなく、選択された実cellの `terrainId / E / GL` をBattle Contextへ渡す。
+
 ---
 
 ## 7. Card Presentation
@@ -157,6 +232,22 @@ Terrain interaction
 
 Production契約が `RESOLVED` でないカードを、通常・Cooldown緩和・最終fallbackのすべてでOfferingから除外する。
 
+さらに全LAND共通ポリシーとして、**現在盤面上に合法配置先が1つも存在しないカードはOffering候補にしない**。
+
+合法配置先判定は初期向きだけではなく、プレイヤーが通常操作で到達可能な4方向すべてについて、
+
+```text
+shape
++ anchor
++ attributeCells
+```
+
+を同じtransformで回転して評価する。
+
+したがって「初期横向きでは配置不能だが、90°回転すれば合法」のカードはOffering対象に残す。一方、全回転で合法配置先ゼロなら、通常抽選・Cooldown緩和・最終fallbackのすべてから除外する。
+
+Multi-Attributeカードでは各回転後の `attributeCells` を含めて `canPlaceShape` を評価し、代表terrainだけで配置可能性を推測しない。
+
 現行データでは `productionContract.status = "UNRESOLVED"` を用いる。単なるboolean解禁フラグには戻さない。
 
 ---
@@ -184,11 +275,18 @@ GameState.placeShape()
 ```
 
 は、真のMulti-AttributeかつProduction Contractが未解決の場合、
-`MULTI_ATTRIBUTE_PRODUCTION_UNRESOLVED` で拒否する。
+
+```text
+MULTI_ATTRIBUTE_PRODUCTION_UNRESOLVED
+```
+
+で拒否する。
 
 これにより、旧Save・デバッグ注入・直接APIなどOfferingを経由しない経路でも未確定カードを実戦投入できない。
 
 一方、`GridEngine` 直呼びはPlacement構造・回転・Zone等の低レベル診断に必要なため、Production Gateを持たせない。Live gameplay境界と低レベルDomain検証境界を分離する。
+
+通常LAND、および明示的なcell mapを持っていてもterrainIdが全セル同一のhomogeneous cardはこのGate対象外とする。
 
 ### 9.2 Ownership境界は実装済み
 
@@ -229,7 +327,25 @@ runtime上のscope:
 
 条件を満たさないcontractはruntimeで `UNRESOLVED` として扱う。
 
-### 9.4 Rotation
+### 9.4 灌漑・Cell由来補正
+
+Cell Productionは、配置後の**実セル座標**で灌漑・本営近郊などのcell由来補正を受ける。
+
+Block Productionはcellへ複製しないため、灌漑等のcell modifierを直接受けない。
+
+```text
+Cell Production
+  → actual board cell
+  → irrigation / vicinity 等
+
+Block Production
+  → placementGroupId
+  → cell modifier対象外
+```
+
+Multi-Attribute Blockだからという理由でBlock Productionへ灌漑補正を掛けたり、各cellへBlock yieldを複製して灌漑判定することを禁止する。
+
+### 9.5 Rotation
 
 Cell Productionのownershipは回転前のsource cell identityを保持する。
 
@@ -241,7 +357,7 @@ rotated local coordinate
 
 回転によって草原側に定義されたcell yieldが丘陵側へ移る状態を禁止する。
 
-### 9.5 表示
+### 9.6 表示
 
 カード面では、
 
@@ -285,6 +401,18 @@ Block ProductionはBoard semantic上でcell productionとは別フィールド�
 
 Restore後に異なるterrainIdが同一terrainへ潰れること、およびBlock ProductionがCell Productionへ変質することを禁止する。
 
+History Restoreも独自のMulti-Attribute復元ルールを持たず、`serializeGameState → hydrateGameState` の共通境界を利用する。
+
+Restore後も以下を一致させる。
+
+- 各cellの `terrainId / E / GL / trialTerrainCategory`
+- 共通 `placementGroupId`
+- `mergeGroupId` のcellごとの差
+- cell production ownership
+- `placedBlockProduction`
+
+Restore直後のTrial terrain判定も、復元された各cell semanticをそのまま参照する。
+
 ---
 
 ## 12. Presentation境界
@@ -312,6 +440,31 @@ Board read modelは少なくとも次を区別して保持できる。
 - `blockProductionPrimary`
 
 Block Productionを地形semanticの正本や各cell yieldへ混ぜない。
+
+### 12.1 部分地帯化されたBlockの表示境界
+
+同じ `placementGroupId` の内部で一部セルだけがZoneへ所属した場合、Presentation上も次を分離する。
+
+```text
+Zone所属セル
+  → mergeGroup単位で表示集約
+
+未Zoneセル
+  → placementGroup単位で表示集約
+  → ただしZone所属済みセルを再取り込みしない
+```
+
+したがって、
+
+```text
+[草原: Zone A][丘陵: 未Zone]
+```
+
+のような状態で、丘陵側の表示集約へ草原セルの産出を再加算してはならない。
+
+同様に、Block Productionは同一 `placementGroupId` 由来だからという理由でZone側・未Zone側の両方へ重複表示しない。Blockのcanonical display ownerを含むPresentation groupにのみ1回表示する。
+
+2Dの内部境界線も同じ規則を使い、Zoneセルと未Zoneセルを「同じカード由来」という理由だけで視覚的に一体化しない。
 
 ---
 

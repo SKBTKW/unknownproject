@@ -108,6 +108,10 @@ import { UILayoutConfig } from './layout_config.js';
                     if (targetEl) {
                         targetEl.classList.add(isValid ? "preview-valid" : "preview-invalid");
 
+                        // Multi-Attribute preview keeps legality as the outer
+                        // green/red signal while the fill uses the actual cell
+                        // terrain color. Uniform legacy cards have no per-cell
+                        // terrainId here and retain the existing preview style.
                         if (cell.terrainId) {
                             const theme = UILayoutConfig.getBlockThemeColor(cell.terrainId);
                             if (typeof targetEl.setAttribute === "function") {
