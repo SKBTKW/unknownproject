@@ -6,6 +6,7 @@
    ============================================================= */
 
 import {
+    ZONE_CONVERSION_CAPABILITIES,
     ZONE_CONVERSION_COST_STATUS,
     ZONE_CONVERSION_STATES,
     isConvertibleCompletedZone,
@@ -98,6 +99,24 @@ function hasAnyCost(resources) {
     return Object.values(resources || {}).some(value => Number(value) > 0);
 }
 
+function representativeZoneCell(zone) {
+    const cells = Array.isArray(zone?.cells) ? zone.cells : [];
+    return cells
+        .filter(cell => Number.isInteger(cell?.r) && Number.isInteger(cell?.c))
+        .map(cell => ({ r: cell.r, c: cell.c }))
+        .sort((a, b) => (a.r - b.r) || (a.c - b.c))[0] || null;
+}
+
+function activeConversionCapabilities(zone) {
+    const conversion = zone?.conversion || null;
+    if (!conversion || conversion.state !== ZONE_CONVERSION_STATES.ACTIVE) return new Set();
+    return new Set(
+        Array.isArray(conversion.capabilities)
+            ? conversion.capabilities.filter(value => typeof value === 'string' && value)
+            : []
+    );
+}
+
 export class ZoneConversionService {
     constructor({ state, definitions = {} } = {}) {
         this.state = state || null;
@@ -110,6 +129,59 @@ export class ZoneConversionService {
 
     getConversionCount(definitionId = null) {
         return zoneConversionCount(this.state, { definitionId });
+    }
+
+    readCellDeploymentSemantics({ r, c } = {}) {
+        if (!Number.isInteger(r) || !Number.isInteger(c)) return null;
+        const cell = this.state?.grid?.[r]?.[c] || null;
+        const groupId = cell?.mergeGroupId;
+        if (!groupId) return null;
+
+        const zone = readZoneRecord(this.state, groupId);
+        const capabilities = activeConversionCapabilities(zone);
+        if (capabilities.size === 0) return null;
+
+        const projected = [];
+        if (capabilities.has(ZONE_CONVERSION_CAPABILITIES.DEFENSE_ANCHOR)) {
+            projected.push(ZONE_CONVERSION_CAPABILITIES.DEFENSE_ANCHOR);
+        }
+
+        const representative = representativeZoneCell(zone);
+        const canReinforce = capabilities.has(ZONE_CONVERSION_CAPABILITIES.GARRISON_SITE)
+            || capabilities.has(ZONE_CONVERSION_CAPABILITIES.REINFORCEMENT_ORIGIN);
+        if (
+            canReinforce
+            && representative
+            && representative.r === r
+            && representative.c === c
+        ) {
+            projected.push(ZONE_CONVERSION_CAPABILITIES.REINFORCEMENT_ORIGIN);
+        }
+
+        return projected.length > 0
+            ? { capabilities: projected, trialTraits: null }
+            : null;
+    }
+
+    listDeploymentOrigins() {
+        const origins = [];
+        for (const zone of Object.values(this.state?.mergedBlocks || {})) {
+            const capabilities = activeConversionCapabilities(zone);
+            const canReinforce = capabilities.has(ZONE_CONVERSION_CAPABILITIES.GARRISON_SITE)
+                || capabilities.has(ZONE_CONVERSION_CAPABILITIES.REINFORCEMENT_ORIGIN);
+            if (!canReinforce) continue;
+
+            const cell = representativeZoneCell(zone);
+            if (!cell) continue;
+            origins.push({
+                id: `ORIGIN:${cell.r}:${cell.c}`,
+                kind: ZONE_CONVERSION_CAPABILITIES.REINFORCEMENT_ORIGIN,
+                cell,
+                capabilities: [ZONE_CONVERSION_CAPABILITIES.REINFORCEMENT_ORIGIN],
+                trialTraits: null
+            });
+        }
+        return origins;
     }
 
     getMaintenancePlan(groupId, verse = this.state?.turn) {
