@@ -79,6 +79,15 @@ function resolveSpecialTactics(context, traits, config) {
                 : null
         });
     }
+    if (declared.has('EARTHWORK_DEFENSE')) {
+        tactics.push({
+            id: 'EARTHWORK_DEFENSE',
+            active: true,
+            defenseMultiplier: Number.isFinite(config.earthworkDefenseMultiplier)
+                ? config.earthworkDefenseMultiplier
+                : null
+        });
+    }
     return tactics;
 }
 
@@ -89,6 +98,9 @@ export class TrialTerrainEffectResolver {
             ...config,
             palisadeDirectionalMultiplier: Number.isFinite(config.palisadeDirectionalMultiplier)
                 ? config.palisadeDirectionalMultiplier
+                : null,
+            earthworkDefenseMultiplier: Number.isFinite(config.earthworkDefenseMultiplier)
+                ? config.earthworkDefenseMultiplier
                 : null,
             forestDeployment: { ...DEFAULT_TRIAL_RULES.forestDeployment, ...config.forestDeployment },
             deepForestDeployment: { ...DEFAULT_TRIAL_RULES.deepForestDeployment, ...config.deepForestDeployment }
@@ -175,6 +187,18 @@ export class TrialTerrainEffectResolver {
                 'PALISADE_DIRECTIONAL_DEFENSE',
                 MODIFIER_TARGETS.HUMAN_INTERCEPTION,
                 palisadeTactic.defenseMultiplier,
+                30
+            ));
+        }
+
+        const earthworkTactic = specialTactics.find(
+            tactic => tactic.id === 'EARTHWORK_DEFENSE'
+        );
+        if (earthworkTactic?.active && Number.isFinite(earthworkTactic.defenseMultiplier)) {
+            modifiers.push(multiplierModifier(
+                'EARTHWORK_DEFENSE',
+                MODIFIER_TARGETS.HUMAN_INTERCEPTION,
+                earthworkTactic.defenseMultiplier,
                 30
             ));
         }
