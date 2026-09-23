@@ -52,6 +52,11 @@ import {
     SPECIAL_BLOCK_MIGRATION_BLOCKED_IDS,
     getSpecialBlockCardMigrationAudit
 } from "../game/src/cards/special_block_card_migration_audit.js";
+import {
+    EXPLORATION_CARD_MIGRATION_STATUS,
+    EXPLORATION_MIGRATION_BLOCKED_IDS,
+    getExplorationCardMigrationAudit
+} from "../game/src/cards/exploration_card_migration_audit.js";
 
 function makeGrid(rows, cols) {
     return Array.from({ length: rows }, () => Array.from({ length: cols }, () => ({})));
@@ -1856,6 +1861,47 @@ function makeGrid(rows, cols) {
             `${card.id} must remain legacy-backed until semantic parity exists`
         );
     }
+}
+
+// AQ. Exploration-owned current SSOT branches stay separate from Investigation until an Exploration Domain exists.
+{
+    const explorationOwnedIds = DOMAIN_ACTION_REQUIRED_IDS
+        .filter(id => resolveDomainActionOwner(id) === DOMAIN_ACTION_OWNER.EXPLORATION)
+        .sort();
+
+    assert.deepEqual(
+        [...EXPLORATION_MIGRATION_BLOCKED_IDS].sort(),
+        explorationOwnedIds
+    );
+    for (const id of explorationOwnedIds) {
+        const audit = getExplorationCardMigrationAudit(id);
+        assert.ok(audit, `missing Exploration migration audit for ${id}`);
+        assert.equal(
+            audit.status,
+            EXPLORATION_CARD_MIGRATION_STATUS.BLOCKED_NO_EXPLORATION_DOMAIN
+        );
+    }
+}
+
+// AR. Every remaining current-SSOT Domain Action branch has exactly one audited migration blocker.
+{
+    const audited = [
+        ...PROJECT_MIGRATION_BLOCKED_IDS,
+        ...BOARD_MIGRATION_BLOCKED_IDS,
+        ...SPECIAL_BLOCK_MIGRATION_BLOCKED_IDS,
+        ...EXPLORATION_MIGRATION_BLOCKED_IDS
+    ];
+
+    assert.equal(
+        new Set(audited).size,
+        audited.length,
+        "migration audit sets must be mutually exclusive"
+    );
+    assert.deepEqual(
+        [...audited].sort(),
+        [...DOMAIN_ACTION_REQUIRED_IDS].sort(),
+        "every remaining current SSOT legacy branch must have an explicit migration blocker"
+    );
 }
 
 console.log("✅ Card Core / Offering v1 contract tests PASS");
