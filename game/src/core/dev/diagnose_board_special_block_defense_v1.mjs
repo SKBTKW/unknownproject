@@ -291,6 +291,95 @@ console.log('Board / Special Block / Defense v1 contract');
     const state = state5();
     const grid = new GridEngine(state);
     state.isHQVicinity = grid.isHQVicinity.bind(grid);
+    state.grid[0][0] = cell(0, 0, {
+        placed: true,
+        placementGroupId: 'forest-earthwork',
+        terrain: { ...FOREST }
+    });
+    state.grid[0][1] = cell(0, 1, {
+        placed: true,
+        placementGroupId: 'approach',
+        terrain: { ...PLAINS }
+    });
+
+    const service = new SpecialBlockService(state);
+    const earthwork = service.createSpecialBlock(
+        SPECIAL_BLOCK_TYPES.EARTHWORK,
+        { r: 0, c: 0 }
+    );
+    assert.equal(earthwork.success, true);
+    assert.equal(earthwork.trialTraits.interceptionAllowed, true);
+    assert.equal(
+        earthwork.trialTraits.suppressTerrainTactic,
+        false,
+        'EARTHWORK preserves Base Terrain tactics'
+    );
+
+    const unresolvedEarthwork = new TrialTerrainEffectResolver().resolve(
+        createBattleContext({
+            interceptCell: state.grid[0][0],
+            approachCell: state.grid[0][1],
+            allocatedDefense: 1,
+            baseInterceptionPower: 5,
+            enemySuppression: 5
+        })
+    );
+    assert.equal(
+        unresolvedEarthwork.specialTactics.find(
+            tactic => tactic.id === 'EARTHWORK_DEFENSE'
+        )?.active,
+        true
+    );
+    assert.equal(
+        unresolvedEarthwork.modifiers.some(
+            modifier => modifier.source === 'EARTHWORK_DEFENSE'
+        ),
+        false,
+        'EARTHWORK adds no numeric modifier until a balance value is provided'
+    );
+    assert.equal(
+        unresolvedEarthwork.modifiers.some(
+            modifier => modifier.source === TRIAL_TERRAIN_EFFECTS.FOREST_DEPLOYMENT
+        ),
+        true,
+        'EARTHWORK does not erase the underlying forest tactic'
+    );
+
+    const injectedEarthwork = new TrialCombatResolver({
+        terrainResolver: new TrialTerrainEffectResolver({
+            earthworkDefenseMultiplier: 1.2
+        })
+    }).resolve(createBattleContext({
+        interceptCell: state.grid[0][0],
+        approachCell: state.grid[0][1],
+        allocatedDefense: 1,
+        baseInterceptionPower: 5,
+        enemySuppression: 5
+    }));
+    assert.equal(injectedEarthwork.success, true);
+    assert.equal(
+        injectedEarthwork.appliedModifiers.some(
+            modifier => modifier.source === 'EARTHWORK_DEFENSE'
+        ),
+        true
+    );
+}
+
+{
+    const watchtower = getSpecialBlockDefinition(SPECIAL_BLOCK_TYPES.WATCHTOWER);
+    assert.deepEqual(
+        watchtower.capabilities,
+        [BOARD_CAPABILITIES.OBSERVATION_SITE],
+        'WATCHTOWER exports observation only; Investigation decides how to consume it'
+    );
+    assert.equal(watchtower.trialTraits.interceptionAllowed, null);
+    assert.equal(watchtower.trialTraits.specialTactics.length, 0);
+}
+
+{
+    const state = state5();
+    const grid = new GridEngine(state);
+    state.isHQVicinity = grid.isHQVicinity.bind(grid);
     const service = new SpecialBlockService(state);
 
     state.grid[0][0] = cell(0, 0, { placed: true, terrain: { ...WETLAND } });
