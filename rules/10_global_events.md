@@ -39,22 +39,20 @@ Global Eventは、長期計画を無作為に無効化するためではなく�
 | :--- | :--- | :--- |
 | `EVENT_COLD_WAVE` | 寒波 | **Implemented / Partial chain** — 平地🌾倍率0.75は産出計算へ接続済み。終了後の`FOOD_CRISIS`イベントWeight補正は現イベントID/categoryに対応先がなく、実効先を確認できない。 |
 | `EVENT_DROUGHT` | 旱魃 | **Implemented** — 平地🌾倍率0.60は産出計算へ接続済み。 |
-| `EVENT_NEW_GENERATION` | 新たな世代 | **Partial** — `OFFERING_WEIGHT_TAG_BOOST(POPULATION)`定義はあるが、現`DeckManager`は`GlobalEventManager.applyOfferingWeightEffects()`を呼ばないため、Offeringへの実効効果は未接続。 |
-| `EVENT_CRAFTSMAN_BOOM` | 職人たちの活況 | **Partial** — `OFFERING_WEIGHT_TAG_BOOST(CONSTRUCTION)`定義はあるが、Offering抽選側hook未接続。 |
+| `EVENT_NEW_GENERATION` | 新たな世代 | **Implemented** — `OFFERING_WEIGHT_TAG_BOOST(POPULATION)` はCard Coreの共通Weight Policyへ `tagMultipliers` として接続済み。 |
+| `EVENT_CRAFTSMAN_BOOM` | 職人たちの活況 | **Implemented** — `OFFERING_WEIGHT_TAG_BOOST(CONSTRUCTION)` はCard Coreの共通Weight Policyへ接続済み。 |
 | `EVENT_BOUNTIFUL_SEASON` | 豊穣の季節 | **Implemented / Partial chain** — 平地🌾倍率1.25は産出計算へ接続済み。終了後の`EVENT_NEW_GENERATION` Weight補正はSelector側で参照され、`NEXT_GLOBAL_EVENT`寿命は次の成功したGlobal Event発火時に1回消費される。 |
-| `EVENT_RECOVERY_MOMENTUM` | 復興の機運 | **Partial** — 発生条件は `HAS_HISTORY → RunHistoryReadModel → Chronicle` で直近Trialの被害を参照する。`OFFERING_WEIGHT_TAG_BOOST(RECOVERY)`定義はあるが、Offering抽選側hook未接続。 |
+| `EVENT_RECOVERY_MOMENTUM` | 復興の機運 | **Implemented** — 発生条件は `HAS_HISTORY → RunHistoryReadModel → Chronicle` で直近Trialの被害を参照し、`OFFERING_WEIGHT_TAG_BOOST(RECOVERY)` もOffering抽選へ接続済み。 |
 | `EVENT_DEMIHUMAN_RAID` | 亜人襲撃 | **Partial / Data only** — 候補定義あり、`effects: []`。 |
 | `EVENT_DEMIHUMAN_SCOUTS` | 亜人の斥候 | **Partial / Data only** — 候補定義あり、`effects: []`。 |
 
 《寒波》《旱魃》《豊穣の季節》の `PRODUCTION_MULTIPLIER` は `ProductionCalculator` が `globalEventManager.applyProductionEffects()` を呼ぶため実効する。
 
-一方、《新たな世代》《職人たちの活況》《復興の機運》が使用する `OFFERING_WEIGHT_TAG_BOOST` は `EffectResolver` / `GlobalEventManager.applyOfferingWeightEffects()` まで実装されているが、現 `DeckManager.drawSingleCard()` はこのhookを呼ばず、カードWeight計算も `baseWeight × Directive × Draw Bias` だけで進む。
+`OFFERING_WEIGHT_TAG_BOOST` は `GlobalEventManager.applyOfferingWeightEffects()` が汎用 `tagMultipliers` を構築し、Card Coreの `offering_weight_policy` が
 
-したがって現状は、
+`baseWeight × Directive × Draw Bias × GE Tag Multiplier`
 
-> **Offering Weight系Global Eventは、イベントの発生・継続表示までは動くが、カード抽選への最終効果が未接続**
-
-と扱う。
+として評価する。GE側はカードIDや抽選ロジックを持たず、Card Core側もイベントID分岐を持たない。通常抽選とfallback抽選は同じWeight Policyを利用する。
 
 ## 3. Trial接近は通常Global Eventと分離する
 
@@ -221,7 +219,7 @@ Trial接近時は、数値カウントダウンではなく**警戒状態**と�
 
 1. 通常Global Eventの発生・候補抽選・継続管理基盤は実装済み。
 2. 寒波 / 旱魃 / 豊穣のProduction倍率は産出計算へ接続済み。
-3. 新たな世代 / 職人活況 / 復興の機運のOffering Weight効果は、GlobalEvent側hookまで存在するが`DeckManager`未接続。
+3. 新たな世代 / 職人活況 / 復興の機運のOffering Weight効果は、Card Core共通Weight Policyへ接続済み。
 4. 亜人襲撃・斥候は効果未実装。
 5. `EVENT_WEIGHT_MODIFIER` の `NEXT_GLOBAL_EVENT` expiryは、次に成功したGlobal Event発火で一度だけ消費される。
 6. 寒波の終了Weight補正`FOOD_CRISIS`は現イベントマスターに実効対象がない。
