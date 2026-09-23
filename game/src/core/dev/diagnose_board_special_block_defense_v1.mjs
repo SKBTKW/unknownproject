@@ -24,6 +24,7 @@ import {
     SPECIAL_BLOCK_PRODUCTION_KINDS,
     SPECIAL_BLOCK_PRODUCTION_STATUS,
     SPECIAL_BLOCK_RELATION_NEIGHBORHOODS,
+    SPECIAL_BLOCK_SOURCE_SIZE_SOURCES,
     SpecialBlockProductionResolver,
     sumSpecialBlockProduction
 } from '../special_block_production.js';
@@ -927,6 +928,7 @@ console.log('Board / Special Block / Defense v1 contract');
             production: {
                 status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
                 kind: SPECIAL_BLOCK_PRODUCTION_KINDS.SOURCE_SIZE,
+                sourceSizeSource: SPECIAL_BLOCK_SOURCE_SIZE_SOURCES.INITIAL_SNAPSHOT,
                 perSourceYields: { wood: 2 }
             }
         }],
@@ -954,14 +956,15 @@ console.log('Board / Special Block / Defense v1 contract');
             id: 'TEST_CONDITIONAL',
             production: {
                 status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
-                kind: SPECIAL_BLOCK_PRODUCTION_KINDS.CONDITIONAL
+                kind: SPECIAL_BLOCK_PRODUCTION_KINDS.CONDITIONAL,
+                strategyKey: 'HILL_BONUS'
             }
         }]
     ]);
     const resolver = new SpecialBlockProductionResolver({
         definitionResolver: id => definitions.get(id) || null,
         strategies: {
-            [SPECIAL_BLOCK_PRODUCTION_KINDS.CONDITIONAL]: ({ cell }) => ({
+            HILL_BONUS: ({ cell }) => ({
                 status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
                 yields: cell?.terrain?.terrainId === 'E2_HILL'
                     ? { wood: 4 }
@@ -986,6 +989,27 @@ console.log('Board / Special Block / Defense v1 contract');
             kind: SPECIAL_BLOCK_PRODUCTION_KINDS.SOURCE_SIZE
         },
         'SOURCE_SIZE resolves only from explicit per-source yields and source snapshot size'
+    );
+
+    definitions.set('TEST_SOURCE_SIZE_UNSPECIFIED', {
+        id: 'TEST_SOURCE_SIZE_UNSPECIFIED',
+        production: {
+            status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
+            kind: SPECIAL_BLOCK_PRODUCTION_KINDS.SOURCE_SIZE,
+            perSourceYields: { wood: 2 }
+        }
+    });
+    sourceState.grid[0][1] = cell(0, 1, {
+        specialBlock: {
+            type: 'TEST_SOURCE_SIZE_UNSPECIFIED',
+            definitionId: 'TEST_SOURCE_SIZE_UNSPECIFIED',
+            sourceGroupReference: { initialSize: 4 }
+        }
+    });
+    assert.equal(
+        resolver.resolveCell(sourceState, sourceState.grid[0][1], { r: 0, c: 1 }).status,
+        SPECIAL_BLOCK_PRODUCTION_STATUS.UNRESOLVED,
+        'SOURCE_SIZE fails closed until the source-size authority is explicit'
     );
 
     const relationState = state5();
