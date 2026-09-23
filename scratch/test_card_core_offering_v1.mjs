@@ -14,6 +14,14 @@ import {
 import { CardEffectHandlerRouter } from "../game/src/cards/card_effect_handler_router.js";
 import { CARD_EFFECT_TYPES, CardEffectExecutor } from "../game/src/cards/card_effect_executor.js";
 import { COMMAND_CARDS_MASTER } from "../game/src/data/command_cards_data.js";
+import {
+    LEGACY_COMMAND_EXECUTION_CLASS,
+    CURRENT_SSOT_LOCAL_IDS,
+    DOMAIN_ACTION_REQUIRED_IDS,
+    LEGACY_ONLY_IDS,
+    DUPLICATE_LEGACY_BRANCH_IDS,
+    classifyLegacyCommandExecution
+} from "../game/src/cards/legacy_command_execution_inventory.js";
 
 function makeGrid(rows, cols) {
     return Array.from({ length: rows }, () => Array.from({ length: cols }, () => ({})));
@@ -868,6 +876,89 @@ function makeGrid(rows, cols) {
             generated.effects,
             source.effects,
             `${id} generated effects must match JSON SSOT exactly`
+        );
+    }
+}
+
+// U. Every remaining DeckManager command ID branch belongs to exactly one migration class.
+{
+    const deckManagerSource = readFileSync(
+        new URL("../game/src/systems/deck_manager.js", import.meta.url),
+        "utf8"
+    );
+    const branchIds = [...deckManagerSource.matchAll(/cId === "([^"]+)"/g)].map(match => match[1]);
+    const uniqueBranchIds = [...new Set(branchIds)];
+
+    const classifiedIds = [
+        ...CURRENT_SSOT_LOCAL_IDS,
+        ...DOMAIN_ACTION_REQUIRED_IDS,
+        ...LEGACY_ONLY_IDS
+    ];
+    assert.equal(new Set(classifiedIds).size, classifiedIds.length,
+        "legacy command inventory classes must be mutually exclusive");
+    assert.deepEqual(
+        [...uniqueBranchIds].sort(),
+        [...classifiedIds].sort(),
+        "every remaining command branch must be explicitly classified"
+    );
+
+    for (const id of uniqueBranchIds) {
+        assert.ok(classifyLegacyCommandExecution(id), `unclassified command branch: ${id}`);
+    }
+
+    const duplicateIds = [...new Set(
+        branchIds.filter((id, index) => branchIds.indexOf(id) !== index)
+    )].sort();
+    assert.deepEqual(
+        duplicateIds,
+        [...DUPLICATE_LEGACY_BRANCH_IDS].sort(),
+        "duplicate ID branches must stay explicit until their migration removes them"
+    );
+}
+
+// V. SSOT ownership and execution classification must agree.
+{
+    const economySource = JSON.parse(readFileSync(
+        new URL("../game/src/data/economy_cards.json", import.meta.url),
+        "utf8"
+    ));
+    const militarySource = JSON.parse(readFileSync(
+        new URL("../game/src/data/military_cards.json", import.meta.url),
+        "utf8"
+    ));
+    const mysticSource = JSON.parse(readFileSync(
+        new URL("../game/src/data/mystic_cards.json", import.meta.url),
+        "utf8"
+    ));
+    const ssotIds = new Set(
+        [...economySource, ...militarySource, ...mysticSource].map(card => card.id)
+    );
+
+    for (const id of CURRENT_SSOT_LOCAL_IDS) {
+        assert.ok(ssotIds.has(id), `${id} CURRENT_SSOT_LOCAL must exist in a current JSON SSOT`);
+        assert.equal(
+            classifyLegacyCommandExecution(id),
+            LEGACY_COMMAND_EXECUTION_CLASS.CURRENT_SSOT_LOCAL
+        );
+    }
+
+    for (const id of DOMAIN_ACTION_REQUIRED_IDS) {
+        assert.ok(ssotIds.has(id), `${id} DOMAIN_ACTION_REQUIRED must exist in a current JSON SSOT`);
+        assert.equal(
+            classifyLegacyCommandExecution(id),
+            LEGACY_COMMAND_EXECUTION_CLASS.DOMAIN_ACTION_REQUIRED
+        );
+    }
+
+    for (const id of LEGACY_ONLY_IDS) {
+        assert.equal(
+            ssotIds.has(id),
+            false,
+            `${id} LEGACY_ONLY must not silently regain current SSOT status without reclassification`
+        );
+        assert.equal(
+            classifyLegacyCommandExecution(id),
+            LEGACY_COMMAND_EXECUTION_CLASS.LEGACY_ONLY
         );
     }
 }
