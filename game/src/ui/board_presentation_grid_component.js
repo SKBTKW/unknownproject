@@ -54,6 +54,19 @@ export function resolveTrialDefenseAllocationBadge(trial) {
     });
 }
 
+export function resolveBoardRoadDirections(edges = []) {
+    const directions = [];
+    const seen = new Set();
+    for (const edge of edges || []) {
+        const direction = String(edge?.direction || '').toUpperCase();
+        if (!edge?.road || !edge?.neighbor || !['NORTH', 'EAST', 'SOUTH', 'WEST'].includes(direction)) continue;
+        if (seen.has(direction)) continue;
+        seen.add(direction);
+        directions.push(direction);
+    }
+    return Object.freeze(directions);
+}
+
 export class BoardPresentationGridComponent extends LegacyBoardGridComponent {
     render(I18n) {
         super.render(I18n);
@@ -142,6 +155,7 @@ export class BoardPresentationGridComponent extends LegacyBoardGridComponent {
         const visibilityAttributes = [
             ['yields', 'data-board-yields-visibility'],
             ['sockets', 'data-board-sockets-visibility'],
+            ['roads', 'data-board-roads-visibility'],
             ['trialRoutes', 'data-board-trial-routes-visibility'],
             ['invasionEntry', 'data-board-invasion-entry-visibility'],
             ['interception', 'data-board-interception-visibility'],
@@ -163,11 +177,26 @@ export class BoardPresentationGridComponent extends LegacyBoardGridComponent {
             const trial = cell?.trial || null;
             cellEl.querySelector?.('.trial-defense-allocation-badge')?.remove?.();
             cellEl.querySelector?.('.trial-tactical-effect-stack')?.remove?.();
+            cellEl.querySelector?.('.board-road-segments')?.remove?.();
             applyBoardGroupJoinClasses(cellEl, cell?.edges);
             cellEl.classList.toggle('board-logical-hover', !isTrialContext && Boolean(interaction?.hovered));
             cellEl.classList.toggle('board-logical-focus', !isTrialContext && Boolean(interaction?.focused));
             cellEl.classList.toggle('board-logical-selected', !isTrialContext && Boolean(interaction?.selected));
             cellEl.classList.toggle('cell-placed-this-turn', Boolean(interaction?.placedThisTurn));
+
+            const roadDirections = resolveBoardRoadDirections(cell?.edges);
+            if (roadDirections.length > 0) {
+                const roadEl = document.createElement('span');
+                roadEl.className = 'board-road-segments';
+                roadEl.setAttribute('aria-hidden', 'true');
+                for (const direction of roadDirections) {
+                    const segmentEl = document.createElement('span');
+                    segmentEl.className = `board-road-segment is-${direction.toLowerCase()}`;
+                    roadEl.appendChild(segmentEl);
+                }
+                cellEl.appendChild(roadEl);
+            }
+
             if (!isTrialContext) {
                 TRIAL_VISUAL_CLASSES.forEach(cls => cellEl.classList.remove(cls));
                 cellEl.removeAttribute('data-trial-direction');
