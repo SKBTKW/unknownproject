@@ -129,7 +129,25 @@ export const ECONOMY_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.25,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_INCREMENT",
+        "key": "granaryCount",
+        "amount": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "buff": {
+          "icon": "🏛️",
+          "category": "CARD_EFFECT"
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_AGRICULTURAL_REFORM",
@@ -1302,7 +1320,25 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.25,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_INCREMENT",
+        "key": "granaryCount",
+        "amount": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "buff": {
+          "icon": "🏛️",
+          "category": "CARD_EFFECT"
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_AGRICULTURAL_REFORM",
