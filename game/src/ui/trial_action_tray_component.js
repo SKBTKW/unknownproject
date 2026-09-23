@@ -93,12 +93,10 @@ export class TrialActionTrayComponent {
                 : (outcome === "EXACT"
                     ? "UI_FIRST_RUN_TRIAL_BALANCED"
                     : "UI_FIRST_RUN_TRIAL_UNFAVORABLE");
-            const outcomeText = tutorialPolicy.qualitativePreviewOnly
-                ? (outcome ? I18n.t(qualitativeOutcomeKey) : "—")
-                : (outcome ? I18n.t(`UI_TRIAL_OUTCOME_${outcome}`) : "—");
-            const marginText = tutorialPolicy.qualitativePreviewOnly
-                ? ""
-                : (preview?.prediction ? `${I18n.t("UI_TRIAL_MARGIN")}: ${preview.prediction.margin}` : "");
+            const outcomeText = outcome ? I18n.t(qualitativeOutcomeKey) : "—";
+            // The Player Tray communicates battle outlook qualitatively. Exact
+            // deterministic arithmetic stays out of the primary decision surface.
+            const marginText = "";
             const modifierTags = (preview?.modifierRows || [])
                 .map(resolveModifierTag)
                 .filter(Boolean)
