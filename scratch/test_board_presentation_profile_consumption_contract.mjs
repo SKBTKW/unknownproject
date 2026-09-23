@@ -44,6 +44,8 @@ for (const emphasis of Object.values(BOARD_VIEW_PRESET_EMPHASIS)) {
 
 const phaseC = read('../game/src/presentation/web25d_phase_c_renderer.js');
 const zoneLink = read('../game/src/presentation/web25d_zone_link_overlay_renderer.js');
+const roadOverlay = read('../game/src/presentation/web25d_road_overlay_renderer.js');
+const phaseE = read('../game/src/presentation/web25d_phase_e_renderer.js');
 const trialOverlay = read('../game/src/presentation/web25d_trial_overlay_renderer.js');
 const presentationGrid = read('../game/src/ui/board_presentation_grid_component.js');
 const boardAwareUi = read('../game/src/ui/board_aware_ui_controller.js');
@@ -117,13 +119,38 @@ assert.match(
 
 assert.match(
     routeCostPolicy,
-    /roadResolver = null/,
-    'roads remain explicitly reserved until a canonical GameState road resolver exists'
+    /canonicalRoadResolver/,
+    'Trial route costs must consume the canonical GameState road network by default'
 );
 assert.match(
-    routeCostPolicy,
-    /GameState does[\s\S]*not yet own a canonical road representation/,
-    'road reservation must retain its canonical-state boundary explanation'
+    dataService,
+    /showRoads = profile\.roads !== "HIDDEN"/,
+    'roads must pass through the BoardPresentation disclosure gate'
+);
+assert.match(
+    dataService,
+    /projectRoadDisclosure\(semantic\.edges, showRoads\)/,
+    'road edge facts must be suppressed before renderer consumption when hidden'
+);
+assert.match(
+    presentationGrid,
+    /data-board-roads-visibility/,
+    'roads must expose profile emphasis to Web 2D'
+);
+assert.match(
+    presentationGrid,
+    /board-road-segments/,
+    'roads must have an active Web 2D consumer'
+);
+assert.match(
+    roadOverlay,
+    /readModel\?\.profile\?\.roads/,
+    'roads must have an active Web 2.5D consumer'
+);
+assert.match(
+    phaseE,
+    /drawWeb25DRoadOverlay/,
+    'Web 2.5D phase composition must include the road overlay'
 );
 
 assert.match(
