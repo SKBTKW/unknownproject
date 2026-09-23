@@ -309,8 +309,17 @@ assert.equal(new Set(supersededManifest.entries.map(entry => entry.branch)).size
 for (const entry of supersededManifest.entries) {
     assert.match(entry.branch, /^aot-task\/AoT260922\/[a-z0-9-]+\/[a-z0-9-]+$/);
     assert.match(entry.expectedHeadSha, /^[0-9a-f]{40}$/);
-    assert.equal(Number.isInteger(entry.replacementPr), true);
+    const replacementPrs = Array.isArray(entry.replacementPrs)
+        ? entry.replacementPrs
+        : [entry.replacementPr];
+    assert.ok(replacementPrs.length > 0);
+    assert.equal(replacementPrs.every(Number.isInteger), true);
 }
+assert.equal(
+    sweeperSource.includes('const replacementPrs = Array.isArray(entry.replacementPrs)'),
+    true,
+    'audited supersession must support a branch whose work was split across multiple replacement PRs',
+);
 assert.equal(
     sweeperSource.includes('function githubHeaders() {\n    const headers = githubHeaders();'),
     false,
