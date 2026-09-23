@@ -9,6 +9,7 @@ import {
     readCellCapabilities,
     readEffectiveGreenery
 } from './special_block_domain.js';
+import { BoardDamageService } from './board_damage_service.js';
 import { SpecialBlockService } from '../systems/special_block_service.js';
 
 function resolveLandSemantic(definition) {
@@ -64,10 +65,11 @@ function entityIds(entity) {
 }
 
 export class BoardDomainAdapter {
-    constructor({ state, gridEngine, specialBlockService = null } = {}) {
+    constructor({ state, gridEngine, specialBlockService = null, boardDamageService = null } = {}) {
         this.state = state || gridEngine?.state || null;
         this.gridEngine = gridEngine || null;
         this.specialBlockService = specialBlockService || new SpecialBlockService(this.state);
+        this.boardDamageService = boardDamageService || new BoardDamageService({ state: this.state });
     }
 
 
@@ -197,6 +199,18 @@ export class BoardDomainAdapter {
             return readEffectiveGreenery(this.state?.grid?.[target.r]?.[target.c] || null);
         }
         return readEffectiveGreenery(target);
+    }
+
+    recordDamage(request) {
+        return this.boardDamageService.recordDamage(request);
+    }
+
+    getDamageRecords(query) {
+        return this.boardDamageService.getDamageRecords(query);
+    }
+
+    hasDamage(query) {
+        return this.boardDamageService.hasDamage(query);
     }
 
     isHQVicinity(r, c) {
