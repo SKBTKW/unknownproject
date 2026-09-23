@@ -1054,21 +1054,31 @@ function makeGrid(rows, cols) {
     const branchIds = [...deckManagerSource.matchAll(/cId === "([^"]+)"/g)].map(match => match[1]);
     const uniqueBranchIds = [...new Set(branchIds)];
 
-    const classifiedIds = [
+    const remainingBranchIds = [
         ...CURRENT_SSOT_LOCAL_IDS,
-        ...DOMAIN_ACTION_REQUIRED_IDS,
+        ...DOMAIN_ACTION_REQUIRED_IDS
+    ];
+    const allClassifiedIds = [
+        ...remainingBranchIds,
         ...LEGACY_ONLY_IDS
     ];
-    assert.equal(new Set(classifiedIds).size, classifiedIds.length,
+    assert.equal(new Set(allClassifiedIds).size, allClassifiedIds.length,
         "legacy command inventory classes must be mutually exclusive");
     assert.deepEqual(
         [...uniqueBranchIds].sort(),
-        [...classifiedIds].sort(),
-        "every remaining command branch must be explicitly classified"
+        [...remainingBranchIds].sort(),
+        "every remaining DeckManager command branch must be an unresolved current-SSOT branch"
     );
 
     for (const id of uniqueBranchIds) {
         assert.ok(classifyLegacyCommandExecution(id), `unclassified command branch: ${id}`);
+    }
+    for (const id of LEGACY_ONLY_IDS) {
+        assert.equal(
+            uniqueBranchIds.includes(id),
+            false,
+            `${id} compatibility-only execution must stay outside DeckManager branches`
+        );
     }
 
     const duplicateIds = [...new Set(
