@@ -30,6 +30,15 @@ class CardEffectHandlerRouter {
         return this.handlers.has(cardId);
     }
 
+    requiresTarget(cardDefinition) {
+        const cardId = cardDefinition?.id;
+        const handler = cardId ? this.handlers.get(cardId) : null;
+        if (typeof handler === "function") return false;
+
+        const effects = cardDefinition?.effects;
+        return this.effectExecutor.requiresTarget(effects);
+    }
+
     enumerateTargets(cardDefinition, context = {}) {
         const cardId = cardDefinition?.id;
         const handler = cardId ? this.handlers.get(cardId) : null;
