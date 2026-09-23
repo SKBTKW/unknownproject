@@ -919,6 +919,14 @@
       ]
     },
     {
+      "path": "scratch/test_trial_deployment_economy.mjs",
+      "purpose": "Trial deployment economy preview/commit atomicity, stale-state rejection, semantic Board capability consumption",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_trial_foundation.mjs",
       "purpose": "trial foundation",
       "suite": "existing",
