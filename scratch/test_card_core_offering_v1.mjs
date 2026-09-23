@@ -1248,4 +1248,70 @@ function makeGrid(rows, cols) {
     );
 }
 
+// AD. Targeted domain cards never enter Offering without at least one legal Board target.
+{
+    const card = {
+        id: "CMD_TARGETED_OFFERING_TEST",
+        category: "COMMAND",
+        rarity: "C",
+        minStage: 1,
+        effects: [{
+            type: CARD_EFFECT_TYPES.DOMAIN_ACTION,
+            action: CARD_DOMAIN_ACTIONS.CREATE_SPECIAL_BLOCK,
+            blockType: "MINE"
+        }]
+    };
+
+    const makeState = () => ({
+        turn: 1,
+        stage: { id: 1 },
+        reserveSlots: [],
+        activeBuffs: [],
+        consumedUniqueCards: [],
+        usedUniqueCards: []
+    });
+
+    const blockedEngine = {
+        boardDomainAdapter: {
+            enumerateLegalSpecialBlockTargets() { return []; },
+            validateSpecialBlockTarget() { return { valid: false, reason: "NO_TARGET" }; },
+            createSpecialBlock() { return { success: false, reason: "NO_TARGET" }; }
+        }
+    };
+    blockedEngine.cardDomainActionExecutor = createCardDomainActionExecutor(blockedEngine);
+    const blockedManager = new DeckManager(makeState(), blockedEngine);
+    blockedManager.cycleSystem = null;
+    assert.equal(
+        blockedManager.isCardEligible(card, 1, 0),
+        false,
+        "targeted domain card with zero legal targets must not enter Offering"
+    );
+
+    const allowedEngine = {
+        boardDomainAdapter: {
+            enumerateLegalSpecialBlockTargets() { return [{ r: 1, c: 1 }]; },
+            validateSpecialBlockTarget() { return { valid: true }; },
+            createSpecialBlock() { return { success: true }; }
+        }
+    };
+    allowedEngine.cardDomainActionExecutor = createCardDomainActionExecutor(allowedEngine);
+    const allowedManager = new DeckManager(makeState(), allowedEngine);
+    allowedManager.cycleSystem = null;
+    assert.equal(
+        allowedManager.isCardEligible(card, 1, 0),
+        true,
+        "targeted domain card may enter Offering when Board reports a legal target"
+    );
+
+    const failClosedService = new CardOfferingEligibilityService({
+        state: makeState(),
+        placementQuery: null
+    });
+    assert.equal(
+        failClosedService.evaluate(card).reason,
+        "EXECUTION_TARGET_QUERY_REQUIRED",
+        "targeted domain Offering must fail closed when no target query boundary is available"
+    );
+}
+
 console.log("✅ Card Core / Offering v1 contract tests PASS");
