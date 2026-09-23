@@ -7,6 +7,7 @@ import { UndoLandSystem } from '../systems/undo_land_system.js';
 import { GridEngine } from '../systems/grid_engine.js';
 import { SpecialBlockService } from '../systems/special_block_service.js';
 import { BoardDomainAdapter } from './board_domain_adapter.js';
+import { BoardHistoryQuery } from './board_history_query.js';
 import { BuffSystem } from '../systems/buff_system.js';
 import { ChronicleSystem } from '../systems/chronicle_system.js';
 import { GlobalEventManager } from '../systems/global_event_system.js';
@@ -123,7 +124,9 @@ class GameEngine {
         this.chronicleSystem = dependencies.chronicleSystem || (ChronicleSystemClass ? new ChronicleSystemClass(this.state) : null);
 
         this.boardWorldQuery = dependencies.boardWorldQuery || this.boardDomainAdapter || null;
-        this.boardHistoryQuery = dependencies.boardHistoryQuery || null;
+        const BoardHistoryQueryClass = dependencies.BoardHistoryQueryClass || BoardHistoryQuery;
+        this.boardHistoryQuery = dependencies.boardHistoryQuery
+            || (BoardHistoryQueryClass ? new BoardHistoryQueryClass({ state: this.state }) : null);
         this.runHistoryReadModel = dependencies.runHistoryReadModel || new RunHistoryReadModel({
             chronicleSystem: this.chronicleSystem,
             boardHistoryQuery: this.boardHistoryQuery
