@@ -1473,6 +1473,15 @@ const landSystemJson = JSON.parse(
     assert.equal(unresolvedCan.reason, "MULTI_ATTRIBUTE_PRODUCTION_UNRESOLVED");
     assert.equal(canDelegateCalls, 0);
 
+    const livePreviewResolver = new PlacementPreviewResolver();
+    const unresolvedPreview = livePreviewResolver.resolveHover(unresolvedCard, state, 0, 0);
+    assert.equal(unresolvedPreview.valid, false);
+    assert.deepEqual(
+        unresolvedPreview.reasons,
+        ["MULTI_ATTRIBUTE_PRODUCTION_UNRESOLVED"]
+    );
+    assert.equal(canDelegateCalls, 0);
+
     const unresolvedPlace = state.placeShape(
         0,
         0,
