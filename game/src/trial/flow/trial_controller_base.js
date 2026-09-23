@@ -27,7 +27,8 @@ export class TrialController {
         completionService = new TrialCompletionService(),
         flow = new TrialFlow(),
         gameFactHub = new GameFactHub(),
-        emberSystem = null
+        emberSystem = null,
+        deploymentService = null
     } = {}) {
         this.powerResolver = powerResolver;
         this.combatResolver = combatResolver;
@@ -38,6 +39,7 @@ export class TrialController {
         this.flow = flow;
         this.gameFactHub = gameFactHub;
         this.emberSystem = emberSystem;
+        this.deploymentService = deploymentService || null;
         this.state = null;
         this.cellResolver = null;
     }
@@ -46,6 +48,7 @@ export class TrialController {
         this.state = createTrialState(scenario);
         this.cellResolver = typeof cellResolver === "function" ? cellResolver : null;
         this.state.enemy.totalSuppression = this.powerResolver.resolveSuppression(this.state.enemy.strategicSuppression);
+        this.deploymentService?.beginSession?.({ trialState: this.state });
         return this.state;
     }
 
@@ -252,6 +255,9 @@ export class TrialController {
             routes: confirmedRoutes,
             totalDefenseAllocated
         };
+        if (this.deploymentService) {
+            this.state.deploymentPreview = this.deploymentService.previewPlan(this.state.interceptionPlan);
+        }
 
         this.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_PLAN_CONFIRMED, {
             routes: JSON.parse(JSON.stringify(confirmedRoutes)),
@@ -260,7 +266,8 @@ export class TrialController {
 
         return {
             success: true,
-            plan: this.state.interceptionPlan
+            plan: this.state.interceptionPlan,
+            deploymentPreview: this.state.deploymentPreview || null
         };
     }
 
@@ -343,7 +350,31 @@ export class TrialController {
         };
     }
 
-    activateInterceptionPlan() {
+    previewInterceptionPlanDeployment(plan = this.state?.interceptionPlan, context = {}) {
+        if (!this.state) {
+            return { success: false, reasons: ["TRIAL_NOT_STARTED"] };
+        }
+        if (!this.deploymentService) {
+            return { success: false, reasons: ["DEPLOYMENT_ECONOMY_NOT_ATTACHED"] };
+        }
+        const preview = this.deploymentService.previewPlan(plan, context);
+        if (plan === this.state.interceptionPlan) {
+            this.state.deploymentPreview = preview;
+        }
+        return preview;
+    }
+
+    getDeploymentHistory() {
+        return this.deploymentService?.getDeploymentHistory?.() || [];
+    }
+
+    endScenario() {
+        this.deploymentService?.endSession?.();
+        this.state = null;
+        this.cellResolver = null;
+    }
+
+    activateInterceptionPlan({ deploymentPreview = null, deploymentContext = {} } = {}) {
         if (!this.state) {
             return { success: false, errors: ["TRIAL_NOT_STARTED"] };
         }
@@ -374,9 +405,27 @@ export class TrialController {
             }
         }
 
-        // 2. Commit resource consumption
+        // 2. Commit deployment resources atomically when the deployment
+        // economy boundary is attached. Legacy callers without the optional
+        // service preserve the existing Trial behavior.
         const defenseToCommit = Number(plan.totalDefenseAllocated) || 0;
-        this.state.human.availableDefense -= defenseToCommit;
+        let deploymentCommit = null;
+        if (this.deploymentService) {
+            const expectedPreview = deploymentPreview || this.state.deploymentPreview || null;
+            deploymentCommit = this.deploymentService.commitPlan(plan, {
+                expectedPreview,
+                context: deploymentContext
+            });
+            if (!deploymentCommit.success) {
+                return {
+                    success: false,
+                    errors: deploymentCommit.reasons || ["DEPLOYMENT_COMMIT_FAILED"],
+                    deploymentCommit
+                };
+            }
+        } else {
+            this.state.human.availableDefense -= defenseToCommit;
+        }
 
         // 3. Establish activation state
         this.state.planActivated = true;
@@ -395,7 +444,8 @@ export class TrialController {
         return {
             success: true,
             battleQueue: JSON.parse(JSON.stringify(battleQueue)),
-            totalDefenseCommitted: defenseToCommit
+            totalDefenseCommitted: defenseToCommit,
+            deploymentCommit
         };
     }
 
