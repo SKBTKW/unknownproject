@@ -280,6 +280,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Card Core / Offering v1 Contract) で不合格が検出されました。");
         process.exit(1);
     }
+    const stage1OfferingEconomyOk = await runCommand("node", ["scratch/test_stage1_offering_economy_playability.mjs"]);
+    if (!stage1OfferingEconomyOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Stage1 Offering / Economy / Board Playability) で不合格が検出されました。");
+        process.exit(1);
+    }
     const cardDomainActionsV2ReplayOk = await runCommand("node", ["scratch/test_card_domain_actions_v2_replay.mjs"]);
     if (!cardDomainActionsV2ReplayOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Card Domain Actions v2 Replay) で不合格が検出されました。");
