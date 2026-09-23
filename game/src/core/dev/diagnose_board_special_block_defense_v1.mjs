@@ -1112,6 +1112,22 @@ console.log('Board / Special Block / Defense v1 contract');
         'CONDITIONAL remains an injected strategy boundary rather than facility-id branching'
     );
 
+    const runtimeState = state5();
+    runtimeState.grid[0][0] = cell(0, 0, {
+        placed: true,
+        terrain: { ...HILL },
+        specialBlock: {
+            type: 'TEST_CONDITIONAL',
+            definitionId: 'TEST_CONDITIONAL'
+        }
+    });
+    runtimeState.specialBlockProductionResolver = resolver;
+    assert.deepEqual(
+        sumSpecialBlockProduction(runtimeState).yields,
+        { food: 0, wood: 4, defense: 0, mystic: 0 },
+        'ProductionCalculator-facing helper honors an injected runtime resolver'
+    );
+
     relationState.grid[0][3] = cell(0, 3, {
         specialBlock: {
             type: 'TEST_FIXED_INVALID',
