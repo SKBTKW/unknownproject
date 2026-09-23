@@ -10,6 +10,8 @@ import {
 import { GridEngine } from '../../systems/grid_engine.js';
 import { SpecialBlockService } from '../../systems/special_block_service.js';
 import { TrialTerrainEffectResolver } from '../../trial/systems/trial_terrain_effect_resolver.js';
+import { createBattleContext } from '../../trial/domain/battle_context.js';
+import { TrialController } from '../../trial/flow/trial_controller_base.js';
 import { TRIAL_TERRAIN_EFFECTS } from '../../trial/domain/trial_types.js';
 import { serializeGameState } from '../state_serializer_base.js';
 import { hydrateGameState } from '../hydrate_game_state_base.js';
@@ -210,6 +212,62 @@ console.log('Board / Special Block / Defense v1 contract');
         'suppressTerrainTactic prevents Base Terrain high-ground tactic'
     );
     assert.equal(state.grid[1][2].terrain.terrainId, 'E3_MOUNTAIN', 'Trial trait read does not rewrite terrain');
+
+    const normalized = createBattleContext({
+        interceptCell: state.grid[1][2],
+        approachCell: cell(0, 2, { placed: true, terrain: { ...PLAINS } }),
+        allocatedDefense: 1,
+        baseInterceptionPower: 5,
+        enemySuppression: 5
+    });
+    assert.equal(
+        normalized.interceptCell.specialBlock?.type,
+        SPECIAL_BLOCK_TYPES.PALISADE,
+        'BattleContext preserves Special Block identity'
+    );
+    assert.equal(normalized.interceptCell.row, 1);
+    assert.equal(normalized.interceptCell.column, 2);
+
+    const directional = new TrialTerrainEffectResolver({
+        palisadeDirectionalMultiplier: 1.25
+    }).resolve(normalized);
+    const palisadeTactic = directional.specialTactics.find(
+        tactic => tactic.id === 'PALISADE_DIRECTIONAL_DEFENSE'
+    );
+    assert.equal(palisadeTactic?.active, true);
+    assert.equal(palisadeTactic?.orientation, 'N');
+    assert.equal(palisadeTactic?.approachDirection, 'N');
+    assert.equal(palisadeTactic?.defenseMultiplier, 1.25);
+    assert.equal(
+        directional.modifiers.some(modifier =>
+            modifier.source === 'PALISADE_DIRECTIONAL_DEFENSE'
+            && modifier.target === 'HUMAN_INTERCEPTION'
+            && modifier.value === 1.25
+        ),
+        true,
+        'injected PALISADE multiplier becomes a normal Trial modifier'
+    );
+
+    const wrongDirection = new TrialTerrainEffectResolver({
+        palisadeDirectionalMultiplier: 1.25
+    }).resolve(createBattleContext({
+        interceptCell: state.grid[1][2],
+        approachCell: cell(1, 1, { placed: true, terrain: { ...PLAINS } }),
+        allocatedDefense: 1,
+        baseInterceptionPower: 5,
+        enemySuppression: 5
+    }));
+    assert.equal(
+        wrongDirection.specialTactics.find(
+            tactic => tactic.id === 'PALISADE_DIRECTIONAL_DEFENSE'
+        )?.active,
+        false,
+        'PALISADE does not apply from a non-facing approach'
+    );
+    assert.equal(
+        wrongDirection.modifiers.some(modifier => modifier.source === 'PALISADE_DIRECTIONAL_DEFENSE'),
+        false
+    );
 }
 
 {
@@ -351,6 +409,29 @@ console.log('Board / Special Block / Defense v1 contract');
         }
     });
     assert.equal(farmTrial.canIntercept, true, 'Special-only FARM can be an interception site');
+
+    const controller = new TrialController();
+    controller.state = {
+        routes: [{
+            id: 'farm-route',
+            cells: [{ r: 1, c: 1 }, { r: 1, c: 2 }]
+        }]
+    };
+    controller.cellResolver = (r, c) => state.grid?.[r]?.[c] || null;
+    const farmInterceptionInput = controller.createRouteInterceptionInput(
+        'farm-route',
+        { r: 1, c: 2 },
+        1
+    );
+    assert.equal(
+        farmInterceptionInput.success,
+        true,
+        'TrialController accepts Special-only interception sites'
+    );
+    assert.equal(
+        farmInterceptionInput.input.interceptCell.specialBlock.type,
+        SPECIAL_BLOCK_TYPES.FARM
+    );
     assert.equal(
         farmTrial.modifiers.some(modifier => modifier.source === TRIAL_TERRAIN_EFFECTS.HIGH_GROUND),
         false,
