@@ -16,6 +16,10 @@ import { hydrateGameState } from '../hydrate_game_state_base.js';
 import { GameEngine } from '../game_engine.js';
 import { sumSpecialBlockProduction } from '../special_block_production.js';
 import { CellViewDataService } from '../../services/cell_view_data_service.js';
+import {
+    DISPLAY_ROLE,
+    BoardPresentationSemanticService
+} from '../../presentation/board_presentation_semantic_service.js';
 
 function cell(r, c, overrides = {}) {
     return {
@@ -295,6 +299,27 @@ console.log('Board / Special Block / Defense v1 contract');
     assert.equal(farmView.occupancy, 'SPECIAL_ONLY');
     assert.equal(farmView.specialBlock?.type, SPECIAL_BLOCK_TYPES.FARM);
     assert.equal(farmView.terrainId, null);
+
+    const semanticService = new BoardPresentationSemanticService({
+        cellViewDataService: new CellViewDataService()
+    });
+    assert.equal(
+        semanticService.getDisplayRole(state, farmView),
+        DISPLAY_ROLE.SPECIAL_BLOCK,
+        'Special-only FARM is a first-class presentation role'
+    );
+    assert.deepEqual(
+        semanticService.getDisplayProduction(state, farmView),
+        { food: 0, wood: 0, defense: 0, mystic: 0, primaryYield: null },
+        'unresolved FARM production stays neutral in presentation'
+    );
+
+    const serializedFarm = serializeGameState(state);
+    const restoredFarm = {};
+    hydrateGameState(restoredFarm, serializedFarm);
+    assert.equal(restoredFarm.grid[1][2].placed, false);
+    assert.equal(restoredFarm.grid[1][2].terrain, null);
+    assert.equal(restoredFarm.grid[1][2].specialBlock.type, SPECIAL_BLOCK_TYPES.FARM);
 
     state.grid[1][2] = cell(1, 2, {
         placed: true,
