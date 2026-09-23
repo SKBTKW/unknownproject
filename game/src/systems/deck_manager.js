@@ -58,6 +58,13 @@ class DeckManager {
         this.offeringEligibility = new CardOfferingEligibilityService({
             state: this.state,
             placementQuery: this.landPlacementAvailability,
+            executionTargetQuery: (definition, context) =>
+                this.cardEffectHandlerRouter?.enumerateTargets(definition, {
+                    ...context,
+                    state: this.state,
+                    engine: this.engine,
+                    deckManager: this
+                }) || [],
             requirementEvaluator: (requirement, context) => {
                 const evaluator = this.engine?.cardOfferingRequirementEvaluator;
                 if (typeof evaluator === "function") return Boolean(evaluator(requirement, context));
