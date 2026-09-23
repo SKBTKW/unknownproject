@@ -112,15 +112,54 @@ export function collectOpenPullRequestReferences(branch, pulls = [], repositoryF
     return references;
 }
 
+let cachedGitHubCliToken;
+
+function loadGitHubCliToken() {
+    if (cachedGitHubCliToken !== undefined) return cachedGitHubCliToken;
+    try {
+        cachedGitHubCliToken = execFileSync('gh', ['auth', 'token', '--hostname', 'github.com'], {
+            encoding: 'utf8',
+            windowsHide: true,
+            stdio: ['ignore', 'pipe', 'ignore'],
+        }).trim();
+    } catch {
+        cachedGitHubCliToken = '';
+    }
+    return cachedGitHubCliToken;
+}
+
+export function resolveGitHubToken(env = process.env) {
+    const envToken = env.GITHUB_TOKEN || env.GH_TOKEN;
+    if (typeof envToken === 'string' && envToken.trim()) return envToken.trim();
+    return loadGitHubCliToken();
+}
+
 function githubHeaders() {
     const headers = {
         Accept: 'application/vnd.github+json',
         'User-Agent': 'AoT-Task-Sweeper',
         'X-GitHub-Api-Version': '2022-11-28',
     };
-    const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+    const token = resolveGitHubToken();
     if (token) headers.Authorization = `Bearer ${token}`;
     return headers;
+}
+
+async function githubFailureReason(response, prefix) {
+    const details = [`${prefix} (${response.status})`];
+    const remaining = response.headers.get('x-ratelimit-remaining');
+    const reset = response.headers.get('x-ratelimit-reset');
+    if (remaining !== null) details.push(`rate_remaining=${remaining}`);
+    if (reset !== null) details.push(`rate_reset=${reset}`);
+    try {
+        const body = await response.json();
+        if (body && typeof body.message === 'string' && body.message.trim()) {
+            details.push(body.message.trim());
+        }
+    } catch {
+        // Status + rate-limit headers are enough when GitHub returns no JSON body.
+    }
+    return details.join(' | ');
 }
 
 async function loadOpenPullRequestSnapshot({ owner, repo }) {
@@ -138,7 +177,7 @@ async function loadOpenPullRequestSnapshot({ owner, repo }) {
             });
             const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls?${params}`, { headers });
             if (!response.ok) {
-                return { verified: false, pulls: [], reason: `GitHub open PR lookup failed (${response.status})` };
+                return { verified: false, pulls: [], reason: await githubFailureReason(response, 'GitHub open PR lookup failed') };
             }
             const pagePulls = await response.json();
             if (!Array.isArray(pagePulls)) {
@@ -191,7 +230,7 @@ async function findMergedPullRequest({ owner, repo, branch, target, headSha }) {
     try {
         const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls?${params}`, { headers });
         if (!response.ok) {
-            return { verified: false, reason: `GitHub PR lookup failed (${response.status})` };
+            return { verified: false, reason: await githubFailureReason(response, 'GitHub PR lookup failed') };
         }
         const pulls = await response.json();
         const merged = pulls.find((pr) => pr.merged_at && pr.head?.sha === headSha);
