@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 
 import { DeckManager } from "../game/src/systems/deck_manager.js";
 import { GameEngine } from "../game/src/core/game_engine.js";
+import { UIController } from "../game/src/ui/ui_controller.js";
 import { normalizeCardDefinitionV1 } from "../game/src/cards/card_definition_v1.js";
 import { LandPlacementAvailabilityQuery } from "../game/src/cards/land_placement_availability_query.js";
 import { CardOfferingEligibilityService } from "../game/src/cards/card_offering_eligibility_service.js";
@@ -1312,6 +1313,76 @@ function makeGrid(rows, cols) {
         "EXECUTION_TARGET_QUERY_REQUIRED",
         "targeted domain Offering must fail closed when no target query boundary is available"
     );
+}
+
+// AE. Targeted command UI path prioritizes Board target selection over land undo / instant confirm.
+{
+    const played = [];
+    const fakeUi = {
+        state: { hasPickedThisTurn: false },
+        selectedCard: { id: "CMD_UI_TARGET_TEST", category: "COMMAND" },
+        selectedCardIdx: 2,
+        selectedReserveIdx: -1,
+        isTrialInteractionActive() { return false; },
+        commandCardRequiresTarget() { return true; },
+        hideCellTooltip() {},
+        isCommandExecutionTarget(_card, r, c) { return r === 2 && c === 3; },
+        playCommandCard(card, idx, target) {
+            played.push({ card, idx, target });
+            return { success: true };
+        },
+        undoSys: {
+            isCellPlacedThisTurn() {
+                throw new Error("targeted command path must run before land undo");
+            }
+        }
+    };
+
+    const rejected = UIController.prototype.onCellClick.call(fakeUi, 0, 0);
+    assert.equal(rejected, false);
+    assert.equal(played.length, 0);
+
+    const accepted = UIController.prototype.onCellClick.call(fakeUi, 2, 3);
+    assert.equal(accepted, true);
+    assert.equal(played.length, 1);
+    assert.deepEqual(played[0].target, { r: 2, c: 3 });
+    assert.equal(played[0].idx, 2);
+}
+
+// AF. UI target queries remain Engine-facade only and CSS uses a distinct semantic class.
+{
+    const fakeUi = {
+        engine: {
+            commandCardRequiresTarget(card) {
+                return card.id === "CMD_TARGETED";
+            },
+            getCommandCardExecutionTargets(card) {
+                return card.id === "CMD_TARGETED" ? [{ r: 1, c: 4 }] : [];
+            }
+        },
+        selectedCard: null
+    };
+    const card = { id: "CMD_TARGETED", category: "COMMAND" };
+    assert.equal(UIController.prototype.commandCardRequiresTarget.call(fakeUi, card), true);
+    assert.deepEqual(
+        UIController.prototype.getCommandCardExecutionTargets.call(fakeUi, card),
+        [{ r: 1, c: 4 }]
+    );
+    fakeUi.getCommandCardExecutionTargets = UIController.prototype.getCommandCardExecutionTargets;
+    assert.equal(UIController.prototype.isCommandExecutionTarget.call(fakeUi, card, 1, 4), true);
+    assert.equal(UIController.prototype.isCommandExecutionTarget.call(fakeUi, card, 4, 1), false);
+
+    const uiSource = readFileSync(
+        new URL("../game/src/ui/ui_controller.js", import.meta.url),
+        "utf8"
+    );
+    const gridCss = readFileSync(
+        new URL("../game/css/2_center_area/land_grid.css", import.meta.url),
+        "utf8"
+    );
+    assert.ok(uiSource.includes("command-target-candidate"));
+    assert.ok(gridCss.includes(".cell.command-target-candidate"));
+    assert.ok(uiSource.includes("this.engine.playCommandCard(card, source, target)"));
 }
 
 console.log("✅ Card Core / Offering v1 contract tests PASS");
