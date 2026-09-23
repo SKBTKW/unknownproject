@@ -47,8 +47,6 @@ const DOMAIN_ACTION_REQUIRED_IDS = Object.freeze([
 ]);
 
 const LEGACY_ONLY_IDS = Object.freeze([
-    "CMD_AGRICULTURAL_POLICY",
-    "CMD_BLACK_MARKET",
     "CMD_BALLISTA_SET",
     "FAC_GREAT_WINDMILL",
     "LGD_DESPERATE_PACT",
