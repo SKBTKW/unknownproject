@@ -47,19 +47,16 @@ Mud Obstacle / High Ground Formation / Cavalry Scouts / Outpost Signal / Ballist
 
 ## 4. 🛡️と🔥の境界
 
-迎撃計画で消費した🛡️はTrial-local `state.human.availableDefense` だけ減る。
+Deployment Economyが有効な正規Commitでは、配備した🛡️をTrial-local `state.human.availableDefense` だけでなく、GameEngine facade経由で通常GameStateの `currentDefense` にもwrite-throughする。
 
-通常GameStateの `currentDefense` へはコミットされない。
+- Previewでは`currentDefense`を変更しない。
+- Commit直前に通常GameState側の残量を再検証する。
+- Commit成功時だけ`currentDefense`を減らす。
+- 🌾・🧱支払いに失敗した場合、🛡️予約を内部rollbackして部分Commitを残さない。
 
-一方、HQ損害は `EmberSystem.applyDamage()` を通じて通常GameStateへ反映される。
+HQ損害も従来通り `EmberSystem.applyDamage()` を通じて通常GameStateへ反映される。
 
-現在の `applyDamage()` は減算後にRunTermination評価も行うため、Trial損害で🔥0になれば敗北終端へ接続し得る。
-
-つまり現在も、
-
-> **🛡️はTrial-local、🔥は通常GameStateへwrite-through**
-
-という非対称境界を持つ。
+したがって、Deployment Economy有効経路では🛡️・🔥とも通常GameStateへwrite-throughする。
 
 ## 5. SKIP / 突破 / HQ損害
 
@@ -94,7 +91,6 @@ Mud Obstacle / High Ground Formation / Cavalry Scouts / Outpost Signal / Ballist
 
 現在も未接続:
 
-- Trialで消費した🛡️の通常GameState反映
 - Trial完了→Stage遷移
 - 第3Trial→Run Victory
 - Settlement後の通常UI退出導線
