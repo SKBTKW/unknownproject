@@ -396,6 +396,14 @@ class GameEngine {
         });
     }
 
+    commandCardRequiresTarget(card) {
+        if (!card || !this.deckManager || typeof this.deckManager.cardRequiresExecutionTarget !== "function") {
+            return false;
+        }
+        const cardObj = card.terrain || card;
+        return this.deckManager.cardRequiresExecutionTarget(cardObj);
+    }
+
     getCommandCardExecutionTargets(card) {
         if (!card || !this.deckManager || typeof this.deckManager.enumerateCardExecutionTargets !== "function") {
             return [];
