@@ -991,6 +991,14 @@
       ]
     },
     {
+      "path": "scratch/test_trial_deployment_balance_probe.mjs",
+      "purpose": "Experimental Trial Deployment Cost bands evaluated against the merged Stage1 Verse15 economy audit envelope without selecting canonical balance values",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_trial_deployment_cost_resolver.mjs",
       "purpose": "Canonical configurable Trial deployment cost resolver and unresolved-profile fail-closed contract",
       "suite": "existing",
