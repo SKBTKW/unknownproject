@@ -1967,6 +1967,14 @@ function makeGrid(rows, cols) {
         grandCultivationTurns: 0,
         grandCultivationStartsNextTurn: false,
         scorchedRetreatTurns: 0,
+        defense: 5,
+        nextTrialDamageMitigation: 1,
+        activeConstructionProjects: [],
+        ember: 10,
+        handOfferingSize: 3,
+        nextTrialMultiplier: 1,
+        activeDrawBias: null,
+        placedBlockCount: 0,
         activeBuffs: [],
         logs: [],
         addBuff(buff) { this.activeBuffs.push(buff); },
@@ -2043,6 +2051,90 @@ function makeGrid(rows, cols) {
         assert.equal(state.scorchedRetreatTurns, 3);
         assert.equal(state.activeBuffs[0].category, "DEBUFF");
         assert.equal(state.activeBuffs[0].remainingTurns, 3);
+        assert.equal(state.logs.length, 1);
+    }
+
+    {
+        const state = makeState();
+        const result = router.execute({ id: "CMD_BALLISTA_SET" }, {
+            state,
+            cardName: "弩砲",
+            cardDescription: "legacy",
+            i18n: null
+        });
+        assert.equal(result.success, true);
+        assert.equal(state.defense, 45);
+        assert.equal(state.nextTrialDamageMitigation, 0.5);
+        assert.equal(state.activeBuffs[0].category, "CARD_EFFECT");
+        assert.equal(state.logs.length, 1);
+    }
+
+    {
+        const state = makeState();
+        const result = router.execute({ id: "FAC_GREAT_WINDMILL" }, {
+            state,
+            cardName: "大風車",
+            cardDescription: "legacy",
+            i18n: null
+        });
+        assert.equal(result.success, true);
+        assert.deepEqual(state.activeConstructionProjects, [{
+            name: "FAC_GREAT_WINDMILL",
+            remainingTurns: 3,
+            woodCostPerTurn: 4
+        }]);
+        assert.equal(state.logs.length, 1);
+    }
+
+    {
+        const state = makeState();
+        const result = router.execute({ id: "LGD_DESPERATE_PACT" }, {
+            state,
+            cardName: "背水",
+            cardDescription: "legacy",
+            i18n: null
+        });
+        assert.equal(result.success, true);
+        assert.equal(state.ember, 15);
+        assert.equal(state.handOfferingSize, 4);
+        assert.equal(state.nextTrialMultiplier, 1.5);
+        assert.equal(state.logs.length, 1);
+    }
+
+    {
+        const state = makeState();
+        state.checkConditionalBuffs = function () {
+            if (this.activeDrawBias?.type === "UNTIL_BLOCKS" && this.placedBlockCount >= 6) {
+                this.activeDrawBias = null;
+            }
+        };
+        const result = router.execute({ id: "CMD_LAND_FOCUS" }, {
+            state,
+            cardName: "土地探索重視",
+            cardDescription: "legacy",
+            i18n: null
+        });
+        assert.equal(result.success, true);
+        assert.deepEqual(state.activeDrawBias, {
+            targetCategory: "LAND",
+            type: "UNTIL_BLOCKS",
+            untilValue: 6
+        });
+        assert.equal(state.activeBuffs[0].icon, "📜");
+        assert.equal(state.logs.length, 1);
+    }
+
+    {
+        const state = makeState();
+        const result = router.execute({ id: "CMD_GUIDED_DEFENSE" }, {
+            state,
+            cardName: "誘導防衛",
+            cardDescription: "legacy",
+            i18n: null
+        });
+        assert.equal(result.success, true);
+        assert.equal(state.guidedDefenseActive, true);
+        assert.equal(state.activeBuffs[0].category, "TACTICAL");
         assert.equal(state.logs.length, 1);
     }
 }
