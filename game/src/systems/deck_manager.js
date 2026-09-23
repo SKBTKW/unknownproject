@@ -195,8 +195,7 @@ class DeckManager {
             stageNum,
             h2Count,
             options,
-            placeabilityCache: options.placeabilityCache || null,
-            skipPlacementCheck: c.category === "LAND" && !this._hasOfferingPlacementRoot()
+            placeabilityCache: options.placeabilityCache || null
         });
         if (offeringGate && !offeringGate.eligible) return false;
 
@@ -326,15 +325,6 @@ class DeckManager {
             }
         }
         return count;
-    }
-
-    _hasOfferingPlacementRoot() {
-        for (const row of this.state?.grid || []) {
-            for (const cell of row || []) {
-                if (cell?.placed) return true;
-            }
-        }
-        return false;
     }
 
     _isCardPlaceableNow(card, placeabilityCache = null) {
