@@ -80,6 +80,12 @@ function normalizeDefinitions(definitions) {
 function stateResource(state, key) {
     if (key === 'wood') return Number(state?.wood ?? state?.material ?? 0) || 0;
     if (key === 'ember') return Number(state?.ember ?? 0) || 0;
+    if (key === 'defense') {
+        if (state?.defenseSystem && typeof state.defenseSystem.getCurrentDefense === 'function') {
+            return Number(state.defenseSystem.getCurrentDefense()) || 0;
+        }
+        return Number(state?.currentDefense ?? state?.defense ?? 0) || 0;
+    }
     return Number(state?.[key] ?? 0) || 0;
 }
 
@@ -97,6 +103,44 @@ function checkResourceRequirements(state, resources) {
 
 function hasAnyCost(resources) {
     return Object.values(resources || {}).some(value => Number(value) > 0);
+}
+
+function spendStateResource(state, key, amount) {
+    const cost = Number(amount) || 0;
+    if (cost <= 0) return true;
+
+    if (key === 'wood') {
+        const current = stateResource(state, key);
+        if (current < cost) return false;
+        state.wood = current - cost;
+        state.material = state.wood;
+        return true;
+    }
+
+    if (key === 'ember') {
+        const current = stateResource(state, key);
+        if (current < cost) return false;
+        state.ember = current - cost;
+        return true;
+    }
+
+    if (key === 'defense') {
+        const current = stateResource(state, key);
+        if (current < cost) return false;
+        if (state?.defenseSystem && typeof state.defenseSystem.reduceCurrentDefense === 'function') {
+            state.defenseSystem.reduceCurrentDefense(cost);
+        } else if (Number.isFinite(state?.currentDefense)) {
+            state.currentDefense = current - cost;
+        } else {
+            state.defense = current - cost;
+        }
+        return true;
+    }
+
+    const current = stateResource(state, key);
+    if (current < cost) return false;
+    state[key] = current - cost;
+    return true;
 }
 
 function representativeZoneCell(zone) {
@@ -244,6 +288,50 @@ export class ZoneConversionService {
             if (plan.defined && plan.due) due.push(plan);
         }
         return due;
+    }
+
+    settleMaintenanceForVerse(verse = this.state?.turn) {
+        const due = this.enumerateMaintenanceDue(verse)
+            .slice()
+            .sort((a, b) => String(a.groupId).localeCompare(String(b.groupId)));
+        const results = [];
+
+        for (const plan of due) {
+            if (!plan.canPay) {
+                results.push(this.applyMaintenanceSettlement(plan.groupId, {
+                    verse,
+                    paymentSucceeded: false
+                }));
+                continue;
+            }
+
+            // Atomic per Zone: all affordability checks are complete before
+            // any resource is mutated. No partial payment is allowed.
+            const resources = Object.entries(plan.resources || {});
+            const stillPayable = resources.every(([key, amount]) =>
+                stateResource(this.state, key) >= amount
+            );
+            if (!stillPayable) {
+                results.push(this.applyMaintenanceSettlement(plan.groupId, {
+                    verse,
+                    paymentSucceeded: false
+                }));
+                continue;
+            }
+
+            for (const [key, amount] of resources) {
+                spendStateResource(this.state, key, amount);
+            }
+            results.push(this.applyMaintenanceSettlement(plan.groupId, {
+                verse,
+                paymentSucceeded: true
+            }));
+        }
+
+        return Object.freeze({
+            verse: Number.isInteger(verse) ? verse : null,
+            results: Object.freeze(results.map(result => Object.freeze(clone(result, {}))))
+        });
     }
 
     applyMaintenanceSettlement(groupId, {
