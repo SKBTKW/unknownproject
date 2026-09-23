@@ -41,6 +41,28 @@ function createCardDomainActionExecutor(engine) {
         return { success: false, reason: "UNSUPPORTED_DOMAIN_ACTION" };
     };
 
+    execute.enumerateTargets = (effect, context = {}) => {
+        if (!effect || typeof effect !== "object") return [];
+
+        if (effect.action === CARD_DOMAIN_ACTIONS.CREATE_SPECIAL_BLOCK) {
+            const board = engine?.boardDomainAdapter;
+            if (!board || typeof board.enumerateLegalSpecialBlockTargets !== "function") {
+                return [];
+            }
+            if (!effect.blockType) return [];
+            return board.enumerateLegalSpecialBlockTargets(
+                effect.blockType,
+                {
+                    verse: context?.state?.turn ?? engine?.state?.turn ?? null,
+                    cardId: context?.cardDefinition?.id || null,
+                    ...(effect.context || {})
+                }
+            ) || [];
+        }
+
+        return [];
+    };
+
     execute.preflight = (effect, context = {}) => {
         if (!effect || typeof effect !== "object") {
             return { success: false, reason: "INVALID_DOMAIN_ACTION" };
