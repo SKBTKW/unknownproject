@@ -14,6 +14,7 @@ import { TRIAL_TERRAIN_EFFECTS } from '../../trial/domain/trial_types.js';
 import { serializeGameState } from '../state_serializer_base.js';
 import { hydrateGameState } from '../hydrate_game_state_base.js';
 import { GameEngine } from '../game_engine.js';
+import { sumSpecialBlockProduction } from '../special_block_production.js';
 
 function cell(r, c, overrides = {}) {
     return {
@@ -336,6 +337,28 @@ console.log('Board / Special Block / Defense v1 contract');
     hydrateGameState(restored, serialized);
     assert.equal(restored.grid[1][2].specialBlock.orientation, 'E');
     assert.equal(restored.grid[1][2].terrain.terrainId, 'GL1_PLAINS');
+}
+
+{
+    const state = state5();
+    const grid = new GridEngine(state);
+    state.isHQVicinity = grid.isHQVicinity.bind(grid);
+    state.grid[0][0] = cell(0, 0, {
+        placed: true,
+        placementGroupId: 'mine-prod',
+        terrain: { ...HILL }
+    });
+    const service = new SpecialBlockService(state);
+    const created = service.createSpecialBlock(SPECIAL_BLOCK_TYPES.MINE, { r: 0, c: 0 });
+    assert.equal(created.success, true);
+    const production = sumSpecialBlockProduction(state);
+    assert.deepEqual(
+        production.yields,
+        { food: 0, wood: 0, defense: 0, mystic: 0 },
+        'unresolved Special Block production never invents numeric output'
+    );
+    assert.equal(production.unresolved.length, 1);
+    assert.equal(production.unresolved[0].type, SPECIAL_BLOCK_TYPES.MINE);
 }
 
 {
