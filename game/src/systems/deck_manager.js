@@ -697,14 +697,29 @@ class DeckManager {
         return false;
     }
 
+    _hasOfferingPlacementRoot() {
+        for (const row of this.state?.grid || []) {
+            for (const cell of row || []) {
+                if (cell?.placed) return true;
+            }
+        }
+        return false;
+    }
+
     _passesOfferingPlaceabilityGate(card, placeabilityCache = null) {
         const definition = this._cardDefinition(card);
         if (!definition || definition.category !== "LAND") return true;
 
         // Live gameplay must never offer a LAND card with no legal placement.
-        // Isolated tests / pre-attach construction may not own the placement
-        // boundary yet; preserve legacy eligibility until it is evaluable.
-        if (!this.state?.grid || typeof this.state.canPlaceShape !== "function") return true;
+        // Isolated CardCycle tests and pre-attach states can expose a grid that
+        // has no placed root (normally HQ). In that state placement legality is
+        // not meaningfully evaluable, so preserve legacy eligibility instead
+        // of treating every LAND card as permanently unplaceable.
+        if (
+            !this.state?.grid
+            || typeof this.state.canPlaceShape !== "function"
+            || !this._hasOfferingPlacementRoot()
+        ) return true;
 
         if (placeabilityCache instanceof WeakMap && typeof definition === "object") {
             if (placeabilityCache.has(definition)) {
