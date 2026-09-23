@@ -89,7 +89,10 @@ class UIController {
         this.trialActionTrayComponent = (typeof document !== 'undefined')
             ? new TrialActionTrayComponent(this)
             : null;
-        this.trialController = new TrialController({ deploymentService: this.engine?.trialDeploymentService || null });
+        this.trialController = new TrialController({
+            deploymentService: this.engine?.trialDeploymentService || null,
+            defenseReservation: this.engine?.trialDefenseReservation || null
+        });
         this.trialPresentationState = new TrialPresentationState();
         this.trialCausalityPresenter = new TrialCausalityPresenter();
         this.trialAdvisorPublicReadModel = new TrialAdvisorPublicReadModel();
@@ -150,7 +153,12 @@ class UIController {
     get pinnedPreviewCard() { return this.interactionState.pinnedPreviewCard; }
     set pinnedPreviewCard(v) { this.interactionState.pinnedPreviewCard = v; }
 
-    startTrialInterceptionPreview(scenario, { deployedDefense = 6, routeId = null, cellResolver = null } = {}) {
+    startTrialInterceptionPreview(scenario, {
+        deployedDefense = 6,
+        routeId = null,
+        cellResolver = null,
+        useCanonicalDefenseReservation = true
+    } = {}) {
         const availableDefense = scenario.availableDefense ?? this.state.currentDefense ?? this.state.defense ?? 0;
         const ember = scenario.ember ?? this.state?.ember ?? (this.state?.emberSystem?.current ?? 20);
         const maxEmber = scenario.maxEmber ?? this.state?.maxEmber ?? (this.state?.emberSystem?.max ?? 20);
@@ -158,7 +166,13 @@ class UIController {
         const resolvedCellResolver = (typeof cellResolver === "function")
             ? cellResolver
             : ((r, c) => this.getBoardDisplayGrid()?.[r]?.[c] || null);
-        this.trialController.startScenario({ ...scenario, availableDefense, ember, maxEmber }, { cellResolver: resolvedCellResolver });
+        this.trialController.startScenario(
+            { ...scenario, availableDefense, ember, maxEmber },
+            {
+                cellResolver: resolvedCellResolver,
+                useCanonicalDefenseReservation
+            }
+        );
         this.trialPresentationState.clearPlanningState();
         this.trialPresentationState.setActiveEnemyRoute(routeId);
 

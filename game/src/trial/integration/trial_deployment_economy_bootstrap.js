@@ -36,11 +36,12 @@ export function attachTrialDeploymentEconomy(engine, {
     }
 
     const resourcePayment = new TrialResourcePayment({ state: engine.state });
-    const defenseReservation = new TrialDefenseReservation({
+    const defenseReservation = engine.trialDefenseReservation || new TrialDefenseReservation({
         getAvailableDefense: () => engine.getTrialAvailableDefense(),
         applyDefenseLoss: amount => engine.applyTrialDefenseLoss(amount),
         recoverDefense: amount => engine.recoverCurrentDefense(amount)
     });
+    engine.trialDefenseReservation = defenseReservation;
     const costPolicy = new TrialDeploymentCostPolicy({ costResolver: resolvedCostResolver });
     const originResolver = new DeploymentOriginResolver({
         boardQuery: engine.boardDomainAdapter,

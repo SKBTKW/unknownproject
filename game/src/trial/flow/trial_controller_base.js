@@ -28,7 +28,8 @@ export class TrialController {
         flow = new TrialFlow(),
         gameFactHub = new GameFactHub(),
         emberSystem = null,
-        deploymentService = null
+        deploymentService = null,
+        defenseReservation = null
     } = {}) {
         this.powerResolver = powerResolver;
         this.combatResolver = combatResolver;
@@ -40,13 +41,18 @@ export class TrialController {
         this.gameFactHub = gameFactHub;
         this.emberSystem = emberSystem;
         this.deploymentService = deploymentService || null;
+        this.defenseReservation = defenseReservation || null;
+        this.sessionDefenseReservation = null;
         this.state = null;
         this.cellResolver = null;
     }
 
-    startScenario(scenario, { cellResolver = null } = {}) {
+    startScenario(scenario, { cellResolver = null, useCanonicalDefenseReservation = true } = {}) {
         this.state = createTrialState(scenario);
         this.cellResolver = typeof cellResolver === "function" ? cellResolver : null;
+        this.sessionDefenseReservation = useCanonicalDefenseReservation === false
+            ? null
+            : this.defenseReservation;
         this.state.enemy.totalSuppression = this.powerResolver.resolveSuppression(this.state.enemy.strategicSuppression);
         this.deploymentService?.beginSession?.({ trialState: this.state });
         return this.state;
@@ -372,6 +378,7 @@ export class TrialController {
         this.deploymentService?.endSession?.();
         this.state = null;
         this.cellResolver = null;
+        this.sessionDefenseReservation = null;
     }
 
     activateInterceptionPlan({ deploymentPreview = null, deploymentContext = {} } = {}) {
@@ -410,6 +417,7 @@ export class TrialController {
         // service preserve the existing Trial behavior.
         const defenseToCommit = Number(plan.totalDefenseAllocated) || 0;
         let deploymentCommit = null;
+        let defenseReservationCommit = null;
         if (this.deploymentService) {
             const expectedPreview = deploymentPreview || this.state.deploymentPreview || null;
             deploymentCommit = this.deploymentService.commitPlan(plan, {
@@ -423,6 +431,16 @@ export class TrialController {
                     deploymentCommit
                 };
             }
+        } else if (this.sessionDefenseReservation && typeof this.sessionDefenseReservation.reserve === "function") {
+            defenseReservationCommit = this.sessionDefenseReservation.reserve(defenseToCommit);
+            if (!defenseReservationCommit?.success) {
+                return {
+                    success: false,
+                    errors: defenseReservationCommit?.reasons || ["DEFENSE_RESERVATION_FAILED"],
+                    defenseReservationCommit
+                };
+            }
+            this.state.human.availableDefense = Number(defenseReservationCommit.after) || 0;
         } else {
             this.state.human.availableDefense -= defenseToCommit;
         }
@@ -445,7 +463,8 @@ export class TrialController {
             success: true,
             battleQueue: JSON.parse(JSON.stringify(battleQueue)),
             totalDefenseCommitted: defenseToCommit,
-            deploymentCommit
+            deploymentCommit,
+            defenseReservationCommit
         };
     }
 

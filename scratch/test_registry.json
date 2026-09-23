@@ -1007,6 +1007,14 @@
       ]
     },
     {
+      "path": "scratch/test_trial_core_defense_write_through.mjs",
+      "purpose": "Trial Core commits defense through canonical GameState reservation even when Deployment Economy is disabled",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_trial_deployment_balance_probe.mjs",
       "purpose": "Experimental Trial Deployment Cost bands evaluated against the merged Stage1 Verse15 economy audit envelope without selecting canonical balance values",
       "suite": "existing",

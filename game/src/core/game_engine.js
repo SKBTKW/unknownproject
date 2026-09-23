@@ -32,6 +32,7 @@ import { FirstRunService } from '../tutorial/first_run_service.js';
 import { FirstRunState } from '../tutorial/first_run_state.js';
 import { TrialTimingAuthorityService } from '../trial/systems/trial_timing_authority_service.js';
 import { attachTrialDeploymentEconomy } from '../trial/integration/trial_deployment_economy_bootstrap.js';
+import { TrialDefenseReservation } from '../trial/systems/trial_defense_reservation.js';
 
 function normalizeRunSeed(seed) {
     if (!Number.isFinite(seed)) return null;
@@ -171,6 +172,13 @@ class GameEngine {
             rebuildCostResolver: dependencies.defenseRebuildCostResolver || null,
             mysticFallbackResolver: dependencies.defenseMysticFallbackResolver || null
         }) : null);
+
+        this.trialDefenseReservation = dependencies.trialDefenseReservation
+            || new TrialDefenseReservation({
+                getAvailableDefense: () => this.getTrialAvailableDefense(),
+                applyDefenseLoss: amount => this.applyTrialDefenseLoss(amount),
+                recoverDefense: amount => this.recoverCurrentDefense(amount)
+            });
 
         this.trialDeploymentAttachment = null;
         if (
