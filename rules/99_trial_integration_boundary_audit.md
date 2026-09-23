@@ -58,7 +58,9 @@ HQ損害も従来通り `EmberSystem.applyDamage()` を通じて通常GameState�
 
 したがって、Deployment Economy有効経路では🛡️・🔥とも通常GameStateへwrite-throughする。
 
-ただし正規Deployment Cost profileは未確定で、Deployment Economy自体は通常ランへ常時attachされていない。このため「🛡️write-through経路は実装済み」だが、「通常ラン全経路で解消済み」とはまだ扱わない。
+GameEngineには明示的な`trialDeploymentEconomy`設定を受け取ってDeployment Economyをattachする接続口がある。設定なしでは従来通り未attach、RESOLVEDなcost profile / resolverを明示した場合だけ有効化される。
+
+ただし正規Deployment Cost profileは未確定なので、製品通常ランではまだ常時有効化していない。このため「🛡️write-through経路とEngine接続口は実装済み」だが、「製品バランス込みで有効化済み」とは扱わない。
 
 ## 5. SKIP / 突破 / HQ損害
 

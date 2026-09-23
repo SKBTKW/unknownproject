@@ -445,6 +445,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Board Trial Deployment Semantics) で不合格が検出されました。");
         process.exit(1);
     }
+    const trialDeploymentEngineAttachOk = await runCommand("node", ["scratch/test_trial_deployment_engine_attach.mjs"]);
+    if (!trialDeploymentEngineAttachOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Trial Deployment Engine Attach) で不合格が検出されました。");
+        process.exit(1);
+    }
     const trialDefenseReservationOk = await runCommand("node", ["scratch/test_trial_defense_reservation.mjs"]);
     if (!trialDefenseReservationOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Trial Defense Reservation) で不合格が検出されました。");
