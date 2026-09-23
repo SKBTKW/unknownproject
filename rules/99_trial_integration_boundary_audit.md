@@ -58,6 +58,8 @@ HQ損害も従来通り `EmberSystem.applyDamage()` を通じて通常GameState�
 
 したがって、Deployment Economy有効経路では🛡️・🔥とも通常GameStateへwrite-throughする。
 
+ただし正規Deployment Cost profileは未確定で、Deployment Economy自体は通常ランへ常時attachされていない。このため「🛡️write-through経路は実装済み」だが、「通常ラン全経路で解消済み」とはまだ扱わない。
+
 ## 5. SKIP / 突破 / HQ損害
 
 現在は以下まで実装済み。
