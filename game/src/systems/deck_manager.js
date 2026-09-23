@@ -1051,11 +1051,6 @@ class DeckManager {
             this.state.systematicLoggingStartsNextTurn = true;
             this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🌲", description: cDesc, badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 3 }) : "3T", category: "DEBUFF", remainingTurns: 3, startsNextTurn: true });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🌲【${cName}】`);
-        } else if (cId === "CMD_GRANARY") {
-            // 🌾 穀物庫: コスト 🧱-20 (食料維持費 x0.90)
-            this.state.granaryCount = (this.state.granaryCount || 0) + 1;
-            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🏛️", description: cDesc, category: "CARD_EFFECT" });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🏛️【${cName}】`);
         } else if (cId === "CMD_AGRICULTURAL_REFORM") {
             // 🌾 農地改革: コスト 🧱-20 (指定地域 🌾+1/T)
             this.state.permanentPlainsFoodBonus = (this.state.permanentPlainsFoodBonus || 0) + 1;
