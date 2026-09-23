@@ -603,6 +603,12 @@ class DeckManager {
         return true;
     }
 
+    cardRequiresExecutionTarget(cardObj) {
+        if (!cardObj || cardObj.category === "LAND") return false;
+        const definitionV1 = normalizeCardDefinitionV1(cardObj);
+        return this.cardEffectHandlerRouter?.requiresTarget(definitionV1) === true;
+    }
+
     enumerateCardExecutionTargets(cardObj) {
         if (!cardObj || cardObj.category === "LAND") return [];
         const definitionV1 = normalizeCardDefinitionV1(cardObj);
