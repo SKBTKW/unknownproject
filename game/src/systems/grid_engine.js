@@ -677,9 +677,9 @@ class GridEngine {
         const multiSuffixKey = "CARD_MULTI_ATTRIBUTE_SUFFIX";
         const translatedMultiSuffix = I18n.t(multiSuffixKey);
         const multiSuffix = hasMultiplePlacementTerrainAttributes(terrain)
-            ? (translatedMultiSuffix && translatedMultiSuffix !== multiSuffixKey
-                ? translatedMultiSuffix
-                : "（複数）")
+            && translatedMultiSuffix
+            && translatedMultiSuffix !== multiSuffixKey
+            ? translatedMultiSuffix
             : "";
         const terrainName = `${baseTerrainName}${multiSuffix}`;
 
