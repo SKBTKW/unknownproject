@@ -833,11 +833,15 @@ function makeGrid(rows, cols) {
         new URL("../game/src/data/economy_cards.json", import.meta.url),
         "utf8"
     ));
+    const militarySource = JSON.parse(readFileSync(
+        new URL("../game/src/data/military_cards.json", import.meta.url),
+        "utf8"
+    ));
     const mysticSource = JSON.parse(readFileSync(
         new URL("../game/src/data/mystic_cards.json", import.meta.url),
         "utf8"
     ));
-    const sourceCards = [...economySource, ...mysticSource];
+    const sourceCards = [...economySource, ...militarySource, ...mysticSource];
     const migratedIds = [
         "CMD_EMERGENCY_LEVY",
         "CMD_LOGGING_CAMP",
