@@ -185,6 +185,14 @@
       ]
     },
     {
+      "path": "scratch/test_board_history_query.mjs",
+      "purpose": "Board-owned Battle Site history read boundary and RunHistory integration",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_board_world_eligibility_integration.mjs",
       "purpose": "Board aggregate read API through strict world eligibility and Card Offering",
       "suite": "existing",
