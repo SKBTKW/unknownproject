@@ -214,6 +214,18 @@ export class BoardDomainAdapter {
         return this.zoneConversionService.quoteCost(definitionId);
     }
 
+    getZoneConversionMaintenancePlan(groupId, verse = this.state?.turn) {
+        return this.zoneConversionService.getMaintenancePlan(groupId, verse);
+    }
+
+    enumerateZoneConversionMaintenanceDue(verse = this.state?.turn) {
+        return this.zoneConversionService.enumerateMaintenanceDue(verse);
+    }
+
+    applyZoneConversionMaintenanceSettlement(groupId, result = {}) {
+        return this.zoneConversionService.applyMaintenanceSettlement(groupId, result);
+    }
+
     createZoneConversion(definitionId, groupId, context = {}) {
         return this.zoneConversionService.createConversion(definitionId, groupId, context);
     }
