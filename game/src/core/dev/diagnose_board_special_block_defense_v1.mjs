@@ -959,6 +959,22 @@ console.log('Board / Special Block / Defense v1 contract');
                 kind: SPECIAL_BLOCK_PRODUCTION_KINDS.CONDITIONAL,
                 strategyKey: 'HILL_BONUS'
             }
+        }],
+        ['TEST_FIXED_INVALID', {
+            id: 'TEST_FIXED_INVALID',
+            production: {
+                status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
+                kind: SPECIAL_BLOCK_PRODUCTION_KINDS.FIXED,
+                yields: { wood: '4' }
+            }
+        }],
+        ['TEST_FIXED_NEGATIVE', {
+            id: 'TEST_FIXED_NEGATIVE',
+            production: {
+                status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
+                kind: SPECIAL_BLOCK_PRODUCTION_KINDS.FIXED,
+                yields: { wood: -1 }
+            }
         }]
     ]);
     const resolver = new SpecialBlockProductionResolver({
@@ -1094,6 +1110,43 @@ console.log('Board / Special Block / Defense v1 contract');
         resolver.resolveCell(relationState, relationState.grid[0][0], { r: 0, c: 0 }).yields.wood,
         4,
         'CONDITIONAL remains an injected strategy boundary rather than facility-id branching'
+    );
+
+    relationState.grid[0][3] = cell(0, 3, {
+        specialBlock: {
+            type: 'TEST_FIXED_INVALID',
+            definitionId: 'TEST_FIXED_INVALID'
+        }
+    });
+    assert.equal(
+        resolver.resolveCell(relationState, relationState.grid[0][3], { r: 0, c: 3 }).status,
+        SPECIAL_BLOCK_PRODUCTION_STATUS.UNRESOLVED,
+        'numeric strings in production definitions fail closed instead of being coerced'
+    );
+
+    relationState.grid[0][4] = cell(0, 4, {
+        specialBlock: {
+            type: 'TEST_FIXED_NEGATIVE',
+            definitionId: 'TEST_FIXED_NEGATIVE'
+        }
+    });
+    assert.equal(
+        resolver.resolveCell(relationState, relationState.grid[0][4], { r: 0, c: 4 }).status,
+        SPECIAL_BLOCK_PRODUCTION_STATUS.UNRESOLVED,
+        'negative production definitions fail closed'
+    );
+
+    sourceState.grid[0][2] = cell(0, 2, {
+        specialBlock: {
+            type: 'TEST_SOURCE_SIZE',
+            definitionId: 'TEST_SOURCE_SIZE',
+            sourceGroupReference: { initialSize: 2.5 }
+        }
+    });
+    assert.equal(
+        resolver.resolveCell(sourceState, sourceState.grid[0][2], { r: 0, c: 2 }).status,
+        SPECIAL_BLOCK_PRODUCTION_STATUS.UNRESOLVED,
+        'SOURCE_SIZE requires an integer source snapshot size'
     );
 }
 
