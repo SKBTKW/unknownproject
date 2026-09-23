@@ -112,6 +112,9 @@ export class TurnLifecycleService {
         const engine = this.engine;
         const state = engine.state;
         this._advanceTurnState();
+        if (engine.zoneConversionService && typeof engine.zoneConversionService.settleMaintenanceForVerse === "function") {
+            engine.lastZoneConversionMaintenanceResult = engine.zoneConversionService.settleMaintenanceForVerse(state?.turn);
+        }
         if (engine.deckManager && typeof engine.deckManager.generateOfferingCards === "function") engine.deckManager.generateOfferingCards({ reason: OFFERING_GENERATION_REASONS.VERSE_START });
         if (engine.globalEventManager) engine.globalEventManager.onTurnStart();
         if (state && typeof state.addLog === "function") state.addLog(this._translate("LOG_TURN_START", { turn: state.turn }, `Turn ${state.turn} started.`));
