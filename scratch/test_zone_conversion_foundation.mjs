@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { BoardDomainAdapter } from "../game/src/core/board_domain_adapter.js";
+import { BOARD_CAPABILITIES } from "../game/src/core/special_block_domain.js";
 import {
     ZONE_CONVERSION_CAPABILITIES,
     ZONE_CONVERSION_COST_STATUS,
@@ -135,7 +136,10 @@ const definitions = {
             status: ZONE_CONVERSION_COST_STATUS.RESOLVED,
             resources: { food: 2 }
         },
-        capabilities: [ZONE_CONVERSION_CAPABILITIES.GARRISON_SITE]
+        capabilities: [
+            ZONE_CONVERSION_CAPABILITIES.GARRISON_SITE,
+            ZONE_CONVERSION_CAPABILITIES.DEFENSE_ANCHOR
+        ]
     },
     UNRESOLVED_COST: {
         id: "UNRESOLVED_COST",
@@ -228,6 +232,26 @@ assert.equal(
 assert.equal(adapter.hasCapability("GARRISON"), true);
 assert.equal(adapter.hasCapability(ZONE_CONVERSION_CAPABILITIES.GARRISON_SITE), true);
 
+const activeFacts = adapter.readTrialDeploymentFacts({ r: 0, c: 1 });
+assert.equal(
+    activeFacts.capabilities.includes(BOARD_CAPABILITIES.DEFENSE_ANCHOR),
+    true,
+    "active converted Zone projects DEFENSE_ANCHOR to its cells"
+);
+const activeOrigins = adapter.listTrialDeploymentOrigins();
+const zoneOrigin = activeOrigins.find(origin => origin.kind === BOARD_CAPABILITIES.REINFORCEMENT_ORIGIN);
+assert.ok(zoneOrigin, "active Garrison Zone projects one semantic reinforcement origin");
+assert.deepEqual(
+    zoneOrigin.cell,
+    { r: 0, c: 0 },
+    "Board owns a deterministic representative origin cell"
+);
+assert.equal(
+    zoneOrigin.capabilities.includes(BOARD_CAPABILITIES.GARRISON_SITE),
+    false,
+    "facility identity must not leak into Trial origin semantics"
+);
+
 const creationVersePlan = adapter.getZoneConversionMaintenancePlan("zone_a", 20);
 assert.equal(creationVersePlan.defined, true);
 assert.equal(creationVersePlan.due, false, "maintenance starts on the Verse after conversion");
@@ -253,6 +277,16 @@ assert.equal(
     "any maintenance failure disables all conversion capabilities"
 );
 assert.equal(
+    adapter.readTrialDeploymentFacts({ r: 0, c: 1 }).capabilities.includes(BOARD_CAPABILITIES.DEFENSE_ANCHOR),
+    false,
+    "dysfunctional conversion must not project DEFENSE_ANCHOR"
+);
+assert.equal(
+    adapter.listTrialDeploymentOrigins().some(origin => origin.kind === BOARD_CAPABILITIES.REINFORCEMENT_ORIGIN),
+    false,
+    "dysfunctional conversion must not remain a reinforcement origin"
+);
+assert.equal(
     adapter.getZoneConversionMaintenancePlan("zone_a", 21).due,
     false,
     "same Verse cannot settle maintenance twice"
@@ -272,6 +306,16 @@ assert.equal(recoveredMaintenance.state, ZONE_CONVERSION_STATES.ACTIVE);
 assert.equal(adapter.isZoneConversionFunctional("zone_a"), true);
 assert.equal(state.food, beforeRecoveredMaintenanceFood);
 assert.equal(adapter.hasCapability(ZONE_CONVERSION_CAPABILITIES.GARRISON_SITE), true);
+assert.equal(
+    adapter.readTrialDeploymentFacts({ r: 0, c: 1 }).capabilities.includes(BOARD_CAPABILITIES.DEFENSE_ANCHOR),
+    true,
+    "recovered conversion restores DEFENSE_ANCHOR"
+);
+assert.equal(
+    adapter.listTrialDeploymentOrigins().some(origin => origin.kind === BOARD_CAPABILITIES.REINFORCEMENT_ORIGIN),
+    true,
+    "recovered conversion restores reinforcement origin"
+);
 
 assert.equal(service.validateCandidate("GARRISON_TEST", "zone_a").valid, false);
 assert.equal(service.validateCandidate("GARRISON_TEST", "zone_a").reasons[0], "ZONE_ALREADY_CONVERTED");
