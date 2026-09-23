@@ -8,6 +8,7 @@ import {
 import { serializeGameState } from "../state_serializer.js";
 import { hydrateGameState } from "../hydrate_game_state.js";
 import { GridEngine } from "../../systems/grid_engine.js";
+import { BoardDomainAdapter } from "../board_domain_adapter.js";
 import { GameState } from "../../v2_unity_ready_main.js";
 import { ConditionEvaluator } from "../condition_evaluator.js";
 import { ProductionCalculator } from "../../systems/production_calculator.js";
@@ -37,7 +38,10 @@ import {
 import { TrialPlanningDraftService } from "../../trial/domain/trial_planning_draft_service.js";
 import { TrialTerrainEffectResolver } from "../../trial/systems/trial_terrain_effect_resolver.js";
 import { TRIAL_PLAN_REASONS } from "../../trial/domain/trial_types.js";
-import { ZONE_CONVERSION_COST_STATUS } from "../zone_conversion_domain.js";
+import {
+    ZONE_CONVERSION_CAPABILITIES,
+    ZONE_CONVERSION_COST_STATUS
+} from "../zone_conversion_domain.js";
 import {
     LAND_CELL_YIELD_SOURCE,
     LAND_PRODUCTION_SCOPE,
@@ -2014,7 +2018,10 @@ const landSystemJson = JSON.parse(
                     status: ZONE_CONVERSION_COST_STATUS.RESOLVED,
                     resources: {}
                 },
-                capabilities: []
+                capabilities: [
+                    ZONE_CONVERSION_CAPABILITIES.GARRISON_SITE,
+                    ZONE_CONVERSION_CAPABILITIES.DEFENSE_ANCHOR
+                ]
             }
         }
     });
@@ -2036,6 +2043,38 @@ const landSystemJson = JSON.parse(
     assert.equal(state.grid[0][2].placementGroupId, placementGroupId);
     assert.equal(state.grid[0][2].mergeGroupId, null);
     assert.equal(state.grid[0][2].terrain.terrainId, "E2_HILL");
+
+    const board = new BoardDomainAdapter({
+        state,
+        zoneConversionService: service
+    });
+    const representativeFacts = board.readTrialDeploymentFacts({ r: 0, c: 0 });
+    const zoneFacts = board.readTrialDeploymentFacts({ r: 0, c: 1 });
+    const remainderFacts = board.readTrialDeploymentFacts({ r: 0, c: 2 });
+
+    assert.ok(
+        zoneFacts.capabilities.includes(ZONE_CONVERSION_CAPABILITIES.DEFENSE_ANCHOR),
+        "converted Zone cell must project its Trial deployment capability"
+    );
+    assert.equal(
+        zoneFacts.capabilities.includes(ZONE_CONVERSION_CAPABILITIES.REINFORCEMENT_ORIGIN),
+        false,
+        "reinforcement-origin semantics must stay on the Zone representative cell"
+    );
+    assert.ok(
+        representativeFacts.capabilities.includes(ZONE_CONVERSION_CAPABILITIES.REINFORCEMENT_ORIGIN),
+        "converted Garrison Zone representative must expose reinforcement-origin semantics"
+    );
+    assert.equal(
+        remainderFacts.capabilities.includes(ZONE_CONVERSION_CAPABILITIES.DEFENSE_ANCHOR),
+        false,
+        "Zone capability must not leak across placementGroupId into a non-Zone remainder cell"
+    );
+    assert.equal(
+        remainderFacts.capabilities.includes(ZONE_CONVERSION_CAPABILITIES.REINFORCEMENT_ORIGIN),
+        false,
+        "reinforcement-origin semantics must stay owned by the converted Zone"
+    );
 }
 
 console.log("diagnose_multi_attribute_land_block: PASS");
