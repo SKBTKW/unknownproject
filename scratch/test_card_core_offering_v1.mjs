@@ -26,13 +26,16 @@ import {
     LEGACY_COMMAND_EXECUTION_CLASS,
     DOMAIN_ACTION_OWNER,
     DOMAIN_ACTION_OWNER_BY_ID,
+    DOMAIN_ACTION_MIGRATION_BLOCKER,
+    DOMAIN_ACTION_MIGRATION_BLOCKER_BY_ID,
     CURRENT_SSOT_LOCAL_IDS,
     DOMAIN_ACTION_REQUIRED_IDS,
     LEGACY_ONLY_IDS,
     DUPLICATE_LEGACY_BRANCH_IDS,
     LEGACY_SHADOWED_BRANCH_IDS,
     classifyLegacyCommandExecution,
-    resolveDomainActionOwner
+    resolveDomainActionOwner,
+    resolveDomainActionMigrationBlocker
 } from "../game/src/cards/legacy_command_execution_inventory.js";
 
 function makeGrid(rows, cols) {
@@ -1550,7 +1553,45 @@ function makeGrid(rows, cols) {
     );
 }
 
-// AH. Shadowed duplicate legacy branches stay explicit and Great Rampart remains Project-owned.
+// AH. Every unresolved current-SSOT Domain Action carries an explicit migration blocker.
+{
+    const validBlockers = new Set(Object.values(DOMAIN_ACTION_MIGRATION_BLOCKER));
+    assert.deepEqual(
+        Object.keys(DOMAIN_ACTION_MIGRATION_BLOCKER_BY_ID).sort(),
+        [...DOMAIN_ACTION_REQUIRED_IDS].sort(),
+        "migration blocker map must cover exactly the unresolved domain-action set"
+    );
+
+    for (const id of DOMAIN_ACTION_REQUIRED_IDS) {
+        assert.ok(
+            validBlockers.has(resolveDomainActionMigrationBlocker(id)),
+            `${id} must expose a known migration blocker`
+        );
+    }
+
+    assert.equal(
+        resolveDomainActionMigrationBlocker("CMD_MINE"),
+        DOMAIN_ACTION_MIGRATION_BLOCKER.SPECIAL_BLOCK_SEMANTIC_MISMATCH
+    );
+    assert.equal(
+        resolveDomainActionMigrationBlocker("CMD_GREAT_RAMPART_PROJECT"),
+        DOMAIN_ACTION_MIGRATION_BLOCKER.PROJECT_DOMAIN_MISSING
+    );
+    assert.equal(
+        resolveDomainActionMigrationBlocker("CMD_WETLAND_RECLAMATION"),
+        DOMAIN_ACTION_MIGRATION_BLOCKER.BOARD_MUTATION_API_MISSING
+    );
+    assert.equal(
+        resolveDomainActionMigrationBlocker("CMD_ABANDONED_SETTLEMENT"),
+        DOMAIN_ACTION_MIGRATION_BLOCKER.EXPLORATION_RESOLVER_OWNERSHIP_PENDING
+    );
+
+    for (const id of [...CURRENT_SSOT_LOCAL_IDS, ...LEGACY_ONLY_IDS]) {
+        assert.equal(resolveDomainActionMigrationBlocker(id), null);
+    }
+}
+
+// AI. Shadowed duplicate legacy branches stay explicit and Great Rampart remains Project-owned.
 {
     assert.deepEqual(
         [...LEGACY_SHADOWED_BRANCH_IDS],
@@ -1573,7 +1614,7 @@ function makeGrid(rows, cols) {
         "first reachable Great Rampart branch must remain the 4T project behavior");
 }
 
-// AI. Candidate narrowing can never re-introduce a card rejected by full eligibility.
+// AJ. Candidate narrowing can never re-introduce a card rejected by full eligibility.
 {
     const master = [
         { id: "LEGAL_INVESTIGATION", category: "INVESTIGATION", weight: 1 },
@@ -1600,7 +1641,7 @@ function makeGrid(rows, cols) {
     );
 }
 
-// AJ. FirstRun-style Investigation minimum is satisfied only from the legal candidate population.
+// AK. FirstRun-style Investigation minimum is satisfied only from the legal candidate population.
 {
     const state = {
         turn: 8,
