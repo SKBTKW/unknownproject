@@ -38,6 +38,18 @@ if (engine.deckManager?.__cardRuntimePolicyAttached !== true) {
 if (typeof engine.executeInvestigationCard !== 'function') {
     throw new Error('executeInvestigationCard API missing from live GameEngine');
 }
+if (typeof engine.performInvestigation !== 'function') {
+    throw new Error('card-independent performInvestigation API missing from live GameEngine');
+}
+if (typeof engine.isInvestigationAvailable !== 'function') {
+    throw new Error('Investigation availability query missing from live GameEngine');
+}
+if (typeof engine.evaluateWorldEligibilityRequirement !== 'function') {
+    throw new Error('world eligibility requirement query missing from live GameEngine');
+}
+if (engine.evaluateWorldEligibilityRequirement({ type: 'TYPO_WORLD_REQUIREMENT' }) !== false) {
+    throw new Error('world eligibility requirement must fail closed on unknown predicates');
+}
 if (typeof engine.getAdditionalCardMastersForRestore !== 'function') {
     throw new Error('investigation restore master provider missing from live GameEngine');
 }

@@ -285,6 +285,9 @@ async function main() {
         ["Investigation Report Presenter", "scratch/test_investigation_report_presenter.mjs"],
         ["Investigation Report Text Renderer", "scratch/test_investigation_report_text_renderer.mjs"],
         ["Investigation Narrative", "scratch/test_investigation_narrative.mjs"],
+        ["Investigation Request v1", "scratch/test_investigation_request_v1.mjs"],
+        ["Run History Read Model", "scratch/test_run_history_read_model.mjs"],
+        ["Global Event Eligibility v1", "scratch/test_global_event_eligibility_v1.mjs"],
     ];
     for (const [label, testPath] of investigationContracts) {
         const ok = await runCommand("node", [testPath]);

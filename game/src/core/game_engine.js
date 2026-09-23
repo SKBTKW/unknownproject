@@ -10,6 +10,8 @@ import { BoardDomainAdapter } from './board_domain_adapter.js';
 import { BuffSystem } from '../systems/buff_system.js';
 import { ChronicleSystem } from '../systems/chronicle_system.js';
 import { GlobalEventManager } from '../systems/global_event_system.js';
+import { ConditionEvaluator } from './condition_evaluator.js';
+import { RunHistoryReadModel } from '../systems/run_history_read_model.js';
 import { EmberSystem } from '../systems/ember_system.js';
 import { CardCycleSystem } from '../systems/card_cycle_system.js';
 import { MaintenanceFallbackSystem } from '../systems/maintenance_fallback_system.js';
@@ -119,6 +121,23 @@ class GameEngine {
 
         const ChronicleSystemClass = dependencies.ChronicleSystemClass || ChronicleSystem;
         this.chronicleSystem = dependencies.chronicleSystem || (ChronicleSystemClass ? new ChronicleSystemClass(this.state) : null);
+
+        this.boardWorldQuery = dependencies.boardWorldQuery || this.boardDomainAdapter || null;
+        this.boardHistoryQuery = dependencies.boardHistoryQuery || null;
+        this.runHistoryReadModel = dependencies.runHistoryReadModel || new RunHistoryReadModel({
+            chronicleSystem: this.chronicleSystem,
+            boardHistoryQuery: this.boardHistoryQuery
+        });
+
+        this.getWorldEligibilityContext = () => ({
+            state: this.state,
+            engine: this,
+            boardQuery: this.boardWorldQuery || null,
+            historyQuery: this.runHistoryReadModel || null,
+            warningStateService: this.warningStateService || null
+        });
+        this.evaluateWorldEligibilityRequirement = (requirement) =>
+            ConditionEvaluator.evaluateStrict(requirement, this.getWorldEligibilityContext());
 
         const GlobalEventManagerClass = dependencies.GlobalEventManagerClass || GlobalEventManager;
         this.globalEventManager = dependencies.globalEventManager || (GlobalEventManagerClass ? new GlobalEventManagerClass(this.state, this) : null);
