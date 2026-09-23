@@ -1583,6 +1583,10 @@ function makeGrid(rows, cols) {
         DOMAIN_ACTION_MIGRATION_BLOCKER.BOARD_MUTATION_API_MISSING
     );
     assert.equal(
+        resolveDomainActionMigrationBlocker("CMD_RESETTLEMENT"),
+        DOMAIN_ACTION_MIGRATION_BLOCKER.ZONE_CONVERSION_DEFINITION_MISSING
+    );
+    assert.equal(
         resolveDomainActionMigrationBlocker("CMD_ABANDONED_SETTLEMENT"),
         DOMAIN_ACTION_MIGRATION_BLOCKER.EXPLORATION_RESOLVER_OWNERSHIP_PENDING
     );
