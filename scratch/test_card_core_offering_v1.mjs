@@ -34,6 +34,7 @@ import {
     DUPLICATE_LEGACY_BRANCH_IDS,
     LEGACY_SHADOWED_BRANCH_IDS,
     classifyLegacyCommandExecution,
+    isLegacyOnlyCommandExecution,
     resolveDomainActionOwner,
     resolveDomainActionMigrationBlocker
 } from "../game/src/cards/legacy_command_execution_inventory.js";
@@ -1591,7 +1592,38 @@ function makeGrid(rows, cols) {
     }
 }
 
-// AI. Shadowed duplicate legacy branches stay explicit and Great Rampart remains Project-owned.
+// AI. Legacy-only generated commands are excluded from live Offering eligibility.
+{
+    const generatedLegacyIds = LEGACY_ONLY_IDS.filter(id =>
+        COMMAND_CARDS_MASTER.some(card => card.id === id)
+    );
+    assert.ok(generatedLegacyIds.length > 0,
+        "fixture must cover legacy-only ids that still exist in generated command data");
+
+    const state = {
+        turn: 20,
+        stage: { id: 3 },
+        reserveSlots: [],
+        activeBuffs: [],
+        consumedUniqueCards: [],
+        usedUniqueCards: []
+    };
+    const manager = new DeckManager(state, {});
+    manager.cycleSystem = null;
+
+    for (const id of LEGACY_ONLY_IDS) {
+        assert.equal(isLegacyOnlyCommandExecution(id), true);
+        const card = COMMAND_CARDS_MASTER.find(candidate => candidate.id === id);
+        if (!card) continue;
+        assert.equal(
+            manager.isCardEligible(card, 3, 0),
+            false,
+            `${id} must never re-enter live Offering from generated legacy data`
+        );
+    }
+}
+
+// AJ. Shadowed duplicate legacy branches stay explicit and Great Rampart remains Project-owned.
 {
     assert.deepEqual(
         [...LEGACY_SHADOWED_BRANCH_IDS],
@@ -1614,7 +1646,7 @@ function makeGrid(rows, cols) {
         "first reachable Great Rampart branch must remain the 4T project behavior");
 }
 
-// AJ. Candidate narrowing can never re-introduce a card rejected by full eligibility.
+// AK. Candidate narrowing can never re-introduce a card rejected by full eligibility.
 {
     const master = [
         { id: "LEGAL_INVESTIGATION", category: "INVESTIGATION", weight: 1 },
@@ -1641,7 +1673,7 @@ function makeGrid(rows, cols) {
     );
 }
 
-// AK. FirstRun-style Investigation minimum is satisfied only from the legal candidate population.
+// AL. FirstRun-style Investigation minimum is satisfied only from the legal candidate population.
 {
     const state = {
         turn: 8,
