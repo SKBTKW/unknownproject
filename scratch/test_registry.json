@@ -488,6 +488,14 @@
       ]
     },
     {
+      "path": "scratch/test_global_event_recovery_history_eligibility.mjs",
+      "purpose": "Recovery Momentum eligibility uses Chronicle-backed last-Trial damage history",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_global_event_gameplay_rng.mjs",
       "purpose": "global event gameplay rng",
       "suite": "supplemental"
@@ -920,7 +928,7 @@
     },
     {
       "path": "scratch/test_trial_deployment_economy.mjs",
-      "purpose": "Trial deployment economy preview/commit atomicity, stale-state rejection, semantic Board capability consumption",
+      "purpose": "Trial deployment economy fixed-placement v1, atomic payment, stale-state rejection, semantic origin/capability consumption",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
