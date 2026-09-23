@@ -2,6 +2,7 @@ import { TrialDeploymentCostPolicy } from "../domain/trial_deployment_cost_polic
 import { createTrialDeploymentCostResolver } from "../domain/trial_deployment_cost_resolver.js";
 import { DeploymentOriginResolver } from "../domain/deployment_origin_resolver.js";
 import { TrialDeploymentService } from "../systems/trial_deployment_service.js";
+import { TrialDefenseReservation } from "../systems/trial_defense_reservation.js";
 import { TrialResourcePayment } from "../systems/trial_resource_payment.js";
 
 /**
@@ -20,6 +21,13 @@ export function attachTrialDeploymentEconomy(engine, {
     if (!engine?.state || !engine?.boardDomainAdapter) {
         return { success: false, reason: "TRIAL_DEPLOYMENT_ENGINE_BOUNDARIES_REQUIRED" };
     }
+    if (
+        typeof engine.getTrialAvailableDefense !== "function"
+        || typeof engine.applyTrialDefenseLoss !== "function"
+        || typeof engine.recoverCurrentDefense !== "function"
+    ) {
+        return { success: false, reason: "TRIAL_DEPLOYMENT_DEFENSE_BOUNDARY_REQUIRED" };
+    }
     const resolvedCostResolver = typeof costResolver === "function"
         ? costResolver
         : createTrialDeploymentCostResolver(costProfile);
@@ -28,6 +36,11 @@ export function attachTrialDeploymentEconomy(engine, {
     }
 
     const resourcePayment = new TrialResourcePayment({ state: engine.state });
+    const defenseReservation = new TrialDefenseReservation({
+        getAvailableDefense: () => engine.getTrialAvailableDefense(),
+        applyDefenseLoss: amount => engine.applyTrialDefenseLoss(amount),
+        recoverDefense: amount => engine.recoverCurrentDefense(amount)
+    });
     const costPolicy = new TrialDeploymentCostPolicy({ costResolver: resolvedCostResolver });
     const originResolver = new DeploymentOriginResolver({
         boardQuery: engine.boardDomainAdapter,
@@ -38,10 +51,12 @@ export function attachTrialDeploymentEconomy(engine, {
         boardQuery: engine.boardDomainAdapter,
         costPolicy,
         originResolver,
-        resourcePayment
+        resourcePayment,
+        defenseReservation
     });
 
     engine.trialDeploymentResourcePayment = resourcePayment;
+    engine.trialDeploymentDefenseReservation = defenseReservation;
     engine.trialDeploymentCostPolicy = costPolicy;
     engine.trialDeploymentOriginResolver = originResolver;
     engine.trialDeploymentService = deploymentService;
@@ -49,6 +64,7 @@ export function attachTrialDeploymentEconomy(engine, {
     return {
         success: true,
         resourcePayment,
+        defenseReservation,
         costPolicy,
         originResolver,
         deploymentService
