@@ -1959,6 +1959,9 @@ function makeGrid(rows, cols) {
     }
 
     const makeState = () => ({
+        permanentPlainsFoodBonus: 0,
+        wood: 0,
+        mystic: 0,
         emberConsumptionReducedTurns: 0,
         emberConsumptionStartsNextTurn: false,
         grandCultivationTurns: 0,
@@ -1969,6 +1972,33 @@ function makeGrid(rows, cols) {
         addBuff(buff) { this.activeBuffs.push(buff); },
         addLog(log) { this.logs.push(log); }
     });
+
+    {
+        const state = makeState();
+        const result = router.execute({ id: "CMD_AGRICULTURAL_POLICY" }, {
+            state,
+            cardName: "農地改革",
+            cardDescription: "legacy",
+            i18n: null
+        });
+        assert.equal(result.success, true);
+        assert.equal(state.permanentPlainsFoodBonus, 1);
+        assert.equal(state.logs.length, 1);
+    }
+
+    {
+        const state = makeState();
+        const result = router.execute({ id: "CMD_BLACK_MARKET" }, {
+            state,
+            cardName: "闇市場",
+            cardDescription: "legacy",
+            i18n: null
+        });
+        assert.equal(result.success, true);
+        assert.equal(state.wood, 35);
+        assert.equal(state.mystic, 10);
+        assert.equal(state.logs.length, 1);
+    }
 
     {
         const state = makeState();
