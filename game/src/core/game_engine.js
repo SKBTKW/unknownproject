@@ -31,6 +31,7 @@ import { attachInvestigationSubsystem } from '../warning/integration/investigati
 import { FirstRunService } from '../tutorial/first_run_service.js';
 import { FirstRunState } from '../tutorial/first_run_state.js';
 import { TrialTimingAuthorityService } from '../trial/systems/trial_timing_authority_service.js';
+import { attachTrialDeploymentEconomy } from '../trial/integration/trial_deployment_economy_bootstrap.js';
 
 function normalizeRunSeed(seed) {
     if (!Number.isFinite(seed)) return null;
@@ -169,6 +170,17 @@ class GameEngine {
             rebuildCostResolver: dependencies.defenseRebuildCostResolver || null,
             mysticFallbackResolver: dependencies.defenseMysticFallbackResolver || null
         }) : null);
+
+        this.trialDeploymentAttachment = null;
+        if (
+            dependencies.trialDeploymentEconomy
+            && typeof dependencies.trialDeploymentEconomy === "object"
+        ) {
+            this.trialDeploymentAttachment = attachTrialDeploymentEconomy(
+                this,
+                dependencies.trialDeploymentEconomy
+            );
+        }
 
         const CardCycleSystemClass = dependencies.CardCycleSystemClass || CardCycleSystem;
         this.cardCycleSystem = dependencies.cardCycleSystem || (CardCycleSystemClass ? new CardCycleSystemClass(this.state, this) : null);
