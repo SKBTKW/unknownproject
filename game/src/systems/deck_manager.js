@@ -173,6 +173,7 @@ class DeckManager {
      */
     isCardEligible(c, stageNum, h2Count, options = {}) {
         if (!c) return false;
+
         const cardStage = c.minStage || 1;
         if (cardStage > stageNum) return false;
 
