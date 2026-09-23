@@ -618,6 +618,14 @@
       ]
     },
     {
+      "path": "scratch/test_investigation_chronicle_bridge.mjs",
+      "purpose": "Investigation GameFacts create truth-safe idempotent Chronicle index entries",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_investigation_offering_adapter.mjs",
       "purpose": "investigation offering adapter",
       "suite": "existing",
