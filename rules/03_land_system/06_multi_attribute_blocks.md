@@ -132,6 +132,27 @@ shapeだけ回転してcell terrainの位置を残すことを禁止する。
 - 真のZone成立前にLINKしない。
 - Multi-Attribute BlockそのものはZoneでもLINKでもない。
 
+### 5.1 Zone Conversion
+
+Zone Conversionは `mergeGroupId` で完成済みZoneをdecorateする。
+
+同一 `placementGroupId` の一部cellだけがZoneへ所属している場合でも、変換対象はそのZoneだけとする。
+
+```text
+placementGroup: Multi A
+├ Plains cell → Zone P → Conversion
+└ Hill cell   → no Zone → unchanged
+```
+
+禁止:
+
+- Conversionを理由に同一 `placementGroupId` 全cellへ `mergeGroupId` を伝播する
+- Zone外cellの `terrainId` を変換後terrainへ書き換える
+- Zone外cellのCELL Production ownershipを変更する
+- Conversion capabilityをplacementGroup全体のcell capabilityとして扱う
+
+Conversion後もZone外cellは元のterrain / production / Trial semanticを維持する。
+
 ---
 
 ## 6. Trial

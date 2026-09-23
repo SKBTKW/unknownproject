@@ -12,6 +12,7 @@ import { GameState } from "../../v2_unity_ready_main.js";
 import { ConditionEvaluator } from "../condition_evaluator.js";
 import { ProductionCalculator } from "../../systems/production_calculator.js";
 import { DefenseSystem } from "../../systems/defense_system.js";
+import { ZoneConversionService } from "../../systems/zone_conversion_service.js";
 import { UndoLandSystem } from "../../systems/undo_land_system.js";
 import { CellViewDataService } from "../../services/cell_view_data_service.js";
 import { DeckManager, OFFERING_GENERATION_REASONS } from "../../systems/deck_manager.js";
@@ -35,6 +36,7 @@ import {
 import { TrialPlanningDraftService } from "../../trial/domain/trial_planning_draft_service.js";
 import { TrialTerrainEffectResolver } from "../../trial/systems/trial_terrain_effect_resolver.js";
 import { TRIAL_PLAN_REASONS } from "../../trial/domain/trial_types.js";
+import { ZONE_CONVERSION_COST_STATUS } from "../zone_conversion_domain.js";
 import {
     LAND_CELL_YIELD_SOURCE,
     LAND_PRODUCTION_SCOPE,
@@ -417,6 +419,46 @@ const landSystemJson = JSON.parse(
         ignoreCooldown: true,
         ignoreHold: true
     }), true);
+}
+
+{
+    // Shipped Multi-Attribute cards must enter the real weighted candidate path
+    // once their Production Contract is resolved, while minStage remains strict.
+    const state = createState();
+    const manager = new DeckManager(state, {
+        gameplayRandom: {
+            nextFloat: () => 0,
+            nextId: () => "live-multi-offering"
+        }
+    });
+
+    manager.getLandCardMaster = () => [actualMultiCards[0]];
+    const plainsHill = manager.drawSingleCard([], {
+        ignoreCooldown: true,
+        ignoreHold: true
+    });
+    assert.equal(plainsHill?.cardMasterId, actualMultiCards[0].id);
+
+    manager.getLandCardMaster = () => [actualMultiCards[1]];
+    const plainsForest = manager.drawSingleCard([], {
+        ignoreCooldown: true,
+        ignoreHold: true
+    });
+    assert.equal(plainsForest?.cardMasterId, actualMultiCards[1].id);
+
+    manager.getLandCardMaster = () => [actualMultiCards[2]];
+    state.stage.id = 1;
+    assert.equal(manager.drawSingleCard([], {
+        ignoreCooldown: true,
+        ignoreHold: true
+    }), null);
+
+    state.stage.id = 2;
+    const hillMountain = manager.drawSingleCard([], {
+        ignoreCooldown: true,
+        ignoreHold: true
+    });
+    assert.equal(hillMountain?.cardMasterId, actualMultiCards[2].id);
 }
 
 {
@@ -1789,6 +1831,104 @@ const landSystemJson = JSON.parse(
 
     const serialized = serializeGameState(state);
     assert.equal(serialized.placedBlockCount, 6);
+}
+
+// Zone Conversion decorates only the completed mergeGroup, not the whole
+// Multi-Attribute placementGroup. A remainder cell outside the Zone must keep
+// its terrain, merge membership, and production ownership unchanged.
+{
+    const state = createState();
+    const placementGroupId = "multi-zone-boundary";
+    const zoneGroupId = "zone-multi-plains";
+    const zoneCells = [
+        { r: 0, c: 0 },
+        { r: 0, c: 1 },
+        { r: 1, c: 0 },
+        { r: 1, c: 1 }
+    ];
+
+    const makeZonePlains = (r, c, groupId) => createCell(r, c, {
+        placed: true,
+        merged: true,
+        mergeGroupId: zoneGroupId,
+        mergeType: "2x2",
+        placementGroupId: groupId,
+        terrain: { ...PLAINS, zoneCategory: "PLAINS" },
+        production: {
+            status: LAND_PRODUCTION_STATUS.RESOLVED,
+            scope: LAND_PRODUCTION_SCOPE.CELL,
+            cellYields: { food: 4, wood: 0, defense: 0, mystic: 0 }
+        }
+    });
+
+    state.grid[0][0] = makeZonePlains(0, 0, "plain-a");
+    state.grid[0][1] = makeZonePlains(0, 1, placementGroupId);
+    state.grid[1][0] = makeZonePlains(1, 0, "plain-b");
+    state.grid[1][1] = makeZonePlains(1, 1, "plain-c");
+    state.grid[0][2] = createCell(0, 2, {
+        placed: true,
+        merged: false,
+        mergeGroupId: null,
+        mergeType: null,
+        placementGroupId,
+        terrain: { ...HILL },
+        production: {
+            status: LAND_PRODUCTION_STATUS.RESOLVED,
+            scope: LAND_PRODUCTION_SCOPE.CELL,
+            cellYields: { food: 2, wood: 1, defense: 1, mystic: 0 }
+        }
+    });
+
+    state.mergedBlocks[zoneGroupId] = {
+        groupId: zoneGroupId,
+        terrainId: "GL1_PLAINS",
+        zoneCategory: "PLAINS",
+        mergeType: "2x2",
+        cells: zoneCells.map(cell => ({ ...cell })),
+        yieldMultiplier: 1.2
+    };
+
+    const beforeZoneCell = JSON.parse(JSON.stringify(state.grid[0][1]));
+    const beforeRemainder = JSON.parse(JSON.stringify(state.grid[0][2]));
+    const beforeZoneCells = JSON.parse(JSON.stringify(state.mergedBlocks[zoneGroupId].cells));
+
+    const service = new ZoneConversionService({
+        state,
+        definitions: {
+            MULTI_ZONE_BOUNDARY_TEST: {
+                id: "MULTI_ZONE_BOUNDARY_TEST",
+                eligibleZoneAttributes: ["PLAINS"],
+                requirements: { resources: {} },
+                creationCost: {
+                    status: ZONE_CONVERSION_COST_STATUS.RESOLVED,
+                    base: {}
+                },
+                maintenance: {
+                    status: ZONE_CONVERSION_COST_STATUS.RESOLVED,
+                    resources: {}
+                },
+                capabilities: []
+            }
+        }
+    });
+
+    assert.equal(service.validateCandidate("MULTI_ZONE_BOUNDARY_TEST", zoneGroupId).valid, true);
+    const created = service.createConversion("MULTI_ZONE_BOUNDARY_TEST", zoneGroupId, {
+        paymentConfirmed: true,
+        createdVerse: 10
+    });
+    assert.equal(created.success, true);
+    assert.equal(
+        state.mergedBlocks[zoneGroupId].conversion.definitionId,
+        "MULTI_ZONE_BOUNDARY_TEST"
+    );
+    assert.deepEqual(state.mergedBlocks[zoneGroupId].cells, beforeZoneCells);
+    assert.deepEqual(state.grid[0][1], beforeZoneCell);
+    assert.deepEqual(state.grid[0][2], beforeRemainder);
+    assert.equal(state.grid[0][1].placementGroupId, placementGroupId);
+    assert.equal(state.grid[0][2].placementGroupId, placementGroupId);
+    assert.equal(state.grid[0][2].mergeGroupId, null);
+    assert.equal(state.grid[0][2].terrain.terrainId, "E2_HILL");
 }
 
 console.log("diagnose_multi_attribute_land_block: PASS");
