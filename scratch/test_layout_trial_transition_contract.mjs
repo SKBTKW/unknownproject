@@ -34,7 +34,7 @@ assert.equal(documentRef.body.dataset.boardContext, "trial");
 
 layout.enterTrial();
 assert.equal(layout.getState(), UI_LAYOUT_STATES.TRIAL);
-assert.equal(layout.getContextOwner(), RIGHT_CONTEXT_OWNERS.TRIAL);
+assert.equal(layout.getContextOwner(), RIGHT_CONTEXT_OWNERS.NONE);
 assert.equal(layout.getHandState(), HAND_LAYOUT_STATES.TRIAL_COLLAPSED);
 assert.equal(layout.getPlayerTrayMode(), PLAYER_TRAY_MODES.TRIAL);
 assert.equal(documentRef.body.dataset.boardContext, "trial");
@@ -49,7 +49,7 @@ layout.claimAdvisorContext();
 assert.equal(layout.getContextOwner(), RIGHT_CONTEXT_OWNERS.ADVISOR);
 layout.closeAdvisor();
 assert.equal(layout.getState(), UI_LAYOUT_STATES.TRIAL);
-assert.equal(layout.getContextOwner(), RIGHT_CONTEXT_OWNERS.TRIAL);
+assert.equal(layout.getContextOwner(), RIGHT_CONTEXT_OWNERS.NONE);
 
 presentation.setContextMode(BOARD_CONTEXT_MODES.NORMAL);
 layout.applyContract();
@@ -102,20 +102,18 @@ assert.ok(
     "Trial Action Tray visibility must not depend on Board Presentation context"
 );
 
-const rightContextSource = fs.readFileSync(
-    new URL("../game/src/ui/trial_defense_allocation_component.js", import.meta.url),
-    "utf8"
+assert.ok(
+    !uiControllerSource.includes("TrialDefenseAllocationComponent")
+        && !uiControllerSource.includes("trialDefenseAllocationComponent")
+        && uiControllerSource.includes("TrialActionTrayComponent"),
+    "UIController must use Player Tray as the canonical Trial operation surface"
 );
 assert.ok(
-    rightContextSource.includes("contextOwnerProvider")
-        && rightContextSource.includes("RIGHT_CONTEXT_OWNERS.TRIAL")
-        && rightContextSource.includes("RIGHT_CONTEXT_OWNERS.NONE"),
-    "Trial Right Context visibility must consume canonical Layout context owner tokens"
-);
-assert.ok(
-    !rightContextSource.includes('this.contextOwnerProvider() === "trial"')
-        && !rightContextSource.includes('active ? "trial" : "none"'),
-    "Trial Right Context must not duplicate Layout context owner string literals"
+    trialActionTraySource.includes("btnTrialFinishPlanning")
+        && trialActionTraySource.includes("btnTrialConfirmPlan")
+        && trialActionTraySource.includes("btnTrialResolveBattle")
+        && trialActionTraySource.includes("btnTrialCompleteTrial"),
+    "Trial Action Tray must own planning through in-Trial progression controls"
 );
 
 const boardContextCss = fs.readFileSync(

@@ -19,14 +19,12 @@ function check(condition, message) {
 
 const read = path => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 const uiSource = read("../game/src/ui/ui_controller.js");
+const actionTraySource = read("../game/src/ui/trial_action_tray_component.js");
 const boardSource = read("../game/src/ui/board_grid_component.js");
-const panelSource = read("../game/src/ui/trial_defense_allocation_component.js");
-const panelCss = read("../game/css/2_center_area/land_grid.css");
-const handCss = read("../game/css/3_bottom_area/draw_card_select_area.css");
+const boardCss = read("../game/css/2_center_area/land_grid.css");
+const trayCss = read("../game/css/3_bottom_area/trial_action_tray.css");
 const trayViewCss = read("../game/css/3_bottom_area/player_tray_view_mode.css");
-const layoutTokens = read("../game/css/0_global_common/layout_tokens.css");
 const indexHtml = read("../game/index.html");
-const layoutConfig = read("../game/src/ui/layout_config.js");
 
 const root = { dataset: {} };
 const body = { dataset: {} };
@@ -42,69 +40,80 @@ manager.setAdapters({
     setBoardViewMode: mode => boardViewModes.push(mode)
 });
 
-console.log("\nPhase 5 Trial UI integration tests");
+console.log("\nStage1 Trial UI final integration tests");
 check(manager.getBoardViewMode() === BOARD_VIEW_MODES.STRATEGIC_2D, "Board view defaults to STRATEGIC_2D mode");
-check(root.dataset.boardView === "top" && body.dataset.boardView === "top", "root datasets expose TOP board-view mode");
-check(indexHtml.includes("player_tray_view_mode.css"), "Player Tray board-view positioning stylesheet is loaded");
+check(indexHtml.includes("player_tray_view_mode.css") && indexHtml.includes('id="trialActionTrayHost"'),
+    "Player Tray host and canonical view positioning stylesheet are loaded");
 check(trayViewCss.includes('body[data-board-view="top"] #layerPlayerTray.layer-player-tray')
     && trayViewCss.includes("left: var(--layout-player-tray-top-left)")
     && trayViewCss.includes("translateX(-50%)"),
-"TOP view anchors Player Tray at bottom-center");
+"2D anchors Player Tray at bottom-center");
 check(trayViewCss.includes('body[data-board-view="quarter"] #layerPlayerTray.layer-player-tray')
     && trayViewCss.includes("left: var(--layout-player-tray-quarter-left)")
     && trayViewCss.includes("translateX(0)"),
-"QUARTER view anchors Player Tray at bottom-left");
-check(trayViewCss.includes("transition:")
-    && trayViewCss.includes("left var(--layout-player-tray-motion-ms)")
-    && trayViewCss.includes("transform var(--layout-player-tray-motion-ms)"),
-"Board-view switching has bounded Player Tray motion");
+"2.5D anchors the same Player Tray at bottom-left");
+check(!trayViewCss.includes('data-player-tray-mode="trial"][data-board-view="quarter"')
+    && !trayViewCss.includes('data-board-view="quarter"][data-player-tray-mode="trial"'),
+"Trial does not define a separate 2.5D Player Tray placement rule");
+
+manager.enterTrial();
+check(manager.getState() === UI_LAYOUT_STATES.TRIAL, "Trial starts in TRIAL layout state");
+check(manager.getContextOwner() === RIGHT_CONTEXT_OWNERS.NONE, "Trial mode does not own Right Context");
+check(manager.getHandState() === HAND_LAYOUT_STATES.TRIAL_COLLAPSED, "Trial retains compatibility hand suppression");
+check(manager.getPlayerTrayMode() === PLAYER_TRAY_MODES.TRIAL && trayModes.at(-1) === PLAYER_TRAY_MODES.TRIAL,
+    "Trial switches the Player Tray content into TRIAL mode");
+check(visibility.at(-1) === false, "legacy Trial Right Context stays hidden");
+check(!uiSource.includes("TrialDefenseAllocationComponent")
+    && !uiSource.includes("trialDefenseAllocationComponent")
+    && uiSource.includes("TrialActionTrayComponent"),
+"UIController no longer depends on the standalone right Trial panel");
+check(actionTraySource.includes("btnTrialFinishPlanning")
+    && actionTraySource.includes("btnTrialConfirmPlan")
+    && actionTraySource.includes("btnTrialActivatePlan")
+    && actionTraySource.includes("btnTrialStartBattle")
+    && actionTraySource.includes("btnTrialResolveBattle")
+    && actionTraySource.includes("btnTrialAdvanceEnemy")
+    && actionTraySource.includes("btnTrialNextBattle")
+    && actionTraySource.includes("btnTrialCompleteTrial"),
+"Player Tray owns the major Trial operation/progression controls");
+check(actionTraySource.includes("qualitativePreviewOnly")
+    && actionTraySource.includes("UI_FIRST_RUN_TRIAL_FAVORABLE")
+    && actionTraySource.includes("UI_FIRST_RUN_TRIAL_UNFAVORABLE"),
+"FirstRun qualitative forecast remains a Presentation Policy on the normal Trial tray");
+check(!trayCss.includes(".trial-defense-allocation-panel")
+    && trayCss.includes(".trial-action-tray-progress"),
+"Trial tray CSS has no legacy right-panel dependency");
+check(uiSource.includes("getTrialRouteVisualState") && uiSource.includes("routeDirection:"),
+"route visual state still publishes entry and direction metadata");
+check(boardSource.includes('data-trial-direction') && boardSource.includes("trial-route-entry"),
+"Board remains responsible for route direction and ingress markers");
+check(boardCss.includes("pointer-events: none") && boardCss.includes(".cell.trial-route-cell::before"),
+"Board route markers do not block interception input");
 
 manager.setBoardViewMode(BOARD_VIEW_MODES.WORLD_2_5D);
 check(manager.getBoardViewMode() === BOARD_VIEW_MODES.WORLD_2_5D
     && root.dataset.boardView === "quarter"
     && boardViewModes.at(-1) === BOARD_VIEW_MODES.WORLD_2_5D,
-"Board view contract switches to QUARTER without changing layout ownership");
-manager.setBoardViewMode(BOARD_VIEW_MODES.STRATEGIC_2D);
-check(manager.getBoardViewMode() === BOARD_VIEW_MODES.STRATEGIC_2D
-    && root.dataset.boardView === "top"
-    && boardViewModes.at(-1) === BOARD_VIEW_MODES.STRATEGIC_2D,
-"Board view contract switches back to TOP");
+"Trial can use existing 2.5D Player Tray placement without changing ownership");
 
-manager.enterTrial();
-check(manager.getState() === UI_LAYOUT_STATES.TRIAL, "Trial starts in TRIAL layout state");
-check(manager.getContextOwner() === RIGHT_CONTEXT_OWNERS.TRIAL, "Trial owns the right context");
-check(manager.getHandState() === HAND_LAYOUT_STATES.TRIAL_COLLAPSED, "Trial hand uses TRIAL_COLLAPSED compatibility state");
-check(manager.getPlayerTrayMode() === PLAYER_TRAY_MODES.TRIAL, "Trial switches Player Tray into dedicated TRIAL mode");
-check(manager.getBoardViewMode() === BOARD_VIEW_MODES.STRATEGIC_2D, "Trial state does not override the selected Board view mode");
-check(root.dataset.handState === "trial-collapsed", "root dataset exposes Trial hand state");
-check(root.dataset.playerTrayMode === "trial", "root dataset exposes Trial Player Tray mode");
-check(trayModes.at(-1) === PLAYER_TRAY_MODES.TRIAL, "Player Tray adapter receives TRIAL mode");
-check(uiSource.includes("trial-hand-collapsed-bar") && uiSource.includes("UI_TRIAL_HAND_COLLAPSED"), "Trial renders the existing compact hand bar until Trial Action Tray presentation is mounted");
-check(handCss.includes(".offering-section.is-trial-collapsed") && handCss.includes("height: 42px"), "Trial hand bar has bounded compact geometry");
-check(layoutConfig.includes('width: "var(--layout-right-context-width)"')
-    && layoutConfig.includes('maxHeight: "var(--layout-right-context-max-height)"')
-    && layoutTokens.includes("--layout-right-context-width: min(360px")
-    && layoutTokens.includes("--layout-right-context-max-height: calc("),
-"right Trial context consumes Layout-owned PC bounds during migration");
-check(panelCss.includes("overflow-y: auto") && panelCss.includes("overscroll-behavior: contain"), "legacy right Trial context scrolls internally during migration");
-check(panelSource.includes("this.contextOwnerProvider() === RIGHT_CONTEXT_OWNERS.TRIAL"), "Trial panel visibility follows the context-owner contract");
-check(panelSource.includes("trial-context-summary") && panelSource.includes("activeRoute?.suppression"), "right context exposes route and enemy strength summary");
-check(uiSource.includes("getTrialRouteVisualState") && uiSource.includes("routeDirection:"), "route visual state exposes entry and direction metadata separately");
-check(boardSource.includes('data-trial-direction') && boardSource.includes("trial-route-entry"), "Board consumes route direction and entry metadata");
-check(panelCss.includes("pointer-events: none") && panelCss.includes(".cell.trial-route-cell::before"), "visual route markers do not block Board input");
-check(panelSource.includes("this.ui.selectTrialRoute(rId)"), "legacy right-panel Route selection remains available during migration");
-
-manager.setBoardViewMode(BOARD_VIEW_MODES.WORLD_2_5D);
 manager.openAdvisor();
 manager.claimAdvisorContext();
-check(manager.getContextOwner() === RIGHT_CONTEXT_OWNERS.ADVISOR && visibility.at(-1) === false, "Advisor suspends Trial context exclusively");
-check(manager.getHandState() === HAND_LAYOUT_STATES.TRIAL_COLLAPSED, "Advisor does not expand the Trial hand");
-check(manager.getPlayerTrayMode() === PLAYER_TRAY_MODES.TRIAL && trayModes.at(-1) === PLAYER_TRAY_MODES.TRIAL, "Advisor overlay preserves Trial Player Tray mode");
-check(manager.getBoardViewMode() === BOARD_VIEW_MODES.WORLD_2_5D && root.dataset.boardView === "quarter", "Advisor overlay preserves QUARTER board view");
+check(manager.getState() === UI_LAYOUT_STATES.ADVISOR_EXPANDED
+    && manager.getContextOwner() === RIGHT_CONTEXT_OWNERS.ADVISOR,
+"Advisor can expand and own Right Context during Trial");
+check(manager.getPlayerTrayMode() === PLAYER_TRAY_MODES.TRIAL
+    && manager.getHandState() === HAND_LAYOUT_STATES.TRIAL_COLLAPSED,
+"Advisor expansion preserves Trial Player Tray mode");
+check(manager.getBoardViewMode() === BOARD_VIEW_MODES.WORLD_2_5D && root.dataset.boardView === "quarter",
+"Advisor expansion preserves 2.5D board view");
+
 manager.closeAdvisor();
-check(manager.getState() === UI_LAYOUT_STATES.TRIAL && manager.getContextOwner() === RIGHT_CONTEXT_OWNERS.TRIAL && visibility.at(-1) === true, "closing Advisor restores Trial context");
-check(manager.getPlayerTrayMode() === PLAYER_TRAY_MODES.TRIAL, "closing Advisor restores Trial with the Trial Player Tray still active");
-check(manager.getBoardViewMode() === BOARD_VIEW_MODES.WORLD_2_5D, "closing Advisor does not change Board view mode");
+check(manager.getState() === UI_LAYOUT_STATES.TRIAL
+    && manager.getContextOwner() === RIGHT_CONTEXT_OWNERS.NONE
+    && visibility.at(-1) === false,
+"closing Advisor returns to Trial without restoring a Trial right panel");
+check(manager.getPlayerTrayMode() === PLAYER_TRAY_MODES.TRIAL, "Trial Player Tray remains active after Advisor closes");
+
 manager.exitTrial();
 check(manager.getState() === UI_LAYOUT_STATES.NORMAL
     && manager.getContextOwner() === RIGHT_CONTEXT_OWNERS.NONE
@@ -113,6 +122,6 @@ check(manager.getState() === UI_LAYOUT_STATES.NORMAL
     && root.dataset.playerTrayMode === "normal"
     && root.dataset.boardView === "quarter"
     && camera.zoom === 1.35 && camera.panX === 44 && camera.panY === -18 && camera.selectedCell === "3:2",
-"Trial exit restores normal Player Tray mode while preserving Board view and camera state");
+"Trial exit restores normal Player Tray while preserving Board view and camera state");
 
 console.log(`Trial UI integration: ${passed}/${passed} PASS`);

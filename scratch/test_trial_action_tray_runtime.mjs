@@ -54,24 +54,24 @@ ui.layoutStateManager.getPlayerTrayMode = () => PLAYER_TRAY_MODES.TRIAL;
 check(component.isActive() === true, "tray activates during editable Trial planning");
 
 lifecycle.reviewRequested = true;
-check(component.isActive() === false, "tray closes when planning enters review");
+check(component.isActive() === true, "tray remains active when planning enters review");
 lifecycle.reviewRequested = false;
 check(component.isActive() === true, "tray reopens when Modify returns from review to planning");
 
 lifecycle.confirmed = true;
-check(component.isActive() === false, "tray stays closed after planning confirmation");
+check(component.isActive() === true, "tray remains the Trial operation surface after planning confirmation");
 lifecycle.confirmed = false;
 lifecycle.activated = true;
-check(component.isActive() === false, "tray stays closed after plan activation");
+check(component.isActive() === true, "tray remains active after plan activation");
 lifecycle.activated = false;
 lifecycle.battleActive = true;
-check(component.isActive() === false, "tray stays closed during an active battle");
+check(component.isActive() === true, "tray remains active during an active battle");
 lifecycle.battleActive = false;
 lifecycle.battleResolved = true;
-check(component.isActive() === false, "tray stays closed while a battle result owns Trial progression");
+check(component.isActive() === true, "tray presents battle result progression inside the same surface");
 lifecycle.battleResolved = false;
 lifecycle.completed = true;
-check(component.isActive() === false, "tray stays closed after Trial completion");
+check(component.isActive() === true, "tray can present the completed Trial summary until settlement exit");
 
 lifecycle.completed = false;
 ui.trialPreviewConfig = null;
@@ -79,16 +79,12 @@ check(component.isActive() === false, "tray does not activate without Trial prev
 
 check(trayCss.includes('body[data-player-tray-mode="trial"] #layerPlayerTray .offering-section')
     && trayCss.includes('body[data-player-tray-mode="trial"] #trialActionTrayHost'),
-    "Trial mode swaps normal Offering presentation for the Trial tray");
-check(trayCss.includes(".trial-defense-allocation-controls")
-    && trayCss.includes(".trial-route-decision-actions")
-    && trayCss.includes("display: none !important"),
-    "legacy right context does not duplicate point-specific Trial controls");
-check(
-    trayCss.includes("point-specific controls now belong to the bottom Trial Action Tray")
-    && trayCss.includes("route/global")
-    && trayCss.includes("planning progression"),
-    "presentation contract keeps point planning in the tray and Trial progression in right context"
-);
+    "Trial mode swaps normal Offering presentation for the canonical Trial tray");
+check(!trayCss.includes(".trial-defense-allocation-panel")
+    && trayCss.includes(".trial-action-tray-progress"),
+    "Player Tray presentation no longer depends on the legacy right Trial panel");
+check(bridgeSource.includes("attachTrialRouteBoardSelection(uiController)")
+    && bridgeSource.includes("uiController.trialActionTrayComponent.render?.()"),
+    "bootstrap preserves board-route wiring when UIController already owns the tray");
 
 console.log(`Trial Action Tray runtime: ${passed}/${passed} PASS`);

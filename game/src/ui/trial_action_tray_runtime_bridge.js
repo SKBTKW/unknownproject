@@ -8,16 +8,19 @@ const RERENDER_AFTER_METHODS = Object.freeze([
 ]);
 
 /**
- * Migration bridge for the Trial Action Tray.
+ * Bootstrap compatibility bridge for the Trial Action Tray.
  *
- * The tray intentionally lives in the Player Tray host while Trial domain/state
- * remains owned by UIController / TrialController. Until the legacy right-side
- * Trial console is decomposed, this bridge keeps the new presentation in sync
- * without moving or duplicating domain logic.
+ * UIController now owns the canonical Player Tray presentation. The wrapper path
+ * remains for older controller fixtures, while route-board input is attached in
+ * both cases. No Trial domain/state ownership moves into this bridge.
  */
 export function attachTrialActionTray(uiController) {
     if (!uiController || typeof document === "undefined") return null;
-    if (uiController.trialActionTrayComponent) return uiController.trialActionTrayComponent;
+    if (uiController.trialActionTrayComponent) {
+        attachTrialRouteBoardSelection(uiController);
+        uiController.trialActionTrayComponent.render?.();
+        return uiController.trialActionTrayComponent;
+    }
 
     const component = new TrialActionTrayComponent(uiController);
     uiController.trialActionTrayComponent = component;

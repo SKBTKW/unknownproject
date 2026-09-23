@@ -42,9 +42,11 @@ check(manager.getContextOwner() === RIGHT_CONTEXT_OWNERS.ALERT, "ALERT owns righ
 
 manager.enterTrial();
 check(manager.getState() === UI_LAYOUT_STATES.TRIAL, "Trial transition enters TRIAL");
-check(manager.getContextOwner() === RIGHT_CONTEXT_OWNERS.TRIAL, "Trial exclusively owns right context");
+check(manager.getContextOwner() === RIGHT_CONTEXT_OWNERS.NONE, "Trial leaves right context unowned");
 check(manager.getHandState() === HAND_LAYOUT_STATES.TRIAL_COLLAPSED, "Trial deep-collapses hand");
 check(manager.openHand() === false, "Trial rejects normal hand expansion");
+manager.setContextOwner(RIGHT_CONTEXT_OWNERS.TRIAL);
+check(manager.getContextOwner() === RIGHT_CONTEXT_OWNERS.NONE, "legacy Trial owner cannot reclaim the finished right-context surface");
 
 manager.openAdvisor();
 check(manager.getState() === UI_LAYOUT_STATES.ADVISOR_EXPANDED, "Advisor can temporarily open during Trial");
@@ -54,7 +56,7 @@ manager.claimAdvisorContext();
 check(manager.getContextOwner() === RIGHT_CONTEXT_OWNERS.ADVISOR, "Advisor remains the exclusive owner during Trial overlay");
 manager.closeAdvisor();
 check(manager.getState() === UI_LAYOUT_STATES.TRIAL, "closing Advisor restores TRIAL state");
-check(manager.getContextOwner() === RIGHT_CONTEXT_OWNERS.TRIAL, "closing Advisor restores Trial context owner");
+check(manager.getContextOwner() === RIGHT_CONTEXT_OWNERS.NONE, "closing Advisor returns to Trial without claiming right context");
 
 manager.exitTrial();
 check(manager.getState() === UI_LAYOUT_STATES.NORMAL, "Trial completion returns to NORMAL");
