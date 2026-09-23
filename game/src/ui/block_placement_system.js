@@ -28,8 +28,12 @@ import { UILayoutConfig } from './layout_config.js';
                     "placeable-candidate",
                     "merge-hover-highlight"
                 );
-                cell.removeAttribute("data-preview-terrain");
-                cell.style.removeProperty("background");
+                if (typeof cell.removeAttribute === "function") {
+                    cell.removeAttribute("data-preview-terrain");
+                }
+                if (cell.style && typeof cell.style.removeProperty === "function") {
+                    cell.style.removeProperty("background");
+                }
             });
             if (typeof window !== "undefined" && window.tooltipSystemInstance && typeof window.tooltipSystemInstance.hide === "function") {
                 window.tooltipSystemInstance.hide();
@@ -43,8 +47,12 @@ import { UILayoutConfig } from './layout_config.js';
             const cells = document.querySelectorAll(".cell");
             cells.forEach(cell => {
                 cell.classList.remove("preview-valid", "preview-invalid", "merge-hover-highlight");
-                cell.removeAttribute("data-preview-terrain");
-                cell.style.removeProperty("background");
+                if (typeof cell.removeAttribute === "function") {
+                    cell.removeAttribute("data-preview-terrain");
+                }
+                if (cell.style && typeof cell.style.removeProperty === "function") {
+                    cell.style.removeProperty("background");
+                }
             });
             if (typeof window !== "undefined" && window.tooltipSystemInstance && typeof window.tooltipSystemInstance.hide === "function") {
                 window.tooltipSystemInstance.hide();
@@ -106,8 +114,12 @@ import { UILayoutConfig } from './layout_config.js';
                         // terrainId here and retain the existing preview style.
                         if (cell.terrainId) {
                             const theme = UILayoutConfig.getBlockThemeColor(cell.terrainId);
-                            targetEl.setAttribute("data-preview-terrain", "1");
-                            targetEl.style.setProperty("background", theme.bg, "important");
+                            if (typeof targetEl.setAttribute === "function") {
+                                targetEl.setAttribute("data-preview-terrain", "1");
+                            }
+                            if (targetEl.style && typeof targetEl.style.setProperty === "function") {
+                                targetEl.style.setProperty("background", theme.bg, "important");
+                            }
                         }
                     }
                 }
