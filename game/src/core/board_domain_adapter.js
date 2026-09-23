@@ -10,7 +10,11 @@ import {
     readEffectiveGreenery
 } from './special_block_domain.js';
 import { BoardDamageService } from './board_damage_service.js';
-import { readZoneConversionCapabilities } from './zone_conversion_domain.js';
+import {
+    isZoneConversionFunctional,
+    readZoneConversion,
+    readZoneConversionCapabilities
+} from './zone_conversion_domain.js';
 import { SpecialBlockService } from '../systems/special_block_service.js';
 import { ZoneConversionService } from '../systems/zone_conversion_service.js';
 
@@ -196,6 +200,18 @@ export class BoardDomainAdapter {
 
     createSpecialBlock(type, target, context = {}) {
         return this.specialBlockService.createSpecialBlock(type, target, context);
+    }
+
+    readZoneConversion(groupId) {
+        return readZoneConversion(this.state, groupId);
+    }
+
+    isZoneConversionFunctional(groupId) {
+        return isZoneConversionFunctional(this.state, groupId);
+    }
+
+    getZoneConversionCount(definitionId = null) {
+        return this.zoneConversionService.getConversionCount(definitionId);
     }
 
     validateZoneConversionCandidate(definitionId, groupId) {
