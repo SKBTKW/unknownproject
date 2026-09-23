@@ -2,6 +2,14 @@
   "schemaVersion": 1,
   "tests": [
     {
+      "path": "scratch/test_trial_board_damage_policy.mjs",
+      "purpose": "Trial non-repel outcomes stage Board damage and commit only after settlement",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_advisor_character_contract.mjs",
       "purpose": "advisor character contract",
       "suite": "existing",
