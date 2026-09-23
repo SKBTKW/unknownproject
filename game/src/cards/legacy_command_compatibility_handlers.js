@@ -46,6 +46,21 @@ function remainingTurnsText(context, turns) {
 }
 
 const LEGACY_COMMAND_COMPATIBILITY_HANDLERS = Object.freeze({
+    CMD_AGRICULTURAL_POLICY(context) {
+        context.state.permanentPlainsFoodBonus =
+            (context.state.permanentPlainsFoodBonus || 0) + 1;
+        activationLog(context, "📜");
+        return { success: true };
+    },
+
+    CMD_BLACK_MARKET(context) {
+        context.state.wood = (context.state.wood || 0) + 35;
+        context.state.mystic = (context.state.mystic || 0) + 10;
+        activationLog(context, "📜");
+        return { success: true };
+    },
+
+
     CMD_CONSERVE_EMBER(context) {
         context.state.emberConsumptionReducedTurns = 1;
         context.state.emberConsumptionStartsNextTurn = true;
