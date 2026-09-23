@@ -20,6 +20,11 @@ import { normalizeCardDefinitionV1, unwrapCardDefinition } from '../cards/card_d
 import { LandPlacementAvailabilityQuery } from '../cards/land_placement_availability_query.js';
 import { CardOfferingEligibilityService } from '../cards/card_offering_eligibility_service.js';
 import { pickWeightedCard } from '../cards/offering_weight_policy.js';
+import {
+    canAppendOfferingCategory,
+    listOfferingCategoryOverflow,
+    resolveOfferingCategoryMultiplicityPolicy
+} from '../cards/offering_category_multiplicity_policy.js';
 import { OfferingCandidatePoolService } from '../cards/offering_candidate_pool_service.js';
 import { evaluateLegacyOfferingRequirements } from '../cards/legacy_offering_requirement_adapter.js';
 import { resolveCardOfferingBoardQuery } from '../cards/card_offering_board_query.js';
@@ -387,9 +392,18 @@ class DeckManager {
                 });
                 if (!candidate) break;
 
-                const replaceIndex = cards.findIndex(card =>
-                    !this._matchesMinimumRequirement(card, requirement, placeabilityCache)
-                );
+                const sameCategoryInvalidIndex = requirement.category
+                    ? cards.findIndex(card => {
+                        const definition = this._cardDefinition(card);
+                        return definition?.category === requirement.category
+                            && !this._matchesMinimumRequirement(card, requirement, placeabilityCache);
+                    })
+                    : -1;
+                const replaceIndex = sameCategoryInvalidIndex >= 0
+                    ? sameCategoryInvalidIndex
+                    : cards.findIndex(card =>
+                        !this._matchesMinimumRequirement(card, requirement, placeabilityCache)
+                    );
                 if (replaceIndex < 0) break;
 
                 const replacedId = this._cardId(cards[replaceIndex]);
@@ -438,6 +452,14 @@ class DeckManager {
         const newCards = [];
         const excludedCardIds = [];
         const placeabilityCache = new WeakMap();
+        const categoryMultiplicityPolicy = resolveOfferingCategoryMultiplicityPolicy({
+            engine: this.engine,
+            state: this.state,
+            reason
+        });
+        let categoryCapRelaxedForFallback = false;
+        const respectsCategoryCap = card =>
+            canAppendOfferingCategory(newCards, card, categoryMultiplicityPolicy);
 
         // 📥 保留スロットにあるカードを手札重複から除外
         if (this.state && this.state.reserveSlots) {
@@ -452,7 +474,10 @@ class DeckManager {
 
         // 段階 1: 通常抽選 (Universal ＆ Card-specific 適合 ＆ 非CD ＆ 非Hold)
         for (let i = 0; i < offeringSize; i++) {
-            const drawn = this.drawSingleCard(excludedCardIds, { placeabilityCache });
+            const drawn = this.drawSingleCard(excludedCardIds, {
+                placeabilityCache,
+                candidateFilter: respectsCategoryCap
+            });
             if (drawn) {
                 newCards.push(drawn);
                 const cId = drawn.cardMasterId || (drawn.terrain ? drawn.terrain.id : null);
@@ -461,50 +486,78 @@ class DeckManager {
         }
 
         // 段階 2 フォールバック: 不足時、Cooldown 中の適格カードから availableTurn 最小のものを一時解禁
+        // Category cap is re-evaluated after every append so the third slot cannot
+        // accidentally reuse a category that reached its cap during this loop.
         if (newCards.length < offeringSize && this.cycleSystem) {
-            const cdCandidates = this.offeringCandidatePool.build({
-                stageNum,
-                h2Count,
-                excludedCardIds,
-                eligibilityOptions: { ignoreCooldown: true, placeabilityCache }
-            });
+            while (newCards.length < offeringSize) {
+                const cdCandidates = this.offeringCandidatePool.build({
+                    stageNum,
+                    h2Count,
+                    excludedCardIds,
+                    eligibilityOptions: { ignoreCooldown: true, placeabilityCache },
+                    candidateFilter: respectsCategoryCap
+                });
+                if (cdCandidates.length === 0) break;
 
-            while (newCards.length < offeringSize && cdCandidates.length > 0) {
                 const minCard = this.cycleSystem.findMinAvailableTurnCard(cdCandidates);
                 if (!minCard) break;
                 const drawn = this._wrapCardInstance(minCard);
                 newCards.push(drawn);
                 excludedCardIds.push(minCard.id);
-                const idx = cdCandidates.indexOf(minCard);
-                if (idx !== -1) cdCandidates.splice(idx, 1);
             }
         }
 
         // 段階 3 フォールバック: それでも不足時、Stage適格な既存基本土地プールから CD無視で補充
-        if (newCards.length < offeringSize) {
+        // First preserve the category cap. Only if the Offering still cannot reach
+        // its requested size do we relax the cap as the final availability rescue.
+        const isBaseLandFallbackCandidate = c => {
+            const policy = c.cyclePolicy || (c.category === "LAND"
+                ? CYCLE_POLICIES.LAND_STANDARD
+                : CYCLE_POLICIES.RARITY);
+            return policy === CYCLE_POLICIES.LAND_STANDARD || c.category === "LAND";
+        };
+
+        while (newCards.length < offeringSize) {
             const baseLandPool = this.offeringCandidatePool.build({
                 stageNum,
                 h2Count,
                 excludedCardIds,
                 eligibilityOptions: { ignoreCooldown: true, placeabilityCache },
-                candidateFilter: c => {
-                    const policy = c.cyclePolicy || (c.category === "LAND"
-                        ? CYCLE_POLICIES.LAND_STANDARD
-                        : CYCLE_POLICIES.RARITY);
-                    return policy === CYCLE_POLICIES.LAND_STANDARD || c.category === "LAND";
-                }
+                candidateFilter: c =>
+                    isBaseLandFallbackCandidate(c)
+                    && respectsCategoryCap(c)
             });
+            if (baseLandPool.length === 0) break;
 
-            while (newCards.length < offeringSize && baseLandPool.length > 0) {
-                const picked = pickWeightedCard(baseLandPool, this.state, () => this._nextGameplayFloat(), this._resolveOfferingWeightContext())
-                    || baseLandPool[0];
+            const picked = pickWeightedCard(
+                baseLandPool,
+                this.state,
+                () => this._nextGameplayFloat(),
+                this._resolveOfferingWeightContext()
+            ) || baseLandPool[0];
+            newCards.push(this._wrapCardInstance(picked));
+            excludedCardIds.push(picked.id);
+        }
 
-                const drawn = this._wrapCardInstance(picked);
-                newCards.push(drawn);
-                excludedCardIds.push(picked.id);
-                const pickedIndex = baseLandPool.indexOf(picked);
-                if (pickedIndex >= 0) baseLandPool.splice(pickedIndex, 1);
-            }
+        while (newCards.length < offeringSize) {
+            const baseLandPool = this.offeringCandidatePool.build({
+                stageNum,
+                h2Count,
+                excludedCardIds,
+                eligibilityOptions: { ignoreCooldown: true, placeabilityCache },
+                candidateFilter: isBaseLandFallbackCandidate
+            });
+            if (baseLandPool.length === 0) break;
+
+            const picked = pickWeightedCard(
+                baseLandPool,
+                this.state,
+                () => this._nextGameplayFloat(),
+                this._resolveOfferingWeightContext()
+            ) || baseLandPool[0];
+            if (!respectsCategoryCap(picked)) categoryCapRelaxedForFallback = true;
+            newCards.push(this._wrapCardInstance(picked));
+            excludedCardIds.push(picked.id);
         }
 
         if (newCards.length < offeringSize) {
@@ -518,10 +571,22 @@ class DeckManager {
             minimumRequirements,
             { placeabilityCache }
         );
+        const categoryOverflow = listOfferingCategoryOverflow(
+            newCards,
+            categoryMultiplicityPolicy
+        );
         this.lastOfferingGeneration = Object.freeze({
             reason,
             requestedMinimums: minimumRequirements.length,
-            appliedMinimums: appliedMinimumRequirements
+            appliedMinimums: appliedMinimumRequirements,
+            categoryMultiplicity: Object.freeze({
+                maxPerCategory: categoryMultiplicityPolicy.maxPerCategory,
+                source: categoryMultiplicityPolicy.source,
+                relaxedForFallback: categoryCapRelaxedForFallback,
+                minimumRequirementOverride:
+                    appliedMinimumRequirements.length > 0 && categoryOverflow.length > 0,
+                overflow: Object.freeze(categoryOverflow)
+            })
         });
 
         // ⭐ 確定した手札 3 枚に対して転生 Cooldown を登録 (フォールバックで救済されたカードもここで新CD再登録)
