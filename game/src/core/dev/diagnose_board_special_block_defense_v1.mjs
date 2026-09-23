@@ -914,4 +914,16 @@ console.log('Board / Special Block / Defense v1 contract');
     );
 }
 
+{
+    const logging = getSpecialBlockDefinition(SPECIAL_BLOCK_TYPES.LOGGING_CAMP);
+    assert.equal(Object.isFrozen(logging), true);
+    assert.equal(Object.isFrozen(logging.placement), true);
+    assert.equal(Object.isFrozen(logging.placement.terrainIds), true);
+    assert.equal(Object.isFrozen(logging.production), true);
+    assert.equal(Object.isFrozen(logging.lifecycle), true);
+    assert.equal(Object.isFrozen(logging.capabilities), true);
+    assert.equal(Object.isFrozen(logging.trialTraits), true);
+    assert.equal(Object.isFrozen(logging.trialTraits.specialTactics), true);
+}
+
 console.log('diagnose_board_special_block_defense_v1: PASS');
