@@ -329,6 +329,50 @@ const CONDITION_HANDLERS = {
         return count <= maxCount;
     },
 
+    // 🌐 Board-owned terrain query. New GE definitions should prefer this
+    // boundary over reading grid internals directly.
+    HAS_TERRAIN: (params, context) => {
+        const query = context?.boardQuery;
+        return query?.hasTerrain?.(params.terrain, {
+            minimum: params.value ?? params.minimum ?? 1
+        }) === true;
+    },
+
+    // 🏗️ Board-owned entity query (Special Block / Battle Site entity, etc.).
+    HAS_ENTITY: (params, context) => {
+        const query = context?.boardQuery;
+        return query?.hasEntity?.(params.entity || params.entityType, {
+            minimum: params.value ?? params.minimum ?? 1
+        }) === true;
+    },
+
+    // 🔭 Board-owned capability query (OBSERVATION, WATER_SOURCE, etc.).
+    HAS_CAPABILITY: (params, context) => {
+        const query = context?.boardQuery;
+        return query?.hasCapability?.(params.capability, {
+            minimum: params.value ?? params.minimum ?? 1
+        }) === true;
+    },
+
+    // 📚 Run/Trial/GE history query. Chronicle/Board remain the authorities.
+    HAS_HISTORY: (params, context) => {
+        return context?.historyQuery?.matches?.(params) === true;
+    },
+
+    // ⚠️ Semantic Warning-state predicate; never exposes exact Trial timing.
+    WARNING_STATE: (params, context) => {
+        const order = ["CALM", "OMEN", "WATCH", "TENSE", "IMMINENT"];
+        const current = context?.warningStateService?.getState?.()
+            || context?.state?.warningState?.state
+            || context?.state?.warningState
+            || null;
+        const required = params.state || params.value;
+        const currentRank = order.indexOf(current);
+        const requiredRank = order.indexOf(required);
+        if (currentRank < 0 || requiredRank < 0) return false;
+        return params.atLeast === false ? current === required : currentRank >= requiredRank;
+    },
+
     // 📜 履歴・フラグ判定 (直近Nターンで食料不足がないか等)
     HISTORY_CHECK: (params, context) => {
         if (!context || !context.state) return false;
@@ -342,7 +386,7 @@ const CONDITION_HANDLERS = {
         if (params.checkType === "TRIAL_DAMAGE_TAKEN") {
             return !!(context.state.lastTrialDamageTaken && context.state.lastTrialDamageTaken > 0);
         }
-        return true;
+        return false;
     },
 
     // ⛰️ 本営周囲に丘陵・山岳が1個以上ある判定
@@ -417,6 +461,22 @@ export class ConditionEvaluator {
     static evaluateAll(conditions, context) {
         if (!Array.isArray(conditions) || conditions.length === 0) return true;
         return conditions.every(c => ConditionEvaluator.evaluate(c, context));
+    }
+
+    /**
+     * Fail-closed variant for eligibility pools. Unknown predicates must never
+     * make an otherwise illegal GE/card candidate eligible.
+     */
+    static evaluateStrict(condition, context) {
+        if (!condition || !condition.type) return true;
+        const handler = CONDITION_HANDLERS[condition.type];
+        if (!handler) return false;
+        return handler(condition, context);
+    }
+
+    static evaluateAllStrict(conditions, context) {
+        if (!Array.isArray(conditions) || conditions.length === 0) return true;
+        return conditions.every(c => ConditionEvaluator.evaluateStrict(c, context));
     }
 
     /**

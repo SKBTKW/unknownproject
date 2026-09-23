@@ -1,6 +1,7 @@
 import { INVESTIGATION_SOURCE_POLICIES } from "../../data/investigation_sources_data.js";
 import { InvestigationResolver } from "./investigation_resolver.js";
 import { KnownEnemyStateService } from "./known_enemy_state_service.js";
+import { InvestigationRequestService } from "./investigation_request_service.js";
 
 function findSourcePolicy(sourceType, policies) {
     if (!sourceType || !Array.isArray(policies)) return null;
@@ -17,11 +18,20 @@ export class InvestigationCardExecutionService {
     constructor({
         sourcePolicies = INVESTIGATION_SOURCE_POLICIES,
         resolver = new InvestigationResolver(),
-        knownEnemyStateService = new KnownEnemyStateService()
+        knownEnemyStateService = new KnownEnemyStateService(),
+        randomSource = null,
+        requestService = null
     } = {}) {
         this.sourcePolicies = sourcePolicies;
         this.resolver = resolver;
         this.knownEnemyStateService = knownEnemyStateService;
+        this.requestService = requestService || (randomSource
+            ? new InvestigationRequestService({
+                randomSource,
+                resolver,
+                knownEnemyStateService
+            })
+            : null);
     }
 
     execute({ card, profile, knownEnemyState, observedAtVerse, reportId = null } = {}) {
@@ -41,15 +51,33 @@ export class InvestigationCardExecutionService {
             textKey: typeof card.textKey === "string" ? card.textKey : null
         };
 
+        if (this.requestService) {
+            return this.requestService.perform({
+                profile,
+                knownEnemyState,
+                observedAtVerse,
+                reportId,
+                sourceType: sourcePolicy.sourceType,
+                allowedFacets: sourcePolicy.allowedFacets,
+                baseObservations: sourcePolicy.maxObservations
+            });
+        }
+
+        // Legacy deterministic adapter path for injected test resolvers. Runtime
+        // composition provides requestService/randomSource and uses the canonical
+        // card-independent request boundary above.
         const report = this.resolver.resolve({
             profile,
+            knownEnemyState,
             observedAtVerse,
             sourcePolicy,
             reportId
         });
+        if (!Array.isArray(report?.observations) || report.observations.length < 1) {
+            return { success: false, reason: "NO_OBSERVABLE_FRAGMENTS" };
+        }
 
         const recorded = this.knownEnemyStateService.record(knownEnemyState, report);
-
         return {
             success: true,
             report,

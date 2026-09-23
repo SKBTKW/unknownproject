@@ -400,6 +400,14 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_global_event_eligibility_v1.mjs",
+      "purpose": "strict global event world and history eligibility",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_global_event_gameplay_rng.mjs",
       "purpose": "global event gameplay rng",
       "suite": "supplemental"
@@ -492,6 +500,14 @@
     {
       "path": "scratch/test_investigation_narrative.mjs",
       "purpose": "investigation narrative",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_investigation_request_v1.mjs",
+      "purpose": "card-independent investigation request, enhanced 2D6, and useful fragment contract",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -674,6 +690,14 @@
     {
       "path": "scratch/test_road_network_foundation.mjs",
       "purpose": "canonical road network foundation",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_run_history_read_model.mjs",
+      "purpose": "chronicle-backed run history and board history query boundary",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
