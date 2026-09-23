@@ -1,4 +1,5 @@
 import { GameFactHub } from "../../core/game_fact.js";
+import { BoardBattleSiteRecorder } from "../../core/board_battle_site_recorder.js";
 import { attachWarningSubsystem } from "../../warning/integration/warning_bootstrap.js";
 import { WarningTimingBridge } from "../../warning/systems/warning_timing_bridge.js";
 import { TrialDueStateService } from "../systems/trial_due_state_service.js";
@@ -147,6 +148,13 @@ export function attachTrialRuntimeSubsystems(engine, {
         });
     }
 
+    if (!engine.boardBattleSiteRecorder) {
+        engine.boardBattleSiteRecorder = new BoardBattleSiteRecorder({
+            gameFactHub: factHub,
+            state: engine.state
+        });
+    }
+
     // The constructor-side Investigation bootstrap may have reported failure
     // only because Warning lacked a shared GameFactHub. Preserve the already
     // attached Investigation runtime/unlock and reflect the now-complete state.
@@ -173,7 +181,8 @@ export function attachTrialRuntimeSubsystems(engine, {
         postTrialSkillProgressionRouterAttached: true,
         postTrialProgressionAttached: true,
         postTrialProgressionReadAttached: true,
-        postTrialAftermathCaptureAttached: true
+        postTrialAftermathCaptureAttached: true,
+        boardBattleSiteRecorderAttached: true
     };
 }
 
