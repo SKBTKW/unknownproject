@@ -321,6 +321,25 @@ console.log('Board / Special Block / Defense v1 contract');
     assert.equal(restoredFarm.grid[1][2].terrain, null);
     assert.equal(restoredFarm.grid[1][2].specialBlock.type, SPECIAL_BLOCK_TYPES.FARM);
 
+    const farmTrial = new TrialTerrainEffectResolver().resolve({
+        interceptCell: {
+            ...state.grid[1][2],
+            elevation: null,
+            cellId: '1:2'
+        },
+        approachCell: {
+            ...cell(1, 1, { placed: true, terrain: { ...PLAINS } }),
+            elevation: 1,
+            cellId: '1:1'
+        }
+    });
+    assert.equal(farmTrial.canIntercept, true, 'Special-only FARM can be an interception site');
+    assert.equal(
+        farmTrial.modifiers.some(modifier => modifier.source === TRIAL_TERRAIN_EFFECTS.HIGH_GROUND),
+        false,
+        'Special-only FARM never invents a terrain elevation tactic'
+    );
+
     state.grid[1][2] = cell(1, 2, {
         placed: true,
         placementGroupId: 'connected-plains',
