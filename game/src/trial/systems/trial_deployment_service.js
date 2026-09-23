@@ -46,12 +46,14 @@ export class TrialDeploymentService {
         boardQuery = null,
         costPolicy = null,
         originResolver = null,
-        resourcePayment = null
+        resourcePayment = null,
+        defenseReservation = null
     } = {}) {
         this.boardQuery = boardQuery || null;
         this.costPolicy = costPolicy || null;
         this.originResolver = originResolver || null;
         this.resourcePayment = resourcePayment || null;
+        this.defenseReservation = defenseReservation || null;
         this.trialState = null;
         this.deploymentHistory = [];
         this.committedPreviewTokens = new Set();
@@ -66,9 +68,12 @@ export class TrialDeploymentService {
         this.sessionCommitted = false;
         this.sessionResourceSnapshot = null;
         const resourceSnapshot = this.resourcePayment?.readAuditSnapshot?.() || null;
+        const liveDefense = this.defenseReservation?.readBalance?.();
         this.sessionResourceSnapshot = this.trialState ? Object.freeze({
             ...(resourceSnapshot || {}),
-            defense: Math.max(0, Number(this.trialState?.human?.availableDefense) || 0),
+            defense: Number.isFinite(liveDefense)
+                ? liveDefense
+                : Math.max(0, Number(this.trialState?.human?.availableDefense) || 0),
             mystic: resourceSnapshot?.mystic ?? Math.max(0, Number(this.trialState?.human?.mystic) || 0)
         }) : null;
         return { success: Boolean(this.trialState), resourceSnapshot: this.getSessionResourceSnapshot() };
@@ -181,6 +186,15 @@ export class TrialDeploymentService {
             reasons: [TRIAL_DEPLOYMENT_REASONS.INSUFFICIENT_RESOURCES],
             balances: null
         };
+        const defenseCheck = this.defenseReservation?.canReserve?.(requestedDefense) || {
+            reservable: false,
+            reasons: [TRIAL_DEPLOYMENT_REASONS.DEFENSE_BUDGET_EXCEEDED],
+            balance: null
+        };
+        const reasons = [
+            ...(affordability.reasons || []),
+            ...(defenseCheck.reasons || [])
+        ];
 
         const snapshot = {
             routeId,
@@ -190,7 +204,8 @@ export class TrialDeploymentService {
             origin: originResult.origin,
             distance: originResult.distance,
             cost: { food: cost.food, material: cost.material, breakdown: cost.breakdown },
-            balances: affordability.balances
+            balances: affordability.balances,
+            defenseBalance: defenseCheck.balance
         };
 
         return {
@@ -201,8 +216,8 @@ export class TrialDeploymentService {
             foodCost: cost.food,
             materialCost: cost.material,
             breakdown: clone(cost.breakdown),
-            affordable: affordability.affordable === true,
-            reasons: [...(affordability.reasons || [])],
+            affordable: affordability.affordable === true && defenseCheck.reservable === true,
+            reasons,
             boardFacts: clone(boardFacts),
             origin: clone(originResult.origin),
             distance: originResult.distance,
@@ -262,6 +277,15 @@ export class TrialDeploymentService {
             reasons: [TRIAL_DEPLOYMENT_REASONS.INSUFFICIENT_RESOURCES],
             balances: null
         };
+        const defenseCheck = this.defenseReservation?.canReserve?.(totalDefense) || {
+            reservable: false,
+            reasons: [TRIAL_DEPLOYMENT_REASONS.DEFENSE_BUDGET_EXCEEDED],
+            balance: null
+        };
+        const reasons = [
+            ...(affordability.reasons || []),
+            ...(defenseCheck.reasons || [])
+        ];
 
         const aggregateSnapshot = {
             plan: intercepts.map(route => ({
@@ -273,7 +297,8 @@ export class TrialDeploymentService {
             totalDefense,
             foodCost,
             materialCost,
-            balances: affordability.balances
+            balances: affordability.balances,
+            defenseBalance: defenseCheck.balance
         };
 
         return {
@@ -281,8 +306,8 @@ export class TrialDeploymentService {
             requestedDefense: totalDefense,
             foodCost,
             materialCost,
-            affordable: affordability.affordable === true,
-            reasons: [...(affordability.reasons || [])],
+            affordable: affordability.affordable === true && defenseCheck.reservable === true,
+            reasons,
             breakdown: {
                 fronts: previews.map(item => ({
                     routeId: item.routeId,
@@ -336,14 +361,26 @@ export class TrialDeploymentService {
             return { success: false, reasons: [TRIAL_DEPLOYMENT_REASONS.DEFENSE_BUDGET_EXCEEDED] };
         }
 
+        const defenseReservation = this.defenseReservation?.reserve?.(latest.requestedDefense);
+        if (!defenseReservation?.success) {
+            return {
+                success: false,
+                reasons: defenseReservation?.reasons?.length
+                    ? defenseReservation.reasons
+                    : [TRIAL_DEPLOYMENT_REASONS.DEFENSE_BUDGET_EXCEEDED]
+            };
+        }
+
         const payment = this.resourcePayment?.pay?.({
             food: latest.foodCost,
             material: latest.materialCost
         });
         if (!payment?.success) {
+            const rollback = this.defenseReservation?.rollback?.(defenseReservation);
             return {
                 success: false,
-                reasons: payment?.reasons?.length ? payment.reasons : [TRIAL_DEPLOYMENT_REASONS.INSUFFICIENT_RESOURCES]
+                reasons: payment?.reasons?.length ? payment.reasons : [TRIAL_DEPLOYMENT_REASONS.INSUFFICIENT_RESOURCES],
+                defenseRollback: clone(rollback)
             };
         }
 
@@ -364,6 +401,7 @@ export class TrialDeploymentService {
             success: true,
             totalDefenseCommitted: latest.requestedDefense,
             payment,
+            defenseReservation: clone(defenseReservation),
             preview: latest,
             historyEntry: clone(historyEntry)
         };
