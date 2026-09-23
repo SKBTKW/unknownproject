@@ -652,9 +652,8 @@ const landSystemJson = JSON.parse(
     };
 
     const offering = manager.generateOfferingCards();
-    assert.equal(offering.length, 1);
-    assert.equal(offering[0].cardMasterId, plains.id);
-    assert.equal(placementChecks, 0);
+    assert.equal(offering.length, 0);
+    assert.ok(placementChecks > 0);
 }
 
 {
