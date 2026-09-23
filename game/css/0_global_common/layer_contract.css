@@ -104,11 +104,6 @@ body[data-board-context="trial"] #gridBoard #cornerTileStyleToggleBtn {
     z-index: var(--z-overlay) !important;
 }
 
-/* Right Context intentionally sits just above the Player HUD band. */
-.trial-defense-allocation-panel {
-    z-index: var(--z-right-context) !important;
-}
-
 @media (max-width: 768px) {
     #advisorDockContainer {
         right: var(--layout-advisor-mobile-right) !important;
@@ -117,14 +112,5 @@ body[data-board-context="trial"] #gridBoard #cornerTileStyleToggleBtn {
 
     #bgTurnWatermark.bg-turn-watermark {
         margin-right: var(--layout-mobile-edge-gap);
-    }
-
-    /*
-     * On compact screens the point-specific Trial Action Tray occupies the
-     * lower band, so the global Trial summary moves into an upper-right band.
-     * Screen-space geometry is owned by UILayoutConfig SSOT and updated via applyLayoutGeometry.
-     */
-    .trial-defense-allocation-panel {
-        overflow-y: auto;
     }
 }
