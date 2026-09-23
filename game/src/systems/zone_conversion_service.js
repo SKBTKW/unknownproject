@@ -101,6 +101,17 @@ function checkResourceRequirements(state, resources) {
     return { valid: failures.length === 0, failures };
 }
 
+function projectStateAfterPayment(state, payment) {
+    const normalized = normalizeZoneResourceMap(payment || {}) || Object.freeze({});
+    const projected = { ...(state || {}) };
+    for (const key of ['food', 'wood', 'defense', 'mystic', 'ember']) {
+        const next = Math.max(0, stateResource(state, key) - Number(normalized[key] || 0));
+        projected[key] = next;
+        if (key === 'wood') projected.material = next;
+    }
+    return projected;
+}
+
 function hasAnyCost(resources) {
     return Object.values(resources || {}).some(value => Number(value) > 0);
 }
@@ -349,6 +360,34 @@ export class ZoneConversionService {
             if (validation.valid) candidates.push(validation);
         }
         return candidates;
+    }
+
+    validateCandidateAfterPayment(definitionId, groupId, payment = {}) {
+        const validation = this.validateCandidate(definitionId, groupId);
+        if (!validation.valid) return validation;
+
+        const normalizedPayment = normalizeZoneResourceMap(payment);
+        if (!normalizedPayment) {
+            return {
+                ...validation,
+                valid: false,
+                reasons: ['PAYMENT_RESOURCE_MAP_UNRESOLVED']
+            };
+        }
+
+        const definition = this.getDefinition(definitionId);
+        const projectedState = projectStateAfterPayment(this.state, normalizedPayment);
+        const projectedResourceCheck = checkResourceRequirements(
+            projectedState,
+            definition?.requirements?.resources
+        );
+
+        return {
+            ...validation,
+            valid: projectedResourceCheck.valid,
+            reasons: projectedResourceCheck.failures,
+            projectedPayment: normalizedPayment
+        };
     }
 
     hasAnyCandidate(definitionId) {
