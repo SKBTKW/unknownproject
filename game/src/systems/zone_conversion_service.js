@@ -112,6 +112,106 @@ export class ZoneConversionService {
         return zoneConversionCount(this.state, { definitionId });
     }
 
+    getMaintenancePlan(groupId, verse = this.state?.turn) {
+        const zone = readZoneRecord(this.state, groupId);
+        const conversion = zone?.conversion || null;
+        if (!conversion) {
+            return {
+                defined: false,
+                due: false,
+                reason: 'ZONE_CONVERSION_REQUIRED',
+                groupId: String(groupId),
+                verse
+            };
+        }
+
+        const maintenance = conversion.maintenance || null;
+        if (!maintenance || maintenance.status !== ZONE_CONVERSION_COST_STATUS.RESOLVED) {
+            return {
+                defined: false,
+                due: false,
+                reason: 'MAINTENANCE_DEFINITION_UNRESOLVED',
+                groupId: String(groupId),
+                verse
+            };
+        }
+
+        const startsVerse = Number.isInteger(maintenance.startsVerse)
+            ? maintenance.startsVerse
+            : (Number.isInteger(conversion.createdVerse) ? conversion.createdVerse + 1 : null);
+        const currentVerse = Number.isInteger(verse) ? verse : null;
+        const due = currentVerse !== null
+            && startsVerse !== null
+            && currentVerse >= startsVerse
+            && maintenance.lastSettledVerse !== currentVerse;
+
+        const resources = normalizeZoneResourceMap(maintenance.resources || {}) || Object.freeze({});
+        const shortfalls = {};
+        for (const [key, required] of Object.entries(resources)) {
+            const available = stateResource(this.state, key);
+            if (available < required) shortfalls[key] = required - available;
+        }
+
+        return {
+            defined: true,
+            due,
+            groupId: String(groupId),
+            verse: currentVerse,
+            startsVerse,
+            resources,
+            canPay: Object.keys(shortfalls).length === 0,
+            shortfalls: Object.freeze(shortfalls),
+            currentState: conversion.state
+        };
+    }
+
+    enumerateMaintenanceDue(verse = this.state?.turn) {
+        const due = [];
+        for (const groupId of Object.keys(this.state?.mergedBlocks || {})) {
+            const plan = this.getMaintenancePlan(groupId, verse);
+            if (plan.defined && plan.due) due.push(plan);
+        }
+        return due;
+    }
+
+    applyMaintenanceSettlement(groupId, {
+        verse = this.state?.turn,
+        paymentSucceeded = false
+    } = {}) {
+        const plan = this.getMaintenancePlan(groupId, verse);
+        if (!plan.defined) {
+            return { success: false, reason: plan.reason, plan };
+        }
+        if (!plan.due) {
+            return { success: false, reason: 'MAINTENANCE_NOT_DUE', plan };
+        }
+
+        const zone = readZoneRecord(this.state, groupId);
+        const conversion = zone.conversion;
+        const nextState = paymentSucceeded === true
+            ? ZONE_CONVERSION_STATES.ACTIVE
+            : ZONE_CONVERSION_STATES.DYSFUNCTIONAL;
+
+        zone.conversion = Object.freeze({
+            ...conversion,
+            state: nextState,
+            maintenance: Object.freeze({
+                ...conversion.maintenance,
+                lastSettledVerse: plan.verse,
+                lastPaymentSucceeded: paymentSucceeded === true
+            })
+        });
+
+        return {
+            success: true,
+            groupId: String(groupId),
+            state: nextState,
+            paymentSucceeded: paymentSucceeded === true,
+            conversion: clone(zone.conversion),
+            plan
+        };
+    }
+
     quoteCost(definitionId) {
         const definition = this.getDefinition(definitionId);
         return resolveZoneConversionCost(this.state, definition);
@@ -218,7 +318,12 @@ export class ZoneConversionService {
             paidCost: Object.freeze(clone(cost.resources, {})),
             maintenance: Object.freeze({
                 status: definition.maintenance?.status || 'UNRESOLVED',
-                resources: maintenanceResources
+                resources: maintenanceResources,
+                startsVerse: Number.isInteger(createdVerse)
+                    ? createdVerse + 1
+                    : (Number.isInteger(this.state?.turn) ? this.state.turn + 1 : null),
+                lastSettledVerse: null,
+                lastPaymentSucceeded: null
             }),
             capabilities: Object.freeze([...definition.capabilities])
         });
