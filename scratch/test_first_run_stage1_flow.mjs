@@ -172,11 +172,17 @@ assert.equal(engine.state.stage.id, 1, "Trial1 must start on Stage1");
 assert.equal(engine.state.stage.size, 5, "Trial1 must start on the 5x5 board");
 assert.equal(latestTutorialState?.active, true);
 assert.equal(latestTutorialState?.currentStep, FIRST_RUN_TRIAL_TUTORIAL_STEPS.ROUTE_INTRO);
-assert.equal(
-    tutorial.begin({ firstRunState: engine.firstRunState, trialIndex: 2 }).active,
-    false,
-    "FirstRun Trial tutorial must never leak into Trial2"
+const tutorialBeforeTrial2Attempt = engine.firstRunState.getTrialTutorialState();
+const tutorialAfterTrial2Attempt = tutorial.begin({
+    firstRunState: engine.firstRunState,
+    trialIndex: 2
+});
+assert.deepEqual(
+    tutorialAfterTrial2Attempt,
+    tutorialBeforeTrial2Attempt,
+    "Trial2 must not mutate the active FirstRun Trial1 tutorial state"
 );
+assert.equal(tutorialAfterTrial2Attempt.trialIndex, 1, "Trial2 must not take ownership of FirstRun tutorial state");
 assert.equal(traceStarts, 1, "Verse7 traces must remain exactly-once through Trial1 launch");
 
 unsubscribe();
