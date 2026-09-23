@@ -26,3 +26,20 @@ Investigation data flow:
 ```text
 Trial data -> ObservableEnemyProfile -> InvestigationReport -> KnownEnemyState
 ```
+
+
+## Investigation history boundary
+
+Successful investigations emit `GAME_FACT_TYPES.INVESTIGATION_RECORDED`.
+`ChronicleSystem` stores a MINOR history index entry
+(`CHRONICLE_INVESTIGATION_RECORDED`) containing only:
+
+- verse
+- trialIndex
+- reportId
+- sourceType
+- cardId
+
+Observation snapshots remain owned by `KnownEnemyState.reports`.
+Chronicle does not copy ObservableEnemyProfile, route, ingress, force, suppression,
+or observation contents, so Run history cannot become a second enemy-truth store.

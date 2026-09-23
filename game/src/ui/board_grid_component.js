@@ -203,18 +203,18 @@ export class BoardGridComponent {
                         }
 
                         // 🚫 内側境界線の完全打消し（マージ大土地・複数マスブロックの完全単一化）
-                        const topSame = (r > 0 && (grid[r-1][c].mergeGroupId === activeGroupId || grid[r-1][c].placementGroupId === activeGroupId));
-                        const rightSame = (c < size - 1 && (grid[r][c+1].mergeGroupId === activeGroupId || grid[r][c+1].placementGroupId === activeGroupId));
-                        const bottomSame = (r < size - 1 && (grid[r+1][c].mergeGroupId === activeGroupId || grid[r+1][c].placementGroupId === activeGroupId));
-                        const leftSame = (c > 0 && (grid[r][c-1].mergeGroupId === activeGroupId || grid[r][c-1].placementGroupId === activeGroupId));
+                        const topSame = (r > 0 && this.isSameLandDisplayGroup(cellData, grid[r-1][c]));
+                        const rightSame = (c < size - 1 && this.isSameLandDisplayGroup(cellData, grid[r][c+1]));
+                        const bottomSame = (r < size - 1 && this.isSameLandDisplayGroup(cellData, grid[r+1][c]));
+                        const leftSame = (c > 0 && this.isSameLandDisplayGroup(cellData, grid[r][c-1]));
 
                         if (topSame) cellEl.classList.add("no-border-top", "no-radius-tl", "no-radius-tr");
                         if (rightSame) cellEl.classList.add("no-border-right", "no-radius-tr", "no-radius-br");
                         if (bottomSame) cellEl.classList.add("no-border-bottom", "no-radius-bl", "no-radius-br");
                         if (leftSame) cellEl.classList.add("no-border-left", "no-radius-tl", "no-radius-bl");
 
-                        topGroupSame = (r > 0 && (grid[r-1][c].mergeGroupId === activeGroupId || grid[r-1][c].placementGroupId === activeGroupId));
-                        leftGroupSame = (c > 0 && (grid[r][c-1].mergeGroupId === activeGroupId || grid[r][c-1].placementGroupId === activeGroupId));
+                        topGroupSame = (r > 0 && this.isSameLandDisplayGroup(cellData, grid[r-1][c]));
+                        leftGroupSame = (c > 0 && this.isSameLandDisplayGroup(cellData, grid[r][c-1]));
 
                         const yieldInfo = this.getPrimaryYieldInfo(cellData, isHQVic);
                         if (yieldInfo && yieldInfo.val > 0) cellEl.classList.add("has-resource-yield");
@@ -564,6 +564,19 @@ export class BoardGridComponent {
      * - "LAND_PRIMARY": 土地名 ＆ 総産出を描画する代表マス（最初の空きマス、または先頭マス）
      * - "CLEAN": クリーンな背景（余計なテキストなし）
      */
+    isSameLandDisplayGroup(cell, neighbor) {
+        if (!cell || !neighbor) return false;
+
+        if (cell.mergeGroupId != null) {
+            return neighbor.mergeGroupId != null
+                && String(neighbor.mergeGroupId) === String(cell.mergeGroupId);
+        }
+
+        if (neighbor.mergeGroupId != null) return false;
+        if (cell.placementGroupId == null || neighbor.placementGroupId == null) return false;
+        return String(neighbor.placementGroupId) === String(cell.placementGroupId);
+    }
+
     getGroupCellRole(r, c, activeGroupId, cellData) {
         if (!cellData) return "LAND_PRIMARY";
         const facts = {
@@ -572,8 +585,8 @@ export class BoardGridComponent {
             placed: Boolean(cellData.placed),
             isHQ: Boolean(cellData.isHQ),
             socketResource: cellData.socketResource || null,
-            mergeGroupId: cellData.mergeGroupId ?? activeGroupId ?? null,
-            placementGroupId: cellData.placementGroupId ?? activeGroupId ?? null
+            mergeGroupId: cellData.mergeGroupId ?? null,
+            placementGroupId: cellData.placementGroupId ?? null
         };
         return resolveBoardDisplayRole(this.state, facts) || "LAND_PRIMARY";
     }

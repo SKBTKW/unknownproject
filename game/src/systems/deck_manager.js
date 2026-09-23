@@ -6,8 +6,12 @@ import { COMMAND_CARDS_MASTER } from '../data/command_cards_data.js';
 import { ConditionEvaluator } from '../core/condition_evaluator.js';
 import { CardCycleSystem, CYCLE_POLICIES } from './card_cycle_system.js';
 import {
+    getPlacementAttributeTerrainId,
     hasMultiplePlacementTerrainAttributes,
-    normalizePlacementAnchor
+    normalizePlacementAnchor,
+    resolvePlacementAttributeCells,
+    resolvePlacementShape,
+    validatePlacementAttributeMap
 } from '../core/placement_geometry.js';
 import { isMultiAttributeProductionResolved } from '../core/land_production_contract.js';
 import { isTrueMergedCell } from '../core/merge_rules.js';
@@ -172,6 +176,21 @@ class DeckManager {
         const cardStage = c.minStage || 1;
         if (cardStage > stageNum) return false;
 
+        const explicitAttributeCells = resolvePlacementAttributeCells(c);
+        if (explicitAttributeCells) {
+            const attributeValidation = validatePlacementAttributeMap(
+                resolvePlacementShape(c),
+                explicitAttributeCells
+            );
+            if (!attributeValidation.valid) return false;
+
+            const hasUnknownTerrain = explicitAttributeCells.some(cell => {
+                const terrainId = getPlacementAttributeTerrainId(cell);
+                return !terrainId || !LAND_SYSTEM_DATA?.terrains?.[terrainId];
+            });
+            if (hasUnknownTerrain) return false;
+        }
+
         // Multi-Attribute cards must not enter live Offering until their
         // Production contract is explicitly finalized.
         if (hasMultiplePlacementTerrainAttributes(c) && !isMultiAttributeProductionResolved(c)) {
@@ -181,7 +200,12 @@ class DeckManager {
         // Offering-only v1 boundary. LAND legality is queried from the existing
         // Placement Domain, and authored offering.requirements are evaluated
         // independently from execution requirements.
-        const offeringGate = this.offeringEligibility?.evaluate(c, { stageNum, h2Count, options });
+        const offeringGate = this.offeringEligibility?.evaluate(c, {
+            stageNum,
+            h2Count,
+            options,
+            placeabilityCache: options.placeabilityCache || null
+        });
         if (offeringGate && !offeringGate.eligible) return false;
 
         const currentTurn = (this.state && this.state.turn) ? this.state.turn : 1;
@@ -262,7 +286,7 @@ class DeckManager {
      */
     drawSingleCard(excludedCardIds = [], options = {}) {
         const stageNum = (this.state && this.state.stage) ? (typeof this.state.stage === 'object' ? (this.state.stage.id || 1) : this.state.stage) : 1;
-        const h2Count = (this.state && typeof this.state.countE2HillsOnBoard === 'function') ? this.state.countE2HillsOnBoard() : 0;
+        const h2Count = this._countE2HillsOnBoard();
 
         const picked = this.offeringCandidatePool?.pick({
             stageNum,
@@ -294,16 +318,40 @@ class DeckManager {
         return card?.cardMasterId || definition?.id || card?.id || null;
     }
 
-    _isCardPlaceableNow(card) {
-        const definition = this._cardDefinition(card);
-        return this.landPlacementAvailability?.hasAnyLegalPlacement(definition) === true;
+    _countE2HillsOnBoard() {
+        if (!this.state) return 0;
+        if (typeof this.state.countE2HillsOnBoard === "function") {
+            return this.state.countE2HillsOnBoard();
+        }
+        if (this.state.gridEngine && typeof this.state.gridEngine.countE2HillsOnBoard === "function") {
+            return this.state.gridEngine.countE2HillsOnBoard();
+        }
+
+        let count = 0;
+        for (const row of this.state.grid || []) {
+            for (const cell of row || []) {
+                const terrainId = cell?.terrain?.terrainId || cell?.terrain?.id || null;
+                if (cell?.placed && terrainId === "E2_HILL") count += 1;
+            }
+        }
+        return count;
     }
 
-    _matchesMinimumRequirement(card, requirement) {
+    _isCardPlaceableNow(card, placeabilityCache = null) {
+        const definition = this._cardDefinition(card);
+        return this.landPlacementAvailability?.hasAnyLegalPlacement(definition, {
+            cache: placeabilityCache
+        }) === true;
+    }
+
+    _matchesMinimumRequirement(card, requirement, placeabilityCache = null) {
         const definition = this._cardDefinition(card);
         if (!definition || !requirement || typeof requirement !== "object") return false;
         if (requirement.category && definition.category !== requirement.category) return false;
-        if (requirement.requirePlaceable === true && !this._isCardPlaceableNow(definition)) return false;
+        if (
+            requirement.requirePlaceable === true
+            && !this._isCardPlaceableNow(definition, placeabilityCache)
+        ) return false;
         return true;
     }
 
@@ -320,21 +368,27 @@ class DeckManager {
             : [];
     }
 
-    _enforceMinimumRequirements(cards, excludedCardIds, requirements) {
+    _enforceMinimumRequirements(cards, excludedCardIds, requirements, { placeabilityCache = null } = {}) {
         if (!Array.isArray(cards) || cards.length === 0 || !Array.isArray(requirements) || requirements.length === 0) return [];
 
         const applied = [];
         for (const requirement of requirements) {
             const minCount = Math.max(1, Math.trunc(requirement.minCount ?? 1));
-            let matchingCount = cards.filter(card => this._matchesMinimumRequirement(card, requirement)).length;
+            let matchingCount = cards.filter(card =>
+                this._matchesMinimumRequirement(card, requirement, placeabilityCache)
+            ).length;
 
             while (matchingCount < minCount) {
                 const candidate = this.drawSingleCard(excludedCardIds, {
-                    candidateFilter: card => this._matchesMinimumRequirement(card, requirement)
+                    candidateFilter: card =>
+                        this._matchesMinimumRequirement(card, requirement, placeabilityCache),
+                    placeabilityCache
                 });
                 if (!candidate) break;
 
-                const replaceIndex = cards.findIndex(card => !this._matchesMinimumRequirement(card, requirement));
+                const replaceIndex = cards.findIndex(card =>
+                    !this._matchesMinimumRequirement(card, requirement, placeabilityCache)
+                );
                 if (replaceIndex < 0) break;
 
                 const replacedId = this._cardId(cards[replaceIndex]);
@@ -378,10 +432,11 @@ class DeckManager {
         const offeringSize = (this.state && this.state.handOfferingSize) ? this.state.handOfferingSize : 3;
         const currentTurn = (this.state && this.state.turn) ? this.state.turn : 1;
         const stageNum = (this.state && this.state.stage) ? (typeof this.state.stage === 'object' ? (this.state.stage.id || 1) : this.state.stage) : 1;
-        const h2Count = (this.state && typeof this.state.countE2HillsOnBoard === 'function') ? this.state.countE2HillsOnBoard() : 0;
+        const h2Count = this._countE2HillsOnBoard();
 
         const newCards = [];
         const excludedCardIds = [];
+        const placeabilityCache = new WeakMap();
 
         // 📥 保留スロットにあるカードを手札重複から除外
         if (this.state && this.state.reserveSlots) {
@@ -396,7 +451,7 @@ class DeckManager {
 
         // 段階 1: 通常抽選 (Universal ＆ Card-specific 適合 ＆ 非CD ＆ 非Hold)
         for (let i = 0; i < offeringSize; i++) {
-            const drawn = this.drawSingleCard(excludedCardIds);
+            const drawn = this.drawSingleCard(excludedCardIds, { placeabilityCache });
             if (drawn) {
                 newCards.push(drawn);
                 const cId = drawn.cardMasterId || (drawn.terrain ? drawn.terrain.id : null);
@@ -410,7 +465,7 @@ class DeckManager {
                 stageNum,
                 h2Count,
                 excludedCardIds,
-                eligibilityOptions: { ignoreCooldown: true }
+                eligibilityOptions: { ignoreCooldown: true, placeabilityCache }
             });
 
             while (newCards.length < offeringSize && cdCandidates.length > 0) {
@@ -430,7 +485,7 @@ class DeckManager {
                 stageNum,
                 h2Count,
                 excludedCardIds,
-                eligibilityOptions: { ignoreCooldown: true },
+                eligibilityOptions: { ignoreCooldown: true, placeabilityCache },
                 candidateFilter: c => {
                     const policy = c.cyclePolicy || (c.category === "LAND"
                         ? CYCLE_POLICIES.LAND_STANDARD
@@ -456,7 +511,12 @@ class DeckManager {
         }
 
         const minimumRequirements = this._resolveMinimumRequirements(reason);
-        const appliedMinimumRequirements = this._enforceMinimumRequirements(newCards, excludedCardIds, minimumRequirements);
+        const appliedMinimumRequirements = this._enforceMinimumRequirements(
+            newCards,
+            excludedCardIds,
+            minimumRequirements,
+            { placeabilityCache }
+        );
         this.lastOfferingGeneration = Object.freeze({
             reason,
             requestedMinimums: minimumRequirements.length,

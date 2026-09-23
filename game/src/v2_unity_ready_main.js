@@ -300,7 +300,9 @@ class GameState {
                 for (let c = 0; c < this.grid[r].length; c++) {
                     const cell = this.grid[r][c];
                     if (cell.placed && !cell.isHQ && cell.terrain) {
-                        const bId = cell.blockId || `${r}_${c}`;
+                        const bId = cell.placementGroupId
+                            || cell.blockId
+                            || `${r}_${c}`;
                         if (!seenBlocks.has(bId)) {
                             seenBlocks.add(bId);
                             count++;
