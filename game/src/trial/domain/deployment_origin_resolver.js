@@ -40,6 +40,16 @@ export class DeploymentOriginResolver {
                 distance = this.distanceResolver({ origin: candidate, target, context });
             } else if (typeof this.boardQuery?.measureTrialDeploymentDistance === "function") {
                 distance = this.boardQuery.measureTrialDeploymentDistance(candidate, target, context);
+            } else {
+                const originCell = candidate?.cell || null;
+                if (
+                    Number.isInteger(originCell?.r)
+                    && Number.isInteger(originCell?.c)
+                    && Number.isInteger(target?.r)
+                    && Number.isInteger(target?.c)
+                ) {
+                    distance = Math.abs(originCell.r - target.r) + Math.abs(originCell.c - target.c);
+                }
             }
             return { candidate, distance };
         }).filter(entry => Number.isFinite(entry.distance) && entry.distance >= 0);
