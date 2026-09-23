@@ -174,7 +174,6 @@ function createCardDomainActionExecutor(engine) {
                 quote?.status !== "RESOLVED"
                 || !isSupportedCardPaymentCost(quotedCost)
                 || !sameResourceCost(cardCost, quotedCost)
-                || !hasReliableCardPaymentState(context?.state, quotedCost)
             ) {
                 return [];
             }
