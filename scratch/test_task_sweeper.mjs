@@ -26,6 +26,9 @@ const base = {
     mergedPrVerified: false,
     mergedPrNumber: undefined,
     prReason: '',
+    supersededVerified: false,
+    supersededPrNumber: undefined,
+    supersededReason: '',
 };
 
 const tests = [
@@ -54,6 +57,18 @@ const tests = [
         mergedPrVerified: true,
         mergedPrNumber: 42,
         openPrReferences: [{ number: 79, role: 'base' }],
+    }, 'BLOCKED'],
+    ['audited superseded TASK is safe only after replacement proof', {
+        ...base,
+        uniqueCommits: 3,
+        supersededVerified: true,
+        supersededPrNumber: 181,
+    }, 'SAFE'],
+    ['superseded manifest mismatch remains blocked', {
+        ...base,
+        uniqueCommits: 3,
+        supersededVerified: false,
+        supersededReason: 'audited superseded proof head mismatch',
     }, 'BLOCKED'],
     ['remote TASK blocks when open PR lookup is unavailable', {
         ...base,
@@ -265,9 +280,41 @@ assert.equal(
     'retry attempts must use a small backoff rather than hot-looping the GitHub API',
 );
 assert.equal(
+    sweeperSource.includes("task_sweeper_superseded.json"),
+    true,
+    'superseded cleanup must use an explicit audited manifest rather than branch-name heuristics',
+);
+assert.equal(
+    sweeperSource.includes('entry.expectedHeadSha !== remoteSha'),
+    true,
+    'superseded proof must be pinned to the exact current remote TASK head',
+);
+assert.equal(
+    sweeperSource.includes('gitIsAncestor(pr.merge_commit_sha, targetRef, cwd)'),
+    true,
+    'replacement PR merge commit must already be contained in the integration target',
+);
+assert.equal(
+    sweeperSource.includes('!state.mergedPrVerified && !state.supersededVerified'),
+    true,
+    'unique commits may bypass the normal merged-head proof only through an audited supersession proof',
+);
+
+const supersededManifest = JSON.parse(
+    fs.readFileSync(new URL('./task_sweeper_superseded.json', import.meta.url), 'utf8')
+);
+assert.equal(supersededManifest.schemaVersion, 1);
+assert.equal(supersededManifest.target, 'AoT260922');
+assert.equal(new Set(supersededManifest.entries.map(entry => entry.branch)).size, supersededManifest.entries.length);
+for (const entry of supersededManifest.entries) {
+    assert.match(entry.branch, /^aot-task\/AoT260922\/[a-z0-9-]+\/[a-z0-9-]+$/);
+    assert.match(entry.expectedHeadSha, /^[0-9a-f]{40}$/);
+    assert.equal(Number.isInteger(entry.replacementPr), true);
+}
+assert.equal(
     sweeperSource.includes('function githubHeaders() {\n    const headers = githubHeaders();'),
     false,
     'GitHub header helper must not recurse into itself',
 );
 
-console.log(`✅ AoT Task Sweeper safety contract: ${passed}/15 classifications PASS + open PR head/base protection + cleanup revalidation + naming/launcher contract PASS`);
+console.log(`✅ AoT Task Sweeper safety contract: ${passed}/17 classifications PASS + open PR head/base protection + cleanup revalidation + naming/launcher contract PASS`);
