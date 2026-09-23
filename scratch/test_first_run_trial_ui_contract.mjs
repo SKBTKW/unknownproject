@@ -42,6 +42,11 @@ for (const forbidden of [
     "startTrialSession(",
     "trialController.startScenario(",
     "trialActive =",
+    ".investigationUnlocked =",
+    ".knownEnemyState =",
+    "trueEnemyStateService.",
+    "warningStateService.markOmen(",
+    "warningStateService.markWatch(",
     "expandGrid(",
     "completeAfterPresentationCleanup(",
     "TRIAL_RESULT_SETTLED"
