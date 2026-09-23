@@ -363,6 +363,14 @@
       ]
     },
     {
+      "path": "scratch/test_first_run_stage1_flow.mjs",
+      "purpose": "connected FirstRun Verse7 trace, Investigation, Warning, restore, and Verse15 Trial1 launch flow",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_first_run_trial_ingress_policy.mjs",
       "purpose": "first run trial ingress policy",
       "suite": "existing",
