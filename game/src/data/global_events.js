@@ -36,11 +36,11 @@ export const GLOBAL_EVENTS_MASTER = [
     },
     {
         id: "EVENT_DEMIHUMAN_RAID", category: "THREAT", nameKey: "EVENT_DEMIHUMAN_RAID_NAME", descKey: "EVENT_DEMIHUMAN_RAID_DESC", icon: "⚔️", minStage: 2, duration: 1, baseWeight: 80, importance: "MAJOR", cooldownTurns: 8,
-        conditions: [{ type: "STAGE_AT_LEAST", value: 2 }, { type: "TRIAL_DISTANCE_ABOVE", value: 5 }], effects: [], endEffects: []
+        conditions: [{ type: "STAGE_AT_LEAST", value: 2 }, { type: "HAS_HISTORY", historyType: "TRIAL_SURVIVED" }, { type: "TRIAL_DISTANCE_ABOVE", value: 5 }], effects: [], endEffects: []
     },
     {
         id: "EVENT_DEMIHUMAN_SCOUTS", category: "THREAT", nameKey: "EVENT_DEMIHUMAN_SCOUTS_NAME", descKey: "EVENT_DEMIHUMAN_SCOUTS_DESC", choiceEventId: "EVENT_CAPTURED_SCOUT", icon: "🏹", minStage: 2, duration: 1, baseWeight: 60, importance: "MAJOR",
-        conditions: [{ type: "STAGE_AT_LEAST", value: 2 }, { type: "TRIAL_DISTANCE_ABOVE", value: 4 }], effects: [], endEffects: []
+        conditions: [{ type: "STAGE_AT_LEAST", value: 2 }, { type: "HAS_HISTORY", historyType: "TRIAL_SURVIVED" }, { type: "TRIAL_DISTANCE_ABOVE", value: 4 }], effects: [], endEffects: []
     }
 ];
 
