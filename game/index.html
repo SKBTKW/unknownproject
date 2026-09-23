@@ -122,6 +122,7 @@
         import { attachTrialActionTray } from './src/ui/trial_action_tray_runtime_bridge.js?v=20260913_v1';
         import { attachTrialRuntimeSubsystems } from './src/trial/integration/trial_runtime_bootstrap.js?v=20260916_v1';
         import { attachTrialLaunchSubsystem } from './src/trial/integration/trial_launch_bootstrap.js?v=20260923_first_run_flow1';
+        import { BrowserFirstRunActivationStore } from './src/tutorial/browser_first_run_activation_store.js?v=20260924_first_run_activation1';
 
         class BrowserGameState extends PlatformNeutralGameState {
             constructor(dependencies = {}) {
@@ -131,7 +132,12 @@
 
         function bootstrap() {
             try {
-                const engine = GameEngine.createGame({ GameStateClass: BrowserGameState });
+                const firstRunActivationStore = new BrowserFirstRunActivationStore();
+                const engine = GameEngine.createGame({
+                    GameStateClass: BrowserGameState,
+                    firstRun: firstRunActivationStore.isFirstRun(),
+                    firstRunActivationStore
+                });
                 const trialRuntime = attachTrialRuntimeSubsystems(engine);
                 if (!trialRuntime.success) {
                     throw new Error(`TRIAL_RUNTIME_BOOTSTRAP_FAILED:${trialRuntime.reason || 'UNKNOWN'}`);

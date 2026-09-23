@@ -295,6 +295,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (FirstRun Orchestration Contract) で不合格が検出されました。");
         process.exit(1);
     }
+    const firstRunActivationOk = await runCommand("node", ["scratch/test_first_run_activation_store.mjs"]);
+    if (!firstRunActivationOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (FirstRun Browser Activation Persistence) で不合格が検出されました。");
+        process.exit(1);
+    }
     const firstRunIntegrationOk = await runCommand("node", ["scratch/test_first_run_game_engine_integration.mjs"]);
     if (!firstRunIntegrationOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (FirstRun GameEngine Integration) で不合格が検出されました。");
