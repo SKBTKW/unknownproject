@@ -738,23 +738,6 @@ class DeckManager {
                 category: "CARD_EFFECT"
             });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🏹【${cName}】`);
-        } else if (cId === "CMD_REKINDLE_EMBER") {
-            // ✨ 再燃: コスト ✨-10
-            this.state.ember = this.state.ember + 3;
-            this.state.reserveFeeWaivedTurns = 3;
-            this.state.reserveFeeWaivedStartsNextTurn = true;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "✨",
-                description: cDesc,
-                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 3 }) : "3T",
-                category: "CARD_EFFECT",
-                remainingTurns: 3,
-                startsNextTurn: true
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `✨【${cName}】`);
         } else if (cId === "CMD_TRANSMUTE_GOLDEN") {
             // 💎 黄金秘境への変容: コスト ✨-20
             if (targetTile && targetTile.r !== undefined && targetTile.c !== undefined && this.state.grid) {
@@ -848,22 +831,6 @@ class DeckManager {
                 remainingTurns: 1
             });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🌾【${cName}】`);
-        } else if (cId === "CMD_MEDITATION") {
-            // 🧘 瞑想: コスト 無料 (次ターン土地保証)
-            this.state.mystic += 3;
-            this.state.activeDrawBias = { targetCategory: "LAND", type: "TURNS", remainingTurns: 1, startsNextTurn: true };
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🧘",
-                description: cDesc,
-                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 1 }) : "1T",
-                category: "CARD_EFFECT",
-                remainingTurns: 1,
-                startsNextTurn: true
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🧘【${cName}】`);
         } else if (cId === "CMD_VIGILANCE") {
             // 🛡️ 警戒: コスト 🧱-15 (次のターンから2ターンの間、獲得する全ての🛡️に+3ボーナス)
             this.state.vigilanceTurns = 2;
@@ -897,37 +864,6 @@ class DeckManager {
                 startsNextTurn: true
             });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🌾【${cName}】`);
-        } else if (cId === "CMD_MANIFEST_MIRACLE") {
-            // ✨ 顕現: コスト ✨-10 (次のターンから3ターンの間、不足資源補填レート 3→1)
-            this.state.manifestMiracleTurns = 3;
-            this.state.manifestMiracleStartsNextTurn = true;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "✨",
-                description: cDesc,
-                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 3 }) : "3T",
-                category: "CARD_EFFECT",
-                remainingTurns: 3,
-                startsNextTurn: true
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `✨【${cName}】`);
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `✨【${cName}】`);
-        } else if (cId === "CMD_FILL_THE_VOID") {
-            // ✨ 届かぬ資材を満たすもの: コスト 無料 (今ターンのみ不足資源補填可能)
-            this.state.fillTheVoidTurns = 1;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "✨",
-                description: cDesc,
-                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 1 }) : "1T",
-                category: "CARD_EFFECT",
-                remainingTurns: 1
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `✨【${cName}】`);
         } else if (cId === "CMD_SCORCHED_RETREAT") {
             // 🔥 焦土退却: コスト 🌾-20 (試練後3ターン土地産出 -1/T)
             this.state.scorchedRetreatTurns = 3;
