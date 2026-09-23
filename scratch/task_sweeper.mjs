@@ -244,34 +244,40 @@ async function verifyAuditedSupersession({
             reason: `audited superseded proof head mismatch: expected ${entry.expectedHeadSha}, found ${remoteSha}`,
         };
     }
-    if (!Number.isInteger(entry.replacementPr)) {
-        return { verified: false, reason: 'audited superseded proof is missing replacement PR number' };
+    const replacementPrs = Array.isArray(entry.replacementPrs)
+        ? entry.replacementPrs
+        : [entry.replacementPr];
+    if (replacementPrs.length === 0 || replacementPrs.some((number) => !Number.isInteger(number))) {
+        return { verified: false, reason: 'audited superseded proof is missing replacement PR number(s)' };
     }
 
     const headers = githubHeaders();
-    const request = await fetchGitHubJson(
-        `https://api.github.com/repos/${githubRepo.owner}/${githubRepo.repo}/pulls/${entry.replacementPr}`,
-        { headers, label: 'GitHub replacement PR lookup failed' }
-    );
-    if (!request.ok) return { verified: false, reason: request.reason };
+    for (const replacementPr of replacementPrs) {
+        const request = await fetchGitHubJson(
+            `https://api.github.com/repos/${githubRepo.owner}/${githubRepo.repo}/pulls/${replacementPr}`,
+            { headers, label: 'GitHub replacement PR lookup failed' }
+        );
+        if (!request.ok) return { verified: false, reason: request.reason };
 
-    const pr = request.body;
-    if (!pr?.merged_at) {
-        return { verified: false, reason: `replacement PR #${entry.replacementPr} is not merged` };
-    }
-    if (pr.base?.ref !== target) {
-        return { verified: false, reason: `replacement PR #${entry.replacementPr} does not target ${target}` };
-    }
-    if (!pr.merge_commit_sha || !gitIsAncestor(pr.merge_commit_sha, targetRef, cwd)) {
-        return {
-            verified: false,
-            reason: `replacement PR #${entry.replacementPr} merge commit is not contained in ${targetRef}`,
-        };
+        const pr = request.body;
+        if (!pr?.merged_at) {
+            return { verified: false, reason: `replacement PR #${replacementPr} is not merged` };
+        }
+        if (pr.base?.ref !== target) {
+            return { verified: false, reason: `replacement PR #${replacementPr} does not target ${target}` };
+        }
+        if (!pr.merge_commit_sha || !gitIsAncestor(pr.merge_commit_sha, targetRef, cwd)) {
+            return {
+                verified: false,
+                reason: `replacement PR #${replacementPr} merge commit is not contained in ${targetRef}`,
+            };
+        }
     }
 
     return {
         verified: true,
-        replacementPr: entry.replacementPr,
+        replacementPr: replacementPrs.length === 1 ? replacementPrs[0] : undefined,
+        replacementPrs,
         note: entry.note || '',
     };
 }
@@ -391,7 +397,9 @@ export function classifyTaskCandidate(state) {
     }
     return {
         status: 'SAFE',
-        reason: `audited superseded TASK; replacement PR #${state.supersededPrNumber} is merged into target`,
+        reason: Array.isArray(state.supersededPrNumbers) && state.supersededPrNumbers.length > 1
+            ? `audited superseded TASK; replacement PRs ${state.supersededPrNumbers.map((number) => `#${number}`).join(' + ')} are merged into target`
+            : `audited superseded TASK; replacement PR #${state.supersededPrNumber} is merged into target`,
     };
 }
 
@@ -472,6 +480,7 @@ async function inspectCandidate(candidate, context) {
         prReason: mergedPr.reason,
         supersededVerified: superseded.verified,
         supersededPrNumber: superseded.replacementPr,
+        supersededPrNumbers: superseded.replacementPrs,
         supersededReason: superseded.reason,
     });
 
