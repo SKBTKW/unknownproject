@@ -787,6 +787,14 @@
       ]
     },
     {
+      "path": "scratch/test_post_trial_threat_history_gate.mjs",
+      "purpose": "Post-Trial demihuman threat GEs require survived Trial history",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_reclaimed_land.mjs",
       "purpose": "reclaimed-land restore compatibility semantics",
       "suite": "supplemental"
