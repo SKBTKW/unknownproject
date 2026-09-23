@@ -471,6 +471,13 @@ function runSeedTrace(seed) {
         });
         assert.ok(action, `seed ${seed} V${verse}: Offering must contain at least one actionable card`);
 
+        const beforeAction = {
+            food: engine.state.food,
+            material: engine.state.wood ?? engine.state.material ?? 0,
+            mystic: engine.state.mystic,
+            ember: engine.state.ember
+        };
+
         if (action.type === "LAND") {
             const rotated = makeRotatedInstance(action.card, action.placement);
             const result = engine.placeLand(
@@ -493,14 +500,20 @@ function runSeedTrace(seed) {
         const beforeSettlement = {
             food: engine.state.food,
             material: engine.state.wood ?? engine.state.material ?? 0,
-            mystic: engine.state.mystic
+            mystic: engine.state.mystic,
+            ember: engine.state.ember
         };
         const settlementPreview = engine.previewTurnEndMaintenance();
         const settlementBreakdown = engine.state.getResourceBreakdown();
         const boundary = engine.nextTurn();
         settlements.push({
             verse,
+            actionType: action.type,
             territoryTiles: engine.state.getTerritoryTileCount(),
+            actionFoodDelta: beforeSettlement.food - beforeAction.food,
+            actionMaterialDelta: beforeSettlement.material - beforeAction.material,
+            actionMysticDelta: beforeSettlement.mystic - beforeAction.mystic,
+            actionEmberDelta: beforeSettlement.ember - beforeAction.ember,
             foodBefore: beforeSettlement.food,
             grossFood: settlementPreview.production.grossFood,
             foodCost: settlementPreview.production.foodCost,
@@ -552,6 +565,10 @@ function runSeedTrace(seed) {
     const totalGrossFood = settlements.reduce((sum, row) => sum + row.grossFood, 0);
     const totalFoodMaintenance = settlements.reduce((sum, row) => sum + row.foodCost, 0);
     const totalMaterialProduction = settlements.reduce((sum, row) => sum + row.materialProduction, 0);
+    const totalActionFoodDelta = settlements.reduce((sum, row) => sum + row.actionFoodDelta, 0);
+    const totalActionMaterialDelta = settlements.reduce((sum, row) => sum + row.actionMaterialDelta, 0);
+    const totalActionMysticDelta = settlements.reduce((sum, row) => sum + row.actionMysticDelta, 0);
+    const totalActionEmberDelta = settlements.reduce((sum, row) => sum + row.actionEmberDelta, 0);
     const firstSettlement = settlements[0];
     const lastSettlement = settlements[settlements.length - 1];
     console.log(
@@ -562,6 +579,10 @@ function runSeedTrace(seed) {
             `foodMaintenance=${totalFoodMaintenance}`,
             `foodNetSupply=${totalGrossFood - totalFoodMaintenance}`,
             `materialProduction=${totalMaterialProduction}`,
+            `actionFoodDelta=${totalActionFoodDelta}`,
+            `actionMaterialDelta=${totalActionMaterialDelta}`,
+            `actionMysticDelta=${totalActionMysticDelta}`,
+            `actionEmberDelta=${totalActionEmberDelta}`,
             `grossFoodRamp=${firstSettlement?.grossFood ?? 0}->${lastSettlement?.grossFood ?? 0}`,
             `materialRamp=${firstSettlement?.materialProduction ?? 0}->${lastSettlement?.materialProduction ?? 0}`,
             `tiles=${firstSettlement?.territoryTiles ?? 0}->${lastSettlement?.territoryTiles ?? 0}`
@@ -569,6 +590,47 @@ function runSeedTrace(seed) {
     );
 
     return { trace, settlements };
+}
+
+
+function formatRange(values) {
+    const finite = values.filter(Number.isFinite);
+    if (finite.length === 0) return "n/a";
+    return `${Math.min(...finite)}..${Math.max(...finite)}`;
+}
+
+function printEconomySummary(runs) {
+    const perRun = runs.map(run => {
+        const first = run.trace.find(row => row.verse === 1);
+        const final = run.trace.find(row => row.verse === 15);
+        return {
+            grossFood: run.settlements.reduce((sum, row) => sum + row.grossFood, 0),
+            foodMaintenance: run.settlements.reduce((sum, row) => sum + row.foodCost, 0),
+            foodNetSupply: run.settlements.reduce((sum, row) => sum + row.netFood, 0),
+            actionFoodDelta: run.settlements.reduce((sum, row) => sum + row.actionFoodDelta, 0),
+            materialProduction: run.settlements.reduce((sum, row) => sum + row.materialProduction, 0),
+            actionMaterialDelta: run.settlements.reduce((sum, row) => sum + row.actionMaterialDelta, 0),
+            startingFood: first?.food ?? Number.NaN,
+            finalFood: final?.food ?? Number.NaN,
+            startingMaterial: first?.material ?? Number.NaN,
+            finalMaterial: final?.material ?? Number.NaN
+        };
+    });
+
+    console.log(
+        [
+            "ECON_SUMMARY",
+            `seeds=${perRun.length}`,
+            `grossFood=${formatRange(perRun.map(row => row.grossFood))}`,
+            `foodMaintenance=${formatRange(perRun.map(row => row.foodMaintenance))}`,
+            `foodNetSupply=${formatRange(perRun.map(row => row.foodNetSupply))}`,
+            `actionFoodDelta=${formatRange(perRun.map(row => row.actionFoodDelta))}`,
+            `foodStock=${formatRange(perRun.map(row => row.startingFood))}->${formatRange(perRun.map(row => row.finalFood))}`,
+            `materialProduction=${formatRange(perRun.map(row => row.materialProduction))}`,
+            `actionMaterialDelta=${formatRange(perRun.map(row => row.actionMaterialDelta))}`,
+            `materialStock=${formatRange(perRun.map(row => row.startingMaterial))}->${formatRange(perRun.map(row => row.finalMaterial))}`
+        ].join(" ")
+    );
 }
 
 console.log("=== Stage1 Offering / Economy / Board Playability Audit ===");
@@ -608,6 +670,8 @@ assert.equal(
     true,
     "representative Stage1 path should expose uninterrupted positive material production"
 );
+
+printEconomySummary(runs);
 
 console.log(
     `PASS Stage1 playability audit: ${TRACE_SEEDS.length} seeds x Verse1-15 + reserve + food settlement + Multi-Attribute + Zone/Link`
