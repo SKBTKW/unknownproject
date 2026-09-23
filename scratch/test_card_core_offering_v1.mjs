@@ -1623,7 +1623,37 @@ function makeGrid(rows, cols) {
     }
 }
 
-// AJ. Shadowed duplicate legacy branches stay explicit and Great Rampart remains Project-owned.
+// AJ. Legacy-only cards cannot be forced back through the weighted draw path.
+{
+    const generatedLegacy = COMMAND_CARDS_MASTER.find(card =>
+        LEGACY_ONLY_IDS.includes(card.id)
+    );
+    assert.ok(generatedLegacy, "fixture requires at least one generated legacy-only command");
+
+    const state = {
+        turn: 20,
+        stage: { id: 3 },
+        reserveSlots: [],
+        activeBuffs: [],
+        consumedUniqueCards: [],
+        usedUniqueCards: []
+    };
+    const manager = new DeckManager(state, {
+        gameplayRandom: { nextFloat: () => 0 }
+    });
+    manager.cycleSystem = null;
+
+    const drawn = manager.drawSingleCard([], {
+        candidateFilter: card => card.id === generatedLegacy.id
+    });
+    assert.equal(
+        drawn,
+        null,
+        `${generatedLegacy.id} must remain impossible to draw even when candidateFilter targets it directly`
+    );
+}
+
+// AK. Shadowed duplicate legacy branches stay explicit and Great Rampart remains Project-owned.
 {
     assert.deepEqual(
         [...LEGACY_SHADOWED_BRANCH_IDS],
@@ -1646,7 +1676,7 @@ function makeGrid(rows, cols) {
         "first reachable Great Rampart branch must remain the 4T project behavior");
 }
 
-// AK. Candidate narrowing can never re-introduce a card rejected by full eligibility.
+// AL. Candidate narrowing can never re-introduce a card rejected by full eligibility.
 {
     const master = [
         { id: "LEGAL_INVESTIGATION", category: "INVESTIGATION", weight: 1 },
@@ -1673,7 +1703,7 @@ function makeGrid(rows, cols) {
     );
 }
 
-// AL. FirstRun-style Investigation minimum is satisfied only from the legal candidate population.
+// AM. FirstRun-style Investigation minimum is satisfied only from the legal candidate population.
 {
     const state = {
         turn: 8,
