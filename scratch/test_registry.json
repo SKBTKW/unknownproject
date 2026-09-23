@@ -217,6 +217,14 @@
       ]
     },
     {
+      "path": "scratch/test_board_damage_presentation.mjs",
+      "purpose": "Board damage semantic state through DTO and 2D/2.5D presentation",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_board_history_query.mjs",
       "purpose": "Board-owned Battle Site history read boundary and RunHistory integration",
       "suite": "existing",
