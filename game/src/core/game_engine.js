@@ -106,8 +106,12 @@ class GameEngine {
             || (BoardDomainAdapterClass ? new BoardDomainAdapterClass({
                 state: this.state,
                 gridEngine: this.gridEngine,
-                specialBlockService: this.specialBlockService
+                specialBlockService: this.specialBlockService,
+                zoneConversionService: dependencies.zoneConversionService || null
             }) : null);
+        this.zoneConversionService = dependencies.zoneConversionService
+            || this.boardDomainAdapter?.zoneConversionService
+            || null;
 
         this.cardDomainActionExecutor = dependencies.cardDomainActionExecutor
             || createCardDomainActionExecutor(this);
@@ -210,6 +214,7 @@ class GameEngine {
             this.state.checkSystem = this.checkSystem;
             if (this.gridEngine) this.state.gridEngine = this.gridEngine;
             if (this.specialBlockService) this.state.specialBlockService = this.specialBlockService;
+            if (this.zoneConversionService) this.state.zoneConversionService = this.zoneConversionService;
             if (this.boardDomainAdapter) this.state.boardDomainAdapter = this.boardDomainAdapter;
             if (this.deckManager) this.state.deckManager = this.deckManager;
             if (this.directiveSystem) this.state.directiveSystem = this.directiveSystem;
