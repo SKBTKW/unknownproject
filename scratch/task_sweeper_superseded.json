@@ -49,6 +49,30 @@
       "expectedHeadSha": "7b64d2e160d10bac0637a0df106d4a6f76ba2eb9",
       "replacementPr": 96,
       "note": "PR #94 explicitly says it was superseded by a fresh TASK; replacement merged as PR #96."
+    },
+    {
+      "branch": "aot-task/AoT260922/cards/card-core-offering-v1",
+      "expectedHeadSha": "5f5eb9e45c13c7db8daaa11742e42233cd7a9bd5",
+      "replacementPr": 132,
+      "note": "The current branch head is PR #115 plus the first declarative migration commits. PR #132 explicitly supersedes the follow-up replay and contains the declarative effect migration/equivalence scope."
+    },
+    {
+      "branch": "aot-task/AoT260922/cards/card-core-offering-v1-followup-r2",
+      "expectedHeadSha": "39d6d3f164c834a79a68c2a8a275880df499cc89",
+      "replacementPr": 168,
+      "note": "The two unique commits add explicit domain migration blocker metadata/tests; PR #168 contains the blocker model and expanded regression coverage on the current base."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/multi-attribute-block-r17",
+      "expectedHeadSha": "6eeb26da0052a653a77477ba614ac28105c5835a",
+      "replacementPr": 166,
+      "note": "PR #155 states it rebuilt the original r17 after divergence; merged PR #166 then explicitly reconciled and superseded the stale r19 work while preserving the foundation scope."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/multi-attribute-block-r19",
+      "expectedHeadSha": "01e9af92aab39ad9883133ed3b0322fd66250ab8",
+      "replacementPr": 166,
+      "note": "PR #166 explicitly says it audited prior r19/r20 source semantics and intended to supersede stale PR #155 (r19)."
     }
   ]
 }
