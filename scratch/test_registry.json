@@ -890,6 +890,14 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_stage1_offering_economy_playability.mjs",
+      "purpose": "Stage1 Offering, economy, reserve, Multi-Attribute placement, Zone/Link, and Verse1-to-Trial1 playability audit",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_state_serializer_restore_coverage.mjs",
       "purpose": "state serializer restore coverage",
       "suite": "existing",
