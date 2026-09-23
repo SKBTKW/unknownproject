@@ -546,4 +546,92 @@ function makeGrid(rows, cols) {
     assert.equal(campState.logs.length, 1);
 }
 
+// P. Simple Mystic cards migrated from ID branches remain behavior-equivalent.
+{
+    const cases = [
+        {
+            id: "CMD_LEYLINE_RESONANCE",
+            initialMystic: 20,
+            expectedMystic: 12,
+            stateKey: "leylineResonanceActive",
+            stateValue: true,
+            icon: "✨",
+            unique: false
+        },
+        {
+            id: "CMD_VOICE_BENEATH_EARTH",
+            initialMystic: 20,
+            expectedMystic: 15,
+            stateKey: "voiceBeneathEarthTurns",
+            stateValue: 1,
+            icon: "🔮",
+            unique: false
+        },
+        {
+            id: "CMD_REVELATION_CHOICE",
+            initialMystic: 20,
+            expectedMystic: 5,
+            stateKey: "revelationChoiceTurns",
+            stateValue: 1,
+            icon: "✨",
+            unique: false
+        },
+        {
+            id: "CMD_TWO_FUTURES",
+            initialMystic: 30,
+            expectedMystic: 10,
+            stateKey: "twoFuturesTurns",
+            stateValue: 1,
+            icon: "🔮",
+            unique: true
+        }
+    ];
+
+    for (const testCase of cases) {
+        const card = COMMAND_CARDS_MASTER.find(candidate => candidate.id === testCase.id);
+        assert.ok(card, `missing generated master card ${testCase.id}`);
+        assert.ok(Array.isArray(card.effects) && card.effects.length === 3,
+            `${testCase.id} must execute declaratively`);
+
+        const state = {
+            turn: 1,
+            food: 50,
+            wood: 50,
+            material: 50,
+            mystic: testCase.initialMystic,
+            ember: 10,
+            reserveSlots: [],
+            consumedUniqueCards: [],
+            usedUniqueCards: [],
+            activeBuffs: [],
+            logs: [],
+            addBuff(buff) { this.activeBuffs.push(buff); },
+            addLog(log) { this.logs.push(log); }
+        };
+        const manager = new DeckManager(state, {});
+        manager.cycleSystem = null;
+
+        const result = manager.playCommandCard(card);
+        assert.equal(result.success, true, testCase.id);
+        assert.equal(state.mystic, testCase.expectedMystic, `${testCase.id} cost drift`);
+        assert.equal(state[testCase.stateKey], testCase.stateValue, `${testCase.id} state effect drift`);
+        assert.equal(state.activeBuffs.length, 1, `${testCase.id} buff count drift`);
+        assert.equal(state.activeBuffs[0].id, testCase.id, `${testCase.id} buff id drift`);
+        assert.equal(state.activeBuffs[0].icon, testCase.icon, `${testCase.id} buff icon drift`);
+        assert.equal(state.activeBuffs[0].category, "CARD_EFFECT", `${testCase.id} buff category drift`);
+        assert.equal(state.logs.length, 1, `${testCase.id} log count drift`);
+
+        if (testCase.stateKey !== "leylineResonanceActive") {
+            assert.equal(state.activeBuffs[0].remainingTurns, 1, `${testCase.id} remainingTurns drift`);
+            assert.ok(state.activeBuffs[0].badgeText, `${testCase.id} must keep remaining-turn badge`);
+        }
+
+        if (testCase.unique) {
+            assert.ok(state.consumedUniqueCards.includes(testCase.id)
+                || state.usedUniqueCards.includes(testCase.id),
+                `${testCase.id} UNIQUE consumption must remain active`);
+        }
+    }
+}
+
 console.log("✅ Card Core / Offering v1 contract tests PASS");
