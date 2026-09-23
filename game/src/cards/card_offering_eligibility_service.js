@@ -5,19 +5,19 @@
    ============================================================= */
 
 import { normalizeCardDefinitionV1 } from './card_definition_v1.js';
-import { CARD_EFFECT_TYPES } from './card_effect_executor.js';
-import { CARD_DOMAIN_ACTIONS } from './card_domain_action_executor.js';
 
 class CardOfferingEligibilityService {
     constructor({
         state,
         placementQuery,
         requirementEvaluator = null,
+        executionTargetRequired = null,
         executionTargetQuery = null
     } = {}) {
         this.state = state;
         this.placementQuery = placementQuery;
         this.requirementEvaluator = requirementEvaluator;
+        this.executionTargetRequired = executionTargetRequired;
         this.executionTargetQuery = executionTargetQuery;
     }
 
@@ -31,11 +31,13 @@ class CardOfferingEligibilityService {
             }
         }
 
-        const requiresBoardExecutionTarget = card.effects.some(effect =>
-            effect?.type === CARD_EFFECT_TYPES.DOMAIN_ACTION
-            && effect?.action === CARD_DOMAIN_ACTIONS.CREATE_SPECIAL_BLOCK
-        );
-        if (requiresBoardExecutionTarget) {
+        const requiresExecutionTarget = typeof this.executionTargetRequired === "function"
+            ? this.executionTargetRequired(card, {
+                ...context,
+                state: this.state
+            }) === true
+            : false;
+        if (requiresExecutionTarget) {
             if (typeof this.executionTargetQuery !== "function") {
                 return Object.freeze({
                     eligible: false,
