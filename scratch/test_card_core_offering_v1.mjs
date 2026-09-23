@@ -635,7 +635,87 @@ function makeGrid(rows, cols) {
     }
 }
 
-// Q. Migrated effects stay identical between JSON SSOT and generated command master.
+// Q. Mystic utility migrations preserve multi-effect legacy behavior.
+{
+    const makeState = ({ mystic = 20, ember = 5 } = {}) => ({
+        turn: 1,
+        food: 50,
+        wood: 50,
+        material: 50,
+        mystic,
+        ember,
+        reserveSlots: [],
+        consumedUniqueCards: [],
+        usedUniqueCards: [],
+        activeBuffs: [],
+        logs: [],
+        addBuff(buff) { this.activeBuffs.push(buff); },
+        addLog(log) { this.logs.push(log); }
+    });
+
+    {
+        const card = COMMAND_CARDS_MASTER.find(c => c.id === "CMD_FILL_THE_VOID");
+        const state = makeState();
+        const manager = new DeckManager(state, {});
+        manager.cycleSystem = null;
+        assert.equal(manager.playCommandCard(card).success, true);
+        assert.equal(state.fillTheVoidTurns, 1);
+        assert.equal(state.activeBuffs[0].remainingTurns, 1);
+        assert.equal(state.activeBuffs[0].id, card.id);
+        assert.equal(state.logs.length, 1);
+    }
+
+    {
+        const card = COMMAND_CARDS_MASTER.find(c => c.id === "CMD_MEDITATION");
+        const state = makeState({ mystic: 10 });
+        const manager = new DeckManager(state, {});
+        manager.cycleSystem = null;
+        assert.equal(manager.playCommandCard(card).success, true);
+        assert.equal(state.mystic, 13, "meditation must preserve immediate mystic +3");
+        assert.deepEqual(state.activeDrawBias, {
+            targetCategory: "LAND",
+            type: "TURNS",
+            remainingTurns: 1,
+            startsNextTurn: true
+        });
+        assert.equal(state.activeBuffs[0].startsNextTurn, true);
+        assert.equal(state.activeBuffs[0].remainingTurns, 1);
+        assert.equal(state.logs.length, 1);
+    }
+
+    {
+        const card = COMMAND_CARDS_MASTER.find(c => c.id === "CMD_REKINDLE_EMBER");
+        const state = makeState({ mystic: 20, ember: 4 });
+        const manager = new DeckManager(state, {});
+        manager.cycleSystem = null;
+        assert.equal(manager.playCommandCard(card).success, true);
+        assert.equal(state.mystic, 10, "rekindle mystic cost drift");
+        assert.equal(state.ember, 7, "rekindle ember gain drift");
+        assert.equal(state.reserveFeeWaivedTurns, 3);
+        assert.equal(state.reserveFeeWaivedStartsNextTurn, true);
+        assert.equal(state.activeBuffs[0].remainingTurns, 3);
+        assert.equal(state.activeBuffs[0].startsNextTurn, true);
+        assert.equal(state.logs.length, 1);
+    }
+
+    {
+        const card = COMMAND_CARDS_MASTER.find(c => c.id === "CMD_MANIFEST_MIRACLE");
+        const state = makeState({ mystic: 20 });
+        const manager = new DeckManager(state, {});
+        manager.cycleSystem = null;
+        assert.equal(manager.playCommandCard(card).success, true);
+        assert.equal(state.mystic, 10, "manifest miracle mystic cost drift");
+        assert.equal(state.manifestMiracleTurns, 3);
+        assert.equal(state.manifestMiracleStartsNextTurn, true);
+        assert.equal(state.activeBuffs[0].remainingTurns, 3);
+        assert.equal(state.activeBuffs[0].startsNextTurn, true);
+        assert.equal(state.logs.length, 2,
+            "legacy Manifest Miracle emits two activation logs; preserve during refactor");
+    }
+}
+
+// R. Migrated effects stay identical between JSON SSOT and generated command master.
+
 {
     const economySource = JSON.parse(readFileSync(
         new URL("../game/src/data/economy_cards.json", import.meta.url),
@@ -652,7 +732,11 @@ function makeGrid(rows, cols) {
         "CMD_LEYLINE_RESONANCE",
         "CMD_VOICE_BENEATH_EARTH",
         "CMD_REVELATION_CHOICE",
-        "CMD_TWO_FUTURES"
+        "CMD_TWO_FUTURES",
+        "CMD_FILL_THE_VOID",
+        "CMD_MEDITATION",
+        "CMD_REKINDLE_EMBER",
+        "CMD_MANIFEST_MIRACLE"
     ];
 
     for (const id of migratedIds) {
