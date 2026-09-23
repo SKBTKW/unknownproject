@@ -280,6 +280,14 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_card_domain_actions_v2_replay.mjs",
+      "purpose": "Card compatibility-handler extraction and canonical domain migration blocker projection",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_check_system_core.mjs",
       "purpose": "check system core",
       "suite": "supplemental"
@@ -349,6 +357,14 @@
     {
       "path": "scratch/test_first_run_service.mjs",
       "purpose": "first run service",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_first_run_stage1_flow.mjs",
+      "purpose": "connected FirstRun Verse7 trace, Investigation, Warning, restore, and Verse15 Trial1 launch flow",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -1270,14 +1286,6 @@
     {
       "path": "scratch/test_zone_conversion_foundation.mjs",
       "purpose": "Zone conversion foundation, maintenance lifecycle, and Board-to-Trial deployment semantic projection",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
-      "path": "scratch/test_card_domain_actions_v2_replay.mjs",
-      "purpose": "Card compatibility-handler extraction and canonical domain migration blocker projection",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
