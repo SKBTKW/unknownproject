@@ -246,6 +246,55 @@ console.log('Board / Special Block / Defense v1 contract');
     const state = state5();
     const grid = new GridEngine(state);
     state.isHQVicinity = grid.isHQVicinity.bind(grid);
+    state.grid[1][1] = cell(1, 1, {
+        placed: true,
+        placementGroupId: 'isolated-plains',
+        terrain: { ...PLAINS }
+    });
+    const service = new SpecialBlockService(state);
+    const farmTargets = service.enumerateLegalTargets(SPECIAL_BLOCK_TYPES.FARM);
+    assert.ok(
+        farmTargets.some(entry =>
+            entry.source.r === 1 && entry.source.c === 1
+            && entry.destination.r === 1 && entry.destination.c === 2
+        ),
+        'isolated 1x1 plains exposes adjacent empty FARM destination'
+    );
+    assert.equal(
+        service.validateTarget(SPECIAL_BLOCK_TYPES.FARM, {
+            source: { r: 1, c: 1 },
+            destination: { r: 1, c: 2 }
+        }).valid,
+        true
+    );
+    assert.equal(
+        service.createSpecialBlock(SPECIAL_BLOCK_TYPES.FARM, {
+            source: { r: 1, c: 1 },
+            destination: { r: 1, c: 2 }
+        }).reason,
+        'INDEPENDENT_GENERATION_NOT_CONNECTED',
+        'FARM mutation remains fail-closed until independent-cell runtime semantics are defined'
+    );
+
+    state.grid[1][2] = cell(1, 2, {
+        placed: true,
+        placementGroupId: 'connected-plains',
+        terrain: { ...PLAINS }
+    });
+    assert.equal(
+        service.validateTarget(SPECIAL_BLOCK_TYPES.FARM, {
+            source: { r: 1, c: 1 },
+            destination: { r: 0, c: 1 }
+        }).reason,
+        'SOURCE_TERRAIN_NOT_ISOLATED',
+        'connected 1x2+ plains cannot be a FARM source'
+    );
+}
+
+{
+    const state = state5();
+    const grid = new GridEngine(state);
+    state.isHQVicinity = grid.isHQVicinity.bind(grid);
     state.grid[1][2] = cell(1, 2, {
         placed: true,
         placementGroupId: 'forest-a',
