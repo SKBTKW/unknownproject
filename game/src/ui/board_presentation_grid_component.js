@@ -54,6 +54,16 @@ export function resolveTrialDefenseAllocationBadge(trial) {
     });
 }
 
+export function resolveBoardDamageMarker(history) {
+    const damage = history?.damage || null;
+    if (!damage?.any) return null;
+    return Object.freeze({
+        land: Boolean(damage.land),
+        specialBlock: Boolean(damage.specialBlock),
+        count: Array.isArray(damage.records) ? damage.records.length : 0
+    });
+}
+
 export function resolveBattleSiteMarker(history) {
     const sites = Array.isArray(history?.battleSites) ? history.battleSites : [];
     if (!history?.battleSite || sites.length === 0) return null;
@@ -194,11 +204,37 @@ export class BoardPresentationGridComponent extends LegacyBoardGridComponent {
             cellEl.querySelector?.('.trial-tactical-effect-stack')?.remove?.();
             cellEl.querySelector?.('.board-road-segments')?.remove?.();
             cellEl.querySelector?.('.battle-site-history-marker')?.remove?.();
+            cellEl.querySelector?.('.board-damage-marker-stack')?.remove?.();
             applyBoardGroupJoinClasses(cellEl, cell?.edges);
             cellEl.classList.toggle('board-logical-hover', !isTrialContext && Boolean(interaction?.hovered));
             cellEl.classList.toggle('board-logical-focus', !isTrialContext && Boolean(interaction?.focused));
             cellEl.classList.toggle('board-logical-selected', !isTrialContext && Boolean(interaction?.selected));
             cellEl.classList.toggle('cell-placed-this-turn', Boolean(interaction?.placedThisTurn));
+
+            const damageMarker = resolveBoardDamageMarker(cell?.history);
+            cellEl.classList.toggle('has-board-damage', Boolean(damageMarker));
+            cellEl.classList.toggle('has-land-damage', Boolean(damageMarker?.land));
+            cellEl.classList.toggle('has-special-block-damage', Boolean(damageMarker?.specialBlock));
+            if (damageMarker) {
+                const damageStack = document.createElement('span');
+                damageStack.className = 'board-damage-marker-stack';
+                damageStack.setAttribute('aria-hidden', 'true');
+                damageStack.setAttribute('data-damage-count', String(damageMarker.count));
+
+                if (damageMarker.land) {
+                    const landDamageEl = document.createElement('span');
+                    landDamageEl.className = 'board-damage-marker is-land';
+                    landDamageEl.textContent = '✦';
+                    damageStack.appendChild(landDamageEl);
+                }
+                if (damageMarker.specialBlock) {
+                    const specialDamageEl = document.createElement('span');
+                    specialDamageEl.className = 'board-damage-marker is-special-block';
+                    specialDamageEl.textContent = '!';
+                    damageStack.appendChild(specialDamageEl);
+                }
+                cellEl.appendChild(damageStack);
+            }
 
             const battleSiteMarker = resolveBattleSiteMarker(cell?.history);
             cellEl.classList.toggle('has-battle-site-history', Boolean(battleSiteMarker));
