@@ -58,6 +58,7 @@ class GameEngine {
         this.landData = dependencies.landData || LAND_SYSTEM_DATA;
         this.cellViewDataService = dependencies.cellViewDataService || new CellViewDataService(this.productionCalculator);
         this.transactionManager = dependencies.transactionManager || new ActionTransactionManager(this);
+        this.firstRunActivationStore = dependencies.firstRunActivationStore || null;
         const isExplicitFirstRun = dependencies.firstRun === true
             || dependencies.firstRunState?.active === true
             || dependencies.firstRunService?.enabled === true;
