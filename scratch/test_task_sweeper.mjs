@@ -5,6 +5,7 @@ import {
     classifyTaskCandidate,
     collectOpenPullRequestReferences,
     parseGitHubRepo,
+    resolveGitHubToken,
 } from './task_sweeper.mjs';
 import { extractTargets, isCleanConfirmation } from './task_sweeper_launcher.mjs';
 import { expectedTaskBranchPattern, isCanonicalTaskBranch } from './task_branch_contract.mjs';
@@ -71,6 +72,17 @@ for (const [label, state, expected] of tests) {
 assert.deepEqual(parseGitHubRepo('git@github.com:SKBTKW/unknownproject.git'), { owner: 'SKBTKW', repo: 'unknownproject' });
 assert.deepEqual(parseGitHubRepo('https://github.com/SKBTKW/unknownproject.git'), { owner: 'SKBTKW', repo: 'unknownproject' });
 assert.equal(parseGitHubRepo('https://example.com/SKBTKW/unknownproject.git'), null);
+
+assert.equal(
+    resolveGitHubToken({ GITHUB_TOKEN: 'token-from-github', GH_TOKEN: 'token-from-gh' }),
+    'token-from-github',
+    'explicit GitHub environment token must remain the first authentication source',
+);
+assert.equal(
+    resolveGitHubToken({ GH_TOKEN: 'token-from-gh' }),
+    'token-from-gh',
+    'GH_TOKEN must authenticate direct REST checks when GITHUB_TOKEN is absent',
+);
 
 const openPulls = [
     {
@@ -216,6 +228,21 @@ assert.equal(
     sweeperSource.includes('const headers = githubHeaders();'),
     true,
     'open and merged PR lookups must share the same authenticated GitHub headers',
+);
+assert.equal(
+    sweeperSource.includes("execFileSync('gh', ['auth', 'token', '--hostname', 'github.com']"),
+    true,
+    'local Sweeper must fall back to the authenticated GitHub CLI token instead of silently using anonymous REST',
+);
+assert.equal(
+    sweeperSource.includes('let cachedGitHubCliToken;'),
+    true,
+    'GitHub CLI token lookup must be cached instead of spawning gh once per API request',
+);
+assert.equal(
+    sweeperSource.includes("response.headers.get('x-ratelimit-remaining')"),
+    true,
+    'GitHub 403 diagnostics must expose rate-limit context without exposing credentials',
 );
 assert.equal(
     sweeperSource.includes('function githubHeaders() {\n    const headers = githubHeaders();'),
