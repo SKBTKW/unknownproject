@@ -19,7 +19,8 @@ import { DeckManager, OFFERING_GENERATION_REASONS } from "../../systems/deck_man
 import { LAND_CARDS_MASTER } from "../../data/land_cards_data.js";
 import {
     LAND_SYSTEM_DATA,
-    isCanonicalTerrainId
+    isCanonicalTerrainId,
+    resolveCanonicalTerrainSemantic
 } from "../../data/land_system.js";
 import { PlacementPreviewResolver } from "../../presentation/placement_preview_resolver.js";
 import { drawWeb25DPlacementPreview } from "../../presentation/web25d_placement_preview_renderer.js";
@@ -254,6 +255,74 @@ const landSystemJson = JSON.parse(
         resolveLandCardDisplayName({ terrain: staleOverlayCard }, fakeI18n),
         "草原（複数）"
     );
+}
+
+{
+    // Shipped Multi-Attribute Production v1 must resolve from canonical terrain
+    // through actual placement into each placed cell and ProductionCalculator.
+    const cases = [
+        {
+            card: actualMultiCards[0],
+            start: { r: 1, c: 0 },
+            support: { r: 2, c: 0 }
+        },
+        {
+            card: actualMultiCards[1],
+            start: { r: 1, c: 0 },
+            support: { r: 2, c: 0 }
+        },
+        {
+            card: actualMultiCards[2],
+            start: { r: 0, c: 0 },
+            support: { r: 1, c: 0 },
+            stage: 2
+        }
+    ];
+
+    for (const testCase of cases) {
+        const state = createState();
+        state.stage.id = testCase.stage || 1;
+        placeExisting(state, testCase.support.r, testCase.support.c, PLAINS, "support");
+
+        const grid = new GridEngine(state, {
+            gameplayRandom: { nextFloat: () => 0.99 },
+            deckManager: { consumeCardIfUnique() {} }
+        });
+        const placed = grid.placeShape(
+            testCase.start.r,
+            testCase.start.c,
+            testCase.card.shape,
+            testCase.card,
+            -1,
+            testCase.card.cells
+        );
+        assert.equal(placed.success, true, testCase.card.id);
+
+        for (const authoredCell of testCase.card.cells) {
+            const r = testCase.start.r + authoredCell.r;
+            const c = testCase.start.c + authoredCell.c;
+            const boardCell = state.grid[r][c];
+            const canonical = resolveCanonicalTerrainSemantic(authoredCell.terrainId);
+            assert.ok(canonical?.terrainId, authoredCell.terrainId);
+
+            const baseYields = canonical.baseYieldsPerTile || canonical;
+            const expected = {
+                food: baseYields.food || 0,
+                wood: baseYields.material ?? baseYields.wood ?? 0,
+                defense: baseYields.defense || 0,
+                mystic: baseYields.mystic || 0
+            };
+
+            assert.equal(boardCell.terrain.terrainId, authoredCell.terrainId);
+            assert.equal(boardCell.production.status, LAND_PRODUCTION_STATUS.RESOLVED);
+            assert.equal(boardCell.production.scope, LAND_PRODUCTION_SCOPE.CELL);
+            assert.deepEqual(boardCell.production.cellYields, expected);
+
+            const breakdown = ProductionCalculator.calculateCellYieldBreakdown(state, r, c);
+            assert.equal(breakdown.productionScope, LAND_PRODUCTION_SCOPE.CELL);
+            assert.deepEqual(breakdown.baseYields, expected);
+        }
+    }
 }
 
 {
