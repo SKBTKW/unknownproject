@@ -93,6 +93,74 @@ function parseWorktrees(raw) {
     return entries;
 }
 
+export function collectOpenPullRequestReferences(branch, pulls = [], repositoryFullName = '') {
+    if (!branch || !Array.isArray(pulls)) return [];
+    const references = [];
+    const expectedRepo = repositoryFullName.toLowerCase();
+    const matchesRepository = (fullName) => !expectedRepo
+        || (typeof fullName === 'string' && fullName.toLowerCase() === expectedRepo);
+
+    for (const pr of pulls) {
+        if (!pr || !Number.isInteger(pr.number)) continue;
+        const baseMatches = pr.base?.ref === branch && matchesRepository(pr.base?.repo?.full_name);
+        const headMatches = pr.head?.ref === branch && matchesRepository(pr.head?.repo?.full_name);
+
+        if (headMatches) references.push({ number: pr.number, role: 'head' });
+        if (baseMatches) references.push({ number: pr.number, role: 'base' });
+    }
+
+    return references;
+}
+
+function githubHeaders() {
+    const headers = {
+        Accept: 'application/vnd.github+json',
+        'User-Agent': 'AoT-Task-Sweeper',
+        'X-GitHub-Api-Version': '2022-11-28',
+    };
+    const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+    if (token) headers.Authorization = `Bearer ${token}`;
+    return headers;
+}
+
+async function loadOpenPullRequestSnapshot({ owner, repo }) {
+    const pulls = [];
+    const perPage = 100;
+    const maxPages = 100;
+    const headers = githubHeaders();
+
+    try {
+        for (let page = 1; page <= maxPages; page += 1) {
+            const params = new URLSearchParams({
+                state: 'open',
+                per_page: String(perPage),
+                page: String(page),
+            });
+            const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls?${params}`, { headers });
+            if (!response.ok) {
+                return { verified: false, pulls: [], reason: `GitHub open PR lookup failed (${response.status})` };
+            }
+            const pagePulls = await response.json();
+            if (!Array.isArray(pagePulls)) {
+                return { verified: false, pulls: [], reason: 'GitHub open PR lookup returned a non-array response' };
+            }
+            pulls.push(...pagePulls);
+            if (pagePulls.length < perPage) {
+                return { verified: true, pulls, reason: '' };
+            }
+        }
+        return { verified: false, pulls: [], reason: 'GitHub open PR lookup exceeded pagination safety limit' };
+    } catch (error) {
+        return { verified: false, pulls: [], reason: `GitHub open PR lookup failed: ${error.message}` };
+    }
+}
+
+function formatOpenPullRequestReferences(references = []) {
+    return references
+        .map((reference) => `#${reference.number} (${reference.role})`)
+        .join(', ');
+}
+
 function listTaskBranches(target, cwd) {
     const prefix = `${TASK_PREFIX}${target}/`;
     const localRaw = git(['for-each-ref', '--format=%(refname:short)', `refs/heads/${prefix}`], { cwd, allowFailure: true });
@@ -118,13 +186,7 @@ async function findMergedPullRequest({ owner, repo, branch, target, headSha }) {
         base: target,
         per_page: '100',
     });
-    const headers = {
-        Accept: 'application/vnd.github+json',
-        'User-Agent': 'AoT-Task-Sweeper',
-        'X-GitHub-Api-Version': '2022-11-28',
-    };
-    const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
-    if (token) headers.Authorization = `Bearer ${token}`;
+    const headers = githubHeaders();
 
     try {
         const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls?${params}`, { headers });
@@ -148,6 +210,12 @@ export function classifyTaskCandidate(state) {
     if (state.dirtyWorktree) blockers.push('worktree has uncommitted or untracked files');
     if (state.localRemoteMismatch) blockers.push('local and remote TASK heads do not match');
     if (state.unpushedCommits > 0) blockers.push(`${state.unpushedCommits} local commit(s) are not pushed`);
+    if (state.remoteExists && state.openPrLookupVerified === false) {
+        blockers.push(state.openPrReason || 'open PR references could not be verified');
+    }
+    if (Array.isArray(state.openPrReferences) && state.openPrReferences.length > 0) {
+        blockers.push(`open PR reference protects this TASK: ${formatOpenPullRequestReferences(state.openPrReferences)}`);
+    }
     if (state.uniqueCommits > 0 && !state.mergedPrVerified) {
         const fallbackReason = state.remoteExists
             ? 'unique commits exist and merged PR could not be verified'
@@ -168,7 +236,7 @@ function isWorktreeDirty(worktreePath) {
 }
 
 async function inspectCandidate(candidate, context) {
-    const { cwd, target, targetRef, worktreeByBranch, githubRepo } = context;
+    const { cwd, target, targetRef, worktreeByBranch, githubRepo, openPrSnapshot } = context;
     const localRef = candidate.localExists ? candidate.branch : '';
     const remoteRef = candidate.remoteExists ? `origin/${candidate.branch}` : '';
     const localSha = localRef ? git(['rev-parse', localRef], { cwd }) : '';
@@ -182,6 +250,15 @@ async function inspectCandidate(candidate, context) {
     const currentWorktree = Boolean(worktreeReal && worktreeReal === currentRoot);
     const dirtyWorktree = Boolean(worktree?.path && fs.existsSync(worktree.path) && isWorktreeDirty(worktree.path));
     const localRemoteMismatch = Boolean(localSha && remoteSha && localSha !== remoteSha);
+
+    const repositoryFullName = githubRepo ? `${githubRepo.owner}/${githubRepo.repo}` : '';
+    const openPrReferences = openPrSnapshot?.verified
+        ? collectOpenPullRequestReferences(candidate.branch, openPrSnapshot.pulls, repositoryFullName)
+        : [];
+    const openPrLookupVerified = !candidate.remoteExists || openPrSnapshot?.verified === true;
+    const openPrReason = openPrLookupVerified
+        ? ''
+        : (openPrSnapshot?.reason || 'origin is not a supported github.com repository');
 
     let mergedPr = { verified: false, reason: '' };
     if (uniqueCommits > 0) {
@@ -210,6 +287,9 @@ async function inspectCandidate(candidate, context) {
         unpushedCommits,
         uniqueCommits,
         remoteExists: candidate.remoteExists,
+        openPrLookupVerified,
+        openPrReferences,
+        openPrReason,
         mergedPrVerified: mergedPr.verified,
         mergedPrNumber: mergedPr.number,
         prReason: mergedPr.reason,
@@ -224,6 +304,9 @@ async function inspectCandidate(candidate, context) {
         worktree,
         currentWorktree,
         dirtyWorktree,
+        openPrLookupVerified,
+        openPrReferences,
+        openPrReason,
         mergedPr,
         ...classification,
     };
@@ -297,6 +380,9 @@ async function revalidateCleanupItems(items, context) {
     const worktrees = parseWorktrees(git(['worktree', 'list', '--porcelain'], { cwd }));
     const worktreeByBranch = new Map(worktrees.filter((entry) => entry.branch).map((entry) => [entry.branch, entry]));
     const freshCandidates = new Map(listTaskBranches(target, cwd).map((candidate) => [candidate.branch, candidate]));
+    const openPrSnapshot = githubRepo
+        ? await loadOpenPullRequestSnapshot(githubRepo)
+        : { verified: false, pulls: [], reason: 'origin is not a supported github.com repository' };
     const result = [];
 
     for (const previous of items) {
@@ -314,6 +400,7 @@ async function revalidateCleanupItems(items, context) {
             targetRef,
             worktreeByBranch,
             githubRepo,
+            openPrSnapshot,
         });
         const revalidation = classifyCleanupRevalidation(previous, current);
         if (revalidation.status === 'BLOCKED') {
@@ -328,12 +415,28 @@ async function revalidateCleanupItems(items, context) {
 }
 
 async function executeCleanup(items, context) {
-    const { cwd } = context;
+    const { cwd, githubRepo } = context;
     const revalidated = await revalidateCleanupItems(items, context);
 
     for (const entry of revalidated) {
         const item = entry.current;
         if (!item || entry.revalidation.status === 'SKIP') continue;
+
+        if (item.remoteExists) {
+            console.log(`\n🔒 Rechecking open PR references immediately before mutating ${item.branch}...`);
+            if (!githubRepo) {
+                throw new Error(`Cleanup blocked for ${item.branch}: origin is not a supported github.com repository`);
+            }
+            const openPrSnapshot = await loadOpenPullRequestSnapshot(githubRepo);
+            if (!openPrSnapshot.verified) {
+                throw new Error(`Cleanup blocked for ${item.branch}: ${openPrSnapshot.reason || 'open PR references could not be verified'}`);
+            }
+            const repositoryFullName = `${githubRepo.owner}/${githubRepo.repo}`;
+            const references = collectOpenPullRequestReferences(item.branch, openPrSnapshot.pulls, repositoryFullName);
+            if (references.length > 0) {
+                throw new Error(`Cleanup blocked for ${item.branch}: open PR reference protects this TASK: ${formatOpenPullRequestReferences(references)}`);
+            }
+        }
 
         console.log(`\n🧹 Cleaning ${item.branch}`);
         if (item.worktree?.path) {
@@ -390,12 +493,22 @@ async function main() {
 
     const originUrl = git(['remote', 'get-url', 'origin'], { cwd });
     const githubRepo = parseGitHubRepo(originUrl);
+    const openPrSnapshot = githubRepo
+        ? await loadOpenPullRequestSnapshot(githubRepo)
+        : { verified: false, pulls: [], reason: 'origin is not a supported github.com repository' };
     const worktrees = parseWorktrees(git(['worktree', 'list', '--porcelain'], { cwd }));
     const worktreeByBranch = new Map(worktrees.filter((entry) => entry.branch).map((entry) => [entry.branch, entry]));
     const candidates = listTaskBranches(target, cwd);
     const inspected = [];
     for (const candidate of candidates) {
-        inspected.push(await inspectCandidate(candidate, { cwd, target, targetRef, worktreeByBranch, githubRepo }));
+        inspected.push(await inspectCandidate(candidate, {
+            cwd,
+            target,
+            targetRef,
+            worktreeByBranch,
+            githubRepo,
+            openPrSnapshot,
+        }));
     }
 
     printReport(target, inspected);
