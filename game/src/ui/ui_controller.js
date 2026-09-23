@@ -246,6 +246,21 @@ class UIController {
             trialIndex,
             event
         });
+        if (
+            event === FIRST_RUN_TRIAL_TUTORIAL_EVENTS.CAUSALITY_OBSERVED
+            && next?.completed === true
+            && typeof this.engine?.firstRunActivationStore?.markCompleted === "function"
+        ) {
+            try {
+                this.lastFirstRunActivationPersistenceResult = this.engine.firstRunActivationStore.markCompleted();
+            } catch (error) {
+                this.lastFirstRunActivationPersistenceResult = {
+                    success: false,
+                    reason: "FIRST_RUN_ACTIVATION_PERSISTENCE_FAILED",
+                    errorMessage: error?.message || String(error)
+                };
+            }
+        }
         this.trialActionTrayComponent?.render?.();
         return next;
     }
