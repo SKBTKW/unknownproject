@@ -7,6 +7,7 @@ import { TrueEnemyStateService } from '../trial/systems/true_enemy_state_service
 import { EnemyTruthReadModel } from '../trial/systems/enemy_truth_read_model.js';
 import { createEnemyStateTransitionResolver } from '../trial/systems/enemy_state_transition_resolver.js';
 import { OFFERING_GENERATION_REASONS } from '../systems/deck_manager.js';
+import { createStage1TrialThreatResolverV1 } from '../trial/config/stage1_trial_threat_policy_v1.js';
 
 export const TURN_LIFECYCLE_PHASES = Object.freeze({ ACTIVE: "ACTIVE", COMMITTING: "COMMITTING", COMMITTED: "COMMITTED", INITIALIZING: "INITIALIZING" });
 
@@ -26,9 +27,12 @@ export class TurnLifecycleService {
             timingAuthority: engine.trialTimingAuthorityService || null
         });
 
+        const productionThreatResolver = engine.trialThreatResolver
+            || createStage1TrialThreatResolverV1();
         this.threatStateService = engine.trialThreatStateService || new TrialThreatStateService({
             gameState: engine.state,
-            gameFactHub: this.gameFactHub
+            gameFactHub: this.gameFactHub,
+            threatResolver: productionThreatResolver
         });
         this.engine.trialThreatStateService = this.threatStateService;
 
