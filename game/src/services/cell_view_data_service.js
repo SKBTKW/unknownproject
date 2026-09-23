@@ -49,7 +49,8 @@ function normalizeSpecialBlock(cell, production) {
         capabilities: [...(definition?.capabilities || [])],
         productionStatus: production?.status || SPECIAL_BLOCK_PRODUCTION_STATUS.NONE,
         productionKind: production?.kind || null,
-        yields: production?.yields || { food: 0, wood: 0, defense: 0, mystic: 0 }
+        yields: production?.yields || { food: 0, wood: 0, defense: 0, mystic: 0 },
+        damageEffect: production?.damageEffect || null
     };
 }
 
@@ -119,6 +120,8 @@ export class CellViewDataService {
                 blockProductionPrimary: false,
                 primaryYield,
                 modifiers: [],
+                landDamageEffect: null,
+                specialBlockDamageEffect: specialBlock?.damageEffect || null,
                 placementGroupId: null,
                 mergeGroupId: null
             };
@@ -181,6 +184,8 @@ export class CellViewDataService {
             blockProductionPrimary,
             primaryYield,
             modifiers,
+            landDamageEffect: breakdown.damageEffect || null,
+            specialBlockDamageEffect: specialBlock?.damageEffect || null,
             placementGroupId: cell.placementGroupId || null,
             mergeGroupId: cell.mergeGroupId || null
         };

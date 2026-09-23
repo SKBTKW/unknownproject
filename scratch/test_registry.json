@@ -225,6 +225,14 @@
       ]
     },
     {
+      "path": "scratch/test_board_damage_effect_policy.mjs",
+      "purpose": "Unresolved LAND/SPECIAL_BLOCK damage effects surface without changing gameplay values",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_board_history_query.mjs",
       "purpose": "Board-owned Battle Site history read boundary and RunHistory integration",
       "suite": "existing",

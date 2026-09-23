@@ -16,6 +16,7 @@ import {
     sumPlacedBlockProduction
 } from '../core/land_production_contract.js';
 import { sumSpecialBlockProduction } from '../core/special_block_production.js';
+import { resolveLandDamageEffect } from '../core/board_damage_effect_policy.js';
 
 (function() {
     class ProductionCalculator {
@@ -301,7 +302,8 @@ import { sumSpecialBlockProduction } from '../core/special_block_production.js';
                 productionScope: null,
                 baseYields: { food: 0, wood: 0, defense: 0, mystic: 0 },
                 modifiers: [],
-                totalYields: { food: 0, wood: 0, defense: 0, mystic: 0 }
+                totalYields: { food: 0, wood: 0, defense: 0, mystic: 0 },
+                damageEffect: null
             };
             if (!state || !state.grid || !state.grid[r] || !state.grid[r][c]) {
                 return emptyResult;
@@ -322,7 +324,8 @@ import { sumSpecialBlockProduction } from '../core/special_block_production.js';
                     productionScope: "CELL",
                     baseYields: { food: hqFood, wood: hqWood, defense: hqDefense, mystic: hqMystic },
                     modifiers: [],
-                    totalYields: { food: hqFood, wood: hqWood, defense: hqDefense, mystic: hqMystic }
+                    totalYields: { food: hqFood, wood: hqWood, defense: hqDefense, mystic: hqMystic },
+                    damageEffect: null
                 };
             }
 
@@ -389,7 +392,8 @@ import { sumSpecialBlockProduction } from '../core/special_block_production.js';
                 productionScope: productionBase.scope,
                 baseYields,
                 modifiers,
-                totalYields: { food: totalFood, wood: totalWood, defense: totalDefense, mystic: totalMystic }
+                totalYields: { food: totalFood, wood: totalWood, defense: totalDefense, mystic: totalMystic },
+                damageEffect: resolveLandDamageEffect(cell)
             };
         }
     }
