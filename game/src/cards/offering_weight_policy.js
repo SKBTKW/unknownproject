@@ -5,7 +5,7 @@
 
 import { normalizeCardDefinitionV1 } from './card_definition_v1.js';
 
-function resolveOfferingWeight(card, state) {
+function resolveOfferingWeight(card, state, weightContext = null) {
     const definition = normalizeCardDefinitionV1(card);
     if (!definition) return 0;
 
@@ -17,15 +17,21 @@ function resolveOfferingWeight(card, state) {
     const biasCategory = state?.activeDrawBias?.targetCategory || null;
     const biasMultiplier = biasCategory && category === biasCategory ? 2 : 1;
 
-    return Math.max(0, baseWeight * directiveMultiplier * biasMultiplier);
+    const tagMultipliers = weightContext?.tagMultipliers || {};
+    let externalTagMultiplier = 1;
+    for (const tag of definition.tags || []) {
+        externalTagMultiplier *= Number(tagMultipliers[tag] ?? 1);
+    }
+
+    return Math.max(0, baseWeight * directiveMultiplier * biasMultiplier * externalTagMultiplier);
 }
 
-function pickWeightedCard(cards, state, nextFloat) {
+function pickWeightedCard(cards, state, nextFloat, weightContext = null) {
     if (!Array.isArray(cards) || cards.length === 0) return null;
 
     const weighted = cards.map(card => ({
         card,
-        weight: resolveOfferingWeight(card, state)
+        weight: resolveOfferingWeight(card, state, weightContext)
     }));
     const totalWeight = weighted.reduce((sum, item) => sum + item.weight, 0);
 
