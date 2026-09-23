@@ -203,6 +203,14 @@
       ]
     },
     {
+      "path": "scratch/test_card_core_offering_v1.mjs",
+      "purpose": "Card Definition v1, LAND placement eligibility, fallback legality, offering/execution separation",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_card_cycle_system.mjs",
       "purpose": "card cycle system",
       "suite": "supplemental"

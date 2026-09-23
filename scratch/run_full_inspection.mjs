@@ -235,6 +235,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Offering Minimum Requirement Contract) で不合格が検出されました。");
         process.exit(1);
     }
+    const cardCoreOfferingV1Ok = await runCommand("node", ["scratch/test_card_core_offering_v1.mjs"]);
+    if (!cardCoreOfferingV1Ok) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Card Core / Offering v1 Contract) で不合格が検出されました。");
+        process.exit(1);
+    }
     const firstRunOk = await runCommand("node", ["scratch/test_first_run_service.mjs"]);
     if (!firstRunOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (FirstRun Orchestration Contract) で不合格が検出されました。");

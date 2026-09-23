@@ -129,6 +129,9 @@ cycleSys.consumeUnique("CMD_TEST_UNIQUE");
 assert("consumeUnique の冪等性: 複数回呼んでも consumedUniqueCards に1件だけ存在すること", state.consumedUniqueCards.filter(id => id === "CMD_TEST_UNIQUE").length === 1);
 
 // 6. Hold 連携検証
+// Tests 6-7 isolate CardCycle/Hold behavior. Offering eligibility now always
+// asks the Placement Domain, so explicitly provide a placeable-board fixture.
+state.canPlaceShape = () => ({ can: true, reasons: [] });
 console.log("\n[Test 6: Hold Separation]");
 const activeLand = deckMgr.getLandCardMaster().find(card => card.id === "CARD_PLAINS_1X1");
 assert("現役CARD_PLAINS_1X1がmasterに存在すること", !!activeLand);
