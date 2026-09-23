@@ -247,7 +247,6 @@ class UIController {
             event
         });
         this.trialActionTrayComponent?.render?.();
-        this.trialActionTrayComponent?.render?.();
         return next;
     }
 
