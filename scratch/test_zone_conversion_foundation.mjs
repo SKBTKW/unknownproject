@@ -172,6 +172,18 @@ const adapter = new BoardDomainAdapter({
 });
 
 assert.equal(service.validateCandidate("GARRISON_TEST", "zone_a").valid, true);
+assert.equal(
+    service.validateCandidateAfterPayment("GARRISON_TEST", "zone_a", { wood: 6, ember: 1 }).valid,
+    true,
+    "card-owned payment may proceed when Zone requirements remain satisfied after payment"
+);
+const postPaymentShortfall = service.validateCandidateAfterPayment(
+    "GARRISON_TEST",
+    "zone_a",
+    { wood: 20, ember: 1 }
+);
+assert.equal(postPaymentShortfall.valid, false);
+assert.equal(postPaymentShortfall.reasons.includes("RESOURCE_REQUIRED:wood"), true);
 assert.equal(service.validateCandidate("GARRISON_TEST", "incomplete").valid, false);
 assert.equal(service.validateCandidate("UNRESOLVED_COST", "zone_a").valid, false);
 const unresolvedMaintenance = service.validateCandidate("UNRESOLVED_MAINTENANCE", "zone_a");
