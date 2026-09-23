@@ -1370,7 +1370,8 @@ function makeGrid(rows, cols) {
 
     const failClosedService = new CardOfferingEligibilityService({
         state: makeState(),
-        placementQuery: null
+        placementQuery: null,
+        executionTargetRequired: () => true
     });
     assert.equal(
         failClosedService.evaluate(card).reason,
@@ -1447,6 +1448,53 @@ function makeGrid(rows, cols) {
     assert.ok(uiSource.includes("command-target-candidate"));
     assert.ok(gridCss.includes(".cell.command-target-candidate"));
     assert.ok(uiSource.includes("this.engine.playCommandCard(card, source, target)"));
+}
+
+// AG. Target requirement semantics come from the owning Domain Action, not Card Core.
+{
+    const targetedEngine = {
+        boardDomainAdapter: {
+            enumerateLegalSpecialBlockTargets() { return [{ r: 1, c: 1 }]; },
+            validateSpecialBlockTarget() { return { valid: true }; },
+            createSpecialBlock() { return { success: true }; }
+        }
+    };
+    targetedEngine.cardDomainActionExecutor = createCardDomainActionExecutor(targetedEngine);
+    const targetedManager = new DeckManager({
+        turn: 1,
+        reserveSlots: [],
+        activeBuffs: [],
+        consumedUniqueCards: [],
+        usedUniqueCards: []
+    }, targetedEngine);
+    targetedManager.cycleSystem = null;
+
+    assert.equal(
+        targetedManager.cardRequiresExecutionTarget({
+            id: "CMD_TARGET_SEMANTIC_TEST",
+            category: "COMMAND",
+            effects: [{
+                type: CARD_EFFECT_TYPES.DOMAIN_ACTION,
+                action: CARD_DOMAIN_ACTIONS.CREATE_SPECIAL_BLOCK,
+                blockType: "MINE"
+            }]
+        }),
+        true
+    );
+
+    const customDomainExecutor = () => ({ success: true });
+    customDomainExecutor.requiresTarget = () => false;
+    const nonTargetExecutor = new CardEffectExecutor({
+        domainActionExecutor: customDomainExecutor
+    });
+    assert.equal(
+        nonTargetExecutor.requiresTarget([{
+            type: CARD_EFFECT_TYPES.DOMAIN_ACTION,
+            action: "DEFENSE_CAPACITY_CHANGE"
+        }]),
+        false,
+        "non-targeted domain actions must not inherit Special Block targeting semantics"
+    );
 }
 
 console.log("✅ Card Core / Offering v1 contract tests PASS");
