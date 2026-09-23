@@ -40,8 +40,6 @@ export class TrialDeploymentCostPolicy {
         boardFacts,
         origin,
         distance,
-        redeployment = false,
-        frontCount = 1,
         context = {}
     } = {}) {
         if (!Number.isInteger(requestedDefense) || requestedDefense < 1) {
@@ -65,8 +63,6 @@ export class TrialDeploymentCostPolicy {
             boardFacts,
             origin,
             distance,
-            redeployment: redeployment === true,
-            frontCount: Math.max(1, Math.trunc(Number(frontCount) || 1)),
             context: { ...context }
         });
         const normalized = normalizeCost(raw);
