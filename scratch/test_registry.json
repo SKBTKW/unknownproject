@@ -602,6 +602,14 @@
       ]
     },
     {
+      "path": "scratch/test_captured_scout_investigation_bridge.mjs",
+      "purpose": "Captured Scout INTERROGATE grants one truthful Investigation outside normal Warning availability",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_investigation_game_engine_attach.mjs",
       "purpose": "investigation game engine attach",
       "suite": "existing",

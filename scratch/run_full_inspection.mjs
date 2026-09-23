@@ -342,6 +342,7 @@ async function main() {
         ["Investigation Narrative", "scratch/test_investigation_narrative.mjs"],
         ["Investigation Request v1", "scratch/test_investigation_request_v1.mjs"],
         ["Investigation Chronicle Bridge", "scratch/test_investigation_chronicle_bridge.mjs"],
+        ["Captured Scout Investigation Bridge", "scratch/test_captured_scout_investigation_bridge.mjs"],
         ["Run History Read Model", "scratch/test_run_history_read_model.mjs"],
         ["Global Event Eligibility v1", "scratch/test_global_event_eligibility_v1.mjs"],
         ["Global Event NEXT_GLOBAL_EVENT Expiry", "scratch/test_global_event_next_event_expiry.mjs"],
