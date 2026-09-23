@@ -39,7 +39,10 @@ class CardEffectHandlerRouter {
 
         const effects = cardDefinition?.effects;
         if (Array.isArray(effects) && effects.length > 0) {
-            return this.effectExecutor.preflight(effects, context);
+            return this.effectExecutor.preflight(effects, {
+                cardDefinition,
+                ...context
+            });
         }
 
         return Object.freeze({ handled: false, success: true, kind: "LEGACY_FALLBACK" });
@@ -51,7 +54,10 @@ class CardEffectHandlerRouter {
         if (typeof handler !== "function") {
             const effects = cardDefinition?.effects;
             if (Array.isArray(effects) && effects.length > 0) {
-                return this.effectExecutor.executeAll(effects, context);
+                return this.effectExecutor.executeAll(effects, {
+                    cardDefinition,
+                    ...context
+                });
             }
             return Object.freeze({ handled: false, success: false, reason: "UNHANDLED_CARD_EFFECT" });
         }
