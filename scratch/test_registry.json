@@ -906,6 +906,14 @@
       ]
     },
     {
+      "path": "scratch/test_stage1_e2e.mjs",
+      "purpose": "Stage1 canonical boundary audit from FirstRun Verse1 through Trial1 battle, settlement, Post-Trial and Stage2 restoration",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_stage1_trial_threat_policy_v1.mjs",
       "purpose": "canonical Stage1 Trial1 threat policy, one-force route band, and production composition",
       "suite": "existing",
