@@ -5,6 +5,7 @@
    ============================================================= */
 
 import { getSpecialBlockDefinition } from './special_block_domain.js';
+import { resolveSpecialBlockDamageEffect } from './board_damage_effect_policy.js';
 
 export const SPECIAL_BLOCK_PRODUCTION_STATUS = Object.freeze({
     RESOLVED: 'RESOLVED',
@@ -50,7 +51,8 @@ export class SpecialBlockProductionResolver {
             return {
                 status: SPECIAL_BLOCK_PRODUCTION_STATUS.NONE,
                 yields: { ...ZERO_YIELDS },
-                kind: null
+                kind: null,
+                damageEffect: resolveSpecialBlockDamageEffect(cell)
             };
         }
 
@@ -60,7 +62,8 @@ export class SpecialBlockProductionResolver {
             return {
                 status: SPECIAL_BLOCK_PRODUCTION_STATUS.NONE,
                 yields: { ...ZERO_YIELDS },
-                kind: null
+                kind: null,
+                damageEffect: resolveSpecialBlockDamageEffect(cell)
             };
         }
 
@@ -68,7 +71,8 @@ export class SpecialBlockProductionResolver {
             return {
                 status: SPECIAL_BLOCK_PRODUCTION_STATUS.UNRESOLVED,
                 yields: { ...ZERO_YIELDS },
-                kind: production.kind || null
+                kind: production.kind || null,
+                damageEffect: resolveSpecialBlockDamageEffect(cell)
             };
         }
 
@@ -76,7 +80,8 @@ export class SpecialBlockProductionResolver {
             return {
                 status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
                 yields: normalizeYields(production.yields),
-                kind: production.kind
+                kind: production.kind,
+                damageEffect: resolveSpecialBlockDamageEffect(cell)
             };
         }
 
@@ -85,7 +90,8 @@ export class SpecialBlockProductionResolver {
             return {
                 status: SPECIAL_BLOCK_PRODUCTION_STATUS.UNRESOLVED,
                 yields: { ...ZERO_YIELDS },
-                kind: production.kind || null
+                kind: production.kind || null,
+                damageEffect: resolveSpecialBlockDamageEffect(cell)
             };
         }
 
@@ -102,14 +108,16 @@ export class SpecialBlockProductionResolver {
             return {
                 status: SPECIAL_BLOCK_PRODUCTION_STATUS.UNRESOLVED,
                 yields: { ...ZERO_YIELDS },
-                kind: production.kind || null
+                kind: production.kind || null,
+                damageEffect: resolveSpecialBlockDamageEffect(cell)
             };
         }
 
         return {
             status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
             yields: normalizeYields(resolved.yields),
-            kind: production.kind || null
+            kind: production.kind || null,
+            damageEffect: resolveSpecialBlockDamageEffect(cell)
         };
     }
 
