@@ -1,6 +1,11 @@
 import assert from 'assert/strict';
 import fs from 'node:fs';
-import { classifyCleanupRevalidation, classifyTaskCandidate, parseGitHubRepo } from './task_sweeper.mjs';
+import {
+    classifyCleanupRevalidation,
+    classifyTaskCandidate,
+    collectOpenPullRequestReferences,
+    parseGitHubRepo,
+} from './task_sweeper.mjs';
 import { extractTargets, isCleanConfirmation } from './task_sweeper_launcher.mjs';
 import { expectedTaskBranchPattern, isCanonicalTaskBranch } from './task_branch_contract.mjs';
 
@@ -14,6 +19,9 @@ const base = {
     unpushedCommits: 0,
     uniqueCommits: 0,
     remoteExists: true,
+    openPrLookupVerified: true,
+    openPrReferences: [],
+    openPrReason: '',
     mergedPrVerified: false,
     mergedPrNumber: undefined,
     prReason: '',
@@ -31,6 +39,26 @@ const tests = [
     ['unpushed commits block', { ...base, unpushedCommits: 1 }, 'BLOCKED'],
     ['local-only unique commits block', { ...base, remoteExists: false, uniqueCommits: 1 }, 'BLOCKED'],
     ['unverified unique remote commits block', { ...base, uniqueCommits: 1, prReason: 'No merged PR' }, 'BLOCKED'],
+    ['zero-unique TASK used as open PR head blocks', {
+        ...base,
+        openPrReferences: [{ number: 77, role: 'head' }],
+    }, 'BLOCKED'],
+    ['zero-unique TASK used as open PR base blocks', {
+        ...base,
+        openPrReferences: [{ number: 78, role: 'base' }],
+    }, 'BLOCKED'],
+    ['verified merged TASK still blocks while reused as open PR base', {
+        ...base,
+        uniqueCommits: 3,
+        mergedPrVerified: true,
+        mergedPrNumber: 42,
+        openPrReferences: [{ number: 79, role: 'base' }],
+    }, 'BLOCKED'],
+    ['remote TASK blocks when open PR lookup is unavailable', {
+        ...base,
+        openPrLookupVerified: false,
+        openPrReason: 'GitHub open PR lookup failed (503)',
+    }, 'BLOCKED'],
 ];
 
 let passed = 0;
@@ -43,6 +71,48 @@ for (const [label, state, expected] of tests) {
 assert.deepEqual(parseGitHubRepo('git@github.com:SKBTKW/unknownproject.git'), { owner: 'SKBTKW', repo: 'unknownproject' });
 assert.deepEqual(parseGitHubRepo('https://github.com/SKBTKW/unknownproject.git'), { owner: 'SKBTKW', repo: 'unknownproject' });
 assert.equal(parseGitHubRepo('https://example.com/SKBTKW/unknownproject.git'), null);
+
+const openPulls = [
+    {
+        number: 101,
+        head: { ref: 'aot-task/AoT260917/tooling/task-sweeper', repo: { full_name: 'SKBTKW/unknownproject' } },
+        base: { ref: 'AoT260917', repo: { full_name: 'SKBTKW/unknownproject' } },
+    },
+    {
+        number: 102,
+        head: { ref: 'feature/from-fork', repo: { full_name: 'someone/fork' } },
+        base: { ref: 'aot-task/AoT260917/tooling/task-sweeper', repo: { full_name: 'SKBTKW/unknownproject' } },
+    },
+    {
+        number: 103,
+        head: { ref: 'aot-task/AoT260917/tooling/task-sweeper', repo: { full_name: 'someone/fork' } },
+        base: { ref: 'AoT260917', repo: { full_name: 'SKBTKW/unknownproject' } },
+    },
+];
+assert.deepEqual(
+    collectOpenPullRequestReferences(
+        'aot-task/AoT260917/tooling/task-sweeper',
+        openPulls,
+        'SKBTKW/unknownproject',
+    ),
+    [
+        { number: 101, role: 'head' },
+        { number: 102, role: 'base' },
+    ],
+    'same-repository open PR head/base references must protect the TASK without matching fork heads',
+);
+assert.deepEqual(
+    collectOpenPullRequestReferences(
+        'aot-task/AoT260917/tooling/task-sweeper',
+        openPulls,
+        'skbtkw/UNKNOWNPROJECT',
+    ),
+    [
+        { number: 101, role: 'head' },
+        { number: 102, role: 'base' },
+    ],
+    'GitHub repository identity comparison must be case-insensitive',
+);
 
 assert.equal(isCanonicalTaskBranch('aot-task/AoT260917/tooling/task-sweeper', 'AoT260917'), true);
 assert.equal(isCanonicalTaskBranch('aot-task/AoT260917/trial/route-fix', 'AoT260917'), true);
@@ -132,5 +202,25 @@ assert.equal(
     true,
     'cleanup must refresh and revalidate immediately before mutation',
 );
+assert.equal(
+    (sweeperSource.match(/await loadOpenPullRequestSnapshot\(githubRepo\)/g) || []).length >= 3,
+    true,
+    'open PR references must be refreshed during dry-run, cleanup revalidation, and immediately before each destructive mutation',
+);
+assert.equal(
+    sweeperSource.includes('Rechecking open PR references immediately before mutating'),
+    true,
+    'destructive cleanup must close the open-PR race window with a final per-TASK reference check',
+);
+assert.equal(
+    sweeperSource.includes('const headers = githubHeaders();'),
+    true,
+    'open and merged PR lookups must share the same authenticated GitHub headers',
+);
+assert.equal(
+    sweeperSource.includes('function githubHeaders() {\n    const headers = githubHeaders();'),
+    false,
+    'GitHub header helper must not recurse into itself',
+);
 
-console.log(`✅ AoT Task Sweeper safety contract: ${passed}/11 classifications PASS + cleanup revalidation + naming/launcher contract PASS`);
+console.log(`✅ AoT Task Sweeper safety contract: ${passed}/15 classifications PASS + open PR head/base protection + cleanup revalidation + naming/launcher contract PASS`);

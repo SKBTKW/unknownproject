@@ -22,13 +22,14 @@ export class GlobalEventDirector {
         const elapsed = (state.turn || 1) - (state.lastGlobalEventTurn || 0);
         if (elapsed < this.COOLDOWN_TURNS) return false;
         const rate = this.PROBABILITY_TABLE.find(e => elapsed <= e.maxElapsed)?.rate ?? 0.5;
-        return (this.randomSource?.nextFloat?.() ?? Math.random()) < rate;
+        if (!this.randomSource || typeof this.randomSource.nextFloat !== "function") return false;
+        return this.randomSource.nextFloat() < rate;
     }
 }
 
 export class GlobalEventSelector {
     constructor(randomSource = null) { this.randomSource = randomSource; }
-    selectEvent(state, masterEvents = GLOBAL_EVENTS_MASTER) {
+    selectEvent(state, masterEvents = GLOBAL_EVENTS_MASTER, eligibilityContext = {}) {
         if (!state || !masterEvents?.length) return null;
         const eligible = [];
         for (const def of masterEvents) {
@@ -36,7 +37,10 @@ export class GlobalEventSelector {
             if (state.activeGlobalEvents?.some(e => e.definitionId === def.id)) continue;
             const last = state.eventCooldowns?.[def.id];
             if (def.cooldownTurns && last && (state.turn || 1) - last < def.cooldownTurns) continue;
-            if (!ConditionEvaluator.evaluateAll(def.conditions, { state })) continue;
+            if (!ConditionEvaluator.evaluateAllStrict(def.conditions, {
+                ...eligibilityContext,
+                state
+            })) continue;
             let weight = def.baseWeight || 100;
             for (const mod of state.temporaryWeightModifiers || []) {
                 if (mod.targetTag === def.id || mod.targetTag === def.category) weight *= mod.multiplier || 1;
@@ -45,7 +49,8 @@ export class GlobalEventSelector {
         }
         if (!eligible.length) return null;
         const total = eligible.reduce((n, e) => n + e.weight, 0);
-        let roll = (this.randomSource?.nextFloat?.() ?? Math.random()) * total;
+        if (!this.randomSource || typeof this.randomSource.nextFloat !== "function") return null;
+        let roll = this.randomSource.nextFloat() * total;
         for (const item of eligible) { if (roll <= item.weight) return item.def; roll -= item.weight; }
         return eligible[0].def;
     }
@@ -175,7 +180,13 @@ export class GlobalEventManager {
         const scheduled = this._triggerScheduledEventForCurrentTurn();
         if (scheduled) return scheduled;
         if (!this.director.shouldTriggerEvent(this.state)) return null;
-        const def = this.selector.selectEvent(this.state, GLOBAL_EVENTS_MASTER);
+        const eligibilityContext = this.engine?.getWorldEligibilityContext?.() || {
+            engine: this.engine,
+            boardQuery: this.engine?.boardWorldQuery || null,
+            historyQuery: this.engine?.runHistoryReadModel || null,
+            warningStateService: this.engine?.warningStateService || null
+        };
+        const def = this.selector.selectEvent(this.state, GLOBAL_EVENTS_MASTER, eligibilityContext);
         return def ? this.triggerEvent(def.id) : null;
     }
     triggerEvent(eventId) {

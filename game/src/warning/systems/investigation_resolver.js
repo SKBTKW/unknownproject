@@ -41,13 +41,40 @@ function collectCandidates(profile, allowedFacets) {
     return candidates;
 }
 
-function selectWithoutReplacement(candidates, limit, rng) {
-    const pool = candidates.map(candidate => ({ ...candidate }));
-    const selected = [];
+function selectWithoutReplacement(candidates, limit, rng, {
+    knownTags = [],
+    preferUnknown = false,
+    preferDistinctFacets = false
+} = {}) {
+    const known = new Set(Array.isArray(knownTags) ? knownTags : []);
+    const unknownPool = [];
+    const knownPool = [];
 
-    while (pool.length > 0 && selected.length < limit) {
-        const index = randomIndex(pool.length, rng);
-        selected.push(pool.splice(index, 1)[0]);
+    for (const candidate of candidates) {
+        const copy = { ...candidate };
+        (preferUnknown && known.has(copy.tag) ? knownPool : unknownPool).push(copy);
+    }
+
+    const selected = [];
+    const usedFacets = new Set();
+
+    const takeFrom = pool => {
+        if (!pool.length || selected.length >= limit) return false;
+        let candidateIndexes = pool.map((_, index) => index);
+        if (preferDistinctFacets) {
+            const distinct = candidateIndexes.filter(index => !usedFacets.has(pool[index].facet));
+            if (distinct.length) candidateIndexes = distinct;
+        }
+        const selectedIndex = candidateIndexes[randomIndex(candidateIndexes.length, rng)];
+        const [picked] = pool.splice(selectedIndex, 1);
+        selected.push(picked);
+        usedFacets.add(picked.facet);
+        return true;
+    };
+
+    while (selected.length < limit && (unknownPool.length || knownPool.length)) {
+        if (unknownPool.length) takeFrom(unknownPool);
+        else takeFrom(knownPool);
     }
 
     return selected;
@@ -73,15 +100,16 @@ function selectWithoutReplacement(candidates, limit, rng) {
  * }
  */
 export class InvestigationResolver {
-    constructor({ rng = Math.random } = {}) {
-        this.rng = typeof rng === "function" ? rng : Math.random;
+    constructor({ rng = null } = {}) {
+        this.rng = typeof rng === "function" ? rng : (() => 0);
     }
 
     resolve({
         profile,
         observedAtVerse,
         sourcePolicy,
-        reportId = null
+        reportId = null,
+        knownEnemyState = null
     } = {}) {
         const policy = sourcePolicy && typeof sourcePolicy === "object" ? sourcePolicy : {};
         const allowedFacets = Array.isArray(policy.allowedFacets)
@@ -89,7 +117,11 @@ export class InvestigationResolver {
             : [];
         const maxObservations = normalizeLimit(policy.maxObservations, 1);
         const candidates = collectCandidates(profile || {}, allowedFacets);
-        const observations = selectWithoutReplacement(candidates, maxObservations, this.rng);
+        const observations = selectWithoutReplacement(candidates, maxObservations, this.rng, {
+            knownTags: knownEnemyState?.observedTags || [],
+            preferUnknown: policy.preferUnknown === true,
+            preferDistinctFacets: policy.preferDistinctFacets === true
+        });
 
         return createInvestigationReport({
             id: reportId || undefined,

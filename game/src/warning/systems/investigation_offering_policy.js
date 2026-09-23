@@ -1,17 +1,15 @@
-function readInvestigationUnlocked(state) {
-    if (!state || typeof state !== "object") return false;
-    if (typeof state.isInvestigationUnlocked === "function") return state.isInvestigationUnlocked() === true;
-    if (typeof state.investigationUnlocked === "boolean") return state.investigationUnlocked;
-    if (typeof state.warningState?.investigationUnlocked === "boolean") return state.warningState.investigationUnlocked;
-    return false;
-}
+import { InvestigationAvailabilityPolicy, readInvestigationUnlocked } from "./investigation_availability_policy.js";
 
 export class InvestigationOfferingPolicy {
+    constructor({ availabilityPolicy = new InvestigationAvailabilityPolicy() } = {}) {
+        this.availabilityPolicy = availabilityPolicy;
+    }
+
     isEligible(card, state) {
         if (!card || typeof card !== "object") return false;
         const investigationCard = card.category === "INVESTIGATION" || card.reqInvestigationUnlocked === true;
         if (!investigationCard) return true;
-        return readInvestigationUnlocked(state);
+        return this.availabilityPolicy.isAvailable(state);
     }
 }
 

@@ -106,6 +106,12 @@ function createState(size = 5) {
                 && Math.abs(r - center) <= 1
                 && Math.abs(c - center) <= 1;
         },
+        // This diagnostic isolates Multi-Attribute production eligibility.
+        // Offering now always asks the Placement Domain, so the fixture must
+        // explicitly model a board with at least one legal placement.
+        canPlaceShape() {
+            return { can: true, reasons: [] };
+        },
         addLog() {},
         toastQueue: []
     };
