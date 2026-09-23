@@ -731,25 +731,7 @@ class DeckManager {
             return { ...routedEffect, success: true };
         }
 
-        if (cId === "CMD_BALLISTA_SET") {
-            // 🏹 迎撃用弩砲陣地: コスト 🧱-30
-            if (this.state.defenseSystem) {
-                this.state.defenseSystem.increaseMaxCapacity(40);
-            } else {
-                this.state.defense += 40;
-            }
-            this.state.nextTrialDamageMitigation = 0.5;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🏹",
-                description: cDesc,
-                badgeText: I18n ? I18n.t("UI_DEFENSE_TRIAL_TAG") : "試練対策",
-                category: "CARD_EFFECT"
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🏹【${cName}】`);
-        } else if (cId === "CMD_TRANSMUTE_GOLDEN") {
+        if (cId === "CMD_TRANSMUTE_GOLDEN") {
             // 💎 黄金秘境への変容: コスト ✨-20
             if (targetTile && targetTile.r !== undefined && targetTile.c !== undefined && this.state.grid) {
                 const cell = this.state.grid[targetTile.r][targetTile.c];
@@ -759,30 +741,6 @@ class DeckManager {
                 this.state.mystic += 10;
                 this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `💎【${cName}】`);
             }
-        } else if (cId === "FAC_GREAT_WINDMILL") {
-            // 🏛️ 大風車工房の建設: コスト 🧱-15
-            if (!this.state.activeConstructionProjects) this.state.activeConstructionProjects = [];
-            this.state.activeConstructionProjects.push({ name: "FAC_GREAT_WINDMILL", remainingTurns: 3, woodCostPerTurn: 4 });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🏛️【${cName}】`);
-        } else if (cId === "LGD_DESPERATE_PACT") {
-            // 📜 背水の盟約: コスト なし
-            this.state.ember = this.state.ember + 5;
-            this.state.handOfferingSize = 4;
-            this.state.nextTrialMultiplier = 1.5;
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🔥【${cName}】`);
-        } else if (cId === "CMD_LAND_FOCUS") {
-            // 📜 土地探索重視: コスト 🌾-10 🧱-10
-            this.state.activeDrawBias = { targetCategory: "LAND", type: "UNTIL_BLOCKS", untilValue: 6 };
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "📜",
-                description: cDesc,
-                category: "CARD_EFFECT"
-            });
-            if (typeof this.state.checkConditionalBuffs === "function") this.state.checkConditionalBuffs();
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `📜【${cName}】`);
         } else if (cId === "CMD_RESETTLEMENT") {
             // 👥 人口移住令: コスト 🌾-15 🧱-10 (平地2x2マージ指定 🔥+2 ＆ 🌾+2/T永続)
             this.state.ember = Math.min(30, (this.state.ember || 20) + 2);
@@ -810,114 +768,6 @@ class DeckManager {
                 remainingTurns: 4
             });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🏯【${cName}】`);
-        } else if (cId === "CMD_OUTPOST") {
-            // 🗼 前哨塔: コスト 🧱-25 (試練侵攻情報を3T早く取得)
-            this.state.hasOutpost = true;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🗼",
-                description: cDesc,
-                category: "PERMANENT"
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🗼【${cName}】`);
-        } else if (cId === "CMD_GUIDED_DEFENSE") {
-            // 🚧 誘導防衛: コスト 🧱-20 (試練時敵移動コスト+1)
-            this.state.guidedDefenseActive = true;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🚧",
-                description: cDesc,
-                category: "TACTICAL"
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🚧【${cName}】`);
-        } else if (cId === "CMD_HIGH_GROUND_FORMATION") {
-            // ⛰️ 高地布陣: コスト 🧱-10 (試練時高地戦術補正強化)
-            this.state.highGroundFormationActive = true;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "⛰️",
-                description: cDesc,
-                category: "TACTICAL"
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `⛰️【${cName}】`);
-        } else if (cId === "CMD_CAVALRY_HOST") {
-            // 🐎 騎馬軍編成: コスト 🌾-30 🧱-20 (試練時平地機動補正)
-            this.state.cavalryHostActive = true;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🐎",
-                description: cDesc,
-                category: "TACTICAL"
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🐎【${cName}】`);
-        } else if (cId === "CMD_PASTORAL_EXPANSION") {
-            // 🐑 放牧地の拡大: コスト 🧱-10 (次回同属性接続ボーナス強化)
-            this.state.pastoralExpansionActive = true;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🐑",
-                description: cDesc,
-                category: "CARD_EFFECT"
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🐑【${cName}】`);
-        } else if (cId === "CMD_LIME_CONSTRUCTION") {
-            // 🧱 石灰焼成: コスト 🌾-10 (次回高コスト建築軽減)
-            this.state.limeConstructionActive = true;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🧱",
-                description: cDesc,
-                category: "CARD_EFFECT"
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🧱【${cName}】`);
-        } else if (cId === "CMD_CAVALRY_SCOUTS") {
-            // 🐎 騎馬斥候隊: コスト 🌾-10 (試練時平地迎撃/増援コスト軽減)
-            this.state.cavalryScoutsActive = true;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🐎",
-                description: cDesc,
-                category: "TACTICAL"
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🐎【${cName}】`);
-        } else if (cId === "CMD_LOCAL_IRON_ARMAMENT") {
-            // ⚔️ 在地鉄器武装: コスト 🧱-15 (赤鉄鉱丘陵の迎撃高地補正強化)
-            this.state.localIronArmamentActive = true;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "⚔️",
-                description: cDesc,
-                category: "TACTICAL"
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `⚔️【${cName}】`);
-        } else if (cId === "CMD_STONE_STRONGPOINT") {
-            // 🏰 石造陣地: コスト 🧱-20 (石材地形の初期地形減衰強化)
-            this.state.stoneStrongpointActive = true;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🏰",
-                description: cDesc,
-                category: "TACTICAL"
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🏰【${cName}】`);
         } else if (cId === "CMD_SINGLE_CLEARING") {
             // 🪓 伐採: コスト 🔥-1 (森1マス伐採・平地化、🧱+20, 🌾+3)
             let cleared = false;
@@ -1122,26 +972,6 @@ class DeckManager {
                     }
                 }
             };
-        } else if (cId === "CMD_MUD_OBSTACLE") {
-            // 🛡️ 泥濘陣地: コスト 🧱-15 (試練時湿原/湖敵制圧力-15%)
-            this.state.mudObstacleActive = true;
-            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🛡️", description: cDesc, category: "TACTICAL" });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🛡️【${cName}】`);
-        } else if (cId === "CMD_OUTPOST_SIGNAL") {
-            // 🗼 狼煙: コスト 🧱-15 (侵攻情報2T早く取得 & 迎撃戦術補正+15%)
-            this.state.outpostSignalActive = true;
-            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🗼", description: cDesc, category: "TACTICAL" });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🗼【${cName}】`);
-        } else if (cId === "CMD_SCOUT_ENEMY") {
-            // 🔍 敵情偵察: コスト 🌾-5 (試練敵情先行公開)
-            this.state.scoutEnemyActive = true;
-            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🔍", description: cDesc, category: "TACTICAL" });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🔍【${cName}】`);
-        } else if (cId === "CMD_OMEN_DREAM") {
-            // 🔮 予兆: コスト ✨-5 (試練先行情報公開)
-            this.state.omenDreamActive = true;
-            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🔮", description: cDesc, category: "CARD_EFFECT" });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🔮【${cName}】`);
         } else if (cId === "CMD_LAND_EXPLORATION") {
             const candidates = [];
             if (this.state.grid) {
