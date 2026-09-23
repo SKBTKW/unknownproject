@@ -665,6 +665,14 @@ async function main() {
         process.exit(1);
     }
 
+    // Final Stage1 integration gate: run only after all focused and supplemental
+    // contracts have passed so failures remain attributable and visible.
+    const stage1E2EOk = await runCommand("node", ["scratch/test_stage1_e2e.mjs"]);
+    if (!stage1E2EOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Final Gate (Stage1 E2E Boundary Audit) で不合格が検出されました。");
+        process.exit(1);
+    }
+
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
     console.log("\n============================================================");
     console.log(`✅ 統合検問パイプライン合格 (所要時間: ${elapsed}s)`);
