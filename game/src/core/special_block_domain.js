@@ -220,14 +220,12 @@ export function readEffectiveGreenery(cell) {
     const base = Number(cell?.terrain?.gl);
     if (!Number.isFinite(base)) return null;
 
+    // New entities persist the ecological effect explicitly. Legacy saves from
+    // the first Special Block implementation may already have the delta
+    // materialized into terrain.gl and carry no baseTerrainEffect. In that
+    // case, treat the stored GL as authoritative to avoid applying GL-1 twice.
     const explicitDelta = Number(cell?.specialBlock?.baseTerrainEffect?.glDelta);
-    const definition = getSpecialBlockDefinition(
-        cell?.specialBlock?.definitionId || cell?.specialBlock?.type
-    );
-    const definitionDelta = Number(definition?.baseTerrainInteraction?.glDelta);
-    const delta = Number.isFinite(explicitDelta)
-        ? explicitDelta
-        : (Number.isFinite(definitionDelta) ? definitionDelta : 0);
+    const delta = Number.isFinite(explicitDelta) ? explicitDelta : 0;
 
     return Math.max(0, base + delta);
 }
