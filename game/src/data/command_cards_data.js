@@ -785,7 +785,27 @@ export const MYSTIC_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.25,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "voiceBeneathEarthTurns",
+        "value": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "🔮",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 1
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_OMEN_DREAM",
@@ -871,7 +891,27 @@ export const MYSTIC_CARDS_MASTER = [
     "minStage": 2,
     "rarity": "R",
     "weight": 0.2,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "revelationChoiceTurns",
+        "value": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "✨",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 1
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_LEYLINE_RESONANCE",
@@ -885,7 +925,25 @@ export const MYSTIC_CARDS_MASTER = [
     "minStage": 2,
     "rarity": "C",
     "weight": 0.35,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "leylineResonanceActive",
+        "value": true
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "buff": {
+          "icon": "✨",
+          "category": "CARD_EFFECT"
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_TWO_FUTURES",
@@ -897,6 +955,26 @@ export const MYSTIC_CARDS_MASTER = [
     },
     "reqMystic": 25,
     "cyclePolicy": "UNIQUE",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "twoFuturesTurns",
+        "value": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "🔮",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 1
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ],
     "minStage": 3,
     "rarity": "UR",
     "weight": 0.1
@@ -1681,7 +1759,27 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.25,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "voiceBeneathEarthTurns",
+        "value": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "🔮",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 1
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_OMEN_DREAM",
@@ -1767,7 +1865,27 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 2,
     "rarity": "R",
     "weight": 0.2,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "revelationChoiceTurns",
+        "value": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "✨",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 1
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_LEYLINE_RESONANCE",
@@ -1781,7 +1899,25 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 2,
     "rarity": "C",
     "weight": 0.35,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "leylineResonanceActive",
+        "value": true
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "buff": {
+          "icon": "✨",
+          "category": "CARD_EFFECT"
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_TWO_FUTURES",
@@ -1793,6 +1929,26 @@ export const COMMAND_CARDS_MASTER = [
     },
     "reqMystic": 25,
     "cyclePolicy": "UNIQUE",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "twoFuturesTurns",
+        "value": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "🔮",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 1
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ],
     "minStage": 3,
     "rarity": "UR",
     "weight": 0.1
