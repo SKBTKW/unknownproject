@@ -85,19 +85,57 @@ export class SpecialBlockService {
             .filter(entry => entry.cell);
     }
 
-    resolveTerrainCluster(target, definition) {
+    resolveSourceGroup(target, definition) {
         const point = coords(target);
-        if (!point) return [];
+        if (!point) {
+            return {
+                kind: 'NONE',
+                groupId: null,
+                cells: []
+            };
+        }
+
         const start = this.getCell(point.r, point.c);
-        if (!start?.placed || !start.terrain) return [];
+        if (!start?.placed || !start.terrain) {
+            return {
+                kind: 'NONE',
+                groupId: null,
+                cells: []
+            };
+        }
 
         const allowedIds = new Set(definition?.placement?.terrainIds || []);
         const startId = terrainId(start);
-        if (allowedIds.size > 0 && !allowedIds.has(startId)) return [];
+        if (allowedIds.size > 0 && !allowedIds.has(startId)) {
+            return {
+                kind: 'NONE',
+                groupId: null,
+                cells: []
+            };
+        }
+
+        if (start.mergeGroupId !== null && start.mergeGroupId !== undefined) {
+            const groupId = String(start.mergeGroupId);
+            const cells = [];
+            for (let r = 0; r < (this.state?.grid?.length || 0); r++) {
+                for (let c = 0; c < (this.state.grid[r]?.length || 0); c++) {
+                    const cell = this.state.grid[r][c];
+                    if (!cell?.placed || !cell.terrain) continue;
+                    if (String(cell.mergeGroupId) !== groupId) continue;
+                    if (allowedIds.size > 0 && !allowedIds.has(terrainId(cell))) continue;
+                    cells.push({ r, c, cell });
+                }
+            }
+            return {
+                kind: 'MERGE_GROUP',
+                groupId,
+                cells
+            };
+        }
 
         const queue = [point];
         const visited = new Set();
-        const cluster = [];
+        const cells = [];
         while (queue.length > 0) {
             const current = queue.shift();
             const key = `${current.r}:${current.c}`;
@@ -107,14 +145,24 @@ export class SpecialBlockService {
             const cell = this.getCell(current.r, current.c);
             const id = terrainId(cell);
             if (!cell?.placed || !cell.terrain) continue;
+            if (cell.mergeGroupId !== null && cell.mergeGroupId !== undefined) continue;
             if (allowedIds.size > 0 && !allowedIds.has(id)) continue;
 
-            cluster.push({ r: current.r, c: current.c, cell });
+            cells.push({ r: current.r, c: current.c, cell });
             for (const next of orthogonalNeighbors(current.r, current.c)) {
                 if (!visited.has(`${next.r}:${next.c}`)) queue.push(next);
             }
         }
-        return cluster;
+
+        return {
+            kind: 'CONNECTED_TERRAIN_CLUSTER',
+            groupId: null,
+            cells
+        };
+    }
+
+    resolveTerrainCluster(target, definition) {
+        return this.resolveSourceGroup(target, definition).cells;
     }
 
     _validateIndependentGenerationTarget(definition, target) {
@@ -188,9 +236,12 @@ export class SpecialBlockService {
             if (!hasAdjacent) return { valid: false, reason: 'ADJACENT_CAPABILITY_REQUIRED' };
         }
 
+        let sourceGroup = null;
         if (definition.placement?.requiresSourceCluster) {
-            const cluster = this.resolveTerrainCluster(point, definition);
-            if (cluster.length < 1) return { valid: false, reason: 'SOURCE_CLUSTER_REQUIRED' };
+            sourceGroup = this.resolveSourceGroup(point, definition);
+            if (sourceGroup.cells.length < 1) {
+                return { valid: false, reason: 'SOURCE_CLUSTER_REQUIRED' };
+            }
         }
 
         if (forCreation && definition.placement?.orientation === 'CARDINAL') {
@@ -199,7 +250,7 @@ export class SpecialBlockService {
             }
         }
 
-        return { valid: true, target: point, cell };
+        return { valid: true, target: point, cell, sourceGroup };
     }
 
     validateTarget(typeOrDefinition, target, context = {}, options = {}) {
@@ -248,13 +299,15 @@ export class SpecialBlockService {
             for (let c = 0; c < (this.state.grid[r]?.length || 0); c++) {
                 const validation = this.validateTarget(definition, { r, c }, context);
                 if (validation.valid) {
-                    const cluster = definition.placement?.requiresSourceCluster
-                        ? this.resolveTerrainCluster({ r, c }, definition)
+                    const sourceGroup = definition.placement?.requiresSourceCluster
+                        ? this.resolveSourceGroup({ r, c }, definition)
                         : null;
                     targets.push({
                         r,
                         c,
-                        sourceClusterSize: cluster ? cluster.length : null
+                        sourceClusterSize: sourceGroup ? sourceGroup.cells.length : null,
+                        sourceGroupKind: sourceGroup?.kind || null,
+                        sourceGroupId: sourceGroup?.groupId || null
                     });
                 }
             }
@@ -311,7 +364,14 @@ export class SpecialBlockService {
             entity: { ...entity },
             baseTerrain: cell.terrain ? { ...cell.terrain } : null,
             capabilities: [...readCellCapabilities(cell)],
-            trialTraits: readSpecialBlockTrialTraits(cell)
+            trialTraits: readSpecialBlockTrialTraits(cell),
+            sourceGroup: validation.sourceGroup
+                ? {
+                    kind: validation.sourceGroup.kind,
+                    groupId: validation.sourceGroup.groupId,
+                    size: validation.sourceGroup.cells.length
+                }
+                : null
         };
     }
 }
