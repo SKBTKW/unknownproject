@@ -119,7 +119,7 @@ export function resolveWeb25DProductionMarkerAnchor(projected = {}) {
 
 export function resolveWeb25DProductionMarker(cell = {}) {
     const role = cell.display?.role || null;
-    if (role !== 'LAND_PRIMARY' && role !== 'SOCKET') return null;
+    if (!['LAND_PRIMARY', 'SOCKET', 'SPECIAL_BLOCK'].includes(role)) return null;
 
     const primary = cell.display?.production?.primaryYield || null;
     const amount = Number(primary?.amount);
@@ -175,6 +175,9 @@ export function resolveWeb25DProductionMarkerMetrics({
 export class Web25DPhaseCRenderer extends Web25DCanvasRenderer {
     drawUnplacedCell(cell, projected) {
         super.drawUnplacedCell(cell, projected);
+        if (cell.specialBlock) {
+            this.drawSpecialBlockLandmark(cell.specialBlock, projected.screenCenter);
+        }
         const socketOpacity = resolveWeb25DProfileOpacity(
             this.readModel?.profile?.sockets,
             { secondary: 0.55, suppressed: 0.28 }
@@ -182,6 +185,16 @@ export class Web25DPhaseCRenderer extends Web25DCanvasRenderer {
         if (cell.hasSocket && socketOpacity > 0) {
             this.drawWithOpacity(socketOpacity, () => {
                 this.drawDormantSocketCore(projected.screenCenter);
+            });
+        }
+        const productionAnchor = resolveWeb25DProductionMarkerAnchor(projected);
+        const yieldOpacity = resolveWeb25DProfileOpacity(
+            this.readModel?.profile?.yields,
+            { secondary: 0.55, suppressed: 0 }
+        );
+        if (cell.specialBlock && productionAnchor && yieldOpacity > 0) {
+            this.drawWithOpacity(yieldOpacity, () => {
+                this.drawProductionMarker(cell, productionAnchor);
             });
         }
         this.drawInteractionEmphasis(cell, projected.screenCenter, 0);
@@ -203,6 +216,8 @@ export class Web25DPhaseCRenderer extends Web25DCanvasRenderer {
         );
         if (cell.isHQ) {
             this.drawHQ(center);
+        } else if (cell.specialBlock) {
+            this.drawSpecialBlockLandmark(cell.specialBlock, center);
         } else if (cell.socketResource && socketOpacity > 0) {
             this.drawWithOpacity(socketOpacity, () => {
                 this.drawResolvedResource(cell.socketResource, center);
@@ -228,6 +243,33 @@ export class Web25DPhaseCRenderer extends Web25DCanvasRenderer {
         }
 
         this.drawInteractionEmphasis(cell, center, lift);
+    }
+
+    drawSpecialBlockLandmark(specialBlock, center) {
+        if (!specialBlock || !center) return;
+        const ctx = this.ctx;
+        const type = String(specialBlock.type || '').toUpperCase();
+        const glyph = type === 'FARM' ? 'F'
+            : type === 'MINE' ? 'M'
+            : type === 'ALTAR' ? 'A'
+            : type === 'PALISADE' ? 'P'
+            : type === 'EARTHWORK' ? 'E'
+            : type === 'WATCHTOWER' ? 'W'
+            : type === 'LOGGING_CAMP' ? 'L'
+            : '•';
+
+        ctx.beginPath();
+        ctx.rect(center.x - 8, center.y - 8, 16, 16);
+        ctx.fillStyle = 'rgba(46, 43, 35, 0.90)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(226, 218, 190, 0.82)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'rgba(239, 232, 207, 0.96)';
+        ctx.fillText(glyph, center.x, center.y);
     }
 
     drawWithOpacity(opacity, draw) {

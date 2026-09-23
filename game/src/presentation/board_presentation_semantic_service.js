@@ -13,6 +13,7 @@ const CARDINAL_DIRECTIONS = Object.freeze([
 const DISPLAY_ROLE = Object.freeze({
     LAND_PRIMARY: 'LAND_PRIMARY',
     SOCKET: 'SOCKET',
+    SPECIAL_BLOCK: 'SPECIAL_BLOCK',
     CLEAN: 'CLEAN'
 });
 
@@ -93,15 +94,25 @@ function addNonSocketProduction(target, viewData) {
     target.mystic += base.mystic || 0;
 
     for (const modifier of viewData?.modifiers || []) {
-        if (!modifier || modifier.type === 'SOCKET') continue;
+        if (!modifier || modifier.type === 'SOCKET' || modifier.type === 'SPECIAL_BLOCK') continue;
         const resource = modifier.resource;
         if (!Object.prototype.hasOwnProperty.call(target, resource)) continue;
         target[resource] += modifier.amount || 0;
     }
 }
 
+function addSpecialBlockProduction(target, viewData) {
+    const yields = viewData?.specialBlock?.yields || {};
+    target.food += yields.food || 0;
+    target.wood += yields.wood || 0;
+    target.defense += yields.defense || 0;
+    target.mystic += yields.mystic || 0;
+}
+
 export function resolveBoardDisplayRole(state, facts) {
-    if (!facts?.placed || facts?.isHQ) return null;
+    if (!facts || facts.isHQ) return null;
+    if (!facts.placed && facts.specialBlock) return DISPLAY_ROLE.SPECIAL_BLOCK;
+    if (!facts.placed) return null;
     if (facts.socketResource) return DISPLAY_ROLE.SOCKET;
 
     const activeGroupId = normalizeGroupId(facts.mergeGroupId || facts.placementGroupId);
@@ -123,8 +134,21 @@ export function resolveBoardDisplayRole(state, facts) {
 }
 
 export function resolveBoardDisplayProduction(state, facts, cellViewDataService) {
-    if (!facts?.placed || facts?.isHQ || !cellViewDataService) return null;
+    if (!facts || facts.isHQ || !cellViewDataService) return null;
     const role = resolveBoardDisplayRole(state, facts);
+    if (role === DISPLAY_ROLE.SPECIAL_BLOCK) {
+        const production = {
+            food: facts.yields?.food || 0,
+            wood: facts.yields?.wood || 0,
+            defense: facts.yields?.defense || 0,
+            mystic: facts.yields?.mystic || 0
+        };
+        return Object.freeze({
+            ...production,
+            primaryYield: facts.primaryYield || pickPrimaryYield(facts.specialBlock?.type, production)
+        });
+    }
+    if (!facts.placed) return null;
     if (role !== DISPLAY_ROLE.LAND_PRIMARY && role !== DISPLAY_ROLE.SOCKET) return null;
 
     if (role === DISPLAY_ROLE.SOCKET) {
@@ -140,6 +164,7 @@ export function resolveBoardDisplayProduction(state, facts, cellViewDataService)
 
     const activeGroupId = normalizeGroupId(facts.mergeGroupId || facts.placementGroupId);
     const production = { food: 0, wood: 0, defense: 0, mystic: 0 };
+    const specialProduction = { food: 0, wood: 0, defense: 0, mystic: 0 };
 
     if (activeGroupId) {
         const grid = state?.grid || [];
@@ -152,7 +177,9 @@ export function resolveBoardDisplayProduction(state, facts, cellViewDataService)
                     || normalizeGroupId(cell.placementGroupId) === activeGroupId;
                 if (!matchesGroup) continue;
                 if (cell.placementGroupId != null) placementGroups.add(String(cell.placementGroupId));
-                addNonSocketProduction(production, cellViewDataService.getCellViewData(state, r, c));
+                const cellView = cellViewDataService.getCellViewData(state, r, c);
+                addNonSocketProduction(production, cellView);
+                addSpecialBlockProduction(specialProduction, cellView);
             }
         }
 
@@ -176,8 +203,13 @@ export function resolveBoardDisplayProduction(state, facts, cellViewDataService)
             production.defense += blockProduction.yields.defense;
             production.mystic += blockProduction.yields.mystic;
         }
+        production.food += specialProduction.food;
+        production.wood += specialProduction.wood;
+        production.defense += specialProduction.defense;
+        production.mystic += specialProduction.mystic;
     } else {
         addNonSocketProduction(production, facts);
+        addSpecialBlockProduction(production, facts);
     }
 
     return Object.freeze({

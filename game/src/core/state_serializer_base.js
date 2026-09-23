@@ -48,6 +48,7 @@ export function serializeGameState(state) {
                         ? JSON.parse(JSON.stringify(cell.cachedSocketSeeds))
                         : {},
                     production: cell.production ? cloneData(cell.production) : null,
+                    specialBlock: cell.specialBlock ? cloneData(cell.specialBlock) : null,
                     terrain: cell.terrain ? {
                         id: cell.terrain.id || null,
                         terrainId: cell.terrain.terrainId || null,
@@ -66,7 +67,10 @@ export function serializeGameState(state) {
                         isArtificialTerrain: !!cell.terrain.isArtificialTerrain,
                         shape: cell.terrain.shape ? JSON.parse(JSON.stringify(cell.terrain.shape)) : null,
                         yields: cell.terrain.yields ? { ...cell.terrain.yields } : null,
-                        baseYieldsPerTile: cell.terrain.baseYieldsPerTile ? { ...cell.terrain.baseYieldsPerTile } : null
+                        baseYieldsPerTile: cell.terrain.baseYieldsPerTile ? { ...cell.terrain.baseYieldsPerTile } : null,
+                        capabilities: Array.isArray(cell.terrain.capabilities)
+                            ? [...cell.terrain.capabilities]
+                            : null
                     } : null,
                     socketResource: cell.socketResource ? {
                         id: cell.socketResource.id || null,
@@ -79,7 +83,10 @@ export function serializeGameState(state) {
                         bonusMaterial: cell.socketResource.bonusMaterial || 0,
                         bonusDefense: cell.socketResource.bonusDefense || 0,
                         bonusMystic: cell.socketResource.bonusMystic || 0,
-                        isLake: !!cell.socketResource.isLake
+                        isLake: !!cell.socketResource.isLake,
+                        capabilities: Array.isArray(cell.socketResource.capabilities)
+                            ? [...cell.socketResource.capabilities]
+                            : null
                     } : null
                 };
             }

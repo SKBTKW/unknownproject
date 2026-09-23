@@ -5,6 +5,8 @@ import { DeckManager, OFFERING_GENERATION_REASONS } from '../systems/deck_manage
 import { ProductionCalculator } from '../systems/production_calculator.js';
 import { UndoLandSystem } from '../systems/undo_land_system.js';
 import { GridEngine } from '../systems/grid_engine.js';
+import { SpecialBlockService } from '../systems/special_block_service.js';
+import { BoardDomainAdapter } from './board_domain_adapter.js';
 import { BuffSystem } from '../systems/buff_system.js';
 import { ChronicleSystem } from '../systems/chronicle_system.js';
 import { GlobalEventManager } from '../systems/global_event_system.js';
@@ -91,6 +93,18 @@ class GameEngine {
         const GridEngineClass = dependencies.GridEngineClass || GridEngine;
         this.gridEngine = dependencies.gridEngine || (GridEngineClass ? new GridEngineClass(this.state, this) : null);
 
+        const SpecialBlockServiceClass = dependencies.SpecialBlockServiceClass || SpecialBlockService;
+        this.specialBlockService = dependencies.specialBlockService
+            || (SpecialBlockServiceClass ? new SpecialBlockServiceClass(this.state) : null);
+
+        const BoardDomainAdapterClass = dependencies.BoardDomainAdapterClass || BoardDomainAdapter;
+        this.boardDomainAdapter = dependencies.boardDomainAdapter
+            || (BoardDomainAdapterClass ? new BoardDomainAdapterClass({
+                state: this.state,
+                gridEngine: this.gridEngine,
+                specialBlockService: this.specialBlockService
+            }) : null);
+
         const DeckManagerClass = dependencies.DeckManagerClass || DeckManager;
         this.deckManager = dependencies.deckManager || (DeckManagerClass ? new DeckManagerClass(this.state, this) : null);
 
@@ -169,6 +183,8 @@ class GameEngine {
             this.state.runSeed = this.runSeed;
             this.state.checkSystem = this.checkSystem;
             if (this.gridEngine) this.state.gridEngine = this.gridEngine;
+            if (this.specialBlockService) this.state.specialBlockService = this.specialBlockService;
+            if (this.boardDomainAdapter) this.state.boardDomainAdapter = this.boardDomainAdapter;
             if (this.deckManager) this.state.deckManager = this.deckManager;
             if (this.directiveSystem) this.state.directiveSystem = this.directiveSystem;
             if (this.buffSystem) this.state.buffSystem = this.buffSystem;
