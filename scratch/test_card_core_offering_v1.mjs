@@ -13,6 +13,10 @@ import {
 } from "../game/src/cards/legacy_offering_requirement_adapter.js";
 import { CardEffectHandlerRouter } from "../game/src/cards/card_effect_handler_router.js";
 import { CARD_EFFECT_TYPES, CardEffectExecutor } from "../game/src/cards/card_effect_executor.js";
+import {
+    CARD_DOMAIN_ACTIONS,
+    createCardDomainActionExecutor
+} from "../game/src/cards/card_domain_action_executor.js";
 import { COMMAND_CARDS_MASTER } from "../game/src/data/command_cards_data.js";
 import {
     LEGACY_COMMAND_EXECUTION_CLASS,
@@ -1022,6 +1026,103 @@ function makeGrid(rows, cols) {
             `${id} must not acquire a domain owner outside DOMAIN_ACTION_REQUIRED`
         );
     }
+}
+
+// Y. Domain actions preflight against Board before command cost / source consumption.
+{
+    const calls = [];
+    const boardDomainAdapter = {
+        validateSpecialBlockTarget(type, target, context) {
+            calls.push({ phase: "validate", type, target, context });
+            return target?.r === 1 && target?.c === 2
+                ? { valid: true }
+                : { valid: false, reason: "TARGET_BLOCKED" };
+        },
+        createSpecialBlock(type, target, context) {
+            calls.push({ phase: "create", type, target, context });
+            return { success: true, entity: { type }, target };
+        }
+    };
+    const engine = { boardDomainAdapter };
+    const domainExecutor = createCardDomainActionExecutor(engine);
+    const effectExecutor = new CardEffectExecutor({ domainActionExecutor: domainExecutor });
+
+    const effect = {
+        type: CARD_EFFECT_TYPES.DOMAIN_ACTION,
+        action: CARD_DOMAIN_ACTIONS.CREATE_SPECIAL_BLOCK,
+        blockType: "MINE"
+    };
+
+    const blocked = effectExecutor.preflight([effect], {
+        state: { turn: 7 },
+        targetTile: { r: 0, c: 0 },
+        cardDefinition: { id: "CMD_DOMAIN_PREFLIGHT_TEST" }
+    });
+    assert.equal(blocked.success, false);
+    assert.equal(blocked.reason, "TARGET_BLOCKED");
+    assert.equal(calls.filter(call => call.phase === "create").length, 0);
+
+    const allowed = effectExecutor.executeAll([effect], {
+        state: { turn: 7 },
+        targetTile: { r: 1, c: 2 },
+        cardDefinition: { id: "CMD_DOMAIN_EXECUTE_TEST" }
+    });
+    assert.equal(allowed.success, true);
+    assert.equal(calls.filter(call => call.phase === "create").length, 1);
+    const createCall = calls.find(call => call.phase === "create");
+    assert.equal(createCall.type, "MINE");
+    assert.deepEqual(createCall.target, { r: 1, c: 2 });
+    assert.equal(createCall.context.verse, 7);
+    assert.equal(createCall.context.cardId, "CMD_DOMAIN_EXECUTE_TEST");
+}
+
+// Z. DeckManager rejects invalid domain target before deducting command cost.
+{
+    const state = {
+        turn: 4,
+        food: 0,
+        wood: 30,
+        material: 30,
+        mystic: 0,
+        ember: 0,
+        reserveSlots: [],
+        handOffering: [{ id: "source-slot" }],
+        consumedUniqueCards: [],
+        usedUniqueCards: [],
+        addLog() {}
+    };
+    const engine = {
+        boardDomainAdapter: {
+            validateSpecialBlockTarget() {
+                return { valid: false, reason: "SPECIAL_BLOCK_OCCUPIED" };
+            },
+            createSpecialBlock() {
+                throw new Error("must not execute after failed preflight");
+            }
+        }
+    };
+    engine.cardDomainActionExecutor = createCardDomainActionExecutor(engine);
+
+    const manager = new DeckManager(state, engine);
+    manager.cycleSystem = null;
+    const card = {
+        id: "CMD_DOMAIN_COST_GUARD_TEST",
+        category: "COMMAND",
+        nameKey: "CMD_DOMAIN_COST_GUARD_TEST_NAME",
+        cost: { wood: 20 },
+        effects: [{
+            type: CARD_EFFECT_TYPES.DOMAIN_ACTION,
+            action: CARD_DOMAIN_ACTIONS.CREATE_SPECIAL_BLOCK,
+            blockType: "MINE"
+        }]
+    };
+
+    const result = manager.playCommandCard(card, { r: 1, c: 1 }, 0, -1);
+    assert.equal(result.success, false);
+    assert.equal(result.reason, "SPECIAL_BLOCK_OCCUPIED");
+    assert.equal(state.wood, 30);
+    assert.equal(state.material, 30);
+    assert.equal(state.handOffering[0].id, "source-slot");
 }
 
 console.log("✅ Card Core / Offering v1 contract tests PASS");
