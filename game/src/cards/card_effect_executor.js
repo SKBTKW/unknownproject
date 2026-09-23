@@ -63,10 +63,14 @@ class CardEffectExecutor {
         });
     }
 
-    requiresTarget(effects) {
-        return Array.isArray(effects)
-            && effects.length === 1
-            && effects[0]?.type === CARD_EFFECT_TYPES.DOMAIN_ACTION;
+    requiresTarget(effects, context = {}) {
+        if (!Array.isArray(effects) || effects.length !== 1) return false;
+        const effect = effects[0];
+        if (effect?.type !== CARD_EFFECT_TYPES.DOMAIN_ACTION) return false;
+        const executor = context.domainActionExecutor || this.domainActionExecutor;
+        return typeof executor?.requiresTarget === "function"
+            ? executor.requiresTarget(effect, context) === true
+            : false;
     }
 
     enumerateTargets(effects, context = {}) {
