@@ -1,3 +1,4 @@
+import { readSpecialBlockTrialTraits } from "../../core/special_block_domain.js";
 import {
     DEFAULT_TRIAL_RULES,
     MODIFIER_OPERATIONS,
@@ -50,6 +51,10 @@ export class TrialTerrainEffectResolver {
     }
 
     canInterceptAt(cell) {
+        const specialTraits = readSpecialBlockTrialTraits(cell);
+        if (typeof specialTraits?.interceptionAllowed === "boolean") {
+            return specialTraits.interceptionAllowed;
+        }
         const id = terrainId(cell);
         return !!id && !WETLAND_IDS.has(id) && !MOUNTAIN_IDS.has(id);
     }
@@ -63,8 +68,12 @@ export class TrialTerrainEffectResolver {
         const events = [];
         const interceptId = terrainId(context.interceptCell);
         const approachId = terrainId(context.approachCell);
+        const specialBlockTraits = readSpecialBlockTrialTraits(context.interceptCell);
+        const suppressTerrainTactic = specialBlockTraits?.suppressTerrainTactic === true;
 
-        const deployment = DEEP_FOREST_IDS.has(interceptId)
+        const deployment = suppressTerrainTactic
+            ? null
+            : DEEP_FOREST_IDS.has(interceptId)
             ? { id: TRIAL_TERRAIN_EFFECTS.DEEP_FOREST_DEPLOYMENT, config: this.config.deepForestDeployment }
             : FOREST_IDS.has(interceptId)
                 ? { id: TRIAL_TERRAIN_EFFECTS.FOREST_DEPLOYMENT, config: this.config.forestDeployment }
@@ -96,7 +105,7 @@ export class TrialTerrainEffectResolver {
         const approachElevation = context.approachCell?.elevation;
         const isE0E1Transition = (approachElevation === 0 && interceptElevation === 1)
             || (approachElevation === 1 && interceptElevation === 0);
-        if (!isE0E1Transition && Number.isFinite(interceptElevation) && Number.isFinite(approachElevation) && interceptElevation !== approachElevation) {
+        if (!suppressTerrainTactic && !isE0E1Transition && Number.isFinite(interceptElevation) && Number.isFinite(approachElevation) && interceptElevation !== approachElevation) {
             const target = interceptElevation > approachElevation
                 ? MODIFIER_TARGETS.HUMAN_INTERCEPTION
                 : MODIFIER_TARGETS.ENEMY_SUPPRESSION;
@@ -125,6 +134,7 @@ export class TrialTerrainEffectResolver {
         return {
             canIntercept: this.canInterceptAt(context.interceptCell),
             canEnterApproachRoute: this.canEnterNormalRoute(context.approachCell),
+            specialBlockTraits,
             modifiers,
             events
         };
