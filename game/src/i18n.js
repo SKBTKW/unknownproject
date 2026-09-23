@@ -1043,6 +1043,11 @@
             TERRAIN_DESERT_HILL: "Desert Hill",
             TERRAIN_FOREST_HILL: "Forest Hill",
             TERRAIN_DEEP_HILL: "Deep Forest Hill",
+            CARD_MULTI_ATTRIBUTE_SUFFIX: " (Mixed)",
+            UI_YIELD_UNRESOLVED: "TBD",
+            CARD_DESC_MULTI_PLAINS_HILL_1X2: "A mixed-terrain block that places a Plains and Hill boundary as one land card.",
+            CARD_DESC_MULTI_PLAINS_FOREST_1X2: "A mixed-terrain block that places a Plains and Forest boundary as one land card.",
+            CARD_DESC_MULTI_HILL_MOUNTAIN_1X2: "A mixed-terrain block that places a Hill and Mountain boundary as one land card.",
             CARD_DESC_WETLAND_1X1: "Lowland collecting moisture. Cannot directly border another Wetland or form a zone, but may border a Lake and supports mud, water sources, and reclamation.",
 
             // 📜 Economy & Policy
