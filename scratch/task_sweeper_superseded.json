@@ -73,6 +73,27 @@
       "expectedHeadSha": "01e9af92aab39ad9883133ed3b0322fd66250ab8",
       "replacementPr": 166,
       "note": "PR #166 explicitly says it audited prior r19/r20 source semantics and intended to supersede stale PR #155 (r19)."
+    },
+    {
+      "branch": "aot-task/AoT260922/board/zone-conversion-foundation-v1-r2",
+      "expectedHeadSha": "e012af95fd315a945e09f5a22e24c360fcae1552",
+      "replacementPrs": [
+        159,
+        171
+      ],
+      "note": "The current r2 head contains both the Zone Conversion foundation and an early Verse-maintenance integration. The clean foundation merged as PR #159, while the maintenance lifecycle was later corrected and merged as PR #171."
+    },
+    {
+      "branch": "aot-task/AoT260922/board/zone-conversion-foundation-v1-r3",
+      "expectedHeadSha": "53866c1eb9b90eaa85bc5b053a15b2e63d915237",
+      "replacementPr": 159,
+      "note": "r3 is a current-base port of the Zone Conversion foundation; PR #159 is the clean rebuilt foundation merged into AoT260922."
+    },
+    {
+      "branch": "aot-task/AoT260922/board/zone-conversion-foundation-v1-r5",
+      "expectedHeadSha": "9d77f4d36caefa286bf391badf80dae005fdf5f4",
+      "replacementPr": 159,
+      "note": "r5 contains only the three foundation port commits; PR #159 is the clean rebuilt foundation merged into AoT260922."
     }
   ]
 }
