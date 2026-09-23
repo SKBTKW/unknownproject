@@ -16,7 +16,37 @@ export const ECONOMY_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "C",
     "weight": 0.4,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "foodCostRationingActive",
+        "value": true
+      },
+      {
+        "type": "STATE_SET",
+        "key": "foodCostRationingDiscount",
+        "value": 0.4
+      },
+      {
+        "type": "STATE_SET",
+        "key": "foodCostHalvedTurns",
+        "value": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "🌾",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 1
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_WETLAND_RECLAMATION",
@@ -553,7 +583,38 @@ export const MILITARY_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "C",
     "weight": 0.35,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "vigilanceTurns",
+        "value": 2
+      },
+      {
+        "type": "STATE_SET",
+        "key": "vigilanceStartsNextTurn",
+        "value": true
+      },
+      {
+        "type": "STATE_SET",
+        "key": "temporaryDefenseTurns",
+        "value": 2
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "🛡️",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 2,
+          "startsNextTurn": true
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_MUD_OBSTACLE",
@@ -927,6 +988,28 @@ export const MYSTIC_CARDS_MASTER = [
     },
     "maxMystic": 30,
     "cyclePolicy": "UNIQUE",
+    "effects": [
+      {
+        "type": "DRAW_BIAS_SET",
+        "bias": {
+          "targetCategory": "MYSTIC",
+          "type": "TURNS",
+          "remainingTurns": 3,
+          "startsNextTurn": true
+        }
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "✨",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 3,
+          "startsNextTurn": true
+        }
+      }
+    ],
     "minStage": 1,
     "rarity": "R",
     "weight": 0.15
@@ -1106,7 +1189,37 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "C",
     "weight": 0.4,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "foodCostRationingActive",
+        "value": true
+      },
+      {
+        "type": "STATE_SET",
+        "key": "foodCostRationingDiscount",
+        "value": 0.4
+      },
+      {
+        "type": "STATE_SET",
+        "key": "foodCostHalvedTurns",
+        "value": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "🌾",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 1
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_WETLAND_RECLAMATION",
@@ -1640,7 +1753,38 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "C",
     "weight": 0.35,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "vigilanceTurns",
+        "value": 2
+      },
+      {
+        "type": "STATE_SET",
+        "key": "vigilanceStartsNextTurn",
+        "value": true
+      },
+      {
+        "type": "STATE_SET",
+        "key": "temporaryDefenseTurns",
+        "value": 2
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "🛡️",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 2,
+          "startsNextTurn": true
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_MUD_OBSTACLE",
@@ -2011,6 +2155,28 @@ export const COMMAND_CARDS_MASTER = [
     },
     "maxMystic": 30,
     "cyclePolicy": "UNIQUE",
+    "effects": [
+      {
+        "type": "DRAW_BIAS_SET",
+        "bias": {
+          "targetCategory": "MYSTIC",
+          "type": "TURNS",
+          "remainingTurns": 3,
+          "startsNextTurn": true
+        }
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "✨",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 3,
+          "startsNextTurn": true
+        }
+      }
+    ],
     "minStage": 1,
     "rarity": "R",
     "weight": 0.15
