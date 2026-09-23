@@ -181,7 +181,16 @@ class CardEffectExecutor {
                         description: context.cardDescription
                     }
                     : {};
-                const resolvedBuff = { ...source, ...buff };
+                const badgeText = effect.badgeTextRemainingTurns
+                    ? (context.i18n?.t
+                        ? context.i18n.t("BUFF_REMAINING_TURNS", { count: buff.remainingTurns })
+                        : `${buff.remainingTurns}T`)
+                    : undefined;
+                const resolvedBuff = {
+                    ...source,
+                    ...buff,
+                    ...(badgeText !== undefined ? { badgeText } : {})
+                };
                 if (typeof state.addBuff === "function") {
                     state.addBuff(resolvedBuff);
                 } else {
