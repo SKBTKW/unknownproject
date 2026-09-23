@@ -11,6 +11,7 @@ export const TRIAL_DEPLOYMENT_REASONS = Object.freeze({
     INSUFFICIENT_RESOURCES: "INSUFFICIENT_RESOURCES",
     STALE_PREVIEW: "STALE_PREVIEW",
     ALREADY_COMMITTED: "ALREADY_COMMITTED",
+    DEPLOYMENT_LOCKED: "DEPLOYMENT_LOCKED",
     INVALID_PLAN: "INVALID_PLAN"
 });
 
@@ -54,13 +55,24 @@ export class TrialDeploymentService {
         this.trialState = null;
         this.deploymentHistory = [];
         this.committedPreviewTokens = new Set();
+        this.sessionCommitted = false;
+        this.sessionResourceSnapshot = null;
     }
 
     beginSession({ trialState } = {}) {
         this.trialState = trialState || null;
         this.deploymentHistory = [];
         this.committedPreviewTokens.clear();
-        return { success: Boolean(this.trialState) };
+        this.sessionCommitted = false;
+        this.sessionResourceSnapshot = null;
+        this.sessionCommitted = false;
+        const resourceSnapshot = this.resourcePayment?.readAuditSnapshot?.() || null;
+        this.sessionResourceSnapshot = this.trialState ? Object.freeze({
+            ...(resourceSnapshot || {}),
+            defense: Math.max(0, Number(this.trialState?.human?.availableDefense) || 0),
+            mystic: resourceSnapshot?.mystic ?? Math.max(0, Number(this.trialState?.human?.mystic) || 0)
+        }) : null;
+        return { success: Boolean(this.trialState), resourceSnapshot: this.getSessionResourceSnapshot() };
     }
 
     endSession() {
@@ -76,6 +88,9 @@ export class TrialDeploymentService {
     validateAllocation({ interceptCell, requestedDefense } = {}) {
         if (!this._sessionActive()) {
             return { valid: false, reasons: [TRIAL_DEPLOYMENT_REASONS.TRIAL_SESSION_INACTIVE] };
+        }
+        if (this.sessionCommitted) {
+            return { valid: false, reasons: [TRIAL_DEPLOYMENT_REASONS.DEPLOYMENT_LOCKED] };
         }
         const target = normalizeTarget(interceptCell);
         if (!target) {
@@ -95,8 +110,6 @@ export class TrialDeploymentService {
         routeId = null,
         interceptCell,
         requestedDefense,
-        redeployment = false,
-        frontCount = 1,
         context = {}
     } = {}) {
         const validation = this.validateAllocation({ interceptCell, requestedDefense });
@@ -147,8 +160,6 @@ export class TrialDeploymentService {
             boardFacts,
             origin: originResult.origin,
             distance: originResult.distance,
-            redeployment,
-            frontCount,
             context: { routeId, ...context }
         }) || { resolved: false, reason: DEPLOYMENT_COST_REASONS.COST_POLICY_UNRESOLVED };
 
@@ -174,8 +185,6 @@ export class TrialDeploymentService {
             routeId,
             target: validation.target,
             requestedDefense,
-            redeployment: redeployment === true,
-            frontCount,
             boardFacts,
             origin: originResult.origin,
             distance: originResult.distance,
@@ -230,8 +239,6 @@ export class TrialDeploymentService {
                 routeId: route.routeId,
                 interceptCell: route.interceptCell,
                 requestedDefense: route.defenseAllocation,
-                redeployment: route.redeployment === true,
-                frontCount: Math.max(1, intercepts.length),
                 context
             });
             if (!preview.success) {
@@ -259,8 +266,7 @@ export class TrialDeploymentService {
             plan: intercepts.map(route => ({
                 routeId: route.routeId,
                 interceptCell: normalizeTarget(route.interceptCell),
-                defenseAllocation: route.defenseAllocation,
-                redeployment: route.redeployment === true
+                defenseAllocation: route.defenseAllocation
             })),
             routePreviewTokens: previews.map(item => item.previewToken),
             totalDefense,
@@ -294,6 +300,9 @@ export class TrialDeploymentService {
     commitPlan(plan, { expectedPreview = null, context = {} } = {}) {
         if (!this._sessionActive()) {
             return { success: false, reasons: [TRIAL_DEPLOYMENT_REASONS.TRIAL_SESSION_INACTIVE] };
+        }
+        if (this.sessionCommitted) {
+            return { success: false, reasons: [TRIAL_DEPLOYMENT_REASONS.DEPLOYMENT_LOCKED] };
         }
         if (!expectedPreview?.previewToken) {
             return { success: false, reasons: [TRIAL_DEPLOYMENT_REASONS.STALE_PREVIEW] };
@@ -339,6 +348,7 @@ export class TrialDeploymentService {
 
         this.trialState.human.availableDefense = availableDefense - latest.requestedDefense;
         this.committedPreviewTokens.add(expectedPreview.previewToken);
+        this.sessionCommitted = true;
         const historyEntry = Object.freeze({
             sequence: this.deploymentHistory.length + 1,
             previewToken: expectedPreview.previewToken,
@@ -360,6 +370,10 @@ export class TrialDeploymentService {
 
     getDeploymentHistory() {
         return clone(this.deploymentHistory);
+    }
+
+    getSessionResourceSnapshot() {
+        return clone(this.sessionResourceSnapshot);
     }
 }
 
