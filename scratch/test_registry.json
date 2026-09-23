@@ -201,6 +201,14 @@
       ]
     },
     {
+      "path": "scratch/test_board_damage_contract.mjs",
+      "purpose": "Board-owned semantic damage records without gameplay side effects",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_board_history_query.mjs",
       "purpose": "Board-owned Battle Site history read boundary and RunHistory integration",
       "suite": "existing",
