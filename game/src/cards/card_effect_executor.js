@@ -13,6 +13,8 @@ const CARD_EFFECT_TYPES = Object.freeze({
     BUFF_ADD: "BUFF_ADD",
     DRAW_BIAS_SET: "DRAW_BIAS_SET",
     PROJECT_ADD: "PROJECT_ADD",
+    LOG_CARD_ACTIVATED: "LOG_CARD_ACTIVATED",
+    RECONCILE_CONDITIONAL_BUFFS: "RECONCILE_CONDITIONAL_BUFFS",
     DOMAIN_ACTION: "DOMAIN_ACTION"
 });
 
@@ -59,6 +61,26 @@ class CardEffectExecutor {
             success: true,
             prepared: Object.freeze(prepared)
         });
+    }
+
+    requiresTarget(effects, context = {}) {
+        if (!Array.isArray(effects) || effects.length !== 1) return false;
+        const effect = effects[0];
+        if (effect?.type !== CARD_EFFECT_TYPES.DOMAIN_ACTION) return false;
+        const executor = context.domainActionExecutor || this.domainActionExecutor;
+        return typeof executor?.requiresTarget === "function"
+            ? executor.requiresTarget(effect, context) === true
+            : false;
+    }
+
+    enumerateTargets(effects, context = {}) {
+        if (!Array.isArray(effects) || effects.length !== 1) return [];
+        const effect = effects[0];
+        if (effect?.type !== CARD_EFFECT_TYPES.DOMAIN_ACTION) return [];
+        const executor = context.domainActionExecutor || this.domainActionExecutor;
+        if (typeof executor?.enumerateTargets !== "function") return [];
+        const targets = executor.enumerateTargets(effect, context);
+        return Array.isArray(targets) ? targets : [];
     }
 
     executeAll(effects, context = {}) {
@@ -117,6 +139,12 @@ class CardEffectExecutor {
                 return effect.buff && typeof effect.buff === "object"
                     ? { success: true }
                     : { success: false, reason: "BUFF_DEFINITION_REQUIRED" };
+            case CARD_EFFECT_TYPES.LOG_CARD_ACTIVATED:
+                return { success: true };
+            case CARD_EFFECT_TYPES.RECONCILE_CONDITIONAL_BUFFS:
+                return typeof state?.checkConditionalBuffs === "function"
+                    ? { success: true }
+                    : { success: false, reason: "CONDITIONAL_BUFF_RECONCILE_REQUIRED" };
             case CARD_EFFECT_TYPES.DRAW_BIAS_SET:
                 return effect.bias && typeof effect.bias === "object"
                     ? { success: true }
@@ -127,9 +155,23 @@ class CardEffectExecutor {
                     : { success: false, reason: "PROJECT_DEFINITION_REQUIRED" };
             case CARD_EFFECT_TYPES.DOMAIN_ACTION: {
                 const executor = context.domainActionExecutor || this.domainActionExecutor;
-                return typeof executor === "function"
-                    ? { success: true }
-                    : { success: false, reason: "DOMAIN_ACTION_EXECUTOR_REQUIRED" };
+                if (typeof executor !== "function") {
+                    return { success: false, reason: "DOMAIN_ACTION_EXECUTOR_REQUIRED" };
+                }
+                if (typeof executor.preflight === "function") {
+                    const result = executor.preflight(effect, context);
+                    if (result && typeof result === "object") {
+                        return {
+                            success: result.success !== false,
+                            ...result
+                        };
+                    }
+                    return {
+                        success: result !== false,
+                        reason: result === false ? "DOMAIN_ACTION_PREFLIGHT_FAILED" : null
+                    };
+                }
+                return { success: true };
             }
             default:
                 return { success: false, reason: "UNSUPPORTED_CARD_EFFECT_TYPE" };
@@ -152,9 +194,6 @@ class CardEffectExecutor {
                 const amount = Number(effect.amount || 0);
                 if (!resource) return { success: false, reason: "RESOURCE_KEY_REQUIRED" };
                 state[resource] = Number(state[resource] || 0) + amount;
-                if (resource === "wood" && Object.prototype.hasOwnProperty.call(state, "material")) {
-                    state.material = state.wood;
-                }
                 return { success: true };
             }
 
@@ -173,11 +212,29 @@ class CardEffectExecutor {
             case CARD_EFFECT_TYPES.BUFF_ADD: {
                 const buff = effect.buff;
                 if (!buff || typeof buff !== "object") return { success: false, reason: "BUFF_DEFINITION_REQUIRED" };
+                const source = effect.fromSourceCard
+                    ? {
+                        id: context.cardDefinition?.id,
+                        name: context.cardName,
+                        shortName: context.cardName,
+                        description: context.cardDescription
+                    }
+                    : {};
+                const badgeText = effect.badgeTextRemainingTurns
+                    ? (context.i18n?.t
+                        ? context.i18n.t("BUFF_REMAINING_TURNS", { count: buff.remainingTurns })
+                        : `${buff.remainingTurns}T`)
+                    : undefined;
+                const resolvedBuff = {
+                    ...source,
+                    ...buff,
+                    ...(badgeText !== undefined ? { badgeText } : {})
+                };
                 if (typeof state.addBuff === "function") {
-                    state.addBuff({ ...buff });
+                    state.addBuff(resolvedBuff);
                 } else {
                     if (!Array.isArray(state.activeBuffs)) state.activeBuffs = [];
-                    state.activeBuffs.push({ ...buff });
+                    state.activeBuffs.push(resolvedBuff);
                 }
                 return { success: true };
             }
@@ -196,6 +253,26 @@ class CardEffectExecutor {
                 }
                 if (!Array.isArray(state.activeConstructionProjects)) state.activeConstructionProjects = [];
                 state.activeConstructionProjects.push({ ...effect.project });
+                return { success: true };
+            }
+
+            case CARD_EFFECT_TYPES.LOG_CARD_ACTIVATED: {
+                if (typeof state.addLog !== "function") return { success: true };
+                const i18n = context.i18n;
+                const name = context.cardName || context.cardDefinition?.id || "Card";
+                const desc = context.cardDescription || "";
+                const message = i18n?.t
+                    ? i18n.t("LOG_CMD_ACTIVATED", { name, desc })
+                    : `📜【${name}】`;
+                state.addLog(message || `📜【${name}】`);
+                return { success: true };
+            }
+
+            case CARD_EFFECT_TYPES.RECONCILE_CONDITIONAL_BUFFS: {
+                if (typeof state.checkConditionalBuffs !== "function") {
+                    return { success: false, reason: "CONDITIONAL_BUFF_RECONCILE_REQUIRED" };
+                }
+                state.checkConditionalBuffs();
                 return { success: true };
             }
 

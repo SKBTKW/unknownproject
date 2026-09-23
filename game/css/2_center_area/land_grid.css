@@ -613,6 +613,20 @@ body.is-camera-dragging-global * {
     cursor: pointer !important;
 }
 
+/* 🎯 対象指定Commandの合法ターゲット。土地配置候補とは別semantic classで保持する。 */
+.cell.command-target-candidate {
+    outline: 3px solid rgba(241, 196, 15, 0.95);
+    outline-offset: -4px;
+    box-shadow: 0 0 18px rgba(241, 196, 15, 0.8), inset 0 0 14px rgba(241, 196, 15, 0.28);
+    cursor: crosshair;
+    z-index: 21;
+}
+
+.cell.command-target-candidate:hover {
+    outline-width: 4px;
+    box-shadow: 0 0 26px rgba(241, 196, 15, 1), inset 0 0 18px rgba(255, 255, 255, 0.3);
+}
+
 /* 🎯 配置ハイライトプレビュー最優先ネオン (マウスホバー時) */
 .cell.preview-valid {
     border: 4px solid #1abc9c !important;

@@ -7,10 +7,18 @@
 import { normalizeCardDefinitionV1 } from './card_definition_v1.js';
 
 class CardOfferingEligibilityService {
-    constructor({ state, placementQuery, requirementEvaluator = null } = {}) {
+    constructor({
+        state,
+        placementQuery,
+        requirementEvaluator = null,
+        executionTargetRequired = null,
+        executionTargetQuery = null
+    } = {}) {
         this.state = state;
         this.placementQuery = placementQuery;
         this.requirementEvaluator = requirementEvaluator;
+        this.executionTargetRequired = executionTargetRequired;
+        this.executionTargetQuery = executionTargetQuery;
     }
 
     evaluate(cardDefinition, context = {}) {
@@ -20,6 +28,31 @@ class CardOfferingEligibilityService {
         if (card.category === "LAND") {
             if (!this.placementQuery?.hasAnyLegalPlacement(card.legacy)) {
                 return Object.freeze({ eligible: false, reason: "NO_LEGAL_PLACEMENT" });
+            }
+        }
+
+        const requiresExecutionTarget = typeof this.executionTargetRequired === "function"
+            ? this.executionTargetRequired(card, {
+                ...context,
+                state: this.state
+            }) === true
+            : false;
+        if (requiresExecutionTarget) {
+            if (typeof this.executionTargetQuery !== "function") {
+                return Object.freeze({
+                    eligible: false,
+                    reason: "EXECUTION_TARGET_QUERY_REQUIRED"
+                });
+            }
+            const targets = this.executionTargetQuery(card, {
+                ...context,
+                state: this.state
+            });
+            if (!Array.isArray(targets) || targets.length === 0) {
+                return Object.freeze({
+                    eligible: false,
+                    reason: "NO_LEGAL_EXECUTION_TARGET"
+                });
             }
         }
 

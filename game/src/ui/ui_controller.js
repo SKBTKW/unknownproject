@@ -1471,8 +1471,9 @@ class UIController {
             return;
         }
 
-        // ⚡ コマンドカードの場合: 発動確認ダイアログを開く
+        // ⚡ 対象指定Commandは盤面選択モードへ。通常Commandは従来どおり即時確認。
         if (category !== "LAND") {
+            if (this.beginTargetedCommandSelection(resCard, -1, reserveIdx)) return;
             this.triggerCommandCardPlay(resCard, -1, reserveIdx);
             return;
         }
@@ -1544,6 +1545,10 @@ class UIController {
 
     triggerCommandCardPlay(card, idx = -1, reserveIdx = -1) {
         if (!this.state || this.state.hasPickedThisTurn) return;
+        if (this.commandCardRequiresTarget(card)) {
+            this.beginTargetedCommandSelection(card, idx, reserveIdx);
+            return;
+        }
         const tObj = card.terrain || card;
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
         const cName = tObj.nameKey ? I18n.t(tObj.nameKey) : (tObj.id || "Card");
@@ -1604,7 +1609,7 @@ class UIController {
         // 🔄 選択中のカードを再度クリックした場合:
         // コマンドカードなら発動確認ダイアログを開く、土地カードなら選択解除
         if (this.selectedCardIdx === idx) {
-            if (category !== "LAND") {
+            if (category !== "LAND" && !this.commandCardRequiresTarget(card)) {
                 this.triggerCommandCardPlay(card, idx, -1);
                 return;
             }
@@ -1670,6 +1675,16 @@ class UIController {
         }
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
         const undoSys = this.undoSys || (typeof window !== "undefined" ? window.undoSys : null);
+
+        // 🎯 対象指定Command中は土地UndoよりCommand target選択を優先する。
+        if (this.selectedCard && this.commandCardRequiresTarget(this.selectedCard)) {
+            this.hideCellTooltip();
+            if (!this.isCommandExecutionTarget(this.selectedCard, r, c)) return false;
+            const selectedCard = this.selectedCard;
+            const selectedIdx = this.selectedCardIdx;
+            const result = this.playCommandCard(selectedCard, selectedIdx, { r, c });
+            return result?.success === true;
+        }
 
         // ↩️ 当ターン配置済みマスをクリックした場合は配置取り消し（Undo）
         if (undoSys && typeof undoSys.isCellPlacedThisTurn === "function" && undoSys.isCellPlacedThisTurn(r, c)) {
@@ -1828,7 +1843,42 @@ class UIController {
         this.hideCellTooltip();
     }
 
+    commandCardRequiresTarget(card = this.selectedCard) {
+        if (!card || !this.engine || typeof this.engine.commandCardRequiresTarget !== "function") return false;
+        return this.engine.commandCardRequiresTarget(card) === true;
+    }
+
+    getCommandCardExecutionTargets(card = this.selectedCard) {
+        if (!card || !this.engine || typeof this.engine.getCommandCardExecutionTargets !== "function") return [];
+        const targets = this.engine.getCommandCardExecutionTargets(card);
+        return Array.isArray(targets) ? targets : [];
+    }
+
+    isCommandExecutionTarget(card, r, c) {
+        return this.getCommandCardExecutionTargets(card).some(target =>
+            Number(target?.r) === r && Number(target?.c) === c
+        );
+    }
+
+    beginTargetedCommandSelection(card, handIdx = -1, reserveIdx = -1) {
+        if (!this.commandCardRequiresTarget(card)) return false;
+        this.selectedCard = card;
+        this.selectedCardIdx = handIdx;
+        this.selectedReserveIdx = reserveIdx;
+        if (focusLayerManager) focusLayerManager.onCardSelect();
+        this.render();
+        this.highlightPlaceableCells();
+        sfxManager.play("UI_CARD_SELECT");
+        return true;
+    }
+
     highlightPlaceableCells() {
+        if (typeof document !== "undefined") {
+            document.querySelectorAll(".cell.command-target-candidate").forEach(cell => {
+                cell.classList.remove("command-target-candidate");
+            });
+        }
+
         if (!this.selectedCard) {
             if (typeof window !== "undefined" && window.BlockPlacementSystem) {
                 window.BlockPlacementSystem.clearAllPreviews();
@@ -1838,9 +1888,14 @@ class UIController {
         const tObj = this.selectedCard.terrain || this.selectedCard;
         const category = this.selectedCard.category || tObj.category || "LAND";
         if (category !== "LAND") {
-            // 🛡️ コマンドカード選択時は土地配置ハイライトを完全停止
             if (typeof window !== "undefined" && window.BlockPlacementSystem) {
                 window.BlockPlacementSystem.clearAllPreviews();
+            }
+            if (this.commandCardRequiresTarget(this.selectedCard) && typeof document !== "undefined") {
+                for (const target of this.getCommandCardExecutionTargets(this.selectedCard)) {
+                    const cell = document.querySelector(`.cell[data-r="${target.r}"][data-c="${target.c}"]`);
+                    if (cell) cell.classList.add("command-target-candidate");
+                }
             }
             return;
         }
@@ -1853,6 +1908,9 @@ class UIController {
         if (!this.state || typeof document === "undefined") return;
         if (this.isTrialInteractionActive()) {
             this.updateTrialInterceptionPreview(r, c);
+            return;
+        }
+        if (this.selectedCard && this.commandCardRequiresTarget(this.selectedCard)) {
             return;
         }
         const cellData = this.getBoardDisplayGrid()[r][c];
@@ -2205,14 +2263,14 @@ class UIController {
         }
     }
 
-    playCommandCard(card, targetIdx) {
+    playCommandCard(card, targetIdx, target = null) {
         if (!this.engine || typeof this.engine.playCommandCard !== "function") return;
         let cardIdx = (typeof targetIdx === "number" && targetIdx >= 0) ? targetIdx : (this.state && this.state.handOffering ? this.state.handOffering.indexOf(card) : -1);
         const source = this.selectedReserveIdx !== -1
             ? { type: "RESERVE", index: this.selectedReserveIdx }
             : { type: "OFFERING", index: cardIdx };
 
-        const res = this.engine.playCommandCard(card, source);
+        const res = this.engine.playCommandCard(card, source, target);
         if (res && res.success) {
             const cardData = card?.terrain || card || {};
             if ((cardData.category || card?.category) === "MILITARY") this.advisorDockComponent?.observeMilitaryAction?.(cardData.id || cardData.nameKey || "MILITARY");
@@ -2227,6 +2285,7 @@ class UIController {
             if (focusLayerManager) focusLayerManager.onCardDeselect();
             this.render();
         }
+        return res;
     }
 
     toggleDirectiveModal() {

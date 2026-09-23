@@ -30,6 +30,30 @@ class CardEffectHandlerRouter {
         return this.handlers.has(cardId);
     }
 
+    requiresTarget(cardDefinition) {
+        const cardId = cardDefinition?.id;
+        const handler = cardId ? this.handlers.get(cardId) : null;
+        if (typeof handler === "function") return false;
+
+        const effects = cardDefinition?.effects;
+        return this.effectExecutor.requiresTarget(effects);
+    }
+
+    enumerateTargets(cardDefinition, context = {}) {
+        const cardId = cardDefinition?.id;
+        const handler = cardId ? this.handlers.get(cardId) : null;
+        if (typeof handler === "function") {
+            return [];
+        }
+
+        const effects = cardDefinition?.effects;
+        if (!Array.isArray(effects) || effects.length === 0) return [];
+        return this.effectExecutor.enumerateTargets(effects, {
+            cardDefinition,
+            ...context
+        });
+    }
+
     preflight(cardDefinition, context = {}) {
         const cardId = cardDefinition?.id;
         const handler = cardId ? this.handlers.get(cardId) : null;
@@ -39,7 +63,10 @@ class CardEffectHandlerRouter {
 
         const effects = cardDefinition?.effects;
         if (Array.isArray(effects) && effects.length > 0) {
-            return this.effectExecutor.preflight(effects, context);
+            return this.effectExecutor.preflight(effects, {
+                cardDefinition,
+                ...context
+            });
         }
 
         return Object.freeze({ handled: false, success: true, kind: "LEGACY_FALLBACK" });
@@ -51,7 +78,10 @@ class CardEffectHandlerRouter {
         if (typeof handler !== "function") {
             const effects = cardDefinition?.effects;
             if (Array.isArray(effects) && effects.length > 0) {
-                return this.effectExecutor.executeAll(effects, context);
+                return this.effectExecutor.executeAll(effects, {
+                    cardDefinition,
+                    ...context
+                });
             }
             return Object.freeze({ handled: false, success: false, reason: "UNHANDLED_CARD_EFFECT" });
         }

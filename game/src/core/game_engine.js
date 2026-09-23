@@ -7,6 +7,7 @@ import { UndoLandSystem } from '../systems/undo_land_system.js';
 import { GridEngine } from '../systems/grid_engine.js';
 import { SpecialBlockService } from '../systems/special_block_service.js';
 import { BoardDomainAdapter } from './board_domain_adapter.js';
+import { createCardDomainActionExecutor } from '../cards/card_domain_action_executor.js';
 import { BoardHistoryQuery } from './board_history_query.js';
 import { BuffSystem } from '../systems/buff_system.js';
 import { ChronicleSystem } from '../systems/chronicle_system.js';
@@ -107,6 +108,9 @@ class GameEngine {
                 gridEngine: this.gridEngine,
                 specialBlockService: this.specialBlockService
             }) : null);
+
+        this.cardDomainActionExecutor = dependencies.cardDomainActionExecutor
+            || createCardDomainActionExecutor(this);
 
         const DeckManagerClass = dependencies.DeckManagerClass || DeckManager;
         this.deckManager = dependencies.deckManager || (DeckManagerClass ? new DeckManagerClass(this.state, this) : null);
@@ -392,13 +396,29 @@ class GameEngine {
         });
     }
 
-    playCommandCard(card, source = { type: "OFFERING", index: -1 }) {
+    commandCardRequiresTarget(card) {
+        if (!card || !this.deckManager || typeof this.deckManager.cardRequiresExecutionTarget !== "function") {
+            return false;
+        }
+        const cardObj = card.terrain || card;
+        return this.deckManager.cardRequiresExecutionTarget(cardObj);
+    }
+
+    getCommandCardExecutionTargets(card) {
+        if (!card || !this.deckManager || typeof this.deckManager.enumerateCardExecutionTargets !== "function") {
+            return [];
+        }
+        const cardObj = card.terrain || card;
+        return this.deckManager.enumerateCardExecutionTargets(cardObj);
+    }
+
+    playCommandCard(card, source = { type: "OFFERING", index: -1 }, target = null) {
         return this.executeAction("PLAY_COMMAND_CARD", () => {
             if (this.deckManager && typeof this.deckManager.playCommandCard === "function") {
                 const cardObj = card.terrain || card;
                 const offeringIdx = source.type === "OFFERING" ? source.index : -1;
                 const reserveIdx = source.type === "RESERVE" ? source.index : -1;
-                const ok = this.deckManager.playCommandCard(cardObj, null, offeringIdx, reserveIdx);
+                const ok = this.deckManager.playCommandCard(cardObj, target, offeringIdx, reserveIdx);
                 const isSuccess = (ok && typeof ok === "object") ? ok.success !== false : ok !== false;
                 const diceCheck = (ok && typeof ok === "object") ? ok.diceCheck : null;
                 return { success: isSuccess, card, diceCheck, reason: isSuccess ? null : ok?.reason };
@@ -407,7 +427,7 @@ class GameEngine {
                 const cardObj = card.terrain || card;
                 const offeringIdx = source.type === "OFFERING" ? source.index : -1;
                 const reserveIdx = source.type === "RESERVE" ? source.index : -1;
-                const ok = this.state.playCommandCard(cardObj, null, offeringIdx, reserveIdx);
+                const ok = this.state.playCommandCard(cardObj, target, offeringIdx, reserveIdx);
                 const isSuccess = (ok && typeof ok === "object") ? ok.success !== false : ok !== false;
                 const diceCheck = (ok && typeof ok === "object") ? ok.diceCheck : null;
                 return { success: isSuccess, card, diceCheck, reason: isSuccess ? null : ok?.reason };

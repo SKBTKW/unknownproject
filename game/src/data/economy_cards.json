@@ -10,7 +10,37 @@
     "minStage": 1,
     "rarity": "C",
     "weight": 0.40,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "foodCostRationingActive",
+        "value": true
+      },
+      {
+        "type": "STATE_SET",
+        "key": "foodCostRationingDiscount",
+        "value": 0.4
+      },
+      {
+        "type": "STATE_SET",
+        "key": "foodCostHalvedTurns",
+        "value": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "🌾",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 1
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_WETLAND_RECLAMATION",
@@ -37,7 +67,25 @@
     "minStage": 1,
     "rarity": "C",
     "weight": 0.35,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "RESOURCE_DELTA",
+        "resource": "wood",
+        "amount": 8
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "buff": {
+          "icon": "🪵",
+          "category": "CARD_EFFECT"
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_GRANARY",
@@ -51,7 +99,25 @@
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.25,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_INCREMENT",
+        "key": "granaryCount",
+        "amount": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "buff": {
+          "icon": "🏛️",
+          "category": "CARD_EFFECT"
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_AGRICULTURAL_REFORM",
@@ -65,7 +131,25 @@
     "minStage": 1,
     "rarity": "R",
     "weight": 0.20,
-    "cyclePolicy": "UNIQUE"
+    "cyclePolicy": "UNIQUE",
+    "effects": [
+      {
+        "type": "STATE_INCREMENT",
+        "key": "permanentPlainsFoodBonus",
+        "amount": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "buff": {
+          "icon": "📜",
+          "category": "CARD_EFFECT"
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_PASTORAL_FARM",
@@ -107,7 +191,25 @@
     "minStage": 1,
     "rarity": "C",
     "weight": 0.35,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "RESOURCE_DELTA",
+        "resource": "wood",
+        "amount": 15
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "buff": {
+          "icon": "🧱",
+          "category": "CARD_EFFECT"
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_SAWMILL",
