@@ -89,7 +89,10 @@ class UIController {
         this.trialActionTrayComponent = (typeof document !== 'undefined')
             ? new TrialActionTrayComponent(this)
             : null;
-        this.trialController = new TrialController({ deploymentService: this.engine?.trialDeploymentService || null });
+        this.trialController = new TrialController({
+            deploymentService: this.engine?.trialDeploymentService || null,
+            defenseReservation: this.engine?.trialDefenseReservation || null
+        });
         this.trialPresentationState = new TrialPresentationState();
         this.trialCausalityPresenter = new TrialCausalityPresenter();
         this.trialAdvisorPublicReadModel = new TrialAdvisorPublicReadModel();
