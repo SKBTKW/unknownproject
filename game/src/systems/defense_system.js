@@ -132,6 +132,34 @@ export class DefenseSystem {
         return this.reconcileWithMax();
     }
 
+    applyPermanentDefenseDevelopment({
+        capacityBonus = 0,
+        vicinityDefenseBonus = 0
+    } = {}) {
+        if (!this.state) {
+            return {
+                success: false,
+                reason: "NO_STATE"
+            };
+        }
+
+        const capacity = toNonNegativeInteger(capacityBonus);
+        const vicinity = toNonNegativeInteger(vicinityDefenseBonus);
+        this.state.defenseCapacityBonus =
+            toNonNegativeInteger(this.state.defenseCapacityBonus) + capacity;
+        this.state.permanentVicinityDefenseBonus =
+            toNonNegativeInteger(this.state.permanentVicinityDefenseBonus) + vicinity;
+        this._syncLegacyDefenseValue();
+        const reconciled = this.reconcileWithMax();
+
+        return {
+            success: true,
+            capacityBonus: capacity,
+            vicinityDefenseBonus: vicinity,
+            ...reconciled
+        };
+    }
+
     reconcileWithMax({ initializeCurrent = false } = {}) {
         if (!this.state) {
             return { currentDefense: 0, maxDefense: BASE_HQ_DEFENSE, clamped: false };
