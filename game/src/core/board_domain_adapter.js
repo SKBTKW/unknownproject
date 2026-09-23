@@ -201,6 +201,53 @@ export class BoardDomainAdapter {
         return readEffectiveGreenery(target);
     }
 
+    readTrialDeploymentFacts(target) {
+        const r = Number.isInteger(target?.r) ? target.r : target?.row;
+        const c = Number.isInteger(target?.c) ? target.c : target?.column;
+        if (!Number.isInteger(r) || !Number.isInteger(c)) return null;
+        const cell = this.state?.grid?.[r]?.[c] || null;
+        if (!cell) return null;
+
+        const terrain = cell.terrain || null;
+        const capabilities = [...this.readCapabilities({ r, c })];
+        const trialTraits = this.readTrialTraits({ r, c }) || null;
+        return {
+            cell: { r, c },
+            placed: cell.placed === true,
+            isHQ: cell.isHQ === true,
+            terrain: {
+                terrainId: terrain?.terrainId || terrain?.id || cell.terrainId || null,
+                elevation: Number.isFinite(terrain?.e) ? terrain.e : null,
+                growthLevel: Number.isFinite(terrain?.gl) ? terrain.gl : null
+            },
+            capabilities,
+            trialTraits: trialTraits ? JSON.parse(JSON.stringify(trialTraits)) : null,
+            damaged: Boolean(cell.damageState || cell.damage || cell.isDamaged)
+        };
+    }
+
+    listTrialDeploymentOrigins() {
+        if (!Array.isArray(this.state?.grid)) return [];
+        const origins = [];
+        for (let r = 0; r < this.state.grid.length; r++) {
+            for (let c = 0; c < (this.state.grid[r]?.length || 0); c++) {
+                const facts = this.readTrialDeploymentFacts({ r, c });
+                if (!facts) continue;
+                const capabilityOrigin = facts.capabilities.includes('REINFORCEMENT_ORIGIN');
+                const traitOrigin = facts.trialTraits?.reinforcementOrigin === true;
+                if (!facts.isHQ && !capabilityOrigin && !traitOrigin) continue;
+                origins.push({
+                    id: facts.isHQ ? `HQ:${r}:${c}` : `ORIGIN:${r}:${c}`,
+                    kind: facts.isHQ ? 'HQ' : 'REINFORCEMENT_ORIGIN',
+                    cell: { r, c },
+                    capabilities: [...facts.capabilities],
+                    trialTraits: facts.trialTraits ? JSON.parse(JSON.stringify(facts.trialTraits)) : null
+                });
+            }
+        }
+        return origins;
+    }
+
     recordDamage(request) {
         return this.boardDamageService.recordDamage(request);
     }
