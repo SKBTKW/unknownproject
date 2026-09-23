@@ -13,6 +13,7 @@ import { TrialTerrainEffectResolver } from '../../trial/systems/trial_terrain_ef
 import { TRIAL_TERRAIN_EFFECTS } from '../../trial/domain/trial_types.js';
 import { serializeGameState } from '../state_serializer_base.js';
 import { hydrateGameState } from '../hydrate_game_state_base.js';
+import { GameEngine } from '../game_engine.js';
 
 function cell(r, c, overrides = {}) {
     return {
@@ -286,6 +287,24 @@ console.log('Board / Special Block / Defense v1 contract');
     hydrateGameState(restored, serialized);
     assert.equal(restored.grid[1][2].specialBlock.orientation, 'E');
     assert.equal(restored.grid[1][2].terrain.terrainId, 'GL1_PLAINS');
+}
+
+{
+    const engine = GameEngine.createGame({ runSeed: 260923 });
+    assert.ok(engine.specialBlockService, 'GameEngine exposes SpecialBlockService');
+    assert.ok(engine.boardDomainAdapter, 'GameEngine exposes BoardDomainAdapter');
+    assert.equal(engine.state.specialBlockService, engine.specialBlockService);
+    assert.equal(engine.state.boardDomainAdapter, engine.boardDomainAdapter);
+    assert.equal(
+        typeof engine.boardDomainAdapter.hasAnyLegalLandPlacement,
+        'function',
+        'Card Core can consume the live Board query boundary'
+    );
+    assert.equal(
+        typeof engine.boardDomainAdapter.readCapabilities,
+        'function',
+        'other domains can consume the live Board capability read boundary'
+    );
 }
 
 console.log('diagnose_board_special_block_defense_v1: PASS');
