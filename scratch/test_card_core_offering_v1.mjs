@@ -2137,6 +2137,85 @@ function makeGrid(rows, cols) {
         assert.equal(state.activeBuffs[0].category, "TACTICAL");
         assert.equal(state.logs.length, 1);
     }
+
+    {
+        const state = makeState();
+        state.food = 0;
+        state.grid = [[{
+            placed: true,
+            isHQ: false,
+            merged: false,
+            terrain: {
+                id: "GL2_FOREST",
+                terrainId: "GL2_FOREST"
+            }
+        }]];
+        const result = router.execute({ id: "CMD_SINGLE_CLEARING" }, {
+            state,
+            cardName: "伐採",
+            cardDescription: "legacy",
+            i18n: null
+        });
+        assert.equal(result.success, true);
+        assert.equal(state.grid[0][0].terrain.terrainId, "GL1_PLAINS");
+        assert.equal(state.wood, 20);
+        assert.equal(state.food, 3);
+        assert.equal(state.activeBuffs[0].icon, "🪓");
+    }
+
+    {
+        const state = makeState();
+        state.grid = [[
+            { placed: true, terrain: { terrainId: "GL2_FOREST" } },
+            { placed: true, terrain: { terrainId: "GL3_DEEP_FOREST" } },
+            { placed: true, terrain: { terrainId: "GL1_PLAINS" } }
+        ]];
+        const result = router.execute({ id: "CMD_SYSTEMATIC_LOGGING" }, {
+            state,
+            cardName: "計画伐採",
+            cardDescription: "legacy",
+            i18n: null
+        });
+        assert.equal(result.success, true);
+        assert.equal(state.wood, 12);
+        assert.equal(state.systematicLoggingTurns, 3);
+        assert.equal(state.systematicLoggingStartsNextTurn, true);
+        assert.equal(state.activeBuffs[0].category, "DEBUFF");
+    }
+
+    {
+        const state = makeState();
+        state.grid = [[
+            { placed: true, isHQ: false, searched: false, merged: false }
+        ]];
+        const explorationCalls = [];
+        const result = router.execute({ id: "CMD_LAND_EXPLORATION" }, {
+            state,
+            cardName: "土地探索",
+            cardDescription: "legacy",
+            i18n: null,
+            deckManager: {
+                _nextGameplayInt(min, max) {
+                    assert.equal(min, 0);
+                    assert.equal(max, 0);
+                    return 0;
+                },
+                executeExploration(r, c) {
+                    explorationCalls.push({ r, c });
+                    return { success: true };
+                }
+            }
+        });
+        assert.equal(result.success, true);
+        assert.deepEqual(explorationCalls, [{ r: 0, c: 0 }]);
+        assert.equal(state.logs.length, 1);
+    }
+
+    assert.deepEqual(
+        [...LEGACY_ONLY_IDS],
+        [],
+        "DeckManager must have no legacy-only card-id branches after compatibility isolation"
+    );
 }
 
 console.log("✅ Card Core / Offering v1 contract tests PASS");
