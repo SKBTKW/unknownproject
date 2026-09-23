@@ -1910,6 +1910,9 @@ class UIController {
             this.updateTrialInterceptionPreview(r, c);
             return;
         }
+        if (this.selectedCard && this.commandCardRequiresTarget(this.selectedCard)) {
+            return;
+        }
         const cellData = this.getBoardDisplayGrid()[r][c];
         const groupId = cellData ? (cellData.mergeGroupId || cellData.placementGroupId) : null;
         if (groupId) {
