@@ -169,7 +169,25 @@ export const ECONOMY_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "R",
     "weight": 0.2,
-    "cyclePolicy": "UNIQUE"
+    "cyclePolicy": "UNIQUE",
+    "effects": [
+      {
+        "type": "STATE_INCREMENT",
+        "key": "permanentPlainsFoodBonus",
+        "amount": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "buff": {
+          "icon": "📜",
+          "category": "CARD_EFFECT"
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_PASTORAL_FARM",
@@ -1360,7 +1378,25 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "R",
     "weight": 0.2,
-    "cyclePolicy": "UNIQUE"
+    "cyclePolicy": "UNIQUE",
+    "effects": [
+      {
+        "type": "STATE_INCREMENT",
+        "key": "permanentPlainsFoodBonus",
+        "amount": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "buff": {
+          "icon": "📜",
+          "category": "CARD_EFFECT"
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_PASTORAL_FARM",
