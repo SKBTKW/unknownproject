@@ -14,6 +14,7 @@ const CARD_EFFECT_TYPES = Object.freeze({
     DRAW_BIAS_SET: "DRAW_BIAS_SET",
     PROJECT_ADD: "PROJECT_ADD",
     LOG_CARD_ACTIVATED: "LOG_CARD_ACTIVATED",
+    RECONCILE_CONDITIONAL_BUFFS: "RECONCILE_CONDITIONAL_BUFFS",
     DOMAIN_ACTION: "DOMAIN_ACTION"
 });
 
@@ -136,6 +137,10 @@ class CardEffectExecutor {
                     : { success: false, reason: "BUFF_DEFINITION_REQUIRED" };
             case CARD_EFFECT_TYPES.LOG_CARD_ACTIVATED:
                 return { success: true };
+            case CARD_EFFECT_TYPES.RECONCILE_CONDITIONAL_BUFFS:
+                return typeof state?.checkConditionalBuffs === "function"
+                    ? { success: true }
+                    : { success: false, reason: "CONDITIONAL_BUFF_RECONCILE_REQUIRED" };
             case CARD_EFFECT_TYPES.DRAW_BIAS_SET:
                 return effect.bias && typeof effect.bias === "object"
                     ? { success: true }
@@ -256,6 +261,14 @@ class CardEffectExecutor {
                     ? i18n.t("LOG_CMD_ACTIVATED", { name, desc })
                     : `📜【${name}】`;
                 state.addLog(message || `📜【${name}】`);
+                return { success: true };
+            }
+
+            case CARD_EFFECT_TYPES.RECONCILE_CONDITIONAL_BUFFS: {
+                if (typeof state.checkConditionalBuffs !== "function") {
+                    return { success: false, reason: "CONDITIONAL_BUFF_RECONCILE_REQUIRED" };
+                }
+                state.checkConditionalBuffs();
                 return { success: true };
             }
 
