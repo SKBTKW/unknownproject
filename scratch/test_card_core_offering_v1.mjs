@@ -34,6 +34,12 @@ import {
     classifyLegacyCommandExecution,
     resolveDomainActionOwner
 } from "../game/src/cards/legacy_command_execution_inventory.js";
+import {
+    PROJECT_CARD_MIGRATION_STATUS,
+    PROJECT_CARD_MIGRATION_AUDIT,
+    PROJECT_MIGRATION_BLOCKED_IDS,
+    getProjectCardMigrationAudit
+} from "../game/src/cards/project_card_migration_audit.js";
 
 function makeGrid(rows, cols) {
     return Array.from({ length: rows }, () => Array.from({ length: cols }, () => ({})));
@@ -1680,6 +1686,55 @@ function makeGrid(rows, cols) {
         manager.lastOfferingGeneration.appliedMinimums[0]?.candidateId,
         "INVESTIGATION_LEGAL"
     );
+}
+
+// AK. Every Project-owned current SSOT branch is explicitly blocked until a Project Domain exists.
+{
+    const projectOwnedIds = DOMAIN_ACTION_REQUIRED_IDS
+        .filter(id => resolveDomainActionOwner(id) === DOMAIN_ACTION_OWNER.PROJECT)
+        .sort();
+
+    assert.deepEqual(
+        [...PROJECT_MIGRATION_BLOCKED_IDS].sort(),
+        projectOwnedIds,
+        "Project migration audit must cover exactly the Project-owned legacy branches"
+    );
+
+    for (const id of projectOwnedIds) {
+        const audit = getProjectCardMigrationAudit(id);
+        assert.ok(audit, `missing Project migration audit for ${id}`);
+        assert.ok(
+            Object.values(PROJECT_CARD_MIGRATION_STATUS).includes(audit.status),
+            `unknown Project migration status for ${id}`
+        );
+        assert.equal(typeof audit.legacyStateKey, "string");
+        assert.ok(audit.legacyStateKey.length > 0);
+    }
+
+    assert.equal(
+        PROJECT_CARD_MIGRATION_AUDIT.CMD_GREAT_RAMPART_PROJECT.status,
+        PROJECT_CARD_MIGRATION_STATUS.BLOCKED_SHADOWED_LEGACY
+    );
+}
+
+// AL. Blocked Project cards must not silently acquire declarative effects before their Domain exists.
+{
+    const economySource = JSON.parse(readFileSync(
+        new URL("../game/src/data/economy_cards.json", import.meta.url),
+        "utf8"
+    ));
+    const projectCards = economySource.filter(card =>
+        PROJECT_MIGRATION_BLOCKED_IDS.includes(card.id)
+    );
+
+    assert.equal(projectCards.length, PROJECT_MIGRATION_BLOCKED_IDS.length);
+    for (const card of projectCards) {
+        assert.equal(
+            Array.isArray(card.effects) && card.effects.length > 0,
+            false,
+            `${card.id} must stay on the legacy path while Project migration is blocked`
+        );
+    }
 }
 
 console.log("✅ Card Core / Offering v1 contract tests PASS");
