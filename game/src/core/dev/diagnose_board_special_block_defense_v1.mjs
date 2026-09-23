@@ -17,6 +17,9 @@ import { TRIAL_TERRAIN_EFFECTS } from '../../trial/domain/trial_types.js';
 import { serializeGameState } from '../state_serializer_base.js';
 import { hydrateGameState } from '../hydrate_game_state_base.js';
 import { GameEngine } from '../game_engine.js';
+import { GameFactHub, GAME_FACT_TYPES } from '../game_fact.js';
+import { BoardBattleSiteRecorder } from '../board_battle_site_recorder.js';
+import { BoardHistoryQuery } from '../board_history_query.js';
 import { sumSpecialBlockProduction } from '../special_block_production.js';
 import { CellViewDataService } from '../../services/cell_view_data_service.js';
 import {
@@ -841,6 +844,56 @@ console.log('Board / Special Block / Defense v1 contract');
     );
     assert.equal(production.unresolved.length, 1);
     assert.equal(production.unresolved[0].type, SPECIAL_BLOCK_TYPES.MINE);
+}
+
+{
+    const state = state5();
+    const grid = new GridEngine(state);
+    state.isHQVicinity = grid.isHQVicinity.bind(grid);
+    state.grid[0][0] = cell(0, 0, {
+        placed: true,
+        placementGroupId: 'battle-site-special',
+        terrain: { ...PLAINS }
+    });
+
+    const service = new SpecialBlockService(state);
+    const earthwork = service.createSpecialBlock(
+        SPECIAL_BLOCK_TYPES.EARTHWORK,
+        { r: 0, c: 0 }
+    );
+    assert.equal(earthwork.success, true);
+
+    const specialBefore = JSON.stringify(state.grid[0][0].specialBlock);
+    const hub = new GameFactHub();
+    const recorder = new BoardBattleSiteRecorder({ gameFactHub: hub, state });
+    const history = new BoardHistoryQuery({ state });
+
+    hub.emit(GAME_FACT_TYPES.TRIAL_BATTLE_RESOLVED, {
+        scenarioId: 'SPECIAL_BLOCK_BATTLE',
+        trialIndex: 1,
+        battleIndex: 0,
+        routeId: 'ROUTE_SPECIAL',
+        interceptCell: { r: 0, c: 0 },
+        outcome: 'REPEL',
+        playerActualPower: 10,
+        enemyActualPower: 8,
+        margin: 2
+    });
+    hub.emit(GAME_FACT_TYPES.TRIAL_RESULT_SETTLED, {
+        scenarioId: 'SPECIAL_BLOCK_BATTLE',
+        trialIndex: 1,
+        turn: 15,
+        outcome: 'SURVIVED'
+    });
+
+    assert.equal(history.hasBattleSite({ trialIndex: 1 }), true);
+    assert.equal(
+        JSON.stringify(state.grid[0][0].specialBlock),
+        specialBefore,
+        'settled Battle Site history coexists with Special Block without mutating facility state'
+    );
+    assert.equal(state.grid[0][0].entities?.length, 1);
+    recorder.dispose();
 }
 
 {
