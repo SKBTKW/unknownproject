@@ -2,6 +2,7 @@ import { I18n } from '../i18n.js';
 import { GlobalEventChoiceSystem } from '../systems/global_event_choice_system.js';
 import { GlobalEventChoiceComponent } from './global_event_choice_component.js';
 import { choiceText } from './global_event_choice_i18n.js';
+import { CapturedScoutInvestigationBridge } from '../warning/systems/captured_scout_investigation_bridge.js';
 
 function clone(value) {
     return value == null ? value : JSON.parse(JSON.stringify(value));
@@ -13,6 +14,8 @@ export class GlobalEventChoiceRuntimeIntegration {
         this.engine = uiController?.engine || null;
         this.manager = this.engine?.globalEventManager || null;
         this.active = null;
+        this.lastInvestigationResult = null;
+        this.investigationBridge = new CapturedScoutInvestigationBridge();
         this.system = new GlobalEventChoiceSystem({ factHub: uiController?.trialController?.gameFactHub || null });
         this.component = typeof document !== 'undefined'
             ? new GlobalEventChoiceComponent({
@@ -47,6 +50,10 @@ export class GlobalEventChoiceRuntimeIntegration {
         const { eventId, publicContext, sourceEventId } = this.active;
         const resolution = this.system.resolveChoice(eventId, choiceId, publicContext);
         if (sourceEventId) this.manager?.markChoiceResolved?.(sourceEventId, resolution);
+        this.lastInvestigationResult = this.investigationBridge.apply({
+            engine: this.engine,
+            resolution
+        });
         const turn = Number(this.ui?.state?.turn || 1);
         this.engine?.chronicleSystem?.record?.({
             turn,
