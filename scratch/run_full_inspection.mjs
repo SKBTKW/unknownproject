@@ -335,6 +335,7 @@ async function main() {
         ["Global Event Eligibility v1", "scratch/test_global_event_eligibility_v1.mjs"],
         ["Global Event NEXT_GLOBAL_EVENT Expiry", "scratch/test_global_event_next_event_expiry.mjs"],
         ["Global Event Recovery History Eligibility", "scratch/test_global_event_recovery_history_eligibility.mjs"],
+        ["Global Event Offering Weight Hook", "scratch/test_global_event_offering_weight_hook.mjs"],
     ];
     for (const [label, testPath] of investigationContracts) {
         const ok = await runCommand("node", [testPath]);
