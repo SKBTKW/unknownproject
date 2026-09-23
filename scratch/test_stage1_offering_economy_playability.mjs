@@ -437,7 +437,11 @@ function captureVerse(engine, seed) {
         materialProductionBreakdown: resourceBreakdown?.wood || null,
         zones: countTrueZones(state),
         links: state.mergeLinks instanceof Set ? state.mergeLinks.size : 0,
-        sockets: countDiscoveredSockets(state)
+        sockets: countDiscoveredSockets(state),
+        offeredLandIds: offering
+            .map(card => definitionOf(card))
+            .filter(definition => definition?.category === "LAND")
+            .map(definition => String(definition.id || "UNKNOWN"))
     };
 }
 
@@ -929,6 +933,102 @@ function printSingleCellOnlyImpact(currentRuns, singleCellRuns, removedCardIds) 
     );
 }
 
+
+function withStage1RareNormal1x2(weightScale, callback) {
+    const changed = LAND_CARDS_MASTER
+        .filter(card => Number(card.minStage || 1) <= 1 && countShapeCells(card.shape) >= 2)
+        .map(card => ({
+            card,
+            minStage: card.minStage,
+            weight: card.weight
+        }));
+
+    for (const entry of changed) {
+        if (String(entry.card.id || "").startsWith("CARD_MULTI_")) {
+            entry.card.minStage = 2;
+        } else {
+            entry.card.weight = Number(entry.card.weight || 0) * weightScale;
+        }
+    }
+
+    try {
+        return callback({
+            weightScale,
+            normal1x2Ids: changed
+                .filter(entry => !String(entry.card.id || "").startsWith("CARD_MULTI_"))
+                .map(entry => entry.card.id),
+            movedMultiIds: changed
+                .filter(entry => String(entry.card.id || "").startsWith("CARD_MULTI_"))
+                .map(entry => entry.card.id)
+        });
+    } finally {
+        for (const entry of changed) {
+            entry.card.minStage = entry.minStage;
+            entry.card.weight = entry.weight;
+        }
+    }
+}
+
+function rareNormal1x2Snapshot(name, runs, normal1x2Ids) {
+    const base = strategySnapshot(name, runs);
+    const normalSet = new Set(normal1x2Ids);
+    const offeredVerses = runs
+        .flatMap(run => run.trace)
+        .filter(row => (row.offeredLandIds || []).some(id => normalSet.has(id))).length;
+    const totalVerses = runs.reduce((sum, run) => sum + run.trace.length, 0);
+    const picks = runs
+        .flatMap(run => run.chosenLandCards || [])
+        .filter(pick => normalSet.has(pick.id));
+    return {
+        ...base,
+        offeredVerses,
+        totalVerses,
+        normal1x2Picks: picks.length
+    };
+}
+
+function printRareNormal1x2Impact(currentRuns, singleCellRuns, scenarios) {
+    const current = strategySnapshot("CURRENT_FIRST_LEGAL", currentRuns);
+    const single = strategySnapshot("STAGE1_1X1_ONLY", singleCellRuns);
+    console.log(
+        [
+            "RARE_NORMAL_1X2_BASELINES",
+            `current=🌾${average(current.food).toFixed(1)}/🧱${average(current.material).toFixed(1)}/tiles${average(current.tiles).toFixed(1)}`,
+            `oneByOne=🌾${average(single.food).toFixed(1)}/🧱${average(single.material).toFixed(1)}/tiles${average(single.tiles).toFixed(1)}`
+        ].join(" ")
+    );
+
+    for (const scenario of scenarios) {
+        const snap = rareNormal1x2Snapshot(
+            `NORMAL_1X2_WEIGHT_${Math.round(scenario.weightScale * 100)}PCT`,
+            scenario.runs,
+            scenario.normal1x2Ids
+        );
+        console.log(
+            [
+                "RARE_NORMAL_1X2_IMPACT",
+                `scale=${scenario.weightScale}`,
+                `normal=${scenario.normal1x2Ids.join(",")}`,
+                `movedMulti=${scenario.movedMultiIds.join(",")}`,
+                `V15🌾=${formatRange(snap.food)} avg=${average(snap.food).toFixed(1)}`,
+                `V15🧱=${formatRange(snap.material)} avg=${average(snap.material).toFixed(1)}`,
+                `V15🛡️=${formatRange(snap.defense)}`,
+                `tiles=${formatRange(snap.tiles)} avg=${average(snap.tiles).toFixed(1)}`,
+                `1x2OfferedVerses=${snap.offeredVerses}/${snap.totalVerses}(${percent(snap.offeredVerses, snap.totalVerses).toFixed(1)}%)`,
+                `1x2Picks=${snap.normal1x2Picks}/${snap.landActions}(${percent(snap.normal1x2Picks, snap.landActions).toFixed(1)}%)`,
+                `multiPicks=${snap.multi}`
+            ].join(" ")
+        );
+
+        assert.equal(snap.multi, 0, "rare normal 1x2 experiment must move Multi-Attribute LAND to Stage2");
+        assert.equal(
+            scenario.runs.every(run => run.trace.every(row => row.offeringCount > 0)),
+            true,
+            "rare normal 1x2 experiment must not create empty Offerings"
+        );
+    }
+}
+
 function average(values) {
     const finite = values.filter(Number.isFinite);
     return finite.length > 0
@@ -1139,6 +1239,29 @@ printSingleCellOnlyImpact(
     neutralRuns,
     singleCellExperiment.runs,
     singleCellExperiment.removedCardIds
+);
+
+const rareNormal1x2Scenarios = [0.25, 0.10, 0.05].map(weightScale =>
+    withStage1RareNormal1x2(weightScale, config => ({
+        ...config,
+        runs: TRACE_SEEDS.map(seed => runSeedTrace(seed, {
+            landSelection: "FIRST_LEGAL",
+            printDiagnostics: false,
+            requireMystic: false
+        }))
+    }))
+);
+assert.equal(
+    rareNormal1x2Scenarios.every(scenario =>
+        scenario.runs.every(run => run.settlements.length === 14)
+    ),
+    true,
+    "all rare normal 1x2 scenarios must reach Verse15"
+);
+printRareNormal1x2Impact(
+    neutralRuns,
+    singleCellExperiment.runs,
+    rareNormal1x2Scenarios
 );
 
 console.log(
