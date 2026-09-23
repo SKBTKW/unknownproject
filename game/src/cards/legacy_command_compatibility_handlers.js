@@ -45,6 +45,15 @@ function remainingTurnsText(context, turns) {
         : `${turns}T`;
 }
 
+function createFlagHandler({ key, icon, category = "CARD_EFFECT" }) {
+    return context => {
+        context.state[key] = true;
+        sourceBuff(context, { icon, category });
+        activationLog(context, icon);
+        return { success: true };
+    };
+}
+
 const LEGACY_COMMAND_COMPATIBILITY_HANDLERS = Object.freeze({
     CMD_AGRICULTURAL_POLICY(context) {
         context.state.permanentPlainsFoodBonus =
@@ -60,6 +69,128 @@ const LEGACY_COMMAND_COMPATIBILITY_HANDLERS = Object.freeze({
         return { success: true };
     },
 
+
+    CMD_BALLISTA_SET(context) {
+        if (context.state.defenseSystem) {
+            context.state.defenseSystem.increaseMaxCapacity(40);
+        } else {
+            context.state.defense = (context.state.defense || 0) + 40;
+        }
+        context.state.nextTrialDamageMitigation = 0.5;
+        sourceBuff(context, {
+            icon: "🏹",
+            badgeText: context?.i18n?.t
+                ? context.i18n.t("UI_DEFENSE_TRIAL_TAG")
+                : "試練対策",
+            category: "CARD_EFFECT"
+        });
+        activationLog(context, "🏹");
+        return { success: true };
+    },
+
+    FAC_GREAT_WINDMILL(context) {
+        if (!Array.isArray(context.state.activeConstructionProjects)) {
+            context.state.activeConstructionProjects = [];
+        }
+        context.state.activeConstructionProjects.push({
+            name: "FAC_GREAT_WINDMILL",
+            remainingTurns: 3,
+            woodCostPerTurn: 4
+        });
+        activationLog(context, "🏛️");
+        return { success: true };
+    },
+
+    LGD_DESPERATE_PACT(context) {
+        context.state.ember = (context.state.ember || 0) + 5;
+        context.state.handOfferingSize = 4;
+        context.state.nextTrialMultiplier = 1.5;
+        activationLog(context, "🔥");
+        return { success: true };
+    },
+
+    CMD_LAND_FOCUS(context) {
+        context.state.activeDrawBias = {
+            targetCategory: "LAND",
+            type: "UNTIL_BLOCKS",
+            untilValue: 6
+        };
+        sourceBuff(context, {
+            icon: "📜",
+            category: "CARD_EFFECT"
+        });
+        if (typeof context.state.checkConditionalBuffs === "function") {
+            context.state.checkConditionalBuffs();
+        }
+        activationLog(context, "📜");
+        return { success: true };
+    },
+
+    CMD_OUTPOST: createFlagHandler({
+        key: "hasOutpost",
+        icon: "🗼",
+        category: "PERMANENT"
+    }),
+    CMD_GUIDED_DEFENSE: createFlagHandler({
+        key: "guidedDefenseActive",
+        icon: "🚧",
+        category: "TACTICAL"
+    }),
+    CMD_HIGH_GROUND_FORMATION: createFlagHandler({
+        key: "highGroundFormationActive",
+        icon: "⛰️",
+        category: "TACTICAL"
+    }),
+    CMD_CAVALRY_HOST: createFlagHandler({
+        key: "cavalryHostActive",
+        icon: "🐎",
+        category: "TACTICAL"
+    }),
+    CMD_PASTORAL_EXPANSION: createFlagHandler({
+        key: "pastoralExpansionActive",
+        icon: "🐑",
+        category: "CARD_EFFECT"
+    }),
+    CMD_LIME_CONSTRUCTION: createFlagHandler({
+        key: "limeConstructionActive",
+        icon: "🧱",
+        category: "CARD_EFFECT"
+    }),
+    CMD_CAVALRY_SCOUTS: createFlagHandler({
+        key: "cavalryScoutsActive",
+        icon: "🐎",
+        category: "TACTICAL"
+    }),
+    CMD_LOCAL_IRON_ARMAMENT: createFlagHandler({
+        key: "localIronArmamentActive",
+        icon: "⚔️",
+        category: "TACTICAL"
+    }),
+    CMD_STONE_STRONGPOINT: createFlagHandler({
+        key: "stoneStrongpointActive",
+        icon: "🏰",
+        category: "TACTICAL"
+    }),
+    CMD_MUD_OBSTACLE: createFlagHandler({
+        key: "mudObstacleActive",
+        icon: "🛡️",
+        category: "TACTICAL"
+    }),
+    CMD_OUTPOST_SIGNAL: createFlagHandler({
+        key: "outpostSignalActive",
+        icon: "🗼",
+        category: "TACTICAL"
+    }),
+    CMD_SCOUT_ENEMY: createFlagHandler({
+        key: "scoutEnemyActive",
+        icon: "🔍",
+        category: "TACTICAL"
+    }),
+    CMD_OMEN_DREAM: createFlagHandler({
+        key: "omenDreamActive",
+        icon: "🔮",
+        category: "CARD_EFFECT"
+    }),
 
     CMD_CONSERVE_EMBER(context) {
         context.state.emberConsumptionReducedTurns = 1;
