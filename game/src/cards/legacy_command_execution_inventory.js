@@ -69,11 +69,14 @@ const LEGACY_ONLY_IDS = Object.freeze([
     "CMD_LAND_EXPLORATION"
 ]);
 
-// These IDs currently occur more than once in the giant legacy branch chain.
-// Keep the duplication explicit until the owning domain migration resolves it.
+// These IDs currently occur more than once in playCommandCard ID references.
+// RESETTLEMENT / GREAT_RAMPART have duplicate effect branches; ABANDONED_SETTLEMENT
+// has an additional CheckSystem preflight reference before its effect branch.
+// Keep every multi-reference case explicit until migration removes it.
 const DUPLICATE_LEGACY_BRANCH_IDS = Object.freeze([
     "CMD_RESETTLEMENT",
-    "CMD_GREAT_RAMPART_PROJECT"
+    "CMD_GREAT_RAMPART_PROJECT",
+    "CMD_ABANDONED_SETTLEMENT"
 ]);
 
 const CLASS_BY_ID = new Map([
