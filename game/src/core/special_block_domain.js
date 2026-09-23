@@ -50,6 +50,22 @@ function freezeStringArray(values) {
     return Array.isArray(values) ? Object.freeze([...values]) : values;
 }
 
+function freezeYieldMap(value) {
+    return value && typeof value === 'object'
+        ? Object.freeze({ ...value })
+        : value;
+}
+
+function freezeProductionDefinition(production) {
+    if (!production) return null;
+    return Object.freeze({
+        ...production,
+        yields: freezeYieldMap(production.yields),
+        perSourceYields: freezeYieldMap(production.perSourceYields),
+        perRelationYields: freezeYieldMap(production.perRelationYields)
+    });
+}
+
 function freezeDefinition(definition) {
     const placement = {
         ...(definition.placement || {}),
@@ -60,9 +76,7 @@ function freezeDefinition(definition) {
         ...definition,
         placement: Object.freeze(placement),
         baseTerrainInteraction: Object.freeze({ ...(definition.baseTerrainInteraction || {}) }),
-        production: definition.production
-            ? Object.freeze({ ...definition.production })
-            : null,
+        production: freezeProductionDefinition(definition.production),
         capabilities: Object.freeze([...(definition.capabilities || [])]),
         trialTraits: Object.freeze({
             ...defaultTrialTraits,

@@ -20,7 +20,14 @@ import { GameEngine } from '../game_engine.js';
 import { GameFactHub, GAME_FACT_TYPES } from '../game_fact.js';
 import { BoardBattleSiteRecorder } from '../board_battle_site_recorder.js';
 import { BoardHistoryQuery } from '../board_history_query.js';
-import { sumSpecialBlockProduction } from '../special_block_production.js';
+import {
+    SPECIAL_BLOCK_PRODUCTION_KINDS,
+    SPECIAL_BLOCK_PRODUCTION_STATUS,
+    SPECIAL_BLOCK_RELATION_NEIGHBORHOODS,
+    SPECIAL_BLOCK_SOURCE_SIZE_SOURCES,
+    SpecialBlockProductionResolver,
+    sumSpecialBlockProduction
+} from '../special_block_production.js';
 import { CellViewDataService } from '../../services/cell_view_data_service.js';
 import {
     DISPLAY_ROLE,
@@ -911,6 +918,263 @@ console.log('Board / Special Block / Defense v1 contract');
         typeof engine.boardDomainAdapter.readCapabilities,
         'function',
         'other domains can consume the live Board capability read boundary'
+    );
+}
+
+{
+    const definitions = new Map([
+        ['TEST_SOURCE_SIZE', {
+            id: 'TEST_SOURCE_SIZE',
+            production: {
+                status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
+                kind: SPECIAL_BLOCK_PRODUCTION_KINDS.SOURCE_SIZE,
+                sourceSizeSource: SPECIAL_BLOCK_SOURCE_SIZE_SOURCES.INITIAL_SNAPSHOT,
+                perSourceYields: { wood: 2 }
+            }
+        }],
+        ['TEST_RELATION', {
+            id: 'TEST_RELATION',
+            production: {
+                status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
+                kind: SPECIAL_BLOCK_PRODUCTION_KINDS.RELATION_COUNT,
+                relationCapability: BOARD_CAPABILITIES.MYSTIC_SOURCE,
+                relationNeighborhood: SPECIAL_BLOCK_RELATION_NEIGHBORHOODS.ORTHOGONAL,
+                perRelationYields: { mystic: 1 },
+                maxRelations: 3
+            }
+        }],
+        ['TEST_RELATION_INCOMPLETE', {
+            id: 'TEST_RELATION_INCOMPLETE',
+            production: {
+                status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
+                kind: SPECIAL_BLOCK_PRODUCTION_KINDS.RELATION_COUNT,
+                relationCapability: BOARD_CAPABILITIES.MYSTIC_SOURCE,
+                perRelationYields: { mystic: 1 }
+            }
+        }],
+        ['TEST_CONDITIONAL', {
+            id: 'TEST_CONDITIONAL',
+            production: {
+                status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
+                kind: SPECIAL_BLOCK_PRODUCTION_KINDS.CONDITIONAL,
+                strategyKey: 'HILL_BONUS'
+            }
+        }],
+        ['TEST_FIXED_INVALID', {
+            id: 'TEST_FIXED_INVALID',
+            production: {
+                status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
+                kind: SPECIAL_BLOCK_PRODUCTION_KINDS.FIXED,
+                yields: { wood: '4' }
+            }
+        }],
+        ['TEST_FIXED_NEGATIVE', {
+            id: 'TEST_FIXED_NEGATIVE',
+            production: {
+                status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
+                kind: SPECIAL_BLOCK_PRODUCTION_KINDS.FIXED,
+                yields: { wood: -1 }
+            }
+        }]
+    ]);
+    const resolver = new SpecialBlockProductionResolver({
+        definitionResolver: id => definitions.get(id) || null,
+        strategies: {
+            HILL_BONUS: ({ cell }) => ({
+                status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
+                yields: cell?.terrain?.terrainId === 'E2_HILL'
+                    ? { wood: 4 }
+                    : { wood: 0 }
+            })
+        }
+    });
+
+    const sourceState = state5();
+    sourceState.grid[0][0] = cell(0, 0, {
+        specialBlock: {
+            type: 'TEST_SOURCE_SIZE',
+            definitionId: 'TEST_SOURCE_SIZE',
+            sourceGroupReference: { initialSize: 4 }
+        }
+    });
+    const sourceResolved = resolver.resolveCell(sourceState, sourceState.grid[0][0], { r: 0, c: 0 });
+    assert.deepEqual(
+        {
+            status: sourceResolved.status,
+            yields: sourceResolved.yields,
+            kind: sourceResolved.kind
+        },
+        {
+            status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
+            yields: { food: 0, wood: 8, defense: 0, mystic: 0 },
+            kind: SPECIAL_BLOCK_PRODUCTION_KINDS.SOURCE_SIZE
+        },
+        'SOURCE_SIZE resolves only from explicit per-source yields and source snapshot size'
+    );
+    assert.equal(sourceResolved.damageEffect?.status, 'NONE');
+
+    definitions.set('TEST_SOURCE_SIZE_UNSPECIFIED', {
+        id: 'TEST_SOURCE_SIZE_UNSPECIFIED',
+        production: {
+            status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
+            kind: SPECIAL_BLOCK_PRODUCTION_KINDS.SOURCE_SIZE,
+            perSourceYields: { wood: 2 }
+        }
+    });
+    sourceState.grid[0][1] = cell(0, 1, {
+        specialBlock: {
+            type: 'TEST_SOURCE_SIZE_UNSPECIFIED',
+            definitionId: 'TEST_SOURCE_SIZE_UNSPECIFIED',
+            sourceGroupReference: { initialSize: 4 }
+        }
+    });
+    assert.equal(
+        resolver.resolveCell(sourceState, sourceState.grid[0][1], { r: 0, c: 1 }).status,
+        SPECIAL_BLOCK_PRODUCTION_STATUS.UNRESOLVED,
+        'SOURCE_SIZE fails closed until the source-size authority is explicit'
+    );
+
+    const relationState = state5();
+    relationState.grid[1][1] = cell(1, 1, {
+        specialBlock: {
+            type: 'TEST_RELATION',
+            definitionId: 'TEST_RELATION'
+        }
+    });
+    relationState.grid[0][1] = cell(0, 1, {
+        capabilities: [BOARD_CAPABILITIES.MYSTIC_SOURCE]
+    });
+    relationState.grid[2][1] = cell(2, 1, {
+        capabilities: [BOARD_CAPABILITIES.MYSTIC_SOURCE]
+    });
+    relationState.grid[1][0] = cell(1, 0, {
+        capabilities: [BOARD_CAPABILITIES.MYSTIC_SOURCE]
+    });
+    relationState.grid[1][2] = cell(1, 2, {
+        capabilities: [BOARD_CAPABILITIES.MYSTIC_SOURCE]
+    });
+    const relationResolved = resolver.resolveCell(relationState, relationState.grid[1][1], { r: 1, c: 1 });
+    assert.deepEqual(
+        {
+            status: relationResolved.status,
+            yields: relationResolved.yields,
+            kind: relationResolved.kind
+        },
+        {
+            status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
+            yields: { food: 0, wood: 0, defense: 0, mystic: 3 },
+            kind: SPECIAL_BLOCK_PRODUCTION_KINDS.RELATION_COUNT
+        },
+        'RELATION_COUNT respects explicit neighborhood, capability and maxRelations'
+    );
+    assert.equal(relationResolved.damageEffect?.status, 'NONE');
+
+    definitions.set('TEST_RELATION_NULL_CAP', {
+        id: 'TEST_RELATION_NULL_CAP',
+        production: {
+            status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
+            kind: SPECIAL_BLOCK_PRODUCTION_KINDS.RELATION_COUNT,
+            relationCapability: BOARD_CAPABILITIES.MYSTIC_SOURCE,
+            relationNeighborhood: SPECIAL_BLOCK_RELATION_NEIGHBORHOODS.ORTHOGONAL,
+            perRelationYields: { mystic: 1 },
+            maxRelations: null
+        }
+    });
+    relationState.grid[3][1] = cell(3, 1, {
+        specialBlock: {
+            type: 'TEST_RELATION_NULL_CAP',
+            definitionId: 'TEST_RELATION_NULL_CAP'
+        }
+    });
+    relationState.grid[2][1] = cell(2, 1, {
+        capabilities: [BOARD_CAPABILITIES.MYSTIC_SOURCE]
+    });
+    relationState.grid[4][1] = cell(4, 1, {
+        capabilities: [BOARD_CAPABILITIES.MYSTIC_SOURCE]
+    });
+    assert.equal(
+        resolver.resolveCell(relationState, relationState.grid[3][1], { r: 3, c: 1 }).yields.mystic,
+        2,
+        'null maxRelations means no explicit cap rather than a zero cap'
+    );
+
+    relationState.grid[3][3] = cell(3, 3, {
+        specialBlock: {
+            type: 'TEST_RELATION_INCOMPLETE',
+            definitionId: 'TEST_RELATION_INCOMPLETE'
+        }
+    });
+    assert.equal(
+        resolver.resolveCell(relationState, relationState.grid[3][3], { r: 3, c: 3 }).status,
+        SPECIAL_BLOCK_PRODUCTION_STATUS.UNRESOLVED,
+        'RELATION_COUNT fails closed when neighborhood semantics are unspecified'
+    );
+
+    relationState.grid[0][0] = cell(0, 0, {
+        placed: true,
+        terrain: { ...HILL },
+        specialBlock: {
+            type: 'TEST_CONDITIONAL',
+            definitionId: 'TEST_CONDITIONAL'
+        }
+    });
+    assert.equal(
+        resolver.resolveCell(relationState, relationState.grid[0][0], { r: 0, c: 0 }).yields.wood,
+        4,
+        'CONDITIONAL remains an injected strategy boundary rather than facility-id branching'
+    );
+
+    const runtimeState = state5();
+    runtimeState.grid[0][0] = cell(0, 0, {
+        placed: true,
+        terrain: { ...HILL },
+        specialBlock: {
+            type: 'TEST_CONDITIONAL',
+            definitionId: 'TEST_CONDITIONAL'
+        }
+    });
+    runtimeState.specialBlockProductionResolver = resolver;
+    assert.deepEqual(
+        sumSpecialBlockProduction(runtimeState).yields,
+        { food: 0, wood: 4, defense: 0, mystic: 0 },
+        'ProductionCalculator-facing helper honors an injected runtime resolver'
+    );
+
+    relationState.grid[0][3] = cell(0, 3, {
+        specialBlock: {
+            type: 'TEST_FIXED_INVALID',
+            definitionId: 'TEST_FIXED_INVALID'
+        }
+    });
+    assert.equal(
+        resolver.resolveCell(relationState, relationState.grid[0][3], { r: 0, c: 3 }).status,
+        SPECIAL_BLOCK_PRODUCTION_STATUS.UNRESOLVED,
+        'numeric strings in production definitions fail closed instead of being coerced'
+    );
+
+    relationState.grid[0][4] = cell(0, 4, {
+        specialBlock: {
+            type: 'TEST_FIXED_NEGATIVE',
+            definitionId: 'TEST_FIXED_NEGATIVE'
+        }
+    });
+    assert.equal(
+        resolver.resolveCell(relationState, relationState.grid[0][4], { r: 0, c: 4 }).status,
+        SPECIAL_BLOCK_PRODUCTION_STATUS.UNRESOLVED,
+        'negative production definitions fail closed'
+    );
+
+    sourceState.grid[0][2] = cell(0, 2, {
+        specialBlock: {
+            type: 'TEST_SOURCE_SIZE',
+            definitionId: 'TEST_SOURCE_SIZE',
+            sourceGroupReference: { initialSize: 2.5 }
+        }
+    });
+    assert.equal(
+        resolver.resolveCell(sourceState, sourceState.grid[0][2], { r: 0, c: 2 }).status,
+        SPECIAL_BLOCK_PRODUCTION_STATUS.UNRESOLVED,
+        'SOURCE_SIZE requires an integer source snapshot size'
     );
 }
 
