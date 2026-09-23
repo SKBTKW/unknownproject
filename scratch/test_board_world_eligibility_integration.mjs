@@ -43,8 +43,16 @@ assert.equal(boardQuery.hasEntity("PALISADE"), false);
 assert.equal(boardQuery.hasCapability("WATER_SOURCE"), true);
 assert.equal(boardQuery.hasCapability("OBSERVATION"), true);
 assert.equal(boardQuery.hasCapability("OBSERVATION_SITE"), true);
-assert.equal(boardQuery.hasCapability("MILITARY"), true);
-assert.equal(boardQuery.hasCapability("INVESTIGATION"), true);
+assert.equal(
+    boardQuery.hasCapability("MILITARY"),
+    false,
+    "WATCHTOWER observation capability must not imply MILITARY"
+);
+assert.equal(
+    boardQuery.hasCapability("INVESTIGATION"),
+    false,
+    "WATCHTOWER observation capability must not imply INVESTIGATION"
+);
 assert.equal(boardQuery.hasCapability("PRODUCTION"), true);
 assert.equal(boardQuery.hasCapability("MYSTIC_SOURCE"), false);
 

@@ -98,15 +98,16 @@ assert.equal(breakdown.damageEffect.status, BOARD_DAMAGE_EFFECT_STATUS.UNRESOLVE
 const specialProduction = resolveSpecialBlockProduction(state, cell, { r: 0, c: 0 });
 assert.equal(specialProduction.damageEffect.status, BOARD_DAMAGE_EFFECT_STATUS.UNRESOLVED);
 
-// Existing capabilities and Trial traits are not silently disabled.
+// Damage must not mutate the owning Special Block semantics.
+// WATCHTOWER is observation-only in the current Board contract.
 const capabilities = readCellCapabilities(cell);
-assert.equal(capabilities.has(BOARD_CAPABILITIES.MILITARY_SITE), true);
-assert.equal(capabilities.has(BOARD_CAPABILITIES.INVESTIGATION_SITE), true);
+assert.equal(capabilities.has(BOARD_CAPABILITIES.MILITARY_SITE), false);
+assert.equal(capabilities.has(BOARD_CAPABILITIES.INVESTIGATION_SITE), false);
 assert.equal(capabilities.has(BOARD_CAPABILITIES.OBSERVATION_SITE), true);
 
 const traits = readSpecialBlockTrialTraits(cell);
-assert.equal(traits.interceptionAllowed, true);
-assert.equal(traits.suppressTerrainTactic, true);
+assert.equal(traits.interceptionAllowed, null);
+assert.equal(traits.suppressTerrainTactic, false);
 
 // View model exposes unresolved effects without modifying displayed yields.
 const view = new CellViewDataService().getCellViewData(state, 0, 0);

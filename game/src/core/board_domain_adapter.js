@@ -4,7 +4,11 @@
    ============================================================= */
 
 import { resolvePlacementGeometry } from './placement_geometry.js';
-import { BOARD_CAPABILITIES, readCellCapabilities } from './special_block_domain.js';
+import {
+    BOARD_CAPABILITIES,
+    readCellCapabilities,
+    readEffectiveGreenery
+} from './special_block_domain.js';
 import { BoardDamageService } from './board_damage_service.js';
 import { SpecialBlockService } from '../systems/special_block_service.js';
 
@@ -188,6 +192,13 @@ export class BoardDomainAdapter {
 
     readTrialTraits(entityOrTarget) {
         return this.specialBlockService.readTrialTraits(entityOrTarget);
+    }
+
+    readEffectiveGreenery(target) {
+        if (Number.isInteger(target?.r) && Number.isInteger(target?.c)) {
+            return readEffectiveGreenery(this.state?.grid?.[target.r]?.[target.c] || null);
+        }
+        return readEffectiveGreenery(target);
     }
 
     recordDamage(request) {
