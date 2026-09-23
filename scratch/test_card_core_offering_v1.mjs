@@ -2079,7 +2079,11 @@ function makeGrid(rows, cols) {
         }]
     };
 
-    assert.equal(manager.isCardEligible(card, 1, 0), false);
+    assert.equal(
+        manager.isCardEligible(card, 1, 0),
+        true,
+        "Offering legality must not hide a board-legal Zone card solely because current payment is unsafe"
+    );
     const result = manager.playCommandCard(card, { r: 0, c: 0 });
     assert.equal(result.success, false);
     assert.equal(result.reason, "ZONE_CONVERSION_CARD_PAYMENT_STATE_UNSAFE");
@@ -2087,7 +2091,64 @@ function makeGrid(rows, cols) {
     assert.equal(state.material, 30);
 }
 
-// AR. DeckManager performs declarative effect preflight only before payment.
+// AR. Zone target enumeration stays legal even when current resources cannot afford activation.
+{
+    const engine = {
+        boardDomainAdapter: {
+            quoteZoneConversionCost() {
+                return { status: "RESOLVED", resources: { food: 10, wood: 10 }, conversionCount: 0 };
+            },
+            enumerateZoneConversionCandidates() {
+                return [{ valid: true, groupId: "zone_a", zoneAttribute: "PLAINS" }];
+            },
+            validateZoneConversionCandidateAfterPayment() {
+                return { valid: true, reasons: [], groupId: "zone_a" };
+            },
+            resolveZoneConversionGroupId() { return "zone_a"; },
+            readZoneSemantic() { return { groupId: "zone_a", cells: [{ r: 0, c: 0 }] }; },
+            createZoneConversion() { throw new Error("unaffordable activation must never execute"); }
+        }
+    };
+    engine.cardDomainActionExecutor = createCardDomainActionExecutor(engine);
+
+    const state = {
+        turn: 1,
+        stage: { id: 1 },
+        food: 2,
+        wood: 3,
+        material: 3,
+        defense: 0,
+        mystic: 0,
+        ember: 0,
+        reserveSlots: [],
+        activeBuffs: [],
+        consumedUniqueCards: [],
+        usedUniqueCards: [],
+        addLog() {}
+    };
+    const manager = new DeckManager(state, engine);
+    manager.cycleSystem = null;
+    const card = {
+        id: "CMD_ZONE_UNAFFORDABLE_BUT_BOARD_LEGAL",
+        category: "COMMAND",
+        cost: { food: 10, material: 10 },
+        effects: [{
+            type: CARD_EFFECT_TYPES.DOMAIN_ACTION,
+            action: CARD_DOMAIN_ACTIONS.CREATE_ZONE_CONVERSION,
+            definitionId: "ZONE_TEST"
+        }]
+    };
+
+    assert.equal(manager.isCardEligible(card, 1, 0), true);
+    assert.equal(manager.enumerateCardExecutionTargets(card).length, 1);
+    const result = manager.playCommandCard(card, { r: 0, c: 0 });
+    assert.equal(result.success, false);
+    assert.equal(result.reason, "ZONE_CONVERSION_CARD_PAYMENT_STATE_UNSAFE");
+    assert.equal(state.food, 2);
+    assert.equal(state.wood, 3);
+}
+
+// AS. DeckManager performs declarative effect preflight only before payment.
 {
     let preflightCalls = 0;
     let executeCalls = 0;
