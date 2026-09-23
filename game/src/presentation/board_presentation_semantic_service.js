@@ -1,6 +1,7 @@
 import { isIrrigationInfluence } from '../core/irrigation_rules.js';
 import { getWaterSourceInfluenceType } from '../core/lake_rules.js';
 import { resolvePlacedBlockProduction } from '../core/land_production_contract.js';
+import { hasRoadBetween } from '../core/road_network.js';
 
 const CARDINAL_DIRECTIONS = Object.freeze([
     Object.freeze({ direction: 'NORTH', dr: -1, dc: 0 }),
@@ -276,6 +277,14 @@ export class BoardPresentationSemanticService {
                 && currentZoneId !== neighborZoneId
                 && linkedZoneIds.has(neighborZoneId)
             );
+            const road = Boolean(
+                neighborCell
+                && hasRoadBetween(
+                    state,
+                    { r: facts.r, c: facts.c },
+                    { r: nr, c: nc }
+                )
+            );
 
             const neighborInfluence = neighborCell
                 ? this.getInfluence(state, nr, nc)
@@ -295,6 +304,7 @@ export class BoardPresentationSemanticService {
                 samePlacementGroup,
                 sameZone,
                 linked,
+                road,
                 placementBoundary: Boolean(currentPlacementGroupId && !samePlacementGroup),
                 zoneBoundary: Boolean(currentZoneId && !sameZone),
                 influenceBoundary: Object.freeze(influenceBoundary)

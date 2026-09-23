@@ -6,6 +6,7 @@ import { ProductionCalculator } from './systems/production_calculator.js';
 import { MaintenanceFallbackSystem } from './systems/maintenance_fallback_system.js';
 import { rotateShapeMatrix } from './core/placement_geometry.js';
 import { isWaterSourceInfluence } from './core/lake_rules.js';
+import { normalizeRoadEdgeIds } from './core/road_network.js';
 
 class GameState {
     constructor(dependencies = {}) {
@@ -58,6 +59,7 @@ class GameState {
             this.placementGroupCounter = 1;
             this.mergedBlocks = {};
             this.mergeLinks = new Set(dependencies.mergeLinks || []);
+            this.roadEdges = new Set(normalizeRoadEdgeIds(dependencies.roadEdges));
             this.grantedConnectionPairs = new Set();
 
             // ⚔️ 3大試練スケジュール（±3前後ランダム決定 ＆ 5T前アナウンス）

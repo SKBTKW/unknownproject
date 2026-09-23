@@ -672,6 +672,14 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_road_network_foundation.mjs",
+      "purpose": "canonical road network foundation",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_safe_integration_runner.mjs",
       "purpose": "safe integration runner",
       "suite": "existing",
@@ -1088,6 +1096,14 @@
       "path": "scratch/test_web25d_placement_preview_renderer.mjs",
       "purpose": "web25d placement preview renderer",
       "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_web25d_road_overlay_renderer.mjs",
+      "purpose": "web25d road overlay renderer",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
     },
     {
       "path": "scratch/test_web25d_trial_overlay_renderer.mjs",

@@ -1,6 +1,7 @@
 import { Web25DPhaseCRenderer } from './web25d_phase_c_renderer.js';
 import { resolveWeb25DElevationPixels } from './web25d_canvas_renderer.js';
 import { drawWeb25DZoneLinkOverlay } from './web25d_zone_link_overlay_renderer.js';
+import { drawWeb25DRoadOverlay } from './web25d_road_overlay_renderer.js';
 
 /**
  * Phase 2.5D-E renderer.
@@ -15,6 +16,14 @@ export class Web25DPhaseERenderer extends Web25DPhaseCRenderer {
 
     shouldDrawZoneLinkEdge() {
         return true;
+    }
+
+    shouldDrawRoadCell(cell) {
+        return this.shouldDrawZoneLinkCell(cell);
+    }
+
+    shouldDrawRoadEdge(cell, edge) {
+        return this.shouldDrawZoneLinkEdge(cell, edge);
     }
 
     redrawPriorityLandmarks() {
@@ -33,6 +42,13 @@ export class Web25DPhaseERenderer extends Web25DPhaseCRenderer {
 
     render() {
         super.render();
+        drawWeb25DRoadOverlay({
+            ctx: this.ctx,
+            projection: this.projection,
+            readModel: this.readModel,
+            shouldDrawCell: cell => this.shouldDrawRoadCell(cell),
+            shouldDrawEdge: (cell, edge) => this.shouldDrawRoadEdge(cell, edge)
+        });
         drawWeb25DZoneLinkOverlay({
             ctx: this.ctx,
             projection: this.projection,

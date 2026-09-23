@@ -127,7 +127,7 @@ PERMANENT Buff
 | ID | 状態 | 現在 |
 | :--- | :---: | :--- |
 | `CMD_GRANARY_NETWORK` | **Planned / Partial / Player-facing description mismatch / Eligibility gap** | 永続state骨格あり。表示説明の維持費強化は未接続。`reqGranaries`未評価。 |
-| `CMD_INDUSTRIAL_ROAD` | **Planned / Partial / Player-facing description mismatch / Eligibility gap** | `industrialRoadActive` とBuffまでは存在。表示説明の道路接続・産出+20%・Trial道路利用は未実装。`reqIndustrySpecialBlocks`未評価。 |
+| `CMD_INDUSTRIAL_ROAD` | **Planned / Partial / Player-facing description mismatch / Eligibility gap** | `industrialRoadActive` とBuff、およびcanonical `roadEdges` / Trial道路消費基盤までは存在。ただしこのカード自身は道路edgeを生成せず、産出+20%も未接続。`reqIndustrySpecialBlocks`未評価。 |
 | `CMD_IRRIGATION_NETWORK` | **Planned / Partial / Player-facing description mismatch / Eligibility gap** | state骨格あり。表示説明の最大8農地恒久🌾+1は未接続。`reqIrrigationDone`未評価。 |
 | `CMD_INDUSTRIAL_CLUSTER` | **Planned / Partial / Player-facing description mismatch / Eligibility gap** | state骨格あり。表示説明のProject🧱コスト20%軽減は未接続。`reqLinkedDistinctIndustries`未評価。 |
 

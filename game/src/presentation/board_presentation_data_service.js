@@ -50,6 +50,13 @@ function projectDefenseAllocations(items, disclose) {
     return (items || []).map(item => projectDefenseAllocation(item, disclose));
 }
 
+function projectRoadDisclosure(edges, disclose) {
+    if (disclose) return edges;
+    return Object.freeze((edges || []).map(edge =>
+        Object.freeze({ ...edge, road: false })
+    ));
+}
+
 export class BoardPresentationDataService {
     constructor({ cellViewDataService = null, semanticService = null } = {}) {
         this.cellViewDataService = cellViewDataService || new CellViewDataService();
@@ -73,6 +80,7 @@ export class BoardPresentationDataService {
             presentationState.viewPreset
         );
         const trial = trialSemanticData || emptyTrialBoardSemanticData();
+        const showRoads = profile.roads !== "HIDDEN";
         const showRoutes = profile.trialRoutes !== "HIDDEN";
         const showInterception = profile.interception !== "HIDDEN";
         const showDefenseAllocation = profile.defenseAllocation !== "HIDDEN";
@@ -142,6 +150,7 @@ export class BoardPresentationDataService {
             const battle = battleIndex.get(key) || null;
             const tacticalEffects = tacticalEffectIndex.get(key) || [];
             const semantic = this.semanticService.getCellSemantic(sourceState, facts, linkIndex);
+            const visibleEdges = projectRoadDisclosure(semantic.edges, showRoads);
             const display = Object.freeze({
                 ...(semantic.display || {}),
                 searched: Boolean(sourceCell?.searched)
@@ -150,6 +159,7 @@ export class BoardPresentationDataService {
             return Object.freeze({
                 ...facts,
                 ...semantic,
+                edges: visibleEdges,
                 display,
                 interaction: Object.freeze({
                     selected: sameCell(presentationState.selectedCell, r, c),

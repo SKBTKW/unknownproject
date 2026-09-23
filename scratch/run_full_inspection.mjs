@@ -340,6 +340,7 @@ async function main() {
         ["Enemy tactic selection", "node", ["game/src/trial/dev/diagnose_enemy_tactic_selection.mjs"]],
         ["Trial force deployment bridge", "node", ["game/src/trial/dev/diagnose_trial_force_deployment_bridge.mjs"]],
         ["Trial route cost policy", "node", ["game/src/trial/dev/diagnose_trial_route_cost_policy.mjs"]],
+        ["Road network foundation", "node", ["scratch/test_road_network_foundation.mjs"]],
         ["Trial route visual semantics", "node", ["scratch/test_trial_route_visual_semantics.mjs"]],
         ["Trial tactical effect board semantics", "node", ["scratch/test_trial_tactical_effect_board_semantics.mjs"]],
         ["Warning state fact bridge", "node", ["scratch/test_warning_state_fact_bridge.mjs"]],
@@ -475,6 +476,7 @@ async function main() {
         ["Landmark production", "node", ["scratch/web25d_landmark_production_validation.mjs"]],
         ["HQ beacon priority", "node", ["scratch/web25d_hq_beacon_priority_validation.mjs"]],
         ["Zone / Link overlay", "node", ["scratch/test_web25d_zone_link_overlay_renderer.mjs"]],
+        ["Road overlay", "node", ["scratch/test_web25d_road_overlay_renderer.mjs"]],
         ["Viewport fit", "node", ["scratch/web25d_viewport_fit_validation.mjs"]],
     ]);
     if (!web25DVisualFocusedOk) process.exit(1);

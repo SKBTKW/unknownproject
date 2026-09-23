@@ -29,7 +29,8 @@ check(layoutState.includes("this.boardPresentationState?.viewMode")
 check(routeCss.startsWith('@import url("./board_context_mode.css");'),
 "loaded Trial board stylesheet imports board-context presentation rules");
 check(presentationGrid.includes("data-board-yields-visibility")
-    && presentationGrid.includes("data-board-sockets-visibility"),
+    && presentationGrid.includes("data-board-sockets-visibility")
+    && presentationGrid.includes("data-board-roads-visibility"),
 "2D board exposes presentation-profile visibility instead of hard-coding Trial disclosure");
 check(contextCss.includes('[data-board-yields-visibility="SUPPRESSED"] .tile-yield-line')
     && contextCss.includes('[data-board-yields-visibility="SUPPRESSED"] .socket-yield-line')
@@ -68,6 +69,14 @@ check(contextCss.includes('[data-board-battle-markers-visibility="SECONDARY"] .c
 check(presentationGrid.includes("trial-defense-allocation-badge")
     && presentationGrid.includes("resolveTrialDefenseAllocationBadge"),
 "2D board materializes defense allocation from renderer-neutral Trial cell data");
+check(presentationGrid.includes("board-road-segments")
+    && presentationGrid.includes("resolveBoardRoadDirections"),
+"2D board materializes roads from renderer-neutral logical edge semantics");
+check(contextCss.includes('[data-board-roads-visibility="SECONDARY"] .board-road-segments')
+    && contextCss.includes('[data-board-roads-visibility="SUPPRESSED"] .board-road-segments')
+    && contextCss.includes('[data-board-roads-visibility="HIDDEN"] .board-road-segments'),
+"2D road segments consume independent roads profile visibility");
+
 check(contextCss.includes('[data-board-defense-allocation-visibility="SECONDARY"] .trial-defense-allocation-badge')
     && contextCss.includes('[data-board-defense-allocation-visibility="SUPPRESSED"] .trial-defense-allocation-badge')
     && contextCss.includes('[data-board-defense-allocation-visibility="HIDDEN"] .trial-defense-allocation-badge'),
