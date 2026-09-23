@@ -347,7 +347,7 @@ function confirmPlan(fixture, decisions = [{ routeId: "R1", cell: { r: 0, c: 2 }
     const plains = f.deploymentService.previewAllocation({
         routeId: "R1",
         interceptCell: { r: 0, c: 1 },
-        requestedDefense: 3
+        requestedDefense: 4
     });
     assert.notEqual(hill.foodCost, plains.foodCost);
     assert.notEqual(hill.materialCost, plains.materialCost);
