@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { EnemyObservationProjector } from '../game/src/warning/systems/enemy_observation_projector.js';
+import { createEnemyStateTransitionResolver } from '../game/src/trial/systems/enemy_state_transition_resolver.js';
 
 const projector = new EnemyObservationProjector();
 
@@ -56,5 +57,45 @@ const hiddenOnly = projector.project({
 });
 assert.equal(hiddenOnly.scaleBand, null, 'Warning must not derive scale from hidden combat values');
 assert.deepEqual(hiddenOnly.directionHints, [], 'Warning must not infer route direction from hidden routes');
+
+const transitionResolver = createEnemyStateTransitionResolver();
+const transitionedTruth = transitionResolver({
+    previousEnemyState: {
+        observable: {
+            directionHints: ['NORTH_ACTIVITY'],
+            movementTraits: ['NIGHT_MOVEMENT'],
+            terrainTraits: ['FOREST_ACTIVITY']
+        }
+    },
+    currentThreat: { strategicSuppression: 14 },
+    verse: 8,
+    trialIndex: 1
+});
+
+assert.deepEqual(transitionedTruth.observable, {
+    scaleBand: null,
+    directionHints: ['NORTH_ACTIVITY'],
+    physiqueTraits: ['MEDIUM_BODY_PRESENT'],
+    equipmentTraits: ['STANDARD_EQUIPMENT'],
+    movementTraits: ['NIGHT_MOVEMENT'],
+    terrainTraits: ['FOREST_ACTIVITY']
+}, 'Trial Truth transition must expose only coarse categorical force traits');
+
+const transitionedProfile = projector.project(transitionedTruth);
+assert.deepEqual(transitionedProfile.physiqueTraits, ['MEDIUM_BODY_PRESENT']);
+assert.deepEqual(transitionedProfile.equipmentTraits, ['STANDARD_EQUIPMENT']);
+for (const forbidden of ['strategicSuppression', 'armyStructure', 'forces', 'commander']) {
+    assert.equal(Object.hasOwn(transitionedProfile, forbidden), false, `${forbidden} leaked from generated Truth observation`);
+}
+
+const zeroForceTruth = transitionResolver({
+    previousEnemyState: transitionedTruth,
+    currentThreat: { strategicSuppression: 0 },
+    verse: 9,
+    trialIndex: 1
+});
+assert.deepEqual(zeroForceTruth.observable.physiqueTraits, [], 'stale physique observations must clear when the current army has no force profiles');
+assert.deepEqual(zeroForceTruth.observable.equipmentTraits, [], 'stale equipment observations must clear when the current army has no force profiles');
+assert.deepEqual(zeroForceTruth.observable.directionHints, ['NORTH_ACTIVITY'], 'facets owned by other Truth sources must be preserved');
 
 console.log('warning observation boundary: PASS');
