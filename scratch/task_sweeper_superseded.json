@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "target": "AoT260922",
+  "entries": [
+    {
+      "branch": "aot-task/AoT260922/board/special-block-defense-v1",
+      "expectedHeadSha": "fdd9936442e603f243f0e1121dc65d77dc0a20e3",
+      "replacementPr": 135,
+      "note": "PR #123 explicitly states it was superseded by clean PR #135."
+    },
+    {
+      "branch": "aot-task/AoT260922/board/special-block-production-v1",
+      "expectedHeadSha": "5f50e616a45c11fe16390599fab14e176cfa9831",
+      "replacementPr": 147,
+      "note": "PR #131 is explicitly superseded; final production replacement merged as PR #147."
+    },
+    {
+      "branch": "aot-task/AoT260922/board/special-block-production-v1-r2",
+      "expectedHeadSha": "9fdbe05716ec5ca1900517c9d3ef2875cc76f242",
+      "replacementPr": 147,
+      "note": "PR #136 is explicitly marked superseded by PR #147."
+    },
+    {
+      "branch": "aot-task/AoT260922/board/zone-conversion-foundation-v1",
+      "expectedHeadSha": "c9410fb412219f16d2d92050feeeda3405c52fea",
+      "replacementPr": 159,
+      "note": "PR #149 is explicitly superseded; the clean foundation ultimately merged as PR #159."
+    },
+    {
+      "branch": "aot-task/AoT260922/cards/card-core-offering-v1-followup",
+      "expectedHeadSha": "6b4ef4c9bd0607fb147904bda7ba4712428c6ab0",
+      "replacementPr": 132,
+      "note": "PR #120 body explicitly says the work was replayed into PR #132."
+    },
+    {
+      "branch": "aot-task/AoT260922/cards/domain-actions-v2",
+      "expectedHeadSha": "77cd339fbbfb59a60f56ffdb961c4af0b023f0d7",
+      "replacementPr": 181,
+      "note": "PR #154 is explicitly marked superseded by clean replay PR #181."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/socket-terrain-id-canonicalization-r2",
+      "expectedHeadSha": "9d05658b17e351c4fd4c74a6acf18de35a0879c8",
+      "replacementPr": 91,
+      "note": "PR #89 explicitly says it was superseded by a fresh TASK; replacement scope merged as PR #91."
+    },
+    {
+      "branch": "aot-task/AoT260922/presentation/web25d-multi-attribute-preview",
+      "expectedHeadSha": "7b64d2e160d10bac0637a0df106d4a6f76ba2eb9",
+      "replacementPr": 96,
+      "note": "PR #94 explicitly says it was superseded by a fresh TASK; replacement merged as PR #96."
+    }
+  ]
+}
