@@ -997,8 +997,13 @@ console.log('Board / Special Block / Defense v1 contract');
             sourceGroupReference: { initialSize: 4 }
         }
     });
+    const sourceResolved = resolver.resolveCell(sourceState, sourceState.grid[0][0], { r: 0, c: 0 });
     assert.deepEqual(
-        resolver.resolveCell(sourceState, sourceState.grid[0][0], { r: 0, c: 0 }),
+        {
+            status: sourceResolved.status,
+            yields: sourceResolved.yields,
+            kind: sourceResolved.kind
+        },
         {
             status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
             yields: { food: 0, wood: 8, defense: 0, mystic: 0 },
@@ -1006,6 +1011,7 @@ console.log('Board / Special Block / Defense v1 contract');
         },
         'SOURCE_SIZE resolves only from explicit per-source yields and source snapshot size'
     );
+    assert.equal(sourceResolved.damageEffect?.status, 'NONE');
 
     definitions.set('TEST_SOURCE_SIZE_UNSPECIFIED', {
         id: 'TEST_SOURCE_SIZE_UNSPECIFIED',
@@ -1047,8 +1053,13 @@ console.log('Board / Special Block / Defense v1 contract');
     relationState.grid[1][2] = cell(1, 2, {
         capabilities: [BOARD_CAPABILITIES.MYSTIC_SOURCE]
     });
+    const relationResolved = resolver.resolveCell(relationState, relationState.grid[1][1], { r: 1, c: 1 });
     assert.deepEqual(
-        resolver.resolveCell(relationState, relationState.grid[1][1], { r: 1, c: 1 }),
+        {
+            status: relationResolved.status,
+            yields: relationResolved.yields,
+            kind: relationResolved.kind
+        },
         {
             status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
             yields: { food: 0, wood: 0, defense: 0, mystic: 3 },
@@ -1056,6 +1067,7 @@ console.log('Board / Special Block / Defense v1 contract');
         },
         'RELATION_COUNT respects explicit neighborhood, capability and maxRelations'
     );
+    assert.equal(relationResolved.damageEffect?.status, 'NONE');
 
     definitions.set('TEST_RELATION_NULL_CAP', {
         id: 'TEST_RELATION_NULL_CAP',
