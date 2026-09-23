@@ -1377,7 +1377,7 @@ const landSystemJson = JSON.parse(
 
 {
     const state = createState();
-    placeExisting(state, 2, 0, PLAINS, "existing");
+    placeExisting(state, 0, 0, PLAINS, "existing");
 
     const restoredTrialCard = {
         id: "CARD_TEST_HILL_MOUNTAIN",
@@ -1402,8 +1402,8 @@ const landSystemJson = JSON.parse(
         deckManager: { consumeCardIfUnique() {} }
     });
     const placed = grid.placeShape(
-        1,
         0,
+        1,
         restoredTrialCard.shape,
         restoredTrialCard,
         -1,
@@ -1411,10 +1411,10 @@ const landSystemJson = JSON.parse(
     );
     assert.equal(placed.success, true);
 
-    const placedGroupId = state.grid[1][0].placementGroupId;
-    assert.equal(state.grid[1][1].placementGroupId, placedGroupId);
-    assert.equal(state.grid[1][0].terrain.terrainId, "E2_HILL");
-    assert.equal(state.grid[1][1].terrain.terrainId, "E3_MOUNTAIN");
+    const placedGroupId = state.grid[0][1].placementGroupId;
+    assert.equal(state.grid[0][2].placementGroupId, placedGroupId);
+    assert.equal(state.grid[0][1].terrain.terrainId, "E2_HILL");
+    assert.equal(state.grid[0][2].terrain.terrainId, "E3_MOUNTAIN");
     assert.equal(state.placedBlockProduction[placedGroupId].yields.defense, 3);
 
     const serialized = serializeGameState(state);
@@ -1423,15 +1423,15 @@ const landSystemJson = JSON.parse(
         resolveCardMaster: () => restoredTrialCard
     });
 
-    assert.equal(restored.grid[1][0].placementGroupId, placedGroupId);
-    assert.equal(restored.grid[1][1].placementGroupId, placedGroupId);
-    assert.equal(restored.grid[1][0].terrain.terrainId, "E2_HILL");
-    assert.equal(restored.grid[1][1].terrain.terrainId, "E3_MOUNTAIN");
+    assert.equal(restored.grid[0][1].placementGroupId, placedGroupId);
+    assert.equal(restored.grid[0][2].placementGroupId, placedGroupId);
+    assert.equal(restored.grid[0][1].terrain.terrainId, "E2_HILL");
+    assert.equal(restored.grid[0][2].terrain.terrainId, "E3_MOUNTAIN");
     assert.equal(restored.placedBlockProduction[placedGroupId].yields.defense, 3);
 
     const terrainResolver = new TrialTerrainEffectResolver();
-    assert.equal(terrainResolver.canInterceptAt(restored.grid[1][0]), true);
-    assert.equal(terrainResolver.canInterceptAt(restored.grid[1][1]), false);
+    assert.equal(terrainResolver.canInterceptAt(restored.grid[0][1]), true);
+    assert.equal(terrainResolver.canInterceptAt(restored.grid[0][2]), false);
 }
 
 {
