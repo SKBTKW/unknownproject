@@ -884,6 +884,51 @@ function printLandPickSummary(runs) {
 }
 
 
+
+function withStage1SingleCellOnly(callback) {
+    const changed = LAND_CARDS_MASTER
+        .filter(card => Number(card.minStage || 1) <= 1 && countShapeCells(card.shape) >= 2)
+        .map(card => ({ card, minStage: card.minStage }));
+
+    for (const entry of changed) {
+        entry.card.minStage = 2;
+    }
+
+    try {
+        return callback(changed.map(entry => entry.card.id));
+    } finally {
+        for (const entry of changed) {
+            entry.card.minStage = entry.minStage;
+        }
+    }
+}
+
+function printSingleCellOnlyImpact(currentRuns, singleCellRuns, removedCardIds) {
+    const current = strategySnapshot("CURRENT_FIRST_LEGAL", currentRuns);
+    const single = strategySnapshot("STAGE1_1X1_ONLY", singleCellRuns);
+
+    const avgDelta = (nextValues, baseValues) => average(nextValues) - average(baseValues);
+    console.log(
+        [
+            "SINGLE_CELL_ONLY_IMPACT",
+            `removed=${removedCardIds.join(",")}`,
+            `currentV15=🌾${formatRange(current.food)}(avg${average(current.food).toFixed(1)})/🧱${formatRange(current.material)}(avg${average(current.material).toFixed(1)})/🛡️${formatRange(current.defense)}/tiles${formatRange(current.tiles)}`,
+            `singleV15=🌾${formatRange(single.food)}(avg${average(single.food).toFixed(1)})/🧱${formatRange(single.material)}(avg${average(single.material).toFixed(1)})/🛡️${formatRange(single.defense)}/tiles${formatRange(single.tiles)}`,
+            `deltaAvg=🌾${avgDelta(single.food, current.food).toFixed(1)}/🧱${avgDelta(single.material, current.material).toFixed(1)}/tiles${avgDelta(single.tiles, current.tiles).toFixed(1)}`,
+            `singleTwoCell=${single.twoCell}/${single.landActions}`,
+            `singleMulti=${single.multi}/${single.landActions}`
+        ].join(" ")
+    );
+
+    assert.equal(single.twoCell, 0, "Stage1 1x1-only experiment must never place a 2+ cell LAND");
+    assert.equal(single.multi, 0, "Stage1 1x1-only experiment must never place a Multi-Attribute LAND");
+    assert.equal(
+        singleCellRuns.every(run => run.trace.every(row => row.offeringCount > 0)),
+        true,
+        "Stage1 1x1-only experiment must not create an empty Offering"
+    );
+}
+
 function average(values) {
     const finite = values.filter(Number.isFinite);
     return finite.length > 0
@@ -1076,6 +1121,25 @@ assert.equal(
     "neutral Stage1 strategy must also reach Verse15 with fourteen settlements"
 );
 printStrategySensitivitySummary(runs, neutralRuns);
+
+const singleCellExperiment = withStage1SingleCellOnly(removedCardIds => ({
+    removedCardIds,
+    runs: TRACE_SEEDS.map(seed => runSeedTrace(seed, {
+        landSelection: "FIRST_LEGAL",
+        printDiagnostics: false,
+        requireMystic: false
+    }))
+}));
+assert.equal(
+    singleCellExperiment.runs.every(run => run.settlements.length === 14),
+    true,
+    "Stage1 1x1-only experiment must reach Verse15 on all audited seeds"
+);
+printSingleCellOnlyImpact(
+    neutralRuns,
+    singleCellExperiment.runs,
+    singleCellExperiment.removedCardIds
+);
 
 console.log(
     `PASS Stage1 playability audit: ${TRACE_SEEDS.length} seeds x Verse1-15 + reserve + food settlement + Multi-Attribute + Zone/Link`
