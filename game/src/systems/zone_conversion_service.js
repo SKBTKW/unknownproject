@@ -80,6 +80,12 @@ function normalizeDefinitions(definitions) {
 function stateResource(state, key) {
     if (key === 'wood') return Number(state?.wood ?? state?.material ?? 0) || 0;
     if (key === 'ember') return Number(state?.ember ?? 0) || 0;
+    if (key === 'defense') {
+        if (state?.defenseSystem && typeof state.defenseSystem.getCurrentDefense === 'function') {
+            return Number(state.defenseSystem.getCurrentDefense()) || 0;
+        }
+        return Number(state?.currentDefense ?? state?.defense ?? 0) || 0;
+    }
     return Number(state?.[key] ?? 0) || 0;
 }
 
