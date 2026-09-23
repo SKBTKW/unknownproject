@@ -139,3 +139,81 @@ export const STAGE1_TRIAL1_PROBE_PLANS = Object.freeze([
 export const UNRESOLVED_DEPLOYMENT_PROFILE = Object.freeze({
     status: TRIAL_DEPLOYMENT_COST_PROFILE_STATUS.UNRESOLVED
 });
+
+
+export function resolveFirstRunBurdenShare({
+    requestedDefense = 0,
+    defenseAvailable = 0,
+    distance = 0,
+    stage1MaxDistance = 4
+} = {}) {
+    const defense = Math.max(0, Number(requestedDefense) || 0);
+    const available = Math.max(0, Number(defenseAvailable) || 0);
+    const defenseFraction = available > 0
+        ? Math.min(1, defense / available)
+        : 0;
+    const distanceFraction = stage1MaxDistance > 0
+        ? Math.min(1, Math.max(0, Number(distance) || 0) / stage1MaxDistance)
+        : 0;
+
+    // FirstRun spectacle probe only:
+    // - meaningful deployment starts expensive
+    // - committing most defense drives the burden toward 75%
+    // - a far deployment can push a full commitment to 80%
+    // This is intentionally NOT a product balance rule yet.
+    const share = 0.25
+        + (0.45 * defenseFraction)
+        + (0.10 * distanceFraction);
+
+    return Math.min(0.80, Math.max(0, share));
+}
+
+export function evaluateFirstRunBurdenAgainstSamples({
+    samples = [],
+    plans = []
+} = {}) {
+    const rows = [];
+    for (const sample of samples) {
+        for (const plan of plans) {
+            const defenseAvailable = Math.max(0, Number(sample.defense) || 0);
+            const requestedDefense = Math.max(
+                0,
+                Math.min(
+                    defenseAvailable,
+                    Number(plan.requestedDefense ?? defenseAvailable) || 0
+                )
+            );
+            const distance = Math.max(0, Number(plan.distance) || 0);
+            const burdenShare = resolveFirstRunBurdenShare({
+                requestedDefense,
+                defenseAvailable,
+                distance
+            });
+
+            const foodAvailable = Math.max(0, Number(sample.food) || 0);
+            const materialAvailable = Math.max(0, Number(sample.material) || 0);
+            const foodCost = Math.ceil(foodAvailable * burdenShare);
+            const materialCost = Math.ceil(materialAvailable * burdenShare);
+
+            rows.push({
+                sampleId: sample.id,
+                planId: plan.id,
+                requestedDefense,
+                defenseAvailable,
+                distance,
+                burdenShare,
+                foodAvailable,
+                materialAvailable,
+                foodCost,
+                materialCost,
+                foodRemaining: foodAvailable - foodCost,
+                materialRemaining: materialAvailable - materialCost,
+                affordable:
+                    foodCost <= foodAvailable
+                    && materialCost <= materialAvailable
+                    && requestedDefense <= defenseAvailable
+            });
+        }
+    }
+    return { success: true, rows };
+}
