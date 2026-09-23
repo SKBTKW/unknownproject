@@ -679,7 +679,7 @@ console.log('Board / Special Block / Defense v1 contract');
     );
     assert.equal(state.grid[1][1].terrain.gl, 2, 'selected-cell effect does not destroy source cluster');
 
-    const legacyLoggingCell = cell(3, 3, {
+    const legacyLoggingCell = cell(0, 0, {
         placed: true,
         terrain: { ...FOREST, gl: 1 },
         specialBlock: {
@@ -692,7 +692,7 @@ console.log('Board / Special Block / Defense v1 contract');
         new BoardDomainAdapter({
             state: { grid: [[legacyLoggingCell]] },
             gridEngine: null
-        }).readEffectiveGreenery(legacyLoggingCell),
+        }).readEffectiveGreenery({ r: 0, c: 0 }),
         1,
         'legacy saves with already-materialized GL-1 are not decremented twice'
     );
