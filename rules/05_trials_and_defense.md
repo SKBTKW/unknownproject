@@ -538,6 +538,20 @@ routeはTrial開始時に外から手書きで与える本番仕様にはしな�
 - 調査・警戒システムは、この生成済みrouteの情報を段階的に公開する。
 - 嘘のroute情報を生成するのではなく、情報解像度を変える。
 
+### 現在の道路実装境界
+
+道路の存在正本は `GameState.roadEdges` とする。各要素は上下左右に隣接する2セル間の無向edgeであり、保存・復元・BoardPresentationでも同じ正本を使用する。
+
+`TrialRouteCostPolicy` は通常時このcanonical道路を参照し、道路edgeを進む場合は現行仮値 `roadMultiplier = 0.6` を適用する。テストや将来の例外ルール向けの `roadResolver` 注入境界は維持する。
+
+ただし、通常Runで道路edgeを新規生成するプレイヤー操作・カード実行はまだ未接続である。《産業街道》も現時点では `industrialRoadActive` を立てるだけで、`roadEdges` を生成しない。
+
+したがって現在は、
+
+> **道路の正本・保存復元・表示・Trial経路コスト消費は接続済み。道路を敷設するゲームルールは未接続。**
+
+と扱う。
+
 具体的な pathfinding アルゴリズム、同コスト時のtie-break、複数routeの分離条件は未確定。
 
 ---
