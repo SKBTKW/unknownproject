@@ -967,6 +967,14 @@
       ]
     },
     {
+      "path": "scratch/test_trial_deployment_cost_resolver.mjs",
+      "purpose": "Canonical configurable Trial deployment cost resolver and unresolved-profile fail-closed contract",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_trial_deployment_economy.mjs",
       "purpose": "Trial deployment economy fixed-placement v1, atomic payment, stale-state rejection, semantic origin/capability consumption",
       "suite": "existing",
