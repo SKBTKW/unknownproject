@@ -355,6 +355,14 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_first_run_activation_store.mjs",
+      "purpose": "browser first-run activation persistence and completion boundary",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_first_run_game_engine_integration.mjs",
       "purpose": "first run game engine integration",
       "suite": "existing",
