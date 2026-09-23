@@ -1683,7 +1683,7 @@ class UIController {
             const selectedCard = this.selectedCard;
             const selectedIdx = this.selectedCardIdx;
             const result = this.playCommandCard(selectedCard, selectedIdx, { r, c });
-            return result !== false;
+            return result?.success === true;
         }
 
         // ↩️ 当ターン配置済みマスをクリックした場合は配置取り消し（Undo）
