@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 import { DeckManager } from "../game/src/systems/deck_manager.js";
 import { normalizeCardDefinitionV1 } from "../game/src/cards/card_definition_v1.js";
@@ -631,6 +632,39 @@ function makeGrid(rows, cols) {
                 || state.usedUniqueCards.includes(testCase.id),
                 `${testCase.id} UNIQUE consumption must remain active`);
         }
+    }
+}
+
+// Q. Migrated effects stay identical between JSON SSOT and generated command master.
+{
+    const economySource = JSON.parse(readFileSync(
+        new URL("../game/src/data/economy_cards.json", import.meta.url),
+        "utf8"
+    ));
+    const mysticSource = JSON.parse(readFileSync(
+        new URL("../game/src/data/mystic_cards.json", import.meta.url),
+        "utf8"
+    ));
+    const sourceCards = [...economySource, ...mysticSource];
+    const migratedIds = [
+        "CMD_EMERGENCY_LEVY",
+        "CMD_LOGGING_CAMP",
+        "CMD_LEYLINE_RESONANCE",
+        "CMD_VOICE_BENEATH_EARTH",
+        "CMD_REVELATION_CHOICE",
+        "CMD_TWO_FUTURES"
+    ];
+
+    for (const id of migratedIds) {
+        const source = sourceCards.find(card => card.id === id);
+        const generated = COMMAND_CARDS_MASTER.find(card => card.id === id);
+        assert.ok(source, `missing SSOT card ${id}`);
+        assert.ok(generated, `missing generated card ${id}`);
+        assert.deepEqual(
+            generated.effects,
+            source.effects,
+            `${id} generated effects must match JSON SSOT exactly`
+        );
     }
 }
 
