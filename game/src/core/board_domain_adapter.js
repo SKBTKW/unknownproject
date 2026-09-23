@@ -78,13 +78,17 @@ export class BoardDomainAdapter {
         specialBlockService = null,
         boardDamageService = null,
         zoneConversionService = null,
+        zoneConversionDefinitions = null,
         trialDeploymentSemanticSource = null
     } = {}) {
         this.state = state || gridEngine?.state || null;
         this.gridEngine = gridEngine || null;
         this.specialBlockService = specialBlockService || new SpecialBlockService(this.state);
         this.boardDamageService = boardDamageService || new BoardDamageService({ state: this.state });
-        this.zoneConversionService = zoneConversionService || new ZoneConversionService({ state: this.state });
+        this.zoneConversionService = zoneConversionService || new ZoneConversionService({
+            state: this.state,
+            definitions: zoneConversionDefinitions || {}
+        });
         this.trialDeploymentSemanticSource = trialDeploymentSemanticSource || this.zoneConversionService;
     }
 
