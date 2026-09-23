@@ -790,7 +790,42 @@ function makeGrid(rows, cols) {
     }
 }
 
-// S. Migrated effects stay identical between JSON SSOT and generated command master.
+// S. Granary migration preserves legacy behavior.
+{
+    const card = COMMAND_CARDS_MASTER.find(candidate => candidate.id === "CMD_GRANARY");
+    assert.ok(card?.effects?.length === 3);
+
+    const state = {
+        turn: 1,
+        food: 20,
+        wood: 30,
+        material: 30,
+        mystic: 0,
+        ember: 5,
+        granaryCount: 2,
+        reserveSlots: [],
+        consumedUniqueCards: [],
+        usedUniqueCards: [],
+        activeBuffs: [],
+        logs: [],
+        addBuff(buff) { this.activeBuffs.push(buff); },
+        addLog(log) { this.logs.push(log); }
+    };
+    const manager = new DeckManager(state, {});
+    manager.cycleSystem = null;
+    const result = manager.playCommandCard(card);
+
+    assert.equal(result.success, true);
+    assert.equal(state.wood, 10, "granary wood cost drift");
+    assert.equal(state.material, 10, "shared command cost keeps material mirror behavior");
+    assert.equal(state.granaryCount, 3);
+    assert.equal(state.activeBuffs[0].id, "CMD_GRANARY");
+    assert.equal(state.activeBuffs[0].icon, "🏛️");
+    assert.equal(state.logs.length, 1);
+}
+
+// T. Migrated effects stay identical between JSON SSOT and generated command master.
+
 
 
 {
@@ -816,7 +851,8 @@ function makeGrid(rows, cols) {
         "CMD_MANIFEST_MIRACLE",
         "CMD_RATIONING",
         "CMD_VIGILANCE",
-        "CMD_MYSTIC_FOCUS"
+        "CMD_MYSTIC_FOCUS",
+        "CMD_GRANARY"
     ];
 
     for (const id of migratedIds) {
