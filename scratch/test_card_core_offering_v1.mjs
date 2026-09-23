@@ -1220,4 +1220,32 @@ function makeGrid(rows, cols) {
     );
 }
 
+// AC. GameEngine exposes command target enumeration without UI reaching into DeckManager internals.
+{
+    const expected = [{ r: 3, c: 4 }];
+    const fakeEngine = {
+        deckManager: {
+            enumerateCardExecutionTargets(card) {
+                assert.equal(card.id, "CMD_ENGINE_TARGET_QUERY");
+                return expected;
+            }
+        }
+    };
+
+    assert.deepEqual(
+        GameEngine.prototype.getCommandCardExecutionTargets.call(
+            fakeEngine,
+            { id: "CMD_ENGINE_TARGET_QUERY", category: "COMMAND" }
+        ),
+        expected
+    );
+    assert.deepEqual(
+        GameEngine.prototype.getCommandCardExecutionTargets.call(
+            { deckManager: null },
+            { id: "CMD_ENGINE_TARGET_QUERY", category: "COMMAND" }
+        ),
+        []
+    );
+}
+
 console.log("✅ Card Core / Offering v1 contract tests PASS");
