@@ -42,7 +42,7 @@ Global Eventは、長期計画を無作為に無効化するためではなく�
 | `EVENT_NEW_GENERATION` | 新たな世代 | **Partial** — `OFFERING_WEIGHT_TAG_BOOST(POPULATION)`定義はあるが、現`DeckManager`は`GlobalEventManager.applyOfferingWeightEffects()`を呼ばないため、Offeringへの実効効果は未接続。 |
 | `EVENT_CRAFTSMAN_BOOM` | 職人たちの活況 | **Partial** — `OFFERING_WEIGHT_TAG_BOOST(CONSTRUCTION)`定義はあるが、Offering抽選側hook未接続。 |
 | `EVENT_BOUNTIFUL_SEASON` | 豊穣の季節 | **Implemented / Partial chain** — 平地🌾倍率1.25は産出計算へ接続済み。終了後の`EVENT_NEW_GENERATION` Weight補正はSelector側で参照され、`NEXT_GLOBAL_EVENT`寿命は次の成功したGlobal Event発火時に1回消費される。 |
-| `EVENT_RECOVERY_MOMENTUM` | 復興の機運 | **Partial** — `OFFERING_WEIGHT_TAG_BOOST(RECOVERY)`定義はあるが、Offering抽選側hook未接続。 |
+| `EVENT_RECOVERY_MOMENTUM` | 復興の機運 | **Partial** — 発生条件は `HAS_HISTORY → RunHistoryReadModel → Chronicle` で直近Trialの被害を参照する。`OFFERING_WEIGHT_TAG_BOOST(RECOVERY)`定義はあるが、Offering抽選側hook未接続。 |
 | `EVENT_DEMIHUMAN_RAID` | 亜人襲撃 | **Partial / Data only** — 候補定義あり、`effects: []`。 |
 | `EVENT_DEMIHUMAN_SCOUTS` | 亜人の斥候 | **Partial / Data only** — 候補定義あり、`effects: []`。 |
 
