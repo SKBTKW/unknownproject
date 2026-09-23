@@ -65,7 +65,6 @@ export class TrialDeploymentService {
         this.committedPreviewTokens.clear();
         this.sessionCommitted = false;
         this.sessionResourceSnapshot = null;
-        this.sessionCommitted = false;
         const resourceSnapshot = this.resourcePayment?.readAuditSnapshot?.() || null;
         this.sessionResourceSnapshot = this.trialState ? Object.freeze({
             ...(resourceSnapshot || {}),
@@ -79,6 +78,8 @@ export class TrialDeploymentService {
         this.trialState = null;
         this.deploymentHistory = [];
         this.committedPreviewTokens.clear();
+        this.sessionCommitted = false;
+        this.sessionResourceSnapshot = null;
     }
 
     _sessionActive() {
