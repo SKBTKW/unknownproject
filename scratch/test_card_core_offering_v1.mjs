@@ -2236,7 +2236,35 @@ function makeGrid(rows, cols) {
     assert.deepEqual(created, ["zone_a", "zone_b"]);
 }
 
-// AT. DeckManager performs declarative effect preflight only before payment.
+// AT. GameEngine exposes the current command execution quote without UI reaching into DeckManager.
+{
+    const fakeEngine = {
+        deckManager: {
+            quoteCardExecutionCost(card) {
+                assert.equal(card.id, "CMD_ENGINE_DYNAMIC_COST");
+                return {
+                    success: true,
+                    resources: { wood: 13, ember: 1 },
+                    source: "DOMAIN_QUOTE"
+                };
+            }
+        }
+    };
+
+    assert.deepEqual(
+        GameEngine.prototype.getCommandCardExecutionCost.call(
+            fakeEngine,
+            { id: "CMD_ENGINE_DYNAMIC_COST", category: "COMMAND" }
+        ),
+        {
+            success: true,
+            resources: { wood: 13, ember: 1 },
+            source: "DOMAIN_QUOTE"
+        }
+    );
+}
+
+// AU. DeckManager performs declarative effect preflight only before payment.
 {
     let preflightCalls = 0;
     let executeCalls = 0;
