@@ -419,10 +419,85 @@ console.log('Board / Special Block / Defense v1 contract');
     const targets = service.enumerateLegalTargets(SPECIAL_BLOCK_TYPES.LOGGING_CAMP);
     const target = targets.find(entry => entry.r === 1 && entry.c === 2);
     assert.equal(target?.sourceClusterSize, 2);
+    assert.equal(target?.sourceGroupKind, 'CONNECTED_TERRAIN_CLUSTER');
+    assert.equal(target?.sourceGroupId, null);
+
     const logging = service.createSpecialBlock(SPECIAL_BLOCK_TYPES.LOGGING_CAMP, { r: 1, c: 2 });
     assert.equal(logging.success, true);
+    assert.equal(logging.sourceGroup.kind, 'CONNECTED_TERRAIN_CLUSTER');
+    assert.equal(logging.sourceGroup.size, 2);
     assert.equal(state.grid[1][2].terrain.gl, 1);
     assert.equal(state.grid[1][1].terrain.gl, 2, 'selected-cell transform does not destroy source cluster');
+}
+
+{
+    const state = state5();
+    const grid = new GridEngine(state);
+    state.isHQVicinity = grid.isHQVicinity.bind(grid);
+
+    state.grid[0][0] = cell(0, 0, {
+        placed: true,
+        merged: true,
+        mergeGroupId: 'forest-zone',
+        placementGroupId: 'forest-zone-a',
+        terrain: { ...FOREST }
+    });
+    state.grid[0][1] = cell(0, 1, {
+        placed: true,
+        merged: true,
+        mergeGroupId: 'forest-zone',
+        placementGroupId: 'forest-zone-b',
+        terrain: { ...FOREST }
+    });
+    state.grid[1][0] = cell(1, 0, {
+        placed: true,
+        merged: true,
+        mergeGroupId: 'forest-zone',
+        placementGroupId: 'forest-zone-c',
+        terrain: { ...FOREST }
+    });
+    state.grid[1][1] = cell(1, 1, {
+        placed: true,
+        merged: true,
+        mergeGroupId: 'forest-zone',
+        placementGroupId: 'forest-zone-d',
+        terrain: { ...FOREST }
+    });
+
+    // Deliberately stale/incomplete summary data: source membership must follow
+    // live cell.mergeGroupId, not mergedBlocks[group].cells.
+    state.mergedBlocks = {
+        'forest-zone': {
+            groupId: 'forest-zone',
+            terrainId: 'GL2_FOREST',
+            mergeType: '2x2',
+            cells: [{ r: 0, c: 0 }]
+        }
+    };
+
+    const service = new SpecialBlockService(state);
+    const group = service.resolveSourceGroup(
+        { r: 0, c: 0 },
+        getSpecialBlockDefinition(SPECIAL_BLOCK_TYPES.LOGGING_CAMP)
+    );
+    assert.equal(group.kind, 'MERGE_GROUP');
+    assert.equal(group.groupId, 'forest-zone');
+    assert.equal(group.cells.length, 4, 'live mergeGroupId membership is canonical');
+
+    // An unzoned forest adjacent to a zoned forest stays in its own fallback
+    // connected cluster instead of silently joining the Zone source.
+    state.grid[2][0] = cell(2, 0, {
+        placed: true,
+        placementGroupId: 'raw-forest',
+        terrain: { ...FOREST }
+    });
+    const raw = service.resolveSourceGroup(
+        { r: 2, c: 0 },
+        getSpecialBlockDefinition(SPECIAL_BLOCK_TYPES.LOGGING_CAMP)
+    );
+    assert.equal(raw.kind, 'CONNECTED_TERRAIN_CLUSTER');
+    assert.equal(raw.groupId, null);
+    assert.equal(raw.cells.length, 1);
 }
 
 {
