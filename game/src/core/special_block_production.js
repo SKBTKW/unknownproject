@@ -100,7 +100,7 @@ export class SpecialBlockProductionResolver {
         definitionResolver = getSpecialBlockDefinition,
         capabilityReader = readCellCapabilities
     } = {}) {
-        this.strategies = { ...strategies };
+        this.strategies = Object.freeze({ ...strategies });
         this.definitionResolver = typeof definitionResolver === 'function'
             ? definitionResolver
             : getSpecialBlockDefinition;
@@ -290,12 +290,21 @@ export class SpecialBlockProductionResolver {
 
 const defaultResolver = new SpecialBlockProductionResolver();
 
+function runtimeResolver(state) {
+    const resolver = state?.specialBlockProductionResolver;
+    return resolver
+        && typeof resolver.resolveCell === 'function'
+        && typeof resolver.sum === 'function'
+        ? resolver
+        : defaultResolver;
+}
+
 export function resolveSpecialBlockProduction(state, cell, position = {}) {
-    return defaultResolver.resolveCell(state, cell, position);
+    return runtimeResolver(state).resolveCell(state, cell, position);
 }
 
 export function sumSpecialBlockProduction(state) {
-    return defaultResolver.sum(state);
+    return runtimeResolver(state).sum(state);
 }
 
 export { ZERO_YIELDS as SPECIAL_BLOCK_ZERO_YIELDS };
