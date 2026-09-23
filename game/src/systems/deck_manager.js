@@ -787,6 +787,7 @@ class DeckManager {
             targetTile,
             handIdx,
             reserveIdx,
+            preflightAlreadyPassed: effectPreflight?.handled === true && effectPreflight.success === true,
             i18n: I18n,
             cardName: cName,
             cardDescription: cDesc
