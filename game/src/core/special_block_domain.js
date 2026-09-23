@@ -216,6 +216,22 @@ export function hasCellCapability(cell, capability) {
     return readCellCapabilities(cell).has(capability);
 }
 
+export function readEffectiveGreenery(cell) {
+    const base = Number(cell?.terrain?.gl);
+    if (!Number.isFinite(base)) return null;
+
+    const explicitDelta = Number(cell?.specialBlock?.baseTerrainEffect?.glDelta);
+    const definition = getSpecialBlockDefinition(
+        cell?.specialBlock?.definitionId || cell?.specialBlock?.type
+    );
+    const definitionDelta = Number(definition?.baseTerrainInteraction?.glDelta);
+    const delta = Number.isFinite(explicitDelta)
+        ? explicitDelta
+        : (Number.isFinite(definitionDelta) ? definitionDelta : 0);
+
+    return Math.max(0, base + delta);
+}
+
 export function readSpecialBlockTrialTraits(entityOrCell) {
     const entity = entityOrCell?.specialBlock || entityOrCell;
     if (!entity || typeof entity !== 'object') return null;
