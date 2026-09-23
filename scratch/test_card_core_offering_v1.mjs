@@ -19,6 +19,7 @@ import { CardEffectHandlerRouter } from "../game/src/cards/card_effect_handler_r
 import { CARD_EFFECT_TYPES, CardEffectExecutor } from "../game/src/cards/card_effect_executor.js";
 import {
     CARD_DOMAIN_ACTIONS,
+    CARD_DOMAIN_PAYMENT_MODES,
     createCardDomainActionExecutor
 } from "../game/src/cards/card_domain_action_executor.js";
 import { COMMAND_CARDS_MASTER } from "../game/src/data/command_cards_data.js";
@@ -2148,7 +2149,94 @@ function makeGrid(rows, cols) {
     assert.equal(state.wood, 3);
 }
 
-// AS. DeckManager performs declarative effect preflight only before payment.
+// AS. DOMAIN_QUOTE mode pays the current escalated Board quote instead of static Card cost.
+{
+    let quotedWood = 10;
+    const created = [];
+    const engine = {
+        boardDomainAdapter: {
+            quoteZoneConversionCost() {
+                return { status: "RESOLVED", resources: { wood: quotedWood }, conversionCount: created.length };
+            },
+            enumerateZoneConversionCandidates() {
+                return [
+                    { valid: true, groupId: "zone_a", zoneAttribute: "PLAINS" },
+                    { valid: true, groupId: "zone_b", zoneAttribute: "PLAINS" }
+                ].filter(candidate => !created.includes(candidate.groupId));
+            },
+            validateZoneConversionCandidateAfterPayment(_definitionId, groupId, payment) {
+                return {
+                    valid: !created.includes(groupId),
+                    reasons: created.includes(groupId) ? ["ZONE_ALREADY_CONVERTED"] : [],
+                    groupId,
+                    projectedPayment: { ...payment }
+                };
+            },
+            resolveZoneConversionGroupId(target) {
+                return target?.groupId || (target?.r === 0 ? "zone_a" : "zone_b");
+            },
+            readZoneSemantic(groupId) {
+                return groupId === "zone_a"
+                    ? { groupId, cells: [{ r: 0, c: 0 }] }
+                    : { groupId, cells: [{ r: 1, c: 0 }] };
+            },
+            createZoneConversion(_definitionId, groupId, context) {
+                created.push(groupId);
+                const paidCost = { wood: quotedWood };
+                quotedWood += 3;
+                return { success: true, groupId, conversion: { paidCost, context } };
+            }
+        }
+    };
+    engine.cardDomainActionExecutor = createCardDomainActionExecutor(engine);
+
+    const state = {
+        turn: 1,
+        stage: { id: 1 },
+        food: 0,
+        wood: 40,
+        material: 40,
+        defense: 0,
+        mystic: 0,
+        ember: 0,
+        reserveSlots: [],
+        activeBuffs: [],
+        consumedUniqueCards: [],
+        usedUniqueCards: [],
+        addLog() {}
+    };
+    const manager = new DeckManager(state, engine);
+    manager.cycleSystem = null;
+
+    const card = {
+        id: "CMD_ZONE_DYNAMIC_QUOTE_TEST",
+        category: "COMMAND",
+        cost: { material: 10 },
+        effects: [{
+            type: CARD_EFFECT_TYPES.DOMAIN_ACTION,
+            action: CARD_DOMAIN_ACTIONS.CREATE_ZONE_CONVERSION,
+            definitionId: "ZONE_ESCALATING",
+            paymentMode: CARD_DOMAIN_PAYMENT_MODES.DOMAIN_QUOTE
+        }]
+    };
+
+    assert.deepEqual(manager.quoteCardExecutionCost(card).resources, { wood: 10 });
+    assert.equal(manager.playCommandCard(card, { groupId: "zone_a" }).success, true);
+    assert.equal(state.wood, 30);
+    assert.equal(state.material, 30);
+
+    assert.deepEqual(
+        manager.quoteCardExecutionCost(card).resources,
+        { wood: 13 },
+        "second conversion must expose the escalated Board quote"
+    );
+    assert.equal(manager.playCommandCard(card, { groupId: "zone_b" }).success, true);
+    assert.equal(state.wood, 17);
+    assert.equal(state.material, 17);
+    assert.deepEqual(created, ["zone_a", "zone_b"]);
+}
+
+// AT. DeckManager performs declarative effect preflight only before payment.
 {
     let preflightCalls = 0;
     let executeCalls = 0;
