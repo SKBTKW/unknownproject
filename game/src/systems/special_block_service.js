@@ -33,6 +33,20 @@ function orthogonalNeighbors(r, c) {
     ];
 }
 
+function createSpecialBlockEntity(definition, r, c, state, context = {}) {
+    return {
+        instanceId: `${definition.id}@${r}:${c}`,
+        type: definition.id,
+        definitionId: definition.id,
+        orientation: context.orientation || null,
+        state: definition.lifecycle?.initialState || 'ACTIVE',
+        historyReference: context.historyReference || null,
+        createdVerse: Number.isInteger(context.verse)
+            ? context.verse
+            : (Number.isInteger(state?.turn) ? state.turn : null)
+    };
+}
+
 export class SpecialBlockService {
     constructor(state) {
         this.state = state;
@@ -257,7 +271,21 @@ export class SpecialBlockService {
         const validation = this.validateTarget(definition, target, context, { forCreation: true });
         if (!validation.valid) return { success: false, reason: validation.reason };
         if (definition?.placement?.mode === 'INDEPENDENT_CELL_GENERATION') {
-            return { success: false, reason: 'INDEPENDENT_GENERATION_NOT_CONNECTED' };
+            const { r, c } = validation.destination;
+            const cell = validation.destinationCell;
+            const entity = createSpecialBlockEntity(definition, r, c, this.state, context);
+            cell.specialBlock = entity;
+
+            return {
+                success: true,
+                target: { r, c },
+                source: { ...validation.source },
+                entity: { ...entity },
+                baseTerrain: null,
+                specialOnly: true,
+                capabilities: [...readCellCapabilities(cell)],
+                trialTraits: readSpecialBlockTrialTraits(cell)
+            };
         }
 
         const { r, c } = validation.target;
@@ -274,17 +302,7 @@ export class SpecialBlockService {
             }
         }
 
-        const entity = {
-            instanceId: `${definition.id}@${r}:${c}`,
-            type: definition.id,
-            definitionId: definition.id,
-            orientation: context.orientation || null,
-            state: definition.lifecycle?.initialState || 'ACTIVE',
-            historyReference: context.historyReference || null,
-            createdVerse: Number.isInteger(context.verse)
-                ? context.verse
-                : (Number.isInteger(this.state?.turn) ? this.state.turn : null)
-        };
+        const entity = createSpecialBlockEntity(definition, r, c, this.state, context);
         cell.specialBlock = entity;
 
         return {
