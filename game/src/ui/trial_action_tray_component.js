@@ -14,11 +14,22 @@ export class TrialActionTrayComponent {
     }
 
     isActive() {
-        return Boolean(
+        const hasTrialContext = Boolean(
             this.ui?.trialPreviewConfig
             && this.ui?.trialController?.state
             && this.ui?.layoutStateManager?.getPlayerTrayMode?.() === PLAYER_TRAY_MODES.TRIAL
         );
+        if (!hasTrialContext) return false;
+
+        const planningClosed = Boolean(
+            this.ui?.trialPresentationState?.planningReviewRequested
+            || this.ui?.isTrialPlanningConfirmed?.()
+            || this.ui?.isTrialPlanActivated?.()
+            || this.ui?.isTrialBattleActive?.()
+            || this.ui?.isTrialBattleResolved?.()
+            || this.ui?.isTrialCompleted?.()
+        );
+        return !planningClosed;
     }
 
     render() {
