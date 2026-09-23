@@ -40,7 +40,7 @@
 | INTERCEPT進軍 | **GAME_AHEAD** | REPELなら停止、非REPELなら残りrouteを全進行してHQ到達。旧「1段進行」説明は古い。 |
 | HQ🔥損害 | **GAME_AHEAD** | 到達routeを全て合算後 `ceil(totalSourcePower / 5)` を1回適用。 |
 | Trial🔥損害→GameState | **実装済み** | `EmberSystem.applyDamage()` へwrite-throughし、🔥0ならRunTermination評価。 |
-| Trial🛡️消費→GameState | **PARTIAL** | Trial-local `availableDefense` のみ減少。通常 `currentDefense` へ未commit。 |
+| Trial🛡️消費→GameState | **実装済み** | Deployment Economy CommitでGameEngine/DefenseSystem経由により通常`currentDefense`へwrite-throughし、支払い失敗時は内部rollback。 |
 | Settlement API | **実装済み** | Chronicle / FAILED終端 / Exit ReadyまでAPIあり。 |
 | 通常UI→Settlement | **PARTIAL** | UIはCompletion結果表示まで。Settlement / Trial退出導線未接続。 |
 | Trial完了→Stage | **RULES_AHEAD** | 未接続。 |
