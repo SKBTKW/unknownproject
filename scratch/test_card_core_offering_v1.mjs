@@ -46,6 +46,12 @@ import {
     BOARD_MIGRATION_BLOCKED_IDS,
     getBoardCardMigrationAudit
 } from "../game/src/cards/board_card_migration_audit.js";
+import {
+    SPECIAL_BLOCK_CARD_MIGRATION_STATUS,
+    SPECIAL_BLOCK_CARD_MIGRATION_AUDIT,
+    SPECIAL_BLOCK_MIGRATION_BLOCKED_IDS,
+    getSpecialBlockCardMigrationAudit
+} from "../game/src/cards/special_block_card_migration_audit.js";
 
 function makeGrid(rows, cols) {
     return Array.from({ length: rows }, () => Array.from({ length: cols }, () => ({})));
@@ -1797,6 +1803,57 @@ function makeGrid(rows, cols) {
             Array.isArray(card.effects) && card.effects.length > 0,
             false,
             `${card.id} must stay on the legacy path while Board migration is blocked`
+        );
+    }
+}
+
+// AO. Every Special-Block-owned current SSOT branch has an explicit semantic migration blocker.
+{
+    const specialOwnedIds = DOMAIN_ACTION_REQUIRED_IDS
+        .filter(id => resolveDomainActionOwner(id) === DOMAIN_ACTION_OWNER.SPECIAL_BLOCK)
+        .sort();
+
+    assert.deepEqual(
+        [...SPECIAL_BLOCK_MIGRATION_BLOCKED_IDS].sort(),
+        specialOwnedIds,
+        "Special Block migration audit must cover exactly the Special-Block-owned legacy branches"
+    );
+
+    for (const id of specialOwnedIds) {
+        const audit = getSpecialBlockCardMigrationAudit(id);
+        assert.ok(audit, `missing Special Block migration audit for ${id}`);
+        assert.ok(
+            Object.values(SPECIAL_BLOCK_CARD_MIGRATION_STATUS).includes(audit.status),
+            `unknown Special Block migration status for ${id}`
+        );
+    }
+
+    assert.equal(
+        SPECIAL_BLOCK_CARD_MIGRATION_AUDIT.CMD_MINE.status,
+        SPECIAL_BLOCK_CARD_MIGRATION_STATUS.BLOCKED_UNRESOLVED_PRODUCTION
+    );
+    assert.equal(
+        SPECIAL_BLOCK_CARD_MIGRATION_AUDIT.CMD_PASTORAL_FARM.candidateDefinition,
+        "FARM"
+    );
+}
+
+// AP. Blocked Special Block cards cannot silently opt into CREATE_SPECIAL_BLOCK.
+{
+    const economySource = JSON.parse(readFileSync(
+        new URL("../game/src/data/economy_cards.json", import.meta.url),
+        "utf8"
+    ));
+    const cards = economySource.filter(card =>
+        SPECIAL_BLOCK_MIGRATION_BLOCKED_IDS.includes(card.id)
+    );
+
+    assert.equal(cards.length, SPECIAL_BLOCK_MIGRATION_BLOCKED_IDS.length);
+    for (const card of cards) {
+        assert.equal(
+            Array.isArray(card.effects) && card.effects.length > 0,
+            false,
+            `${card.id} must remain legacy-backed until semantic parity exists`
         );
     }
 }
