@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 import { DeckManager } from "../game/src/systems/deck_manager.js";
 import { normalizeCardDefinitionV1 } from "../game/src/cards/card_definition_v1.js";
@@ -12,6 +13,22 @@ import {
 } from "../game/src/cards/legacy_offering_requirement_adapter.js";
 import { CardEffectHandlerRouter } from "../game/src/cards/card_effect_handler_router.js";
 import { CARD_EFFECT_TYPES, CardEffectExecutor } from "../game/src/cards/card_effect_executor.js";
+import {
+    CARD_DOMAIN_ACTIONS,
+    createCardDomainActionExecutor
+} from "../game/src/cards/card_domain_action_executor.js";
+import { COMMAND_CARDS_MASTER } from "../game/src/data/command_cards_data.js";
+import {
+    LEGACY_COMMAND_EXECUTION_CLASS,
+    DOMAIN_ACTION_OWNER,
+    DOMAIN_ACTION_OWNER_BY_ID,
+    CURRENT_SSOT_LOCAL_IDS,
+    DOMAIN_ACTION_REQUIRED_IDS,
+    LEGACY_ONLY_IDS,
+    DUPLICATE_LEGACY_BRANCH_IDS,
+    classifyLegacyCommandExecution,
+    resolveDomainActionOwner
+} from "../game/src/cards/legacy_command_execution_inventory.js";
 
 function makeGrid(rows, cols) {
     return Array.from({ length: rows }, () => Array.from({ length: cols }, () => ({})));
@@ -349,7 +366,7 @@ function makeGrid(rows, cols) {
 
     assert.equal(result.success, true);
     assert.equal(state.wood, 7);
-    assert.equal(state.material, 7, "wood resource delta keeps legacy material mirror in sync");
+    assert.equal(state.material, 2, "resource delta mutates only the authored resource");
     assert.equal(state.guidedDefenseActive, true);
     assert.equal(state.testCounter, 2);
     assert.equal(state.activeBuffs.length, 1);
@@ -478,6 +495,634 @@ function makeGrid(rows, cols) {
     assert.equal(state.wood, 10, "execution failure must occur before cost deduction");
     assert.equal(state.handOffering[0].id, "slot", "execution failure must not consume the source slot");
     assert.equal(state.shouldNotRun, undefined);
+}
+
+// O. First real migrations preserve legacy state/cost semantics without DeckManager ID branches.
+{
+    const emergency = COMMAND_CARDS_MASTER.find(card => card.id === "CMD_EMERGENCY_LEVY");
+    const loggingCamp = COMMAND_CARDS_MASTER.find(card => card.id === "CMD_LOGGING_CAMP");
+    assert.ok(Array.isArray(emergency?.effects) && emergency.effects.length === 3);
+    assert.ok(Array.isArray(loggingCamp?.effects) && loggingCamp.effects.length === 3);
+
+    const emergencyState = {
+        turn: 1,
+        food: 30,
+        wood: 4,
+        material: 99,
+        mystic: 0,
+        ember: 3,
+        reserveSlots: [],
+        consumedUniqueCards: [],
+        usedUniqueCards: [],
+        activeBuffs: [],
+        logs: [],
+        addBuff(buff) { this.activeBuffs.push(buff); },
+        addLog(log) { this.logs.push(log); }
+    };
+    const emergencyManager = new DeckManager(emergencyState, {});
+    emergencyManager.cycleSystem = null;
+    const emergencyResult = emergencyManager.playCommandCard(emergency);
+
+    assert.equal(emergencyResult.success, true);
+    assert.equal(emergencyState.food, 10, "legacy food cost remains 20");
+    assert.equal(emergencyState.wood, 19, "legacy immediate material gain remains +15 wood");
+    assert.equal(emergencyState.material, 99, "legacy effect did not mirror gained wood into material");
+    assert.equal(emergencyState.activeBuffs.length, 1);
+    assert.equal(emergencyState.activeBuffs[0].id, "CMD_EMERGENCY_LEVY");
+    assert.equal(emergencyState.activeBuffs[0].icon, "🧱");
+    assert.equal(emergencyState.activeBuffs[0].category, "CARD_EFFECT");
+    assert.equal(emergencyState.logs.length, 1);
+
+    const campState = {
+        turn: 1,
+        food: 10,
+        wood: 2,
+        material: 77,
+        mystic: 0,
+        ember: 2,
+        reserveSlots: [],
+        consumedUniqueCards: [],
+        usedUniqueCards: [],
+        activeBuffs: [],
+        logs: [],
+        addBuff(buff) { this.activeBuffs.push(buff); },
+        addLog(log) { this.logs.push(log); }
+    };
+    const campManager = new DeckManager(campState, {});
+    campManager.cycleSystem = null;
+    const campResult = campManager.playCommandCard(loggingCamp);
+
+    assert.equal(campResult.success, true);
+    assert.equal(campState.ember, 1, "legacy ember cost remains 1");
+    assert.equal(campState.wood, 10, "legacy immediate gain remains +8 wood");
+    assert.equal(campState.material, 77);
+    assert.equal(campState.activeBuffs.length, 1);
+    assert.equal(campState.activeBuffs[0].id, "CMD_LOGGING_CAMP");
+    assert.equal(campState.activeBuffs[0].icon, "🪵");
+    assert.equal(campState.logs.length, 1);
+}
+
+// P. Simple Mystic cards migrated from ID branches remain behavior-equivalent.
+{
+    const cases = [
+        {
+            id: "CMD_LEYLINE_RESONANCE",
+            initialMystic: 20,
+            expectedMystic: 12,
+            stateKey: "leylineResonanceActive",
+            stateValue: true,
+            icon: "✨",
+            unique: false
+        },
+        {
+            id: "CMD_VOICE_BENEATH_EARTH",
+            initialMystic: 20,
+            expectedMystic: 15,
+            stateKey: "voiceBeneathEarthTurns",
+            stateValue: 1,
+            icon: "🔮",
+            unique: false
+        },
+        {
+            id: "CMD_REVELATION_CHOICE",
+            initialMystic: 20,
+            expectedMystic: 5,
+            stateKey: "revelationChoiceTurns",
+            stateValue: 1,
+            icon: "✨",
+            unique: false
+        },
+        {
+            id: "CMD_TWO_FUTURES",
+            initialMystic: 30,
+            expectedMystic: 10,
+            stateKey: "twoFuturesTurns",
+            stateValue: 1,
+            icon: "🔮",
+            unique: true
+        }
+    ];
+
+    for (const testCase of cases) {
+        const card = COMMAND_CARDS_MASTER.find(candidate => candidate.id === testCase.id);
+        assert.ok(card, `missing generated master card ${testCase.id}`);
+        assert.ok(Array.isArray(card.effects) && card.effects.length === 3,
+            `${testCase.id} must execute declaratively`);
+
+        const state = {
+            turn: 1,
+            food: 50,
+            wood: 50,
+            material: 50,
+            mystic: testCase.initialMystic,
+            ember: 10,
+            reserveSlots: [],
+            consumedUniqueCards: [],
+            usedUniqueCards: [],
+            activeBuffs: [],
+            logs: [],
+            addBuff(buff) { this.activeBuffs.push(buff); },
+            addLog(log) { this.logs.push(log); }
+        };
+        const manager = new DeckManager(state, {});
+        manager.cycleSystem = null;
+
+        const result = manager.playCommandCard(card);
+        assert.equal(result.success, true, testCase.id);
+        assert.equal(state.mystic, testCase.expectedMystic, `${testCase.id} cost drift`);
+        assert.equal(state[testCase.stateKey], testCase.stateValue, `${testCase.id} state effect drift`);
+        assert.equal(state.activeBuffs.length, 1, `${testCase.id} buff count drift`);
+        assert.equal(state.activeBuffs[0].id, testCase.id, `${testCase.id} buff id drift`);
+        assert.equal(state.activeBuffs[0].icon, testCase.icon, `${testCase.id} buff icon drift`);
+        assert.equal(state.activeBuffs[0].category, "CARD_EFFECT", `${testCase.id} buff category drift`);
+        assert.equal(state.logs.length, 1, `${testCase.id} log count drift`);
+
+        if (testCase.stateKey !== "leylineResonanceActive") {
+            assert.equal(state.activeBuffs[0].remainingTurns, 1, `${testCase.id} remainingTurns drift`);
+            assert.ok(state.activeBuffs[0].badgeText, `${testCase.id} must keep remaining-turn badge`);
+        }
+
+        if (testCase.unique) {
+            assert.ok(state.consumedUniqueCards.includes(testCase.id)
+                || state.usedUniqueCards.includes(testCase.id),
+                `${testCase.id} UNIQUE consumption must remain active`);
+        }
+    }
+}
+
+// Q. Mystic utility migrations preserve multi-effect legacy behavior.
+{
+    const makeState = ({ mystic = 20, ember = 5 } = {}) => ({
+        turn: 1,
+        food: 50,
+        wood: 50,
+        material: 50,
+        mystic,
+        ember,
+        reserveSlots: [],
+        consumedUniqueCards: [],
+        usedUniqueCards: [],
+        activeBuffs: [],
+        logs: [],
+        addBuff(buff) { this.activeBuffs.push(buff); },
+        addLog(log) { this.logs.push(log); }
+    });
+
+    {
+        const card = COMMAND_CARDS_MASTER.find(c => c.id === "CMD_FILL_THE_VOID");
+        const state = makeState();
+        const manager = new DeckManager(state, {});
+        manager.cycleSystem = null;
+        assert.equal(manager.playCommandCard(card).success, true);
+        assert.equal(state.fillTheVoidTurns, 1);
+        assert.equal(state.activeBuffs[0].remainingTurns, 1);
+        assert.equal(state.activeBuffs[0].id, card.id);
+        assert.equal(state.logs.length, 1);
+    }
+
+    {
+        const card = COMMAND_CARDS_MASTER.find(c => c.id === "CMD_MEDITATION");
+        const state = makeState({ mystic: 10 });
+        const manager = new DeckManager(state, {});
+        manager.cycleSystem = null;
+        assert.equal(manager.playCommandCard(card).success, true);
+        assert.equal(state.mystic, 13, "meditation must preserve immediate mystic +3");
+        assert.deepEqual(state.activeDrawBias, {
+            targetCategory: "LAND",
+            type: "TURNS",
+            remainingTurns: 1,
+            startsNextTurn: true
+        });
+        assert.equal(state.activeBuffs[0].startsNextTurn, true);
+        assert.equal(state.activeBuffs[0].remainingTurns, 1);
+        assert.equal(state.logs.length, 1);
+    }
+
+    {
+        const card = COMMAND_CARDS_MASTER.find(c => c.id === "CMD_REKINDLE_EMBER");
+        const state = makeState({ mystic: 20, ember: 4 });
+        const manager = new DeckManager(state, {});
+        manager.cycleSystem = null;
+        assert.equal(manager.playCommandCard(card).success, true);
+        assert.equal(state.mystic, 10, "rekindle mystic cost drift");
+        assert.equal(state.ember, 7, "rekindle ember gain drift");
+        assert.equal(state.reserveFeeWaivedTurns, 3);
+        assert.equal(state.reserveFeeWaivedStartsNextTurn, true);
+        assert.equal(state.activeBuffs[0].remainingTurns, 3);
+        assert.equal(state.activeBuffs[0].startsNextTurn, true);
+        assert.equal(state.logs.length, 1);
+    }
+
+    {
+        const card = COMMAND_CARDS_MASTER.find(c => c.id === "CMD_MANIFEST_MIRACLE");
+        const state = makeState({ mystic: 20 });
+        const manager = new DeckManager(state, {});
+        manager.cycleSystem = null;
+        assert.equal(manager.playCommandCard(card).success, true);
+        assert.equal(state.mystic, 10, "manifest miracle mystic cost drift");
+        assert.equal(state.manifestMiracleTurns, 3);
+        assert.equal(state.manifestMiracleStartsNextTurn, true);
+        assert.equal(state.activeBuffs[0].remainingTurns, 3);
+        assert.equal(state.activeBuffs[0].startsNextTurn, true);
+        assert.equal(state.logs.length, 2,
+            "legacy Manifest Miracle emits two activation logs; preserve during refactor");
+    }
+}
+
+// R. Next declarative migrations preserve legacy behavior.
+{
+    const cases = [
+        {
+            id: "CMD_RATIONING",
+            initial: { food: 10, wood: 10, material: 10, mystic: 5, ember: 5 },
+            assertState(state) {
+                assert.equal(state.foodCostRationingActive, true);
+                assert.equal(state.foodCostRationingDiscount, 0.4);
+                assert.equal(state.foodCostHalvedTurns, 1);
+                assert.equal(state.activeBuffs[0].remainingTurns, 1);
+                assert.equal(state.activeBuffs[0].icon, "🌾");
+                assert.equal(state.logs.length, 1);
+            }
+        },
+        {
+            id: "CMD_VIGILANCE",
+            initial: { food: 10, wood: 30, material: 30, mystic: 5, ember: 5 },
+            assertState(state) {
+                assert.equal(state.wood, 15, "vigilance cost drift");
+                assert.equal(state.vigilanceTurns, 2);
+                assert.equal(state.vigilanceStartsNextTurn, true);
+                assert.equal(state.temporaryDefenseTurns, 2);
+                assert.equal(state.activeBuffs[0].remainingTurns, 2);
+                assert.equal(state.activeBuffs[0].startsNextTurn, true);
+                assert.equal(state.activeBuffs[0].icon, "🛡️");
+                assert.equal(state.logs.length, 1);
+            }
+        },
+        {
+            id: "CMD_MYSTIC_FOCUS",
+            initial: { food: 10, wood: 10, material: 10, mystic: 20, ember: 5 },
+            assertState(state) {
+                assert.equal(state.mystic, 10, "mystic focus cost drift");
+                assert.deepEqual(state.activeDrawBias, {
+                    targetCategory: "MYSTIC",
+                    type: "TURNS",
+                    remainingTurns: 3,
+                    startsNextTurn: true
+                });
+                assert.equal(state.activeBuffs[0].remainingTurns, 3);
+                assert.equal(state.activeBuffs[0].startsNextTurn, true);
+                assert.equal(state.activeBuffs[0].icon, "✨");
+                assert.equal(state.logs.length, 0,
+                    "legacy Mystic Focus emits no activation log; preserve during refactor");
+            }
+        }
+    ];
+
+    for (const testCase of cases) {
+        const card = COMMAND_CARDS_MASTER.find(candidate => candidate.id === testCase.id);
+        assert.ok(card, `missing generated master card ${testCase.id}`);
+        assert.ok(Array.isArray(card.effects) && card.effects.length > 0);
+
+        const state = {
+            turn: 1,
+            reserveSlots: [],
+            consumedUniqueCards: [],
+            usedUniqueCards: [],
+            activeBuffs: [],
+            logs: [],
+            addBuff(buff) { this.activeBuffs.push(buff); },
+            addLog(log) { this.logs.push(log); },
+            ...testCase.initial
+        };
+        const manager = new DeckManager(state, {});
+        manager.cycleSystem = null;
+        const result = manager.playCommandCard(card);
+
+        assert.equal(result.success, true, testCase.id);
+        assert.equal(state.activeBuffs[0].id, testCase.id);
+        assert.equal(state.activeBuffs[0].category, "CARD_EFFECT");
+        testCase.assertState(state);
+    }
+}
+
+// S. Granary migration preserves legacy behavior.
+{
+    const card = COMMAND_CARDS_MASTER.find(candidate => candidate.id === "CMD_GRANARY");
+    assert.ok(card?.effects?.length === 3);
+
+    const state = {
+        turn: 1,
+        food: 20,
+        wood: 30,
+        material: 30,
+        mystic: 0,
+        ember: 5,
+        granaryCount: 2,
+        reserveSlots: [],
+        consumedUniqueCards: [],
+        usedUniqueCards: [],
+        activeBuffs: [],
+        logs: [],
+        addBuff(buff) { this.activeBuffs.push(buff); },
+        addLog(log) { this.logs.push(log); }
+    };
+    const manager = new DeckManager(state, {});
+    manager.cycleSystem = null;
+    const result = manager.playCommandCard(card);
+
+    assert.equal(result.success, true);
+    assert.equal(state.wood, 10, "granary wood cost drift");
+    assert.equal(state.material, 10, "shared command cost keeps material mirror behavior");
+    assert.equal(state.granaryCount, 3);
+    assert.equal(state.activeBuffs[0].id, "CMD_GRANARY");
+    assert.equal(state.activeBuffs[0].icon, "🏛️");
+    assert.equal(state.logs.length, 1);
+}
+
+// T. Agricultural Reform migration preserves legacy behavior.
+{
+    const card = COMMAND_CARDS_MASTER.find(candidate => candidate.id === "CMD_AGRICULTURAL_REFORM");
+    assert.ok(card?.effects?.length === 3);
+
+    const state = {
+        turn: 1,
+        food: 20,
+        wood: 30,
+        material: 30,
+        mystic: 0,
+        ember: 5,
+        permanentPlainsFoodBonus: 2,
+        reserveSlots: [],
+        consumedUniqueCards: [],
+        usedUniqueCards: [],
+        activeBuffs: [],
+        logs: [],
+        addBuff(buff) { this.activeBuffs.push(buff); },
+        addLog(log) { this.logs.push(log); }
+    };
+    const manager = new DeckManager(state, {});
+    manager.cycleSystem = null;
+    const result = manager.playCommandCard(card);
+
+    assert.equal(result.success, true);
+    assert.equal(state.wood, 10, "agricultural reform wood cost drift");
+    assert.equal(state.material, 10, "shared command cost keeps material mirror behavior");
+    assert.equal(state.permanentPlainsFoodBonus, 3);
+    assert.equal(state.activeBuffs[0].id, "CMD_AGRICULTURAL_REFORM");
+    assert.equal(state.activeBuffs[0].icon, "📜");
+    assert.equal(state.logs.length, 1);
+}
+
+// U. Migrated effects stay identical between JSON SSOT and generated command master.
+
+
+
+{
+    const economySource = JSON.parse(readFileSync(
+        new URL("../game/src/data/economy_cards.json", import.meta.url),
+        "utf8"
+    ));
+    const militarySource = JSON.parse(readFileSync(
+        new URL("../game/src/data/military_cards.json", import.meta.url),
+        "utf8"
+    ));
+    const mysticSource = JSON.parse(readFileSync(
+        new URL("../game/src/data/mystic_cards.json", import.meta.url),
+        "utf8"
+    ));
+    const sourceCards = [...economySource, ...militarySource, ...mysticSource];
+    const migratedIds = [
+        "CMD_EMERGENCY_LEVY",
+        "CMD_LOGGING_CAMP",
+        "CMD_LEYLINE_RESONANCE",
+        "CMD_VOICE_BENEATH_EARTH",
+        "CMD_REVELATION_CHOICE",
+        "CMD_TWO_FUTURES",
+        "CMD_FILL_THE_VOID",
+        "CMD_MEDITATION",
+        "CMD_REKINDLE_EMBER",
+        "CMD_MANIFEST_MIRACLE",
+        "CMD_RATIONING",
+        "CMD_VIGILANCE",
+        "CMD_MYSTIC_FOCUS",
+        "CMD_GRANARY",
+        "CMD_AGRICULTURAL_REFORM"
+    ];
+
+    for (const id of migratedIds) {
+        const source = sourceCards.find(card => card.id === id);
+        const generated = COMMAND_CARDS_MASTER.find(card => card.id === id);
+        assert.ok(source, `missing SSOT card ${id}`);
+        assert.ok(generated, `missing generated card ${id}`);
+        assert.deepEqual(
+            generated.effects,
+            source.effects,
+            `${id} generated effects must match JSON SSOT exactly`
+        );
+    }
+}
+
+// V. Every remaining DeckManager command ID branch belongs to exactly one migration class.
+{
+    const deckManagerSource = readFileSync(
+        new URL("../game/src/systems/deck_manager.js", import.meta.url),
+        "utf8"
+    );
+    const branchIds = [...deckManagerSource.matchAll(/cId === "([^"]+)"/g)].map(match => match[1]);
+    const uniqueBranchIds = [...new Set(branchIds)];
+
+    const classifiedIds = [
+        ...CURRENT_SSOT_LOCAL_IDS,
+        ...DOMAIN_ACTION_REQUIRED_IDS,
+        ...LEGACY_ONLY_IDS
+    ];
+    assert.equal(new Set(classifiedIds).size, classifiedIds.length,
+        "legacy command inventory classes must be mutually exclusive");
+    assert.deepEqual(
+        [...uniqueBranchIds].sort(),
+        [...classifiedIds].sort(),
+        "every remaining command branch must be explicitly classified"
+    );
+
+    for (const id of uniqueBranchIds) {
+        assert.ok(classifyLegacyCommandExecution(id), `unclassified command branch: ${id}`);
+    }
+
+    const duplicateIds = [...new Set(
+        branchIds.filter((id, index) => branchIds.indexOf(id) !== index)
+    )].sort();
+    assert.deepEqual(
+        duplicateIds,
+        [...DUPLICATE_LEGACY_BRANCH_IDS].sort(),
+        "duplicate ID branches must stay explicit until their migration removes them"
+    );
+}
+
+// W. SSOT ownership and execution classification must agree.
+{
+    const economySource = JSON.parse(readFileSync(
+        new URL("../game/src/data/economy_cards.json", import.meta.url),
+        "utf8"
+    ));
+    const militarySource = JSON.parse(readFileSync(
+        new URL("../game/src/data/military_cards.json", import.meta.url),
+        "utf8"
+    ));
+    const mysticSource = JSON.parse(readFileSync(
+        new URL("../game/src/data/mystic_cards.json", import.meta.url),
+        "utf8"
+    ));
+    const ssotIds = new Set(
+        [...economySource, ...militarySource, ...mysticSource].map(card => card.id)
+    );
+
+    for (const id of CURRENT_SSOT_LOCAL_IDS) {
+        assert.ok(ssotIds.has(id), `${id} CURRENT_SSOT_LOCAL must exist in a current JSON SSOT`);
+        assert.equal(
+            classifyLegacyCommandExecution(id),
+            LEGACY_COMMAND_EXECUTION_CLASS.CURRENT_SSOT_LOCAL
+        );
+    }
+
+    for (const id of DOMAIN_ACTION_REQUIRED_IDS) {
+        assert.ok(ssotIds.has(id), `${id} DOMAIN_ACTION_REQUIRED must exist in a current JSON SSOT`);
+        assert.equal(
+            classifyLegacyCommandExecution(id),
+            LEGACY_COMMAND_EXECUTION_CLASS.DOMAIN_ACTION_REQUIRED
+        );
+    }
+
+    for (const id of LEGACY_ONLY_IDS) {
+        assert.equal(
+            ssotIds.has(id),
+            false,
+            `${id} LEGACY_ONLY must not silently regain current SSOT status without reclassification`
+        );
+        assert.equal(
+            classifyLegacyCommandExecution(id),
+            LEGACY_COMMAND_EXECUTION_CLASS.LEGACY_ONLY
+        );
+    }
+}
+
+// X. Every DOMAIN_ACTION_REQUIRED card has exactly one owning domain.
+{
+    const validOwners = new Set(Object.values(DOMAIN_ACTION_OWNER));
+    assert.deepEqual(
+        Object.keys(DOMAIN_ACTION_OWNER_BY_ID).sort(),
+        [...DOMAIN_ACTION_REQUIRED_IDS].sort(),
+        "domain owner map must cover exactly the domain-action migration set"
+    );
+
+    for (const id of DOMAIN_ACTION_REQUIRED_IDS) {
+        const owner = resolveDomainActionOwner(id);
+        assert.ok(validOwners.has(owner), `${id} must resolve to a known domain owner`);
+    }
+
+    for (const id of [...CURRENT_SSOT_LOCAL_IDS, ...LEGACY_ONLY_IDS]) {
+        assert.equal(
+            resolveDomainActionOwner(id),
+            null,
+            `${id} must not acquire a domain owner outside DOMAIN_ACTION_REQUIRED`
+        );
+    }
+}
+
+// Y. Domain actions preflight against Board before command cost / source consumption.
+{
+    const calls = [];
+    const boardDomainAdapter = {
+        validateSpecialBlockTarget(type, target, context) {
+            calls.push({ phase: "validate", type, target, context });
+            return target?.r === 1 && target?.c === 2
+                ? { valid: true }
+                : { valid: false, reason: "TARGET_BLOCKED" };
+        },
+        createSpecialBlock(type, target, context) {
+            calls.push({ phase: "create", type, target, context });
+            return { success: true, entity: { type }, target };
+        }
+    };
+    const engine = { boardDomainAdapter };
+    const domainExecutor = createCardDomainActionExecutor(engine);
+    const effectExecutor = new CardEffectExecutor({ domainActionExecutor: domainExecutor });
+
+    const effect = {
+        type: CARD_EFFECT_TYPES.DOMAIN_ACTION,
+        action: CARD_DOMAIN_ACTIONS.CREATE_SPECIAL_BLOCK,
+        blockType: "MINE"
+    };
+
+    const blocked = effectExecutor.preflight([effect], {
+        state: { turn: 7 },
+        targetTile: { r: 0, c: 0 },
+        cardDefinition: { id: "CMD_DOMAIN_PREFLIGHT_TEST" }
+    });
+    assert.equal(blocked.success, false);
+    assert.equal(blocked.reason, "TARGET_BLOCKED");
+    assert.equal(calls.filter(call => call.phase === "create").length, 0);
+
+    const allowed = effectExecutor.executeAll([effect], {
+        state: { turn: 7 },
+        targetTile: { r: 1, c: 2 },
+        cardDefinition: { id: "CMD_DOMAIN_EXECUTE_TEST" }
+    });
+    assert.equal(allowed.success, true);
+    assert.equal(calls.filter(call => call.phase === "create").length, 1);
+    const createCall = calls.find(call => call.phase === "create");
+    assert.equal(createCall.type, "MINE");
+    assert.deepEqual(createCall.target, { r: 1, c: 2 });
+    assert.equal(createCall.context.verse, 7);
+    assert.equal(createCall.context.cardId, "CMD_DOMAIN_EXECUTE_TEST");
+}
+
+// Z. DeckManager rejects invalid domain target before deducting command cost.
+{
+    const state = {
+        turn: 4,
+        food: 0,
+        wood: 30,
+        material: 30,
+        mystic: 0,
+        ember: 0,
+        reserveSlots: [],
+        handOffering: [{ id: "source-slot" }],
+        consumedUniqueCards: [],
+        usedUniqueCards: [],
+        addLog() {}
+    };
+    const engine = {
+        boardDomainAdapter: {
+            validateSpecialBlockTarget() {
+                return { valid: false, reason: "SPECIAL_BLOCK_OCCUPIED" };
+            },
+            createSpecialBlock() {
+                throw new Error("must not execute after failed preflight");
+            }
+        }
+    };
+    engine.cardDomainActionExecutor = createCardDomainActionExecutor(engine);
+
+    const manager = new DeckManager(state, engine);
+    manager.cycleSystem = null;
+    const card = {
+        id: "CMD_DOMAIN_COST_GUARD_TEST",
+        category: "COMMAND",
+        nameKey: "CMD_DOMAIN_COST_GUARD_TEST_NAME",
+        cost: { wood: 20 },
+        effects: [{
+            type: CARD_EFFECT_TYPES.DOMAIN_ACTION,
+            action: CARD_DOMAIN_ACTIONS.CREATE_SPECIAL_BLOCK,
+            blockType: "MINE"
+        }]
+    };
+
+    const result = manager.playCommandCard(card, { r: 1, c: 1 }, 0, -1);
+    assert.equal(result.success, false);
+    assert.equal(result.reason, "SPECIAL_BLOCK_OCCUPIED");
+    assert.equal(state.wood, 30);
+    assert.equal(state.material, 30);
+    assert.equal(state.handOffering[0].id, "source-slot");
 }
 
 console.log("✅ Card Core / Offering v1 contract tests PASS");
