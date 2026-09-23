@@ -615,6 +615,43 @@ const landSystemJson = JSON.parse(
 }
 
 {
+    const plains = LAND_CARDS_MASTER.find(card => card.id === "CARD_PLAINS_1X1");
+    assert.ok(plains);
+
+    const state = createState();
+    for (const row of state.grid) {
+        for (const cell of row) {
+            cell.placed = false;
+            cell.isHQ = false;
+            cell.terrain = null;
+        }
+    }
+    state.handOfferingSize = 1;
+    let placementChecks = 0;
+    state.canPlaceShape = () => {
+        placementChecks += 1;
+        return { can: false, reasons: ["NOT_ADJACENT"] };
+    };
+
+    const manager = new DeckManager(state, {
+        gameplayRandom: {
+            nextFloat: () => 0,
+            nextId: () => "unrooted-cycle-fixture"
+        }
+    });
+    manager.getLandCardMaster = () => [plains];
+    manager.cycleSystem = {
+        isInCooldown() { return false; },
+        registerOffering() {}
+    };
+
+    const offering = manager.generateOfferingCards();
+    assert.equal(offering.length, 1);
+    assert.equal(offering[0].cardMasterId, plains.id);
+    assert.equal(placementChecks, 0);
+}
+
+{
     const wetland = LAND_CARDS_MASTER.find(card => card.id === "CARD_WETLAND_1X1");
     const plains = LAND_CARDS_MASTER.find(card => card.id === "CARD_PLAINS_1X1");
     assert.ok(wetland);
