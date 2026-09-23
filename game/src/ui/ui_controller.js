@@ -89,7 +89,7 @@ class UIController {
         this.trialDefenseAllocationComponent = (typeof document !== 'undefined') ? new TrialDefenseAllocationComponent(this, {
             contextOwnerProvider: () => this.layoutStateManager.getContextOwner()
         }) : null;
-        this.trialController = new TrialController();
+        this.trialController = new TrialController({ deploymentService: this.engine?.trialDeploymentService || null });
         this.trialPresentationState = new TrialPresentationState();
         this.trialCausalityPresenter = new TrialCausalityPresenter();
         this.trialAdvisorPublicReadModel = new TrialAdvisorPublicReadModel();
@@ -196,7 +196,8 @@ class UIController {
 
     stopTrialInterceptionPreview() {
         this.trialPreviewConfig = null;
-        this.trialController.state = null;
+        if (typeof this.trialController?.endScenario === "function") this.trialController.endScenario();
+        else this.trialController.state = null;
         this.trialPresentationState.clearPlanningState();
         this.hideCellTooltip();
         this.layoutStateManager.exitTrial();
