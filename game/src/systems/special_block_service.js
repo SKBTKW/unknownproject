@@ -103,6 +103,45 @@ export class SpecialBlockService {
         return cluster;
     }
 
+    _validateIndependentGenerationTarget(definition, target) {
+        const source = coords(target?.source);
+        const destination = coords(target?.destination || target?.target);
+        if (!source || !destination) return { valid: false, reason: 'SOURCE_AND_DESTINATION_REQUIRED' };
+
+        const sourceCell = this.getCell(source.r, source.c);
+        const destinationCell = this.getCell(destination.r, destination.c);
+        if (!sourceCell?.placed || !sourceCell.terrain || sourceCell.isHQ) {
+            return { valid: false, reason: 'SOURCE_TERRAIN_REQUIRED' };
+        }
+        if (sourceCell.specialBlock) return { valid: false, reason: 'SOURCE_SPECIAL_BLOCK_OCCUPIED' };
+
+        const sourceTerrainIds = definition.placement?.sourceTerrainIds || [];
+        if (sourceTerrainIds.length > 0 && !sourceTerrainIds.includes(terrainId(sourceCell))) {
+            return { valid: false, reason: 'SOURCE_TERRAIN_NOT_ALLOWED' };
+        }
+
+        const hasConnectedSameSource = this.findAdjacentCells(source.r, source.c)
+            .some(entry => entry.cell?.placed && sourceTerrainIds.includes(terrainId(entry.cell)));
+        if (hasConnectedSameSource) {
+            return { valid: false, reason: 'SOURCE_TERRAIN_NOT_ISOLATED' };
+        }
+
+        const orthogonallyAdjacent = Math.abs(source.r - destination.r) + Math.abs(source.c - destination.c) === 1;
+        if (!orthogonallyAdjacent) return { valid: false, reason: 'DESTINATION_NOT_ADJACENT' };
+        if (!destinationCell) return { valid: false, reason: 'OUT_OF_BOUNDS' };
+        if (destinationCell.placed || destinationCell.specialBlock) {
+            return { valid: false, reason: 'DESTINATION_OCCUPIED' };
+        }
+
+        return {
+            valid: true,
+            source,
+            destination,
+            sourceCell,
+            destinationCell
+        };
+    }
+
     _validateOverlayTarget(definition, target, context = {}, { forCreation = false } = {}) {
         const point = coords(target);
         if (!point) return { valid: false, reason: 'INVALID_TARGET' };
@@ -157,8 +196,7 @@ export class SpecialBlockService {
 
         if (definition.placement?.mode === 'INDEPENDENT_CELL_GENERATION') {
             return {
-                valid: false,
-                reason: 'INDEPENDENT_GENERATION_NOT_CONNECTED',
+                ...this._validateIndependentGenerationTarget(definition, target),
                 definition
             };
         }
@@ -176,6 +214,22 @@ export class SpecialBlockService {
         if (!definition?.id || !Array.isArray(this.state?.grid)) return [];
 
         const targets = [];
+        if (definition.placement?.mode === 'INDEPENDENT_CELL_GENERATION') {
+            for (let r = 0; r < this.state.grid.length; r++) {
+                for (let c = 0; c < (this.state.grid[r]?.length || 0); c++) {
+                    for (const destination of orthogonalNeighbors(r, c)) {
+                        const candidate = {
+                            source: { r, c },
+                            destination
+                        };
+                        const validation = this.validateTarget(definition, candidate, context);
+                        if (validation.valid) targets.push(candidate);
+                    }
+                }
+            }
+            return targets;
+        }
+
         for (let r = 0; r < this.state.grid.length; r++) {
             for (let c = 0; c < (this.state.grid[r]?.length || 0); c++) {
                 const validation = this.validateTarget(definition, { r, c }, context);
@@ -202,6 +256,9 @@ export class SpecialBlockService {
         const definition = getSpecialBlockDefinition(type);
         const validation = this.validateTarget(definition, target, context, { forCreation: true });
         if (!validation.valid) return { success: false, reason: validation.reason };
+        if (definition?.placement?.mode === 'INDEPENDENT_CELL_GENERATION') {
+            return { success: false, reason: 'INDEPENDENT_GENERATION_NOT_CONNECTED' };
+        }
 
         const { r, c } = validation.target;
         const cell = validation.cell;
