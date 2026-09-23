@@ -84,7 +84,13 @@ class CardEffectExecutor {
     }
 
     executeAll(effects, context = {}) {
-        const preflight = this.preflight(effects, context);
+        const preflight = context.preflightAlreadyPassed === true
+            ? Object.freeze({
+                handled: true,
+                success: true,
+                prepared: Object.freeze((Array.isArray(effects) ? effects : []).map(cloneEffect))
+            })
+            : this.preflight(effects, context);
         if (!preflight.handled || !preflight.success) {
             return Object.freeze({
                 ...preflight,
