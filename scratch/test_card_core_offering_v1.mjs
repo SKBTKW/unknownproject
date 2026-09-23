@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { DeckManager } from "../game/src/systems/deck_manager.js";
 import { GameEngine } from "../game/src/core/game_engine.js";
 import { UIController } from "../game/src/ui/ui_controller.js";
+import { DefenseSystem } from "../game/src/systems/defense_system.js";
 import { normalizeCardDefinitionV1 } from "../game/src/cards/card_definition_v1.js";
 import { LandPlacementAvailabilityQuery } from "../game/src/cards/land_placement_availability_query.js";
 import { CardOfferingEligibilityService } from "../game/src/cards/card_offering_eligibility_service.js";
@@ -938,7 +939,56 @@ function makeGrid(rows, cols) {
     }
 }
 
-// V. Migrated effects stay identical between JSON SSOT and generated command master.
+// V. Iron Rampart migrates through Defense domain with legacy-equivalent results.
+{
+    const card = COMMAND_CARDS_MASTER.find(candidate => candidate.id === "CMD_IRON_RAMPART");
+    assert.ok(card?.effects?.length === 1);
+    assert.equal(card.effects[0].action, CARD_DOMAIN_ACTIONS.APPLY_DEFENSE_DEVELOPMENT);
+
+    const grid = Array.from({ length: 5 }, () =>
+        Array.from({ length: 5 }, () => ({ placed: false }))
+    );
+    const state = {
+        turn: 1,
+        food: 20,
+        wood: 40,
+        material: 40,
+        mystic: 0,
+        ember: 5,
+        defense: 10,
+        currentDefense: 10,
+        maxDefense: 10,
+        defenseCapacityBonus: 0,
+        permanentVicinityDefenseBonus: 0,
+        placedBlockCount: 0,
+        grid,
+        reserveSlots: [],
+        consumedUniqueCards: [],
+        usedUniqueCards: [],
+        activeBuffs: [],
+        logs: [],
+        addLog(log) { this.logs.push(log); }
+    };
+    const defenseSystem = new DefenseSystem(state);
+    state.defenseSystem = defenseSystem;
+    const engine = { defenseSystem };
+    engine.cardDomainActionExecutor = createCardDomainActionExecutor(engine);
+
+    const manager = new DeckManager(state, engine);
+    manager.cycleSystem = null;
+    const result = manager.playCommandCard(card);
+
+    assert.equal(result.success, true);
+    assert.equal(state.wood, 20, "iron rampart wood cost drift");
+    assert.equal(state.material, 20, "shared command cost material mirror drift");
+    assert.equal(state.defenseCapacityBonus, 25);
+    assert.equal(state.defense, 35, "legacy defense compatibility value must include capacity bonus");
+    assert.equal(state.permanentVicinityDefenseBonus, 2);
+    assert.equal(defenseSystem.getMaxDefense(), 35);
+    assert.equal(state.logs.length, 1);
+}
+
+// W. Migrated effects stay identical between JSON SSOT and generated command master.
 
 
 
@@ -972,7 +1022,8 @@ function makeGrid(rows, cols) {
         "CMD_MYSTIC_FOCUS",
         "CMD_GRANARY",
         "CMD_AGRICULTURAL_REFORM",
-        "CMD_MILITARY_FOCUS"
+        "CMD_MILITARY_FOCUS",
+        "CMD_IRON_RAMPART"
     ];
 
     for (const id of migratedIds) {
@@ -988,7 +1039,7 @@ function makeGrid(rows, cols) {
     }
 }
 
-// W. Every remaining DeckManager command ID branch belongs to exactly one migration class.
+// X. Every remaining DeckManager command ID branch belongs to exactly one migration class.
 {
     const deckManagerSource = readFileSync(
         new URL("../game/src/systems/deck_manager.js", import.meta.url),
@@ -1024,7 +1075,7 @@ function makeGrid(rows, cols) {
     );
 }
 
-// X. SSOT ownership and execution classification must agree.
+// Y. SSOT ownership and execution classification must agree.
 {
     const economySource = JSON.parse(readFileSync(
         new URL("../game/src/data/economy_cards.json", import.meta.url),
@@ -1071,7 +1122,7 @@ function makeGrid(rows, cols) {
     }
 }
 
-// Y. Every DOMAIN_ACTION_REQUIRED card has exactly one owning domain.
+// Z. Every DOMAIN_ACTION_REQUIRED card has exactly one owning domain.
 {
     const validOwners = new Set(Object.values(DOMAIN_ACTION_OWNER));
     assert.deepEqual(
