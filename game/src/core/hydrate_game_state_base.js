@@ -1,3 +1,4 @@
+import { normalizeRoadEdgeIds } from './road_network.js';
 /**
  * Pure inverse boundary for StateSerializer's world data. The caller owns
  * restoring subsystem runtime, both RNG streams, and Chronicle separately.
@@ -97,7 +98,7 @@ export function hydrateGameState(state, serialized, { resolveCardMaster } = {}) 
     values.handOffering = serialized.handOffering.map(card => restoreCard(card, resolveCardMaster));
     values.reserveSlots = serialized.reserveSlots.map(card => restoreCard(card, resolveCardMaster));
     values.mergeLinks = new Set(serialized.mergeLinks);
-    values.roadEdges = new Set(serialized.roadEdges || []);
+    values.roadEdges = new Set(normalizeRoadEdgeIds(serialized.roadEdges));
     values.grantedConnectionPairs = new Set(serialized.grantedConnectionPairs);
 
     for (const [field, value] of Object.entries(values)) state[field] = value;
