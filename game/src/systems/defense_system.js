@@ -2,6 +2,7 @@ import {
     resolveCellProductionBase,
     sumPlacedBlockProduction
 } from '../core/land_production_contract.js';
+import { sumSpecialBlockProduction } from '../core/special_block_production.js';
 const BASE_HQ_DEFENSE = 10;
 
 function toNonNegativeInteger(value, fallback = 0) {
@@ -63,6 +64,7 @@ export class DefenseSystem {
         }
 
         maxDefense += toNonNegativeInteger(sumPlacedBlockProduction(state).defense);
+        maxDefense += toNonNegativeInteger(sumSpecialBlockProduction(state).yields.defense);
         maxDefense += toNonNegativeInteger(state.permanentVicinityDefenseBonus) * vicinityCount;
         maxDefense += toNonNegativeInteger(state.defenseCapacityBonus);
 
