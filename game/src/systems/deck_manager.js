@@ -58,6 +58,8 @@ class DeckManager {
         this.offeringEligibility = new CardOfferingEligibilityService({
             state: this.state,
             placementQuery: this.landPlacementAvailability,
+            executionTargetRequired: (definition) =>
+                this.cardEffectHandlerRouter?.requiresTarget(definition) === true,
             executionTargetQuery: (definition, context) =>
                 this.cardEffectHandlerRouter?.enumerateTargets(definition, {
                     ...context,
