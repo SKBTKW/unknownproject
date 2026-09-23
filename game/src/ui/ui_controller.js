@@ -1545,6 +1545,10 @@ class UIController {
 
     triggerCommandCardPlay(card, idx = -1, reserveIdx = -1) {
         if (!this.state || this.state.hasPickedThisTurn) return;
+        if (this.commandCardRequiresTarget(card)) {
+            this.beginTargetedCommandSelection(card, idx, reserveIdx);
+            return;
+        }
         const tObj = card.terrain || card;
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
         const cName = tObj.nameKey ? I18n.t(tObj.nameKey) : (tObj.id || "Card");
@@ -2278,6 +2282,7 @@ class UIController {
             if (focusLayerManager) focusLayerManager.onCardDeselect();
             this.render();
         }
+        return res;
     }
 
     toggleDirectiveModal() {
