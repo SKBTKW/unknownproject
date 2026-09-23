@@ -422,6 +422,46 @@ const landSystemJson = JSON.parse(
 }
 
 {
+    // Shipped Multi-Attribute cards must enter the real weighted candidate path
+    // once their Production Contract is resolved, while minStage remains strict.
+    const state = createState();
+    const manager = new DeckManager(state, {
+        gameplayRandom: {
+            nextFloat: () => 0,
+            nextId: () => "live-multi-offering"
+        }
+    });
+
+    manager.getLandCardMaster = () => [actualMultiCards[0]];
+    const plainsHill = manager.drawSingleCard([], {
+        ignoreCooldown: true,
+        ignoreHold: true
+    });
+    assert.equal(plainsHill?.cardMasterId, actualMultiCards[0].id);
+
+    manager.getLandCardMaster = () => [actualMultiCards[1]];
+    const plainsForest = manager.drawSingleCard([], {
+        ignoreCooldown: true,
+        ignoreHold: true
+    });
+    assert.equal(plainsForest?.cardMasterId, actualMultiCards[1].id);
+
+    manager.getLandCardMaster = () => [actualMultiCards[2]];
+    state.stage.id = 1;
+    assert.equal(manager.drawSingleCard([], {
+        ignoreCooldown: true,
+        ignoreHold: true
+    }), null);
+
+    state.stage.id = 2;
+    const hillMountain = manager.drawSingleCard([], {
+        ignoreCooldown: true,
+        ignoreHold: true
+    });
+    assert.equal(hillMountain?.cardMasterId, actualMultiCards[2].id);
+}
+
+{
     const productionReadyMulti = {
         ...actualMultiCards[0],
         productionContract: {
