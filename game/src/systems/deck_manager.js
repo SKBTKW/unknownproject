@@ -731,16 +731,7 @@ class DeckManager {
             return { ...routedEffect, success: true };
         }
 
-        if (cId === "CMD_AGRICULTURAL_POLICY") {
-            // 🌾 農地改革: コスト 🧱-20
-            this.state.permanentPlainsFoodBonus = (this.state.permanentPlainsFoodBonus || 0) + 1;
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `📜【${cName}】`);
-        } else if (cId === "CMD_BLACK_MARKET") {
-            // 💰 闇市場の一括売却: コスト 🌾-25
-            this.state.wood += 35;
-            this.state.mystic += 10;
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `📜【${cName}】`);
-        } else if (cId === "CMD_BALLISTA_SET") {
+        if (cId === "CMD_BALLISTA_SET") {
             // 🏹 迎撃用弩砲陣地: コスト 🧱-30
             if (this.state.defenseSystem) {
                 this.state.defenseSystem.increaseMaxCapacity(40);
