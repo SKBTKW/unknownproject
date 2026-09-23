@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 import { DeckManager } from "../game/src/systems/deck_manager.js";
+import { GameEngine } from "../game/src/core/game_engine.js";
 import { normalizeCardDefinitionV1 } from "../game/src/cards/card_definition_v1.js";
 import { LandPlacementAvailabilityQuery } from "../game/src/cards/land_placement_availability_query.js";
 import { CardOfferingEligibilityService } from "../game/src/cards/card_offering_eligibility_service.js";
@@ -1123,6 +1124,47 @@ function makeGrid(rows, cols) {
     assert.equal(state.wood, 30);
     assert.equal(state.material, 30);
     assert.equal(state.handOffering[0].id, "source-slot");
+}
+
+// AA. GameEngine command boundary carries optional target without changing legacy callers.
+{
+    const calls = [];
+    const fakeEngine = {
+        deckManager: {
+            playCommandCard(card, target, offeringIdx, reserveIdx) {
+                calls.push({ card, target, offeringIdx, reserveIdx });
+                return { success: true };
+            }
+        },
+        executeAction(_type, pipeline) {
+            const result = typeof pipeline === "function" ? pipeline() : pipeline.execute();
+            return result;
+        }
+    };
+
+    const card = { id: "CMD_TARGET_BRIDGE_TEST", category: "COMMAND" };
+    const target = { r: 2, c: 3 };
+    const result = GameEngine.prototype.playCommandCard.call(
+        fakeEngine,
+        card,
+        { type: "OFFERING", index: 1 },
+        target
+    );
+
+    assert.equal(result.success, true);
+    assert.equal(calls.length, 1);
+    assert.deepEqual(calls[0].target, target);
+    assert.equal(calls[0].offeringIdx, 1);
+    assert.equal(calls[0].reserveIdx, -1);
+
+    GameEngine.prototype.playCommandCard.call(
+        fakeEngine,
+        card,
+        { type: "RESERVE", index: 0 }
+    );
+    assert.equal(calls[1].target, null, "legacy two-argument caller keeps null target");
+    assert.equal(calls[1].offeringIdx, -1);
+    assert.equal(calls[1].reserveIdx, 0);
 }
 
 console.log("✅ Card Core / Offering v1 contract tests PASS");
