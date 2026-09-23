@@ -694,7 +694,31 @@ export const MILITARY_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.3,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "DRAW_BIAS_SET",
+        "bias": {
+          "targetCategory": "MILITARY",
+          "type": "UNTIL_DEFENSE",
+          "untilValue": 20
+        }
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "buff": {
+          "icon": "🛡️",
+          "category": "CARD_EFFECT"
+        }
+      },
+      {
+        "type": "RECONCILE_CONDITIONAL_BUFFS"
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_CAVALRY_SCOUTS",
@@ -1900,7 +1924,31 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.3,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "DRAW_BIAS_SET",
+        "bias": {
+          "targetCategory": "MILITARY",
+          "type": "UNTIL_DEFENSE",
+          "untilValue": 20
+        }
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "buff": {
+          "icon": "🛡️",
+          "category": "CARD_EFFECT"
+        }
+      },
+      {
+        "type": "RECONCILE_CONDITIONAL_BUFFS"
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_CAVALRY_SCOUTS",
