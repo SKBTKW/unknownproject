@@ -759,7 +759,37 @@ export const MYSTIC_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.3,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "RESOURCE_DELTA",
+        "resource": "mystic",
+        "amount": 3
+      },
+      {
+        "type": "DRAW_BIAS_SET",
+        "bias": {
+          "targetCategory": "LAND",
+          "type": "TURNS",
+          "remainingTurns": 1,
+          "startsNextTurn": true
+        }
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "🧘",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 1,
+          "startsNextTurn": true
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_FILL_THE_VOID",
@@ -771,7 +801,27 @@ export const MYSTIC_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "C",
     "weight": 0.35,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "fillTheVoidTurns",
+        "value": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "✨",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 1
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_VOICE_BENEATH_EARTH",
@@ -834,7 +884,38 @@ export const MYSTIC_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.25,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "RESOURCE_DELTA",
+        "resource": "ember",
+        "amount": 3
+      },
+      {
+        "type": "STATE_SET",
+        "key": "reserveFeeWaivedTurns",
+        "value": 3
+      },
+      {
+        "type": "STATE_SET",
+        "key": "reserveFeeWaivedStartsNextTurn",
+        "value": true
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "✨",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 3,
+          "startsNextTurn": true
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_MYSTIC_FOCUS",
@@ -862,7 +943,36 @@ export const MYSTIC_CARDS_MASTER = [
     "minStage": 2,
     "rarity": "R",
     "weight": 0.2,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "manifestMiracleTurns",
+        "value": 3
+      },
+      {
+        "type": "STATE_SET",
+        "key": "manifestMiracleStartsNextTurn",
+        "value": true
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "✨",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 3,
+          "startsNextTurn": true
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_TRANSMUTE_GOLDEN",
@@ -1733,7 +1843,37 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.3,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "RESOURCE_DELTA",
+        "resource": "mystic",
+        "amount": 3
+      },
+      {
+        "type": "DRAW_BIAS_SET",
+        "bias": {
+          "targetCategory": "LAND",
+          "type": "TURNS",
+          "remainingTurns": 1,
+          "startsNextTurn": true
+        }
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "🧘",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 1,
+          "startsNextTurn": true
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_FILL_THE_VOID",
@@ -1745,7 +1885,27 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "C",
     "weight": 0.35,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "fillTheVoidTurns",
+        "value": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "✨",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 1
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_VOICE_BENEATH_EARTH",
@@ -1808,7 +1968,38 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.25,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "RESOURCE_DELTA",
+        "resource": "ember",
+        "amount": 3
+      },
+      {
+        "type": "STATE_SET",
+        "key": "reserveFeeWaivedTurns",
+        "value": 3
+      },
+      {
+        "type": "STATE_SET",
+        "key": "reserveFeeWaivedStartsNextTurn",
+        "value": true
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "✨",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 3,
+          "startsNextTurn": true
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_MYSTIC_FOCUS",
@@ -1836,7 +2027,36 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 2,
     "rarity": "R",
     "weight": 0.2,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "manifestMiracleTurns",
+        "value": 3
+      },
+      {
+        "type": "STATE_SET",
+        "key": "manifestMiracleStartsNextTurn",
+        "value": true
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "✨",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 3,
+          "startsNextTurn": true
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_TRANSMUTE_GOLDEN",
