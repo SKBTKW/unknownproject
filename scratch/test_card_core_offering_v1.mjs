@@ -40,6 +40,12 @@ import {
     PROJECT_MIGRATION_BLOCKED_IDS,
     getProjectCardMigrationAudit
 } from "../game/src/cards/project_card_migration_audit.js";
+import {
+    BOARD_CARD_MIGRATION_STATUS,
+    BOARD_CARD_MIGRATION_AUDIT,
+    BOARD_MIGRATION_BLOCKED_IDS,
+    getBoardCardMigrationAudit
+} from "../game/src/cards/board_card_migration_audit.js";
 
 function makeGrid(rows, cols) {
     return Array.from({ length: rows }, () => Array.from({ length: cols }, () => ({})));
@@ -1733,6 +1739,64 @@ function makeGrid(rows, cols) {
             Array.isArray(card.effects) && card.effects.length > 0,
             false,
             `${card.id} must stay on the legacy path while Project migration is blocked`
+        );
+    }
+}
+
+// AM. Every Board-owned current SSOT branch is explicitly blocked until Board owns its mutation semantics.
+{
+    const boardOwnedIds = DOMAIN_ACTION_REQUIRED_IDS
+        .filter(id => resolveDomainActionOwner(id) === DOMAIN_ACTION_OWNER.BOARD)
+        .sort();
+
+    assert.deepEqual(
+        [...BOARD_MIGRATION_BLOCKED_IDS].sort(),
+        boardOwnedIds,
+        "Board migration audit must cover exactly the Board-owned legacy branches"
+    );
+
+    for (const id of boardOwnedIds) {
+        const audit = getBoardCardMigrationAudit(id);
+        assert.ok(audit, `missing Board migration audit for ${id}`);
+        assert.ok(
+            Object.values(BOARD_CARD_MIGRATION_STATUS).includes(audit.status),
+            `unknown Board migration status for ${id}`
+        );
+        assert.equal(typeof audit.intendedAction, "string");
+        assert.ok(audit.intendedAction.length > 0);
+    }
+
+    assert.equal(
+        BOARD_CARD_MIGRATION_AUDIT.CMD_RESETTLEMENT.status,
+        BOARD_CARD_MIGRATION_STATUS.BLOCKED_SHADOWED_LEGACY
+    );
+    assert.equal(
+        BOARD_CARD_MIGRATION_AUDIT.CMD_IRRIGATION.status,
+        BOARD_CARD_MIGRATION_STATUS.BLOCKED_NO_EFFECT_CONSUMER
+    );
+}
+
+// AN. Blocked Board cards must not silently acquire declarative effects before Board action contracts exist.
+{
+    const economySource = JSON.parse(readFileSync(
+        new URL("../game/src/data/economy_cards.json", import.meta.url),
+        "utf8"
+    ));
+    const mysticSource = JSON.parse(readFileSync(
+        new URL("../game/src/data/mystic_cards.json", import.meta.url),
+        "utf8"
+    ));
+    const sourceCards = [...economySource, ...mysticSource];
+    const boardCards = sourceCards.filter(card =>
+        BOARD_MIGRATION_BLOCKED_IDS.includes(card.id)
+    );
+
+    assert.equal(boardCards.length, BOARD_MIGRATION_BLOCKED_IDS.length);
+    for (const card of boardCards) {
+        assert.equal(
+            Array.isArray(card.effects) && card.effects.length > 0,
+            false,
+            `${card.id} must stay on the legacy path while Board migration is blocked`
         );
     }
 }
