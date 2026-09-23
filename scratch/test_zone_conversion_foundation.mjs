@@ -202,6 +202,9 @@ const createdA = service.createConversion("GARRISON_TEST", "zone_a", {
     createdVerse: 20
 });
 assert.equal(createdA.success, true);
+assert.equal(adapter.getZoneConversionCount("GARRISON_TEST"), 1);
+assert.equal(adapter.readZoneConversion("zone_a").definitionId, "GARRISON_TEST");
+assert.equal(adapter.isZoneConversionFunctional("zone_a"), true);
 assert.equal(state.mergedBlocks.zone_a.terrainId, beforeZone.terrainId);
 assert.equal(state.mergedBlocks.zone_a.mergeType, beforeZone.mergeType);
 assert.deepEqual(state.mergedBlocks.zone_a.cells, beforeZone.cells);
@@ -242,6 +245,7 @@ const failedMaintenance = adapter.applyZoneConversionMaintenanceSettlement("zone
 });
 assert.equal(failedMaintenance.success, true);
 assert.equal(failedMaintenance.state, ZONE_CONVERSION_STATES.DYSFUNCTIONAL);
+assert.equal(adapter.isZoneConversionFunctional("zone_a"), false);
 assert.equal(state.food, beforeFailedMaintenanceFood, "Board records settlement but never spends maintenance resources");
 assert.equal(
     adapter.hasCapability(ZONE_CONVERSION_CAPABILITIES.GARRISON_SITE),
@@ -265,6 +269,7 @@ const recoveredMaintenance = adapter.applyZoneConversionMaintenanceSettlement("z
 });
 assert.equal(recoveredMaintenance.success, true);
 assert.equal(recoveredMaintenance.state, ZONE_CONVERSION_STATES.ACTIVE);
+assert.equal(adapter.isZoneConversionFunctional("zone_a"), true);
 assert.equal(state.food, beforeRecoveredMaintenanceFood);
 assert.equal(adapter.hasCapability(ZONE_CONVERSION_CAPABILITIES.GARRISON_SITE), true);
 
@@ -280,7 +285,7 @@ const createdB = service.createConversion("GARRISON_TEST", "zone_b", {
 });
 assert.equal(createdB.success, true);
 assert.deepEqual(createdB.conversion.paidCost, { wood: 9, ember: 1 });
-assert.equal(service.getConversionCount("GARRISON_TEST"), 2);
+assert.equal(adapter.getZoneConversionCount("GARRISON_TEST"), 2);
 assert.equal(adapter.hasCapability("GARRISON_SITE", { minimum: 2 }), true);
 
 const serialized = serializeGameState(state);
