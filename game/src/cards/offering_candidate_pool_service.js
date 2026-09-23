@@ -52,7 +52,8 @@ export class OfferingCandidatePoolService {
         eligibilityOptions = {},
         candidateFilter = null,
         state = null,
-        random = Math.random
+        random = Math.random,
+        weightContext = null
     } = {}) {
         const candidates = this.build({
             stageNum,
@@ -62,7 +63,7 @@ export class OfferingCandidatePoolService {
             candidateFilter
         });
         if (candidates.length === 0) return null;
-        return pickWeightedCard(candidates, state, random)
+        return pickWeightedCard(candidates, state, random, weightContext)
             || candidates[0]
             || null;
     }
