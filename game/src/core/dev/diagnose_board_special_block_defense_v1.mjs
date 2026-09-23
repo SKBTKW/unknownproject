@@ -15,6 +15,7 @@ import { serializeGameState } from '../state_serializer_base.js';
 import { hydrateGameState } from '../hydrate_game_state_base.js';
 import { GameEngine } from '../game_engine.js';
 import { sumSpecialBlockProduction } from '../special_block_production.js';
+import { CellViewDataService } from '../../services/cell_view_data_service.js';
 
 function cell(r, c, overrides = {}) {
     return {
@@ -268,14 +269,32 @@ console.log('Board / Special Block / Defense v1 contract');
         }).valid,
         true
     );
-    assert.equal(
-        service.createSpecialBlock(SPECIAL_BLOCK_TYPES.FARM, {
-            source: { r: 1, c: 1 },
-            destination: { r: 1, c: 2 }
-        }).reason,
-        'INDEPENDENT_GENERATION_NOT_CONNECTED',
-        'FARM mutation remains fail-closed until independent-cell runtime semantics are defined'
+    const farmCreated = service.createSpecialBlock(SPECIAL_BLOCK_TYPES.FARM, {
+        source: { r: 1, c: 1 },
+        destination: { r: 1, c: 2 }
+    });
+    assert.equal(farmCreated.success, true);
+    assert.equal(farmCreated.specialOnly, true);
+    assert.equal(state.grid[1][2].placed, false, 'FARM does not become base terrain');
+    assert.equal(state.grid[1][2].terrain, null, 'FARM does not invent terrain semantics');
+    assert.equal(state.grid[1][2].specialBlock.type, SPECIAL_BLOCK_TYPES.FARM);
+
+    const occupiedLandCheck = grid.canPlaceShape(
+        1, 2, [[1]], { ...PLAINS }, null
     );
+    assert.equal(
+        occupiedLandCheck.can,
+        false,
+        'LAND placement cannot overwrite a Special-only cell'
+    );
+    assert.ok(occupiedLandCheck.reasons.includes('ALREADY_PLACED'));
+
+    const farmView = new CellViewDataService().getCellViewData(state, 1, 2);
+    assert.equal(farmView.placed, false);
+    assert.equal(farmView.occupied, true);
+    assert.equal(farmView.occupancy, 'SPECIAL_ONLY');
+    assert.equal(farmView.specialBlock?.type, SPECIAL_BLOCK_TYPES.FARM);
+    assert.equal(farmView.terrainId, null);
 
     state.grid[1][2] = cell(1, 2, {
         placed: true,
