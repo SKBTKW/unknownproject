@@ -127,7 +127,7 @@ export class SpecialBlockProductionResolver {
             if (capabilities?.has?.(production.relationCapability)) count++;
         }
 
-        const maxRelations = Number(production.maxRelations);
+        const maxRelations = production.maxRelations;
         const effectiveCount = Number.isFinite(maxRelations)
             ? Math.min(count, Math.max(0, Math.trunc(maxRelations)))
             : count;
