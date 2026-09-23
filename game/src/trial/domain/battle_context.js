@@ -1,14 +1,31 @@
 function normalizeCell(cell) {
     if (!cell) return null;
-    const terrain = cell.terrain || cell;
+    const terrain = cell.terrain || null;
+    const row = Number.isInteger(cell.row)
+        ? cell.row
+        : (Number.isInteger(cell.r) ? cell.r : null);
+    const column = Number.isInteger(cell.column)
+        ? cell.column
+        : (Number.isInteger(cell.c) ? cell.c : null);
     return {
         cellId: cell.cellId || cell.id || null,
-        row: Number.isInteger(cell.row) ? cell.row : null,
-        column: Number.isInteger(cell.column) ? cell.column : null,
+        row,
+        column,
+        r: row,
+        c: column,
+        placed: cell.placed === true,
+        isHQ: cell.isHQ === true,
         terrain,
-        terrainId: terrain.terrainId || terrain.id || null,
-        elevation: Number.isFinite(terrain.e) ? terrain.e : 1,
-        growthLevel: Number.isFinite(terrain.gl) ? terrain.gl : null
+        terrainId: terrain?.terrainId || terrain?.id || cell.terrainId || null,
+        elevation: Number.isFinite(terrain?.e)
+            ? terrain.e
+            : (Number.isFinite(cell.elevation) ? cell.elevation : null),
+        growthLevel: Number.isFinite(terrain?.gl)
+            ? terrain.gl
+            : (Number.isFinite(cell.growthLevel) ? cell.growthLevel : null),
+        specialBlock: cell.specialBlock
+            ? JSON.parse(JSON.stringify(cell.specialBlock))
+            : null
     };
 }
 
