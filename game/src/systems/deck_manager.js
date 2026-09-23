@@ -785,20 +785,6 @@ class DeckManager {
             });
             if (typeof this.state.checkConditionalBuffs === "function") this.state.checkConditionalBuffs();
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `⚔️【${cName}】`);
-        } else if (cId === "CMD_MYSTIC_FOCUS") {
-            // ✨ 神秘重視: コスト 🔥-1 (次のターンから3ターンの間、神秘出現率2倍)
-            this.state.activeDrawBias = { targetCategory: "MYSTIC", type: "TURNS", remainingTurns: 3, startsNextTurn: true };
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "✨",
-                description: cDesc,
-                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 3 }) : "3T",
-                category: "CARD_EFFECT",
-                remainingTurns: 3,
-                startsNextTurn: true
-            });
         } else if (cId === "CMD_CONSERVE_EMBER") {
             // 🔥 節約: コスト 無料 (次ターンの🔥消費-1軽減)
             this.state.emberConsumptionReducedTurns = 1;
@@ -815,39 +801,6 @@ class DeckManager {
                 startsNextTurn: true
             });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🔥【${cName}】`);
-        } else if (cId === "CMD_RATIONING") {
-            // 🌾 配給: コスト 無料 (今ターンの最終食料維持費を 40% 軽減)
-            this.state.foodCostRationingActive = true;
-            this.state.foodCostRationingDiscount = 0.40;
-            this.state.foodCostHalvedTurns = 1;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🌾",
-                description: cDesc,
-                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 1 }) : "1T",
-                category: "CARD_EFFECT",
-                remainingTurns: 1
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🌾【${cName}】`);
-        } else if (cId === "CMD_VIGILANCE") {
-            // 🛡️ 警戒: コスト 🧱-15 (次のターンから2ターンの間、獲得する全ての🛡️に+3ボーナス)
-            this.state.vigilanceTurns = 2;
-            this.state.vigilanceStartsNextTurn = true;
-            this.state.temporaryDefenseTurns = 2;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🛡️",
-                description: cDesc,
-                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 2 }) : "2T",
-                category: "CARD_EFFECT",
-                remainingTurns: 2,
-                startsNextTurn: true
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🛡️【${cName}】`);
         } else if (cId === "CMD_GRAND_CULTIVATION") {
             // 🌾 耕作計画: コスト 🧱-35 (次のターンから4ターンの間、平地の産出 🌾+1/T)
             this.state.grandCultivationTurns = 4;
