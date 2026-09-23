@@ -652,8 +652,32 @@ console.log('Board / Special Block / Defense v1 contract');
     assert.equal(logging.success, true);
     assert.equal(logging.sourceGroup.kind, 'CONNECTED_TERRAIN_CLUSTER');
     assert.equal(logging.sourceGroup.size, 2);
-    assert.equal(state.grid[1][2].terrain.gl, 1);
-    assert.equal(state.grid[1][1].terrain.gl, 2, 'selected-cell transform does not destroy source cluster');
+    assert.equal(
+        state.grid[1][2].terrain.gl,
+        2,
+        'LOGGING_CAMP preserves canonical Base Terrain GL'
+    );
+    assert.equal(
+        state.grid[1][2].terrain.terrainId,
+        'GL2_FOREST',
+        'LOGGING_CAMP preserves canonical Base Terrain identity'
+    );
+    assert.deepEqual(
+        state.grid[1][2].specialBlock.baseTerrainEffect,
+        { glDelta: -1, sourceGL: 2 }
+    );
+    const board = new BoardDomainAdapter({ state, gridEngine: grid, specialBlockService: service });
+    assert.equal(
+        board.readEffectiveGreenery({ r: 1, c: 2 }),
+        1,
+        'Board effective greenery reflects LOGGING_CAMP GL-1'
+    );
+    assert.equal(
+        new CellViewDataService().getCellViewData(state, 1, 2).greenery,
+        1,
+        'presentation reads effective greenery without rewriting terrain'
+    );
+    assert.equal(state.grid[1][1].terrain.gl, 2, 'selected-cell effect does not destroy source cluster');
 }
 
 {
@@ -727,6 +751,17 @@ console.log('Board / Special Block / Defense v1 contract');
         restoredLogging.grid[0][0].specialBlock.sourceGroupReference.initialSize,
         4,
         'source group reference survives save/restore'
+    );
+    assert.equal(
+        restoredLogging.grid[0][0].terrain.gl,
+        2,
+        'save/restore keeps canonical Base Terrain GL'
+    );
+    assert.equal(
+        new BoardDomainAdapter({ state: restoredLogging, gridEngine: null })
+            .readEffectiveGreenery({ r: 0, c: 0 }),
+        1,
+        'save/restore preserves effective LOGGING_CAMP GL modifier'
     );
 
     // An unzoned forest adjacent to a zoned forest stays in its own fallback
