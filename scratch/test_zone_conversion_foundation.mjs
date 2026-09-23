@@ -264,7 +264,12 @@ assert.equal(duePlan.canPay, false);
 assert.deepEqual(duePlan.shortfalls, { food: 1 });
 
 const beforeFailedMaintenanceFood = state.food;
-const failedVerse = service.settleMaintenanceForVerse(21);
+const maintenanceLifecycle = Object.create(TurnLifecycleService.prototype);
+maintenanceLifecycle.engine = {
+    state,
+    zoneConversionService: service
+};
+const failedVerse = maintenanceLifecycle.settleZoneConversionMaintenanceForVerse(21);
 assert.equal(failedVerse.results.length, 1);
 assert.equal(failedVerse.results[0].success, true);
 assert.equal(failedVerse.results[0].state, ZONE_CONVERSION_STATES.DYSFUNCTIONAL);
@@ -295,7 +300,7 @@ state.food = 30;
 const recoveryPlan = adapter.getZoneConversionMaintenancePlan("zone_a", 22);
 assert.equal(recoveryPlan.due, true);
 assert.equal(recoveryPlan.canPay, true);
-const recoveredVerse = service.settleMaintenanceForVerse(22);
+const recoveredVerse = maintenanceLifecycle.settleZoneConversionMaintenanceForVerse(22);
 assert.equal(recoveredVerse.results.length, 1);
 assert.equal(recoveredVerse.results[0].success, true);
 assert.equal(recoveredVerse.results[0].state, ZONE_CONVERSION_STATES.ACTIVE);
@@ -349,9 +354,12 @@ assert.equal(restored.mergedBlocks.zone_b.conversion.sequence, 2);
             hasMulliganedThisTurn: true
         },
         zoneConversionService: {
-            settleMaintenanceForVerse(verse) {
+            enumerateMaintenanceDue(verse) {
                 order.push(`maintenance:${verse}`);
-                return { verse, results: [] };
+                return [];
+            },
+            applyMaintenanceSettlement() {
+                throw new Error("not expected");
             }
         },
         deckManager: {
