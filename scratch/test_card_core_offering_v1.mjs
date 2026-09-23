@@ -12,6 +12,7 @@ import {
 } from "../game/src/cards/legacy_offering_requirement_adapter.js";
 import { CardEffectHandlerRouter } from "../game/src/cards/card_effect_handler_router.js";
 import { CARD_EFFECT_TYPES, CardEffectExecutor } from "../game/src/cards/card_effect_executor.js";
+import { COMMAND_CARDS_MASTER } from "../game/src/data/command_cards_data.js";
 
 function makeGrid(rows, cols) {
     return Array.from({ length: rows }, () => Array.from({ length: cols }, () => ({})));
@@ -349,7 +350,7 @@ function makeGrid(rows, cols) {
 
     assert.equal(result.success, true);
     assert.equal(state.wood, 7);
-    assert.equal(state.material, 7, "wood resource delta keeps legacy material mirror in sync");
+    assert.equal(state.material, 2, "resource delta mutates only the authored resource");
     assert.equal(state.guidedDefenseActive, true);
     assert.equal(state.testCounter, 2);
     assert.equal(state.activeBuffs.length, 1);
@@ -478,6 +479,71 @@ function makeGrid(rows, cols) {
     assert.equal(state.wood, 10, "execution failure must occur before cost deduction");
     assert.equal(state.handOffering[0].id, "slot", "execution failure must not consume the source slot");
     assert.equal(state.shouldNotRun, undefined);
+}
+
+// O. First real migrations preserve legacy state/cost semantics without DeckManager ID branches.
+{
+    const emergency = COMMAND_CARDS_MASTER.find(card => card.id === "CMD_EMERGENCY_LEVY");
+    const loggingCamp = COMMAND_CARDS_MASTER.find(card => card.id === "CMD_LOGGING_CAMP");
+    assert.ok(Array.isArray(emergency?.effects) && emergency.effects.length === 3);
+    assert.ok(Array.isArray(loggingCamp?.effects) && loggingCamp.effects.length === 3);
+
+    const emergencyState = {
+        turn: 1,
+        food: 30,
+        wood: 4,
+        material: 99,
+        mystic: 0,
+        ember: 3,
+        reserveSlots: [],
+        consumedUniqueCards: [],
+        usedUniqueCards: [],
+        activeBuffs: [],
+        logs: [],
+        addBuff(buff) { this.activeBuffs.push(buff); },
+        addLog(log) { this.logs.push(log); }
+    };
+    const emergencyManager = new DeckManager(emergencyState, {});
+    emergencyManager.cycleSystem = null;
+    const emergencyResult = emergencyManager.playCommandCard(emergency);
+
+    assert.equal(emergencyResult.success, true);
+    assert.equal(emergencyState.food, 10, "legacy food cost remains 20");
+    assert.equal(emergencyState.wood, 19, "legacy immediate material gain remains +15 wood");
+    assert.equal(emergencyState.material, 99, "legacy effect did not mirror gained wood into material");
+    assert.equal(emergencyState.activeBuffs.length, 1);
+    assert.equal(emergencyState.activeBuffs[0].id, "CMD_EMERGENCY_LEVY");
+    assert.equal(emergencyState.activeBuffs[0].icon, "🧱");
+    assert.equal(emergencyState.activeBuffs[0].category, "CARD_EFFECT");
+    assert.equal(emergencyState.logs.length, 1);
+
+    const campState = {
+        turn: 1,
+        food: 10,
+        wood: 2,
+        material: 77,
+        mystic: 0,
+        ember: 2,
+        reserveSlots: [],
+        consumedUniqueCards: [],
+        usedUniqueCards: [],
+        activeBuffs: [],
+        logs: [],
+        addBuff(buff) { this.activeBuffs.push(buff); },
+        addLog(log) { this.logs.push(log); }
+    };
+    const campManager = new DeckManager(campState, {});
+    campManager.cycleSystem = null;
+    const campResult = campManager.playCommandCard(loggingCamp);
+
+    assert.equal(campResult.success, true);
+    assert.equal(campState.ember, 1, "legacy ember cost remains 1");
+    assert.equal(campState.wood, 10, "legacy immediate gain remains +8 wood");
+    assert.equal(campState.material, 77);
+    assert.equal(campState.activeBuffs.length, 1);
+    assert.equal(campState.activeBuffs[0].id, "CMD_LOGGING_CAMP");
+    assert.equal(campState.activeBuffs[0].icon, "🪵");
+    assert.equal(campState.logs.length, 1);
 }
 
 console.log("✅ Card Core / Offering v1 contract tests PASS");
