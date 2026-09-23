@@ -1,3 +1,5 @@
+import { resolveRepresentativePlacementTerrainId } from '../core/placement_geometry.js';
+
 /**
  * 🗺️ land_sfx_resolver.js (地形選択SEリゾルバー)
  * 
@@ -13,8 +15,7 @@ export function resolveLandSelectSfx(terrainIdOrCard) {
     if (typeof terrainIdOrCard === "string") {
         tid = terrainIdOrCard.toUpperCase();
     } else if (typeof terrainIdOrCard === "object") {
-        const tObj = terrainIdOrCard.terrain || terrainIdOrCard;
-        tid = (tObj.terrainId || tObj.id || "").toUpperCase();
+        tid = String(resolveRepresentativePlacementTerrainId(terrainIdOrCard) || "").toUpperCase();
     }
 
     // 1. 湿原 (E0 GL1)

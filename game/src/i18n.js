@@ -960,6 +960,7 @@
             ERR_INVALID_ELEVATION_NEIGHBOR: "平地と山岳は直接隣接できません（高度断絶）",
             ERR_ALREADY_PLACED: "既に土地が開発されています",
             ERR_OUT_OF_BOUNDS: "盤面の外側です",
+            ERR_MULTI_ATTRIBUTE_PRODUCTION_UNRESOLVED: "この複数属性土地は産出仕様が未確定のため開発できません",
             ALERT_GAME_OVER: "💀 【GAME OVER】 生命力 🔥 が 0 になりました。人類の灯火は消滅しました。",
             ALERT_GAME_CLEAR: "🎉 【GAME CLEAR】 50 ターンを生存抜けて人類の生存目標を達成しました！",
             ALERT_SEARCH_FAILED: "❌ 探索不可: {reason}",
@@ -1042,6 +1043,11 @@
             TERRAIN_DESERT_HILL: "Desert Hill",
             TERRAIN_FOREST_HILL: "Forest Hill",
             TERRAIN_DEEP_HILL: "Deep Forest Hill",
+            CARD_MULTI_ATTRIBUTE_SUFFIX: " (Mixed)",
+            UI_YIELD_UNRESOLVED: "TBD",
+            CARD_DESC_MULTI_PLAINS_HILL_1X2: "A mixed-terrain block that places a Plains and Hill boundary as one land card.",
+            CARD_DESC_MULTI_PLAINS_FOREST_1X2: "A mixed-terrain block that places a Plains and Forest boundary as one land card.",
+            CARD_DESC_MULTI_HILL_MOUNTAIN_1X2: "A mixed-terrain block that places a Hill and Mountain boundary as one land card.",
             CARD_DESC_WETLAND_1X1: "Lowland collecting moisture. Cannot directly border another Wetland or form a zone, but may border a Lake and supports mud, water sources, and reclamation.",
 
             // 📜 Economy & Policy
@@ -1891,6 +1897,7 @@
             ERR_INVALID_ELEVATION_NEIGHBOR: "Plains and Mountains cannot be directly adjacent (Elevation Gap)",
             ERR_ALREADY_PLACED: "Land is already developed here",
             ERR_OUT_OF_BOUNDS: "Out of board bounds",
+            ERR_MULTI_ATTRIBUTE_PRODUCTION_UNRESOLVED: "This multi-attribute land cannot be developed until its production rules are resolved",
             ALERT_GAME_OVER: "💀 [GAME OVER] Ember extinguished.",
             ALERT_GAME_CLEAR: "🎉 [GAME CLEAR] Survived 50 Turns!",
             ALERT_SEARCH_FAILED: "❌ Cannot Explore: {reason}",

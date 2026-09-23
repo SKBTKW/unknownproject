@@ -1,4 +1,5 @@
 import { hasMultiplePlacementTerrainAttributes } from '../core/placement_geometry.js';
+import { resolveCanonicalTerrainSemantic } from '../data/land_system.js';
 /* =============================================================
    game/src/presentation/land_card_presentation.js
    LAND card presentation helpers.
@@ -42,6 +43,12 @@ function getAttributeTerrainId(cell) {
 }
 
 function getAttributeNameKey(cell) {
+    const terrainId = getAttributeTerrainId(cell);
+    if (terrainId) {
+        const canonicalNameKey = resolveCanonicalTerrainSemantic(terrainId)?.nameKey || null;
+        if (canonicalNameKey) return canonicalNameKey;
+    }
+
     return cell?.terrain?.nameKey || cell?.nameKey || null;
 }
 
