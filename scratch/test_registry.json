@@ -898,6 +898,14 @@
       ]
     },
     {
+      "path": "scratch/test_stage1_trial_threat_policy_v1.mjs",
+      "purpose": "canonical Stage1 Trial1 threat policy, one-force route band, and production composition",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_state_serializer_restore_coverage.mjs",
       "purpose": "state serializer restore coverage",
       "suite": "existing",

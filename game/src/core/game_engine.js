@@ -207,6 +207,8 @@ class GameEngine {
             this.trialTimingAuthorityService = dependencies.state?.trialTimingAuthorityService || null;
         }
 
+        this.trialThreatResolver = dependencies.trialThreatResolver || null;
+
         const TurnLifecycleServiceClass = dependencies.TurnLifecycleServiceClass || TurnLifecycleService;
         this.turnLifecycleService = dependencies.turnLifecycleService
             || (TurnLifecycleServiceClass ? new TurnLifecycleServiceClass(this) : null);
