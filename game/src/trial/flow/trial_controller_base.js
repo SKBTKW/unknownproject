@@ -15,6 +15,7 @@ import { TrialEnemyAdvanceService } from "../systems/trial_enemy_advance_service
 import { TrialHqDamageResolver } from "../systems/trial_hq_damage_resolver.js";
 import { TrialCompletionService } from "../systems/trial_completion_service.js";
 import { TrialFlow } from "./trial_flow.js";
+import { readSpecialBlockTrialTraits } from "../../core/special_block_domain.js";
 
 export class TrialController {
     constructor({
@@ -75,7 +76,9 @@ export class TrialController {
         const position = this.getRoutePosition(routeId, r, c);
         if (!position) return { success: false, reason: TRIAL_PLAN_REASONS.CELL_NOT_ON_ROUTE };
         const cell = this.cellResolver?.(r, c);
-        if (!cell?.placed || cell.isHQ) {
+        const specialTraits = readSpecialBlockTrialTraits(cell);
+        const specialInterceptionAllowed = specialTraits?.interceptionAllowed === true;
+        if (!cell || cell.isHQ || (!cell.placed && !specialInterceptionAllowed)) {
             return { success: false, reason: TRIAL_PLAN_REASONS.INTERCEPTION_NOT_ALLOWED };
         }
         const approachEntry = position.index > 0 ? position.cells[position.index - 1] : null;
