@@ -15,8 +15,7 @@ const LEGACY_COMMAND_EXECUTION_CLASS = Object.freeze({
 });
 
 const CURRENT_SSOT_LOCAL_IDS = Object.freeze([
-    "CMD_MILITARY_FOCUS",
-    "CMD_AGRICULTURAL_REFORM"
+    "CMD_MILITARY_FOCUS"
 ]);
 
 const DOMAIN_ACTION_REQUIRED_IDS = Object.freeze([
