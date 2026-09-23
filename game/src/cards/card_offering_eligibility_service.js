@@ -25,8 +25,10 @@ class CardOfferingEligibilityService {
         const card = normalizeCardDefinitionV1(cardDefinition);
         if (!card?.id) return Object.freeze({ eligible: false, reason: "INVALID_CARD_DEFINITION" });
 
-        if (card.category === "LAND") {
-            if (!this.placementQuery?.hasAnyLegalPlacement(card.legacy)) {
+        if (card.category === "LAND" && context.skipPlacementCheck !== true) {
+            if (!this.placementQuery?.hasAnyLegalPlacement(card.legacy, {
+                cache: context.placeabilityCache || context.options?.placeabilityCache || null
+            })) {
                 return Object.freeze({ eligible: false, reason: "NO_LEGAL_PLACEMENT" });
             }
         }
