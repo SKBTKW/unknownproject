@@ -1017,34 +1017,6 @@ class DeckManager {
                 category: "TACTICAL"
             });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🐎【${cName}】`);
-        } else if (cId === "CMD_REVELATION_CHOICE") {
-            // ✨ 天啓の選択: コスト ✨-15 (次ターン指定カテゴリ枠確定)
-            this.state.revelationChoiceTurns = 1;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "✨",
-                description: cDesc,
-                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 1 }) : "1T",
-                category: "CARD_EFFECT",
-                remainingTurns: 1
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `✨【${cName}】`);
-        } else if (cId === "CMD_TWO_FUTURES") {
-            // 🔮 二つの未来: コスト ✨-20 (次ターン2組手札オファリング)
-            this.state.twoFuturesTurns = 1;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🔮",
-                description: cDesc,
-                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 1 }) : "1T",
-                category: "CARD_EFFECT",
-                remainingTurns: 1
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🔮【${cName}】`);
         } else if (cId === "CMD_PASTORAL_EXPANSION") {
             // 🐑 放牧地の拡大: コスト 🧱-10 (次回同属性接続ボーナス強化)
             this.state.pastoralExpansionActive = true;
@@ -1105,32 +1077,6 @@ class DeckManager {
                 category: "TACTICAL"
             });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🏰【${cName}】`);
-        } else if (cId === "CMD_LEYLINE_RESONANCE") {
-            // ✨ 地脈の共鳴: コスト ✨-8 (次回✨不足補填枠拡大)
-            this.state.leylineResonanceActive = true;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "✨",
-                description: cDesc,
-                category: "CARD_EFFECT"
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `✨【${cName}】`);
-        } else if (cId === "CMD_VOICE_BENEATH_EARTH") {
-            // 🔮 大地の囁き: コスト ✨-5 (次ターン発見資源連動オファリング)
-            this.state.voiceBeneathEarthTurns = 1;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🔮",
-                description: cDesc,
-                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 1 }) : "1T",
-                category: "CARD_EFFECT",
-                remainingTurns: 1
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🔮【${cName}】`);
         } else if (cId === "CMD_SINGLE_CLEARING") {
             // 🪓 伐採: コスト 🔥-1 (森1マス伐採・平地化、🧱+20, 🌾+3)
             let cleared = false;
