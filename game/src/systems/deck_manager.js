@@ -706,20 +706,9 @@ class DeckManager {
         return false;
     }
 
-    _passesOfferingPlaceabilityGate(card, placeabilityCache = null) {
+    _evaluateOfferingPlaceability(card, placeabilityCache = null) {
         const definition = this._cardDefinition(card);
         if (!definition || definition.category !== "LAND") return true;
-
-        // Live gameplay must never offer a LAND card with no legal placement.
-        // Isolated CardCycle tests and pre-attach states can expose a grid that
-        // has no placed root (normally HQ). In that state placement legality is
-        // not meaningfully evaluable, so preserve legacy eligibility instead
-        // of treating every LAND card as permanently unplaceable.
-        if (
-            !this.state?.grid
-            || typeof this.state.canPlaceShape !== "function"
-            || !this._hasOfferingPlacementRoot()
-        ) return true;
 
         if (placeabilityCache instanceof WeakMap && typeof definition === "object") {
             if (placeabilityCache.has(definition)) {
@@ -733,13 +722,33 @@ class DeckManager {
         return this._isCardPlaceableNow(definition);
     }
 
+    _passesOfferingPlaceabilityGate(card, placeabilityCache = null) {
+        const definition = this._cardDefinition(card);
+        if (!definition || definition.category !== "LAND") return true;
+
+        // Live gameplay must never offer a LAND card with no legal placement.
+        // Isolated CardCycle tests and pre-attach states can expose a grid that
+        // has no placed root (normally HQ). In that state generic draw/fallback
+        // legality is not meaningfully evaluable, so preserve legacy eligibility.
+        if (
+            !this.state?.grid
+            || typeof this.state.canPlaceShape !== "function"
+            || !this._hasOfferingPlacementRoot()
+        ) return true;
+
+        return this._evaluateOfferingPlaceability(definition, placeabilityCache);
+    }
+
     _matchesMinimumRequirement(card, requirement, placeabilityCache = null) {
         const definition = this._cardDefinition(card);
         if (!definition || !requirement || typeof requirement !== "object") return false;
         if (requirement.category && definition.category !== requirement.category) return false;
         if (
             requirement.requirePlaceable === true
-            && !this._passesOfferingPlaceabilityGate(definition, placeabilityCache)
+            // An explicit minimum guarantee is stricter than generic fallback:
+            // if the provider asks for a placeable card, always evaluate the
+            // supplied placement boundary even in synthetic/unrooted harnesses.
+            && !this._evaluateOfferingPlaceability(definition, placeabilityCache)
         ) return false;
         return true;
     }
