@@ -54,6 +54,21 @@ export function resolveTrialDefenseAllocationBadge(trial) {
     });
 }
 
+export function resolveBattleSiteMarker(history) {
+    const sites = Array.isArray(history?.battleSites) ? history.battleSites : [];
+    if (!history?.battleSite || sites.length === 0) return null;
+    const latest = [...sites].sort((a, b) => {
+        const turnDelta = (b?.settledTurn ?? -1) - (a?.settledTurn ?? -1);
+        if (turnDelta !== 0) return turnDelta;
+        return (b?.trialIndex ?? -1) - (a?.trialIndex ?? -1);
+    })[0] || null;
+    return Object.freeze({
+        count: sites.length,
+        trialIndex: Number.isInteger(latest?.trialIndex) ? latest.trialIndex : null,
+        outcome: latest?.outcome || null
+    });
+}
+
 export function resolveBoardRoadDirections(edges = []) {
     const directions = [];
     const seen = new Set();
@@ -178,11 +193,29 @@ export class BoardPresentationGridComponent extends LegacyBoardGridComponent {
             cellEl.querySelector?.('.trial-defense-allocation-badge')?.remove?.();
             cellEl.querySelector?.('.trial-tactical-effect-stack')?.remove?.();
             cellEl.querySelector?.('.board-road-segments')?.remove?.();
+            cellEl.querySelector?.('.battle-site-history-marker')?.remove?.();
             applyBoardGroupJoinClasses(cellEl, cell?.edges);
             cellEl.classList.toggle('board-logical-hover', !isTrialContext && Boolean(interaction?.hovered));
             cellEl.classList.toggle('board-logical-focus', !isTrialContext && Boolean(interaction?.focused));
             cellEl.classList.toggle('board-logical-selected', !isTrialContext && Boolean(interaction?.selected));
             cellEl.classList.toggle('cell-placed-this-turn', Boolean(interaction?.placedThisTurn));
+
+            const battleSiteMarker = resolveBattleSiteMarker(cell?.history);
+            cellEl.classList.toggle('has-battle-site-history', Boolean(battleSiteMarker));
+            if (battleSiteMarker) {
+                const historyEl = document.createElement('span');
+                historyEl.className = 'battle-site-history-marker';
+                historyEl.textContent = '⚔';
+                historyEl.setAttribute('aria-hidden', 'true');
+                historyEl.setAttribute('data-battle-site-count', String(battleSiteMarker.count));
+                if (battleSiteMarker.trialIndex !== null) {
+                    historyEl.setAttribute('data-trial-index', String(battleSiteMarker.trialIndex));
+                }
+                if (battleSiteMarker.outcome) {
+                    historyEl.setAttribute('data-battle-outcome', String(battleSiteMarker.outcome));
+                }
+                cellEl.appendChild(historyEl);
+            }
 
             const roadDirections = resolveBoardRoadDirections(cell?.edges);
             if (roadDirections.length > 0) {

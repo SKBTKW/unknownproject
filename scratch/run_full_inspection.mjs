@@ -160,6 +160,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Battle Site Lifecycle) で不合格が検出されました。");
         process.exit(1);
     }
+    const battleSitePresentationOk = await runCommand("node", ["scratch/test_battle_site_presentation.mjs"]);
+    if (!battleSitePresentationOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Battle Site Presentation) で不合格が検出されました。");
+        process.exit(1);
+    }
     const turnLifecycleOk = await runCommand("node", ["scratch/test_turn_lifecycle_service.mjs"]);
     if (!turnLifecycleOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Turn Lifecycle Contract) で不合格が検出されました。");

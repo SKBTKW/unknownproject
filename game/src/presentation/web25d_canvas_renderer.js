@@ -354,6 +354,7 @@ export class Web25DCanvasRenderer {
 
         this.drawTerrainSurfaceDetail(cell, projected.screenCenter, lift);
         this.drawGreenery(cell, projected.screenCenter, lift);
+        this.drawBattleSiteHistory(cell, projected.screenCenter, lift);
 
         if (this.showElevationLabels && Number.isInteger(cell.elevation)) {
             ctx.font = '9px sans-serif';
@@ -443,6 +444,29 @@ export class Web25DCanvasRenderer {
             ctx.lineWidth = 0.9;
             ctx.stroke();
         }
+    }
+
+    drawBattleSiteHistory(cell, center, lift) {
+        if (!cell?.history?.battleSite) return;
+        const ctx = this.ctx;
+        const x = center.x - 13;
+        const y = center.y - lift + 8;
+
+        ctx.beginPath();
+        ctx.moveTo(x - 4, y - 4);
+        ctx.lineTo(x + 4, y + 4);
+        ctx.moveTo(x + 4, y - 4);
+        ctx.lineTo(x - 4, y + 4);
+        ctx.strokeStyle = 'rgba(226, 208, 179, 0.82)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(x - 5, y + 6);
+        ctx.lineTo(x + 5, y + 6);
+        ctx.strokeStyle = 'rgba(88, 72, 58, 0.88)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
     }
 
     drawGreenery(cell, center, lift) {

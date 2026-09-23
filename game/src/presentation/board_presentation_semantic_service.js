@@ -259,6 +259,38 @@ export class BoardPresentationSemanticService {
         return resolveBoardDisplayProduction(state, facts, this.cellViewDataService);
     }
 
+    getHistory(state, facts) {
+        const cell = state?.grid?.[facts?.r]?.[facts?.c] || null;
+        const battleSites = Array.isArray(cell?.entities)
+            ? cell.entities
+                .filter(entity => {
+                    const type = String(
+                        entity?.entityType
+                        || entity?.type
+                        || entity?.definitionId
+                        || entity?.kind
+                        || entity?.id
+                        || ''
+                    ).toUpperCase();
+                    return type === 'BATTLE_SITE' || type.startsWith('BATTLE_SITE@');
+                })
+                .map(entity => Object.freeze({
+                    id: entity.id || null,
+                    trialIndex: Number.isInteger(entity.trialIndex) ? entity.trialIndex : null,
+                    scenarioId: entity.scenarioId || null,
+                    battleIndex: Number.isInteger(entity.battleIndex) ? entity.battleIndex : null,
+                    routeId: entity.routeId || null,
+                    outcome: entity.outcome || null,
+                    trialOutcome: entity.trialOutcome || null,
+                    settledTurn: Number.isInteger(entity.settledTurn) ? entity.settledTurn : null
+                }))
+            : [];
+        return Object.freeze({
+            battleSite: battleSites.length > 0,
+            battleSites: Object.freeze(battleSites)
+        });
+    }
+
     getInfluence(state, r, c) {
         const hqVicinity = typeof state?.isHQVicinity === 'function'
             ? Boolean(state.isHQVicinity(r, c))
@@ -357,6 +389,7 @@ export class BoardPresentationSemanticService {
             zone,
             links,
             display: Object.freeze({ role, production }),
+            history: this.getHistory(state, facts),
             influence: this.getInfluence(state, facts.r, facts.c),
             edges: this.getLogicalEdges(state, facts, linkIndex)
         });
