@@ -1,4 +1,5 @@
 import { PlacementPreviewResolver } from '../presentation/placement_preview_resolver.js';
+import { UILayoutConfig } from './layout_config.js';
 
 /* =============================================================
    game/src/ui/block_placement_system.js
@@ -107,8 +108,8 @@ import { PlacementPreviewResolver } from '../presentation/placement_preview_reso
                     if (targetEl) {
                         targetEl.classList.add(isValid ? "preview-valid" : "preview-invalid");
 
-                        if (cell.terrainId && typeof globalThis.UILayoutConfig !== "undefined") {
-                            const theme = globalThis.UILayoutConfig.getBlockThemeColor(cell.terrainId);
+                        if (cell.terrainId) {
+                            const theme = UILayoutConfig.getBlockThemeColor(cell.terrainId);
                             if (typeof targetEl.setAttribute === "function") {
                                 targetEl.setAttribute("data-preview-terrain", "1");
                             }
