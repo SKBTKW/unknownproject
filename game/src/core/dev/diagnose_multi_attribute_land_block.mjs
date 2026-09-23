@@ -14,7 +14,7 @@ import { ProductionCalculator } from "../../systems/production_calculator.js";
 import { DefenseSystem } from "../../systems/defense_system.js";
 import { UndoLandSystem } from "../../systems/undo_land_system.js";
 import { CellViewDataService } from "../../services/cell_view_data_service.js";
-import { DeckManager } from "../../systems/deck_manager.js";
+import { DeckManager, OFFERING_GENERATION_REASONS } from "../../systems/deck_manager.js";
 import { LAND_CARDS_MASTER } from "../../data/land_cards_data.js";
 import {
     LAND_SYSTEM_DATA,
