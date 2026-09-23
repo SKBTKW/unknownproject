@@ -4,7 +4,10 @@ import { GameEngine } from "../game/src/core/game_engine.js";
 import { TrialController } from "../game/src/trial/flow/trial_controller.js";
 import { TRIAL_DEPLOYMENT_COST_PROFILE_STATUS } from "../game/src/trial/domain/trial_deployment_cost_resolver.js";
 
-function createControllerFixture({ defenseAllocation = 4 } = {}) {
+function createControllerFixture({
+    defenseAllocation = 4,
+    useCanonicalDefenseReservation = true
+} = {}) {
     const engine = new GameEngine({ runSeed: 20260924 });
     const controller = new TrialController({
         gameFactHub: engine.gameFactHub,
@@ -31,6 +34,7 @@ function createControllerFixture({ defenseAllocation = 4 } = {}) {
             ]
         }]
     }, {
+        useCanonicalDefenseReservation,
         cellResolver: (r, c) => ({
             r,
             c,
@@ -76,6 +80,23 @@ console.log("\nTrial Core defense write-through");
     assert.equal(engine.getTrialAvailableDefense(), availableDefense - 4);
     assert.equal(engine.state.currentDefense, availableDefense - 4);
     assert.equal(controller.state.human.availableDefense, availableDefense - 4);
+}
+
+{
+    const { engine, controller, availableDefense } = createControllerFixture({
+        defenseAllocation: 4,
+        useCanonicalDefenseReservation: false
+    });
+
+    const activated = controller.activateInterceptionPlan();
+    assert.equal(activated.success, true);
+    assert.equal(
+        engine.getTrialAvailableDefense(),
+        availableDefense,
+        "development/preview-style sessions may use an isolated virtual defense pool"
+    );
+    assert.equal(controller.state.human.availableDefense, availableDefense - 4);
+    assert.equal(activated.defenseReservationCommit, null);
 }
 
 {
