@@ -10,7 +10,11 @@ import {
     resolvePlacementShape,
     rotatePlacementClockwise
 } from "../game/src/core/placement_geometry.js";
-import { resolveCellProductionBase } from "../game/src/core/land_production_contract.js";
+import {
+    resolveCardProductionPreview,
+    resolveCellProductionBase
+} from "../game/src/core/land_production_contract.js";
+import { resolveOfferingWeight } from "../game/src/cards/offering_weight_policy.js";
 
 const TRACE_SEEDS = Object.freeze([
     20260920,
@@ -595,6 +599,7 @@ function runSeedTrace(seed) {
     const trace = [];
     const settlements = [];
     const placementOrigins = new Map();
+    const chosenLandCards = [];
     let investigationExecuted = false;
 
     assert.equal(engine.state.stage.id, 1);
@@ -653,6 +658,11 @@ function runSeedTrace(seed) {
             );
             assert.equal(result?.success, true, `seed ${seed} V${verse}: selected LAND action must commit`);
             recordPlacementOrigin(engine.state, placementGroupsBefore, action, placementOrigins);
+            chosenLandCards.push({
+                id: String(action.definition?.id || "UNKNOWN"),
+                cells: countShapeCells(action.placement.shape),
+                multiAttribute: String(action.definition?.id || "").startsWith("CARD_MULTI_")
+            });
         } else {
             const result = engine.executeInvestigationCard(
                 action.card,
@@ -768,7 +778,7 @@ function runSeedTrace(seed) {
         ].join(" ")
     );
 
-    return { trace, settlements, productionContribution };
+    return { trace, settlements, productionContribution, chosenLandCards };
 }
 
 
@@ -778,6 +788,86 @@ function formatRange(values) {
     return `${Math.min(...finite)}..${Math.max(...finite)}`;
 }
 
+
+
+function printStage1CardYieldHorizon() {
+    const engine = GameEngine.createGame({ runSeed: 20260924, firstRun: true });
+    const horizons = Object.freeze({
+        V1: 14,
+        V4: 11,
+        V8: 7,
+        V12: 3
+    });
+    const cards = LAND_CARDS_MASTER
+        .filter(card => card.category === "LAND" && Number(card.minStage || 1) <= 1)
+        .map(card => {
+            const preview = resolveCardProductionPreview(card);
+            assert.notEqual(preview.status, "UNRESOLVED", `${card.id} production must resolve`);
+            const yields = preview.totalYields || {};
+            return {
+                id: card.id,
+                rarity: card.rarity,
+                weight: resolveOfferingWeight(card, engine.state),
+                cells: countShapeCells(card.shape),
+                multiAttribute: String(card.id).startsWith("CARD_MULTI_"),
+                food: Number(yields.food) || 0,
+                material: Number(yields.wood) || 0,
+                defense: Number(yields.defense) || 0,
+                mystic: Number(yields.mystic) || 0
+            };
+        })
+        .sort((a, b) => (
+            (b.food + b.material) - (a.food + a.material)
+            || b.cells - a.cells
+            || a.id.localeCompare(b.id)
+        ));
+
+    console.log("=== Stage1 Card Yield Horizon / base recurring value only ===");
+    for (const card of cards) {
+        const horizonText = Object.entries(horizons)
+            .map(([verse, turns]) => (
+                `${verse}=🌾${card.food * turns}/🧱${card.material * turns}/🛡️${card.defense * turns}/✨${card.mystic * turns}`
+            ))
+            .join(",");
+        console.log(
+            [
+                "CARD_HORIZON",
+                card.id,
+                `rarity=${card.rarity}`,
+                `weight=${card.weight}`,
+                `cells=${card.cells}`,
+                `multi=${card.multiAttribute}`,
+                `perVerse=🌾${card.food}/🧱${card.material}/🛡️${card.defense}/✨${card.mystic}`,
+                horizonText
+            ].join(" ")
+        );
+    }
+
+    const plains1x1 = cards.find(card => card.id === "CARD_PLAINS_1X1");
+    const plains1x2 = cards.find(card => card.id === "CARD_PLAINS_1X2");
+    const multiPlainsForest = cards.find(card => card.id === "CARD_MULTI_PLAINS_FOREST_1X2");
+    assert.equal(plains1x2.food, plains1x1.food * 2, "Plains 1x2 must carry two cells of recurring food");
+    assert.equal(multiPlainsForest.food, 6, "Plains+Forest Multi must preserve canonical 4+2 food");
+    assert.equal(multiPlainsForest.material, 2, "Plains+Forest Multi must preserve canonical Forest material");
+}
+
+function printLandPickSummary(runs) {
+    const picks = runs.flatMap(run => run.chosenLandCards || []);
+    const counts = new Map();
+    for (const pick of picks) counts.set(pick.id, (counts.get(pick.id) || 0) + 1);
+    const twoCell = picks.filter(pick => pick.cells >= 2);
+    const multi = picks.filter(pick => pick.multiAttribute);
+
+    console.log(
+        [
+            "LAND_PICK_SUMMARY",
+            `landActions=${picks.length}`,
+            `twoCell=${twoCell.length}(${percent(twoCell.length, picks.length).toFixed(1)}%)`,
+            `multiAttribute=${multi.length}(${percent(multi.length, picks.length).toFixed(1)}%)`,
+            `cards=${[...counts.entries()].sort((a, b) => b[1] - a[1]).map(([id, count]) => `${id}:${count}`).join(",")}`
+        ].join(" ")
+    );
+}
 
 function printProductionContributionSummary(runs) {
     const combined = sumContributionRows(runs.flatMap(run => run.settlements));
@@ -866,6 +956,7 @@ function printEconomySummary(runs) {
 
 console.log("=== Stage1 Offering / Economy / Board Playability Audit ===");
 
+printStage1CardYieldHorizon();
 testFoodSettlementUsesGrossProductionOnce();
 testReserveDoesNotPoisonOfferingOrOverchargeEmber();
 testStage1MultiAttributeEligibility();
@@ -904,6 +995,7 @@ assert.equal(
 
 printEconomySummary(runs);
 printProductionContributionSummary(runs);
+printLandPickSummary(runs);
 
 console.log(
     `PASS Stage1 playability audit: ${TRACE_SEEDS.length} seeds x Verse1-15 + reserve + food settlement + Multi-Attribute + Zone/Link`
