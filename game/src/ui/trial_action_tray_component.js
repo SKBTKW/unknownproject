@@ -556,15 +556,15 @@ export class TrialActionTrayComponent {
                         <strong>🛡️ ${allocated} / ${maxForActive}</strong>
                     </div>
                     <div class="trial-action-slider-row">
-                        <button type="button" data-trial-action="decrease" ${allocated <= 0 || disabledSlider ? "disabled" : ""}>−</button>
-                        <input data-trial-action="slider" type="range" min="0" max="${maxForActive}" step="1" value="${allocated}" ${disabledSlider ? "disabled" : ""}>
-                        <button type="button" data-trial-action="increase" ${allocated >= maxForActive || disabledSlider ? "disabled" : ""}>＋</button>
-                        <button type="button" class="trial-action-max" data-trial-action="max" ${allocated >= maxForActive || disabledSlider ? "disabled" : ""}>${I18n.t("UI_TRIAL_DEFENSE_MAX")}</button>
+                        <button type="button" id="btnTrialDefenseDecrease" data-trial-action="decrease" ${allocated <= 0 || disabledSlider ? "disabled" : ""}>−</button>
+                        <input id="trialDefenseAllocationSlider" data-trial-action="slider" type="range" min="0" max="${maxForActive}" step="1" value="${allocated}" ${disabledSlider ? "disabled" : ""}>
+                        <button type="button" id="btnTrialDefenseIncrease" data-trial-action="increase" ${allocated >= maxForActive || disabledSlider ? "disabled" : ""}>＋</button>
+                        <button type="button" id="btnTrialDefenseMax" class="trial-action-max" data-trial-action="max" ${allocated >= maxForActive || disabledSlider ? "disabled" : ""}>${I18n.t("UI_TRIAL_DEFENSE_MAX")}</button>
                     </div>
                     <div class="trial-action-decision-row">
-                        <button type="button" class="is-primary" data-trial-action="intercept" ${canSetIntercept ? "" : "disabled"}>${I18n.t("UI_TRIAL_BTN_SET_INTERCEPT")}</button>
-                        <button type="button" data-trial-action="skip" ${canSkip ? "" : "disabled"}>${I18n.t("UI_TRIAL_BTN_SKIP")}</button>
-                        <button type="button" data-trial-action="clear" ${canClear ? "" : "disabled"}>${I18n.t("UI_TRIAL_BTN_CLEAR")}</button>
+                        <button type="button" id="btnTrialSetIntercept" class="is-primary" data-trial-action="intercept" ${canSetIntercept ? "" : "disabled"}>${I18n.t("UI_TRIAL_BTN_SET_INTERCEPT")}</button>
+                        <button type="button" id="btnTrialSetSkip" data-trial-action="skip" ${canSkip ? "" : "disabled"}>${I18n.t("UI_TRIAL_BTN_SKIP")}</button>
+                        <button type="button" id="btnTrialClearDecision" data-trial-action="clear" ${canClear ? "" : "disabled"}>${I18n.t("UI_TRIAL_BTN_CLEAR")}</button>
                     </div>
                 </div>
                 ${errorsHtml}
@@ -573,14 +573,16 @@ export class TrialActionTrayComponent {
             </section>
         `;
 
-        const query = action => root.querySelector(`[data-trial-action="${action}"]`);
-        const decrease = query("decrease");
-        const increase = query("increase");
-        const max = query("max");
-        const slider = query("slider");
-        const intercept = query("intercept");
-        const skip = query("skip");
-        const clear = query("clear");
+        const query = (action, id) =>
+            root.querySelector?.(`[data-trial-action="${action}"]`)
+            || document.getElementById(id);
+        const decrease = query("decrease", "btnTrialDefenseDecrease");
+        const increase = query("increase", "btnTrialDefenseIncrease");
+        const max = query("max", "btnTrialDefenseMax");
+        const slider = query("slider", "trialDefenseAllocationSlider");
+        const intercept = query("intercept", "btnTrialSetIntercept");
+        const skip = query("skip", "btnTrialSetSkip");
+        const clear = query("clear", "btnTrialClearDecision");
 
         if (decrease) decrease.onclick = () => this.ui.adjustTrialDefenseAllocation(-1);
         if (increase) increase.onclick = () => this.ui.adjustTrialDefenseAllocation(1);
