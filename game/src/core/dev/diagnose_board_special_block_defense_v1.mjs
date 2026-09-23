@@ -20,7 +20,13 @@ import { GameEngine } from '../game_engine.js';
 import { GameFactHub, GAME_FACT_TYPES } from '../game_fact.js';
 import { BoardBattleSiteRecorder } from '../board_battle_site_recorder.js';
 import { BoardHistoryQuery } from '../board_history_query.js';
-import { sumSpecialBlockProduction } from '../special_block_production.js';
+import {
+    SPECIAL_BLOCK_PRODUCTION_KINDS,
+    SPECIAL_BLOCK_PRODUCTION_STATUS,
+    SPECIAL_BLOCK_RELATION_NEIGHBORHOODS,
+    SpecialBlockProductionResolver,
+    sumSpecialBlockProduction
+} from '../special_block_production.js';
 import { CellViewDataService } from '../../services/cell_view_data_service.js';
 import {
     DISPLAY_ROLE,
@@ -911,6 +917,130 @@ console.log('Board / Special Block / Defense v1 contract');
         typeof engine.boardDomainAdapter.readCapabilities,
         'function',
         'other domains can consume the live Board capability read boundary'
+    );
+}
+
+{
+    const definitions = new Map([
+        ['TEST_SOURCE_SIZE', {
+            id: 'TEST_SOURCE_SIZE',
+            production: {
+                status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
+                kind: SPECIAL_BLOCK_PRODUCTION_KINDS.SOURCE_SIZE,
+                perSourceYields: { wood: 2 }
+            }
+        }],
+        ['TEST_RELATION', {
+            id: 'TEST_RELATION',
+            production: {
+                status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
+                kind: SPECIAL_BLOCK_PRODUCTION_KINDS.RELATION_COUNT,
+                relationCapability: BOARD_CAPABILITIES.MYSTIC_SOURCE,
+                relationNeighborhood: SPECIAL_BLOCK_RELATION_NEIGHBORHOODS.ORTHOGONAL,
+                perRelationYields: { mystic: 1 },
+                maxRelations: 3
+            }
+        }],
+        ['TEST_RELATION_INCOMPLETE', {
+            id: 'TEST_RELATION_INCOMPLETE',
+            production: {
+                status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
+                kind: SPECIAL_BLOCK_PRODUCTION_KINDS.RELATION_COUNT,
+                relationCapability: BOARD_CAPABILITIES.MYSTIC_SOURCE,
+                perRelationYields: { mystic: 1 }
+            }
+        }],
+        ['TEST_CONDITIONAL', {
+            id: 'TEST_CONDITIONAL',
+            production: {
+                status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
+                kind: SPECIAL_BLOCK_PRODUCTION_KINDS.CONDITIONAL
+            }
+        }]
+    ]);
+    const resolver = new SpecialBlockProductionResolver({
+        definitionResolver: id => definitions.get(id) || null,
+        strategies: {
+            [SPECIAL_BLOCK_PRODUCTION_KINDS.CONDITIONAL]: ({ cell }) => ({
+                status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
+                yields: cell?.terrain?.terrainId === 'E2_HILL'
+                    ? { wood: 4 }
+                    : { wood: 0 }
+            })
+        }
+    });
+
+    const sourceState = state5();
+    sourceState.grid[0][0] = cell(0, 0, {
+        specialBlock: {
+            type: 'TEST_SOURCE_SIZE',
+            definitionId: 'TEST_SOURCE_SIZE',
+            sourceGroupReference: { initialSize: 4 }
+        }
+    });
+    assert.deepEqual(
+        resolver.resolveCell(sourceState, sourceState.grid[0][0], { r: 0, c: 0 }),
+        {
+            status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
+            yields: { food: 0, wood: 8, defense: 0, mystic: 0 },
+            kind: SPECIAL_BLOCK_PRODUCTION_KINDS.SOURCE_SIZE
+        },
+        'SOURCE_SIZE resolves only from explicit per-source yields and source snapshot size'
+    );
+
+    const relationState = state5();
+    relationState.grid[1][1] = cell(1, 1, {
+        specialBlock: {
+            type: 'TEST_RELATION',
+            definitionId: 'TEST_RELATION'
+        }
+    });
+    relationState.grid[0][1] = cell(0, 1, {
+        capabilities: [BOARD_CAPABILITIES.MYSTIC_SOURCE]
+    });
+    relationState.grid[2][1] = cell(2, 1, {
+        capabilities: [BOARD_CAPABILITIES.MYSTIC_SOURCE]
+    });
+    relationState.grid[1][0] = cell(1, 0, {
+        capabilities: [BOARD_CAPABILITIES.MYSTIC_SOURCE]
+    });
+    relationState.grid[1][2] = cell(1, 2, {
+        capabilities: [BOARD_CAPABILITIES.MYSTIC_SOURCE]
+    });
+    assert.deepEqual(
+        resolver.resolveCell(relationState, relationState.grid[1][1], { r: 1, c: 1 }),
+        {
+            status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
+            yields: { food: 0, wood: 0, defense: 0, mystic: 3 },
+            kind: SPECIAL_BLOCK_PRODUCTION_KINDS.RELATION_COUNT
+        },
+        'RELATION_COUNT respects explicit neighborhood, capability and maxRelations'
+    );
+
+    relationState.grid[3][3] = cell(3, 3, {
+        specialBlock: {
+            type: 'TEST_RELATION_INCOMPLETE',
+            definitionId: 'TEST_RELATION_INCOMPLETE'
+        }
+    });
+    assert.equal(
+        resolver.resolveCell(relationState, relationState.grid[3][3], { r: 3, c: 3 }).status,
+        SPECIAL_BLOCK_PRODUCTION_STATUS.UNRESOLVED,
+        'RELATION_COUNT fails closed when neighborhood semantics are unspecified'
+    );
+
+    relationState.grid[0][0] = cell(0, 0, {
+        placed: true,
+        terrain: { ...HILL },
+        specialBlock: {
+            type: 'TEST_CONDITIONAL',
+            definitionId: 'TEST_CONDITIONAL'
+        }
+    });
+    assert.equal(
+        resolver.resolveCell(relationState, relationState.grid[0][0], { r: 0, c: 0 }).yields.wood,
+        4,
+        'CONDITIONAL remains an injected strategy boundary rather than facility-id branching'
     );
 }
 
