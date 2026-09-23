@@ -768,27 +768,6 @@ class DeckManager {
                 remainingTurns: 4
             });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🏯【${cName}】`);
-        } else if (cId === "CMD_SINGLE_CLEARING") {
-            // 🪓 伐採: コスト 🔥-1 (森1マス伐採・平地化、🧱+20, 🌾+3)
-            let cleared = false;
-            if (this.state.grid) {
-                for (let r = 0; r < this.state.grid.length && !cleared; r++) {
-                    for (let c = 0; c < this.state.grid[r].length && !cleared; c++) {
-                        const cell = this.state.grid[r][c];
-                        if (cell && cell.placed && !cell.isHQ && cell.terrain) {
-                            const tid = cell.terrain.terrainId || cell.terrain.id || "";
-                            if (tid.includes("FOREST") && !isTrueMergedCell(this.state, cell)) {
-                                cell.terrain = { id: "GL1_PLAINS", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, e: 1, food: 4, wood: 0, defense: 0, mystic: 0, category: "BASE" };
-                                cleared = true;
-                            }
-                        }
-                    }
-                }
-            }
-            this.state.wood = (this.state.wood || 0) + 20;
-            this.state.food = (this.state.food || 0) + 3;
-            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🪓", description: cDesc, category: "CARD_EFFECT" });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🪓【${cName}】`);
         } else if (cId === "CMD_WETLAND_RECLAMATION") {
             // 🌾 干拓: コスト 🧱-15, 🔥-1 (湖以外の湿原1マスを干拓地へ永久転換)
             let reclaimed = false;
@@ -834,25 +813,6 @@ class DeckManager {
             }
             this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🌾", description: cDesc, category: "CARD_EFFECT" });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🌾【${cName}】`);
-        } else if (cId === "CMD_SYSTEMATIC_LOGGING") {
-            // 🌲 計画伐採: コスト 🌾-10 (森林マス数×🧱+6、3T森産出🧱-1/T)
-            let forestCount = 0;
-            if (this.state.grid) {
-                for (let r = 0; r < this.state.grid.length; r++) {
-                    for (let c = 0; c < this.state.grid[r].length; c++) {
-                        const cell = this.state.grid[r][c];
-                        if (cell && cell.placed && cell.terrain) {
-                            const tid = cell.terrain.terrainId || cell.terrain.id || "";
-                            if (tid.includes("FOREST")) forestCount++;
-                        }
-                    }
-                }
-            }
-            this.state.wood = (this.state.wood || 0) + (forestCount * 6);
-            this.state.systematicLoggingTurns = 3;
-            this.state.systematicLoggingStartsNextTurn = true;
-            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🌲", description: cDesc, badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 3 }) : "3T", category: "DEBUFF", remainingTurns: 3, startsNextTurn: true });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🌲【${cName}】`);
         } else if (cId === "CMD_PASTORAL_FARM") {
             // 🐄 牧畜場: コスト 🧱-15 (平地を牧畜場化、🌾産出追加)
             this.state.food = (this.state.food || 0) + 2;
@@ -972,28 +932,7 @@ class DeckManager {
                     }
                 }
             };
-        } else if (cId === "CMD_LAND_EXPLORATION") {
-            const candidates = [];
-            if (this.state.grid) {
-                for (let r = 0; r < 5; r++) {
-                    for (let c = 0; c < 5; c++) {
-                        const cell = this.state.grid[r][c];
-                        if (cell && cell.placed && !cell.isHQ && !cell.searched && !cell.merged) {
-                            candidates.push({ r, c });
-                        }
-                    }
-                }
-            }
 
-            if (candidates.length === 0) {
-                return { success: false, reason: "NO_EXPLORABLE_TILES" };
-            }
-
-            const chosen = candidates[this._nextGameplayInt(0, candidates.length - 1)];
-            const posStr = `${String.fromCharCode(65+chosen.c)}${chosen.r+1}`;
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: `(${posStr}) 2D6` }) : `📜 ${cName}`);
-            const expRes = this.executeExploration(chosen.r, chosen.c);
-            return { success: expRes.success };
         }
 
         if (cardObj.isUnique) {
