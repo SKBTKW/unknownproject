@@ -24,6 +24,7 @@ import {
     findContractCellYields,
     normalizeProductionContract
 } from '../core/land_production_contract.js';
+import { isBoardCellOccupied } from '../core/board_cell_occupancy.js';
 function coordinateKey(r, c) {
     return `${r}:${c}`;
 }
@@ -123,6 +124,7 @@ class GridEngine {
                     mergeType: null,
                     placementGroupId: null,
                     terrain: isHQ ? { id: "HQ", nameKey: "TERRAIN_HQ", food: 10, wood: 10, defense: 10, mystic: 1 } : null,
+                    specialBlock: null,
                     searched: false,
                     hasSocket: false,
                     socketResource: null,
@@ -292,6 +294,7 @@ class GridEngine {
                         mergeType: null,
                         placementGroupId: null,
                         terrain: null,
+                        specialBlock: null,
                         searched: false,
                         hasSocket: false,
                         socketResource: null
@@ -334,7 +337,7 @@ class GridEngine {
         for (let r = 0; r < newSize; r++) {
             for (let c = 0; c < newSize; c++) {
                 const isPerimeter = (r === 0 || r === newSize - 1 || c === 0 || c === newSize - 1);
-                if (isPerimeter && !newGrid[r][c].placed && !newGrid[r][c].hasSocket) {
+                if (isPerimeter && !isBoardCellOccupied(newGrid[r][c]) && !newGrid[r][c].hasSocket) {
                     perimeterCandidates.push({ r, c });
                 }
             }
@@ -358,7 +361,7 @@ class GridEngine {
                 const cell = newGrid[r][c];
                 const isHQ = (r === newCenter && c === newCenter);
                 const isNearHQ = (Math.abs(r - newCenter) <= 1 && Math.abs(c - newCenter) <= 1);
-                if (!cell.placed && !isHQ && !isNearHQ && !cell.hasSocket) {
+                if (!isBoardCellOccupied(cell) && !isHQ && !isNearHQ && !cell.hasSocket) {
                     allCandidates.push({ r, c });
                 }
             }
@@ -440,7 +443,7 @@ class GridEngine {
                     isOutOfBounds = true;
                     continue;
                 }
-                if (this.state.grid[r][c].placed) isAlreadyPlaced = true;
+                if (isBoardCellOccupied(this.state.grid[r][c])) isAlreadyPlaced = true;
                 const isWetland = isWetlandTerrain(cellTerrain);
                 if (this.isHQVicinity(r, c)) {
                     if (isMountain) isMountainNearHQ = true;
