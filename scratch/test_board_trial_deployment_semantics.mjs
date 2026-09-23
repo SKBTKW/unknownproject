@@ -152,15 +152,7 @@ function makeSpecialBlockService() {
         "utf8"
     );
 
-    const deploymentSection = boardSource.slice(
-        boardSource.indexOf("    readTrialDeploymentFacts"),
-        boardSource.indexOf("    recordDamage")
-    );
-    assert.equal(
-        /GARRISON/.test(deploymentSection),
-        false,
-        "Board may own facility identity, but deployment projection must expose semantics only"
-    );
+    assert.equal(/GARRISON/.test(boardSource), false);
     assert.equal(/GARRISON/.test(trialSource), false);
     assert.equal(/mergeGroupId/.test(trialSource), false);
     assert.equal(/conversion\.definitionId/.test(trialSource), false);
