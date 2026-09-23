@@ -32,7 +32,7 @@ import {
     resolveTrialPresentationRouteId
 } from '../presentation/trial_route_focus_resolver.js';
 import { TrialInterceptionPreviewComponent } from './trial_interception_preview_component.js';
-import { TrialDefenseAllocationComponent } from './trial_defense_allocation_component.js';
+import { TrialActionTrayComponent } from './trial_action_tray_component.js';
 import { LayoutStateManager, UI_LAYOUT_STATES, HAND_LAYOUT_STATES } from './layout_state_manager.js';
 import { DevelopmentTrialPreviewHarness } from '../trial/dev/development_trial_preview_harness.js';
 import { TRIAL_PLAN_REASONS, TRIAL_BATTLE_STATUSES } from '../trial/domain/trial_types.js';
@@ -86,9 +86,9 @@ class UIController {
         this.devDiceControls = (typeof document !== 'undefined') ? new DevDiceControlsComponent(this) : null;
         this.buildIdentityBadge = (typeof document !== 'undefined') ? new BuildIdentityBadgeComponent() : null;
         this.layoutStateManager = new LayoutStateManager();
-        this.trialDefenseAllocationComponent = (typeof document !== 'undefined') ? new TrialDefenseAllocationComponent(this, {
-            contextOwnerProvider: () => this.layoutStateManager.getContextOwner()
-        }) : null;
+        this.trialActionTrayComponent = (typeof document !== 'undefined')
+            ? new TrialActionTrayComponent(this)
+            : null;
         this.trialController = new TrialController({ deploymentService: this.engine?.trialDeploymentService || null });
         this.trialPresentationState = new TrialPresentationState();
         this.trialCausalityPresenter = new TrialCausalityPresenter();
@@ -127,9 +127,6 @@ class UIController {
             },
             setAdvisorExpanded: expanded => {
                 this.advisorDockComponent?.applyLayoutViewState?.(expanded);
-            },
-            setTrialContextVisible: () => {
-                this.trialDefenseAllocationComponent?.render?.();
             }
         });
 
@@ -250,7 +247,7 @@ class UIController {
             event
         });
         this.trialActionTrayComponent?.render?.();
-        this.trialDefenseAllocationComponent?.render?.();
+        this.trialActionTrayComponent?.render?.();
         return next;
     }
 
@@ -416,7 +413,7 @@ class UIController {
         if (!this.getFirstRunTrialTutorialPolicy().allowInterceptionSelection) {
             this.trialPresentationState.clearHoveredCell();
             this.trialPresentationState.clearInterceptionPreview();
-            this.trialDefenseAllocationComponent?.render?.();
+            this.trialActionTrayComponent?.render?.();
             return null;
         }
         const cellState = this.getTrialInterceptionCellState(r, c);
@@ -445,14 +442,14 @@ class UIController {
         const effectiveCell = this.trialPresentationState.getEffectiveInterceptCell();
         if (!effectiveCell) {
             this.trialPresentationState.clearInterceptionPreview();
-            if (this.trialDefenseAllocationComponent) this.trialDefenseAllocationComponent.render();
+            if (this.trialActionTrayComponent) this.trialActionTrayComponent.render();
             return null;
         }
         const { r, c } = effectiveCell;
         const input = this.createTrialPreviewInput(r, c);
         if (!input) {
             this.trialPresentationState.clearInterceptionPreview();
-            if (this.trialDefenseAllocationComponent) this.trialDefenseAllocationComponent.render();
+            if (this.trialActionTrayComponent) this.trialActionTrayComponent.render();
             return null;
         }
         const result = this.trialController.previewInterception(input);
@@ -463,7 +460,7 @@ class UIController {
             deployedDefense: this.trialPresentationState.previewDefenseAllocation,
             result
         });
-        if (this.trialDefenseAllocationComponent) this.trialDefenseAllocationComponent.render();
+        if (this.trialActionTrayComponent) this.trialActionTrayComponent.render();
         return preview;
     }
 
@@ -478,7 +475,7 @@ class UIController {
         this.refreshTrialInterceptionPreview();
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
         this.renderBoardGrid(I18n);
-        if (this.trialDefenseAllocationComponent) this.trialDefenseAllocationComponent.render();
+        if (this.trialActionTrayComponent) this.trialActionTrayComponent.render();
         const tutorialState = this.recordFirstRunTrialTutorialEvent(
             FIRST_RUN_TRIAL_TUTORIAL_EVENTS.INTERCEPTION_SELECTED
         );
@@ -564,7 +561,7 @@ class UIController {
 
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
         this.renderBoardGrid(I18n);
-        if (this.trialDefenseAllocationComponent) this.trialDefenseAllocationComponent.render();
+        if (this.trialActionTrayComponent) this.trialActionTrayComponent.render();
         return true;
     }
 
@@ -1175,7 +1172,7 @@ class UIController {
             this.renderBuffPanel();
             this.updateMulliganButton();
             this.updateFloatingPreview(null);
-            if (this.trialDefenseAllocationComponent) this.trialDefenseAllocationComponent.render();
+            if (this.trialActionTrayComponent) this.trialActionTrayComponent.render();
             if (this.advisorDockComponent) this.advisorDockComponent.render();
             this.devChronicleRestore?.render();
         } catch (err) {
