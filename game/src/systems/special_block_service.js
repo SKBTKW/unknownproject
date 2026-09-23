@@ -356,12 +356,30 @@ export class SpecialBlockService {
         }
 
         const entity = createSpecialBlockEntity(definition, r, c, this.state, context);
+        if (validation.sourceGroup) {
+            entity.sourceGroupReference = {
+                kind: validation.sourceGroup.kind,
+                groupId: validation.sourceGroup.groupId,
+                initialSize: validation.sourceGroup.cells.length,
+                cells: validation.sourceGroup.cells.map(entry => ({ r: entry.r, c: entry.c }))
+            };
+        }
         cell.specialBlock = entity;
 
         return {
             success: true,
             target: { r, c },
-            entity: { ...entity },
+            entity: {
+                ...entity,
+                ...(entity.sourceGroupReference
+                    ? {
+                        sourceGroupReference: {
+                            ...entity.sourceGroupReference,
+                            cells: entity.sourceGroupReference.cells.map(point => ({ ...point }))
+                        }
+                    }
+                    : {})
+            },
             baseTerrain: cell.terrain ? { ...cell.terrain } : null,
             capabilities: [...readCellCapabilities(cell)],
             trialTraits: readSpecialBlockTrialTraits(cell),
