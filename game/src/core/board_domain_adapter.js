@@ -4,11 +4,59 @@
    ============================================================= */
 
 import { resolvePlacementGeometry } from './placement_geometry.js';
-import { readCellCapabilities } from './special_block_domain.js';
+import { BOARD_CAPABILITIES, readCellCapabilities } from './special_block_domain.js';
 import { SpecialBlockService } from '../systems/special_block_service.js';
 
 function resolveLandSemantic(definition) {
     return definition?.terrain || definition || null;
+}
+
+function normalizeMinimum(options = {}) {
+    const value = Number(options?.minimum ?? 1);
+    return Number.isFinite(value) ? Math.max(1, Math.trunc(value)) : 1;
+}
+
+function normalizeTerrainQuery(value) {
+    return typeof value === 'string' ? value.trim().toUpperCase() : '';
+}
+
+function cellTerrainId(cell) {
+    return String(cell?.terrain?.terrainId || cell?.terrain?.id || cell?.terrainId || '').toUpperCase();
+}
+
+function matchesTerrainId(id, query) {
+    if (!id || !query) return false;
+    if (id === query) return true;
+    // Semantic family names such as WETLAND / PLAINS / DESERT may be used by
+    // world-event definitions without exposing Board's elevation/GL prefixes.
+    return !/^((GL|E)\d+)_/.test(query) && (
+        id.endsWith(`_${query}`) || id.includes(`_${query}_`)
+    );
+}
+
+const CAPABILITY_ALIASES = Object.freeze({
+    OBSERVATION: BOARD_CAPABILITIES.OBSERVATION_SITE,
+    INVESTIGATION: BOARD_CAPABILITIES.INVESTIGATION_SITE,
+    MILITARY: BOARD_CAPABILITIES.MILITARY_SITE,
+    PRODUCTION: BOARD_CAPABILITIES.PRODUCTION_SITE
+});
+
+function normalizeCapability(value) {
+    if (typeof value !== 'string') return '';
+    const key = value.trim().toUpperCase();
+    return CAPABILITY_ALIASES[key] || key;
+}
+
+function entityIds(entity) {
+    if (!entity || typeof entity !== 'object') return [];
+    return [
+        entity.id,
+        entity.type,
+        entity.definitionId,
+        entity.entityType,
+        entity.kind
+    ].filter(value => typeof value === 'string' && value)
+        .map(value => value.toUpperCase());
 }
 
 export class BoardDomainAdapter {
@@ -16,6 +64,55 @@ export class BoardDomainAdapter {
         this.state = state || gridEngine?.state || null;
         this.gridEngine = gridEngine || null;
         this.specialBlockService = specialBlockService || new SpecialBlockService(this.state);
+    }
+
+
+    hasTerrain(terrain, options = {}) {
+        const query = normalizeTerrainQuery(terrain);
+        if (!query || !Array.isArray(this.state?.grid)) return false;
+        const minimum = normalizeMinimum(options);
+        let count = 0;
+        for (const row of this.state.grid) {
+            for (const cell of row || []) {
+                if (!cell?.placed || !cell.terrain) continue;
+                if (matchesTerrainId(cellTerrainId(cell), query) && ++count >= minimum) return true;
+            }
+        }
+        return false;
+    }
+
+    hasEntity(entityType, options = {}) {
+        const query = typeof entityType === 'string' ? entityType.trim().toUpperCase() : '';
+        if (!query || !Array.isArray(this.state?.grid)) return false;
+        const minimum = normalizeMinimum(options);
+        let count = 0;
+        for (const row of this.state.grid) {
+            for (const cell of row || []) {
+                const candidates = [
+                    cell?.specialBlock,
+                    cell?.socketResource,
+                    cell?.entity,
+                    ...(Array.isArray(cell?.entities) ? cell.entities : [])
+                ];
+                if (candidates.some(entity => entityIds(entity).includes(query)) && ++count >= minimum) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    hasCapability(capability, options = {}) {
+        const query = normalizeCapability(capability);
+        if (!query || !Array.isArray(this.state?.grid)) return false;
+        const minimum = normalizeMinimum(options);
+        let count = 0;
+        for (const row of this.state.grid) {
+            for (const cell of row || []) {
+                if (readCellCapabilities(cell).has(query) && ++count >= minimum) return true;
+            }
+        }
+        return false;
     }
 
     validateLandPlacement(definition, anchor) {
