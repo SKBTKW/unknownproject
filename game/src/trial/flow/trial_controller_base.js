@@ -42,13 +42,17 @@ export class TrialController {
         this.emberSystem = emberSystem;
         this.deploymentService = deploymentService || null;
         this.defenseReservation = defenseReservation || null;
+        this.sessionDefenseReservation = null;
         this.state = null;
         this.cellResolver = null;
     }
 
-    startScenario(scenario, { cellResolver = null } = {}) {
+    startScenario(scenario, { cellResolver = null, useCanonicalDefenseReservation = true } = {}) {
         this.state = createTrialState(scenario);
         this.cellResolver = typeof cellResolver === "function" ? cellResolver : null;
+        this.sessionDefenseReservation = useCanonicalDefenseReservation === false
+            ? null
+            : this.defenseReservation;
         this.state.enemy.totalSuppression = this.powerResolver.resolveSuppression(this.state.enemy.strategicSuppression);
         this.deploymentService?.beginSession?.({ trialState: this.state });
         return this.state;
@@ -374,6 +378,7 @@ export class TrialController {
         this.deploymentService?.endSession?.();
         this.state = null;
         this.cellResolver = null;
+        this.sessionDefenseReservation = null;
     }
 
     activateInterceptionPlan({ deploymentPreview = null, deploymentContext = {} } = {}) {
@@ -426,8 +431,8 @@ export class TrialController {
                     deploymentCommit
                 };
             }
-        } else if (this.defenseReservation && typeof this.defenseReservation.reserve === "function") {
-            defenseReservationCommit = this.defenseReservation.reserve(defenseToCommit);
+        } else if (this.sessionDefenseReservation && typeof this.sessionDefenseReservation.reserve === "function") {
+            defenseReservationCommit = this.sessionDefenseReservation.reserve(defenseToCommit);
             if (!defenseReservationCommit?.success) {
                 return {
                     success: false,
