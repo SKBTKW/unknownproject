@@ -4,6 +4,7 @@ import { TrialController } from "../game/src/trial/flow/trial_controller.js";
 import { TrialDeploymentCostPolicy } from "../game/src/trial/domain/trial_deployment_cost_policy.js";
 import { DeploymentOriginResolver } from "../game/src/trial/domain/deployment_origin_resolver.js";
 import { TrialDeploymentService } from "../game/src/trial/systems/trial_deployment_service.js";
+import { TrialDefenseReservation } from "../game/src/trial/systems/trial_defense_reservation.js";
 import { TrialResourcePayment } from "../game/src/trial/systems/trial_resource_payment.js";
 
 function createFixture({
@@ -13,7 +14,7 @@ function createFixture({
     mystic = 4,
     includeReinforcementOrigin = false
 } = {}) {
-    const resources = { food, wood: material, material, mystic };
+    const resources = { food, wood: material, material, mystic, currentDefense: defense };
     const cells = new Map([
         ["0:0", { r: 0, c: 0, placed: true, isHQ: true, terrain: { terrainId: "HQ", e: 0, gl: 0 } }],
         ["0:1", { r: 0, c: 1, placed: true, isHQ: false, terrain: { terrainId: "E1_PLAINS", e: 1, gl: 0 } }],
@@ -87,6 +88,27 @@ function createFixture({
     };
 
     const payment = new TrialResourcePayment({ state: resources });
+    const defenseReservation = new TrialDefenseReservation({
+        getAvailableDefense: () => resources.currentDefense,
+        applyDefenseLoss: amount => {
+            const before = resources.currentDefense;
+            resources.currentDefense = Math.max(0, before - amount);
+            return {
+                before,
+                after: resources.currentDefense,
+                reduced: before - resources.currentDefense
+            };
+        },
+        recoverDefense: amount => {
+            const before = resources.currentDefense;
+            resources.currentDefense += amount;
+            return {
+                before,
+                after: resources.currentDefense,
+                recovered: resources.currentDefense - before
+            };
+        }
+    });
     const originResolver = new DeploymentOriginResolver({ boardQuery });
     const costPolicy = new TrialDeploymentCostPolicy({
         costResolver: ({ requestedDefense, distance, boardFacts: facts, origin }) => ({
@@ -113,7 +135,8 @@ function createFixture({
         boardQuery,
         costPolicy,
         originResolver,
-        resourcePayment: payment
+        resourcePayment: payment,
+        defenseReservation
     });
     const controller = new TrialController({ deploymentService });
     controller.startScenario({
@@ -143,6 +166,7 @@ function createFixture({
         boardFacts,
         boardQuery,
         payment,
+        defenseReservation,
         originResolver,
         costPolicy,
         deploymentService,
@@ -182,6 +206,7 @@ function confirmPlan(fixture, decisions = [{ routeId: "R1", cell: { r: 0, c: 2 }
     assert.equal(f.resources.food, before.food - confirmed.deploymentPreview.foodCost);
     assert.equal(f.resources.wood, before.wood - confirmed.deploymentPreview.materialCost);
     assert.equal(f.resources.mystic, before.mystic, "deployment v1 must not infer mystic conversion");
+    assert.equal(f.resources.currentDefense, 6, "Commit must write defense consumption through to normal GameState");
     assert.equal(f.controller.state.human.availableDefense, 6);
     assert.equal(f.controller.getDeploymentHistory().length, 1);
     assert.deepEqual(
@@ -251,7 +276,37 @@ function confirmPlan(fixture, decisions = [{ routeId: "R1", cell: { r: 0, c: 2 }
     assert.equal(f.controller.state.planActivated, false);
 }
 
-// Commit always revalidates current resource and Board state.
+// Commit always revalidates current resource, defense pool and Board state.
+{
+    const f = createFixture();
+    const confirmed = confirmPlan(f);
+    f.resources.currentDefense -= 1;
+    const beforeCommit = { ...f.resources };
+    const activated = f.controller.activateInterceptionPlan();
+    assert.equal(activated.success, false);
+    assert.equal(activated.errors.includes("STALE_PREVIEW"), true, "currentDefense changed after Preview must stale the Commit");
+    assert.deepEqual(f.resources, beforeCommit);
+    assert.equal(f.controller.state.planActivated, false);
+    assert.equal(confirmed.deploymentPreview.success, true);
+}
+{
+    const f = createFixture();
+    const confirmed = confirmPlan(f);
+    const defenseBefore = f.resources.currentDefense;
+    const foodBefore = f.resources.food;
+    const materialBefore = f.resources.wood;
+    f.payment.pay = () => ({
+        success: false,
+        reasons: ["SIMULATED_PAYMENT_FAILURE"]
+    });
+    const activated = f.controller.activateInterceptionPlan();
+    assert.equal(activated.success, false);
+    assert.equal(f.resources.currentDefense, defenseBefore, "failed resource payment must roll back the defense reservation");
+    assert.equal(f.resources.food, foodBefore);
+    assert.equal(f.resources.wood, materialBefore);
+    assert.equal(f.controller.state.planActivated, false);
+    assert.equal(confirmed.deploymentPreview.success, true);
+}
 {
     const f = createFixture();
     const confirmed = confirmPlan(f);

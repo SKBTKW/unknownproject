@@ -114,7 +114,20 @@ const profile = {
 
 {
     const engine = {
-        state: { food: 10, wood: 10, material: 10, mystic: 0 },
+        state: { food: 10, wood: 10, material: 10, mystic: 0, currentDefense: 10 },
+        getTrialAvailableDefense() {
+            return this.state.currentDefense;
+        },
+        applyTrialDefenseLoss(amount) {
+            const before = this.state.currentDefense;
+            this.state.currentDefense = Math.max(0, before - amount);
+            return { before, after: this.state.currentDefense, reduced: before - this.state.currentDefense };
+        },
+        recoverCurrentDefense(amount) {
+            const before = this.state.currentDefense;
+            this.state.currentDefense += amount;
+            return { before, after: this.state.currentDefense, recovered: this.state.currentDefense - before };
+        },
         boardDomainAdapter: {
             readTrialDeploymentFacts() {
                 return {
@@ -138,6 +151,13 @@ const profile = {
             }
         }
     };
+
+    const noDefenseBoundary = attachTrialDeploymentEconomy({
+        state: { food: 10, wood: 10, material: 10, mystic: 0, currentDefense: 10 },
+        boardDomainAdapter: engine.boardDomainAdapter
+    }, { costProfile: profile });
+    assert.equal(noDefenseBoundary.success, false);
+    assert.equal(noDefenseBoundary.reason, "TRIAL_DEPLOYMENT_DEFENSE_BOUNDARY_REQUIRED");
 
     const missing = attachTrialDeploymentEconomy(engine);
     assert.equal(missing.success, false);

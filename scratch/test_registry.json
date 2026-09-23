@@ -267,6 +267,14 @@
       ]
     },
     {
+      "path": "scratch/test_captured_scout_investigation_bridge.mjs",
+      "purpose": "Captured Scout INTERROGATE grants one truthful Investigation outside normal Warning availability",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_card_core_offering_v1.mjs",
       "purpose": "Card Definition v1, LAND placement eligibility, fallback legality, offering/execution separation",
       "suite": "existing",
@@ -596,14 +604,6 @@
     {
       "path": "scratch/test_investigation_chronicle_bridge.mjs",
       "purpose": "Investigation GameFacts create truth-safe idempotent Chronicle index entries",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
-      "path": "scratch/test_captured_scout_investigation_bridge.mjs",
-      "purpose": "Captured Scout INTERROGATE grants one truthful Investigation outside normal Warning availability",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -969,6 +969,14 @@
     {
       "path": "scratch/test_trial_core_presentation_boundary.mjs",
       "purpose": "trial core presentation boundary",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_trial_defense_reservation.mjs",
+      "purpose": "Trial deployment defense write-through reservation, failure rollback, and fail-closed GameState boundary",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
