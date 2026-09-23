@@ -62,6 +62,12 @@ class CardEffectExecutor {
         });
     }
 
+    requiresTarget(effects) {
+        return Array.isArray(effects)
+            && effects.length === 1
+            && effects[0]?.type === CARD_EFFECT_TYPES.DOMAIN_ACTION;
+    }
+
     enumerateTargets(effects, context = {}) {
         if (!Array.isArray(effects) || effects.length !== 1) return [];
         const effect = effects[0];
