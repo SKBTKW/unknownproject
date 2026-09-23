@@ -396,13 +396,13 @@ class GameEngine {
         });
     }
 
-    playCommandCard(card, source = { type: "OFFERING", index: -1 }) {
+    playCommandCard(card, source = { type: "OFFERING", index: -1 }, target = null) {
         return this.executeAction("PLAY_COMMAND_CARD", () => {
             if (this.deckManager && typeof this.deckManager.playCommandCard === "function") {
                 const cardObj = card.terrain || card;
                 const offeringIdx = source.type === "OFFERING" ? source.index : -1;
                 const reserveIdx = source.type === "RESERVE" ? source.index : -1;
-                const ok = this.deckManager.playCommandCard(cardObj, null, offeringIdx, reserveIdx);
+                const ok = this.deckManager.playCommandCard(cardObj, target, offeringIdx, reserveIdx);
                 const isSuccess = (ok && typeof ok === "object") ? ok.success !== false : ok !== false;
                 const diceCheck = (ok && typeof ok === "object") ? ok.diceCheck : null;
                 return { success: isSuccess, card, diceCheck, reason: isSuccess ? null : ok?.reason };
@@ -411,7 +411,7 @@ class GameEngine {
                 const cardObj = card.terrain || card;
                 const offeringIdx = source.type === "OFFERING" ? source.index : -1;
                 const reserveIdx = source.type === "RESERVE" ? source.index : -1;
-                const ok = this.state.playCommandCard(cardObj, null, offeringIdx, reserveIdx);
+                const ok = this.state.playCommandCard(cardObj, target, offeringIdx, reserveIdx);
                 const isSuccess = (ok && typeof ok === "object") ? ok.success !== false : ok !== false;
                 const diceCheck = (ok && typeof ok === "object") ? ok.diceCheck : null;
                 return { success: isSuccess, card, diceCheck, reason: isSuccess ? null : ok?.reason };
