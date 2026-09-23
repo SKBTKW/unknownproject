@@ -48,6 +48,7 @@ export function serializeGameState(state) {
                         ? JSON.parse(JSON.stringify(cell.cachedSocketSeeds))
                         : {},
                     production: cell.production ? cloneData(cell.production) : null,
+                    specialBlock: cell.specialBlock ? cloneData(cell.specialBlock) : null,
                     terrain: cell.terrain ? {
                         id: cell.terrain.id || null,
                         terrainId: cell.terrain.terrainId || null,
