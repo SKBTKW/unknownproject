@@ -38,15 +38,24 @@ const ZERO_YIELDS = Object.freeze({
     mystic: 0
 });
 
+function isValidYieldValue(value) {
+    return value === undefined
+        || (typeof value === 'number' && Number.isFinite(value) && value >= 0);
+}
+
+function isValidYieldMap(yields) {
+    if (!yields || typeof yields !== 'object' || Array.isArray(yields)) return false;
+    return ['food', 'wood', 'material', 'defense', 'mystic']
+        .every(key => isValidYieldValue(yields[key]));
+}
+
 function normalizeYields(yields) {
-    if (!yields || typeof yields !== 'object') return { ...ZERO_YIELDS };
+    if (!isValidYieldMap(yields)) return null;
     return {
-        food: Number.isFinite(Number(yields.food)) ? Number(yields.food) : 0,
-        wood: Number.isFinite(Number(yields.wood ?? yields.material))
-            ? Number(yields.wood ?? yields.material)
-            : 0,
-        defense: Number.isFinite(Number(yields.defense)) ? Number(yields.defense) : 0,
-        mystic: Number.isFinite(Number(yields.mystic)) ? Number(yields.mystic) : 0
+        food: yields.food ?? 0,
+        wood: yields.wood ?? yields.material ?? 0,
+        defense: yields.defense ?? 0,
+        mystic: yields.mystic ?? 0
     };
 }
 
@@ -60,6 +69,7 @@ function addYields(total, yields) {
 
 function multiplyYields(yields, factor) {
     const normalized = normalizeYields(yields);
+    if (!normalized || !Number.isInteger(factor) || factor < 0) return null;
     return {
         food: normalized.food * factor,
         wood: normalized.wood * factor,
@@ -103,18 +113,18 @@ export class SpecialBlockProductionResolver {
         if (production?.sourceSizeSource !== SPECIAL_BLOCK_SOURCE_SIZE_SOURCES.INITIAL_SNAPSHOT) {
             return null;
         }
-        const size = Number(entity?.sourceGroupReference?.initialSize);
-        if (!Number.isFinite(size) || size < 0 || !production?.perSourceYields) return null;
+        const size = entity?.sourceGroupReference?.initialSize;
+        if (!Number.isInteger(size) || size < 0 || !isValidYieldMap(production?.perSourceYields)) return null;
         return {
             status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
-            yields: multiplyYields(production.perSourceYields, Math.trunc(size))
+            yields: multiplyYields(production.perSourceYields, size)
         };
     }
 
     _resolveRelationCount(state, r, c, production) {
         if (!Number.isInteger(r) || !Number.isInteger(c)) return null;
         if (typeof production?.relationCapability !== 'string' || !production.relationCapability) return null;
-        if (!production?.perRelationYields) return null;
+        if (!isValidYieldMap(production?.perRelationYields)) return null;
 
         const offsets = relationOffsets(production.relationNeighborhood);
         if (!offsets) return null;
@@ -176,10 +186,18 @@ export class SpecialBlockProductionResolver {
             };
         }
 
-        if (production.kind === SPECIAL_BLOCK_PRODUCTION_KINDS.FIXED && production.yields) {
+        if (production.kind === SPECIAL_BLOCK_PRODUCTION_KINDS.FIXED) {
+            const fixedYields = normalizeYields(production.yields);
+            if (!fixedYields) {
+                return {
+                    status: SPECIAL_BLOCK_PRODUCTION_STATUS.UNRESOLVED,
+                    yields: { ...ZERO_YIELDS },
+                    kind: production.kind
+                };
+            }
             return {
                 status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
-                yields: normalizeYields(production.yields),
+                yields: fixedYields,
                 kind: production.kind
             };
         }
@@ -194,7 +212,7 @@ export class SpecialBlockProductionResolver {
         if (builtIn?.status === SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED) {
             return {
                 status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
-                yields: normalizeYields(builtIn.yields),
+                yields: builtIn.yields,
                 kind: production.kind || null
             };
         }
@@ -225,9 +243,18 @@ export class SpecialBlockProductionResolver {
             };
         }
 
+        const normalizedResolvedYields = normalizeYields(resolved.yields);
+        if (!normalizedResolvedYields) {
+            return {
+                status: SPECIAL_BLOCK_PRODUCTION_STATUS.UNRESOLVED,
+                yields: { ...ZERO_YIELDS },
+                kind: production.kind || null
+            };
+        }
+
         return {
             status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
-            yields: normalizeYields(resolved.yields),
+            yields: normalizedResolvedYields,
             kind: production.kind || null
         };
     }
