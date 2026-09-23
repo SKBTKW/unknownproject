@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { resolveCardEffectHandlerRouter } from "../game/src/cards/card_effect_handler_router.js";
 import {
     DOMAIN_ACTION_REQUIRED_IDS,
+    DOMAIN_ACTION_MIGRATION_BLOCKER,
     LEGACY_ONLY_IDS,
     resolveDomainActionOwner,
     resolveDomainActionMigrationBlocker
@@ -39,6 +40,27 @@ for (const id of DOMAIN_ACTION_REQUIRED_IDS) {
     assert.ok(entry, `missing blocker projection: ${id}`);
     assert.equal(entry.owner, resolveDomainActionOwner(id));
     assert.equal(entry.blocker, resolveDomainActionMigrationBlocker(id));
+}
+
+const resettlementBlocker = blockers.find(entry => entry.cardId === "CMD_RESETTLEMENT");
+assert.ok(resettlementBlocker);
+assert.equal(
+    resettlementBlocker.blocker,
+    DOMAIN_ACTION_MIGRATION_BLOCKER.ZONE_CONVERSION_DEFINITION_MISSING
+);
+assert.equal(
+    resettlementBlocker.foundationReady,
+    true,
+    "Zone Conversion bridge is ready; Resettlement now waits only on canonical domain definition"
+);
+assert.equal(resettlementBlocker.remainingWork, "AUTHOR_DOMAIN_DEFINITION");
+
+for (const entry of blockers.filter(item => item.cardId !== "CMD_RESETTLEMENT")) {
+    assert.equal(
+        entry.foundationReady,
+        false,
+        `${entry.cardId} must not report foundation-ready until its blocker narrows accordingly`
+    );
 }
 
 // Spot-check routed compatibility behavior after extraction.
