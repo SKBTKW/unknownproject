@@ -94,6 +94,24 @@
       "expectedHeadSha": "9d77f4d36caefa286bf391badf80dae005fdf5f4",
       "replacementPr": 159,
       "note": "r5 contains only the three foundation port commits; PR #159 is the clean rebuilt foundation merged into AoT260922."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/socket-terrain-id-canonicalization",
+      "expectedHeadSha": "4796a66cfc2e39b79d37fd8098112f16afd01c4a",
+      "replacementPr": 91,
+      "note": "The original branch is one canonical Socket terrain-id commit plus its focused test; PR #91 rebased the same scope onto the current AoT base and merged it."
+    },
+    {
+      "branch": "aot-task/AoT260922/presentation/defense-allocation-board-overlay",
+      "expectedHeadSha": "5344fe9b5094d77aaaa21bd53d0f7022cd9b98c6",
+      "replacementPr": 108,
+      "note": "The branch commit chain implements disclosure gating, 2.5D/2D defense-allocation chips, style hierarchy, and profile tests; PR #108 merged that same complete scope from the r2 replay."
+    },
+    {
+      "branch": "aot-task/AoT260922/presentation/web25d-hq-beacon-priority",
+      "expectedHeadSha": "a3ff54ddbb43f84a340cfeb6aa45129a28e8b214",
+      "replacementPr": 97,
+      "note": "The branch isolates and redraws only the HQ ember beacon above Zone/Link with focused validation; PR #97 merged the same visual-priority contract from the r2 replay."
     }
   ]
 }
