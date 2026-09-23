@@ -97,6 +97,15 @@ class DeckManager {
             ?? `${prefix}_${scope}_${Date.now()}_${Math.random()}`;
     }
 
+    _resolveOfferingWeightContext() {
+        const offeringWeights = { tagMultipliers: {} };
+        const manager = this.engine?.globalEventManager || this.state?.globalEventManager || null;
+        manager?.applyOfferingWeightEffects?.(offeringWeights);
+        return Object.freeze({
+            tagMultipliers: Object.freeze({ ...(offeringWeights.tagMultipliers || {}) })
+        });
+    }
+
     /**
      * 🎴 マスターデータベース（静的キャッシュ ＆ 即時解決）の取得
      */
@@ -262,7 +271,8 @@ class DeckManager {
             eligibilityOptions: options,
             candidateFilter: options.candidateFilter,
             state: this.state,
-            random: () => this._nextGameplayFloat()
+            random: () => this._nextGameplayFloat(),
+            weightContext: this._resolveOfferingWeightContext()
         }) || null;
 
         if (!picked) {
@@ -430,7 +440,7 @@ class DeckManager {
             });
 
             while (newCards.length < offeringSize && baseLandPool.length > 0) {
-                const picked = pickWeightedCard(baseLandPool, this.state, () => this._nextGameplayFloat())
+                const picked = pickWeightedCard(baseLandPool, this.state, () => this._nextGameplayFloat(), this._resolveOfferingWeightContext())
                     || baseLandPool[0];
 
                 const drawn = this._wrapCardInstance(picked);
