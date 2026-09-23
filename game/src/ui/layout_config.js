@@ -93,30 +93,6 @@ const UILayoutConfig = {
         pointerEvents: "auto"
     },
 
-    // ⚔️ Trial迎撃計画: Layout-owned screen-space geometry only.
-    trialDefenseAllocation: {
-        desktop: {
-            position: "fixed",
-            right: "var(--layout-right-context-right)",
-            top: "var(--layout-right-context-top)",
-            bottom: "var(--layout-right-context-bottom)",
-            width: "var(--layout-right-context-width)",
-            maxHeight: "var(--layout-right-context-max-height)",
-            zIndex: "var(--z-right-context)",
-            pointerEvents: "auto"
-        },
-        mobile: {
-            position: "fixed",
-            right: "var(--layout-right-context-mobile-right)",
-            top: "var(--layout-right-context-mobile-top)",
-            bottom: "auto",
-            width: "var(--layout-right-context-mobile-width)",
-            maxHeight: "var(--layout-right-context-mobile-max-height)",
-            zIndex: "var(--z-right-context)",
-            pointerEvents: "auto"
-        }
-    },
-
     // 🏷️ 開発ブランチ / 製品バージョン表示バッジ（画面左下隅）
     buildIdentityBadge: {
         desktop: {
