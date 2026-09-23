@@ -231,9 +231,25 @@ console.log('Board / Special Block / Defense v1 contract');
 
     state.grid[0][1] = cell(0, 1, {
         placed: true,
-        terrain: { ...PLAINS, capabilities: [BOARD_CAPABILITIES.MYSTIC_SOURCE] }
+        terrain: { ...PLAINS, capabilities: [BOARD_CAPABILITIES.MYSTIC_SOURCE] },
+        socketResource: {
+            id: 'TEST_MYSTIC_SOCKET',
+            capabilities: [BOARD_CAPABILITIES.MYSTIC_SOURCE],
+            bonusMystic: 2
+        }
     });
     state.grid[0][2] = cell(0, 2, { placed: true, terrain: { ...PLAINS } });
+
+    const serializedCapabilities = serializeGameState(state);
+    const restoredCapabilities = {};
+    hydrateGameState(restoredCapabilities, serializedCapabilities);
+    const restoredService = new SpecialBlockService(restoredCapabilities);
+    assert.equal(
+        restoredService.readCapabilities({ r: 0, c: 1 }).has(BOARD_CAPABILITIES.MYSTIC_SOURCE),
+        true,
+        'terrain/socket capability survives save/restore'
+    );
+
     const altar = service.createSpecialBlock(SPECIAL_BLOCK_TYPES.ALTAR, { r: 0, c: 2 });
     assert.equal(altar.success, true);
     assert.equal(
