@@ -1,4 +1,5 @@
 import { hasMultiplePlacementTerrainAttributes } from './placement_geometry.js';
+import { normalizeRoadEdgeIds } from './road_network.js';
 /**
  * 🌐 StateSerializer (ゲームステート決定論的直列化モジュール)
  * 
@@ -191,6 +192,7 @@ export function serializeGameState(state) {
             : {},
         placedBlockProduction: cloneData(state.placedBlockProduction, {}),
         mergeLinks: Array.from(state.mergeLinks || []).sort(),
+        roadEdges: normalizeRoadEdgeIds(state.roadEdges),
         stage: serializedStage
     };
 }
