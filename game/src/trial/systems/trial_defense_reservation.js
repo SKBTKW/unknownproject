@@ -90,12 +90,28 @@ export class TrialDefenseReservation {
         const after = this.readBalance();
         const reduced = toDefense(result?.reduced ?? (before - after));
         if (reduced !== amount || after !== before - amount) {
+            let rollback = null;
+            if (reduced > 0) {
+                const rollbackBefore = this.readBalance();
+                const rollbackResult = this.recoverDefense(reduced);
+                const rollbackAfter = this.readBalance();
+                const restored = toDefense(
+                    rollbackResult?.recovered ?? (rollbackAfter - rollbackBefore)
+                );
+                rollback = {
+                    success: restored === reduced && rollbackAfter === rollbackBefore + reduced,
+                    restored,
+                    before: rollbackBefore,
+                    after: rollbackAfter
+                };
+            }
             return {
                 success: false,
                 reasons: [TRIAL_DEFENSE_RESERVATION_REASONS.DEFENSE_RESERVATION_FAILED],
                 before,
-                after,
-                reserved: reduced
+                after: this.readBalance(),
+                reserved: 0,
+                rollback
             };
         }
 
