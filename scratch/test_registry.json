@@ -672,6 +672,14 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_road_network_foundation.mjs",
+      "purpose": "canonical road network foundation",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_safe_integration_runner.mjs",
       "purpose": "safe integration runner",
       "suite": "existing",
@@ -730,19 +738,19 @@
       ]
     },
     {
-      "path": "scratch/test_task_health.mjs",
-      "purpose": "task health",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
       "path": "scratch/test_task_health_git_integration.mjs",
       "purpose": "task health git integration",
       "suite": "existing",
       "entryPoints": [
         "scratch/test_task_health.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_task_health.mjs",
+      "purpose": "task health",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
@@ -835,6 +843,14 @@
     {
       "path": "scratch/test_trial_normal_input_isolation.mjs",
       "purpose": "trial normal input isolation",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_trial_phase2_preview.mjs",
+      "purpose": "trial phase2 preview",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -953,14 +969,6 @@
       ]
     },
     {
-      "path": "scratch/test_trial_phase2_preview.mjs",
-      "purpose": "trial phase2 preview",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
       "path": "scratch/test_trial_restore_boundary_service.mjs",
       "purpose": "trial restore boundary service",
       "suite": "existing",
@@ -1035,14 +1043,6 @@
       ]
     },
     {
-      "path": "scratch/test_verse1_restore_point.mjs",
-      "purpose": "verse1 restore point",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
       "path": "scratch/test_verse_chronicle_facts.mjs",
       "purpose": "verse chronicle facts",
       "suite": "existing",
@@ -1053,6 +1053,14 @@
     {
       "path": "scratch/test_verse_restore_point_contract.mjs",
       "purpose": "verse restore point contract",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_verse1_restore_point.mjs",
+      "purpose": "verse1 restore point",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -1088,6 +1096,14 @@
       "path": "scratch/test_web25d_placement_preview_renderer.mjs",
       "purpose": "web25d placement preview renderer",
       "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_web25d_road_overlay_renderer.mjs",
+      "purpose": "web25d road overlay renderer",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
     },
     {
       "path": "scratch/test_web25d_trial_overlay_renderer.mjs",
