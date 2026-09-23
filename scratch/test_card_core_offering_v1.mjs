@@ -832,7 +832,41 @@ function makeGrid(rows, cols) {
     assert.equal(state.logs.length, 1);
 }
 
-// T. Migrated effects stay identical between JSON SSOT and generated command master.
+// T. Agricultural Reform migration preserves legacy behavior.
+{
+    const card = COMMAND_CARDS_MASTER.find(candidate => candidate.id === "CMD_AGRICULTURAL_REFORM");
+    assert.ok(card?.effects?.length === 3);
+
+    const state = {
+        turn: 1,
+        food: 20,
+        wood: 30,
+        material: 30,
+        mystic: 0,
+        ember: 5,
+        permanentPlainsFoodBonus: 2,
+        reserveSlots: [],
+        consumedUniqueCards: [],
+        usedUniqueCards: [],
+        activeBuffs: [],
+        logs: [],
+        addBuff(buff) { this.activeBuffs.push(buff); },
+        addLog(log) { this.logs.push(log); }
+    };
+    const manager = new DeckManager(state, {});
+    manager.cycleSystem = null;
+    const result = manager.playCommandCard(card);
+
+    assert.equal(result.success, true);
+    assert.equal(state.wood, 10, "agricultural reform wood cost drift");
+    assert.equal(state.material, 10, "shared command cost keeps material mirror behavior");
+    assert.equal(state.permanentPlainsFoodBonus, 3);
+    assert.equal(state.activeBuffs[0].id, "CMD_AGRICULTURAL_REFORM");
+    assert.equal(state.activeBuffs[0].icon, "📜");
+    assert.equal(state.logs.length, 1);
+}
+
+// U. Migrated effects stay identical between JSON SSOT and generated command master.
 
 
 
@@ -864,7 +898,8 @@ function makeGrid(rows, cols) {
         "CMD_RATIONING",
         "CMD_VIGILANCE",
         "CMD_MYSTIC_FOCUS",
-        "CMD_GRANARY"
+        "CMD_GRANARY",
+        "CMD_AGRICULTURAL_REFORM"
     ];
 
     for (const id of migratedIds) {
@@ -880,7 +915,7 @@ function makeGrid(rows, cols) {
     }
 }
 
-// U. Every remaining DeckManager command ID branch belongs to exactly one migration class.
+// V. Every remaining DeckManager command ID branch belongs to exactly one migration class.
 {
     const deckManagerSource = readFileSync(
         new URL("../game/src/systems/deck_manager.js", import.meta.url),
@@ -916,7 +951,7 @@ function makeGrid(rows, cols) {
     );
 }
 
-// V. SSOT ownership and execution classification must agree.
+// W. SSOT ownership and execution classification must agree.
 {
     const economySource = JSON.parse(readFileSync(
         new URL("../game/src/data/economy_cards.json", import.meta.url),
