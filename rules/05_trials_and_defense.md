@@ -155,6 +155,39 @@ Trial で利用可能な防衛力は **現在🛡️** とする。
 
 ---
 
+### 5.4 Deployment Economy
+
+Trialの🛡️配備は、将来的に「無料の数値割当」ではなく、通常GameStateが保持する🌾・🧱を使う兵站/設営コストを持つ。
+
+現在の実装では以下の境界まで確定している。
+
+- Previewでは資源を消費しない。
+- Commit時に🌾・🧱をatomicに支払う。
+- Commit時はBoard facts / origin / distance / resource残高を再検証する。
+- 配備した🛡️はそのTrial中固定し、v1では再配置・撤収・返金を行わない。
+- 複数routeを迎撃しても、front数そのものによる追加surchargeは持たない。
+- 配備元はHQ固定ではなく、Boardが公開するsemantic `REINFORCEMENT_ORIGIN` を利用できる。
+- TrialはGarrison等の施設IDを知らず、Board semanticだけを読む。
+- `DEFENSE_ANCHOR` 等の盤面効果はBoard facts / trialTraits経由でコストへ反映できる。
+- 通常ProductionはTrial中に実行しない。
+- ✨→🛡️変換は現行Deployment Economyの責務ではない。
+
+Canonical cost resolverの式形は以下に限定する。
+
+```text
+resourceCost
+= base
++ requestedDefense × perDefense
++ origin→target distance × perDistance
++ Board semantic modifier
+```
+
+ただし、`base / perDefense / perDistance` の具体係数は**現時点で未確定**である。
+
+したがって、正規Gameplay用のcost profileが明示的に `RESOLVED` になるまでは、Deployment Economyはfail-closedとし、未定義を無料配備として扱わない。
+
+既存のTrial戦闘倍率、道路の進軍コスト係数、防衛再建費等をDeployment Costへ流用する根拠はなく、別系統の値として扱う。
+
 ## 6. Trial戦闘尺度
 
 現在のプロトタイプでは、平時の戦略値を Trial 戦闘尺度へ変換する。
