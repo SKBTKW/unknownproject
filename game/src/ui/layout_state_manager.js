@@ -185,14 +185,20 @@ export class LayoutStateManager {
     }
 
     resolveDefaultOwner(state) {
-        if (state === UI_LAYOUT_STATES.TRIAL) return RIGHT_CONTEXT_OWNERS.TRIAL;
+        // Trial mode owns the Player Tray / board presentation, not the right context.
+        // Keep RIGHT_CONTEXT_OWNERS.TRIAL only as a compatibility token for legacy
+        // callers; the finished Trial layout leaves the surface free for Advisor.
+        if (state === UI_LAYOUT_STATES.TRIAL) return RIGHT_CONTEXT_OWNERS.NONE;
         if (state === UI_LAYOUT_STATES.ALERT) return RIGHT_CONTEXT_OWNERS.ALERT;
         if (state === UI_LAYOUT_STATES.ADVISOR_EXPANDED) return RIGHT_CONTEXT_OWNERS.ADVISOR;
         return RIGHT_CONTEXT_OWNERS.NONE;
     }
 
     resolveAllowedOwner(owner) {
-        if (this.state === UI_LAYOUT_STATES.TRIAL) return RIGHT_CONTEXT_OWNERS.TRIAL;
+        if (this.state === UI_LAYOUT_STATES.TRIAL) {
+            if (owner === RIGHT_CONTEXT_OWNERS.ADVISOR) return RIGHT_CONTEXT_OWNERS.ADVISOR;
+            return RIGHT_CONTEXT_OWNERS.NONE;
+        }
         if (this.state === UI_LAYOUT_STATES.ALERT) return RIGHT_CONTEXT_OWNERS.ALERT;
         if (this.state === UI_LAYOUT_STATES.ADVISOR_EXPANDED) return RIGHT_CONTEXT_OWNERS.ADVISOR;
         return RIGHT_CONTEXT_OWNERS.NONE;
