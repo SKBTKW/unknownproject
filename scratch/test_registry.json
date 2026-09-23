@@ -1274,6 +1274,14 @@
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
       ]
+    },
+    {
+      "path": "scratch/test_card_domain_actions_v2_replay.mjs",
+      "purpose": "Card compatibility-handler extraction and canonical domain migration blocker projection",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
     }
   ]
 }
