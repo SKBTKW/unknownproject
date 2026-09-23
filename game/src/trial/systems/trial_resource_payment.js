@@ -36,6 +36,16 @@ export class TrialResourcePayment {
         });
     }
 
+    readAuditSnapshot() {
+        const state = this._getState();
+        if (!state) return null;
+        return Object.freeze({
+            food: toAmount(state.food),
+            material: toAmount(state.wood ?? state.material),
+            mystic: toAmount(state.mystic)
+        });
+    }
+
     canPay(cost = {}) {
         const balances = this.readBalances();
         if (!balances) {
