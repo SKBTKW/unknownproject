@@ -206,7 +206,16 @@ export class GlobalEventManager {
         const i18n = globalThis.I18n || { t: k => k };
         this.state.addLog?.(def.choiceEventId ? `🌍【${i18n.t(def.nameKey)}】` : `🌍【${i18n.t(def.nameKey)}】: ${i18n.t(def.descKey)}`);
         this.emitLifecycle(GLOBAL_EVENT_TIMINGS.START, def, turn, inst);
+        this._consumeNextGlobalEventWeightModifiers();
         return inst;
+    }
+    _consumeNextGlobalEventWeightModifiers() {
+        if (!Array.isArray(this.state?.temporaryWeightModifiers)) return 0;
+        const before = this.state.temporaryWeightModifiers.length;
+        this.state.temporaryWeightModifiers = this.state.temporaryWeightModifiers.filter(
+            modifier => modifier?.expiry?.type !== "NEXT_GLOBAL_EVENT"
+        );
+        return before - this.state.temporaryWeightModifiers.length;
     }
     syncBuffProxy() {
         if (!this.state?.buffSystem) return;
