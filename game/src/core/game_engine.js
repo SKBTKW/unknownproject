@@ -396,6 +396,14 @@ class GameEngine {
         });
     }
 
+    getCommandCardExecutionTargets(card) {
+        if (!card || !this.deckManager || typeof this.deckManager.enumerateCardExecutionTargets !== "function") {
+            return [];
+        }
+        const cardObj = card.terrain || card;
+        return this.deckManager.enumerateCardExecutionTargets(cardObj);
+    }
+
     playCommandCard(card, source = { type: "OFFERING", index: -1 }, target = null) {
         return this.executeAction("PLAY_COMMAND_CARD", () => {
             if (this.deckManager && typeof this.deckManager.playCommandCard === "function") {
