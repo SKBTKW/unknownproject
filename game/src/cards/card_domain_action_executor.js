@@ -45,6 +45,19 @@ function isSupportedCardPaymentCost(cost = {}) {
     return Number(cost?.defense || 0) === 0;
 }
 
+function hasReliableCardPaymentState(state, cost = {}) {
+    const woodCost = Number(cost?.wood || 0);
+    if (woodCost > 0) {
+        if (!Number.isFinite(Number(state?.wood))) return false;
+        if (Number(state.wood) < woodCost) return false;
+    }
+    for (const key of ['food', 'mystic', 'ember']) {
+        const required = Number(cost?.[key] || 0);
+        if (required > 0 && Number(state?.[key] || 0) < required) return false;
+    }
+    return true;
+}
+
 function resolveZoneGroupId(board, effect, context) {
     if (effect?.targetGroupId !== undefined && effect?.targetGroupId !== null) {
         return String(effect.targetGroupId);
@@ -161,6 +174,7 @@ function createCardDomainActionExecutor(engine) {
                 quote?.status !== "RESOLVED"
                 || !isSupportedCardPaymentCost(quotedCost)
                 || !sameResourceCost(cardCost, quotedCost)
+                || !hasReliableCardPaymentState(context?.state, quotedCost)
             ) {
                 return [];
             }
@@ -264,6 +278,14 @@ function createCardDomainActionExecutor(engine) {
                     success: false,
                     reason: "ZONE_CONVERSION_CARD_COST_MISMATCH",
                     cardCost,
+                    quote
+                };
+            }
+
+            if (!hasReliableCardPaymentState(context?.state, quote.resources)) {
+                return {
+                    success: false,
+                    reason: "ZONE_CONVERSION_CARD_PAYMENT_STATE_UNSAFE",
                     quote
                 };
             }
