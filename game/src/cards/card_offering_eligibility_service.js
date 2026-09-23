@@ -5,6 +5,7 @@
    ============================================================= */
 
 import { normalizeCardDefinitionV1 } from './card_definition_v1.js';
+import { evaluateCardRuntimeVisibility } from './card_runtime_visibility_policy.js';
 
 class CardOfferingEligibilityService {
     constructor({
@@ -24,6 +25,14 @@ class CardOfferingEligibilityService {
     evaluate(cardDefinition, context = {}) {
         const card = normalizeCardDefinitionV1(cardDefinition);
         if (!card?.id) return Object.freeze({ eligible: false, reason: "INVALID_CARD_DEFINITION" });
+
+        const visibility = evaluateCardRuntimeVisibility(card.legacy || cardDefinition);
+        if (!visibility.visible) {
+            return Object.freeze({
+                eligible: false,
+                reason: visibility.reason || "CARD_NOT_RUNTIME_VISIBLE"
+            });
+        }
 
         if (card.category === "LAND") {
             if (!this.placementQuery?.hasAnyLegalPlacement(card.legacy, {
