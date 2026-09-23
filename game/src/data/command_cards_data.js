@@ -58,7 +58,25 @@ export const ECONOMY_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "C",
     "weight": 0.35,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "RESOURCE_DELTA",
+        "resource": "wood",
+        "amount": 8
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "buff": {
+          "icon": "🪵",
+          "category": "CARD_EFFECT"
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_GRANARY",
@@ -165,7 +183,25 @@ export const ECONOMY_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "C",
     "weight": 0.35,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "RESOURCE_DELTA",
+        "resource": "wood",
+        "amount": 15
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "buff": {
+          "icon": "🧱",
+          "category": "CARD_EFFECT"
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_SAWMILL",
@@ -924,7 +960,25 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "C",
     "weight": 0.35,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "RESOURCE_DELTA",
+        "resource": "wood",
+        "amount": 8
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "buff": {
+          "icon": "🪵",
+          "category": "CARD_EFFECT"
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_GRANARY",
@@ -1031,7 +1085,25 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "C",
     "weight": 0.35,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "RESOURCE_DELTA",
+        "resource": "wood",
+        "amount": 15
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "buff": {
+          "icon": "🧱",
+          "category": "CARD_EFFECT"
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_SAWMILL",
