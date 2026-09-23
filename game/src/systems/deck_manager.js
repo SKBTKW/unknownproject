@@ -792,52 +792,6 @@ class DeckManager {
             });
             if (typeof this.state.checkConditionalBuffs === "function") this.state.checkConditionalBuffs();
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `📜【${cName}】`);
-        } else if (cId === "CMD_CONSERVE_EMBER") {
-            // 🔥 節約: コスト 無料 (次ターンの🔥消費-1軽減)
-            this.state.emberConsumptionReducedTurns = 1;
-            this.state.emberConsumptionStartsNextTurn = true;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🔥",
-                description: cDesc,
-                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 1 }) : "1T",
-                category: "CARD_EFFECT",
-                remainingTurns: 1,
-                startsNextTurn: true
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🔥【${cName}】`);
-        } else if (cId === "CMD_GRAND_CULTIVATION") {
-            // 🌾 耕作計画: コスト 🧱-35 (次のターンから4ターンの間、平地の産出 🌾+1/T)
-            this.state.grandCultivationTurns = 4;
-            this.state.grandCultivationStartsNextTurn = true;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🌾",
-                description: cDesc,
-                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 4 }) : "4T",
-                category: "CARD_EFFECT",
-                remainingTurns: 4,
-                startsNextTurn: true
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🌾【${cName}】`);
-        } else if (cId === "CMD_SCORCHED_RETREAT") {
-            // 🔥 焦土退却: コスト 🌾-20 (試練後3ターン土地産出 -1/T)
-            this.state.scorchedRetreatTurns = 3;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🔥",
-                description: cDesc,
-                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 3 }) : "3T",
-                category: "DEBUFF",
-                remainingTurns: 3
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🔥【${cName}】`);
         } else if (cId === "CMD_RESETTLEMENT") {
             // 👥 人口移住令: コスト 🌾-15 🧱-10 (平地2x2マージ指定 🔥+2 ＆ 🌾+2/T永続)
             this.state.ember = Math.min(30, (this.state.ember || 20) + 2);
