@@ -16,7 +16,37 @@ export const ECONOMY_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "C",
     "weight": 0.4,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "foodCostRationingActive",
+        "value": true
+      },
+      {
+        "type": "STATE_SET",
+        "key": "foodCostRationingDiscount",
+        "value": 0.4
+      },
+      {
+        "type": "STATE_SET",
+        "key": "foodCostHalvedTurns",
+        "value": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "🌾",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 1
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_WETLAND_RECLAMATION",
@@ -58,7 +88,25 @@ export const ECONOMY_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "C",
     "weight": 0.35,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "RESOURCE_DELTA",
+        "resource": "wood",
+        "amount": 8
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "buff": {
+          "icon": "🪵",
+          "category": "CARD_EFFECT"
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_GRANARY",
@@ -81,7 +129,25 @@ export const ECONOMY_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.25,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_INCREMENT",
+        "key": "granaryCount",
+        "amount": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "buff": {
+          "icon": "🏛️",
+          "category": "CARD_EFFECT"
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_AGRICULTURAL_REFORM",
@@ -103,7 +169,25 @@ export const ECONOMY_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "R",
     "weight": 0.2,
-    "cyclePolicy": "UNIQUE"
+    "cyclePolicy": "UNIQUE",
+    "effects": [
+      {
+        "type": "STATE_INCREMENT",
+        "key": "permanentPlainsFoodBonus",
+        "amount": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "buff": {
+          "icon": "📜",
+          "category": "CARD_EFFECT"
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_PASTORAL_FARM",
@@ -165,7 +249,25 @@ export const ECONOMY_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "C",
     "weight": 0.35,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "RESOURCE_DELTA",
+        "resource": "wood",
+        "amount": 15
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "buff": {
+          "icon": "🧱",
+          "category": "CARD_EFFECT"
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_SAWMILL",
@@ -517,7 +619,38 @@ export const MILITARY_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "C",
     "weight": 0.35,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "vigilanceTurns",
+        "value": 2
+      },
+      {
+        "type": "STATE_SET",
+        "key": "vigilanceStartsNextTurn",
+        "value": true
+      },
+      {
+        "type": "STATE_SET",
+        "key": "temporaryDefenseTurns",
+        "value": 2
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "🛡️",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 2,
+          "startsNextTurn": true
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_MUD_OBSTACLE",
@@ -723,7 +856,37 @@ export const MYSTIC_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.3,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "RESOURCE_DELTA",
+        "resource": "mystic",
+        "amount": 3
+      },
+      {
+        "type": "DRAW_BIAS_SET",
+        "bias": {
+          "targetCategory": "LAND",
+          "type": "TURNS",
+          "remainingTurns": 1,
+          "startsNextTurn": true
+        }
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "🧘",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 1,
+          "startsNextTurn": true
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_FILL_THE_VOID",
@@ -735,7 +898,27 @@ export const MYSTIC_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "C",
     "weight": 0.35,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "fillTheVoidTurns",
+        "value": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "✨",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 1
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_VOICE_BENEATH_EARTH",
@@ -749,7 +932,27 @@ export const MYSTIC_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.25,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "voiceBeneathEarthTurns",
+        "value": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "🔮",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 1
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_OMEN_DREAM",
@@ -778,7 +981,38 @@ export const MYSTIC_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.25,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "RESOURCE_DELTA",
+        "resource": "ember",
+        "amount": 3
+      },
+      {
+        "type": "STATE_SET",
+        "key": "reserveFeeWaivedTurns",
+        "value": 3
+      },
+      {
+        "type": "STATE_SET",
+        "key": "reserveFeeWaivedStartsNextTurn",
+        "value": true
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "✨",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 3,
+          "startsNextTurn": true
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_MYSTIC_FOCUS",
@@ -790,6 +1024,28 @@ export const MYSTIC_CARDS_MASTER = [
     },
     "maxMystic": 30,
     "cyclePolicy": "UNIQUE",
+    "effects": [
+      {
+        "type": "DRAW_BIAS_SET",
+        "bias": {
+          "targetCategory": "MYSTIC",
+          "type": "TURNS",
+          "remainingTurns": 3,
+          "startsNextTurn": true
+        }
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "✨",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 3,
+          "startsNextTurn": true
+        }
+      }
+    ],
     "minStage": 1,
     "rarity": "R",
     "weight": 0.15
@@ -806,7 +1062,36 @@ export const MYSTIC_CARDS_MASTER = [
     "minStage": 2,
     "rarity": "R",
     "weight": 0.2,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "manifestMiracleTurns",
+        "value": 3
+      },
+      {
+        "type": "STATE_SET",
+        "key": "manifestMiracleStartsNextTurn",
+        "value": true
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "✨",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 3,
+          "startsNextTurn": true
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_TRANSMUTE_GOLDEN",
@@ -835,7 +1120,27 @@ export const MYSTIC_CARDS_MASTER = [
     "minStage": 2,
     "rarity": "R",
     "weight": 0.2,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "revelationChoiceTurns",
+        "value": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "✨",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 1
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_LEYLINE_RESONANCE",
@@ -849,7 +1154,25 @@ export const MYSTIC_CARDS_MASTER = [
     "minStage": 2,
     "rarity": "C",
     "weight": 0.35,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "leylineResonanceActive",
+        "value": true
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "buff": {
+          "icon": "✨",
+          "category": "CARD_EFFECT"
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_TWO_FUTURES",
@@ -861,6 +1184,26 @@ export const MYSTIC_CARDS_MASTER = [
     },
     "reqMystic": 25,
     "cyclePolicy": "UNIQUE",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "twoFuturesTurns",
+        "value": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "🔮",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 1
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ],
     "minStage": 3,
     "rarity": "UR",
     "weight": 0.1
@@ -882,7 +1225,37 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "C",
     "weight": 0.4,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "foodCostRationingActive",
+        "value": true
+      },
+      {
+        "type": "STATE_SET",
+        "key": "foodCostRationingDiscount",
+        "value": 0.4
+      },
+      {
+        "type": "STATE_SET",
+        "key": "foodCostHalvedTurns",
+        "value": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "🌾",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 1
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_WETLAND_RECLAMATION",
@@ -924,7 +1297,25 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "C",
     "weight": 0.35,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "RESOURCE_DELTA",
+        "resource": "wood",
+        "amount": 8
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "buff": {
+          "icon": "🪵",
+          "category": "CARD_EFFECT"
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_GRANARY",
@@ -947,7 +1338,25 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.25,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_INCREMENT",
+        "key": "granaryCount",
+        "amount": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "buff": {
+          "icon": "🏛️",
+          "category": "CARD_EFFECT"
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_AGRICULTURAL_REFORM",
@@ -969,7 +1378,25 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "R",
     "weight": 0.2,
-    "cyclePolicy": "UNIQUE"
+    "cyclePolicy": "UNIQUE",
+    "effects": [
+      {
+        "type": "STATE_INCREMENT",
+        "key": "permanentPlainsFoodBonus",
+        "amount": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "buff": {
+          "icon": "📜",
+          "category": "CARD_EFFECT"
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_PASTORAL_FARM",
@@ -1031,7 +1458,25 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "C",
     "weight": 0.35,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "RESOURCE_DELTA",
+        "resource": "wood",
+        "amount": 15
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "buff": {
+          "icon": "🧱",
+          "category": "CARD_EFFECT"
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_SAWMILL",
@@ -1380,7 +1825,38 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "C",
     "weight": 0.35,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "vigilanceTurns",
+        "value": 2
+      },
+      {
+        "type": "STATE_SET",
+        "key": "vigilanceStartsNextTurn",
+        "value": true
+      },
+      {
+        "type": "STATE_SET",
+        "key": "temporaryDefenseTurns",
+        "value": 2
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "🛡️",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 2,
+          "startsNextTurn": true
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_MUD_OBSTACLE",
@@ -1583,7 +2059,37 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.3,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "RESOURCE_DELTA",
+        "resource": "mystic",
+        "amount": 3
+      },
+      {
+        "type": "DRAW_BIAS_SET",
+        "bias": {
+          "targetCategory": "LAND",
+          "type": "TURNS",
+          "remainingTurns": 1,
+          "startsNextTurn": true
+        }
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "🧘",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 1,
+          "startsNextTurn": true
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_FILL_THE_VOID",
@@ -1595,7 +2101,27 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "C",
     "weight": 0.35,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "fillTheVoidTurns",
+        "value": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "✨",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 1
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_VOICE_BENEATH_EARTH",
@@ -1609,7 +2135,27 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.25,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "voiceBeneathEarthTurns",
+        "value": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "🔮",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 1
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_OMEN_DREAM",
@@ -1638,7 +2184,38 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.25,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "RESOURCE_DELTA",
+        "resource": "ember",
+        "amount": 3
+      },
+      {
+        "type": "STATE_SET",
+        "key": "reserveFeeWaivedTurns",
+        "value": 3
+      },
+      {
+        "type": "STATE_SET",
+        "key": "reserveFeeWaivedStartsNextTurn",
+        "value": true
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "✨",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 3,
+          "startsNextTurn": true
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_MYSTIC_FOCUS",
@@ -1650,6 +2227,28 @@ export const COMMAND_CARDS_MASTER = [
     },
     "maxMystic": 30,
     "cyclePolicy": "UNIQUE",
+    "effects": [
+      {
+        "type": "DRAW_BIAS_SET",
+        "bias": {
+          "targetCategory": "MYSTIC",
+          "type": "TURNS",
+          "remainingTurns": 3,
+          "startsNextTurn": true
+        }
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "✨",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 3,
+          "startsNextTurn": true
+        }
+      }
+    ],
     "minStage": 1,
     "rarity": "R",
     "weight": 0.15
@@ -1666,7 +2265,36 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 2,
     "rarity": "R",
     "weight": 0.2,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "manifestMiracleTurns",
+        "value": 3
+      },
+      {
+        "type": "STATE_SET",
+        "key": "manifestMiracleStartsNextTurn",
+        "value": true
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "✨",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 3,
+          "startsNextTurn": true
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_TRANSMUTE_GOLDEN",
@@ -1695,7 +2323,27 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 2,
     "rarity": "R",
     "weight": 0.2,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "revelationChoiceTurns",
+        "value": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "✨",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 1
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_LEYLINE_RESONANCE",
@@ -1709,7 +2357,25 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 2,
     "rarity": "C",
     "weight": 0.35,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "leylineResonanceActive",
+        "value": true
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "buff": {
+          "icon": "✨",
+          "category": "CARD_EFFECT"
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
   },
   {
     "id": "CMD_TWO_FUTURES",
@@ -1721,6 +2387,26 @@ export const COMMAND_CARDS_MASTER = [
     },
     "reqMystic": 25,
     "cyclePolicy": "UNIQUE",
+    "effects": [
+      {
+        "type": "STATE_SET",
+        "key": "twoFuturesTurns",
+        "value": 1
+      },
+      {
+        "type": "BUFF_ADD",
+        "fromSourceCard": true,
+        "badgeTextRemainingTurns": true,
+        "buff": {
+          "icon": "🔮",
+          "category": "CARD_EFFECT",
+          "remainingTurns": 1
+        }
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ],
     "minStage": 3,
     "rarity": "UR",
     "weight": 0.1
