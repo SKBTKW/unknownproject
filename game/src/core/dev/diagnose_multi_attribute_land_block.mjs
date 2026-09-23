@@ -531,6 +531,44 @@ const landSystemJson = JSON.parse(
 }
 
 {
+    // Full Offering generation must accept all three shipped Multi-Attribute
+    // cards at Stage 2 when the real Placement Domain has legal positions.
+    const state = createState();
+    state.stage.id = 2;
+    state.handOfferingSize = 3;
+    placeExisting(state, 1, 0, PLAINS, "offering-support");
+
+    const grid = new GridEngine(state, {
+        gameplayRandom: {
+            nextFloat: () => 0,
+            nextId: () => "live-multi-generation-grid"
+        },
+        deckManager: { consumeCardIfUnique() {} }
+    });
+    state.gridEngine = grid;
+    state.canPlaceShape = (...args) => grid.canPlaceShape(...args);
+
+    const manager = new DeckManager(state, {
+        gameplayRandom: {
+            nextFloat: () => 0,
+            nextId: () => "live-multi-generation"
+        }
+    });
+    manager.getLandCardMaster = () => [...actualMultiCards];
+
+    const offering = manager.generateOfferingCards({
+        reason: OFFERING_GENERATION_REASONS.VERSE_START
+    });
+    assert.equal(offering.length, 3);
+    assert.deepEqual(
+        new Set(offering.map(card => card.cardMasterId)),
+        new Set(actualMultiCards.map(card => card.id))
+    );
+    assert.equal(state.handOffering, offering);
+    assert.equal(state.offeringCards, offering);
+}
+
+{
     const productionReadyMulti = {
         ...actualMultiCards[0],
         productionContract: {
