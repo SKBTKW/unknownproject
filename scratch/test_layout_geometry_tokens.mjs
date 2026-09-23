@@ -88,26 +88,18 @@ check(tokensCss.includes("--layout-right-context-max-height: calc(")
 "Right Context max height is derived from the same Layout-owned boundaries");
 check(tokensCss.includes("--layout-right-context-mobile-top")
     && tokensCss.includes("--layout-right-context-mobile-max-height")
-    && layoutConfig.includes('top: "var(--layout-right-context-mobile-top)"')
-    && layoutConfig.includes('bottom: "auto"')
-    && layoutConfig.includes('maxHeight: "var(--layout-right-context-mobile-max-height)"'),
-"mobile Right Context is reserved in the upper band instead of overlapping the Trial Action Tray");
-check(!layerContractCss.includes("var(--layout-right-context-mobile-top)")
-    && !layerContractCss.includes("var(--layout-right-context-mobile-max-height)"),
-"global layer contract does not duplicate mobile Right Context geometry");
-
-check(layoutConfig.includes('right: "var(--layout-right-context-right)"')
-    && layoutConfig.includes('width: "var(--layout-right-context-width)"')
-    && layoutConfig.includes('width: "var(--layout-right-context-mobile-width)"'),
-"legacy Trial Right Context geometry delegates to shared Layout tokens");
-check(layoutConfig.includes('top: "var(--layout-right-context-mobile-top)"')
-    && layoutConfig.includes('maxHeight: "var(--layout-right-context-mobile-max-height)"')
-    && !layoutConfig.includes("--layout-right-context-mobile-bottom"),
-"mobile Trial Right Context config follows the upper-band Layout contract");
-check(layoutConfig.includes('zIndex: "var(--z-right-context)"')
-    && tokensCss.includes("--z-right-context:")
-    && layerContractCss.includes("var(--z-right-context)"),
-"Trial Right Context stacking consumes the shared Layout layer token");
+    && tokensCss.includes("--z-right-context:"),
+"shared Right Context tokens remain available for non-Trial/compatibility layout consumers");
+check(!layoutConfig.includes("trialDefenseAllocation")
+    && !layoutConfig.includes("var(--layout-right-context-mobile-top)")
+    && !layoutConfig.includes("var(--layout-right-context-mobile-max-height)")
+    && !layoutConfig.includes('zIndex: "var(--z-right-context)"'),
+"retired Trial right-panel geometry is no longer consumed by UILayoutConfig");
+check(!layerContractCss.includes(".trial-defense-allocation-panel")
+    && !layerContractCss.includes("var(--layout-right-context-mobile-top)")
+    && !layerContractCss.includes("var(--layout-right-context-mobile-max-height)")
+    && !layerContractCss.includes("var(--z-right-context)"),
+"global layer contract has no retired Trial right-panel geometry or stacking rule");
 check(layoutConfig.includes('right: "var(--layout-advisor-right)"')
     && layoutConfig.includes('bottom: "var(--layout-advisor-bottom)"')
     && layoutConfig.includes('zIndex: "var(--z-advisor)"'),
@@ -133,8 +125,7 @@ check(layerContractCss.includes("#advisorDockContainer")
 check(layerContractCss.includes("#layerSystemOverlay.layer-system-overlay")
     && layerContractCss.includes("var(--z-overlay)"),
 "System Overlay global stacking order is normalized by the Layout layer contract");
-check(layerContractCss.includes(".trial-defense-allocation-panel")
-    && layerContractCss.includes("var(--z-right-context)"),
-"Right Context global stacking order is normalized by the Layout layer contract");
+check(!layerContractCss.includes(".trial-defense-allocation-panel"),
+"retired standalone Trial Right Context has no global layer-contract selector");
 
 console.log(`Layout geometry tokens: ${passed}/${passed} PASS`);
