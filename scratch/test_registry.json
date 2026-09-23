@@ -193,6 +193,14 @@
       ]
     },
     {
+      "path": "scratch/test_battle_site_presentation.mjs",
+      "purpose": "Battle Site semantic marker through Board DTO and 2D/2.5D presentation",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_board_history_query.mjs",
       "purpose": "Board-owned Battle Site history read boundary and RunHistory integration",
       "suite": "existing",
