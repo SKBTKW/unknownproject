@@ -999,33 +999,39 @@ function printRareNormal1x2Impact(currentRuns, singleCellRuns, scenarios) {
     );
 
     for (const scenario of scenarios) {
-        const snap = rareNormal1x2Snapshot(
-            `NORMAL_1X2_WEIGHT_${Math.round(scenario.weightScale * 100)}PCT`,
-            scenario.runs,
-            scenario.normal1x2Ids
-        );
-        console.log(
-            [
-                "RARE_NORMAL_1X2_IMPACT",
-                `scale=${scenario.weightScale}`,
-                `normal=${scenario.normal1x2Ids.join(",")}`,
-                `movedMulti=${scenario.movedMultiIds.join(",")}`,
-                `V15🌾=${formatRange(snap.food)} avg=${average(snap.food).toFixed(1)}`,
-                `V15🧱=${formatRange(snap.material)} avg=${average(snap.material).toFixed(1)}`,
-                `V15🛡️=${formatRange(snap.defense)}`,
-                `tiles=${formatRange(snap.tiles)} avg=${average(snap.tiles).toFixed(1)}`,
-                `1x2OfferedVerses=${snap.offeredVerses}/${snap.totalVerses}(${percent(snap.offeredVerses, snap.totalVerses).toFixed(1)}%)`,
-                `1x2Picks=${snap.normal1x2Picks}/${snap.landActions}(${percent(snap.normal1x2Picks, snap.landActions).toFixed(1)}%)`,
-                `multiPicks=${snap.multi}`
-            ].join(" ")
-        );
+        for (const [strategy, strategyRuns] of [
+            ["FIRST_LEGAL", scenario.runsFirstLegal],
+            ["GROWTH", scenario.runsGrowth]
+        ]) {
+            const snap = rareNormal1x2Snapshot(
+                `NORMAL_1X2_WEIGHT_${Math.round(scenario.weightScale * 100)}PCT_${strategy}`,
+                strategyRuns,
+                scenario.normal1x2Ids
+            );
+            console.log(
+                [
+                    "RARE_NORMAL_1X2_IMPACT",
+                    `scale=${scenario.weightScale}`,
+                    `strategy=${strategy}`,
+                    `normal=${scenario.normal1x2Ids.join(",")}`,
+                    `movedMulti=${scenario.movedMultiIds.join(",")}`,
+                    `V15🌾=${formatRange(snap.food)} avg=${average(snap.food).toFixed(1)}`,
+                    `V15🧱=${formatRange(snap.material)} avg=${average(snap.material).toFixed(1)}`,
+                    `V15🛡️=${formatRange(snap.defense)}`,
+                    `tiles=${formatRange(snap.tiles)} avg=${average(snap.tiles).toFixed(1)}`,
+                    `1x2OfferedVerses=${snap.offeredVerses}/${snap.totalVerses}(${percent(snap.offeredVerses, snap.totalVerses).toFixed(1)}%)`,
+                    `1x2Picks=${snap.normal1x2Picks}/${snap.landActions}(${percent(snap.normal1x2Picks, snap.landActions).toFixed(1)}%)`,
+                    `multiPicks=${snap.multi}`
+                ].join(" ")
+            );
 
-        assert.equal(snap.multi, 0, "rare normal 1x2 experiment must move Multi-Attribute LAND to Stage2");
-        assert.equal(
-            scenario.runs.every(run => run.trace.every(row => row.offeringCount > 0)),
-            true,
-            "rare normal 1x2 experiment must not create empty Offerings"
-        );
+            assert.equal(snap.multi, 0, "rare normal 1x2 experiment must move Multi-Attribute LAND to Stage2");
+            assert.equal(
+                strategyRuns.every(run => run.trace.every(row => row.offeringCount > 0)),
+                true,
+                "rare normal 1x2 experiment must not create empty Offerings"
+            );
+        }
     }
 }
 
@@ -1244,8 +1250,13 @@ printSingleCellOnlyImpact(
 const rareNormal1x2Scenarios = [0.25, 0.10, 0.05].map(weightScale =>
     withStage1RareNormal1x2(weightScale, config => ({
         ...config,
-        runs: TRACE_SEEDS.map(seed => runSeedTrace(seed, {
+        runsFirstLegal: TRACE_SEEDS.map(seed => runSeedTrace(seed, {
             landSelection: "FIRST_LEGAL",
+            printDiagnostics: false,
+            requireMystic: false
+        })),
+        runsGrowth: TRACE_SEEDS.map(seed => runSeedTrace(seed, {
+            landSelection: "GROWTH",
             printDiagnostics: false,
             requireMystic: false
         }))
@@ -1253,7 +1264,8 @@ const rareNormal1x2Scenarios = [0.25, 0.10, 0.05].map(weightScale =>
 );
 assert.equal(
     rareNormal1x2Scenarios.every(scenario =>
-        scenario.runs.every(run => run.settlements.length === 14)
+        [...scenario.runsFirstLegal, ...scenario.runsGrowth]
+            .every(run => run.settlements.length === 14)
     ),
     true,
     "all rare normal 1x2 scenarios must reach Verse15"
