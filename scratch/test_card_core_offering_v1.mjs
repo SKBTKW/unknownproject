@@ -2031,7 +2031,63 @@ function makeGrid(rows, cols) {
     assert.equal(state.defense, 10);
 }
 
-// AQ. DeckManager performs declarative effect preflight only before payment.
+// AQ. Zone Conversion rejects inconsistent legacy material/wood payment state before mutation.
+{
+    const engine = {
+        boardDomainAdapter: {
+            quoteZoneConversionCost() {
+                return { status: "RESOLVED", resources: { wood: 10 }, conversionCount: 0 };
+            },
+            enumerateZoneConversionCandidates() {
+                return [{ valid: true, groupId: "zone_a", zoneAttribute: "PLAINS" }];
+            },
+            validateZoneConversionCandidateAfterPayment() {
+                return { valid: true, reasons: [], groupId: "zone_a" };
+            },
+            resolveZoneConversionGroupId() { return "zone_a"; },
+            readZoneSemantic() { return { groupId: "zone_a", cells: [{ r: 0, c: 0 }] }; },
+            createZoneConversion() { throw new Error("unsafe payment source must never execute"); }
+        }
+    };
+    engine.cardDomainActionExecutor = createCardDomainActionExecutor(engine);
+
+    const state = {
+        turn: 1,
+        stage: { id: 1 },
+        food: 0,
+        wood: 5,
+        material: 30,
+        defense: 10,
+        mystic: 0,
+        ember: 0,
+        reserveSlots: [],
+        activeBuffs: [],
+        consumedUniqueCards: [],
+        usedUniqueCards: [],
+        addLog() {}
+    };
+    const manager = new DeckManager(state, engine);
+    manager.cycleSystem = null;
+    const card = {
+        id: "CMD_ZONE_UNSAFE_MATERIAL_MIRROR",
+        category: "COMMAND",
+        cost: { material: 10 },
+        effects: [{
+            type: CARD_EFFECT_TYPES.DOMAIN_ACTION,
+            action: CARD_DOMAIN_ACTIONS.CREATE_ZONE_CONVERSION,
+            definitionId: "ZONE_TEST"
+        }]
+    };
+
+    assert.equal(manager.isCardEligible(card, 1, 0), false);
+    const result = manager.playCommandCard(card, { r: 0, c: 0 });
+    assert.equal(result.success, false);
+    assert.equal(result.reason, "ZONE_CONVERSION_CARD_PAYMENT_STATE_UNSAFE");
+    assert.equal(state.wood, 5);
+    assert.equal(state.material, 30);
+}
+
+// AR. DeckManager performs declarative effect preflight only before payment.
 {
     let preflightCalls = 0;
     let executeCalls = 0;
