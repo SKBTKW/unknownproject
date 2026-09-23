@@ -74,6 +74,18 @@ hydrateGameState(restored, serialized, { resolveCardMaster: () => null });
 assert.equal(restored.roadEdges instanceof Set, true);
 assert.deepEqual([...restored.roadEdges], ['0:0::0:1']);
 
+const malformedSerialized = {
+    ...serialized,
+    roadEdges: ['0:0::0:1', '0:1::0:0', 'invalid']
+};
+const restoredMalformed = {};
+hydrateGameState(restoredMalformed, malformedSerialized, { resolveCardMaster: () => null });
+assert.deepEqual(
+    [...restoredMalformed.roadEdges],
+    ['0:0::0:1'],
+    'restore canonicalizes road ids instead of preserving malformed or reversed aliases'
+);
+
 const legacySerialized = { ...serialized };
 delete legacySerialized.roadEdges;
 const restoredLegacy = {};
