@@ -1,3 +1,4 @@
+import { GameEngine } from "../game/src/core/game_engine.js";
 import assert from "node:assert/strict";
 import {
     evaluateDeploymentProfileAgainstSamples,
@@ -8,6 +9,11 @@ import {
 } from "./trial_deployment_balance_probe.mjs";
 
 {
+    const liveStage1Engine = GameEngine.createGame({ runSeed: 20260924, firstRun: true });
+    assert.equal(liveStage1Engine.trialDeploymentAttachment, null);
+    assert.equal(liveStage1Engine.trialDeploymentService, undefined);
+    console.log("LIVE_STAGE1_DEPLOYMENT_PROFILE=UNRESOLVED sink=0 until explicitly configured");
+
     const unresolved = evaluateDeploymentProfileAgainstSamples({
         profile: UNRESOLVED_DEPLOYMENT_PROFILE,
         samples: STAGE1_TRIAL1_AUDIT_ENVELOPE_20260923,
@@ -54,13 +60,13 @@ import {
             plans: STAGE1_TRIAL1_PROBE_PLANS
         });
         assert.equal(result.success, true);
-        assert.equal(result.rows.length, 6);
+        assert.equal(result.rows.length, 8);
 
         const summary = summarizeDeploymentBalanceRows(result.rows);
         summaries.push({ id: experiment.id, ...summary });
 
         console.log(
-            `${experiment.id}: affordable=${summary.affordableCount}/${summary.rowCount} maxFood=${summary.maxFoodSharePct.toFixed(1)}% maxMat=${summary.maxMaterialSharePct.toFixed(1)}%`
+            `${experiment.id}: affordable=${summary.affordableCount}/${summary.rowCount} maxFood=${summary.maxFoodSharePct.toFixed(1)}% maxMat=${summary.maxMaterialSharePct.toFixed(1)}% minRemaining=🌾${summary.minFoodRemaining}/🧱${summary.minMaterialRemaining}`
         );
         for (const row of result.rows) {
             console.log(
@@ -72,6 +78,7 @@ import {
                     `dist=${row.distance}`,
                     `food=${row.foodCost}/${row.foodAvailable} (${row.foodSharePct.toFixed(1)}%)`,
                     `mat=${row.materialCost}/${row.materialAvailable} (${row.materialSharePct.toFixed(1)}%)`,
+                    `remaining=🌾${row.foodRemaining}/🧱${row.materialRemaining}`,
                     `affordable=${row.affordable}`
                 ].join(" ")
             );
