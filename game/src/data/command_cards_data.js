@@ -763,7 +763,16 @@ export const MILITARY_CARDS_MASTER = [
     "minStage": 2,
     "rarity": "UC",
     "weight": 0.3,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "DOMAIN_ACTION",
+        "action": "APPLY_DEFENSE_DEVELOPMENT",
+        "capacityBonus": 25,
+        "vicinityDefenseBonus": 2,
+        "logActivation": true
+      }
+    ]
   },
   {
     "id": "CMD_BALLISTA_SET",
@@ -1993,7 +2002,16 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 2,
     "rarity": "UC",
     "weight": 0.3,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "DOMAIN_ACTION",
+        "action": "APPLY_DEFENSE_DEVELOPMENT",
+        "capacityBonus": 25,
+        "vicinityDefenseBonus": 2,
+        "logActivation": true
+      }
+    ]
   },
   {
     "id": "CMD_BALLISTA_SET",
