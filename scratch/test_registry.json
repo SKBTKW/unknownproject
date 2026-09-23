@@ -2,14 +2,6 @@
   "schemaVersion": 1,
   "tests": [
     {
-      "path": "scratch/test_trial_board_damage_policy.mjs",
-      "purpose": "Trial non-repel outcomes stage Board damage and commit only after settlement",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
       "path": "scratch/test_advisor_character_contract.mjs",
       "purpose": "advisor character contract",
       "suite": "existing",
@@ -154,6 +146,22 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_battle_site_lifecycle.mjs",
+      "purpose": "settled Trial battle sites persist idempotently through Board serialization",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_battle_site_presentation.mjs",
+      "purpose": "Battle Site semantic marker through Board DTO and 2D/2.5D presentation",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_board_camera_header_boundary.mjs",
       "purpose": "board camera header boundary",
       "suite": "supplemental"
@@ -167,6 +175,38 @@
       "path": "scratch/test_board_context_presentation_contract.mjs",
       "purpose": "board context presentation contract",
       "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_board_damage_contract.mjs",
+      "purpose": "Board-owned semantic damage records without gameplay side effects",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_board_damage_effect_policy.mjs",
+      "purpose": "Unresolved LAND/SPECIAL_BLOCK damage effects surface without changing gameplay values",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_board_damage_presentation.mjs",
+      "purpose": "Board damage semantic state through DTO and 2D/2.5D presentation",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_board_history_query.mjs",
+      "purpose": "Board-owned Battle Site history read boundary and RunHistory integration",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
     },
     {
       "path": "scratch/test_board_presentation_axes.mjs",
@@ -193,52 +233,9 @@
       ]
     },
     {
-      "path": "scratch/test_battle_site_lifecycle.mjs",
-      "purpose": "settled Trial battle sites persist idempotently through Board serialization",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
-      "path": "scratch/test_battle_site_presentation.mjs",
-      "purpose": "Battle Site semantic marker through Board DTO and 2D/2.5D presentation",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
-      "path": "scratch/test_board_damage_contract.mjs",
-      "purpose": "Board-owned semantic damage records without gameplay side effects",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
-      "path": "scratch/test_board_damage_presentation.mjs",
-      "purpose": "Board damage semantic state through DTO and 2D/2.5D presentation",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
-      "path": "scratch/test_board_damage_effect_policy.mjs",
-      "purpose": "Unresolved LAND/SPECIAL_BLOCK damage effects surface without changing gameplay values",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
-      "path": "scratch/test_board_history_query.mjs",
-      "purpose": "Board-owned Battle Site history read boundary and RunHistory integration",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
+      "path": "scratch/test_board_trial_hover_input.mjs",
+      "purpose": "board trial hover input",
+      "suite": "supplemental"
     },
     {
       "path": "scratch/test_board_world_eligibility_integration.mjs",
@@ -247,11 +244,6 @@
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
       ]
-    },
-    {
-      "path": "scratch/test_board_trial_hover_input.mjs",
-      "purpose": "board trial hover input",
-      "suite": "supplemental"
     },
     {
       "path": "scratch/test_board_zone_link_visual_contract.mjs",
@@ -578,14 +570,6 @@
       ]
     },
     {
-      "path": "scratch/test_investigation_request_v1.mjs",
-      "purpose": "card-independent investigation request, enhanced 2D6, and useful fragment contract",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
       "path": "scratch/test_investigation_offering_adapter.mjs",
       "purpose": "investigation offering adapter",
       "suite": "existing",
@@ -604,6 +588,14 @@
     {
       "path": "scratch/test_investigation_report_text_renderer.mjs",
       "purpose": "investigation report text renderer",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_investigation_request_v1.mjs",
+      "purpose": "card-independent investigation request, enhanced 2D6, and useful fragment contract",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -834,19 +826,19 @@
       ]
     },
     {
-      "path": "scratch/test_task_health.mjs",
-      "purpose": "task health",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
       "path": "scratch/test_task_health_git_integration.mjs",
       "purpose": "task health git integration",
       "suite": "existing",
       "entryPoints": [
         "scratch/test_task_health.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_task_health.mjs",
+      "purpose": "task health",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
@@ -881,6 +873,14 @@
     {
       "path": "scratch/test_trial_advisor_public_read_model.mjs",
       "purpose": "trial advisor public read model",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_trial_board_damage_policy.mjs",
+      "purpose": "Trial non-repel outcomes stage Board damage and commit only after settlement",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -939,6 +939,14 @@
     {
       "path": "scratch/test_trial_normal_input_isolation.mjs",
       "purpose": "trial normal input isolation",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_trial_phase2_preview.mjs",
+      "purpose": "trial phase2 preview",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -1057,14 +1065,6 @@
       ]
     },
     {
-      "path": "scratch/test_trial_phase2_preview.mjs",
-      "purpose": "trial phase2 preview",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
       "path": "scratch/test_trial_restore_boundary_service.mjs",
       "purpose": "trial restore boundary service",
       "suite": "existing",
@@ -1139,14 +1139,6 @@
       ]
     },
     {
-      "path": "scratch/test_verse1_restore_point.mjs",
-      "purpose": "verse1 restore point",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
       "path": "scratch/test_verse_chronicle_facts.mjs",
       "purpose": "verse chronicle facts",
       "suite": "existing",
@@ -1157,6 +1149,14 @@
     {
       "path": "scratch/test_verse_restore_point_contract.mjs",
       "purpose": "verse restore point contract",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_verse1_restore_point.mjs",
+      "purpose": "verse1 restore point",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -1210,6 +1210,14 @@
       "path": "scratch/test_web25d_zone_link_overlay_renderer.mjs",
       "purpose": "web25d zone link overlay renderer",
       "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_zone_conversion_foundation.mjs",
+      "purpose": "zone conversion foundation contract",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
     }
   ]
 }
