@@ -62,6 +62,16 @@ class CardEffectExecutor {
         });
     }
 
+    enumerateTargets(effects, context = {}) {
+        if (!Array.isArray(effects) || effects.length !== 1) return [];
+        const effect = effects[0];
+        if (effect?.type !== CARD_EFFECT_TYPES.DOMAIN_ACTION) return [];
+        const executor = context.domainActionExecutor || this.domainActionExecutor;
+        if (typeof executor?.enumerateTargets !== "function") return [];
+        const targets = executor.enumerateTargets(effect, context);
+        return Array.isArray(targets) ? targets : [];
+    }
+
     executeAll(effects, context = {}) {
         const preflight = this.preflight(effects, context);
         if (!preflight.handled || !preflight.success) {
