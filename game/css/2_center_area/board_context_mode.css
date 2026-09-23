@@ -240,3 +240,41 @@ body[data-board-context="trial"] #gridBoard .trial-battle-current {
 body[data-board-context="trial"] #gridBoard .battle-site-history-marker {
     opacity: 0.42;
 }
+
+
+/* Board damage markers are persistent semantic state, separate from live Trial overlays. */
+#gridBoard .board-damage-marker-stack {
+    position: absolute;
+    right: 4px;
+    top: 4px;
+    z-index: 12;
+    display: inline-flex;
+    gap: 2px;
+    pointer-events: none;
+}
+#gridBoard .board-damage-marker {
+    width: 16px;
+    height: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 900;
+    line-height: 1;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.52);
+}
+#gridBoard .board-damage-marker.is-land {
+    border: 1px solid rgba(206, 143, 111, 0.90);
+    background: rgba(70, 37, 31, 0.86);
+    color: rgba(242, 181, 145, 0.96);
+}
+#gridBoard .board-damage-marker.is-special-block {
+    border: 1px solid rgba(224, 180, 93, 0.92);
+    background: rgba(67, 50, 24, 0.90);
+    color: rgba(255, 219, 136, 0.98);
+}
+body[data-board-context="trial"] #gridBoard .board-damage-marker-stack {
+    opacity: 0.44;
+}

@@ -285,9 +285,28 @@ export class BoardPresentationSemanticService {
                     settledTurn: Number.isInteger(entity.settledTurn) ? entity.settledTurn : null
                 }))
             : [];
+        const damageRecords = Array.isArray(cell?.damageRecords)
+            ? cell.damageRecords.map(record => Object.freeze({
+                id: record?.id || null,
+                target: record?.target || null,
+                source: record?.source ? Object.freeze({ ...record.source }) : null,
+                metadata: record?.metadata ? Object.freeze({ ...record.metadata }) : null
+            }))
+            : [];
+        const landDamageRecords = damageRecords.filter(record => record.target === 'LAND');
+        const specialBlockDamageRecords = damageRecords.filter(record => record.target === 'SPECIAL_BLOCK');
+
         return Object.freeze({
             battleSite: battleSites.length > 0,
-            battleSites: Object.freeze(battleSites)
+            battleSites: Object.freeze(battleSites),
+            damage: Object.freeze({
+                any: damageRecords.length > 0,
+                land: landDamageRecords.length > 0,
+                specialBlock: specialBlockDamageRecords.length > 0,
+                records: Object.freeze(damageRecords),
+                landRecords: Object.freeze(landDamageRecords),
+                specialBlockRecords: Object.freeze(specialBlockDamageRecords)
+            })
         });
     }
 
