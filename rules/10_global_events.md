@@ -41,7 +41,7 @@ Global Eventは、長期計画を無作為に無効化するためではなく�
 | `EVENT_DROUGHT` | 旱魃 | **Implemented** — 平地🌾倍率0.60は産出計算へ接続済み。 |
 | `EVENT_NEW_GENERATION` | 新たな世代 | **Partial** — `OFFERING_WEIGHT_TAG_BOOST(POPULATION)`定義はあるが、現`DeckManager`は`GlobalEventManager.applyOfferingWeightEffects()`を呼ばないため、Offeringへの実効効果は未接続。 |
 | `EVENT_CRAFTSMAN_BOOM` | 職人たちの活況 | **Partial** — `OFFERING_WEIGHT_TAG_BOOST(CONSTRUCTION)`定義はあるが、Offering抽選側hook未接続。 |
-| `EVENT_BOUNTIFUL_SEASON` | 豊穣の季節 | **Implemented / Partial chain** — 平地🌾倍率1.25は産出計算へ接続済み。終了後の`EVENT_NEW_GENERATION` Weight補正はSelector側で参照されるが、`NEXT_GLOBAL_EVENT`寿命の消費処理に不整合あり。 |
+| `EVENT_BOUNTIFUL_SEASON` | 豊穣の季節 | **Implemented / Partial chain** — 平地🌾倍率1.25は産出計算へ接続済み。終了後の`EVENT_NEW_GENERATION` Weight補正はSelector側で参照され、`NEXT_GLOBAL_EVENT`寿命は次の成功したGlobal Event発火時に1回消費される。 |
 | `EVENT_RECOVERY_MOMENTUM` | 復興の機運 | **Partial** — `OFFERING_WEIGHT_TAG_BOOST(RECOVERY)`定義はあるが、Offering抽選側hook未接続。 |
 | `EVENT_DEMIHUMAN_RAID` | 亜人襲撃 | **Partial / Data only** — 候補定義あり、`effects: []`。 |
 | `EVENT_DEMIHUMAN_SCOUTS` | 亜人の斥候 | **Partial / Data only** — 候補定義あり、`effects: []`。 |
@@ -195,10 +195,11 @@ Trial接近時は、数値カウントダウンではなく**警戒状態**と�
 ただし寿命管理には実装不整合がある。
 
 - `EffectResolver.EVENT_WEIGHT_MODIFIER` は `expiry: { type: "NEXT_GLOBAL_EVENT" }` を保存できる。
-- `GlobalEventManager.tickTurn()` は `TURN_COUNT` expiryのみを除去し、`NEXT_GLOBAL_EVENT` は保持する。
-- 現 `triggerEvent()` 内にも「次のGlobal Event発生時に当該modifierを消費/削除する」処理を確認できない。
+- `GlobalEventManager.triggerEvent()` は、成功したGlobal Event開始時に、それ以前から待機していた `NEXT_GLOBAL_EVENT` modifierを1回消費する。
+- 消費は現在イベントの `effects` 適用前に行うため、現在イベント自身が新たに付与した `NEXT_GLOBAL_EVENT` modifierは次回イベントまで保持される。
+- `TURN_COUNT` modifierの寿命管理は従来どおり `tickTurn()` が担当する。
 
-したがって、`NEXT_GLOBAL_EVENT` と宣言されたWeight補正は、現状では**意図した1回消費寿命ではなく残存し続ける可能性がある**。
+したがって、`NEXT_GLOBAL_EVENT` は**次に成功したGlobal Event発火で一度だけ消費される寿命**として実装済み。
 
 さらに《寒波》終了時の `targetTag: "FOOD_CRISIS"` は、現8イベントの `id` / `category` と一致する対象を確認できないため、現マスターでは実効対象なし。
 
@@ -222,7 +223,7 @@ Trial接近時は、数値カウントダウンではなく**警戒状態**と�
 2. 寒波 / 旱魃 / 豊穣のProduction倍率は産出計算へ接続済み。
 3. 新たな世代 / 職人活況 / 復興の機運のOffering Weight効果は、GlobalEvent側hookまで存在するが`DeckManager`未接続。
 4. 亜人襲撃・斥候は効果未実装。
-5. `EVENT_WEIGHT_MODIFIER` の `NEXT_GLOBAL_EVENT` expiryは宣言できるが、次イベント発生時の消費処理を確認できない。
+5. `EVENT_WEIGHT_MODIFIER` の `NEXT_GLOBAL_EVENT` expiryは、次に成功したGlobal Event発火で一度だけ消費される。
 6. 寒波の終了Weight補正`FOOD_CRISIS`は現イベントマスターに実効対象がない。
 7. 第1 Trial前の固定異変シーケンスは未実装。
 8. 調査・情報カテゴリの解禁状態は未実装。
