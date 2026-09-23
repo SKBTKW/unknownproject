@@ -5,14 +5,11 @@
     "nameKey": "CMD_RATIONING_NAME",
     "descriptionKey": "CMD_RATIONING_DESC",
     "cost": {},
-    "tags": [
-      "FOOD",
-      "EMERGENCY"
-    ],
+    "tags": ["FOOD", "EMERGENCY"],
     "reqFoodDeficitOrFallback": true,
     "minStage": 1,
     "rarity": "C",
-    "weight": 0.4,
+    "weight": 0.40,
     "cyclePolicy": "RARITY",
     "effects": [
       {
@@ -50,16 +47,8 @@
     "category": "COMMAND",
     "nameKey": "CMD_WETLAND_RECLAMATION_NAME",
     "descriptionKey": "CMD_WETLAND_RECLAMATION_DESC",
-    "cost": {
-      "wood": 15,
-      "ember": 1
-    },
-    "tags": [
-      "WETLAND",
-      "RECLAIMED",
-      "FOOD",
-      "DEVELOPMENT"
-    ],
+    "cost": { "wood": 15, "ember": 1 },
+    "tags": ["WETLAND", "RECLAIMED", "FOOD", "DEVELOPMENT"],
     "reqWetland": 1,
     "reqWood": 15,
     "minStage": 1,
@@ -72,15 +61,8 @@
     "category": "COMMAND",
     "nameKey": "CMD_LOGGING_CAMP_NAME",
     "descriptionKey": "CMD_LOGGING_CAMP_DESC",
-    "cost": {
-      "ember": 1
-    },
-    "tags": [
-      "FOREST",
-      "MATERIAL",
-      "INDUSTRY",
-      "SPECIAL_BLOCK"
-    ],
+    "cost": { "ember": 1 },
+    "tags": ["FOREST", "MATERIAL", "INDUSTRY", "SPECIAL_BLOCK"],
     "reqForestNearby": 3,
     "minStage": 1,
     "rarity": "C",
@@ -110,17 +92,8 @@
     "category": "COMMAND",
     "nameKey": "CMD_GRANARY_NAME",
     "descriptionKey": "CMD_GRANARY_DESC",
-    "cost": {
-      "wood": 20
-    },
-    "tags": [
-      "PLAINS",
-      "RECLAIMED",
-      "FOOD",
-      "STORAGE",
-      "INDUSTRY",
-      "SPECIAL_BLOCK"
-    ],
+    "cost": { "wood": 20 },
+    "tags": ["PLAINS", "RECLAIMED", "FOOD", "STORAGE", "INDUSTRY", "SPECIAL_BLOCK"],
     "reqPlains": 4,
     "reqWood": 20,
     "minStage": 1,
@@ -133,21 +106,13 @@
     "category": "COMMAND",
     "nameKey": "CMD_AGRICULTURAL_REFORM_NAME",
     "descriptionKey": "CMD_AGRICULTURAL_REFORM_DESC",
-    "cost": {
-      "wood": 20
-    },
-    "tags": [
-      "PLAINS",
-      "RECLAIMED",
-      "FOOD",
-      "AGRICULTURE",
-      "DEVELOPMENT"
-    ],
+    "cost": { "wood": 20 },
+    "tags": ["PLAINS", "RECLAIMED", "FOOD", "AGRICULTURE", "DEVELOPMENT"],
     "reqConnectedPlainsOrReclaimed": 3,
     "reqWood": 20,
     "minStage": 1,
     "rarity": "R",
-    "weight": 0.2,
+    "weight": 0.20,
     "cyclePolicy": "UNIQUE"
   },
   {
@@ -155,16 +120,8 @@
     "category": "COMMAND",
     "nameKey": "CMD_PASTORAL_FARM_NAME",
     "descriptionKey": "CMD_PASTORAL_FARM_DESC",
-    "cost": {
-      "wood": 15
-    },
-    "tags": [
-      "PLAINS",
-      "LIVESTOCK",
-      "FOOD",
-      "INDUSTRY",
-      "SPECIAL_BLOCK"
-    ],
+    "cost": { "wood": 15 },
+    "tags": ["PLAINS", "LIVESTOCK", "FOOD", "INDUSTRY", "SPECIAL_BLOCK"],
     "reqDiscoveredResourceTag": "LIVESTOCK",
     "reqPlains": 4,
     "reqWood": 15,
@@ -178,14 +135,8 @@
     "category": "COMMAND",
     "nameKey": "CMD_ABANDONED_SETTLEMENT_NAME",
     "descriptionKey": "CMD_ABANDONED_SETTLEMENT_DESC",
-    "cost": {
-      "ember": 1
-    },
-    "tags": [
-      "EXPLORATION",
-      "EVENT",
-      "RESOURCE"
-    ],
+    "cost": { "ember": 1 },
+    "tags": ["EXPLORATION", "EVENT", "RESOURCE"],
     "reqEmptyCells": 8,
     "minStage": 1,
     "rarity": "UC",
@@ -197,14 +148,8 @@
     "category": "COMMAND",
     "nameKey": "CMD_EMERGENCY_LEVY_NAME",
     "descriptionKey": "CMD_EMERGENCY_LEVY_DESC",
-    "cost": {
-      "food": 20
-    },
-    "tags": [
-      "FOOD",
-      "MATERIAL",
-      "EMERGENCY"
-    ],
+    "cost": { "food": 20 },
+    "tags": ["FOOD", "MATERIAL", "EMERGENCY"],
     "reqWoodDeficit": true,
     "reqFood": 20,
     "minStage": 1,
@@ -235,20 +180,13 @@
     "category": "COMMAND",
     "nameKey": "CMD_SAWMILL_NAME",
     "descriptionKey": "CMD_SAWMILL_DESC",
-    "cost": {
-      "wood": 25
-    },
-    "tags": [
-      "FOREST",
-      "MATERIAL",
-      "INDUSTRY",
-      "SPECIAL_BLOCK"
-    ],
+    "cost": { "wood": 25 },
+    "tags": ["FOREST", "MATERIAL", "INDUSTRY", "SPECIAL_BLOCK"],
     "reqLoggingCamp": 1,
     "reqWood": 25,
     "minStage": 2,
     "rarity": "R",
-    "weight": 0.2,
+    "weight": 0.20,
     "cyclePolicy": "RARITY"
   },
   {
@@ -256,17 +194,8 @@
     "category": "COMMAND",
     "nameKey": "CMD_QUARRY_NAME",
     "descriptionKey": "CMD_QUARRY_DESC",
-    "cost": {
-      "wood": 20
-    },
-    "tags": [
-      "HILL",
-      "STONE",
-      "MATERIAL",
-      "EXTRACTION",
-      "INDUSTRY",
-      "SPECIAL_BLOCK"
-    ],
+    "cost": { "wood": 20 },
+    "tags": ["HILL", "STONE", "MATERIAL", "EXTRACTION", "INDUSTRY", "SPECIAL_BLOCK"],
     "reqDiscoveredResourceTag": "STONE",
     "reqHill": 1,
     "reqWood": 20,
@@ -280,23 +209,13 @@
     "category": "COMMAND",
     "nameKey": "CMD_MINE_NAME",
     "descriptionKey": "CMD_MINE_DESC",
-    "cost": {
-      "wood": 25
-    },
-    "tags": [
-      "HILL",
-      "MOUNTAIN",
-      "ORE",
-      "MATERIAL",
-      "MYSTIC",
-      "EXTRACTION",
-      "SPECIAL_BLOCK"
-    ],
+    "cost": { "wood": 25 },
+    "tags": ["HILL", "MOUNTAIN", "ORE", "MATERIAL", "MYSTIC", "EXTRACTION", "SPECIAL_BLOCK"],
     "reqOreSocket": true,
     "reqWood": 25,
     "minStage": 2,
     "rarity": "R",
-    "weight": 0.2,
+    "weight": 0.20,
     "cyclePolicy": "RARITY"
   },
   {
@@ -304,22 +223,14 @@
     "category": "COMMAND",
     "nameKey": "CMD_STABLE_NAME",
     "descriptionKey": "CMD_STABLE_DESC",
-    "cost": {
-      "wood": 20
-    },
-    "tags": [
-      "PLAINS",
-      "LIVESTOCK",
-      "MOBILITY",
-      "INDUSTRY",
-      "SPECIAL_BLOCK"
-    ],
+    "cost": { "wood": 20 },
+    "tags": ["PLAINS", "LIVESTOCK", "MOBILITY", "INDUSTRY", "SPECIAL_BLOCK"],
     "reqDiscoveredResourceTag": "HORSE",
     "reqPlains": 6,
     "reqWood": 20,
     "minStage": 2,
     "rarity": "R",
-    "weight": 0.2,
+    "weight": 0.20,
     "cyclePolicy": "RARITY"
   },
   {
@@ -327,22 +238,9 @@
     "category": "COMMAND",
     "nameKey": "CMD_LIME_KILN_NAME",
     "descriptionKey": "CMD_LIME_KILN_DESC",
-    "cost": {
-      "food": 10,
-      "wood": 15
-    },
-    "tags": [
-      "STONE",
-      "FOREST",
-      "MATERIAL",
-      "CONSTRUCTION",
-      "INDUSTRY",
-      "SPECIAL_BLOCK"
-    ],
-    "reqDiscoveredResourceTags": [
-      "STONE",
-      "WOOD"
-    ],
+    "cost": { "food": 10, "wood": 15 },
+    "tags": ["STONE", "FOREST", "MATERIAL", "CONSTRUCTION", "INDUSTRY", "SPECIAL_BLOCK"],
+    "reqDiscoveredResourceTags": ["STONE", "WOOD"],
     "reqFood": 10,
     "reqWood": 15,
     "minStage": 2,
@@ -355,20 +253,13 @@
     "category": "COMMAND",
     "nameKey": "CMD_MARKET_NAME",
     "descriptionKey": "CMD_MARKET_DESC",
-    "cost": {
-      "wood": 25
-    },
-    "tags": [
-      "LINK",
-      "RESOURCE",
-      "INDUSTRY",
-      "SPECIAL_BLOCK"
-    ],
+    "cost": { "wood": 25 },
+    "tags": ["LINK", "RESOURCE", "INDUSTRY", "SPECIAL_BLOCK"],
     "reqMinLinks": 2,
     "reqWood": 25,
     "minStage": 2,
     "rarity": "R",
-    "weight": 0.2,
+    "weight": 0.20,
     "cyclePolicy": "RARITY"
   },
   {
@@ -376,21 +267,13 @@
     "category": "COMMAND",
     "nameKey": "CMD_DEPOT_NAME",
     "descriptionKey": "CMD_DEPOT_DESC",
-    "cost": {
-      "wood": 30
-    },
-    "tags": [
-      "MATERIAL",
-      "STORAGE",
-      "LINK",
-      "INDUSTRY",
-      "SPECIAL_BLOCK"
-    ],
+    "cost": { "wood": 30 },
+    "tags": ["MATERIAL", "STORAGE", "LINK", "INDUSTRY", "SPECIAL_BLOCK"],
     "reqIndustrySpecialBlocks": 2,
     "reqWood": 30,
     "minStage": 2,
     "rarity": "R",
-    "weight": 0.2,
+    "weight": 0.20,
     "cyclePolicy": "RARITY"
   },
   {
@@ -398,16 +281,8 @@
     "category": "COMMAND",
     "nameKey": "CMD_IRRIGATION_NAME",
     "descriptionKey": "CMD_IRRIGATION_DESC",
-    "cost": {
-      "wood": 20
-    },
-    "tags": [
-      "WATER",
-      "PLAINS",
-      "RECLAIMED",
-      "FOOD",
-      "DEVELOPMENT"
-    ],
+    "cost": { "wood": 20 },
+    "tags": ["WATER", "PLAINS", "RECLAIMED", "FOOD", "DEVELOPMENT"],
     "reqWaterSource": true,
     "reqPlainsOrReclaimed": 1,
     "reqWood": 20,
@@ -421,22 +296,14 @@
     "category": "COMMAND",
     "nameKey": "CMD_RESETTLEMENT_NAME",
     "descriptionKey": "CMD_RESETTLEMENT_DESC",
-    "cost": {
-      "food": 15,
-      "wood": 10
-    },
-    "tags": [
-      "PLAINS",
-      "MERGE",
-      "FOOD",
-      "DEVELOPMENT"
-    ],
+    "cost": { "food": 15, "wood": 10 },
+    "tags": ["PLAINS", "MERGE", "FOOD", "DEVELOPMENT"],
     "reqPlainsMerge2x2": 1,
     "reqFood": 15,
     "reqWood": 10,
     "minStage": 2,
     "rarity": "R",
-    "weight": 0.2,
+    "weight": 0.20,
     "cyclePolicy": "RARITY"
   },
   {
@@ -444,20 +311,13 @@
     "category": "COMMAND",
     "nameKey": "CMD_WORKSHOP_NAME",
     "descriptionKey": "CMD_WORKSHOP_DESC",
-    "cost": {
-      "wood": 30
-    },
-    "tags": [
-      "MATERIAL",
-      "INDUSTRY",
-      "CONSTRUCTION",
-      "SPECIAL_BLOCK"
-    ],
+    "cost": { "wood": 30 },
+    "tags": ["MATERIAL", "INDUSTRY", "CONSTRUCTION", "SPECIAL_BLOCK"],
     "reqDistinctPrimaryIndustries": 2,
     "reqWood": 30,
     "minStage": 2,
     "rarity": "R",
-    "weight": 0.2,
+    "weight": 0.20,
     "cyclePolicy": "RARITY"
   },
   {
@@ -465,20 +325,13 @@
     "category": "COMMAND",
     "nameKey": "CMD_GRANARY_NETWORK_NAME",
     "descriptionKey": "CMD_GRANARY_NETWORK_DESC",
-    "cost": {
-      "wood": 50
-    },
-    "tags": [
-      "FOOD",
-      "STORAGE",
-      "LINK",
-      "PROJECT"
-    ],
+    "cost": { "wood": 50 },
+    "tags": ["FOOD", "STORAGE", "LINK", "PROJECT"],
     "reqGranaries": 2,
     "reqWood": 50,
     "minStage": 3,
     "rarity": "UR",
-    "weight": 0.1,
+    "weight": 0.10,
     "cyclePolicy": "UNIQUE"
   },
   {
@@ -486,20 +339,13 @@
     "category": "COMMAND",
     "nameKey": "CMD_INDUSTRIAL_ROAD_NAME",
     "descriptionKey": "CMD_INDUSTRIAL_ROAD_DESC",
-    "cost": {
-      "wood": 45
-    },
-    "tags": [
-      "ROAD",
-      "LINK",
-      "INDUSTRY",
-      "PROJECT"
-    ],
+    "cost": { "wood": 45 },
+    "tags": ["ROAD", "LINK", "INDUSTRY", "PROJECT"],
     "reqIndustrySpecialBlocks": 2,
     "reqWood": 45,
     "minStage": 3,
     "rarity": "R",
-    "weight": 0.2,
+    "weight": 0.20,
     "cyclePolicy": "RARITY"
   },
   {
@@ -507,22 +353,14 @@
     "category": "COMMAND",
     "nameKey": "CMD_IRRIGATION_NETWORK_NAME",
     "descriptionKey": "CMD_IRRIGATION_NETWORK_DESC",
-    "cost": {
-      "wood": 50
-    },
-    "tags": [
-      "WATER",
-      "PLAINS",
-      "RECLAIMED",
-      "FOOD",
-      "PROJECT"
-    ],
+    "cost": { "wood": 50 },
+    "tags": ["WATER", "PLAINS", "RECLAIMED", "FOOD", "PROJECT"],
     "reqIrrigationDone": true,
     "reqWaterSource": true,
     "reqWood": 50,
     "minStage": 3,
     "rarity": "UR",
-    "weight": 0.1,
+    "weight": 0.10,
     "cyclePolicy": "UNIQUE"
   },
   {
@@ -530,19 +368,13 @@
     "category": "COMMAND",
     "nameKey": "CMD_INDUSTRIAL_CLUSTER_NAME",
     "descriptionKey": "CMD_INDUSTRIAL_CLUSTER_DESC",
-    "cost": {
-      "wood": 60
-    },
-    "tags": [
-      "INDUSTRY",
-      "LINK",
-      "PROJECT"
-    ],
+    "cost": { "wood": 60 },
+    "tags": ["INDUSTRY", "LINK", "PROJECT"],
     "reqLinkedDistinctIndustries": 3,
     "reqWood": 60,
     "minStage": 3,
     "rarity": "UR",
-    "weight": 0.1,
+    "weight": 0.10,
     "cyclePolicy": "UNIQUE"
   },
   {
@@ -550,19 +382,13 @@
     "category": "COMMAND",
     "nameKey": "CMD_GREAT_RAMPART_PROJECT_NAME",
     "descriptionKey": "CMD_GREAT_RAMPART_PROJECT_DESC",
-    "cost": {
-      "wood": 70
-    },
-    "tags": [
-      "CONSTRUCTION",
-      "DEFENSE",
-      "PROJECT"
-    ],
+    "cost": { "wood": 70 },
+    "tags": ["CONSTRUCTION", "DEFENSE", "PROJECT"],
     "reqLargeTerritory": true,
     "reqWood": 70,
     "minStage": 3,
     "rarity": "UR",
-    "weight": 0.1,
+    "weight": 0.10,
     "cyclePolicy": "UNIQUE"
   }
 ]
