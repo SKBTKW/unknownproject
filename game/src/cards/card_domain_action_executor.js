@@ -41,6 +41,9 @@ function createCardDomainActionExecutor(engine) {
         return { success: false, reason: "UNSUPPORTED_DOMAIN_ACTION" };
     };
 
+    execute.requiresTarget = (effect) =>
+        effect?.action === CARD_DOMAIN_ACTIONS.CREATE_SPECIAL_BLOCK;
+
     execute.enumerateTargets = (effect, context = {}) => {
         if (!effect || typeof effect !== "object") return [];
 
