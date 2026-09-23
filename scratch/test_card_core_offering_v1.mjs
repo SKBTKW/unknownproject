@@ -1799,4 +1799,227 @@ function makeGrid(rows, cols) {
     );
 }
 
+// AN. Zone Conversion domain action is offered/executed only when Board quote matches Card cost.
+{
+    const calls = [];
+    const boardDomainAdapter = {
+        quoteZoneConversionCost(definitionId) {
+            assert.equal(definitionId, "RESETTLEMENT_TEST");
+            return { status: "RESOLVED", resources: { food: 15, wood: 10 }, conversionCount: 0 };
+        },
+        enumerateZoneConversionCandidates() {
+            return [{ valid: true, groupId: "zone_plains", zoneAttribute: "PLAINS" }];
+        },
+        validateZoneConversionCandidateAfterPayment(_definitionId, groupId, payment) {
+            calls.push({ phase: "validateAfterPayment", groupId, payment: { ...payment } });
+            return groupId === "zone_plains"
+                ? { valid: true, reasons: [], groupId }
+                : { valid: false, reasons: ["ZONE_NOT_ALLOWED"], groupId };
+        },
+        readZoneSemantic(groupId) {
+            return groupId === "zone_plains"
+                ? { groupId, cells: [{ r: 1, c: 1 }, { r: 1, c: 2 }, { r: 2, c: 1 }, { r: 2, c: 2 }] }
+                : null;
+        },
+        resolveZoneConversionGroupId(target) {
+            if (target?.groupId) return target.groupId;
+            return target?.r === 1 && target?.c === 1 ? "zone_plains" : null;
+        },
+        createZoneConversion(definitionId, groupId, context) {
+            calls.push({ phase: "create", definitionId, groupId, context });
+            return { success: true, groupId, conversion: { definitionId } };
+        }
+    };
+    const engine = { boardDomainAdapter };
+    engine.cardDomainActionExecutor = createCardDomainActionExecutor(engine);
+
+    const card = {
+        id: "CMD_ZONE_CONVERSION_TEST",
+        category: "COMMAND",
+        cost: { food: 15, material: 10 },
+        effects: [{
+            type: CARD_EFFECT_TYPES.DOMAIN_ACTION,
+            action: CARD_DOMAIN_ACTIONS.CREATE_ZONE_CONVERSION,
+            definitionId: "RESETTLEMENT_TEST"
+        }]
+    };
+    const state = {
+        turn: 12,
+        stage: { id: 1 },
+        food: 30,
+        wood: 30,
+        material: 30,
+        mystic: 0,
+        ember: 5,
+        reserveSlots: [],
+        activeBuffs: [],
+        consumedUniqueCards: [],
+        usedUniqueCards: [],
+        addLog() {}
+    };
+    const manager = new DeckManager(state, engine);
+    manager.cycleSystem = null;
+
+    assert.equal(manager.cardRequiresExecutionTarget(card), true);
+    assert.deepEqual(
+        manager.enumerateCardExecutionTargets(card),
+        [{
+            groupId: "zone_plains",
+            r: 1,
+            c: 1,
+            zoneAttribute: "PLAINS",
+            cost: { food: 15, wood: 10 }
+        }]
+    );
+    assert.equal(manager.isCardEligible(card, 1, 0), true);
+
+    const result = manager.playCommandCard(card, { r: 1, c: 1 });
+    assert.equal(result.success, true);
+    assert.equal(state.food, 15);
+    assert.equal(state.wood, 20);
+    assert.equal(state.material, 20);
+    assert.equal(calls.filter(call => call.phase === "create").length, 1);
+    const createCall = calls.find(call => call.phase === "create");
+    assert.equal(createCall.groupId, "zone_plains");
+    assert.equal(createCall.context.paymentConfirmed, true);
+    assert.equal(createCall.context.createdVerse, 12);
+}
+
+// AO. Zone Conversion cost mismatch or post-payment illegality fails before Card payment.
+{
+    const makeState = () => ({
+        turn: 12,
+        stage: { id: 1 },
+        food: 30,
+        wood: 30,
+        material: 30,
+        mystic: 0,
+        ember: 5,
+        reserveSlots: [],
+        activeBuffs: [],
+        consumedUniqueCards: [],
+        usedUniqueCards: [],
+        addLog() {}
+    });
+
+    const mismatchEngine = {
+        boardDomainAdapter: {
+            quoteZoneConversionCost() {
+                return { status: "RESOLVED", resources: { wood: 11 }, conversionCount: 0 };
+            },
+            enumerateZoneConversionCandidates() {
+                return [{ valid: true, groupId: "zone_a", zoneAttribute: "PLAINS" }];
+            },
+            validateZoneConversionCandidateAfterPayment() {
+                return { valid: true, reasons: [], groupId: "zone_a" };
+            },
+            resolveZoneConversionGroupId() { return "zone_a"; },
+            readZoneSemantic() { return { groupId: "zone_a", cells: [{ r: 0, c: 0 }] }; },
+            createZoneConversion() { throw new Error("cost mismatch must never execute"); }
+        }
+    };
+    mismatchEngine.cardDomainActionExecutor = createCardDomainActionExecutor(mismatchEngine);
+    const mismatchState = makeState();
+    const mismatchManager = new DeckManager(mismatchState, mismatchEngine);
+    mismatchManager.cycleSystem = null;
+    const mismatchCard = {
+        id: "CMD_ZONE_COST_MISMATCH",
+        category: "COMMAND",
+        cost: { material: 10 },
+        effects: [{
+            type: CARD_EFFECT_TYPES.DOMAIN_ACTION,
+            action: CARD_DOMAIN_ACTIONS.CREATE_ZONE_CONVERSION,
+            definitionId: "ZONE_TEST"
+        }]
+    };
+    assert.equal(mismatchManager.isCardEligible(mismatchCard, 1, 0), false);
+    const mismatchResult = mismatchManager.playCommandCard(mismatchCard, { r: 0, c: 0 });
+    assert.equal(mismatchResult.success, false);
+    assert.equal(mismatchResult.reason, "ZONE_CONVERSION_CARD_COST_MISMATCH");
+    assert.equal(mismatchState.wood, 30);
+    assert.equal(mismatchState.material, 30);
+
+    const projectedEngine = {
+        boardDomainAdapter: {
+            quoteZoneConversionCost() {
+                return { status: "RESOLVED", resources: { wood: 10 }, conversionCount: 0 };
+            },
+            enumerateZoneConversionCandidates() {
+                return [{ valid: true, groupId: "zone_a", zoneAttribute: "PLAINS" }];
+            },
+            validateZoneConversionCandidateAfterPayment() {
+                return { valid: false, reasons: ["RESOURCE_REQUIRED:wood"], groupId: "zone_a" };
+            },
+            resolveZoneConversionGroupId() { return "zone_a"; },
+            readZoneSemantic() { return { groupId: "zone_a", cells: [{ r: 0, c: 0 }] }; },
+            createZoneConversion() { throw new Error("projected shortfall must never execute"); }
+        }
+    };
+    projectedEngine.cardDomainActionExecutor = createCardDomainActionExecutor(projectedEngine);
+    const projectedState = makeState();
+    const projectedManager = new DeckManager(projectedState, projectedEngine);
+    projectedManager.cycleSystem = null;
+    const projectedCard = {
+        id: "CMD_ZONE_POST_PAYMENT_SHORTFALL",
+        category: "COMMAND",
+        cost: { material: 10 },
+        effects: [{
+            type: CARD_EFFECT_TYPES.DOMAIN_ACTION,
+            action: CARD_DOMAIN_ACTIONS.CREATE_ZONE_CONVERSION,
+            definitionId: "ZONE_TEST"
+        }]
+    };
+    assert.equal(projectedManager.isCardEligible(projectedCard, 1, 0), false);
+    const projectedResult = projectedManager.playCommandCard(projectedCard, { r: 0, c: 0 });
+    assert.equal(projectedResult.success, false);
+    assert.equal(projectedResult.reason, "RESOURCE_REQUIRED:wood");
+    assert.equal(projectedState.wood, 30);
+    assert.equal(projectedState.material, 30);
+}
+
+// AP. DeckManager performs declarative effect preflight only before payment.
+{
+    let preflightCalls = 0;
+    let executeCalls = 0;
+    const domainExecutor = () => {
+        executeCalls += 1;
+        return { success: true };
+    };
+    domainExecutor.preflight = () => {
+        preflightCalls += 1;
+        return { success: true };
+    };
+    domainExecutor.requiresTarget = () => false;
+
+    const effectExecutor = new CardEffectExecutor({ domainActionExecutor: domainExecutor });
+    const router = new CardEffectHandlerRouter(null, { effectExecutor });
+    const state = {
+        turn: 1,
+        food: 0,
+        wood: 20,
+        material: 20,
+        mystic: 0,
+        ember: 0,
+        reserveSlots: [],
+        consumedUniqueCards: [],
+        usedUniqueCards: [],
+        addLog() {}
+    };
+    const manager = new DeckManager(state, { cardEffectHandlerRouter: router });
+    manager.cardEffectHandlerRouter = router;
+    manager.cycleSystem = null;
+
+    const card = {
+        id: "CMD_SINGLE_PREFLIGHT_TEST",
+        category: "COMMAND",
+        cost: { material: 5 },
+        effects: [{ type: CARD_EFFECT_TYPES.DOMAIN_ACTION, action: "TEST_DOMAIN_ACTION" }]
+    };
+    const result = manager.playCommandCard(card);
+    assert.equal(result.success, true);
+    assert.equal(preflightCalls, 1, "post-payment execution must not repeat domain preflight");
+    assert.equal(executeCalls, 1);
+    assert.equal(state.wood, 15);
+}
+
 console.log("✅ Card Core / Offering v1 contract tests PASS");
