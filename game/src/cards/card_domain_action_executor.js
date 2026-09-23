@@ -11,6 +11,11 @@ const CARD_DOMAIN_ACTIONS = Object.freeze({
     APPLY_DEFENSE_DEVELOPMENT: "APPLY_DEFENSE_DEVELOPMENT"
 });
 
+const CARD_DOMAIN_PAYMENT_MODES = Object.freeze({
+    CARD_COST: "CARD_COST",
+    DOMAIN_QUOTE: "DOMAIN_QUOTE"
+});
+
 function resolveTarget(effect, context) {
     return effect?.target || context?.targetTile || null;
 }
@@ -148,6 +153,37 @@ function createCardDomainActionExecutor(engine) {
         return { success: false, reason: "UNSUPPORTED_DOMAIN_ACTION" };
     };
 
+    execute.quoteCost = (effect, context = {}) => {
+        if (effect?.action !== CARD_DOMAIN_ACTIONS.CREATE_ZONE_CONVERSION) return null;
+        if (effect?.paymentMode !== CARD_DOMAIN_PAYMENT_MODES.DOMAIN_QUOTE) return null;
+
+        const board = engine?.boardDomainAdapter;
+        if (!board || typeof board.quoteZoneConversionCost !== "function") {
+            return { success: false, reason: "BOARD_ZONE_CONVERSION_UNAVAILABLE" };
+        }
+        if (!effect.definitionId) {
+            return { success: false, reason: "ZONE_CONVERSION_DEFINITION_REQUIRED" };
+        }
+
+        const quote = board.quoteZoneConversionCost(effect.definitionId);
+        if (quote?.status !== "RESOLVED" || !quote?.resources) {
+            return { success: false, reason: "ZONE_CONVERSION_COST_UNRESOLVED", quote };
+        }
+        if (!isSupportedCardPaymentCost(quote.resources)) {
+            return {
+                success: false,
+                reason: "ZONE_CONVERSION_CARD_PAYMENT_RESOURCE_UNSUPPORTED",
+                quote
+            };
+        }
+        return {
+            success: true,
+            resources: { ...quote.resources },
+            quote,
+            source: "DOMAIN_QUOTE"
+        };
+    };
+
     execute.requiresTarget = (effect) =>
         effect?.action === CARD_DOMAIN_ACTIONS.CREATE_SPECIAL_BLOCK
         || effect?.action === CARD_DOMAIN_ACTIONS.CREATE_ZONE_CONVERSION;
@@ -170,10 +206,11 @@ function createCardDomainActionExecutor(engine) {
             const quote = board.quoteZoneConversionCost(effect.definitionId);
             const quotedCost = quote?.resources || {};
             const cardCost = normalizeCardCost(context?.cardDefinition);
+            const domainQuoted = effect.paymentMode === CARD_DOMAIN_PAYMENT_MODES.DOMAIN_QUOTE;
             if (
                 quote?.status !== "RESOLVED"
                 || !isSupportedCardPaymentCost(quotedCost)
-                || !sameResourceCost(cardCost, quotedCost)
+                || (!domainQuoted && !sameResourceCost(cardCost, quotedCost))
             ) {
                 return [];
             }
@@ -271,8 +308,13 @@ function createCardDomainActionExecutor(engine) {
                 };
             }
 
+            const domainQuoted = effect.paymentMode === CARD_DOMAIN_PAYMENT_MODES.DOMAIN_QUOTE;
             const cardCost = normalizeCardCost(context?.cardDefinition);
-            if (!sameResourceCost(cardCost, quote.resources)) {
+            const paymentCost = domainQuoted
+                ? (context?.resolvedPaymentCost || quote.resources)
+                : cardCost;
+
+            if (!domainQuoted && !sameResourceCost(cardCost, quote.resources)) {
                 return {
                     success: false,
                     reason: "ZONE_CONVERSION_CARD_COST_MISMATCH",
@@ -280,8 +322,16 @@ function createCardDomainActionExecutor(engine) {
                     quote
                 };
             }
+            if (domainQuoted && !sameResourceCost(paymentCost, quote.resources)) {
+                return {
+                    success: false,
+                    reason: "ZONE_CONVERSION_QUOTE_STALE",
+                    paymentCost,
+                    quote
+                };
+            }
 
-            if (!hasReliableCardPaymentState(context?.state, quote.resources)) {
+            if (!hasReliableCardPaymentState(context?.state, paymentCost)) {
                 return {
                     success: false,
                     reason: "ZONE_CONVERSION_CARD_PAYMENT_STATE_UNSAFE",
@@ -342,6 +392,7 @@ function createCardDomainActionExecutor(engine) {
 
 export {
     CARD_DOMAIN_ACTIONS,
+    CARD_DOMAIN_PAYMENT_MODES,
     createCardDomainActionExecutor
 };
 
