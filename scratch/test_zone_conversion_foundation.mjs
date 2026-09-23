@@ -3,7 +3,8 @@ import { BoardDomainAdapter } from "../game/src/core/board_domain_adapter.js";
 import {
     ZONE_CONVERSION_CAPABILITIES,
     ZONE_CONVERSION_COST_STATUS,
-    ZONE_CONVERSION_ESCALATION_SCOPES
+    ZONE_CONVERSION_ESCALATION_SCOPES,
+    ZONE_CONVERSION_STATES
 } from "../game/src/core/zone_conversion_domain.js";
 import { ZoneConversionService } from "../game/src/systems/zone_conversion_service.js";
 import { serializeGameState } from "../game/src/core/state_serializer.js";
@@ -194,13 +195,59 @@ assert.deepEqual(
 assert.deepEqual(createdA.conversion.paidCost, { wood: 6, ember: 1 });
 assert.deepEqual(createdA.conversion.maintenance, {
     status: ZONE_CONVERSION_COST_STATUS.RESOLVED,
-    resources: { food: 2 }
+    resources: { food: 2 },
+    startsVerse: 21,
+    lastSettledVerse: null,
+    lastPaymentSucceeded: null
 });
 assert.equal(
     createdA.conversion.capabilities.includes(ZONE_CONVERSION_CAPABILITIES.GARRISON_SITE),
     true
 );
 assert.equal(adapter.hasCapability("GARRISON"), true);
+assert.equal(adapter.hasCapability(ZONE_CONVERSION_CAPABILITIES.GARRISON_SITE), true);
+
+const creationVersePlan = adapter.getZoneConversionMaintenancePlan("zone_a", 20);
+assert.equal(creationVersePlan.defined, true);
+assert.equal(creationVersePlan.due, false, "maintenance starts on the Verse after conversion");
+
+state.food = 1;
+const duePlan = adapter.getZoneConversionMaintenancePlan("zone_a", 21);
+assert.equal(duePlan.due, true);
+assert.equal(duePlan.canPay, false);
+assert.deepEqual(duePlan.shortfalls, { food: 1 });
+
+const beforeFailedMaintenanceFood = state.food;
+const failedMaintenance = adapter.applyZoneConversionMaintenanceSettlement("zone_a", {
+    verse: 21,
+    paymentSucceeded: false
+});
+assert.equal(failedMaintenance.success, true);
+assert.equal(failedMaintenance.state, ZONE_CONVERSION_STATES.DYSFUNCTIONAL);
+assert.equal(state.food, beforeFailedMaintenanceFood, "Board records settlement but never spends maintenance resources");
+assert.equal(
+    adapter.hasCapability(ZONE_CONVERSION_CAPABILITIES.GARRISON_SITE),
+    false,
+    "any maintenance failure disables all conversion capabilities"
+);
+assert.equal(
+    adapter.getZoneConversionMaintenancePlan("zone_a", 21).due,
+    false,
+    "same Verse cannot settle maintenance twice"
+);
+
+state.food = 30;
+const recoveryPlan = adapter.getZoneConversionMaintenancePlan("zone_a", 22);
+assert.equal(recoveryPlan.due, true);
+assert.equal(recoveryPlan.canPay, true);
+const beforeRecoveredMaintenanceFood = state.food;
+const recoveredMaintenance = adapter.applyZoneConversionMaintenanceSettlement("zone_a", {
+    verse: 22,
+    paymentSucceeded: true
+});
+assert.equal(recoveredMaintenance.success, true);
+assert.equal(recoveredMaintenance.state, ZONE_CONVERSION_STATES.ACTIVE);
+assert.equal(state.food, beforeRecoveredMaintenanceFood);
 assert.equal(adapter.hasCapability(ZONE_CONVERSION_CAPABILITIES.GARRISON_SITE), true);
 
 assert.equal(service.validateCandidate("GARRISON_TEST", "zone_a").valid, false);
