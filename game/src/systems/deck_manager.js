@@ -16,6 +16,7 @@ import { normalizeCardDefinitionV1, unwrapCardDefinition } from '../cards/card_d
 import { LandPlacementAvailabilityQuery } from '../cards/land_placement_availability_query.js';
 import { CardOfferingEligibilityService } from '../cards/card_offering_eligibility_service.js';
 import { pickWeightedCard } from '../cards/offering_weight_policy.js';
+import { OfferingCandidatePoolService } from '../cards/offering_candidate_pool_service.js';
 import { evaluateLegacyOfferingRequirements } from '../cards/legacy_offering_requirement_adapter.js';
 import { resolveCardOfferingBoardQuery } from '../cards/card_offering_board_query.js';
 import { resolveCardEffectHandlerRouter } from '../cards/card_effect_handler_router.js';
@@ -74,6 +75,11 @@ class DeckManager {
                 if (typeof worldEvaluator === "function") return Boolean(worldEvaluator(requirement));
                 return Boolean(ConditionEvaluator.evaluate(requirement, { state: this.state, ...context }));
             }
+        });
+        this.offeringCandidatePool = new OfferingCandidatePoolService({
+            cardMasterProvider: () => this.getLandCardMaster(),
+            eligibilityEvaluator: (card, stageNum, h2Count, options) =>
+                this.isCardEligible(card, stageNum, h2Count, options)
         });
     }
 
@@ -246,26 +252,22 @@ class DeckManager {
      * @param {Object} [options={}] - フォールバック等の一時制御フラグ
      */
     drawSingleCard(excludedCardIds = [], options = {}) {
-        const master = this.getLandCardMaster();
         const stageNum = (this.state && this.state.stage) ? (typeof this.state.stage === 'object' ? (this.state.stage.id || 1) : this.state.stage) : 1;
         const h2Count = (this.state && typeof this.state.countE2HillsOnBoard === 'function') ? this.state.countE2HillsOnBoard() : 0;
 
-        let eligible = master.filter(c => this.isCardEligible(c, stageNum, h2Count, options));
-        if (typeof options.candidateFilter === "function") {
-            eligible = eligible.filter(c => options.candidateFilter(c));
-        }
+        const picked = this.offeringCandidatePool?.pick({
+            stageNum,
+            h2Count,
+            excludedCardIds,
+            eligibilityOptions: options,
+            candidateFilter: options.candidateFilter,
+            state: this.state,
+            random: () => this._nextGameplayFloat()
+        }) || null;
 
-        // 🛡️ 同一オファリング内における完全同一カードの重複排除
-        if (Array.isArray(excludedCardIds) && excludedCardIds.length > 0) {
-            eligible = eligible.filter(c => !excludedCardIds.includes(c.id));
-        }
-
-        if (eligible.length === 0) {
+        if (!picked) {
             return null; // 制約緩和フォールバックへ委ねる
         }
-
-        const chosen = pickWeightedCard(eligible, this.state, () => this._nextGameplayFloat());
-        const picked = chosen || eligible[0] || master[0];
         return this._wrapCardInstance(picked);
     }
 
@@ -365,7 +367,6 @@ class DeckManager {
         }
         const offeringSize = (this.state && this.state.handOfferingSize) ? this.state.handOfferingSize : 3;
         const currentTurn = (this.state && this.state.turn) ? this.state.turn : 1;
-        const master = this.getLandCardMaster();
         const stageNum = (this.state && this.state.stage) ? (typeof this.state.stage === 'object' ? (this.state.stage.id || 1) : this.state.stage) : 1;
         const h2Count = (this.state && typeof this.state.countE2HillsOnBoard === 'function') ? this.state.countE2HillsOnBoard() : 0;
 
@@ -395,9 +396,11 @@ class DeckManager {
 
         // 段階 2 フォールバック: 不足時、Cooldown 中の適格カードから availableTurn 最小のものを一時解禁
         if (newCards.length < offeringSize && this.cycleSystem) {
-            const cdCandidates = master.filter(c => {
-                if (excludedCardIds.includes(c.id)) return false;
-                return this.isCardEligible(c, stageNum, h2Count, { ignoreCooldown: true });
+            const cdCandidates = this.offeringCandidatePool.build({
+                stageNum,
+                h2Count,
+                excludedCardIds,
+                eligibilityOptions: { ignoreCooldown: true }
             });
 
             while (newCards.length < offeringSize && cdCandidates.length > 0) {
@@ -413,15 +416,17 @@ class DeckManager {
 
         // 段階 3 フォールバック: それでも不足時、Stage適格な既存基本土地プールから CD無視で補充
         if (newCards.length < offeringSize) {
-            const baseLandPool = master.filter(c => {
-                if (excludedCardIds.includes(c.id)) return false;
-                const policy = c.cyclePolicy || (c.category === "LAND" ? CYCLE_POLICIES.LAND_STANDARD : CYCLE_POLICIES.RARITY);
-                if (policy !== CYCLE_POLICIES.LAND_STANDARD && c.category !== "LAND") return false;
-
-                // Fallback may relax cooldown only. It must never bypass
-                // Offering legality, authored requirements, Hold/Unique gates,
-                // or the "LAND has at least one legal placement" invariant.
-                return this.isCardEligible(c, stageNum, h2Count, { ignoreCooldown: true });
+            const baseLandPool = this.offeringCandidatePool.build({
+                stageNum,
+                h2Count,
+                excludedCardIds,
+                eligibilityOptions: { ignoreCooldown: true },
+                candidateFilter: c => {
+                    const policy = c.cyclePolicy || (c.category === "LAND"
+                        ? CYCLE_POLICIES.LAND_STANDARD
+                        : CYCLE_POLICIES.RARITY);
+                    return policy === CYCLE_POLICIES.LAND_STANDARD || c.category === "LAND";
+                }
             });
 
             while (newCards.length < offeringSize && baseLandPool.length > 0) {
