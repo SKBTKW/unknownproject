@@ -1167,4 +1167,57 @@ function makeGrid(rows, cols) {
     assert.equal(calls[1].reserveIdx, 0);
 }
 
+// AB. Legal execution targets flow Board -> Domain executor -> Effect router -> DeckManager.
+{
+    const expectedTargets = [{ r: 1, c: 2 }, { r: 2, c: 2 }];
+    const engine = {
+        boardDomainAdapter: {
+            enumerateLegalSpecialBlockTargets(type, context) {
+                assert.equal(type, "MINE");
+                assert.equal(context.cardId, "CMD_TARGET_QUERY_TEST");
+                return expectedTargets.map(target => ({ ...target }));
+            },
+            validateSpecialBlockTarget() {
+                return { valid: true };
+            },
+            createSpecialBlock() {
+                return { success: true };
+            }
+        }
+    };
+    engine.cardDomainActionExecutor = createCardDomainActionExecutor(engine);
+
+    const state = {
+        turn: 9,
+        reserveSlots: [],
+        consumedUniqueCards: [],
+        usedUniqueCards: []
+    };
+    const manager = new DeckManager(state, engine);
+    manager.cycleSystem = null;
+
+    const card = {
+        id: "CMD_TARGET_QUERY_TEST",
+        category: "COMMAND",
+        effects: [{
+            type: CARD_EFFECT_TYPES.DOMAIN_ACTION,
+            action: CARD_DOMAIN_ACTIONS.CREATE_SPECIAL_BLOCK,
+            blockType: "MINE"
+        }]
+    };
+
+    assert.deepEqual(
+        manager.enumerateCardExecutionTargets(card),
+        expectedTargets,
+        "DeckManager must expose Board-owned legal target enumeration without rescanning the grid"
+    );
+    assert.deepEqual(
+        manager.enumerateCardExecutionTargets({ id: "CMD_LOCAL_ONLY", category: "COMMAND", effects: [
+            { type: CARD_EFFECT_TYPES.STATE_SET, key: "x", value: true }
+        ] }),
+        [],
+        "non-domain declarative effects have no board execution targets"
+    );
+}
+
 console.log("✅ Card Core / Offering v1 contract tests PASS");
