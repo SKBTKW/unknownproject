@@ -392,9 +392,18 @@ class DeckManager {
                 });
                 if (!candidate) break;
 
-                const replaceIndex = cards.findIndex(card =>
-                    !this._matchesMinimumRequirement(card, requirement, placeabilityCache)
-                );
+                const sameCategoryInvalidIndex = requirement.category
+                    ? cards.findIndex(card => {
+                        const definition = this._cardDefinition(card);
+                        return definition?.category === requirement.category
+                            && !this._matchesMinimumRequirement(card, requirement, placeabilityCache);
+                    })
+                    : -1;
+                const replaceIndex = sameCategoryInvalidIndex >= 0
+                    ? sameCategoryInvalidIndex
+                    : cards.findIndex(card =>
+                        !this._matchesMinimumRequirement(card, requirement, placeabilityCache)
+                    );
                 if (replaceIndex < 0) break;
 
                 const replacedId = this._cardId(cards[replaceIndex]);
