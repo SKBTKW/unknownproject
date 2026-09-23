@@ -484,6 +484,25 @@ console.log('Board / Special Block / Defense v1 contract');
     assert.equal(group.groupId, 'forest-zone');
     assert.equal(group.cells.length, 4, 'live mergeGroupId membership is canonical');
 
+    const zoneLogging = service.createSpecialBlock(
+        SPECIAL_BLOCK_TYPES.LOGGING_CAMP,
+        { r: 0, c: 0 }
+    );
+    assert.equal(zoneLogging.success, true);
+    assert.equal(zoneLogging.entity.sourceGroupReference.kind, 'MERGE_GROUP');
+    assert.equal(zoneLogging.entity.sourceGroupReference.groupId, 'forest-zone');
+    assert.equal(zoneLogging.entity.sourceGroupReference.initialSize, 4);
+    assert.equal(zoneLogging.entity.sourceGroupReference.cells.length, 4);
+
+    const serializedLogging = serializeGameState(state);
+    const restoredLogging = {};
+    hydrateGameState(restoredLogging, serializedLogging);
+    assert.equal(
+        restoredLogging.grid[0][0].specialBlock.sourceGroupReference.initialSize,
+        4,
+        'source group reference survives save/restore'
+    );
+
     // An unzoned forest adjacent to a zoned forest stays in its own fallback
     // connected cluster instead of silently joining the Zone source.
     state.grid[2][0] = cell(2, 0, {
