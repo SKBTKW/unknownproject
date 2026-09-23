@@ -41,6 +41,10 @@ function sameResourceCost(left = {}, right = {}) {
     return true;
 }
 
+function isSupportedCardPaymentCost(cost = {}) {
+    return Number(cost?.defense || 0) === 0;
+}
+
 function resolveZoneGroupId(board, effect, context) {
     if (effect?.targetGroupId !== undefined && effect?.targetGroupId !== null) {
         return String(effect.targetGroupId);
@@ -153,7 +157,11 @@ function createCardDomainActionExecutor(engine) {
             const quote = board.quoteZoneConversionCost(effect.definitionId);
             const quotedCost = quote?.resources || {};
             const cardCost = normalizeCardCost(context?.cardDefinition);
-            if (quote?.status !== "RESOLVED" || !sameResourceCost(cardCost, quotedCost)) {
+            if (
+                quote?.status !== "RESOLVED"
+                || !isSupportedCardPaymentCost(quotedCost)
+                || !sameResourceCost(cardCost, quotedCost)
+            ) {
                 return [];
             }
 
@@ -240,6 +248,14 @@ function createCardDomainActionExecutor(engine) {
             const quote = board.quoteZoneConversionCost(effect.definitionId);
             if (quote?.status !== "RESOLVED" || !quote?.resources) {
                 return { success: false, reason: "ZONE_CONVERSION_COST_UNRESOLVED", quote };
+            }
+
+            if (!isSupportedCardPaymentCost(quote.resources)) {
+                return {
+                    success: false,
+                    reason: "ZONE_CONVERSION_CARD_PAYMENT_RESOURCE_UNSUPPORTED",
+                    quote
+                };
             }
 
             const cardCost = normalizeCardCost(context?.cardDefinition);
