@@ -29,6 +29,7 @@ import {
     DOMAIN_ACTION_REQUIRED_IDS,
     LEGACY_ONLY_IDS,
     DUPLICATE_LEGACY_BRANCH_IDS,
+    LEGACY_SHADOWED_BRANCH_IDS,
     classifyLegacyCommandExecution,
     resolveDomainActionOwner
 } from "../game/src/cards/legacy_command_execution_inventory.js";
@@ -1546,6 +1547,29 @@ function makeGrid(rows, cols) {
         false,
         "non-targeted domain actions must not inherit Special Block targeting semantics"
     );
+}
+
+// AH. Shadowed duplicate legacy branches stay explicit and Great Rampart remains Project-owned.
+{
+    assert.deepEqual(
+        [...LEGACY_SHADOWED_BRANCH_IDS],
+        ["CMD_GREAT_RAMPART_PROJECT"]
+    );
+    assert.equal(
+        resolveDomainActionOwner("CMD_GREAT_RAMPART_PROJECT"),
+        DOMAIN_ACTION_OWNER.PROJECT
+    );
+
+    const deckManagerSource = readFileSync(
+        new URL("../game/src/systems/deck_manager.js", import.meta.url),
+        "utf8"
+    );
+    const first = deckManagerSource.indexOf('cId === "CMD_GREAT_RAMPART_PROJECT"');
+    const second = deckManagerSource.indexOf('cId === "CMD_GREAT_RAMPART_PROJECT"', first + 1);
+    assert.ok(first >= 0 && second > first, "Great Rampart legacy duplicate must remain detectable until Project migration");
+    const firstBranch = deckManagerSource.slice(first, second);
+    assert.ok(firstBranch.includes("greatRampartTurns = 4"),
+        "first reachable Great Rampart branch must remain the 4T project behavior");
 }
 
 console.log("✅ Card Core / Offering v1 contract tests PASS");
