@@ -16,11 +16,14 @@ import { CARD_EFFECT_TYPES, CardEffectExecutor } from "../game/src/cards/card_ef
 import { COMMAND_CARDS_MASTER } from "../game/src/data/command_cards_data.js";
 import {
     LEGACY_COMMAND_EXECUTION_CLASS,
+    DOMAIN_ACTION_OWNER,
+    DOMAIN_ACTION_OWNER_BY_ID,
     CURRENT_SSOT_LOCAL_IDS,
     DOMAIN_ACTION_REQUIRED_IDS,
     LEGACY_ONLY_IDS,
     DUPLICATE_LEGACY_BRANCH_IDS,
-    classifyLegacyCommandExecution
+    classifyLegacyCommandExecution,
+    resolveDomainActionOwner
 } from "../game/src/cards/legacy_command_execution_inventory.js";
 
 function makeGrid(rows, cols) {
@@ -994,6 +997,29 @@ function makeGrid(rows, cols) {
         assert.equal(
             classifyLegacyCommandExecution(id),
             LEGACY_COMMAND_EXECUTION_CLASS.LEGACY_ONLY
+        );
+    }
+}
+
+// X. Every DOMAIN_ACTION_REQUIRED card has exactly one owning domain.
+{
+    const validOwners = new Set(Object.values(DOMAIN_ACTION_OWNER));
+    assert.deepEqual(
+        Object.keys(DOMAIN_ACTION_OWNER_BY_ID).sort(),
+        [...DOMAIN_ACTION_REQUIRED_IDS].sort(),
+        "domain owner map must cover exactly the domain-action migration set"
+    );
+
+    for (const id of DOMAIN_ACTION_REQUIRED_IDS) {
+        const owner = resolveDomainActionOwner(id);
+        assert.ok(validOwners.has(owner), `${id} must resolve to a known domain owner`);
+    }
+
+    for (const id of [...CURRENT_SSOT_LOCAL_IDS, ...LEGACY_ONLY_IDS]) {
+        assert.equal(
+            resolveDomainActionOwner(id),
+            null,
+            `${id} must not acquire a domain owner outside DOMAIN_ACTION_REQUIRED`
         );
     }
 }
