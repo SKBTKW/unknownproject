@@ -94,7 +94,7 @@ function createFixture({
                 + distance
                 + Math.max(0, Number(origin?.trialTraits?.logisticsFoodDelta) || 0),
             material: Math.max(0, Number(facts.terrain?.elevation) || 0)
-                + (facts.capabilities.includes("DEFENSE_ANCHOR") ? 0 : 1)
+                + (facts.capabilities.includes("DEFENSE_ANCHOR") ? 0 : 2)
                 + Math.max(0, Number(origin?.trialTraits?.materialSetupDelta) || 0),
             breakdown: {
                 logistics: {
