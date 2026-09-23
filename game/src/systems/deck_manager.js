@@ -596,6 +596,16 @@ class DeckManager {
         return true;
     }
 
+    enumerateCardExecutionTargets(cardObj) {
+        if (!cardObj || cardObj.category === "LAND") return [];
+        const definitionV1 = normalizeCardDefinitionV1(cardObj);
+        return this.cardEffectHandlerRouter?.enumerateTargets(definitionV1, {
+            state: this.state,
+            engine: this.engine,
+            deckManager: this
+        }) || [];
+    }
+
     /**
      * 📜 コマンドカードの発動処理
      */
