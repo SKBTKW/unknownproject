@@ -200,6 +200,10 @@ export class GlobalEventManager {
         const inst = { definitionId: def.id, remainingTurns: def.duration || 1, runtimeState: {} };
         if (def.choiceEventId) inst.runtimeState.choice = { eventId: def.choiceEventId, status: "PENDING", publicContext: createGlobalEventChoicePublicContext(def.choiceEventId, { state: this.state, randomSource: this.randomSource }) };
         this.state.activeGlobalEvents.push(inst);
+        // Consume only modifiers that were waiting for this event. Do this
+        // before current-event effects so any new NEXT_GLOBAL_EVENT modifier
+        // created by this event remains available for the following event.
+        this._consumeNextGlobalEventWeightModifiers();
         EffectResolver.resolveAll(def.effects, { state: this.state, engine: this.engine });
         this.state.chronicleSystem?.record?.({ turn, type: "GLOBAL_EVENT", id: def.id, nameKey: def.nameKey, importance: def.importance || CHRONICLE_IMPORTANCE.MAJOR, meta: { category: def.category, duration: def.duration } });
         this.syncBuffProxy();
@@ -207,6 +211,14 @@ export class GlobalEventManager {
         this.state.addLog?.(def.choiceEventId ? `🌍【${i18n.t(def.nameKey)}】` : `🌍【${i18n.t(def.nameKey)}】: ${i18n.t(def.descKey)}`);
         this.emitLifecycle(GLOBAL_EVENT_TIMINGS.START, def, turn, inst);
         return inst;
+    }
+    _consumeNextGlobalEventWeightModifiers() {
+        if (!Array.isArray(this.state?.temporaryWeightModifiers)) return 0;
+        const before = this.state.temporaryWeightModifiers.length;
+        this.state.temporaryWeightModifiers = this.state.temporaryWeightModifiers.filter(
+            modifier => modifier?.expiry?.type !== "NEXT_GLOBAL_EVENT"
+        );
+        return before - this.state.temporaryWeightModifiers.length;
     }
     syncBuffProxy() {
         if (!this.state?.buffSystem) return;
