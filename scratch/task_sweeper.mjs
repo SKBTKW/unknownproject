@@ -162,6 +162,44 @@ async function githubFailureReason(response, prefix) {
     return details.join(' | ');
 }
 
+const GITHUB_FETCH_MAX_ATTEMPTS = 3;
+const GITHUB_FETCH_RETRY_BASE_MS = 350;
+
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function shouldRetryGitHubStatus(status) {
+    return status === 408 || status === 429 || status >= 500;
+}
+
+async function fetchGitHubJson(url, { headers, label }) {
+    let lastReason = '';
+    for (let attempt = 1; attempt <= GITHUB_FETCH_MAX_ATTEMPTS; attempt += 1) {
+        try {
+            const response = await fetch(url, { headers });
+            if (response.ok) {
+                const body = await response.json();
+                return { ok: true, body, response };
+            }
+
+            lastReason = await githubFailureReason(response, label);
+            if (!shouldRetryGitHubStatus(response.status) || attempt === GITHUB_FETCH_MAX_ATTEMPTS) {
+                return { ok: false, reason: lastReason };
+            }
+        } catch (error) {
+            lastReason = `${label}: ${error.message}`;
+            if (attempt === GITHUB_FETCH_MAX_ATTEMPTS) {
+                return { ok: false, reason: lastReason };
+            }
+        }
+
+        await sleep(GITHUB_FETCH_RETRY_BASE_MS * attempt);
+    }
+
+    return { ok: false, reason: lastReason || `${label}: exhausted retries` };
+}
+
 async function loadOpenPullRequestSnapshot({ owner, repo }) {
     const pulls = [];
     const perPage = 100;
@@ -175,11 +213,14 @@ async function loadOpenPullRequestSnapshot({ owner, repo }) {
                 per_page: String(perPage),
                 page: String(page),
             });
-            const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls?${params}`, { headers });
-            if (!response.ok) {
-                return { verified: false, pulls: [], reason: await githubFailureReason(response, 'GitHub open PR lookup failed') };
+            const request = await fetchGitHubJson(
+                `https://api.github.com/repos/${owner}/${repo}/pulls?${params}`,
+                { headers, label: 'GitHub open PR lookup failed' }
+            );
+            if (!request.ok) {
+                return { verified: false, pulls: [], reason: request.reason };
             }
-            const pagePulls = await response.json();
+            const pagePulls = request.body;
             if (!Array.isArray(pagePulls)) {
                 return { verified: false, pulls: [], reason: 'GitHub open PR lookup returned a non-array response' };
             }
@@ -228,11 +269,14 @@ async function findMergedPullRequest({ owner, repo, branch, target, headSha }) {
     const headers = githubHeaders();
 
     try {
-        const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls?${params}`, { headers });
-        if (!response.ok) {
-            return { verified: false, reason: await githubFailureReason(response, 'GitHub PR lookup failed') };
+        const request = await fetchGitHubJson(
+            `https://api.github.com/repos/${owner}/${repo}/pulls?${params}`,
+            { headers, label: 'GitHub PR lookup failed' }
+        );
+        if (!request.ok) {
+            return { verified: false, reason: request.reason };
         }
-        const pulls = await response.json();
+        const pulls = request.body;
         const merged = pulls.find((pr) => pr.merged_at && pr.head?.sha === headSha);
         if (!merged) return { verified: false, reason: 'No merged PR matches the current remote TASK head' };
         return { verified: true, number: merged.number, mergedAt: merged.merged_at };
