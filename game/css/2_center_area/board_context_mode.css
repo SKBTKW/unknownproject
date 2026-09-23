@@ -209,3 +209,34 @@ body[data-board-context="trial"] #gridBoard .trial-battle-resolved,
 body[data-board-context="trial"] #gridBoard .trial-battle-current {
     isolation: isolate;
 }
+
+
+/* Historical Battle Site marker. This is persistent Board history, not a live Trial marker. */
+#gridBoard .battle-site-history-marker {
+    position: absolute;
+    left: 4px;
+    bottom: 4px;
+    z-index: 12;
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    border: 1px solid rgba(184, 160, 128, 0.82);
+    border-radius: 50%;
+    background: rgba(35, 31, 29, 0.82);
+    color: rgba(226, 208, 179, 0.92);
+    font-size: 11px;
+    line-height: 1;
+    pointer-events: none;
+    opacity: 0.78;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.48);
+}
+#gridBoard .cell.has-battle-site-history:hover .battle-site-history-marker,
+#gridBoard .cell.board-logical-selected .battle-site-history-marker {
+    opacity: 1;
+}
+body[data-board-context="trial"] #gridBoard .battle-site-history-marker {
+    opacity: 0.42;
+}
