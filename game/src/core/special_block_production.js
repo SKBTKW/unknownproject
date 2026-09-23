@@ -27,6 +27,10 @@ export const SPECIAL_BLOCK_RELATION_NEIGHBORHOODS = Object.freeze({
     EIGHT_WAY: 'EIGHT_WAY'
 });
 
+export const SPECIAL_BLOCK_SOURCE_SIZE_SOURCES = Object.freeze({
+    INITIAL_SNAPSHOT: 'INITIAL_SNAPSHOT'
+});
+
 const ZERO_YIELDS = Object.freeze({
     food: 0,
     wood: 0,
@@ -96,6 +100,9 @@ export class SpecialBlockProductionResolver {
     }
 
     _resolveSourceSize(entity, production) {
+        if (production?.sourceSizeSource !== SPECIAL_BLOCK_SOURCE_SIZE_SOURCES.INITIAL_SNAPSHOT) {
+            return null;
+        }
         const size = Number(entity?.sourceGroupReference?.initialSize);
         if (!Number.isFinite(size) || size < 0 || !production?.perSourceYields) return null;
         return {
@@ -192,7 +199,7 @@ export class SpecialBlockProductionResolver {
             };
         }
 
-        const strategy = this.strategies[production.kind];
+        const strategy = this.strategies[production.strategyKey || production.kind];
         if (typeof strategy !== 'function') {
             return {
                 status: SPECIAL_BLOCK_PRODUCTION_STATUS.UNRESOLVED,
