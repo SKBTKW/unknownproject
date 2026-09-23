@@ -967,6 +967,14 @@
       ]
     },
     {
+      "path": "scratch/test_trial_defense_reservation.mjs",
+      "purpose": "Trial deployment defense write-through reservation, failure rollback, and fail-closed GameState boundary",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_trial_deployment_cost_resolver.mjs",
       "purpose": "Canonical configurable Trial deployment cost resolver and unresolved-profile fail-closed contract",
       "suite": "existing",
