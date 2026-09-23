@@ -187,6 +187,16 @@ export class Web25DPhaseCRenderer extends Web25DCanvasRenderer {
                 this.drawDormantSocketCore(projected.screenCenter);
             });
         }
+        const productionAnchor = resolveWeb25DProductionMarkerAnchor(projected);
+        const yieldOpacity = resolveWeb25DProfileOpacity(
+            this.readModel?.profile?.yields,
+            { secondary: 0.55, suppressed: 0 }
+        );
+        if (cell.specialBlock && productionAnchor && yieldOpacity > 0) {
+            this.drawWithOpacity(yieldOpacity, () => {
+                this.drawProductionMarker(cell, productionAnchor);
+            });
+        }
         this.drawInteractionEmphasis(cell, projected.screenCenter, 0);
     }
 
