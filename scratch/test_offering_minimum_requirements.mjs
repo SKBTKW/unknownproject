@@ -99,4 +99,113 @@ function makeHarness({ eligible = () => true } = {}) {
     assert.deepEqual(seenReasons, [OFFERING_GENERATION_REASONS.MULLIGAN]);
 }
 
-console.log("✅ Offering minimum-requirement contract: reason routing + playable LAND + eligibility gate PASS");
+
+function makeMultiplicityHarness(cards, {
+    minimumRequirements = [],
+    maxPerCategory = null
+} = {}) {
+    const state = {
+        turn: 1,
+        stage: { id: 1 },
+        handOfferingSize: 3,
+        handOffering: [],
+        offeringCards: [],
+        reserveSlots: [],
+        grid: [[{}]],
+        canPlaceShape: () => ({ can: true })
+    };
+    const engine = {
+        gameplayRandom: { nextFloat: () => 0 },
+        offeringMinimumRequirementProvider: () => minimumRequirements
+    };
+    if (maxPerCategory != null) {
+        engine.offeringCategoryMultiplicityPolicyProvider = () => ({ maxPerCategory });
+    }
+
+    const manager = new DeckManager(state, engine);
+    manager.getLandCardMaster = () => cards;
+    manager.isCardEligible = () => true;
+    manager._wrapCardInstance = card => ({
+        cardMasterId: card.id,
+        terrain: card
+    });
+    manager.cycleSystem = {
+        isInCooldown: () => false,
+        findMinAvailableTurnCard: candidates => candidates[0] || null,
+        registerOffering: () => {}
+    };
+    return manager;
+}
+
+// Normal Offering: same category may appear twice, but a third slot must use another category.
+{
+    const manager = makeMultiplicityHarness([
+        makeCard("LAND_A", "LAND"),
+        makeCard("LAND_B", "LAND"),
+        makeCard("LAND_C", "LAND"),
+        makeCard("CMD_A", "COMMAND")
+    ]);
+    const offering = manager.generateOfferingCards();
+    const categories = offering.map(card => card.terrain.category);
+    assert.deepEqual(categories, ["LAND", "LAND", "COMMAND"]);
+    assert.equal(manager.lastOfferingGeneration.categoryMultiplicity.maxPerCategory, 2);
+    assert.equal(manager.lastOfferingGeneration.categoryMultiplicity.relaxedForFallback, false);
+    assert.deepEqual(manager.lastOfferingGeneration.categoryMultiplicity.overflow, []);
+}
+
+// Forced minimums are authoritative and may intentionally create three cards of one category.
+{
+    const manager = makeMultiplicityHarness([
+        makeCard("LAND_A", "LAND"),
+        makeCard("LAND_B", "LAND"),
+        makeCard("CMD_A", "COMMAND"),
+        makeCard("INV_A", "INVESTIGATION"),
+        makeCard("INV_B", "INVESTIGATION"),
+        makeCard("INV_C", "INVESTIGATION")
+    ], {
+        minimumRequirements: [{
+            id: "FORCED_INVESTIGATION",
+            category: "INVESTIGATION",
+            minCount: 3
+        }]
+    });
+    const offering = manager.generateOfferingCards();
+    assert.deepEqual(
+        offering.map(card => card.terrain.category),
+        ["INVESTIGATION", "INVESTIGATION", "INVESTIGATION"]
+    );
+    assert.equal(manager.lastOfferingGeneration.appliedMinimums.length, 3);
+    assert.equal(manager.lastOfferingGeneration.categoryMultiplicity.minimumRequirementOverride, true);
+    assert.equal(manager.lastOfferingGeneration.categoryMultiplicity.overflow[0].category, "INVESTIGATION");
+}
+
+// Future Directive / GE policy may explicitly allow three cards of the same category.
+{
+    const manager = makeMultiplicityHarness([
+        makeCard("LAND_A", "LAND"),
+        makeCard("LAND_B", "LAND"),
+        makeCard("LAND_C", "LAND"),
+        makeCard("CMD_A", "COMMAND")
+    ], { maxPerCategory: 3 });
+    const offering = manager.generateOfferingCards();
+    assert.deepEqual(offering.map(card => card.terrain.category), ["LAND", "LAND", "LAND"]);
+    assert.equal(manager.lastOfferingGeneration.categoryMultiplicity.maxPerCategory, 3);
+    assert.equal(manager.lastOfferingGeneration.categoryMultiplicity.source, "PROVIDER");
+    assert.deepEqual(manager.lastOfferingGeneration.categoryMultiplicity.overflow, []);
+}
+
+// If no second category exists at all, the final fallback may relax the cap to preserve three-card Offering availability.
+{
+    const manager = makeMultiplicityHarness([
+        makeCard("LAND_A", "LAND"),
+        makeCard("LAND_B", "LAND"),
+        makeCard("LAND_C", "LAND")
+    ]);
+    const offering = manager.generateOfferingCards();
+    assert.equal(offering.length, 3);
+    assert.deepEqual(offering.map(card => card.terrain.category), ["LAND", "LAND", "LAND"]);
+    assert.equal(manager.lastOfferingGeneration.categoryMultiplicity.relaxedForFallback, true);
+    assert.equal(manager.lastOfferingGeneration.categoryMultiplicity.overflow[0].category, "LAND");
+}
+
+console.log("✅ Offering minimum-requirement + category multiplicity contracts PASS");
