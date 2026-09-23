@@ -7,6 +7,7 @@
    ============================================================= */
 
 import { isCompletedMergeGroup, resolveMergeTerrainAttribute } from './merge_rules.js';
+import { BOARD_CAPABILITIES } from './special_block_domain.js';
 
 export const ZONE_CONVERSION_STATES = Object.freeze({
     ACTIVE: 'ACTIVE',
@@ -24,7 +25,7 @@ export const ZONE_CONVERSION_ESCALATION_SCOPES = Object.freeze({
 });
 
 export const ZONE_CONVERSION_CAPABILITIES = Object.freeze({
-    GARRISON_SITE: 'GARRISON_SITE'
+    GARRISON_SITE: BOARD_CAPABILITIES.GARRISON_SITE
 });
 
 const RESOURCE_KEYS = Object.freeze(['food', 'wood', 'defense', 'mystic', 'ember']);
