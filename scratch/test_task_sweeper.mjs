@@ -245,6 +245,26 @@ assert.equal(
     'GitHub 403 diagnostics must expose rate-limit context without exposing credentials',
 );
 assert.equal(
+    sweeperSource.includes('const GITHUB_FETCH_MAX_ATTEMPTS = 3;'),
+    true,
+    'transient GitHub REST failures must have a bounded retry budget',
+);
+assert.equal(
+    sweeperSource.includes('shouldRetryGitHubStatus(response.status)'),
+    true,
+    'retry policy must remain limited to transient HTTP failures',
+);
+assert.equal(
+    sweeperSource.includes("status === 408 || status === 429 || status >= 500"),
+    true,
+    'authentication and authorization failures must remain fail-closed instead of being blindly retried',
+);
+assert.equal(
+    sweeperSource.includes('await sleep(GITHUB_FETCH_RETRY_BASE_MS * attempt);'),
+    true,
+    'retry attempts must use a small backoff rather than hot-looping the GitHub API',
+);
+assert.equal(
     sweeperSource.includes('function githubHeaders() {\n    const headers = githubHeaders();'),
     false,
     'GitHub header helper must not recurse into itself',
