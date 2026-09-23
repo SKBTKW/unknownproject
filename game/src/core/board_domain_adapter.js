@@ -10,7 +10,13 @@ import {
     readEffectiveGreenery
 } from './special_block_domain.js';
 import { BoardDamageService } from './board_damage_service.js';
+import {
+    isZoneConversionFunctional,
+    readZoneConversion,
+    readZoneConversionCapabilities
+} from './zone_conversion_domain.js';
 import { SpecialBlockService } from '../systems/special_block_service.js';
+import { ZoneConversionService } from '../systems/zone_conversion_service.js';
 
 function resolveLandSemantic(definition) {
     return definition?.terrain || definition || null;
@@ -43,7 +49,8 @@ const CAPABILITY_ALIASES = Object.freeze({
     OBSERVATION: BOARD_CAPABILITIES.OBSERVATION_SITE,
     INVESTIGATION: BOARD_CAPABILITIES.INVESTIGATION_SITE,
     MILITARY: BOARD_CAPABILITIES.MILITARY_SITE,
-    PRODUCTION: BOARD_CAPABILITIES.PRODUCTION_SITE
+    PRODUCTION: BOARD_CAPABILITIES.PRODUCTION_SITE,
+    GARRISON: BOARD_CAPABILITIES.GARRISON_SITE
 });
 
 function normalizeCapability(value) {
@@ -70,13 +77,15 @@ export class BoardDomainAdapter {
         gridEngine,
         specialBlockService = null,
         boardDamageService = null,
+        zoneConversionService = null,
         trialDeploymentSemanticSource = null
     } = {}) {
         this.state = state || gridEngine?.state || null;
         this.gridEngine = gridEngine || null;
         this.specialBlockService = specialBlockService || new SpecialBlockService(this.state);
         this.boardDamageService = boardDamageService || new BoardDamageService({ state: this.state });
-        this.trialDeploymentSemanticSource = trialDeploymentSemanticSource || null;
+        this.zoneConversionService = zoneConversionService || new ZoneConversionService({ state: this.state });
+        this.trialDeploymentSemanticSource = trialDeploymentSemanticSource || this.zoneConversionService;
     }
 
 
@@ -123,6 +132,11 @@ export class BoardDomainAdapter {
         for (const row of this.state.grid) {
             for (const cell of row || []) {
                 if (readCellCapabilities(cell).has(query) && ++count >= minimum) return true;
+            }
+        }
+        for (const groupId of Object.keys(this.state?.mergedBlocks || {})) {
+            if (readZoneConversionCapabilities(this.state, groupId).has(query) && ++count >= minimum) {
+                return true;
             }
         }
         return false;
@@ -188,6 +202,54 @@ export class BoardDomainAdapter {
 
     createSpecialBlock(type, target, context = {}) {
         return this.specialBlockService.createSpecialBlock(type, target, context);
+    }
+
+    readZoneConversion(groupId) {
+        return readZoneConversion(this.state, groupId);
+    }
+
+    isZoneConversionFunctional(groupId) {
+        return isZoneConversionFunctional(this.state, groupId);
+    }
+
+    getZoneConversionCount(definitionId = null) {
+        return this.zoneConversionService.getConversionCount(definitionId);
+    }
+
+    validateZoneConversionCandidate(definitionId, groupId) {
+        return this.zoneConversionService.validateCandidate(definitionId, groupId);
+    }
+
+    enumerateZoneConversionCandidates(definitionId) {
+        return this.zoneConversionService.enumerateCandidates(definitionId);
+    }
+
+    hasAnyZoneConversionCandidate(definitionId) {
+        return this.zoneConversionService.hasAnyCandidate(definitionId);
+    }
+
+    quoteZoneConversionCost(definitionId) {
+        return this.zoneConversionService.quoteCost(definitionId);
+    }
+
+    getZoneConversionMaintenancePlan(groupId, verse = this.state?.turn) {
+        return this.zoneConversionService.getMaintenancePlan(groupId, verse);
+    }
+
+    enumerateZoneConversionMaintenanceDue(verse = this.state?.turn) {
+        return this.zoneConversionService.enumerateMaintenanceDue(verse);
+    }
+
+    applyZoneConversionMaintenanceSettlement(groupId, result = {}) {
+        return this.zoneConversionService.applyMaintenanceSettlement(groupId, result);
+    }
+
+    createZoneConversion(definitionId, groupId, context = {}) {
+        return this.zoneConversionService.createConversion(definitionId, groupId, context);
+    }
+
+    readZoneConversionCapabilities(groupId) {
+        return readZoneConversionCapabilities(this.state, groupId);
     }
 
     readCapabilities(target) {

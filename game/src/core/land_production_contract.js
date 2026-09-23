@@ -2,20 +2,25 @@
    game/src/core/land_production_contract.js
    Land production ownership boundary.
 
-   This module deliberately does NOT choose the production values for
-   Multi-Attribute blocks. It only distinguishes:
+   Multi-Attribute production supports:
    - legacy cell-terrain production
    - explicit cell production
+   - canonical-terrain-derived cell production
    - explicit block production
    - unresolved production
    ============================================================= */
 
 import {
+    getPlacementAttributeTerrainId,
     hasMultiplePlacementTerrainAttributes,
     resolvePlacementAttributeCells,
     resolvePlacementShape,
     validatePlacementAttributeMap
 } from './placement_geometry.js';
+import {
+    isCanonicalTerrainId,
+    resolveCanonicalTerrainSemantic
+} from '../data/land_system.js';
 
 const LAND_PRODUCTION_STATUS = Object.freeze({
     LEGACY: "LEGACY",
@@ -27,6 +32,10 @@ const LAND_PRODUCTION_SCOPE = Object.freeze({
     CELL: "CELL",
     BLOCK: "BLOCK",
     HYBRID: "HYBRID"
+});
+
+const LAND_CELL_YIELD_SOURCE = Object.freeze({
+    CANONICAL_TERRAIN: "CANONICAL_TERRAIN"
 });
 
 const ZERO_LAND_YIELDS = Object.freeze({
@@ -73,6 +82,23 @@ function resolveLegacyTerrainYields(terrain) {
             ? terrain.mystic
             : (terrain.baseYieldsPerTile?.mystic ?? terrain.yields?.mystic ?? 0)
     });
+}
+
+function resolveCanonicalTerrainCellYields(attributeCells) {
+    if (!Array.isArray(attributeCells) || attributeCells.length === 0) return null;
+
+    const entries = [];
+    for (const cell of attributeCells) {
+        const terrainId = getPlacementAttributeTerrainId(cell);
+        if (!terrainId || !isCanonicalTerrainId(terrainId)) return null;
+
+        entries.push({
+            r: cell.r,
+            c: cell.c,
+            yields: resolveLegacyTerrainYields(resolveCanonicalTerrainSemantic(terrainId))
+        });
+    }
+    return entries;
 }
 
 function normalizeProductionContract(card) {
@@ -123,18 +149,20 @@ function normalizeProductionContract(card) {
         });
     }
 
-    const cellYields = Array.isArray(raw.cellYields)
-        ? raw.cellYields.map(entry => ({
-            r: Number.isInteger(entry?.r) ? entry.r : entry?.dr,
-            c: Number.isInteger(entry?.c) ? entry.c : entry?.dc,
-            yields: normalizeLandYields(entry?.yields)
-        })).filter(entry => Number.isInteger(entry.r) && Number.isInteger(entry.c))
-        : null;
+    const attributeCells = resolvePlacementAttributeCells(card) || [];
+    const cellYields = raw.cellYieldSource === LAND_CELL_YIELD_SOURCE.CANONICAL_TERRAIN
+        ? resolveCanonicalTerrainCellYields(attributeCells)
+        : (Array.isArray(raw.cellYields)
+            ? raw.cellYields.map(entry => ({
+                r: Number.isInteger(entry?.r) ? entry.r : entry?.dr,
+                c: Number.isInteger(entry?.c) ? entry.c : entry?.dc,
+                yields: normalizeLandYields(entry?.yields)
+            })).filter(entry => Number.isInteger(entry.r) && Number.isInteger(entry.c))
+            : null);
     const blockYields = raw.blockYields ? normalizeLandYields(raw.blockYields) : null;
 
     const hasCellSource = Array.isArray(cellYields) && cellYields.length > 0;
     const hasBlockSource = !!blockYields;
-    const attributeCells = resolvePlacementAttributeCells(card) || [];
     const expectedCellKeys = new Set(attributeCells.map(cell => `${cell.r}:${cell.c}`));
     const declaredCellKeys = new Set((cellYields || []).map(entry => `${entry.r}:${entry.c}`));
     const completeCellCoverage = expectedCellKeys.size > 0
@@ -304,6 +332,7 @@ function sumPlacedBlockProduction(state) {
 }
 
 export {
+    LAND_CELL_YIELD_SOURCE,
     LAND_PRODUCTION_SCOPE,
     LAND_PRODUCTION_STATUS,
     ZERO_LAND_YIELDS,

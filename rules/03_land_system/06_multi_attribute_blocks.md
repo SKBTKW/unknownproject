@@ -1,6 +1,6 @@
 # 06. 複数属性ブロック (Multi-Attribute Land Block)
 
-> **Status:** [CURRENT] [PARTIAL] [REFERENCE]
+> **Status:** [CURRENT] [REFERENCE]
 >
 > 1枚の土地カード・1回の配置・1つのBlock identityの内部に、異なるterrain semanticを持つ複数セルを含める土地ブロックの共通契約。
 
@@ -132,6 +132,27 @@ shapeだけ回転してcell terrainの位置を残すことを禁止する。
 - 真のZone成立前にLINKしない。
 - Multi-Attribute BlockそのものはZoneでもLINKでもない。
 
+### 5.1 Zone Conversion
+
+Zone Conversionは `mergeGroupId` で完成済みZoneをdecorateする。
+
+同一 `placementGroupId` の一部cellだけがZoneへ所属している場合でも、変換対象はそのZoneだけとする。
+
+```text
+placementGroup: Multi A
+├ Plains cell → Zone P → Conversion
+└ Hill cell   → no Zone → unchanged
+```
+
+禁止:
+
+- Conversionを理由に同一 `placementGroupId` 全cellへ `mergeGroupId` を伝播する
+- Zone外cellの `terrainId` を変換後terrainへ書き換える
+- Zone外cellのCELL Production ownershipを変更する
+- Conversion capabilityをplacementGroup全体のcell capabilityとして扱う
+
+Conversion後もZone外cellは元のterrain / production / Trial semanticを維持する。
+
 ---
 
 ## 6. Trial
@@ -248,26 +269,46 @@ shape
 
 Multi-Attributeカードでは各回転後の `attributeCells` を含めて `canPlaceShape` を評価し、代表terrainだけで配置可能性を推測しない。
 
-現行データでは `productionContract.status = "UNRESOLVED"` を用いる。単なるboolean解禁フラグには戻さない。
+初期3枚はv1 Production確定済みのため `productionContract.status = "RESOLVED"` でLive Offeringへ参加する。将来追加される未確定Multi-Attributeカードについては、引き続き `UNRESOLVED` を使用し、単なるboolean解禁フラグには戻さない。
 
 ---
 
 ## 9. Production
 
-### 9.1 数値仕様は未確定
+### 9.1 v1 Production確定
 
-現カード3種の具体的な産出値・採用scopeは未確定である。
+初期3枚のMulti-Attributeカードは **CELL Production** を採用する。
 
-以下を担当判断だけで確定しない。
+```text
+scope = CELL
+cellYieldSource = CANONICAL_TERRAIN
+```
 
-- 全セルへ同じcard-level yieldを複製
-- マス数倍
-- 代表セルだけをCell Production源とする
-- 各terrain基礎産出の自動合算
+各cellは自身の `terrainId` に対応する `LAND_SYSTEM_DATA.terrains` の基礎産出をProduction正本として使用する。
 
-したがって現カードは `productionContract.status = "UNRESOLVED"` のままとし、Live Offeringへ出さない。
+カード定義へ `food / wood / defense / mystic` を重複記述しない。terrain側の基礎産出が変更された場合、Multi-Attributeカードも同じ正本へ追従する。
 
-さらにLive配置境界でも二重防衛する。
+v1ではMulti-Attributeであること自体による追加産出ボーナスは与えない。Rの価値は主に、
+
+- 1枚・1配置で異なる2 terrainを同時に形成できる
+- Zone / LINK / Trial準備の盤面形成効率
+- 単一terrain 1×2では作れない境界構築
+
+に置く。
+
+現行基礎値でのカード合計は次の通り。
+
+| Card | Cell Production | 合計 |
+| --- | --- | --- |
+| 草原 + 丘陵 | 草原 `4/0/0/0` + 丘陵 `2/1/1/0` | 🌾6 / 🧱1 / 🛡️1 / ✨0 |
+| 草原 + 森 | 草原 `4/0/0/0` + 森 `2/2/2/0` | 🌾6 / 🧱2 / 🛡️2 / ✨0 |
+| 丘陵 + 山岳 | 丘陵 `2/1/1/0` + 山岳 `0/3/5/1` | 🌾2 / 🧱4 / 🛡️6 / ✨1 |
+
+ここで数値はカード固有定数ではなく、現時点のcanonical terrain base yieldを展開した説明値である。
+
+将来のMulti-AttributeカードでProductionが未決定の場合は `UNRESOLVED` のままLive Offeringへ出さない。
+
+Live配置境界でも二重防衛する。
 
 ```text
 GameState.canPlaceShape()
@@ -288,7 +329,7 @@ MULTI_ATTRIBUTE_PRODUCTION_UNRESOLVED
 
 通常LAND、および明示的なcell mapを持っていてもterrainIdが全セル同一のhomogeneous cardはこのGate対象外とする。
 
-### 9.2 Ownership境界は実装済み
+### 9.2 Ownership境界
 
 Production値を決める前提として、次のownershipだけを共通境界として定義する。
 
@@ -313,13 +354,20 @@ runtime上のscope:
 - `BLOCK`
 - `HYBRID`
 
-これらは「初期3カードにどれを採用するか」を決めたものではない。将来の正式仕様を、terrain semanticやRendererへ押し込まず表現するための受け皿である。
+初期3カードは `CELL` を採用する。 `BLOCK / HYBRID` は将来カードのための正式な拡張口として維持する。
 
 ### 9.3 RESOLVED条件
 
-`CELL` または `HYBRID` では、active cell全てについて明示的なcell yield entryを要求する。
+`CELL` または `HYBRID` では、active cell全てのProduction sourceが解決できることを要求する。
 
-一部セルだけを記述し、残りを暗黙にterrain yieldへfallbackすることは禁止する。
+CELL sourceは次のどちらかとする。
+
+- 明示 `cellYields`
+- `cellYieldSource = CANONICAL_TERRAIN`
+
+`CANONICAL_TERRAIN` は全attribute cellの `terrainId` がcanonical terrainとして解決可能な場合のみ有効とする。
+
+明示 `cellYields` の場合、一部セルだけを記述し、残りを暗黙にterrain yieldへfallbackすることは禁止する。
 
 `BLOCK` はblock yieldを明示する。
 
@@ -377,11 +425,11 @@ Block ProductionはBoard semantic上でcell productionとは別フィールド�
 
 現時点の実装データ:
 
-| Card ID | 表示名 | Cells | Stage | Rarity | Weight | Live Offering |
-| --- | --- | --- | ---: | --- | ---: | --- |
-| `CARD_MULTI_PLAINS_HILL_1X2` | 草原（複数） | 草原 + 丘陵 | 1 | R | 0.08 | Production Gate |
-| `CARD_MULTI_PLAINS_FOREST_1X2` | 草原（複数） | 草原 + 森 | 1 | R | 0.08 | Production Gate |
-| `CARD_MULTI_HILL_MOUNTAIN_1X2` | 丘陵（複数） | 丘陵 + 山岳 | 2 | R | 0.05 | Production Gate |
+| Card ID | 表示名 | Cells | Stage | Rarity | Weight | Production | Live Offering |
+| --- | --- | --- | ---: | --- | ---: | --- | --- |
+| `CARD_MULTI_PLAINS_HILL_1X2` | 草原（複数） | 草原 + 丘陵 | 1 | R | 0.08 | CELL / CANONICAL_TERRAIN | 有効 |
+| `CARD_MULTI_PLAINS_FOREST_1X2` | 草原（複数） | 草原 + 森 | 1 | R | 0.08 | CELL / CANONICAL_TERRAIN | 有効 |
+| `CARD_MULTI_HILL_MOUNTAIN_1X2` | 丘陵（複数） | 丘陵 + 山岳 | 2 | R | 0.05 | CELL / CANONICAL_TERRAIN | 有効 |
 
 これらは既存の `CARD_FOREST_HILL_1X2` 等とは別概念である。
 

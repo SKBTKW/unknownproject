@@ -337,6 +337,7 @@ async function main() {
         ["Global Event NEXT_GLOBAL_EVENT Expiry", "scratch/test_global_event_next_event_expiry.mjs"],
         ["Global Event Recovery History Eligibility", "scratch/test_global_event_recovery_history_eligibility.mjs"],
         ["Global Event Offering Weight Hook", "scratch/test_global_event_offering_weight_hook.mjs"],
+        ["Post-Trial Threat History Gate", "scratch/test_post_trial_threat_history_gate.mjs"],
     ];
     for (const [label, testPath] of investigationContracts) {
         const ok = await runCommand("node", [testPath]);
@@ -602,6 +603,12 @@ async function main() {
     const step6MaintOk = await runCommand("node", ["scratch/test_maintenance_fallback_system.mjs"]);
     if (!step6MaintOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (食料決済・不足補填) で不合格が検出されました。");
+        process.exit(1);
+    }
+
+    const zoneConversionFoundationOk = await runCommand("node", ["scratch/test_zone_conversion_foundation.mjs"]);
+    if (!zoneConversionFoundationOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Zone Conversion Foundation) で不合格が検出されました。");
         process.exit(1);
     }
 
