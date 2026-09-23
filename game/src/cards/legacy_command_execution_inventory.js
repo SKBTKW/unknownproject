@@ -158,6 +158,10 @@ function isDomainActionRequired(cardId) {
     return classifyLegacyCommandExecution(cardId) === LEGACY_COMMAND_EXECUTION_CLASS.DOMAIN_ACTION_REQUIRED;
 }
 
+function isLegacyOnlyCommandExecution(cardId) {
+    return classifyLegacyCommandExecution(cardId) === LEGACY_COMMAND_EXECUTION_CLASS.LEGACY_ONLY;
+}
+
 function resolveDomainActionOwner(cardId) {
     return DOMAIN_ACTION_OWNER_BY_ID[cardId] || null;
 }
@@ -179,6 +183,7 @@ export {
     LEGACY_SHADOWED_BRANCH_IDS,
     classifyLegacyCommandExecution,
     isDomainActionRequired,
+    isLegacyOnlyCommandExecution,
     resolveDomainActionOwner,
     resolveDomainActionMigrationBlocker
 };
