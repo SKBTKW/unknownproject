@@ -46,17 +46,30 @@ const overlayPlacement = Object.freeze({
     requireEmptySpecialBlock: true
 });
 
+function freezeStringArray(values) {
+    return Array.isArray(values) ? Object.freeze([...values]) : values;
+}
+
 function freezeDefinition(definition) {
+    const placement = {
+        ...(definition.placement || {}),
+        terrainIds: freezeStringArray(definition.placement?.terrainIds),
+        sourceTerrainIds: freezeStringArray(definition.placement?.sourceTerrainIds)
+    };
     return Object.freeze({
         ...definition,
-        placement: Object.freeze({ ...(definition.placement || {}) }),
+        placement: Object.freeze(placement),
         baseTerrainInteraction: Object.freeze({ ...(definition.baseTerrainInteraction || {}) }),
+        production: definition.production
+            ? Object.freeze({ ...definition.production })
+            : null,
         capabilities: Object.freeze([...(definition.capabilities || [])]),
         trialTraits: Object.freeze({
             ...defaultTrialTraits,
             ...(definition.trialTraits || {}),
             specialTactics: Object.freeze([...(definition.trialTraits?.specialTactics || [])])
         }),
+        lifecycle: Object.freeze({ ...(definition.lifecycle || {}) }),
         presentation: Object.freeze({ ...(definition.presentation || {}) })
     });
 }
