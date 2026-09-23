@@ -130,9 +130,23 @@ class CardEffectExecutor {
                     : { success: false, reason: "PROJECT_DEFINITION_REQUIRED" };
             case CARD_EFFECT_TYPES.DOMAIN_ACTION: {
                 const executor = context.domainActionExecutor || this.domainActionExecutor;
-                return typeof executor === "function"
-                    ? { success: true }
-                    : { success: false, reason: "DOMAIN_ACTION_EXECUTOR_REQUIRED" };
+                if (typeof executor !== "function") {
+                    return { success: false, reason: "DOMAIN_ACTION_EXECUTOR_REQUIRED" };
+                }
+                if (typeof executor.preflight === "function") {
+                    const result = executor.preflight(effect, context);
+                    if (result && typeof result === "object") {
+                        return {
+                            success: result.success !== false,
+                            ...result
+                        };
+                    }
+                    return {
+                        success: result !== false,
+                        reason: result === false ? "DOMAIN_ACTION_PREFLIGHT_FAILED" : null
+                    };
+                }
+                return { success: true };
             }
             default:
                 return { success: false, reason: "UNSUPPORTED_CARD_EFFECT_TYPE" };
