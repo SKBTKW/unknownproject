@@ -2,6 +2,8 @@ import { GameEngine } from "../game/src/core/game_engine.js";
 import assert from "node:assert/strict";
 import {
     evaluateDeploymentProfileAgainstSamples,
+    evaluateFirstRunBurdenAgainstSamples,
+    resolveFirstRunBurdenShare,
     summarizeDeploymentBalanceRows,
     STAGE1_TRIAL1_AUDIT_ENVELOPE_20260923,
     STAGE1_TRIAL1_PROBE_PLANS,
@@ -97,3 +99,68 @@ import {
 }
 
 console.log("test_trial_deployment_balance_probe: PASS");
+
+
+{
+    const firstRun = evaluateFirstRunBurdenAgainstSamples({
+        samples: STAGE1_TRIAL1_AUDIT_ENVELOPE_20260923,
+        plans: STAGE1_TRIAL1_PROBE_PLANS
+    });
+    assert.equal(firstRun.success, true);
+    assert.equal(firstRun.rows.length, 8);
+
+    console.log("=== FirstRun Deployment Burden Probe ===");
+    for (const row of firstRun.rows) {
+        console.log(
+            [
+                row.sampleId,
+                row.planId,
+                `def=${row.requestedDefense}/${row.defenseAvailable}`,
+                `dist=${row.distance}`,
+                `share=${(row.burdenShare * 100).toFixed(1)}%`,
+                `cost=🌾${row.foodCost}/🧱${row.materialCost}`,
+                `remaining=🌾${row.foodRemaining}/🧱${row.materialRemaining}`
+            ].join(" ")
+        );
+    }
+
+    const heavyMin = firstRun.rows.find(row =>
+        row.sampleId === "V15_MIN_OBSERVED"
+        && row.planId === "HEAVY_DEFENSE_FAR"
+    );
+    const allMin = firstRun.rows.find(row =>
+        row.sampleId === "V15_MIN_OBSERVED"
+        && row.planId === "ALL_DEFENSE_FAR"
+    );
+    const halfFarMin = firstRun.rows.find(row =>
+        row.sampleId === "V15_MIN_OBSERVED"
+        && row.planId === "HALF_DEFENSE_FAR"
+    );
+
+    assert.ok(heavyMin);
+    assert.ok(allMin);
+    assert.ok(halfFarMin);
+
+    assert.ok(
+        heavyMin.burdenShare >= 0.74 && heavyMin.burdenShare <= 0.76,
+        "heavy first-run commitment should land around 75% burden"
+    );
+    assert.equal(
+        Number(allMin.burdenShare.toFixed(2)),
+        0.80,
+        "all-defense far deployment should cap at 80% burden"
+    );
+    assert.ok(
+        halfFarMin.burdenShare >= 0.57 && halfFarMin.burdenShare <= 0.59,
+        "half-defense far deployment should stay dramatic without matching full mobilization"
+    );
+
+    assert.equal(
+        Number(resolveFirstRunBurdenShare({
+            requestedDefense: 27,
+            defenseAvailable: 27,
+            distance: 4
+        }).toFixed(2)),
+        0.80
+    );
+}
