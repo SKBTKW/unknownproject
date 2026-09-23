@@ -63,6 +63,16 @@ class CardEffectExecutor {
         });
     }
 
+    quoteCost(effects, context = {}) {
+        if (!Array.isArray(effects) || effects.length !== 1) return null;
+        const effect = effects[0];
+        if (effect?.type !== CARD_EFFECT_TYPES.DOMAIN_ACTION) return null;
+        const executor = context.domainActionExecutor || this.domainActionExecutor;
+        if (typeof executor?.quoteCost !== "function") return null;
+        const result = executor.quoteCost(effect, context);
+        return result && typeof result === "object" ? result : null;
+    }
+
     requiresTarget(effects, context = {}) {
         if (!Array.isArray(effects) || effects.length !== 1) return false;
         const effect = effects[0];
