@@ -897,18 +897,6 @@ class DeckManager {
                 startsNextTurn: true
             });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🌾【${cName}】`);
-        } else if (cId === "CMD_EMERGENCY_LEVY") {
-            // 🧱 緊急徴発: コスト 🌾-20 (即座に 🧱+15 を獲得、次ターンペナルティ削除)
-            this.state.wood = (this.state.wood || 0) + 15;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🧱",
-                description: cDesc,
-                category: "CARD_EFFECT"
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🧱【${cName}】`);
         } else if (cId === "CMD_MANIFEST_MIRACLE") {
             // ✨ 顕現: コスト ✨-10 (次のターンから3ターンの間、不足資源補填レート 3→1)
             this.state.manifestMiracleTurns = 3;
@@ -1228,11 +1216,6 @@ class DeckManager {
             this.state.systematicLoggingStartsNextTurn = true;
             this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🌲", description: cDesc, badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 3 }) : "3T", category: "DEBUFF", remainingTurns: 3, startsNextTurn: true });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🌲【${cName}】`);
-        } else if (cId === "CMD_LOGGING_CAMP") {
-            // 🪵 伐採拠点: コスト 🔥-1 (即時 🧱+8、周囲森林から🧱産出)
-            this.state.wood = (this.state.wood || 0) + 8;
-            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🪵", description: cDesc, category: "CARD_EFFECT" });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🪵【${cName}】`);
         } else if (cId === "CMD_GRANARY") {
             // 🌾 穀物庫: コスト 🧱-20 (食料維持費 x0.90)
             this.state.granaryCount = (this.state.granaryCount || 0) + 1;
