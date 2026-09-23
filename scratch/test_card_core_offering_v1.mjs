@@ -10,6 +10,7 @@ import { LandPlacementAvailabilityQuery } from "../game/src/cards/land_placement
 import { CardOfferingEligibilityService } from "../game/src/cards/card_offering_eligibility_service.js";
 import { CardExecutionRequirementService } from "../game/src/cards/card_execution_requirement_service.js";
 import { pickWeightedCard } from "../game/src/cards/offering_weight_policy.js";
+import { OfferingCandidatePoolService } from "../game/src/cards/offering_candidate_pool_service.js";
 import {
     adaptLegacyOfferingRequirements,
     evaluateLegacyOfferingRequirements
@@ -1570,6 +1571,115 @@ function makeGrid(rows, cols) {
     const firstBranch = deckManagerSource.slice(first, second);
     assert.ok(firstBranch.includes("greatRampartTurns = 4"),
         "first reachable Great Rampart branch must remain the 4T project behavior");
+}
+
+// AI. Candidate narrowing can never re-introduce a card rejected by full eligibility.
+{
+    const master = [
+        { id: "LEGAL_INVESTIGATION", category: "INVESTIGATION", weight: 1 },
+        { id: "ILLEGAL_INVESTIGATION", category: "INVESTIGATION", weight: 100 }
+    ];
+    const pool = new OfferingCandidatePoolService({
+        cardMasterProvider: () => master,
+        eligibilityEvaluator: card => card.id !== "ILLEGAL_INVESTIGATION"
+    });
+
+    assert.deepEqual(
+        pool.build({
+            candidateFilter: card => card.category === "INVESTIGATION"
+        }).map(card => card.id),
+        ["LEGAL_INVESTIGATION"]
+    );
+    assert.equal(
+        pool.pick({
+            candidateFilter: card => card.id === "ILLEGAL_INVESTIGATION",
+            random: () => 0
+        }),
+        null,
+        "candidateFilter may narrow the legal population but must never resurrect an illegal card"
+    );
+}
+
+// AJ. FirstRun-style Investigation minimum is satisfied only from the legal candidate population.
+{
+    const state = {
+        turn: 8,
+        stage: { id: 1 },
+        handOfferingSize: 2,
+        investigationUnlocked: true,
+        reserveSlots: [],
+        activeBuffs: [],
+        consumedUniqueCards: [],
+        usedUniqueCards: [],
+        grid: makeGrid(1, 2),
+        canPlaceShape: () => ({ can: true })
+    };
+    const engine = {
+        gameplayRandom: {
+            nextFloat: () => 0,
+            nextId: (prefix, scope) => `${prefix}_${scope}_test`
+        },
+        cardOfferingRequirementEvaluator(requirement) {
+            return requirement?.type !== "BLOCKED_FOR_TEST";
+        },
+        offeringMinimumRequirementProvider: {
+            getMinimumRequirements() {
+                return [{
+                    id: "FIRST_RUN_INVESTIGATION_TEST",
+                    category: "INVESTIGATION",
+                    minCount: 1
+                }];
+            }
+        }
+    };
+    const manager = new DeckManager(state, engine);
+    manager.cycleSystem = null;
+    manager.getLandCardMaster = () => [
+        {
+            id: "LAND_A",
+            category: "LAND",
+            rarity: "C",
+            weight: 1,
+            cyclePolicy: "LAND_STANDARD",
+            shape: [[1]]
+        },
+        {
+            id: "LAND_B",
+            category: "LAND",
+            rarity: "C",
+            weight: 1,
+            cyclePolicy: "LAND_STANDARD",
+            shape: [[1]]
+        },
+        {
+            id: "INVESTIGATION_LEGAL",
+            category: "INVESTIGATION",
+            rarity: "C",
+            weight: 1
+        },
+        {
+            id: "INVESTIGATION_ILLEGAL",
+            category: "INVESTIGATION",
+            rarity: "C",
+            weight: 100,
+            offering: {
+                requirements: [{ type: "BLOCKED_FOR_TEST" }]
+            }
+        }
+    ];
+
+    const offering = manager.generateOfferingCards({ reason: "VERSE_START" });
+    const ids = offering.map(card => card.cardMasterId);
+
+    assert.equal(offering.length, 2);
+    assert.ok(ids.includes("INVESTIGATION_LEGAL"),
+        "minimum guarantee must insert a legal Investigation candidate");
+    assert.equal(ids.includes("INVESTIGATION_ILLEGAL"), false,
+        "minimum guarantee must never bypass Offering eligibility");
+    assert.equal(
+        manager.lastOfferingGeneration.appliedMinimums[0]?.candidateId,
+        "INVESTIGATION_LEGAL"
+    );
 }
 
 console.log("✅ Card Core / Offering v1 contract tests PASS");
