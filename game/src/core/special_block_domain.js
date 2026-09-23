@@ -151,7 +151,7 @@ export const SPECIAL_BLOCK_DEFINITIONS = Object.freeze({
         capabilities: [BOARD_CAPABILITIES.MILITARY_SITE],
         trialTraits: {
             interceptionAllowed: true,
-            suppressTerrainTactic: true,
+            suppressTerrainTactic: false,
             specialTactics: ['EARTHWORK_DEFENSE']
         },
         lifecycle: { initialState: 'ACTIVE' },
@@ -163,11 +163,7 @@ export const SPECIAL_BLOCK_DEFINITIONS = Object.freeze({
         placement: { ...overlayPlacement },
         baseTerrainInteraction: { kind: BASE_TERRAIN_INTERACTIONS.TERRAIN_USING_OVERLAY },
         production: null,
-        capabilities: [
-            BOARD_CAPABILITIES.MILITARY_SITE,
-            BOARD_CAPABILITIES.INVESTIGATION_SITE,
-            BOARD_CAPABILITIES.OBSERVATION_SITE
-        ],
+        capabilities: [BOARD_CAPABILITIES.OBSERVATION_SITE],
         trialTraits: {},
         lifecycle: { initialState: 'ACTIVE' },
         presentation: { nameKey: 'SPECIAL_BLOCK_WATCHTOWER' }
