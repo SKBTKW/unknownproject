@@ -249,6 +249,12 @@ export class ZoneConversionService {
             reasons.push('CREATION_COST_UNRESOLVED');
         }
 
+        const maintenanceResolved = definition.maintenance?.status === ZONE_CONVERSION_COST_STATUS.RESOLVED
+            && normalizeZoneResourceMap(definition.maintenance?.resources || {}) !== null;
+        if (!maintenanceResolved) {
+            reasons.push('MAINTENANCE_DEFINITION_UNRESOLVED');
+        }
+
         return {
             valid: reasons.length === 0,
             reasons,
