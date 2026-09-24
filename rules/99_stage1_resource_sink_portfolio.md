@@ -45,7 +45,7 @@
 |---|---:|---|---|
 | CMD_RATIONING | なし | 緊急対応 | Implementedだが説明差分あり |
 | CMD_WETLAND_RECLAMATION | 🧱15 + 🔥1 | 任意投資 | Implemented |
-| CMD_LOGGING_CAMP | 🔥1 | 任意投資 | Partial。恒久施設価値は未接続 |
+| CMD_LOGGING_CAMP | 未確定（Board DOMAIN_QUOTE） | 任意投資 | v2 foundation。GL2+連結2セル隣接の独立施設。隣接同種施設で産出上昇、具体値未確定 |
 | CMD_GRANARY | 🧱20 | 任意投資 | Partial |
 | CMD_AGRICULTURAL_REFORM | 🧱20 | 任意投資 | Implemented / simplified |
 | CMD_PASTORAL_FARM | 🧱15 | 任意投資 | Partial |
@@ -71,21 +71,20 @@ Command CardコストはDeckManagerの共通支払い境界で実際に減算さ
 
 等の定義が存在する。
 
-しかしSpecial Block definition自体には、現在
+Special BlockにはBoard-ownedの `creationCost` quote境界が実装済みで、
+Card側の `DOMAIN_QUOTE` とatomic payment経路から利用できる。
 
-- creationCost
-- maintenance
-- upkeep
-
-のcanonical payment fieldを持たない。
+ただしFARM / LOGGING_CAMP / ALTAR等の**具体的な作成費は未確定**であり、
+未解決定義はfail-closedする。
 
 したがって、
 
 > 農場などを平時の主要sinkにする
 
-方針を採る場合は、効果値だけでなく **Special Block作成費の所有境界** を先に決める必要がある。
+方針では、Card側へ重複価格を持たせず、Board definitionで作成費を確定する。
 
-Command Cardのcostとして払う方式と、Board/Zone側がquoteする方式を二重化しない。
+maintenance / upkeepは施設ごとの確定仕様がある場合だけ別途Domain契約として追加し、
+Command Card costとBoard quoteを二重化しない。
 
 ## 4. Zone Conversion
 

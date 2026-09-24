@@ -125,7 +125,16 @@ export class SpecialBlockProductionResolver {
 
     _resolveRelationCount(state, r, c, production) {
         if (!Number.isInteger(r) || !Number.isInteger(c)) return null;
-        if (typeof production?.relationCapability !== 'string' || !production.relationCapability) return null;
+
+        const relationCapability = typeof production?.relationCapability === 'string'
+            && production.relationCapability
+            ? production.relationCapability
+            : null;
+        const relationDefinitionId = typeof production?.relationDefinitionId === 'string'
+            && production.relationDefinitionId
+            ? production.relationDefinitionId
+            : null;
+        if (!relationCapability && !relationDefinitionId) return null;
         if (!isValidYieldMap(production?.perRelationYields)) return null;
 
         const offsets = relationOffsets(production.relationNeighborhood);
@@ -135,8 +144,16 @@ export class SpecialBlockProductionResolver {
         for (const [dr, dc] of offsets) {
             const neighbor = state?.grid?.[r + dr]?.[c + dc];
             if (!neighbor) continue;
+
+            if (relationDefinitionId) {
+                const entity = neighbor.specialBlock;
+                const definitionId = entity?.definitionId || entity?.type || null;
+                if (definitionId === relationDefinitionId && isSpecialBlockFunctional(entity)) count++;
+                continue;
+            }
+
             const capabilities = this.capabilityReader(neighbor);
-            if (capabilities?.has?.(production.relationCapability)) count++;
+            if (capabilities?.has?.(relationCapability)) count++;
         }
 
         const maxRelations = production.maxRelations;
@@ -144,9 +161,16 @@ export class SpecialBlockProductionResolver {
             ? Math.min(count, Math.max(0, Math.trunc(maxRelations)))
             : count;
 
+        const relationYields = multiplyYields(production.perRelationYields, effectiveCount);
+        if (!relationYields) return null;
+        const baseYields = production.baseYields === undefined
+            ? { ...ZERO_YIELDS }
+            : normalizeYields(production.baseYields);
+        if (!baseYields) return null;
+
         return {
             status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
-            yields: multiplyYields(production.perRelationYields, effectiveCount)
+            yields: addYields({ ...baseYields }, relationYields)
         };
     }
 

@@ -197,6 +197,7 @@ function freezeProductionDefinition(production) {
     return Object.freeze({
         ...production,
         yields: freezeYieldMap(production.yields),
+        baseYields: freezeYieldMap(production.baseYields),
         perSourceYields: freezeYieldMap(production.perSourceYields),
         perRelationYields: freezeYieldMap(production.perRelationYields)
     });
@@ -241,7 +242,8 @@ export const SPECIAL_BLOCK_DEFINITIONS = Object.freeze({
         placement: {
             mode: 'INDEPENDENT_CELL_GENERATION',
             targeting: 'SOURCE_AND_ADJACENT_EMPTY',
-            sourceTerrainIds: ['GL1_PLAINS']
+            sourceTerrainIds: ['GL1_PLAINS'],
+            requiresSourceIsolation: true
         },
         baseTerrainInteraction: { kind: BASE_TERRAIN_INTERACTIONS.INDEPENDENT },
         production: { kind: 'FIXED', status: 'UNRESOLVED' },
@@ -268,16 +270,18 @@ export const SPECIAL_BLOCK_DEFINITIONS = Object.freeze({
         id: SPECIAL_BLOCK_TYPES.LOGGING_CAMP,
         category: 'PRODUCTION',
         placement: {
-            ...overlayPlacement,
-            terrainIds: ['GL2_FOREST', 'GL3_DEEP_FOREST', 'E2_FOREST_HILL', 'E2_DEEP_HILL'],
-            minGL: 2,
-            requiresSourceCluster: true
+            mode: 'INDEPENDENT_CELL_GENERATION',
+            targeting: 'SOURCE_AND_ADJACENT_EMPTY',
+            sourceMinGL: 2,
+            minConnectedSourceCells: 2
         },
-        baseTerrainInteraction: {
-            kind: BASE_TERRAIN_INTERACTIONS.TRANSFORMING_OVERLAY,
-            glDelta: -1
+        baseTerrainInteraction: { kind: BASE_TERRAIN_INTERACTIONS.INDEPENDENT },
+        production: {
+            kind: 'RELATION_COUNT',
+            status: 'UNRESOLVED',
+            relationDefinitionId: SPECIAL_BLOCK_TYPES.LOGGING_CAMP,
+            relationNeighborhood: 'ORTHOGONAL'
         },
-        production: { kind: 'SOURCE_SIZE', status: 'UNRESOLVED' },
         capabilities: [BOARD_CAPABILITIES.PRODUCTION_SITE],
         trialTraits: {},
         lifecycle: { initialState: 'ACTIVE' },

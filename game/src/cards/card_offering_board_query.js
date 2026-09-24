@@ -100,6 +100,55 @@ class LegacyStateCardOfferingBoardQuery {
         return count;
     }
 
+    hasConnectedTerrainGLAtLeast(minimumGL, { minimum = 2 } = {}) {
+        const grid = this.state?.grid;
+        const threshold = Number(minimumGL);
+        const required = Math.max(1, Math.trunc(Number(minimum) || 1));
+        if (!grid || !Number.isFinite(threshold)) return false;
+
+        const visited = new Set();
+        const matches = (r, c) => {
+            const cell = grid?.[r]?.[c];
+            return Boolean(
+                cell?.placed
+                && !cell.isHQ
+                && !cell.specialBlock
+                && cell.terrain
+                && Number(cell.terrain.gl) >= threshold
+            );
+        };
+
+        for (let r = 0; r < grid.length; r++) {
+            for (let c = 0; c < (grid[r]?.length || 0); c++) {
+                const startKey = `${r}:${c}`;
+                if (visited.has(startKey) || !matches(r, c)) continue;
+
+                let count = 0;
+                const queue = [{ r, c }];
+                visited.add(startKey);
+                while (queue.length > 0) {
+                    const current = queue.shift();
+                    count++;
+                    if (count >= required) return true;
+
+                    const neighbors = [
+                        { r: current.r - 1, c: current.c },
+                        { r: current.r + 1, c: current.c },
+                        { r: current.r, c: current.c - 1 },
+                        { r: current.r, c: current.c + 1 }
+                    ];
+                    for (const next of neighbors) {
+                        const key = `${next.r}:${next.c}`;
+                        if (visited.has(key) || !matches(next.r, next.c)) continue;
+                        visited.add(key);
+                        queue.push(next);
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     hasReclaimableWetland() {
         const grid = this.state?.grid;
         if (!grid) return false;

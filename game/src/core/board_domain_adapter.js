@@ -115,6 +115,51 @@ export class BoardDomainAdapter {
         return false;
     }
 
+    hasConnectedTerrainGLAtLeast(minimumGL, { minimum = 2 } = {}) {
+        const threshold = Number(minimumGL);
+        const required = Math.max(1, Math.trunc(Number(minimum) || 1));
+        if (!Number.isFinite(threshold) || !Array.isArray(this.state?.grid)) return false;
+
+        const grid = this.state.grid;
+        const visited = new Set();
+        const matches = (r, c) => {
+            const cell = grid?.[r]?.[c];
+            return Boolean(
+                cell?.placed
+                && !cell.isHQ
+                && !cell.specialBlock
+                && cell.terrain
+                && Number(cell.terrain.gl) >= threshold
+            );
+        };
+
+        for (let r = 0; r < grid.length; r++) {
+            for (let c = 0; c < (grid[r]?.length || 0); c++) {
+                const startKey = `${r}:${c}`;
+                if (visited.has(startKey) || !matches(r, c)) continue;
+
+                let count = 0;
+                const queue = [{ r, c }];
+                visited.add(startKey);
+                while (queue.length > 0) {
+                    const current = queue.shift();
+                    count++;
+                    if (count >= required) return true;
+
+                    for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+                        const nr = current.r + dr;
+                        const nc = current.c + dc;
+                        const key = `${nr}:${nc}`;
+                        if (visited.has(key) || !matches(nr, nc)) continue;
+                        visited.add(key);
+                        queue.push({ r: nr, c: nc });
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     hasEntity(entityType, options = {}) {
         const query = typeof entityType === 'string' ? entityType.trim().toUpperCase() : '';
         if (!query || !Array.isArray(this.state?.grid)) return false;
