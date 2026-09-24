@@ -152,10 +152,18 @@ check(manager.getState() === UI_LAYOUT_STATES.TRIAL
 "closing Advisor returns to Trial without restoring a Trial right panel");
 check(manager.getPlayerTrayMode() === PLAYER_TRAY_MODES.TRIAL, "Trial Player Tray remains active after Advisor closes");
 
-check(uiSource.indexOf("this.trialPresentationState.clearPlanningState();") >= 0
-    && uiSource.indexOf("this.trialPresentationState.clearPlanningState();")
-        < uiSource.indexOf("this.layoutStateManager.exitTrial();"),
-"Trial stop clears Trial presentation planning state before leaving Trial layout");
+const stopTrialStart = uiSource.indexOf("stopTrialInterceptionPreview() {");
+const stopTrialEnd = uiSource.indexOf("\n    getTrialAvailableDefense()", stopTrialStart);
+const stopTrialSource = stopTrialStart >= 0 && stopTrialEnd > stopTrialStart
+    ? uiSource.slice(stopTrialStart, stopTrialEnd)
+    : "";
+check(stopTrialSource.includes("this.trialPreviewConfig = null;")
+    && stopTrialSource.includes("this.trialPresentationState.clearPlanningState();")
+    && stopTrialSource.includes("this.hideCellTooltip();")
+    && stopTrialSource.includes("this.layoutStateManager.exitTrial();")
+    && stopTrialSource.indexOf("this.trialPresentationState.clearPlanningState();")
+        < stopTrialSource.indexOf("this.layoutStateManager.exitTrial();"),
+"Trial stop clears temporary Presentation state before leaving Trial layout");
 trialPresentationState.clearPlanningState();
 manager.exitTrial();
 check(trialPresentationState.selectedInterceptCell === null
