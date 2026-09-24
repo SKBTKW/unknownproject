@@ -30,6 +30,8 @@ const productionSource = fs.readFileSync(
     "utf8"
 );
 assert.equal(productionSource.includes("web25DBoardRuntime"), true);
+assert.equal(productionSource.includes("web25dBoardCanvas"), true);
+assert.equal(productionSource.includes("web25dValidationCanvas"), false);
 assert.equal(productionSource.includes("web25DValidationRuntime = runtime"), true);
 assert.equal(productionSource.includes("BoardPresentationData read model"), true);
 assert.equal(productionSource.includes("state.grid"), false);
