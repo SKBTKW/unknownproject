@@ -36,9 +36,7 @@ const SUPPORT = Object.freeze([
     "CMD_ABANDONED_SETTLEMENT"
 ]);
 const BLOCKED = Object.freeze([
-    "CMD_LOGGING_CAMP",
-    "CMD_AGRICULTURAL_REFORM",
-    "CMD_PASTORAL_FARM",
+    "CMD_LOGGING_CAMP",    "CMD_PASTORAL_FARM",
     "CMD_MILITARY_FOCUS",
     "CMD_FILL_THE_VOID",
     "CMD_VOICE_BENEATH_EARTH",
@@ -78,7 +76,7 @@ for (const id of PROTOTYPE) {
         "Emergency Levy v1 is immediate-only");
 }
 
-for (const id of ["CMD_RATIONING", "CMD_EMERGENCY_LEVY", "CMD_REKINDLE_EMBER", "CMD_GRANARY", "CMD_WETLAND_RECLAMATION"]) {
+for (const id of ["CMD_RATIONING", "CMD_EMERGENCY_LEVY", "CMD_REKINDLE_EMBER", "CMD_GRANARY", "CMD_WETLAND_RECLAMATION", "CMD_AGRICULTURAL_REFORM"]) {
     assert.deepEqual(
         generatedById.get(id),
         byId.get(id),
@@ -187,9 +185,16 @@ for (const id of ["CMD_RATIONING", "CMD_EMERGENCY_LEVY", "CMD_REKINDLE_EMBER", "
 
 {
     const card = byId.get("CMD_AGRICULTURAL_REFORM");
-    assert.ok(effect("CMD_AGRICULTURAL_REFORM", "STATE_INCREMENT",
-        item => item.key === "permanentPlainsFoodBonus" && item.amount === 1));
-    assert.equal(Boolean(effect("CMD_AGRICULTURAL_REFORM", "DOMAIN_ACTION")), false);
+    assert.equal(card.cost, undefined,
+        "Agricultural Reform creation cost is Board-domain authority, not duplicated in Card data");
+    assert.equal(card.reqWood, undefined);
+    assert.equal(card.reqConnectedPlainsOrReclaimed, undefined);
+    assert.ok(effect("CMD_AGRICULTURAL_REFORM", "DOMAIN_ACTION",
+        item => item.action === "CREATE_ZONE_CONVERSION"
+            && item.definitionId === "AGRICULTURAL_REFORM"
+            && item.paymentMode === "DOMAIN_QUOTE"));
+    assert.equal(Boolean(effect("CMD_AGRICULTURAL_REFORM", "STATE_INCREMENT")), false,
+        "Agricultural Reform must not use global permanentPlainsFoodBonus");
 }
 
 for (const id of ["CMD_PASTORAL_FARM"]) {

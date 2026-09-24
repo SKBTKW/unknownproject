@@ -46,9 +46,9 @@ Stage1非LAND 15枚を一括で復帰させてはいけない。
 現在の説明と実効果が一致しない。
 
 ### `CMD_AGRICULTURAL_REFORM`
-表示は「指定した連結農業地域の最大4マス」。
-現effectは `permanentPlainsFoodBonus += 1` で、ProductionCalculatorは全PLAINSへ適用する。
-対象範囲意味論が一致しない。
+完成PLAINS Zoneを明示targetとして選ぶ `AGRICULTURAL_REFORM` Zone Conversionへ移行。
+作成費🧱20と局所🌾+1/各member/TはZone definitionが正本を持ち、Cardは `DOMAIN_QUOTE` と対象選択だけを担当する。
+production既定ではDormantのまま、ID単位prototypeで検証可能。
 
 ### `CMD_PASTORAL_FARM`
 表示は「平地1マスを牧畜場化し持続産出」。

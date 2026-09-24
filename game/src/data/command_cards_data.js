@@ -148,9 +148,6 @@ export const ECONOMY_CARDS_MASTER = [
     "category": "COMMAND",
     "nameKey": "CMD_AGRICULTURAL_REFORM_NAME",
     "descriptionKey": "CMD_AGRICULTURAL_REFORM_DESC",
-    "cost": {
-      "wood": 20
-    },
     "tags": [
       "PLAINS",
       "RECLAIMED",
@@ -158,28 +155,17 @@ export const ECONOMY_CARDS_MASTER = [
       "AGRICULTURE",
       "DEVELOPMENT"
     ],
-    "reqConnectedPlainsOrReclaimed": 3,
-    "reqWood": 20,
     "minStage": 1,
     "rarity": "R",
     "weight": 0.2,
     "cyclePolicy": "UNIQUE",
     "effects": [
       {
-        "type": "STATE_INCREMENT",
-        "key": "permanentPlainsFoodBonus",
-        "amount": 1
-      },
-      {
-        "type": "BUFF_ADD",
-        "fromSourceCard": true,
-        "buff": {
-          "icon": "📜",
-          "category": "CARD_EFFECT"
-        }
-      },
-      {
-        "type": "LOG_CARD_ACTIVATED"
+        "type": "DOMAIN_ACTION",
+        "action": "CREATE_ZONE_CONVERSION",
+        "definitionId": "AGRICULTURAL_REFORM",
+        "paymentMode": "DOMAIN_QUOTE",
+        "logActivation": true
       }
     ]
   },
@@ -1363,9 +1349,6 @@ export const COMMAND_CARDS_MASTER = [
     "category": "COMMAND",
     "nameKey": "CMD_AGRICULTURAL_REFORM_NAME",
     "descriptionKey": "CMD_AGRICULTURAL_REFORM_DESC",
-    "cost": {
-      "wood": 20
-    },
     "tags": [
       "PLAINS",
       "RECLAIMED",
@@ -1373,28 +1356,17 @@ export const COMMAND_CARDS_MASTER = [
       "AGRICULTURE",
       "DEVELOPMENT"
     ],
-    "reqConnectedPlainsOrReclaimed": 3,
-    "reqWood": 20,
     "minStage": 1,
     "rarity": "R",
     "weight": 0.2,
     "cyclePolicy": "UNIQUE",
     "effects": [
       {
-        "type": "STATE_INCREMENT",
-        "key": "permanentPlainsFoodBonus",
-        "amount": 1
-      },
-      {
-        "type": "BUFF_ADD",
-        "fromSourceCard": true,
-        "buff": {
-          "icon": "📜",
-          "category": "CARD_EFFECT"
-        }
-      },
-      {
-        "type": "LOG_CARD_ACTIVATED"
+        "type": "DOMAIN_ACTION",
+        "action": "CREATE_ZONE_CONVERSION",
+        "definitionId": "AGRICULTURAL_REFORM",
+        "paymentMode": "DOMAIN_QUOTE",
+        "logActivation": true
       }
     ]
   },

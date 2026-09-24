@@ -930,6 +930,14 @@
       ]
     },
     {
+      "path": "scratch/test_stage1_agricultural_reform_zone_v1.mjs",
+      "purpose": "verify Agricultural Reform Board-owned Zone Conversion cost, completed PLAINS target, local per-member food production, and legacy global-buff retirement",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_stage1_granary_special_block_v1.mjs",
       "purpose": "verify Granary card target legality, atomic payment, Board FOOD_STORAGE capability, and capped flat food-maintenance reduction",
       "suite": "existing",

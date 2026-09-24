@@ -300,6 +300,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Wetland Reclamation Domain Action v1) で不合格が検出されました。");
         process.exit(1);
     }
+    const stage1AgriculturalReformZoneV1Ok = await runCommand("node", ["scratch/test_stage1_agricultural_reform_zone_v1.mjs"]);
+    if (!stage1AgriculturalReformZoneV1Ok) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Stage1 Agricultural Reform Zone v1) で不合格が検出されました。");
+        process.exit(1);
+    }
     const stage1GranarySpecialBlockV1Ok = await runCommand("node", ["scratch/test_stage1_granary_special_block_v1.mjs"]);
     if (!stage1GranarySpecialBlockV1Ok) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Stage1 Granary Special Block v1) で不合格が検出されました。");
