@@ -24,11 +24,9 @@ const SEEDS = Object.freeze([
 ]);
 
 const SPEND_PRIORITY = Object.freeze([
-    "CMD_AGRICULTURAL_REFORM",
-    "CMD_GRANARY",
-    "CMD_MILITARY_FOCUS",
+    "CMD_EMERGENCY_LEVY",
     "CMD_VIGILANCE",
-    "CMD_HIGH_GROUND_FORMATION"
+    "CMD_REKINDLE_EMBER"
 ]);
 
 const SPEND_CARD_BY_ID = new Map(
@@ -216,10 +214,20 @@ function resolveExecutableSpend(engine, usedIds) {
     return null;
 }
 
-function runStage1Path(seed, { allowSpend = true } = {}) {
+function runStage1Path(seed, {
+    allowSpend = true,
+    activatePrototypeSpends = false
+} = {}) {
     const engine = GameEngine.createGame({
         runSeed: seed,
-        firstRun: true
+        firstRun: true,
+        ...(activatePrototypeSpends
+            ? {
+                cardRuntimeActivationProvider: () => ({
+                    activeCardIds: [...SPEND_PRIORITY]
+                })
+            }
+            : {})
     });
     const usedIds = new Set();
     const spends = [];
@@ -281,7 +289,7 @@ function runStage1Path(seed, { allowSpend = true } = {}) {
     }
 
     return Object.freeze({
-        id: `${allowSpend ? "EXEC_SPEND" : "BASELINE"}_SEED_${seed}`,
+        id: `${activatePrototypeSpends ? "PROTOTYPE_SPEND" : (allowSpend ? "PRODUCTION" : "BASELINE")}_SEED_${seed}`,
         seed,
         food: Math.max(0, Number(engine.state.food) || 0),
         material: currentMaterial(engine.state),
@@ -364,107 +372,147 @@ console.log("\n=== Stage1 executable spend-path + product Trial1 burden audit ==
 const baselines = new Map(
     SEEDS.map(seed => [seed, runStage1Path(seed, { allowSpend: false })])
 );
-const samples = SEEDS.map(seed => runStage1Path(seed, { allowSpend: true }));
-
-for (const sample of samples) {
-    const baseline = baselines.get(sample.seed);
-    console.log(
-        [
-            sample.id,
-            `baseline=🌾${baseline.food}/🧱${baseline.material}/🛡️${baseline.defense}`,
-            `preTrial=🌾${sample.food}/🧱${sample.material}/🛡️${sample.defense}`,
-            `🔥${sample.ember}`,
-            `tiles=${sample.territoryTiles}`,
-            `spends=${sample.spends.map(entry => `${entry.cardId}@V${entry.verse}`).join(",") || "NONE"}`
-        ].join(" ")
-    );
-}
-
-const spendCounts = samples.map(sample => sample.spends.length);
-const totalExecutedSpends = spendCounts.reduce((sum, value) => sum + value, 0);
-assert.ok(
-    totalExecutedSpends > 0,
-    "representative Stage1 path must execute at least one real cost-bearing command through GameEngine.playCommandCard"
+const productionSamples = SEEDS.map(seed =>
+    runStage1Path(seed, {
+        allowSpend: true,
+        activatePrototypeSpends: false
+    })
 );
+const prototypeSamples = SEEDS.map(seed =>
+    runStage1Path(seed, {
+        allowSpend: true,
+        activatePrototypeSpends: true
+    })
+);
+
+const productionSpendCount = productionSamples.reduce(
+    (sum, sample) => sum + sample.spends.length,
+    0
+);
+const prototypeSpendCount = prototypeSamples.reduce(
+    (sum, sample) => sum + sample.spends.length,
+    0
+);
+
 assert.equal(
-    samples.every(sample => sample.food > 0 && sample.material > 0 && sample.ember > 0),
-    true,
-    "executable spend paths must reach Trial1 with live resources"
+    productionSpendCount,
+    0,
+    "production-default Stage1 must keep cost-bearing non-LAND prototype cards dormant"
 );
+assert.ok(
+    prototypeSpendCount > 0,
+    "ID-scoped prototype activation must expose at least one executable pre-Trial spend path"
+);
+
+function evaluateSampleSet(label, samples) {
+    const rows = [];
+    for (const sample of samples) {
+        const baseline = baselines.get(sample.seed);
+        console.log(
+            [
+                label,
+                sample.id,
+                `baseline=🌾${baseline.food}/🧱${baseline.material}/🛡️${baseline.defense}`,
+                `preTrial=🌾${sample.food}/🧱${sample.material}/🛡️${sample.defense}`,
+                `🔥${sample.ember}`,
+                `tiles=${sample.territoryTiles}`,
+                `spends=${sample.spends.map(entry => `${entry.cardId}@V${entry.verse}`).join(",") || "NONE"}`
+            ].join(" ")
+        );
+
+        for (const plan of plans) {
+            const row = evaluateProductDeployment({
+                baseline,
+                sample,
+                planId: plan.id,
+                requestedDefense: plan.requestedDefense,
+                distance: plan.distance
+            });
+            rows.push(row);
+            console.log(
+                [
+                    "PRODUCT_BURDEN",
+                    label,
+                    `seed=${row.seed}`,
+                    row.planId,
+                    `def=${row.requestedDefense}/${row.defenseAvailable}`,
+                    `deployment=${pct(row.burdenShare)}`,
+                    `preTrial=🌾${pct(row.preTrialFoodBurden)}/🧱${pct(row.preTrialMaterialBurden)}`,
+                    `cost=🌾${row.foodCost}/🧱${row.materialCost}`,
+                    `final=🌾${row.foodAfter}/🧱${row.materialAfter}`,
+                    `total=🌾${pct(row.totalFoodBurden)}/🧱${pct(row.totalMaterialBurden)}`
+                ].join(" ")
+            );
+        }
+    }
+    return rows;
+}
 
 const plans = Object.freeze([
     Object.freeze({ id: "HEAVY_DEFENSE_FAR", requestedDefense: 24, distance: 4 }),
     Object.freeze({ id: "ALL_DEFENSE_FAR", requestedDefense: Number.MAX_SAFE_INTEGER, distance: 4 })
 ]);
 
-const rows = [];
-for (const sample of samples) {
-    const baseline = baselines.get(sample.seed);
+const productionRows = evaluateSampleSet("PRODUCTION", productionSamples);
+const prototypeRows = evaluateSampleSet("PROTOTYPE", prototypeSamples);
+
+for (const rows of [productionRows, prototypeRows]) {
+    assert.equal(
+        rows.every(row =>
+            row.foodCost <= row.preTrialFood
+            && row.materialCost <= row.preTrialMaterial
+            && row.foodAfter >= 0
+            && row.materialAfter >= 0
+        ),
+        true,
+        "product relative deployment cost must remain affordable against the live pre-Trial balance"
+    );
+}
+
+const productionFull = productionRows.filter(row => row.planId === "ALL_DEFENSE_FAR");
+assert.equal(
+    productionFull.every(row => Number(row.burdenShare.toFixed(2)) === 0.80),
+    true,
+    "full-defense far deployment must remain the 80% product cap"
+);
+assert.equal(
+    productionFull.every(row =>
+        Math.abs(row.totalFoodBurden - row.burdenShare) < 0.01
+        && Math.abs(row.totalMaterialBurden - row.burdenShare) < 0.01
+    ),
+    true,
+    "with no production pre-Trial command sinks, total resource burden should equal the deployment burden"
+);
+
+function printSummary(label, rows) {
     for (const plan of plans) {
-        const row = evaluateProductDeployment({
-            baseline,
-            sample,
-            planId: plan.id,
-            requestedDefense: plan.requestedDefense,
-            distance: plan.distance
-        });
-        rows.push(row);
+        const selected = rows.filter(row => row.planId === plan.id);
+        const food = summarize(selected.map(row => row.totalFoodBurden));
+        const material = summarize(selected.map(row => row.totalMaterialBurden));
         console.log(
             [
-                "PRODUCT_BURDEN",
-                `seed=${row.seed}`,
-                row.planId,
-                `def=${row.requestedDefense}/${row.defenseAvailable}`,
-                `deployment=${pct(row.burdenShare)}`,
-                `preTrial=🌾${pct(row.preTrialFoodBurden)}/🧱${pct(row.preTrialMaterialBurden)}`,
-                `cost=🌾${row.foodCost}/🧱${row.materialCost}`,
-                `final=🌾${row.foodAfter}/🧱${row.materialAfter}`,
-                `total=🌾${pct(row.totalFoodBurden)}/🧱${pct(row.totalMaterialBurden)}`
+                "TOTAL_BURDEN_SUMMARY",
+                label,
+                plan.id,
+                `food=${pct(food.min)}..${pct(food.max)} med=${pct(food.median)}`,
+                `material=${pct(material.min)}..${pct(material.max)} med=${pct(material.median)}`,
+                `over80=${selected.filter(row => row.totalFoodBurden > 0.80 || row.totalMaterialBurden > 0.80).length}/${selected.length}`
             ].join(" ")
         );
     }
 }
 
-assert.equal(
-    rows.every(row =>
-        row.foodCost <= row.preTrialFood
-        && row.materialCost <= row.preTrialMaterial
-        && row.foodAfter >= 0
-        && row.materialAfter >= 0
-    ),
-    true,
-    "product relative deployment cost must remain affordable against the live pre-Trial balance"
-);
-
-const fullRows = rows.filter(row => row.planId === "ALL_DEFENSE_FAR");
-assert.equal(
-    fullRows.every(row => Number(row.burdenShare.toFixed(2)) === 0.80),
-    true,
-    "full-defense far deployment must remain the 80% product cap"
-);
-
-for (const plan of plans) {
-    const selected = rows.filter(row => row.planId === plan.id);
-    const food = summarize(selected.map(row => row.totalFoodBurden));
-    const material = summarize(selected.map(row => row.totalMaterialBurden));
-    console.log(
-        [
-            "TOTAL_BURDEN_SUMMARY",
-            plan.id,
-            `food=${pct(food.min)}..${pct(food.max)} med=${pct(food.median)}`,
-            `material=${pct(material.min)}..${pct(material.max)} med=${pct(material.median)}`,
-            `over80=${selected.filter(row => row.totalFoodBurden > 0.80 || row.totalMaterialBurden > 0.80).length}/${selected.length}`
-        ].join(" ")
-    );
-}
+printSummary("PRODUCTION", productionRows);
+printSummary("PROTOTYPE", prototypeRows);
 
 console.log(
     "EXEC_SPEND_RESULT",
     JSON.stringify({
-        spendCounts,
-        totalExecutedSpends,
+        productionSpendCount,
+        prototypeSpendCount,
         productPolicy: "FIRST_RUN_TRIAL1_RELATIVE_V1",
-        note: "total burden is measured against same-seed no-command Stage1 baseline"
+        productionConclusion: "no live pre-Trial command sink yet; current total burden equals deployment burden",
+        prototypeConclusion: "future live sinks must trigger a deployment-burden retune instead of stacking blindly"
     })
 );
 
