@@ -397,7 +397,7 @@ function makeGrid(rows, cols) {
 
     assert.equal(result.success, true);
     assert.equal(state.wood, 7);
-    assert.equal(state.material, 2, "resource delta mutates only the authored resource");
+    assert.equal(state.material, 7, "material alias must stay synchronized with wood");
     assert.equal(state.guidedDefenseActive, true);
     assert.equal(state.testCounter, 2);
     assert.equal(state.activeBuffs.length, 1);
@@ -557,7 +557,7 @@ function makeGrid(rows, cols) {
     assert.equal(emergencyResult.success, true);
     assert.equal(emergencyState.food, 10, "legacy food cost remains 20");
     assert.equal(emergencyState.wood, 19, "legacy immediate material gain remains +15 wood");
-    assert.equal(emergencyState.material, 99, "legacy effect did not mirror gained wood into material");
+    assert.equal(emergencyState.material, 19, "Emergency Levy must keep wood/material aliases synchronized");
     assert.equal(emergencyState.activeBuffs.length, 0,
         "Emergency Levy v1 is immediate-only");
     assert.equal(emergencyState.emergencyLevyTurns, undefined,
@@ -586,7 +586,7 @@ function makeGrid(rows, cols) {
     assert.equal(campResult.success, true);
     assert.equal(campState.ember, 1, "legacy ember cost remains 1");
     assert.equal(campState.wood, 10, "legacy immediate gain remains +8 wood");
-    assert.equal(campState.material, 77);
+    assert.equal(campState.material, 10, "material alias must mirror Logging Camp wood gain");
     assert.equal(campState.activeBuffs.length, 1);
     assert.equal(campState.activeBuffs[0].id, "CMD_LOGGING_CAMP");
     assert.equal(campState.activeBuffs[0].icon, "🪵");
