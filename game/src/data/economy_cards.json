@@ -62,29 +62,19 @@
     "category": "COMMAND",
     "nameKey": "CMD_LOGGING_CAMP_NAME",
     "descriptionKey": "CMD_LOGGING_CAMP_DESC",
-    "cost": { "ember": 1 },
+    "cost": {},
     "tags": ["FOREST", "MATERIAL", "INDUSTRY", "SPECIAL_BLOCK"],
-    "reqForestNearby": 3,
     "minStage": 1,
     "rarity": "C",
     "weight": 0.35,
     "cyclePolicy": "RARITY",
     "effects": [
       {
-        "type": "RESOURCE_DELTA",
-        "resource": "wood",
-        "amount": 8
-      },
-      {
-        "type": "BUFF_ADD",
-        "fromSourceCard": true,
-        "buff": {
-          "icon": "🪵",
-          "category": "CARD_EFFECT"
-        }
-      },
-      {
-        "type": "LOG_CARD_ACTIVATED"
+        "type": "DOMAIN_ACTION",
+        "action": "CREATE_SPECIAL_BLOCK",
+        "blockType": "LOGGING_CAMP",
+        "paymentMode": "DOMAIN_QUOTE",
+        "logActivation": true
       }
     ]
   },
