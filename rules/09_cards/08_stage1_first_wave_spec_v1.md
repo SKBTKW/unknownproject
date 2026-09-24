@@ -205,33 +205,38 @@ terrain identity mutationとZone/Link整合性はBoard側が所有する。
 
 ### プレイヤーへの問い
 
-> 森の繁茂を削って、継続的な資材生産へ転換するか。
+> GL2以上の土地をつなぎ、その周囲へ林業拠点を集積して継続的な資材生産を作るか。
 
-### v1仕様
+### v2仕様
 
 Special Block `LOGGING_CAMP` を正本にする。
 
-- target: GL2以上の合法森林系セル
-- result: `LOGGING_CAMP` Special Block
-- base terrain ecological effect: **GL -1**
-- effect persists on Board
-- source clusterをsemantic queryで記録/参照
-- 同一セルへの重複建設不可
+- Offering condition: **GL2以上の土地セルが直交連結で2セル以上存在**
+- 2枚の1x1土地カードを後から隣接させても条件を満たす
+- 同一 `placementGroupId` は要求しない
+- target: 上記連結源の構成セルに直交隣接する**未配置グリッド**
+- result: terrainを持たない独立 `LOGGING_CAMP` Special Block
+- source terrainのGL/terrain identityは変更しない
+- Special Block共通隣接契約を適用:
+  - Eは参照元セルからコピー
+  - GLは隣接判定上1
+  - 砂漠系 / 山岳系への直交隣接は禁止
+  - GL差2以上の地形へは隣接不可
+- 最終的な配置合法性はBoard Domainが所有する
 
 ### Production
 
-v1でproduction shapeを固定する:
+production shapeは隣接施設数ベースへ変更する:
 
 ```text
-SOURCE_SIZE
+RELATION_COUNT
+relationDefinitionId = LOGGING_CAMP
+relationNeighborhood = ORTHOGONAL
 ```
 
-ただし **具体的な🧱/Verse値は未確定** とする。
-
-理由:
-
-既存Stage1監査では🧱余剰が大きく、
-ここで `+7/Verse` 等を先に固定すると経済を再び膨らませる可能性が高い。
+隣接する `LOGGING_CAMP` の数に応じて🧱産出が上昇する。
+**基礎🧱産出・隣接1基あたりの加算値・作成費は未確定** とし、
+数値を決めるまではDomain quote / productionをfail-closedで維持する。
 
 数値は、
 
