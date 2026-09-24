@@ -131,8 +131,18 @@ Stage別category weightを決める
 
 ## 6. 次の実装順
 
-1. A候補3枚を個別ID単位で有効化できるruntime boundaryを作る
-2. ただし通常製品Offeringへの投入はweight決定までOFFに保つ
+ID単位のruntime activation boundaryは実装済み。
+
+- `GameEngine.cardRuntimeActivationProvider` から `activeCardIds` を明示注入できる
+- 既定値は空配列
+- `LAND / INVESTIGATION` の既存active categoryは維持
+- `COMMAND / MILITARY / MYSTIC` をカテゴリ単位で復帰させるAPIは持たない
+- production bootstrapはproviderを注入していないため、製品既定ではA候補3枚もDormantのまま
+
+次の順序:
+
+1. A候補3枚をprototype環境で個別ID単位に有効化して、Offering / play / cost / effectを検証する
+2. 通常製品Offeringへの投入はtaxonomy / weight決定までOFFに保つ
 3. 施設/土地改良系をBoard-owned actionへ移行
 4. 実際に平時支出が発生するStage1 traceを再計測
 5. Verse14/15残高帯を決める
