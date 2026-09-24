@@ -342,6 +342,11 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_demihuman_traces_public_presentation_bridge.mjs",
+      "purpose": "demihuman traces public presentation lifecycle bridge",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_dev_chronicle_restore_ui.mjs",
       "purpose": "dev chronicle restore ui",
       "suite": "existing",
@@ -1442,6 +1447,14 @@
     {
       "path": "scratch/test_unity_runtime_handoff_contract.mjs",
       "purpose": "Unity runtime handoff contract over BoardPresentation, BoardInput, and GameRuntimeSnapshot",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_unity_runtime_contract_fixtures.mjs",
+      "purpose": "Unity runtime golden fixture compatibility for outbound handoff and inbound board input",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
