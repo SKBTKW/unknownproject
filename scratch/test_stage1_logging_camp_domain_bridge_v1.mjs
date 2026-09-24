@@ -4,13 +4,14 @@ import { createCardDomainActionExecutor } from "../game/src/cards/card_domain_ac
 import { BoardDomainAdapter } from "../game/src/core/board_domain_adapter.js";
 import {
     SPECIAL_BLOCK_COST_STATUS,
-    SPECIAL_BLOCK_TYPES
+    SPECIAL_BLOCK_TYPES,
+    getSpecialBlockDefinition
 } from "../game/src/core/special_block_domain.js";
 import { COMMAND_CARDS_MASTER } from "../game/src/data/command_cards_data.js";
 import { DeckManager } from "../game/src/systems/deck_manager.js";
 import { attachCardRuntimePolicy } from "../game/src/systems/card_runtime_policy.js";
 
-console.log("\nStage1 Logging Camp Domain Bridge v1");
+console.log("\nStage1 Logging Camp Domain Bridge v2");
 
 function cell(r, c, terrain = null) {
     return {
@@ -44,14 +45,23 @@ const forest = {
 
 const grid = [
     [cell(0, 0, forest), cell(0, 1, forest), cell(0, 2)],
-    [cell(1, 0, forest), cell(1, 1), cell(1, 2)],
+    [cell(1, 0), cell(1, 1), cell(1, 2)],
     [cell(2, 0), cell(2, 1), cell(2, 2)]
 ];
+
+// Two separately placed 1x1 GL2+ lands may intentionally form the required pair.
+grid[0][0].placementGroupId = "place_a";
+grid[0][1].placementGroupId = "place_b";
 
 const loggingCard = COMMAND_CARDS_MASTER.find(card => card.id === "CMD_LOGGING_CAMP");
 assert.ok(loggingCard);
 assert.deepEqual(loggingCard.cost, {});
 assert.equal(loggingCard.reqForestNearby, undefined);
+assert.deepEqual(loggingCard.offering?.requirements, [{
+    type: "CONNECTED_GL_AT_LEAST",
+    minimumGL: 2,
+    value: 2
+}]);
 assert.deepEqual(loggingCard.effects, [{
     type: "DOMAIN_ACTION",
     action: "CREATE_SPECIAL_BLOCK",
@@ -60,8 +70,19 @@ assert.deepEqual(loggingCard.effects, [{
     logActivation: true
 }]);
 
-// Canonical Logging Camp Board geometry is legal, but product balance remains unresolved.
-// The card therefore fails closed before it can enter Offering / execute.
+const loggingDefinition = getSpecialBlockDefinition(SPECIAL_BLOCK_TYPES.LOGGING_CAMP);
+assert.equal(loggingDefinition.placement.mode, "INDEPENDENT_CELL_GENERATION");
+assert.equal(loggingDefinition.placement.sourceMinGL, 2);
+assert.equal(loggingDefinition.placement.minConnectedSourceCells, 2);
+assert.equal(loggingDefinition.baseTerrainInteraction.kind, "INDEPENDENT");
+assert.equal(loggingDefinition.production.kind, "RELATION_COUNT");
+assert.equal(loggingDefinition.production.status, "UNRESOLVED");
+assert.equal(loggingDefinition.production.relationDefinitionId, SPECIAL_BLOCK_TYPES.LOGGING_CAMP);
+assert.equal(loggingDefinition.production.relationNeighborhood, "ORTHOGONAL");
+
+// Canonical Logging Camp geometry: an empty destination adjacent to either cell
+// of an orthogonally connected GL2+ source pair. Placement-group identity is
+// deliberately irrelevant, so two 1x1 cards can create the pair over two Verses.
 {
     const state = {
         turn: 6,
@@ -81,11 +102,28 @@ assert.deepEqual(loggingCard.effects, [{
         addLog() {}
     };
     const boardDomainAdapter = new BoardDomainAdapter({ state });
+
+    assert.equal(
+        boardDomainAdapter.hasConnectedTerrainGLAtLeast(2, { minimum: 2 }),
+        true,
+        "two adjacent GL2+ lands must satisfy the Offering board predicate"
+    );
+
     const legalBoardTargets = boardDomainAdapter.enumerateLegalSpecialBlockTargets(
         SPECIAL_BLOCK_TYPES.LOGGING_CAMP,
         { verse: state.turn, cardId: loggingCard.id }
     );
-    assert.ok(legalBoardTargets.length > 0, "forest cluster should be Board-legal independent of price");
+    assert.ok(legalBoardTargets.length > 0, "connected GL2+ pair must expose adjacent empty build sites");
+    assert.ok(
+        legalBoardTargets.some(target =>
+            target.destination?.r === 1 && target.destination?.c === 0
+        ),
+        "an empty grid cardinally adjacent to the connected source pair must be legal"
+    );
+    assert.ok(
+        legalBoardTargets.every(target => target.sourceClusterSize >= 2),
+        "every Logging Camp target must be backed by a connected GL2+ source cluster"
+    );
 
     const engine = {
         state,
@@ -97,20 +135,46 @@ assert.deepEqual(loggingCard.effects, [{
     engine.deckManager = deck;
     assert.equal(attachCardRuntimePolicy(deck).success, true);
 
+    // Product creation cost and numeric production remain unresolved; runtime
+    // exposure therefore still fails closed until balance is selected.
     const quote = deck.quoteCardExecutionCost(loggingCard);
     assert.equal(quote.success, false);
     assert.equal(quote.reason, "SPECIAL_BLOCK_COST_UNRESOLVED");
     assert.equal(quote.quote?.status, SPECIAL_BLOCK_COST_STATUS.UNRESOLVED);
 
+    assert.deepEqual(deck.enumerateCardExecutionTargets(loggingCard), []);
+    assert.equal(deck.isCardEligible(loggingCard, 1, 0), false);
+}
+
+// A single GL2+ source cell is not enough.
+{
+    const state = {
+        grid: [
+            [cell(0, 0, forest), cell(0, 1)],
+            [cell(1, 0), cell(1, 1)]
+        ]
+    };
+    const board = new BoardDomainAdapter({ state });
+    assert.equal(board.hasConnectedTerrainGLAtLeast(2, { minimum: 2 }), false);
     assert.deepEqual(
-        deck.enumerateCardExecutionTargets(loggingCard),
-        [],
-        "unpriced Logging Camp must expose no executable card targets"
+        board.enumerateLegalSpecialBlockTargets(SPECIAL_BLOCK_TYPES.LOGGING_CAMP),
+        []
     );
-    assert.equal(
-        deck.isCardEligible(loggingCard, 1, 0),
-        false,
-        "even ID-scoped prototype activation must not leak an unpriced Logging Camp into Offering"
+}
+
+// Diagonal GL2+ cells do not count as a connected 1x2 source pair.
+{
+    const state = {
+        grid: [
+            [cell(0, 0, forest), cell(0, 1)],
+            [cell(1, 0), cell(1, 1, forest)]
+        ]
+    };
+    const board = new BoardDomainAdapter({ state });
+    assert.equal(board.hasConnectedTerrainGLAtLeast(2, { minimum: 2 }), false);
+    assert.deepEqual(
+        board.enumerateLegalSpecialBlockTargets(SPECIAL_BLOCK_TYPES.LOGGING_CAMP),
+        []
     );
 }
 
@@ -288,8 +352,8 @@ assert.deepEqual(loggingCard.effects, [{
     assert.equal(creates, 0);
 }
 
-console.log("  canonical Logging Camp geometry exists while cost/production remain unresolved");
+console.log("  connected GL2+ pair -> adjacent empty-grid Logging Camp geometry is canonical");
 console.log("  unresolved DOMAIN_QUOTE fails closed before Offering exposure");
 console.log("  resolved Board quote pays atomically and forwards paidCost");
 console.log("  stale Special Block quote rolls payment back");
-console.log("✅ Stage1 Logging Camp Domain Bridge v1 PASS");
+console.log("✅ Stage1 Logging Camp Domain Bridge v2 PASS");
