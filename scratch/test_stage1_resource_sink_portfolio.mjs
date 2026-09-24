@@ -45,7 +45,7 @@ assert.deepEqual(
 const expectedCosts = new Map([
     ["CMD_RATIONING", {}],
     ["CMD_WETLAND_RECLAMATION", { wood: 15, ember: 1 }],
-    ["CMD_LOGGING_CAMP", { ember: 1 }],
+    ["CMD_LOGGING_CAMP", {}],
     ["CMD_GRANARY", { wood: 20 }],
     ["CMD_AGRICULTURAL_REFORM", {}],
     ["CMD_PASTORAL_FARM", { wood: 15 }],
