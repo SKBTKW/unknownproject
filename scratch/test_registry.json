@@ -972,6 +972,14 @@
       ]
     },
     {
+      "path": "scratch/test_stage1_agricultural_reform_zone_conversion_v1.mjs",
+      "purpose": "verify Agricultural Reform product definition injection, completed PLAINS Zone targeting, Board-owned cost quote, local per-member food production, and UNIQUE lifecycle",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_card_runtime_id_scoped_activation.mjs",
       "purpose": "verify dormant non-LAND cards can only be enabled by explicit card id while legacy categories remain disabled and production defaults stay unchanged",
       "suite": "existing",
