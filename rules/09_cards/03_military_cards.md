@@ -17,6 +17,23 @@
 | `CMD_MILITARY_FOCUS` | **Implemented / Internal taxonomy gap / threshold conflict** | `activeDrawBias={ targetCategory:"MILITARY", type:"UNTIL_DEFENSE", untilValue:20 }` を設定し、Offering抽選時に `category:"MILITARY"` の重みを×2する。最大🛡️20以上で解除。ただしEligibilityは20ちょうどを許可するため、最大🛡️=20では発動直後に解除される。 |
 | `CMD_IRON_RAMPART` | **Implemented / Player-facing description mismatch** | 🧱20。runtimeは `DefenseSystem.increaseMaxCapacity(25)` により**最大🛡️容量+25**し、本営近郊1マスあたり恒久最大🛡️+2を加える。表示説明の「🛡️+25 即時獲得」は現在🛡️回復を意味するように読めるが、実装は最大容量増加であり、現在🛡️を同量回復しない。 |
 
+### 《警戒》のOffering / Execution gate
+
+prototype v1では、旧 `reqTrialOrLowDefense` を使用しない。
+
+```text
+WARNING_STATE >= WATCH
+```
+
+をOfferingとExecutionの両方で評価する。
+
+- CALM / OMEN: 不可
+- WATCH / TENSE / IMMINENT: 可
+- exact Trial残りVerse数は参照しない
+- production runtime activationは引き続きOFF
+
+これにより、低い現在🛡️だけを理由にVerse1から常時候補化する挙動を除外する。
+
 ### 《警戒》の二重意味
 
 現在の実装には同じ `vigilanceTurns` を読む処理が2箇所ある。
