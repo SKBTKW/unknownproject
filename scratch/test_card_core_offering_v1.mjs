@@ -586,7 +586,7 @@ function makeGrid(rows, cols) {
     assert.equal(campResult.success, true);
     assert.equal(campState.ember, 1, "legacy ember cost remains 1");
     assert.equal(campState.wood, 10, "legacy immediate gain remains +8 wood");
-    assert.equal(campState.material, 77);
+    assert.equal(campState.material, 10, "material alias must mirror Logging Camp wood gain");
     assert.equal(campState.activeBuffs.length, 1);
     assert.equal(campState.activeBuffs[0].id, "CMD_LOGGING_CAMP");
     assert.equal(campState.activeBuffs[0].icon, "🪵");
