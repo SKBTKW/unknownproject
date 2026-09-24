@@ -37,7 +37,7 @@ Global Eventは、長期計画を無作為に無効化するためではなく�
 
 | ID | 名称 | 実装状態 |
 | :--- | :--- | :--- |
-| `EVENT_COLD_WAVE` | 寒波 | **Implemented / Partial chain** — 平地🌾倍率0.75は産出計算へ接続済み。終了後の`FOOD_CRISIS`イベントWeight補正は現イベントID/categoryに対応先がなく、実効先を確認できない。 |
+| `EVENT_COLD_WAVE` | 寒波 | **Implemented** — 平地🌾倍率0.75は産出計算へ接続済み。旧`FOOD_CRISIS` Weight補正は実効対象が存在しなかったため削除済み。 |
 | `EVENT_DROUGHT` | 旱魃 | **Implemented** — 平地🌾倍率0.60は産出計算へ接続済み。 |
 | `EVENT_NEW_GENERATION` | 新たな世代 | **Implemented** — `OFFERING_WEIGHT_TAG_BOOST(POPULATION)` はCard Coreの共通Weight Policyへ `tagMultipliers` として接続済み。 |
 | `EVENT_CRAFTSMAN_BOOM` | 職人たちの活況 | **Implemented** — `OFFERING_WEIGHT_TAG_BOOST(CONSTRUCTION)` はCard Coreの共通Weight Policyへ接続済み。 |
@@ -199,8 +199,6 @@ Trial接近時は、数値カウントダウンではなく**警戒状態**と�
 
 したがって、`NEXT_GLOBAL_EVENT` は**次に成功したGlobal Event発火で一度だけ消費される寿命**として実装済み。
 
-さらに《寒波》終了時の `targetTag: "FOOD_CRISIS"` は、現8イベントの `id` / `category` と一致する対象を確認できないため、現マスターでは実効対象なし。
-
 《豊穣の季節》終了時の `targetTag: "EVENT_NEW_GENERATION"` はEvent IDに一致するためSelectorのWeight計算対象にはなるが、上記expiry未消費問題を持つ。
 
 第1 Trial前の異変シーケンスのみ、導入体験として保証する。
@@ -222,7 +220,7 @@ Trial接近時は、数値カウントダウンではなく**警戒状態**と�
 3. 新たな世代 / 職人活況 / 復興の機運のOffering Weight効果は、Card Core共通Weight Policyへ接続済み。
 4. 亜人襲撃・斥候は `HAS_HISTORY(TRIAL_SURVIVED)` で第1 Trial後に限定済み。亜人襲撃は通常Trial lifecycleを再利用せず、専用Minor Raid encounter port未実装の間はfail-closedとする。
 5. `EVENT_WEIGHT_MODIFIER` の `NEXT_GLOBAL_EVENT` expiryは、次に成功したGlobal Event発火で一度だけ消費される。
-6. 寒波の終了Weight補正`FOOD_CRISIS`は現イベントマスターに実効対象がない。
+6. `EVENT_WEIGHT_MODIFIER` のtargetは現イベントID/categoryへ解決可能なものだけをデータ契約として許可する。旧`FOOD_CRISIS` dead targetは削除済み。
 7. 第1 Trial前の固定異変シーケンスは未実装。
 8. 調査・情報カテゴリの解禁状態は未実装。
 9. 警戒状態の環境Presentationは未実装。
