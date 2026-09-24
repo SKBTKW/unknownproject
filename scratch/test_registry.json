@@ -1500,6 +1500,14 @@
       ]
     },
     {
+      "path": "scratch/test_stage1_agricultural_reform_zone_v1.mjs",
+      "purpose": "Stage1 Agricultural Reform targets one completed PLAINS Zone, pays Board-owned cost, and adds local per-member food production",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_zone_conversion_card_atomicity.mjs",
       "purpose": "Zone conversion card quoted-payment atomicity, stale commit revalidation, rollback, and deferred card consumption",
       "suite": "existing",

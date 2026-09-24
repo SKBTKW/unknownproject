@@ -852,38 +852,22 @@ function makeGrid(rows, cols) {
     });
 }
 
-// T. Agricultural Reform migration preserves legacy behavior.
+// T. Agricultural Reform is a Board-owned targeted Zone Conversion action.
 {
     const card = COMMAND_CARDS_MASTER.find(candidate => candidate.id === "CMD_AGRICULTURAL_REFORM");
-    assert.ok(card?.effects?.length === 3);
-
-    const state = {
-        turn: 1,
-        food: 20,
-        wood: 30,
-        material: 30,
-        mystic: 0,
-        ember: 5,
-        permanentPlainsFoodBonus: 2,
-        reserveSlots: [],
-        consumedUniqueCards: [],
-        usedUniqueCards: [],
-        activeBuffs: [],
-        logs: [],
-        addBuff(buff) { this.activeBuffs.push(buff); },
-        addLog(log) { this.logs.push(log); }
-    };
-    const manager = new DeckManager(state, {});
-    manager.cycleSystem = null;
-    const result = manager.playCommandCard(card);
-
-    assert.equal(result.success, true);
-    assert.equal(state.wood, 10, "agricultural reform wood cost drift");
-    assert.equal(state.material, 10, "shared command cost keeps material mirror behavior");
-    assert.equal(state.permanentPlainsFoodBonus, 3);
-    assert.equal(state.activeBuffs[0].id, "CMD_AGRICULTURAL_REFORM");
-    assert.equal(state.activeBuffs[0].icon, "📜");
-    assert.equal(state.logs.length, 1);
+    assert.equal(card?.cost, undefined,
+        "Agricultural Reform cost is owned by the Zone Conversion definition");
+    assert.equal(card?.reqWood, undefined);
+    assert.equal(card?.reqConnectedPlainsOrReclaimed, undefined,
+        "Offering legality must come from real Zone Conversion targets");
+    assert.equal(card?.effects?.length, 1);
+    assert.deepEqual(card.effects[0], {
+        type: "DOMAIN_ACTION",
+        action: "CREATE_ZONE_CONVERSION",
+        definitionId: "AGRICULTURAL_REFORM",
+        paymentMode: "DOMAIN_QUOTE",
+        logActivation: true
+    });
 }
 
 // U. Military Focus migration preserves legacy immediate conditional reconciliation.

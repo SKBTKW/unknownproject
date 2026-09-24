@@ -745,6 +745,12 @@ async function main() {
         process.exit(1);
     }
 
+    const stage1AgriculturalReformZoneOk = await runCommand("node", ["scratch/test_stage1_agricultural_reform_zone_v1.mjs"]);
+    if (!stage1AgriculturalReformZoneOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Stage1 Agricultural Reform Zone Conversion) で不合格が検出されました。");
+        process.exit(1);
+    }
+
     const zoneConversionProductionModifierOk = await runCommand("node", ["scratch/test_zone_conversion_production_modifier.mjs"]);
     if (!zoneConversionProductionModifierOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Zone Conversion Production Modifier) で不合格が検出されました。");

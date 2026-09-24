@@ -1,5 +1,9 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import {
+    ZONE_CONVERSION_DEFINITIONS,
+    ZONE_CONVERSION_DEFINITION_IDS
+} from "../game/src/data/zone_conversion_definitions.js";
 
 const economyCards = JSON.parse(
     readFileSync(new URL("../game/src/data/economy_cards.json", import.meta.url), "utf8")
@@ -37,7 +41,7 @@ const expectedCosts = new Map([
     ["CMD_WETLAND_RECLAMATION", { wood: 15, ember: 1 }],
     ["CMD_LOGGING_CAMP", { ember: 1 }],
     ["CMD_GRANARY", { wood: 20 }],
-    ["CMD_AGRICULTURAL_REFORM", { wood: 20 }],
+    ["CMD_AGRICULTURAL_REFORM", {}],
     ["CMD_PASTORAL_FARM", { wood: 15 }],
     ["CMD_ABANDONED_SETTLEMENT", { ember: 1 }],
     ["CMD_EMERGENCY_LEVY", { food: 20 }]
@@ -50,6 +54,23 @@ for (const card of stage1) {
         `${card.id}: audit must be updated when current Stage1 card cost changes`
     );
 }
+
+const agriculturalReformDefinition =
+    ZONE_CONVERSION_DEFINITIONS[ZONE_CONVERSION_DEFINITION_IDS.AGRICULTURAL_REFORM];
+assert.ok(
+    agriculturalReformDefinition,
+    "Agricultural Reform Zone Conversion definition must exist"
+);
+assert.deepEqual(
+    agriculturalReformDefinition.creationCost?.base,
+    { wood: 20 },
+    "Agricultural Reform sink cost is Board-domain authority"
+);
+assert.equal(
+    stage1.find(card => card.id === "CMD_AGRICULTURAL_REFORM")?.effects?.[0]?.paymentMode,
+    "DOMAIN_QUOTE",
+    "Agricultural Reform must consume the Board-owned cost through DOMAIN_QUOTE"
+);
 
 assert.equal(
     investigationCards

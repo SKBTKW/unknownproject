@@ -11,7 +11,7 @@
 
 Stage1非LAND 15枚を一括で復帰させてはいけない。
 
-現在のsource JSONと実行系を照合すると、**ID単位prototypeで試験できる候補は5枚**になった。
+現在のsource JSONと実行系を照合すると、**ID単位prototypeで試験できる候補は6枚**になった。
 
 ### A — live prototype候補
 
@@ -22,6 +22,7 @@ Stage1非LAND 15枚を一括で復帰させてはいけない。
 | `CMD_REKINDLE_EMBER` | 神秘→🔥救済 | ✨10 | v1は`🔥+3`の即時回復に単純化。保留維持費免除は分離済み |
 | `CMD_GRANARY` | 盤面恒久投資 | 🧱20 | `GRANARY` Special Blockを対象指定で設置し、`FOOD_STORAGE` Capability経由で維持費-2（最大2基分）まで接続済み |
 | `CMD_WETLAND_RECLAMATION` | 湿原変換 | 🧱15＋🔥1 | explicit targetの`TRANSFORM_TERRAIN` Domain Actionで湿原1マスを干拓地へ変換。湖/HQ/完成ZoneはBoard側でfail-closed |
+| `CMD_AGRICULTURAL_REFORM` | 地帯恒久投資 | 🧱20 | 完成PLAINS Zoneを明示targetにし、Zone definition正本の`DOMAIN_QUOTE`で支払い。ACTIVE conversionが各memberへ🌾+1/T |
 
 ここでの「候補」は **今すぐ通常Offeringへ有効化する** という意味ではない。
 まず個別ID単位でprototype対象にできる、という意味。
@@ -44,11 +45,6 @@ Stage1非LAND 15枚を一括で復帰させてはいけない。
 表示は「森1マスを伐採拠点化し、周辺森林から持続産出」。
 現Declarative effectは `🧱+8` とBuff追加だけで、Special Block化も周辺持続産出も行わない。
 現在の説明と実効果が一致しない。
-
-### `CMD_AGRICULTURAL_REFORM`
-表示は「指定した連結農業地域の最大4マス」。
-現effectは `permanentPlainsFoodBonus += 1` で、ProductionCalculatorは全PLAINSへ適用する。
-対象範囲意味論が一致しない。
 
 ### `CMD_PASTORAL_FARM`
 表示は「平地1マスを牧畜場化し持続産出」。
@@ -73,13 +69,14 @@ Offering taxonomy確定前に復帰させない。
 
 ## 4. sinkとして見た意味
 
-A候補5枚でも、Stage1平時sinkはまだ不足する。
+A候補6枚でも、Stage1平時sinkはまだ不足する。
 
 - `CMD_EMERGENCY_LEVY`: 🌾20 → 🧱15 の変換であり、純消費は小さい
 - `CMD_VIGILANCE`: 🧱15 の明確なTrial準備sink
 - `CMD_REKINDLE_EMBER`: ✨10を使うが `maxEmber: 5` の救済条件なので通常Runで常用しない
 - `CMD_GRANARY`: 🧱20を恒久施設へ変える本命sink候補。ただしproduction既定OFFのままprototypeで検証する
 - `CMD_WETLAND_RECLAMATION`: 🧱15＋🔥1を盤面価値へ変える土地投資sink。production既定OFFのままprototypeで検証する
+- `CMD_AGRICULTURAL_REFORM`: 🧱20を完成PLAINS Zoneの局所恒久🌾へ変える地帯投資sink。production既定OFFのままprototypeで検証する
 
 したがって、これらをprototype可能にしても、
 
