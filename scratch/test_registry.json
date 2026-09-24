@@ -1047,6 +1047,14 @@
       ]
     },
     {
+      "path": "scratch/test_stage1_trial1_deployment_cost_candidate_v1.mjs",
+      "purpose": "compare soft, dramatic, and overload linear Trial1 deployment cost candidates against the post-HQ-nerf live Stage1 envelope",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_trial_deployment_cost_resolver.mjs",
       "purpose": "Canonical configurable Trial deployment cost resolver and unresolved-profile fail-closed contract",
       "suite": "existing",
