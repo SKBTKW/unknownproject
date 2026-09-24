@@ -150,9 +150,9 @@ console.log("\nStage1 prototype cards: Offering -> payment -> effect -> Verse pr
     assert.equal(played.success, true);
     assert.equal(state.mystic, 0, "Rekindle must pay ✨10");
     assert.equal(state.ember, 8, "Rekindle must restore 🔥+3");
-    assert.equal(state.reserveFeeWaivedTurns, undefined,
+    assert.equal(state.reserveFeeWaivedTurns || 0, 0,
         "Rekindle v1 must not create a reserve-upkeep waiver");
-    assert.equal(state.reserveFeeWaivedStartsNextTurn, undefined,
+    assert.equal(Boolean(state.reserveFeeWaivedStartsNextTurn), false,
         "Rekindle v1 must remain immediate-only");
 
     const turnBefore = state.turn;
@@ -160,8 +160,8 @@ console.log("\nStage1 prototype cards: Offering -> payment -> effect -> Verse pr
     const next = engine.nextTurn();
     assert.notEqual(next?.success, false);
     assert.equal(state.turn, turnBefore + 1);
-    assert.equal(state.reserveFeeWaivedStartsNextTurn, undefined);
-    assert.equal(state.reserveFeeWaivedTurns, undefined);
+    assert.equal(Boolean(state.reserveFeeWaivedStartsNextTurn), false);
+    assert.equal(state.reserveFeeWaivedTurns || 0, 0);
     assert.equal(
         state.ember,
         emberBeforeNext - 2,
