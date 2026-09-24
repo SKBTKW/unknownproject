@@ -280,6 +280,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Card Core / Offering v1 Contract) で不合格が検出されました。");
         process.exit(1);
     }
+    const stage1DormantCardTriageOk = await runCommand("node", ["scratch/test_stage1_dormant_card_triage.mjs"]);
+    if (!stage1DormantCardTriageOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Stage1 Dormant Card Triage Inventory) で不合格が検出されました。");
+        process.exit(1);
+    }
     const stage1OfferingEconomyOk = await runCommand("node", ["scratch/test_stage1_offering_economy_playability.mjs"]);
     if (!stage1OfferingEconomyOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Stage1 Offering / Economy / Board Playability) で不合格が検出されました。");
