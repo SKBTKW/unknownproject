@@ -5,10 +5,13 @@
 
 import {
     BASE_TERRAIN_INTERACTIONS,
+    SPECIAL_BLOCK_COST_STATUS,
     getSpecialBlockDefinition,
     hasCellCapability,
+    normalizeSpecialBlockResourceMap,
     readCellCapabilities,
-    readSpecialBlockTrialTraits
+    readSpecialBlockTrialTraits,
+    resolveSpecialBlockCreationCost
 } from '../core/special_block_domain.js';
 
 const CARDINAL_ORIENTATIONS = new Set(['N', 'E', 'S', 'W']);
@@ -33,6 +36,18 @@ function orthogonalNeighbors(r, c) {
     ];
 }
 
+function sameResourceMap(left = {}, right = {}) {
+    const keys = new Set([...Object.keys(left || {}), ...Object.keys(right || {})]);
+    for (const key of keys) {
+        if (Number(left?.[key] || 0) !== Number(right?.[key] || 0)) return false;
+    }
+    return true;
+}
+
+function hasAnyCost(resources = {}) {
+    return Object.values(resources || {}).some(value => Number(value || 0) > 0);
+}
+
 function createSpecialBlockEntity(definition, r, c, state, context = {}) {
     return {
         instanceId: `${definition.id}@${r}:${c}`,
@@ -43,7 +58,10 @@ function createSpecialBlockEntity(definition, r, c, state, context = {}) {
         historyReference: context.historyReference || null,
         createdVerse: Number.isInteger(context.verse)
             ? context.verse
-            : (Number.isInteger(state?.turn) ? state.turn : null)
+            : (Number.isInteger(state?.turn) ? state.turn : null),
+        ...(context.paidCost
+            ? { paidCost: Object.freeze({ ...context.paidCost }) }
+            : {})
     };
 }
 
@@ -319,14 +337,76 @@ export class SpecialBlockService {
         return this.enumerateLegalTargets(typeOrDefinition, context).length > 0;
     }
 
+    quoteCost(typeOrDefinition) {
+        const definition = typeof typeOrDefinition === 'string'
+            ? getSpecialBlockDefinition(typeOrDefinition)
+            : typeOrDefinition;
+        return resolveSpecialBlockCreationCost(definition);
+    }
+
+    validateTargetAfterPayment(typeOrDefinition, target, payment = {}, context = {}) {
+        const validation = this.validateTarget(typeOrDefinition, target, context, { forCreation: true });
+        if (!validation.valid) return validation;
+
+        const cost = this.quoteCost(validation.definition || typeOrDefinition);
+        if (cost.status !== SPECIAL_BLOCK_COST_STATUS.RESOLVED || !cost.resources) {
+            return {
+                ...validation,
+                valid: false,
+                reason: 'CREATION_COST_UNRESOLVED',
+                cost
+            };
+        }
+
+        const normalizedPayment = normalizeSpecialBlockResourceMap(payment);
+        if (!normalizedPayment) {
+            return {
+                ...validation,
+                valid: false,
+                reason: 'PAYMENT_RESOURCE_MAP_UNRESOLVED',
+                cost
+            };
+        }
+        if (!sameResourceMap(normalizedPayment, cost.resources)) {
+            return {
+                ...validation,
+                valid: false,
+                reason: 'PAYMENT_COST_MISMATCH',
+                cost,
+                projectedPayment: normalizedPayment
+            };
+        }
+
+        return {
+            ...validation,
+            valid: true,
+            reason: null,
+            cost,
+            projectedPayment: normalizedPayment
+        };
+    }
+
     createSpecialBlock(type, target, context = {}) {
         const definition = getSpecialBlockDefinition(type);
         const validation = this.validateTarget(definition, target, context, { forCreation: true });
         if (!validation.valid) return { success: false, reason: validation.reason };
+
+        const cost = this.quoteCost(definition);
+        if (
+            cost.status === SPECIAL_BLOCK_COST_STATUS.RESOLVED
+            && hasAnyCost(cost.resources)
+            && context.paymentConfirmed !== true
+        ) {
+            return { success: false, reason: 'PAYMENT_CONFIRMATION_REQUIRED', validation, cost };
+        }
+        const creationContext = cost.status === SPECIAL_BLOCK_COST_STATUS.RESOLVED
+            ? { ...context, paidCost: cost.resources }
+            : context;
+
         if (definition?.placement?.mode === 'INDEPENDENT_CELL_GENERATION') {
             const { r, c } = validation.destination;
             const cell = validation.destinationCell;
-            const entity = createSpecialBlockEntity(definition, r, c, this.state, context);
+            const entity = createSpecialBlockEntity(definition, r, c, this.state, creationContext);
             cell.specialBlock = entity;
 
             return {
@@ -345,7 +425,7 @@ export class SpecialBlockService {
         const cell = validation.cell;
         const interaction = definition.baseTerrainInteraction?.kind;
 
-        const entity = createSpecialBlockEntity(definition, r, c, this.state, context);
+        const entity = createSpecialBlockEntity(definition, r, c, this.state, creationContext);
 
         if (interaction === BASE_TERRAIN_INTERACTIONS.TRANSFORMING_OVERLAY) {
             const delta = Number(definition.baseTerrainInteraction?.glDelta);
