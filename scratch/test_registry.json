@@ -1477,6 +1477,14 @@
       ]
     },
     {
+      "path": "scratch/test_unity_runtime_fixture_generator.mjs",
+      "purpose": "Unity runtime fixture generator reproducibility, write/check parity, and drift detection",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_unity_trial_runtime_contract_fixtures.mjs",
       "purpose": "Unity Trial runtime golden fixtures for 2.5D route/interception presentation and inbound Trial board commands",
       "suite": "existing",
