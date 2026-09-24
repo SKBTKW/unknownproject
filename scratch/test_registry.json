@@ -1484,6 +1484,14 @@
       ]
     },
     {
+      "path": "scratch/test_terrain_transform_foundation.mjs",
+      "purpose": "Board-owned explicit terrain transform legality, canonical terrain replacement, and topology reconciliation hooks",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_zone_conversion_foundation.mjs",
       "purpose": "Zone conversion foundation, maintenance lifecycle, and Board-to-Trial deployment semantic projection",
       "suite": "existing",

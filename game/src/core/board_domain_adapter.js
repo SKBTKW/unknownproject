@@ -17,6 +17,7 @@ import {
     readZoneSemantic
 } from './zone_conversion_domain.js';
 import { SpecialBlockService } from '../systems/special_block_service.js';
+import { TerrainTransformService } from '../systems/terrain_transform_service.js';
 import { ZoneConversionService } from '../systems/zone_conversion_service.js';
 
 function resolveLandSemantic(definition) {
@@ -77,6 +78,7 @@ export class BoardDomainAdapter {
         state,
         gridEngine,
         specialBlockService = null,
+        terrainTransformService = null,
         boardDamageService = null,
         zoneConversionService = null,
         zoneConversionDefinitions = null,
@@ -85,6 +87,10 @@ export class BoardDomainAdapter {
         this.state = state || gridEngine?.state || null;
         this.gridEngine = gridEngine || null;
         this.specialBlockService = specialBlockService || new SpecialBlockService(this.state);
+        this.terrainTransformService = terrainTransformService || new TerrainTransformService({
+            state: this.state,
+            gridEngine: this.gridEngine
+        });
         this.boardDamageService = boardDamageService || new BoardDamageService({ state: this.state });
         this.zoneConversionService = zoneConversionService || new ZoneConversionService({
             state: this.state,
@@ -191,6 +197,18 @@ export class BoardDomainAdapter {
             }
         }
         return false;
+    }
+
+    validateTerrainTransform(spec, target) {
+        return this.terrainTransformService.validateTarget(spec, target);
+    }
+
+    enumerateTerrainTransformTargets(spec) {
+        return this.terrainTransformService.enumerateTargets(spec);
+    }
+
+    transformTerrain(spec, target, context = {}) {
+        return this.terrainTransformService.transform(spec, target, context);
     }
 
     validateSpecialBlockTarget(typeOrDefinition, target, context = {}) {
