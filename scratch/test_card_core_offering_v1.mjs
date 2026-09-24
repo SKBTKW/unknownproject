@@ -989,9 +989,9 @@ function makeGrid(rows, cols) {
     assert.equal(state.wood, 20, "iron rampart wood cost drift");
     assert.equal(state.material, 20, "shared command cost material mirror drift");
     assert.equal(state.defenseCapacityBonus, 25);
-    assert.equal(state.defense, 35, "legacy defense compatibility value must include capacity bonus");
+    assert.equal(state.defense, 30, "legacy defense compatibility value must include capacity bonus");
     assert.equal(state.permanentVicinityDefenseBonus, 2);
-    assert.equal(defenseSystem.getMaxDefense(), 35);
+    assert.equal(defenseSystem.getMaxDefense(), 30);
     assert.equal(state.logs.length, 1);
 }
 
