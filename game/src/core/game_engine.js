@@ -1,5 +1,6 @@
 import { I18n } from '../i18n.js';
 import { LAND_SYSTEM_DATA } from '../data/land_system.js';
+import { ZONE_CONVERSION_DEFINITIONS } from '../data/zone_conversion_definitions.js';
 import { DIRECTIVES, DirectiveSystem } from '../systems/directive_system.js';
 import { DeckManager, OFFERING_GENERATION_REASONS } from '../systems/deck_manager.js';
 import { ProductionCalculator } from '../systems/production_calculator.js';
@@ -113,7 +114,7 @@ class GameEngine {
                 gridEngine: this.gridEngine,
                 specialBlockService: this.specialBlockService,
                 zoneConversionService: dependencies.zoneConversionService || null,
-                zoneConversionDefinitions: dependencies.zoneConversionDefinitions || null
+                zoneConversionDefinitions: dependencies.zoneConversionDefinitions || ZONE_CONVERSION_DEFINITIONS
             }) : null);
         this.zoneConversionService = dependencies.zoneConversionService
             || this.boardDomainAdapter?.zoneConversionService
