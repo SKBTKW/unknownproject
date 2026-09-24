@@ -312,6 +312,10 @@ export class BoardDomainAdapter {
         return readCellCapabilities(target);
     }
 
+    isSpecialBlockFunctional(entityOrTarget) {
+        return this.specialBlockService.isFunctional(entityOrTarget);
+    }
+
     readTrialTraits(entityOrTarget) {
         return this.specialBlockService.readTrialTraits(entityOrTarget);
     }
