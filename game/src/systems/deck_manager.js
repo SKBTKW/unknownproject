@@ -61,7 +61,11 @@ class DeckManager {
             evaluator: (requirement, context) => {
                 const evaluator = this.engine?.cardExecutionRequirementEvaluator;
                 if (typeof evaluator === "function") return Boolean(evaluator(requirement, context));
-                return Boolean(ConditionEvaluator.evaluate(requirement, { state: this.state, ...context }));
+                return Boolean(ConditionEvaluator.evaluate(requirement, {
+                    state: this.state,
+                    boardQuery: this.cardOfferingBoardQuery,
+                    ...context
+                }));
             }
         });
         this.offeringEligibility = new CardOfferingEligibilityService({
