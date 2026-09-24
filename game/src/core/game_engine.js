@@ -33,6 +33,7 @@ import { FirstRunState } from '../tutorial/first_run_state.js';
 import { TrialTimingAuthorityService } from '../trial/systems/trial_timing_authority_service.js';
 import { attachTrialDeploymentEconomy } from '../trial/integration/trial_deployment_economy_bootstrap.js';
 import { TrialDefenseReservation } from '../trial/systems/trial_defense_reservation.js';
+import { ZONE_CONVERSION_DEFINITIONS } from '../data/zone_conversion_definitions.js';
 
 function normalizeRunSeed(seed) {
     if (!Number.isFinite(seed)) return null;
@@ -111,7 +112,7 @@ class GameEngine {
                 gridEngine: this.gridEngine,
                 specialBlockService: this.specialBlockService,
                 zoneConversionService: dependencies.zoneConversionService || null,
-                zoneConversionDefinitions: dependencies.zoneConversionDefinitions || null
+                zoneConversionDefinitions: dependencies.zoneConversionDefinitions || ZONE_CONVERSION_DEFINITIONS
             }) : null);
         this.zoneConversionService = dependencies.zoneConversionService
             || this.boardDomainAdapter?.zoneConversionService
