@@ -8,6 +8,7 @@ import {
     ZONE_CONVERSION_STATES
 } from "../game/src/core/zone_conversion_domain.js";
 import { ZoneConversionService } from "../game/src/systems/zone_conversion_service.js";
+import { ZoneConversionDefinitionRegistry } from "../game/src/core/zone_conversion_definition_registry.js";
 import { serializeGameState } from "../game/src/core/state_serializer.js";
 import { hydrateGameState } from "../game/src/core/hydrate_game_state.js";
 import { TurnLifecycleService } from "../game/src/core/turn_lifecycle_service.js";
@@ -186,6 +187,94 @@ assert.deepEqual(
     injectedDefinitionAdapter.quoteZoneConversionCost("GARRISON_TEST").resources,
     { wood: 6, ember: 1 }
 );
+
+assert.equal(
+    injectedDefinitionAdapter.hasZoneConversionDefinition("GARRISON_TEST"),
+    true,
+    "Board exposes definition existence without leaking the registry implementation"
+);
+assert.deepEqual(
+    injectedDefinitionAdapter.listZoneConversionDefinitionIds(),
+    ["GARRISON_TEST", "UNRESOLVED_COST", "UNRESOLVED_MAINTENANCE"],
+    "Board exposes deterministic canonical definition ids"
+);
+
+// The registry is the one Board-owned normalization/snapshot authority.
+// Concrete definition sets may be injected from data modules without becoming
+// a second runtime registry.
+{
+    const mutableDefinitions = {
+        TEST_ONLY: {
+            id: "TEST_ONLY",
+            eligibleZoneAttributes: ["PLAINS"],
+            requirements: { resources: { food: 1 } },
+            creationCost: {
+                status: ZONE_CONVERSION_COST_STATUS.RESOLVED,
+                base: { wood: 2 }
+            },
+            maintenance: {
+                status: ZONE_CONVERSION_COST_STATUS.RESOLVED,
+                resources: {}
+            },
+            capabilities: [ZONE_CONVERSION_CAPABILITIES.DEFENSE_ANCHOR]
+        },
+        MISMATCHED_KEY: {
+            id: "OTHER_ID",
+            eligibleZoneAttributes: [],
+            requirements: { resources: {} },
+            creationCost: {
+                status: ZONE_CONVERSION_COST_STATUS.RESOLVED,
+                base: {}
+            },
+            maintenance: {
+                status: ZONE_CONVERSION_COST_STATUS.RESOLVED,
+                resources: {}
+            },
+            capabilities: []
+        }
+    };
+
+    const registry = new ZoneConversionDefinitionRegistry(mutableDefinitions);
+    assert.deepEqual(registry.listIds(), ["TEST_ONLY"]);
+    assert.equal(registry.has("TEST_ONLY"), true);
+    assert.equal(registry.has("MISMATCHED_KEY"), false);
+    assert.equal(registry.has("OTHER_ID"), false, "key/id mismatch must fail closed");
+
+    const snapshot = registry.get("TEST_ONLY");
+    assert.equal(Object.isFrozen(snapshot), true);
+    assert.equal(Object.isFrozen(snapshot.creationCost), true);
+    assert.equal(Object.isFrozen(snapshot.creationCost.base), true);
+    assert.equal(Object.isFrozen(snapshot.capabilities), true);
+
+    mutableDefinitions.TEST_ONLY.capabilities.push("MUTATED_AFTER_REGISTRATION");
+    mutableDefinitions.TEST_ONLY.creationCost.base.wood = 999;
+    assert.deepEqual(
+        registry.get("TEST_ONLY").capabilities,
+        [ZONE_CONVERSION_CAPABILITIES.DEFENSE_ANCHOR],
+        "registry snapshot is isolated from later content mutation"
+    );
+    assert.deepEqual(
+        registry.get("TEST_ONLY").creationCost.base,
+        { wood: 2 },
+        "registry snapshot keeps authoritative cost data stable"
+    );
+
+    const registryBackedService = new ZoneConversionService({
+        state: makeState(),
+        definitions: {
+            IGNORED: {
+                id: "IGNORED"
+            }
+        },
+        definitionRegistry: registry
+    });
+    assert.equal(
+        registryBackedService.getDefinition("TEST_ONLY"),
+        snapshot,
+        "an injected Board registry overrides raw definition input"
+    );
+    assert.equal(registryBackedService.getDefinition("IGNORED"), null);
+}
 
 assert.equal(service.validateCandidate("GARRISON_TEST", "zone_a").valid, true);
 assert.equal(
