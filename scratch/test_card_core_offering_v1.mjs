@@ -1748,7 +1748,8 @@ function makeGrid(rows, cols) {
     );
     assert.equal(
         resolveDomainActionMigrationBlocker("CMD_RESETTLEMENT"),
-        DOMAIN_ACTION_MIGRATION_BLOCKER.ZONE_CONVERSION_DEFINITION_MISSING
+        null,
+        "Resettlement must leave the unresolved migration inventory after canonical Zone definition migration"
     );
     assert.equal(
         resolveDomainActionMigrationBlocker("CMD_ABANDONED_SETTLEMENT"),
