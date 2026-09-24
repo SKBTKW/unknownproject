@@ -88,6 +88,13 @@ for (const id of ["CMD_RATIONING", "CMD_EMERGENCY_LEVY", "CMD_REKINDLE_EMBER"]) 
 
 {
     const card = byId.get("CMD_VIGILANCE");
+    assert.equal(card.reqTrialOrLowDefense, undefined,
+        "Vigilance must not retain the legacy trial-or-low-defense gate");
+    assert.deepEqual(card.offering?.requirements, [{
+        id: "VIGILANCE_WARNING_TENSE",
+        type: "WARNING_STATE",
+        state: "TENSE"
+    }], "Vigilance Offering must use semantic Warning state");
     assert.equal(card.cost.wood, 15);
     assert.ok(effect("CMD_VIGILANCE", "STATE_SET",
         item => item.key === "vigilanceTurns" && item.value === 2));
