@@ -476,7 +476,19 @@ export const ECONOMY_CARDS_MASTER = [
     "minStage": 2,
     "rarity": "R",
     "weight": 0.2,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "DOMAIN_ACTION",
+        "action": "CREATE_ZONE_CONVERSION",
+        "definitionId": "RESETTLEMENT_PLAINS_2X2",
+        "sourceBuff": {
+          "icon": "👥",
+          "category": "PERMANENT"
+        },
+        "logActivation": true
+      }
+    ]
   },
   {
     "id": "CMD_WORKSHOP",
@@ -1718,7 +1730,19 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 2,
     "rarity": "R",
     "weight": 0.2,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "DOMAIN_ACTION",
+        "action": "CREATE_ZONE_CONVERSION",
+        "definitionId": "RESETTLEMENT_PLAINS_2X2",
+        "sourceBuff": {
+          "icon": "👥",
+          "category": "PERMANENT"
+        },
+        "logActivation": true
+      }
+    ]
   },
   {
     "id": "CMD_WORKSHOP",
