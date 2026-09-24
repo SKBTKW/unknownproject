@@ -626,6 +626,7 @@ async function main() {
         ["Board profile consumption audit", "node", ["scratch/test_board_presentation_profile_consumption_contract.mjs"]],
         ["Board presentation Unity boundary", "node", ["scratch/test_board_presentation_unity_boundary.mjs"]],
         ["Unity runtime handoff contract", "node", ["scratch/test_unity_runtime_handoff_contract.mjs"]],
+        ["Unity runtime golden fixtures", "node", ["scratch/test_unity_runtime_contract_fixtures.mjs"]],
         ["Legacy Web2D board input adapter", "node", ["scratch/test_legacy_web2d_board_input_adapter.mjs"]],
     ]);
     if (!presentationFocusedOk) process.exit(1);
