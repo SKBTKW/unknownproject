@@ -4,7 +4,8 @@ import fs from "node:fs";
 const e2ePath = new URL("./test_stage1_e2e.mjs", import.meta.url);
 const source = fs.readFileSync(e2ePath, "utf8");
 
-// This gate owns orchestration and evidence only. It must never force canonical
+// This gate owns orchestration and evidence only. Full Inspection runs it after the live Stage1 E2E.
+// It must never force canonical
 // progression by mutating the authorities it is supposed to inspect.
 const forbiddenWrites = [
     /state\.stage\s*=\s*/,
