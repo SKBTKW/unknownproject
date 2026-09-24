@@ -7,6 +7,7 @@ import {
     BASE_TERRAIN_INTERACTIONS,
     getSpecialBlockDefinition,
     hasCellCapability,
+    isSpecialBlockFunctional,
     readCellCapabilities,
     readSpecialBlockTrialTraits
 } from '../core/special_block_domain.js';
@@ -71,6 +72,12 @@ export class SpecialBlockService {
         const point = coords(target);
         const cell = point ? this.getCell(point.r, point.c) : target;
         return readCellCapabilities(cell);
+    }
+
+    isFunctional(entityOrTarget) {
+        const point = coords(entityOrTarget);
+        const cell = point ? this.getCell(point.r, point.c) : entityOrTarget;
+        return isSpecialBlockFunctional(cell);
     }
 
     readTrialTraits(entityOrTarget) {
