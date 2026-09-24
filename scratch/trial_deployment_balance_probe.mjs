@@ -8,6 +8,24 @@ function pct(part, whole) {
     return (part / whole) * 100;
 }
 
+export function resolveDeploymentProbeRequestedDefense(sample = {}, plan = {}) {
+    const available = Math.max(0, Number(sample.defense) || 0);
+    const fraction = Number(plan.requestedDefenseFraction);
+    let requested;
+
+    if (Number.isFinite(fraction)) {
+        const normalizedFraction = Math.min(1, Math.max(0, fraction));
+        requested = Math.round(available * normalizedFraction);
+        if (available > 0 && normalizedFraction > 0) {
+            requested = Math.max(1, requested);
+        }
+    } else {
+        requested = Number(plan.requestedDefense ?? available) || 0;
+    }
+
+    return Math.max(0, Math.min(available, requested));
+}
+
 export function evaluateDeploymentProfileAgainstSamples({
     profile,
     samples = [],
@@ -25,13 +43,7 @@ export function evaluateDeploymentProfileAgainstSamples({
     const rows = [];
     for (const sample of samples) {
         for (const plan of plans) {
-            const requestedDefense = Math.max(
-                0,
-                Math.min(
-                    Number(sample.defense) || 0,
-                    Number(plan.requestedDefense ?? sample.defense) || 0
-                )
-            );
+            const requestedDefense = resolveDeploymentProbeRequestedDefense(sample, plan);
             const distance = Math.max(0, Number(plan.distance) || 0);
             const cost = resolver({
                 requestedDefense,
@@ -116,22 +128,22 @@ export const STAGE1_TRIAL1_AUDIT_ENVELOPE_20260923 = Object.freeze([
 export const STAGE1_TRIAL1_PROBE_PLANS = Object.freeze([
     Object.freeze({
         id: "HALF_DEFENSE_NEAR",
-        requestedDefense: 14,
+        requestedDefenseFraction: 0.5,
         distance: 2
     }),
     Object.freeze({
         id: "HALF_DEFENSE_FAR",
-        requestedDefense: 14,
+        requestedDefenseFraction: 0.5,
         distance: 4
     }),
     Object.freeze({
         id: "HEAVY_DEFENSE_FAR",
-        requestedDefense: 24,
+        requestedDefenseFraction: 0.8,
         distance: 4
     }),
     Object.freeze({
         id: "ALL_DEFENSE_FAR",
-        requestedDefense: Number.MAX_SAFE_INTEGER,
+        requestedDefenseFraction: 1,
         distance: 4
     })
 ]);
@@ -176,13 +188,7 @@ export function evaluateFirstRunBurdenAgainstSamples({
     for (const sample of samples) {
         for (const plan of plans) {
             const defenseAvailable = Math.max(0, Number(sample.defense) || 0);
-            const requestedDefense = Math.max(
-                0,
-                Math.min(
-                    defenseAvailable,
-                    Number(plan.requestedDefense ?? defenseAvailable) || 0
-                )
-            );
+            const requestedDefense = resolveDeploymentProbeRequestedDefense(sample, plan);
             const distance = Math.max(0, Number(plan.distance) || 0);
             const burdenShare = resolveFirstRunBurdenShare({
                 requestedDefense,
