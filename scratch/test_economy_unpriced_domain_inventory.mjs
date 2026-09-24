@@ -137,11 +137,20 @@ const engine = GameEngine.createGame({
     runSeed: 20260924,
     firstRun: true
 });
-const definitions = engine.zoneConversionService?.definitions;
+const zoneConversionService = engine.zoneConversionService;
 
-assert.ok(definitions instanceof Map, "canonical ZoneConversionService must expose definition Map");
+assert.ok(
+    zoneConversionService
+        && typeof zoneConversionService.listDefinitionIds === "function"
+        && typeof zoneConversionService.getDefinition === "function",
+    "canonical ZoneConversionService must expose Board-owned definition authority reads"
+);
 
-const zoneRows = [...definitions.values()].map(summarizeZoneDefinition);
+const zoneRows = zoneConversionService
+    .listDefinitionIds()
+    .map(definitionId => zoneConversionService.getDefinition(definitionId))
+    .filter(Boolean)
+    .map(summarizeZoneDefinition);
 const resolvedCreationRows = zoneRows.filter(row =>
     row.creationStatus === "RESOLVED"
     && (row.creationFood > 0 || row.creationMaterial > 0)

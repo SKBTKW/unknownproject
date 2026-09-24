@@ -240,6 +240,14 @@ export class BoardDomainAdapter {
         return readZoneConversion(this.state, groupId);
     }
 
+    hasZoneConversionDefinition(definitionId) {
+        return this.zoneConversionService.hasDefinition(definitionId);
+    }
+
+    listZoneConversionDefinitionIds() {
+        return this.zoneConversionService.listDefinitionIds();
+    }
+
     isZoneConversionFunctional(groupId) {
         return isZoneConversionFunctional(this.state, groupId);
     }
