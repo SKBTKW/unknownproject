@@ -27,7 +27,7 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 | `CMD_RATIONING` | **Implemented / v1 semantic-aligned** | このVerseの最終食料維持費を50%化。カード定義は`foodCostHalvedTurns=1`へ一本化し、旧40%系state writeを廃止。 |
 | `CMD_WETLAND_RECLAMATION` | **Implemented / Interaction mismatch** | 🧱15＋🔥1。湖でない未地帯化湿原1マスを干拓地へ永久変換。ただし表示説明は「1マスを指定」とする一方、runtimeはtarget入力を使わず走査順で最初の有効湿原を自動選択する。 |
 | `CMD_LOGGING_CAMP` | **Partial / Player-facing description mismatch / Eligibility different** | runtimeは即時🧱+8とBuffのみ。表示説明の「森1マスを伐採拠点化」「周囲森林から継続🧱産出」は未接続。`reqForestNearby` は近接判定ではなく盤面全体の森系マス数。 |
-| `CMD_GRANARY` | **Partial / Player-facing description mismatch** | `granaryCount` は増えるがMaintenanceは参照しない。表示説明の食料維持費×0.90は実効しない。 |
+| `CMD_GRANARY` | **Implemented foundation / Dormant** | 🧱20。平地/干拓地へ`GRANARY` Special Blockを対象指定で設置。`FOOD_STORAGE` CapabilityをMaintenanceが読み、1基あたり維持費-2・最大2基分。production既定ではDormant。 |
 | `CMD_AGRICULTURAL_REFORM` | **Implemented / Simplified / Player-facing description mismatch / Eligibility different** | runtimeは全平地系へ恒久🌾+1/Verse。表示説明は「指定した連結農業地域の最大4マス」だが、target選択はなく盤面全体へ作用する。候補化の連結条件も実際には盤面全体合計。 |
 | `CMD_PASTORAL_FARM` | **Partial** | 即時🌾+2中心。表示説明の持続施設効果は未接続。 |
 | `CMD_ABANDONED_SETTLEMENT` | **Implemented** | 🔥1、2D6。2–5:🌾+15 / 6–8:🧱+15 / 9–11:✨+10 / 12:🌾+20🧱+20✨+15。 |

@@ -114,7 +114,6 @@ export const ECONOMY_CARDS_MASTER = [
       "INDUSTRY",
       "SPECIAL_BLOCK"
     ],
-    "reqPlains": 4,
     "reqWood": 20,
     "minStage": 1,
     "rarity": "UC",
@@ -122,20 +121,10 @@ export const ECONOMY_CARDS_MASTER = [
     "cyclePolicy": "RARITY",
     "effects": [
       {
-        "type": "STATE_INCREMENT",
-        "key": "granaryCount",
-        "amount": 1
-      },
-      {
-        "type": "BUFF_ADD",
-        "fromSourceCard": true,
-        "buff": {
-          "icon": "🏛️",
-          "category": "CARD_EFFECT"
-        }
-      },
-      {
-        "type": "LOG_CARD_ACTIVATED"
+        "type": "DOMAIN_ACTION",
+        "action": "CREATE_SPECIAL_BLOCK",
+        "blockType": "GRANARY",
+        "logActivation": true
       }
     ]
   },
@@ -1317,7 +1306,6 @@ export const COMMAND_CARDS_MASTER = [
       "INDUSTRY",
       "SPECIAL_BLOCK"
     ],
-    "reqPlains": 4,
     "reqWood": 20,
     "minStage": 1,
     "rarity": "UC",
@@ -1325,20 +1313,10 @@ export const COMMAND_CARDS_MASTER = [
     "cyclePolicy": "RARITY",
     "effects": [
       {
-        "type": "STATE_INCREMENT",
-        "key": "granaryCount",
-        "amount": 1
-      },
-      {
-        "type": "BUFF_ADD",
-        "fromSourceCard": true,
-        "buff": {
-          "icon": "🏛️",
-          "category": "CARD_EFFECT"
-        }
-      },
-      {
-        "type": "LOG_CARD_ACTIVATED"
+        "type": "DOMAIN_ACTION",
+        "action": "CREATE_SPECIAL_BLOCK",
+        "blockType": "GRANARY",
+        "logActivation": true
       }
     ]
   },

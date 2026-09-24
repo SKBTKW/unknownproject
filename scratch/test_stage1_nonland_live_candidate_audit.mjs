@@ -26,7 +26,8 @@ const generatedById = new Map(COMMAND_CARDS_MASTER.map(card => [card.id, card]))
 const PROTOTYPE = Object.freeze([
     "CMD_EMERGENCY_LEVY",
     "CMD_VIGILANCE",
-    "CMD_REKINDLE_EMBER"
+    "CMD_REKINDLE_EMBER",
+    "CMD_GRANARY"
 ]);
 const SUPPORT = Object.freeze([
     "CMD_RATIONING",
@@ -36,7 +37,6 @@ const SUPPORT = Object.freeze([
 const BLOCKED = Object.freeze([
     "CMD_WETLAND_RECLAMATION",
     "CMD_LOGGING_CAMP",
-    "CMD_GRANARY",
     "CMD_AGRICULTURAL_REFORM",
     "CMD_PASTORAL_FARM",
     "CMD_MILITARY_FOCUS",
@@ -78,7 +78,7 @@ for (const id of PROTOTYPE) {
         "Emergency Levy v1 is immediate-only");
 }
 
-for (const id of ["CMD_RATIONING", "CMD_EMERGENCY_LEVY", "CMD_REKINDLE_EMBER"]) {
+for (const id of ["CMD_RATIONING", "CMD_EMERGENCY_LEVY", "CMD_REKINDLE_EMBER", "CMD_GRANARY"]) {
     assert.deepEqual(
         generatedById.get(id),
         byId.get(id),
@@ -147,9 +147,12 @@ for (const id of ["CMD_RATIONING", "CMD_EMERGENCY_LEVY", "CMD_REKINDLE_EMBER"]) 
 
 {
     const card = byId.get("CMD_GRANARY");
-    assert.ok(effect("CMD_GRANARY", "STATE_INCREMENT",
-        item => item.key === "granaryCount" && item.amount === 1));
-    assert.equal(maintenanceSource.includes("granaryCount"), false);
+    assert.equal(card.cost.wood, 20);
+    assert.equal(card.reqPlains, undefined);
+    assert.ok(effect("CMD_GRANARY", "DOMAIN_ACTION",
+        item => item.action === "CREATE_SPECIAL_BLOCK" && item.blockType === "GRANARY"));
+    assert.ok(maintenanceSource.includes("BOARD_CAPABILITIES.FOOD_STORAGE"),
+        "Granary maintenance effect must be capability-driven, never card-id-driven");
 }
 
 {

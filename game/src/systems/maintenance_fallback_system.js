@@ -1,3 +1,8 @@
+import {
+    BOARD_CAPABILITIES,
+    readCellCapabilities
+} from '../core/special_block_domain.js';
+
 /* =============================================================
    MaintenanceFallbackSystem
    ターン終了時の食料維持費予測・不足補填・状態適用の正本
@@ -5,6 +10,8 @@
 
 const MYSTIC_FOOD_RATE = 6;
 const MATERIAL_COST_PER_FOOD = 5;
+const GRANARY_FOOD_MAINTENANCE_REDUCTION = 2;
+const GRANARY_FOOD_MAINTENANCE_CAP = 2;
 
 function toNonNegativeInteger(value) {
     if (!Number.isFinite(value)) return 0;
@@ -63,6 +70,16 @@ function createHypotheticalPlan(deficit, mystic, material) {
     });
 }
 
+function countFoodStorageSites(state) {
+    let count = 0;
+    for (const row of state?.grid || []) {
+        for (const cell of row || []) {
+            if (readCellCapabilities(cell).has(BOARD_CAPABILITIES.FOOD_STORAGE)) count += 1;
+        }
+    }
+    return count;
+}
+
 class MaintenanceFallbackSystem {
     static resolveFoodMaintenanceCost(state) {
         let baseFoodCost = 20;
@@ -85,11 +102,20 @@ class MaintenanceFallbackSystem {
             : baseFoodCost;
         if (emergencyLevyApplied) foodCost += 5;
 
+        const foodStorageSites = Math.min(
+            GRANARY_FOOD_MAINTENANCE_CAP,
+            countFoodStorageSites(state)
+        );
+        const granaryReduction = foodStorageSites * GRANARY_FOOD_MAINTENANCE_REDUCTION;
+        foodCost = Math.max(0, foodCost - granaryReduction);
+
         return Object.freeze({
             baseFoodCost,
             foodCost,
             rationingApplied,
-            emergencyLevyApplied
+            emergencyLevyApplied,
+            foodStorageSites,
+            granaryReduction
         });
     }
 
@@ -208,6 +234,8 @@ class MaintenanceFallbackSystem {
 }
 
 export {
+    GRANARY_FOOD_MAINTENANCE_CAP,
+    GRANARY_FOOD_MAINTENANCE_REDUCTION,
     MATERIAL_COST_PER_FOOD,
     MYSTIC_FOOD_RATE,
     MaintenanceFallbackSystem
