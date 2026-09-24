@@ -12,9 +12,9 @@ import {
 
 {
     const liveStage1Engine = GameEngine.createGame({ runSeed: 20260924, firstRun: true });
-    assert.equal(liveStage1Engine.trialDeploymentAttachment, null);
-    assert.equal(liveStage1Engine.trialDeploymentService, undefined);
-    console.log("LIVE_STAGE1_DEPLOYMENT_PROFILE=UNRESOLVED sink=0 until explicitly configured");
+    assert.equal(liveStage1Engine.trialDeploymentAttachment?.success, true);
+    assert.equal(typeof liveStage1Engine.trialDeploymentService?.previewPlan, "function");
+    console.log("LIVE_STAGE1_DEPLOYMENT_PROFILE=FIRST_RUN_TRIAL1_RELATIVE_V1");
 
     const unresolved = evaluateDeploymentProfileAgainstSamples({
         profile: UNRESOLVED_DEPLOYMENT_PROFILE,
