@@ -1042,6 +1042,14 @@
       ]
     },
     {
+      "path": "scratch/test_economy_unpriced_domain_inventory.mjs",
+      "purpose": "inventory currently unpriced Stage1 GE choices and runtime Zone Conversion food/material definitions against the open PVE authoring band",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_stage1_trial1_live_experience_audit.mjs",
       "purpose": "derive Trial1 FirstRun burden from live seeded Stage1 Verse15 resources instead of a fixed historical economy envelope",
       "suite": "existing",
