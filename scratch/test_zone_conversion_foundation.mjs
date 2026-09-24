@@ -5,7 +5,8 @@ import {
     ZONE_CONVERSION_CAPABILITIES,
     ZONE_CONVERSION_COST_STATUS,
     ZONE_CONVERSION_ESCALATION_SCOPES,
-    ZONE_CONVERSION_STATES
+    ZONE_CONVERSION_STATES,
+    sumActiveZoneConversionProduction
 } from "../game/src/core/zone_conversion_domain.js";
 import { ZoneConversionService } from "../game/src/systems/zone_conversion_service.js";
 import { serializeGameState } from "../game/src/core/state_serializer.js";
@@ -122,6 +123,7 @@ const definitions = {
     GARRISON_TEST: {
         id: "GARRISON_TEST",
         eligibleZoneAttributes: ["E2_HILL", "E3_MOUNTAIN"],
+        eligibleMergeTypes: ["L_SHAPE", "T_SHAPE"],
         requirements: {
             resources: { food: 10, wood: 8 }
         },
@@ -137,6 +139,11 @@ const definitions = {
             status: ZONE_CONVERSION_COST_STATUS.RESOLVED,
             resources: { food: 2 }
         },
+        creationReward: {
+            resources: { ember: 2 },
+            caps: { ember: 20 }
+        },
+        productionBonus: { food: 2 },
         capabilities: [
             ZONE_CONVERSION_CAPABILITIES.GARRISON_SITE,
             ZONE_CONVERSION_CAPABILITIES.DEFENSE_ANCHOR
@@ -235,6 +242,17 @@ const createdA = service.createConversion("GARRISON_TEST", "zone_a", {
     createdVerse: 20
 });
 assert.equal(createdA.success, true);
+assert.deepEqual(createdA.creationReward, {
+    resources: { ember: 2 },
+    caps: { ember: 20 }
+});
+assert.deepEqual(createdA.conversion.productionBonus, { food: 2 });
+assert.deepEqual(sumActiveZoneConversionProduction(state), {
+    food: 2,
+    wood: 0,
+    defense: 0,
+    mystic: 0
+});
 assert.equal(adapter.getZoneConversionCount("GARRISON_TEST"), 1);
 assert.equal(adapter.readZoneConversion("zone_a").definitionId, "GARRISON_TEST");
 assert.equal(adapter.isZoneConversionFunctional("zone_a"), true);
@@ -302,6 +320,8 @@ assert.equal(failedVerse.results.length, 1);
 assert.equal(failedVerse.results[0].success, true);
 assert.equal(failedVerse.results[0].state, ZONE_CONVERSION_STATES.DYSFUNCTIONAL);
 assert.equal(adapter.isZoneConversionFunctional("zone_a"), false);
+assert.equal(sumActiveZoneConversionProduction(state).food, 0,
+    "dysfunctional conversion stops its production bonus");
 assert.equal(state.food, beforeFailedMaintenanceFood, "failed maintenance never partially spends resources");
 assert.equal(
     adapter.hasCapability(ZONE_CONVERSION_CAPABILITIES.GARRISON_SITE),
@@ -333,6 +353,8 @@ assert.equal(recoveredVerse.results.length, 1);
 assert.equal(recoveredVerse.results[0].success, true);
 assert.equal(recoveredVerse.results[0].state, ZONE_CONVERSION_STATES.ACTIVE);
 assert.equal(adapter.isZoneConversionFunctional("zone_a"), true);
+assert.equal(sumActiveZoneConversionProduction(state).food, 2,
+    "recovered conversion restores its production bonus");
 assert.equal(state.food, 28, "successful maintenance spends the full upkeep exactly once");
 assert.equal(adapter.hasCapability(ZONE_CONVERSION_CAPABILITIES.GARRISON_SITE), true);
 assert.equal(
