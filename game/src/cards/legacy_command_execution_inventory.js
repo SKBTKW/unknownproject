@@ -93,8 +93,10 @@ const DUPLICATE_LEGACY_BRANCH_IDS = Object.freeze([
 ]);
 
 const LEGACY_SHADOWED_BRANCH_IDS = Object.freeze([
-    // First matching branch applies the 4T project form; the later permanent
-    // form is unreachable in the current else-if chain.
+    // The first matching branch wins in playCommandCard's else-if chain.
+    // Keep both shadowed duplicates explicit until their owning Domain migrations
+    // remove the legacy branches entirely.
+    "CMD_RESETTLEMENT",
     "CMD_GREAT_RAMPART_PROJECT"
 ]);
 
