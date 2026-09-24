@@ -157,6 +157,13 @@ function readDefense(engine) {
 }
 
 function captureTrial1Sample(engine, seed) {
+    const production = engine.productionCalculator?.calculateTotalProduction?.(engine.state) || null;
+    const grossFoodPerVerse = Math.max(0, Number(production?.grossFood) || 0);
+    const grossMaterialPerVerse = Math.max(
+        0,
+        Number(production?.totalMaterial ?? production?.totalWood) || 0
+    );
+
     return Object.freeze({
         id: `LIVE_SEED_${seed}`,
         seed,
@@ -169,7 +176,11 @@ function captureTrial1Sample(engine, seed) {
             Number(engine.state.maxDefense ?? engine.state.defense ?? 0) || 0
         ),
         ember: Math.max(0, Number(engine.state.ember) || 0),
-        territoryTiles: Number(engine.state.getTerritoryTileCount?.() || 0)
+        territoryTiles: Number(engine.state.getTerritoryTileCount?.() || 0),
+        grossFoodPerVerse,
+        grossMaterialPerVerse,
+        foodMaintenancePerVerse: Math.max(0, Number(production?.foodCost) || 0),
+        netFoodPerVerse: Number(production?.netFood) || 0
     });
 }
 
@@ -248,6 +259,16 @@ assert.equal(liveSamples.every(row => row.food > 0), true, "all live Stage1 samp
 assert.equal(liveSamples.every(row => row.material > 0), true, "all live Stage1 samples must reach Trial1 with material remaining");
 assert.equal(liveSamples.every(row => row.defense > 0), true, "all live Stage1 samples must reach Trial1 with defense remaining");
 assert.equal(liveSamples.every(row => row.ember > 0), true, "all live Stage1 samples must reach Trial1 alive");
+assert.equal(
+    liveSamples.every(row => row.grossFoodPerVerse > 0),
+    true,
+    "every live Stage1 sample must expose positive gross food production for PVE"
+);
+assert.equal(
+    liveSamples.every(row => row.grossMaterialPerVerse > 0),
+    true,
+    "every live Stage1 sample must expose positive gross material production for PVE"
+);
 
 for (const row of liveSamples) {
     console.log(
@@ -258,7 +279,10 @@ for (const row of liveSamples) {
             `🧱${row.material}`,
             `🛡️${row.defense}/${row.maxDefense}`,
             `🔥${row.ember}`,
-            `tiles=${row.territoryTiles}`
+            `tiles=${row.territoryTiles}`,
+            `gross=🌾${row.grossFoodPerVerse}/🧱${row.grossMaterialPerVerse} perV`,
+            `foodMaint=${row.foodMaintenancePerVerse}`,
+            `net🌾=${row.netFoodPerVerse}`
         ].join(" ")
     );
 }
@@ -270,7 +294,9 @@ console.log(
         `🧱${formatRange(liveSamples.map(row => row.material))}`,
         `🛡️${formatRange(liveSamples.map(row => row.defense))}`,
         `🔥${formatRange(liveSamples.map(row => row.ember))}`,
-        `tiles=${formatRange(liveSamples.map(row => row.territoryTiles))}`
+        `tiles=${formatRange(liveSamples.map(row => row.territoryTiles))}`,
+        `gross🌾/V=${formatRange(liveSamples.map(row => row.grossFoodPerVerse))}`,
+        `gross🧱/V=${formatRange(liveSamples.map(row => row.grossMaterialPerVerse))}`
     ].join(" ")
 );
 
@@ -284,7 +310,29 @@ assert.equal(
     liveSamples.length * STAGE1_TRIAL1_PROBE_PLANS.length
 );
 
+const liveSampleById = new Map(liveSamples.map(sample => [sample.id, sample]));
+const pveRows = [];
+
 for (const row of firstRunBurden.rows) {
+    const sample = liveSampleById.get(row.sampleId);
+    assert.ok(sample, `PVE sample must exist for ${row.sampleId}`);
+
+    const foodPve = row.foodCost / sample.grossFoodPerVerse;
+    const materialPve = row.materialCost / sample.grossMaterialPerVerse;
+    const recoveryPve = Math.max(foodPve, materialPve);
+    assert.equal(Number.isFinite(foodPve), true);
+    assert.equal(Number.isFinite(materialPve), true);
+    assert.equal(Number.isFinite(recoveryPve), true);
+
+    pveRows.push(Object.freeze({
+        ...row,
+        grossFoodPerVerse: sample.grossFoodPerVerse,
+        grossMaterialPerVerse: sample.grossMaterialPerVerse,
+        foodPve,
+        materialPve,
+        recoveryPve
+    }));
+
     console.log(
         [
             "LIVE_BURDEN",
@@ -294,7 +342,34 @@ for (const row of firstRunBurden.rows) {
             `dist=${row.distance}`,
             `share=${(row.burdenShare * 100).toFixed(1)}%`,
             `cost=🌾${row.foodCost}/🧱${row.materialCost}`,
-            `remaining=🌾${row.foodRemaining}/🧱${row.materialRemaining}`
+            `remaining=🌾${row.foodRemaining}/🧱${row.materialRemaining}`,
+            `PVE=🌾${foodPve.toFixed(2)}V/🧱${materialPve.toFixed(2)}V`,
+            `recovery=${recoveryPve.toFixed(2)}V`
+        ].join(" ")
+    );
+}
+
+function median(values) {
+    const sorted = [...values].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 === 0
+        ? (sorted[mid - 1] + sorted[mid]) / 2
+        : sorted[mid];
+}
+
+for (const planId of ["HEAVY_DEFENSE_FAR", "ALL_DEFENSE_FAR"]) {
+    const selected = pveRows.filter(row => row.planId === planId);
+    const foodValues = selected.map(row => row.foodPve);
+    const materialValues = selected.map(row => row.materialPve);
+    const recoveryValues = selected.map(row => row.recoveryPve);
+
+    console.log(
+        [
+            "PVE_SUMMARY",
+            planId,
+            `🌾=${Math.min(...foodValues).toFixed(2)}..${Math.max(...foodValues).toFixed(2)}V med=${median(foodValues).toFixed(2)}V`,
+            `🧱=${Math.min(...materialValues).toFixed(2)}..${Math.max(...materialValues).toFixed(2)}V med=${median(materialValues).toFixed(2)}V`,
+            `recovery=${Math.min(...recoveryValues).toFixed(2)}..${Math.max(...recoveryValues).toFixed(2)}V med=${median(recoveryValues).toFixed(2)}V`
         ].join(" ")
     );
 }
@@ -310,7 +385,7 @@ console.log(
 // Offering mix and future Stage1 economy changes must be reflected by rerunning
 // the actual game path rather than editing another hard-coded balance table.
 assert.equal(
-    firstRunBurden.rows.every(row => row.affordable === true),
+    pveRows.every(row => row.affordable === true),
     true,
     "relative FirstRun burden probe must remain internally affordable for the live samples"
 );
