@@ -366,6 +366,12 @@ const CONDITION_HANDLERS = {
         return context?.historyQuery?.matches?.(params) === true;
     },
 
+    // 📉 Economy/Stage1-owned semantic material-shortage predicate.
+    // Card logic never derives thresholds here; it only consumes the injected read model.
+    MATERIAL_SHORTAGE: (_params, context) => {
+        return context?.resourcePressureQuery?.isMaterialShortage?.() === true;
+    },
+
     // ⚠️ Semantic Warning-state predicate; never exposes exact Trial timing.
     WARNING_STATE: (params, context) => {
         const order = ["CALM", "OMEN", "WATCH", "TENSE", "IMMINENT"];
