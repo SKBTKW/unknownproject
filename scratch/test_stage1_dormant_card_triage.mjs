@@ -1,10 +1,16 @@
 import assert from "node:assert/strict";
 
-import {
-    ECONOMY_CARDS_MASTER,
-    MILITARY_CARDS_MASTER,
-    MYSTIC_CARDS_MASTER
-} from "../game/src/data/command_cards_data.js";
+import { readFileSync } from "node:fs";
+
+const ECONOMY_CARDS_MASTER = JSON.parse(
+    readFileSync(new URL("../game/src/data/economy_cards.json", import.meta.url), "utf8")
+);
+const MILITARY_CARDS_MASTER = JSON.parse(
+    readFileSync(new URL("../game/src/data/military_cards.json", import.meta.url), "utf8")
+);
+const MYSTIC_CARDS_MASTER = JSON.parse(
+    readFileSync(new URL("../game/src/data/mystic_cards.json", import.meta.url), "utf8")
+);
 import { isCardRuntimeActive } from "../game/src/systems/card_runtime_policy.js";
 
 const TRIAGE = Object.freeze({
