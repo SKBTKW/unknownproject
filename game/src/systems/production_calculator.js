@@ -17,6 +17,7 @@ import {
 } from '../core/land_production_contract.js';
 import { sumSpecialBlockProduction } from '../core/special_block_production.js';
 import { resolveLandDamageEffect } from '../core/board_damage_effect_policy.js';
+import { sumActiveZoneConversionProduction } from '../core/zone_conversion_domain.js';
 
 (function() {
     class ProductionCalculator {
@@ -158,13 +159,14 @@ import { resolveLandDamageEffect } from '../core/board_damage_effect_policy.js';
             const blockProduction = sumPlacedBlockProduction(state);
             const specialBlockProduction = sumSpecialBlockProduction(state);
             const specialYields = specialBlockProduction.yields;
+            const zoneConversionProduction = sumActiveZoneConversionProduction(state);
             const adjustedPlainsFood = Math.floor((foodTiles + plainsBuffBonus) * plainsFoodMultiplier);
-            const grossFood = Math.floor((hqFood + adjustedPlainsFood + blockProduction.food + specialYields.food + foodSockets + foodVicinity + foodLakeIrrigation) * foodMult * buffFoodMult);
+            const grossFood = Math.floor((hqFood + adjustedPlainsFood + blockProduction.food + specialYields.food + zoneConversionProduction.food + foodSockets + foodVicinity + foodLakeIrrigation) * foodMult * buffFoodMult);
             const netFood = grossFood - foodCost;
             const totalFood = netFood; // 表示互換用。実state加算は必ずgrossFoodを使用する。
-            const totalWood = Math.max(0, Math.floor((hqWood + woodTiles + blockProduction.wood + specialYields.wood + woodSockets + woodVicinity - systematicLoggingPenalty) * woodMult * buffWoodMult));
+            const totalWood = Math.max(0, Math.floor((hqWood + woodTiles + blockProduction.wood + specialYields.wood + zoneConversionProduction.wood + woodSockets + woodVicinity - systematicLoggingPenalty) * woodMult * buffWoodMult));
             const totalMaterial = totalWood;
-            const totalMystic = Math.floor((hqMystic + mysticTiles + blockProduction.mystic + specialYields.mystic + mysticSockets + mysticVicinity + flatMysticBonus) * mysticMult * buffMysticMult);
+            const totalMystic = Math.floor((hqMystic + mysticTiles + blockProduction.mystic + specialYields.mystic + zoneConversionProduction.mystic + mysticSockets + mysticVicinity + flatMysticBonus) * mysticMult * buffMysticMult);
 
             return {
                 totalFood,
@@ -179,7 +181,8 @@ import { resolveLandDamageEffect } from '../core/board_damage_effect_policy.js';
                 hqWood,
                 hqMystic,
                 blockProduction,
-                specialBlockProduction
+                specialBlockProduction,
+                zoneConversionProduction
             };
         }
 
@@ -262,6 +265,7 @@ import { resolveLandDamageEffect } from '../core/board_damage_effect_policy.js';
             const defTotal = this.calculateTotalDefense(state);
             const blockProduction = sumPlacedBlockProduction(state);
             const specialBlockProduction = sumSpecialBlockProduction(state);
+            const zoneConversionProduction = sumActiveZoneConversionProduction(state);
 
             let emberPct = 0;
             let emberMystic = 0;
@@ -271,8 +275,8 @@ import { resolveLandDamageEffect } from '../core/board_damage_effect_policy.js';
             }
 
             return {
-                food: { hqBase: hqFood, tiles: foodTiles, blocks: blockProduction.food, specialBlocks: specialBlockProduction.yields.food, sockets: foodSockets, vicinity: foodVicinity, lakeIrrigation: prods.foodLakeIrrigation || 0, emberPct, gross: prods.grossFood, foodCost: prods.foodCost, net: prods.netFood, total: prods.totalFood },
-                wood: { hqBase: hqWood, tiles: woodTiles, blocks: blockProduction.wood, specialBlocks: specialBlockProduction.yields.wood, sockets: woodSockets, vicinity: woodVicinity, emberPct, total: prods.totalWood },
+                food: { hqBase: hqFood, tiles: foodTiles, blocks: blockProduction.food, specialBlocks: specialBlockProduction.yields.food, zoneConversions: zoneConversionProduction.food, sockets: foodSockets, vicinity: foodVicinity, lakeIrrigation: prods.foodLakeIrrigation || 0, emberPct, gross: prods.grossFood, foodCost: prods.foodCost, net: prods.netFood, total: prods.totalFood },
+                wood: { hqBase: hqWood, tiles: woodTiles, blocks: blockProduction.wood, specialBlocks: specialBlockProduction.yields.wood, zoneConversions: zoneConversionProduction.wood, sockets: woodSockets, vicinity: woodVicinity, emberPct, total: prods.totalWood },
                 defense: {
                     hqBase: hqDefense,
                     tiles: defenseTiles,
@@ -285,7 +289,7 @@ import { resolveLandDamageEffect } from '../core/board_damage_effect_policy.js';
                         ? state.defenseSystem.getCurrentDefense()
                         : Math.min(state?.currentDefense ?? defTotal, defTotal)
                 },
-                mystic: { hqBase: hqMystic, tiles: mysticTiles, blocks: blockProduction.mystic, specialBlocks: specialBlockProduction.yields.mystic, sockets: mysticSockets, vicinity: mysticVicinity, emberMystic, emberPct, total: prods.totalMystic }
+                mystic: { hqBase: hqMystic, tiles: mysticTiles, blocks: blockProduction.mystic, specialBlocks: specialBlockProduction.yields.mystic, zoneConversions: zoneConversionProduction.mystic, sockets: mysticSockets, vicinity: mysticVicinity, emberMystic, emberPct, total: prods.totalMystic }
             };
         }
 
