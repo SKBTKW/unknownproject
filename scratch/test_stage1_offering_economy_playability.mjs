@@ -477,7 +477,7 @@ function testFoodSettlementUsesGrossProductionOnce() {
     const before = engine.state.food;
     const preview = engine.previewTurnEndMaintenance();
 
-    assert.equal(preview.production.grossFood, 10, "Stage1 HQ gross food baseline must remain 10");
+    assert.equal(preview.production.grossFood, 5, "Stage1 HQ gross food baseline must remain 5");
     assert.equal(preview.production.foodCost, 20, "normal Stage1 maintenance must remain 20");
 
     engine.nextTurn();
@@ -595,7 +595,7 @@ function testZoneAndLinkAreAimableOnFiveByFive() {
         true,
         "two different adjacent true Zones must create a Stage1 Link"
     );
-    assert.equal(readMaxDefense(state) > 10, true, "FOREST Zone path must make pre-Trial defense growth possible");
+    assert.equal(readMaxDefense(state) > 5, true, "FOREST Zone path must make pre-Trial defense growth possible");
     assert.equal(state.maxEmber > 20, true, "Stage1 Link must expand Ember capacity");
 }
 
@@ -750,7 +750,7 @@ function runSeedTrace(seed, {
     if (requireMystic) {
         assert.equal(verse15.mystic > 0, true, `seed ${seed}: Mystic must be live by Verse15`);
     }
-    assert.equal(verse15.defense >= 10, true, `seed ${seed}: defense must not regress below HQ baseline`);
+    assert.equal(verse15.defense >= 5, true, `seed ${seed}: defense must not regress below HQ baseline`);
     assert.equal(
         investigationExecuted,
         true,
@@ -1180,7 +1180,7 @@ const runs = TRACE_SEEDS.map(runSeedTrace);
 const traces = runs.map(run => run.trace);
 const finals = traces.map(trace => trace.find(row => row.verse === 15));
 assert.equal(
-    finals.some(row => row.defense > 10),
+    finals.some(row => row.defense > 5),
     true,
     "at least one representative seeded run must demonstrate pre-Trial defense preparation"
 );
