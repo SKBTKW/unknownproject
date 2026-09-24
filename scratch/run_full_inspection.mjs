@@ -300,6 +300,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Card Runtime ID-Scoped Activation) で不合格が検出されました。");
         process.exit(1);
     }
+    const stage1PrototypeCardE2EOk = await runCommand("node", ["scratch/test_stage1_prototype_card_e2e.mjs"]);
+    if (!stage1PrototypeCardE2EOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Stage1 Prototype Card E2E) で不合格が検出されました。");
+        process.exit(1);
+    }
     const stage1Trial1LiveExperienceOk = await runCommand("node", ["scratch/test_stage1_trial1_live_experience_audit.mjs"]);
     if (!stage1Trial1LiveExperienceOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Stage1 Trial1 Live Experience Audit) で不合格が検出されました。");
