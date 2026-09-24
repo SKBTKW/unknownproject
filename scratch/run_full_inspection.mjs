@@ -285,6 +285,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Stage1 Offering / Economy / Board Playability) で不合格が検出されました。");
         process.exit(1);
     }
+    const stage1Trial1LiveExperienceOk = await runCommand("node", ["scratch/test_stage1_trial1_live_experience_audit.mjs"]);
+    if (!stage1Trial1LiveExperienceOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Stage1 Trial1 Live Experience Audit) で不合格が検出されました。");
+        process.exit(1);
+    }
     const cardDomainActionsV2ReplayOk = await runCommand("node", ["scratch/test_card_domain_actions_v2_replay.mjs"]);
     if (!cardDomainActionsV2ReplayOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Card Domain Actions v2 Replay) で不合格が検出されました。");
