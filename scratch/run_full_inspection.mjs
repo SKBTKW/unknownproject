@@ -643,6 +643,7 @@ async function main() {
         ["Unity runtime handoff contract", "node", ["scratch/test_unity_runtime_handoff_contract.mjs"]],
         ["Unity runtime golden fixtures", "node", ["scratch/test_unity_runtime_contract_fixtures.mjs"]],
         ["Unity Trial runtime golden fixtures", "node", ["scratch/test_unity_trial_runtime_contract_fixtures.mjs"]],
+        ["Unity runtime fixture generator", "node", ["scratch/test_unity_runtime_fixture_generator.mjs"]],
         ["Legacy Web2D board input adapter", "node", ["scratch/test_legacy_web2d_board_input_adapter.mjs"]],
     ]);
     if (!presentationFocusedOk) process.exit(1);
