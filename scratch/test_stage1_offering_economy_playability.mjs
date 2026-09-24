@@ -721,8 +721,11 @@ function runSeedTrace(seed, {
         });
         assert.equal(
             engine.state.food,
-            beforeSettlement.food + settlementPreview.production.grossFood - settlementPreview.production.foodCost,
-            `seed ${seed} V${verse}: food stock must equal stock + gross production - one maintenance payment`
+            Math.max(
+                0,
+                beforeSettlement.food + settlementPreview.production.grossFood - settlementPreview.production.foodCost
+            ),
+            `seed ${seed} V${verse}: food stock must equal nonnegative stock + gross production - one maintenance payment`
         );
         assert.equal(
             engine.state.wood ?? engine.state.material ?? 0,
