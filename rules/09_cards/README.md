@@ -96,6 +96,10 @@ Stage1のlive / dormantカードとOfferingカテゴリ未確定境界の棚卸�
 Stage1のDormant非LAND 15枚を、現在の実装意味論のままliveへ戻せるか監査した台帳。
 カテゴリ・weightを決める前に、prototype可能 / support / semantic repair requiredへ切り分ける。
 
+### 📈 `08_stage1_prototype_exposure_audit.md`
+ID単位prototype候補3枚について、FirstRun Verse1〜14の実測eligible windowを記録する。
+effectが動くことと、製品Offering条件が妥当であることを分離して扱う。
+
 ### 🧪 `06_stage1_dormant_card_triage.md`
 Stage1 Dormantカード15枚の復帰・再設計・保留判断。runtime再有効化は行わない。
 
