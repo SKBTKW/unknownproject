@@ -80,7 +80,7 @@ export function attachWeb25DBoardRuntime(uiController, {
 
     const initialSize = resolveCanvasSize(boardEl);
     const canvas = document.createElement('canvas');
-    canvas.id = 'web25dValidationCanvas';
+    canvas.id = 'web25dBoardCanvas';
     canvas.width = initialSize.width;
     canvas.height = initialSize.height;
     canvas.hidden = true;
