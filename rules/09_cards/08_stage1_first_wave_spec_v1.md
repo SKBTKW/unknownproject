@@ -220,35 +220,36 @@ Special Block `LOGGING_CAMP` を正本にする。
 
 ### Production
 
-v1でproduction shapeを固定する:
+v1のproductionは次で固定する:
 
 ```text
 SOURCE_SIZE
+sourceSizeSource: INITIAL_SNAPSHOT
+🧱 +1 / source cell / Verse
 ```
 
-ただし **具体的な🧱/Verse値は未確定** とする。
+source clusterは建設時Snapshotを使用し、後から森林が増減しても
+既存の伐採拠点の基準サイズは変えない。
 
-理由:
-
-既存Stage1監査では🧱余剰が大きく、
-ここで `+7/Verse` 等を先に固定すると経済を再び膨らませる可能性が高い。
-
-数値は、
-
-- HQ基礎産出5/5/5/1
-- Stage1 LAND頻度
-- 平時sink
-- Trial Deployment
-
-を含む再試算後に確定する。
+2026-09-24の8 seed probeでは、初合法時点はV2〜V4、
+source size中央値1、V15時点のsource size中央値3だった。
+`+2 / source cell` は早期回収が速すぎるため、v1初期値は `+1` を採用する。
 
 ### Cost ownership
 
-Special Block作成費はBoard側quoteを正本にする方向。
+Special Block作成費はBoard側quoteを正本にする。
 
-カード側 `cost` とSpecial Block definition側で二重に値を持たない。
+v1作成費:
 
-現 `🔥1` は製品v1の確定値とはしない。
+```text
+🧱20
+```
+
+Card側 `cost` は空のままとし、Special Block definitionの
+`creationCost` だけを正本にする。
+
+同probeでは初合法時点の全8 seedで🧱20を支払えることを確認済み。
+🧱15より投資判断を要求しつつ、🧱30ほどStage1前半の選択肢を狭めない値として採用する。
 
 ---
 
