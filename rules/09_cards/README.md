@@ -92,6 +92,10 @@ live Offering可否はCardRuntimePolicyとInvestigation解禁条件も合わせ�
 ### 🗂️ `05_offering_category_inventory.md`
 Stage1のlive / dormantカードとOfferingカテゴリ未確定境界の棚卸し。
 
+### 🔎 `06_stage1_nonland_live_candidate_audit.md`
+Stage1のDormant非LAND 15枚を、現在の実装意味論のままliveへ戻せるか監査した台帳。
+カテゴリ・weightを決める前に、prototype可能 / support / semantic repair requiredへ切り分ける。
+
 ### 🧪 `06_stage1_dormant_card_triage.md`
 Stage1 Dormantカード15枚の復帰・再設計・保留判断。runtime再有効化は行わない。
 
