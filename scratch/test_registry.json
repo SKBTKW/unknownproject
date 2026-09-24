@@ -525,6 +525,14 @@
       ]
     },
     {
+      "path": "scratch/test_global_event_weight_target_contract.mjs",
+      "purpose": "EVENT_WEIGHT_MODIFIER targets resolve to current Global Event ids/categories",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_global_event_offering_weight_hook.mjs",
       "purpose": "Active Global Event tag multipliers affect canonical Offering weighted draws",
       "suite": "existing",

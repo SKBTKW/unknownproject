@@ -401,6 +401,7 @@ async function main() {
         ["Run History Read Model", "scratch/test_run_history_read_model.mjs"],
         ["Global Event Eligibility v1", "scratch/test_global_event_eligibility_v1.mjs"],
         ["Global Event NEXT_GLOBAL_EVENT Expiry", "scratch/test_global_event_next_event_expiry.mjs"],
+        ["Global Event Weight Target Contract", "scratch/test_global_event_weight_target_contract.mjs"],
         ["Global Event Recovery History Eligibility", "scratch/test_global_event_recovery_history_eligibility.mjs"],
         ["Global Event Offering Weight Hook", "scratch/test_global_event_offering_weight_hook.mjs"],
         ["Post-Trial Threat History Gate", "scratch/test_post_trial_threat_history_gate.mjs"],
