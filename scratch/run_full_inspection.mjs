@@ -765,9 +765,14 @@ async function main() {
 
     // Final Stage1 integration gate: run only after all focused and supplemental
     // contracts have passed so failures remain attributable and visible.
+    const stage1E2EOk = await runCommand("node", ["scratch/test_stage1_e2e.mjs"]);
+    if (!stage1E2EOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Final Gate (Stage1 E2E Boundary Audit) で不合格が検出されました。");
+        process.exit(1);
+    }
     const stage1CanonicalPathOk = await runCommand("node", ["scratch/test_stage1_canonical_runtime_path.mjs"]);
     if (!stage1CanonicalPathOk) {
-        console.error("\n❌ [PIPELINE BLOCKED] Final Gate (Stage1 Canonical Runtime Path) で不合格が検出されました。");
+        console.error("\n❌ [PIPELINE BLOCKED] Final Gate (Stage1 Canonical Runtime Path Guard) で不合格が検出されました。");
         process.exit(1);
     }
 
