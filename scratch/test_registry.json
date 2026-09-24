@@ -1554,6 +1554,14 @@
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
       ]
+    },
+    {
+      "path": "scratch/test_zone_conversion_creation_reward.mjs",
+      "purpose": "Zone Conversion one-time creation reward semantics, canonical resource application, persistence, and idempotency",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
     }
   ]
 }
