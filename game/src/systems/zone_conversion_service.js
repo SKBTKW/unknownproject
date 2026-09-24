@@ -21,81 +21,11 @@ import {
     zoneConversionCount
 } from '../core/zone_conversion_domain.js';
 import { resolveMergeTerrainAttribute } from '../core/merge_rules.js';
+import { ZoneConversionDefinitionRegistry } from '../core/zone_conversion_definition_registry.js';
 
 function clone(value, fallback = null) {
     if (value === undefined) return fallback;
     return JSON.parse(JSON.stringify(value));
-}
-
-function freezeStringArray(values) {
-    return Object.freeze([...(Array.isArray(values) ? values : [])]);
-}
-
-function freezeDefinition(definition) {
-    const requirements = definition?.requirements || {};
-    return Object.freeze({
-        ...definition,
-        eligibleZoneAttributes: freezeStringArray(definition?.eligibleZoneAttributes),
-        requirements: Object.freeze({
-            ...requirements,
-            resources: requirements.resources
-                ? Object.freeze({ ...requirements.resources })
-                : null
-        }),
-        creationCost: definition?.creationCost
-            ? Object.freeze({
-                ...definition.creationCost,
-                base: definition.creationCost.base
-                    ? Object.freeze({ ...definition.creationCost.base })
-                    : null,
-                escalation: definition.creationCost.escalation
-                    ? Object.freeze({
-                        ...definition.creationCost.escalation,
-                        perConversion: definition.creationCost.escalation.perConversion
-                            ? Object.freeze({ ...definition.creationCost.escalation.perConversion })
-                            : null
-                    })
-                    : null
-            })
-            : null,
-        maintenance: definition?.maintenance
-            ? Object.freeze({
-                ...definition.maintenance,
-                resources: definition.maintenance.resources
-                    ? Object.freeze({ ...definition.maintenance.resources })
-                    : null
-            })
-            : null,
-        creationReward: definition?.creationReward
-            ? Object.freeze({
-                ...definition.creationReward,
-                resources: definition.creationReward.resources
-                    ? Object.freeze({ ...definition.creationReward.resources })
-                    : null
-            })
-            : null,
-        production: definition?.production
-            ? Object.freeze({
-                ...definition.production,
-                perMemberYields: definition.production.perMemberYields
-                    ? Object.freeze({ ...definition.production.perMemberYields })
-                    : null
-            })
-            : null,
-        capabilities: freezeStringArray(definition?.capabilities)
-    });
-}
-
-function normalizeDefinitions(definitions) {
-    const entries = definitions instanceof Map
-        ? [...definitions.entries()]
-        : Object.entries(definitions || {});
-    const result = new Map();
-    for (const [id, definition] of entries) {
-        if (!id || !definition || typeof definition !== 'object') continue;
-        result.set(String(id), freezeDefinition({ ...definition, id: definition.id || String(id) }));
-    }
-    return result;
 }
 
 function stateResource(state, key) {
@@ -214,13 +144,27 @@ function activeConversionCapabilities(zone) {
 }
 
 export class ZoneConversionService {
-    constructor({ state, definitions = {} } = {}) {
+    constructor({
+        state,
+        definitions = {},
+        definitionRegistry = null
+    } = {}) {
         this.state = state || null;
-        this.definitions = normalizeDefinitions(definitions);
+        this.definitionRegistry = definitionRegistry instanceof ZoneConversionDefinitionRegistry
+            ? definitionRegistry
+            : new ZoneConversionDefinitionRegistry(definitions);
     }
 
     getDefinition(definitionId) {
-        return this.definitions.get(String(definitionId)) || null;
+        return this.definitionRegistry.get(definitionId);
+    }
+
+    hasDefinition(definitionId) {
+        return this.definitionRegistry.has(definitionId);
+    }
+
+    listDefinitionIds() {
+        return this.definitionRegistry.listIds();
     }
 
     getConversionCount(definitionId = null) {
