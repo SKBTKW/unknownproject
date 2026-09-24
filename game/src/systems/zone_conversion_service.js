@@ -31,6 +31,7 @@ function freezeDefinition(definition) {
     return Object.freeze({
         ...definition,
         eligibleZoneAttributes: freezeStringArray(definition?.eligibleZoneAttributes),
+        eligibleMergeTypes: freezeStringArray(definition?.eligibleMergeTypes),
         requirements: Object.freeze({
             ...requirements,
             resources: requirements.resources
@@ -61,6 +62,19 @@ function freezeDefinition(definition) {
                     : null
             })
             : null,
+        creationReward: definition?.creationReward
+            ? Object.freeze({
+                resources: definition.creationReward.resources
+                    ? Object.freeze({ ...definition.creationReward.resources })
+                    : Object.freeze({}),
+                caps: definition.creationReward.caps
+                    ? Object.freeze({ ...definition.creationReward.caps })
+                    : Object.freeze({})
+            })
+            : null,
+        productionBonus: definition?.productionBonus
+            ? Object.freeze({ ...definition.productionBonus })
+            : Object.freeze({}),
         capabilities: freezeStringArray(definition?.capabilities)
     });
 }
@@ -327,6 +341,13 @@ export class ZoneConversionService {
             reasons.push('ZONE_ATTRIBUTE_NOT_ALLOWED');
         }
 
+        if (
+            definition.eligibleMergeTypes.length > 0
+            && !definition.eligibleMergeTypes.includes(zone.mergeType)
+        ) {
+            reasons.push('ZONE_MERGE_TYPE_NOT_ALLOWED');
+        }
+
         const resourceCheck = checkResourceRequirements(
             this.state,
             definition.requirements?.resources
@@ -448,6 +469,10 @@ export class ZoneConversionService {
                 lastSettledVerse: null,
                 lastPaymentSucceeded: null
             }),
+            creationReward: definition.creationReward
+                ? Object.freeze(clone(definition.creationReward, {}))
+                : null,
+            productionBonus: Object.freeze(clone(definition.productionBonus, {})),
             capabilities: Object.freeze([...definition.capabilities])
         });
 
@@ -456,6 +481,7 @@ export class ZoneConversionService {
             success: true,
             groupId: String(groupId),
             conversion: clone(conversion),
+            creationReward: conversion.creationReward ? clone(conversion.creationReward) : null,
             cost
         };
     }
