@@ -90,10 +90,14 @@ export function validateTerrainAgainstSpecialBlockAdjacency(terrain, profile) {
     const terrainE = finiteTerrainAxis(terrain.e);
     const reasons = [];
 
-    // Absolute facility-edge exclusions. These are stricter than the generic
-    // GL/E step rules and prevent Special Blocks from becoming topology bypasses.
-    if (terrainGL === 0) reasons.push('SPECIAL_BLOCK_DESERT_NEIGHBOR_FORBIDDEN');
-    if (terrainE === 3) reasons.push('SPECIAL_BLOCK_MOUNTAIN_NEIGHBOR_FORBIDDEN');
+    // Absolute facility-edge exclusions. GL0 is not enough to identify a
+    // desert because canonical mountains also use GL0; keep the two semantics
+    // explicit so facilities such as mines are not misclassified.
+    const id = String(terrain.terrainId || terrain.id || '').toUpperCase();
+    const isDesert = id.includes('DESERT');
+    const isMountain = terrainE === 3 || id.includes('MOUNTAIN');
+    if (isDesert) reasons.push('SPECIAL_BLOCK_DESERT_NEIGHBOR_FORBIDDEN');
+    if (isMountain) reasons.push('SPECIAL_BLOCK_MOUNTAIN_NEIGHBOR_FORBIDDEN');
 
     if (
         terrainGL !== null
