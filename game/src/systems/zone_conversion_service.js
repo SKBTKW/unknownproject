@@ -10,12 +10,14 @@ import {
     ZONE_CONVERSION_COST_STATUS,
     ZONE_CONVERSION_PRODUCTION_KINDS,
     ZONE_CONVERSION_PRODUCTION_STATUS,
+    ZONE_CONVERSION_REWARD_STATUS,
     ZONE_CONVERSION_STATES,
     isConvertibleCompletedZone,
     normalizeZoneProductionYieldMap,
     normalizeZoneResourceMap,
     readZoneRecord,
     resolveZoneConversionCost,
+    resolveZoneConversionCreationReward,
     zoneConversionCount
 } from '../core/zone_conversion_domain.js';
 import { resolveMergeTerrainAttribute } from '../core/merge_rules.js';
@@ -61,6 +63,14 @@ function freezeDefinition(definition) {
                 ...definition.maintenance,
                 resources: definition.maintenance.resources
                     ? Object.freeze({ ...definition.maintenance.resources })
+                    : null
+            })
+            : null,
+        creationReward: definition?.creationReward
+            ? Object.freeze({
+                ...definition.creationReward,
+                resources: definition.creationReward.resources
+                    ? Object.freeze({ ...definition.creationReward.resources })
                     : null
             })
             : null,
@@ -125,6 +135,64 @@ function projectStateAfterPayment(state, payment) {
 
 function hasAnyCost(resources) {
     return Object.values(resources || {}).some(value => Number(value) > 0);
+}
+
+function applyCreationReward(state, resources = {}) {
+    const applied = {};
+    for (const [key, rawAmount] of Object.entries(resources || {})) {
+        const amount = Number(rawAmount || 0);
+        if (!Number.isFinite(amount) || amount <= 0) continue;
+
+        if (key === 'ember') {
+            let gained = 0;
+            if (state?.emberSystem && typeof state.emberSystem.recoverInstant === 'function') {
+                gained = Number(state.emberSystem.recoverInstant(amount)) || 0;
+            } else {
+                const before = Number(state?.ember || 0);
+                const max = Number.isFinite(Number(state?.maxEmber))
+                    ? Number(state.maxEmber)
+                    : before + amount;
+                const after = Math.min(max, before + amount);
+                if (state) state.ember = after;
+                gained = after - before;
+            }
+            if (gained > 0) applied.ember = gained;
+            continue;
+        }
+
+        if (key === 'defense') {
+            let gained = 0;
+            if (state?.defenseSystem && typeof state.defenseSystem.recoverCurrentDefense === 'function') {
+                gained = Number(state.defenseSystem.recoverCurrentDefense(amount)?.recovered || 0);
+            } else {
+                const before = Number(state?.currentDefense ?? state?.defense ?? 0);
+                const max = Number.isFinite(Number(state?.maxDefense))
+                    ? Number(state.maxDefense)
+                    : before + amount;
+                const after = Math.min(max, before + amount);
+                if (state) state.currentDefense = after;
+                gained = after - before;
+            }
+            if (gained > 0) applied.defense = gained;
+            continue;
+        }
+
+        if (key === 'wood') {
+            const before = Number(state?.wood ?? state?.material ?? 0) || 0;
+            const after = before + amount;
+            if (state) {
+                state.wood = after;
+                state.material = after;
+            }
+            applied.wood = amount;
+            continue;
+        }
+
+        const before = Number(state?.[key] || 0) || 0;
+        if (state) state[key] = before + amount;
+        applied[key] = amount;
+    }
+    return Object.freeze(applied);
 }
 
 function representativeZoneCell(zone) {
@@ -468,6 +536,10 @@ export class ZoneConversionService {
         return resolveZoneConversionCost(this.state, definition);
     }
 
+    resolveCreationReward(definitionId) {
+        return resolveZoneConversionCreationReward(this.getDefinition(definitionId));
+    }
+
     validateCandidate(definitionId, groupId) {
         const definition = this.getDefinition(definitionId);
         if (!definition) {
@@ -504,6 +576,11 @@ export class ZoneConversionService {
             && normalizeZoneResourceMap(definition.maintenance?.resources || {}) !== null;
         if (!maintenanceResolved) {
             reasons.push('MAINTENANCE_DEFINITION_UNRESOLVED');
+        }
+
+        const creationReward = this.resolveCreationReward(definitionId);
+        if (creationReward.status === ZONE_CONVERSION_REWARD_STATUS.UNRESOLVED) {
+            reasons.push('CREATION_REWARD_UNRESOLVED');
         }
 
         return {
@@ -591,7 +668,20 @@ export class ZoneConversionService {
             };
         }
 
+        const reward = this.resolveCreationReward(definitionId);
+        if (reward.status === ZONE_CONVERSION_REWARD_STATUS.UNRESOLVED) {
+            return {
+                success: false,
+                reason: 'CREATION_REWARD_UNRESOLVED',
+                validation,
+                reward
+            };
+        }
+
         const zone = readZoneRecord(this.state, groupId);
+        const appliedCreationReward = reward.status === ZONE_CONVERSION_REWARD_STATUS.RESOLVED
+            ? applyCreationReward(this.state, reward.resources)
+            : Object.freeze({});
         const conversion = Object.freeze({
             instanceId: `ZONE_CONVERSION@${String(groupId)}@${definition.id}`,
             definitionId: definition.id,
@@ -610,6 +700,11 @@ export class ZoneConversionService {
                 lastSettledVerse: null,
                 lastPaymentSucceeded: null
             }),
+            creationReward: Object.freeze({
+                status: reward.status,
+                requested: Object.freeze(clone(reward.resources, {})),
+                applied: appliedCreationReward
+            }),
             capabilities: Object.freeze([...definition.capabilities])
         });
 
@@ -618,6 +713,7 @@ export class ZoneConversionService {
             success: true,
             groupId: String(groupId),
             conversion: clone(conversion),
+            creationReward: clone(conversion.creationReward),
             cost
         };
     }
