@@ -5,6 +5,10 @@ import { LAND_SYSTEM_DATA } from "../game/src/data/land_system.js";
 import { COMMAND_CARDS_MASTER } from "../game/src/data/command_cards_data.js";
 import { GLOBAL_EVENTS_MASTER } from "../game/src/data/global_events.js";
 import {
+    ECONOMY_COST_AUTHORING_ANCHORS_V1,
+    classifyEconomyPveForAuthoring
+} from "./economy_cost_authoring_anchors_v1.mjs";
+import {
     resolvePlacementAnchor,
     resolvePlacementAttributeCells,
     resolvePlacementShape,
@@ -426,6 +430,16 @@ function rangeWithMedian(values) {
 const blockVerseUnits = resolveCanonicalBlockVerseUnits();
 assert.ok(blockVerseUnits.food > 0, "plains food BVE unit must remain positive");
 assert.ok(blockVerseUnits.material > 0, "mountain material BVE unit must remain positive");
+assert.equal(
+    blockVerseUnits.food,
+    ECONOMY_COST_AUTHORING_ANCHORS_V1.bve.foodPerBve,
+    "food BVE authoring anchor must track canonical Plains output"
+);
+assert.equal(
+    blockVerseUnits.material,
+    ECONOMY_COST_AUTHORING_ANCHORS_V1.bve.materialPerBve,
+    "material BVE authoring anchor must track canonical Mountain output"
+);
 
 console.log(
     "BVE_UNITS",
@@ -490,10 +504,52 @@ assert.ok(
     "FirstRun Trial1 heavy deployment must remain categorically heavier than every current Stage1 food/material card cost"
 );
 
+const authoringAnchors = ECONOMY_COST_AUTHORING_ANCHORS_V1.pve;
+assert.ok(
+    maxStage1CardPve <= authoringAnchors.routineStage1CardMax,
+    `current Stage1 card max PVE ${maxStage1CardPve.toFixed(2)} exceeds routine-card authoring anchor ${authoringAnchors.routineStage1CardMax.toFixed(2)}`
+);
+assert.ok(
+    heavyTrialPve.min >= authoringAnchors.firstRunTrial1Heavy.min
+        && heavyTrialPve.max <= authoringAnchors.firstRunTrial1Heavy.max,
+    `FirstRun Trial1 heavy PVE ${heavyTrialPve.min.toFixed(2)}..${heavyTrialPve.max.toFixed(2)} moved outside authoring anchor ${authoringAnchors.firstRunTrial1Heavy.min.toFixed(2)}..${authoringAnchors.firstRunTrial1Heavy.max.toFixed(2)}`
+);
+assert.ok(
+    allTrialPve.min >= authoringAnchors.firstRunTrial1AllIn.min
+        && allTrialPve.max <= authoringAnchors.firstRunTrial1AllIn.max,
+    `FirstRun Trial1 all-in PVE ${allTrialPve.min.toFixed(2)}..${allTrialPve.max.toFixed(2)} moved outside authoring anchor ${authoringAnchors.firstRunTrial1AllIn.min.toFixed(2)}..${authoringAnchors.firstRunTrial1AllIn.max.toFixed(2)}`
+);
+
 const stage1ExplicitGeCosts = GLOBAL_EVENTS_MASTER
     .filter(event => Number(event?.minStage || 1) <= 1)
     .map(event => ({ event, cost: readFoodMaterialCost(event) }))
     .filter(entry => entry.cost.food > 0 || entry.cost.material > 0);
+
+console.log(
+    "AUTHORING_ANCHOR_STATUS",
+    JSON.stringify({
+        routineCard: {
+            maxObservedPve: Number(maxStage1CardPve.toFixed(2)),
+            anchorMax: authoringAnchors.routineStage1CardMax,
+            classification: classifyEconomyPveForAuthoring(maxStage1CardPve)
+        },
+        strategicOpen: authoringAnchors.strategicAuthoringSpace,
+        heavyTrial: {
+            observed: {
+                min: Number(heavyTrialPve.min.toFixed(2)),
+                max: Number(heavyTrialPve.max.toFixed(2))
+            },
+            anchor: authoringAnchors.firstRunTrial1Heavy
+        },
+        allInTrial: {
+            observed: {
+                min: Number(allTrialPve.min.toFixed(2)),
+                max: Number(allTrialPve.max.toFixed(2))
+            },
+            anchor: authoringAnchors.firstRunTrial1AllIn
+        }
+    })
+);
 
 console.log(
     "ECONOMY_SCALE_GAP",
