@@ -5,6 +5,10 @@ import { DeckManager } from "../game/src/systems/deck_manager.js";
 import { GameEngine } from "../game/src/core/game_engine.js";
 import { UIController } from "../game/src/ui/ui_controller.js";
 import { DefenseSystem } from "../game/src/systems/defense_system.js";
+import { ZoneConversionService } from "../game/src/systems/zone_conversion_service.js";
+import { BoardDomainAdapter } from "../game/src/core/board_domain_adapter.js";
+import { ProductionCalculator } from "../game/src/systems/production_calculator.js";
+import { ZONE_CONVERSION_DEFINITIONS } from "../game/src/data/zone_conversion_definitions.js";
 import { normalizeCardDefinitionV1 } from "../game/src/cards/card_definition_v1.js";
 import { LandPlacementAvailabilityQuery } from "../game/src/cards/land_placement_availability_query.js";
 import { CardOfferingEligibilityService } from "../game/src/cards/card_offering_eligibility_service.js";
@@ -995,7 +999,155 @@ function makeGrid(rows, cols) {
     assert.equal(state.logs.length, 1);
 }
 
-// W. Migrated effects stay identical between JSON SSOT and generated command master.
+// W. Resettlement migrates to a real 2x2 PLAINS Zone Conversion.
+{
+    const card = COMMAND_CARDS_MASTER.find(candidate => candidate.id === "CMD_RESETTLEMENT");
+    assert.ok(card?.effects?.length === 1);
+    assert.equal(card.effects[0].action, CARD_DOMAIN_ACTIONS.CREATE_ZONE_CONVERSION);
+    assert.equal(card.effects[0].definitionId, "RESETTLEMENT_PLAINS_2X2");
+
+    const grid = Array.from({ length: 5 }, (_, r) =>
+        Array.from({ length: 5 }, (_, c) => ({
+            r, c,
+            placed: false,
+            isHQ: false,
+            merged: false,
+            mergeGroupId: null,
+            mergeType: null,
+            terrain: null,
+            socketResource: null
+        }))
+    );
+    const zoneCells = [{ r: 0, c: 0 }, { r: 0, c: 1 }, { r: 1, c: 0 }, { r: 1, c: 1 }];
+    for (const pt of zoneCells) {
+        grid[pt.r][pt.c] = {
+            ...grid[pt.r][pt.c],
+            placed: true,
+            merged: true,
+            mergeGroupId: "plains_2x2",
+            mergeType: "2x2",
+            terrain: {
+                id: "GL1_PLAINS",
+                terrainId: "GL1_PLAINS",
+                zoneCategory: "PLAINS",
+                food: 1,
+                wood: 0,
+                defense: 0,
+                mystic: 0
+            }
+        };
+    }
+    const lCells = [{ r: 3, c: 3 }, { r: 3, c: 4 }, { r: 4, c: 3 }, { r: 4, c: 4 }];
+    for (const pt of lCells) {
+        grid[pt.r][pt.c] = {
+            ...grid[pt.r][pt.c],
+            placed: true,
+            merged: true,
+            mergeGroupId: "plains_l",
+            mergeType: "L_SHAPE",
+            terrain: {
+                id: "GL1_PLAINS",
+                terrainId: "GL1_PLAINS",
+                zoneCategory: "PLAINS",
+                food: 1,
+                wood: 0,
+                defense: 0,
+                mystic: 0
+            }
+        };
+    }
+
+    const state = {
+        turn: 20,
+        stage: { id: 2, size: 5 },
+        food: 30,
+        wood: 30,
+        material: 30,
+        defense: 10,
+        currentDefense: 10,
+        maxDefense: 10,
+        mystic: 0,
+        ember: 29,
+        maxEmber: 30,
+        grid,
+        mergedBlocks: {
+            plains_2x2: {
+                groupId: "plains_2x2",
+                terrainId: "GL1_PLAINS",
+                zoneCategory: "PLAINS",
+                mergeType: "2x2",
+                cells: zoneCells,
+                yieldMultiplier: 1.2
+            },
+            plains_l: {
+                groupId: "plains_l",
+                terrainId: "GL1_PLAINS",
+                zoneCategory: "PLAINS",
+                mergeType: "L_SHAPE",
+                cells: lCells,
+                yieldMultiplier: 1.2
+            }
+        },
+        reserveSlots: [],
+        consumedUniqueCards: [],
+        usedUniqueCards: [],
+        activeBuffs: [],
+        logs: [],
+        placedBlockProduction: {},
+        isHQVicinity() { return false; },
+        addBuff(buff) { this.activeBuffs.push(buff); },
+        addLog(log) { this.logs.push(log); }
+    };
+
+    const zoneConversionService = new ZoneConversionService({
+        state,
+        definitions: ZONE_CONVERSION_DEFINITIONS
+    });
+    const boardDomainAdapter = new BoardDomainAdapter({
+        state,
+        gridEngine: null,
+        zoneConversionService
+    });
+    const engine = { boardDomainAdapter, zoneConversionService };
+    engine.cardDomainActionExecutor = createCardDomainActionExecutor(engine);
+
+    const manager = new DeckManager(state, engine);
+    manager.cycleSystem = null;
+
+    const targets = manager.enumerateCardExecutionTargets(card);
+    assert.equal(targets.length, 1, "only the 2x2 PLAINS Zone is a Resettlement target");
+    assert.equal(targets[0].groupId, "plains_2x2");
+    assert.deepEqual({ r: targets[0].r, c: targets[0].c }, { r: 0, c: 0 });
+    assert.equal(manager.isCardEligible(card, 2, 0), true);
+
+    const result = manager.playCommandCard(card, { r: 0, c: 0 });
+    assert.equal(result.success, true);
+    assert.equal(state.food, 15);
+    assert.equal(state.wood, 20);
+    assert.equal(state.material, 20);
+    assert.equal(state.ember, 30, "Resettlement creation reward keeps the legacy ember cap");
+    assert.equal(state.activeBuffs.length, 1);
+    assert.equal(state.activeBuffs[0].id, "CMD_RESETTLEMENT");
+    assert.equal(state.activeBuffs[0].icon, "👥");
+    assert.equal(state.activeBuffs[0].category, "PERMANENT");
+    assert.equal(state.logs.length, 1);
+
+    const conversion = boardDomainAdapter.readZoneConversion("plains_2x2");
+    assert.equal(conversion.definitionId, "RESETTLEMENT_PLAINS_2X2");
+    assert.deepEqual(conversion.paidCost, { food: 15, wood: 10 });
+    assert.deepEqual(conversion.productionBonus, { food: 2 });
+    assert.equal(conversion.state, "ACTIVE");
+
+    const production = ProductionCalculator.calculateTotalProduction(state);
+    assert.equal(production.zoneConversionProduction.food, 2);
+    assert.equal(
+        ProductionCalculator.getResourceBreakdown(state).food.zoneConversions,
+        2,
+        "Resettlement food bonus is now part of the production read model"
+    );
+}
+
+// X. Migrated effects stay identical between JSON SSOT and generated command master.
 
 
 
@@ -1030,7 +1182,8 @@ function makeGrid(rows, cols) {
         "CMD_GRANARY",
         "CMD_AGRICULTURAL_REFORM",
         "CMD_MILITARY_FOCUS",
-        "CMD_IRON_RAMPART"
+        "CMD_IRON_RAMPART",
+        "CMD_RESETTLEMENT"
     ];
 
     for (const id of migratedIds) {
@@ -1046,7 +1199,7 @@ function makeGrid(rows, cols) {
     }
 }
 
-// X. Every remaining DeckManager command ID branch belongs to exactly one migration class.
+// Y. Every remaining DeckManager command ID branch belongs to exactly one migration class.
 {
     const deckManagerSource = readFileSync(
         new URL("../game/src/systems/deck_manager.js", import.meta.url),
