@@ -41,6 +41,7 @@ export class TrialController {
         this.gameFactHub = gameFactHub;
         this.emberSystem = emberSystem;
         this.deploymentService = deploymentService || null;
+        this.sessionDeploymentService = null;
         this.defenseReservation = defenseReservation || null;
         this.sessionDefenseReservation = null;
         this.state = null;
@@ -54,7 +55,11 @@ export class TrialController {
             ? null
             : this.defenseReservation;
         this.state.enemy.totalSuppression = this.powerResolver.resolveSuppression(this.state.enemy.strategicSuppression);
-        this.deploymentService?.beginSession?.({ trialState: this.state });
+        const deploymentSession = this.deploymentService?.beginSession?.({ trialState: this.state }) || null;
+        this.sessionDeploymentService = this.deploymentService
+            && deploymentSession?.applicable !== false
+            ? this.deploymentService
+            : null;
         return this.state;
     }
 
@@ -261,8 +266,8 @@ export class TrialController {
             routes: confirmedRoutes,
             totalDefenseAllocated
         };
-        if (this.deploymentService) {
-            this.state.deploymentPreview = this.deploymentService.previewPlan(this.state.interceptionPlan);
+        if (this.sessionDeploymentService) {
+            this.state.deploymentPreview = this.sessionDeploymentService.previewPlan(this.state.interceptionPlan);
         }
 
         this.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_PLAN_CONFIRMED, {
@@ -360,10 +365,10 @@ export class TrialController {
         if (!this.state) {
             return { success: false, reasons: ["TRIAL_NOT_STARTED"] };
         }
-        if (!this.deploymentService) {
+        if (!this.sessionDeploymentService) {
             return { success: false, reasons: ["DEPLOYMENT_ECONOMY_NOT_ATTACHED"] };
         }
-        const preview = this.deploymentService.previewPlan(plan, context);
+        const preview = this.sessionDeploymentService.previewPlan(plan, context);
         if (plan === this.state.interceptionPlan) {
             this.state.deploymentPreview = preview;
         }
@@ -371,11 +376,12 @@ export class TrialController {
     }
 
     getDeploymentHistory() {
-        return this.deploymentService?.getDeploymentHistory?.() || [];
+        return this.sessionDeploymentService?.getDeploymentHistory?.() || [];
     }
 
     endScenario() {
         this.deploymentService?.endSession?.();
+        this.sessionDeploymentService = null;
         this.state = null;
         this.cellResolver = null;
         this.sessionDefenseReservation = null;
@@ -418,9 +424,9 @@ export class TrialController {
         const defenseToCommit = Number(plan.totalDefenseAllocated) || 0;
         let deploymentCommit = null;
         let defenseReservationCommit = null;
-        if (this.deploymentService) {
+        if (this.sessionDeploymentService) {
             const expectedPreview = deploymentPreview || this.state.deploymentPreview || null;
-            deploymentCommit = this.deploymentService.commitPlan(plan, {
+            deploymentCommit = this.sessionDeploymentService.commitPlan(plan, {
                 expectedPreview,
                 context: deploymentContext
             });
