@@ -1668,6 +1668,14 @@
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
       ]
+    },
+    {
+      "path": "scratch/test_stage1_logging_camp_v2_spend_path_probe.mjs",
+      "purpose": "Stage1 Logging Camp v2 adjacent-site spend path, candidate cost/base/relation production, V15 residual material, and Trial1 heavy PVE probe",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
     }
   ]
 }
