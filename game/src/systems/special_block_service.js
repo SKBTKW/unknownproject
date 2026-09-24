@@ -6,13 +6,16 @@
 import {
     BASE_TERRAIN_INTERACTIONS,
     SPECIAL_BLOCK_COST_STATUS,
+    createSpecialBlockAdjacencyProfile,
     getSpecialBlockDefinition,
     hasCellCapability,
     isSpecialBlockFunctional,
     normalizeSpecialBlockResourceMap,
     readCellCapabilities,
+    readSpecialBlockAdjacencyProfile,
     readSpecialBlockTrialTraits,
-    resolveSpecialBlockCreationCost
+    resolveSpecialBlockCreationCost,
+    validateTerrainAgainstSpecialBlockAdjacency
 } from '../core/special_block_domain.js';
 
 const CARDINAL_ORIENTATIONS = new Set(['N', 'E', 'S', 'W']);
@@ -62,6 +65,17 @@ function createSpecialBlockEntity(definition, r, c, state, context = {}) {
             : (Number.isInteger(state?.turn) ? state.turn : null),
         ...(context.paidCost
             ? { paidCost: Object.freeze({ ...context.paidCost }) }
+            : {}),
+        ...(context.terrainAdjacencyProfile
+            ? {
+                terrainAdjacencyProfile: Object.freeze({
+                    e: context.terrainAdjacencyProfile.e,
+                    gl: context.terrainAdjacencyProfile.gl,
+                    ...(context.terrainAdjacencyProfile.source
+                        ? { source: Object.freeze({ ...context.terrainAdjacencyProfile.source }) }
+                        : {})
+                })
+            }
             : {})
     };
 }
@@ -278,21 +292,77 @@ export class SpecialBlockService {
         return { valid: true, target: point, cell, sourceGroup };
     }
 
+
+    _validateAdjacencyAt(point, profile) {
+        if (!point || !profile) return { valid: false, reason: 'ADJACENCY_PROFILE_UNAVAILABLE', reasons: ['ADJACENCY_PROFILE_UNAVAILABLE'] };
+
+        const reasons = [];
+        for (const entry of this.findAdjacentCells(point.r, point.c)) {
+            const neighbor = entry.cell;
+            if (!neighbor || neighbor.isHQ) continue;
+
+            if (neighbor.specialBlock) {
+                const neighborProfile = readSpecialBlockAdjacencyProfile(neighbor);
+                if (
+                    neighborProfile
+                    && Number.isFinite(profile.e)
+                    && Number.isFinite(neighborProfile.e)
+                    && Math.abs(profile.e - neighborProfile.e) >= 2
+                ) {
+                    if ((profile.e === 0 && neighborProfile.e === 3) || (profile.e === 3 && neighborProfile.e === 0)) {
+                        reasons.push('WETLAND_MOUNTAIN_NEIGHBOR');
+                    } else if ((profile.e === 0 && neighborProfile.e === 2) || (profile.e === 2 && neighborProfile.e === 0)) {
+                        reasons.push('WETLAND_HILL_NEIGHBOR');
+                    } else {
+                        reasons.push('INVALID_ELEVATION_NEIGHBOR');
+                    }
+                }
+                continue;
+            }
+
+            if (neighbor.placed && neighbor.terrain) {
+                const terrainCheck = validateTerrainAgainstSpecialBlockAdjacency(neighbor.terrain, profile);
+                reasons.push(...terrainCheck.reasons);
+            }
+        }
+
+        const uniqueReasons = [...new Set(reasons)];
+        return {
+            valid: uniqueReasons.length === 0,
+            reason: uniqueReasons[0] || null,
+            reasons: uniqueReasons
+        };
+    }
+
     validateTarget(typeOrDefinition, target, context = {}, options = {}) {
         const definition = typeof typeOrDefinition === 'string'
             ? getSpecialBlockDefinition(typeOrDefinition)
             : typeOrDefinition;
         if (!definition?.id) return { valid: false, reason: 'UNKNOWN_SPECIAL_BLOCK' };
 
-        if (definition.placement?.mode === 'INDEPENDENT_CELL_GENERATION') {
+        const independent = definition.placement?.mode === 'INDEPENDENT_CELL_GENERATION';
+        const structural = independent
+            ? this._validateIndependentGenerationTarget(definition, target)
+            : this._validateOverlayTarget(definition, target, context, options);
+        if (!structural.valid) return { ...structural, definition };
+
+        const referenceCell = independent ? structural.sourceCell : structural.cell;
+        const referencePoint = independent ? structural.source : structural.target;
+        const placementPoint = independent ? structural.destination : structural.target;
+        const adjacencyProfile = createSpecialBlockAdjacencyProfile(referenceCell, referencePoint);
+        const adjacency = this._validateAdjacencyAt(placementPoint, adjacencyProfile);
+        if (!adjacency.valid) {
             return {
-                ...this._validateIndependentGenerationTarget(definition, target),
+                ...structural,
+                ...adjacency,
+                adjacencyProfile,
                 definition
             };
         }
 
         return {
-            ...this._validateOverlayTarget(definition, target, context, options),
+            ...structural,
+            adjacencyProfile,
             definition
         };
     }
@@ -414,9 +484,13 @@ export class SpecialBlockService {
                 };
             }
         }
+        const adjacencyContext = {
+            ...context,
+            terrainAdjacencyProfile: validation.adjacencyProfile
+        };
         const creationContext = cost.status === SPECIAL_BLOCK_COST_STATUS.RESOLVED
-            ? { ...context, paidCost: cost.resources }
-            : context;
+            ? { ...adjacencyContext, paidCost: cost.resources }
+            : adjacencyContext;
 
         if (definition?.placement?.mode === 'INDEPENDENT_CELL_GENERATION') {
             const { r, c } = validation.destination;
