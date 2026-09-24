@@ -70,6 +70,7 @@ class GameEngine {
         this.offeringMinimumRequirementProvider = dependencies.offeringMinimumRequirementProvider
             || this.firstRunService
             || null;
+        this.cardRuntimeActivationProvider = dependencies.cardRuntimeActivationProvider || null;
 
         const injectedCheckSystem = dependencies.checkSystem || dependencies.state?.checkSystem || null;
         const injectedRngState = injectedCheckSystem && typeof injectedCheckSystem.getState === "function"
