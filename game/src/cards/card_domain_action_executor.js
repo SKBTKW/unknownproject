@@ -130,7 +130,9 @@ function createCardDomainActionExecutor(engine) {
             // authoritative Board quote and current candidate state immediately
             // before commit so a stale target/price cannot consume a card.
             const currentQuote = board.quoteZoneConversionCost(effect.definitionId);
-            const paidCost = context?.resolvedPaymentCost || {};
+            const paidCost = normalizeCardCost({
+                cost: context?.resolvedPaymentCost || {}
+            });
             if (
                 currentQuote?.status !== "RESOLVED"
                 || !currentQuote?.resources
