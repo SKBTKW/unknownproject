@@ -48,8 +48,8 @@ assert.deepEqual(
 );
 assert.deepEqual(
     unresolvedService.quoteCost(SPECIAL_BLOCK_TYPES.LOGGING_CAMP),
-    { status: SPECIAL_BLOCK_COST_STATUS.UNRESOLVED, resources: null },
-    "foundation must not invent LOGGING_CAMP balance values"
+    { status: SPECIAL_BLOCK_COST_STATUS.RESOLVED, resources: { wood: 20 } },
+    "LOGGING_CAMP v1 must expose its Board-owned 🧱20 creation quote"
 );
 assert.deepEqual(
     unresolvedService.quoteCost(SPECIAL_BLOCK_TYPES.ALTAR),
