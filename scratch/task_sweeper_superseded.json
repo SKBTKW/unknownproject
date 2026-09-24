@@ -457,6 +457,66 @@
         179
       ],
       "note": "Audited against the consolidated Multi-Attribute replacement chain: PR #96 (2.5D per-cell preview), #160 (live unresolved-production safety + 2D preview), #166 (canonical foundation reconciliation), #169 (final CELL/CANONICAL_TERRAIN production), #172 (Zone Conversion boundary), #173/#179 (live Offering paths), and #175 (canonical production flow). The current canonical contract in rules/03_land_system/06_multi_attribute_blocks.md preserves the staged semantics from this branch family, including per-cell terrain SSOT, exact attribute-map validation, rotation, block identity/counting, save/undo/restore, Trial cell terrain, partial-Zone presentation, legal-placement Offering gates, production ownership, and irrigation/cell-modifier boundaries."
+    },
+    {
+      "branch": "aot-task/AoT260922/board/zone-conversion-runtime-definition-port-v1",
+      "expectedHeadSha": "94c3fcb116732e16b05a707a1ece486d99a0c736",
+      "replacementPr": 225,
+      "note": "The original runtime-definition-port branch was clean-replayed onto the then-current AoT260922 as PR #225 with the same three-file Board/GameEngine injection scope; PR #225 passed Full Inspection and merged."
+    },
+    {
+      "branch": "aot-task/AoT260922/cards/offering-category-multiplicity-v1",
+      "expectedHeadSha": "b3c3e30d1253e97cc45356c53730c6234c96e078",
+      "replacementPr": 223,
+      "note": "The original Offering category-multiplicity branch was superseded by the r2 replay merged as PR #223, preserving the agreed 2-per-category default, forced-minimum override, provider override, and final availability fallback."
+    },
+    {
+      "branch": "aot-task/AoT260922/cards/zone-conversion-domain-action-v1",
+      "expectedHeadSha": "60a3e83d7aac2acae541e79ba5c05b2cbce90a3e",
+      "replacementPrs": [
+        225,
+        226
+      ],
+      "note": "The original Zone Conversion Card bridge was superseded by the current-base Board runtime definition port in PR #225 plus the clean Card bridge replay in PR #226. Together they preserve Board-owned definitions/mutation and Card-owned quoted payment/preflight semantics."
+    },
+    {
+      "branch": "aot-task/AoT260922/cards/zone-conversion-domain-action-v1-r2",
+      "expectedHeadSha": "8fc0b4affe4e7f73e646ebc65ab85cd8373c6182",
+      "replacementPrs": [
+        225,
+        226
+      ],
+      "note": "Draft PR #204/r2 was explicitly superseded after AoT260922 advanced. PR #225 landed the required Board definition injection seam; PR #226 then clean-replayed the complete generic CREATE_ZONE_CONVERSION bridge, dynamic Board quote, stale revalidation, payment safety, targeting, and migration-readiness scope onto that base."
+    },
+    {
+      "branch": "aot-task/AoT260922/integration/stage1-e2e-audit-rebase",
+      "expectedHeadSha": "d4ff0aec70dee59a8cb06fd277d3012ea7d42842",
+      "replacementPr": 190,
+      "note": "This intermediate Stage1 E2E audit rebase was superseded by the final merged Stage1 E2E audit PR #190, which carries the audit-only registry/runner/test scope on the later target."
+    },
+    {
+      "branch": "aot-task/AoT260922/presentation/trial-right-panel-retirement",
+      "expectedHeadSha": "952d835c77f7be84598b1f0bb1a996de1a5a0aed",
+      "replacementPr": 211,
+      "note": "The Trial right-panel retirement lineage was rebuilt repeatedly as the target moved; final current-base implementation merged as PR #211 (r4), replacing the original branch."
+    },
+    {
+      "branch": "aot-task/AoT260922/presentation/trial-right-panel-retirement-r2",
+      "expectedHeadSha": "15b44b4714069caee5ebf0d2324320bc4c546dae",
+      "replacementPr": 211,
+      "note": "PR #205/r2 was not merged and was superseded by later clean replays; the final retirement implementation merged as PR #211 (r4)."
+    },
+    {
+      "branch": "aot-task/AoT260922/presentation/trial-right-panel-retirement-r3",
+      "expectedHeadSha": "0166a06214f9ca21382ef641f732072f4ce0a6d9",
+      "replacementPr": 211,
+      "note": "PR #210/r3 was green but became stale as AoT260922 advanced; its scope was recreated from the later target and merged as PR #211 (r4)."
+    },
+    {
+      "branch": "aot-task/AoT260922/tutorial/first-run-activation-v1-rebase",
+      "expectedHeadSha": "fad2ae6b9561c486113c2cd90952e8f2ba1c10dc",
+      "replacementPr": 203,
+      "note": "This stale FirstRun browser-activation rebase was superseded by PR #203, which merged the persisted browser FirstRun activation store and explicit GameEngine firstRun decision on the canonical target."
     }
   ]
 }
