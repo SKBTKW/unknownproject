@@ -342,6 +342,11 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_demihuman_traces_public_presentation_bridge.mjs",
+      "purpose": "demihuman traces public presentation lifecycle bridge",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_dev_chronicle_restore_ui.mjs",
       "purpose": "dev chronicle restore ui",
       "suite": "existing",
