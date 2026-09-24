@@ -2,6 +2,10 @@ import {
     TRIAL_DEPLOYMENT_COST_PROFILE_STATUS,
     createTrialDeploymentCostResolver
 } from "../game/src/trial/domain/trial_deployment_cost_resolver.js";
+import {
+    FIRST_RUN_TRIAL1_RELATIVE_DEPLOYMENT_POLICY_V1,
+    resolveFirstRunTrial1DeploymentBurdenShare
+} from "../game/src/trial/config/first_run_trial1_relative_deployment_policy_v1.js";
 
 function pct(part, whole) {
     if (!Number.isFinite(whole) || whole <= 0) return null;
@@ -157,27 +161,17 @@ export function resolveFirstRunBurdenShare({
     requestedDefense = 0,
     defenseAvailable = 0,
     distance = 0,
-    stage1MaxDistance = 4
+    stage1MaxDistance = FIRST_RUN_TRIAL1_RELATIVE_DEPLOYMENT_POLICY_V1.stage1MaxDistance
 } = {}) {
-    const defense = Math.max(0, Number(requestedDefense) || 0);
-    const available = Math.max(0, Number(defenseAvailable) || 0);
-    const defenseFraction = available > 0
-        ? Math.min(1, defense / available)
-        : 0;
-    const distanceFraction = stage1MaxDistance > 0
-        ? Math.min(1, Math.max(0, Number(distance) || 0) / stage1MaxDistance)
-        : 0;
-
-    // FirstRun spectacle probe only:
-    // - meaningful deployment starts expensive
-    // - committing most defense drives the burden toward 75%
-    // - a far deployment can push a full commitment to 80%
-    // This is intentionally NOT a product balance rule yet.
-    const share = 0.25
-        + (0.45 * defenseFraction)
-        + (0.10 * distanceFraction);
-
-    return Math.min(0.80, Math.max(0, share));
+    return resolveFirstRunTrial1DeploymentBurdenShare({
+        requestedDefense,
+        defenseAvailable,
+        distance,
+        policy: {
+            ...FIRST_RUN_TRIAL1_RELATIVE_DEPLOYMENT_POLICY_V1,
+            stage1MaxDistance
+        }
+    });
 }
 
 export function evaluateFirstRunBurdenAgainstSamples({
