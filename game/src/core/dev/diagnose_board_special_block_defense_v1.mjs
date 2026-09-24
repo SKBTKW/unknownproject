@@ -658,7 +658,14 @@ console.log('Board / Special Block / Defense v1 contract');
     assert.equal(target?.sourceGroupKind, 'CONNECTED_TERRAIN_CLUSTER');
     assert.equal(target?.sourceGroupId, null);
 
-    const logging = service.createSpecialBlock(SPECIAL_BLOCK_TYPES.LOGGING_CAMP, { r: 1, c: 2 });
+    const logging = service.createSpecialBlock(
+        SPECIAL_BLOCK_TYPES.LOGGING_CAMP,
+        { r: 1, c: 2 },
+        {
+            paymentConfirmed: true,
+            paidCost: { wood: 20 }
+        }
+    );
     assert.equal(logging.success, true);
     assert.equal(logging.sourceGroup.kind, 'CONNECTED_TERRAIN_CLUSTER');
     assert.equal(logging.sourceGroup.size, 2);
