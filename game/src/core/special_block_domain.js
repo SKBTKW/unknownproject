@@ -44,6 +44,7 @@ export const SPECIAL_BLOCK_COST_STATUS = Object.freeze({
 export const SPECIAL_BLOCK_ADJACENCY_GL = 1;
 
 function finiteTerrainAxis(value) {
+    if (value === null || value === undefined || value === '') return null;
     const number = Number(value);
     return Number.isFinite(number) ? number : null;
 }
