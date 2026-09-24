@@ -28,7 +28,8 @@ const PROTOTYPE = Object.freeze([
     "CMD_VIGILANCE",
     "CMD_REKINDLE_EMBER",
     "CMD_GRANARY",
-    "CMD_WETLAND_RECLAMATION"
+    "CMD_WETLAND_RECLAMATION",
+    "CMD_AGRICULTURAL_REFORM"
 ]);
 const SUPPORT = Object.freeze([
     "CMD_RATIONING",
@@ -37,7 +38,6 @@ const SUPPORT = Object.freeze([
 ]);
 const BLOCKED = Object.freeze([
     "CMD_LOGGING_CAMP",
-    "CMD_AGRICULTURAL_REFORM",
     "CMD_PASTORAL_FARM",
     "CMD_MILITARY_FOCUS",
     "CMD_FILL_THE_VOID",
@@ -78,7 +78,7 @@ for (const id of PROTOTYPE) {
         "Emergency Levy v1 is immediate-only");
 }
 
-for (const id of ["CMD_RATIONING", "CMD_EMERGENCY_LEVY", "CMD_REKINDLE_EMBER", "CMD_GRANARY", "CMD_WETLAND_RECLAMATION"]) {
+for (const id of ["CMD_RATIONING", "CMD_EMERGENCY_LEVY", "CMD_REKINDLE_EMBER", "CMD_GRANARY", "CMD_WETLAND_RECLAMATION", "CMD_AGRICULTURAL_REFORM"]) {
     assert.deepEqual(
         generatedById.get(id),
         byId.get(id),
@@ -187,9 +187,15 @@ for (const id of ["CMD_RATIONING", "CMD_EMERGENCY_LEVY", "CMD_REKINDLE_EMBER", "
 
 {
     const card = byId.get("CMD_AGRICULTURAL_REFORM");
-    assert.ok(effect("CMD_AGRICULTURAL_REFORM", "STATE_INCREMENT",
-        item => item.key === "permanentPlainsFoodBonus" && item.amount === 1));
-    assert.equal(Boolean(effect("CMD_AGRICULTURAL_REFORM", "DOMAIN_ACTION")), false);
+    assert.deepEqual(card.cost, {});
+    assert.equal(card.reqConnectedPlainsOrReclaimed, undefined);
+    assert.equal(card.reqWood, undefined);
+    assert.ok(effect("CMD_AGRICULTURAL_REFORM", "DOMAIN_ACTION",
+        item => item.action === "CREATE_ZONE_CONVERSION"
+            && item.definitionId === "AGRICULTURAL_REFORM"
+            && item.paymentMode === "DOMAIN_QUOTE"));
+    assert.equal(Boolean(effect("CMD_AGRICULTURAL_REFORM", "STATE_INCREMENT")), false);
+    assert.equal(Boolean(effect("CMD_AGRICULTURAL_REFORM", "BUFF_ADD")), false);
 }
 
 for (const id of ["CMD_PASTORAL_FARM"]) {

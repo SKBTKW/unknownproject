@@ -5,6 +5,11 @@ import {
     SPECIAL_BLOCK_DEFINITIONS,
     resolveSpecialBlockCreationCost
 } from "../game/src/core/special_block_domain.js";
+import { resolveZoneConversionCost } from "../game/src/core/zone_conversion_domain.js";
+import {
+    ZONE_CONVERSION_DEFINITION_IDS,
+    ZONE_CONVERSION_DEFINITIONS
+} from "../game/src/data/zone_conversion_definitions.js";
 
 const economyCards = JSON.parse(
     readFileSync(new URL("../game/src/data/economy_cards.json", import.meta.url), "utf8")
@@ -42,7 +47,7 @@ const expectedCosts = new Map([
     ["CMD_WETLAND_RECLAMATION", { wood: 15, ember: 1 }],
     ["CMD_LOGGING_CAMP", { ember: 1 }],
     ["CMD_GRANARY", { wood: 20 }],
-    ["CMD_AGRICULTURAL_REFORM", { wood: 20 }],
+    ["CMD_AGRICULTURAL_REFORM", {}],
     ["CMD_PASTORAL_FARM", { wood: 15 }],
     ["CMD_ABANDONED_SETTLEMENT", { ember: 1 }],
     ["CMD_EMERGENCY_LEVY", { food: 20 }]
@@ -55,6 +60,16 @@ for (const card of stage1) {
         `${card.id}: audit must be updated when current Stage1 card cost changes`
     );
 }
+
+const agriculturalReformCost = resolveZoneConversionCost(
+    { mergedBlocks: {} },
+    ZONE_CONVERSION_DEFINITIONS[ZONE_CONVERSION_DEFINITION_IDS.AGRICULTURAL_REFORM]
+);
+assert.deepEqual(
+    agriculturalReformCost.resources,
+    { wood: 20 },
+    "Agricultural Reform Stage1 sink must be audited from Board-owned Zone Conversion cost"
+);
 
 assert.equal(
     investigationCards

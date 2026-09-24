@@ -28,7 +28,7 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 | `CMD_WETLAND_RECLAMATION` | **Implemented foundation / Dormant** | 🧱15＋🔥1。explicit targetの`TRANSFORM_TERRAIN` Domain Actionで湖でない未地帯化湿原1マスを`E1_RECLAIMED_LAND`へ永久変換。HQ/完成Zone/LakeはBoard側で拒否。production既定ではDormant。 |
 | `CMD_LOGGING_CAMP` | **Partial / Player-facing description mismatch / Eligibility different** | runtimeは即時🧱+8とBuffのみ。表示説明の「森1マスを伐採拠点化」「周囲森林から継続🧱産出」は未接続。`reqForestNearby` は近接判定ではなく盤面全体の森系マス数。 |
 | `CMD_GRANARY` | **Implemented foundation / Dormant** | 🧱20。平地/干拓地へ`GRANARY` Special Blockを対象指定で設置。`FOOD_STORAGE` CapabilityをMaintenanceが読み、1基あたり維持費-2・最大2基分。production既定ではDormant。 |
-| `CMD_AGRICULTURAL_REFORM` | **Implemented / Simplified / Player-facing description mismatch / Eligibility different** | runtimeは全平地系へ恒久🌾+1/Verse。表示説明は「指定した連結農業地域の最大4マス」だが、target選択はなく盤面全体へ作用する。候補化の連結条件も実際には盤面全体合計。 |
+| `CMD_AGRICULTURAL_REFORM` | **Implemented / v1 Board-owned** | 完成済みPLAINS Zone 1つを明示選択し、Zone Conversionとして各メンバー🌾+1/Verse。作成費🧱20はBoard definitionが正本、維持費なし、UNIQUE。 |
 | `CMD_PASTORAL_FARM` | **Partial** | 即時🌾+2中心。表示説明の持続施設効果は未接続。 |
 | `CMD_ABANDONED_SETTLEMENT` | **Implemented** | 🔥1、2D6。2–5:🌾+15 / 6–8:🧱+15 / 9–11:✨+10 / 12:🌾+20🧱+20✨+15。 |
 | `CMD_EMERGENCY_LEVY` | **Implemented** | 🌾20→即時🧱+15。旧維持費+5ペナルティは現発動では設定しない。 |
@@ -176,7 +176,7 @@ PERMANENT Buff
 
 1. 《配給》: **表示40% / runtime50%**。
 2. 《干拓》: 表示は対象指定、runtimeは自動選択。
-3. 《農地改革》: 表示は指定連結最大4マス、runtimeは全平地系+1/Verse。Eligibilityの連結条件も非連結合計。
+3. 《農地改革》: v1で完成済みPLAINS Zone 1つへのZone Conversionへ移行済み。旧global `permanentPlainsFoodBonus`は新規発動では使用しない。
 4. 《伐採拠点》: 表示の拠点化・周囲継続産出が未接続。
 5. 《灌漑》: 水源条件は有効だが平地/干拓地条件は未評価。表示の対象マス恒久強化も未接続。
 6. 《移住》: 現役同一ID分岐が重複。先行分岐が後段をshadowし、30超🔥を30へ下げ得る。継続🌾stateはconsumerなし。
