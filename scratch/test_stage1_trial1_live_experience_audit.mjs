@@ -31,6 +31,8 @@ const LIVE_AUDIT_SEEDS = Object.freeze([
     20260927
 ]);
 
+const PVE_CURVE_VERSES = Object.freeze([1, 5, 8, 12, 15]);
+
 function definitionOf(card) {
     return card?.terrain || card || null;
 }
@@ -196,6 +198,15 @@ function playGrowthRun(seed) {
         runSeed: seed,
         firstRun: true
     });
+    const pveCurve = [];
+
+    const captureCurvePoint = () => {
+        if (!PVE_CURVE_VERSES.includes(engine.state.turn)) return;
+        if (pveCurve.some(point => point.verse === engine.state.turn)) return;
+        pveCurve.push(captureTrial1Sample(engine, seed));
+    };
+
+    captureCurvePoint();
 
     while (engine.state.turn < 15) {
         if (engine.state.hasPickedThisTurn !== true) {
@@ -221,9 +232,20 @@ function playGrowthRun(seed) {
         engine.nextTurn();
         assert.equal(engine.state.turn, before + 1, `seed ${seed}: Verse must advance normally`);
         assert.ok(engine.state.ember > 0, `seed ${seed} V${engine.state.turn}: Ember must remain positive`);
+        captureCurvePoint();
     }
 
-    return captureTrial1Sample(engine, seed);
+    const finalSample = captureTrial1Sample(engine, seed);
+    assert.deepEqual(
+        pveCurve.map(point => point.verse),
+        PVE_CURVE_VERSES,
+        `seed ${seed}: all Stage1 PVE checkpoints must be captured`
+    );
+
+    return Object.freeze({
+        ...finalSample,
+        pveCurve: Object.freeze(pveCurve)
+    });
 }
 
 function range(values) {
@@ -486,6 +508,57 @@ for (const { card, cost } of stage1ResourceCostCards) {
     );
 }
 
+const pveCurveSummary = [];
+for (const verse of PVE_CURVE_VERSES) {
+    const checkpoints = liveSamples.map(sample => {
+        const point = sample.pveCurve.find(entry => entry.verse === verse);
+        assert.ok(point, `seed ${sample.seed}: missing V${verse} PVE checkpoint`);
+        return point;
+    });
+
+    const cardPressures = [];
+    for (const { card, cost } of stage1ResourceCostCards) {
+        for (const checkpoint of checkpoints) {
+            const foodPve = cost.food > 0 ? cost.food / checkpoint.grossFoodPerVerse : 0;
+            const materialPve = cost.material > 0 ? cost.material / checkpoint.grossMaterialPerVerse : 0;
+            cardPressures.push(Object.freeze({
+                cardId: card.id,
+                seed: checkpoint.seed,
+                recoveryPve: Math.max(foodPve, materialPve)
+            }));
+        }
+    }
+
+    const maxPressure = cardPressures.reduce(
+        (best, row) => !best || row.recoveryPve > best.recoveryPve ? row : best,
+        null
+    );
+    const pressureRange = rangeWithMedian(cardPressures.map(row => row.recoveryPve));
+    const grossFood = rangeWithMedian(checkpoints.map(row => row.grossFoodPerVerse));
+    const grossMaterial = rangeWithMedian(checkpoints.map(row => row.grossMaterialPerVerse));
+
+    const summary = Object.freeze({
+        verse,
+        grossFood,
+        grossMaterial,
+        cardPressure: pressureRange,
+        maxCardId: maxPressure?.cardId || null,
+        maxCardSeed: maxPressure?.seed || null
+    });
+    pveCurveSummary.push(summary);
+
+    console.log(
+        [
+            "STAGE1_PVE_CURVE",
+            `V${verse}`,
+            `gross🌾=${grossFood.min.toFixed(0)}..${grossFood.max.toFixed(0)} med=${grossFood.median.toFixed(1)}`,
+            `gross🧱=${grossMaterial.min.toFixed(0)}..${grossMaterial.max.toFixed(0)} med=${grossMaterial.median.toFixed(1)}`,
+            `rawCardPVE=${pressureRange.min.toFixed(2)}..${pressureRange.max.toFixed(2)} med=${pressureRange.median.toFixed(2)}`,
+            `max=${maxPressure?.cardId || "NONE"}@${maxPressure?.seed || "n/a"}`
+        ].join(" ")
+    );
+}
+
 const maxStage1CardPve = Math.max(...stage1CardScaleRows.map(row => row.pve.max));
 const maxStage1CardBve = Math.max(...stage1CardScaleRows.map(row => row.recoveryBve));
 const heavyTrialPve = rangeWithMedian(
@@ -524,6 +597,31 @@ const stage1ExplicitGeCosts = GLOBAL_EVENTS_MASTER
     .filter(event => Number(event?.minStage || 1) <= 1)
     .map(event => ({ event, cost: readFoodMaterialCost(event) }))
     .filter(entry => entry.cost.food > 0 || entry.cost.material > 0);
+
+console.log(
+    "PVE_CURVE_RESULT",
+    JSON.stringify({
+        checkpoints: pveCurveSummary.map(entry => ({
+            verse: entry.verse,
+            grossFood: {
+                min: Number(entry.grossFood.min.toFixed(0)),
+                median: Number(entry.grossFood.median.toFixed(1)),
+                max: Number(entry.grossFood.max.toFixed(0))
+            },
+            grossMaterial: {
+                min: Number(entry.grossMaterial.min.toFixed(0)),
+                median: Number(entry.grossMaterial.median.toFixed(1)),
+                max: Number(entry.grossMaterial.max.toFixed(0))
+            },
+            rawStage1CardPve: {
+                min: Number(entry.cardPressure.min.toFixed(2)),
+                median: Number(entry.cardPressure.median.toFixed(2)),
+                max: Number(entry.cardPressure.max.toFixed(2))
+            },
+            maxCardId: entry.maxCardId
+        }))
+    })
+);
 
 console.log(
     "AUTHORING_ANCHOR_STATUS",
