@@ -1690,27 +1690,53 @@ function makeGrid(rows, cols) {
     );
 }
 
-// AK. Shadowed duplicate legacy branches stay explicit and Great Rampart remains Project-owned.
+// AK. Shadowed duplicate legacy branches stay explicit until owning-Domain migration removes them.
 {
     assert.deepEqual(
-        [...LEGACY_SHADOWED_BRANCH_IDS],
-        ["CMD_GREAT_RAMPART_PROJECT"]
+        [...LEGACY_SHADOWED_BRANCH_IDS].sort(),
+        ["CMD_GREAT_RAMPART_PROJECT", "CMD_RESETTLEMENT"].sort()
     );
     assert.equal(
         resolveDomainActionOwner("CMD_GREAT_RAMPART_PROJECT"),
         DOMAIN_ACTION_OWNER.PROJECT
+    );
+    assert.equal(
+        resolveDomainActionOwner("CMD_RESETTLEMENT"),
+        DOMAIN_ACTION_OWNER.BOARD
     );
 
     const deckManagerSource = readFileSync(
         new URL("../game/src/systems/deck_manager.js", import.meta.url),
         "utf8"
     );
-    const first = deckManagerSource.indexOf('cId === "CMD_GREAT_RAMPART_PROJECT"');
-    const second = deckManagerSource.indexOf('cId === "CMD_GREAT_RAMPART_PROJECT"', first + 1);
-    assert.ok(first >= 0 && second > first, "Great Rampart legacy duplicate must remain detectable until Project migration");
-    const firstBranch = deckManagerSource.slice(first, second);
-    assert.ok(firstBranch.includes("greatRampartTurns = 4"),
-        "first reachable Great Rampart branch must remain the 4T project behavior");
+
+    for (const id of LEGACY_SHADOWED_BRANCH_IDS) {
+        const first = deckManagerSource.indexOf(`cId === "${id}"`);
+        const second = deckManagerSource.indexOf(`cId === "${id}"`, first + 1);
+        assert.ok(
+            first >= 0 && second > first,
+            `${id} shadowed duplicate must remain detectable until Domain migration`
+        );
+        const between = deckManagerSource.slice(first, second);
+        assert.ok(
+            between.includes("} else"),
+            `${id} first branch must participate in the same else-if chain that shadows the later duplicate`
+        );
+    }
+
+    const rampartFirst = deckManagerSource.indexOf('cId === "CMD_GREAT_RAMPART_PROJECT"');
+    const rampartSecond = deckManagerSource.indexOf('cId === "CMD_GREAT_RAMPART_PROJECT"', rampartFirst + 1);
+    assert.ok(
+        deckManagerSource.slice(rampartFirst, rampartSecond).includes("greatRampartTurns = 4"),
+        "first reachable Great Rampart branch must remain the current 4T legacy behavior"
+    );
+
+    const resettlementFirst = deckManagerSource.indexOf('cId === "CMD_RESETTLEMENT"');
+    const resettlementSecond = deckManagerSource.indexOf('cId === "CMD_RESETTLEMENT"', resettlementFirst + 1);
+    assert.ok(
+        deckManagerSource.slice(resettlementFirst, resettlementSecond).includes("this.state.ember = Math.min"),
+        "first reachable Resettlement branch must remain distinguishable from its unreachable duplicate"
+    );
 }
 
 // AL. Candidate narrowing can never re-introduce a card rejected by full eligibility.

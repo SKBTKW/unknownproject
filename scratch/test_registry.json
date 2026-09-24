@@ -986,6 +986,14 @@
       ]
     },
     {
+      "path": "scratch/test_stage1_executable_spend_path_audit.mjs",
+      "purpose": "run canonical Stage1 command spends, then measure actual FirstRun Trial1 relative deployment and total same-seed resource burden",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_stage1_trial1_linear_cost_fit.mjs",
       "purpose": "measure whether the fixed linear deployment-cost formula can hold the live FirstRun 70-80% burden target across Stage1 seeds",
       "suite": "existing",
@@ -996,6 +1004,14 @@
     {
       "path": "scratch/test_first_run_trial1_relative_deployment_cost.mjs",
       "purpose": "FirstRun Trial1-only relative food/material deployment burden, session applicability, later-Trial fallback, and explicit override precedence",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_first_run_trial1_relative_payment_integration.mjs",
+      "purpose": "FirstRun production composition preview/commit integration for relative food/material deployment payment, defense reservation, and stale atomic rejection",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"

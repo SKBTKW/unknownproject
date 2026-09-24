@@ -501,6 +501,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (FirstRun Trial1 Relative Deployment Cost) で不合格が検出されました。");
         process.exit(1);
     }
+    const firstRunTrial1RelativePaymentIntegrationOk = await runCommand("node", ["scratch/test_first_run_trial1_relative_payment_integration.mjs"]);
+    if (!firstRunTrial1RelativePaymentIntegrationOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (FirstRun Trial1 Relative Payment Integration) で不合格が検出されました。");
+        process.exit(1);
+    }
     const stage1Trial1DeploymentCostCandidateOk = await runCommand("node", ["scratch/test_stage1_trial1_deployment_cost_candidate_v1.mjs"]);
     if (!stage1Trial1DeploymentCostCandidateOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Stage1 Trial1 Deployment Cost Candidate Audit) で不合格が検出されました。");
@@ -509,6 +514,11 @@ async function main() {
     const stage1Trial1DeploymentHeadroomOk = await runCommand("node", ["scratch/test_stage1_trial1_deployment_headroom_v1.mjs"]);
     if (!stage1Trial1DeploymentHeadroomOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Stage1 Trial1 Deployment Headroom Audit) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const stage1ExecutableSpendPathOk = await runCommand("node", ["scratch/test_stage1_executable_spend_path_audit.mjs"]);
+    if (!stage1ExecutableSpendPathOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Stage1 Executable Spend Path + Product Trial1 Burden) で不合格が検出されました。");
         process.exit(1);
     }
     const trialDeploymentEngineAttachOk = await runCommand("node", ["scratch/test_trial_deployment_engine_attach.mjs"]);
