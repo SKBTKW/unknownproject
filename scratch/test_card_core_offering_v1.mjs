@@ -61,10 +61,31 @@ function makeGrid(rows, cols) {
     assert.equal(v1.schemaVersion, 1);
     assert.equal(v1.id, legacy.id);
     assert.equal(v1.lifecycle.minStage, 2);
+    assert.equal(v1.offering.category, "LAND");
     assert.equal(v1.offering.weight, 0.25);
     assert.equal(v1.offering.requirements.length, 1);
     assert.equal(v1.execution.requirements.length, 1);
     assert.equal(v1.legacy, legacy);
+}
+
+{
+    const explicitOfferingCategory = normalizeCardDefinitionV1({
+        id: "COMMAND_WITH_OFFERING_CATEGORY",
+        category: "COMMAND",
+        offeringCategory: "TEST_BUCKET_A"
+    });
+    assert.equal(explicitOfferingCategory.category, "COMMAND",
+        "gameplay category remains independent from Offering category");
+    assert.equal(explicitOfferingCategory.offering.category, "TEST_BUCKET_A");
+
+    const nestedOfferingCategory = normalizeCardDefinitionV1({
+        id: "COMMAND_WITH_NESTED_OFFERING_CATEGORY",
+        category: "COMMAND",
+        offeringCategory: "TEST_BUCKET_A",
+        offering: { category: "TEST_BUCKET_B" }
+    });
+    assert.equal(nestedOfferingCategory.offering.category, "TEST_BUCKET_B",
+        "authored offering.category takes precedence over the legacy-friendly alias");
 }
 
 // B. LAND availability asks the Placement Domain and checks rotations.
