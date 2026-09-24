@@ -22,10 +22,10 @@ const expectedFood = initialFood
     + singleChargePreview.grossFood
     - singleChargePreview.foodCost;
 assert.strictEqual(singleChargeEngine.state.food, expectedFood);
-assert.strictEqual(singleChargeEngine.state.food, 40);
-assert.strictEqual(singleChargePreview.production.totalFood, -10);
-assert.strictEqual(singleChargePreview.production.netFood, -10);
-assert.strictEqual(singleChargePreview.production.grossFood, 10);
+assert.strictEqual(singleChargeEngine.state.food, 35);
+assert.strictEqual(singleChargePreview.production.totalFood, -15);
+assert.strictEqual(singleChargePreview.production.netFood, -15);
+assert.strictEqual(singleChargePreview.production.grossFood, 5);
 assert.strictEqual(singleChargePreview.foodCost, 20);
 
 // 2. 配給・緊急徴発を含む最終維持費がpreviewと実決済で一致する。
@@ -37,7 +37,7 @@ const rationingPreview = rationingEngine.previewTurnEndMaintenance({
 assert.strictEqual(rationingPreview.foodCost, 10);
 rationingEngine.nextTurn({ autoFallbackEnabled: false });
 assert.strictEqual(rationingEngine.lastTurnMaintenanceResult.foodCost, 10);
-assert.strictEqual(rationingEngine.state.food, 50);
+assert.strictEqual(rationingEngine.state.food, 45);
 assert.strictEqual(rationingEngine.state.foodCostHalvedTurns, 0);
 
 const levyEngine = GameEngine.createGame({ runSeed: 260902 });
@@ -49,7 +49,7 @@ const levyPreview = levyEngine.previewTurnEndMaintenance({
 assert.strictEqual(levyPreview.foodCost, 25);
 levyEngine.nextTurn({ autoFallbackEnabled: false });
 assert.strictEqual(levyEngine.lastTurnMaintenanceResult.foodCost, 25);
-assert.strictEqual(levyEngine.state.food, 35);
+assert.strictEqual(levyEngine.state.food, 30);
 assert.strictEqual(levyEngine.state.emergencyLevyTurns, 0);
 
 // 3. OFFでもautomaticPlanと仮想計画を分離し、必要量を取得できる。
@@ -84,10 +84,12 @@ assert.strictEqual(offPartial.automaticPlan.materialSpent, 0);
 // 5. ONで全額補填可能なら自動消費し、食料不足由来の🔥-1を回避する。
 const autoFullEngine = GameEngine.createGame({ runSeed: 260902 });
 autoFullEngine.state.food = 0;
+autoFullEngine.state.wood = 50;
+autoFullEngine.state.material = 50;
 autoFullEngine.nextTurn({ autoFallbackEnabled: true });
 assert.strictEqual(autoFullEngine.state.food, 0);
 assert.strictEqual(autoFullEngine.state.mystic, 0);
-assert.strictEqual(autoFullEngine.state.wood, 20);
+assert.strictEqual(autoFullEngine.state.wood, 10);
 assert.strictEqual(autoFullEngine.state.ember, 19);
 assert.strictEqual(autoFullEngine.lastTurnMaintenanceResult.fallbackResult.applied, true);
 
@@ -98,29 +100,33 @@ autoPartialEngine.state.wood = 0;
 autoPartialEngine.state.material = 0;
 autoPartialEngine.nextTurn({ autoFallbackEnabled: true });
 assert.strictEqual(autoPartialEngine.state.mystic, 1);
-assert.strictEqual(autoPartialEngine.state.wood, 10);
+assert.strictEqual(autoPartialEngine.state.wood, 5);
 assert.strictEqual(autoPartialEngine.state.ember, 18);
 assert.strictEqual(autoPartialEngine.lastTurnMaintenanceResult.fallbackResult.applied, false);
 
 // 7. OFF全額補填可能: そのまま終了なら無消費、承認時だけ消費する。
 const offSkipEngine = GameEngine.createGame({ runSeed: 260902 });
 offSkipEngine.state.food = 0;
+offSkipEngine.state.wood = 50;
+offSkipEngine.state.material = 50;
 offSkipEngine.nextTurn({
     autoFallbackEnabled: false,
     useHypotheticalFallback: false
 });
 assert.strictEqual(offSkipEngine.state.mystic, 1);
-assert.strictEqual(offSkipEngine.state.wood, 40);
+assert.strictEqual(offSkipEngine.state.wood, 55);
 assert.strictEqual(offSkipEngine.state.ember, 18);
 
 const offConfirmEngine = GameEngine.createGame({ runSeed: 260902 });
 offConfirmEngine.state.food = 0;
+offConfirmEngine.state.wood = 50;
+offConfirmEngine.state.material = 50;
 offConfirmEngine.nextTurn({
     autoFallbackEnabled: false,
     useHypotheticalFallback: true
 });
 assert.strictEqual(offConfirmEngine.state.mystic, 0);
-assert.strictEqual(offConfirmEngine.state.wood, 20);
+assert.strictEqual(offConfirmEngine.state.wood, 10);
 assert.strictEqual(offConfirmEngine.state.ember, 19);
 
 // 8. Tooltipは全額可能と部分補填不能を別表示する。
