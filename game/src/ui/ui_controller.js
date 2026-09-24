@@ -746,6 +746,26 @@ class UIController {
         return Boolean(this.trialController?.state?.interceptionPlan);
     }
 
+    getTrialPlanningDeploymentPreview() {
+        if (!this.trialPreviewConfig || !this.trialController?.state) return null;
+
+        const confirmedPreview = this.trialController.state.deploymentPreview || null;
+        if (this.isTrialPlanningConfirmed() && confirmedPreview) {
+            return {
+                ...confirmedPreview,
+                applicable: Boolean(this.trialController.sessionDeploymentService)
+            };
+        }
+
+        if (typeof this.trialController.previewPlanningDraftDeployment !== "function") {
+            return null;
+        }
+
+        return this.trialController.previewPlanningDraftDeployment(
+            this.trialPresentationState.routePlanDrafts
+        );
+    }
+
     confirmTrialPlanning() {
         if (!this.trialPreviewConfig || !this.trialController?.state) {
             return { success: false, errors: ["TRIAL_NOT_STARTED"], warnings: [] };
@@ -772,6 +792,27 @@ class UIController {
                 requiresConfirmation: true,
                 warnings: validation.warnings,
                 errors: []
+            };
+        }
+
+        const deploymentPreview = this.getTrialPlanningDeploymentPreview();
+        if (
+            deploymentPreview?.applicable === true
+            && (
+                deploymentPreview.success !== true
+                || deploymentPreview.affordable !== true
+            )
+        ) {
+            const errorKey = deploymentPreview.success === true
+                ? "UI_TRIAL_DEPLOYMENT_INSUFFICIENT_RESOURCES"
+                : "UI_TRIAL_DEPLOYMENT_COST_UNAVAILABLE";
+            this.trialPresentationState.planningValidationErrors = [errorKey];
+            this.render();
+            return {
+                success: false,
+                errors: [errorKey],
+                warnings: validation.warnings || [],
+                deploymentPreview
             };
         }
 
