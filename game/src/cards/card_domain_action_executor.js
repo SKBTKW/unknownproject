@@ -91,6 +91,52 @@ function withOptionalActivationLog(effect, context, result) {
     return result;
 }
 
+function applyCreationReward(result, context) {
+    if (!result || result.success === false || !result.creationReward) return result;
+    const state = context?.state;
+    if (!state) return { ...result, success: false, reason: "CREATION_REWARD_STATE_REQUIRED" };
+
+    const resources = result.creationReward.resources || {};
+    const caps = result.creationReward.caps || {};
+    for (const [key, rawAmount] of Object.entries(resources)) {
+        const amount = Number(rawAmount || 0);
+        if (!Number.isFinite(amount) || amount === 0) continue;
+        const current = Number(state[key] || 0);
+        const cap = Number(caps[key]);
+        state[key] = Number.isFinite(cap)
+            ? Math.min(cap, current + amount)
+            : current + amount;
+        if (key === "wood" && state.material !== undefined) state.material = state[key];
+    }
+    return result;
+}
+
+function withOptionalSourceBuff(effect, context, result) {
+    if (!result || result.success === false || !effect?.sourceBuff) return result;
+    const state = context?.state;
+    if (typeof state?.addBuff !== "function") {
+        return { ...result, success: false, reason: "SOURCE_BUFF_STATE_REQUIRED" };
+    }
+
+    const source = effect.sourceBuff;
+    state.addBuff({
+        id: context.cardDefinition?.id || null,
+        name: context.cardName || context.cardDefinition?.id || null,
+        shortName: context.cardName || context.cardDefinition?.id || null,
+        description: context.cardDescription || "",
+        ...source
+    });
+    return result;
+}
+
+function finalizeDomainAction(effect, context, result) {
+    const rewarded = applyCreationReward(result, context);
+    if (rewarded?.success === false) return rewarded;
+    const buffed = withOptionalSourceBuff(effect, context, rewarded);
+    if (buffed?.success === false) return buffed;
+    return withOptionalActivationLog(effect, context, buffed);
+}
+
 function createCardDomainActionExecutor(engine) {
     const execute = (effect, context = {}) => {
         if (!effect || typeof effect !== "object") {
@@ -106,7 +152,7 @@ function createCardDomainActionExecutor(engine) {
                 capacityBonus: effect.capacityBonus,
                 vicinityDefenseBonus: effect.vicinityDefenseBonus
             });
-            return withOptionalActivationLog(effect, context, result);
+            return finalizeDomainAction(effect, context, result);
         }
 
         if (effect.action === CARD_DOMAIN_ACTIONS.CREATE_ZONE_CONVERSION) {
@@ -127,7 +173,7 @@ function createCardDomainActionExecutor(engine) {
                 createdVerse: context?.state?.turn ?? engine?.state?.turn ?? null,
                 cardId: context?.cardDefinition?.id || null
             });
-            return withOptionalActivationLog(effect, context, result);
+            return finalizeDomainAction(effect, context, result);
         }
 
         if (effect.action === CARD_DOMAIN_ACTIONS.CREATE_SPECIAL_BLOCK) {
@@ -147,7 +193,7 @@ function createCardDomainActionExecutor(engine) {
                 cardId: context?.cardDefinition?.id || null,
                 ...(effect.context || {})
             });
-            return withOptionalActivationLog(effect, context, result);
+            return finalizeDomainAction(effect, context, result);
         }
 
         return { success: false, reason: "UNSUPPORTED_DOMAIN_ACTION" };
@@ -263,6 +309,9 @@ function createCardDomainActionExecutor(engine) {
     execute.preflight = (effect, context = {}) => {
         if (!effect || typeof effect !== "object") {
             return { success: false, reason: "INVALID_DOMAIN_ACTION" };
+        }
+        if (effect.sourceBuff && typeof context?.state?.addBuff !== "function") {
+            return { success: false, reason: "SOURCE_BUFF_STATE_REQUIRED" };
         }
 
         if (effect.action === CARD_DOMAIN_ACTIONS.APPLY_DEFENSE_DEVELOPMENT) {
