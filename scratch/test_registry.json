@@ -827,6 +827,14 @@
       ]
     },
     {
+      "path": "scratch/test_demihuman_raid_boundary.mjs",
+      "purpose": "Demihuman Raid remains history-gated and outside normal Trial lifecycle until a dedicated encounter port exists",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_reclaimed_land.mjs",
       "purpose": "reclaimed-land restore compatibility semantics",
       "suite": "supplemental"
