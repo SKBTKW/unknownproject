@@ -938,6 +938,14 @@
       ]
     },
     {
+      "path": "scratch/test_stage1_prototype_exposure_audit.mjs",
+      "purpose": "measure when audited Stage1 prototype cards would become eligible across seeded FirstRun growth traces without changing production Offering composition",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_stage1_offering_economy_playability.mjs",
       "purpose": "Stage1 Offering, economy, reserve, Multi-Attribute placement, Zone/Link, and Verse1-to-Trial1 playability audit",
       "suite": "existing",
