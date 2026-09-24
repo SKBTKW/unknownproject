@@ -1,5 +1,10 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import {
+    SPECIAL_BLOCK_COST_STATUS,
+    getSpecialBlockDefinition,
+    resolveSpecialBlockCreationCost
+} from "../game/src/core/special_block_domain.js";
 
 const economyCards = JSON.parse(
     readFileSync(new URL("../game/src/data/economy_cards.json", import.meta.url), "utf8")
@@ -60,16 +65,24 @@ assert.equal(
 );
 
 for (const type of ["FARM", "LOGGING_CAMP", "ALTAR"]) {
-    assert.equal(
-        specialBlockSource.includes(`${type}: '${type}'`),
-        true,
+    const definition = getSpecialBlockDefinition(type);
+    assert.ok(
+        definition,
         `${type} Special Block must remain discoverable by the portfolio audit`
+    );
+    assert.deepEqual(
+        resolveSpecialBlockCreationCost(definition),
+        {
+            status: SPECIAL_BLOCK_COST_STATUS.UNRESOLVED,
+            resources: null
+        },
+        `${type}: creation-cost authority exists but product balance must remain unresolved until its owner task resolves it`
     );
 }
 assert.equal(
-    /creationCost\s*:/.test(specialBlockSource),
-    false,
-    "Special Block domain currently has no canonical creationCost; update portfolio audit when a cost boundary is added"
+    specialBlockSource.includes("resolveSpecialBlockCreationCost"),
+    true,
+    "Special Block domain must expose canonical creation-cost authority"
 );
 assert.equal(
     /maintenance\s*:|upkeep\s*:/.test(specialBlockSource),

@@ -213,9 +213,56 @@ function createCardDomainActionExecutor(engine) {
             if (!target) {
                 return { success: false, reason: "SPECIAL_BLOCK_TARGET_REQUIRED" };
             }
+
+            const domainQuoted = effect.paymentMode === CARD_DOMAIN_PAYMENT_MODES.DOMAIN_QUOTE;
+            if (domainQuoted) {
+                if (
+                    typeof board.quoteSpecialBlockCost !== "function"
+                    || typeof board.validateSpecialBlockTargetAfterPayment !== "function"
+                ) {
+                    return { success: false, reason: "BOARD_SPECIAL_BLOCK_COST_UNAVAILABLE" };
+                }
+                const currentQuote = board.quoteSpecialBlockCost(effect.blockType);
+                const paidCost = normalizeCardCost({
+                    cost: context?.resolvedPaymentCost || {}
+                });
+                if (
+                    currentQuote?.status !== "RESOLVED"
+                    || !currentQuote?.resources
+                    || !sameResourceCost(paidCost, currentQuote.resources)
+                ) {
+                    return {
+                        success: false,
+                        reason: "SPECIAL_BLOCK_QUOTE_STALE",
+                        paymentCost: { ...paidCost },
+                        quote: currentQuote || null
+                    };
+                }
+
+                const currentValidation = board.validateSpecialBlockTargetAfterPayment(
+                    effect.blockType,
+                    target,
+                    paidCost,
+                    {
+                        verse: context?.state?.turn ?? engine?.state?.turn ?? null,
+                        cardId: context?.cardDefinition?.id || null,
+                        ...(effect.context || {})
+                    }
+                );
+                if (!currentValidation?.valid) {
+                    return {
+                        success: false,
+                        reason: currentValidation?.reason || "SPECIAL_BLOCK_TARGET_INVALID",
+                        validation: currentValidation,
+                        quote: currentQuote
+                    };
+                }
+            }
+
             const result = board.createSpecialBlock(effect.blockType, target, {
                 verse: context?.state?.turn ?? engine?.state?.turn ?? null,
                 cardId: context?.cardDefinition?.id || null,
+                paymentConfirmed: domainQuoted,
                 ...(effect.context || {})
             });
             return withOptionalActivationLog(effect, context, result);
@@ -225,34 +272,64 @@ function createCardDomainActionExecutor(engine) {
     };
 
     execute.quoteCost = (effect, context = {}) => {
-        if (effect?.action !== CARD_DOMAIN_ACTIONS.CREATE_ZONE_CONVERSION) return null;
         if (effect?.paymentMode !== CARD_DOMAIN_PAYMENT_MODES.DOMAIN_QUOTE) return null;
 
         const board = engine?.boardDomainAdapter;
-        if (!board || typeof board.quoteZoneConversionCost !== "function") {
-            return { success: false, reason: "BOARD_ZONE_CONVERSION_UNAVAILABLE" };
-        }
-        if (!effect.definitionId) {
-            return { success: false, reason: "ZONE_CONVERSION_DEFINITION_REQUIRED" };
-        }
 
-        const quote = board.quoteZoneConversionCost(effect.definitionId);
-        if (quote?.status !== "RESOLVED" || !quote?.resources) {
-            return { success: false, reason: "ZONE_CONVERSION_COST_UNRESOLVED", quote };
-        }
-        if (!isSupportedCardPaymentCost(quote.resources)) {
+        if (effect?.action === CARD_DOMAIN_ACTIONS.CREATE_ZONE_CONVERSION) {
+            if (!board || typeof board.quoteZoneConversionCost !== "function") {
+                return { success: false, reason: "BOARD_ZONE_CONVERSION_UNAVAILABLE" };
+            }
+            if (!effect.definitionId) {
+                return { success: false, reason: "ZONE_CONVERSION_DEFINITION_REQUIRED" };
+            }
+
+            const quote = board.quoteZoneConversionCost(effect.definitionId);
+            if (quote?.status !== "RESOLVED" || !quote?.resources) {
+                return { success: false, reason: "ZONE_CONVERSION_COST_UNRESOLVED", quote };
+            }
+            if (!isSupportedCardPaymentCost(quote.resources)) {
+                return {
+                    success: false,
+                    reason: "ZONE_CONVERSION_CARD_PAYMENT_RESOURCE_UNSUPPORTED",
+                    quote
+                };
+            }
             return {
-                success: false,
-                reason: "ZONE_CONVERSION_CARD_PAYMENT_RESOURCE_UNSUPPORTED",
-                quote
+                success: true,
+                resources: { ...quote.resources },
+                quote,
+                source: "DOMAIN_QUOTE"
             };
         }
-        return {
-            success: true,
-            resources: { ...quote.resources },
-            quote,
-            source: "DOMAIN_QUOTE"
-        };
+
+        if (effect?.action === CARD_DOMAIN_ACTIONS.CREATE_SPECIAL_BLOCK) {
+            if (!board || typeof board.quoteSpecialBlockCost !== "function") {
+                return { success: false, reason: "BOARD_SPECIAL_BLOCK_COST_UNAVAILABLE" };
+            }
+            if (!effect.blockType) {
+                return { success: false, reason: "SPECIAL_BLOCK_TYPE_REQUIRED" };
+            }
+            const quote = board.quoteSpecialBlockCost(effect.blockType);
+            if (quote?.status !== "RESOLVED" || !quote?.resources) {
+                return { success: false, reason: "SPECIAL_BLOCK_COST_UNRESOLVED", quote };
+            }
+            if (!isSupportedCardPaymentCost(quote.resources)) {
+                return {
+                    success: false,
+                    reason: "SPECIAL_BLOCK_CARD_PAYMENT_RESOURCE_UNSUPPORTED",
+                    quote
+                };
+            }
+            return {
+                success: true,
+                resources: { ...quote.resources },
+                quote,
+                source: "DOMAIN_QUOTE"
+            };
+        }
+
+        return null;
     };
 
     execute.requiresTarget = (effect) =>
@@ -329,14 +406,49 @@ function createCardDomainActionExecutor(engine) {
                 return [];
             }
             if (!effect.blockType) return [];
-            return board.enumerateLegalSpecialBlockTargets(
+
+            const targetContext = {
+                verse: context?.state?.turn ?? engine?.state?.turn ?? null,
+                cardId: context?.cardDefinition?.id || null,
+                ...(effect.context || {})
+            };
+            const targets = board.enumerateLegalSpecialBlockTargets(
                 effect.blockType,
-                {
-                    verse: context?.state?.turn ?? engine?.state?.turn ?? null,
-                    cardId: context?.cardDefinition?.id || null,
-                    ...(effect.context || {})
-                }
+                targetContext
             ) || [];
+
+            if (effect.paymentMode !== CARD_DOMAIN_PAYMENT_MODES.DOMAIN_QUOTE) {
+                return targets;
+            }
+            if (
+                typeof board.quoteSpecialBlockCost !== "function"
+                || typeof board.validateSpecialBlockTargetAfterPayment !== "function"
+            ) {
+                return [];
+            }
+
+            const quote = board.quoteSpecialBlockCost(effect.blockType);
+            const quotedCost = quote?.resources || {};
+            if (
+                quote?.status !== "RESOLVED"
+                || !isSupportedCardPaymentCost(quotedCost)
+            ) {
+                return [];
+            }
+
+            return targets.flatMap(target => {
+                const validation = board.validateSpecialBlockTargetAfterPayment(
+                    effect.blockType,
+                    target,
+                    quotedCost,
+                    targetContext
+                );
+                if (!validation?.valid) return [];
+                return [{
+                    ...target,
+                    cost: { ...quotedCost }
+                }];
+            });
         }
 
         return [];
@@ -470,14 +582,68 @@ function createCardDomainActionExecutor(engine) {
             if (!target) {
                 return { success: false, reason: "SPECIAL_BLOCK_TARGET_REQUIRED" };
             }
+            const targetContext = {
+                verse: context?.state?.turn ?? engine?.state?.turn ?? null,
+                cardId: context?.cardDefinition?.id || null,
+                ...(effect.context || {})
+            };
+
+            if (effect.paymentMode === CARD_DOMAIN_PAYMENT_MODES.DOMAIN_QUOTE) {
+                if (
+                    typeof board.quoteSpecialBlockCost !== "function"
+                    || typeof board.validateSpecialBlockTargetAfterPayment !== "function"
+                ) {
+                    return { success: false, reason: "BOARD_SPECIAL_BLOCK_COST_UNAVAILABLE" };
+                }
+                const quote = board.quoteSpecialBlockCost(effect.blockType);
+                if (quote?.status !== "RESOLVED" || !quote?.resources) {
+                    return { success: false, reason: "SPECIAL_BLOCK_COST_UNRESOLVED", quote };
+                }
+                if (!isSupportedCardPaymentCost(quote.resources)) {
+                    return {
+                        success: false,
+                        reason: "SPECIAL_BLOCK_CARD_PAYMENT_RESOURCE_UNSUPPORTED",
+                        quote
+                    };
+                }
+
+                const paymentCost = context?.resolvedPaymentCost || quote.resources;
+                if (!sameResourceCost(paymentCost, quote.resources)) {
+                    return {
+                        success: false,
+                        reason: "SPECIAL_BLOCK_QUOTE_STALE",
+                        paymentCost: { ...paymentCost },
+                        quote
+                    };
+                }
+                if (!hasReliableCardPaymentState(context?.state, paymentCost)) {
+                    return {
+                        success: false,
+                        reason: "SPECIAL_BLOCK_CARD_PAYMENT_STATE_UNSAFE",
+                        quote
+                    };
+                }
+
+                const validation = board.validateSpecialBlockTargetAfterPayment(
+                    effect.blockType,
+                    target,
+                    paymentCost,
+                    targetContext
+                );
+                return {
+                    success: validation?.valid === true,
+                    reason: validation?.valid === true
+                        ? null
+                        : (validation?.reason || "SPECIAL_BLOCK_TARGET_INVALID"),
+                    validation,
+                    quote
+                };
+            }
+
             const validation = board.validateSpecialBlockTarget(
                 effect.blockType,
                 target,
-                {
-                    verse: context?.state?.turn ?? engine?.state?.turn ?? null,
-                    cardId: context?.cardDefinition?.id || null,
-                    ...(effect.context || {})
-                }
+                targetContext
             );
             return {
                 success: validation?.valid === true,

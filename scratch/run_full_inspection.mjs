@@ -751,6 +751,12 @@ async function main() {
         process.exit(1);
     }
 
+    const specialBlockCreationCostQuoteOk = await runCommand("node", ["scratch/test_special_block_creation_cost_quote.mjs"]);
+    if (!specialBlockCreationCostQuoteOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Special Block Creation Cost Quote) で不合格が検出されました。");
+        process.exit(1);
+    }
+
     const zoneConversionCardAtomicityOk = await runCommand("node", ["scratch/test_zone_conversion_card_atomicity.mjs"]);
     if (!zoneConversionCardAtomicityOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Zone Conversion Card Atomicity) で不合格が検出されました。");
