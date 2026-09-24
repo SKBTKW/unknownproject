@@ -91,6 +91,15 @@ export const ECONOMY_CARDS_MASTER = [
     "rarity": "C",
     "weight": 0.35,
     "cyclePolicy": "RARITY",
+    "offering": {
+      "requirements": [
+        {
+          "type": "CONNECTED_GL_AT_LEAST",
+          "minimumGL": 2,
+          "value": 2
+        }
+      ]
+    },
     "effects": [
       {
         "type": "DOMAIN_ACTION",
@@ -1281,6 +1290,15 @@ export const COMMAND_CARDS_MASTER = [
     "rarity": "C",
     "weight": 0.35,
     "cyclePolicy": "RARITY",
+    "offering": {
+      "requirements": [
+        {
+          "type": "CONNECTED_GL_AT_LEAST",
+          "minimumGL": 2,
+          "value": 2
+        }
+      ]
+    },
     "effects": [
       {
         "type": "DOMAIN_ACTION",
