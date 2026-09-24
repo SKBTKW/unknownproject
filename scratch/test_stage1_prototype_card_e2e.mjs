@@ -64,11 +64,13 @@ console.log("\nStage1 prototype cards: Offering -> payment -> effect -> Verse pr
     assert.equal(engine.deckManager.isCardEligible(card, 1, 0), true);
     generateOnlyPrototype(engine, id);
 
-    const before = { food: state.food, wood: state.wood };
+    const before = { food: state.food, wood: state.wood, material: state.material };
     const played = state.playCommandCard(card);
     assert.equal(played.success, true);
     assert.equal(state.food, before.food - 20, "Levy must pay 🌾20");
     assert.equal(state.wood, before.wood + 15, "Levy must gain 🧱15 after payment");
+    assert.equal(state.material, before.material + 15,
+        "Levy must keep the material alias synchronized");
     assert.equal(state.hasPickedThisTurn, true);
 
     const turnBefore = state.turn;
