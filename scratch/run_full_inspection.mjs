@@ -471,6 +471,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Stage1 Trial1 Deployment Cost Candidate Audit) で不合格が検出されました。");
         process.exit(1);
     }
+    const stage1Trial1DeploymentHeadroomOk = await runCommand("node", ["scratch/test_stage1_trial1_deployment_headroom_v1.mjs"]);
+    if (!stage1Trial1DeploymentHeadroomOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Stage1 Trial1 Deployment Headroom Audit) で不合格が検出されました。");
+        process.exit(1);
+    }
     const trialDeploymentEngineAttachOk = await runCommand("node", ["scratch/test_trial_deployment_engine_attach.mjs"]);
     if (!trialDeploymentEngineAttachOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Trial Deployment Engine Attach) で不合格が検出されました。");
