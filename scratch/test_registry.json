@@ -898,6 +898,14 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_stage1_e2e.mjs",
+      "purpose": "Stage1 canonical boundary audit from FirstRun Verse1 through Trial1 battle, settlement, Post-Trial and Stage2 restoration",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_stage1_offering_economy_playability.mjs",
       "purpose": "Stage1 Offering, economy, reserve, Multi-Attribute placement, Zone/Link, and Verse1-to-Trial1 playability audit",
       "suite": "existing",
@@ -906,8 +914,8 @@
       ]
     },
     {
-      "path": "scratch/test_stage1_e2e.mjs",
-      "purpose": "Stage1 canonical boundary audit from FirstRun Verse1 through Trial1 battle, settlement, Post-Trial and Stage2 restoration",
+      "path": "scratch/test_stage1_resource_sink_portfolio.mjs",
+      "purpose": "Stage1 resource sink portfolio assumptions across command-card costs, Investigation, Special Blocks and choice Global Events",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -999,6 +1007,14 @@
       ]
     },
     {
+      "path": "scratch/test_trial_core_defense_write_through.mjs",
+      "purpose": "Trial Core commits defense through canonical GameState reservation even when Deployment Economy is disabled",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_trial_core_presentation_boundary.mjs",
       "purpose": "trial core presentation boundary",
       "suite": "existing",
@@ -1009,14 +1025,6 @@
     {
       "path": "scratch/test_trial_defense_reservation.mjs",
       "purpose": "Trial deployment defense write-through reservation, failure rollback, and fail-closed GameState boundary",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
-      "path": "scratch/test_trial_core_defense_write_through.mjs",
-      "purpose": "Trial Core commits defense through canonical GameState reservation even when Deployment Economy is disabled",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
