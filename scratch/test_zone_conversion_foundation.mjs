@@ -12,6 +12,7 @@ import { ZoneConversionService } from "../game/src/systems/zone_conversion_servi
 import { serializeGameState } from "../game/src/core/state_serializer.js";
 import { hydrateGameState } from "../game/src/core/hydrate_game_state.js";
 import { TurnLifecycleService } from "../game/src/core/turn_lifecycle_service.js";
+import { ZONE_CONVERSION_DEFINITIONS } from "../game/src/data/zone_conversion_definitions.js";
 
 function makeCell(r, c, terrainId = "E2_HILL") {
     return {
@@ -192,6 +193,39 @@ assert.equal(
 assert.deepEqual(
     injectedDefinitionAdapter.quoteZoneConversionCost("GARRISON_TEST").resources,
     { wood: 6, ember: 1 }
+);
+
+const canonicalDefinitionState = makeState();
+canonicalDefinitionState.mergedBlocks.zone_a.zoneCategory = "PLAINS";
+canonicalDefinitionState.mergedBlocks.zone_a.terrainId = "GL1_PLAINS";
+canonicalDefinitionState.mergedBlocks.zone_a.mergeType = "2x2";
+for (const pt of canonicalDefinitionState.mergedBlocks.zone_a.cells) {
+    canonicalDefinitionState.grid[pt.r][pt.c].terrain = {
+        id: "GL1_PLAINS",
+        terrainId: "GL1_PLAINS",
+        zoneCategory: "PLAINS",
+        food: 1,
+        wood: 0,
+        defense: 0,
+        mystic: 0
+    };
+}
+canonicalDefinitionState.food = 30;
+canonicalDefinitionState.wood = 30;
+canonicalDefinitionState.material = 30;
+const canonicalDefinitionAdapter = new BoardDomainAdapter({
+    state: canonicalDefinitionState,
+    gridEngine: null,
+    zoneConversionDefinitions: ZONE_CONVERSION_DEFINITIONS
+});
+assert.equal(
+    canonicalDefinitionAdapter.enumerateZoneConversionCandidates("RESETTLEMENT_PLAINS_2X2").length,
+    1,
+    "canonical Resettlement definition is consumable through the Board runtime definition port"
+);
+assert.deepEqual(
+    canonicalDefinitionAdapter.quoteZoneConversionCost("RESETTLEMENT_PLAINS_2X2").resources,
+    { food: 15, wood: 10 }
 );
 
 assert.equal(service.validateCandidate("GARRISON_TEST", "zone_a").valid, true);
