@@ -7,7 +7,8 @@ import { resolvePlacementGeometry } from './placement_geometry.js';
 import {
     BOARD_CAPABILITIES,
     readCellCapabilities,
-    readEffectiveGreenery
+    readEffectiveGreenery,
+    readSpecialBlockAdjacencyProfile
 } from './special_block_domain.js';
 import { BoardDamageService } from './board_damage_service.js';
 import {
@@ -337,6 +338,13 @@ export class BoardDomainAdapter {
             return readEffectiveGreenery(this.state?.grid?.[target.r]?.[target.c] || null);
         }
         return readEffectiveGreenery(target);
+    }
+
+    readSpecialBlockAdjacencyProfile(target) {
+        if (Number.isInteger(target?.r) && Number.isInteger(target?.c)) {
+            return readSpecialBlockAdjacencyProfile(this.state?.grid?.[target.r]?.[target.c] || null);
+        }
+        return readSpecialBlockAdjacencyProfile(target);
     }
 
     readTrialDeploymentFacts(target) {
