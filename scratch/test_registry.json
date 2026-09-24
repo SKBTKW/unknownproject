@@ -1055,6 +1055,14 @@
       ]
     },
     {
+      "path": "scratch/test_stage1_trial1_deployment_headroom_v1.mjs",
+      "purpose": "stress Trial1 deployment cost candidates against representative pre-Trial food/material spending headroom",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_trial_deployment_cost_resolver.mjs",
       "purpose": "Canonical configurable Trial deployment cost resolver and unresolved-profile fail-closed contract",
       "suite": "existing",
