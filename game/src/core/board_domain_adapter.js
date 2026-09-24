@@ -285,6 +285,10 @@ export class BoardDomainAdapter {
         return this.zoneConversionService.quoteCost(definitionId);
     }
 
+    resolveZoneConversionCreationReward(definitionId) {
+        return this.zoneConversionService.resolveCreationReward(definitionId);
+    }
+
     getZoneConversionMaintenancePlan(groupId, verse = this.state?.turn) {
         return this.zoneConversionService.getMaintenancePlan(groupId, verse);
     }
