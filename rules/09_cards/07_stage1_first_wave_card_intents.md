@@ -242,7 +242,11 @@ Stage1の資源sinkとして使うカードは、
 決め直す点:
 - 最大🛡️を増やすのか、現在🛡️獲得効率を増やすのか
 - 2つを同時に持たせない
-- Warning stateとのOffering条件連携
+
+Offering / Execution gate:
+- prototype v1では **Warning stateがWATCH以上** のときだけ有効
+- CALM / OMENでは候補化・実行とも不可
+- exact Trial残りVerse数はカード条件へ露出しない
 
 ---
 
