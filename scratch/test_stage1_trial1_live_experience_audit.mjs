@@ -378,6 +378,41 @@ for (let verse = 1; verse <= 15; verse += 1) {
     );
 }
 
+const authoringBlockVerseUnits = resolveCanonicalBlockVerseUnits();
+const authoringCostGrid = Object.freeze({
+    food: Object.freeze([5, 10, 15, 20, 30]),
+    material: Object.freeze([5, 10, 15, 20, 30, 50, 70])
+});
+
+for (const verse of [4, 7, 10, 15]) {
+    const checkpoints = stage1EconomyTimeline.filter(row => row.verse === verse);
+    assert.equal(checkpoints.length, LIVE_AUDIT_SEEDS.length);
+
+    for (const [resource, costs] of Object.entries(authoringCostGrid)) {
+        const perVerseKey = resource === "food"
+            ? "grossFoodPerVerse"
+            : "grossMaterialPerVerse";
+        const blockUnit = authoringBlockVerseUnits[resource];
+        assert.ok(blockUnit > 0, `${resource} authoring BVE unit must remain positive`);
+
+        for (const cost of costs) {
+            const pve = rangeWithMedian(
+                checkpoints.map(row => cost / row[perVerseKey])
+            );
+            console.log(
+                [
+                    "AUTHORING_COST_GRID",
+                    `V${verse}`,
+                    resource,
+                    `cost=${cost}`,
+                    `BVE=${(cost / blockUnit).toFixed(2)}`,
+                    `PVE=${pve.min.toFixed(2)}..${pve.max.toFixed(2)} med=${pve.median.toFixed(2)}`
+                ].join(" ")
+            );
+        }
+    }
+}
+
 const stage1CostCardsForEligibility = COMMAND_CARDS_MASTER
     .filter(card => Number(card?.minStage || 1) <= 1)
     .map(card => ({ card, cost: readFoodMaterialCost(card) }))
