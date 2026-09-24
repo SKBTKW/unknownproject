@@ -586,7 +586,24 @@ export const MILITARY_CARDS_MASTER = [
     "cost": {
       "wood": 15
     },
-    "reqTrialOrLowDefense": true,
+    "offering": {
+      "requirements": [
+        {
+          "id": "VIGILANCE_WARNING_WATCH",
+          "type": "WARNING_STATE",
+          "state": "WATCH"
+        }
+      ]
+    },
+    "execution": {
+      "requirements": [
+        {
+          "id": "VIGILANCE_WARNING_WATCH",
+          "type": "WARNING_STATE",
+          "state": "WATCH"
+        }
+      ]
+    },
     "minStage": 1,
     "rarity": "C",
     "weight": 0.35,
