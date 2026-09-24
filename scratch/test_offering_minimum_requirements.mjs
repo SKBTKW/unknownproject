@@ -1,10 +1,11 @@
 import assert from "assert/strict";
 import { DeckManager, OFFERING_GENERATION_REASONS } from "../game/src/systems/deck_manager.js";
 
-function makeCard(id, category) {
+function makeCard(id, category, offeringCategory = null) {
     return {
         id,
         category,
+        ...(offeringCategory ? { offeringCategory } : {}),
         minStage: 1,
         weight: 1,
         shape: [[1]],
@@ -177,6 +178,23 @@ function makeMultiplicityHarness(cards, {
     assert.equal(manager.lastOfferingGeneration.appliedMinimums.length, 3);
     assert.equal(manager.lastOfferingGeneration.categoryMultiplicity.minimumRequirementOverride, true);
     assert.equal(manager.lastOfferingGeneration.categoryMultiplicity.overflow[0].category, "INVESTIGATION");
+}
+
+
+{
+    const manager = makeMultiplicityHarness([
+        makeCard("CMD_A", "COMMAND", "TEST_BUCKET_A"),
+        makeCard("CMD_B", "COMMAND", "TEST_BUCKET_A"),
+        makeCard("CMD_C", "COMMAND", "TEST_BUCKET_A"),
+        makeCard("CMD_D", "COMMAND", "TEST_BUCKET_B")
+    ]);
+    const offering = manager.generateOfferingCards();
+    assert.deepEqual(
+        offering.map(card => card.terrain.offeringCategory),
+        ["TEST_BUCKET_A", "TEST_BUCKET_A", "TEST_BUCKET_B"],
+        "multiplicity uses Offering category without changing gameplay category"
+    );
+    assert.ok(offering.every(card => card.terrain.category === "COMMAND"));
 }
 
 // Future Directive / GE policy may explicitly allow three cards of the same category.

@@ -41,7 +41,12 @@ export function resolveOfferingCategoryMultiplicityPolicy({
 
 export function resolveOfferingCardCategory(card) {
     const definition = card?.terrain || card || null;
-    return String(definition?.category || "LAND");
+    return String(
+        definition?.offering?.category
+        ?? definition?.offeringCategory
+        ?? definition?.category
+        ?? "LAND"
+    );
 }
 
 export function countOfferingCategories(cards = []) {

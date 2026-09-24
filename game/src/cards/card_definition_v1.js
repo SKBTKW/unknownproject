@@ -34,6 +34,7 @@ function normalizeCardDefinitionV1(source) {
         rarity: source.rarity || "C",
         tags: freezeArray(source.tags),
         offering: Object.freeze({
+            category: authoredOffering.category ?? source.offeringCategory ?? source.category ?? "LAND",
             requirements: normalizeRequirementList(authoredOffering.requirements),
             weight: authoredOffering.weight ?? source.weight ?? 0.1
         }),
