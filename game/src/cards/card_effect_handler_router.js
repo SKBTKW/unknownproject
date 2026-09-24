@@ -31,6 +31,19 @@ class CardEffectHandlerRouter {
         return this.handlers.has(cardId);
     }
 
+    quoteCost(cardDefinition, context = {}) {
+        const cardId = cardDefinition?.id;
+        const handler = cardId ? this.handlers.get(cardId) : null;
+        if (typeof handler === "function") return null;
+
+        const effects = cardDefinition?.effects;
+        if (!Array.isArray(effects) || effects.length === 0) return null;
+        return this.effectExecutor.quoteCost(effects, {
+            cardDefinition,
+            ...context
+        });
+    }
+
     requiresTarget(cardDefinition) {
         const cardId = cardDefinition?.id;
         const handler = cardId ? this.handlers.get(cardId) : null;

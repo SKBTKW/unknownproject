@@ -746,6 +746,35 @@ class DeckManager {
         return true;
     }
 
+    quoteCardExecutionCost(cardObj) {
+        if (!cardObj || cardObj.category === "LAND") {
+            return { success: false, reason: "NOT_A_COMMAND_CARD", resources: {} };
+        }
+        const definitionV1 = normalizeCardDefinitionV1(cardObj);
+        const quote = this.cardEffectHandlerRouter?.quoteCost(definitionV1, {
+            state: this.state,
+            engine: this.engine,
+            deckManager: this
+        }) || null;
+
+        if (quote?.success === false) return quote;
+        if (quote?.success === true && quote.resources) {
+            return {
+                success: true,
+                resources: { ...quote.resources },
+                source: quote.source || "DOMAIN_QUOTE",
+                quote: quote.quote || null
+            };
+        }
+
+        return {
+            success: true,
+            resources: { ...(cardObj.cost || {}) },
+            source: "CARD_COST",
+            quote: null
+        };
+    }
+
     cardRequiresExecutionTarget(cardObj) {
         if (!cardObj || cardObj.category === "LAND") return false;
         const definitionV1 = normalizeCardDefinitionV1(cardObj);
@@ -785,13 +814,23 @@ class DeckManager {
             };
         }
 
+        const paymentPlan = this.quoteCardExecutionCost(cardObj);
+        if (paymentPlan?.success === false) {
+            return {
+                success: false,
+                reason: paymentPlan.reason || "COMMAND_COST_QUOTE_FAILED"
+            };
+        }
+
+        const resolvedPaymentCost = paymentPlan?.resources || cardObj.cost || {};
         const effectPreflight = this.cardEffectHandlerRouter?.preflight(cardObj, {
             state: this.state,
             engine: this.engine,
             deckManager: this,
             targetTile,
             handIdx,
-            reserveIdx
+            reserveIdx,
+            resolvedPaymentCost
         });
         if (effectPreflight?.handled && effectPreflight.success === false) {
             return {
@@ -808,7 +847,7 @@ class DeckManager {
             return { success: false, reason: "CHECK_SYSTEM_UNAVAILABLE" };
         }
 
-        const cost = cardObj.cost || {};
+        const cost = resolvedPaymentCost;
         const matCost = cost.material !== undefined ? cost.material : (cost.wood || 0);
         const curMat = Math.max(this.state.material !== undefined ? this.state.material : 0, this.state.wood !== undefined ? this.state.wood : 0);
 
@@ -852,6 +891,8 @@ class DeckManager {
             targetTile,
             handIdx,
             reserveIdx,
+            resolvedPaymentCost,
+            preflightAlreadyPassed: effectPreflight?.handled === true && effectPreflight.success === true,
             i18n: I18n,
             cardName: cName,
             cardDescription: cDesc
