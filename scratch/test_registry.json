@@ -930,6 +930,14 @@
       ]
     },
     {
+      "path": "scratch/test_stage1_prototype_card_e2e.mjs",
+      "purpose": "verify audited Stage1 prototype cards through opt-in Offering eligibility, atomic payment, effect execution, Verse progression, and production-default dormancy",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_stage1_offering_economy_playability.mjs",
       "purpose": "Stage1 Offering, economy, reserve, Multi-Attribute placement, Zone/Link, and Verse1-to-Trial1 playability audit",
       "suite": "existing",
