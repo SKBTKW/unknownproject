@@ -142,8 +142,8 @@ console.log("test_trial_deployment_balance_probe: PASS");
     assert.ok(halfFarMin);
 
     assert.ok(
-        heavyMin.burdenShare >= 0.74 && heavyMin.burdenShare <= 0.76,
-        "heavy first-run commitment should land around 75% burden"
+        heavyMin.burdenShare >= 0.71 && heavyMin.burdenShare <= 0.73,
+        "80% defense first-run commitment should land around 72% burden"
     );
     assert.equal(
         Number(allMin.burdenShare.toFixed(2)),

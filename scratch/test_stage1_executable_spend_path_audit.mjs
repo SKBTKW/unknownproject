@@ -11,6 +11,9 @@ import {
 import {
     resolveFirstRunTrial1DeploymentBurdenShare
 } from "../game/src/trial/config/first_run_trial1_relative_deployment_policy_v1.js";
+import {
+    resolveDeploymentProbeRequestedDefense
+} from "./trial_deployment_balance_probe.mjs";
 
 const SEEDS = Object.freeze([
     20260920,
@@ -323,14 +326,19 @@ function summarize(values) {
     };
 }
 
-function evaluateProductDeployment({ baseline, sample, planId, requestedDefense, distance }) {
+function evaluateProductDeployment({
+    baseline,
+    sample,
+    planId,
+    requestedDefense,
+    requestedDefenseFraction,
+    distance
+}) {
     const defenseAvailable = Math.max(0, Number(sample.defense) || 0);
-    const committedDefense = Math.min(
-        defenseAvailable,
-        requestedDefense === Number.MAX_SAFE_INTEGER
-            ? defenseAvailable
-            : Math.max(0, Number(requestedDefense) || 0)
-    );
+    const committedDefense = resolveDeploymentProbeRequestedDefense(sample, {
+        requestedDefense,
+        requestedDefenseFraction
+    });
     const burdenShare = resolveFirstRunTrial1DeploymentBurdenShare({
         requestedDefense: committedDefense,
         defenseAvailable,
@@ -426,6 +434,7 @@ function evaluateSampleSet(label, samples) {
                 sample,
                 planId: plan.id,
                 requestedDefense: plan.requestedDefense,
+                requestedDefenseFraction: plan.requestedDefenseFraction,
                 distance: plan.distance
             });
             rows.push(row);
@@ -449,8 +458,8 @@ function evaluateSampleSet(label, samples) {
 }
 
 const plans = Object.freeze([
-    Object.freeze({ id: "HEAVY_DEFENSE_FAR", requestedDefense: 24, distance: 4 }),
-    Object.freeze({ id: "ALL_DEFENSE_FAR", requestedDefense: Number.MAX_SAFE_INTEGER, distance: 4 })
+    Object.freeze({ id: "HEAVY_DEFENSE_FAR", requestedDefenseFraction: 0.8, distance: 4 }),
+    Object.freeze({ id: "ALL_DEFENSE_FAR", requestedDefenseFraction: 1, distance: 4 })
 ]);
 
 const productionRows = evaluateSampleSet("PRODUCTION", productionSamples);
@@ -468,6 +477,16 @@ for (const rows of [productionRows, prototypeRows]) {
         "product relative deployment cost must remain affordable against the live pre-Trial balance"
     );
 }
+
+const productionHeavy = productionRows.filter(row => row.planId === "HEAVY_DEFENSE_FAR");
+assert.equal(
+    productionHeavy.every(row =>
+        row.burdenShare >= 0.70
+        && row.burdenShare <= 0.73
+    ),
+    true,
+    "80% defense far deployment should keep the live FirstRun product burden in the low-70% band"
+);
 
 const productionFull = productionRows.filter(row => row.planId === "ALL_DEFENSE_FAR");
 assert.equal(
