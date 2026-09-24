@@ -36,6 +36,50 @@ export const BASE_TERRAIN_INTERACTIONS = Object.freeze({
     TERRAIN_USING_OVERLAY: 'TERRAIN_USING_OVERLAY'
 });
 
+export const SPECIAL_BLOCK_COST_STATUS = Object.freeze({
+    RESOLVED: 'RESOLVED',
+    UNRESOLVED: 'UNRESOLVED'
+});
+
+const SPECIAL_BLOCK_RESOURCE_KEYS = Object.freeze(['food', 'wood', 'defense', 'mystic', 'ember']);
+
+function validNonNegativeNumber(value) {
+    return typeof value === 'number' && Number.isFinite(value) && value >= 0;
+}
+
+export function normalizeSpecialBlockResourceMap(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+    const normalized = {};
+    for (const key of SPECIAL_BLOCK_RESOURCE_KEYS) {
+        const raw = value[key];
+        if (raw === undefined) continue;
+        if (!validNonNegativeNumber(raw)) return null;
+        normalized[key] = raw;
+    }
+    return Object.freeze(normalized);
+}
+
+export function resolveSpecialBlockCreationCost(definition) {
+    const cost = definition?.creationCost;
+    if (!cost || cost.status !== SPECIAL_BLOCK_COST_STATUS.RESOLVED) {
+        return Object.freeze({
+            status: SPECIAL_BLOCK_COST_STATUS.UNRESOLVED,
+            resources: null
+        });
+    }
+    const resources = normalizeSpecialBlockResourceMap(cost.resources);
+    if (!resources) {
+        return Object.freeze({
+            status: SPECIAL_BLOCK_COST_STATUS.UNRESOLVED,
+            resources: null
+        });
+    }
+    return Object.freeze({
+        status: SPECIAL_BLOCK_COST_STATUS.RESOLVED,
+        resources
+    });
+}
+
 const defaultTrialTraits = Object.freeze({
     interceptionAllowed: null,
     suppressTerrainTactic: false,
@@ -81,6 +125,16 @@ function freezeDefinition(definition) {
         ...definition,
         placement: Object.freeze(placement),
         baseTerrainInteraction: Object.freeze({ ...(definition.baseTerrainInteraction || {}) }),
+        ...(definition.creationCost
+            ? {
+                creationCost: Object.freeze({
+                    ...definition.creationCost,
+                    resources: definition.creationCost.resources
+                        ? Object.freeze({ ...definition.creationCost.resources })
+                        : definition.creationCost.resources
+                })
+            }
+            : {}),
         production: freezeProductionDefinition(definition.production),
         capabilities: Object.freeze([...(definition.capabilities || [])]),
         trialTraits: Object.freeze({
