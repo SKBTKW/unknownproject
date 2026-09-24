@@ -392,12 +392,20 @@ export class SpecialBlockService {
         if (!validation.valid) return { success: false, reason: validation.reason };
 
         const cost = this.quoteCost(definition);
-        if (
-            cost.status === SPECIAL_BLOCK_COST_STATUS.RESOLVED
-            && hasAnyCost(cost.resources)
-            && context.paymentConfirmed !== true
-        ) {
-            return { success: false, reason: 'PAYMENT_CONFIRMATION_REQUIRED', validation, cost };
+        if (cost.status === SPECIAL_BLOCK_COST_STATUS.RESOLVED && hasAnyCost(cost.resources)) {
+            if (context.paymentConfirmed !== true) {
+                return { success: false, reason: 'PAYMENT_CONFIRMATION_REQUIRED', validation, cost };
+            }
+            const paidCost = normalizeSpecialBlockResourceMap(context.paidCost);
+            if (!paidCost || !sameResourceMap(paidCost, cost.resources)) {
+                return {
+                    success: false,
+                    reason: 'PAYMENT_COST_MISMATCH',
+                    validation,
+                    cost,
+                    paidCost
+                };
+            }
         }
         const creationContext = cost.status === SPECIAL_BLOCK_COST_STATUS.RESOLVED
             ? { ...context, paidCost: cost.resources }
