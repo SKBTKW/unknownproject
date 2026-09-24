@@ -5,6 +5,8 @@ import {
     createSpecialBlockAdjacencyProfile,
     readSpecialBlockAdjacencyProfile
 } from "../game/src/core/special_block_domain.js";
+import { hydrateGameState } from "../game/src/core/hydrate_game_state_base.js";
+import { serializeGameState } from "../game/src/core/state_serializer_base.js";
 import { GridEngine } from "../game/src/systems/grid_engine.js";
 import { SpecialBlockService } from "../game/src/systems/special_block_service.js";
 
@@ -185,6 +187,14 @@ function landCheckWithNeighbor(neighborCell, targetTerrain) {
     assert.deepEqual(
         readSpecialBlockAdjacencyProfile(state.grid[0][0]),
         { e: 2, gl: 1, source: { r: 0, c: 0 } }
+    );
+
+    const restored = {};
+    hydrateGameState(restored, serializeGameState(state));
+    assert.deepEqual(
+        readSpecialBlockAdjacencyProfile(restored.grid[0][0]),
+        { e: 2, gl: 1, source: { r: 0, c: 0 } },
+        "Special Block adjacency profile survives canonical save/restore"
     );
 }
 
