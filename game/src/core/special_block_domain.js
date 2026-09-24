@@ -197,6 +197,7 @@ function freezeProductionDefinition(production) {
     return Object.freeze({
         ...production,
         yields: freezeYieldMap(production.yields),
+        baseYields: freezeYieldMap(production.baseYields),
         perSourceYields: freezeYieldMap(production.perSourceYields),
         perRelationYields: freezeYieldMap(production.perRelationYields)
     });
