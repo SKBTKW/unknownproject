@@ -204,8 +204,9 @@ export class SpecialBlockService {
         return this.resolveSourceGroup(target, definition).cells;
     }
 
-    _matchesIndependentSourceCell(definition, cell) {
-        if (!cell?.placed || !cell.terrain || cell.isHQ || cell.specialBlock) return false;
+    _matchesIndependentSourceCell(definition, cell, { allowSpecialBlock = false } = {}) {
+        if (!cell?.placed || !cell.terrain || cell.isHQ) return false;
+        if (!allowSpecialBlock && cell.specialBlock) return false;
 
         const placement = definition?.placement || {};
         const sourceTerrainIds = placement.sourceTerrainIds || [];
@@ -259,6 +260,18 @@ export class SpecialBlockService {
             return { valid: false, reason: 'SOURCE_TERRAIN_NOT_ALLOWED' };
         }
 
+        if (definition.placement?.requiresSourceIsolation === true) {
+            const hasConnectedSameSource = this.findAdjacentCells(source.r, source.c)
+                .some(entry => this._matchesIndependentSourceCell(
+                    definition,
+                    entry.cell,
+                    { allowSpecialBlock: true }
+                ));
+            if (hasConnectedSameSource) {
+                return { valid: false, reason: 'SOURCE_TERRAIN_NOT_ISOLATED' };
+            }
+        }
+
         const sourceCluster = this._resolveIndependentSourceCluster(definition, source);
         const minConnectedSourceCells = Number(definition.placement?.minConnectedSourceCells ?? 1);
         if (
@@ -266,10 +279,6 @@ export class SpecialBlockService {
             && sourceCluster.length < Math.max(1, Math.trunc(minConnectedSourceCells))
         ) {
             return { valid: false, reason: 'SOURCE_CLUSTER_TOO_SMALL' };
-        }
-
-        if (definition.placement?.requiresSourceIsolation === true && sourceCluster.length > 1) {
-            return { valid: false, reason: 'SOURCE_TERRAIN_NOT_ISOLATED' };
         }
 
         const orthogonallyAdjacent = Math.abs(source.r - destination.r) + Math.abs(source.c - destination.c) === 1;
