@@ -43,7 +43,7 @@ Global Eventは、長期計画を無作為に無効化するためではなく�
 | `EVENT_CRAFTSMAN_BOOM` | 職人たちの活況 | **Implemented** — `OFFERING_WEIGHT_TAG_BOOST(CONSTRUCTION)` はCard Coreの共通Weight Policyへ接続済み。 |
 | `EVENT_BOUNTIFUL_SEASON` | 豊穣の季節 | **Implemented / Partial chain** — 平地🌾倍率1.25は産出計算へ接続済み。終了後の`EVENT_NEW_GENERATION` Weight補正はSelector側で参照され、`NEXT_GLOBAL_EVENT`寿命は次の成功したGlobal Event発火時に1回消費される。 |
 | `EVENT_RECOVERY_MOMENTUM` | 復興の機運 | **Implemented** — 発生条件は `HAS_HISTORY → RunHistoryReadModel → Chronicle` で直近Trialの被害を参照し、`OFFERING_WEIGHT_TAG_BOOST(RECOVERY)` もOffering抽選へ接続済み。 |
-| `EVENT_DEMIHUMAN_RAID` | 亜人襲撃 | **Partial / History-gated** — `HAS_HISTORY(TRIAL_SURVIVED)` により少なくとも1回のTrial突破後のみ候補化。`effects: []` のため襲撃本体効果は未実装。 |
+| `EVENT_DEMIHUMAN_RAID` | 亜人襲撃 | **Partial / Boundary locked** — `HAS_HISTORY(TRIAL_SURVIVED)` により少なくとも1回のTrial突破後のみ候補化。現時点では通常Trial lifecycleを再利用せず、`effects: []` のまま専用Minor Raid encounter port待ち。 |
 | `EVENT_DEMIHUMAN_SCOUTS` | 亜人の斥候 | **Partial / History-gated** — `HAS_HISTORY(TRIAL_SURVIVED)` により少なくとも1回のTrial突破後のみ候補化。Captured Scout選択イベントへの導線はあるが、追加効果は未実装。 |
 
 《寒波》《旱魃》《豊穣の季節》の `PRODUCTION_MULTIPLIER` は `ProductionCalculator` が `globalEventManager.applyProductionEffects()` を呼ぶため実効する。
@@ -230,3 +230,18 @@ Trial接近時は、数値カウントダウンではなく**警戒状態**と�
 11. `DeckManager.isCardEligible()` の一部カード条件は、警戒状態ではなく `nextTrialTurn - currentTurn` を直接参照している。
 12. そのため、固定異変・脅威認識・調査解禁より先にTrial接近条件だけで候補化し得るカードがある。
 13. 通常Verse進行からTrial本体を自動起動する配線は未実装。
+
+
+### Demihuman Raid lifecycle boundary
+
+`EVENT_DEMIHUMAN_RAID` は「第1 Trial後に発生し得る小規模脅威」だが、通常Trialそのものではない。
+
+現時点では以下を禁止境界として扱う。
+
+- GEから `TrialController.startScenario()` を直接起動しない。
+- Raid解決で通常TrialのSettlement / Stage progression / Post-Trial rewardを流用しない。
+- GEの `effects` / `endEffects` にTrial lifecycleを埋め込まない。
+- Raid固有の戦闘値・損害値が未確定な間は、空effectを「無料/無害な襲撃」と解釈しない。
+
+将来の実装は、通常Trial lifecycleから独立した **Minor Raid encounter port** を先に定義し、
+GE側はそのPortへ要求を渡すだけとする。敵truth、route、通常Trial scheduleの所有権はGEへ移さない。
