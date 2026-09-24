@@ -166,21 +166,25 @@ console.log("\nStage1 prototype cards: Offering -> payment -> effect -> Verse pr
         "held card must not charge an extra 🔥 reserve fee while Rekindle waiver is active"
     );
 
-    const blocked = createPrototypeEngine(id, 2026092406);
-    blocked.state.mystic = 10;
-    blocked.state.ember = 6;
+    const hidden = createPrototypeEngine(id, 2026092406);
+    hidden.state.mystic = 10;
+    hidden.state.ember = 6;
     assert.equal(
-        blocked.deckManager.isCardEligible(card, 1, 0),
+        hidden.deckManager.isCardEligible(card, 1, 0),
         false,
         "Rekindle must stay out of Offering above the current low-Ember threshold"
     );
+
+    const blocked = createPrototypeEngine(id, 2026092407);
+    blocked.state.mystic = 9;
+    blocked.state.ember = 5;
     const snapshot = { mystic: blocked.state.mystic, ember: blocked.state.ember };
     const denied = blocked.state.playCommandCard(card);
     assert.equal(denied.success, false);
     assert.deepEqual(
         { mystic: blocked.state.mystic, ember: blocked.state.ember },
         snapshot,
-        "failed Rekindle must not mutate resources"
+        "failed Rekindle payment must not mutate resources"
     );
 }
 
