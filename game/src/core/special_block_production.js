@@ -6,6 +6,7 @@
 
 import {
     getSpecialBlockDefinition,
+    isSpecialBlockFunctional,
     readCellCapabilities
 } from './special_block_domain.js';
 import { resolveSpecialBlockDamageEffect } from './board_damage_effect_policy.js';
@@ -166,6 +167,15 @@ export class SpecialBlockProductionResolver {
                 status: SPECIAL_BLOCK_PRODUCTION_STATUS.NONE,
                 yields: { ...ZERO_YIELDS },
                 kind: null,
+                damageEffect: resolveSpecialBlockDamageEffect(cell)
+            };
+        }
+        if (!isSpecialBlockFunctional(entity)) {
+            return {
+                status: SPECIAL_BLOCK_PRODUCTION_STATUS.NONE,
+                yields: { ...ZERO_YIELDS },
+                kind: null,
+                lifecycleState: entity.state ?? null,
                 damageEffect: resolveSpecialBlockDamageEffect(cell)
             };
         }
