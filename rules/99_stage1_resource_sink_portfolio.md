@@ -15,7 +15,7 @@
 - Command Cardには実コストがある
 - Investigationは現在無料
 - 選択型Global Eventは現在資源支払いを持たない
-- FARM / LOGGING_CAMP / ALTAR等のSpecial Block定義には作成費・維持費がない
+- FARM / ALTAR等の一部Special Blockは作成費・維持費が未確定だが、LOGGING_CAMPはBoard-owned creation costを持つ
 - Zone Conversionには作成費・維持費のframeworkがあるが、Stage1製品バランス値は未確定
 - Trial Deploymentには支払いframeworkがあるが、canonical profileは未確定
 
@@ -45,7 +45,7 @@
 |---|---:|---|---|
 | CMD_RATIONING | なし | 緊急対応 | Implementedだが説明差分あり |
 | CMD_WETLAND_RECLAMATION | 🧱15 + 🔥1 | 任意投資 | Implemented |
-| CMD_LOGGING_CAMP | 🔥1 | 任意投資 | Partial。恒久施設価値は未接続 |
+| CMD_LOGGING_CAMP | 🧱20（Board quote） | 任意投資 | v1 resolved。SOURCE_SIZEで建設時森林群1セルにつき🧱+1/Verse |
 | CMD_GRANARY | 🧱20 | 任意投資 | Partial |
 | CMD_AGRICULTURAL_REFORM | 🧱20 | 任意投資 | Implemented / simplified |
 | CMD_PASTORAL_FARM | 🧱15 | 任意投資 | Partial |
@@ -71,21 +71,14 @@ Command CardコストはDeckManagerの共通支払い境界で実際に減算さ
 
 等の定義が存在する。
 
-しかしSpecial Block definition自体には、現在
+Special Block definitionにはBoard-owned `creationCost` quote境界があり、
+`LOGGING_CAMP` はv1として **🧱20** を正本化した。
 
-- creationCost
-- maintenance
-- upkeep
+`CMD_LOGGING_CAMP` 側の `cost` は空のままで、
+CardはBoard quoteを支払うだけとするため、価格の二重管理はしない。
 
-のcanonical payment fieldを持たない。
-
-したがって、
-
-> 農場などを平時の主要sinkにする
-
-方針を採る場合は、効果値だけでなく **Special Block作成費の所有境界** を先に決める必要がある。
-
-Command Cardのcostとして払う方式と、Board/Zone側がquoteする方式を二重化しない。
+一方、FARM / ALTAR等はまだ作成費・維持費が未確定。
+これらを平時の主要sinkにする場合も同じBoard-owned quote境界へ揃える。
 
 ## 4. Zone Conversion
 
