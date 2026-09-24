@@ -138,6 +138,7 @@ class GameEngine {
         this.chronicleSystem = dependencies.chronicleSystem || (ChronicleSystemClass ? new ChronicleSystemClass(this.state) : null);
 
         this.boardWorldQuery = dependencies.boardWorldQuery || this.boardDomainAdapter || null;
+        this.resourcePressureQuery = dependencies.resourcePressureQuery || null;
         const BoardHistoryQueryClass = dependencies.BoardHistoryQueryClass || BoardHistoryQuery;
         this.boardHistoryQuery = dependencies.boardHistoryQuery
             || (BoardHistoryQueryClass ? new BoardHistoryQueryClass({ state: this.state }) : null);
@@ -151,7 +152,8 @@ class GameEngine {
             engine: this,
             boardQuery: this.boardWorldQuery || null,
             historyQuery: this.runHistoryReadModel || null,
-            warningStateService: this.warningStateService || null
+            warningStateService: this.warningStateService || null,
+            resourcePressureQuery: this.resourcePressureQuery || null
         });
         this.evaluateWorldEligibilityRequirement = (requirement) =>
             ConditionEvaluator.evaluateStrict(requirement, this.getWorldEligibilityContext());
