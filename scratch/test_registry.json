@@ -1570,6 +1570,14 @@
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
       ]
+    },
+    {
+      "path": "scratch/test_special_block_lifecycle_functional_gate.mjs",
+      "purpose": "Special Block lifecycle functional gating for capability, Trial traits, production, legacy compatibility, and persistence",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
     }
   ]
 }

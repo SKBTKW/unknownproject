@@ -758,6 +758,12 @@ async function main() {
         process.exit(1);
     }
 
+    const specialBlockLifecycleGateOk = await runCommand("node", ["scratch/test_special_block_lifecycle_functional_gate.mjs"]);
+    if (!specialBlockLifecycleGateOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Special Block Lifecycle Functional Gate) で不合格が検出されました。");
+        process.exit(1);
+    }
+
     const zoneConversionFoundationOk = await runCommand("node", ["scratch/test_zone_conversion_foundation.mjs"]);
     if (!zoneConversionFoundationOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Zone Conversion Foundation) で不合格が検出されました。");
