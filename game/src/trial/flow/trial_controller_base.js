@@ -222,6 +222,81 @@ export class TrialController {
         });
     }
 
+    buildInterceptionPlanSnapshot(drafts) {
+        const map = drafts instanceof Map
+            ? drafts
+            : new Map(Array.isArray(drafts) ? drafts.map(d => [d.routeId, d]) : Object.entries(drafts || {}));
+        const confirmedRoutes = [];
+        for (const route of this.state?.routes || []) {
+            const rId = route.id ?? route.routeId;
+            const decision = map.get(rId);
+            if (decision && (
+                decision.status === TRIAL_ROUTE_PLAN_STATUSES.INTERCEPT
+                || decision.status === TRIAL_ROUTE_PLAN_STATUSES.SKIP
+            )) {
+                confirmedRoutes.push({
+                    routeId: rId,
+                    status: decision.status,
+                    interceptCell: decision.interceptCell ? { ...decision.interceptCell } : null,
+                    interceptBlockId: decision.interceptBlockId || null,
+                    defenseAllocation: Number(decision.defenseAllocation) || 0
+                });
+            }
+        }
+
+        return {
+            routes: confirmedRoutes,
+            totalDefenseAllocated: confirmedRoutes.reduce(
+                (sum, route) => sum + (
+                    route.status === TRIAL_ROUTE_PLAN_STATUSES.INTERCEPT
+                        ? route.defenseAllocation
+                        : 0
+                ),
+                0
+            )
+        };
+    }
+
+    previewPlanningDraftDeployment(drafts, context = {}) {
+        if (!this.state) {
+            return {
+                success: false,
+                applicable: false,
+                affordable: false,
+                reasons: ["TRIAL_NOT_STARTED"]
+            };
+        }
+
+        const validation = this.validatePlanningDraft(drafts);
+        if (!validation.valid || (validation.errors && validation.errors.length > 0)) {
+            return {
+                success: false,
+                applicable: Boolean(this.sessionDeploymentService),
+                affordable: false,
+                reasons: validation.errors || []
+            };
+        }
+
+        if (!this.sessionDeploymentService) {
+            return {
+                success: true,
+                applicable: false,
+                affordable: true,
+                foodCost: 0,
+                materialCost: 0,
+                reasons: []
+            };
+        }
+
+        const plan = this.buildInterceptionPlanSnapshot(drafts);
+        const preview = this.sessionDeploymentService.previewPlan(plan, context);
+        return {
+            ...preview,
+            applicable: true,
+            plan
+        };
+    }
+
     confirmInterceptionPlan(drafts, { allowWarnings = false } = {}) {
         if (!this.state) return { success: false, errors: ["TRIAL_NOT_STARTED"], warnings: [] };
         if (this.state.interceptionPlan !== null) {
@@ -239,33 +314,9 @@ export class TrialController {
             return { success: false, requiresConfirmation: true, warnings: validation.warnings };
         }
 
-        const map = drafts instanceof Map
-            ? drafts
-            : new Map(Array.isArray(drafts) ? drafts.map(d => [d.routeId, d]) : Object.entries(drafts || {}));
-        const confirmedRoutes = [];
-        for (const route of this.state.routes) {
-            const rId = route.id ?? route.routeId;
-            const decision = map.get(rId);
-            if (decision && (decision.status === TRIAL_ROUTE_PLAN_STATUSES.INTERCEPT || decision.status === TRIAL_ROUTE_PLAN_STATUSES.SKIP)) {
-                confirmedRoutes.push({
-                    routeId: rId,
-                    status: decision.status,
-                    interceptCell: decision.interceptCell ? { ...decision.interceptCell } : null,
-                    interceptBlockId: decision.interceptBlockId || null,
-                    defenseAllocation: Number(decision.defenseAllocation) || 0
-                });
-            }
-        }
-
-        const totalDefenseAllocated = confirmedRoutes.reduce(
-            (sum, r) => sum + (r.status === TRIAL_ROUTE_PLAN_STATUSES.INTERCEPT ? r.defenseAllocation : 0),
-            0
-        );
-
-        this.state.interceptionPlan = {
-            routes: confirmedRoutes,
-            totalDefenseAllocated
-        };
+        this.state.interceptionPlan = this.buildInterceptionPlanSnapshot(drafts);
+        const confirmedRoutes = this.state.interceptionPlan.routes;
+        const totalDefenseAllocated = this.state.interceptionPlan.totalDefenseAllocated;
         if (this.sessionDeploymentService) {
             this.state.deploymentPreview = this.sessionDeploymentService.previewPlan(this.state.interceptionPlan);
         }
