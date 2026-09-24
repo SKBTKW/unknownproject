@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 
 import { GameEngine } from "../game/src/core/game_engine.js";
+import { WarningStateService } from "../game/src/warning/systems/warning_state_service.js";
 import { COMMAND_CARDS_MASTER } from "../game/src/data/command_cards_data.js";
 
 const IDS = Object.freeze([
@@ -100,7 +101,12 @@ console.log("\nStage1 prototype cards: Offering -> payment -> effect -> Verse pr
     state.wood = 30;
     state.material = 30;
     state.currentDefense = Math.min(5, state.maxDefense || 5);
+    engine.warningStateService = new WarningStateService();
+    engine.warningStateService.markWatch({ source: "TEST", verse: state.turn });
 
+    assert.equal(engine.deckManager.isCardEligible(card, 1, 0), false,
+        "Vigilance must stay out before TENSE even when defense is low");
+    engine.warningStateService.markTense({ source: "TEST", verse: state.turn });
     assert.equal(engine.deckManager.isCardEligible(card, 1, 0), true);
     generateOnlyPrototype(engine, id);
 

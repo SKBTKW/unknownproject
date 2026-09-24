@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 
 import { GameEngine } from "../game/src/core/game_engine.js";
+import { attachTrialRuntimeSubsystems } from "../game/src/trial/integration/trial_runtime_bootstrap.js";
 import { COMMAND_CARDS_MASTER } from "../game/src/systems/deck_manager.js";
 import {
     resolvePlacementAnchor,
@@ -232,6 +233,9 @@ function runStage1Path(seed, {
             }
             : {})
     });
+    const trialRuntime = attachTrialRuntimeSubsystems(engine);
+    assert.equal(trialRuntime?.success, true,
+        "spend-path audit must use the canonical Trial/Warning runtime composition");
     const usedIds = new Set();
     const spends = [];
 

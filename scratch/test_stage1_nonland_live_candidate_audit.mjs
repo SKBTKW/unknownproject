@@ -88,6 +88,18 @@ for (const id of ["CMD_RATIONING", "CMD_EMERGENCY_LEVY", "CMD_REKINDLE_EMBER", "
 
 {
     const card = byId.get("CMD_VIGILANCE");
+    assert.equal(card.reqTrialOrLowDefense, undefined,
+        "Vigilance must not retain the legacy trial-or-low-defense gate");
+    assert.deepEqual(card.offering?.requirements, [{
+        id: "VIGILANCE_WARNING_TENSE",
+        type: "WARNING_STATE",
+        state: "TENSE"
+    }], "Vigilance Offering must use semantic Warning state");
+    const generatedCopies = COMMAND_CARDS_MASTER.filter(candidate => candidate.id === "CMD_VIGILANCE");
+    assert.equal(generatedCopies.length, 1,
+        "combined command master must expose one canonical Vigilance definition");
+    assert.deepEqual(generatedCopies[0].offering?.requirements, card.offering?.requirements,
+        "Vigilance source/generated Offering requirements must stay in parity");
     assert.equal(card.cost.wood, 15);
     assert.ok(effect("CMD_VIGILANCE", "STATE_SET",
         item => item.key === "vigilanceTurns" && item.value === 2));
