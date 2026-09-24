@@ -918,19 +918,6 @@ class DeckManager {
                 this.state.mystic += 10;
                 this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `💎【${cName}】`);
             }
-        } else       if (cId === "CMD_RESETTLEMENT") {
-            // 👥 人口移住令: コスト 🌾-15 🧱-10 (平地2x2マージ指定 🔥+2 ＆ 🌾+2/T永続)
-            this.state.ember = Math.min(30, (this.state.ember || 20) + 2);
-            this.state.resettlementFoodBonus = (this.state.resettlementFoodBonus || 0) + 2;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "👥",
-                description: cDesc,
-                category: "PERMANENT"
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `👥【${cName}】`);
         } else if (cId === "CMD_GREAT_RAMPART_PROJECT") {
             // 🏯 特別プロジェクト：大防塁 (4T継続投資 🧱-45/T ＆ 試練進軍効率大幅低下)
             this.state.greatRampartTurns = 4;
@@ -1035,15 +1022,6 @@ class DeckManager {
             this.state.irrigationCount = (this.state.irrigationCount || 0) + 1;
             this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "💧", description: cDesc, category: "CARD_EFFECT" });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `💧【${cName}】`);
-        } else if (cId === "CMD_RESETTLEMENT") {
-            // 🏕️ 移住: コスト 🌾-15 🧱-10 (平地MERGEに 🔥+2、🌾+2/T)
-            if (this.state.emberSystem && typeof this.state.emberSystem.addBonus === 'function') {
-                this.state.emberSystem.addBonus(2);
-            } else {
-                this.state.ember = (this.state.ember || 0) + 2;
-            }
-            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🏕️", description: cDesc, category: "CARD_EFFECT" });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🏕️【${cName}】`);
         } else if (cId === "CMD_WORKSHOP") {
             // 🔨 工房: コスト 🧱-30 (SPECIAL_BLOCKカード🧱コスト-10%)
             this.state.workshopCount = (this.state.workshopCount || 0) + 1;
