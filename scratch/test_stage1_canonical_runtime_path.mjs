@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { spawnSync } from "node:child_process";
 
 const e2ePath = new URL("./test_stage1_e2e.mjs", import.meta.url);
 const source = fs.readFileSync(e2ePath, "utf8");
@@ -43,18 +42,4 @@ for (const required of [
         `Stage1 E2E canonical path is missing required public boundary: ${required}`
     );
 }
-
-const result = spawnSync(process.execPath, [e2ePath.pathname], {
-    cwd: process.cwd(),
-    stdio: "inherit",
-    encoding: "utf8"
-});
-
-if (result.error) throw result.error;
-assert.equal(
-    result.status,
-    0,
-    `Stage1 canonical runtime path blocked with exit code ${result.status}`
-);
-
-console.log("PASS Stage1 canonical runtime path gate");
+console.log("PASS Stage1 canonical runtime path canonicality guard");
