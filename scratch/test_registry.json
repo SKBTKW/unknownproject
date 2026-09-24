@@ -980,6 +980,14 @@
       ]
     },
     {
+      "path": "scratch/test_stage1_logging_camp_domain_bridge_v1.mjs",
+      "purpose": "verify Logging Camp delegates to Board Special Block semantics, unresolved pricing fails closed, and resolved Special Block Domain quotes pay atomically",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_card_runtime_id_scoped_activation.mjs",
       "purpose": "verify dormant non-LAND cards can only be enabled by explicit card id while legacy categories remain disabled and production defaults stay unchanged",
       "suite": "existing",
