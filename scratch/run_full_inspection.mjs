@@ -310,6 +310,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Stage1 Granary Special Block v1) で不合格が検出されました。");
         process.exit(1);
     }
+    const stage1AgriculturalReformZoneConversionV1Ok = await runCommand("node", ["scratch/test_stage1_agricultural_reform_zone_conversion_v1.mjs"]);
+    if (!stage1AgriculturalReformZoneConversionV1Ok) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Stage1 Agricultural Reform Zone Conversion v1) で不合格が検出されました。");
+        process.exit(1);
+    }
     const cardRuntimeIdScopedActivationOk = await runCommand("node", ["scratch/test_card_runtime_id_scoped_activation.mjs"]);
     if (!cardRuntimeIdScopedActivationOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Card Runtime ID-Scoped Activation) で不合格が検出されました。");
