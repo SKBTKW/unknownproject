@@ -86,12 +86,22 @@ expected23.forEach(exp => {
 });
 
 console.log("\n--- 2. 発動ハンドラ (playCommandCard) 検問 ---");
-const testCards = ["CMD_LOGGING_CAMP", "CMD_QUARRY", "CMD_RESETTLEMENT", "CMD_EMERGENCY_LEVY", "CMD_RATIONING"];
-testCards.forEach(cId => {
+const immediateBuffCards = ["CMD_LOGGING_CAMP", "CMD_QUARRY", "CMD_EMERGENCY_LEVY", "CMD_RATIONING"];
+immediateBuffCards.forEach(cId => {
     const cardObj = allCmdCards.find(c => c.id === cId);
     dm.playCommandCard(cardObj, -1, -1, null);
     assert(mockState.activeBuffs.some(b => b.id === cId), `playCommandCard(${cId}) added active buff`);
 });
+
+const resettlement = allCmdCards.find(c => c.id === "CMD_RESETTLEMENT");
+assert(
+    Array.isArray(resettlement?.effects)
+        && resettlement.effects.length === 1
+        && resettlement.effects[0]?.type === "DOMAIN_ACTION"
+        && resettlement.effects[0]?.action === "CREATE_ZONE_CONVERSION"
+        && resettlement.effects[0]?.definitionId === "RESETTLEMENT_PLAINS_2X2",
+    "CMD_RESETTLEMENT is a targeted Zone Conversion command, not an immediate no-target buff command"
+);
 
 console.log("\n============================================================");
 console.log(`📊 検問集計: ${passCount} PASS / ${failCount} FAIL`);
