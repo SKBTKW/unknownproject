@@ -48,6 +48,15 @@ const runtime = attachTrialRuntimeSubsystems(engine);
 check(runtime?.success === true, "Trial runtime subsystems attach to the live GameEngine");
 check(Boolean(engine.trialDueStateService), "TrialDueState authority is attached");
 check(Boolean(engine.postTrialProgressionService), "PostTrial progression authority is attached");
+check(
+    Boolean(engine.trialDeploymentService),
+    "Production Stage1 composes Trial Deployment Economy",
+    JSON.stringify({
+        trialDeploymentService: Boolean(engine.trialDeploymentService),
+        trialDefenseReservation: Boolean(engine.trialDefenseReservation),
+        trialDeploymentCostPolicy: Boolean(engine.trialDeploymentCostPolicy)
+    })
+);
 
 function findLegalLandPlacement() {
     const size = engine.state.stage?.size || engine.state.grid?.length || 5;
@@ -368,6 +377,33 @@ if (explicitLaunchResult?.started === true && trialController.state) {
         JSON.stringify(confirmed || null)
     );
 
+    const deploymentEconomyAttached = Boolean(engine.trialDeploymentService);
+    const deploymentPreview = deploymentEconomyAttached
+        ? engine.trialDeploymentService.previewPlan(confirmed?.plan || null)
+        : null;
+    if (deploymentEconomyAttached) {
+        check(
+            deploymentPreview?.success === true,
+            "Trial1 deployment preview resolves through production TrialDeploymentService",
+            JSON.stringify(deploymentPreview || null)
+        );
+        check(
+            deploymentPreview?.affordable === true,
+            "Trial1 deployment preview is affordable on the canonical Stage1 path",
+            JSON.stringify(deploymentPreview || null)
+        );
+        check(
+            (Number(deploymentPreview?.foodCost) || 0) + (Number(deploymentPreview?.materialCost) || 0) > 0,
+            "Trial1 deployment preview creates a positive Food / Material sink",
+            JSON.stringify({
+                foodCost: deploymentPreview?.foodCost ?? null,
+                materialCost: deploymentPreview?.materialCost ?? null
+            })
+        );
+    }
+
+    const foodBeforeActivation = Number(engine.state.food) || 0;
+    const materialBeforeActivation = Number(engine.state.wood) || 0;
     const defenseBeforeActivation = Math.max(
         0,
         Math.floor(Number(engine.state.currentDefense) || 0)
@@ -395,6 +431,53 @@ if (explicitLaunchResult?.started === true && trialController.state) {
                 after: engine.state.currentDefense,
                 deploymentEconomyAttached: Boolean(engine.trialDeploymentService),
                 deploymentCommit: activated.deploymentCommit || null
+            })
+        );
+    }
+    if (activated?.success && deploymentEconomyAttached && deploymentPreview?.success) {
+        const committedPreview = activated?.deploymentCommit?.preview || null;
+        const foodPaid = Number(activated?.deploymentCommit?.historyEntry?.foodPaid)
+            || Number(activated?.deploymentCommit?.payment?.foodPaid)
+            || 0;
+        const materialPaid = Number(activated?.deploymentCommit?.historyEntry?.materialPaid)
+            || Number(activated?.deploymentCommit?.payment?.materialPaid)
+            || 0;
+
+        check(
+            committedPreview?.previewToken === deploymentPreview.previewToken,
+            "Trial1 deployment commit matches the validated preview exactly",
+            JSON.stringify({
+                expectedPreviewToken: deploymentPreview.previewToken,
+                committedPreviewToken: committedPreview?.previewToken || null
+            })
+        );
+        check(
+            foodPaid === (Number(deploymentPreview.foodCost) || 0)
+                && materialPaid === (Number(deploymentPreview.materialCost) || 0),
+            "Trial1 committed Food / Material payment equals preview",
+            JSON.stringify({
+                previewFood: deploymentPreview.foodCost,
+                previewMaterial: deploymentPreview.materialCost,
+                foodPaid,
+                materialPaid
+            })
+        );
+        check(
+            Number(engine.state.food) === foodBeforeActivation - foodPaid,
+            "Trial1 deployment Food writes through exactly once at activation",
+            JSON.stringify({
+                before: foodBeforeActivation,
+                paid: foodPaid,
+                after: engine.state.food
+            })
+        );
+        check(
+            Number(engine.state.wood) === materialBeforeActivation - materialPaid,
+            "Trial1 deployment Material writes through exactly once at activation",
+            JSON.stringify({
+                before: materialBeforeActivation,
+                paid: materialPaid,
+                after: engine.state.wood
             })
         );
     }
