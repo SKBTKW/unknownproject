@@ -906,6 +906,14 @@
       ]
     },
     {
+      "path": "scratch/test_stage1_canonical_runtime_path.mjs",
+      "purpose": "final Stage1 canonical runtime path gate that forbids forced state progression and delegates Verse1-to-Stage2 execution to the live E2E path",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_stage1_e2e.mjs",
       "purpose": "Stage1 canonical boundary audit from FirstRun Verse1 through Trial1 battle, settlement, Post-Trial and Stage2 restoration",
       "suite": "existing",

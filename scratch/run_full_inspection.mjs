@@ -775,6 +775,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Final Gate (Stage1 E2E Boundary Audit) で不合格が検出されました。");
         process.exit(1);
     }
+    const stage1CanonicalPathOk = await runCommand("node", ["scratch/test_stage1_canonical_runtime_path.mjs"]);
+    if (!stage1CanonicalPathOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Final Gate (Stage1 Canonical Runtime Path Guard) で不合格が検出されました。");
+        process.exit(1);
+    }
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
     console.log("\n============================================================");
