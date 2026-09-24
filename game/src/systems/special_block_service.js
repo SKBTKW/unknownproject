@@ -204,6 +204,46 @@ export class SpecialBlockService {
         return this.resolveSourceGroup(target, definition).cells;
     }
 
+    _matchesIndependentSourceCell(definition, cell) {
+        if (!cell?.placed || !cell.terrain || cell.isHQ || cell.specialBlock) return false;
+
+        const placement = definition?.placement || {};
+        const sourceTerrainIds = placement.sourceTerrainIds || [];
+        if (sourceTerrainIds.length > 0 && !sourceTerrainIds.includes(terrainId(cell))) return false;
+
+        const sourceMinGL = Number(placement.sourceMinGL);
+        if (Number.isFinite(sourceMinGL) && Number(cell.terrain?.gl) < sourceMinGL) return false;
+
+        const sourceMaxGL = Number(placement.sourceMaxGL);
+        if (Number.isFinite(sourceMaxGL) && Number(cell.terrain?.gl) > sourceMaxGL) return false;
+
+        return true;
+    }
+
+    _resolveIndependentSourceCluster(definition, source) {
+        const start = coords(source);
+        if (!start) return [];
+
+        const queue = [start];
+        const visited = new Set();
+        const cells = [];
+        while (queue.length > 0) {
+            const current = queue.shift();
+            const key = `${current.r}:${current.c}`;
+            if (visited.has(key)) continue;
+            visited.add(key);
+
+            const cell = this.getCell(current.r, current.c);
+            if (!this._matchesIndependentSourceCell(definition, cell)) continue;
+
+            cells.push({ r: current.r, c: current.c, cell });
+            for (const next of orthogonalNeighbors(current.r, current.c)) {
+                if (!visited.has(`${next.r}:${next.c}`)) queue.push(next);
+            }
+        }
+        return cells;
+    }
+
     _validateIndependentGenerationTarget(definition, target) {
         const source = coords(target?.source);
         const destination = coords(target?.destination || target?.target);
@@ -215,15 +255,20 @@ export class SpecialBlockService {
             return { valid: false, reason: 'SOURCE_TERRAIN_REQUIRED' };
         }
         if (sourceCell.specialBlock) return { valid: false, reason: 'SOURCE_SPECIAL_BLOCK_OCCUPIED' };
-
-        const sourceTerrainIds = definition.placement?.sourceTerrainIds || [];
-        if (sourceTerrainIds.length > 0 && !sourceTerrainIds.includes(terrainId(sourceCell))) {
+        if (!this._matchesIndependentSourceCell(definition, sourceCell)) {
             return { valid: false, reason: 'SOURCE_TERRAIN_NOT_ALLOWED' };
         }
 
-        const hasConnectedSameSource = this.findAdjacentCells(source.r, source.c)
-            .some(entry => entry.cell?.placed && sourceTerrainIds.includes(terrainId(entry.cell)));
-        if (hasConnectedSameSource) {
+        const sourceCluster = this._resolveIndependentSourceCluster(definition, source);
+        const minConnectedSourceCells = Number(definition.placement?.minConnectedSourceCells ?? 1);
+        if (
+            Number.isFinite(minConnectedSourceCells)
+            && sourceCluster.length < Math.max(1, Math.trunc(minConnectedSourceCells))
+        ) {
+            return { valid: false, reason: 'SOURCE_CLUSTER_TOO_SMALL' };
+        }
+
+        if (definition.placement?.requiresSourceIsolation === true && sourceCluster.length > 1) {
             return { valid: false, reason: 'SOURCE_TERRAIN_NOT_ISOLATED' };
         }
 
@@ -239,7 +284,8 @@ export class SpecialBlockService {
             source,
             destination,
             sourceCell,
-            destinationCell
+            destinationCell,
+            sourceCluster
         };
     }
 
@@ -383,7 +429,14 @@ export class SpecialBlockService {
                             destination
                         };
                         const validation = this.validateTarget(definition, candidate, context);
-                        if (validation.valid) targets.push(candidate);
+                        if (validation.valid) {
+                            targets.push({
+                                ...candidate,
+                                sourceClusterSize: Array.isArray(validation.sourceCluster)
+                                    ? validation.sourceCluster.length
+                                    : null
+                            });
+                        }
                     }
                 }
             }
