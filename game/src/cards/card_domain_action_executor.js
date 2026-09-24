@@ -111,7 +111,11 @@ function createCardDomainActionExecutor(engine) {
 
         if (effect.action === CARD_DOMAIN_ACTIONS.CREATE_ZONE_CONVERSION) {
             const board = engine?.boardDomainAdapter;
-            if (!board || typeof board.createZoneConversion !== "function") {
+            if (
+                !board
+                || typeof board.createZoneConversion !== "function"
+                || typeof board.quoteZoneConversionCost !== "function"
+            ) {
                 return { success: false, reason: "BOARD_ZONE_CONVERSION_UNAVAILABLE" };
             }
             if (!effect.definitionId) {
@@ -120,6 +124,40 @@ function createCardDomainActionExecutor(engine) {
             const groupId = resolveZoneGroupId(board, effect, context);
             if (!groupId) {
                 return { success: false, reason: "ZONE_CONVERSION_TARGET_REQUIRED" };
+            }
+
+            // Re-read authoritative Board state immediately before commit.
+            // DeckManager has already applied this invocation's payment.
+            const currentQuote = board.quoteZoneConversionCost(effect.definitionId);
+            const paidCost = normalizeCardCost({
+                cost: context?.resolvedPaymentCost || {}
+            });
+            if (
+                currentQuote?.status !== "RESOLVED"
+                || !currentQuote?.resources
+                || !sameResourceCost(paidCost, currentQuote.resources)
+            ) {
+                return {
+                    success: false,
+                    reason: "ZONE_CONVERSION_QUOTE_STALE",
+                    paymentCost: { ...paidCost },
+                    quote: currentQuote || null
+                };
+            }
+
+            if (typeof board.validateZoneConversionCandidate === "function") {
+                const currentValidation = board.validateZoneConversionCandidate(
+                    effect.definitionId,
+                    groupId
+                );
+                if (!currentValidation?.valid) {
+                    return {
+                        success: false,
+                        reason: currentValidation?.reasons?.[0] || "ZONE_CONVERSION_TARGET_INVALID",
+                        validation: currentValidation,
+                        quote: currentQuote
+                    };
+                }
             }
 
             const result = board.createZoneConversion(effect.definitionId, groupId, {
