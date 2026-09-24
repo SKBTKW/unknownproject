@@ -1492,6 +1492,14 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_zone_conversion_production_modifier.mjs",
+      "purpose": "Zone Conversion ACTIVE/DYSFUNCTIONAL per-member production projection, ProductionCalculator inclusion, cell breakdown, and save/restore",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_zone_conversion_card_atomicity.mjs",
       "purpose": "Zone conversion card quoted-payment atomicity, stale commit revalidation, rollback, and deferred card consumption",
       "suite": "existing",

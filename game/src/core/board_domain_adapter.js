@@ -239,6 +239,18 @@ export class BoardDomainAdapter {
         return this.zoneConversionService.getConversionCount(definitionId);
     }
 
+    resolveZoneConversionProduction(groupId) {
+        return this.zoneConversionService.resolveProduction(groupId);
+    }
+
+    sumZoneConversionProduction() {
+        return this.zoneConversionService.sumProduction();
+    }
+
+    resolveZoneConversionCellProduction(target) {
+        return this.zoneConversionService.resolveCellProduction(target);
+    }
+
     validateZoneConversionCandidate(definitionId, groupId) {
         return this.zoneConversionService.validateCandidate(definitionId, groupId);
     }
