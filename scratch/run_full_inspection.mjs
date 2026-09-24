@@ -800,6 +800,12 @@ async function main() {
         process.exit(1);
     }
 
+    const loggingCampBalanceProbeOk = await runCommand("node", ["scratch/test_stage1_logging_camp_balance_probe.mjs"]);
+    if (!loggingCampBalanceProbeOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Logging Camp SOURCE_SIZE / Cost Probe) で不合格が検出されました。");
+        process.exit(1);
+    }
+
     const supplementalOk = await runCommand("node", ["scratch/scratch_registry.mjs", "--run", "supplemental"]);
     if (!supplementalOk) {
         console.error("\n[PIPELINE BLOCKED] Supplemental scratch tests failed.");
