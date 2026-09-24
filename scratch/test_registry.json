@@ -914,6 +914,14 @@
       ]
     },
     {
+      "path": "scratch/test_stage1_trial1_live_experience_audit.mjs",
+      "purpose": "derive Trial1 FirstRun burden from live seeded Stage1 Verse15 resources instead of a fixed historical economy envelope",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_stage1_resource_sink_portfolio.mjs",
       "purpose": "Stage1 resource sink portfolio assumptions across command-card costs, Investigation, Special Blocks and choice Global Events",
       "suite": "existing",
