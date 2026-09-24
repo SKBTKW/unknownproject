@@ -14,16 +14,6 @@
     "effects": [
       {
         "type": "STATE_SET",
-        "key": "foodCostRationingActive",
-        "value": true
-      },
-      {
-        "type": "STATE_SET",
-        "key": "foodCostRationingDiscount",
-        "value": 0.4
-      },
-      {
-        "type": "STATE_SET",
         "key": "foodCostHalvedTurns",
         "value": 1
       },
@@ -197,14 +187,6 @@
         "type": "RESOURCE_DELTA",
         "resource": "wood",
         "amount": 15
-      },
-      {
-        "type": "BUFF_ADD",
-        "fromSourceCard": true,
-        "buff": {
-          "icon": "🧱",
-          "category": "CARD_EFFECT"
-        }
       },
       {
         "type": "LOG_CARD_ACTIVATED"
