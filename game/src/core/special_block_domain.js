@@ -220,6 +220,17 @@ export function getSpecialBlockDefinition(type) {
     return SPECIAL_BLOCK_DEFINITIONS[type] || null;
 }
 
+export function isSpecialBlockFunctional(entityOrCell) {
+    const entity = entityOrCell?.specialBlock || entityOrCell;
+    if (!entity || typeof entity !== 'object') return false;
+    // Legacy saves may predate persisted lifecycle state. Treat missing state
+    // as the historical ACTIVE behavior; any explicit non-ACTIVE state fails
+    // closed until a lifecycle policy explicitly reactivates it.
+    return entity.state === undefined
+        || entity.state === null
+        || entity.state === 'ACTIVE';
+}
+
 function addCapabilities(target, values) {
     for (const value of values || []) {
         if (typeof value === 'string' && value) target.add(value);
@@ -241,16 +252,18 @@ export function readCellCapabilities(cell) {
     addCapabilities(capabilities, cell.capabilities);
     addCapabilities(capabilities, cell.terrain?.capabilities);
     addCapabilities(capabilities, cell.socketResource?.capabilities);
-    addCapabilities(capabilities, cell.specialBlock?.capabilities);
 
     const id = terrainId(cell);
     if (id === 'E0_WETLAND') capabilities.add(BOARD_CAPABILITIES.WATER_SOURCE);
     if (isIrrigationSourceCell(cell)) capabilities.add(BOARD_CAPABILITIES.WATER_SOURCE);
 
-    const specialDefinition = getSpecialBlockDefinition(
-        cell.specialBlock?.definitionId || cell.specialBlock?.type
-    );
-    addCapabilities(capabilities, specialDefinition?.capabilities);
+    if (isSpecialBlockFunctional(cell.specialBlock)) {
+        addCapabilities(capabilities, cell.specialBlock?.capabilities);
+        const specialDefinition = getSpecialBlockDefinition(
+            cell.specialBlock?.definitionId || cell.specialBlock?.type
+        );
+        addCapabilities(capabilities, specialDefinition?.capabilities);
+    }
 
     // HQ is never promoted to MYSTIC_SOURCE by production values.
     if (cell.isHQ) capabilities.delete(BOARD_CAPABILITIES.MYSTIC_SOURCE);
@@ -279,6 +292,7 @@ export function readEffectiveGreenery(cell) {
 export function readSpecialBlockTrialTraits(entityOrCell) {
     const entity = entityOrCell?.specialBlock || entityOrCell;
     if (!entity || typeof entity !== 'object') return null;
+    if (!isSpecialBlockFunctional(entity)) return null;
     const definition = getSpecialBlockDefinition(entity.definitionId || entity.type);
     if (!definition) return null;
     return {
