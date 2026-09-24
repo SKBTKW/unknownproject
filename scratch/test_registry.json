@@ -914,14 +914,6 @@
       ]
     },
     {
-      "path": "scratch/test_stage1_trial1_live_experience_audit.mjs",
-      "purpose": "derive Trial1 FirstRun burden from live seeded Stage1 Verse15 resources instead of a fixed historical economy envelope",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
       "path": "scratch/test_stage1_resource_sink_portfolio.mjs",
       "purpose": "Stage1 resource sink portfolio assumptions across command-card costs, Investigation, Special Blocks and choice Global Events",
       "suite": "existing",
@@ -932,6 +924,14 @@
     {
       "path": "scratch/test_stage1_trial_threat_policy_v1.mjs",
       "purpose": "canonical Stage1 Trial1 threat policy, one-force route band, and production composition",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_stage1_trial1_live_experience_audit.mjs",
+      "purpose": "derive Trial1 FirstRun burden from live seeded Stage1 Verse15 resources instead of a fixed historical economy envelope",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -1378,6 +1378,14 @@
       "path": "scratch/test_web25d_zone_link_overlay_renderer.mjs",
       "purpose": "web25d zone link overlay renderer",
       "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_zone_conversion_card_atomicity.mjs",
+      "purpose": "Zone Conversion card payment, stale revalidation, and rollback atomicity",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
     },
     {
       "path": "scratch/test_zone_conversion_foundation.mjs",
