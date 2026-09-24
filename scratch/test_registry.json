@@ -922,6 +922,14 @@
       ]
     },
     {
+      "path": "scratch/test_stage1_nonland_live_candidate_audit.mjs",
+      "purpose": "audit all Stage1 dormant non-LAND source cards and lock prototype/support/semantic-repair dispositions without activating runtime categories",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_stage1_trial1_live_experience_audit.mjs",
       "purpose": "derive Trial1 FirstRun burden from live seeded Stage1 Verse15 resources instead of a fixed historical economy envelope",
       "suite": "existing",
