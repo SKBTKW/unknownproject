@@ -78,7 +78,7 @@ for (const id of PROTOTYPE) {
         "Emergency Levy v1 is immediate-only");
 }
 
-for (const id of ["CMD_RATIONING", "CMD_EMERGENCY_LEVY", "CMD_REKINDLE_EMBER", "CMD_GRANARY"]) {
+for (const id of ["CMD_RATIONING", "CMD_EMERGENCY_LEVY", "CMD_REKINDLE_EMBER", "CMD_GRANARY", "CMD_VIGILANCE"]) {
     assert.deepEqual(
         generatedById.get(id),
         byId.get(id),
@@ -89,6 +89,15 @@ for (const id of ["CMD_RATIONING", "CMD_EMERGENCY_LEVY", "CMD_REKINDLE_EMBER", "
 {
     const card = byId.get("CMD_VIGILANCE");
     assert.equal(card.cost.wood, 15);
+    assert.equal(card.reqTrialOrLowDefense, undefined,
+        "Vigilance must not use the legacy trial-or-low-defense gate");
+    assert.deepEqual(card.offering?.requirements, [{
+        id: "VIGILANCE_WARNING_WATCH",
+        type: "WARNING_STATE",
+        state: "WATCH"
+    }]);
+    assert.deepEqual(card.execution?.requirements, card.offering.requirements,
+        "Vigilance Offering and Execution must share one Warning semantic gate");
     assert.ok(effect("CMD_VIGILANCE", "STATE_SET",
         item => item.key === "vigilanceTurns" && item.value === 2));
     assert.ok(effect("CMD_VIGILANCE", "STATE_SET",
