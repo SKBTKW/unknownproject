@@ -105,6 +105,9 @@ Stage1で優先して具体化する非LANDカードの判断軸。Offering正�
 ### 📐 `08_stage1_first_wave_spec_v1.md`
 盤面投資4枚＋状況対応3枚のv1意味論。runtime再有効化・Offeringカテゴリ確定は別工程。
 
+### 🔬 `09_stage1_prototype_exposure_audit.md`
+Stage1 prototype 3枚のVerse別Offering eligibilityを、production activationを変えずにseed監査する台帳。
+
 実装上は非土地カードの多くが `category: "COMMAND"` として残っており、上記テーマ分類とruntime categoryは一致しない。
 Offering用taxonomyは `offering.category` 境界へ段階的に移すが、現時点で正式確定している系統はLANDのみとする。
 
