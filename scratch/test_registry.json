@@ -1612,6 +1612,14 @@
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
       ]
+    },
+    {
+      "path": "scratch/test_special_block_terrain_adjacency_contract.mjs",
+      "purpose": "Special Block E-copy/GL1 adjacency proxy, terrain GL step, desert/mountain edge exclusions",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
     }
   ]
 }

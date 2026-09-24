@@ -41,6 +41,93 @@ export const SPECIAL_BLOCK_COST_STATUS = Object.freeze({
     UNRESOLVED: 'UNRESOLVED'
 });
 
+export const SPECIAL_BLOCK_ADJACENCY_GL = 1;
+
+function finiteTerrainAxis(value) {
+    if (value === null || value === undefined || value === '') return null;
+    const number = Number(value);
+    return Number.isFinite(number) ? number : null;
+}
+
+/**
+ * Special Blocks participate in Board adjacency without becoming normal Terrain.
+ * E is copied from the terrain used as the construction reference; GL is always
+ * treated as 1. The persisted profile keeps independent/special-only cells
+ * deterministic across save/restore.
+ */
+export function createSpecialBlockAdjacencyProfile(referenceCell, source = null) {
+    const elevation = finiteTerrainAxis(referenceCell?.terrain?.e);
+    return Object.freeze({
+        e: elevation,
+        gl: SPECIAL_BLOCK_ADJACENCY_GL,
+        ...(source && Number.isInteger(source.r) && Number.isInteger(source.c)
+            ? { source: Object.freeze({ r: source.r, c: source.c }) }
+            : {})
+    });
+}
+
+export function readSpecialBlockAdjacencyProfile(entityOrCell) {
+    const cell = entityOrCell?.specialBlock ? entityOrCell : null;
+    const entity = cell?.specialBlock || entityOrCell;
+    if (!entity || typeof entity !== 'object') return null;
+
+    const stored = entity.terrainAdjacencyProfile;
+    const storedE = finiteTerrainAxis(stored?.e);
+    const fallbackE = finiteTerrainAxis(cell?.terrain?.e);
+
+    return Object.freeze({
+        e: storedE !== null ? storedE : fallbackE,
+        gl: SPECIAL_BLOCK_ADJACENCY_GL,
+        ...(stored?.source && Number.isInteger(stored.source.r) && Number.isInteger(stored.source.c)
+            ? { source: Object.freeze({ r: stored.source.r, c: stored.source.c }) }
+            : {})
+    });
+}
+
+export function validateTerrainAgainstSpecialBlockAdjacency(terrain, profile) {
+    if (!terrain || !profile) return { valid: true, reasons: [] };
+
+    const terrainGL = finiteTerrainAxis(terrain.gl);
+    const terrainE = finiteTerrainAxis(terrain.e);
+    const reasons = [];
+
+    // Absolute facility-edge exclusions. GL0 is not enough to identify a
+    // desert because canonical mountains also use GL0; keep the two semantics
+    // explicit so facilities such as mines are not misclassified.
+    const id = String(terrain.terrainId || terrain.id || '').toUpperCase();
+    const isDesert = id.includes('DESERT');
+    const isMountain = terrainE === 3 || id.includes('MOUNTAIN');
+    if (isDesert) reasons.push('SPECIAL_BLOCK_DESERT_NEIGHBOR_FORBIDDEN');
+    if (isMountain) reasons.push('SPECIAL_BLOCK_MOUNTAIN_NEIGHBOR_FORBIDDEN');
+
+    if (
+        terrainGL !== null
+        && Number.isFinite(profile.gl)
+        && Math.abs(terrainGL - profile.gl) >= 2
+    ) {
+        reasons.push('INVALID_GL_NEIGHBOR');
+    }
+
+    if (
+        terrainE !== null
+        && Number.isFinite(profile.e)
+        && Math.abs(terrainE - profile.e) >= 2
+    ) {
+        if ((terrainE === 0 && profile.e === 3) || (terrainE === 3 && profile.e === 0)) {
+            reasons.push('WETLAND_MOUNTAIN_NEIGHBOR');
+        } else if ((terrainE === 0 && profile.e === 2) || (terrainE === 2 && profile.e === 0)) {
+            reasons.push('WETLAND_HILL_NEIGHBOR');
+        } else {
+            reasons.push('INVALID_ELEVATION_NEIGHBOR');
+        }
+    }
+
+    return {
+        valid: reasons.length === 0,
+        reasons: [...new Set(reasons)]
+    };
+}
+
 const SPECIAL_BLOCK_RESOURCE_KEYS = Object.freeze(['food', 'wood', 'defense', 'mystic', 'ember']);
 
 function validNonNegativeNumber(value) {

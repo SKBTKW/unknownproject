@@ -145,6 +145,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Board / Special Block / Defense v1 Contract) で不合格が検出されました。");
         process.exit(1);
     }
+    const specialBlockTerrainAdjacencyOk = await runCommand("node", ["scratch/test_special_block_terrain_adjacency_contract.mjs"]);
+    if (!specialBlockTerrainAdjacencyOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Special Block Terrain Adjacency Contract) で不合格が検出されました。");
+        process.exit(1);
+    }
     const boardWorldEligibilityOk = await runCommand("node", ["scratch/test_board_world_eligibility_integration.mjs"]);
     if (!boardWorldEligibilityOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Board / World Eligibility Integration) で不合格が検出されました.");
