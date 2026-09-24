@@ -53,12 +53,27 @@ export const ECONOMY_CARDS_MASTER = [
       "FOOD",
       "DEVELOPMENT"
     ],
-    "reqWetland": 1,
     "reqWood": 15,
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.25,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "DOMAIN_ACTION",
+        "action": "TRANSFORM_TERRAIN",
+        "fromTerrainIds": [
+          "E0_WETLAND"
+        ],
+        "toTerrainId": "E1_RECLAIMED_LAND",
+        "excludeHQ": true,
+        "forbidTrueMerge": true,
+        "forbiddenSocketIds": [
+          "SOCKET_LAKE"
+        ],
+        "logActivation": true
+      }
+    ]
   },
   {
     "id": "CMD_LOGGING_CAMP",
@@ -1253,12 +1268,27 @@ export const COMMAND_CARDS_MASTER = [
       "FOOD",
       "DEVELOPMENT"
     ],
-    "reqWetland": 1,
     "reqWood": 15,
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.25,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "DOMAIN_ACTION",
+        "action": "TRANSFORM_TERRAIN",
+        "fromTerrainIds": [
+          "E0_WETLAND"
+        ],
+        "toTerrainId": "E1_RECLAIMED_LAND",
+        "excludeHQ": true,
+        "forbidTrueMerge": true,
+        "forbiddenSocketIds": [
+          "SOCKET_LAKE"
+        ],
+        "logActivation": true
+      }
+    ]
   },
   {
     "id": "CMD_LOGGING_CAMP",
