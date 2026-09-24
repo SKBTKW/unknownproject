@@ -1428,6 +1428,14 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_zone_conversion_card_atomicity.mjs",
+      "purpose": "Zone conversion card quoted-payment atomicity, stale commit revalidation, rollback, and deferred card consumption",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_zone_conversion_foundation.mjs",
       "purpose": "Zone conversion foundation, maintenance lifecycle, and Board-to-Trial deployment semantic projection",
       "suite": "existing",
