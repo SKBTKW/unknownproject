@@ -296,6 +296,14 @@
       ]
     },
     {
+      "path": "scratch/test_card_runtime_id_scoped_activation.mjs",
+      "purpose": "verify dormant non-LAND cards can only be enabled by explicit card id while legacy categories remain disabled and production defaults stay unchanged",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_check_system_core.mjs",
       "purpose": "check system core",
       "suite": "supplemental"
@@ -332,18 +340,26 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_demihuman_raid_boundary.mjs",
+      "purpose": "Demihuman Raid remains history-gated and outside normal Trial lifecycle until a dedicated encounter port exists",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_demihuman_traces_global_event_contract.mjs",
       "purpose": "demihuman traces global event contract",
       "suite": "supplemental"
     },
     {
-      "path": "scratch/test_demihuman_traces_public_presentation_read_model.mjs",
-      "purpose": "demihuman traces public presentation read model",
+      "path": "scratch/test_demihuman_traces_public_presentation_bridge.mjs",
+      "purpose": "demihuman traces public presentation lifecycle bridge",
       "suite": "supplemental"
     },
     {
-      "path": "scratch/test_demihuman_traces_public_presentation_bridge.mjs",
-      "purpose": "demihuman traces public presentation lifecycle bridge",
+      "path": "scratch/test_demihuman_traces_public_presentation_read_model.mjs",
+      "purpose": "demihuman traces public presentation read model",
       "suite": "supplemental"
     },
     {
@@ -358,6 +374,14 @@
       "path": "scratch/test_economy_cards_master.mjs",
       "purpose": "economy cards master",
       "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_economy_unpriced_domain_inventory.mjs",
+      "purpose": "inventory currently unpriced Stage1 GE choices and runtime Zone Conversion food/material definitions against the open PVE authoring band",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
     },
     {
       "path": "scratch/test_feedback_classification.mjs",
@@ -423,6 +447,22 @@
     {
       "path": "scratch/test_first_run_trial_ui_contract.mjs",
       "purpose": "first run trial ui contract",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_first_run_trial1_relative_deployment_cost.mjs",
+      "purpose": "FirstRun Trial1-only relative food/material deployment burden, session applicability, later-Trial fallback, and explicit override precedence",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_first_run_trial1_relative_payment_integration.mjs",
+      "purpose": "FirstRun production composition preview/commit integration for relative food/material deployment payment, defense reservation, and stale atomic rejection",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -535,14 +575,6 @@
       ]
     },
     {
-      "path": "scratch/test_global_event_weight_target_contract.mjs",
-      "purpose": "EVENT_WEIGHT_MODIFIER targets resolve to current Global Event ids/categories",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
       "path": "scratch/test_global_event_offering_weight_hook.mjs",
       "purpose": "Active Global Event tag multipliers affect canonical Offering weighted draws",
       "suite": "existing",
@@ -553,6 +585,14 @@
     {
       "path": "scratch/test_global_event_recovery_history_eligibility.mjs",
       "purpose": "Recovery Momentum eligibility uses Chronicle-backed last-Trial damage history",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_global_event_weight_target_contract.mjs",
+      "purpose": "EVENT_WEIGHT_MODIFIER targets resolve to current Global Event ids/categories",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -845,14 +885,6 @@
       ]
     },
     {
-      "path": "scratch/test_demihuman_raid_boundary.mjs",
-      "purpose": "Demihuman Raid remains history-gated and outside normal Trial lifecycle until a dedicated encounter port exists",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
       "path": "scratch/test_reclaimed_land.mjs",
       "purpose": "reclaimed-land restore compatibility semantics",
       "suite": "supplemental"
@@ -919,13 +951,37 @@
       ]
     },
     {
+      "path": "scratch/test_special_block_creation_cost_quote.mjs",
+      "purpose": "Special Block authoritative creation-cost quote, post-payment validation, stale-payment rejection, and paidCost persistence",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_special_block_lifecycle_functional_gate.mjs",
+      "purpose": "Special Block lifecycle functional gating for capability, Trial traits, production, legacy compatibility, and persistence",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_special_block_terrain_adjacency_contract.mjs",
+      "purpose": "Special Block E-copy/GL1 adjacency proxy, terrain GL step, desert/mountain edge exclusions",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_stage_expansion.mjs",
       "purpose": "stage expansion",
       "suite": "supplemental"
     },
     {
-      "path": "scratch/test_stage1_dormant_card_triage.mjs",
-      "purpose": "Stage1 dormant non-LAND card triage inventory coverage",
+      "path": "scratch/test_stage1_agricultural_reform_zone_conversion_v1.mjs",
+      "purpose": "verify Agricultural Reform product definition injection, completed PLAINS Zone targeting, Board-owned cost quote, local per-member food production, and UNIQUE lifecycle",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -940,6 +996,14 @@
       ]
     },
     {
+      "path": "scratch/test_stage1_dormant_card_triage.mjs",
+      "purpose": "Stage1 dormant non-LAND card triage inventory coverage",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_stage1_e2e.mjs",
       "purpose": "Stage1 canonical boundary audit from FirstRun Verse1 through Trial1 battle, settlement, Post-Trial and Stage2 restoration",
       "suite": "existing",
@@ -948,16 +1012,8 @@
       ]
     },
     {
-      "path": "scratch/test_stage1_nonland_live_candidate_audit.mjs",
-      "purpose": "audit all Stage1 dormant non-LAND source cards and lock prototype/support/semantic-repair dispositions without activating runtime categories",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
-      "path": "scratch/test_wetland_reclamation_domain_action_v1.mjs",
-      "purpose": "verify Wetland Reclamation explicit Terrain Transform targeting, exact payment, canonical reclaimed terrain mutation, and legacy branch retirement",
+      "path": "scratch/test_stage1_executable_spend_path_audit.mjs",
+      "purpose": "run canonical Stage1 command spends, then measure actual FirstRun Trial1 relative deployment and total same-seed resource burden",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -972,8 +1028,8 @@
       ]
     },
     {
-      "path": "scratch/test_stage1_agricultural_reform_zone_conversion_v1.mjs",
-      "purpose": "verify Agricultural Reform product definition injection, completed PLAINS Zone targeting, Board-owned cost quote, local per-member food production, and UNIQUE lifecycle",
+      "path": "scratch/test_stage1_logging_camp_balance_probe.mjs",
+      "purpose": "Stage1 Logging Camp legal source-cluster timing, candidate creation-cost PVE, and SOURCE_SIZE gross payback probe",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -988,8 +1044,16 @@
       ]
     },
     {
-      "path": "scratch/test_card_runtime_id_scoped_activation.mjs",
-      "purpose": "verify dormant non-LAND cards can only be enabled by explicit card id while legacy categories remain disabled and production defaults stay unchanged",
+      "path": "scratch/test_stage1_nonland_live_candidate_audit.mjs",
+      "purpose": "audit all Stage1 dormant non-LAND source cards and lock prototype/support/semantic-repair dispositions without activating runtime categories",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_stage1_offering_economy_playability.mjs",
+      "purpose": "Stage1 Offering, economy, reserve, Multi-Attribute placement, Zone/Link, and Verse1-to-Trial1 playability audit",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -1006,14 +1070,6 @@
     {
       "path": "scratch/test_stage1_prototype_exposure_audit.mjs",
       "purpose": "measure Verse1-14 Offering eligibility windows for the three audited Stage1 prototype cards across deterministic FirstRun growth traces without changing production activation",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
-      "path": "scratch/test_stage1_offering_economy_playability.mjs",
-      "purpose": "Stage1 Offering, economy, reserve, Multi-Attribute placement, Zone/Link, and Verse1-to-Trial1 playability audit",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -1060,40 +1116,8 @@
       ]
     },
     {
-      "path": "scratch/test_stage1_executable_spend_path_audit.mjs",
-      "purpose": "run canonical Stage1 command spends, then measure actual FirstRun Trial1 relative deployment and total same-seed resource burden",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
       "path": "scratch/test_stage1_trial1_linear_cost_fit.mjs",
       "purpose": "measure whether the fixed linear deployment-cost formula can hold the live FirstRun 70-80% burden target across Stage1 seeds",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
-      "path": "scratch/test_first_run_trial1_relative_deployment_cost.mjs",
-      "purpose": "FirstRun Trial1-only relative food/material deployment burden, session applicability, later-Trial fallback, and explicit override precedence",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
-      "path": "scratch/test_first_run_trial1_relative_payment_integration.mjs",
-      "purpose": "FirstRun production composition preview/commit integration for relative food/material deployment payment, defense reservation, and stale atomic rejection",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
-      "path": "scratch/test_economy_unpriced_domain_inventory.mjs",
-      "purpose": "inventory currently unpriced Stage1 GE choices and runtime Zone Conversion food/material definitions against the open PVE authoring band",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -1142,6 +1166,14 @@
     {
       "path": "scratch/test_task_sweeper.mjs",
       "purpose": "task sweeper",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_terrain_transform_foundation.mjs",
+      "purpose": "Board-owned explicit terrain transform legality, canonical terrain replacement, and topology reconciliation hooks",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -1461,8 +1493,16 @@
       "suite": "supplemental"
     },
     {
-      "path": "scratch/test_unity_runtime_handoff_contract.mjs",
-      "purpose": "Unity runtime handoff contract over BoardPresentation, BoardInput, and GameRuntimeSnapshot",
+      "path": "scratch/test_ui_lifecycle.mjs",
+      "purpose": "ui lifecycle",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_unified_integration_workflow.mjs",
+      "purpose": "unified integration workflow",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -1477,16 +1517,8 @@
       ]
     },
     {
-      "path": "scratch/test_ui_lifecycle.mjs",
-      "purpose": "ui lifecycle",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
-      "path": "scratch/test_unified_integration_workflow.mjs",
-      "purpose": "unified integration workflow",
+      "path": "scratch/test_unity_runtime_handoff_contract.mjs",
+      "purpose": "Unity runtime handoff contract over BoardPresentation, BoardInput, and GameRuntimeSnapshot",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -1574,8 +1606,8 @@
       "suite": "supplemental"
     },
     {
-      "path": "scratch/test_zone_conversion_production_modifier.mjs",
-      "purpose": "Zone Conversion ACTIVE/DYSFUNCTIONAL per-member production projection, ProductionCalculator inclusion, cell breakdown, and save/restore",
+      "path": "scratch/test_wetland_reclamation_domain_action_v1.mjs",
+      "purpose": "verify Wetland Reclamation explicit Terrain Transform targeting, exact payment, canonical reclaimed terrain mutation, and legacy branch retirement",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -1590,8 +1622,8 @@
       ]
     },
     {
-      "path": "scratch/test_terrain_transform_foundation.mjs",
-      "purpose": "Board-owned explicit terrain transform legality, canonical terrain replacement, and topology reconciliation hooks",
+      "path": "scratch/test_zone_conversion_creation_reward.mjs",
+      "purpose": "Zone Conversion one-time creation reward semantics, canonical resource application, persistence, and idempotency",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -1606,32 +1638,8 @@
       ]
     },
     {
-      "path": "scratch/test_special_block_creation_cost_quote.mjs",
-      "purpose": "Special Block authoritative creation-cost quote, post-payment validation, stale-payment rejection, and paidCost persistence",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
-      "path": "scratch/test_zone_conversion_creation_reward.mjs",
-      "purpose": "Zone Conversion one-time creation reward semantics, canonical resource application, persistence, and idempotency",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
-      "path": "scratch/test_special_block_lifecycle_functional_gate.mjs",
-      "purpose": "Special Block lifecycle functional gating for capability, Trial traits, production, legacy compatibility, and persistence",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
-      "path": "scratch/test_special_block_terrain_adjacency_contract.mjs",
-      "purpose": "Special Block E-copy/GL1 adjacency proxy, terrain GL step, desert/mountain edge exclusions",
+      "path": "scratch/test_zone_conversion_production_modifier.mjs",
+      "purpose": "Zone Conversion ACTIVE/DYSFUNCTIONAL per-member production projection, ProductionCalculator inclusion, cell breakdown, and save/restore",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
