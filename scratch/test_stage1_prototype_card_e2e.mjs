@@ -101,6 +101,18 @@ console.log("\nStage1 prototype cards: Offering -> payment -> effect -> Verse pr
     state.material = 30;
     state.currentDefense = Math.min(5, state.maxDefense || 5);
 
+    assert.equal(
+        engine.deckManager.isCardEligible(card, 1, 0),
+        false,
+        "Vigilance must stay hidden before the semantic Warning preparation window"
+    );
+    engine.warningStateService.markOmen({ source: "PROTOTYPE_E2E" });
+    assert.equal(
+        engine.deckManager.isCardEligible(card, 1, 0),
+        false,
+        "OMEN alone must not expose Vigilance"
+    );
+    engine.warningStateService.markWatch({ source: "PROTOTYPE_E2E" });
     assert.equal(engine.deckManager.isCardEligible(card, 1, 0), true);
     generateOnlyPrototype(engine, id);
 
@@ -120,7 +132,20 @@ console.log("\nStage1 prototype cards: Offering -> payment -> effect -> Verse pr
     assert.equal(state.vigilanceTurns, 2, "first transition arms the 2-Verse duration without consuming it");
     assert.equal(state.getMaxDefense(), maxBefore + 3, "armed Vigilance must raise the defense ceiling by +3");
 
-    const blocked = createPrototypeEngine(id, 2026092404);
+    const early = createPrototypeEngine(id, 2026092404);
+    early.state.wood = 30;
+    early.state.material = 30;
+    const earlyDenied = early.state.playCommandCard(card);
+    assert.equal(earlyDenied.success, false);
+    assert.equal(
+        earlyDenied.reason,
+        "VIGILANCE_WARNING_WATCH",
+        "execution must revalidate the same Warning semantic gate"
+    );
+    assert.equal(early.state.wood, 30, "early Vigilance rejection must occur before payment");
+
+    const blocked = createPrototypeEngine(id, 2026092408);
+    blocked.warningStateService.markWatch({ source: "PROTOTYPE_E2E" });
     blocked.state.wood = 14;
     blocked.state.material = 14;
     const snapshot = { wood: blocked.state.wood, turns: blocked.state.vigilanceTurns };
@@ -202,7 +227,7 @@ console.log("\nStage1 prototype cards: Offering -> payment -> effect -> Verse pr
 }
 
 console.log("  CMD_EMERGENCY_LEVY: Offering + 🌾 payment + 🧱 conversion + next Verse PASS");
-console.log("  CMD_VIGILANCE: Offering + 🧱 payment + delayed defense buff PASS");
+console.log("  CMD_VIGILANCE: WATCH gate + 🧱 payment + delayed defense buff PASS");
 console.log("  CMD_REKINDLE_EMBER: Offering + ✨ payment + 🔥 recovery + no persistent waiver PASS");
 console.log("  production default remains dormant for all 3");
 console.log("✅ Stage1 prototype card E2E PASS");
