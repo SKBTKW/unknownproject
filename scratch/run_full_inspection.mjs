@@ -678,6 +678,7 @@ async function main() {
         ["Zone / Link overlay", "node", ["scratch/test_web25d_zone_link_overlay_renderer.mjs"]],
         ["Road overlay", "node", ["scratch/test_web25d_road_overlay_renderer.mjs"]],
         ["Viewport fit", "node", ["scratch/web25d_viewport_fit_validation.mjs"]],
+        ["Production runtime boundary", "node", ["scratch/test_web25d_production_runtime.mjs"]],
     ]);
     if (!web25DVisualFocusedOk) process.exit(1);
     const advisorFoundationOk = await runCommand("node", ["scratch/test_advisor_foundation.mjs"]);
