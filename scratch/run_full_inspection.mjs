@@ -325,6 +325,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Stage1 Trial1 Live Experience Audit) で不合格が検出されました。");
         process.exit(1);
     }
+    const economyUnpricedDomainInventoryOk = await runCommand("node", ["scratch/test_economy_unpriced_domain_inventory.mjs"]);
+    if (!economyUnpricedDomainInventoryOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Economy Unpriced Domain Inventory) で不合格が検出されました。");
+        process.exit(1);
+    }
     const cardDomainActionsV2ReplayOk = await runCommand("node", ["scratch/test_card_domain_actions_v2_replay.mjs"]);
     if (!cardDomainActionsV2ReplayOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Card Domain Actions v2 Replay) で不合格が検出されました。");
