@@ -739,6 +739,12 @@ async function main() {
         process.exit(1);
     }
 
+    const specialBlockCreationCostOk = await runCommand("node", ["scratch/test_special_block_creation_cost_quote.mjs"]);
+    if (!specialBlockCreationCostOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Special Block creation-cost quote で不合格が検出されました。");
+        process.exit(1);
+    }
+
     const zoneConversionFoundationOk = await runCommand("node", ["scratch/test_zone_conversion_foundation.mjs"]);
     if (!zoneConversionFoundationOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Zone Conversion Foundation) で不合格が検出されました。");
