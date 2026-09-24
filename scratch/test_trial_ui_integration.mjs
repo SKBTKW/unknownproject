@@ -20,6 +20,8 @@ function check(condition, message) {
 
 const read = path => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 const uiSource = read("../game/src/ui/ui_controller.js");
+const layoutSource = read("../game/src/ui/layout_state_manager.js");
+const routeSelectionBridgeSource = read("../game/src/ui/trial_route_board_selection_bridge.js");
 const actionTraySource = read("../game/src/ui/trial_action_tray_component.js");
 const boardSource = read("../game/src/ui/board_grid_component.js");
 const boardCss = read("../game/css/2_center_area/land_grid.css");
@@ -100,6 +102,15 @@ check(boardSource.includes('data-trial-direction') && boardSource.includes("tria
 "Board remains responsible for route direction and ingress markers");
 check(boardCss.includes("pointer-events: none") && boardCss.includes(".cell.trial-route-cell::before"),
 "Board route markers do not block interception input");
+check(!layoutSource.includes("boardCameraSystem")
+    && !layoutSource.includes("resetCamera(")
+    && !layoutSource.includes("resetZoom("),
+"Layout state transitions do not own or reset Board camera pan/zoom");
+check(routeSelectionBridgeSource.includes("clearMarkers(boardEl);")
+    && routeSelectionBridgeSource.includes('document.body?.classList.toggle("trial-route-selection-on-board", active)')
+    && routeSelectionBridgeSource.indexOf("clearMarkers(boardEl);")
+        < routeSelectionBridgeSource.indexOf("if (!active) return;"),
+"Trial route selector sync clears stale markers and body state before inactive exit");
 
 manager.setBoardViewMode(BOARD_VIEW_MODES.WORLD_2_5D);
 check(manager.getBoardViewMode() === BOARD_VIEW_MODES.WORLD_2_5D
@@ -161,9 +172,12 @@ check(stopTrialSource.includes("this.trialPreviewConfig = null;")
     && stopTrialSource.includes("this.trialPresentationState.clearPlanningState();")
     && stopTrialSource.includes("this.hideCellTooltip();")
     && stopTrialSource.includes("this.layoutStateManager.exitTrial();")
+    && stopTrialSource.includes("this.render();")
     && stopTrialSource.indexOf("this.trialPresentationState.clearPlanningState();")
-        < stopTrialSource.indexOf("this.layoutStateManager.exitTrial();"),
-"Trial stop clears temporary Presentation state before leaving Trial layout");
+        < stopTrialSource.indexOf("this.layoutStateManager.exitTrial();")
+    && stopTrialSource.indexOf("this.layoutStateManager.exitTrial();")
+        < stopTrialSource.indexOf("this.render();"),
+"Trial stop clears temporary Presentation state, exits Trial layout, then re-renders marker cleanup");
 trialPresentationState.clearPlanningState();
 manager.exitTrial();
 check(trialPresentationState.selectedInterceptCell === null
