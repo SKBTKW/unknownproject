@@ -8,6 +8,7 @@ import {
     getSpecialBlockDefinition
 } from "../game/src/core/special_block_domain.js";
 import { COMMAND_CARDS_MASTER } from "../game/src/data/command_cards_data.js";
+import { SpecialBlockProductionResolver } from "../game/src/core/special_block_production.js";
 import { DeckManager } from "../game/src/systems/deck_manager.js";
 import { attachCardRuntimePolicy } from "../game/src/systems/card_runtime_policy.js";
 
@@ -352,8 +353,57 @@ assert.equal(loggingDefinition.production.relationNeighborhood, "ORTHOGONAL");
     assert.equal(creates, 0);
 }
 
+// RELATION_COUNT can target the same Special Block definition without counting
+// unrelated production facilities. Numeric values here are synthetic test data;
+// the product definition itself remains UNRESOLVED.
+{
+    const resolvedLoggingDefinition = {
+        id: SPECIAL_BLOCK_TYPES.LOGGING_CAMP,
+        production: {
+            kind: "RELATION_COUNT",
+            status: "RESOLVED",
+            relationDefinitionId: SPECIAL_BLOCK_TYPES.LOGGING_CAMP,
+            relationNeighborhood: "ORTHOGONAL",
+            baseYields: { wood: 2 },
+            perRelationYields: { wood: 1 }
+        }
+    };
+    const resolver = new SpecialBlockProductionResolver({
+        definitionResolver: () => resolvedLoggingDefinition
+    });
+    const productionState = {
+        grid: [[cell(0, 0), cell(0, 1), cell(0, 2)]]
+    };
+    productionState.grid[0][0].specialBlock = {
+        definitionId: SPECIAL_BLOCK_TYPES.LOGGING_CAMP,
+        state: "ACTIVE"
+    };
+    productionState.grid[0][1].specialBlock = {
+        definitionId: SPECIAL_BLOCK_TYPES.LOGGING_CAMP,
+        state: "ACTIVE"
+    };
+    productionState.grid[0][2].specialBlock = {
+        definitionId: SPECIAL_BLOCK_TYPES.FARM,
+        state: "ACTIVE"
+    };
+
+    const resolved = resolver.resolveCell(
+        productionState,
+        productionState.grid[0][0],
+        { r: 0, c: 0 }
+    );
+    assert.equal(resolved.status, "RESOLVED");
+    assert.deepEqual(resolved.yields, {
+        food: 0,
+        wood: 3,
+        defense: 0,
+        mystic: 0
+    });
+}
+
 console.log("  connected GL2+ pair -> adjacent empty-grid Logging Camp geometry is canonical");
 console.log("  unresolved DOMAIN_QUOTE fails closed before Offering exposure");
 console.log("  resolved Board quote pays atomically and forwards paidCost");
 console.log("  stale Special Block quote rolls payment back");
+console.log("  same-definition orthogonal adjacency scales production without counting other facilities");
 console.log("✅ Stage1 Logging Camp Domain Bridge v2 PASS");
