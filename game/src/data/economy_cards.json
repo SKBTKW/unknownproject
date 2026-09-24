@@ -84,7 +84,6 @@
     "descriptionKey": "CMD_GRANARY_DESC",
     "cost": { "wood": 20 },
     "tags": ["PLAINS", "RECLAIMED", "FOOD", "STORAGE", "INDUSTRY", "SPECIAL_BLOCK"],
-    "reqPlains": 4,
     "reqWood": 20,
     "minStage": 1,
     "rarity": "UC",
@@ -92,20 +91,10 @@
     "cyclePolicy": "RARITY",
     "effects": [
       {
-        "type": "STATE_INCREMENT",
-        "key": "granaryCount",
-        "amount": 1
-      },
-      {
-        "type": "BUFF_ADD",
-        "fromSourceCard": true,
-        "buff": {
-          "icon": "🏛️",
-          "category": "CARD_EFFECT"
-        }
-      },
-      {
-        "type": "LOG_CARD_ACTIVATED"
+        "type": "DOMAIN_ACTION",
+        "action": "CREATE_SPECIAL_BLOCK",
+        "blockType": "GRANARY",
+        "logActivation": true
       }
     ]
   },

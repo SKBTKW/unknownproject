@@ -13,6 +13,7 @@ export const BOARD_CAPABILITIES = Object.freeze({
     INVESTIGATION_SITE: 'INVESTIGATION_SITE',
     OBSERVATION_SITE: 'OBSERVATION_SITE',
     PRODUCTION_SITE: 'PRODUCTION_SITE',
+    FOOD_STORAGE: 'FOOD_STORAGE',
     DEFENSE_ANCHOR: 'DEFENSE_ANCHOR',
     REINFORCEMENT_ORIGIN: 'REINFORCEMENT_ORIGIN',
     GARRISON_SITE: 'GARRISON_SITE'
@@ -20,6 +21,7 @@ export const BOARD_CAPABILITIES = Object.freeze({
 
 export const SPECIAL_BLOCK_TYPES = Object.freeze({
     FARM: 'FARM',
+    GRANARY: 'GRANARY',
     LOGGING_CAMP: 'LOGGING_CAMP',
     MINE: 'MINE',
     ALTAR: 'ALTAR',
@@ -106,6 +108,20 @@ export const SPECIAL_BLOCK_DEFINITIONS = Object.freeze({
         trialTraits: {},
         lifecycle: { initialState: 'ACTIVE' },
         presentation: { nameKey: 'SPECIAL_BLOCK_FARM' }
+    }),
+    [SPECIAL_BLOCK_TYPES.GRANARY]: freezeDefinition({
+        id: SPECIAL_BLOCK_TYPES.GRANARY,
+        category: 'STORAGE',
+        placement: {
+            ...overlayPlacement,
+            terrainIds: ['GL1_PLAINS', 'E1_RECLAIMED_LAND']
+        },
+        baseTerrainInteraction: { kind: BASE_TERRAIN_INTERACTIONS.TERRAIN_USING_OVERLAY },
+        production: null,
+        capabilities: [BOARD_CAPABILITIES.FOOD_STORAGE],
+        trialTraits: {},
+        lifecycle: { initialState: 'ACTIVE' },
+        presentation: { nameKey: 'SPECIAL_BLOCK_GRANARY' }
     }),
     [SPECIAL_BLOCK_TYPES.LOGGING_CAMP]: freezeDefinition({
         id: SPECIAL_BLOCK_TYPES.LOGGING_CAMP,
