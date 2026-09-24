@@ -235,3 +235,73 @@ Deployment canonical profileを決める前に、最低限以下を決める。
 7. その残高に対するDeploymentの最終負担率
 
 この順序で決めれば、後からsinkを追加してTrial1経済が破綻するリスクを下げられる。
+
+
+## 11. 2026-09-24 AoT260924 現行Stage1実測と逆算
+
+HQ基礎産出 5/5/5/1 反映後の Full Inspection 実測では、Verse15の無追加sink baselineは次の帯。
+
+| Strategy | 🌾 | 🧱 | 🛡️ |
+|---|---:|---:|---:|
+| GROWTH | 329〜580 | 227〜411 | 21〜35 |
+| FIRST_LEGAL | 164〜437 | 215〜326 | 17〜27 |
+
+したがって、旧監査で使っていた `🌾413〜678 / 🧱334〜467` を現行balance判断には使わない。
+
+初見Stage1全体で「Trial終了までに70〜80%程度の資源を意思決定へ変換する」目標を置く場合、
+Deploymentだけで70〜80%を徴収する必要はない。
+
+逆算例:
+
+| 累計消費目標 | Trial前sink | Deployment時の残存備蓄消費 |
+|---|---:|---:|
+| 70% | 50.0% | 40% |
+| 75% | 54.5% | 45% |
+| 80% | 60.0% | 50% |
+
+式:
+
+```text
+totalSpend = 1 - (1 - preTrialSpend) × (1 - deploymentSpend)
+```
+
+したがって現時点の設計仮説は、
+
+> Verse1〜14で baseline備蓄の50〜60%相当が
+> Command Card / Special Block / Zone Conversion / GE / その他準備へ流れ、
+> Trial Deploymentで残りの40〜50%を使う。
+
+とする。
+
+これは製品コスト値ではなく、各sinkへ予算を割り振るためのbudget envelope。
+
+### FIRST_LEGAL最小ケースの例
+
+baseline `🌾164 / 🧱215` で累計75%帯を使うと、
+
+```text
+Trial前sink 約54.5%
+→ Trial直前 約 🌾75 / 🧱98
+
+Deploymentでその45%
+→ Trial後 約 🌾41 / 🧱54
+```
+
+程度になる。
+
+このケースはかなり厳しいため、個別sink値を決める際はFIRST_LEGAL下限を必ず監視する。
+
+### 次のbalance作業
+
+各sinkへこの50〜60%枠を割り振る。
+
+候補:
+
+- Command Card投資
+- FARM / LOGGING_CAMP / ALTAR等のSpecial Block
+- Zone Conversion / Garrison
+- GE選択肢
+- Investigation
+- Trial前軍事準備
+
+個別コスト合計がこの枠を大きく超える場合は、Deployment負担を下げるか、平時生産を再調整する。
