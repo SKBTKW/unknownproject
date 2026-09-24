@@ -850,6 +850,13 @@ class DeckManager {
         const cost = resolvedPaymentCost;
         const matCost = cost.material !== undefined ? cost.material : (cost.wood || 0);
         const curMat = Math.max(this.state.material !== undefined ? this.state.material : 0, this.state.wood !== undefined ? this.state.wood : 0);
+        const routedPaymentSnapshot = {
+            food: this.state.food,
+            wood: this.state.wood,
+            material: this.state.material,
+            mystic: this.state.mystic,
+            ember: this.state.ember
+        };
 
         if (cost.food && this.state.food < cost.food) return { success: false, reason: "NOT_ENOUGH_FOOD" };
         if (matCost > 0 && curMat < matCost) return { success: false, reason: "NOT_ENOUGH_MATERIAL" };
@@ -868,22 +875,24 @@ class DeckManager {
         const cName = I18n.t(cardObj.nameKey) || I18n.t(`${cardObj.id}_NAME`) || I18n.t(cardObj.id) || cardObj.id;
         const cDesc = I18n.t(`${cardObj.id}_DESC`) || "";
 
-        // 🎴 発動スロットの消費（手札の場合は空きスロット化、保留の場合は空スロット化）
-        if (handIdx >= 0 && this.state.handOffering && this.state.handOffering[handIdx]) {
-            this.state.handOffering[handIdx] = { isBlank: true, originalCard: cardObj, id: this._nextGameplayId("blank", `${this.state.turn || 1}_${handIdx}`) };
-            this.state.hasPickedThisTurn = true;
-        } else if (reserveIdx >= 0 && this.state.reserveSlots) {
-            this.state.reserveSlots[reserveIdx] = null;
-            this.state.hasPickedThisTurn = true;
-        }
+        const consumePlayedCardSlot = () => {
+            if (handIdx >= 0 && this.state.handOffering && this.state.handOffering[handIdx]) {
+                this.state.handOffering[handIdx] = {
+                    isBlank: true,
+                    originalCard: cardObj,
+                    id: this._nextGameplayId("blank", `${this.state.turn || 1}_${handIdx}`)
+                };
+                this.state.hasPickedThisTurn = true;
+            } else if (reserveIdx >= 0 && this.state.reserveSlots) {
+                this.state.reserveSlots[reserveIdx] = null;
+                this.state.hasPickedThisTurn = true;
+            }
+            this.consumeCardIfUnique(cardObj);
+        };
 
-        // ⭐ 選択時消費: UNIQUE カードなら consumedUniqueCards へ登録
-        this.consumeCardIfUnique(cardObj);
-
-        // Card Effect Handler v1 boundary.
-        // No legacy effect is registered by default. Registered effects may
-        // migrate one-by-one; every unregistered card falls through to the
-        // existing if/else implementation unchanged.
+        // Declarative/domain effects commit before the card slot is consumed.
+        // If a stale Board condition rejects the commit after payment, restore
+        // only this invocation's payment and leave the card untouched.
         const routedEffect = this.cardEffectHandlerRouter?.execute(cardObj, {
             state: this.state,
             engine: this.engine,
@@ -898,15 +907,30 @@ class DeckManager {
             cardDescription: cDesc
         });
         if (routedEffect?.handled) {
-            if (routedEffect.success === false) return routedEffect;
+            if (routedEffect.success === false) {
+                this.state.food = routedPaymentSnapshot.food;
+                this.state.wood = routedPaymentSnapshot.wood;
+                if (routedPaymentSnapshot.material !== undefined) {
+                    this.state.material = routedPaymentSnapshot.material;
+                } else {
+                    this.state.material = this.state.wood;
+                }
+                this.state.mystic = routedPaymentSnapshot.mystic;
+                this.state.ember = routedPaymentSnapshot.ember;
+                return routedEffect;
+            }
 
+            consumePlayedCardSlot();
             if (cardObj.isUnique) {
                 if (!this.state.usedUniqueCards) this.state.usedUniqueCards = [];
-                this.state.usedUniqueCards.push(cId);
+                if (!this.state.usedUniqueCards.includes(cId)) this.state.usedUniqueCards.push(cId);
             }
             this.state.hasPickedThisTurn = true;
             return { ...routedEffect, success: true };
         }
+
+        // Legacy path preserves the previous consume-before-effect order.
+        consumePlayedCardSlot();
 
            if (cId === "CMD_TRANSMUTE_GOLDEN") {
             // 💎 黄金秘境への変容: コスト ✨-20
