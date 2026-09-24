@@ -68,6 +68,7 @@ console.log("\nStage1 prototype cards: Offering -> payment -> effect -> Verse pr
     assert.equal(played.success, true);
     assert.equal(state.food, before.food - 20, "Levy must pay 🌾20");
     assert.equal(state.wood, before.wood + 15, "Levy must gain 🧱15 after payment");
+    assert.equal(state.material, state.wood, "Levy must keep wood/material alias synchronized");
     assert.equal(state.hasPickedThisTurn, true);
 
     const turnBefore = state.turn;
@@ -108,6 +109,7 @@ console.log("\nStage1 prototype cards: Offering -> payment -> effect -> Verse pr
     const played = state.playCommandCard(card);
     assert.equal(played.success, true);
     assert.equal(state.wood, 15, "Vigilance must pay 🧱15");
+    assert.equal(state.material, state.wood, "Vigilance payment must keep wood/material alias synchronized");
     assert.equal(state.vigilanceTurns, 2);
     assert.equal(state.vigilanceStartsNextTurn, true);
     assert.equal(state.getMaxDefense(), maxBefore, "Vigilance bonus must not start on the activation Verse");
@@ -123,11 +125,19 @@ console.log("\nStage1 prototype cards: Offering -> payment -> effect -> Verse pr
     const blocked = createPrototypeEngine(id, 2026092404);
     blocked.state.wood = 14;
     blocked.state.material = 14;
-    const snapshot = { wood: blocked.state.wood, turns: blocked.state.vigilanceTurns };
+    const snapshot = {
+        wood: blocked.state.wood,
+        material: blocked.state.material,
+        turns: blocked.state.vigilanceTurns
+    };
     const denied = blocked.state.playCommandCard(card);
     assert.equal(denied.success, false);
     assert.deepEqual(
-        { wood: blocked.state.wood, turns: blocked.state.vigilanceTurns },
+        {
+            wood: blocked.state.wood,
+            material: blocked.state.material,
+            turns: blocked.state.vigilanceTurns
+        },
         snapshot,
         "failed Vigilance payment must not arm the buff"
     );
