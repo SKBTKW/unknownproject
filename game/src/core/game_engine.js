@@ -425,6 +425,14 @@ class GameEngine {
         });
     }
 
+    getCommandCardExecutionCost(card) {
+        if (!card || !this.deckManager || typeof this.deckManager.quoteCardExecutionCost !== "function") {
+            return { success: false, reason: "NO_COMMAND_COST_LOGIC", resources: {} };
+        }
+        const cardObj = card.terrain || card;
+        return this.deckManager.quoteCardExecutionCost(cardObj);
+    }
+
     commandCardRequiresTarget(card) {
         if (!card || !this.deckManager || typeof this.deckManager.cardRequiresExecutionTarget !== "function") {
             return false;
