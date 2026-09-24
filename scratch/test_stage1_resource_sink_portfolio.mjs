@@ -91,13 +91,26 @@ assert.equal(
     true,
     "Special Block domain must expose the canonical creation-cost boundary"
 );
-for (const type of ["FARM", "LOGGING_CAMP", "ALTAR"]) {
+for (const type of ["FARM", "ALTAR"]) {
     assert.equal(
         resolveSpecialBlockCreationCost(SPECIAL_BLOCK_DEFINITIONS[type]).status,
         SPECIAL_BLOCK_COST_STATUS.UNRESOLVED,
         `${type} creation-cost balance must remain unresolved until explicitly authored`
     );
 }
+const loggingCampCost = resolveSpecialBlockCreationCost(
+    SPECIAL_BLOCK_DEFINITIONS.LOGGING_CAMP
+);
+assert.equal(
+    loggingCampCost.status,
+    SPECIAL_BLOCK_COST_STATUS.RESOLVED,
+    "Logging Camp v1 creation cost must remain Board-owned and resolved"
+);
+assert.deepEqual(
+    loggingCampCost.resources,
+    { wood: 20 },
+    "Logging Camp v1 creation cost must remain 🧱20"
+);
 assert.equal(
     /maintenance\s*:|upkeep\s*:/.test(specialBlockSource),
     false,
