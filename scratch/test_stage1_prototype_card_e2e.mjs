@@ -150,20 +150,22 @@ console.log("\nStage1 prototype cards: Offering -> payment -> effect -> Verse pr
     assert.equal(played.success, true);
     assert.equal(state.mystic, 0, "Rekindle must pay ✨10");
     assert.equal(state.ember, 8, "Rekindle must restore 🔥+3");
-    assert.equal(state.reserveFeeWaivedTurns, 3);
-    assert.equal(state.reserveFeeWaivedStartsNextTurn, true);
+    assert.equal(state.reserveFeeWaivedTurns || 0, 0,
+        "Rekindle v1 must not create a reserve-upkeep waiver");
+    assert.equal(Boolean(state.reserveFeeWaivedStartsNextTurn), false,
+        "Rekindle v1 must remain immediate-only");
 
     const turnBefore = state.turn;
     const emberBeforeNext = state.ember;
     const next = engine.nextTurn();
     assert.notEqual(next?.success, false);
     assert.equal(state.turn, turnBefore + 1);
-    assert.equal(state.reserveFeeWaivedStartsNextTurn, false);
-    assert.equal(state.reserveFeeWaivedTurns, 3, "first transition must arm the 3-Verse reserve waiver without consuming it");
+    assert.equal(Boolean(state.reserveFeeWaivedStartsNextTurn), false);
+    assert.equal(state.reserveFeeWaivedTurns || 0, 0);
     assert.equal(
         state.ember,
-        emberBeforeNext - 1,
-        "held card must not charge an extra 🔥 reserve fee while Rekindle waiver is active"
+        emberBeforeNext - 2,
+        "without a Rekindle waiver, the normal Verse cost plus held-card reserve fee must apply"
     );
 
     const hidden = createPrototypeEngine(id, 2026092406);
@@ -201,6 +203,6 @@ console.log("\nStage1 prototype cards: Offering -> payment -> effect -> Verse pr
 
 console.log("  CMD_EMERGENCY_LEVY: Offering + 🌾 payment + 🧱 conversion + next Verse PASS");
 console.log("  CMD_VIGILANCE: Offering + 🧱 payment + delayed defense buff PASS");
-console.log("  CMD_REKINDLE_EMBER: Offering + ✨ payment + 🔥 recovery + reserve waiver PASS");
+console.log("  CMD_REKINDLE_EMBER: Offering + ✨ payment + 🔥 recovery + no persistent waiver PASS");
 console.log("  production default remains dormant for all 3");
 console.log("✅ Stage1 prototype card E2E PASS");

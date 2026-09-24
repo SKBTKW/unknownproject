@@ -528,11 +528,11 @@ function makeGrid(rows, cols) {
     assert.equal(state.shouldNotRun, undefined);
 }
 
-// O. First real migrations preserve legacy state/cost semantics without DeckManager ID branches.
+// O. First real migrations preserve intended state/cost semantics without DeckManager ID branches.
 {
     const emergency = COMMAND_CARDS_MASTER.find(card => card.id === "CMD_EMERGENCY_LEVY");
     const loggingCamp = COMMAND_CARDS_MASTER.find(card => card.id === "CMD_LOGGING_CAMP");
-    assert.ok(Array.isArray(emergency?.effects) && emergency.effects.length === 3);
+    assert.ok(Array.isArray(emergency?.effects) && emergency.effects.length === 2);
     assert.ok(Array.isArray(loggingCamp?.effects) && loggingCamp.effects.length === 3);
 
     const emergencyState = {
@@ -558,10 +558,10 @@ function makeGrid(rows, cols) {
     assert.equal(emergencyState.food, 10, "legacy food cost remains 20");
     assert.equal(emergencyState.wood, 19, "legacy immediate material gain remains +15 wood");
     assert.equal(emergencyState.material, 99, "legacy effect did not mirror gained wood into material");
-    assert.equal(emergencyState.activeBuffs.length, 1);
-    assert.equal(emergencyState.activeBuffs[0].id, "CMD_EMERGENCY_LEVY");
-    assert.equal(emergencyState.activeBuffs[0].icon, "🧱");
-    assert.equal(emergencyState.activeBuffs[0].category, "CARD_EFFECT");
+    assert.equal(emergencyState.activeBuffs.length, 0,
+        "Emergency Levy v1 is immediate-only");
+    assert.equal(emergencyState.emergencyLevyTurns, undefined,
+        "Emergency Levy v1 must not schedule a future maintenance penalty");
     assert.equal(emergencyState.logs.length, 1);
 
     const campState = {
@@ -681,7 +681,7 @@ function makeGrid(rows, cols) {
     }
 }
 
-// Q. Mystic utility migrations preserve multi-effect legacy behavior.
+// Q. Mystic utility migrations preserve current v1 behavior.
 {
     const makeState = ({ mystic = 20, ember = 5 } = {}) => ({
         turn: 1,
@@ -737,10 +737,11 @@ function makeGrid(rows, cols) {
         assert.equal(manager.playCommandCard(card).success, true);
         assert.equal(state.mystic, 10, "rekindle mystic cost drift");
         assert.equal(state.ember, 7, "rekindle ember gain drift");
-        assert.equal(state.reserveFeeWaivedTurns, 3);
-        assert.equal(state.reserveFeeWaivedStartsNextTurn, true);
-        assert.equal(state.activeBuffs[0].remainingTurns, 3);
-        assert.equal(state.activeBuffs[0].startsNextTurn, true);
+        assert.equal(state.reserveFeeWaivedTurns, undefined,
+            "Rekindle v1 must not grant reserve-upkeep waiver state");
+        assert.equal(state.reserveFeeWaivedStartsNextTurn, undefined);
+        assert.equal(state.activeBuffs.length, 0,
+            "Rekindle v1 is immediate-only");
         assert.equal(state.logs.length, 1);
     }
 
@@ -760,15 +761,15 @@ function makeGrid(rows, cols) {
     }
 }
 
-// R. Next declarative migrations preserve legacy behavior.
+// R. Declarative migrations preserve current semantic contracts.
 {
     const cases = [
         {
             id: "CMD_RATIONING",
             initial: { food: 10, wood: 10, material: 10, mystic: 5, ember: 5 },
             assertState(state) {
-                assert.equal(state.foodCostRationingActive, true);
-                assert.equal(state.foodCostRationingDiscount, 0.4);
+                assert.equal(state.foodCostRationingActive, undefined);
+                assert.equal(state.foodCostRationingDiscount, undefined);
                 assert.equal(state.foodCostHalvedTurns, 1);
                 assert.equal(state.activeBuffs[0].remainingTurns, 1);
                 assert.equal(state.activeBuffs[0].icon, "🌾");

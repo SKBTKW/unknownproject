@@ -13,7 +13,7 @@
 | `CMD_MEDITATION` | **Implemented / Different / Player-facing description mismatch** | 無料。runtimeは条件確認なしで即時✨+3し、次Verse向け `LAND` Draw Bias×2を1回設定する。表示説明の「今Verse土地を置かなかった場合」「次手札に土地カードを保証」はどちらもruntimeと一致しない。 |
 | `CMD_FILL_THE_VOID` | **Partial / Player-facing description mismatch** | `fillTheVoidTurns=1` は立つが、一般Command支払い側が参照しない。表示説明の「不足🌾/🧱を✨3で補填」は実効しない。 |
 | `CMD_VOICE_BENEATH_EARTH` | **Partial / Stale state / Player-facing description mismatch** | `voiceBeneathEarthTurns=1` を立てるがOffering側consumerと減算処理が未接続。表示説明の「次Offering 1枠を発見資源タグから抽選」は実効しない。 |
-| `CMD_REKINDLE_EMBER` | **Implemented / Different** | 即時🔥+3。Hold維持費免除は実効するが、状態寿命の扱いにより最大4回免除し得る。 |
+| `CMD_REKINDLE_EMBER` | **Implemented / v1 semantic-aligned** | ✨10を消費して即時🔥+3。Hold維持費免除はv1から分離し、持続state/Buffを持たない。 |
 | `CMD_MYSTIC_FOCUS` | **Implemented / Internal taxonomy gap** | `MYSTIC` category Draw Bias×2。神秘テーマでも `COMMAND` categoryは対象外。現神秘10枚中 `MYSTIC` categoryは再燃・神秘重視・秘境の3枚のみ。 |
 | `CMD_MANIFEST_MIRACLE` | **Partial / Player-facing description mismatch / Duplicate log** | `manifestMiracleTurns=3` は立つがCommand不足コスト補填consumerなし。さらに発動時に同じ `LOG_CMD_ACTIVATED` を2回追加する。 |
 | `CMD_TRANSMUTE_GOLDEN` | **Broken active path / Player-facing description mismatch** | 通常 `GameEngine.playCommandCard()` が `targetTile=null` 固定。✨20を先払いした後、targetなしフォールバックで✨10だけ戻すため、通常Actionでは**実質✨10を失い、土地/socket変容は起きない**。 |

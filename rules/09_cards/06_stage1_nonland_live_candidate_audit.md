@@ -19,7 +19,7 @@ Stage1非LAND 15枚を一括で復帰させてはいけない。
 | --- | --- | ---: | --- |
 | `CMD_EMERGENCY_LEVY` | 緊急資源変換 | 🌾20 | Declarative effectだけで説明通り `🧱+15` まで完結する |
 | `CMD_VIGILANCE` | Trial前防衛準備 | 🧱15 | 2Tの`vigilanceTurns`をDefenseSystem / turn lifecycleが実際に消費する |
-| `CMD_REKINDLE_EMBER` | 神秘→🔥救済 | ✨10 | `🔥+3` と保留維持費免除3Tが現GameStateで実際に消費される |
+| `CMD_REKINDLE_EMBER` | 神秘→🔥救済 | ✨10 | v1は`🔥+3`の即時回復に単純化。保留維持費免除は分離済み |
 
 ここでの「候補」は **今すぐ通常Offeringへ有効化する** という意味ではない。
 まず個別ID単位でprototype対象にできる、という意味。

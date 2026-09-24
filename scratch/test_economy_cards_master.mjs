@@ -86,12 +86,20 @@ expected23.forEach(exp => {
 });
 
 console.log("\n--- 2. 発動ハンドラ (playCommandCard) 検問 ---");
-const testCards = ["CMD_LOGGING_CAMP", "CMD_QUARRY", "CMD_RESETTLEMENT", "CMD_EMERGENCY_LEVY", "CMD_RATIONING"];
-testCards.forEach(cId => {
+const persistentFeedbackCards = ["CMD_LOGGING_CAMP", "CMD_QUARRY", "CMD_RESETTLEMENT", "CMD_RATIONING"];
+persistentFeedbackCards.forEach(cId => {
     const cardObj = allCmdCards.find(c => c.id === cId);
     dm.playCommandCard(cardObj, -1, -1, null);
-    assert(mockState.activeBuffs.some(b => b.id === cId), `playCommandCard(${cId}) added active buff`);
+    assert(mockState.activeBuffs.some(b => b.id === cId), `playCommandCard(${cId}) added active/visible buff`);
 });
+
+{
+    const levy = allCmdCards.find(c => c.id === "CMD_EMERGENCY_LEVY");
+    const stateSets = (levy.effects || []).filter(effect => effect.type === "STATE_SET");
+    const buffs = (levy.effects || []).filter(effect => effect.type === "BUFF_ADD");
+    assert(stateSets.length === 0, "Emergency Levy has no delayed maintenance penalty state");
+    assert(buffs.length === 0, "Emergency Levy is immediate-only and has no persistent buff");
+}
 
 console.log("\n============================================================");
 console.log(`📊 検問集計: ${passCount} PASS / ${failCount} FAIL`);
