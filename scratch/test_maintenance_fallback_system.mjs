@@ -136,7 +136,11 @@ tooltip.I18n = {
         return `${key}:${JSON.stringify(params)}`;
     }
 };
-const fullTooltip = tooltip.renderTurnEndPreview(offConfirmEngine.state, false);
+const fullPreviewEngine = GameEngine.createGame({ runSeed: 260902 });
+fullPreviewEngine.state.food = 0;
+fullPreviewEngine.state.wood = 50;
+fullPreviewEngine.state.material = 50;
+const fullTooltip = tooltip.renderTurnEndPreview(fullPreviewEngine.state, false);
 assert.ok(fullTooltip.startsWith("TOOLTIP_FOOD_FALLBACK_CONFIRM:"));
 
 const partialPreviewEngine = GameEngine.createGame({ runSeed: 260902 });
