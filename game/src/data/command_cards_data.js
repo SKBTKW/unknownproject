@@ -20,16 +20,6 @@ export const ECONOMY_CARDS_MASTER = [
     "effects": [
       {
         "type": "STATE_SET",
-        "key": "foodCostRationingActive",
-        "value": true
-      },
-      {
-        "type": "STATE_SET",
-        "key": "foodCostRationingDiscount",
-        "value": 0.4
-      },
-      {
-        "type": "STATE_SET",
         "key": "foodCostHalvedTurns",
         "value": 1
       },
@@ -255,14 +245,6 @@ export const ECONOMY_CARDS_MASTER = [
         "type": "RESOURCE_DELTA",
         "resource": "wood",
         "amount": 15
-      },
-      {
-        "type": "BUFF_ADD",
-        "fromSourceCard": true,
-        "buff": {
-          "icon": "🧱",
-          "category": "CARD_EFFECT"
-        }
       },
       {
         "type": "LOG_CARD_ACTIVATED"
@@ -1022,27 +1004,6 @@ export const MYSTIC_CARDS_MASTER = [
         "amount": 3
       },
       {
-        "type": "STATE_SET",
-        "key": "reserveFeeWaivedTurns",
-        "value": 3
-      },
-      {
-        "type": "STATE_SET",
-        "key": "reserveFeeWaivedStartsNextTurn",
-        "value": true
-      },
-      {
-        "type": "BUFF_ADD",
-        "fromSourceCard": true,
-        "badgeTextRemainingTurns": true,
-        "buff": {
-          "icon": "✨",
-          "category": "CARD_EFFECT",
-          "remainingTurns": 3,
-          "startsNextTurn": true
-        }
-      },
-      {
         "type": "LOG_CARD_ACTIVATED"
       }
     ]
@@ -1260,16 +1221,6 @@ export const COMMAND_CARDS_MASTER = [
     "weight": 0.4,
     "cyclePolicy": "RARITY",
     "effects": [
-      {
-        "type": "STATE_SET",
-        "key": "foodCostRationingActive",
-        "value": true
-      },
-      {
-        "type": "STATE_SET",
-        "key": "foodCostRationingDiscount",
-        "value": 0.4
-      },
       {
         "type": "STATE_SET",
         "key": "foodCostHalvedTurns",
@@ -1497,14 +1448,6 @@ export const COMMAND_CARDS_MASTER = [
         "type": "RESOURCE_DELTA",
         "resource": "wood",
         "amount": 15
-      },
-      {
-        "type": "BUFF_ADD",
-        "fromSourceCard": true,
-        "buff": {
-          "icon": "🧱",
-          "category": "CARD_EFFECT"
-        }
       },
       {
         "type": "LOG_CARD_ACTIVATED"
@@ -2256,27 +2199,6 @@ export const COMMAND_CARDS_MASTER = [
         "type": "RESOURCE_DELTA",
         "resource": "ember",
         "amount": 3
-      },
-      {
-        "type": "STATE_SET",
-        "key": "reserveFeeWaivedTurns",
-        "value": 3
-      },
-      {
-        "type": "STATE_SET",
-        "key": "reserveFeeWaivedStartsNextTurn",
-        "value": true
-      },
-      {
-        "type": "BUFF_ADD",
-        "fromSourceCard": true,
-        "badgeTextRemainingTurns": true,
-        "buff": {
-          "icon": "✨",
-          "category": "CARD_EFFECT",
-          "remainingTurns": 3,
-          "startsNextTurn": true
-        }
       },
       {
         "type": "LOG_CARD_ACTIVATED"

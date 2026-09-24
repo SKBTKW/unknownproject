@@ -24,7 +24,7 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 
 | ID | 状態 | 現在の実挙動 / 注意点 |
 | :--- | :---: | :--- |
-| `CMD_RATIONING` | **Implemented / Player-facing description mismatch** | 食料維持費を50%化。表示説明は「40%軽減」のままでruntimeと一致しない。旧 `foodCostRationingDiscount=0.40` fieldは残るが実効値ではない。 |
+| `CMD_RATIONING` | **Implemented / v1 semantic-aligned** | このVerseの最終食料維持費を50%化。カード定義は`foodCostHalvedTurns=1`へ一本化し、旧40%系state writeを廃止。 |
 | `CMD_WETLAND_RECLAMATION` | **Implemented / Interaction mismatch** | 🧱15＋🔥1。湖でない未地帯化湿原1マスを干拓地へ永久変換。ただし表示説明は「1マスを指定」とする一方、runtimeはtarget入力を使わず走査順で最初の有効湿原を自動選択する。 |
 | `CMD_LOGGING_CAMP` | **Partial / Player-facing description mismatch / Eligibility different** | runtimeは即時🧱+8とBuffのみ。表示説明の「森1マスを伐採拠点化」「周囲森林から継続🧱産出」は未接続。`reqForestNearby` は近接判定ではなく盤面全体の森系マス数。 |
 | `CMD_GRANARY` | **Partial / Player-facing description mismatch** | `granaryCount` は増えるがMaintenanceは参照しない。表示説明の食料維持費×0.90は実効しない。 |
@@ -39,13 +39,11 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 
 #### 《配給》
 
-表示:
+v1表示 / runtime:
 
-> 今Verseの最終食料維持費を40%軽減
+> 今Verseの最終食料維持費を50%にする。
 
-runtime:
-
-> `foodCostHalvedTurns=1` により50%化
+カード定義は `foodCostHalvedTurns=1` の単一意味へ整理済み。
 
 #### 《干拓》
 
