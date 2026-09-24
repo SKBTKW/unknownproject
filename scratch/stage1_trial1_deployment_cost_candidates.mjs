@@ -20,6 +20,11 @@ export const STAGE1_TRIAL1_DEPLOYMENT_COST_CANDIDATES = Object.freeze({
         food: Object.freeze({ base: 100, perDefense: 6, perDistance: 20 }),
         material: Object.freeze({ base: 70, perDefense: 5.5, perDistance: 4 })
     }),
+    RESILIENT: Object.freeze({
+        status: "RESOLVED",
+        food: Object.freeze({ base: 80, perDefense: 6.5, perDistance: 13 }),
+        material: Object.freeze({ base: 40, perDefense: 4.5, perDistance: 9 })
+    }),
     OVERLOAD: Object.freeze({
         status: "RESOLVED",
         food: Object.freeze({ base: 110, perDefense: 6.5, perDistance: 22 }),
