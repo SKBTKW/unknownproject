@@ -1,4 +1,5 @@
 import { hasMultiplePlacementTerrainAttributes } from './placement_geometry.js';
+import { normalizeRoadEdgeIds } from './road_network.js';
 /**
  * 🌐 StateSerializer (ゲームステート決定論的直列化モジュール)
  * 
@@ -47,6 +48,13 @@ export function serializeGameState(state) {
                         ? JSON.parse(JSON.stringify(cell.cachedSocketSeeds))
                         : {},
                     production: cell.production ? cloneData(cell.production) : null,
+                    specialBlock: cell.specialBlock ? cloneData(cell.specialBlock) : null,
+                    ...(Array.isArray(cell.entities) && cell.entities.length > 0
+                        ? { entities: cloneData(cell.entities, []) }
+                        : {}),
+                    ...(Array.isArray(cell.damageRecords) && cell.damageRecords.length > 0
+                        ? { damageRecords: cloneData(cell.damageRecords, []) }
+                        : {}),
                     terrain: cell.terrain ? {
                         id: cell.terrain.id || null,
                         terrainId: cell.terrain.terrainId || null,
@@ -65,7 +73,10 @@ export function serializeGameState(state) {
                         isArtificialTerrain: !!cell.terrain.isArtificialTerrain,
                         shape: cell.terrain.shape ? JSON.parse(JSON.stringify(cell.terrain.shape)) : null,
                         yields: cell.terrain.yields ? { ...cell.terrain.yields } : null,
-                        baseYieldsPerTile: cell.terrain.baseYieldsPerTile ? { ...cell.terrain.baseYieldsPerTile } : null
+                        baseYieldsPerTile: cell.terrain.baseYieldsPerTile ? { ...cell.terrain.baseYieldsPerTile } : null,
+                        capabilities: Array.isArray(cell.terrain.capabilities)
+                            ? [...cell.terrain.capabilities]
+                            : null
                     } : null,
                     socketResource: cell.socketResource ? {
                         id: cell.socketResource.id || null,
@@ -78,7 +89,10 @@ export function serializeGameState(state) {
                         bonusMaterial: cell.socketResource.bonusMaterial || 0,
                         bonusDefense: cell.socketResource.bonusDefense || 0,
                         bonusMystic: cell.socketResource.bonusMystic || 0,
-                        isLake: !!cell.socketResource.isLake
+                        isLake: !!cell.socketResource.isLake,
+                        capabilities: Array.isArray(cell.socketResource.capabilities)
+                            ? [...cell.socketResource.capabilities]
+                            : null
                     } : null
                 };
             }
@@ -132,6 +146,14 @@ export function serializeGameState(state) {
         ? [...state.usedUniqueCards].sort()
         : [];
 
+    const serializedPlacedBlockCount = Number.isFinite(state.placedBlockCount)
+        ? state.placedBlockCount
+        : (typeof state.countPlacedBlocks === "function"
+            ? state.countPlacedBlocks()
+            : (typeof state.gridEngine?.getPlacedBlockCount === "function"
+                ? state.gridEngine.getPlacedBlockCount()
+                : 0));
+
     const serializedStage = state.stage ? {
         id: state.stage.id,
         name: state.stage.name,
@@ -161,7 +183,7 @@ export function serializeGameState(state) {
         nextTrialTurn: state.nextTrialTurn !== undefined ? state.nextTrialTurn : null,
         activeConstructionProjects: cloneData(state.activeConstructionProjects, []),
         activeDrawBias: cloneData(state.activeDrawBias),
-        placedBlockCount: Number.isFinite(state.placedBlockCount) ? state.placedBlockCount : 0,
+        placedBlockCount: serializedPlacedBlockCount,
         permanentPlainsFoodBonus: state.permanentPlainsFoodBonus || 0,
         permanentVicinityDefenseBonus: state.permanentVicinityDefenseBonus || 0,
         emberConsumptionReducedTurns: state.emberConsumptionReducedTurns || 0,
@@ -191,6 +213,7 @@ export function serializeGameState(state) {
             : {},
         placedBlockProduction: cloneData(state.placedBlockProduction, {}),
         mergeLinks: Array.from(state.mergeLinks || []).sort(),
+        roadEdges: normalizeRoadEdgeIds(state.roadEdges),
         stage: serializedStage
     };
 }

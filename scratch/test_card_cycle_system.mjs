@@ -14,7 +14,7 @@ function assert(name, condition) {
     }
 }
 
-const engine = new GameEngine();
+const engine = GameEngine.createGame({ runSeed: 0xA0712001 });
 const state = engine.state;
 const deckMgr = engine.deckManager;
 const cycleSys = deckMgr.cycleSystem;
@@ -129,21 +129,38 @@ cycleSys.consumeUnique("CMD_TEST_UNIQUE");
 assert("consumeUnique の冪等性: 複数回呼んでも consumedUniqueCards に1件だけ存在すること", state.consumedUniqueCards.filter(id => id === "CMD_TEST_UNIQUE").length === 1);
 
 // 6. Hold 連携検証
+// Tests 6-7 isolate CardCycle/Hold behavior. Offering eligibility now always
+// asks the Placement Domain, so explicitly provide a placeable-board fixture.
+state.canPlaceShape = () => ({ can: true, reasons: [] });
 console.log("\n[Test 6: Hold Separation]");
+const activeLand = deckMgr.getLandCardMaster().find(card => card.id === "CARD_PLAINS_1X1");
+assert("現役CARD_PLAINS_1X1がmasterに存在すること", !!activeLand);
 state.reserveSlots = [null, null, null];
 state.consumedUniqueCards = [];
-state.cardCooldowns = { "CMD_R_IN_HOLD": 13 }; // T13 復帰予定
-state.turn = 13; // すでに CD は明けている (13 < 13 は false)
-assert("T13: Cooldown 自体は明けていること", cycleSys.isInCooldown("CMD_R_IN_HOLD", 13) === false);
+state.cardCooldowns = { [activeLand.id]: 13 };
+state.turn = 13;
+assert("T13: Cooldown 自体は明けていること", cycleSys.isInCooldown(activeLand.id, 13) === false);
 
-// しかし Hold にある場合
-state.reserveSlots[0] = { id: "CMD_R_IN_HOLD", cardMasterId: "CMD_R_IN_HOLD", category: "COMMAND" };
-assert("Hold 中のカードは isInHold で true になること", deckMgr.isInHold("CMD_R_IN_HOLD") === true);
-assert("Hold 中のカードは isCardEligible で false (手札重複除外) になること", deckMgr.isCardEligible({ id: "CMD_R_IN_HOLD", minStage: 1 }, 1, 0) === false);
+state.reserveSlots[0] = {
+    id: "held-plains",
+    cardMasterId: activeLand.id,
+    category: "LAND",
+    terrain: activeLand
+};
+assert("Hold 中のカードは isInHold で true になること", deckMgr.isInHold(activeLand.id) === true);
+assert("Hold 中のカードは Offering 適格外になること",
+    deckMgr.isCardEligible(activeLand, 1, 0, { ignoreCooldown: true }) === false);
 
-// Hold から使用 (空スロット化) された後
 state.reserveSlots[0] = null;
-assert("Hold 解除後: isCardEligible で true (復帰) になること", deckMgr.isCardEligible({ id: "CMD_R_IN_HOLD", minStage: 1 }, 1, 0) === true);
+assert("Hold 解除後は同じ現役カードが復帰可能になること",
+    deckMgr.isCardEligible(activeLand, 1, 0, { ignoreCooldown: true }) === true);
+
+// Trial中発動を前提にした旧予約カードは正式にOfferingへ戻さない。
+const retiredTrialCard = { id: "CMD_CAVALRY_HOST", minStage: 1, cyclePolicy: "RARITY" };
+assert("廃止済みTrial予約カードはCooldown外扱いにならないこと",
+    cycleSys.isInCooldown(retiredTrialCard.id, 999) === true);
+assert("廃止済みTrial予約カードはOffering適格外であること",
+    deckMgr.isCardEligible(retiredTrialCard, 3, 0, { ignoreCooldown: false, ignoreHold: true }) === false);
 
 // 7. フォールバック時の Cooldown 再登録検証
 console.log("\n[Test 7: Fallback Re-registration]");

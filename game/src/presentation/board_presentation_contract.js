@@ -53,7 +53,8 @@ function toTrialCellDto(trial) {
         route,
         interceptionCandidate: cloneJsonSafe(trial?.interceptionCandidate ?? null),
         plannedIntercept: cloneJsonSafe(trial?.plannedIntercept ?? null),
-        battleMarker: cloneJsonSafe(trial?.battleMarker ?? null)
+        battleMarker: cloneJsonSafe(trial?.battleMarker ?? null),
+        tacticalEffects: cloneJsonSafe(trial?.tacticalEffects ?? [])
     };
 }
 function toCellDto(cell) {
@@ -83,6 +84,18 @@ function toCellDto(cell) {
         zone: cloneJsonSafe(cell.zone ?? null),
         links: cloneJsonSafe(cell.links ?? []),
         display: cloneJsonSafe(cell.display ?? { role: null, production: null }),
+        history: cloneJsonSafe(cell.history ?? {
+            battleSite: false,
+            battleSites: [],
+            damage: {
+                any: false,
+                land: false,
+                specialBlock: false,
+                records: [],
+                landRecords: [],
+                specialBlockRecords: []
+            }
+        }),
         influence: cloneJsonSafe(cell.influence ?? { hqVicinity: false, waterSource: false, waterSourceType: null }),
         edges: cloneJsonSafe(cell.edges ?? []),
         interaction: toInteractionDto(cell.interaction),
@@ -108,6 +121,7 @@ function toTrialDto(trial) {
         interceptionCandidates: cloneJsonSafe(trial?.interceptionCandidates ?? []),
         plannedIntercepts: cloneJsonSafe(trial?.plannedIntercepts ?? []),
         battleMarkers: cloneJsonSafe(trial?.battleMarkers ?? []),
+        tacticalEffects: cloneJsonSafe(trial?.tacticalEffects ?? []),
         enemyState: cloneJsonSafe(trial?.enemyState ?? null)
     };
 }

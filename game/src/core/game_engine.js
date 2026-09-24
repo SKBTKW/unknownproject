@@ -5,9 +5,15 @@ import { DeckManager, OFFERING_GENERATION_REASONS } from '../systems/deck_manage
 import { ProductionCalculator } from '../systems/production_calculator.js';
 import { UndoLandSystem } from '../systems/undo_land_system.js';
 import { GridEngine } from '../systems/grid_engine.js';
+import { SpecialBlockService } from '../systems/special_block_service.js';
+import { BoardDomainAdapter } from './board_domain_adapter.js';
+import { createCardDomainActionExecutor } from '../cards/card_domain_action_executor.js';
+import { BoardHistoryQuery } from './board_history_query.js';
 import { BuffSystem } from '../systems/buff_system.js';
 import { ChronicleSystem } from '../systems/chronicle_system.js';
 import { GlobalEventManager } from '../systems/global_event_system.js';
+import { ConditionEvaluator } from './condition_evaluator.js';
+import { RunHistoryReadModel } from '../systems/run_history_read_model.js';
 import { EmberSystem } from '../systems/ember_system.js';
 import { CardCycleSystem } from '../systems/card_cycle_system.js';
 import { MaintenanceFallbackSystem } from '../systems/maintenance_fallback_system.js';
@@ -25,6 +31,8 @@ import { attachInvestigationSubsystem } from '../warning/integration/investigati
 import { FirstRunService } from '../tutorial/first_run_service.js';
 import { FirstRunState } from '../tutorial/first_run_state.js';
 import { TrialTimingAuthorityService } from '../trial/systems/trial_timing_authority_service.js';
+import { attachTrialDeploymentEconomy } from '../trial/integration/trial_deployment_economy_bootstrap.js';
+import { TrialDefenseReservation } from '../trial/systems/trial_defense_reservation.js';
 
 function normalizeRunSeed(seed) {
     if (!Number.isFinite(seed)) return null;
@@ -51,6 +59,7 @@ class GameEngine {
         this.landData = dependencies.landData || LAND_SYSTEM_DATA;
         this.cellViewDataService = dependencies.cellViewDataService || new CellViewDataService(this.productionCalculator);
         this.transactionManager = dependencies.transactionManager || new ActionTransactionManager(this);
+        this.firstRunActivationStore = dependencies.firstRunActivationStore || null;
         const isExplicitFirstRun = dependencies.firstRun === true
             || dependencies.firstRunState?.active === true
             || dependencies.firstRunService?.enabled === true;
@@ -91,6 +100,26 @@ class GameEngine {
         const GridEngineClass = dependencies.GridEngineClass || GridEngine;
         this.gridEngine = dependencies.gridEngine || (GridEngineClass ? new GridEngineClass(this.state, this) : null);
 
+        const SpecialBlockServiceClass = dependencies.SpecialBlockServiceClass || SpecialBlockService;
+        this.specialBlockService = dependencies.specialBlockService
+            || (SpecialBlockServiceClass ? new SpecialBlockServiceClass(this.state) : null);
+
+        const BoardDomainAdapterClass = dependencies.BoardDomainAdapterClass || BoardDomainAdapter;
+        this.boardDomainAdapter = dependencies.boardDomainAdapter
+            || (BoardDomainAdapterClass ? new BoardDomainAdapterClass({
+                state: this.state,
+                gridEngine: this.gridEngine,
+                specialBlockService: this.specialBlockService,
+                zoneConversionService: dependencies.zoneConversionService || null,
+                zoneConversionDefinitions: dependencies.zoneConversionDefinitions || null
+            }) : null);
+        this.zoneConversionService = dependencies.zoneConversionService
+            || this.boardDomainAdapter?.zoneConversionService
+            || null;
+
+        this.cardDomainActionExecutor = dependencies.cardDomainActionExecutor
+            || createCardDomainActionExecutor(this);
+
         const DeckManagerClass = dependencies.DeckManagerClass || DeckManager;
         this.deckManager = dependencies.deckManager || (DeckManagerClass ? new DeckManagerClass(this.state, this) : null);
 
@@ -105,6 +134,25 @@ class GameEngine {
 
         const ChronicleSystemClass = dependencies.ChronicleSystemClass || ChronicleSystem;
         this.chronicleSystem = dependencies.chronicleSystem || (ChronicleSystemClass ? new ChronicleSystemClass(this.state) : null);
+
+        this.boardWorldQuery = dependencies.boardWorldQuery || this.boardDomainAdapter || null;
+        const BoardHistoryQueryClass = dependencies.BoardHistoryQueryClass || BoardHistoryQuery;
+        this.boardHistoryQuery = dependencies.boardHistoryQuery
+            || (BoardHistoryQueryClass ? new BoardHistoryQueryClass({ state: this.state }) : null);
+        this.runHistoryReadModel = dependencies.runHistoryReadModel || new RunHistoryReadModel({
+            chronicleSystem: this.chronicleSystem,
+            boardHistoryQuery: this.boardHistoryQuery
+        });
+
+        this.getWorldEligibilityContext = () => ({
+            state: this.state,
+            engine: this,
+            boardQuery: this.boardWorldQuery || null,
+            historyQuery: this.runHistoryReadModel || null,
+            warningStateService: this.warningStateService || null
+        });
+        this.evaluateWorldEligibilityRequirement = (requirement) =>
+            ConditionEvaluator.evaluateStrict(requirement, this.getWorldEligibilityContext());
 
         const GlobalEventManagerClass = dependencies.GlobalEventManagerClass || GlobalEventManager;
         this.globalEventManager = dependencies.globalEventManager || (GlobalEventManagerClass ? new GlobalEventManagerClass(this.state, this) : null);
@@ -125,6 +173,24 @@ class GameEngine {
             rebuildCostResolver: dependencies.defenseRebuildCostResolver || null,
             mysticFallbackResolver: dependencies.defenseMysticFallbackResolver || null
         }) : null);
+
+        this.trialDefenseReservation = dependencies.trialDefenseReservation
+            || new TrialDefenseReservation({
+                getAvailableDefense: () => this.getTrialAvailableDefense(),
+                applyDefenseLoss: amount => this.applyTrialDefenseLoss(amount),
+                recoverDefense: amount => this.recoverCurrentDefense(amount)
+            });
+
+        this.trialDeploymentAttachment = null;
+        if (
+            dependencies.trialDeploymentEconomy
+            && typeof dependencies.trialDeploymentEconomy === "object"
+        ) {
+            this.trialDeploymentAttachment = attachTrialDeploymentEconomy(
+                this,
+                dependencies.trialDeploymentEconomy
+            );
+        }
 
         const CardCycleSystemClass = dependencies.CardCycleSystemClass || CardCycleSystem;
         this.cardCycleSystem = dependencies.cardCycleSystem || (CardCycleSystemClass ? new CardCycleSystemClass(this.state, this) : null);
@@ -151,6 +217,8 @@ class GameEngine {
             this.trialTimingAuthorityService = dependencies.state?.trialTimingAuthorityService || null;
         }
 
+        this.trialThreatResolver = dependencies.trialThreatResolver || null;
+
         const TurnLifecycleServiceClass = dependencies.TurnLifecycleServiceClass || TurnLifecycleService;
         this.turnLifecycleService = dependencies.turnLifecycleService
             || (TurnLifecycleServiceClass ? new TurnLifecycleServiceClass(this) : null);
@@ -169,6 +237,9 @@ class GameEngine {
             this.state.runSeed = this.runSeed;
             this.state.checkSystem = this.checkSystem;
             if (this.gridEngine) this.state.gridEngine = this.gridEngine;
+            if (this.specialBlockService) this.state.specialBlockService = this.specialBlockService;
+            if (this.zoneConversionService) this.state.zoneConversionService = this.zoneConversionService;
+            if (this.boardDomainAdapter) this.state.boardDomainAdapter = this.boardDomainAdapter;
             if (this.deckManager) this.state.deckManager = this.deckManager;
             if (this.directiveSystem) this.state.directiveSystem = this.directiveSystem;
             if (this.buffSystem) this.state.buffSystem = this.buffSystem;
@@ -354,13 +425,37 @@ class GameEngine {
         });
     }
 
-    playCommandCard(card, source = { type: "OFFERING", index: -1 }) {
+    getCommandCardExecutionCost(card) {
+        if (!card || !this.deckManager || typeof this.deckManager.quoteCardExecutionCost !== "function") {
+            return { success: false, reason: "NO_COMMAND_COST_LOGIC", resources: {} };
+        }
+        const cardObj = card.terrain || card;
+        return this.deckManager.quoteCardExecutionCost(cardObj);
+    }
+
+    commandCardRequiresTarget(card) {
+        if (!card || !this.deckManager || typeof this.deckManager.cardRequiresExecutionTarget !== "function") {
+            return false;
+        }
+        const cardObj = card.terrain || card;
+        return this.deckManager.cardRequiresExecutionTarget(cardObj);
+    }
+
+    getCommandCardExecutionTargets(card) {
+        if (!card || !this.deckManager || typeof this.deckManager.enumerateCardExecutionTargets !== "function") {
+            return [];
+        }
+        const cardObj = card.terrain || card;
+        return this.deckManager.enumerateCardExecutionTargets(cardObj);
+    }
+
+    playCommandCard(card, source = { type: "OFFERING", index: -1 }, target = null) {
         return this.executeAction("PLAY_COMMAND_CARD", () => {
             if (this.deckManager && typeof this.deckManager.playCommandCard === "function") {
                 const cardObj = card.terrain || card;
                 const offeringIdx = source.type === "OFFERING" ? source.index : -1;
                 const reserveIdx = source.type === "RESERVE" ? source.index : -1;
-                const ok = this.deckManager.playCommandCard(cardObj, null, offeringIdx, reserveIdx);
+                const ok = this.deckManager.playCommandCard(cardObj, target, offeringIdx, reserveIdx);
                 const isSuccess = (ok && typeof ok === "object") ? ok.success !== false : ok !== false;
                 const diceCheck = (ok && typeof ok === "object") ? ok.diceCheck : null;
                 return { success: isSuccess, card, diceCheck, reason: isSuccess ? null : ok?.reason };
@@ -369,7 +464,7 @@ class GameEngine {
                 const cardObj = card.terrain || card;
                 const offeringIdx = source.type === "OFFERING" ? source.index : -1;
                 const reserveIdx = source.type === "RESERVE" ? source.index : -1;
-                const ok = this.state.playCommandCard(cardObj, null, offeringIdx, reserveIdx);
+                const ok = this.state.playCommandCard(cardObj, target, offeringIdx, reserveIdx);
                 const isSuccess = (ok && typeof ok === "object") ? ok.success !== false : ok !== false;
                 const diceCheck = (ok && typeof ok === "object") ? ok.diceCheck : null;
                 return { success: isSuccess, card, diceCheck, reason: isSuccess ? null : ok?.reason };

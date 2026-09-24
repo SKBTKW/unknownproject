@@ -1,5 +1,13 @@
 import { TRIAL_ROUTE_PLAN_STATUSES, TRIAL_BATTLE_STATUSES } from '../trial/domain/trial_types.js';
 import { createTrialBoardSemanticData } from './trial_board_semantic_data.js';
+import {
+    isTrialRouteSelectionEnabled,
+    resolveTrialPresentationRouteId
+} from './trial_route_focus_resolver.js';
+import {
+    projectTrialTacticalEffects,
+    TRIAL_TACTICAL_EFFECT_PHASES
+} from './trial_tactical_effect_semantic.js';
 
 function toCell(cell) {
     if (!cell) return null;
@@ -59,6 +67,40 @@ function buildBattleMarkers(trialState) {
     }).filter(Boolean);
 }
 
+function buildPreviewTacticalEffects(interceptionCandidates) {
+    return (interceptionCandidates || []).flatMap(candidate =>
+        Array.isArray(candidate?.tacticalEffects) ? candidate.tacticalEffects : []
+    );
+}
+
+function stripCandidateTacticalEffects(interceptionCandidates) {
+    return (interceptionCandidates || []).map(candidate => {
+        if (!candidate || typeof candidate !== 'object') return candidate;
+        const { tacticalEffects: _projectedTacticalEffects, ...semantic } = candidate;
+        return semantic;
+    });
+}
+
+function buildResolvedTacticalEffects(trialState) {
+    const results = Array.isArray(trialState?.battleResults) ? trialState.battleResults : [];
+    const queue = Array.isArray(trialState?.battleQueue) ? trialState.battleQueue : [];
+    const effects = [];
+
+    results.forEach((result, index) => {
+        if (!result) return;
+        const battle = queue[index] || null;
+        const cell = toCell(result.interceptCell || battle?.interceptCell);
+        if (!cell) return;
+        effects.push(...projectTrialTacticalEffects(result, {
+            cell,
+            routeId: result.routeId ?? battle?.routeId ?? null,
+            phase: TRIAL_TACTICAL_EFFECT_PHASES.APPLIED
+        }));
+    });
+
+    return effects;
+}
+
 function buildEnemyState(trialState) {
     if (!trialState?.enemy) return null;
     return {
@@ -72,24 +114,38 @@ function buildEnemyState(trialState) {
 export class TrialBoardSemanticAdapter {
     static fromRuntime({ trialState = null, trialPresentationState = null, boardSize = null, interceptionCandidates = [] } = {}) {
         if (!trialState) return createTrialBoardSemanticData({ available: false, interceptionCandidates });
-        const currentBattle = typeof trialState.getCurrentBattle === "function"
-            ? trialState.getCurrentBattle()
-            : (Array.isArray(trialState.battleQueue) && Number.isInteger(trialState.currentBattleIndex) ? trialState.battleQueue[trialState.currentBattleIndex] || null : null);
-        const activeRouteId = trialPresentationState?.activeEnemyRoute ?? currentBattle?.routeId ?? null;
+        const routeSelectionEnabled = isTrialRouteSelectionEnabled(trialState);
+        const planningFocusVisible = routeSelectionEnabled;
+        const activeRouteId = resolveTrialPresentationRouteId({
+            trialState,
+            trialPresentationState
+        });
         const routes = (trialState.routes || []).map(route => {
             const cells = routeCellsOf(route);
             const entryCell = toCell(route?.entryCell) || cells[0] || null;
             return { routeId: routeIdOf(route), cells, entryCell, entrySide: route?.entrySide || inferEntrySide(entryCell, boardSize) };
         });
+        const tacticalEffects = planningFocusVisible
+            ? buildPreviewTacticalEffects(interceptionCandidates)
+            : buildResolvedTacticalEffects(trialState);
+
         return createTrialBoardSemanticData({
             available: true,
             activeRouteId,
-            selectedInterceptCell: trialPresentationState?.selectedInterceptCell || null,
-            hoveredInterceptCell: trialPresentationState?.hoveredCell || null,
+            routeSelectionEnabled,
+            selectedInterceptCell: planningFocusVisible
+                ? (trialPresentationState?.selectedInterceptCell || null)
+                : null,
+            hoveredInterceptCell: planningFocusVisible
+                ? (trialPresentationState?.hoveredCell || null)
+                : null,
             routes,
-            interceptionCandidates,
+            interceptionCandidates: planningFocusVisible
+                ? stripCandidateTacticalEffects(interceptionCandidates)
+                : [],
             plannedIntercepts: buildPlannedIntercepts(trialState, trialPresentationState),
             battleMarkers: buildBattleMarkers(trialState),
+            tacticalEffects,
             enemyState: buildEnemyState(trialState)
         });
     }

@@ -805,8 +805,8 @@ export async function runUILifecycleInspection() {
         const selectedTrialBoard = mockDoc.getElementById("gridBoard");
         const selectedForestCell = selectedTrialBoard.children.find(c => c.dataset && c.dataset.r === "2" && c.dataset.c === "1");
         assert("選択地点にtrial-interception-selectedクラスが描画されること", selectedForestCell.classList.contains("trial-interception-selected"));
-        const allocationRoot = mockDoc.getElementById("trialDefenseAllocationRoot");
-        assert("Trial中だけ配分UIが表示されること", allocationRoot.classList.contains("is-active") && allocationRoot.innerHTML.includes("trialDefenseAllocationSlider"));
+        const allocationRoot = mockDoc.getElementById("trialActionTrayHost");
+        assert("Trial中だけPlayer Tray配分UIが表示されること", allocationRoot.classList.contains("is-active") && allocationRoot.innerHTML.includes("trialDefenseAllocationSlider"));
         const allocationBefore = ui.trialPresentationState.previewDefenseAllocation;
         const currentDefenseBeforeAllocation = engine.state.currentDefense;
         mockDoc.getElementById("btnTrialDefenseDecrease").onclick();
@@ -831,7 +831,7 @@ export async function runUILifecycleInspection() {
         assert("停止後は通常盤面参照へ復帰すること", ui.getBoardDisplayGrid() === normalGridReference);
         assert("停止後はTrial route/candidate classが残らないこと", !restoredCell.classList.contains("trial-route-cell") && !restoredCell.classList.contains("trial-interception-candidate"));
         assert("停止後はTrial TooltipとTrialStateを破棄すること", tooltipSystemInstance.tooltipEl.style.display === "none" && ui.trialController.state === null);
-        assert("停止後はselectionと配分UIもclearされること", ui.trialPresentationState.selectedInterceptCell === null && !allocationRoot.classList.contains("is-active"));
+        assert("停止後はselectionとPlayer Tray Trial UIもclearされること", ui.trialPresentationState.selectedInterceptCell === null && !allocationRoot.classList.contains("is-active"));
         restoredCell.onmouseenter(trialHoverEvent);
         restoredCell.onmousemove(trialHoverEvent);
         assert("停止後は通常セルhoverへ復帰すること", !tooltipSystemInstance.tooltipEl.innerHTML.includes("trial-interception-preview"));

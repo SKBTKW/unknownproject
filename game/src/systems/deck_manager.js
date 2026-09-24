@@ -6,13 +6,30 @@ import { COMMAND_CARDS_MASTER } from '../data/command_cards_data.js';
 import { ConditionEvaluator } from '../core/condition_evaluator.js';
 import { CardCycleSystem, CYCLE_POLICIES } from './card_cycle_system.js';
 import {
+    getPlacementAttributeTerrainId,
     hasMultiplePlacementTerrainAttributes,
     normalizePlacementAnchor,
-    resolvePlacementGeometry
+    resolvePlacementAttributeCells,
+    resolvePlacementShape,
+    validatePlacementAttributeMap
 } from '../core/placement_geometry.js';
 import { isMultiAttributeProductionResolved } from '../core/land_production_contract.js';
 import { isTrueMergedCell } from '../core/merge_rules.js';
 import { getWaterSourceSpawnChance } from '../core/lake_rules.js';
+import { normalizeCardDefinitionV1, unwrapCardDefinition } from '../cards/card_definition_v1.js';
+import { LandPlacementAvailabilityQuery } from '../cards/land_placement_availability_query.js';
+import { CardOfferingEligibilityService } from '../cards/card_offering_eligibility_service.js';
+import { pickWeightedCard } from '../cards/offering_weight_policy.js';
+import {
+    canAppendOfferingCategory,
+    listOfferingCategoryOverflow,
+    resolveOfferingCategoryMultiplicityPolicy
+} from '../cards/offering_category_multiplicity_policy.js';
+import { OfferingCandidatePoolService } from '../cards/offering_candidate_pool_service.js';
+import { evaluateLegacyOfferingRequirements } from '../cards/legacy_offering_requirement_adapter.js';
+import { resolveCardOfferingBoardQuery } from '../cards/card_offering_board_query.js';
+import { resolveCardEffectHandlerRouter } from '../cards/card_effect_handler_router.js';
+import { CardExecutionRequirementService } from '../cards/card_execution_requirement_service.js';
 
 export const OFFERING_GENERATION_REASONS = Object.freeze({
     INITIAL: "INITIAL",
@@ -38,6 +55,41 @@ class DeckManager {
         this.engine = engine;
         this._landCardMasterCache = null;
         this.cycleSystem = new CardCycleSystem(this.state, this.engine);
+        this.landPlacementAvailability = new LandPlacementAvailabilityQuery(this.state);
+        this.cardOfferingBoardQuery = resolveCardOfferingBoardQuery(this.state, this.engine);
+        this.cardEffectHandlerRouter = resolveCardEffectHandlerRouter(this.engine);
+        this.executionRequirementService = new CardExecutionRequirementService({
+            evaluator: (requirement, context) => {
+                const evaluator = this.engine?.cardExecutionRequirementEvaluator;
+                if (typeof evaluator === "function") return Boolean(evaluator(requirement, context));
+                return Boolean(ConditionEvaluator.evaluate(requirement, { state: this.state, ...context }));
+            }
+        });
+        this.offeringEligibility = new CardOfferingEligibilityService({
+            state: this.state,
+            placementQuery: this.landPlacementAvailability,
+            executionTargetRequired: (definition) =>
+                this.cardEffectHandlerRouter?.requiresTarget(definition) === true,
+            executionTargetQuery: (definition, context) =>
+                this.cardEffectHandlerRouter?.enumerateTargets(definition, {
+                    ...context,
+                    state: this.state,
+                    engine: this.engine,
+                    deckManager: this
+                }) || [],
+            requirementEvaluator: (requirement, context) => {
+                const evaluator = this.engine?.cardOfferingRequirementEvaluator;
+                if (typeof evaluator === "function") return Boolean(evaluator(requirement, context));
+                const worldEvaluator = this.engine?.evaluateWorldEligibilityRequirement;
+                if (typeof worldEvaluator === "function") return Boolean(worldEvaluator(requirement));
+                return Boolean(ConditionEvaluator.evaluate(requirement, { state: this.state, ...context }));
+            }
+        });
+        this.offeringCandidatePool = new OfferingCandidatePoolService({
+            cardMasterProvider: () => this.getLandCardMaster(),
+            eligibilityEvaluator: (card, stageNum, h2Count, options) =>
+                this.isCardEligible(card, stageNum, h2Count, options)
+        });
     }
 
     _nextGameplayFloat() {
@@ -52,6 +104,15 @@ class DeckManager {
     _nextGameplayId(prefix, scope) {
         return this.engine?.gameplayRandom?.nextId?.(prefix, scope)
             ?? `${prefix}_${scope}_${Date.now()}_${Math.random()}`;
+    }
+
+    _resolveOfferingWeightContext() {
+        const offeringWeights = { tagMultipliers: {} };
+        const manager = this.engine?.globalEventManager || this.state?.globalEventManager || null;
+        manager?.applyOfferingWeightEffects?.(offeringWeights);
+        return Object.freeze({
+            tagMultipliers: Object.freeze({ ...(offeringWeights.tagMultipliers || {}) })
+        });
     }
 
     /**
@@ -117,14 +178,41 @@ class DeckManager {
      */
     isCardEligible(c, stageNum, h2Count, options = {}) {
         if (!c) return false;
+
         const cardStage = c.minStage || 1;
         if (cardStage > stageNum) return false;
+
+        const explicitAttributeCells = resolvePlacementAttributeCells(c);
+        if (explicitAttributeCells) {
+            const attributeValidation = validatePlacementAttributeMap(
+                resolvePlacementShape(c),
+                explicitAttributeCells
+            );
+            if (!attributeValidation.valid) return false;
+
+            const hasUnknownTerrain = explicitAttributeCells.some(cell => {
+                const terrainId = getPlacementAttributeTerrainId(cell);
+                return !terrainId || !LAND_SYSTEM_DATA?.terrains?.[terrainId];
+            });
+            if (hasUnknownTerrain) return false;
+        }
 
         // Multi-Attribute cards must not enter live Offering until their
         // Production contract is explicitly finalized.
         if (hasMultiplePlacementTerrainAttributes(c) && !isMultiAttributeProductionResolved(c)) {
             return false;
         }
+
+        // Offering-only v1 boundary. LAND legality is queried from the existing
+        // Placement Domain, and authored offering.requirements are evaluated
+        // independently from execution requirements.
+        const offeringGate = this.offeringEligibility?.evaluate(c, {
+            stageNum,
+            h2Count,
+            options,
+            placeabilityCache: options.placeabilityCache || null
+        });
+        if (offeringGate && !offeringGate.eligible) return false;
 
         const currentTurn = (this.state && this.state.turn) ? this.state.turn : 1;
 
@@ -171,326 +259,12 @@ class DeckManager {
             }
         }
 
-        if (c.reqE2HillsOnBoard && h2Count < c.reqE2HillsOnBoard) return false;
-
-        // ⛰️ 本営周囲に丘陵・山岳が1個以上あることを要求
-        if (c.reqHillOrMountainAroundHQ && this.state) {
-            if (!ConditionEvaluator.checkHillOrMountainAroundHQ(this.state)) return false;
-        }
-
-        // 🛡️ 本営周囲に丘陵・山岳が「0個」であることを要求 (否定条件)
-        if (c.reqNoHillOrMountainAroundHQ && this.state) {
-            if (!ConditionEvaluator.checkNoHillOrMountainAroundHQ(this.state)) return false;
-        }
-
-        if (c.reqUnmergedDesertOrMountain && this.state && this.state.grid) {
-            const size = this.state.grid.length;
-            let found = false;
-            for (let r = 0; r < size; r++) {
-                for (let cCol = 0; cCol < size; cCol++) {
-                    const cell = this.state.grid[r][cCol];
-                    if (cell && cell.placed && !cell.merged && cell.terrain) {
-                        const tid = cell.terrain.terrainId || cell.terrain.id;
-                        if (tid === "GL0_DESERT" || tid === "E3_MOUNTAIN") { found = true; break; }
-                    }
-                }
-                if (found) break;
-            }
-            if (!found) return false;
-        }
-
-        if (c.reqStage2End && this.state) {
-            if (this.state.turn < 20) return false;
-        }
-
-        if (c.maxPlacedBlocks !== undefined && this.state && typeof this.state.countPlacedTiles === 'function') {
-            if (this.state.countPlacedTiles() > c.maxPlacedBlocks) return false;
-        }
-        if (c.maxDefense !== undefined && this.state && typeof this.state.calculateTotalDefense === 'function') {
-            if (this.state.calculateTotalDefense() > c.maxDefense) return false;
-        }
-        if (c.maxMystic !== undefined && this.state && this.state.mystic !== undefined) {
-            if (this.state.mystic > c.maxMystic) return false;
-        }
-        if (c.maxFood !== undefined && this.state && this.state.food !== undefined) {
-            if (this.state.food > c.maxFood) return false;
-        }
-        if (c.maxEmber !== undefined && this.state && this.state.ember !== undefined) {
-            if (this.state.ember > c.maxEmber) return false;
-        }
-        if (c.reqTrialOrLowDefense && this.state) {
-            const notice = (typeof this.state.getTrialNotice === 'function') ? this.state.getTrialNotice() : { active: false };
-            const def = (typeof this.state.getCurrentDefense === 'function')
-                ? this.state.getCurrentDefense()
-                : (this.state.currentDefense ?? this.state.defense ?? 0);
-            if (!notice.active && def > 30) return false;
-        }
-
-        if (c.noSocketsOnBoard && this.state && this.state.grid) {
-            const size = this.state.grid.length;
-            let hasSocket = false;
-            for (let r = 0; r < size; r++) {
-                for (let cCol = 0; cCol < size; cCol++) {
-                    const cell = this.state.grid[r][cCol];
-                    if (cell && cell.socketResource) {
-                        hasSocket = true;
-                        break;
-                    }
-                }
-                if (hasSocket) break;
-            }
-            if (hasSocket) return false;
-        }
-
-        if (c.reqWood !== undefined && this.state && this.state.wood < c.reqWood) return false;
-        if (c.reqFood !== undefined && this.state && this.state.food < c.reqFood) return false;
-
-        if (c.reqPlains !== undefined && this.state && this.state.grid) {
-            const size = this.state.grid.length;
-            let plainsCount = 0;
-            for (let r = 0; r < size; r++) {
-                for (let cCol = 0; cCol < size; cCol++) {
-                    const cell = this.state.grid[r][cCol];
-                    if (cell && cell.placed && !cell.isHQ && cell.terrain) {
-                        const tid = cell.terrain.terrainId || cell.terrain.id || "";
-                        if (tid.includes("PLAINS")) plainsCount++;
-                    }
-                }
-            }
-            if (plainsCount < c.reqPlains) return false;
-        }
-
-        if (c.reqMystic !== undefined && this.state && (this.state.mystic || 0) < c.reqMystic) return false;
-
-        // ⚠️ 試練予告中 (残り5T以内または notice.active)
-        if (c.reqTrialNotice && this.state) {
-            const notice = (typeof this.state.getTrialNotice === 'function') ? this.state.getTrialNotice() : { active: false };
-            const nextTrialTurn = this.state.nextTrialTurn || 20;
-            const currentTurn = this.state.turn || 1;
-            const isNotice = (notice && notice.active) || (nextTrialTurn - currentTurn <= 5);
-            if (!isNotice) return false;
-        }
-
-        // ⏳ 試練までの残りターン数判定 (<= N)
-        if (c.reqTrialWithin !== undefined && this.state) {
-            const nextTrialTurn = this.state.nextTrialTurn || 20;
-            const currentTurn = this.state.turn || 1;
-            if ((nextTrialTurn - currentTurn) > c.reqTrialWithin) return false;
-        }
-
-        // 🗺️ 盤面に丘陵または山岳が存在すること
-        if (c.reqHillOrMountain && this.state) {
-            if (!ConditionEvaluator.evaluate({ type: "HAS_HILL_OR_MOUNTAIN" }, { state: this.state })) return false;
-        }
-
-        // 💧 盤面に湿原または湖が存在すること
-        if (c.reqWetlandOrLake && this.state) {
-            if (!ConditionEvaluator.evaluate({ type: "HAS_WETLAND_OR_LAKE" }, { state: this.state })) return false;
-        }
-
-        // 🌲 盤面に森が指定数以上存在すること
-        if (c.reqForest !== undefined && this.state) {
-            if (!ConditionEvaluator.evaluate({ type: "HAS_FOREST", value: c.reqForest }, { state: this.state })) return false;
-        }
-
-        // 💎 発見済みソケット資源タグ判定 (単一: reqDiscoveredResourceTag / 複数配列: reqDiscoveredResourceTags)
-        if (c.reqDiscoveredResourceTag && this.state) {
-            if (!ConditionEvaluator.evaluate({ type: "SOCKET_FOUND", category: c.reqDiscoveredResourceTag }, { state: this.state })) return false;
-        }
-        if (c.reqDiscoveredResourceTags && Array.isArray(c.reqDiscoveredResourceTags) && this.state) {
-            for (const tag of c.reqDiscoveredResourceTags) {
-                if (!ConditionEvaluator.evaluate({ type: "SOCKET_FOUND", category: tag }, { state: this.state })) return false;
-            }
-        }
-
-        // 💎 発見済みユニーク資源数判定
-        if (c.reqDiscoveredResourcesCount !== undefined && this.state) {
-            if (!ConditionEvaluator.evaluate({ type: "DISCOVERED_RESOURCES_COUNT", value: c.reqDiscoveredResourcesCount }, { state: this.state })) return false;
-        }
-
-        // ✨ 発見済み神秘系資源数判定
-        if (c.reqDiscoveredMysticResourcesCount !== undefined && this.state) {
-            if (!ConditionEvaluator.evaluate({ type: "DISCOVERED_MYSTIC_RESOURCES_COUNT", value: c.reqDiscoveredMysticResourcesCount }, { state: this.state })) return false;
-        }
-
-        // 🔗 連結した指定地形の最大マス数判定
-        if (c.reqConnectedPlains !== undefined && this.state) {
-            if (!ConditionEvaluator.evaluate({ type: "CONNECTED_TERRAIN_AT_LEAST", terrainType: "PLAINS", value: c.reqConnectedPlains }, { state: this.state })) return false;
-        }
-        if (c.reqConnectedHillOrForest !== undefined && this.state) {
-            if (!ConditionEvaluator.evaluate({ type: "CONNECTED_TERRAIN_AT_LEAST", terrainType: "HILL_OR_FOREST", value: c.reqConnectedHillOrForest }, { state: this.state })) return false;
-        }
-        // 🌲 盤面に森または森丘陵が指定数以上存在すること
-        if (c.reqForestOrHillForest !== undefined && this.state) {
-            if (!ConditionEvaluator.evaluate({ type: "HAS_FOREST_OR_HILL_FOREST", value: c.reqForestOrHillForest }, { state: this.state })) return false;
-        }
-
-        // 💧 盤面に湿原が指定数以上存在すること
-        if (c.reqWetland !== undefined && this.state) {
-            if (!ConditionEvaluator.evaluate({ type: "HAS_WETLAND", value: c.reqWetland }, { state: this.state })) return false;
-        }
-
-        // 🌾 干拓: 湖ではない未MERGEの湿原が1マス以上存在すること
-        if (c.id === "CMD_WETLAND_RECLAMATION" && this.state && this.state.grid) {
-            let hasReclaimable = false;
-            for (let r = 0; r < this.state.grid.length && !hasReclaimable; r++) {
-                for (let cCol = 0; cCol < this.state.grid[r].length && !hasReclaimable; cCol++) {
-                    const cell = this.state.grid[r][cCol];
-                    if (cell && cell.placed && !cell.isHQ && cell.terrain) {
-                        const tid = cell.terrain.terrainId || cell.terrain.id || "";
-                        const isLakeCell = cell.socketResource && (cell.socketResource.id === "SOCKET_LAKE" || cell.socketResource.isLake);
-                        if (tid.includes("WETLAND") && !isTrueMergedCell(this.state, cell) && !isLakeCell) {
-                            hasReclaimable = true;
-                        }
-                    }
-                }
-            }
-            if (!hasReclaimable) return false;
-        }
-
-        // 🌾 食料不足または自動補填見込み判定
-        if (c.reqFoodDeficitOrFallback && this.state) {
-            const currentFood = this.state.food || 0;
-            const upkeep = (typeof this.state.getFoodUpkeep === 'function') ? this.state.getFoodUpkeep() : 20;
-            const isDeficit = currentFood < upkeep || currentFood <= 40;
-            if (!isDeficit) return false;
-        }
-
-        // 🌲 候補周囲に森系マスが存在すること
-        if (c.reqForestNearby !== undefined && this.state && this.state.grid) {
-            let forestCount = 0;
-            for (let r = 0; r < this.state.grid.length; r++) {
-                for (let col = 0; col < this.state.grid[r].length; col++) {
-                    const cell = this.state.grid[r][col];
-                    if (cell && cell.placed && cell.terrain) {
-                        const tid = cell.terrain.terrainId || cell.terrain.id || "";
-                        if (tid.includes("FOREST")) forestCount++;
-                    }
-                }
-            }
-            if (forestCount < c.reqForestNearby) return false;
-        }
-
-        // 🌾 連結した平地または干拓地
-        if (c.reqConnectedPlainsOrReclaimed !== undefined && this.state && this.state.grid) {
-            let count = 0;
-            for (let r = 0; r < this.state.grid.length; r++) {
-                for (let col = 0; col < this.state.grid[r].length; col++) {
-                    const cell = this.state.grid[r][col];
-                    if (cell && cell.placed && cell.terrain) {
-                        const tid = cell.terrain.terrainId || cell.terrain.id || "";
-                        if (tid.includes("PLAINS") || tid.includes("RECLAIMED_LAND")) count++;
-                    }
-                }
-            }
-            if (count < c.reqConnectedPlainsOrReclaimed) return false;
-        }
-
-        // 🧱 資材不足傾向
-        if (c.reqWoodDeficit && this.state) {
-            if ((this.state.wood || 0) > 30) return false;
-        }
-
-        // 🪓 伐採拠点の存在
-        if (c.reqLoggingCamp && this.state) {
-            const buffs = this.state.activeBuffs || [];
-            const hasCamp = buffs.some(b => b.id === "CMD_LOGGING_CAMP" || b.id === "LOGGING_CAMP");
-            let hasForest = false;
-            if (this.state.grid) {
-                for (let r = 0; r < this.state.grid.length && !hasForest; r++) {
-                    for (let col = 0; col < this.state.grid[r].length && !hasForest; col++) {
-                        const cell = this.state.grid[r][col];
-                        if (cell && cell.placed && cell.terrain && (cell.terrain.terrainId || "").includes("FOREST")) hasForest = true;
-                    }
-                }
-            }
-            if (!hasCamp && !hasForest) return false;
-        }
-
-        // ⛰️ 丘陵の存在
-        if (c.reqHill !== undefined && this.state && this.state.grid) {
-            let hillCount = 0;
-            for (let r = 0; r < this.state.grid.length; r++) {
-                for (let col = 0; col < this.state.grid[r].length; col++) {
-                    const cell = this.state.grid[r][col];
-                    if (cell && cell.placed && cell.terrain && (cell.terrain.terrainId || "").includes("HILL")) hillCount++;
-                }
-            }
-            if (hillCount < c.reqHill) return false;
-        }
-
-        // ⛏️ 鉱物系ソケットの存在
-        if (c.reqOreSocket && this.state && this.state.grid) {
-            let hasOre = false;
-            for (let r = 0; r < this.state.grid.length && !hasOre; r++) {
-                for (let col = 0; col < this.state.grid[r].length && !hasOre; col++) {
-                    const cell = this.state.grid[r][col];
-                    if (cell && cell.socketResource) {
-                        const cat = cell.socketResource.category || "";
-                        const sid = cell.socketResource.id || "";
-                        if (cat.includes("ORE") || cat.includes("STONE") || cat.includes("IRON") || sid.includes("ORE") || sid.includes("STONE")) hasOre = true;
-                    }
-                }
-            }
-            if (!hasOre) return false;
-        }
-
-        // 💧 水源（湖またはオアシス）
-        if (c.reqWaterSource && this.state && this.state.grid) {
-            let hasWater = false;
-            for (let r = 0; r < this.state.grid.length && !hasWater; r++) {
-                for (let col = 0; col < this.state.grid[r].length && !hasWater; col++) {
-                    const cell = this.state.grid[r][col];
-                    if (cell && cell.socketResource && (cell.socketResource.id === "SOCKET_LAKE" || cell.socketResource.id === "SOCKET_OASIS" || cell.socketResource.isLake)) hasWater = true;
-                }
-            }
-            if (!hasWater) return false;
-        }
-
-        // 🔗 平地2x2マージ
-        if (c.reqPlainsMerge2x2 && this.state) {
-            const hasMerge = this.state.mergedBlocks && Object.values(this.state.mergedBlocks).some(m => m.terrainId && m.terrainId.includes("PLAINS"));
-            if (!hasMerge) return false;
-        }
-
-        // 🏰 大規模国土
-        if (c.reqLargeTerritory && this.state && this.state.grid) {
-            let placedCount = 0;
-            for (let r = 0; r < this.state.grid.length; r++) {
-                for (let col = 0; col < this.state.grid[r].length; col++) {
-                    if (this.state.grid[r][col]?.placed && !this.state.grid[r][col]?.isHQ) placedCount++;
-                }
-            }
-            if (placedCount < 10) return false;
-        }
-
-        // 🔲 盤面の空きマス数判定
-        if (c.reqEmptyCells !== undefined && this.state) {
-            if (!ConditionEvaluator.evaluate({ type: "EMPTY_CELLS_AT_LEAST", value: c.reqEmptyCells }, { state: this.state })) return false;
-        }
-
-        // 🏜️ 未マージの砂漠または山岳が存在すること
-        if (c.reqUnmergedDesertOrMountain && this.state) {
-            if (!ConditionEvaluator.evaluate({ type: "HAS_UNMERGED_DESERT_OR_MOUNTAIN" }, { state: this.state })) return false;
-        }
-
-        // 🗼 前哨塔または丘陵/山岳が存在すること
-        if (c.reqOutpostOrHighGround && this.state) {
-            if (!ConditionEvaluator.evaluate({ type: "HAS_OUTPOST_OR_HIGH_GROUND" }, { state: this.state })) return false;
-        }
-
-        // 📦 盤面に配置済みのブロック数上限
-        if (c.maxPlacedBlocks !== undefined && this.state) {
-            if (!ConditionEvaluator.evaluate({ type: "PLACED_BLOCKS_AT_MOST", value: c.maxPlacedBlocks }, { state: this.state })) return false;
-        }
-
-        // 🛡️ 防衛力の上限
-        if (c.maxDefense !== undefined && this.state) {
-            const maxDefense = (typeof this.state.calculateTotalDefense === 'function')
-                ? this.state.calculateTotalDefense()
-                : (this.state.maxDefense ?? this.state.defense ?? 0);
-            if (maxDefense > c.maxDefense) return false;
-        }
+        const legacyRequirementGate = evaluateLegacyOfferingRequirements(
+            c,
+            { state: this.state, h2Count, boardQuery: this.cardOfferingBoardQuery },
+            ConditionEvaluator
+        );
+        if (!legacyRequirementGate.eligible) return false;
 
         return true;
     }
@@ -517,68 +291,32 @@ class DeckManager {
      * @param {Object} [options={}] - フォールバック等の一時制御フラグ
      */
     drawSingleCard(excludedCardIds = [], options = {}) {
-        const master = this.getLandCardMaster();
         const stageNum = (this.state && this.state.stage) ? (typeof this.state.stage === 'object' ? (this.state.stage.id || 1) : this.state.stage) : 1;
-        const h2Count = (this.state && typeof this.state.countE2HillsOnBoard === 'function') ? this.state.countE2HillsOnBoard() : 0;
+        const h2Count = this._countE2HillsOnBoard();
 
-        let eligible = master.filter(c => this.isCardEligible(c, stageNum, h2Count, options));
-        if (typeof options.candidateFilter === "function") {
-            eligible = eligible.filter(c => options.candidateFilter(c));
-        }
+        const picked = this.offeringCandidatePool?.pick({
+            stageNum,
+            h2Count,
+            excludedCardIds,
+            eligibilityOptions: options,
+            candidateFilter: options.candidateFilter,
+            state: this.state,
+            random: () => this._nextGameplayFloat(),
+            weightContext: this._resolveOfferingWeightContext()
+        }) || null;
 
-        // 🛡️ 同一オファリング内における完全同一カードの重複排除
-        if (Array.isArray(excludedCardIds) && excludedCardIds.length > 0) {
-            eligible = eligible.filter(c => !excludedCardIds.includes(c.id));
-        }
-
-        if (eligible.length === 0) {
+        if (!picked) {
             return null; // 制約緩和フォールバックへ委ねる
         }
-
-        const activeBiasCategory = (this.state && this.state.activeDrawBias) ? this.state.activeDrawBias.targetCategory : null;
-
-        let totalW = eligible.reduce((acc, c) => {
-            let w = c.weight ?? 0.1;
-            const cat = c.category || "LAND";
-            let dirMult = 1.0;
-            if (this.state && this.state.directiveSystem) {
-                dirMult = this.state.directiveSystem.getCategoryWeightMultiplier(cat);
-            }
-            let biasMult = 1.0;
-            if (activeBiasCategory && cat === activeBiasCategory) {
-                biasMult = 2.0;
-            }
-            return acc + (w * dirMult * biasMult);
-        }, 0);
-
-        let rand = this._nextGameplayFloat() * totalW;
-        let chosen = eligible[0];
-
-        for (let c of eligible) {
-            let w = c.weight ?? 0.1;
-            const cat = c.category || "LAND";
-            let dirMult = 1.0;
-            if (this.state && this.state.directiveSystem) {
-                dirMult = this.state.directiveSystem.getCategoryWeightMultiplier(cat);
-            }
-            let biasMult = 1.0;
-            if (activeBiasCategory && cat === activeBiasCategory) {
-                biasMult = 2.0;
-            }
-            const finalW = w * dirMult * biasMult;
-            if (rand < finalW) {
-                chosen = c;
-                break;
-            }
-            rand -= finalW;
-        }
-
-        const picked = chosen || eligible[0] || master[0];
         return this._wrapCardInstance(picked);
     }
 
     _cardDefinition(card) {
-        return card?.terrain || card || null;
+        return unwrapCardDefinition(card);
+    }
+
+    getCardDefinitionV1(card) {
+        return normalizeCardDefinitionV1(this._cardDefinition(card));
     }
 
     _cardId(card) {
@@ -586,36 +324,40 @@ class DeckManager {
         return card?.cardMasterId || definition?.id || card?.id || null;
     }
 
-    _isCardPlaceableNow(card) {
-        const definition = this._cardDefinition(card);
-        if (!definition || definition.category !== "LAND") return false;
-        if (!this.state?.grid || typeof this.state.canPlaceShape !== "function") return false;
+    _countE2HillsOnBoard() {
+        if (!this.state) return 0;
+        if (typeof this.state.countE2HillsOnBoard === "function") {
+            return this.state.countE2HillsOnBoard();
+        }
+        if (this.state.gridEngine && typeof this.state.gridEngine.countE2HillsOnBoard === "function") {
+            return this.state.gridEngine.countE2HillsOnBoard();
+        }
 
-        for (let r = 0; r < this.state.grid.length; r++) {
-            for (let c = 0; c < this.state.grid[r].length; c++) {
-                try {
-                    const placement = resolvePlacementGeometry(definition, r, c);
-                    const result = this.state.canPlaceShape(
-                        placement.startR,
-                        placement.startC,
-                        placement.shape,
-                        definition,
-                        placement.attributeCells
-                    );
-                    if (result?.can === true) return true;
-                } catch {
-                    // Malformed/non-placeable candidates do not satisfy placement guarantees.
-                }
+        let count = 0;
+        for (const row of this.state.grid || []) {
+            for (const cell of row || []) {
+                const terrainId = cell?.terrain?.terrainId || cell?.terrain?.id || null;
+                if (cell?.placed && terrainId === "E2_HILL") count += 1;
             }
         }
-        return false;
+        return count;
     }
 
-    _matchesMinimumRequirement(card, requirement) {
+    _isCardPlaceableNow(card, placeabilityCache = null) {
+        const definition = this._cardDefinition(card);
+        return this.landPlacementAvailability?.hasAnyLegalPlacement(definition, {
+            cache: placeabilityCache
+        }) === true;
+    }
+
+    _matchesMinimumRequirement(card, requirement, placeabilityCache = null) {
         const definition = this._cardDefinition(card);
         if (!definition || !requirement || typeof requirement !== "object") return false;
         if (requirement.category && definition.category !== requirement.category) return false;
-        if (requirement.requirePlaceable === true && !this._isCardPlaceableNow(definition)) return false;
+        if (
+            requirement.requirePlaceable === true
+            && !this._isCardPlaceableNow(definition, placeabilityCache)
+        ) return false;
         return true;
     }
 
@@ -632,21 +374,36 @@ class DeckManager {
             : [];
     }
 
-    _enforceMinimumRequirements(cards, excludedCardIds, requirements) {
+    _enforceMinimumRequirements(cards, excludedCardIds, requirements, { placeabilityCache = null } = {}) {
         if (!Array.isArray(cards) || cards.length === 0 || !Array.isArray(requirements) || requirements.length === 0) return [];
 
         const applied = [];
         for (const requirement of requirements) {
             const minCount = Math.max(1, Math.trunc(requirement.minCount ?? 1));
-            let matchingCount = cards.filter(card => this._matchesMinimumRequirement(card, requirement)).length;
+            let matchingCount = cards.filter(card =>
+                this._matchesMinimumRequirement(card, requirement, placeabilityCache)
+            ).length;
 
             while (matchingCount < minCount) {
                 const candidate = this.drawSingleCard(excludedCardIds, {
-                    candidateFilter: card => this._matchesMinimumRequirement(card, requirement)
+                    candidateFilter: card =>
+                        this._matchesMinimumRequirement(card, requirement, placeabilityCache),
+                    placeabilityCache
                 });
                 if (!candidate) break;
 
-                const replaceIndex = cards.findIndex(card => !this._matchesMinimumRequirement(card, requirement));
+                const sameCategoryInvalidIndex = requirement.category
+                    ? cards.findIndex(card => {
+                        const definition = this._cardDefinition(card);
+                        return definition?.category === requirement.category
+                            && !this._matchesMinimumRequirement(card, requirement, placeabilityCache);
+                    })
+                    : -1;
+                const replaceIndex = sameCategoryInvalidIndex >= 0
+                    ? sameCategoryInvalidIndex
+                    : cards.findIndex(card =>
+                        !this._matchesMinimumRequirement(card, requirement, placeabilityCache)
+                    );
                 if (replaceIndex < 0) break;
 
                 const replacedId = this._cardId(cards[replaceIndex]);
@@ -689,12 +446,20 @@ class DeckManager {
         }
         const offeringSize = (this.state && this.state.handOfferingSize) ? this.state.handOfferingSize : 3;
         const currentTurn = (this.state && this.state.turn) ? this.state.turn : 1;
-        const master = this.getLandCardMaster();
         const stageNum = (this.state && this.state.stage) ? (typeof this.state.stage === 'object' ? (this.state.stage.id || 1) : this.state.stage) : 1;
-        const h2Count = (this.state && typeof this.state.countE2HillsOnBoard === 'function') ? this.state.countE2HillsOnBoard() : 0;
+        const h2Count = this._countE2HillsOnBoard();
 
         const newCards = [];
         const excludedCardIds = [];
+        const placeabilityCache = new WeakMap();
+        const categoryMultiplicityPolicy = resolveOfferingCategoryMultiplicityPolicy({
+            engine: this.engine,
+            state: this.state,
+            reason
+        });
+        let categoryCapRelaxedForFallback = false;
+        const respectsCategoryCap = card =>
+            canAppendOfferingCategory(newCards, card, categoryMultiplicityPolicy);
 
         // 📥 保留スロットにあるカードを手札重複から除外
         if (this.state && this.state.reserveSlots) {
@@ -709,7 +474,10 @@ class DeckManager {
 
         // 段階 1: 通常抽選 (Universal ＆ Card-specific 適合 ＆ 非CD ＆ 非Hold)
         for (let i = 0; i < offeringSize; i++) {
-            const drawn = this.drawSingleCard(excludedCardIds);
+            const drawn = this.drawSingleCard(excludedCardIds, {
+                placeabilityCache,
+                candidateFilter: respectsCategoryCap
+            });
             if (drawn) {
                 newCards.push(drawn);
                 const cId = drawn.cardMasterId || (drawn.terrain ? drawn.terrain.id : null);
@@ -718,65 +486,78 @@ class DeckManager {
         }
 
         // 段階 2 フォールバック: 不足時、Cooldown 中の適格カードから availableTurn 最小のものを一時解禁
+        // Category cap is re-evaluated after every append so the third slot cannot
+        // accidentally reuse a category that reached its cap during this loop.
         if (newCards.length < offeringSize && this.cycleSystem) {
-            const cdCandidates = master.filter(c => {
-                if (excludedCardIds.includes(c.id)) return false;
-                return this.isCardEligible(c, stageNum, h2Count, { ignoreCooldown: true });
-            });
+            while (newCards.length < offeringSize) {
+                const cdCandidates = this.offeringCandidatePool.build({
+                    stageNum,
+                    h2Count,
+                    excludedCardIds,
+                    eligibilityOptions: { ignoreCooldown: true, placeabilityCache },
+                    candidateFilter: respectsCategoryCap
+                });
+                if (cdCandidates.length === 0) break;
 
-            while (newCards.length < offeringSize && cdCandidates.length > 0) {
                 const minCard = this.cycleSystem.findMinAvailableTurnCard(cdCandidates);
                 if (!minCard) break;
                 const drawn = this._wrapCardInstance(minCard);
                 newCards.push(drawn);
                 excludedCardIds.push(minCard.id);
-                const idx = cdCandidates.indexOf(minCard);
-                if (idx !== -1) cdCandidates.splice(idx, 1);
             }
         }
 
         // 段階 3 フォールバック: それでも不足時、Stage適格な既存基本土地プールから CD無視で補充
-        if (newCards.length < offeringSize) {
-            const baseLandPool = master.filter(c => {
-                if (excludedCardIds.includes(c.id)) return false;
-                if (hasMultiplePlacementTerrainAttributes(c) && !isMultiAttributeProductionResolved(c)) return false;
-                const policy = c.cyclePolicy || (c.category === "LAND" ? CYCLE_POLICIES.LAND_STANDARD : CYCLE_POLICIES.RARITY);
-                return (policy === CYCLE_POLICIES.LAND_STANDARD || c.category === "LAND") && (c.minStage || 1) <= stageNum;
+        // First preserve the category cap. Only if the Offering still cannot reach
+        // its requested size do we relax the cap as the final availability rescue.
+        const isBaseLandFallbackCandidate = c => {
+            const policy = c.cyclePolicy || (c.category === "LAND"
+                ? CYCLE_POLICIES.LAND_STANDARD
+                : CYCLE_POLICIES.RARITY);
+            return policy === CYCLE_POLICIES.LAND_STANDARD || c.category === "LAND";
+        };
+
+        while (newCards.length < offeringSize) {
+            const baseLandPool = this.offeringCandidatePool.build({
+                stageNum,
+                h2Count,
+                excludedCardIds,
+                eligibilityOptions: { ignoreCooldown: true, placeabilityCache },
+                candidateFilter: c =>
+                    isBaseLandFallbackCandidate(c)
+                    && respectsCategoryCap(c)
             });
+            if (baseLandPool.length === 0) break;
 
-            while (newCards.length < offeringSize && baseLandPool.length > 0) {
-                const activeBiasCategory = this.state?.activeDrawBias?.targetCategory || null;
-                const weighted = baseLandPool.map(card => {
-                    const category = card.category || "LAND";
-                    const directiveMultiplier = this.state?.directiveSystem
-                        ? this.state.directiveSystem.getCategoryWeightMultiplier(category)
-                        : 1.0;
-                    const biasMultiplier = activeBiasCategory && category === activeBiasCategory ? 2.0 : 1.0;
-                    return {
-                        card,
-                        weight: Math.max(0, Number(card.weight ?? 0.1)) * directiveMultiplier * biasMultiplier
-                    };
-                });
-                const totalWeight = weighted.reduce((sum, item) => sum + item.weight, 0);
-                let picked = weighted[0]?.card || baseLandPool[0];
+            const picked = pickWeightedCard(
+                baseLandPool,
+                this.state,
+                () => this._nextGameplayFloat(),
+                this._resolveOfferingWeightContext()
+            ) || baseLandPool[0];
+            newCards.push(this._wrapCardInstance(picked));
+            excludedCardIds.push(picked.id);
+        }
 
-                if (totalWeight > 0) {
-                    let roll = this._nextGameplayFloat() * totalWeight;
-                    for (const item of weighted) {
-                        if (roll < item.weight) {
-                            picked = item.card;
-                            break;
-                        }
-                        roll -= item.weight;
-                    }
-                }
+        while (newCards.length < offeringSize) {
+            const baseLandPool = this.offeringCandidatePool.build({
+                stageNum,
+                h2Count,
+                excludedCardIds,
+                eligibilityOptions: { ignoreCooldown: true, placeabilityCache },
+                candidateFilter: isBaseLandFallbackCandidate
+            });
+            if (baseLandPool.length === 0) break;
 
-                const drawn = this._wrapCardInstance(picked);
-                newCards.push(drawn);
-                excludedCardIds.push(picked.id);
-                const pickedIndex = baseLandPool.indexOf(picked);
-                if (pickedIndex >= 0) baseLandPool.splice(pickedIndex, 1);
-            }
+            const picked = pickWeightedCard(
+                baseLandPool,
+                this.state,
+                () => this._nextGameplayFloat(),
+                this._resolveOfferingWeightContext()
+            ) || baseLandPool[0];
+            if (!respectsCategoryCap(picked)) categoryCapRelaxedForFallback = true;
+            newCards.push(this._wrapCardInstance(picked));
+            excludedCardIds.push(picked.id);
         }
 
         if (newCards.length < offeringSize) {
@@ -784,11 +565,28 @@ class DeckManager {
         }
 
         const minimumRequirements = this._resolveMinimumRequirements(reason);
-        const appliedMinimumRequirements = this._enforceMinimumRequirements(newCards, excludedCardIds, minimumRequirements);
+        const appliedMinimumRequirements = this._enforceMinimumRequirements(
+            newCards,
+            excludedCardIds,
+            minimumRequirements,
+            { placeabilityCache }
+        );
+        const categoryOverflow = listOfferingCategoryOverflow(
+            newCards,
+            categoryMultiplicityPolicy
+        );
         this.lastOfferingGeneration = Object.freeze({
             reason,
             requestedMinimums: minimumRequirements.length,
-            appliedMinimums: appliedMinimumRequirements
+            appliedMinimums: appliedMinimumRequirements,
+            categoryMultiplicity: Object.freeze({
+                maxPerCategory: categoryMultiplicityPolicy.maxPerCategory,
+                source: categoryMultiplicityPolicy.source,
+                relaxedForFallback: categoryCapRelaxedForFallback,
+                minimumRequirementOverride:
+                    appliedMinimumRequirements.length > 0 && categoryOverflow.length > 0,
+                overflow: Object.freeze(categoryOverflow)
+            })
         });
 
         // ⭐ 確定した手札 3 枚に対して転生 Cooldown を登録 (フォールバックで救済されたカードもここで新CD再登録)
@@ -948,11 +746,98 @@ class DeckManager {
         return true;
     }
 
+    quoteCardExecutionCost(cardObj) {
+        if (!cardObj || cardObj.category === "LAND") {
+            return { success: false, reason: "NOT_A_COMMAND_CARD", resources: {} };
+        }
+        const definitionV1 = normalizeCardDefinitionV1(cardObj);
+        const quote = this.cardEffectHandlerRouter?.quoteCost(definitionV1, {
+            state: this.state,
+            engine: this.engine,
+            deckManager: this
+        }) || null;
+
+        if (quote?.success === false) return quote;
+        if (quote?.success === true && quote.resources) {
+            return {
+                success: true,
+                resources: { ...quote.resources },
+                source: quote.source || "DOMAIN_QUOTE",
+                quote: quote.quote || null
+            };
+        }
+
+        return {
+            success: true,
+            resources: { ...(cardObj.cost || {}) },
+            source: "CARD_COST",
+            quote: null
+        };
+    }
+
+    cardRequiresExecutionTarget(cardObj) {
+        if (!cardObj || cardObj.category === "LAND") return false;
+        const definitionV1 = normalizeCardDefinitionV1(cardObj);
+        return this.cardEffectHandlerRouter?.requiresTarget(definitionV1) === true;
+    }
+
+    enumerateCardExecutionTargets(cardObj) {
+        if (!cardObj || cardObj.category === "LAND") return [];
+        const definitionV1 = normalizeCardDefinitionV1(cardObj);
+        return this.cardEffectHandlerRouter?.enumerateTargets(definitionV1, {
+            state: this.state,
+            engine: this.engine,
+            deckManager: this
+        }) || [];
+    }
+
     /**
      * 📜 コマンドカードの発動処理
      */
     playCommandCard(cardObj, targetTile = null, handIdx = -1, reserveIdx = -1) {
         if (!this.state || !cardObj || cardObj.category === "LAND") return { success: false, reason: "NOT_A_COMMAND_CARD" };
+
+        const definitionV1 = normalizeCardDefinitionV1(cardObj);
+        const executionGate = this.executionRequirementService.evaluate(definitionV1, {
+            state: this.state,
+            engine: this.engine,
+            deckManager: this,
+            targetTile,
+            handIdx,
+            reserveIdx
+        });
+        if (!executionGate.canExecute) {
+            return {
+                success: false,
+                reason: executionGate.failures[0] || "EXECUTION_REQUIREMENT_FAILED",
+                failures: executionGate.failures
+            };
+        }
+
+        const paymentPlan = this.quoteCardExecutionCost(cardObj);
+        if (paymentPlan?.success === false) {
+            return {
+                success: false,
+                reason: paymentPlan.reason || "COMMAND_COST_QUOTE_FAILED"
+            };
+        }
+
+        const resolvedPaymentCost = paymentPlan?.resources || cardObj.cost || {};
+        const effectPreflight = this.cardEffectHandlerRouter?.preflight(cardObj, {
+            state: this.state,
+            engine: this.engine,
+            deckManager: this,
+            targetTile,
+            handIdx,
+            reserveIdx,
+            resolvedPaymentCost
+        });
+        if (effectPreflight?.handled && effectPreflight.success === false) {
+            return {
+                success: false,
+                reason: effectPreflight.reason || "CARD_EFFECT_PREFLIGHT_FAILED"
+            };
+        }
 
         const cId = cardObj.id;
         const checkSystem = cId === "CMD_ABANDONED_SETTLEMENT"
@@ -962,7 +847,7 @@ class DeckManager {
             return { success: false, reason: "CHECK_SYSTEM_UNAVAILABLE" };
         }
 
-        const cost = cardObj.cost || {};
+        const cost = resolvedPaymentCost;
         const matCost = cost.material !== undefined ? cost.material : (cost.wood || 0);
         const curMat = Math.max(this.state.material !== undefined ? this.state.material : 0, this.state.wood !== undefined ? this.state.wood : 0);
 
@@ -995,61 +880,35 @@ class DeckManager {
         // ⭐ 選択時消費: UNIQUE カードなら consumedUniqueCards へ登録
         this.consumeCardIfUnique(cardObj);
 
-        if (cId === "CMD_AGRICULTURAL_POLICY") {
-            // 🌾 農地改革: コスト 🧱-20
-            this.state.permanentPlainsFoodBonus = (this.state.permanentPlainsFoodBonus || 0) + 1;
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `📜【${cName}】`);
-        } else if (cId === "CMD_BLACK_MARKET") {
-            // 💰 闇市場の一括売却: コスト 🌾-25
-            this.state.wood += 35;
-            this.state.mystic += 10;
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `📜【${cName}】`);
-        } else if (cId === "CMD_IRON_RAMPART") {
-            // 🛡️ 鉄壁の防壁構築: コスト 🧱-20
-            if (this.state.defenseSystem) {
-                this.state.defenseSystem.increaseMaxCapacity(25);
-            } else {
-                this.state.defense += 25;
+        // Card Effect Handler v1 boundary.
+        // No legacy effect is registered by default. Registered effects may
+        // migrate one-by-one; every unregistered card falls through to the
+        // existing if/else implementation unchanged.
+        const routedEffect = this.cardEffectHandlerRouter?.execute(cardObj, {
+            state: this.state,
+            engine: this.engine,
+            deckManager: this,
+            targetTile,
+            handIdx,
+            reserveIdx,
+            resolvedPaymentCost,
+            preflightAlreadyPassed: effectPreflight?.handled === true && effectPreflight.success === true,
+            i18n: I18n,
+            cardName: cName,
+            cardDescription: cDesc
+        });
+        if (routedEffect?.handled) {
+            if (routedEffect.success === false) return routedEffect;
+
+            if (cardObj.isUnique) {
+                if (!this.state.usedUniqueCards) this.state.usedUniqueCards = [];
+                this.state.usedUniqueCards.push(cId);
             }
-            this.state.permanentVicinityDefenseBonus = (this.state.permanentVicinityDefenseBonus || 0) + 2;
-            if (this.state.defenseSystem) this.state.defenseSystem.reconcileWithMax();
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🛡️【${cName}】`);
-        } else if (cId === "CMD_BALLISTA_SET") {
-            // 🏹 迎撃用弩砲陣地: コスト 🧱-30
-            if (this.state.defenseSystem) {
-                this.state.defenseSystem.increaseMaxCapacity(40);
-            } else {
-                this.state.defense += 40;
-            }
-            this.state.nextTrialDamageMitigation = 0.5;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🏹",
-                description: cDesc,
-                badgeText: I18n ? I18n.t("UI_DEFENSE_TRIAL_TAG") : "試練対策",
-                category: "CARD_EFFECT"
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🏹【${cName}】`);
-        } else if (cId === "CMD_REKINDLE_EMBER") {
-            // ✨ 再燃: コスト ✨-10
-            this.state.ember = this.state.ember + 3;
-            this.state.reserveFeeWaivedTurns = 3;
-            this.state.reserveFeeWaivedStartsNextTurn = true;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "✨",
-                description: cDesc,
-                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 3 }) : "3T",
-                category: "CARD_EFFECT",
-                remainingTurns: 3,
-                startsNextTurn: true
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `✨【${cName}】`);
-        } else if (cId === "CMD_TRANSMUTE_GOLDEN") {
+            this.state.hasPickedThisTurn = true;
+            return { ...routedEffect, success: true };
+        }
+
+           if (cId === "CMD_TRANSMUTE_GOLDEN") {
             // 💎 黄金秘境への変容: コスト ✨-20
             if (targetTile && targetTile.r !== undefined && targetTile.c !== undefined && this.state.grid) {
                 const cell = this.state.grid[targetTile.r][targetTile.c];
@@ -1059,196 +918,7 @@ class DeckManager {
                 this.state.mystic += 10;
                 this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `💎【${cName}】`);
             }
-        } else if (cId === "FAC_GREAT_WINDMILL") {
-            // 🏛️ 大風車工房の建設: コスト 🧱-15
-            if (!this.state.activeConstructionProjects) this.state.activeConstructionProjects = [];
-            this.state.activeConstructionProjects.push({ name: "FAC_GREAT_WINDMILL", remainingTurns: 3, woodCostPerTurn: 4 });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🏛️【${cName}】`);
-        } else if (cId === "LGD_DESPERATE_PACT") {
-            // 📜 背水の盟約: コスト なし
-            this.state.ember = this.state.ember + 5;
-            this.state.handOfferingSize = 4;
-            this.state.nextTrialMultiplier = 1.5;
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🔥【${cName}】`);
-        } else if (cId === "CMD_LAND_FOCUS") {
-            // 📜 土地探索重視: コスト 🌾-10 🧱-10
-            this.state.activeDrawBias = { targetCategory: "LAND", type: "UNTIL_BLOCKS", untilValue: 6 };
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "📜",
-                description: cDesc,
-                category: "CARD_EFFECT"
-            });
-            if (typeof this.state.checkConditionalBuffs === "function") this.state.checkConditionalBuffs();
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `📜【${cName}】`);
-        } else if (cId === "CMD_MILITARY_FOCUS") {
-            // ⚔️ 軍事重視: コスト 🧱-20
-            this.state.activeDrawBias = { targetCategory: "MILITARY", type: "UNTIL_DEFENSE", untilValue: 20 };
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🛡️",
-                description: cDesc,
-                category: "CARD_EFFECT"
-            });
-            if (typeof this.state.checkConditionalBuffs === "function") this.state.checkConditionalBuffs();
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `⚔️【${cName}】`);
-        } else if (cId === "CMD_MYSTIC_FOCUS") {
-            // ✨ 神秘重視: コスト 🔥-1 (次のターンから3ターンの間、神秘出現率2倍)
-            this.state.activeDrawBias = { targetCategory: "MYSTIC", type: "TURNS", remainingTurns: 3, startsNextTurn: true };
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "✨",
-                description: cDesc,
-                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 3 }) : "3T",
-                category: "CARD_EFFECT",
-                remainingTurns: 3,
-                startsNextTurn: true
-            });
-        } else if (cId === "CMD_CONSERVE_EMBER") {
-            // 🔥 節約: コスト 無料 (次ターンの🔥消費-1軽減)
-            this.state.emberConsumptionReducedTurns = 1;
-            this.state.emberConsumptionStartsNextTurn = true;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🔥",
-                description: cDesc,
-                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 1 }) : "1T",
-                category: "CARD_EFFECT",
-                remainingTurns: 1,
-                startsNextTurn: true
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🔥【${cName}】`);
-        } else if (cId === "CMD_RATIONING") {
-            // 🌾 配給: コスト 無料 (今ターンの最終食料維持費を 40% 軽減)
-            this.state.foodCostRationingActive = true;
-            this.state.foodCostRationingDiscount = 0.40;
-            this.state.foodCostHalvedTurns = 1;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🌾",
-                description: cDesc,
-                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 1 }) : "1T",
-                category: "CARD_EFFECT",
-                remainingTurns: 1
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🌾【${cName}】`);
-        } else if (cId === "CMD_MEDITATION") {
-            // 🧘 瞑想: コスト 無料 (次ターン土地保証)
-            this.state.mystic += 3;
-            this.state.activeDrawBias = { targetCategory: "LAND", type: "TURNS", remainingTurns: 1, startsNextTurn: true };
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🧘",
-                description: cDesc,
-                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 1 }) : "1T",
-                category: "CARD_EFFECT",
-                remainingTurns: 1,
-                startsNextTurn: true
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🧘【${cName}】`);
-        } else if (cId === "CMD_VIGILANCE") {
-            // 🛡️ 警戒: コスト 🧱-15 (次のターンから2ターンの間、獲得する全ての🛡️に+3ボーナス)
-            this.state.vigilanceTurns = 2;
-            this.state.vigilanceStartsNextTurn = true;
-            this.state.temporaryDefenseTurns = 2;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🛡️",
-                description: cDesc,
-                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 2 }) : "2T",
-                category: "CARD_EFFECT",
-                remainingTurns: 2,
-                startsNextTurn: true
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🛡️【${cName}】`);
-        } else if (cId === "CMD_GRAND_CULTIVATION") {
-            // 🌾 耕作計画: コスト 🧱-35 (次のターンから4ターンの間、平地の産出 🌾+1/T)
-            this.state.grandCultivationTurns = 4;
-            this.state.grandCultivationStartsNextTurn = true;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🌾",
-                description: cDesc,
-                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 4 }) : "4T",
-                category: "CARD_EFFECT",
-                remainingTurns: 4,
-                startsNextTurn: true
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🌾【${cName}】`);
-        } else if (cId === "CMD_EMERGENCY_LEVY") {
-            // 🧱 緊急徴発: コスト 🌾-20 (即座に 🧱+15 を獲得、次ターンペナルティ削除)
-            this.state.wood = (this.state.wood || 0) + 15;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🧱",
-                description: cDesc,
-                category: "CARD_EFFECT"
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🧱【${cName}】`);
-        } else if (cId === "CMD_MANIFEST_MIRACLE") {
-            // ✨ 顕現: コスト ✨-10 (次のターンから3ターンの間、不足資源補填レート 3→1)
-            this.state.manifestMiracleTurns = 3;
-            this.state.manifestMiracleStartsNextTurn = true;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "✨",
-                description: cDesc,
-                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 3 }) : "3T",
-                category: "CARD_EFFECT",
-                remainingTurns: 3,
-                startsNextTurn: true
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `✨【${cName}】`);
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `✨【${cName}】`);
-        } else if (cId === "CMD_FILL_THE_VOID") {
-            // ✨ 届かぬ資材を満たすもの: コスト 無料 (今ターンのみ不足資源補填可能)
-            this.state.fillTheVoidTurns = 1;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "✨",
-                description: cDesc,
-                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 1 }) : "1T",
-                category: "CARD_EFFECT",
-                remainingTurns: 1
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `✨【${cName}】`);
-        } else if (cId === "CMD_SCORCHED_RETREAT") {
-            // 🔥 焦土退却: コスト 🌾-20 (試練後3ターン土地産出 -1/T)
-            this.state.scorchedRetreatTurns = 3;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🔥",
-                description: cDesc,
-                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 3 }) : "3T",
-                category: "DEBUFF",
-                remainingTurns: 3
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🔥【${cName}】`);
-        } else if (cId === "CMD_RESETTLEMENT") {
+        } else       if (cId === "CMD_RESETTLEMENT") {
             // 👥 人口移住令: コスト 🌾-15 🧱-10 (平地2x2マージ指定 🔥+2 ＆ 🌾+2/T永続)
             this.state.ember = Math.min(30, (this.state.ember || 20) + 2);
             this.state.resettlementFoodBonus = (this.state.resettlementFoodBonus || 0) + 2;
@@ -1275,190 +945,7 @@ class DeckManager {
                 remainingTurns: 4
             });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🏯【${cName}】`);
-        } else if (cId === "CMD_OUTPOST") {
-            // 🗼 前哨塔: コスト 🧱-25 (試練侵攻情報を3T早く取得)
-            this.state.hasOutpost = true;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🗼",
-                description: cDesc,
-                category: "PERMANENT"
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🗼【${cName}】`);
-        } else if (cId === "CMD_GUIDED_DEFENSE") {
-            // 🚧 誘導防衛: コスト 🧱-20 (試練時敵移動コスト+1)
-            this.state.guidedDefenseActive = true;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🚧",
-                description: cDesc,
-                category: "TACTICAL"
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🚧【${cName}】`);
-        } else if (cId === "CMD_HIGH_GROUND_FORMATION") {
-            // ⛰️ 高地布陣: コスト 🧱-10 (試練時高地戦術補正強化)
-            this.state.highGroundFormationActive = true;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "⛰️",
-                description: cDesc,
-                category: "TACTICAL"
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `⛰️【${cName}】`);
-        } else if (cId === "CMD_CAVALRY_HOST") {
-            // 🐎 騎馬軍編成: コスト 🌾-30 🧱-20 (試練時平地機動補正)
-            this.state.cavalryHostActive = true;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🐎",
-                description: cDesc,
-                category: "TACTICAL"
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🐎【${cName}】`);
-        } else if (cId === "CMD_REVELATION_CHOICE") {
-            // ✨ 天啓の選択: コスト ✨-15 (次ターン指定カテゴリ枠確定)
-            this.state.revelationChoiceTurns = 1;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "✨",
-                description: cDesc,
-                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 1 }) : "1T",
-                category: "CARD_EFFECT",
-                remainingTurns: 1
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `✨【${cName}】`);
-        } else if (cId === "CMD_TWO_FUTURES") {
-            // 🔮 二つの未来: コスト ✨-20 (次ターン2組手札オファリング)
-            this.state.twoFuturesTurns = 1;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🔮",
-                description: cDesc,
-                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 1 }) : "1T",
-                category: "CARD_EFFECT",
-                remainingTurns: 1
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🔮【${cName}】`);
-        } else if (cId === "CMD_PASTORAL_EXPANSION") {
-            // 🐑 放牧地の拡大: コスト 🧱-10 (次回同属性接続ボーナス強化)
-            this.state.pastoralExpansionActive = true;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🐑",
-                description: cDesc,
-                category: "CARD_EFFECT"
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🐑【${cName}】`);
-        } else if (cId === "CMD_LIME_CONSTRUCTION") {
-            // 🧱 石灰焼成: コスト 🌾-10 (次回高コスト建築軽減)
-            this.state.limeConstructionActive = true;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🧱",
-                description: cDesc,
-                category: "CARD_EFFECT"
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🧱【${cName}】`);
-        } else if (cId === "CMD_CAVALRY_SCOUTS") {
-            // 🐎 騎馬斥候隊: コスト 🌾-10 (試練時平地迎撃/増援コスト軽減)
-            this.state.cavalryScoutsActive = true;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🐎",
-                description: cDesc,
-                category: "TACTICAL"
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🐎【${cName}】`);
-        } else if (cId === "CMD_LOCAL_IRON_ARMAMENT") {
-            // ⚔️ 在地鉄器武装: コスト 🧱-15 (赤鉄鉱丘陵の迎撃高地補正強化)
-            this.state.localIronArmamentActive = true;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "⚔️",
-                description: cDesc,
-                category: "TACTICAL"
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `⚔️【${cName}】`);
-        } else if (cId === "CMD_STONE_STRONGPOINT") {
-            // 🏰 石造陣地: コスト 🧱-20 (石材地形の初期地形減衰強化)
-            this.state.stoneStrongpointActive = true;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🏰",
-                description: cDesc,
-                category: "TACTICAL"
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🏰【${cName}】`);
-        } else if (cId === "CMD_LEYLINE_RESONANCE") {
-            // ✨ 地脈の共鳴: コスト ✨-8 (次回✨不足補填枠拡大)
-            this.state.leylineResonanceActive = true;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "✨",
-                description: cDesc,
-                category: "CARD_EFFECT"
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `✨【${cName}】`);
-        } else if (cId === "CMD_VOICE_BENEATH_EARTH") {
-            // 🔮 大地の囁き: コスト ✨-5 (次ターン発見資源連動オファリング)
-            this.state.voiceBeneathEarthTurns = 1;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "🔮",
-                description: cDesc,
-                badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 1 }) : "1T",
-                category: "CARD_EFFECT",
-                remainingTurns: 1
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🔮【${cName}】`);
-        } else if (cId === "CMD_SINGLE_CLEARING") {
-            // 🪓 伐採: コスト 🔥-1 (森1マス伐採・平地化、🧱+20, 🌾+3)
-            let cleared = false;
-            if (this.state.grid) {
-                for (let r = 0; r < this.state.grid.length && !cleared; r++) {
-                    for (let c = 0; c < this.state.grid[r].length && !cleared; c++) {
-                        const cell = this.state.grid[r][c];
-                        if (cell && cell.placed && !cell.isHQ && cell.terrain) {
-                            const tid = cell.terrain.terrainId || cell.terrain.id || "";
-                            if (tid.includes("FOREST") && !isTrueMergedCell(this.state, cell)) {
-                                cell.terrain = { id: "GL1_PLAINS", terrainId: "GL1_PLAINS", nameKey: "TERRAIN_PLAINS", gl: 1, e: 1, food: 4, wood: 0, defense: 0, mystic: 0, category: "BASE" };
-                                cleared = true;
-                            }
-                        }
-                    }
-                }
-            }
-            this.state.wood = (this.state.wood || 0) + 20;
-            this.state.food = (this.state.food || 0) + 3;
-            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🪓", description: cDesc, category: "CARD_EFFECT" });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🪓【${cName}】`);
-        } else if (cId === "CMD_WETLAND_RECLAMATION") {
+        } else           if (cId === "CMD_WETLAND_RECLAMATION") {
             // 🌾 干拓: コスト 🧱-15, 🔥-1 (湖以外の湿原1マスを干拓地へ永久転換)
             let reclaimed = false;
             let reclaimedCoord = null;
@@ -1503,41 +990,7 @@ class DeckManager {
             }
             this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🌾", description: cDesc, category: "CARD_EFFECT" });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🌾【${cName}】`);
-        } else if (cId === "CMD_SYSTEMATIC_LOGGING") {
-            // 🌲 計画伐採: コスト 🌾-10 (森林マス数×🧱+6、3T森産出🧱-1/T)
-            let forestCount = 0;
-            if (this.state.grid) {
-                for (let r = 0; r < this.state.grid.length; r++) {
-                    for (let c = 0; c < this.state.grid[r].length; c++) {
-                        const cell = this.state.grid[r][c];
-                        if (cell && cell.placed && cell.terrain) {
-                            const tid = cell.terrain.terrainId || cell.terrain.id || "";
-                            if (tid.includes("FOREST")) forestCount++;
-                        }
-                    }
-                }
-            }
-            this.state.wood = (this.state.wood || 0) + (forestCount * 6);
-            this.state.systematicLoggingTurns = 3;
-            this.state.systematicLoggingStartsNextTurn = true;
-            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🌲", description: cDesc, badgeText: I18n ? I18n.t("BUFF_REMAINING_TURNS", { count: 3 }) : "3T", category: "DEBUFF", remainingTurns: 3, startsNextTurn: true });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🌲【${cName}】`);
-        } else if (cId === "CMD_LOGGING_CAMP") {
-            // 🪵 伐採拠点: コスト 🔥-1 (即時 🧱+8、周囲森林から🧱産出)
-            this.state.wood = (this.state.wood || 0) + 8;
-            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🪵", description: cDesc, category: "CARD_EFFECT" });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🪵【${cName}】`);
-        } else if (cId === "CMD_GRANARY") {
-            // 🌾 穀物庫: コスト 🧱-20 (食料維持費 x0.90)
-            this.state.granaryCount = (this.state.granaryCount || 0) + 1;
-            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🏛️", description: cDesc, category: "CARD_EFFECT" });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🏛️【${cName}】`);
-        } else if (cId === "CMD_AGRICULTURAL_REFORM") {
-            // 🌾 農地改革: コスト 🧱-20 (指定地域 🌾+1/T)
-            this.state.permanentPlainsFoodBonus = (this.state.permanentPlainsFoodBonus || 0) + 1;
-            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "📜", description: cDesc, category: "CARD_EFFECT" });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `📜【${cName}】`);
-        } else if (cId === "CMD_PASTORAL_FARM") {
+        } else  if (cId === "CMD_PASTORAL_FARM") {
             // 🐄 牧畜場: コスト 🧱-15 (平地を牧畜場化、🌾産出追加)
             this.state.food = (this.state.food || 0) + 2;
             this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🐄", description: cDesc, category: "CARD_EFFECT" });
@@ -1656,49 +1109,7 @@ class DeckManager {
                     }
                 }
             };
-        } else if (cId === "CMD_MUD_OBSTACLE") {
-            // 🛡️ 泥濘陣地: コスト 🧱-15 (試練時湿原/湖敵制圧力-15%)
-            this.state.mudObstacleActive = true;
-            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🛡️", description: cDesc, category: "TACTICAL" });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🛡️【${cName}】`);
-        } else if (cId === "CMD_OUTPOST_SIGNAL") {
-            // 🗼 狼煙: コスト 🧱-15 (侵攻情報2T早く取得 & 迎撃戦術補正+15%)
-            this.state.outpostSignalActive = true;
-            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🗼", description: cDesc, category: "TACTICAL" });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🗼【${cName}】`);
-        } else if (cId === "CMD_SCOUT_ENEMY") {
-            // 🔍 敵情偵察: コスト 🌾-5 (試練敵情先行公開)
-            this.state.scoutEnemyActive = true;
-            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🔍", description: cDesc, category: "TACTICAL" });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🔍【${cName}】`);
-        } else if (cId === "CMD_OMEN_DREAM") {
-            // 🔮 予兆: コスト ✨-5 (試練先行情報公開)
-            this.state.omenDreamActive = true;
-            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🔮", description: cDesc, category: "CARD_EFFECT" });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🔮【${cName}】`);
-        } else if (cId === "CMD_LAND_EXPLORATION") {
-            const candidates = [];
-            if (this.state.grid) {
-                for (let r = 0; r < 5; r++) {
-                    for (let c = 0; c < 5; c++) {
-                        const cell = this.state.grid[r][c];
-                        if (cell && cell.placed && !cell.isHQ && !cell.searched && !cell.merged) {
-                            candidates.push({ r, c });
-                        }
-                    }
-                }
-            }
-
-            if (candidates.length === 0) {
-                return { success: false, reason: "NO_EXPLORABLE_TILES" };
-            }
-
-            const chosen = candidates[this._nextGameplayInt(0, candidates.length - 1)];
-            const posStr = `${String.fromCharCode(65+chosen.c)}${chosen.r+1}`;
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: `(${posStr}) 2D6` }) : `📜 ${cName}`);
-            const expRes = this.executeExploration(chosen.r, chosen.c);
-            return { success: expRes.success };
-        }
+        } else     
 
         if (cardObj.isUnique) {
             if (!this.state.usedUniqueCards) this.state.usedUniqueCards = [];

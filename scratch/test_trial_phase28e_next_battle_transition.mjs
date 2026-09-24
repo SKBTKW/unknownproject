@@ -293,6 +293,22 @@ test("A3: active battleなし（currentBattleIndex === null）での遷移拒否
     const controller = ui.trialController;
 
     assert.equal(controller.state.currentBattleIndex, null);
+    assert.equal(controller.state.battleQueue.length, 1);
+    assert.equal(
+        ui.getActiveTrialRoute()?.id,
+        controller.state.battleQueue[0].routeId,
+        "activated plan focuses the first pending battle route before battle start"
+    );
+    assert.equal(
+        ui.getTrialBoardSemanticData().activeRouteId,
+        controller.state.battleQueue[0].routeId,
+        "board semantic focus matches the first pending battle route"
+    );
+    assert.equal(
+        ui.selectTrialRoute(routes.at(-1).id),
+        false,
+        "route selection is locked after plan activation"
+    );
     const result = controller.transitionAfterCurrentBattle();
     assert.equal(result.success, false);
     assert.deepEqual(result.errors, [TRIAL_PLAN_REASONS.NO_ACTIVE_BATTLE]);
@@ -386,7 +402,7 @@ test("A7: 失敗時の状態不変性 (Atomicity)", () => {
 // =========================================================================
 
 test("B1: 複数バトル時、遷移後にhasNextBattle=true, nextBattleIndex=1, currentBattleIndex=nullとなる", () => {
-    const { controller } = createTraversedHarness("TERRAIN_COMPARE_BASIC", true);
+    const { ui, controller } = createTraversedHarness("TERRAIN_COMPARE_BASIC", true);
     assert.equal(controller.state.battleQueue.length, 2);
     assert.equal(controller.state.battleQueue[0].status, TRIAL_BATTLE_STATUSES.RESOLVED);
     assert.equal(controller.state.battleQueue[1].status, TRIAL_BATTLE_STATUSES.PENDING);
@@ -402,6 +418,21 @@ test("B1: 複数バトル時、遷移後にhasNextBattle=true, nextBattleIndex=1
     assert.equal(controller.state.battleQueue[0].status, TRIAL_BATTLE_STATUSES.RESOLVED);
     assert.equal(controller.state.battleQueue[0].sequenceAdvanced, true);
     assert.equal(controller.state.battleQueue[1].status, TRIAL_BATTLE_STATUSES.PENDING); // まだ ACTIVE にしない
+    assert.equal(
+        ui.getActiveTrialRoute()?.id,
+        controller.state.battleQueue[1].routeId,
+        "between battles, presentation focus advances to the next pending battle route"
+    );
+    assert.equal(
+        ui.getTrialBoardSemanticData().activeRouteId,
+        controller.state.battleQueue[1].routeId,
+        "between battles, board semantics focus the same next pending route"
+    );
+    assert.equal(
+        ui.selectTrialRoute(controller.state.battleQueue[0].routeId),
+        false,
+        "between battles, activated plans cannot switch route focus manually"
+    );
 
     // GameFact 発行検査
     const facts = controller.gameFactHub.getFacts().filter(f => f.type === GAME_FACT_TYPES.TRIAL_BATTLE_SEQUENCE_ADVANCED);

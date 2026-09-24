@@ -48,7 +48,10 @@ export function attachTrialRouteBoardSelection(uiController) {
             const isTrialPresentation = uiController.boardPresentationState?.contextMode === "TRIAL";
             const is2D = !uiController.boardPresentationState?.viewMode
                 || uiController.boardPresentationState?.viewMode === BOARD_VIEW_MODES.TWO_D;
-            const active = hasLiveTrial && isTrialPresentation && is2D;
+            const routeSelectionEnabled = typeof uiController.isTrialRouteSelectionEnabled === "function"
+                ? uiController.isTrialRouteSelectionEnabled()
+                : !Boolean(uiController.isTrialPlanActivated?.());
+            const active = hasLiveTrial && isTrialPresentation && is2D && routeSelectionEnabled;
             document.body?.classList.toggle("trial-route-selection-on-board", active);
             if (!active) return;
 

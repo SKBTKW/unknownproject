@@ -18,6 +18,32 @@ function freezeArray(items) {
     return Object.freeze(items);
 }
 
+export const TRIAL_BATTLE_PRESENTATION_STATUSES = Object.freeze({
+    PENDING: 'PENDING',
+    ACTIVE: 'ACTIVE',
+    RESOLVED: 'RESOLVED'
+});
+
+export function resolveTrialBattleMarkerState(marker) {
+    if (!marker) return null;
+
+    const candidateStatus = String(
+        marker.status || TRIAL_BATTLE_PRESENTATION_STATUSES.PENDING
+    ).toUpperCase();
+    const status = Object.values(TRIAL_BATTLE_PRESENTATION_STATUSES).includes(candidateStatus)
+        ? candidateStatus
+        : TRIAL_BATTLE_PRESENTATION_STATUSES.PENDING;
+    const isCurrent = Boolean(marker.isCurrent);
+
+    return Object.freeze({
+        status,
+        isCurrent,
+        isPending: status === TRIAL_BATTLE_PRESENTATION_STATUSES.PENDING,
+        isActive: status === TRIAL_BATTLE_PRESENTATION_STATUSES.ACTIVE,
+        isResolved: status === TRIAL_BATTLE_PRESENTATION_STATUSES.RESOLVED
+    });
+}
+
 function buildRouteCellVisualState(route, cells, index, singletonDirectionFallback = null) {
     const cell = cells[index];
     if (!cell) return null;
@@ -92,12 +118,14 @@ export function buildTrialRouteCellIndex(trialSemanticData) {
 export function createTrialBoardSemanticData({
     available = false,
     activeRouteId = null,
+    routeSelectionEnabled = null,
     selectedInterceptCell = null,
     hoveredInterceptCell = null,
     routes = [],
     interceptionCandidates = [],
     plannedIntercepts = [],
     battleMarkers = [],
+    tacticalEffects = [],
     enemyState = null
 } = {}) {
     const normalizedRoutes = routes.map(route => {
@@ -129,6 +157,9 @@ export function createTrialBoardSemanticData({
     return Object.freeze({
         available: Boolean(available),
         activeRouteId: activeRouteId ?? null,
+        routeSelectionEnabled: routeSelectionEnabled === null
+            ? Boolean(available)
+            : Boolean(routeSelectionEnabled),
         selectedInterceptCell: normalizeRouteCell(selectedInterceptCell),
         hoveredInterceptCell: normalizeRouteCell(hoveredInterceptCell),
         routes: freezeArray(normalizedRoutes),
@@ -140,6 +171,9 @@ export function createTrialBoardSemanticData({
         ),
         battleMarkers: freezeArray(
             battleMarkers.map(normalizeMarkedCell).filter(Boolean)
+        ),
+        tacticalEffects: freezeArray(
+            tacticalEffects.map(normalizeMarkedCell).filter(Boolean)
         ),
         enemyState: enemyState ? Object.freeze({ ...enemyState }) : null
     });

@@ -45,6 +45,14 @@ function getRoutePosition(route, r, c) {
     return index >= 0 ? { route, cells, index } : null;
 }
 
+function resolveInterceptBlockId({ cell = null, interceptCell = null, coords = null } = {}) {
+    const resolvedCoords = coords || toCellCoordinates(interceptCell);
+    const placementGroupId = cell?.placementGroupId ?? interceptCell?.placementGroupId ?? null;
+    if (placementGroupId != null) return `placement:${placementGroupId}`;
+    if (!resolvedCoords) return null;
+    return `cell:${resolvedCoords.r}:${resolvedCoords.c}`;
+}
+
 export class TrialPlanningDraftService {
     static getRouteDecision(drafts, routeId) {
         const map = ensureDraftMap(drafts);
@@ -189,10 +197,10 @@ export class TrialPlanningDraftService {
             }
         }
 
-        // Block identity: placementGroupId SSOT
-        const blockId = cell?.placementGroupId != null
-            ? `placement:${cell.placementGroupId}`
-            : (interceptCell?.placementGroupId != null ? `placement:${interceptCell.placementGroupId}` : `cell:${coords.r}:${coords.c}`);
+        // Block identity: placementGroupId SSOT.
+        // Always derive through the same helper used by validation so
+        // deserialized/legacy drafts cannot bypass same-block exclusion.
+        const blockId = resolveInterceptBlockId({ cell, interceptCell, coords });
 
         // Check if another route already uses this block
         for (const [otherRouteId, otherPlan] of map.entries()) {
@@ -273,9 +281,10 @@ export class TrialPlanningDraftService {
                     }
                 }
 
+                let resolvedCell = null;
                 if (coords && typeof cellResolver === "function") {
-                    const cell = cellResolver(coords.r, coords.c);
-                    if (!cell?.placed || cell.isHQ) {
+                    resolvedCell = cellResolver(coords.r, coords.c);
+                    if (!resolvedCell?.placed || resolvedCell.isHQ) {
                         errors.push(TRIAL_PLAN_REASONS.INTERCEPTION_NOT_ALLOWED);
                     }
                 }
@@ -293,11 +302,15 @@ export class TrialPlanningDraftService {
                     totalAllocated += plan.defenseAllocation;
                 }
 
-                if (plan.interceptBlockId) {
-                    if (seenBlocks.has(plan.interceptBlockId)) {
+                const validatedBlockId = resolvedCell
+                    ? resolveInterceptBlockId({ cell: resolvedCell, interceptCell: plan.interceptCell, coords })
+                    : (plan.interceptBlockId || resolveInterceptBlockId({ interceptCell: plan.interceptCell, coords }));
+
+                if (validatedBlockId) {
+                    if (seenBlocks.has(validatedBlockId)) {
                         errors.push(TRIAL_PLAN_REASONS.BLOCK_ALREADY_PLANNED);
                     } else {
-                        seenBlocks.add(plan.interceptBlockId);
+                        seenBlocks.add(validatedBlockId);
                     }
                 }
             } else if (plan.status === TRIAL_ROUTE_PLAN_STATUSES.SKIP) {

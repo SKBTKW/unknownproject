@@ -88,7 +88,8 @@ export class DevelopmentTrialPreviewHarness {
         };
         this.ui.startTrialSession(scenario, {
             deployedDefense: scenarioDefinition.deployedDefense,
-            routeId: routes[0]?.id || scenarioDefinition.routeId
+            routeId: routes[0]?.id || scenarioDefinition.routeId,
+            useCanonicalDefenseReservation: false
         });
         return { success: true, scenarioId: scenarioDefinition.id };
     }

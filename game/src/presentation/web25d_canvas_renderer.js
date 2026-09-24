@@ -10,6 +10,7 @@ const GREENERY_DENSITY = Object.freeze([0, 2, 5, 8]);
 export const WEB25D_TERRAIN_VISUAL_FAMILIES = Object.freeze({
     WETLAND: 'WETLAND',
     PLAINS: 'PLAINS',
+    RECLAIMED_LAND: 'RECLAIMED_LAND',
     FOREST: 'FOREST',
     DEEP_FOREST: 'DEEP_FOREST',
     HILL: 'HILL',
@@ -24,6 +25,7 @@ export const WEB25D_TERRAIN_VISUAL_FAMILIES = Object.freeze({
 export function resolveWeb25DTerrainVisualFamily(terrainId) {
     const id = String(terrainId || '').toUpperCase();
     if (id.includes('WETLAND')) return WEB25D_TERRAIN_VISUAL_FAMILIES.WETLAND;
+    if (id.includes('RECLAIMED_LAND')) return WEB25D_TERRAIN_VISUAL_FAMILIES.RECLAIMED_LAND;
     if (id.includes('DEEP_HILL')) return WEB25D_TERRAIN_VISUAL_FAMILIES.DEEP_HILL;
     if (id.includes('FOREST_HILL')) return WEB25D_TERRAIN_VISUAL_FAMILIES.FOREST_HILL;
     if (id.includes('DESERT_HILL')) return WEB25D_TERRAIN_VISUAL_FAMILIES.DESERT_HILL;
@@ -42,6 +44,8 @@ export function resolveWeb25DTerrainTopFill(cell = {}) {
             return 'rgba(62, 91, 84, 0.88)';
         case WEB25D_TERRAIN_VISUAL_FAMILIES.PLAINS:
             return 'rgba(109, 124, 82, 0.86)';
+        case WEB25D_TERRAIN_VISUAL_FAMILIES.RECLAIMED_LAND:
+            return 'rgba(126, 116, 78, 0.90)';
         case WEB25D_TERRAIN_VISUAL_FAMILIES.FOREST:
             return 'rgba(72, 101, 69, 0.88)';
         case WEB25D_TERRAIN_VISUAL_FAMILIES.DEEP_FOREST:
@@ -350,6 +354,8 @@ export class Web25DCanvasRenderer {
 
         this.drawTerrainSurfaceDetail(cell, projected.screenCenter, lift);
         this.drawGreenery(cell, projected.screenCenter, lift);
+        this.drawBattleSiteHistory(cell, projected.screenCenter, lift);
+        this.drawBoardDamageHistory(cell, projected.screenCenter, lift);
 
         if (this.showElevationLabels && Number.isInteger(cell.elevation)) {
             ctx.font = '9px sans-serif';
@@ -378,6 +384,20 @@ export class Web25DCanvasRenderer {
             ctx.lineTo(x + 12, y - 2);
             ctx.strokeStyle = 'rgba(128, 168, 155, 0.58)';
             ctx.lineWidth = 1;
+            ctx.stroke();
+            return;
+        }
+
+        if (family === WEB25D_TERRAIN_VISUAL_FAMILIES.RECLAIMED_LAND) {
+            ctx.beginPath();
+            ctx.moveTo(x - 15, y - 5);
+            ctx.lineTo(x + 8, y + 3);
+            ctx.moveTo(x - 9, y - 7);
+            ctx.lineTo(x + 14, y + 1);
+            ctx.moveTo(x - 14, y + 1);
+            ctx.lineTo(x + 4, y + 7);
+            ctx.strokeStyle = 'rgba(205, 187, 126, 0.48)';
+            ctx.lineWidth = 0.9;
             ctx.stroke();
             return;
         }
@@ -425,6 +445,62 @@ export class Web25DCanvasRenderer {
             ctx.lineWidth = 0.9;
             ctx.stroke();
         }
+    }
+
+    drawBoardDamageHistory(cell, center, lift) {
+        const damage = cell?.history?.damage || null;
+        if (!damage?.any) return;
+
+        const ctx = this.ctx;
+        const x = center.x + 14;
+        const y = center.y - lift + 8;
+
+        if (damage.land) {
+            ctx.beginPath();
+            ctx.moveTo(x - 6, y - 4);
+            ctx.lineTo(x - 2, y);
+            ctx.lineTo(x - 5, y + 4);
+            ctx.moveTo(x - 1, y - 5);
+            ctx.lineTo(x + 2, y - 1);
+            ctx.lineTo(x, y + 4);
+            ctx.strokeStyle = 'rgba(226, 154, 116, 0.90)';
+            ctx.lineWidth = 1.4;
+            ctx.stroke();
+        }
+
+        if (damage.specialBlock) {
+            ctx.beginPath();
+            ctx.moveTo(x + 5, y - 5);
+            ctx.lineTo(x + 5, y + 2);
+            ctx.moveTo(x + 5, y + 5);
+            ctx.lineTo(x + 5, y + 5.5);
+            ctx.strokeStyle = 'rgba(244, 201, 112, 0.94)';
+            ctx.lineWidth = 1.8;
+            ctx.stroke();
+        }
+    }
+
+    drawBattleSiteHistory(cell, center, lift) {
+        if (!cell?.history?.battleSite) return;
+        const ctx = this.ctx;
+        const x = center.x - 13;
+        const y = center.y - lift + 8;
+
+        ctx.beginPath();
+        ctx.moveTo(x - 4, y - 4);
+        ctx.lineTo(x + 4, y + 4);
+        ctx.moveTo(x + 4, y - 4);
+        ctx.lineTo(x - 4, y + 4);
+        ctx.strokeStyle = 'rgba(226, 208, 179, 0.82)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(x - 5, y + 6);
+        ctx.lineTo(x + 5, y + 6);
+        ctx.strokeStyle = 'rgba(88, 72, 58, 0.88)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
     }
 
     drawGreenery(cell, center, lift) {

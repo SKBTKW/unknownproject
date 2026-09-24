@@ -1,0 +1,522 @@
+{
+  "schemaVersion": 1,
+  "target": "AoT260922",
+  "entries": [
+    {
+      "branch": "aot-task/AoT260922/board/special-block-defense-v1",
+      "expectedHeadSha": "fdd9936442e603f243f0e1121dc65d77dc0a20e3",
+      "replacementPr": 135,
+      "note": "PR #123 explicitly states it was superseded by clean PR #135."
+    },
+    {
+      "branch": "aot-task/AoT260922/board/special-block-production-v1",
+      "expectedHeadSha": "5f50e616a45c11fe16390599fab14e176cfa9831",
+      "replacementPr": 147,
+      "note": "PR #131 is explicitly superseded; final production replacement merged as PR #147."
+    },
+    {
+      "branch": "aot-task/AoT260922/board/special-block-production-v1-r2",
+      "expectedHeadSha": "9fdbe05716ec5ca1900517c9d3ef2875cc76f242",
+      "replacementPr": 147,
+      "note": "PR #136 is explicitly marked superseded by PR #147."
+    },
+    {
+      "branch": "aot-task/AoT260922/board/zone-conversion-foundation-v1",
+      "expectedHeadSha": "c9410fb412219f16d2d92050feeeda3405c52fea",
+      "replacementPr": 159,
+      "note": "PR #149 is explicitly superseded; the clean foundation ultimately merged as PR #159."
+    },
+    {
+      "branch": "aot-task/AoT260922/cards/card-core-offering-v1-followup",
+      "expectedHeadSha": "6b4ef4c9bd0607fb147904bda7ba4712428c6ab0",
+      "replacementPr": 132,
+      "note": "PR #120 body explicitly says the work was replayed into PR #132."
+    },
+    {
+      "branch": "aot-task/AoT260922/cards/domain-actions-v2",
+      "expectedHeadSha": "77cd339fbbfb59a60f56ffdb961c4af0b023f0d7",
+      "replacementPr": 181,
+      "note": "PR #154 is explicitly marked superseded by clean replay PR #181."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/socket-terrain-id-canonicalization-r2",
+      "expectedHeadSha": "9d05658b17e351c4fd4c74a6acf18de35a0879c8",
+      "replacementPr": 91,
+      "note": "PR #89 explicitly says it was superseded by a fresh TASK; replacement scope merged as PR #91."
+    },
+    {
+      "branch": "aot-task/AoT260922/presentation/web25d-multi-attribute-preview",
+      "expectedHeadSha": "7b64d2e160d10bac0637a0df106d4a6f76ba2eb9",
+      "replacementPr": 96,
+      "note": "PR #94 explicitly says it was superseded by a fresh TASK; replacement merged as PR #96."
+    },
+    {
+      "branch": "aot-task/AoT260922/cards/card-core-offering-v1",
+      "expectedHeadSha": "5f5eb9e45c13c7db8daaa11742e42233cd7a9bd5",
+      "replacementPr": 132,
+      "note": "The current branch head is PR #115 plus the first declarative migration commits. PR #132 explicitly supersedes the follow-up replay and contains the declarative effect migration/equivalence scope."
+    },
+    {
+      "branch": "aot-task/AoT260922/cards/card-core-offering-v1-followup-r2",
+      "expectedHeadSha": "39d6d3f164c834a79a68c2a8a275880df499cc89",
+      "replacementPr": 168,
+      "note": "The two unique commits add explicit domain migration blocker metadata/tests; PR #168 contains the blocker model and expanded regression coverage on the current base."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/multi-attribute-block-r17",
+      "expectedHeadSha": "6eeb26da0052a653a77477ba614ac28105c5835a",
+      "replacementPr": 166,
+      "note": "PR #155 states it rebuilt the original r17 after divergence; merged PR #166 then explicitly reconciled and superseded the stale r19 work while preserving the foundation scope."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/multi-attribute-block-r19",
+      "expectedHeadSha": "01e9af92aab39ad9883133ed3b0322fd66250ab8",
+      "replacementPr": 166,
+      "note": "PR #166 explicitly says it audited prior r19/r20 source semantics and intended to supersede stale PR #155 (r19)."
+    },
+    {
+      "branch": "aot-task/AoT260922/board/zone-conversion-foundation-v1-r2",
+      "expectedHeadSha": "e012af95fd315a945e09f5a22e24c360fcae1552",
+      "replacementPrs": [
+        159,
+        171
+      ],
+      "note": "The current r2 head contains both the Zone Conversion foundation and an early Verse-maintenance integration. The clean foundation merged as PR #159, while the maintenance lifecycle was later corrected and merged as PR #171."
+    },
+    {
+      "branch": "aot-task/AoT260922/board/zone-conversion-foundation-v1-r3",
+      "expectedHeadSha": "53866c1eb9b90eaa85bc5b053a15b2e63d915237",
+      "replacementPr": 159,
+      "note": "r3 is a current-base port of the Zone Conversion foundation; PR #159 is the clean rebuilt foundation merged into AoT260922."
+    },
+    {
+      "branch": "aot-task/AoT260922/board/zone-conversion-foundation-v1-r5",
+      "expectedHeadSha": "9d77f4d36caefa286bf391badf80dae005fdf5f4",
+      "replacementPr": 159,
+      "note": "r5 contains only the three foundation port commits; PR #159 is the clean rebuilt foundation merged into AoT260922."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/socket-terrain-id-canonicalization",
+      "expectedHeadSha": "4796a66cfc2e39b79d37fd8098112f16afd01c4a",
+      "replacementPr": 91,
+      "note": "The original branch is one canonical Socket terrain-id commit plus its focused test; PR #91 rebased the same scope onto the current AoT base and merged it."
+    },
+    {
+      "branch": "aot-task/AoT260922/presentation/defense-allocation-board-overlay",
+      "expectedHeadSha": "5344fe9b5094d77aaaa21bd53d0f7022cd9b98c6",
+      "replacementPr": 108,
+      "note": "The branch commit chain implements disclosure gating, 2.5D/2D defense-allocation chips, style hierarchy, and profile tests; PR #108 merged that same complete scope from the r2 replay."
+    },
+    {
+      "branch": "aot-task/AoT260922/presentation/web25d-hq-beacon-priority",
+      "expectedHeadSha": "a3ff54ddbb43f84a340cfeb6aa45129a28e8b214",
+      "replacementPr": 97,
+      "note": "The branch isolates and redraws only the HQ ember beacon above Zone/Link with focused validation; PR #97 merged the same visual-priority contract from the r2 replay."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/multi-attribute-block",
+      "expectedHeadSha": "59d87ace0481ed8209fc3eca85ed6182cc3740ee",
+      "replacementPrs": [
+        96,
+        160,
+        166,
+        169,
+        172,
+        173,
+        175,
+        179
+      ],
+      "note": "Audited against the consolidated Multi-Attribute replacement chain: PR #96 (2.5D per-cell preview), #160 (live unresolved-production safety + 2D preview), #166 (canonical foundation reconciliation), #169 (final CELL/CANONICAL_TERRAIN production), #172 (Zone Conversion boundary), #173/#179 (live Offering paths), and #175 (canonical production flow). The current canonical contract in rules/03_land_system/06_multi_attribute_blocks.md preserves the staged semantics from this branch family, including per-cell terrain SSOT, exact attribute-map validation, rotation, block identity/counting, save/undo/restore, Trial cell terrain, partial-Zone presentation, legal-placement Offering gates, production ownership, and irrigation/cell-modifier boundaries."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/multi-attribute-block-20260923a",
+      "expectedHeadSha": "ebb00b97017da6aa3a4e453e1250a10b543e11fd",
+      "replacementPrs": [
+        96,
+        160,
+        166,
+        169,
+        172,
+        173,
+        175,
+        179
+      ],
+      "note": "Audited against the consolidated Multi-Attribute replacement chain: PR #96 (2.5D per-cell preview), #160 (live unresolved-production safety + 2D preview), #166 (canonical foundation reconciliation), #169 (final CELL/CANONICAL_TERRAIN production), #172 (Zone Conversion boundary), #173/#179 (live Offering paths), and #175 (canonical production flow). The current canonical contract in rules/03_land_system/06_multi_attribute_blocks.md preserves the staged semantics from this branch family, including per-cell terrain SSOT, exact attribute-map validation, rotation, block identity/counting, save/undo/restore, Trial cell terrain, partial-Zone presentation, legal-placement Offering gates, production ownership, and irrigation/cell-modifier boundaries."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/multi-attribute-block-20260923b",
+      "expectedHeadSha": "237e31667cb725537eaec4f36e566b86e289d185",
+      "replacementPrs": [
+        96,
+        160,
+        166,
+        169,
+        172,
+        173,
+        175,
+        179
+      ],
+      "note": "Audited against the consolidated Multi-Attribute replacement chain: PR #96 (2.5D per-cell preview), #160 (live unresolved-production safety + 2D preview), #166 (canonical foundation reconciliation), #169 (final CELL/CANONICAL_TERRAIN production), #172 (Zone Conversion boundary), #173/#179 (live Offering paths), and #175 (canonical production flow). The current canonical contract in rules/03_land_system/06_multi_attribute_blocks.md preserves the staged semantics from this branch family, including per-cell terrain SSOT, exact attribute-map validation, rotation, block identity/counting, save/undo/restore, Trial cell terrain, partial-Zone presentation, legal-placement Offering gates, production ownership, and irrigation/cell-modifier boundaries."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/multi-attribute-block-r2",
+      "expectedHeadSha": "f85268cc2236b743855459bfc7f7b336416b0053",
+      "replacementPrs": [
+        96,
+        160,
+        166,
+        169,
+        172,
+        173,
+        175,
+        179
+      ],
+      "note": "Audited against the consolidated Multi-Attribute replacement chain: PR #96 (2.5D per-cell preview), #160 (live unresolved-production safety + 2D preview), #166 (canonical foundation reconciliation), #169 (final CELL/CANONICAL_TERRAIN production), #172 (Zone Conversion boundary), #173/#179 (live Offering paths), and #175 (canonical production flow). The current canonical contract in rules/03_land_system/06_multi_attribute_blocks.md preserves the staged semantics from this branch family, including per-cell terrain SSOT, exact attribute-map validation, rotation, block identity/counting, save/undo/restore, Trial cell terrain, partial-Zone presentation, legal-placement Offering gates, production ownership, and irrigation/cell-modifier boundaries."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/multi-attribute-block-r3",
+      "expectedHeadSha": "3589baa7fd176b5c95b45f0c15cef8baf607c708",
+      "replacementPrs": [
+        96,
+        160,
+        166,
+        169,
+        172,
+        173,
+        175,
+        179
+      ],
+      "note": "Audited against the consolidated Multi-Attribute replacement chain: PR #96 (2.5D per-cell preview), #160 (live unresolved-production safety + 2D preview), #166 (canonical foundation reconciliation), #169 (final CELL/CANONICAL_TERRAIN production), #172 (Zone Conversion boundary), #173/#179 (live Offering paths), and #175 (canonical production flow). The current canonical contract in rules/03_land_system/06_multi_attribute_blocks.md preserves the staged semantics from this branch family, including per-cell terrain SSOT, exact attribute-map validation, rotation, block identity/counting, save/undo/restore, Trial cell terrain, partial-Zone presentation, legal-placement Offering gates, production ownership, and irrigation/cell-modifier boundaries."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/multi-attribute-block-r4",
+      "expectedHeadSha": "c786d463809f4c5002fca6bc11c0b0472757ecfd",
+      "replacementPrs": [
+        96,
+        160,
+        166,
+        169,
+        172,
+        173,
+        175,
+        179
+      ],
+      "note": "Audited against the consolidated Multi-Attribute replacement chain: PR #96 (2.5D per-cell preview), #160 (live unresolved-production safety + 2D preview), #166 (canonical foundation reconciliation), #169 (final CELL/CANONICAL_TERRAIN production), #172 (Zone Conversion boundary), #173/#179 (live Offering paths), and #175 (canonical production flow). The current canonical contract in rules/03_land_system/06_multi_attribute_blocks.md preserves the staged semantics from this branch family, including per-cell terrain SSOT, exact attribute-map validation, rotation, block identity/counting, save/undo/restore, Trial cell terrain, partial-Zone presentation, legal-placement Offering gates, production ownership, and irrigation/cell-modifier boundaries."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/multi-attribute-block-r5",
+      "expectedHeadSha": "ade4863a8425b0327651350e8ae236fa364edc58",
+      "replacementPrs": [
+        96,
+        160,
+        166,
+        169,
+        172,
+        173,
+        175,
+        179
+      ],
+      "note": "Audited against the consolidated Multi-Attribute replacement chain: PR #96 (2.5D per-cell preview), #160 (live unresolved-production safety + 2D preview), #166 (canonical foundation reconciliation), #169 (final CELL/CANONICAL_TERRAIN production), #172 (Zone Conversion boundary), #173/#179 (live Offering paths), and #175 (canonical production flow). The current canonical contract in rules/03_land_system/06_multi_attribute_blocks.md preserves the staged semantics from this branch family, including per-cell terrain SSOT, exact attribute-map validation, rotation, block identity/counting, save/undo/restore, Trial cell terrain, partial-Zone presentation, legal-placement Offering gates, production ownership, and irrigation/cell-modifier boundaries."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/multi-attribute-block-r6",
+      "expectedHeadSha": "d703c1d630e61a15b867f47cf27a8e210d399484",
+      "replacementPrs": [
+        96,
+        160,
+        166,
+        169,
+        172,
+        173,
+        175,
+        179
+      ],
+      "note": "Audited against the consolidated Multi-Attribute replacement chain: PR #96 (2.5D per-cell preview), #160 (live unresolved-production safety + 2D preview), #166 (canonical foundation reconciliation), #169 (final CELL/CANONICAL_TERRAIN production), #172 (Zone Conversion boundary), #173/#179 (live Offering paths), and #175 (canonical production flow). The current canonical contract in rules/03_land_system/06_multi_attribute_blocks.md preserves the staged semantics from this branch family, including per-cell terrain SSOT, exact attribute-map validation, rotation, block identity/counting, save/undo/restore, Trial cell terrain, partial-Zone presentation, legal-placement Offering gates, production ownership, and irrigation/cell-modifier boundaries."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/multi-attribute-block-r7",
+      "expectedHeadSha": "f79bb07fd52ea2a372bcedefe00043ba3f2e42f3",
+      "replacementPrs": [
+        96,
+        160,
+        166,
+        169,
+        172,
+        173,
+        175,
+        179
+      ],
+      "note": "Audited against the consolidated Multi-Attribute replacement chain: PR #96 (2.5D per-cell preview), #160 (live unresolved-production safety + 2D preview), #166 (canonical foundation reconciliation), #169 (final CELL/CANONICAL_TERRAIN production), #172 (Zone Conversion boundary), #173/#179 (live Offering paths), and #175 (canonical production flow). The current canonical contract in rules/03_land_system/06_multi_attribute_blocks.md preserves the staged semantics from this branch family, including per-cell terrain SSOT, exact attribute-map validation, rotation, block identity/counting, save/undo/restore, Trial cell terrain, partial-Zone presentation, legal-placement Offering gates, production ownership, and irrigation/cell-modifier boundaries."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/multi-attribute-block-r8",
+      "expectedHeadSha": "2fed62192298bdf2e42e29c5466f19744b4a2a0e",
+      "replacementPrs": [
+        96,
+        160,
+        166,
+        169,
+        172,
+        173,
+        175,
+        179
+      ],
+      "note": "Audited against the consolidated Multi-Attribute replacement chain: PR #96 (2.5D per-cell preview), #160 (live unresolved-production safety + 2D preview), #166 (canonical foundation reconciliation), #169 (final CELL/CANONICAL_TERRAIN production), #172 (Zone Conversion boundary), #173/#179 (live Offering paths), and #175 (canonical production flow). The current canonical contract in rules/03_land_system/06_multi_attribute_blocks.md preserves the staged semantics from this branch family, including per-cell terrain SSOT, exact attribute-map validation, rotation, block identity/counting, save/undo/restore, Trial cell terrain, partial-Zone presentation, legal-placement Offering gates, production ownership, and irrigation/cell-modifier boundaries."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/multi-attribute-block-r9",
+      "expectedHeadSha": "de78ecc65c300e3b56bf730dab7aad1390949ff5",
+      "replacementPrs": [
+        96,
+        160,
+        166,
+        169,
+        172,
+        173,
+        175,
+        179
+      ],
+      "note": "Audited against the consolidated Multi-Attribute replacement chain: PR #96 (2.5D per-cell preview), #160 (live unresolved-production safety + 2D preview), #166 (canonical foundation reconciliation), #169 (final CELL/CANONICAL_TERRAIN production), #172 (Zone Conversion boundary), #173/#179 (live Offering paths), and #175 (canonical production flow). The current canonical contract in rules/03_land_system/06_multi_attribute_blocks.md preserves the staged semantics from this branch family, including per-cell terrain SSOT, exact attribute-map validation, rotation, block identity/counting, save/undo/restore, Trial cell terrain, partial-Zone presentation, legal-placement Offering gates, production ownership, and irrigation/cell-modifier boundaries."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/multi-attribute-block-r10",
+      "expectedHeadSha": "ab96d85ac445a3523f51cb49d01090968d615336",
+      "replacementPrs": [
+        96,
+        160,
+        166,
+        169,
+        172,
+        173,
+        175,
+        179
+      ],
+      "note": "Audited against the consolidated Multi-Attribute replacement chain: PR #96 (2.5D per-cell preview), #160 (live unresolved-production safety + 2D preview), #166 (canonical foundation reconciliation), #169 (final CELL/CANONICAL_TERRAIN production), #172 (Zone Conversion boundary), #173/#179 (live Offering paths), and #175 (canonical production flow). The current canonical contract in rules/03_land_system/06_multi_attribute_blocks.md preserves the staged semantics from this branch family, including per-cell terrain SSOT, exact attribute-map validation, rotation, block identity/counting, save/undo/restore, Trial cell terrain, partial-Zone presentation, legal-placement Offering gates, production ownership, and irrigation/cell-modifier boundaries."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/multi-attribute-block-r11",
+      "expectedHeadSha": "a74cfaa92485d47a3983f3d5430949c3fd35c3ac",
+      "replacementPrs": [
+        96,
+        160,
+        166,
+        169,
+        172,
+        173,
+        175,
+        179
+      ],
+      "note": "Audited against the consolidated Multi-Attribute replacement chain: PR #96 (2.5D per-cell preview), #160 (live unresolved-production safety + 2D preview), #166 (canonical foundation reconciliation), #169 (final CELL/CANONICAL_TERRAIN production), #172 (Zone Conversion boundary), #173/#179 (live Offering paths), and #175 (canonical production flow). The current canonical contract in rules/03_land_system/06_multi_attribute_blocks.md preserves the staged semantics from this branch family, including per-cell terrain SSOT, exact attribute-map validation, rotation, block identity/counting, save/undo/restore, Trial cell terrain, partial-Zone presentation, legal-placement Offering gates, production ownership, and irrigation/cell-modifier boundaries."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/multi-attribute-block-r12",
+      "expectedHeadSha": "0149de361f78afab0b6374697eff86a77e08a6ef",
+      "replacementPrs": [
+        96,
+        160,
+        166,
+        169,
+        172,
+        173,
+        175,
+        179
+      ],
+      "note": "Audited against the consolidated Multi-Attribute replacement chain: PR #96 (2.5D per-cell preview), #160 (live unresolved-production safety + 2D preview), #166 (canonical foundation reconciliation), #169 (final CELL/CANONICAL_TERRAIN production), #172 (Zone Conversion boundary), #173/#179 (live Offering paths), and #175 (canonical production flow). The current canonical contract in rules/03_land_system/06_multi_attribute_blocks.md preserves the staged semantics from this branch family, including per-cell terrain SSOT, exact attribute-map validation, rotation, block identity/counting, save/undo/restore, Trial cell terrain, partial-Zone presentation, legal-placement Offering gates, production ownership, and irrigation/cell-modifier boundaries."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/multi-attribute-block-r13",
+      "expectedHeadSha": "bb61037f8790010bcfba4bd3f7e74ff62a673259",
+      "replacementPrs": [
+        96,
+        160,
+        166,
+        169,
+        172,
+        173,
+        175,
+        179
+      ],
+      "note": "Audited against the consolidated Multi-Attribute replacement chain: PR #96 (2.5D per-cell preview), #160 (live unresolved-production safety + 2D preview), #166 (canonical foundation reconciliation), #169 (final CELL/CANONICAL_TERRAIN production), #172 (Zone Conversion boundary), #173/#179 (live Offering paths), and #175 (canonical production flow). The current canonical contract in rules/03_land_system/06_multi_attribute_blocks.md preserves the staged semantics from this branch family, including per-cell terrain SSOT, exact attribute-map validation, rotation, block identity/counting, save/undo/restore, Trial cell terrain, partial-Zone presentation, legal-placement Offering gates, production ownership, and irrigation/cell-modifier boundaries."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/multi-attribute-block-r14",
+      "expectedHeadSha": "0a24f09c3d160fcdce4852551a8d743069ae68a1",
+      "replacementPrs": [
+        96,
+        160,
+        166,
+        169,
+        172,
+        173,
+        175,
+        179
+      ],
+      "note": "Audited against the consolidated Multi-Attribute replacement chain: PR #96 (2.5D per-cell preview), #160 (live unresolved-production safety + 2D preview), #166 (canonical foundation reconciliation), #169 (final CELL/CANONICAL_TERRAIN production), #172 (Zone Conversion boundary), #173/#179 (live Offering paths), and #175 (canonical production flow). The current canonical contract in rules/03_land_system/06_multi_attribute_blocks.md preserves the staged semantics from this branch family, including per-cell terrain SSOT, exact attribute-map validation, rotation, block identity/counting, save/undo/restore, Trial cell terrain, partial-Zone presentation, legal-placement Offering gates, production ownership, and irrigation/cell-modifier boundaries."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/multi-attribute-block-r15",
+      "expectedHeadSha": "1d353dbdaf9d52ae7800e9f3da04d4d2138b558a",
+      "replacementPrs": [
+        96,
+        160,
+        166,
+        169,
+        172,
+        173,
+        175,
+        179
+      ],
+      "note": "Audited against the consolidated Multi-Attribute replacement chain: PR #96 (2.5D per-cell preview), #160 (live unresolved-production safety + 2D preview), #166 (canonical foundation reconciliation), #169 (final CELL/CANONICAL_TERRAIN production), #172 (Zone Conversion boundary), #173/#179 (live Offering paths), and #175 (canonical production flow). The current canonical contract in rules/03_land_system/06_multi_attribute_blocks.md preserves the staged semantics from this branch family, including per-cell terrain SSOT, exact attribute-map validation, rotation, block identity/counting, save/undo/restore, Trial cell terrain, partial-Zone presentation, legal-placement Offering gates, production ownership, and irrigation/cell-modifier boundaries."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/multi-attribute-block-r16",
+      "expectedHeadSha": "c5f573a2039ce759059a5fc5b35795e0fd6525e4",
+      "replacementPrs": [
+        96,
+        160,
+        166,
+        169,
+        172,
+        173,
+        175,
+        179
+      ],
+      "note": "Audited against the consolidated Multi-Attribute replacement chain: PR #96 (2.5D per-cell preview), #160 (live unresolved-production safety + 2D preview), #166 (canonical foundation reconciliation), #169 (final CELL/CANONICAL_TERRAIN production), #172 (Zone Conversion boundary), #173/#179 (live Offering paths), and #175 (canonical production flow). The current canonical contract in rules/03_land_system/06_multi_attribute_blocks.md preserves the staged semantics from this branch family, including per-cell terrain SSOT, exact attribute-map validation, rotation, block identity/counting, save/undo/restore, Trial cell terrain, partial-Zone presentation, legal-placement Offering gates, production ownership, and irrigation/cell-modifier boundaries."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/multi-attribute-block-r18",
+      "expectedHeadSha": "f20b53fc6aaba55b1ac3d1a4620eee7efc26692c",
+      "replacementPrs": [
+        96,
+        160,
+        166,
+        169,
+        172,
+        173,
+        175,
+        179
+      ],
+      "note": "Audited against the consolidated Multi-Attribute replacement chain: PR #96 (2.5D per-cell preview), #160 (live unresolved-production safety + 2D preview), #166 (canonical foundation reconciliation), #169 (final CELL/CANONICAL_TERRAIN production), #172 (Zone Conversion boundary), #173/#179 (live Offering paths), and #175 (canonical production flow). The current canonical contract in rules/03_land_system/06_multi_attribute_blocks.md preserves the staged semantics from this branch family, including per-cell terrain SSOT, exact attribute-map validation, rotation, block identity/counting, save/undo/restore, Trial cell terrain, partial-Zone presentation, legal-placement Offering gates, production ownership, and irrigation/cell-modifier boundaries."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/multi-attribute-block-r20",
+      "expectedHeadSha": "5982e1edcf30648dc579e16157f41beec3178631",
+      "replacementPrs": [
+        96,
+        160,
+        166,
+        169,
+        172,
+        173,
+        175,
+        179
+      ],
+      "note": "Audited against the consolidated Multi-Attribute replacement chain: PR #96 (2.5D per-cell preview), #160 (live unresolved-production safety + 2D preview), #166 (canonical foundation reconciliation), #169 (final CELL/CANONICAL_TERRAIN production), #172 (Zone Conversion boundary), #173/#179 (live Offering paths), and #175 (canonical production flow). The current canonical contract in rules/03_land_system/06_multi_attribute_blocks.md preserves the staged semantics from this branch family, including per-cell terrain SSOT, exact attribute-map validation, rotation, block identity/counting, save/undo/restore, Trial cell terrain, partial-Zone presentation, legal-placement Offering gates, production ownership, and irrigation/cell-modifier boundaries."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/multi-attribute-block-r21",
+      "expectedHeadSha": "f6047373e882e27dc77442a44db6de3bab608a3d",
+      "replacementPrs": [
+        96,
+        160,
+        166,
+        169,
+        172,
+        173,
+        175,
+        179
+      ],
+      "note": "Audited against the consolidated Multi-Attribute replacement chain: PR #96 (2.5D per-cell preview), #160 (live unresolved-production safety + 2D preview), #166 (canonical foundation reconciliation), #169 (final CELL/CANONICAL_TERRAIN production), #172 (Zone Conversion boundary), #173/#179 (live Offering paths), and #175 (canonical production flow). The current canonical contract in rules/03_land_system/06_multi_attribute_blocks.md preserves the staged semantics from this branch family, including per-cell terrain SSOT, exact attribute-map validation, rotation, block identity/counting, save/undo/restore, Trial cell terrain, partial-Zone presentation, legal-placement Offering gates, production ownership, and irrigation/cell-modifier boundaries."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/multi-attribute-hardening-v2",
+      "expectedHeadSha": "58aa026fac8fde195b0f927c57b5e6213d274984",
+      "replacementPrs": [
+        96,
+        160,
+        166,
+        169,
+        172,
+        173,
+        175,
+        179
+      ],
+      "note": "Audited against the consolidated Multi-Attribute replacement chain: PR #96 (2.5D per-cell preview), #160 (live unresolved-production safety + 2D preview), #166 (canonical foundation reconciliation), #169 (final CELL/CANONICAL_TERRAIN production), #172 (Zone Conversion boundary), #173/#179 (live Offering paths), and #175 (canonical production flow). The current canonical contract in rules/03_land_system/06_multi_attribute_blocks.md preserves the staged semantics from this branch family, including per-cell terrain SSOT, exact attribute-map validation, rotation, block identity/counting, save/undo/restore, Trial cell terrain, partial-Zone presentation, legal-placement Offering gates, production ownership, and irrigation/cell-modifier boundaries."
+    },
+    {
+      "branch": "aot-task/AoT260922/land/multi-attribute-hardening-v3",
+      "expectedHeadSha": "dcfec2abe74b5b8d83efea683a8cdcff92a68f2d",
+      "replacementPrs": [
+        96,
+        160,
+        166,
+        169,
+        172,
+        173,
+        175,
+        179
+      ],
+      "note": "Audited against the consolidated Multi-Attribute replacement chain: PR #96 (2.5D per-cell preview), #160 (live unresolved-production safety + 2D preview), #166 (canonical foundation reconciliation), #169 (final CELL/CANONICAL_TERRAIN production), #172 (Zone Conversion boundary), #173/#179 (live Offering paths), and #175 (canonical production flow). The current canonical contract in rules/03_land_system/06_multi_attribute_blocks.md preserves the staged semantics from this branch family, including per-cell terrain SSOT, exact attribute-map validation, rotation, block identity/counting, save/undo/restore, Trial cell terrain, partial-Zone presentation, legal-placement Offering gates, production ownership, and irrigation/cell-modifier boundaries."
+    },
+    {
+      "branch": "aot-task/AoT260922/board/zone-conversion-runtime-definition-port-v1",
+      "expectedHeadSha": "94c3fcb116732e16b05a707a1ece486d99a0c736",
+      "replacementPr": 225,
+      "note": "The original runtime-definition-port branch was clean-replayed onto the then-current AoT260922 as PR #225 with the same three-file Board/GameEngine injection scope; PR #225 passed Full Inspection and merged."
+    },
+    {
+      "branch": "aot-task/AoT260922/cards/offering-category-multiplicity-v1",
+      "expectedHeadSha": "b3c3e30d1253e97cc45356c53730c6234c96e078",
+      "replacementPr": 223,
+      "note": "The original Offering category-multiplicity branch was superseded by the r2 replay merged as PR #223, preserving the agreed 2-per-category default, forced-minimum override, provider override, and final availability fallback."
+    },
+    {
+      "branch": "aot-task/AoT260922/cards/zone-conversion-domain-action-v1",
+      "expectedHeadSha": "60a3e83d7aac2acae541e79ba5c05b2cbce90a3e",
+      "replacementPrs": [
+        225,
+        226
+      ],
+      "note": "The original Zone Conversion Card bridge was superseded by the current-base Board runtime definition port in PR #225 plus the clean Card bridge replay in PR #226. Together they preserve Board-owned definitions/mutation and Card-owned quoted payment/preflight semantics."
+    },
+    {
+      "branch": "aot-task/AoT260922/cards/zone-conversion-domain-action-v1-r2",
+      "expectedHeadSha": "8fc0b4affe4e7f73e646ebc65ab85cd8373c6182",
+      "replacementPrs": [
+        225,
+        226
+      ],
+      "note": "Draft PR #204/r2 was explicitly superseded after AoT260922 advanced. PR #225 landed the required Board definition injection seam; PR #226 then clean-replayed the complete generic CREATE_ZONE_CONVERSION bridge, dynamic Board quote, stale revalidation, payment safety, targeting, and migration-readiness scope onto that base."
+    },
+    {
+      "branch": "aot-task/AoT260922/integration/stage1-e2e-audit-rebase",
+      "expectedHeadSha": "d4ff0aec70dee59a8cb06fd277d3012ea7d42842",
+      "replacementPr": 190,
+      "note": "This intermediate Stage1 E2E audit rebase was superseded by the final merged Stage1 E2E audit PR #190, which carries the audit-only registry/runner/test scope on the later target."
+    },
+    {
+      "branch": "aot-task/AoT260922/presentation/trial-right-panel-retirement",
+      "expectedHeadSha": "952d835c77f7be84598b1f0bb1a996de1a5a0aed",
+      "replacementPr": 211,
+      "note": "The Trial right-panel retirement lineage was rebuilt repeatedly as the target moved; final current-base implementation merged as PR #211 (r4), replacing the original branch."
+    },
+    {
+      "branch": "aot-task/AoT260922/presentation/trial-right-panel-retirement-r2",
+      "expectedHeadSha": "15b44b4714069caee5ebf0d2324320bc4c546dae",
+      "replacementPr": 211,
+      "note": "PR #205/r2 was not merged and was superseded by later clean replays; the final retirement implementation merged as PR #211 (r4)."
+    },
+    {
+      "branch": "aot-task/AoT260922/presentation/trial-right-panel-retirement-r3",
+      "expectedHeadSha": "0166a06214f9ca21382ef641f732072f4ce0a6d9",
+      "replacementPr": 211,
+      "note": "PR #210/r3 was green but became stale as AoT260922 advanced; its scope was recreated from the later target and merged as PR #211 (r4)."
+    },
+    {
+      "branch": "aot-task/AoT260922/tutorial/first-run-activation-v1-rebase",
+      "expectedHeadSha": "fad2ae6b9561c486113c2cd90952e8f2ba1c10dc",
+      "replacementPr": 203,
+      "note": "This stale FirstRun browser-activation rebase was superseded by PR #203, which merged the persisted browser FirstRun activation store and explicit GameEngine firstRun decision on the canonical target."
+    }
+  ]
+}

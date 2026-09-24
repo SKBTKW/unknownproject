@@ -6,7 +6,7 @@
       "purpose": "advisor character contract",
       "suite": "existing",
       "entryPoints": [
-        ".github/workflows/full-inspection.yml"
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
@@ -14,7 +14,7 @@
       "purpose": "advisor character dialogue override",
       "suite": "existing",
       "entryPoints": [
-        ".github/workflows/full-inspection.yml"
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
@@ -22,7 +22,7 @@
       "purpose": "advisor character differentiation",
       "suite": "existing",
       "entryPoints": [
-        ".github/workflows/full-inspection.yml"
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
@@ -30,17 +30,13 @@
       "purpose": "advisor character voice contrast",
       "suite": "existing",
       "entryPoints": [
-        ".github/workflows/full-inspection.yml"
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
       "path": "scratch/test_advisor_dialogue_depth.mjs",
       "purpose": "advisor dialogue depth",
-      "suite": "quarantined",
-      "reason": "Policy 3 returns detailed; test expects normal.",
-      "nextAction": "Confirm the current dialogue policy before changing implementation or expected value.",
-      "observedAt": "2026-09-22",
-      "observedEnvironment": "Windows / Node 24.18.0 / Python 3.11.3"
+      "suite": "supplemental"
     },
     {
       "path": "scratch/test_advisor_dialogue_responsibility.mjs",
@@ -83,7 +79,7 @@
       "purpose": "advisor reaction dialogue integration",
       "suite": "existing",
       "entryPoints": [
-        ".github/workflows/full-inspection.yml"
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
@@ -91,7 +87,7 @@
       "purpose": "advisor reaction scene coverage",
       "suite": "existing",
       "entryPoints": [
-        ".github/workflows/full-inspection.yml"
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
@@ -107,7 +103,7 @@
       "purpose": "advisor staff officer golden lines",
       "suite": "existing",
       "entryPoints": [
-        ".github/workflows/full-inspection.yml"
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
@@ -115,7 +111,7 @@
       "purpose": "advisor staff officer reaction boundaries",
       "suite": "existing",
       "entryPoints": [
-        ".github/workflows/full-inspection.yml"
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
@@ -141,17 +137,29 @@
     },
     {
       "path": "scratch/test_area_influence_system.mjs",
-      "purpose": "area influence system",
-      "suite": "quarantined",
-      "reason": "placeShape(...).success is undefined at line 75.",
-      "nextAction": "Update the fixture to the current placement result and RNG contracts, then verify water-source behavior.",
-      "observedAt": "2026-09-22",
-      "observedEnvironment": "Windows / Node 24.18.0 / Python 3.11.3"
+      "purpose": "irrigation source compatibility and wetland adjacency rules",
+      "suite": "supplemental"
     },
     {
       "path": "scratch/test_area_influence_visuals.mjs",
       "purpose": "area influence visuals",
       "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_battle_site_lifecycle.mjs",
+      "purpose": "settled Trial battle sites persist idempotently through Board serialization",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_battle_site_presentation.mjs",
+      "purpose": "Battle Site semantic marker through Board DTO and 2D/2.5D presentation",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
     },
     {
       "path": "scratch/test_board_camera_header_boundary.mjs",
@@ -169,11 +177,51 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_board_damage_contract.mjs",
+      "purpose": "Board-owned semantic damage records without gameplay side effects",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_board_damage_effect_policy.mjs",
+      "purpose": "Unresolved LAND/SPECIAL_BLOCK damage effects surface without changing gameplay values",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_board_damage_presentation.mjs",
+      "purpose": "Board damage semantic state through DTO and 2D/2.5D presentation",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_board_history_query.mjs",
+      "purpose": "Board-owned Battle Site history read boundary and RunHistory integration",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_board_presentation_axes.mjs",
       "purpose": "board presentation axes",
       "suite": "existing",
       "entryPoints": [
-        ".github/workflows/full-inspection.yml"
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_board_presentation_profile_consumption_contract.mjs",
+      "purpose": "board presentation profile consumer coverage",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
@@ -181,13 +229,29 @@
       "purpose": "board presentation unity boundary",
       "suite": "existing",
       "entryPoints": [
-        ".github/workflows/full-inspection.yml"
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_board_trial_deployment_semantics.mjs",
+      "purpose": "Board semantic projection for Trial deployment facts and reinforcement origins without facility identity coupling",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
       "path": "scratch/test_board_trial_hover_input.mjs",
       "purpose": "board trial hover input",
       "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_board_world_eligibility_integration.mjs",
+      "purpose": "Board aggregate read API through strict world eligibility and Card Offering",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
     },
     {
       "path": "scratch/test_board_zone_link_visual_contract.mjs",
@@ -203,13 +267,33 @@
       ]
     },
     {
+      "path": "scratch/test_captured_scout_investigation_bridge.mjs",
+      "purpose": "Captured Scout INTERROGATE grants one truthful Investigation outside normal Warning availability",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_card_core_offering_v1.mjs",
+      "purpose": "Card Definition v1, LAND placement eligibility, fallback legality, offering/execution separation",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_card_cycle_system.mjs",
       "purpose": "card cycle system",
-      "suite": "quarantined",
-      "reason": "Eligibility after releasing Hold does not match the expected true value.",
-      "nextAction": "Check current offering requirements and construct an eligible released-card fixture.",
-      "observedAt": "2026-09-22",
-      "observedEnvironment": "Windows / Node 24.18.0 / Python 3.11.3"
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_card_domain_actions_v2_replay.mjs",
+      "purpose": "Card compatibility-handler extraction and canonical domain migration blocker projection",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
     },
     {
       "path": "scratch/test_check_system_core.mjs",
@@ -223,12 +307,8 @@
     },
     {
       "path": "scratch/test_check_system_ui.mjs",
-      "purpose": "check system ui",
-      "suite": "quarantined",
-      "reason": "Mock DOM classList lacks toggle.",
-      "nextAction": "Update the mock DOM and rerun the original assertions.",
-      "observedAt": "2026-09-22",
-      "observedEnvironment": "Windows / Node 24.18.0 / Python 3.11.3"
+      "purpose": "CheckSystem result presentation and dice queue boundary",
+      "suite": "supplemental"
     },
     {
       "path": "scratch/test_css_important_relocation.py",
@@ -275,6 +355,14 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_first_run_activation_store.mjs",
+      "purpose": "browser first-run activation persistence and completion boundary",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_first_run_game_engine_integration.mjs",
       "purpose": "first run game engine integration",
       "suite": "existing",
@@ -285,6 +373,14 @@
     {
       "path": "scratch/test_first_run_service.mjs",
       "purpose": "first run service",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_first_run_stage1_flow.mjs",
+      "purpose": "connected FirstRun Verse7 trace, Investigation, Warning, restore, and Verse15 Trial1 launch flow",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -332,19 +428,15 @@
     },
     {
       "path": "scratch/test_fraud_detection.py",
-      "purpose": "fraud detection",
-      "suite": "quarantined",
-      "reason": "The verifier now returns two values; the test unpacks three.",
-      "nextAction": "Adapt the test to assertion records and verify that corrupted fixture data is actually rejected.",
-      "observedAt": "2026-09-22",
-      "observedEnvironment": "Windows / Node 24.18.0 / Python 3.11.3"
+      "purpose": "spec verifier and lint fail-closed regression",
+      "suite": "supplemental"
     },
     {
       "path": "scratch/test_full_inspection_workflow_contract.mjs",
       "purpose": "full inspection workflow contract",
       "suite": "existing",
       "entryPoints": [
-        ".github/workflows/full-inspection.yml"
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
@@ -370,11 +462,7 @@
     {
       "path": "scratch/test_g5_legacy.mjs",
       "purpose": "g5 legacy",
-      "suite": "quarantined",
-      "reason": "Mock document lacks the appendChild host used by DiceWidgetComponent.",
-      "nextAction": "Update the DOM fixture and retain legacy isolation assertions.",
-      "observedAt": "2026-09-22",
-      "observedEnvironment": "Windows / Node 24.18.0 / Python 3.11.3"
+      "suite": "supplemental"
     },
     {
       "path": "scratch/test_game_state_grid_rng_routing.mjs",
@@ -416,9 +504,41 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_global_event_eligibility_v1.mjs",
+      "purpose": "strict global event world and history eligibility",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_global_event_gameplay_rng.mjs",
       "purpose": "global event gameplay rng",
       "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_global_event_next_event_expiry.mjs",
+      "purpose": "NEXT_GLOBAL_EVENT weight modifiers consume exactly once on successful GE trigger",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_global_event_offering_weight_hook.mjs",
+      "purpose": "Active Global Event tag multipliers affect canonical Offering weighted draws",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_global_event_recovery_history_eligibility.mjs",
+      "purpose": "Recovery Momentum eligibility uses Chronicle-backed last-Trial damage history",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
     },
     {
       "path": "scratch/test_history_restore_atomic_rollback.mjs",
@@ -490,6 +610,14 @@
       ]
     },
     {
+      "path": "scratch/test_investigation_chronicle_bridge.mjs",
+      "purpose": "Investigation GameFacts create truth-safe idempotent Chronicle index entries",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_investigation_game_engine_attach.mjs",
       "purpose": "investigation game engine attach",
       "suite": "existing",
@@ -532,6 +660,14 @@
     {
       "path": "scratch/test_investigation_report_text_renderer.mjs",
       "purpose": "investigation report text renderer",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_investigation_request_v1.mjs",
+      "purpose": "card-independent investigation request, enhanced 2D6, and useful fragment contract",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -586,6 +722,11 @@
       ]
     },
     {
+      "path": "scratch/test_land_socket_terrain_ids.mjs",
+      "purpose": "land socket terrain id canonicalization",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_layout_css_ownership.mjs",
       "purpose": "layout css ownership",
       "suite": "existing",
@@ -602,15 +743,6 @@
       "path": "scratch/test_layout_responsibility_boundary.mjs",
       "purpose": "layout responsibility boundary",
       "suite": "supplemental"
-    },
-    {
-      "path": "scratch/test_layout_sidebar_shell_tokens.mjs",
-      "purpose": "layout sidebar shell tokens",
-      "suite": "quarantined",
-      "reason": "Sidebar CSS contains the padding text forbidden by this test.",
-      "nextAction": "Compare the layout ownership contract and current CSS before choosing a fix.",
-      "observedAt": "2026-09-22",
-      "observedEnvironment": "Windows / Node 24.18.0 / Python 3.11.3"
     },
     {
       "path": "scratch/test_layout_state_manager.mjs",
@@ -633,7 +765,7 @@
       "purpose": "legacy web2d board input adapter",
       "suite": "existing",
       "entryPoints": [
-        ".github/workflows/full-inspection.yml"
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
@@ -646,7 +778,7 @@
     },
     {
       "path": "scratch/test_merge_cap.mjs",
-      "purpose": "merge cap",
+      "purpose": "true merge cap and 1.2x production multiplier",
       "suite": "supplemental"
     },
     {
@@ -656,15 +788,6 @@
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
       ]
-    },
-    {
-      "path": "scratch/test_offering_conditions.mjs",
-      "purpose": "offering conditions",
-      "suite": "quarantined",
-      "reason": "Migration card eligibility differs from the Stage 2 fixture expectation.",
-      "nextAction": "Review current prerequisites against the fixture and the rules.",
-      "observedAt": "2026-09-22",
-      "observedEnvironment": "Windows / Node 24.18.0 / Python 3.11.3"
     },
     {
       "path": "scratch/test_offering_duplicate_fallback.mjs",
@@ -696,13 +819,33 @@
       ]
     },
     {
+      "path": "scratch/test_post_trial_threat_history_gate.mjs",
+      "purpose": "Post-Trial demihuman threat GEs require survived Trial history",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_reclaimed_land.mjs",
-      "purpose": "reclaimed land",
-      "suite": "quarantined",
-      "reason": "A normal wetland alone no longer satisfies the fixture eligibility expectation.",
-      "nextAction": "Review current reclamation prerequisites and separate fixture drift from a runtime defect.",
-      "observedAt": "2026-09-22",
-      "observedEnvironment": "Windows / Node 24.18.0 / Python 3.11.3"
+      "purpose": "reclaimed-land restore compatibility semantics",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_road_network_foundation.mjs",
+      "purpose": "canonical road network foundation",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_run_history_read_model.mjs",
+      "purpose": "chronicle-backed run history and board history query boundary",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
     },
     {
       "path": "scratch/test_safe_integration_runner.mjs",
@@ -755,16 +898,32 @@
       "suite": "supplemental"
     },
     {
-      "path": "scratch/test_state_serializer_restore_coverage.mjs",
-      "purpose": "state serializer restore coverage",
+      "path": "scratch/test_stage1_offering_economy_playability.mjs",
+      "purpose": "Stage1 Offering, economy, reserve, Multi-Attribute placement, Zone/Link, and Verse1-to-Trial1 playability audit",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
       ]
     },
     {
-      "path": "scratch/test_task_health.mjs",
-      "purpose": "task health",
+      "path": "scratch/test_stage1_e2e.mjs",
+      "purpose": "Stage1 canonical boundary audit from FirstRun Verse1 through Trial1 battle, settlement, Post-Trial and Stage2 restoration",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_stage1_trial_threat_policy_v1.mjs",
+      "purpose": "canonical Stage1 Trial1 threat policy, one-force route band, and production composition",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_state_serializer_restore_coverage.mjs",
+      "purpose": "state serializer restore coverage",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -776,6 +935,14 @@
       "suite": "existing",
       "entryPoints": [
         "scratch/test_task_health.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_task_health.mjs",
+      "purpose": "task health",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
@@ -791,7 +958,7 @@
       "purpose": "task sweeper",
       "suite": "existing",
       "entryPoints": [
-        ".github/workflows/full-inspection.yml"
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
@@ -803,26 +970,21 @@
       ]
     },
     {
-      "path": "scratch/test_trial_action_tray_contract.mjs",
-      "purpose": "trial action tray contract",
-      "suite": "quarantined",
-      "reason": "The source-string assertion expects direct construction replaced by a runtime bridge.",
-      "nextAction": "Replace the obsolete construction check with a behavior or bridge contract.",
-      "observedAt": "2026-09-22",
-      "observedEnvironment": "Windows / Node 24.18.0 / Python 3.11.3"
-    },
-    {
       "path": "scratch/test_trial_action_tray_runtime.mjs",
       "purpose": "trial action tray runtime",
-      "suite": "quarantined",
-      "reason": "Tray activation source text no longer matches the asserted getPlayerTrayMode expression.",
-      "nextAction": "Check current activation behavior and replace brittle source-text expectations.",
-      "observedAt": "2026-09-22",
-      "observedEnvironment": "Windows / Node 24.18.0 / Python 3.11.3"
+      "suite": "supplemental"
     },
     {
       "path": "scratch/test_trial_advisor_public_read_model.mjs",
       "purpose": "trial advisor public read model",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_trial_board_damage_policy.mjs",
+      "purpose": "Trial non-repel outcomes stage Board damage and commit only after settlement",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -839,6 +1001,54 @@
     {
       "path": "scratch/test_trial_core_presentation_boundary.mjs",
       "purpose": "trial core presentation boundary",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_trial_defense_reservation.mjs",
+      "purpose": "Trial deployment defense write-through reservation, failure rollback, and fail-closed GameState boundary",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_trial_core_defense_write_through.mjs",
+      "purpose": "Trial Core commits defense through canonical GameState reservation even when Deployment Economy is disabled",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_trial_deployment_balance_probe.mjs",
+      "purpose": "Experimental Trial Deployment Cost bands evaluated against the merged Stage1 Verse15 economy audit envelope without selecting canonical balance values",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_trial_deployment_cost_resolver.mjs",
+      "purpose": "Canonical configurable Trial deployment cost resolver and unresolved-profile fail-closed contract",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_trial_deployment_economy.mjs",
+      "purpose": "Trial deployment economy fixed-placement v1, atomic payment, stale-state rejection, semantic origin/capability consumption",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_trial_deployment_engine_attach.mjs",
+      "purpose": "Explicit GameEngine Deployment Economy attachment while default gameplay remains disabled until a resolved profile is supplied",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -881,6 +1091,14 @@
     {
       "path": "scratch/test_trial_normal_input_isolation.mjs",
       "purpose": "trial normal input isolation",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_trial_phase2_preview.mjs",
+      "purpose": "trial phase2 preview",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -999,14 +1217,6 @@
       ]
     },
     {
-      "path": "scratch/test_trial_phase2_preview.mjs",
-      "purpose": "trial phase2 preview",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
       "path": "scratch/test_trial_restore_boundary_service.mjs",
       "purpose": "trial restore boundary service",
       "suite": "existing",
@@ -1025,18 +1235,22 @@
     {
       "path": "scratch/test_trial_route_board_selection_contract.mjs",
       "purpose": "trial route board selection contract",
-      "suite": "quarantined",
-      "reason": "The legacy right-route-list summary source assertion fails.",
-      "nextAction": "Verify current route presentation ownership and update the contract accordingly.",
-      "observedAt": "2026-09-22",
-      "observedEnvironment": "Windows / Node 24.18.0 / Python 3.11.3"
+      "suite": "supplemental"
     },
     {
       "path": "scratch/test_trial_route_visual_semantics.mjs",
       "purpose": "trial route visual semantics",
       "suite": "existing",
       "entryPoints": [
-        ".github/workflows/full-inspection.yml"
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_trial_tactical_effect_board_semantics.mjs",
+      "purpose": "trial tactical effect board semantics",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
@@ -1077,23 +1291,6 @@
       ]
     },
     {
-      "path": "scratch/test_verify_user_issues.mjs",
-      "purpose": "verify user issues",
-      "suite": "quarantined",
-      "reason": "A repeated command execution returns success=false at line 79.",
-      "nextAction": "Check offering context and current command prerequisites before changing behavior.",
-      "observedAt": "2026-09-22",
-      "observedEnvironment": "Windows / Node 24.18.0 / Python 3.11.3"
-    },
-    {
-      "path": "scratch/test_verse1_restore_point.mjs",
-      "purpose": "verse1 restore point",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
       "path": "scratch/test_verse_chronicle_facts.mjs",
       "purpose": "verse chronicle facts",
       "suite": "existing",
@@ -1104,6 +1301,14 @@
     {
       "path": "scratch/test_verse_restore_point_contract.mjs",
       "purpose": "verse restore point contract",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_verse1_restore_point.mjs",
+      "purpose": "verse1 restore point",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -1122,7 +1327,7 @@
       "purpose": "warning state fact bridge",
       "suite": "existing",
       "entryPoints": [
-        ".github/workflows/full-inspection.yml"
+        "scratch/run_full_inspection.mjs"
       ]
     },
     {
@@ -1141,6 +1346,14 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_web25d_road_overlay_renderer.mjs",
+      "purpose": "web25d road overlay renderer",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_web25d_trial_overlay_renderer.mjs",
       "purpose": "web25d trial overlay renderer",
       "suite": "supplemental"
@@ -1149,6 +1362,14 @@
       "path": "scratch/test_web25d_zone_link_overlay_renderer.mjs",
       "purpose": "web25d zone link overlay renderer",
       "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_zone_conversion_foundation.mjs",
+      "purpose": "Zone conversion foundation, maintenance lifecycle, and Board-to-Trial deployment semantic projection",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
     }
   ]
 }

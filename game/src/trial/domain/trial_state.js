@@ -21,6 +21,7 @@ export class TrialState {
         this.routes = cloneData(scenario.routes) || [];
         this.interceptions = [];
         this.interceptionPlan = null;
+        this.deploymentPreview = null;
         this.planActivated = false;
         this.battleQueue = null;
         this.currentBattleIndex = null;

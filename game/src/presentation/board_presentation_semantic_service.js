@@ -1,6 +1,7 @@
 import { isIrrigationInfluence } from '../core/irrigation_rules.js';
 import { getWaterSourceInfluenceType } from '../core/lake_rules.js';
 import { resolvePlacedBlockProduction } from '../core/land_production_contract.js';
+import { hasRoadBetween } from '../core/road_network.js';
 
 const CARDINAL_DIRECTIONS = Object.freeze([
     Object.freeze({ direction: 'NORTH', dr: -1, dc: 0 }),
@@ -12,6 +13,7 @@ const CARDINAL_DIRECTIONS = Object.freeze([
 const DISPLAY_ROLE = Object.freeze({
     LAND_PRIMARY: 'LAND_PRIMARY',
     SOCKET: 'SOCKET',
+    SPECIAL_BLOCK: 'SPECIAL_BLOCK',
     CLEAN: 'CLEAN'
 });
 
@@ -23,6 +25,49 @@ function normalizeLinkEntries(mergeLinks) {
     if (mergeLinks instanceof Set) return [...mergeLinks];
     if (Array.isArray(mergeLinks)) return mergeLinks;
     return [];
+}
+
+const DISPLAY_GROUP_KIND = Object.freeze({
+    ZONE: 'ZONE',
+    PLACEMENT: 'PLACEMENT'
+});
+
+function resolveDisplayGroup(facts) {
+    const zoneId = normalizeGroupId(facts?.mergeGroupId);
+    if (zoneId) return Object.freeze({ kind: DISPLAY_GROUP_KIND.ZONE, id: zoneId });
+
+    const placementGroupId = normalizeGroupId(facts?.placementGroupId);
+    if (placementGroupId) {
+        return Object.freeze({ kind: DISPLAY_GROUP_KIND.PLACEMENT, id: placementGroupId });
+    }
+
+    return null;
+}
+
+function cellMatchesDisplayGroup(cell, group) {
+    if (!cell || !group) return false;
+    if (group.kind === DISPLAY_GROUP_KIND.ZONE) {
+        return normalizeGroupId(cell.mergeGroupId) === group.id;
+    }
+    return normalizeGroupId(cell.mergeGroupId) === null
+        && normalizeGroupId(cell.placementGroupId) === group.id;
+}
+
+function findPlacementDisplayOwner(state, placementGroupId) {
+    const targetId = normalizeGroupId(placementGroupId);
+    if (!targetId) return null;
+
+    const grid = state?.grid || [];
+    let fallback = null;
+    for (let r = 0; r < grid.length; r++) {
+        for (let c = 0; c < (grid[r]?.length || 0); c++) {
+            const cell = grid[r][c];
+            if (!cell?.placed || normalizeGroupId(cell.placementGroupId) !== targetId) continue;
+            if (!fallback) fallback = { r, c, cell };
+            if (!cell.socketResource) return { r, c, cell };
+        }
+    }
+    return fallback;
 }
 
 function pickPrimaryYield(terrainId, production) {
@@ -92,27 +137,35 @@ function addNonSocketProduction(target, viewData) {
     target.mystic += base.mystic || 0;
 
     for (const modifier of viewData?.modifiers || []) {
-        if (!modifier || modifier.type === 'SOCKET') continue;
+        if (!modifier || modifier.type === 'SOCKET' || modifier.type === 'SPECIAL_BLOCK') continue;
         const resource = modifier.resource;
         if (!Object.prototype.hasOwnProperty.call(target, resource)) continue;
         target[resource] += modifier.amount || 0;
     }
 }
 
+function addSpecialBlockProduction(target, viewData) {
+    const yields = viewData?.specialBlock?.yields || {};
+    target.food += yields.food || 0;
+    target.wood += yields.wood || 0;
+    target.defense += yields.defense || 0;
+    target.mystic += yields.mystic || 0;
+}
+
 export function resolveBoardDisplayRole(state, facts) {
-    if (!facts?.placed || facts?.isHQ) return null;
+    if (!facts || facts.isHQ) return null;
+    if (!facts.placed && facts.specialBlock) return DISPLAY_ROLE.SPECIAL_BLOCK;
+    if (!facts.placed) return null;
     if (facts.socketResource) return DISPLAY_ROLE.SOCKET;
 
-    const activeGroupId = normalizeGroupId(facts.mergeGroupId || facts.placementGroupId);
-    if (!activeGroupId) return DISPLAY_ROLE.LAND_PRIMARY;
+    const activeGroup = resolveDisplayGroup(facts);
+    if (!activeGroup) return DISPLAY_ROLE.LAND_PRIMARY;
 
     const grid = state?.grid || [];
     for (let r = 0; r < grid.length; r++) {
         for (let c = 0; c < (grid[r]?.length || 0); c++) {
             const cell = grid[r][c];
-            if (!cell) continue;
-            const cellGroupId = normalizeGroupId(cell.mergeGroupId || cell.placementGroupId);
-            if (cellGroupId !== activeGroupId || cell.socketResource) continue;
+            if (!cellMatchesDisplayGroup(cell, activeGroup) || cell.socketResource) continue;
             return r === facts.r && c === facts.c
                 ? DISPLAY_ROLE.LAND_PRIMARY
                 : DISPLAY_ROLE.CLEAN;
@@ -122,8 +175,21 @@ export function resolveBoardDisplayRole(state, facts) {
 }
 
 export function resolveBoardDisplayProduction(state, facts, cellViewDataService) {
-    if (!facts?.placed || facts?.isHQ || !cellViewDataService) return null;
+    if (!facts || facts.isHQ || !cellViewDataService) return null;
     const role = resolveBoardDisplayRole(state, facts);
+    if (role === DISPLAY_ROLE.SPECIAL_BLOCK) {
+        const production = {
+            food: facts.yields?.food || 0,
+            wood: facts.yields?.wood || 0,
+            defense: facts.yields?.defense || 0,
+            mystic: facts.yields?.mystic || 0
+        };
+        return Object.freeze({
+            ...production,
+            primaryYield: facts.primaryYield || pickPrimaryYield(facts.specialBlock?.type, production)
+        });
+    }
+    if (!facts.placed) return null;
     if (role !== DISPLAY_ROLE.LAND_PRIMARY && role !== DISPLAY_ROLE.SOCKET) return null;
 
     if (role === DISPLAY_ROLE.SOCKET) {
@@ -137,26 +203,29 @@ export function resolveBoardDisplayProduction(state, facts, cellViewDataService)
         }
     }
 
-    const activeGroupId = normalizeGroupId(facts.mergeGroupId || facts.placementGroupId);
+    const activeGroup = resolveDisplayGroup(facts);
     const production = { food: 0, wood: 0, defense: 0, mystic: 0 };
+    const specialProduction = { food: 0, wood: 0, defense: 0, mystic: 0 };
 
-    if (activeGroupId) {
+    if (activeGroup) {
         const grid = state?.grid || [];
         const placementGroups = new Set();
         for (let r = 0; r < grid.length; r++) {
             for (let c = 0; c < (grid[r]?.length || 0); c++) {
                 const cell = grid[r][c];
                 if (!cell?.placed) continue;
-                const matchesGroup = normalizeGroupId(cell.mergeGroupId) === activeGroupId
-                    || normalizeGroupId(cell.placementGroupId) === activeGroupId;
-                if (!matchesGroup) continue;
+                if (!cellMatchesDisplayGroup(cell, activeGroup)) continue;
                 if (cell.placementGroupId != null) placementGroups.add(String(cell.placementGroupId));
-                addNonSocketProduction(production, cellViewDataService.getCellViewData(state, r, c));
+                const cellView = cellViewDataService.getCellViewData(state, r, c);
+                addNonSocketProduction(production, cellView);
+                addSpecialBlockProduction(specialProduction, cellView);
             }
         }
 
         const sourceCell = state?.grid?.[facts.r]?.[facts.c];
-        if (sourceCell?.merged && facts.mergeGroupId != null) {
+        if (activeGroup.kind === DISPLAY_GROUP_KIND.ZONE
+            && sourceCell?.merged
+            && facts.mergeGroupId != null) {
             const group = state?.mergedBlocks?.[facts.mergeGroupId];
             const multiplier = group?.yieldMultiplier || 1.20;
             production.food = Math.floor(production.food * multiplier);
@@ -168,6 +237,9 @@ export function resolveBoardDisplayProduction(state, facts, cellViewDataService)
         // Block-owned output is not a cell/Zone output. Add it once per
         // placementGroup after Zone multipliers so display matches settlement.
         for (const placementGroupId of placementGroups) {
+            const owner = findPlacementDisplayOwner(state, placementGroupId);
+            if (!owner || !cellMatchesDisplayGroup(owner.cell, activeGroup)) continue;
+
             const blockProduction = resolvePlacedBlockProduction(state, placementGroupId);
             if (!blockProduction.defined) continue;
             production.food += blockProduction.yields.food;
@@ -175,8 +247,13 @@ export function resolveBoardDisplayProduction(state, facts, cellViewDataService)
             production.defense += blockProduction.yields.defense;
             production.mystic += blockProduction.yields.mystic;
         }
+        production.food += specialProduction.food;
+        production.wood += specialProduction.wood;
+        production.defense += specialProduction.defense;
+        production.mystic += specialProduction.mystic;
     } else {
         addNonSocketProduction(production, facts);
+        addSpecialBlockProduction(production, facts);
     }
 
     return Object.freeze({
@@ -224,6 +301,57 @@ export class BoardPresentationSemanticService {
 
     getDisplayProduction(state, facts) {
         return resolveBoardDisplayProduction(state, facts, this.cellViewDataService);
+    }
+
+    getHistory(state, facts) {
+        const cell = state?.grid?.[facts?.r]?.[facts?.c] || null;
+        const battleSites = Array.isArray(cell?.entities)
+            ? cell.entities
+                .filter(entity => {
+                    const type = String(
+                        entity?.entityType
+                        || entity?.type
+                        || entity?.definitionId
+                        || entity?.kind
+                        || entity?.id
+                        || ''
+                    ).toUpperCase();
+                    return type === 'BATTLE_SITE' || type.startsWith('BATTLE_SITE@');
+                })
+                .map(entity => Object.freeze({
+                    id: entity.id || null,
+                    trialIndex: Number.isInteger(entity.trialIndex) ? entity.trialIndex : null,
+                    scenarioId: entity.scenarioId || null,
+                    battleIndex: Number.isInteger(entity.battleIndex) ? entity.battleIndex : null,
+                    routeId: entity.routeId || null,
+                    outcome: entity.outcome || null,
+                    trialOutcome: entity.trialOutcome || null,
+                    settledTurn: Number.isInteger(entity.settledTurn) ? entity.settledTurn : null
+                }))
+            : [];
+        const damageRecords = Array.isArray(cell?.damageRecords)
+            ? cell.damageRecords.map(record => Object.freeze({
+                id: record?.id || null,
+                target: record?.target || null,
+                source: record?.source ? Object.freeze({ ...record.source }) : null,
+                metadata: record?.metadata ? Object.freeze({ ...record.metadata }) : null
+            }))
+            : [];
+        const landDamageRecords = damageRecords.filter(record => record.target === 'LAND');
+        const specialBlockDamageRecords = damageRecords.filter(record => record.target === 'SPECIAL_BLOCK');
+
+        return Object.freeze({
+            battleSite: battleSites.length > 0,
+            battleSites: Object.freeze(battleSites),
+            damage: Object.freeze({
+                any: damageRecords.length > 0,
+                land: landDamageRecords.length > 0,
+                specialBlock: specialBlockDamageRecords.length > 0,
+                records: Object.freeze(damageRecords),
+                landRecords: Object.freeze(landDamageRecords),
+                specialBlockRecords: Object.freeze(specialBlockDamageRecords)
+            })
+        });
     }
 
     getInfluence(state, r, c) {
@@ -276,6 +404,14 @@ export class BoardPresentationSemanticService {
                 && currentZoneId !== neighborZoneId
                 && linkedZoneIds.has(neighborZoneId)
             );
+            const road = Boolean(
+                neighborCell
+                && hasRoadBetween(
+                    state,
+                    { r: facts.r, c: facts.c },
+                    { r: nr, c: nc }
+                )
+            );
 
             const neighborInfluence = neighborCell
                 ? this.getInfluence(state, nr, nc)
@@ -295,6 +431,7 @@ export class BoardPresentationSemanticService {
                 samePlacementGroup,
                 sameZone,
                 linked,
+                road,
                 placementBoundary: Boolean(currentPlacementGroupId && !samePlacementGroup),
                 zoneBoundary: Boolean(currentZoneId && !sameZone),
                 influenceBoundary: Object.freeze(influenceBoundary)
@@ -315,6 +452,7 @@ export class BoardPresentationSemanticService {
             zone,
             links,
             display: Object.freeze({ role, production }),
+            history: this.getHistory(state, facts),
             influence: this.getInfluence(state, facts.r, facts.c),
             edges: this.getLogicalEdges(state, facts, linkIndex)
         });

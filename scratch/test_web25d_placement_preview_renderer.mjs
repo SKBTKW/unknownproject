@@ -10,13 +10,18 @@ function createContext() {
         lineTo(x, y) { ops.push(['lineTo', x, y]); },
         closePath() { ops.push(['closePath']); },
         stroke() { ops.push(['stroke', this.strokeStyle, this.lineWidth]); },
+        fill() { ops.push(['fill', this.fillStyle, this.globalAlpha]); },
         save() { ops.push(['save']); },
         restore() { ops.push(['restore']); },
         clip() { ops.push(['clip']); },
         set strokeStyle(value) { this._strokeStyle = value; },
         get strokeStyle() { return this._strokeStyle; },
         set lineWidth(value) { this._lineWidth = value; },
-        get lineWidth() { return this._lineWidth; }
+        get lineWidth() { return this._lineWidth; },
+        set fillStyle(value) { this._fillStyle = value; },
+        get fillStyle() { return this._fillStyle; },
+        set globalAlpha(value) { this._globalAlpha = value; },
+        get globalAlpha() { return this._globalAlpha; }
     };
 }
 
@@ -49,5 +54,32 @@ drawWeb25DPlacementPreview({
 assert.equal(ctx.ops.some(op => op[0] === 'clip'), true);
 assert.equal(ctx.ops.some(op => op[0] === 'stroke' && String(op[1]).includes('224, 225, 218')), true);
 assert.equal(ctx.ops.some(op => op[0] === 'fill'), false);
+
+const terrainCtx = createContext();
+drawWeb25DPlacementPreview({
+    ctx: terrainCtx,
+    projection,
+    readModel: {
+        placementPreview: {
+            active: true,
+            candidates: [],
+            hover: {
+                valid: true,
+                anchor: { r: 1, c: 1 },
+                placement: {
+                    cells: [
+                        { r: 1, c: 1, terrainId: 'GL1_PLAINS' },
+                        { r: 1, c: 2, terrainId: 'E2_HILL' }
+                    ]
+                }
+            }
+        }
+    }
+});
+
+const terrainFills = terrainCtx.ops.filter(op => op[0] === 'fill');
+assert.equal(terrainFills.length, 2);
+assert.notEqual(terrainFills[0][1], terrainFills[1][1]);
+assert.deepEqual(terrainFills.map(op => op[2]), [0.78, 0.78]);
 
 console.log('web25d placement preview renderer ok');

@@ -1,53 +1,59 @@
 #!/usr/bin/env python3
-import sys
+import json
 import os
+import sys
 import tempfile
 
 sys.path.insert(0, 'scratch')
 import verify_all_rule_files
 import pre_write_linter
 
-print("=== 🛡️ 暴走制御スクリプト検知能力テスト ===")
+print("=== Spec verifier / lint fail-closed regression tests ===")
 
-# --- 1. 数値改ざん・捏造の検知テスト ---
-print("\n[テスト1] AIが勝手に数値を捏造した場合 (平地の食料を 99 に改変)")
+EXPECTED_LAND = [
+    {"terrainId": "GL1_PLAINS", "shape": [[1]], "yields": {"food": 4, "wood": 0, "defense": 0, "mystic": 0}},
+    {"terrainId": "GL2_FOREST", "shape": [[1]], "yields": {"food": 2, "wood": 2, "defense": 2, "mystic": 0}},
+    {"terrainId": "E2_HILL", "shape": [[1]], "yields": {"food": 2, "wood": 1, "defense": 1, "mystic": 0}},
+    {"terrainId": "E3_MOUNTAIN", "shape": [[1]], "yields": {"food": 0, "wood": 3, "defense": 5, "mystic": 1}},
+]
+
+def write_fixture(root, *, plains_food=4):
+    src = os.path.join(root, 'game', 'src')
+    data = os.path.join(src, 'data')
+    os.makedirs(data, exist_ok=True)
+
+    cards = json.loads(json.dumps(EXPECTED_LAND))
+    cards[0]['yields']['food'] = plains_food
+    with open(os.path.join(data, 'land_cards.json'), 'w', encoding='utf-8') as f:
+        json.dump(cards, f)
+
+
+def failures(assertions):
+    return {item['id']: item for item in assertions if not item['passed']}
+
 with tempfile.TemporaryDirectory() as tmpdir:
-    game_dir = os.path.join(tmpdir, 'game')
-    src_dir = os.path.join(game_dir, 'src')
-    os.makedirs(src_dir)
-    with open(os.path.join(src_dir, 'fake_data.js'), 'w', encoding='utf-8') as f:
-        f.write('export const fake = { id: "GL1_PLAINS", food: 99, wood: 0, defense: 0 };')
+    write_fixture(tmpdir, plains_food=99)
+    assertions, _ = verify_all_rule_files.verify_all_specs_against_code('rules', os.path.join(tmpdir, 'game'))
+    failed = failures(assertions)
+    assert 'SPEC01_YIELD_GL1_PLAINS' in failed, failed
+    print("PASS: corrupted land yield is rejected")
 
-    mismatches, count, elapsed = verify_all_rule_files.verify_all_specs_against_code('rules', game_dir)
-    print(f"  検知された違反件数: {len(mismatches)} 件")
-    for m in mismatches:
-        print(f"  🚨 遮断理由: {m}")
+with tempfile.TemporaryDirectory() as tmpdir:
+    write_fixture(tmpdir)
+    assertions, _ = verify_all_rule_files.verify_all_specs_against_code('rules', os.path.join(tmpdir, 'game'))
+    failed = failures(assertions)
+    assert not failed, failed
+    print("PASS: valid minimal current-spec fixture passes")
 
-    if len(mismatches) > 0:
-        print("  ✅ [PASS] 捏造数値を機械的に100%検知・遮断しました。")
-    else:
-        print("  ❌ [FAIL] 捏造数値を検知できませんでした。")
-        sys.exit(1)
-
-# --- 2. 日本語直書き・I18N違反の検知テスト ---
-print("\n[テスト2] AIが勝手に日本語テキストを直書きした場合")
 with tempfile.NamedTemporaryFile('w', suffix='.js', delete=False, encoding='utf-8') as tf:
     tf.write('const msg = "勝手に追加した未翻訳テキスト";\n')
     temp_filepath = tf.name
 
-violations = pre_write_linter.scan_file_for_hardcoded_japanese(temp_filepath)
-os.remove(temp_filepath)
+try:
+    violations = pre_write_linter.scan_file_for_japanese(temp_filepath, 'fixture/test_hardcoded_japanese.js')
+finally:
+    os.remove(temp_filepath)
 
-print(f"  検知された直書き日本語行: {len(violations)} 行")
-for line_num, content in violations:
-    print(f"  🚨 遮断理由: 行 {line_num} -> {content}")
-
-if len(violations) > 0:
-    print("  ✅ [PASS] 日本語直書きを機械的に100%検知・遮断しました。")
-else:
-    print("  ❌ [FAIL] 日本語直書きを検知できませんでした。")
-    sys.exit(1)
-
-print("\n====================================================")
-print("🎉 結論: 暴走制御スクリプトは確実に機能・遮断しています！")
-print("====================================================")
+assert violations, 'hardcoded Japanese text must be detected'
+print("PASS: hardcoded Japanese text is rejected")
+print("Spec verifier / lint fail-closed regression tests: PASS")

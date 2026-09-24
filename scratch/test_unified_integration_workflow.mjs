@@ -129,6 +129,15 @@ check(classifyRunnerResult({
 
 check(classifyRunnerResult({
   executed: false,
+  decision: { decision: RUNNER_DECISION.REVIEW_REQUIRED, reason: 'review' },
+}), {
+  status: WORKFLOW_STATUS.BLOCKED,
+  continueLoop: false,
+  reason: 'review',
+}, 'Safe Runner REVIEW_REQUIRED stops only for explicit review');
+
+check(classifyRunnerResult({
+  executed: false,
   decision: { decision: RUNNER_DECISION.READY, reason: 'candidate' },
 }), {
   status: WORKFLOW_STATUS.READY,

@@ -155,6 +155,40 @@ Trial で利用可能な防衛力は **現在🛡️** とする。
 
 ---
 
+### 5.4 Deployment Economy
+
+Trialの🛡️配備は、将来的に「無料の数値割当」ではなく、通常GameStateが保持する🌾・🧱を使う兵站/設営コストを持つ。
+
+現在の実装では以下の境界まで確定している。
+
+- Previewでは資源を消費しない。
+- Commit時に🌾・🧱を支払い、同じCommitで通常GameStateの`currentDefense`から配備🛡️を予約する。
+- Commit時はBoard facts / origin / distance / resource残高 / 通常GameStateの`currentDefense`を再検証する。
+- 🌾・🧱支払いが失敗した場合、先行した🛡️予約は内部rollbackし、部分Commitを残さない。
+- 配備した🛡️はそのTrial中固定し、Commit成功後の再配置・撤収・返金を行わない。
+- 複数routeを迎撃しても、front数そのものによる追加surchargeは持たない。
+- 配備元はHQ固定ではなく、Boardが公開するsemantic `REINFORCEMENT_ORIGIN` を利用できる。
+- TrialはGarrison等の施設IDを知らず、Board semanticだけを読む。
+- `DEFENSE_ANCHOR` 等の盤面効果はBoard facts / trialTraits経由でコストへ反映できる。
+- 通常ProductionはTrial中に実行しない。
+- ✨→🛡️変換は現行Deployment Economyの責務ではない。
+
+Canonical cost resolverの式形は以下に限定する。
+
+```text
+resourceCost
+= base
++ requestedDefense × perDefense
++ origin→target distance × perDistance
++ Board semantic modifier
+```
+
+ただし、`base / perDefense / perDistance` の具体係数は**現時点で未確定**である。
+
+したがって、正規Gameplay用のcost profileが明示的に `RESOLVED` になるまでは、Deployment Economyはfail-closedとし、未定義を無料配備として扱わない。
+
+既存のTrial戦闘倍率、道路の進軍コスト係数、防衛再建費等をDeployment Costへ流用する根拠はなく、別系統の値として扱う。
+
 ## 6. Trial戦闘尺度
 
 現在のプロトタイプでは、平時の戦略値を Trial 戦闘尺度へ変換する。
@@ -537,6 +571,20 @@ routeはTrial開始時に外から手書きで与える本番仕様にはしな�
 - 地形ごとの進軍コストを利用し、原則として合理的な低コストrouteを選択する。
 - 調査・警戒システムは、この生成済みrouteの情報を段階的に公開する。
 - 嘘のroute情報を生成するのではなく、情報解像度を変える。
+
+### 現在の道路実装境界
+
+道路の存在正本は `GameState.roadEdges` とする。各要素は上下左右に隣接する2セル間の無向edgeであり、保存・復元・BoardPresentationでも同じ正本を使用する。
+
+`TrialRouteCostPolicy` は通常時このcanonical道路を参照し、道路edgeを進む場合は現行仮値 `roadMultiplier = 0.6` を適用する。テストや将来の例外ルール向けの `roadResolver` 注入境界は維持する。
+
+ただし、通常Runで道路edgeを新規生成するプレイヤー操作・カード実行はまだ未接続である。《産業街道》も現時点では `industrialRoadActive` を立てるだけで、`roadEdges` を生成しない。
+
+したがって現在は、
+
+> **道路の正本・保存復元・表示・Trial経路コスト消費は接続済み。道路を敷設するゲームルールは未接続。**
+
+と扱う。
 
 具体的な pathfinding アルゴリズム、同コスト時のtie-break、複数routeの分離条件は未確定。
 

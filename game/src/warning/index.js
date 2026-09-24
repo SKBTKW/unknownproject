@@ -13,6 +13,16 @@ export { InvestigationResolver } from './systems/investigation_resolver.js';
 export { InvestigationHistoryComparator } from './systems/investigation_history_comparator.js';
 export { KnownEnemyStateService } from './systems/known_enemy_state_service.js';
 export { InvestigationOfferingPolicy } from './systems/investigation_offering_policy.js';
+export {
+    InvestigationAvailabilityPolicy,
+    isInvestigationAvailable,
+    readInvestigationUnlocked
+} from './systems/investigation_availability_policy.js';
+export {
+    InvestigationRequestService,
+    INVESTIGATION_RESULT_TYPES,
+    INVESTIGATION_ALL_FACETS
+} from './systems/investigation_request_service.js';
 export { InvestigationOfferingAdapter } from './systems/investigation_offering_adapter.js';
 export { InvestigationCardExecutionService } from './systems/investigation_card_execution_service.js';
 export { InvestigationUnlockBridge, DEFAULT_UNLOCK_EVENT_IDS } from './systems/investigation_unlock_bridge.js';

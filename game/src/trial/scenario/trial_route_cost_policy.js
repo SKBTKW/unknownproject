@@ -1,4 +1,5 @@
 import { EnemyForceTerrainInteractionResolver } from "../systems/enemy_force_terrain_interaction_resolver.js";
+import { canonicalRoadResolver } from "../../core/road_network.js";
 
 function terrainId(cell) {
     const terrain = cell?.terrain || cell || {};
@@ -97,8 +98,8 @@ function isRoughTerrain(interaction) {
  * ROUGH_TERRAIN is the only march trait with a runtime route-cost meaning for
  * now. LONG_DISTANCE / FORCED_MARCH / NIGHT_MARCH / LOGISTICS_DEPENDENT remain
  * data-only until their costs and trade-offs have dedicated systems.
- * Roads are intentionally injected through roadResolver because GameState does
- * not yet own a canonical road representation.
+ * Roads consume GameState.roadEdges through the canonical resolver by default.
+ * roadResolver remains injectable for focused tests and future exceptional rules.
  */
 export class TrialRouteCostPolicy {
     constructor({
@@ -127,7 +128,9 @@ export class TrialRouteCostPolicy {
             }
         };
         this.interactionResolver = interactionResolver;
-        this.roadResolver = roadResolver;
+        this.roadResolver = typeof roadResolver === "function"
+            ? roadResolver
+            : canonicalRoadResolver;
     }
 
     resolve({ gameState = null, fromCell = null, toCell = null, from = null, to = null, force = null } = {}) {

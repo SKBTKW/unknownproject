@@ -145,10 +145,10 @@ export class Web25DMaterializationRenderer extends Web25DPhaseERenderer {
         this.withRevealAlpha(state.resource, () => super.drawDormantSocketCore(center));
     }
 
-    drawLandPrimaryMarker(cell, center) {
+    drawProductionMarker(cell, center) {
         const state = this.getMaterializationCellState(this.materializationCell);
-        if (!state?.active) return super.drawLandPrimaryMarker(cell, center);
-        this.withRevealAlpha(state.resource, () => super.drawLandPrimaryMarker(cell, center));
+        if (!state?.active) return super.drawProductionMarker(cell, center);
+        this.withRevealAlpha(state.resource, () => super.drawProductionMarker(cell, center));
     }
 }
 

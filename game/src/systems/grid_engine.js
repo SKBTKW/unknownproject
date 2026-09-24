@@ -24,6 +24,17 @@ import {
     findContractCellYields,
     normalizeProductionContract
 } from '../core/land_production_contract.js';
+import {
+    isCanonicalTerrainId,
+    resolveCanonicalTerrainSemantic
+} from '../data/land_system.js';
+import {
+    getPlacementAttributeTerrainId,
+    hasMultiplePlacementTerrainAttributes,
+    resolveRepresentativePlacementTerrainId,
+    validatePlacementAttributeMap
+} from '../core/placement_geometry.js';
+import { isBoardCellOccupied } from '../core/board_cell_occupancy.js';
 function coordinateKey(r, c) {
     return `${r}:${c}`;
 }
@@ -39,17 +50,25 @@ function cloneTerrainSemantic(terrain) {
 
 function resolveAttributeTerrain(attributeCell, fallbackTerrain) {
     if (!attributeCell) return fallbackTerrain;
-    if (attributeCell.terrain && typeof attributeCell.terrain === "object") {
-        return cloneTerrainSemantic(attributeCell.terrain);
-    }
 
+    const sourceSemantic = attributeCell.terrain && typeof attributeCell.terrain === "object"
+        ? attributeCell.terrain
+        : attributeCell;
     const {
         r: _r,
         c: _c,
         dr: _dr,
         dc: _dc,
+        sourceR: _sourceR,
+        sourceC: _sourceC,
         ...semantic
-    } = attributeCell;
+    } = sourceSemantic;
+
+    const terrainId = semantic.terrainId || semantic.id || null;
+    if (terrainId) {
+        return cloneTerrainSemantic(resolveCanonicalTerrainSemantic(terrainId, semantic));
+    }
+
     const hasSemantic = Object.keys(semantic).length > 0;
     return hasSemantic ? cloneTerrainSemantic(semantic) : fallbackTerrain;
 }
@@ -123,6 +142,7 @@ class GridEngine {
                     mergeType: null,
                     placementGroupId: null,
                     terrain: isHQ ? { id: "HQ", nameKey: "TERRAIN_HQ", food: 10, wood: 10, defense: 10, mystic: 1 } : null,
+                    specialBlock: null,
                     searched: false,
                     hasSocket: false,
                     socketResource: null,
@@ -227,7 +247,7 @@ class GridEngine {
      * @returns {number}
      */
     getPlacementEmberCost() {
-        const count = (this.state && this.state.placedBlockCount !== undefined) ? this.state.placedBlockCount : 0;
+        const count = this.getPlacedBlockCount();
         if (count < 6) return 0;   // 0〜5 ブロック: 🔥 0 (完全無料)
         if (count < 16) return 1;  // 6〜15 ブロック: 🔥 1
         if (count < 31) return 2;  // 16〜30 ブロック: 🔥 2
@@ -244,7 +264,8 @@ class GridEngine {
         for (let r = 0; r < size; r++) {
             for (let c = 0; c < size; c++) {
                 const cell = this.state.grid[r][c];
-                if (cell && cell.placed && cell.terrain && cell.terrain.id === "E2_HILL") {
+                const terrainId = cell?.terrain?.terrainId || cell?.terrain?.id || null;
+                if (cell?.placed && terrainId === "E2_HILL") {
                     count++;
                 }
             }
@@ -292,6 +313,7 @@ class GridEngine {
                         mergeType: null,
                         placementGroupId: null,
                         terrain: null,
+                        specialBlock: null,
                         searched: false,
                         hasSocket: false,
                         socketResource: null
@@ -334,7 +356,7 @@ class GridEngine {
         for (let r = 0; r < newSize; r++) {
             for (let c = 0; c < newSize; c++) {
                 const isPerimeter = (r === 0 || r === newSize - 1 || c === 0 || c === newSize - 1);
-                if (isPerimeter && !newGrid[r][c].placed && !newGrid[r][c].hasSocket) {
+                if (isPerimeter && !isBoardCellOccupied(newGrid[r][c]) && !newGrid[r][c].hasSocket) {
                     perimeterCandidates.push({ r, c });
                 }
             }
@@ -358,7 +380,7 @@ class GridEngine {
                 const cell = newGrid[r][c];
                 const isHQ = (r === newCenter && c === newCenter);
                 const isNearHQ = (Math.abs(r - newCenter) <= 1 && Math.abs(c - newCenter) <= 1);
-                if (!cell.placed && !isHQ && !isNearHQ && !cell.hasSocket) {
+                if (!isBoardCellOccupied(cell) && !isHQ && !isNearHQ && !cell.hasSocket) {
                     allCandidates.push({ r, c });
                 }
             }
@@ -397,6 +419,30 @@ class GridEngine {
      */
     canPlaceShape(startR, startC, shapeMatrix, terrain = null, attributeCells = null) {
         if (!this.state || !this.state.grid) return { can: false, reason: "NO_GRID", reasons: ["NO_GRID"] };
+
+        if (Array.isArray(attributeCells)) {
+            const attributeValidation = validatePlacementAttributeMap(shapeMatrix, attributeCells);
+            if (!attributeValidation.valid) {
+                return {
+                    can: false,
+                    reason: "INVALID_ATTRIBUTE_MAP",
+                    reasons: ["INVALID_ATTRIBUTE_MAP"],
+                    attributeReasons: [...attributeValidation.reasons]
+                };
+            }
+
+            const unknownTerrainId = attributeCells
+                .map(getPlacementAttributeTerrainId)
+                .find(terrainId => !isCanonicalTerrainId(terrainId));
+            if (unknownTerrainId) {
+                return {
+                    can: false,
+                    reason: "UNKNOWN_ATTRIBUTE_TERRAIN",
+                    reasons: ["UNKNOWN_ATTRIBUTE_TERRAIN"],
+                    terrainId: unknownTerrainId
+                };
+            }
+        }
 
         const rows = shapeMatrix.length;
         const cols = shapeMatrix[0].length;
@@ -440,7 +486,7 @@ class GridEngine {
                     isOutOfBounds = true;
                     continue;
                 }
-                if (this.state.grid[r][c].placed) isAlreadyPlaced = true;
+                if (isBoardCellOccupied(this.state.grid[r][c])) isAlreadyPlaced = true;
                 const isWetland = isWetlandTerrain(cellTerrain);
                 if (this.isHQVicinity(r, c)) {
                     if (isMountain) isMountainNearHQ = true;
@@ -622,7 +668,23 @@ class GridEngine {
         }
 
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' && window.I18n ? window.I18n : { t: k => k });
-        const terrainName = I18n.t((terrain && (terrain.nameKey || terrain.id)) || "TERRAIN_PLAINS");
+        const representativeTerrainId = resolveRepresentativePlacementTerrainId(terrain);
+        const representativeTerrain = isCanonicalTerrainId(representativeTerrainId)
+            ? resolveCanonicalTerrainSemantic(representativeTerrainId)
+            : terrain;
+        const representativeNameKey = representativeTerrain?.nameKey
+            || terrain?.nameKey
+            || representativeTerrainId
+            || "TERRAIN_PLAINS";
+        const baseTerrainName = I18n.t(representativeNameKey);
+        const multiSuffixKey = "CARD_MULTI_ATTRIBUTE_SUFFIX";
+        const translatedMultiSuffix = I18n.t(multiSuffixKey);
+        const multiSuffix = hasMultiplePlacementTerrainAttributes(terrain)
+            && translatedMultiSuffix
+            && translatedMultiSuffix !== multiSuffixKey
+            ? translatedMultiSuffix
+            : "";
+        const terrainName = `${baseTerrainName}${multiSuffix}`;
 
         let spawnedAnySocket = false;
         for (let dr = 0; dr < rows; dr++) {
@@ -690,7 +752,10 @@ class GridEngine {
                                         bonusFood: (chosen.bonusYields && chosen.bonusYields.food) || 0,
                                         bonusWood: (chosen.bonusYields && (chosen.bonusYields.material !== undefined ? chosen.bonusYields.material : chosen.bonusYields.wood)) || 0,
                                         bonusDefense: (chosen.bonusYields && chosen.bonusYields.defense) || 0,
-                                        bonusMystic: (chosen.bonusYields && chosen.bonusYields.mystic) || 0
+                                        bonusMystic: (chosen.bonusYields && chosen.bonusYields.mystic) || 0,
+                                        capabilities: Array.isArray(chosen.capabilities)
+                                            ? [...chosen.capabilities]
+                                            : []
                                     };
                                 }
                             }

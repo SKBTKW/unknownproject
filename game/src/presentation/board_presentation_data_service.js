@@ -28,6 +28,35 @@ function buildMarkedCellIndex(items) {
     return map;
 }
 
+function buildMarkedCellListIndex(items) {
+    const map = new Map();
+    for (const item of items || []) {
+        if (!item?.cell) continue;
+        const key = `${item.cell.r}:${item.cell.c}`;
+        if (!map.has(key)) map.set(key, []);
+        map.get(key).push(item);
+    }
+    return map;
+}
+
+function projectDefenseAllocation(item, disclose) {
+    if (!item) return item;
+    if (disclose) return item;
+    const { defenseAllocation: _hiddenDefenseAllocation, ...visible } = item;
+    return Object.freeze(visible);
+}
+
+function projectDefenseAllocations(items, disclose) {
+    return (items || []).map(item => projectDefenseAllocation(item, disclose));
+}
+
+function projectRoadDisclosure(edges, disclose) {
+    if (disclose) return edges;
+    return Object.freeze((edges || []).map(edge =>
+        Object.freeze({ ...edge, road: false })
+    ));
+}
+
 export class BoardPresentationDataService {
     constructor({ cellViewDataService = null, semanticService = null } = {}) {
         this.cellViewDataService = cellViewDataService || new CellViewDataService();
@@ -51,14 +80,18 @@ export class BoardPresentationDataService {
             presentationState.viewPreset
         );
         const trial = trialSemanticData || emptyTrialBoardSemanticData();
+        const showRoads = profile.roads !== "HIDDEN";
         const showRoutes = profile.trialRoutes !== "HIDDEN";
         const showInterception = profile.interception !== "HIDDEN";
+        const showDefenseAllocation = profile.defenseAllocation !== "HIDDEN";
         const showBattleMarkers = profile.battleMarkers !== "HIDDEN";
-        const showTrialOperationalData = showRoutes || showInterception || showBattleMarkers;
+        const showTacticalEffects = profile.tacticalEffects !== "HIDDEN";
+        const showTrialOperationalData = showRoutes || showInterception || showBattleMarkers || showTacticalEffects;
 
         const visibleTrial = Object.freeze({
             available: Boolean(trial.available && showTrialOperationalData),
             activeRouteId: showRoutes ? trial.activeRouteId : null,
+            routeSelectionEnabled: Boolean(showRoutes && trial.routeSelectionEnabled),
             selectedInterceptCell: showInterception ? trial.selectedInterceptCell : null,
             hoveredInterceptCell: showInterception ? trial.hoveredInterceptCell : null,
             routes: Object.freeze(showRoutes ? [...(trial.routes || [])] : []),
@@ -66,10 +99,17 @@ export class BoardPresentationDataService {
                 showInterception ? [...(trial.interceptionCandidates || [])] : []
             ),
             plannedIntercepts: Object.freeze(
-                showInterception ? [...(trial.plannedIntercepts || [])] : []
+                showInterception
+                    ? projectDefenseAllocations(trial.plannedIntercepts, showDefenseAllocation)
+                    : []
             ),
             battleMarkers: Object.freeze(
-                showBattleMarkers ? [...(trial.battleMarkers || [])] : []
+                showBattleMarkers
+                    ? projectDefenseAllocations(trial.battleMarkers, showDefenseAllocation)
+                    : []
+            ),
+            tacticalEffects: Object.freeze(
+                showTacticalEffects ? [...(trial.tacticalEffects || [])] : []
             ),
             enemyState: showTrialOperationalData ? trial.enemyState : null
         });
@@ -83,6 +123,9 @@ export class BoardPresentationDataService {
             : new Map();
         const battleIndex = showBattleMarkers
             ? buildMarkedCellIndex(visibleTrial.battleMarkers)
+            : new Map();
+        const tacticalEffectIndex = showTacticalEffects
+            ? buildMarkedCellListIndex(visibleTrial.tacticalEffects)
             : new Map();
         const linkIndex = this.semanticService.buildLinkIndex(sourceState);
 
@@ -105,7 +148,9 @@ export class BoardPresentationDataService {
             const interception = interceptionIndex.get(key) || null;
             const planned = plannedIndex.get(key) || null;
             const battle = battleIndex.get(key) || null;
+            const tacticalEffects = tacticalEffectIndex.get(key) || [];
             const semantic = this.semanticService.getCellSemantic(sourceState, facts, linkIndex);
+            const visibleEdges = projectRoadDisclosure(semantic.edges, showRoads);
             const display = Object.freeze({
                 ...(semantic.display || {}),
                 searched: Boolean(sourceCell?.searched)
@@ -114,6 +159,7 @@ export class BoardPresentationDataService {
             return Object.freeze({
                 ...facts,
                 ...semantic,
+                edges: visibleEdges,
                 display,
                 interaction: Object.freeze({
                     selected: sameCell(presentationState.selectedCell, r, c),
@@ -129,7 +175,8 @@ export class BoardPresentationDataService {
                     interceptionSelected: sameCell(visibleTrial.selectedInterceptCell, r, c),
                     interceptionHovered: sameCell(visibleTrial.hoveredInterceptCell, r, c),
                     plannedIntercept: planned,
-                    battleMarker: battle
+                    battleMarker: battle,
+                    tacticalEffects: Object.freeze([...tacticalEffects])
                 })
             });
         })));

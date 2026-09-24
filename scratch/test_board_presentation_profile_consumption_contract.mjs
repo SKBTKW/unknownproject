@@ -1,0 +1,179 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+import {
+    BOARD_PRESENTATION_PROFILES,
+    BOARD_VIEW_PRESET_EMPHASIS,
+    BOARD_VISIBILITY
+} from '../game/src/presentation/board_presentation_profile.js';
+
+const read = path => fs.readFileSync(new URL(path, import.meta.url), 'utf8');
+
+const expectedFields = Object.freeze([
+    'terrain',
+    'zones',
+    'links',
+    'roads',
+    'hq',
+    'yields',
+    'developmentHints',
+    'sockets',
+    'trialRoutes',
+    'invasionEntry',
+    'interception',
+    'defenseAllocation',
+    'battleMarkers',
+    'tacticalEffects'
+]);
+
+const profileFieldSet = new Set();
+for (const profile of Object.values(BOARD_PRESENTATION_PROFILES)) {
+    for (const key of Object.keys(profile)) profileFieldSet.add(key);
+}
+assert.deepEqual(
+    [...profileFieldSet].sort(),
+    [...expectedFields].sort(),
+    'every board profile field must be explicitly classified by the consumption audit'
+);
+
+for (const emphasis of Object.values(BOARD_VIEW_PRESET_EMPHASIS)) {
+    for (const key of Object.keys(emphasis)) {
+        assert.equal(profileFieldSet.has(key), true, `view preset field must belong to the profile contract: ${key}`);
+    }
+}
+
+const phaseC = read('../game/src/presentation/web25d_phase_c_renderer.js');
+const zoneLink = read('../game/src/presentation/web25d_zone_link_overlay_renderer.js');
+const roadOverlay = read('../game/src/presentation/web25d_road_overlay_renderer.js');
+const phaseE = read('../game/src/presentation/web25d_phase_e_renderer.js');
+const trialOverlay = read('../game/src/presentation/web25d_trial_overlay_renderer.js');
+const presentationGrid = read('../game/src/ui/board_presentation_grid_component.js');
+const boardAwareUi = read('../game/src/ui/board_aware_ui_controller.js');
+const legacyGrid = read('../game/src/ui/board_grid_component.js');
+const trialAdapter = read('../game/src/presentation/trial_board_semantic_adapter.js');
+const dataService = read('../game/src/presentation/board_presentation_data_service.js');
+const routeCostPolicy = read('../game/src/trial/scenario/trial_route_cost_policy.js');
+
+assert.match(zoneLink, /readModel\.profile\?\.zones/, 'zones must have an active renderer consumer');
+assert.match(zoneLink, /readModel\.profile\?\.links/, 'links must have an active renderer consumer');
+assert.match(phaseC, /this\.readModel\?\.profile\?\.yields/, 'yields must have an active 2.5D consumer');
+assert.match(phaseC, /this\.readModel\?\.profile\?\.sockets/, 'sockets must have an active 2.5D consumer');
+assert.match(presentationGrid, /data-board-yields-visibility/, 'yields must have an active 2D consumer');
+assert.match(presentationGrid, /data-board-sockets-visibility/, 'sockets must have an active 2D consumer');
+
+assert.match(boardAwareUi, /profile\.developmentHints/, 'developmentHints must gate presentation generation');
+assert.match(legacyGrid, /shouldShowBoardDevelopmentHints/, '2D development hints must consume the presentation gate');
+
+for (const key of ['trialRoutes', 'invasionEntry', 'interception', 'defenseAllocation', 'battleMarkers', 'tacticalEffects']) {
+    assert.match(
+        trialOverlay,
+        new RegExp(`profile\\.${key}`),
+        `${key} must have an active 2.5D Trial overlay consumer`
+    );
+}
+for (const attribute of [
+    'data-board-trial-routes-visibility',
+    'data-board-invasion-entry-visibility',
+    'data-board-interception-visibility',
+    'data-board-defense-allocation-visibility',
+    'data-board-battle-markers-visibility',
+    'data-board-tactical-effects-visibility'
+]) {
+    assert.match(
+        presentationGrid,
+        new RegExp(attribute),
+        `${attribute} must expose Trial profile emphasis to the 2D board`
+    );
+}
+
+assert.match(
+    trialAdapter,
+    /defenseAllocation:/,
+    'defenseAllocation is carried as renderer-neutral Trial board data'
+);
+assert.match(
+    dataService,
+    /showDefenseAllocation = profile\.defenseAllocation !== "HIDDEN"/,
+    'defenseAllocation disclosure is independently gated before renderer consumption'
+);
+assert.match(
+    dataService,
+    /projectDefenseAllocations\(trial\.plannedIntercepts, showDefenseAllocation\)/,
+    'planned intercept allocations pass through the defense disclosure gate'
+);
+assert.match(
+    dataService,
+    /projectDefenseAllocations\(trial\.battleMarkers, showDefenseAllocation\)/,
+    'battle allocations pass through the defense disclosure gate'
+);
+assert.match(
+    presentationGrid,
+    /trial-defense-allocation-badge/,
+    'defenseAllocation has an active 2D board consumer'
+);
+assert.match(
+    trialOverlay,
+    /resolveWeb25DDefenseAllocationMarkers/,
+    'defenseAllocation has an active 2.5D board consumer'
+);
+
+assert.match(
+    routeCostPolicy,
+    /canonicalRoadResolver/,
+    'Trial route costs must consume the canonical GameState road network by default'
+);
+assert.match(
+    dataService,
+    /showRoads = profile\.roads !== "HIDDEN"/,
+    'roads must pass through the BoardPresentation disclosure gate'
+);
+assert.match(
+    dataService,
+    /projectRoadDisclosure\(semantic\.edges, showRoads\)/,
+    'road edge facts must be suppressed before renderer consumption when hidden'
+);
+assert.match(
+    presentationGrid,
+    /data-board-roads-visibility/,
+    'roads must expose profile emphasis to Web 2D'
+);
+assert.match(
+    presentationGrid,
+    /board-road-segments/,
+    'roads must have an active Web 2D consumer'
+);
+assert.match(
+    roadOverlay,
+    /readModel\?\.profile\?\.roads/,
+    'roads must have an active Web 2.5D consumer'
+);
+assert.match(
+    phaseE,
+    /drawWeb25DRoadOverlay/,
+    'Web 2.5D phase composition must include the road overlay'
+);
+
+assert.match(
+    dataService,
+    /showTacticalEffects = profile\.tacticalEffects !== "HIDDEN"/,
+    'tacticalEffects disclosure is independently gated before renderer consumption'
+);
+assert.match(
+    presentationGrid,
+    /trial-tactical-effect-stack/,
+    'tacticalEffects has an active 2D board consumer'
+);
+assert.match(
+    trialOverlay,
+    /resolveWeb25DTacticalEffectMarkers/,
+    'tacticalEffects has an active 2.5D board consumer'
+);
+
+for (const profile of Object.values(BOARD_PRESENTATION_PROFILES)) {
+    assert.notEqual(profile.terrain, BOARD_VISIBILITY.HIDDEN);
+    assert.notEqual(profile.terrain, BOARD_VISIBILITY.SUPPRESSED);
+    assert.notEqual(profile.hq, BOARD_VISIBILITY.HIDDEN);
+    assert.notEqual(profile.hq, BOARD_VISIBILITY.SUPPRESSED);
+}
+
+console.log('BOARD_PRESENTATION_PROFILE_CONSUMPTION_CONTRACT_OK');

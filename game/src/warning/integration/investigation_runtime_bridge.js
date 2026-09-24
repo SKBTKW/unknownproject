@@ -4,6 +4,8 @@ import { createKnownEnemyState } from "../domain/known_enemy_state.js";
 import { InvestigationResolver } from "../systems/investigation_resolver.js";
 import { InvestigationOfferingAdapter } from "../systems/investigation_offering_adapter.js";
 import { InvestigationCardExecutionService } from "../systems/investigation_card_execution_service.js";
+import { InvestigationAvailabilityPolicy } from "../systems/investigation_availability_policy.js";
+import { INVESTIGATION_ALL_FACETS } from "../systems/investigation_request_service.js";
 
 function cardDefinition(card) {
     return card?.terrain || card || null;
@@ -56,7 +58,8 @@ export function attachInvestigationRuntime(engine, {
     if (typeof state.investigationUnlocked !== "boolean") state.investigationUnlocked = false;
 
     const resolvedExecutionService = executionService || new InvestigationCardExecutionService({
-        resolver: new InvestigationResolver({ rng: () => engine.gameplayRandom.nextFloat() })
+        resolver: new InvestigationResolver({ rng: () => engine.gameplayRandom.nextFloat() }),
+        randomSource: engine.gameplayRandom
     });
 
     const deckManager = engine.deckManager;
@@ -73,8 +76,89 @@ export function attachInvestigationRuntime(engine, {
         return [...previous, ...INVESTIGATION_CARDS_MASTER];
     };
 
+    const availabilityPolicy = new InvestigationAvailabilityPolicy();
+
+    const performDomainInvestigation = ({
+        sourceType = "INVESTIGATION",
+        allowedFacets = INVESTIGATION_ALL_FACETS,
+        baseObservations = 1,
+        enhanced = false,
+        costPaid = null,
+        observationModifiers = null,
+        reportId = null,
+        semanticSourceId = null,
+        requireAvailability = true
+    } = {}) => {
+        if (requireAvailability && !availabilityPolicy.isAvailable(state, {
+            warningStateService: engine.warningStateService || null
+        })) {
+            return { success: false, reason: "INVESTIGATION_LOCKED" };
+        }
+
+        const profile = observableProfileProvider({ engine, state });
+        if (!profile) return { success: false, reason: "OBSERVABLE_PROFILE_UNAVAILABLE" };
+
+        if (!state.knownEnemyState) {
+            state.knownEnemyState = createKnownEnemyState({
+                trialIndex: Number.isInteger(profile.trialIndex) ? profile.trialIndex : 1
+            });
+        }
+
+        const verse = Number.isInteger(state.turn) ? state.turn : null;
+        const trialIndex = Number.isInteger(profile.trialIndex) ? profile.trialIndex : "unknown";
+        const resolvedReportId = reportId
+            || engine.gameplayRandom.nextId("investigation", `${trialIndex}:${verse ?? "unknown"}`);
+        const requestService = resolvedExecutionService.requestService;
+        if (!requestService || typeof requestService.perform !== "function") {
+            return { success: false, reason: "INVESTIGATION_REQUEST_SERVICE_REQUIRED" };
+        }
+
+        const result = requestService.perform({
+            profile,
+            knownEnemyState: state.knownEnemyState,
+            observedAtVerse: verse,
+            reportId: resolvedReportId,
+            sourceType,
+            allowedFacets,
+            baseObservations,
+            enhanced,
+            costPaid,
+            observationModifiers
+        });
+        if (!result.success) return result;
+
+        state.lastInvestigationReport = result.report;
+        state.lastInvestigationComparison = result.comparison || null;
+
+        engine.gameFactHub?.emit?.(GAME_FACT_TYPES.INVESTIGATION_RECORDED, {
+            trialIndex: Number.isInteger(profile.trialIndex) ? profile.trialIndex : null,
+            verse,
+            cardId: semanticSourceId,
+            reportId: result.report?.id || resolvedReportId,
+            sourceType
+        });
+        return result;
+    };
+
+    engine.isInvestigationAvailable = function isInvestigationAvailable() {
+        return availabilityPolicy.isAvailable(state, {
+            warningStateService: engine.warningStateService || null
+        });
+    };
+
+    engine.performInvestigation = function performInvestigation(request = {}) {
+        return performDomainInvestigation(request);
+    };
+
+    engine.performGrantedInvestigation = function performGrantedInvestigation(request = {}) {
+        return performDomainInvestigation({
+            ...request,
+            requireAvailability: false
+        });
+    };
+
     engine.executeInvestigationCard = function executeInvestigationCard(card, source) {
-        if (!state.investigationUnlocked) return { success: false, reason: "INVESTIGATION_LOCKED" };
+        if (!engine.isInvestigationAvailable()) return { success: false, reason: "INVESTIGATION_LOCKED" };
         if (state.hasPickedThisTurn) return { success: false, reason: "ALREADY_PICKED" };
 
         const actualCard = sourceCard(state, source);

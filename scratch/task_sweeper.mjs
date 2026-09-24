@@ -55,6 +55,26 @@ function readConfig(key, cwd) {
     return git(['config', '--get', key], { cwd, allowFailure: true });
 }
 
+function loadSupersededTaskManifest(cwd) {
+    const manifestPath = path.join(cwd, 'scratch', 'task_sweeper_superseded.json');
+    if (!fs.existsSync(manifestPath)) return { schemaVersion: 1, target: '', entries: [] };
+    const parsed = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    if (parsed?.schemaVersion !== 1 || !Array.isArray(parsed.entries)) {
+        throw new Error('Invalid scratch/task_sweeper_superseded.json');
+    }
+    return parsed;
+}
+
+function gitIsAncestor(ancestor, descendant, cwd) {
+    if (!ancestor || !descendant) return false;
+    const result = spawnSync('git', ['merge-base', '--is-ancestor', ancestor, descendant], {
+        cwd,
+        windowsHide: true,
+        stdio: 'ignore',
+    });
+    return result.status === 0;
+}
+
 function resolveTarget(explicitTarget, cwd) {
     if (explicitTarget) return explicitTarget;
     const authorized = readConfig('aot.authorizedBranch', cwd);
@@ -93,6 +113,216 @@ function parseWorktrees(raw) {
     return entries;
 }
 
+export function collectOpenPullRequestReferences(branch, pulls = [], repositoryFullName = '') {
+    if (!branch || !Array.isArray(pulls)) return [];
+    const references = [];
+    const expectedRepo = repositoryFullName.toLowerCase();
+    const matchesRepository = (fullName) => !expectedRepo
+        || (typeof fullName === 'string' && fullName.toLowerCase() === expectedRepo);
+
+    for (const pr of pulls) {
+        if (!pr || !Number.isInteger(pr.number)) continue;
+        const baseMatches = pr.base?.ref === branch && matchesRepository(pr.base?.repo?.full_name);
+        const headMatches = pr.head?.ref === branch && matchesRepository(pr.head?.repo?.full_name);
+
+        if (headMatches) references.push({ number: pr.number, role: 'head' });
+        if (baseMatches) references.push({ number: pr.number, role: 'base' });
+    }
+
+    return references;
+}
+
+let cachedGitHubCliToken;
+
+function loadGitHubCliToken() {
+    if (cachedGitHubCliToken !== undefined) return cachedGitHubCliToken;
+    try {
+        cachedGitHubCliToken = execFileSync('gh', ['auth', 'token', '--hostname', 'github.com'], {
+            encoding: 'utf8',
+            windowsHide: true,
+            stdio: ['ignore', 'pipe', 'ignore'],
+        }).trim();
+    } catch {
+        cachedGitHubCliToken = '';
+    }
+    return cachedGitHubCliToken;
+}
+
+export function resolveGitHubToken(env = process.env) {
+    const envToken = env.GITHUB_TOKEN || env.GH_TOKEN;
+    if (typeof envToken === 'string' && envToken.trim()) return envToken.trim();
+    return loadGitHubCliToken();
+}
+
+function githubHeaders() {
+    const headers = {
+        Accept: 'application/vnd.github+json',
+        'User-Agent': 'AoT-Task-Sweeper',
+        'X-GitHub-Api-Version': '2022-11-28',
+    };
+    const token = resolveGitHubToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+    return headers;
+}
+
+async function githubFailureReason(response, prefix) {
+    const details = [`${prefix} (${response.status})`];
+    const remaining = response.headers.get('x-ratelimit-remaining');
+    const reset = response.headers.get('x-ratelimit-reset');
+    if (remaining !== null) details.push(`rate_remaining=${remaining}`);
+    if (reset !== null) details.push(`rate_reset=${reset}`);
+    try {
+        const body = await response.json();
+        if (body && typeof body.message === 'string' && body.message.trim()) {
+            details.push(body.message.trim());
+        }
+    } catch {
+        // Status + rate-limit headers are enough when GitHub returns no JSON body.
+    }
+    return details.join(' | ');
+}
+
+const GITHUB_FETCH_MAX_ATTEMPTS = 3;
+const GITHUB_FETCH_RETRY_BASE_MS = 350;
+
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function shouldRetryGitHubStatus(status) {
+    return status === 408 || status === 429 || status >= 500;
+}
+
+async function fetchGitHubJson(url, { headers, label }) {
+    let lastReason = '';
+    for (let attempt = 1; attempt <= GITHUB_FETCH_MAX_ATTEMPTS; attempt += 1) {
+        try {
+            const response = await fetch(url, { headers });
+            if (response.ok) {
+                const body = await response.json();
+                return { ok: true, body, response };
+            }
+
+            lastReason = await githubFailureReason(response, label);
+            if (!shouldRetryGitHubStatus(response.status) || attempt === GITHUB_FETCH_MAX_ATTEMPTS) {
+                return { ok: false, reason: lastReason };
+            }
+        } catch (error) {
+            lastReason = `${label}: ${error.message}`;
+            if (attempt === GITHUB_FETCH_MAX_ATTEMPTS) {
+                return { ok: false, reason: lastReason };
+            }
+        }
+
+        await sleep(GITHUB_FETCH_RETRY_BASE_MS * attempt);
+    }
+
+    return { ok: false, reason: lastReason || `${label}: exhausted retries` };
+}
+
+async function verifyAuditedSupersession({
+    branch,
+    remoteSha,
+    target,
+    targetRef,
+    githubRepo,
+    supersededManifest,
+    cwd,
+}) {
+    if (!remoteSha || !githubRepo || !supersededManifest) {
+        return { verified: false, reason: '' };
+    }
+    if (supersededManifest.target && supersededManifest.target !== target) {
+        return { verified: false, reason: '' };
+    }
+
+    const entry = supersededManifest.entries.find((item) => item?.branch === branch);
+    if (!entry) return { verified: false, reason: '' };
+    if (entry.expectedHeadSha !== remoteSha) {
+        return {
+            verified: false,
+            reason: `audited superseded proof head mismatch: expected ${entry.expectedHeadSha}, found ${remoteSha}`,
+        };
+    }
+    const replacementPrs = Array.isArray(entry.replacementPrs)
+        ? entry.replacementPrs
+        : [entry.replacementPr];
+    if (replacementPrs.length === 0 || replacementPrs.some((number) => !Number.isInteger(number))) {
+        return { verified: false, reason: 'audited superseded proof is missing replacement PR number(s)' };
+    }
+
+    const headers = githubHeaders();
+    for (const replacementPr of replacementPrs) {
+        const request = await fetchGitHubJson(
+            `https://api.github.com/repos/${githubRepo.owner}/${githubRepo.repo}/pulls/${replacementPr}`,
+            { headers, label: 'GitHub replacement PR lookup failed' }
+        );
+        if (!request.ok) return { verified: false, reason: request.reason };
+
+        const pr = request.body;
+        if (!pr?.merged_at) {
+            return { verified: false, reason: `replacement PR #${replacementPr} is not merged` };
+        }
+        if (pr.base?.ref !== target) {
+            return { verified: false, reason: `replacement PR #${replacementPr} does not target ${target}` };
+        }
+        if (!pr.merge_commit_sha || !gitIsAncestor(pr.merge_commit_sha, targetRef, cwd)) {
+            return {
+                verified: false,
+                reason: `replacement PR #${replacementPr} merge commit is not contained in ${targetRef}`,
+            };
+        }
+    }
+
+    return {
+        verified: true,
+        replacementPr: replacementPrs.length === 1 ? replacementPrs[0] : undefined,
+        replacementPrs,
+        note: entry.note || '',
+    };
+}
+
+async function loadOpenPullRequestSnapshot({ owner, repo }) {
+    const pulls = [];
+    const perPage = 100;
+    const maxPages = 100;
+    const headers = githubHeaders();
+
+    try {
+        for (let page = 1; page <= maxPages; page += 1) {
+            const params = new URLSearchParams({
+                state: 'open',
+                per_page: String(perPage),
+                page: String(page),
+            });
+            const request = await fetchGitHubJson(
+                `https://api.github.com/repos/${owner}/${repo}/pulls?${params}`,
+                { headers, label: 'GitHub open PR lookup failed' }
+            );
+            if (!request.ok) {
+                return { verified: false, pulls: [], reason: request.reason };
+            }
+            const pagePulls = request.body;
+            if (!Array.isArray(pagePulls)) {
+                return { verified: false, pulls: [], reason: 'GitHub open PR lookup returned a non-array response' };
+            }
+            pulls.push(...pagePulls);
+            if (pagePulls.length < perPage) {
+                return { verified: true, pulls, reason: '' };
+            }
+        }
+        return { verified: false, pulls: [], reason: 'GitHub open PR lookup exceeded pagination safety limit' };
+    } catch (error) {
+        return { verified: false, pulls: [], reason: `GitHub open PR lookup failed: ${error.message}` };
+    }
+}
+
+function formatOpenPullRequestReferences(references = []) {
+    return references
+        .map((reference) => `#${reference.number} (${reference.role})`)
+        .join(', ');
+}
+
 function listTaskBranches(target, cwd) {
     const prefix = `${TASK_PREFIX}${target}/`;
     const localRaw = git(['for-each-ref', '--format=%(refname:short)', `refs/heads/${prefix}`], { cwd, allowFailure: true });
@@ -118,20 +348,17 @@ async function findMergedPullRequest({ owner, repo, branch, target, headSha }) {
         base: target,
         per_page: '100',
     });
-    const headers = {
-        Accept: 'application/vnd.github+json',
-        'User-Agent': 'AoT-Task-Sweeper',
-        'X-GitHub-Api-Version': '2022-11-28',
-    };
-    const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
-    if (token) headers.Authorization = `Bearer ${token}`;
+    const headers = githubHeaders();
 
     try {
-        const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls?${params}`, { headers });
-        if (!response.ok) {
-            return { verified: false, reason: `GitHub PR lookup failed (${response.status})` };
+        const request = await fetchGitHubJson(
+            `https://api.github.com/repos/${owner}/${repo}/pulls?${params}`,
+            { headers, label: 'GitHub PR lookup failed' }
+        );
+        if (!request.ok) {
+            return { verified: false, reason: request.reason };
         }
-        const pulls = await response.json();
+        const pulls = request.body;
         const merged = pulls.find((pr) => pr.merged_at && pr.head?.sha === headSha);
         if (!merged) return { verified: false, reason: 'No merged PR matches the current remote TASK head' };
         return { verified: true, number: merged.number, mergedAt: merged.merged_at };
@@ -148,18 +375,32 @@ export function classifyTaskCandidate(state) {
     if (state.dirtyWorktree) blockers.push('worktree has uncommitted or untracked files');
     if (state.localRemoteMismatch) blockers.push('local and remote TASK heads do not match');
     if (state.unpushedCommits > 0) blockers.push(`${state.unpushedCommits} local commit(s) are not pushed`);
-    if (state.uniqueCommits > 0 && !state.mergedPrVerified) {
+    if (state.remoteExists && state.openPrLookupVerified === false) {
+        blockers.push(state.openPrReason || 'open PR references could not be verified');
+    }
+    if (Array.isArray(state.openPrReferences) && state.openPrReferences.length > 0) {
+        blockers.push(`open PR reference protects this TASK: ${formatOpenPullRequestReferences(state.openPrReferences)}`);
+    }
+    if (state.uniqueCommits > 0 && !state.mergedPrVerified && !state.supersededVerified) {
         const fallbackReason = state.remoteExists
             ? 'unique commits exist and merged PR could not be verified'
             : 'local-only TASK has unique commits and merged PR could not be verified';
-        blockers.push(state.prReason || fallbackReason);
+        blockers.push(state.supersededReason || state.prReason || fallbackReason);
     }
 
     if (blockers.length > 0) return { status: 'BLOCKED', blockers };
     if (state.uniqueCommits === 0) {
         return { status: 'SAFE', reason: 'no unique commits against target' };
     }
-    return { status: 'SAFE', reason: `merged PR #${state.mergedPrNumber} verified at current remote head` };
+    if (state.mergedPrVerified) {
+        return { status: 'SAFE', reason: `merged PR #${state.mergedPrNumber} verified at current remote head` };
+    }
+    return {
+        status: 'SAFE',
+        reason: Array.isArray(state.supersededPrNumbers) && state.supersededPrNumbers.length > 1
+            ? `audited superseded TASK; replacement PRs ${state.supersededPrNumbers.map((number) => `#${number}`).join(' + ')} are merged into target`
+            : `audited superseded TASK; replacement PR #${state.supersededPrNumber} is merged into target`,
+    };
 }
 
 function isWorktreeDirty(worktreePath) {
@@ -168,7 +409,7 @@ function isWorktreeDirty(worktreePath) {
 }
 
 async function inspectCandidate(candidate, context) {
-    const { cwd, target, targetRef, worktreeByBranch, githubRepo } = context;
+    const { cwd, target, targetRef, worktreeByBranch, githubRepo, openPrSnapshot, supersededManifest } = context;
     const localRef = candidate.localExists ? candidate.branch : '';
     const remoteRef = candidate.remoteExists ? `origin/${candidate.branch}` : '';
     const localSha = localRef ? git(['rev-parse', localRef], { cwd }) : '';
@@ -183,7 +424,17 @@ async function inspectCandidate(candidate, context) {
     const dirtyWorktree = Boolean(worktree?.path && fs.existsSync(worktree.path) && isWorktreeDirty(worktree.path));
     const localRemoteMismatch = Boolean(localSha && remoteSha && localSha !== remoteSha);
 
+    const repositoryFullName = githubRepo ? `${githubRepo.owner}/${githubRepo.repo}` : '';
+    const openPrReferences = openPrSnapshot?.verified
+        ? collectOpenPullRequestReferences(candidate.branch, openPrSnapshot.pulls, repositoryFullName)
+        : [];
+    const openPrLookupVerified = !candidate.remoteExists || openPrSnapshot?.verified === true;
+    const openPrReason = openPrLookupVerified
+        ? ''
+        : (openPrSnapshot?.reason || 'origin is not a supported github.com repository');
+
     let mergedPr = { verified: false, reason: '' };
+    let superseded = { verified: false, reason: '' };
     if (uniqueCommits > 0) {
         const prHeadSha = remoteSha || localSha;
         if (!githubRepo) {
@@ -197,6 +448,17 @@ async function inspectCandidate(candidate, context) {
                 target,
                 headSha: prHeadSha,
             });
+            if (!mergedPr.verified) {
+                superseded = await verifyAuditedSupersession({
+                    branch: candidate.branch,
+                    remoteSha,
+                    target,
+                    targetRef,
+                    githubRepo,
+                    supersededManifest,
+                    cwd,
+                });
+            }
         }
     }
 
@@ -210,9 +472,16 @@ async function inspectCandidate(candidate, context) {
         unpushedCommits,
         uniqueCommits,
         remoteExists: candidate.remoteExists,
+        openPrLookupVerified,
+        openPrReferences,
+        openPrReason,
         mergedPrVerified: mergedPr.verified,
         mergedPrNumber: mergedPr.number,
         prReason: mergedPr.reason,
+        supersededVerified: superseded.verified,
+        supersededPrNumber: superseded.replacementPr,
+        supersededPrNumbers: superseded.replacementPrs,
+        supersededReason: superseded.reason,
     });
 
     return {
@@ -224,7 +493,11 @@ async function inspectCandidate(candidate, context) {
         worktree,
         currentWorktree,
         dirtyWorktree,
+        openPrLookupVerified,
+        openPrReferences,
+        openPrReason,
         mergedPr,
+        superseded,
         ...classification,
     };
 }
@@ -290,13 +563,16 @@ export function classifyCleanupRevalidation(previous, current) {
 }
 
 async function revalidateCleanupItems(items, context) {
-    const { cwd, target, targetRef, githubRepo } = context;
+    const { cwd, target, targetRef, githubRepo, supersededManifest } = context;
     console.log('\n🔎 Revalidating SAFE TASK branches immediately before cleanup...');
     git(['fetch', 'origin', '--prune'], { cwd });
 
     const worktrees = parseWorktrees(git(['worktree', 'list', '--porcelain'], { cwd }));
     const worktreeByBranch = new Map(worktrees.filter((entry) => entry.branch).map((entry) => [entry.branch, entry]));
     const freshCandidates = new Map(listTaskBranches(target, cwd).map((candidate) => [candidate.branch, candidate]));
+    const openPrSnapshot = githubRepo
+        ? await loadOpenPullRequestSnapshot(githubRepo)
+        : { verified: false, pulls: [], reason: 'origin is not a supported github.com repository' };
     const result = [];
 
     for (const previous of items) {
@@ -314,6 +590,8 @@ async function revalidateCleanupItems(items, context) {
             targetRef,
             worktreeByBranch,
             githubRepo,
+            openPrSnapshot,
+            supersededManifest,
         });
         const revalidation = classifyCleanupRevalidation(previous, current);
         if (revalidation.status === 'BLOCKED') {
@@ -328,12 +606,28 @@ async function revalidateCleanupItems(items, context) {
 }
 
 async function executeCleanup(items, context) {
-    const { cwd } = context;
+    const { cwd, githubRepo } = context;
     const revalidated = await revalidateCleanupItems(items, context);
 
     for (const entry of revalidated) {
         const item = entry.current;
         if (!item || entry.revalidation.status === 'SKIP') continue;
+
+        if (item.remoteExists) {
+            console.log(`\n🔒 Rechecking open PR references immediately before mutating ${item.branch}...`);
+            if (!githubRepo) {
+                throw new Error(`Cleanup blocked for ${item.branch}: origin is not a supported github.com repository`);
+            }
+            const openPrSnapshot = await loadOpenPullRequestSnapshot(githubRepo);
+            if (!openPrSnapshot.verified) {
+                throw new Error(`Cleanup blocked for ${item.branch}: ${openPrSnapshot.reason || 'open PR references could not be verified'}`);
+            }
+            const repositoryFullName = `${githubRepo.owner}/${githubRepo.repo}`;
+            const references = collectOpenPullRequestReferences(item.branch, openPrSnapshot.pulls, repositoryFullName);
+            if (references.length > 0) {
+                throw new Error(`Cleanup blocked for ${item.branch}: open PR reference protects this TASK: ${formatOpenPullRequestReferences(references)}`);
+            }
+        }
 
         console.log(`\n🧹 Cleaning ${item.branch}`);
         if (item.worktree?.path) {
@@ -390,12 +684,24 @@ async function main() {
 
     const originUrl = git(['remote', 'get-url', 'origin'], { cwd });
     const githubRepo = parseGitHubRepo(originUrl);
+    const supersededManifest = loadSupersededTaskManifest(cwd);
+    const openPrSnapshot = githubRepo
+        ? await loadOpenPullRequestSnapshot(githubRepo)
+        : { verified: false, pulls: [], reason: 'origin is not a supported github.com repository' };
     const worktrees = parseWorktrees(git(['worktree', 'list', '--porcelain'], { cwd }));
     const worktreeByBranch = new Map(worktrees.filter((entry) => entry.branch).map((entry) => [entry.branch, entry]));
     const candidates = listTaskBranches(target, cwd);
     const inspected = [];
     for (const candidate of candidates) {
-        inspected.push(await inspectCandidate(candidate, { cwd, target, targetRef, worktreeByBranch, githubRepo }));
+        inspected.push(await inspectCandidate(candidate, {
+            cwd,
+            target,
+            targetRef,
+            worktreeByBranch,
+            githubRepo,
+            openPrSnapshot,
+            supersededManifest,
+        }));
     }
 
     printReport(target, inspected);
@@ -418,6 +724,7 @@ async function main() {
         target,
         targetRef,
         githubRepo,
+        supersededManifest,
     });
     console.log('\n✅ SAFE TASK cleanup completed.');
 }

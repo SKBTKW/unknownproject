@@ -176,7 +176,7 @@ const LAND_SYSTEM_DATA = {
       { id: "SOCKET_ELK", nameKey: "SOCKET_ELK", category: "CAT_HUNTING", icon: "🐾", weight: 50, bonusYields: { food: 2, material: 0, wood: 0, defense: 1, mystic: 0 } },
       { id: "SOCKET_SACRED_TREE", nameKey: "SOCKET_SACRED_TREE", category: "CAT_SPECIAL_NATURE", icon: "💎", weight: 25, bonusYields: { food: 0, material: 0, wood: 0, defense: 0, mystic: 2 } }
     ],
-    "E2_WASTELAND": [
+    "E2_DESERT_HILL": [
       { id: "SOCKET_LIMESTONE", nameKey: "SOCKET_LIMESTONE", category: "CAT_STONE", icon: "🪨", weight: 100, bonusYields: { food: 0, material: 3, wood: 3, defense: 0, mystic: 0 } },
       { id: "SOCKET_HEMATITE", nameKey: "SOCKET_HEMATITE", category: "CAT_STRATEGIC_MINERAL", icon: "⛏️", weight: 55, bonusYields: { food: 0, material: 1, wood: 1, defense: 2, mystic: 0 } },
       { id: "SOCKET_SLATE", nameKey: "SOCKET_SLATE", category: "CAT_STONE", icon: "🪨", weight: 80, bonusYields: { food: 0, material: 2, wood: 2, defense: 0, mystic: 0 } },
@@ -199,7 +199,7 @@ const LAND_SYSTEM_DATA = {
       { id: "SOCKET_COPPER_VEIN", nameKey: "SOCKET_COPPER_VEIN", category: "CAT_STRATEGIC_MINERAL", icon: "⛏️", weight: 50, bonusYields: { food: 0, material: 1, wood: 1, defense: 1, mystic: 0 } },
       { id: "SOCKET_MOUNTAIN_HERB", nameKey: "SOCKET_MOUNTAIN_HERB", category: "CAT_USEFUL_PLANT", icon: "🌿", weight: 65, bonusYields: { food: 0, material: 0, wood: 0, defense: 0, mystic: 1 } }
     ],
-    "E2_DEEP_FOREST_HILL": [
+    "E2_DEEP_HILL": [
       { id: "SOCKET_FIR", nameKey: "SOCKET_FIR", category: "CAT_WOOD", icon: "🌳", weight: 90, bonusYields: { food: 0, material: 3, wood: 3, defense: 0, mystic: 0 } },
       { id: "SOCKET_HARDWOOD", nameKey: "SOCKET_HARDWOOD", category: "CAT_WOOD", icon: "🌳", weight: 55, bonusYields: { food: 0, material: 2, wood: 2, defense: 0, mystic: 1 } },
       { id: "SOCKET_BEAR", nameKey: "SOCKET_BEAR", category: "CAT_HUNTING", icon: "🐾", weight: 50, bonusYields: { food: 2, material: 0, wood: 0, defense: 1, mystic: 0 } },
@@ -222,6 +222,35 @@ const LAND_SYSTEM_DATA = {
     "E3_MOUNTAIN": { pattern: "4TILE_CONVEX_SHAPE", minTiles: 4, explorationAllowed: false, yieldMultiplier: 1.2, emberReward: 1 }
   }
 };
+
+export function isCanonicalTerrainId(terrainId) {
+  const id = String(terrainId || "");
+  return Boolean(id && LAND_SYSTEM_DATA.terrains[id]);
+}
+
+export function resolveCanonicalTerrainSemantic(terrainId, overlays = null) {
+  const id = String(terrainId || "");
+  const canonical = LAND_SYSTEM_DATA.terrains[id] || null;
+  const extras = overlays && typeof overlays === "object" ? overlays : {};
+
+  if (!canonical) {
+    return id
+      ? { ...extras, id: extras.id || id, terrainId: extras.terrainId || id }
+      : { ...extras };
+  }
+
+  // Custom per-cell flags may extend the terrain semantic, but canonical
+  // terrain fields win whenever both define the same property.
+  return {
+    ...extras,
+    ...canonical,
+    id: canonical.id || id,
+    terrainId: canonical.terrainId || canonical.id || id,
+    ...(canonical.baseYieldsPerTile
+      ? { baseYieldsPerTile: { ...canonical.baseYieldsPerTile } }
+      : {})
+  };
+}
 
 if (typeof window !== "undefined") {
   window.LAND_SYSTEM_DATA = LAND_SYSTEM_DATA;

@@ -200,17 +200,70 @@ body[data-player-tray-mode="trial"] #trialActionTrayHost {
     background: rgba(15, 115, 100, 0.92);
 }
 
-/*
- * Migration boundary:
- * point-specific controls now belong to the bottom Trial Action Tray.
- * The legacy right-side Trial context remains responsible for route/global
- * summary and planning progression until the Advisor / fallback panel split.
- */
-body[data-player-tray-mode="trial"] .trial-defense-allocation-panel .trial-defense-allocation-status,
-body[data-player-tray-mode="trial"] .trial-defense-allocation-panel .trial-defense-allocation-controls,
-body[data-player-tray-mode="trial"] .trial-defense-allocation-panel .trial-route-decision-actions,
-body[data-player-tray-mode="trial"] .trial-defense-allocation-panel .trial-defense-allocation-preview {
-    display: none !important;
+/* Final Trial contract: review, battle progression and short result causality
+   stay inside the same Player Tray surface. Right Context is not required. */
+.trial-action-tray-progress {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.trial-action-progress {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    max-height: var(--layout-trial-action-tray-max-height-compact);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.trial-action-progress .trial-review-route-list {
+    display: grid;
+    gap: 5px;
+}
+
+.trial-action-progress .trial-review-route-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.trial-action-progress .trial-review-route-details {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.trial-action-progress .trial-plan-review-requested-banner,
+.trial-action-progress .trial-plan-confirmed-banner,
+.trial-action-progress .trial-plan-activated-banner,
+.trial-action-progress .trial-battle-active-banner,
+.trial-action-progress .trial-battle-resolved-banner,
+.trial-action-progress .trial-completed-banner {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.trial-action-tray .trial-plan-finish-controls,
+.trial-action-tray .trial-plan-warning-actions,
+.trial-action-progress .trial-review-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.trial-action-tray .btn-trial-action,
+.trial-action-progress .btn-trial-action {
+    min-height: 34px;
+    border-radius: 7px;
+    border: 1px solid #56657a;
+    background: rgba(43, 52, 68, 0.96);
+    color: #ffffff;
+    font-weight: 800;
+    cursor: pointer;
 }
 
 @media (max-width: 900px) {

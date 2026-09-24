@@ -814,26 +814,73 @@ test("X. Advisor未mountでもStart成功", () => {
 });
 
 
-// --- Y. Advisor Foundation regression維持 ---
-test("Y. Advisor Foundation regression維持", () => {
+// --- Y. Battle開始後はcurrent battle routeがPresentationの正本になる ---
+test("Y. Battle開始後はcurrent battle routeがPresentationの正本になる", () => {
+    const { ui } = createFreshHarness();
+    const routes = ui.getTrialPlanningRoutes();
+
+    ui.selectTrialRoute(routes[0].id);
+    ui.selectTrialInterceptionCell(2, 1);
+    ui.setTrialDefenseAllocation(10);
+    ui.setTrialActiveRouteIntercept();
+
+    for (let i = 1; i < routes.length; i++) {
+        ui.selectTrialRoute(routes[i].id);
+        ui.setTrialActiveRouteSkip();
+    }
+
+    ui.selectTrialRoute(routes[1].id);
+    assert.equal(
+        ui.trialPresentationState.activeEnemyRoute,
+        routes[1].id,
+        "setup must leave a different planning route selected"
+    );
+
+    ui.finishTrialPlanning();
+    ui.confirmTrialPlanning();
+    ui.activateTrialPlan();
+
+    const activatedSemantic = ui.getTrialBoardSemanticData();
+    assert.equal(activatedSemantic.interceptionCandidates.length, 0);
+    assert.equal(activatedSemantic.selectedInterceptCell, null);
+    assert.equal(activatedSemantic.hoveredInterceptCell, null);
+
+    const start = ui.startTrialBattle();
+    assert.equal(start.success, true);
+    assert.equal(start.currentBattle.routeId, routes[0].id);
+    assert.equal(ui.getActiveTrialRoute().id, routes[0].id);
+
+    const battleSemantic = ui.getTrialBoardSemanticData();
+    assert.equal(battleSemantic.activeRouteId, routes[0].id);
+    assert.equal(battleSemantic.interceptionCandidates.length, 0);
+    assert.equal(battleSemantic.selectedInterceptCell, null);
+    assert.equal(battleSemantic.hoveredInterceptCell, null);
+
+    const staleSwitch = ui.selectTrialRoute(routes[1].id);
+    assert.equal(staleSwitch, false, "active battle must reject route switching");
+    assert.equal(ui.getActiveTrialRoute().id, routes[0].id);
+});
+
+// --- Z. Advisor Foundation regression維持 ---
+test("Z. Advisor Foundation regression維持", () => {
     
     execSync("node scratch/test_advisor_foundation.mjs", { stdio: "pipe" });
 });
 
-// --- Z. Settings regression維持 ---
-test("Z. Settings regression維持", () => {
+// --- AA. Settings regression維持 ---
+test("AA. Settings regression維持", () => {
     
     execSync("node scratch/test_settings_modal_system.mjs", { stdio: "pipe" });
 });
 
-// --- AA. Phase 2.8A regression維持 ---
-test("AA. Phase 2.8A regression維持", () => {
+// --- AB. Phase 2.8A regression維持 ---
+test("AB. Phase 2.8A regression維持", () => {
     
     execSync("node scratch/test_trial_phase28a_plan_activation.mjs", { stdio: "pipe" });
 });
 
-// --- AB. Phase 2.7C-F regression維持 ---
-test("AB. Phase 2.7C-F regression維持", () => {
+// --- AC. Phase 2.7C-F regression維持 ---
+test("AC. Phase 2.7C-F regression維持", () => {
     
     execSync("node scratch/test_trial_phase27cf_final_review_confirm.mjs", { stdio: "pipe" });
 });

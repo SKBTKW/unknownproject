@@ -77,8 +77,11 @@ assert(!!engine.state, 'GameEngine.state が正常に初期化されているこ
 assert(!!engine.gridEngine, 'GridEngine が DI 注入されていること');
 assert(!!engine.deckManager, 'DeckManager が DI 注入されていること');
 assert(!!engine.buffSystem, 'BuffSystem が DI 注入されていること');
-assert(engine.state.ember === 20, '初期残り火が 20 であること');
-assert(engine.state.food === 50 && engine.state.wood === 30, '初期食料が 50、初期資材が 30 であること');
+assert(engine.state.ember === 20 && engine.state.maxEmber === 20, '初期残り火が 20 / 20 であること');
+assert(engine.state.food === 50, '初期食料が 50 であること');
+assert(engine.state.wood === 30 && engine.state.material === 30, '初期資材が 30 で内部互換名も同期していること');
+assert(engine.state.currentDefense === 10 && engine.state.maxDefense === 10, '初期防衛が 10 / 10 であること');
+assert(engine.state.mystic === 0, '初期神秘が 0 であること');
 
 const injectedStageState = new GameState({
     stage: { id: 3, name: 'Stage 3', size: 9, maxTiles: 80 },

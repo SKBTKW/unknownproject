@@ -38,20 +38,18 @@ console.log("  ✅ PASS: ui_controller.js からの直接 GameState mutation: 0 
 
 // 2. Action Boundary Skeleton ＆ Deep Equality 検問: 通常土地配置 ➔ Undo
 console.log("🔍 [G1-2] Action Boundary ＆ Undo Deep Equality 検問 (土地配置 ➔ Undo)...");
-const engine = GameEngine.createGame();
-const stateBeforeAction = serializeGameState(engine.state);
+const engine = GameEngine.createGame({ runSeed: 0xA0710001 });
 
-// 手札カードを 1 枚選択して配置 (本営隣接 (1,2) に配置可能な土地)
-let testCard = engine.state.handOffering.find(c => {
-    if (!c) return false;
-    const shape = c.shape || (c.terrain && c.terrain.shape);
-    return shape && shape.length === 1 && shape[0].length === 1;
-});
-if (!testCard) {
-    testCard = { id: "G1_TEST_PLAINS", category: "LAND", rarity: "C", terrain: { terrainId: "PLAINS", shape: [[1]], yields: { food: 4 } } };
-    engine.state.handOffering[0] = testCard;
-}
-const offeringIdx = engine.state.handOffering.indexOf(testCard);
+// Offering乱数に依存させず、Action Boundaryそのものを検証する固定fixtureを使う。
+const testCard = {
+    id: "G1_TEST_PLAINS",
+    category: "LAND",
+    rarity: "C",
+    terrain: { terrainId: "PLAINS", shape: [[1]], yields: { food: 4 } },
+};
+const offeringIdx = 0;
+engine.state.handOffering[offeringIdx] = testCard;
+const stateBeforeAction = serializeGameState(engine.state);
 
 // Engine API 経由で土地配置
 const placeRes = engine.placeLand(1, 2, testCard, 0, { type: "OFFERING", index: offeringIdx });

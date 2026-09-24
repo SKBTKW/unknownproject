@@ -4,8 +4,13 @@ import { DeckManager } from './systems/deck_manager.js';
 import { DirectiveSystem } from './systems/directive_system.js';
 import { ProductionCalculator } from './systems/production_calculator.js';
 import { MaintenanceFallbackSystem } from './systems/maintenance_fallback_system.js';
-import { rotateShapeMatrix } from './core/placement_geometry.js';
+import {
+    hasMultiplePlacementTerrainAttributes,
+    rotateShapeMatrix
+} from './core/placement_geometry.js';
+import { isMultiAttributeProductionResolved } from './core/land_production_contract.js';
 import { isWaterSourceInfluence } from './core/lake_rules.js';
+import { normalizeRoadEdgeIds } from './core/road_network.js';
 
 class GameState {
     constructor(dependencies = {}) {
@@ -58,6 +63,7 @@ class GameState {
             this.placementGroupCounter = 1;
             this.mergedBlocks = {};
             this.mergeLinks = new Set(dependencies.mergeLinks || []);
+            this.roadEdges = new Set(normalizeRoadEdgeIds(dependencies.roadEdges));
             this.grantedConnectionPairs = new Set();
 
             // ⚔️ 3大試練スケジュール（±3前後ランダム決定 ＆ 5T前アナウンス）
@@ -294,7 +300,9 @@ class GameState {
                 for (let c = 0; c < this.grid[r].length; c++) {
                     const cell = this.grid[r][c];
                     if (cell.placed && !cell.isHQ && cell.terrain) {
-                        const bId = cell.blockId || `${r}_${c}`;
+                        const bId = cell.placementGroupId
+                            || cell.blockId
+                            || `${r}_${c}`;
                         if (!seenBlocks.has(bId)) {
                             seenBlocks.add(bId);
                             count++;
@@ -339,12 +347,31 @@ class GameState {
             return count;
         }
 
+        _validateLiveLandProduction(terrain) {
+            if (
+                hasMultiplePlacementTerrainAttributes(terrain)
+                && !isMultiAttributeProductionResolved(terrain)
+            ) {
+                return {
+                    can: false,
+                    success: false,
+                    reason: "MULTI_ATTRIBUTE_PRODUCTION_UNRESOLVED",
+                    reasons: ["MULTI_ATTRIBUTE_PRODUCTION_UNRESOLVED"]
+                };
+            }
+            return null;
+        }
+
         canPlaceShape(startR, startC, shapeMatrix, terrain = null, attributeCells = null) {
+            const productionGate = this._validateLiveLandProduction(terrain);
+            if (productionGate) return productionGate;
             if (this.gridEngine) return this.gridEngine.canPlaceShape(startR, startC, shapeMatrix, terrain, attributeCells);
             return { can: false, reason: "NO_GRID_ENGINE" };
         }
 
         placeShape(startR, startC, shapeMatrix, terrain, handIdx = -1, attributeCells = null) {
+            const productionGate = this._validateLiveLandProduction(terrain);
+            if (productionGate) return productionGate;
             if (this.gridEngine) return this.gridEngine.placeShape(startR, startC, shapeMatrix, terrain, handIdx, attributeCells);
             return { can: false, reason: "NO_GRID_ENGINE" };
         }

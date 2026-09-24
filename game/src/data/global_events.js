@@ -28,7 +28,7 @@ export const GLOBAL_EVENTS_MASTER = [
     },
     {
         id: "EVENT_RECOVERY_MOMENTUM", category: "OPPORTUNITY", nameKey: "EVENT_RECOVERY_MOMENTUM_NAME", descKey: "EVENT_RECOVERY_MOMENTUM_DESC", icon: "🛡️", minStage: 1, duration: 3, baseWeight: 100, importance: "MAJOR",
-        conditions: [{ type: "STAGE_AT_LEAST", value: 1 }, { type: "HISTORY_CHECK", checkType: "TRIAL_DAMAGE_TAKEN" }], effects: [{ type: "OFFERING_WEIGHT_TAG_BOOST", tag: "RECOVERY", multiplier: 2.0 }], endEffects: []
+        conditions: [{ type: "STAGE_AT_LEAST", value: 1 }, { type: "HAS_HISTORY", historyType: "DAMAGE_TAKEN_IN_LAST_TRIAL", minimum: 1 }], effects: [{ type: "OFFERING_WEIGHT_TAG_BOOST", tag: "RECOVERY", multiplier: 2.0 }], endEffects: []
     },
     {
         id: "EVENT_DEMIHUMAN_TRACES", category: "THREAT", nameKey: "EVENT_DEMIHUMAN_TRACES_NAME", descKey: "EVENT_DEMIHUMAN_TRACES_DESC", icon: "🐾", minStage: 1, duration: 1, baseWeight: 1, importance: "MAJOR", cooldownTurns: 999, randomEligible: false, oneShot: true,
@@ -36,11 +36,11 @@ export const GLOBAL_EVENTS_MASTER = [
     },
     {
         id: "EVENT_DEMIHUMAN_RAID", category: "THREAT", nameKey: "EVENT_DEMIHUMAN_RAID_NAME", descKey: "EVENT_DEMIHUMAN_RAID_DESC", icon: "⚔️", minStage: 2, duration: 1, baseWeight: 80, importance: "MAJOR", cooldownTurns: 8,
-        conditions: [{ type: "STAGE_AT_LEAST", value: 2 }, { type: "TRIAL_DISTANCE_ABOVE", value: 5 }], effects: [], endEffects: []
+        conditions: [{ type: "STAGE_AT_LEAST", value: 2 }, { type: "HAS_HISTORY", historyType: "TRIAL_SURVIVED" }, { type: "TRIAL_DISTANCE_ABOVE", value: 5 }], effects: [], endEffects: []
     },
     {
         id: "EVENT_DEMIHUMAN_SCOUTS", category: "THREAT", nameKey: "EVENT_DEMIHUMAN_SCOUTS_NAME", descKey: "EVENT_DEMIHUMAN_SCOUTS_DESC", choiceEventId: "EVENT_CAPTURED_SCOUT", icon: "🏹", minStage: 2, duration: 1, baseWeight: 60, importance: "MAJOR",
-        conditions: [{ type: "STAGE_AT_LEAST", value: 2 }, { type: "TRIAL_DISTANCE_ABOVE", value: 4 }], effects: [], endEffects: []
+        conditions: [{ type: "STAGE_AT_LEAST", value: 2 }, { type: "HAS_HISTORY", historyType: "TRIAL_SURVIVED" }, { type: "TRIAL_DISTANCE_ABOVE", value: 4 }], effects: [], endEffects: []
     }
 ];
 

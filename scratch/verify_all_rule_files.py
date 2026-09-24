@@ -89,70 +89,16 @@ def verify_all_specs_against_code(rules_dir, game_dir):
                 'message': f'{terrain_id} yield mismatch: {", ".join(mismatch_props)}' if mismatch_props else f'{terrain_id} yields matched expected values'
             })
 
-    # 2. Spec 02 Initial Resources: GameState / Engine の初期定数突合
-    game_state_path = os.path.join(src_dir, 'core', 'game_state.js')
-    if os.path.exists(game_state_path):
-        with open(game_state_path, 'r', encoding='utf-8') as f:
-            gs_content = f.read()
+    # Initial resources are verified behaviorally in scratch/test_all_modules.mjs.
+    # Keep this Python verifier focused on data/spec assets and fail-closed implementation presence.
 
-        # initial ember = 20
-        ember_match = re.search(r'this\.ember\s*=\s*(\d+)', gs_content)
-        act_ember = int(ember_match.group(1)) if ember_match else None
-        assertions.append({
-            'id': 'SPEC02_INITIAL_EMBER',
-            'spec': '02_resources_and_ember.md',
-            'passed': act_ember == 20,
-            'message': f'Initial Ember: expected 20, got {act_ember}'
-        })
+    # Merge yield multiplier and zone behavior are verified behaviorally by
+    # scratch/test_reclaimed_land.mjs and the domain suite. Avoid duplicating
+    # that contract here with source-string presence checks.
 
-        # initial food = 50
-        food_match = re.search(r'this\.food\s*=\s*(\d+)', gs_content)
-        act_food = int(food_match.group(1)) if food_match else None
-        assertions.append({
-            'id': 'SPEC02_INITIAL_FOOD',
-            'spec': '02_resources_and_ember.md',
-            'passed': act_food == 50,
-            'message': f'Initial Food: expected 50, got {act_food}'
-        })
-
-        # initial wood = 30
-        wood_match = re.search(r'this\.wood\s*=\s*(\d+)', gs_content)
-        act_wood = int(wood_match.group(1)) if wood_match else None
-        assertions.append({
-            'id': 'SPEC02_INITIAL_WOOD',
-            'spec': '02_resources_and_ember.md',
-            'passed': act_wood == 30,
-            'message': f'Initial Wood: expected 30, got {act_wood}'
-        })
-
-    # 3. Spec 03 Merge System 1.2x Multiplier
-    prod_calc_path = os.path.join(src_dir, 'systems', 'production_calculator.js')
-    if os.path.exists(prod_calc_path):
-        with open(prod_calc_path, 'r', encoding='utf-8') as f:
-            pc_content = f.read()
-        mult_match = re.search(r'(?:1\.2|1\.20)', pc_content)
-        has_group = 'mergeGroupId' in pc_content
-        assertions.append({
-            'id': 'SPEC03_MERGE_MULTIPLIER',
-            'spec': '03_merge_system.md',
-            'passed': bool(mult_match and has_group),
-            'message': '2x2 Merge 1.2x multiplier logic verified in production_calculator.js' if mult_match and has_group else 'Merge 1.2x logic missing'
-        })
-
-    # 4. Spec 04 Exploration System (2D6 exploration in deck_manager.js)
-    deck_mgr_path = os.path.join(src_dir, 'systems', 'deck_manager.js')
-    has_exploration = False
-    if os.path.exists(deck_mgr_path):
-        with open(deck_mgr_path, 'r', encoding='utf-8') as f:
-            dm_content = f.read()
-        has_exploration = 'executeExploration(r, c)' in dm_content or 'executeExploration(' in dm_content
-
-    assertions.append({
-        'id': 'SPEC04_EXPLORATION_METHOD',
-        'spec': '04_exploration_system.md',
-        'passed': has_exploration,
-        'message': '2D6 Exploration system verified in deck_manager.js' if has_exploration else 'Exploration system missing in deck_manager.js'
-    })
+    # Legacy exploration is intentionally not asserted here.
+    # rules/02_resources_and_ember.md explicitly removes the old permanent click-to-explore flow.
+    # Presence of executeExploration() is therefore not evidence of current-spec correctness.
 
     elapsed_sec = time.time() - start_time
     return assertions, elapsed_sec

@@ -13,7 +13,7 @@ function test(name, fn) {
     console.log("  ✅ " + name);
 }
 
-// Lightweight DOM mock for UIController and TrialDefenseAllocationComponent
+// Lightweight DOM mock for UIController and TrialActionTrayComponent
 class MockElement {
     constructor(id = "", className = "", tagName = "div") {
         this._id = id;
@@ -158,8 +158,8 @@ const ui = new UIController(engine);
 const startRes = ui.startDevelopmentTrialPreview("TERRAIN_COMPARE_BASIC");
 assert.equal(startRes.success, true, "Development Trial Preview harness should start successfully");
 
-const root = document.getElementById("trialDefenseAllocationRoot");
-assert.ok(root, "trialDefenseAllocationRoot should be mounted");
+const root = document.getElementById("trialActionTrayHost");
+assert.ok(root, "trialActionTrayHost should be mounted");
 
 // A. route一覧がPlanning順で表示される
 test("A. route一覧がPlanning順で表示される", () => {

@@ -664,22 +664,12 @@
       {
         "r": 0,
         "c": 0,
-        "terrainId": "GL1_PLAINS",
-        "nameKey": "TERRAIN_PLAINS",
-        "e": 1,
-        "gl": 1,
-        "category": "BASE",
-        "zoneCategory": "PLAINS",
-        "trialTerrainCategory": "STANDARD_E1"
+        "terrainId": "GL1_PLAINS"
       },
       {
         "r": 0,
         "c": 1,
-        "terrainId": "E2_HILL",
-        "nameKey": "TERRAIN_HILL",
-        "e": 2,
-        "gl": 1,
-        "category": "BASE"
+        "terrainId": "E2_HILL"
       }
     ],
     "minStage": 1,
@@ -687,7 +677,9 @@
     "rarity": "R",
     "weight": 0.08,
     "productionContract": {
-      "status": "UNRESOLVED"
+      "status": "RESOLVED",
+      "scope": "CELL",
+      "cellYieldSource": "CANONICAL_TERRAIN"
     },
     "descriptionKey": "CARD_DESC_MULTI_PLAINS_HILL_1X2"
   },
@@ -709,22 +701,12 @@
       {
         "r": 0,
         "c": 0,
-        "terrainId": "GL1_PLAINS",
-        "nameKey": "TERRAIN_PLAINS",
-        "e": 1,
-        "gl": 1,
-        "category": "BASE",
-        "zoneCategory": "PLAINS",
-        "trialTerrainCategory": "STANDARD_E1"
+        "terrainId": "GL1_PLAINS"
       },
       {
         "r": 0,
         "c": 1,
-        "terrainId": "GL2_FOREST",
-        "nameKey": "TERRAIN_FOREST",
-        "e": 1,
-        "gl": 2,
-        "category": "BASE"
+        "terrainId": "GL2_FOREST"
       }
     ],
     "minStage": 1,
@@ -732,7 +714,9 @@
     "rarity": "R",
     "weight": 0.08,
     "productionContract": {
-      "status": "UNRESOLVED"
+      "status": "RESOLVED",
+      "scope": "CELL",
+      "cellYieldSource": "CANONICAL_TERRAIN"
     },
     "descriptionKey": "CARD_DESC_MULTI_PLAINS_FOREST_1X2"
   },
@@ -754,20 +738,12 @@
       {
         "r": 0,
         "c": 0,
-        "terrainId": "E2_HILL",
-        "nameKey": "TERRAIN_HILL",
-        "e": 2,
-        "gl": 1,
-        "category": "BASE"
+        "terrainId": "E2_HILL"
       },
       {
         "r": 0,
         "c": 1,
-        "terrainId": "E3_MOUNTAIN",
-        "nameKey": "TERRAIN_MOUNTAIN",
-        "e": 3,
-        "gl": 0,
-        "category": "BASE"
+        "terrainId": "E3_MOUNTAIN"
       }
     ],
     "minStage": 2,
@@ -775,7 +751,9 @@
     "rarity": "R",
     "weight": 0.05,
     "productionContract": {
-      "status": "UNRESOLVED"
+      "status": "RESOLVED",
+      "scope": "CELL",
+      "cellYieldSource": "CANONICAL_TERRAIN"
     },
     "descriptionKey": "CARD_DESC_MULTI_HILL_MOUNTAIN_1X2"
   }

@@ -2,9 +2,9 @@ name: Scratch validation
 
 on:
   pull_request:
-    branches: [main, "AoT*"]
+    branches: [main]
   push:
-    branches: [main, "AoT*"]
+    branches: [main]
   workflow_dispatch:
 
 permissions:

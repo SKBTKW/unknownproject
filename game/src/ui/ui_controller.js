@@ -27,8 +27,12 @@ import { TrialController } from '../trial/flow/trial_controller.js';
 import { TrialPresentationState } from '../trial/presentation/trial_presentation_state.js';
 import { TrialCausalityPresenter } from '../trial/presentation/trial_causality_presenter.js';
 import { TrialAdvisorPublicReadModel } from '../trial/presentation/trial_advisor_public_read_model.js';
+import {
+    isTrialRouteSelectionEnabled,
+    resolveTrialPresentationRouteId
+} from '../presentation/trial_route_focus_resolver.js';
 import { TrialInterceptionPreviewComponent } from './trial_interception_preview_component.js';
-import { TrialDefenseAllocationComponent } from './trial_defense_allocation_component.js';
+import { TrialActionTrayComponent } from './trial_action_tray_component.js';
 import { LayoutStateManager, UI_LAYOUT_STATES, HAND_LAYOUT_STATES } from './layout_state_manager.js';
 import { DevelopmentTrialPreviewHarness } from '../trial/dev/development_trial_preview_harness.js';
 import { TRIAL_PLAN_REASONS, TRIAL_BATTLE_STATUSES } from '../trial/domain/trial_types.js';
@@ -82,10 +86,13 @@ class UIController {
         this.devDiceControls = (typeof document !== 'undefined') ? new DevDiceControlsComponent(this) : null;
         this.buildIdentityBadge = (typeof document !== 'undefined') ? new BuildIdentityBadgeComponent() : null;
         this.layoutStateManager = new LayoutStateManager();
-        this.trialDefenseAllocationComponent = (typeof document !== 'undefined') ? new TrialDefenseAllocationComponent(this, {
-            contextOwnerProvider: () => this.layoutStateManager.getContextOwner()
-        }) : null;
-        this.trialController = new TrialController();
+        this.trialActionTrayComponent = (typeof document !== 'undefined')
+            ? new TrialActionTrayComponent(this)
+            : null;
+        this.trialController = new TrialController({
+            deploymentService: this.engine?.trialDeploymentService || null,
+            defenseReservation: this.engine?.trialDefenseReservation || null
+        });
         this.trialPresentationState = new TrialPresentationState();
         this.trialCausalityPresenter = new TrialCausalityPresenter();
         this.trialAdvisorPublicReadModel = new TrialAdvisorPublicReadModel();
@@ -123,9 +130,6 @@ class UIController {
             },
             setAdvisorExpanded: expanded => {
                 this.advisorDockComponent?.applyLayoutViewState?.(expanded);
-            },
-            setTrialContextVisible: () => {
-                this.trialDefenseAllocationComponent?.render?.();
             }
         });
 
@@ -149,7 +153,12 @@ class UIController {
     get pinnedPreviewCard() { return this.interactionState.pinnedPreviewCard; }
     set pinnedPreviewCard(v) { this.interactionState.pinnedPreviewCard = v; }
 
-    startTrialInterceptionPreview(scenario, { deployedDefense = 6, routeId = null, cellResolver = null } = {}) {
+    startTrialInterceptionPreview(scenario, {
+        deployedDefense = 6,
+        routeId = null,
+        cellResolver = null,
+        useCanonicalDefenseReservation = true
+    } = {}) {
         const availableDefense = scenario.availableDefense ?? this.state.currentDefense ?? this.state.defense ?? 0;
         const ember = scenario.ember ?? this.state?.ember ?? (this.state?.emberSystem?.current ?? 20);
         const maxEmber = scenario.maxEmber ?? this.state?.maxEmber ?? (this.state?.emberSystem?.max ?? 20);
@@ -157,7 +166,13 @@ class UIController {
         const resolvedCellResolver = (typeof cellResolver === "function")
             ? cellResolver
             : ((r, c) => this.getBoardDisplayGrid()?.[r]?.[c] || null);
-        this.trialController.startScenario({ ...scenario, availableDefense, ember, maxEmber }, { cellResolver: resolvedCellResolver });
+        this.trialController.startScenario(
+            { ...scenario, availableDefense, ember, maxEmber },
+            {
+                cellResolver: resolvedCellResolver,
+                useCanonicalDefenseReservation
+            }
+        );
         this.trialPresentationState.clearPlanningState();
         this.trialPresentationState.setActiveEnemyRoute(routeId);
 
@@ -192,7 +207,8 @@ class UIController {
 
     stopTrialInterceptionPreview() {
         this.trialPreviewConfig = null;
-        this.trialController.state = null;
+        if (typeof this.trialController?.endScenario === "function") this.trialController.endScenario();
+        else this.trialController.state = null;
         this.trialPresentationState.clearPlanningState();
         this.hideCellTooltip();
         this.layoutStateManager.exitTrial();
@@ -244,8 +260,22 @@ class UIController {
             trialIndex,
             event
         });
+        if (
+            event === FIRST_RUN_TRIAL_TUTORIAL_EVENTS.CAUSALITY_OBSERVED
+            && next?.completed === true
+            && typeof this.engine?.firstRunActivationStore?.markCompleted === "function"
+        ) {
+            try {
+                this.lastFirstRunActivationPersistenceResult = this.engine.firstRunActivationStore.markCompleted();
+            } catch (error) {
+                this.lastFirstRunActivationPersistenceResult = {
+                    success: false,
+                    reason: "FIRST_RUN_ACTIVATION_PERSISTENCE_FAILED",
+                    errorMessage: error?.message || String(error)
+                };
+            }
+        }
         this.trialActionTrayComponent?.render?.();
-        this.trialDefenseAllocationComponent?.render?.();
         return next;
     }
 
@@ -282,12 +312,19 @@ class UIController {
         );
     }
 
+    isTrialRouteSelectionEnabled() {
+        return isTrialRouteSelectionEnabled(this.trialController?.state || null);
+    }
+
     getActiveTrialRoute() {
         if (!this.trialPreviewConfig || !this.trialController.state) return null;
         const routes = this.trialController.state.routes || [];
-        const activeRouteId = this.trialPresentationState.activeEnemyRoute;
-        if (activeRouteId !== null) {
-            return routes.find(route => route.id === activeRouteId) || null;
+        const focusRouteId = resolveTrialPresentationRouteId({
+            trialState: this.trialController.state,
+            trialPresentationState: this.trialPresentationState
+        });
+        if (focusRouteId !== null) {
+            return routes.find(route => (route?.id ?? route?.routeId) === focusRouteId) || null;
         }
         return routes[0] || null;
     }
@@ -404,7 +441,7 @@ class UIController {
         if (!this.getFirstRunTrialTutorialPolicy().allowInterceptionSelection) {
             this.trialPresentationState.clearHoveredCell();
             this.trialPresentationState.clearInterceptionPreview();
-            this.trialDefenseAllocationComponent?.render?.();
+            this.trialActionTrayComponent?.render?.();
             return null;
         }
         const cellState = this.getTrialInterceptionCellState(r, c);
@@ -433,14 +470,14 @@ class UIController {
         const effectiveCell = this.trialPresentationState.getEffectiveInterceptCell();
         if (!effectiveCell) {
             this.trialPresentationState.clearInterceptionPreview();
-            if (this.trialDefenseAllocationComponent) this.trialDefenseAllocationComponent.render();
+            if (this.trialActionTrayComponent) this.trialActionTrayComponent.render();
             return null;
         }
         const { r, c } = effectiveCell;
         const input = this.createTrialPreviewInput(r, c);
         if (!input) {
             this.trialPresentationState.clearInterceptionPreview();
-            if (this.trialDefenseAllocationComponent) this.trialDefenseAllocationComponent.render();
+            if (this.trialActionTrayComponent) this.trialActionTrayComponent.render();
             return null;
         }
         const result = this.trialController.previewInterception(input);
@@ -451,7 +488,7 @@ class UIController {
             deployedDefense: this.trialPresentationState.previewDefenseAllocation,
             result
         });
-        if (this.trialDefenseAllocationComponent) this.trialDefenseAllocationComponent.render();
+        if (this.trialActionTrayComponent) this.trialActionTrayComponent.render();
         return preview;
     }
 
@@ -466,7 +503,7 @@ class UIController {
         this.refreshTrialInterceptionPreview();
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
         this.renderBoardGrid(I18n);
-        if (this.trialDefenseAllocationComponent) this.trialDefenseAllocationComponent.render();
+        if (this.trialActionTrayComponent) this.trialActionTrayComponent.render();
         const tutorialState = this.recordFirstRunTrialTutorialEvent(
             FIRST_RUN_TRIAL_TUTORIAL_EVENTS.INTERCEPTION_SELECTED
         );
@@ -527,6 +564,7 @@ class UIController {
 
     selectTrialRoute(routeId) {
         if (!this.trialPreviewConfig) return false;
+        if (!this.isTrialRouteSelectionEnabled()) return false;
         this.acknowledgeFirstRunTrialRoute();
         this.trialPresentationState.setActiveEnemyRoute(routeId);
         this.trialPresentationState.clearHoveredCell();
@@ -551,7 +589,7 @@ class UIController {
 
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
         this.renderBoardGrid(I18n);
-        if (this.trialDefenseAllocationComponent) this.trialDefenseAllocationComponent.render();
+        if (this.trialActionTrayComponent) this.trialActionTrayComponent.render();
         return true;
     }
 
@@ -804,6 +842,9 @@ class UIController {
             return result;
         }
         this.trialPresentationState.planningValidationErrors = [];
+        this.trialPresentationState.clearSelectedInterceptCell();
+        this.trialPresentationState.clearHoveredCell();
+        this.trialPresentationState.clearInterceptionPreview();
         this.recordFirstRunTrialTutorialEvent(FIRST_RUN_TRIAL_TUTORIAL_EVENTS.BATTLE_STARTED);
         this.render();
         return result;
@@ -1159,7 +1200,7 @@ class UIController {
             this.renderBuffPanel();
             this.updateMulliganButton();
             this.updateFloatingPreview(null);
-            if (this.trialDefenseAllocationComponent) this.trialDefenseAllocationComponent.render();
+            if (this.trialActionTrayComponent) this.trialActionTrayComponent.render();
             if (this.advisorDockComponent) this.advisorDockComponent.render();
             this.devChronicleRestore?.render();
         } catch (err) {
@@ -1456,8 +1497,9 @@ class UIController {
             return;
         }
 
-        // ⚡ コマンドカードの場合: 発動確認ダイアログを開く
+        // ⚡ 対象指定Commandは盤面選択モードへ。通常Commandは従来どおり即時確認。
         if (category !== "LAND") {
+            if (this.beginTargetedCommandSelection(resCard, -1, reserveIdx)) return;
             this.triggerCommandCardPlay(resCard, -1, reserveIdx);
             return;
         }
@@ -1529,6 +1571,10 @@ class UIController {
 
     triggerCommandCardPlay(card, idx = -1, reserveIdx = -1) {
         if (!this.state || this.state.hasPickedThisTurn) return;
+        if (this.commandCardRequiresTarget(card)) {
+            this.beginTargetedCommandSelection(card, idx, reserveIdx);
+            return;
+        }
         const tObj = card.terrain || card;
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
         const cName = tObj.nameKey ? I18n.t(tObj.nameKey) : (tObj.id || "Card");
@@ -1589,7 +1635,7 @@ class UIController {
         // 🔄 選択中のカードを再度クリックした場合:
         // コマンドカードなら発動確認ダイアログを開く、土地カードなら選択解除
         if (this.selectedCardIdx === idx) {
-            if (category !== "LAND") {
+            if (category !== "LAND" && !this.commandCardRequiresTarget(card)) {
                 this.triggerCommandCardPlay(card, idx, -1);
                 return;
             }
@@ -1655,6 +1701,16 @@ class UIController {
         }
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
         const undoSys = this.undoSys || (typeof window !== "undefined" ? window.undoSys : null);
+
+        // 🎯 対象指定Command中は土地UndoよりCommand target選択を優先する。
+        if (this.selectedCard && this.commandCardRequiresTarget(this.selectedCard)) {
+            this.hideCellTooltip();
+            if (!this.isCommandExecutionTarget(this.selectedCard, r, c)) return false;
+            const selectedCard = this.selectedCard;
+            const selectedIdx = this.selectedCardIdx;
+            const result = this.playCommandCard(selectedCard, selectedIdx, { r, c });
+            return result?.success === true;
+        }
 
         // ↩️ 当ターン配置済みマスをクリックした場合は配置取り消し（Undo）
         if (undoSys && typeof undoSys.isCellPlacedThisTurn === "function" && undoSys.isCellPlacedThisTurn(r, c)) {
@@ -1813,7 +1869,42 @@ class UIController {
         this.hideCellTooltip();
     }
 
+    commandCardRequiresTarget(card = this.selectedCard) {
+        if (!card || !this.engine || typeof this.engine.commandCardRequiresTarget !== "function") return false;
+        return this.engine.commandCardRequiresTarget(card) === true;
+    }
+
+    getCommandCardExecutionTargets(card = this.selectedCard) {
+        if (!card || !this.engine || typeof this.engine.getCommandCardExecutionTargets !== "function") return [];
+        const targets = this.engine.getCommandCardExecutionTargets(card);
+        return Array.isArray(targets) ? targets : [];
+    }
+
+    isCommandExecutionTarget(card, r, c) {
+        return this.getCommandCardExecutionTargets(card).some(target =>
+            Number(target?.r) === r && Number(target?.c) === c
+        );
+    }
+
+    beginTargetedCommandSelection(card, handIdx = -1, reserveIdx = -1) {
+        if (!this.commandCardRequiresTarget(card)) return false;
+        this.selectedCard = card;
+        this.selectedCardIdx = handIdx;
+        this.selectedReserveIdx = reserveIdx;
+        if (focusLayerManager) focusLayerManager.onCardSelect();
+        this.render();
+        this.highlightPlaceableCells();
+        sfxManager.play("UI_CARD_SELECT");
+        return true;
+    }
+
     highlightPlaceableCells() {
+        if (typeof document !== "undefined") {
+            document.querySelectorAll(".cell.command-target-candidate").forEach(cell => {
+                cell.classList.remove("command-target-candidate");
+            });
+        }
+
         if (!this.selectedCard) {
             if (typeof window !== "undefined" && window.BlockPlacementSystem) {
                 window.BlockPlacementSystem.clearAllPreviews();
@@ -1823,9 +1914,14 @@ class UIController {
         const tObj = this.selectedCard.terrain || this.selectedCard;
         const category = this.selectedCard.category || tObj.category || "LAND";
         if (category !== "LAND") {
-            // 🛡️ コマンドカード選択時は土地配置ハイライトを完全停止
             if (typeof window !== "undefined" && window.BlockPlacementSystem) {
                 window.BlockPlacementSystem.clearAllPreviews();
+            }
+            if (this.commandCardRequiresTarget(this.selectedCard) && typeof document !== "undefined") {
+                for (const target of this.getCommandCardExecutionTargets(this.selectedCard)) {
+                    const cell = document.querySelector(`.cell[data-r="${target.r}"][data-c="${target.c}"]`);
+                    if (cell) cell.classList.add("command-target-candidate");
+                }
             }
             return;
         }
@@ -1838,6 +1934,9 @@ class UIController {
         if (!this.state || typeof document === "undefined") return;
         if (this.isTrialInteractionActive()) {
             this.updateTrialInterceptionPreview(r, c);
+            return;
+        }
+        if (this.selectedCard && this.commandCardRequiresTarget(this.selectedCard)) {
             return;
         }
         const cellData = this.getBoardDisplayGrid()[r][c];
@@ -2190,14 +2289,14 @@ class UIController {
         }
     }
 
-    playCommandCard(card, targetIdx) {
+    playCommandCard(card, targetIdx, target = null) {
         if (!this.engine || typeof this.engine.playCommandCard !== "function") return;
         let cardIdx = (typeof targetIdx === "number" && targetIdx >= 0) ? targetIdx : (this.state && this.state.handOffering ? this.state.handOffering.indexOf(card) : -1);
         const source = this.selectedReserveIdx !== -1
             ? { type: "RESERVE", index: this.selectedReserveIdx }
             : { type: "OFFERING", index: cardIdx };
 
-        const res = this.engine.playCommandCard(card, source);
+        const res = this.engine.playCommandCard(card, source, target);
         if (res && res.success) {
             const cardData = card?.terrain || card || {};
             if ((cardData.category || card?.category) === "MILITARY") this.advisorDockComponent?.observeMilitaryAction?.(cardData.id || cardData.nameKey || "MILITARY");
@@ -2212,6 +2311,7 @@ class UIController {
             if (focusLayerManager) focusLayerManager.onCardDeselect();
             this.render();
         }
+        return res;
     }
 
     toggleDirectiveModal() {

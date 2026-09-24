@@ -6,7 +6,10 @@ import {
   RUNNER_DECISION,
   buildAuditSummary,
   buildMergeDecision,
+  buildMergeDecisionProof,
   buildOperationPlan,
+  validateCleanupSnapshot,
+  validateMergedPullRequest,
   validatePullRequest,
 } from './safe_integration_runner_core.mjs';
 
@@ -44,14 +47,25 @@ function readyAnalysis(overrides = {}) {
   assert.equal(decision.candidate.branch, 'aot-task/AoT260919/tooling/example');
 }
 
-for (const [field, value] of [
-  ['BLOCKED', 1],
-  ['RECONCILE_REQUIRED', 1],
-  ['REVIEW_REQUIRED', 1],
-]) {
-  const decision = buildMergeDecision(readyAnalysis({ summary: { [field]: value } }));
-  assert.equal(decision.decision, RUNNER_DECISION.BLOCKED, `${field} must block automatic merge`);
-  assert.equal(decision.candidate, null);
+for (const field of ['BLOCKED', 'RECONCILE_REQUIRED', 'REVIEW_REQUIRED']) {
+  const decision = buildMergeDecision(readyAnalysis({ summary: { [field]: 1 } }));
+  assert.equal(decision.decision, RUNNER_DECISION.READY, `independent READY candidate survives unrelated ${field}`);
+  assert.equal(decision.candidate.branch, 'aot-task/AoT260919/tooling/example');
+}
+
+{
+  const blocked = buildMergeDecision(readyAnalysis({
+    integrationOrder: [],
+    summary: { READY: 0, BLOCKED: 1 },
+  }));
+  assert.equal(blocked.decision, RUNNER_DECISION.BLOCKED);
+}
+{
+  const review = buildMergeDecision(readyAnalysis({
+    integrationOrder: [],
+    summary: { READY: 0, REVIEW_REQUIRED: 1 },
+  }));
+  assert.equal(review.decision, RUNNER_DECISION.REVIEW_REQUIRED);
 }
 
 {
@@ -109,6 +123,12 @@ const goodPr = {
   const result = validatePullRequest(candidate, goodPr, 'AoT260919');
   assert.equal(result.ok, true);
   assert.deepEqual(result.problems, []);
+  const decision = buildMergeDecisionProof(readyAnalysis(), goodPr);
+  assert.equal(decision.decision, RUNNER_DECISION.READY);
+  assert.equal(decision.proof.targetSha, 'target-sha');
+  assert.equal(decision.proof.taskSha, 'task-sha');
+  assert.equal(decision.proof.pullRequestNumber, 123);
+  assert.equal(decision.proof.fullInspection, 'SUCCESS');
 }
 
 for (const mutate of [
@@ -135,9 +155,10 @@ for (const mutate of [
     },
   });
   assert.equal(plan.maxMergeCount, 1);
-  assert.equal(plan.branchDeletionAllowed, false);
+  assert.equal(plan.mergeMethod, 'squash');
+  assert.equal(plan.branchDeletionAllowed, true);
   assert.equal(plan.requiresPostMergeFullInspection, true);
-  assert.equal(plan.requiresPostMergeGuardRerun, true);
+  assert.equal(plan.requiresPostMergeGuardRerun, false);
 
   const audit = buildAuditSummary({ plan, executed: false });
   assert.equal(audit.branchDeleted, false);
@@ -149,14 +170,39 @@ for (const mutate of [
   assert.match(runnerSource, /run\('git', \['rev-parse', '--show-toplevel'\], \{ cwd: options\.cwd \|\| process\.cwd\(\) \}\)/);
   assert.doesNotMatch(runnerSource, /run\(options\.cwd \|\| process\.cwd\(\), \['rev-parse', '--show-toplevel'\]\)/);
   assert.match(runnerSource, /--match-head-commit/);
+  assert.match(runnerSource, /--squash/);
   assert.match(runnerSource, /--merge-next requires an explicit --target/);
   assert.match(runnerSource, /Post-merge Full Inspection/);
-  assert.match(runnerSource, /Post-merge Guard rerun/);
+  assert.match(runnerSource, /cleanupMergedTask/);
+  assert.doesNotMatch(runnerSource, /rerunGuardFromFreshClone/);
   assert.doesNotMatch(runnerSource, /--delete-branch/);
-  assert.doesNotMatch(runnerSource, /git\s+branch\s+-D/);
-  assert.doesNotMatch(runnerSource, /push[^\n]*--delete/);
+  assert.match(runnerSource, /\['branch', '-D', plan\.taskBranch\]/);
+  assert.match(runnerSource, /\['push', 'origin', '--delete', plan\.taskBranch\]/);
 }
 
+
+{
+  const proof = buildMergeDecisionProof(readyAnalysis(), goodPr).proof;
+  assert.equal(validateMergedPullRequest(proof, {
+    state: 'MERGED',
+    mergedAt: '2026-09-22T00:00:00Z',
+    baseRefName: 'AoT260919',
+    headRefName: candidate.branch,
+    headRefOid: candidate.sha,
+  }).ok, true);
+  assert.equal(validateCleanupSnapshot(proof, {
+    localSha: candidate.sha,
+    remoteSha: candidate.sha,
+    worktreeDirty: false,
+    worktreeLocked: false,
+    currentWorktree: false,
+    worktreeMissing: false,
+  }).ok, true);
+  assert.equal(validateCleanupSnapshot(proof, {
+    localSha: candidate.sha,
+    remoteSha: 'moved',
+  }).ok, false);
+}
 
 {
   const syntax = spawnSync(process.execPath, ['--check', 'scratch/safe_integration_runner.mjs'], {

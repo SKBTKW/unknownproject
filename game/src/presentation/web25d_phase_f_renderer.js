@@ -1,5 +1,12 @@
 import { Web25DPlacementPreviewCompositeRenderer } from './web25d_placement_preview_composite_renderer.js';
-import { drawWeb25DTrialOverlay } from './web25d_trial_overlay_renderer.js';
+import {
+    BOARD_INPUT_COMMANDS,
+    createBoardInputCommand
+} from './board_input_contract.js';
+import {
+    drawWeb25DTrialOverlay,
+    hitWeb25DTrialRouteSelector
+} from './web25d_trial_overlay_renderer.js';
 
 /**
  * Phase 2.5D-F renderer.
@@ -18,6 +25,27 @@ export class Web25DPhaseFRenderer extends Web25DPlacementPreviewCompositeRendere
             this.lastPointerCell = null;
         }
         super.setReadModel(readModel);
+    }
+
+    handleClick(event) {
+        const point = this.getCanvasPointFromEvent(event);
+        const selector = hitWeb25DTrialRouteSelector({
+            point,
+            projection: this.projection,
+            readModel: this.readModel
+        });
+
+        if (selector) {
+            if (!selector.isActive) {
+                this.bridge.dispatch(createBoardInputCommand(
+                    BOARD_INPUT_COMMANDS.SELECT_TRIAL_ROUTE,
+                    { routeId: selector.routeId }
+                ));
+            }
+            return selector.entryCell;
+        }
+
+        return super.handleClick(event);
     }
 
     render() {

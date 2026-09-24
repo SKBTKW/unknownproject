@@ -9,6 +9,18 @@
 
 import { ProductionCalculator } from '../systems/production_calculator.js';
 import { resolvePlacedBlockProduction } from '../core/land_production_contract.js';
+import {
+    BOARD_CELL_OCCUPANCY,
+    resolveBoardCellOccupancy
+} from '../core/board_cell_occupancy.js';
+import {
+    getSpecialBlockDefinition,
+    readEffectiveGreenery
+} from '../core/special_block_domain.js';
+import {
+    resolveSpecialBlockProduction,
+    SPECIAL_BLOCK_PRODUCTION_STATUS
+} from '../core/special_block_production.js';
 
 function isPlacementProductionPrimary(state, r, c, placementGroupId) {
     if (!placementGroupId || !Array.isArray(state?.grid)) return false;
@@ -21,6 +33,25 @@ function isPlacementProductionPrimary(state, r, c, placementGroupId) {
         }
     }
     return false;
+}
+
+function normalizeSpecialBlock(cell, production) {
+    const entity = cell?.specialBlock;
+    if (!entity) return null;
+    const definition = getSpecialBlockDefinition(entity.definitionId || entity.type);
+    return {
+        instanceId: entity.instanceId || null,
+        type: entity.type || entity.definitionId || null,
+        state: entity.state || null,
+        orientation: entity.orientation || null,
+        category: definition?.category || null,
+        nameKey: definition?.presentation?.nameKey || null,
+        capabilities: [...(definition?.capabilities || [])],
+        productionStatus: production?.status || SPECIAL_BLOCK_PRODUCTION_STATUS.NONE,
+        productionKind: production?.kind || null,
+        yields: production?.yields || { food: 0, wood: 0, defense: 0, mystic: 0 },
+        damageEffect: production?.damageEffect || null
+    };
 }
 
 function normalizeSocketResource(socket) {
@@ -52,26 +83,45 @@ export class CellViewDataService {
         const cell = state.grid[r][c];
         if (!cell) return null;
 
+        const occupancy = resolveBoardCellOccupancy(cell);
+        const specialBlockProduction = resolveSpecialBlockProduction(state, cell, { r, c });
+        const specialBlock = normalizeSpecialBlock(cell, specialBlockProduction);
+
         if (!cell.placed) {
+            const specialYields = specialBlockProduction.yields || { food: 0, wood: 0, defense: 0, mystic: 0 };
+            let primaryYield = null;
+            let maxVal = 0;
+            for (const res of ["food", "wood", "defense", "mystic"]) {
+                const val = specialYields[res] || 0;
+                if (val > maxVal) {
+                    maxVal = val;
+                    primaryYield = { resource: res, amount: val };
+                }
+            }
             return {
                 r,
                 c,
                 placed: false,
+                occupied: occupancy !== BOARD_CELL_OCCUPANCY.EMPTY,
+                occupancy,
                 isHQ: false,
                 terrainId: null,
-                category: null,
-                nameKey: null,
+                category: specialBlock ? "SPECIAL_BLOCK" : null,
+                nameKey: specialBlock?.nameKey || null,
                 elevation: null,
                 greenery: null,
                 hasSocket: !!cell.hasSocket,
                 socketResource: normalizeSocketResource(cell.socketResource),
-                yields: { food: 0, wood: 0, defense: 0, mystic: 0 },
-                productionStatus: null,
-                productionScope: null,
+                specialBlock,
+                yields: { ...specialYields },
+                productionStatus: specialBlock?.productionStatus || null,
+                productionScope: specialBlock ? "SPECIAL_BLOCK" : null,
                 blockProduction: null,
                 blockProductionPrimary: false,
-                primaryYield: null,
+                primaryYield,
                 modifiers: [],
+                landDamageEffect: null,
+                specialBlockDamageEffect: specialBlock?.damageEffect || null,
                 placementGroupId: null,
                 mergeGroupId: null
             };
@@ -81,8 +131,20 @@ export class CellViewDataService {
             ? this.calculator.calculateCellYieldBreakdown(state, r, c)
             : { baseYields: {}, modifiers: [], totalYields: {} };
 
-        const totalYields = breakdown.totalYields || { food: 0, wood: 0, defense: 0, mystic: 0 };
-        const modifiers = breakdown.modifiers || [];
+        const landYields = breakdown.totalYields || { food: 0, wood: 0, defense: 0, mystic: 0 };
+        const specialYields = specialBlockProduction.yields || { food: 0, wood: 0, defense: 0, mystic: 0 };
+        const totalYields = {
+            food: (landYields.food || 0) + (specialYields.food || 0),
+            wood: (landYields.wood || 0) + (specialYields.wood || 0),
+            defense: (landYields.defense || 0) + (specialYields.defense || 0),
+            mystic: (landYields.mystic || 0) + (specialYields.mystic || 0)
+        };
+        const modifiers = [...(breakdown.modifiers || [])];
+        if (specialBlockProduction.status === SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED) {
+            for (const [resource, amount] of Object.entries(specialYields)) {
+                if (amount) modifiers.push({ type: "SPECIAL_BLOCK", resource, amount });
+            }
+        }
 
         let primaryYield = null;
         let maxVal = 0;
@@ -103,14 +165,17 @@ export class CellViewDataService {
             r,
             c,
             placed: true,
+            occupied: true,
+            occupancy,
             isHQ: !!cell.isHQ,
             terrainId: t.terrainId || t.id || (cell.isHQ ? "HQ" : null),
             category: t.category || (cell.isHQ ? "HQ" : "LAND"),
             nameKey: t.nameKey || (cell.isHQ ? "TERRAIN_HQ_NAME" : null),
             elevation: Number.isInteger(t.e) ? t.e : null,
-            greenery: Number.isInteger(t.gl) ? t.gl : null,
+            greenery: readEffectiveGreenery(cell),
             hasSocket: !!cell.hasSocket,
             socketResource: normalizeSocketResource(cell.socketResource),
+            specialBlock,
             yields: totalYields,
             baseYields: breakdown.baseYields || { food: 0, wood: 0, defense: 0, mystic: 0 },
             productionStatus: breakdown.productionStatus || null,
@@ -119,6 +184,8 @@ export class CellViewDataService {
             blockProductionPrimary,
             primaryYield,
             modifiers,
+            landDamageEffect: breakdown.damageEffect || null,
+            specialBlockDamageEffect: specialBlock?.damageEffect || null,
             placementGroupId: cell.placementGroupId || null,
             mergeGroupId: cell.mergeGroupId || null
         };

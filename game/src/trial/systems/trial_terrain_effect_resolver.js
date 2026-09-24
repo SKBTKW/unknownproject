@@ -1,3 +1,4 @@
+import { readSpecialBlockTrialTraits } from "../../core/special_block_domain.js";
 import {
     DEFAULT_TRIAL_RULES,
     MODIFIER_OPERATIONS,
@@ -39,17 +40,78 @@ function multiplierModifier(source, target, value, priority = 0) {
     };
 }
 
+function resolveApproachDirection(interceptCell, approachCell) {
+    const ir = Number.isInteger(interceptCell?.row) ? interceptCell.row : interceptCell?.r;
+    const ic = Number.isInteger(interceptCell?.column) ? interceptCell.column : interceptCell?.c;
+    const ar = Number.isInteger(approachCell?.row) ? approachCell.row : approachCell?.r;
+    const ac = Number.isInteger(approachCell?.column) ? approachCell.column : approachCell?.c;
+    if (![ir, ic, ar, ac].every(Number.isInteger)) return null;
+    const dr = ar - ir;
+    const dc = ac - ic;
+    if (dr === -1 && dc === 0) return 'N';
+    if (dr === 1 && dc === 0) return 'S';
+    if (dr === 0 && dc === 1) return 'E';
+    if (dr === 0 && dc === -1) return 'W';
+    return null;
+}
+
+function resolveSpecialTactics(context, traits, config) {
+    const tactics = [];
+    const declared = new Set(traits?.specialTactics || []);
+    if (declared.has('PALISADE_DIRECTIONAL_DEFENSE')) {
+        const orientation = context.interceptCell?.specialBlock?.orientation || null;
+        const approachDirection = resolveApproachDirection(
+            context.interceptCell,
+            context.approachCell
+        );
+        const active = Boolean(
+            orientation
+            && approachDirection
+            && orientation === approachDirection
+        );
+        tactics.push({
+            id: 'PALISADE_DIRECTIONAL_DEFENSE',
+            active,
+            orientation,
+            approachDirection,
+            defenseMultiplier: active && Number.isFinite(config.palisadeDirectionalMultiplier)
+                ? config.palisadeDirectionalMultiplier
+                : null
+        });
+    }
+    if (declared.has('EARTHWORK_DEFENSE')) {
+        tactics.push({
+            id: 'EARTHWORK_DEFENSE',
+            active: true,
+            defenseMultiplier: Number.isFinite(config.earthworkDefenseMultiplier)
+                ? config.earthworkDefenseMultiplier
+                : null
+        });
+    }
+    return tactics;
+}
+
 export class TrialTerrainEffectResolver {
     constructor(config = {}) {
         this.config = {
             ...DEFAULT_TRIAL_RULES,
             ...config,
+            palisadeDirectionalMultiplier: Number.isFinite(config.palisadeDirectionalMultiplier)
+                ? config.palisadeDirectionalMultiplier
+                : null,
+            earthworkDefenseMultiplier: Number.isFinite(config.earthworkDefenseMultiplier)
+                ? config.earthworkDefenseMultiplier
+                : null,
             forestDeployment: { ...DEFAULT_TRIAL_RULES.forestDeployment, ...config.forestDeployment },
             deepForestDeployment: { ...DEFAULT_TRIAL_RULES.deepForestDeployment, ...config.deepForestDeployment }
         };
     }
 
     canInterceptAt(cell) {
+        const specialTraits = readSpecialBlockTrialTraits(cell);
+        if (typeof specialTraits?.interceptionAllowed === "boolean") {
+            return specialTraits.interceptionAllowed;
+        }
         const id = terrainId(cell);
         return !!id && !WETLAND_IDS.has(id) && !MOUNTAIN_IDS.has(id);
     }
@@ -63,8 +125,13 @@ export class TrialTerrainEffectResolver {
         const events = [];
         const interceptId = terrainId(context.interceptCell);
         const approachId = terrainId(context.approachCell);
+        const specialBlockTraits = readSpecialBlockTrialTraits(context.interceptCell);
+        const specialTactics = resolveSpecialTactics(context, specialBlockTraits, this.config);
+        const suppressTerrainTactic = specialBlockTraits?.suppressTerrainTactic === true;
 
-        const deployment = DEEP_FOREST_IDS.has(interceptId)
+        const deployment = suppressTerrainTactic
+            ? null
+            : DEEP_FOREST_IDS.has(interceptId)
             ? { id: TRIAL_TERRAIN_EFFECTS.DEEP_FOREST_DEPLOYMENT, config: this.config.deepForestDeployment }
             : FOREST_IDS.has(interceptId)
                 ? { id: TRIAL_TERRAIN_EFFECTS.FOREST_DEPLOYMENT, config: this.config.forestDeployment }
@@ -96,7 +163,7 @@ export class TrialTerrainEffectResolver {
         const approachElevation = context.approachCell?.elevation;
         const isE0E1Transition = (approachElevation === 0 && interceptElevation === 1)
             || (approachElevation === 1 && interceptElevation === 0);
-        if (!isE0E1Transition && Number.isFinite(interceptElevation) && Number.isFinite(approachElevation) && interceptElevation !== approachElevation) {
+        if (!suppressTerrainTactic && !isE0E1Transition && Number.isFinite(interceptElevation) && Number.isFinite(approachElevation) && interceptElevation !== approachElevation) {
             const target = interceptElevation > approachElevation
                 ? MODIFIER_TARGETS.HUMAN_INTERCEPTION
                 : MODIFIER_TARGETS.ENEMY_SUPPRESSION;
@@ -112,6 +179,30 @@ export class TrialTerrainEffectResolver {
             });
         }
 
+        const palisadeTactic = specialTactics.find(
+            tactic => tactic.id === 'PALISADE_DIRECTIONAL_DEFENSE'
+        );
+        if (palisadeTactic?.active && Number.isFinite(palisadeTactic.defenseMultiplier)) {
+            modifiers.push(multiplierModifier(
+                'PALISADE_DIRECTIONAL_DEFENSE',
+                MODIFIER_TARGETS.HUMAN_INTERCEPTION,
+                palisadeTactic.defenseMultiplier,
+                30
+            ));
+        }
+
+        const earthworkTactic = specialTactics.find(
+            tactic => tactic.id === 'EARTHWORK_DEFENSE'
+        );
+        if (earthworkTactic?.active && Number.isFinite(earthworkTactic.defenseMultiplier)) {
+            modifiers.push(multiplierModifier(
+                'EARTHWORK_DEFENSE',
+                MODIFIER_TARGETS.HUMAN_INTERCEPTION,
+                earthworkTactic.defenseMultiplier,
+                30
+            ));
+        }
+
         for (const modifier of modifiers.filter(item => item.source !== deployment?.id)) {
             events.push({
                 type: "TERRAIN_EFFECT_APPLIED",
@@ -125,6 +216,8 @@ export class TrialTerrainEffectResolver {
         return {
             canIntercept: this.canInterceptAt(context.interceptCell),
             canEnterApproachRoute: this.canEnterNormalRoute(context.approachCell),
+            specialBlockTraits,
+            specialTactics,
             modifiers,
             events
         };

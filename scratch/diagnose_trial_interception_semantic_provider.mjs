@@ -34,8 +34,17 @@ const trialPresentationState = {
 let previewCalls = 0;
 const previewResolver = input => {
     previewCalls += 1;
+    const success = input.interceptCell.cellId === '0:1';
     return {
-        success: input.interceptCell.cellId === '0:1'
+        success,
+        modifiers: success
+            ? [{
+                source: 'HIGH_GROUND',
+                target: 'HUMAN_INTERCEPTION',
+                operation: 'MULTIPLY',
+                value: 1.2
+            }]
+            : []
     };
 };
 
@@ -67,6 +76,9 @@ assertEqual(second.onRoute, true, 'second on route');
 assertEqual(second.canIntercept, true, 'domain resolver can allow interception');
 assertEqual(second.isPlanned, true, 'planned state preserved');
 assertEqual(second.isPlannedActive, true, 'active-route plan identified');
+assertEqual(second.tacticalEffects.length, 1, 'domain preview modifiers project into tactical effect semantics');
+assertEqual(second.tacticalEffects[0].effectId, 'HIGH_GROUND', 'tactical effect identity remains domain-authored');
+assertEqual(second.tacticalEffects[0].phase, 'AVAILABLE', 'planning tactical effect remains preview-only semantic');
 assertEqual(previewCalls, 1, 'domain resolver called exactly once');
 
 const hq = provider.getCellState({

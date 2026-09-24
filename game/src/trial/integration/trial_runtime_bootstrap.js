@@ -1,7 +1,9 @@
 import { GameFactHub } from "../../core/game_fact.js";
+import { BoardBattleSiteRecorder } from "../../core/board_battle_site_recorder.js";
 import { attachWarningSubsystem } from "../../warning/integration/warning_bootstrap.js";
 import { WarningTimingBridge } from "../../warning/systems/warning_timing_bridge.js";
 import { TrialDueStateService } from "../systems/trial_due_state_service.js";
+import { TrialBoardDamageBridge } from "../systems/trial_board_damage_bridge.js";
 import { TrialStageProgressionService } from "../systems/trial_stage_progression_service.js";
 import { PostTrialProgressionService } from "../systems/post_trial_progression_service.js";
 import { PostTrialSkillProgressionRouter } from "../systems/post_trial_skill_progression_router.js";
@@ -147,6 +149,21 @@ export function attachTrialRuntimeSubsystems(engine, {
         });
     }
 
+    if (!engine.boardBattleSiteRecorder) {
+        engine.boardBattleSiteRecorder = new BoardBattleSiteRecorder({
+            gameFactHub: factHub,
+            state: engine.state
+        });
+    }
+
+    if (!engine.trialBoardDamageBridge) {
+        engine.trialBoardDamageBridge = new TrialBoardDamageBridge({
+            gameFactHub: factHub,
+            state: engine.state,
+            boardDamageService: engine.boardDomainAdapter?.boardDamageService || null
+        });
+    }
+
     // The constructor-side Investigation bootstrap may have reported failure
     // only because Warning lacked a shared GameFactHub. Preserve the already
     // attached Investigation runtime/unlock and reflect the now-complete state.
@@ -173,7 +190,9 @@ export function attachTrialRuntimeSubsystems(engine, {
         postTrialSkillProgressionRouterAttached: true,
         postTrialProgressionAttached: true,
         postTrialProgressionReadAttached: true,
-        postTrialAftermathCaptureAttached: true
+        postTrialAftermathCaptureAttached: true,
+        boardBattleSiteRecorderAttached: true,
+        trialBoardDamageBridgeAttached: true
     };
 }
 

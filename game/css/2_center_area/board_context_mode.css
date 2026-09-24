@@ -1,7 +1,201 @@
 /* Board Presentation context rules. Screen-space UI visibility belongs to LayoutStateManager. */
 
-body[data-board-context="trial"] #gridBoard .tile-yield-line,
-body[data-board-context="trial"] #gridBoard .socket-yield-line,
+#gridBoard[data-board-yields-visibility="SUPPRESSED"] .tile-yield-line,
+#gridBoard[data-board-yields-visibility="SUPPRESSED"] .socket-yield-line,
+#gridBoard[data-board-yields-visibility="SUPPRESSED"] .symbolic-yield-badge,
+#gridBoard[data-board-yields-visibility="HIDDEN"] .tile-yield-line,
+#gridBoard[data-board-yields-visibility="HIDDEN"] .socket-yield-line,
+#gridBoard[data-board-yields-visibility="HIDDEN"] .symbolic-yield-badge {
+    display: none;
+}
+
+#gridBoard[data-board-sockets-visibility="SECONDARY"] .socket-tile-content-box,
+#gridBoard[data-board-sockets-visibility="SECONDARY"] .symbolic-socket-icon {
+    opacity: 0.58;
+}
+
+#gridBoard[data-board-sockets-visibility="SECONDARY"] .cell.socket-unopened {
+    animation: none;
+}
+
+#gridBoard[data-board-sockets-visibility="SECONDARY"] .socket-star-icon {
+    opacity: 0.48;
+    filter: drop-shadow(0 0 5px rgba(46, 204, 113, 0.45));
+}
+
+#gridBoard[data-board-sockets-visibility="HIDDEN"] .socket-tile-content-box,
+#gridBoard[data-board-sockets-visibility="HIDDEN"] .symbolic-socket-icon,
+#gridBoard[data-board-sockets-visibility="HIDDEN"] .socket-star-icon {
+    display: none;
+}
+
+#gridBoard .board-road-segments {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    pointer-events: none;
+}
+#gridBoard .board-road-segment {
+    position: absolute;
+    display: block;
+    background: rgba(177, 154, 116, 0.90);
+    box-shadow: 0 0 0 1px rgba(66, 58, 48, 0.72);
+}
+#gridBoard .board-road-segment.is-north,
+#gridBoard .board-road-segment.is-south {
+    width: 3px;
+    height: 50%;
+    left: calc(50% - 1.5px);
+}
+#gridBoard .board-road-segment.is-east,
+#gridBoard .board-road-segment.is-west {
+    width: 50%;
+    height: 3px;
+    top: calc(50% - 1.5px);
+}
+#gridBoard .board-road-segment.is-north { top: 0; }
+#gridBoard .board-road-segment.is-south { bottom: 0; }
+#gridBoard .board-road-segment.is-east { right: 0; }
+#gridBoard .board-road-segment.is-west { left: 0; }
+#gridBoard[data-board-roads-visibility="SECONDARY"] .board-road-segments {
+    opacity: 0.55;
+}
+#gridBoard[data-board-roads-visibility="SUPPRESSED"] .board-road-segments {
+    opacity: 0.24;
+}
+#gridBoard[data-board-roads-visibility="HIDDEN"] .board-road-segments {
+    display: none;
+}
+
+#gridBoard[data-board-trial-routes-visibility="SECONDARY"] .cell.trial-route-cell {
+    box-shadow: inset 0 0 0 1px rgba(230, 126, 34, 0.28);
+}
+#gridBoard[data-board-trial-routes-visibility="SECONDARY"] .cell.trial-route-cell::before {
+    opacity: 0.55;
+}
+#gridBoard[data-board-trial-routes-visibility="SUPPRESSED"] .cell.trial-route-cell {
+    box-shadow: inset 0 0 0 1px rgba(230, 126, 34, 0.12);
+}
+#gridBoard[data-board-trial-routes-visibility="SUPPRESSED"] .cell.trial-route-cell::before {
+    opacity: 0.24;
+}
+
+#gridBoard[data-board-invasion-entry-visibility="SECONDARY"] .trial-route-entry::after,
+#gridBoard[data-board-invasion-entry-visibility="SECONDARY"] .trial-route-entry-selector {
+    opacity: 0.55;
+}
+#gridBoard[data-board-invasion-entry-visibility="SUPPRESSED"] .trial-route-entry::after,
+#gridBoard[data-board-invasion-entry-visibility="SUPPRESSED"] .trial-route-entry-selector {
+    opacity: 0.24;
+}
+#gridBoard[data-board-invasion-entry-visibility="HIDDEN"] .trial-route-entry::after,
+#gridBoard[data-board-invasion-entry-visibility="HIDDEN"] .trial-route-entry-selector {
+    display: none;
+}
+
+#gridBoard[data-board-interception-visibility="SECONDARY"] .cell.trial-interception-candidate {
+    box-shadow: inset 0 0 0 2px rgba(241, 196, 15, 0.48), 0 0 7px rgba(241, 196, 15, 0.20);
+}
+#gridBoard[data-board-interception-visibility="SECONDARY"] .cell.trial-interception-planned {
+    box-shadow: inset 0 0 0 2px rgba(16, 185, 129, 0.52), 0 0 7px rgba(16, 185, 129, 0.20);
+}
+#gridBoard[data-board-interception-visibility="SUPPRESSED"] .cell.trial-interception-candidate {
+    box-shadow: inset 0 0 0 1px rgba(241, 196, 15, 0.24), 0 0 4px rgba(241, 196, 15, 0.10);
+}
+#gridBoard[data-board-interception-visibility="SUPPRESSED"] .cell.trial-interception-planned {
+    box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.26), 0 0 4px rgba(16, 185, 129, 0.10);
+}
+
+#gridBoard[data-board-battle-markers-visibility="SECONDARY"] .cell.trial-battle-active {
+    box-shadow: 0 0 7px rgba(245, 158, 11, 0.38), inset 0 0 5px rgba(245, 158, 11, 0.28);
+}
+#gridBoard[data-board-battle-markers-visibility="SUPPRESSED"] .cell.trial-battle-active {
+    box-shadow: 0 0 4px rgba(245, 158, 11, 0.18), inset 0 0 3px rgba(245, 158, 11, 0.14);
+}
+
+#gridBoard .trial-defense-allocation-badge {
+    position: absolute;
+    right: 3px;
+    bottom: 3px;
+    z-index: 13;
+    min-width: 22px;
+    height: 16px;
+    padding: 0 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    border: 1px solid rgba(174, 216, 239, 0.88);
+    border-radius: 4px;
+    background: rgba(24, 39, 59, 0.94);
+    color: rgba(239, 248, 255, 0.98);
+    font-size: 10px;
+    font-weight: 900;
+    line-height: 1;
+    pointer-events: none;
+    white-space: nowrap;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
+}
+#gridBoard .trial-defense-allocation-badge.is-battle {
+    border-color: rgba(255, 216, 145, 0.92);
+}
+#gridBoard[data-board-defense-allocation-visibility="SECONDARY"] .trial-defense-allocation-badge {
+    opacity: 0.55;
+}
+#gridBoard[data-board-defense-allocation-visibility="SUPPRESSED"] .trial-defense-allocation-badge {
+    opacity: 0.24;
+}
+#gridBoard[data-board-defense-allocation-visibility="HIDDEN"] .trial-defense-allocation-badge {
+    display: none;
+}
+
+#gridBoard .trial-tactical-effect-stack {
+    position: absolute;
+    left: 3px;
+    top: 3px;
+    z-index: 13;
+    display: inline-flex;
+    gap: 2px;
+    pointer-events: none;
+}
+#gridBoard .trial-tactical-effect-badge {
+    width: 16px;
+    height: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    border: 1px solid rgba(159, 218, 229, 0.88);
+    border-radius: 4px;
+    background: rgba(25, 42, 49, 0.88);
+    color: rgba(246, 247, 238, 0.98);
+    font-size: 10px;
+    font-weight: 900;
+    line-height: 1;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.48);
+}
+#gridBoard .trial-tactical-effect-badge.is-applied {
+    background: rgba(40, 38, 29, 0.94);
+}
+#gridBoard .trial-tactical-effect-badge.is-applied.is-advantage {
+    border-color: rgba(142, 224, 167, 0.94);
+}
+#gridBoard .trial-tactical-effect-badge.is-applied.is-disadvantage {
+    border-color: rgba(239, 151, 139, 0.94);
+}
+#gridBoard .trial-tactical-effect-badge.is-applied.is-mixed {
+    border-color: rgba(236, 205, 130, 0.94);
+}
+#gridBoard[data-board-tactical-effects-visibility="SECONDARY"] .trial-tactical-effect-stack {
+    opacity: 0.55;
+}
+#gridBoard[data-board-tactical-effects-visibility="SUPPRESSED"] .trial-tactical-effect-stack {
+    opacity: 0.24;
+}
+#gridBoard[data-board-tactical-effects-visibility="HIDDEN"] .trial-tactical-effect-stack {
+    display: none;
+}
+
 body[data-board-context="trial"] #gridBoard .searched-badge {
     display: none;
 }
@@ -9,6 +203,78 @@ body[data-board-context="trial"] #gridBoard .searched-badge {
 body[data-board-context="trial"] #gridBoard .trial-route-cell,
 body[data-board-context="trial"] #gridBoard .trial-interception-candidate,
 body[data-board-context="trial"] #gridBoard .trial-interception-planned,
-body[data-board-context="trial"] #gridBoard .trial-battle-active {
+body[data-board-context="trial"] #gridBoard .trial-battle-pending,
+body[data-board-context="trial"] #gridBoard .trial-battle-active,
+body[data-board-context="trial"] #gridBoard .trial-battle-resolved,
+body[data-board-context="trial"] #gridBoard .trial-battle-current {
     isolation: isolate;
+}
+
+
+/* Historical Battle Site marker. This is persistent Board history, not a live Trial marker. */
+#gridBoard .battle-site-history-marker {
+    position: absolute;
+    left: 4px;
+    bottom: 4px;
+    z-index: 12;
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    border: 1px solid rgba(184, 160, 128, 0.82);
+    border-radius: 50%;
+    background: rgba(35, 31, 29, 0.82);
+    color: rgba(226, 208, 179, 0.92);
+    font-size: 11px;
+    line-height: 1;
+    pointer-events: none;
+    opacity: 0.78;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.48);
+}
+#gridBoard .cell.has-battle-site-history:hover .battle-site-history-marker,
+#gridBoard .cell.board-logical-selected .battle-site-history-marker {
+    opacity: 1;
+}
+body[data-board-context="trial"] #gridBoard .battle-site-history-marker {
+    opacity: 0.42;
+}
+
+
+/* Board damage markers are persistent semantic state, separate from live Trial overlays. */
+#gridBoard .board-damage-marker-stack {
+    position: absolute;
+    right: 4px;
+    top: 4px;
+    z-index: 12;
+    display: inline-flex;
+    gap: 2px;
+    pointer-events: none;
+}
+#gridBoard .board-damage-marker {
+    width: 16px;
+    height: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 900;
+    line-height: 1;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.52);
+}
+#gridBoard .board-damage-marker.is-land {
+    border: 1px solid rgba(206, 143, 111, 0.90);
+    background: rgba(70, 37, 31, 0.86);
+    color: rgba(242, 181, 145, 0.96);
+}
+#gridBoard .board-damage-marker.is-special-block {
+    border: 1px solid rgba(224, 180, 93, 0.92);
+    background: rgba(67, 50, 24, 0.90);
+    color: rgba(255, 219, 136, 0.98);
+}
+body[data-board-context="trial"] #gridBoard .board-damage-marker-stack {
+    opacity: 0.44;
 }
