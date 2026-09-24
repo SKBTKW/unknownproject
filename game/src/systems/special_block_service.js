@@ -430,12 +430,16 @@ export class SpecialBlockService {
                         };
                         const validation = this.validateTarget(definition, candidate, context);
                         if (validation.valid) {
-                            targets.push({
-                                ...candidate,
-                                sourceClusterSize: Array.isArray(validation.sourceCluster)
-                                    ? validation.sourceCluster.length
-                                    : null
-                            });
+                            if (Number(definition.placement?.minConnectedSourceCells) > 1) {
+                                targets.push({
+                                    ...candidate,
+                                    sourceClusterSize: Array.isArray(validation.sourceCluster)
+                                        ? validation.sourceCluster.length
+                                        : null
+                                });
+                            } else {
+                                targets.push(candidate);
+                            }
                         }
                     }
                 }
