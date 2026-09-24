@@ -7,6 +7,10 @@ import {
     SPECIAL_BLOCK_TYPES
 } from "../game/src/core/special_block_domain.js";
 import { COMMAND_CARDS_MASTER } from "../game/src/data/command_cards_data.js";
+import {
+    resolveSpecialBlockProduction,
+    SPECIAL_BLOCK_PRODUCTION_STATUS
+} from "../game/src/core/special_block_production.js";
 import { DeckManager } from "../game/src/systems/deck_manager.js";
 import { attachCardRuntimePolicy } from "../game/src/systems/card_runtime_policy.js";
 
@@ -60,8 +64,8 @@ assert.deepEqual(loggingCard.effects, [{
     logActivation: true
 }]);
 
-// Canonical Logging Camp Board geometry is legal, but product balance remains unresolved.
-// The card therefore fails closed before it can enter Offering / execute.
+// Product v1 resolves the Board-owned quote and SOURCE_SIZE production.
+// Card stays declarative: it names LOGGING_CAMP and pays the exact Board quote.
 {
     const state = {
         turn: 6,
@@ -73,11 +77,12 @@ assert.deepEqual(loggingCard.effects, [{
         mystic: 0,
         ember: 10,
         grid,
-        handOffering: [],
+        handOffering: [loggingCard],
         reserveSlots: [null],
         activeBuffs: [],
         consumedUniqueCards: [],
         usedUniqueCards: [],
+        hasPickedThisTurn: false,
         addLog() {}
     };
     const boardDomainAdapter = new BoardDomainAdapter({ state });
@@ -85,7 +90,7 @@ assert.deepEqual(loggingCard.effects, [{
         SPECIAL_BLOCK_TYPES.LOGGING_CAMP,
         { verse: state.turn, cardId: loggingCard.id }
     );
-    assert.ok(legalBoardTargets.length > 0, "forest cluster should be Board-legal independent of price");
+    assert.ok(legalBoardTargets.length > 0, "forest cluster should be Board-legal");
 
     const engine = {
         state,
@@ -98,19 +103,51 @@ assert.deepEqual(loggingCard.effects, [{
     assert.equal(attachCardRuntimePolicy(deck).success, true);
 
     const quote = deck.quoteCardExecutionCost(loggingCard);
-    assert.equal(quote.success, false);
-    assert.equal(quote.reason, "SPECIAL_BLOCK_COST_UNRESOLVED");
-    assert.equal(quote.quote?.status, SPECIAL_BLOCK_COST_STATUS.UNRESOLVED);
+    assert.equal(quote.success, true);
+    assert.deepEqual(quote.resources, { wood: 20 });
+    assert.equal(quote.source, "DOMAIN_QUOTE");
+    assert.equal(quote.quote?.status, SPECIAL_BLOCK_COST_STATUS.RESOLVED);
 
-    assert.deepEqual(
-        deck.enumerateCardExecutionTargets(loggingCard),
-        [],
-        "unpriced Logging Camp must expose no executable card targets"
-    );
+    const targets = deck.enumerateCardExecutionTargets(loggingCard);
+    assert.ok(targets.length > 0);
+    assert.equal(targets.every(target => target.cost?.wood === 20), true);
     assert.equal(
         deck.isCardEligible(loggingCard, 1, 0),
+        true,
+        "ID-scoped prototype activation may expose the resolved Logging Camp"
+    );
+
+    const target = targets.find(candidate => candidate.r === 0 && candidate.c === 0) || targets[0];
+    const sourceSize = target.sourceClusterSize || 3;
+    const beforeWood = state.wood;
+    const result = deck.playCommandCard(loggingCard, { r: target.r, c: target.c }, 0, -1);
+    assert.equal(result.success, true);
+    assert.equal(state.wood, beforeWood - 20);
+    assert.equal(state.material, state.wood);
+    assert.equal(state.hasPickedThisTurn, true);
+
+    const builtCell = state.grid[target.r][target.c];
+    assert.equal(builtCell.specialBlock?.definitionId, SPECIAL_BLOCK_TYPES.LOGGING_CAMP);
+    assert.deepEqual(builtCell.specialBlock?.paidCost, { wood: 20 });
+    assert.equal(builtCell.specialBlock?.baseTerrainEffect?.glDelta, -1);
+    assert.equal(builtCell.specialBlock?.sourceGroupReference?.initialSize, sourceSize);
+
+    const production = resolveSpecialBlockProduction(
+        state,
+        builtCell,
+        { r: target.r, c: target.c }
+    );
+    assert.equal(production.status, SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED);
+    assert.equal(production.yields.wood, sourceSize);
+    assert.equal(production.yields.food, 0);
+    assert.equal(production.yields.defense, 0);
+    assert.equal(production.yields.mystic, 0);
+
+    assert.equal(
+        deck.enumerateCardExecutionTargets(loggingCard)
+            .some(candidate => candidate.r === target.r && candidate.c === target.c),
         false,
-        "even ID-scoped prototype activation must not leak an unpriced Logging Camp into Offering"
+        "occupied Logging Camp cell must not remain an execution target"
     );
 }
 
@@ -288,8 +325,8 @@ assert.deepEqual(loggingCard.effects, [{
     assert.equal(creates, 0);
 }
 
-console.log("  canonical Logging Camp geometry exists while cost/production remain unresolved");
-console.log("  unresolved DOMAIN_QUOTE fails closed before Offering exposure");
+console.log("  canonical Logging Camp resolves Board-owned 🧱20 creation cost");
+console.log("  SOURCE_SIZE uses the initial forest-cluster snapshot at 🧱+1 per source cell");
 console.log("  resolved Board quote pays atomically and forwards paidCost");
 console.log("  stale Special Block quote rolls payment back");
 console.log("✅ Stage1 Logging Camp Domain Bridge v1 PASS");
