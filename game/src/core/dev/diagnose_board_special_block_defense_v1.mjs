@@ -771,7 +771,11 @@ console.log('Board / Special Block / Defense v1 contract');
 
     const zoneLogging = service.createSpecialBlock(
         SPECIAL_BLOCK_TYPES.LOGGING_CAMP,
-        { r: 0, c: 0 }
+        { r: 0, c: 0 },
+        {
+            paymentConfirmed: true,
+            paidCost: { wood: 20 }
+        }
     );
     assert.equal(zoneLogging.success, true);
     assert.equal(zoneLogging.entity.sourceGroupReference.kind, 'MERGE_GROUP');
