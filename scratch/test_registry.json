@@ -898,14 +898,6 @@
       "suite": "supplemental"
     },
     {
-      "path": "scratch/test_stage1_e2e.mjs",
-      "purpose": "Stage1 canonical boundary audit from FirstRun Verse1 through Trial1 battle, settlement, Post-Trial and Stage2 restoration",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
       "path": "scratch/test_stage1_dormant_card_triage.mjs",
       "purpose": "Stage1 dormant non-LAND card triage inventory coverage",
       "suite": "existing",
@@ -914,8 +906,8 @@
       ]
     },
     {
-      "path": "scratch/test_stage1_offering_economy_playability.mjs",
-      "purpose": "Stage1 Offering, economy, reserve, Multi-Attribute placement, Zone/Link, and Verse1-to-Trial1 playability audit",
+      "path": "scratch/test_stage1_e2e.mjs",
+      "purpose": "Stage1 canonical boundary audit from FirstRun Verse1 through Trial1 battle, settlement, Post-Trial and Stage2 restoration",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -930,8 +922,16 @@
       ]
     },
     {
-      "path": "scratch/test_stage1_trial1_live_experience_audit.mjs",
-      "purpose": "derive Trial1 FirstRun burden from live seeded Stage1 Verse15 resources instead of a fixed historical economy envelope",
+      "path": "scratch/test_stage1_offering_economy_playability.mjs",
+      "purpose": "Stage1 Offering, economy, reserve, Multi-Attribute placement, Zone/Link, and Verse1-to-Trial1 playability audit",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_stage1_resource_sink_budget_probe.mjs",
+      "purpose": "Reverse-budget Stage1 pre-Trial and Deployment spend bands against the current AoT260924 Verse15 baseline envelope",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -948,6 +948,30 @@
     {
       "path": "scratch/test_stage1_trial_threat_policy_v1.mjs",
       "purpose": "canonical Stage1 Trial1 threat policy, one-force route band, and production composition",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_stage1_trial1_deployment_cost_candidate_v1.mjs",
+      "purpose": "compare soft, dramatic, and overload linear Trial1 deployment cost candidates against the post-HQ-nerf live Stage1 envelope",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_stage1_trial1_deployment_headroom_v1.mjs",
+      "purpose": "stress Trial1 deployment cost candidates against representative pre-Trial food/material spending headroom",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_stage1_trial1_live_experience_audit.mjs",
+      "purpose": "derive Trial1 FirstRun burden from live seeded Stage1 Verse15 resources instead of a fixed historical economy envelope",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -1057,22 +1081,6 @@
     {
       "path": "scratch/test_trial_deployment_balance_probe.mjs",
       "purpose": "Experimental Trial Deployment Cost bands evaluated against the merged Stage1 Verse15 economy audit envelope without selecting canonical balance values",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
-      "path": "scratch/test_stage1_trial1_deployment_cost_candidate_v1.mjs",
-      "purpose": "compare soft, dramatic, and overload linear Trial1 deployment cost candidates against the post-HQ-nerf live Stage1 envelope",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
-    },
-    {
-      "path": "scratch/test_stage1_trial1_deployment_headroom_v1.mjs",
-      "purpose": "stress Trial1 deployment cost candidates against representative pre-Trial food/material spending headroom",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
