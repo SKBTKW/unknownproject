@@ -248,7 +248,7 @@ assert.deepEqual(loggingCard.effects, [{
     const board = {
         quoteSpecialBlockCost() {
             quoteReads += 1;
-            const wood = quoteReads >= 4 ? 7 : 6;
+            const wood = quoteReads >= 3 ? 7 : 6;
             return {
                 status: SPECIAL_BLOCK_COST_STATUS.RESOLVED,
                 resources: { wood, ember: 1 }
