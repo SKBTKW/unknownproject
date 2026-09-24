@@ -19,6 +19,35 @@ export const ZONE_CONVERSION_COST_STATUS = Object.freeze({
     UNRESOLVED: 'UNRESOLVED'
 });
 
+export const ZONE_CONVERSION_PRODUCTION_STATUS = Object.freeze({
+    RESOLVED: 'RESOLVED',
+    UNRESOLVED: 'UNRESOLVED',
+    NONE: 'NONE'
+});
+
+export const ZONE_CONVERSION_PRODUCTION_KINDS = Object.freeze({
+    PER_MEMBER_CELL: 'PER_MEMBER_CELL'
+});
+
+const ZONE_PRODUCTION_RESOURCE_KEYS = Object.freeze(['food', 'wood', 'mystic']);
+
+export function normalizeZoneProductionYieldMap(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+    const normalized = {};
+    for (const key of ZONE_PRODUCTION_RESOURCE_KEYS) {
+        const raw = value[key];
+        if (raw === undefined) continue;
+        if (!validNonNegativeNumber(raw)) return null;
+        normalized[key] = raw;
+    }
+    for (const key of Object.keys(value)) {
+        if (!ZONE_PRODUCTION_RESOURCE_KEYS.includes(key) && Number(value[key] || 0) !== 0) {
+            return null;
+        }
+    }
+    return Object.freeze(normalized);
+}
+
 export const ZONE_CONVERSION_ESCALATION_SCOPES = Object.freeze({
     SAME_DEFINITION: 'SAME_DEFINITION',
     ALL_CONVERSIONS: 'ALL_CONVERSIONS'
