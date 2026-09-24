@@ -115,7 +115,6 @@ function createCardDomainActionExecutor(engine) {
                 !board
                 || typeof board.createZoneConversion !== "function"
                 || typeof board.quoteZoneConversionCost !== "function"
-                || typeof board.validateZoneConversionCandidate !== "function"
             ) {
                 return { success: false, reason: "BOARD_ZONE_CONVERSION_UNAVAILABLE" };
             }
@@ -145,17 +144,19 @@ function createCardDomainActionExecutor(engine) {
                 };
             }
 
-            const currentValidation = board.validateZoneConversionCandidate(
-                effect.definitionId,
-                groupId
-            );
-            if (!currentValidation?.valid) {
-                return {
-                    success: false,
-                    reason: currentValidation?.reasons?.[0] || "ZONE_CONVERSION_TARGET_INVALID",
-                    validation: currentValidation,
-                    quote: currentQuote
-                };
+            if (typeof board.validateZoneConversionCandidate === "function") {
+                const currentValidation = board.validateZoneConversionCandidate(
+                    effect.definitionId,
+                    groupId
+                );
+                if (!currentValidation?.valid) {
+                    return {
+                        success: false,
+                        reason: currentValidation?.reasons?.[0] || "ZONE_CONVERSION_TARGET_INVALID",
+                        validation: currentValidation,
+                        quote: currentQuote
+                    };
+                }
             }
 
             const result = board.createZoneConversion(effect.definitionId, groupId, {
