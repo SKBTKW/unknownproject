@@ -78,7 +78,7 @@ for (const id of PROTOTYPE) {
         "Emergency Levy v1 is immediate-only");
 }
 
-for (const id of ["CMD_RATIONING", "CMD_EMERGENCY_LEVY", "CMD_REKINDLE_EMBER", "CMD_GRANARY", "CMD_WETLAND_RECLAMATION", "CMD_AGRICULTURAL_REFORM"]) {
+for (const id of ["CMD_RATIONING", "CMD_EMERGENCY_LEVY", "CMD_REKINDLE_EMBER", "CMD_GRANARY", "CMD_WETLAND_RECLAMATION", "CMD_AGRICULTURAL_REFORM", "CMD_LOGGING_CAMP"]) {
     assert.deepEqual(
         generatedById.get(id),
         byId.get(id),
@@ -170,9 +170,14 @@ for (const id of ["CMD_RATIONING", "CMD_EMERGENCY_LEVY", "CMD_REKINDLE_EMBER", "
 {
     const card = byId.get("CMD_LOGGING_CAMP");
     assert.ok(card.tags.includes("SPECIAL_BLOCK"));
-    assert.equal(Boolean(effect("CMD_LOGGING_CAMP", "DOMAIN_ACTION")), false);
-    assert.ok(effect("CMD_LOGGING_CAMP", "RESOURCE_DELTA",
-        item => item.resource === "wood" && item.amount === 8));
+    assert.deepEqual(card.cost, {});
+    assert.equal(card.reqForestNearby, undefined);
+    assert.ok(effect("CMD_LOGGING_CAMP", "DOMAIN_ACTION",
+        item => item.action === "CREATE_SPECIAL_BLOCK"
+            && item.blockType === "LOGGING_CAMP"
+            && item.paymentMode === "DOMAIN_QUOTE"));
+    assert.equal(Boolean(effect("CMD_LOGGING_CAMP", "RESOURCE_DELTA")), false);
+    assert.equal(Boolean(effect("CMD_LOGGING_CAMP", "BUFF_ADD")), false);
 }
 
 {
