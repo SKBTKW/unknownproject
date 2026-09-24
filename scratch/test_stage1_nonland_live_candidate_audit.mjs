@@ -27,7 +27,8 @@ const PROTOTYPE = Object.freeze([
     "CMD_EMERGENCY_LEVY",
     "CMD_VIGILANCE",
     "CMD_REKINDLE_EMBER",
-    "CMD_GRANARY"
+    "CMD_GRANARY",
+    "CMD_WETLAND_RECLAMATION"
 ]);
 const SUPPORT = Object.freeze([
     "CMD_RATIONING",
@@ -35,7 +36,6 @@ const SUPPORT = Object.freeze([
     "CMD_ABANDONED_SETTLEMENT"
 ]);
 const BLOCKED = Object.freeze([
-    "CMD_WETLAND_RECLAMATION",
     "CMD_LOGGING_CAMP",
     "CMD_AGRICULTURAL_REFORM",
     "CMD_PASTORAL_FARM",
@@ -78,7 +78,7 @@ for (const id of PROTOTYPE) {
         "Emergency Levy v1 is immediate-only");
 }
 
-for (const id of ["CMD_RATIONING", "CMD_EMERGENCY_LEVY", "CMD_REKINDLE_EMBER", "CMD_GRANARY"]) {
+for (const id of ["CMD_RATIONING", "CMD_EMERGENCY_LEVY", "CMD_REKINDLE_EMBER", "CMD_GRANARY", "CMD_WETLAND_RECLAMATION"]) {
     assert.deepEqual(
         generatedById.get(id),
         byId.get(id),
@@ -150,6 +150,24 @@ for (const id of ["CMD_RATIONING", "CMD_EMERGENCY_LEVY", "CMD_REKINDLE_EMBER", "
 }
 
 {
+    const card = byId.get("CMD_WETLAND_RECLAMATION");
+    assert.equal(card.cost.wood, 15);
+    assert.equal(card.cost.ember, 1);
+    assert.equal(card.reqWetland, undefined,
+        "Wetland Reclamation eligibility must come from legal Terrain Transform targets");
+    assert.ok(effect("CMD_WETLAND_RECLAMATION", "DOMAIN_ACTION",
+        item => item.action === "TRANSFORM_TERRAIN"
+            && item.toTerrainId === "E1_RECLAIMED_LAND"
+            && Array.isArray(item.fromTerrainIds)
+            && item.fromTerrainIds.includes("E0_WETLAND")));
+    assert.equal(
+        deckSource.includes('cId === "CMD_WETLAND_RECLAMATION"'),
+        false,
+        "Wetland Reclamation legacy auto-target branch must be removed"
+    );
+}
+
+{
     const card = byId.get("CMD_LOGGING_CAMP");
     assert.ok(card.tags.includes("SPECIAL_BLOCK"));
     assert.equal(Boolean(effect("CMD_LOGGING_CAMP", "DOMAIN_ACTION")), false);
@@ -174,7 +192,7 @@ for (const id of ["CMD_RATIONING", "CMD_EMERGENCY_LEVY", "CMD_REKINDLE_EMBER", "
     assert.equal(Boolean(effect("CMD_AGRICULTURAL_REFORM", "DOMAIN_ACTION")), false);
 }
 
-for (const id of ["CMD_WETLAND_RECLAMATION", "CMD_PASTORAL_FARM"]) {
+for (const id of ["CMD_PASTORAL_FARM"]) {
     assert.equal((byId.get(id)?.effects || []).length, 0, `${id} still depends on legacy execution semantics`);
 }
 

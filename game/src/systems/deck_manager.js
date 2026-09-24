@@ -14,7 +14,6 @@ import {
     validatePlacementAttributeMap
 } from '../core/placement_geometry.js';
 import { isMultiAttributeProductionResolved } from '../core/land_production_contract.js';
-import { isTrueMergedCell } from '../core/merge_rules.js';
 import { getWaterSourceSpawnChance } from '../core/lake_rules.js';
 import { normalizeCardDefinitionV1, unwrapCardDefinition } from '../cards/card_definition_v1.js';
 import { LandPlacementAvailabilityQuery } from '../cards/land_placement_availability_query.js';
@@ -967,52 +966,7 @@ class DeckManager {
                 remainingTurns: 4
             });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🏯【${cName}】`);
-        } else           if (cId === "CMD_WETLAND_RECLAMATION") {
-            // 🌾 干拓: コスト 🧱-15, 🔥-1 (湖以外の湿原1マスを干拓地へ永久転換)
-            let reclaimed = false;
-            let reclaimedCoord = null;
-            if (this.state.grid) {
-                for (let r = 0; r < this.state.grid.length && !reclaimed; r++) {
-                    for (let c = 0; c < this.state.grid[r].length && !reclaimed; c++) {
-                        const cell = this.state.grid[r][c];
-                        if (cell && cell.placed && !cell.isHQ && cell.terrain) {
-                            const tid = cell.terrain.terrainId || cell.terrain.id || "";
-                            const isLakeCell = cell.socketResource && (cell.socketResource.id === "SOCKET_LAKE" || cell.socketResource.isLake);
-                            if (tid.includes("WETLAND") && !isTrueMergedCell(this.state, cell) && !isLakeCell) {
-                                cell.terrain = {
-                                    id: "E1_RECLAIMED_LAND",
-                                    terrainId: "E1_RECLAIMED_LAND",
-                                    nameKey: "TERRAIN_RECLAIMED_LAND",
-                                    gl: 1,
-                                    e: 1,
-                                    food: 4,
-                                    wood: 1,
-                                    material: 1,
-                                    defense: 0,
-                                    mystic: 0,
-                                    category: "BASE",
-                                    zoneCategory: "PLAINS",
-                                    trialTerrainCategory: "STANDARD_E1",
-                                    isSpecialBlock: true,
-                                    isArtificialTerrain: true
-                                };
-                                reclaimed = true;
-                                reclaimedCoord = { r, c };
-                            }
-                        }
-                    }
-                }
-            }
-            const gridEngine = this.engine?.gridEngine || this.state?.gridEngine;
-            if (reclaimedCoord && gridEngine && typeof gridEngine.checkMergePatterns === "function") {
-                const mergeResult = gridEngine.checkMergePatterns([reclaimedCoord]);
-                if (mergeResult?.merge2x2 && typeof gridEngine.checkNewMergeLinks === "function") {
-                    gridEngine.checkNewMergeLinks();
-                }
-            }
-            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🌾", description: cDesc, category: "CARD_EFFECT" });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🌾【${cName}】`);
-        } else  if (cId === "CMD_PASTORAL_FARM") {
+        } else if (cId === "CMD_PASTORAL_FARM") {
             // 🐄 牧畜場: コスト 🧱-15 (平地を牧畜場化、🌾産出追加)
             this.state.food = (this.state.food || 0) + 2;
             this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🐄", description: cDesc, category: "CARD_EFFECT" });

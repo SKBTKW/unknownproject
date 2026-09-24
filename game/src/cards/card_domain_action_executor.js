@@ -8,6 +8,7 @@
 const CARD_DOMAIN_ACTIONS = Object.freeze({
     CREATE_SPECIAL_BLOCK: "CREATE_SPECIAL_BLOCK",
     CREATE_ZONE_CONVERSION: "CREATE_ZONE_CONVERSION",
+    TRANSFORM_TERRAIN: "TRANSFORM_TERRAIN",
     APPLY_DEFENSE_DEVELOPMENT: "APPLY_DEFENSE_DEVELOPMENT"
 });
 
@@ -61,6 +62,18 @@ function hasReliableCardPaymentState(state, cost = {}) {
         if (required > 0 && Number(state?.[key] || 0) < required) return false;
     }
     return true;
+}
+
+function resolveTerrainTransformSpec(effect = {}) {
+    return Object.freeze({
+        fromTerrainIds: Array.isArray(effect.fromTerrainIds) ? [...effect.fromTerrainIds] : [],
+        toTerrainId: effect.toTerrainId || null,
+        excludeHQ: effect.excludeHQ !== false,
+        forbidTrueMerge: effect.forbidTrueMerge === true,
+        forbiddenSocketIds: Array.isArray(effect.forbiddenSocketIds)
+            ? [...effect.forbiddenSocketIds]
+            : []
+    });
 }
 
 function resolveZoneGroupId(board, effect, context) {
@@ -168,6 +181,26 @@ function createCardDomainActionExecutor(engine) {
             return withOptionalActivationLog(effect, context, result);
         }
 
+        if (effect.action === CARD_DOMAIN_ACTIONS.TRANSFORM_TERRAIN) {
+            const board = engine?.boardDomainAdapter;
+            if (!board || typeof board.transformTerrain !== "function") {
+                return { success: false, reason: "BOARD_TERRAIN_TRANSFORM_UNAVAILABLE" };
+            }
+            const target = resolveTarget(effect, context);
+            if (!target) {
+                return { success: false, reason: "TERRAIN_TRANSFORM_TARGET_REQUIRED" };
+            }
+            const result = board.transformTerrain(
+                resolveTerrainTransformSpec(effect),
+                target,
+                {
+                    verse: context?.state?.turn ?? engine?.state?.turn ?? null,
+                    cardId: context?.cardDefinition?.id || null
+                }
+            );
+            return withOptionalActivationLog(effect, context, result);
+        }
+
         if (effect.action === CARD_DOMAIN_ACTIONS.CREATE_SPECIAL_BLOCK) {
             const board = engine?.boardDomainAdapter;
             if (!board || typeof board.createSpecialBlock !== "function") {
@@ -224,7 +257,8 @@ function createCardDomainActionExecutor(engine) {
 
     execute.requiresTarget = (effect) =>
         effect?.action === CARD_DOMAIN_ACTIONS.CREATE_SPECIAL_BLOCK
-        || effect?.action === CARD_DOMAIN_ACTIONS.CREATE_ZONE_CONVERSION;
+        || effect?.action === CARD_DOMAIN_ACTIONS.CREATE_ZONE_CONVERSION
+        || effect?.action === CARD_DOMAIN_ACTIONS.TRANSFORM_TERRAIN;
 
     execute.enumerateTargets = (effect, context = {}) => {
         if (!effect || typeof effect !== "object") return [];
@@ -277,6 +311,16 @@ function createCardDomainActionExecutor(engine) {
                     cost: quotedCost
                 }];
             });
+        }
+
+        if (effect.action === CARD_DOMAIN_ACTIONS.TRANSFORM_TERRAIN) {
+            const board = engine?.boardDomainAdapter;
+            if (!board || typeof board.enumerateTerrainTransformTargets !== "function") {
+                return [];
+            }
+            return board.enumerateTerrainTransformTargets(
+                resolveTerrainTransformSpec(effect)
+            ) || [];
         }
 
         if (effect.action === CARD_DOMAIN_ACTIONS.CREATE_SPECIAL_BLOCK) {
@@ -389,6 +433,28 @@ function createCardDomainActionExecutor(engine) {
                     : (validation?.reasons?.[0] || "ZONE_CONVERSION_TARGET_INVALID"),
                 validation,
                 quote
+            };
+        }
+
+        if (effect.action === CARD_DOMAIN_ACTIONS.TRANSFORM_TERRAIN) {
+            const board = engine?.boardDomainAdapter;
+            if (!board || typeof board.validateTerrainTransform !== "function") {
+                return { success: false, reason: "BOARD_TERRAIN_TRANSFORM_UNAVAILABLE" };
+            }
+            const target = resolveTarget(effect, context);
+            if (!target) {
+                return { success: false, reason: "TERRAIN_TRANSFORM_TARGET_REQUIRED" };
+            }
+            const validation = board.validateTerrainTransform(
+                resolveTerrainTransformSpec(effect),
+                target
+            );
+            return {
+                success: validation?.valid === true,
+                reason: validation?.valid === true
+                    ? null
+                    : (validation?.reason || "TERRAIN_TRANSFORM_TARGET_INVALID"),
+                validation
             };
         }
 

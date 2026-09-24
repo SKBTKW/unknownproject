@@ -1594,7 +1594,13 @@ function makeGrid(rows, cols) {
     );
     assert.equal(
         resolveDomainActionMigrationBlocker("CMD_WETLAND_RECLAMATION"),
-        DOMAIN_ACTION_MIGRATION_BLOCKER.BOARD_MUTATION_API_MISSING
+        null,
+        "Wetland Reclamation leaves the unresolved migration set once Terrain Transform is canonical"
+    );
+    assert.equal(
+        DOMAIN_ACTION_REQUIRED_IDS.includes("CMD_WETLAND_RECLAMATION"),
+        false,
+        "Wetland Reclamation declarative Domain Action must not remain in legacy migration inventory"
     );
     assert.equal(
         resolveDomainActionMigrationBlocker("CMD_RESETTLEMENT"),
