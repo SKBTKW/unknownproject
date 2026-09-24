@@ -110,7 +110,8 @@ class GameEngine {
                 state: this.state,
                 gridEngine: this.gridEngine,
                 specialBlockService: this.specialBlockService,
-                zoneConversionService: dependencies.zoneConversionService || null
+                zoneConversionService: dependencies.zoneConversionService || null,
+                zoneConversionDefinitions: dependencies.zoneConversionDefinitions || null
             }) : null);
         this.zoneConversionService = dependencies.zoneConversionService
             || this.boardDomainAdapter?.zoneConversionService

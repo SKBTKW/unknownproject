@@ -171,6 +171,22 @@ const adapter = new BoardDomainAdapter({
     zoneConversionService: service
 });
 
+const injectedDefinitionState = makeState();
+const injectedDefinitionAdapter = new BoardDomainAdapter({
+    state: injectedDefinitionState,
+    gridEngine: null,
+    zoneConversionDefinitions: definitions
+});
+assert.equal(
+    injectedDefinitionAdapter.enumerateZoneConversionCandidates("GARRISON_TEST").length,
+    2,
+    "Board runtime definition port constructs a usable ZoneConversionService"
+);
+assert.deepEqual(
+    injectedDefinitionAdapter.quoteZoneConversionCost("GARRISON_TEST").resources,
+    { wood: 6, ember: 1 }
+);
+
 assert.equal(service.validateCandidate("GARRISON_TEST", "zone_a").valid, true);
 assert.equal(service.validateCandidate("GARRISON_TEST", "incomplete").valid, false);
 assert.equal(service.validateCandidate("UNRESOLVED_COST", "zone_a").valid, false);
