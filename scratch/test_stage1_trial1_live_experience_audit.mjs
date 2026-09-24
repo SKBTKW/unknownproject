@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 
 import { GameEngine } from "../game/src/core/game_engine.js";
+import { LAND_SYSTEM_DATA } from "../game/src/data/land_system.js";
+import { COMMAND_CARDS_MASTER } from "../game/src/data/command_cards_data.js";
+import { GLOBAL_EVENTS_MASTER } from "../game/src/data/global_events.js";
 import {
     resolvePlacementAnchor,
     resolvePlacementAttributeCells,
@@ -373,6 +376,149 @@ for (const planId of ["HEAVY_DEFENSE_FAR", "ALL_DEFENSE_FAR"]) {
         ].join(" ")
     );
 }
+
+function resolveCanonicalBlockVerseUnits() {
+    const plains = LAND_SYSTEM_DATA?.terrains?.GL1_PLAINS || null;
+    const mountain = LAND_SYSTEM_DATA?.terrains?.E3_MOUNTAIN || null;
+    const food = Number(
+        plains?.baseYieldsPerTile?.food
+        ?? plains?.yields?.food
+        ?? plains?.food
+        ?? 0
+    );
+    const material = Number(
+        mountain?.baseYieldsPerTile?.material
+        ?? mountain?.baseYieldsPerTile?.wood
+        ?? mountain?.yields?.material
+        ?? mountain?.yields?.wood
+        ?? mountain?.material
+        ?? mountain?.wood
+        ?? 0
+    );
+    return Object.freeze({
+        food: Math.max(0, food),
+        material: Math.max(0, material)
+    });
+}
+
+function readFoodMaterialCost(definition) {
+    const cost = definition?.cost || {};
+    return Object.freeze({
+        food: Math.max(0, Number(cost.food) || 0),
+        material: Math.max(0, Number(cost.material ?? cost.wood) || 0)
+    });
+}
+
+function rangeWithMedian(values) {
+    const sorted = [...values].filter(Number.isFinite).sort((a, b) => a - b);
+    assert.ok(sorted.length > 0);
+    const mid = Math.floor(sorted.length / 2);
+    const medianValue = sorted.length % 2 === 0
+        ? (sorted[mid - 1] + sorted[mid]) / 2
+        : sorted[mid];
+    return Object.freeze({
+        min: sorted[0],
+        median: medianValue,
+        max: sorted[sorted.length - 1]
+    });
+}
+
+const blockVerseUnits = resolveCanonicalBlockVerseUnits();
+assert.ok(blockVerseUnits.food > 0, "plains food BVE unit must remain positive");
+assert.ok(blockVerseUnits.material > 0, "mountain material BVE unit must remain positive");
+
+console.log(
+    "BVE_UNITS",
+    `🌾1BVE=${blockVerseUnits.food}`,
+    `🧱1BVE=${blockVerseUnits.material}`
+);
+
+const stage1ResourceCostCards = COMMAND_CARDS_MASTER
+    .filter(card => Number(card?.minStage || 1) <= 1)
+    .map(card => ({ card, cost: readFoodMaterialCost(card) }))
+    .filter(entry => entry.cost.food > 0 || entry.cost.material > 0);
+
+assert.ok(stage1ResourceCostCards.length > 0, "Stage1 must expose resource-cost cards for economy scale comparison");
+
+const stage1CardScaleRows = [];
+for (const { card, cost } of stage1ResourceCostCards) {
+    const foodBve = cost.food / blockVerseUnits.food;
+    const materialBve = cost.material / blockVerseUnits.material;
+    const recoveryBve = Math.max(foodBve, materialBve);
+    const pveAcrossLiveStage1 = liveSamples.map(sample => {
+        const foodPve = cost.food > 0 ? cost.food / sample.grossFoodPerVerse : 0;
+        const materialPve = cost.material > 0 ? cost.material / sample.grossMaterialPerVerse : 0;
+        return Math.max(foodPve, materialPve);
+    });
+    const pve = rangeWithMedian(pveAcrossLiveStage1);
+
+    stage1CardScaleRows.push(Object.freeze({
+        id: card.id,
+        cost,
+        foodBve,
+        materialBve,
+        recoveryBve,
+        pve
+    }));
+
+    console.log(
+        [
+            "STAGE1_CARD_SCALE",
+            card.id,
+            `cost=🌾${cost.food}/🧱${cost.material}`,
+            `BVE=🌾${foodBve.toFixed(2)}/🧱${materialBve.toFixed(2)} recovery=${recoveryBve.toFixed(2)}`,
+            `V15_PVE=${pve.min.toFixed(2)}..${pve.max.toFixed(2)} med=${pve.median.toFixed(2)}`
+        ].join(" ")
+    );
+}
+
+const maxStage1CardPve = Math.max(...stage1CardScaleRows.map(row => row.pve.max));
+const maxStage1CardBve = Math.max(...stage1CardScaleRows.map(row => row.recoveryBve));
+const heavyTrialPve = rangeWithMedian(
+    pveRows
+        .filter(row => row.planId === "HEAVY_DEFENSE_FAR")
+        .map(row => row.recoveryPve)
+);
+const allTrialPve = rangeWithMedian(
+    pveRows
+        .filter(row => row.planId === "ALL_DEFENSE_FAR")
+        .map(row => row.recoveryPve)
+);
+
+assert.ok(
+    heavyTrialPve.min > maxStage1CardPve,
+    "FirstRun Trial1 heavy deployment must remain categorically heavier than every current Stage1 food/material card cost"
+);
+
+const stage1ExplicitGeCosts = GLOBAL_EVENTS_MASTER
+    .filter(event => Number(event?.minStage || 1) <= 1)
+    .map(event => ({ event, cost: readFoodMaterialCost(event) }))
+    .filter(entry => entry.cost.food > 0 || entry.cost.material > 0);
+
+console.log(
+    "ECONOMY_SCALE_GAP",
+    JSON.stringify({
+        blockVerseUnit: blockVerseUnits,
+        stage1ResourceCostCardCount: stage1CardScaleRows.length,
+        currentStage1CardMaxRecoveryBve: Number(maxStage1CardBve.toFixed(2)),
+        currentStage1CardMaxV15Pve: Number(maxStage1CardPve.toFixed(2)),
+        firstRunTrial1HeavyRecoveryPve: {
+            min: Number(heavyTrialPve.min.toFixed(2)),
+            median: Number(heavyTrialPve.median.toFixed(2)),
+            max: Number(heavyTrialPve.max.toFixed(2))
+        },
+        firstRunTrial1AllRecoveryPve: {
+            min: Number(allTrialPve.min.toFixed(2)),
+            median: Number(allTrialPve.median.toFixed(2)),
+            max: Number(allTrialPve.max.toFixed(2))
+        },
+        stage1GlobalEventsWithExplicitFoodMaterialCost: stage1ExplicitGeCosts.length,
+        openAuthoringSpacePve: {
+            aboveCurrentCards: Number(maxStage1CardPve.toFixed(2)),
+            belowHeavyTrial: Number(heavyTrialPve.min.toFixed(2))
+        }
+    })
+);
 
 const drift = summarizeLegacyDrift(liveSamples);
 console.log(
