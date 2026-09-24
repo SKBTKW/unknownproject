@@ -28,14 +28,14 @@ engine.state.stage = { id: 2, name: 'Stage 2', size: 7 };
 engine.gridEngine.expandGrid(7);
 assert(engine.state.grid.length === 7, 'Stage 2盤面が7x7へ拡張される');
 assert(TerritoryBadgeComponent.getMaxTilesForStage(2) === 48, 'Stage 2最大開発数が48マスである');
-assert(engine.state.currentDefense === 5 && engine.state.maxDefense === 9, 'Stage 2本営強化で最大🛡️のみ9へ増える');
+assert(engine.state.currentDefense === 5 && engine.state.maxDefense === 14, 'Stage 2本営強化で最大🛡️のみ14へ増える');
 
 console.log('\n[3/3] Stage 3 (9x9)');
 engine.state.stage = { id: 3, name: 'Stage 3', size: 9 };
 engine.gridEngine.expandGrid(9);
 assert(engine.state.grid.length === 9, 'Stage 3盤面が9x9へ拡張される');
 assert(TerritoryBadgeComponent.getMaxTilesForStage(3) === 80, 'Stage 3最大開発数が80マスである');
-assert(engine.state.currentDefense === 5 && engine.state.maxDefense === 9, 'Stage 3拡張後も現在🛡️を自動回復しない');
+assert(engine.state.currentDefense === 5 && engine.state.maxDefense === 14, 'Stage 3拡張後も現在🛡️を自動回復しない');
 
 console.log(`\n盤面拡張: ${passed}/${total} PASS`);
 if (passed !== total) process.exitCode = 1;
