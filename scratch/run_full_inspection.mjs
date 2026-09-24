@@ -481,6 +481,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Trial Deployment Balance Probe) で不合格が検出されました。");
         process.exit(1);
     }
+    const trial1LinearCostFitOk = await runCommand("node", ["scratch/test_stage1_trial1_linear_cost_fit.mjs"]);
+    if (!trial1LinearCostFitOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Stage1 Trial1 Fixed Linear Cost Fit) で不合格が検出されました。");
+        process.exit(1);
+    }
     const stage1Trial1DeploymentCostCandidateOk = await runCommand("node", ["scratch/test_stage1_trial1_deployment_cost_candidate_v1.mjs"]);
     if (!stage1Trial1DeploymentCostCandidateOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Stage1 Trial1 Deployment Cost Candidate Audit) で不合格が検出されました。");
