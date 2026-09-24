@@ -215,6 +215,14 @@ export class BoardDomainAdapter {
         return this.specialBlockService.validateTarget(typeOrDefinition, target, context);
     }
 
+    validateSpecialBlockTargetAfterPayment(typeOrDefinition, target, payment = {}, context = {}) {
+        return this.specialBlockService.validateTargetAfterPayment(typeOrDefinition, target, payment, context);
+    }
+
+    quoteSpecialBlockCost(typeOrDefinition) {
+        return this.specialBlockService.quoteCost(typeOrDefinition);
+    }
+
     enumerateLegalSpecialBlockTargets(typeOrDefinition, context = {}) {
         return this.specialBlockService.enumerateLegalTargets(typeOrDefinition, context);
     }
