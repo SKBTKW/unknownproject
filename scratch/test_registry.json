@@ -994,6 +994,14 @@
       ]
     },
     {
+      "path": "scratch/test_first_run_trial1_relative_deployment_cost.mjs",
+      "purpose": "FirstRun Trial1-only relative food/material deployment burden, session applicability, later-Trial fallback, and explicit override precedence",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_stage1_trial1_live_experience_audit.mjs",
       "purpose": "derive Trial1 FirstRun burden from live seeded Stage1 Verse15 resources instead of a fixed historical economy envelope",
       "suite": "existing",
