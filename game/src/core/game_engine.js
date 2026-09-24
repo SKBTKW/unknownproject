@@ -93,7 +93,7 @@ class GameEngine {
             this.state = dependencies.state;
         } else {
             const GameStateClass = dependencies.GameStateClass || GameState;
-            this.state = GameStateClass ? new GameStateClass({ engine: this }) : { turn: 1, ember: 20, food: 50, wood: 30, defense: 10, currentDefense: 10, maxDefense: 10, mystic: 0, handOffering: [], reserveSlots: [null] };
+            this.state = GameStateClass ? new GameStateClass({ engine: this }) : { turn: 1, ember: 20, food: 50, wood: 30, defense: 5, currentDefense: 5, maxDefense: 5, mystic: 0, handOffering: [], reserveSlots: [null] };
         }
 
         // 3. ドメインサブシステムの初期化と注入

@@ -3,7 +3,7 @@ import {
     sumPlacedBlockProduction
 } from '../core/land_production_contract.js';
 import { sumSpecialBlockProduction } from '../core/special_block_production.js';
-const BASE_HQ_DEFENSE = 10;
+const BASE_HQ_DEFENSE = 5;
 
 function toNonNegativeInteger(value, fallback = 0) {
     if (!Number.isFinite(value)) return fallback;

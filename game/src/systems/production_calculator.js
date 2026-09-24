@@ -146,13 +146,13 @@ import { resolveLandDamageEffect } from '../core/board_damage_effect_policy.js';
             // 表示予測も実決済も同じ最終維持費 resolver を参照する。
             const foodCost = MaintenanceFallbackSystem.resolveFoodMaintenanceCost(state).foodCost;
 
-            // 🏰 本営 (HQ) 基礎産出の動的解決 (Stage 1: 10/10/10/1, Stage 2: 14/14/14/2)
+            // 🏰 本営 (HQ) 基礎産出の動的解決 (Stage 1: 5/5/5/1)
             const center = Math.floor(size / 2);
             const hqTerrain = (state.grid && state.grid[center] && state.grid[center][center] && state.grid[center][center].terrain) 
                 ? state.grid[center][center].terrain 
-                : { food: 10, wood: 10, defense: 10, mystic: 1 };
-            const hqFood = (hqTerrain.food !== undefined) ? hqTerrain.food : 10;
-            const hqWood = (hqTerrain.wood !== undefined) ? (hqTerrain.material !== undefined ? hqTerrain.material : hqTerrain.wood) : 10;
+                : { food: 5, wood: 5, defense: 5, mystic: 1 };
+            const hqFood = (hqTerrain.food !== undefined) ? hqTerrain.food : 5;
+            const hqWood = (hqTerrain.wood !== undefined) ? (hqTerrain.material !== undefined ? hqTerrain.material : hqTerrain.wood) : 5;
             const hqMystic = (hqTerrain.mystic !== undefined) ? hqTerrain.mystic : 1;
 
             const blockProduction = sumPlacedBlockProduction(state);
@@ -199,10 +199,10 @@ import { resolveLandDamageEffect } from '../core/board_damage_effect_policy.js';
             const center = Math.floor(size / 2);
             const hqTerrain = (state.grid && state.grid[center] && state.grid[center][center] && state.grid[center][center].terrain) 
                 ? state.grid[center][center].terrain 
-                : { food: 10, wood: 10, defense: 10, mystic: 1 };
-            const hqFood = (hqTerrain.food !== undefined) ? hqTerrain.food : 10;
-            const hqWood = (hqTerrain.wood !== undefined) ? (hqTerrain.material !== undefined ? hqTerrain.material : hqTerrain.wood) : 10;
-            const hqDefense = (hqTerrain.defense !== undefined) ? hqTerrain.defense : 10;
+                : { food: 5, wood: 5, defense: 5, mystic: 1 };
+            const hqFood = (hqTerrain.food !== undefined) ? hqTerrain.food : 5;
+            const hqWood = (hqTerrain.wood !== undefined) ? (hqTerrain.material !== undefined ? hqTerrain.material : hqTerrain.wood) : 5;
+            const hqDefense = (hqTerrain.defense !== undefined) ? hqTerrain.defense : 5;
             const hqMystic = (hqTerrain.mystic !== undefined) ? hqTerrain.mystic : 1;
 
             for (let r = 0; r < size; r++) {
@@ -314,10 +314,10 @@ import { resolveLandDamageEffect } from '../core/board_damage_effect_policy.js';
 
             // 1. 本営マスの場合
             if (cell.isHQ) {
-                const hqTerrain = cell.terrain || { food: 10, wood: 10, defense: 10, mystic: 1 };
-                const hqFood = (hqTerrain.food !== undefined) ? hqTerrain.food : 10;
-                const hqWood = (hqTerrain.wood !== undefined) ? (hqTerrain.material !== undefined ? hqTerrain.material : hqTerrain.wood) : 10;
-                const hqDefense = (hqTerrain.defense !== undefined) ? hqTerrain.defense : 10;
+                const hqTerrain = cell.terrain || { food: 5, wood: 5, defense: 5, mystic: 1 };
+                const hqFood = (hqTerrain.food !== undefined) ? hqTerrain.food : 5;
+                const hqWood = (hqTerrain.wood !== undefined) ? (hqTerrain.material !== undefined ? hqTerrain.material : hqTerrain.wood) : 5;
+                const hqDefense = (hqTerrain.defense !== undefined) ? hqTerrain.defense : 5;
                 const hqMystic = (hqTerrain.mystic !== undefined) ? hqTerrain.mystic : 1;
                 return {
                     productionStatus: LAND_PRODUCTION_STATUS.LEGACY,

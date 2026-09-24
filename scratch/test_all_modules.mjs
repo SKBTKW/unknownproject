@@ -80,7 +80,7 @@ assert(!!engine.buffSystem, 'BuffSystem が DI 注入されていること');
 assert(engine.state.ember === 20 && engine.state.maxEmber === 20, '初期残り火が 20 / 20 であること');
 assert(engine.state.food === 50, '初期食料が 50 であること');
 assert(engine.state.wood === 30 && engine.state.material === 30, '初期資材が 30 で内部互換名も同期していること');
-assert(engine.state.currentDefense === 10 && engine.state.maxDefense === 10, '初期防衛が 10 / 10 であること');
+assert(engine.state.currentDefense === 5 && engine.state.maxDefense === 5, '初期防衛が 5 / 5 であること');
 assert(engine.state.mystic === 0, '初期神秘が 0 であること');
 
 const injectedStageState = new GameState({
@@ -244,7 +244,7 @@ const prosperousBuffs = engine.buffSystem.getDisplayBuffs();
 assert(prosperousBuffs.some(b => b.id === 'ENV_EMBER_PROSPERITY'), '🔥25 で残り火旺盛バフが登録されていること');
 
 const prods = engine.state.calculateTotalProduction();
-assert(prods.grossFood >= 15, `食料総産出が正しく計算されていること (実際: ${prods.grossFood})`);
+assert(prods.grossFood >= 10, `食料総産出が正しく計算されていること (実際: ${prods.grossFood})`);
 assert(prods.foodCost === 25, `🔥25 で食料維持費が 25 であること (実際: ${prods.foodCost})`);
 assert(prods.netFood === prods.grossFood - prods.foodCost, `食料純収支が正しく計算されていること (実際: ${prods.netFood})`);
 assert(prods.totalMystic >= 2, `神秘産出に残り火旺盛ボーナスが加算されていること (実際: ${prods.totalMystic})`);
@@ -912,7 +912,7 @@ lakeEngine.state.grid[0][1] = { r: 0, c: 1, placed: true, terrain: { id: 'GL1_PL
 const lakeProds = lakeEngine.state.calculateTotalProduction();
 // 本営10 + 平地(4+4) + 湖ソケット2 + 灌漑バフ2(4*0.5) = 22, 維持費20 ➔ net +2
 assert(lakeProds.foodLakeIrrigation === 2, '湖の隣接平地(食料4)に灌漑バフ +2 (50%) が加算されること');
-assert(lakeProds.grossFood === 22, '食料総産出(gross)に湖の灌漑バフが含まれること');
+assert(lakeProds.grossFood === 17, '食料総産出(gross)に湖の灌漑バフが含まれること');
 
 // 🌴 オアシス (Oasis) 周囲8マスの灌漑バフ検証
 const oasisEngine = new GameEngine();
@@ -921,7 +921,7 @@ oasisEngine.state.grid[0][0] = { r: 0, c: 0, placed: true, terrain: { id: 'GL0_D
 oasisEngine.state.grid[0][1] = { r: 0, c: 1, placed: true, terrain: { id: 'GL1_PLAINS', nameKey: 'TERRAIN_PLAINS', food: 4, wood: 0, defense: 0, mystic: 0 } };
 const oasisProds = oasisEngine.state.calculateTotalProduction();
 assert(oasisProds.foodLakeIrrigation === 2, 'オアシスの隣接平地(食料4)に灌漑バフ +2 (50%) が加算されること');
-assert(oasisProds.grossFood === 17, '食料総産出(gross)にオアシスの灌漑バフが含まれること');
+assert(oasisProds.grossFood === 12, '食料総産出(gross)にオアシスの灌漑バフが含まれること');
 
 console.log('\n🌟 [23/23] dormant COMMAND追加群のfail-closed検証');
 
@@ -1086,9 +1086,9 @@ for (let r = 0; r < 2; r++) {
     }
 }
 
-// 通常時の産出: 本営10 + 平地16 + 近郊1 = 27, 維持費20 ➔ net +7
+// 通常時の産出: 本営5 + 平地16 + 近郊1 = 22, 維持費20 ➔ net +2
 const normalProds = eventEngine.state.calculateTotalProduction();
-assert(normalProds.grossFood === 27, '寒波発動前の平地食料総産出が27であること');
+assert(normalProds.grossFood === 22, '寒波発動前の平地食料総産出が22であること');
 
 // 寒波を手動トリガー
 const coldWaveInst = eventEngine.globalEventManager.triggerEvent('EVENT_COLD_WAVE');
@@ -1096,9 +1096,9 @@ assert(coldWaveInst !== null, '寒波イベントが正常に発動すること'
 assert(eventEngine.state.activeGlobalEvents.length === 1, 'アクティブイベントに寒波が登録されること');
 assert(eventEngine.state.buffSystem.hasBuff('EVENT_COLD_WAVE'), 'BuffSystemに寒波の表示用Proxyが登録されること');
 
-// 寒波中の産出: 平地食料 16 * 0.75 = 12 ➔ 本営10 + 平地12 + 近郊1 = 23, 維持費20 ➔ net +3
+// 寒波中の産出: 平地食料 16 * 0.75 = 12 ➔ 本営5 + 平地12 + 近郊1 = 18, 維持費20 ➔ net -2
 const coldProds = eventEngine.state.calculateTotalProduction();
-assert(coldProds.grossFood === 23, '寒波中の平地食料産出が-25%され総産出が23になること');
+assert(coldProds.grossFood === 18, '寒波中の平地食料産出が-25%され総産出が18になること');
 
 // 3ターン経過させて寒波の自然失効を検証
 eventEngine.globalEventManager.tickTurn(); // 3 -> 2
@@ -1109,9 +1109,9 @@ eventEngine.globalEventManager.tickTurn(); // 1 -> 0 (失効)
 assert(eventEngine.state.activeGlobalEvents.length === 0, '3ターン経過で寒波が自然失効すること');
 assert(!eventEngine.state.buffSystem.hasBuff('EVENT_COLD_WAVE'), '失効後にBuffSystemの表示用Proxyが自動除去されること');
 
-// 失効後の産出復帰: 本営10 + 平地16 + 近郊1 = 27
+// 失効後の産出復帰: 本営5 + 平地16 + 近郊1 = 22
 const restoredProds = eventEngine.state.calculateTotalProduction();
-assert(restoredProds.grossFood === 27, '寒波失効後に平地食料産出が通常値(27)に完全復帰すること');
+assert(restoredProds.grossFood === 22, '寒波失効後に平地食料産出が通常値(22)に完全復帰すること');
 
 // 年表記録の検証
 const eventChron = eventEngine.state.chronicleSystem.getChronicle('MAJOR');

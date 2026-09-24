@@ -589,7 +589,7 @@ test("runtime HUD snapshot is JSON-safe and does not expose GameState internals"
     assert.deepEqual(runtimeDto.resources.ember, { current: 7, max: 13 });
     assert.deepEqual(runtimeDto.resources.food, { current: 9 });
     assert.deepEqual(runtimeDto.resources.material, { current: 5 });
-    assert.deepEqual(runtimeDto.resources.defense, { current: 6, max: 10 });
+    assert.deepEqual(runtimeDto.resources.defense, { current: 5, max: 5 });
     assert.deepEqual(runtimeDto.resources.mystic, { current: 4 });
     const serialized = JSON.stringify(runtimeDto);
     for (const forbidden of ["grid", "mergedBlocks", "mergeLinks", "directiveSystem", "document", "window", "GameObject", "Transform"]) {

@@ -21,11 +21,11 @@ class GameState {
         this.food = dependencies.food !== undefined ? dependencies.food : 50; // 🌾 初期食料 50 (戦略的猶予確保)
         this.wood = dependencies.material !== undefined ? dependencies.material : (dependencies.wood !== undefined ? dependencies.wood : 30);
         this.material = this.wood;
-        const legacyDefense = dependencies.defense !== undefined ? dependencies.defense : 10;
+        const legacyDefense = dependencies.defense !== undefined ? dependencies.defense : 5;
         this.defenseCapacityBonus = dependencies.defenseCapacityBonus !== undefined
             ? dependencies.defenseCapacityBonus
-            : Math.max(0, legacyDefense - 10);
-        this.defense = 10 + this.defenseCapacityBonus;
+            : Math.max(0, legacyDefense - 5);
+        this.defense = 5 + this.defenseCapacityBonus;
         this.currentDefense = dependencies.currentDefense !== undefined
             ? dependencies.currentDefense
             : (dependencies.currentShield !== undefined ? dependencies.currentShield : legacyDefense);
@@ -171,7 +171,7 @@ class GameState {
                         mergeGroupId: null,
                         mergeType: null,
                         placementGroupId: null,
-                        terrain: isHQ ? { id: "HQ", nameKey: "TERRAIN_HQ", food: 10, wood: 10, defense: 10, mystic: 1 } : null,
+                        terrain: isHQ ? { id: "HQ", nameKey: "TERRAIN_HQ", food: 5, wood: 5, defense: 5, mystic: 1 } : null,
                         searched: false,
                         hasSocket: false,
                         socketResource: null,
@@ -407,7 +407,7 @@ class GameState {
             if (ProductionCalculator && typeof ProductionCalculator.calculateTotalProduction === "function") {
                 return ProductionCalculator.calculateTotalProduction(this);
             }
-            return { totalFood: 10, totalWood: 10, totalMystic: 1 };
+            return { totalFood: 5, totalWood: 5, totalMystic: 1 };
         }
 
         calculateTotalDefense() {
@@ -417,7 +417,7 @@ class GameState {
             if (ProductionCalculator && typeof ProductionCalculator.calculateTotalDefense === "function") {
                 return ProductionCalculator.calculateTotalDefense(this);
             }
-            return this.maxDefense || 10;
+            return this.maxDefense || 5;
         }
 
         getMaxDefense() {

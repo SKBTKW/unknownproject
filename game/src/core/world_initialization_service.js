@@ -36,7 +36,7 @@ export class WorldInitializationService {
                     mergeType: null,
                     placementGroupId: null,
                     terrain: isHQ
-                        ? { id: 'HQ', nameKey: 'TERRAIN_HQ', food: 10, wood: 10, defense: 10, mystic: 1 }
+                        ? { id: 'HQ', nameKey: 'TERRAIN_HQ', food: 5, wood: 5, defense: 5, mystic: 1 }
                         : null,
                     searched: false,
                     hasSocket: false,

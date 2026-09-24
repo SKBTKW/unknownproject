@@ -141,7 +141,7 @@ class GridEngine {
                     mergeGroupId: null,
                     mergeType: null,
                     placementGroupId: null,
-                    terrain: isHQ ? { id: "HQ", nameKey: "TERRAIN_HQ", food: 10, wood: 10, defense: 10, mystic: 1 } : null,
+                    terrain: isHQ ? { id: "HQ", nameKey: "TERRAIN_HQ", food: 5, wood: 5, defense: 5, mystic: 1 } : null,
                     specialBlock: null,
                     searched: false,
                     hasSocket: false,

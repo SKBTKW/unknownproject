@@ -100,12 +100,12 @@ console.log("\nTrial Core defense write-through");
 }
 
 {
-    const { engine, controller, availableDefense } = createControllerFixture({ defenseAllocation: 8 });
+    const { engine, controller, availableDefense } = createControllerFixture({ defenseAllocation: 4 });
 
-    const externalLoss = engine.applyTrialDefenseLoss(5);
-    assert.equal(externalLoss.reduced, 5);
+    const externalLoss = engine.applyTrialDefenseLoss(2);
+    assert.equal(externalLoss.reduced, 2);
     const liveBeforeCommit = engine.getTrialAvailableDefense();
-    assert.equal(liveBeforeCommit, availableDefense - 5);
+    assert.equal(liveBeforeCommit, availableDefense - 2);
 
     const activated = controller.activateInterceptionPlan();
     assert.equal(activated.success, false, "stale Trial-local budget must fail closed against live GameState defense");
