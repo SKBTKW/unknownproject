@@ -501,6 +501,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (FirstRun Trial1 Relative Deployment Cost) で不合格が検出されました。");
         process.exit(1);
     }
+    const firstRunTrial1RelativePaymentIntegrationOk = await runCommand("node", ["scratch/test_first_run_trial1_relative_payment_integration.mjs"]);
+    if (!firstRunTrial1RelativePaymentIntegrationOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (FirstRun Trial1 Relative Payment Integration) で不合格が検出されました。");
+        process.exit(1);
+    }
     const stage1Trial1DeploymentCostCandidateOk = await runCommand("node", ["scratch/test_stage1_trial1_deployment_cost_candidate_v1.mjs"]);
     if (!stage1Trial1DeploymentCostCandidateOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Stage1 Trial1 Deployment Cost Candidate Audit) で不合格が検出されました。");
