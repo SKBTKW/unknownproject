@@ -337,6 +337,11 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_demihuman_traces_public_presentation_read_model.mjs",
+      "purpose": "demihuman traces public presentation read model",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_dev_chronicle_restore_ui.mjs",
       "purpose": "dev chronicle restore ui",
       "suite": "existing",
@@ -519,6 +524,14 @@
     {
       "path": "scratch/test_global_event_next_event_expiry.mjs",
       "purpose": "NEXT_GLOBAL_EVENT weight modifiers consume exactly once on successful GE trigger",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_global_event_weight_target_contract.mjs",
+      "purpose": "EVENT_WEIGHT_MODIFIER targets resolve to current Global Event ids/categories",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -827,6 +840,14 @@
       ]
     },
     {
+      "path": "scratch/test_demihuman_raid_boundary.mjs",
+      "purpose": "Demihuman Raid remains history-gated and outside normal Trial lifecycle until a dedicated encounter port exists",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_reclaimed_land.mjs",
       "purpose": "reclaimed-land restore compatibility semantics",
       "suite": "supplemental"
@@ -900,6 +921,14 @@
     {
       "path": "scratch/test_stage1_dormant_card_triage.mjs",
       "purpose": "Stage1 dormant non-LAND card triage inventory coverage",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_stage1_canonical_runtime_path.mjs",
+      "purpose": "final Stage1 canonical runtime path gate that forbids forced state progression and delegates Verse1-to-Stage2 execution to the live E2E path",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -1411,6 +1440,14 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_unity_runtime_handoff_contract.mjs",
+      "purpose": "Unity runtime handoff contract over BoardPresentation, BoardInput, and GameRuntimeSnapshot",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_ui_lifecycle.mjs",
       "purpose": "ui lifecycle",
       "suite": "existing",
@@ -1482,6 +1519,14 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_web25d_production_runtime.mjs",
+      "purpose": "Web 2.5D production runtime bootstrap and compatibility boundary",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_web25d_road_overlay_renderer.mjs",
       "purpose": "web25d road overlay renderer",
       "suite": "existing",
@@ -1526,6 +1571,30 @@
     {
       "path": "scratch/test_zone_conversion_foundation.mjs",
       "purpose": "Zone conversion foundation, maintenance lifecycle, and Board-to-Trial deployment semantic projection",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_special_block_creation_cost_quote.mjs",
+      "purpose": "Special Block authoritative creation-cost quote, post-payment validation, stale-payment rejection, and paidCost persistence",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_zone_conversion_creation_reward.mjs",
+      "purpose": "Zone Conversion one-time creation reward semantics, canonical resource application, persistence, and idempotency",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_special_block_lifecycle_functional_gate.mjs",
+      "purpose": "Special Block lifecycle functional gating for capability, Trial traits, production, legacy compatibility, and persistence",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
