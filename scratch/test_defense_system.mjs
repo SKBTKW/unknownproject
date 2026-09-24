@@ -45,48 +45,57 @@ console.log('🛡️ DefenseSystem regression tests');
 
 // A: 新規ゲームは本営基礎値で全快開始。
 const initialEngine = GameEngine.createGame();
-assert(initialEngine.defenseSystem.getCurrentDefense() === 10, '新規ゲームの現在🛡️は10');
-assert(initialEngine.defenseSystem.getMaxDefense() === 10, '新規ゲームの最大🛡️は10');
+assert(initialEngine.defenseSystem.getCurrentDefense() === 5, '新規ゲームの現在🛡️は5');
+assert(initialEngine.defenseSystem.getMaxDefense() === 5, '新規ゲームの最大🛡️は5');
+const hqCell = initialEngine.state.grid[2][2];
+assert(
+    hqCell?.isHQ === true
+        && hqCell.terrain?.food === 5
+        && hqCell.terrain?.wood === 5
+        && hqCell.terrain?.defense === 5
+        && hqCell.terrain?.mystic === 1,
+    'Stage1本営の基礎産出は🌾5/🧱5/🛡️5/✨1'
+);
 
 // B: 土地配置で増えた最大🛡️は同量だけ現在🛡️にも即時反映する。
 const placed = initialEngine.gridEngine.placeShape(1, 2, [[1]], defenseLand(3));
 assert(placed.success === true, '防衛値を持つ土地を配置できる');
-assert(initialEngine.defenseSystem.getMaxDefense() === 13, '土地配置で最大🛡️が13へ増える');
-assert(initialEngine.defenseSystem.getCurrentDefense() === 13, '土地配置で増えた3点を現在🛡️にも反映する');
+assert(initialEngine.defenseSystem.getMaxDefense() === 8, '土地配置で最大🛡️が8へ増える');
+assert(initialEngine.defenseSystem.getCurrentDefense() === 8, '土地配置で増えた3点を現在🛡️にも反映する');
 
 // C: 既存損耗は維持し、配置で増えた最大値の差分だけ現在値へ足す。
 const damagedPlacementEngine = GameEngine.createGame();
-damagedPlacementEngine.defenseSystem.setCurrentDefense(8);
+damagedPlacementEngine.defenseSystem.setCurrentDefense(3);
 const damagedPlaced = damagedPlacementEngine.gridEngine.placeShape(1, 2, [[1]], defenseLand(3));
 assert(damagedPlaced.success === true, '損耗中でも防衛値を持つ土地を配置できる');
 assert(
-    damagedPlacementEngine.defenseSystem.getCurrentDefense() === 11
-        && damagedPlacementEngine.defenseSystem.getMaxDefense() === 13,
-    '8/10から🛡️+3土地配置で11/13となり既存損耗2を維持する'
+    damagedPlacementEngine.defenseSystem.getCurrentDefense() === 6
+        && damagedPlacementEngine.defenseSystem.getMaxDefense() === 8,
+    '3/5から🛡️+3土地配置で6/8となり既存損耗2を維持する'
 );
 
 // Stage拡張によるHQ強化は土地配置ではないため現在値を自動充填しない。
 const expandedEngine = GameEngine.createGame();
 expandedEngine.gridEngine.expandGrid(7);
 assert(expandedEngine.defenseSystem.getMaxDefense() === 14, 'Stage盤面拡張後は強化本営から最大🛡️14を再計算する');
-assert(expandedEngine.defenseSystem.getCurrentDefense() === 10, 'Stage盤面拡張では現在🛡️を自動回復しない');
+assert(expandedEngine.defenseSystem.getCurrentDefense() === 5, 'Stage盤面拡張では現在🛡️を自動回復しない');
 
 // D/F/G: 損耗・回復・最大低下時クランプ。
-initialEngine.defenseSystem.setCurrentDefense(13);
+initialEngine.defenseSystem.setCurrentDefense(8);
 const loss = initialEngine.applyTrialDefenseLoss(4);
-assert(loss.after === 9 && initialEngine.defenseSystem.getMaxDefense() === 13, '損耗APIは現在🛡️だけを減らす');
+assert(loss.after === 4 && initialEngine.defenseSystem.getMaxDefense() === 8, '損耗APIは現在🛡️だけを減らす');
 const recovery = initialEngine.recoverCurrentDefense(99);
-assert(recovery.after === 13, '回復APIは最大🛡️を超えない');
+assert(recovery.after === 8, '回復APIは最大🛡️を超えない');
 initialEngine.state.grid[1][2].placed = false;
 initialEngine.state.grid[1][2].terrain = null;
 const clamped = initialEngine.defenseSystem.reconcileWithMax();
-assert(clamped.maxDefense === 10 && clamped.currentDefense === 10 && clamped.clamped, '最大🛡️低下時に現在🛡️をクランプする');
+assert(clamped.maxDefense === 5 && clamped.currentDefense === 5 && clamped.clamped, '最大🛡️低下時に現在🛡️をクランプする');
 
 // E: Trial公開APIは現在値を返す。
 initialEngine.defenseSystem.increaseMaxCapacity(10);
 initialEngine.defenseSystem.setCurrentDefense(7);
 assert(initialEngine.getTrialAvailableDefense() === 7, 'Trial投入可能量は現在🛡️を参照する');
-assert(initialEngine.defenseSystem.getMaxDefense() === 20, 'Trial参照と最大🛡️は独立している');
+assert(initialEngine.defenseSystem.getMaxDefense() === 15, 'Trial参照と最大🛡️は独立している');
 
 // I-1: 仕様未確定時は再建せず、資源も変化させない。
 const unresolvedEngine = GameEngine.createGame();
@@ -102,13 +111,13 @@ const rebuildEngine = GameEngine.createGame({
     defenseRebuildCostResolver: ({ missingDefense }) => ({ food: missingDefense, material: missingDefense + 1 })
 });
 rebuildEngine.defenseSystem.increaseMaxCapacity(4);
-rebuildEngine.defenseSystem.setCurrentDefense(11);
+rebuildEngine.defenseSystem.setCurrentDefense(6);
 rebuildEngine.state.food = 10;
 rebuildEngine.state.wood = 10;
 rebuildEngine.state.material = 10;
 const rebuilt = rebuildEngine.rebuildDefense();
 assert(rebuilt.success === true, '通常資源が足りる場合だけ再建が成功する');
-assert(rebuildEngine.state.currentDefense === 14 && rebuildEngine.state.maxDefense === 14, '再建成功時に最大まで一括回復する');
+assert(rebuildEngine.state.currentDefense === 9 && rebuildEngine.state.maxDefense === 9, '再建成功時に最大まで一括回復する');
 assert(rebuildEngine.state.food === 7 && rebuildEngine.state.wood === 6 && rebuildEngine.state.mystic === 0, '再建成功時だけ所定資源を消費する');
 
 // I-3: ✨補填は明示許可と確認の両方が必要。
@@ -117,7 +126,7 @@ const mysticEngine = GameEngine.createGame({
     defenseMysticFallbackResolver: () => 1
 });
 mysticEngine.defenseSystem.increaseMaxCapacity(2);
-mysticEngine.defenseSystem.setCurrentDefense(8);
+mysticEngine.defenseSystem.setCurrentDefense(5);
 mysticEngine.state.food = 0;
 mysticEngine.state.wood = 0;
 mysticEngine.state.material = 0;
@@ -132,47 +141,47 @@ assert(mysticEngine.state.currentDefense === mysticEngine.state.maxDefense, '✨
 
 // J: 配置ActionのUndoは現在値と最大値の両方を事前状態へ戻す。
 const undoEngine = GameEngine.createGame();
-undoEngine.defenseSystem.setCurrentDefense(8);
+undoEngine.defenseSystem.setCurrentDefense(3);
 undoEngine.state.handOffering[0] = { id: 'TEST_DEFENSE_LAND', terrain: defenseLand(3), currentShape: [[1]] };
 const action = undoEngine.placeLand(1, 2, undoEngine.state.handOffering[0], 0, { type: 'OFFERING', index: 0 });
-assert(action.success === true && undoEngine.state.currentDefense === 11 && undoEngine.state.maxDefense === 13, '配置Actionでも増加分だけ現在🛡️へ反映する');
+assert(action.success === true && undoEngine.state.currentDefense === 6 && undoEngine.state.maxDefense === 8, '配置Actionでも増加分だけ現在🛡️へ反映する');
 const undo = undoEngine.undoLastAction();
-assert(undo.success === true && undoEngine.state.currentDefense === 8 && undoEngine.state.maxDefense === 10, 'Undoで現在🛡️と最大🛡️を配置前へ復元する');
+assert(undo.success === true && undoEngine.state.currentDefense === 3 && undoEngine.state.maxDefense === 5, 'Undoで現在🛡️と最大🛡️を配置前へ復元する');
 
 // J-2: History RestoreはDefenseSystem内部の配置カウンタも復元盤面へ再同期する。
 const restorePlacementEngine = GameEngine.createGame();
 const beforeRestorePlacement = restorePlacementEngine.gridEngine.placeShape(1, 2, [[1]], defenseLand(3));
 assert(
     beforeRestorePlacement.success === true
-        && restorePlacementEngine.state.currentDefense === 13
-        && restorePlacementEngine.state.maxDefense === 13,
-    'History Restore前の防衛土地配置で13/13になる'
+        && restorePlacementEngine.state.currentDefense === 8
+        && restorePlacementEngine.state.maxDefense === 8,
+    'History Restore前の防衛土地配置で8/8になる'
 );
 const restoredPlacement = restorePlacementEngine.historyRestoreService.restoreVerse(1);
 assert(
     restoredPlacement.success === true
-        && restorePlacementEngine.state.currentDefense === 10
-        && restorePlacementEngine.state.maxDefense === 10,
-    'Verse 1 Restoreで防衛値を10/10へ復元する'
+        && restorePlacementEngine.state.currentDefense === 5
+        && restorePlacementEngine.state.maxDefense === 5,
+    'Verse 1 Restoreで防衛値を5/5へ復元する'
 );
 const afterRestorePlacement = restorePlacementEngine.gridEngine.placeShape(1, 2, [[1]], defenseLand(3));
 assert(
     afterRestorePlacement.success === true
-        && restorePlacementEngine.state.currentDefense === 13
-        && restorePlacementEngine.state.maxDefense === 13,
+        && restorePlacementEngine.state.currentDefense === 8
+        && restorePlacementEngine.state.maxDefense === 8,
     'History Restore後の再配置でも配置増分3を現在🛡️へ再充填する'
 );
 
 const serialized = serializeGameState(undoEngine.state);
-assert(serialized.currentDefense === 8 && serialized.maxDefense === 10, '直列化結果に現在🛡️と最大🛡️を保存する');
+assert(serialized.currentDefense === 3 && serialized.maxDefense === 5, '直列化結果に現在🛡️と最大🛡️を保存する');
 
 const staleEngine = GameEngine.createGame();
 staleEngine.state.vigilanceTurns = 1;
 staleEngine.state.vigilanceStartsNextTurn = false;
-staleEngine.defenseSystem.setCurrentDefense(13);
+staleEngine.defenseSystem.setCurrentDefense(8);
 staleEngine.state.vigilanceTurns = 0;
 const reconciledSerialization = serializeGameState(staleEngine.state);
-assert(reconciledSerialization.currentDefense === 10 && reconciledSerialization.maxDefense === 10, '直列化前に失効した最大値補正と現在値を整合させる');
+assert(reconciledSerialization.currentDefense === 5 && reconciledSerialization.maxDefense === 5, '直列化前に失効した最大値補正と現在値を整合させる');
 
 // H: HUDは「現在 / 最大」で描画する。
 const hudEngine = GameEngine.createGame();
@@ -194,7 +203,7 @@ globalThis.document = {
     )
 };
 header.render({ t: key => key });
-assert(ensureElement('valDefense').innerText === '8 / 15', 'HUDが現在🛡️ / 最大🛡️を表示する');
+assert(ensureElement('valDefense').innerText === '8 / 10', 'HUDが現在🛡️ / 最大🛡️を表示する');
 if (previousDocument === undefined) delete globalThis.document;
 else globalThis.document = previousDocument;
 
