@@ -1477,6 +1477,14 @@
       ]
     },
     {
+      "path": "scratch/test_unity_trial_runtime_contract_fixtures.mjs",
+      "purpose": "Unity Trial runtime golden fixtures for 2.5D route/interception presentation and inbound Trial board commands",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_ui_lifecycle.mjs",
       "purpose": "ui lifecycle",
       "suite": "existing",
