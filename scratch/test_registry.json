@@ -353,6 +353,11 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_demihuman_traces_public_presentation_read_model.mjs",
+      "purpose": "demihuman traces public presentation read model",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_dev_chronicle_restore_ui.mjs",
       "purpose": "dev chronicle restore ui",
       "suite": "existing",
