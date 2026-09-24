@@ -95,6 +95,9 @@ Stage1のlive / dormantカードとOfferingカテゴリ未確定境界の棚卸�
 ### 🧪 `06_stage1_dormant_card_triage.md`
 Stage1 Dormantカード15枚の復帰・再設計・保留判断。runtime再有効化は行わない。
 
+### 🧭 `07_stage1_first_wave_card_intents.md`
+Stage1で優先して具体化する非LANDカードの判断軸。Offering正式カテゴリ・weightはまだ確定しない。
+
 実装上は非土地カードの多くが `category: "COMMAND"` として残っており、上記テーマ分類とruntime categoryは一致しない。
 Offering用taxonomyは `offering.category` 境界へ段階的に移すが、現時点で正式確定している系統はLANDのみとする。
 
