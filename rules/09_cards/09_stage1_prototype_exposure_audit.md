@@ -64,36 +64,61 @@ Offering conditionはlive化前に再設計する。
 
 ## 4. 警戒
 
-現条件:
+### 修正前の実測
+
+旧条件:
 
 - `reqTrialOrLowDefense: true`
-- legacy評価は
+- legacy評価:
   - Trial notice active
   - **OR**
   - current defense <= 30
 
-Stage1の実測では全112 snapshotで条件成立した。
+この条件ではStage1の全112 snapshotで成立した。
 
 - Trial notice前: **72 / 72**
 - Trial notice中: **40 / 40**
+- Verse1〜14すべて
 
-つまり現条件のままlive化すると、
-Trial前準備カードではなく **Verse1から常時抽選対象** になる。
+つまりTrial前準備カードではなく、Verse1から常時抽選対象になっていた。
 
-### 判断
+### prototype v1 gate
 
-これはFirst Wave intentの
+旧 `reqTrialOrLowDefense` は正本から外し、
+Card Definition v1のOffering / Execution requirementを同じ意味論へ揃える。
 
-> 「今の内政投資を止めて、次のTrialへ備えるか」
+```text
+WARNING_STATE >= WATCH
+```
 
-と整合しない。
+この条件はexact Trial残りVerse数を参照しない。
 
-live化前にOffering conditionをWarning / Trial接近期へ寄せる。
-少なくとも現行の `trial OR defense<=30` をそのまま製品条件にしない。
+FirstRunのsemantic flowでは、
+
+- Verse7: OMEN
+- Verse8: Investigation成功後にWATCH
+- Verse10: TENSE
+- Verse14: IMMINENT
+
+となる。
+
+したがって通常FirstRunでVerse8に調査を選んだ場合、
+《警戒》は**その後のOfferingから**Trial準備候補になれる。
+
+一方、この監査のLAND-only traceはVerse8 Investigationを実行しないため、
+Warning timing側がTENSEへ進むVerse10から初めて成立する。
+このtraceでは修正後の期待値を以下に固定する。
+
+- **40 / 112**
+- Verse10〜14
+- CALM / OMENでは0
+
+Executionでも同じ `WARNING_STATE >= WATCH` を再評価するため、
+早期に取得・注入したカードをCALM / OMENで発動する経路はfail-closedになる。
 
 効果本体
 `🧱15 → 次Verseから2Verseの🛡️補正`
-についてはE2E通過済み。
+は従来どおりE2E対象とし、production runtime activationはOFFのまま維持する。
 
 ## 5. 残火再燃
 
@@ -161,7 +186,7 @@ effect E2E:
 Offering condition:
 
 - `CMD_EMERGENCY_LEVY`: **要再設計**
-- `CMD_VIGILANCE`: **要再設計**
+- `CMD_VIGILANCE`: **prototype v1修正済み — WARNING_STATE >= WATCH**
 - `CMD_REKINDLE_EMBER`: rescue用途として妥当、通常sinkには数えない
 
 production activation:
