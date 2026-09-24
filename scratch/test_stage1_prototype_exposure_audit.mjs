@@ -255,6 +255,18 @@ for (const id of PROTOTYPE_IDS) {
     );
 }
 
+const vigilanceExposure = rows.filter(row => row.eligibility.CMD_VIGILANCE);
+assert.equal(
+    vigilanceExposure.length,
+    40,
+    "LAND-only trace must expose Vigilance only after semantic Warning reaches at least WATCH/TENSE"
+);
+assert.deepEqual(
+    [...new Set(vigilanceExposure.map(row => row.verse))],
+    [10, 11, 12, 13, 14],
+    "without taking the Verse8 Investigation action, timing escalation must first expose Vigilance at Verse10"
+);
+
 for (const row of rows.filter(row =>
     PROTOTYPE_IDS.some(id => row.eligibility[id])
 )) {
