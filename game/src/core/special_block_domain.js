@@ -277,7 +277,16 @@ export const SPECIAL_BLOCK_DEFINITIONS = Object.freeze({
             kind: BASE_TERRAIN_INTERACTIONS.TRANSFORMING_OVERLAY,
             glDelta: -1
         },
-        production: { kind: 'SOURCE_SIZE', status: 'UNRESOLVED' },
+        creationCost: {
+            status: SPECIAL_BLOCK_COST_STATUS.RESOLVED,
+            resources: { wood: 20 }
+        },
+        production: {
+            kind: 'SOURCE_SIZE',
+            status: 'RESOLVED',
+            sourceSizeSource: 'INITIAL_SNAPSHOT',
+            perSourceYields: { wood: 1 }
+        },
         capabilities: [BOARD_CAPABILITIES.PRODUCTION_SITE],
         trialTraits: {},
         lifecycle: { initialState: 'ACTIVE' },
