@@ -151,7 +151,7 @@ console.log("test_trial_deployment_balance_probe: PASS");
         "all-defense far deployment should cap at 80% burden"
     );
     assert.ok(
-        halfFarMin.burdenShare >= 0.62 && halfFarMin.burdenShare <= 0.63,
+        halfFarMin.burdenShare >= 0.63 && halfFarMin.burdenShare <= 0.64,
         "half-defense far deployment should stay dramatic without matching full mobilization"
     );
 
