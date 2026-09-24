@@ -240,6 +240,16 @@ const CONDITION_HANDLERS = {
         return maxConnected >= requiredCount;
     },
 
+    // 🌿 Board-owned connected vegetation query.
+    // Used by Offering eligibility without binding Card logic to grid internals.
+    CONNECTED_GL_AT_LEAST: (params, context) => {
+        const query = context?.boardQuery;
+        return query?.hasConnectedTerrainGLAtLeast?.(
+            params.minimumGL ?? params.gl ?? 0,
+            { minimum: params.value ?? params.minimum ?? 2 }
+        ) === true;
+    },
+
     // 🌲 盤面に森または森丘陵が存在するか判定 (指定マス数以上)
     HAS_FOREST_OR_HILL_FOREST: (params, context) => {
         if (!context || !context.state || !context.state.grid) return false;
