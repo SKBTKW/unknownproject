@@ -5,14 +5,16 @@
  * consumed by gameplay logic. They simply preserve the current economic
  * hierarchy while Card / GE / Project prices are still being authored.
  *
- * Evidence at introduction (Stage1, 8 seeded live Verse15 runs):
+ * Evidence after the Stage1 Board adjacency contract refresh
+ * (8 seeded live Verse15 runs):
  * - current Stage1 food/material card max recovery PVE: 0.83
- * - FirstRun Trial1 heavy (80% defense, far) recovery PVE: 5.87..7.91
- * - FirstRun Trial1 all-in (100% defense, far) recovery PVE: 6.63..8.89
+ * - FirstRun Trial1 heavy (80% defense, far) recovery PVE: 5.72..8.04
+ * - FirstRun Trial1 all-in (100% defense, far) recovery PVE: 6.50..9.04
  *
  * Rounded guardrails intentionally leave a large unallocated middle band for
  * future GE / Project / special-development costs instead of inventing those
- * prices prematurely.
+ * prices prematurely. Upper Trial guardrails are rounded outward to contain
+ * the current seeded runtime envelope; this does not change runtime pricing.
  */
 export const ECONOMY_COST_AUTHORING_ANCHORS_V1 = Object.freeze({
     bve: Object.freeze({
@@ -29,11 +31,11 @@ export const ECONOMY_COST_AUTHORING_ANCHORS_V1 = Object.freeze({
         }),
         firstRunTrial1Heavy: Object.freeze({
             min: 5.5,
-            max: 8.0
+            max: 8.1
         }),
         firstRunTrial1AllIn: Object.freeze({
             min: 6.5,
-            max: 9.0
+            max: 9.1
         })
     })
 });
