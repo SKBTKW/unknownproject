@@ -33,6 +33,7 @@ import { FirstRunState } from '../tutorial/first_run_state.js';
 import { TrialTimingAuthorityService } from '../trial/systems/trial_timing_authority_service.js';
 import { attachTrialDeploymentEconomy } from '../trial/integration/trial_deployment_economy_bootstrap.js';
 import { TrialDefenseReservation } from '../trial/systems/trial_defense_reservation.js';
+import { createFirstRunTrial1RelativeDeploymentCostResolver } from '../trial/config/first_run_trial1_relative_deployment_policy_v1.js';
 
 function normalizeRunSeed(seed) {
     if (!Number.isFinite(seed)) return null;
@@ -183,13 +184,36 @@ class GameEngine {
             });
 
         this.trialDeploymentAttachment = null;
-        if (
+        const explicitTrialDeploymentEconomy = (
             dependencies.trialDeploymentEconomy
             && typeof dependencies.trialDeploymentEconomy === "object"
-        ) {
+        )
+            ? dependencies.trialDeploymentEconomy
+            : null;
+        const firstRunTrial1DeploymentEconomy = (
+            !explicitTrialDeploymentEconomy
+            && this.firstRunState?.active === true
+        )
+            ? {
+                costResolver: createFirstRunTrial1RelativeDeploymentCostResolver({
+                    balanceProvider: () => ({
+                        food: Number(this.state?.food) || 0,
+                        material: Number(this.state?.wood ?? this.state?.material) || 0
+                    }),
+                    defenseBalanceProvider: () => this.getTrialAvailableDefense()
+                }),
+                applicabilityPredicate: ({ trialState }) =>
+                    this.firstRunState?.active === true
+                    && Number(trialState?.trialIndex) === 1
+            }
+            : null;
+        const trialDeploymentEconomy = explicitTrialDeploymentEconomy
+            || firstRunTrial1DeploymentEconomy;
+
+        if (trialDeploymentEconomy) {
             this.trialDeploymentAttachment = attachTrialDeploymentEconomy(
                 this,
-                dependencies.trialDeploymentEconomy
+                trialDeploymentEconomy
             );
         }
 

@@ -930,6 +930,14 @@
       ]
     },
     {
+      "path": "scratch/test_stage1_prototype_card_e2e.mjs",
+      "purpose": "verify audited Stage1 prototype cards through opt-in Offering eligibility, atomic payment, effect execution, Verse progression, and production-default dormancy",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_stage1_offering_economy_playability.mjs",
       "purpose": "Stage1 Offering, economy, reserve, Multi-Attribute placement, Zone/Link, and Verse1-to-Trial1 playability audit",
       "suite": "existing",
@@ -980,6 +988,14 @@
     {
       "path": "scratch/test_stage1_trial1_linear_cost_fit.mjs",
       "purpose": "measure whether the fixed linear deployment-cost formula can hold the live FirstRun 70-80% burden target across Stage1 seeds",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_first_run_trial1_relative_deployment_cost.mjs",
+      "purpose": "FirstRun Trial1-only relative food/material deployment burden, session applicability, later-Trial fallback, and explicit override precedence",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
