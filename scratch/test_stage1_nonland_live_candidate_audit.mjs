@@ -5,6 +5,7 @@ import {
     CARD_RUNTIME_ACTIVE_CATEGORIES,
     isCardRuntimeActive
 } from "../game/src/systems/card_runtime_policy.js";
+import { COMMAND_CARDS_MASTER } from "../game/src/data/command_cards_data.js";
 
 const readJson = path => JSON.parse(fs.readFileSync(new URL(path, import.meta.url), "utf8"));
 const read = path => fs.readFileSync(new URL(path, import.meta.url), "utf8");
@@ -20,6 +21,7 @@ const deckSource = read("../game/src/systems/deck_manager.js");
 const stage1 = [...economy, ...military, ...mystic]
     .filter(card => Number(card.minStage ?? 1) === 1);
 const byId = new Map(stage1.map(card => [card.id, card]));
+const generatedById = new Map(COMMAND_CARDS_MASTER.map(card => [card.id, card]));
 
 const PROTOTYPE = Object.freeze([
     "CMD_EMERGENCY_LEVY",
@@ -70,6 +72,18 @@ for (const id of PROTOTYPE) {
     assert.equal(card.cost.food, 20);
     assert.ok(effect("CMD_EMERGENCY_LEVY", "RESOURCE_DELTA",
         item => item.resource === "wood" && item.amount === 15));
+    assert.equal(Boolean(effect("CMD_EMERGENCY_LEVY", "STATE_SET")), false,
+        "Emergency Levy v1 must not schedule a future maintenance penalty");
+    assert.equal(Boolean(effect("CMD_EMERGENCY_LEVY", "BUFF_ADD")), false,
+        "Emergency Levy v1 is immediate-only");
+}
+
+for (const id of ["CMD_RATIONING", "CMD_EMERGENCY_LEVY", "CMD_REKINDLE_EMBER"]) {
+    assert.deepEqual(
+        generatedById.get(id),
+        byId.get(id),
+        `${id} generated command master must match source JSON`
+    );
 }
 
 {
@@ -89,9 +103,10 @@ for (const id of PROTOTYPE) {
     assert.equal(card.maxEmber, 5);
     assert.ok(effect("CMD_REKINDLE_EMBER", "RESOURCE_DELTA",
         item => item.resource === "ember" && item.amount === 3));
-    assert.ok(effect("CMD_REKINDLE_EMBER", "STATE_SET",
-        item => item.key === "reserveFeeWaivedTurns" && item.value === 3));
-    assert.ok(stateSource.includes("this.reserveFeeWaivedTurns && this.reserveFeeWaivedTurns > 0"));
+    assert.equal(Boolean(effect("CMD_REKINDLE_EMBER", "STATE_SET")), false,
+        "Rekindle v1 must not write reserve-upkeep waiver state");
+    assert.equal(Boolean(effect("CMD_REKINDLE_EMBER", "BUFF_ADD")), false,
+        "Rekindle v1 is immediate-only and must not leave a duration buff");
 }
 
 {
@@ -99,6 +114,9 @@ for (const id of PROTOTYPE) {
     assert.deepEqual(card.cost, {});
     assert.ok(effect("CMD_RATIONING", "STATE_SET",
         item => item.key === "foodCostHalvedTurns" && item.value === 1));
+    assert.equal(Boolean(effect("CMD_RATIONING", "STATE_SET",
+        item => item.key === "foodCostRationingActive" || item.key === "foodCostRationingDiscount")), false,
+        "Rationing v1 uses one canonical halving state");
     assert.ok(maintenanceSource.includes("state.foodCostHalvedTurns > 0"));
 }
 
