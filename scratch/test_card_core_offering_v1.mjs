@@ -778,7 +778,14 @@ function makeGrid(rows, cols) {
         },
         {
             id: "CMD_VIGILANCE",
-            initial: { food: 10, wood: 30, material: 30, mystic: 5, ember: 5 },
+            initial: {
+                food: 10,
+                wood: 30,
+                material: 30,
+                mystic: 5,
+                ember: 5,
+                warningState: "WATCH"
+            },
             assertState(state) {
                 assert.equal(state.wood, 15, "vigilance cost drift");
                 assert.equal(state.vigilanceTurns, 2);
