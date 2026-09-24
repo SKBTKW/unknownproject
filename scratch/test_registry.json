@@ -845,6 +845,14 @@
       ]
     },
     {
+      "path": "scratch/test_post_trial_history_runtime_gate.mjs",
+      "purpose": "Canonical Trial settlement records Chronicle history consumed directly by RunHistoryReadModel and post-Trial Global Event eligibility",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_demihuman_raid_boundary.mjs",
       "purpose": "Demihuman Raid remains history-gated and outside normal Trial lifecycle until a dedicated encounter port exists",
       "suite": "existing",
