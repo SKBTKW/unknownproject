@@ -111,8 +111,8 @@ const dramaticMixed = dramaticCases.find(entry =>
 assert.ok(dramaticMixed);
 assert.equal(
     dramaticMixed.heavy.affordable,
-    6,
-    "DRAMATIC heavy commitment should expose that mixed pre-Trial spending can make 2/8 live samples unaffordable"
+    7,
+    "DRAMATIC 80%-defense heavy commitment should expose at least one mixed-spend affordability failure"
 );
 assert.equal(
     dramaticMixed.all.affordable,
@@ -148,14 +148,14 @@ assert.ok(
     "RESILIENT no-spend heavy material median should remain visibly costly"
 );
 assert.ok(
-    resilientMixed.heavy.foodMedian >= 0.64
-        && resilientMixed.heavy.foodMedian <= 0.69,
-    "RESILIENT mixed-spend heavy food median should rise into the mid/high-60% band"
+    resilientMixed.heavy.foodMedian >= 0.62
+        && resilientMixed.heavy.foodMedian <= 0.66,
+    "RESILIENT mixed-spend 80%-defense heavy food median should remain in the low/mid-60% band"
 );
 assert.ok(
-    resilientMixed.heavy.materialMedian >= 0.64
-        && resilientMixed.heavy.materialMedian <= 0.69,
-    "RESILIENT mixed-spend heavy material median should rise into the mid/high-60% band"
+    resilientMixed.heavy.materialMedian >= 0.62
+        && resilientMixed.heavy.materialMedian <= 0.66,
+    "RESILIENT mixed-spend 80%-defense heavy material median should remain in the low/mid-60% band"
 );
 assert.ok(
     resilientMixed.all.foodMedian >= 0.69
