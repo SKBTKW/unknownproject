@@ -86,12 +86,23 @@ expected23.forEach(exp => {
 });
 
 console.log("\n--- 2. 発動ハンドラ (playCommandCard) 検問 ---");
-const persistentFeedbackCards = ["CMD_LOGGING_CAMP", "CMD_QUARRY", "CMD_RESETTLEMENT", "CMD_RATIONING"];
+const persistentFeedbackCards = ["CMD_QUARRY", "CMD_RESETTLEMENT", "CMD_RATIONING"];
 persistentFeedbackCards.forEach(cId => {
     const cardObj = allCmdCards.find(c => c.id === cId);
     dm.playCommandCard(cardObj, -1, -1, null);
     assert(mockState.activeBuffs.some(b => b.id === cId), `playCommandCard(${cId}) added active/visible buff`);
 });
+
+{
+    const loggingCamp = allCmdCards.find(c => c.id === "CMD_LOGGING_CAMP");
+    assert(loggingCamp && Object.keys(loggingCamp.cost || {}).length === 0,
+        "Logging Camp card does not duplicate Board-owned creation cost");
+    assert(loggingCamp?.effects?.length === 1
+        && loggingCamp.effects[0].action === "CREATE_SPECIAL_BLOCK"
+        && loggingCamp.effects[0].blockType === "LOGGING_CAMP"
+        && loggingCamp.effects[0].paymentMode === "DOMAIN_QUOTE",
+        "Logging Camp delegates creation and pricing to Board");
+}
 
 {
     const levy = allCmdCards.find(c => c.id === "CMD_EMERGENCY_LEVY");

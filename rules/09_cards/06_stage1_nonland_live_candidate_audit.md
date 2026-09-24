@@ -42,9 +42,9 @@ Stage1非LAND 15枚を一括で復帰させてはいけない。
 ## 3. C — 現状のままlive化しない
 
 ### `CMD_LOGGING_CAMP`
-表示は「森1マスを伐採拠点化し、周辺森林から持続産出」。
-現Declarative effectは `🧱+8` とBuff追加だけで、Special Block化も周辺持続産出も行わない。
-現在の説明と実効果が一致しない。
+Card→Boardの構造移行は完了し、`CREATE_SPECIAL_BLOCK / LOGGING_CAMP / DOMAIN_QUOTE` を使用する。
+ただしBoard正本の作成費と `SOURCE_SIZE` 産出値が未確定のため、現時点では意図的にfail-closed。
+価格・産出を決めるまではprototype候補へ昇格しない。
 
 ### `CMD_PASTORAL_FARM`
 表示は「平地1マスを牧畜場化し持続産出」。
@@ -88,7 +88,7 @@ A候補5枚でも、Stage1平時sinkはまだ不足する。
 
 特に、
 
-- 伐採拠点
+- 伐採拠点（構造移行済み、価格/産出未確定）
 - 牧畜場
 
 は「資源を払って盤面の恒久価値へ変える」役として有望だが、**Legacy挙動をそのまま復帰させず作り直す**。

@@ -533,7 +533,6 @@ function makeGrid(rows, cols) {
     const emergency = COMMAND_CARDS_MASTER.find(card => card.id === "CMD_EMERGENCY_LEVY");
     const loggingCamp = COMMAND_CARDS_MASTER.find(card => card.id === "CMD_LOGGING_CAMP");
     assert.ok(Array.isArray(emergency?.effects) && emergency.effects.length === 2);
-    assert.ok(Array.isArray(loggingCamp?.effects) && loggingCamp.effects.length === 3);
 
     const emergencyState = {
         turn: 1,
@@ -564,33 +563,17 @@ function makeGrid(rows, cols) {
         "Emergency Levy v1 must not schedule a future maintenance penalty");
     assert.equal(emergencyState.logs.length, 1);
 
-    const campState = {
-        turn: 1,
-        food: 10,
-        wood: 2,
-        material: 77,
-        mystic: 0,
-        ember: 2,
-        reserveSlots: [],
-        consumedUniqueCards: [],
-        usedUniqueCards: [],
-        activeBuffs: [],
-        logs: [],
-        addBuff(buff) { this.activeBuffs.push(buff); },
-        addLog(log) { this.logs.push(log); }
-    };
-    const campManager = new DeckManager(campState, {});
-    campManager.cycleSystem = null;
-    const campResult = campManager.playCommandCard(loggingCamp);
-
-    assert.equal(campResult.success, true);
-    assert.equal(campState.ember, 1, "legacy ember cost remains 1");
-    assert.equal(campState.wood, 10, "legacy immediate gain remains +8 wood");
-    assert.equal(campState.material, 10, "material alias must mirror Logging Camp wood gain");
-    assert.equal(campState.activeBuffs.length, 1);
-    assert.equal(campState.activeBuffs[0].id, "CMD_LOGGING_CAMP");
-    assert.equal(campState.activeBuffs[0].icon, "🪵");
-    assert.equal(campState.logs.length, 1);
+    assert.deepEqual(loggingCamp?.cost, {},
+        "Logging Camp cost authority belongs to the Special Block domain");
+    assert.equal(loggingCamp?.reqForestNearby, undefined,
+        "Logging Camp Offering legality must come from Board target enumeration");
+    assert.deepEqual(loggingCamp?.effects, [{
+        type: "DOMAIN_ACTION",
+        action: "CREATE_SPECIAL_BLOCK",
+        blockType: "LOGGING_CAMP",
+        paymentMode: "DOMAIN_QUOTE",
+        logActivation: true
+    }]);
 }
 
 // P. Simple Mystic cards migrated from ID branches remain behavior-equivalent.

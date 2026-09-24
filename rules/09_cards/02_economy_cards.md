@@ -26,7 +26,7 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 | :--- | :---: | :--- |
 | `CMD_RATIONING` | **Implemented / v1 semantic-aligned** | このVerseの最終食料維持費を50%化。カード定義は`foodCostHalvedTurns=1`へ一本化し、旧40%系state writeを廃止。 |
 | `CMD_WETLAND_RECLAMATION` | **Implemented foundation / Dormant** | 🧱15＋🔥1。explicit targetの`TRANSFORM_TERRAIN` Domain Actionで湖でない未地帯化湿原1マスを`E1_RECLAIMED_LAND`へ永久変換。HQ/完成Zone/LakeはBoard側で拒否。production既定ではDormant。 |
-| `CMD_LOGGING_CAMP` | **Partial / Player-facing description mismatch / Eligibility different** | runtimeは即時🧱+8とBuffのみ。表示説明の「森1マスを伐採拠点化」「周囲森林から継続🧱産出」は未接続。`reqForestNearby` は近接判定ではなく盤面全体の森系マス数。 |
+| `CMD_LOGGING_CAMP` | **Board-owned foundation / Unpriced / Dormant** | `LOGGING_CAMP` Special Blockを明示対象へ作成するDomain Actionへ移行済み。GL-1・森林source cluster保持はBoard正本。作成費とSOURCE_SIZE産出値は未確定のため、Domain quoteはfail-closedし通常Offeringへ出ない。 |
 | `CMD_GRANARY` | **Implemented foundation / Dormant** | 🧱20。平地/干拓地へ`GRANARY` Special Blockを対象指定で設置。`FOOD_STORAGE` CapabilityをMaintenanceが読み、1基あたり維持費-2・最大2基分。production既定ではDormant。 |
 | `CMD_AGRICULTURAL_REFORM` | **Implemented / v1 Board-owned** | 完成済みPLAINS Zone 1つを明示選択し、Zone Conversionとして各メンバー🌾+1/Verse。作成費🧱20はBoard definitionが正本、維持費なし、UNIQUE。 |
 | `CMD_PASTORAL_FARM` | **Partial** | 即時🌾+2中心。表示説明の持続施設効果は未接続。 |
@@ -67,13 +67,11 @@ runtime:
 
 #### 《伐採拠点》
 
-表示:
+v1 foundation:
 
-> 森1マスを拠点化し、周囲森林から継続産出
+> 森林系セルへ `LOGGING_CAMP` Special Blockを明示配置し、繁茂を1段階下げてsource clusterをBoardへ保持する。
 
-runtime:
-
-> 即時🧱+8のみ。対象マス変換・周囲継続産出consumerなし
+作成費とSOURCE_SIZE産出値はまだ未確定。未価格の間はOffering/実行ともfail-closedする。
 
 ---
 
