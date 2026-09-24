@@ -81,6 +81,21 @@ export function readZoneConversionCapabilities(state, groupId) {
     );
 }
 
+export function sumActiveZoneConversionProduction(state) {
+    const totals = { food: 0, wood: 0, defense: 0, mystic: 0 };
+    for (const [groupId, zone] of Object.entries(state?.mergedBlocks || {})) {
+        if (!isCompletedMergeGroup(state, groupId)) continue;
+        const conversion = zone?.conversion;
+        if (!conversion || conversion.state !== ZONE_CONVERSION_STATES.ACTIVE) continue;
+        const bonus = conversion.productionBonus || {};
+        for (const key of Object.keys(totals)) {
+            const value = Number(bonus[key] || 0);
+            if (Number.isFinite(value)) totals[key] += value;
+        }
+    }
+    return Object.freeze(totals);
+}
+
 export function zoneConversionCount(state, { definitionId = null } = {}) {
     let count = 0;
     for (const [groupId, zone] of Object.entries(state?.mergedBlocks || {})) {
