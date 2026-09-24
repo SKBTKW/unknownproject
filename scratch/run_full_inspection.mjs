@@ -451,6 +451,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Board Trial Deployment Semantics) で不合格が検出されました。");
         process.exit(1);
     }
+    const stage1ResourceSinkPortfolioOk = await runCommand("node", ["scratch/test_stage1_resource_sink_portfolio.mjs"]);
+    if (!stage1ResourceSinkPortfolioOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Stage1 Resource Sink Portfolio) で不合格が検出されました。");
+        process.exit(1);
+    }
     const trialDeploymentBalanceProbeOk = await runCommand("node", ["scratch/test_trial_deployment_balance_probe.mjs"]);
     if (!trialDeploymentBalanceProbeOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Trial Deployment Balance Probe) で不合格が検出されました。");
