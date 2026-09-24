@@ -809,6 +809,12 @@ async function main() {
         process.exit(1);
     }
 
+    const loggingCampV2SpendProbeOk = await runCommand("node", ["scratch/test_stage1_logging_camp_v2_spend_path_probe.mjs"]);
+    if (!loggingCampV2SpendProbeOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Logging Camp v2 Spend Path Probe) で不合格が検出されました。");
+        process.exit(1);
+    }
+
     const supplementalOk = await runCommand("node", ["scratch/scratch_registry.mjs", "--run", "supplemental"]);
     if (!supplementalOk) {
         console.error("\n[PIPELINE BLOCKED] Supplemental scratch tests failed.");
