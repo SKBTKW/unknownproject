@@ -295,6 +295,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Stage1 Non-LAND Live Candidate Audit) で不合格が検出されました。");
         process.exit(1);
     }
+    const wetlandReclamationDomainActionV1Ok = await runCommand("node", ["scratch/test_wetland_reclamation_domain_action_v1.mjs"]);
+    if (!wetlandReclamationDomainActionV1Ok) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Wetland Reclamation Domain Action v1) で不合格が検出されました。");
+        process.exit(1);
+    }
     const stage1GranarySpecialBlockV1Ok = await runCommand("node", ["scratch/test_stage1_granary_special_block_v1.mjs"]);
     if (!stage1GranarySpecialBlockV1Ok) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Stage1 Granary Special Block v1) で不合格が検出されました。");
