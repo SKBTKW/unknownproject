@@ -100,7 +100,11 @@ console.log("\nStage1 prototype cards: Offering -> payment -> effect -> Verse pr
     state.wood = 30;
     state.material = 30;
     state.currentDefense = Math.min(5, state.maxDefense || 5);
+    state.warningState = { state: "WATCH" };
 
+    assert.equal(engine.deckManager.isCardEligible(card, 1, 0), false,
+        "Vigilance must stay out before TENSE even when defense is low");
+    state.warningState = { state: "TENSE" };
     assert.equal(engine.deckManager.isCardEligible(card, 1, 0), true);
     generateOnlyPrototype(engine, id);
 
