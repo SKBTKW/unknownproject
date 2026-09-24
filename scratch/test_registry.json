@@ -1530,6 +1530,14 @@
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
       ]
+    },
+    {
+      "path": "scratch/test_special_block_creation_cost_quote.mjs",
+      "purpose": "Special Block authoritative creation-cost quote, post-payment validation, stale-payment rejection, and paidCost persistence",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
     }
   ]
 }
