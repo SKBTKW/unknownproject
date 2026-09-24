@@ -1419,6 +1419,14 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_unity_runtime_handoff_contract.mjs",
+      "purpose": "Unity runtime handoff contract over BoardPresentation, BoardInput, and GameRuntimeSnapshot",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_ui_lifecycle.mjs",
       "purpose": "ui lifecycle",
       "suite": "existing",
