@@ -154,6 +154,19 @@ export class TrialActionTrayComponent {
         const isCompleted = Boolean(this.ui.isTrialCompleted?.());
         const reviewRequested = this.ui.trialPresentationState.planningReviewRequested;
         const isReviewMode = reviewRequested || isConfirmed || isActivated || isBattleActive || isBattleResolved || isCompleted;
+        const deploymentPreview = isReviewMode
+            ? (this.ui.getTrialPlanningDeploymentPreview?.() || null)
+            : null;
+        const deploymentApplicable = deploymentPreview?.applicable === true;
+        const deploymentResolved = deploymentApplicable
+            && deploymentPreview?.success === true
+            && Number.isFinite(Number(deploymentPreview.foodCost))
+            && Number.isFinite(Number(deploymentPreview.materialCost));
+        const deploymentBlocksConfirm = deploymentApplicable
+            && (
+                !deploymentResolved
+                || deploymentPreview.affordable !== true
+            );
 
         if (isReviewMode) {
             const currentBattleSnapshot = (isBattleActive || isBattleResolved) ? this.ui.getCurrentTrialBattle?.() : null;
@@ -188,6 +201,41 @@ export class TrialActionTrayComponent {
                     </div>
                 `;
             }).join("");
+
+            let deploymentCostHtml = "";
+            if (
+                deploymentApplicable
+                && !isActivated
+                && !isBattleActive
+                && !isBattleResolved
+                && !isCompleted
+            ) {
+                if (deploymentResolved) {
+                    const costText = I18n.t("UI_TRIAL_DEPLOYMENT_COST_RESOURCES", {
+                        food: Math.max(0, Math.floor(Number(deploymentPreview.foodCost) || 0)),
+                        material: Math.max(0, Math.floor(Number(deploymentPreview.materialCost) || 0))
+                    });
+                    const statusText = deploymentPreview.affordable === true
+                        ? I18n.t("UI_TRIAL_DEPLOYMENT_COST_COMMIT_NOTE")
+                        : I18n.t("UI_TRIAL_DEPLOYMENT_INSUFFICIENT_RESOURCES");
+                    deploymentCostHtml = `
+                        <div class="trial-deployment-cost-box ${deploymentPreview.affordable === true ? "" : "is-unaffordable"}"
+                             id="trialDeploymentCostPreview">
+                            <strong>${I18n.t("UI_TRIAL_DEPLOYMENT_COST_TITLE")}</strong>
+                            <span class="trial-deployment-cost-resources">${costText}</span>
+                            <small>${statusText}</small>
+                        </div>
+                    `;
+                } else {
+                    deploymentCostHtml = `
+                        <div class="trial-deployment-cost-box is-unaffordable"
+                             id="trialDeploymentCostPreview">
+                            <strong>${I18n.t("UI_TRIAL_DEPLOYMENT_COST_TITLE")}</strong>
+                            <small>${I18n.t("UI_TRIAL_DEPLOYMENT_COST_UNAVAILABLE")}</small>
+                        </div>
+                    `;
+                }
+            }
 
             let reviewActionsHtml = "";
             if (isCompleted) {
@@ -225,7 +273,8 @@ export class TrialActionTrayComponent {
                         </button>
                     </div>
                     <div class="trial-review-actions">
-                        <button type="button" id="btnTrialConfirmPlan" class="btn-trial-action btn-confirm-plan">
+                        <button type="button" id="btnTrialConfirmPlan" class="btn-trial-action btn-confirm-plan"
+                            ${deploymentBlocksConfirm ? 'disabled aria-disabled="true"' : ""}>
                             ${I18n.t("UI_TRIAL_REVIEW_CONFIRM")}
                         </button>
                     </div>
@@ -234,7 +283,8 @@ export class TrialActionTrayComponent {
                 reviewActionsHtml = `
                     <div class="trial-plan-confirmed-banner" id="trialPlanConfirmedBanner">
                         <div class="trial-plan-confirmed-status">${I18n.t("UI_TRIAL_PLAN_CONFIRMED")}</div>
-                        <button type="button" id="btnTrialActivatePlan" class="btn-trial-action btn-activate-plan">
+                        <button type="button" id="btnTrialActivatePlan" class="btn-trial-action btn-activate-plan"
+                            ${deploymentBlocksConfirm ? 'disabled aria-disabled="true"' : ""}>
                             ${I18n.t("UI_TRIAL_ACTIVATE_PLAN")}
                         </button>
                     </div>
@@ -450,6 +500,7 @@ export class TrialActionTrayComponent {
                 <div class="trial-route-list-header">${I18n.t("UI_TRIAL_ROUTE_LIST")}</div>
                 <div class="trial-review-route-list" id="trialReviewRouteList">${reviewRoutesHtml}</div>
 
+                ${deploymentCostHtml}
                 ${errorsHtml}
                 ${reviewActionsHtml}
                     </div>

@@ -6,6 +6,9 @@ import { PLAYER_TRAY_MODES } from "../game/src/ui/layout_state_manager.js";
 const read = path => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 const indexSource = read("../game/index.html");
 const bridgeSource = read("../game/src/ui/trial_action_tray_runtime_bridge.js");
+const componentSource = read("../game/src/ui/trial_action_tray_component.js");
+const uiControllerSource = read("../game/src/ui/ui_controller.js");
+const i18nSource = read("../game/src/i18n.js");
 const trayCss = read("../game/css/3_bottom_area/trial_action_tray.css");
 
 let passed = 0;
@@ -86,5 +89,24 @@ check(!trayCss.includes(".trial-defense-allocation-panel")
 check(bridgeSource.includes("attachTrialRouteBoardSelection(uiController)")
     && bridgeSource.includes("uiController.trialActionTrayComponent.render?.()"),
     "bootstrap preserves board-route wiring when UIController already owns the tray");
+
+check(componentSource.includes("getTrialPlanningDeploymentPreview")
+    && componentSource.includes("deploymentPreview.foodCost")
+    && componentSource.includes("deploymentPreview.materialCost")
+    && componentSource.includes('id="trialDeploymentCostPreview"'),
+    "review surface renders deployment food/material cost before execution");
+check(componentSource.includes("deploymentBlocksConfirm")
+    && componentSource.includes('disabled aria-disabled="true"'),
+    "unaffordable or unresolved deployment preview disables confirm/execute actions");
+check(uiControllerSource.includes("previewPlanningDraftDeployment")
+    && uiControllerSource.includes("UI_TRIAL_DEPLOYMENT_INSUFFICIENT_RESOURCES")
+    && uiControllerSource.includes("UI_TRIAL_DEPLOYMENT_COST_UNAVAILABLE"),
+    "UIController resolves draft deployment preview and fails closed before plan confirmation");
+check(i18nSource.includes('UI_TRIAL_DEPLOYMENT_COST_TITLE: "配備コスト"')
+    && i18nSource.includes('UI_TRIAL_DEPLOYMENT_COST_TITLE: "Deployment Cost"'),
+    "deployment cost presentation is localized in Japanese and English");
+check(trayCss.includes(".trial-deployment-cost-box")
+    && trayCss.includes(".trial-action-progress .btn-trial-action:disabled"),
+    "Trial tray styles deployment cost state and disabled confirmation controls");
 
 console.log(`Trial Action Tray runtime: ${passed}/${passed} PASS`);

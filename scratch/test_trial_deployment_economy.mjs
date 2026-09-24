@@ -190,6 +190,30 @@ function confirmPlan(fixture, decisions = [{ routeId: "R1", cell: { r: 0, c: 2 }
     return confirmed;
 }
 
+// Draft deployment preview is pure and does not confirm or reserve anything.
+{
+    const f = createFixture();
+    const drafts = new Map();
+    const planned = f.controller.setRouteInterceptPlan(
+        drafts,
+        "R1",
+        { r: 0, c: 2 },
+        4
+    );
+    assert.equal(planned.success, true);
+
+    const before = { ...f.resources };
+    const preview = f.controller.previewPlanningDraftDeployment(drafts);
+    assert.equal(preview.success, true);
+    assert.equal(preview.applicable, true);
+    assert.equal(preview.affordable, true);
+    assert.equal(preview.foodCost, 6);
+    assert.equal(preview.materialCost, 2);
+    assert.equal(f.controller.state.interceptionPlan, null);
+    assert.equal(f.controller.state.deploymentPreview, null);
+    assert.deepEqual(f.resources, before, "draft deployment preview is pure");
+}
+
 // Preview is pure; Commit spends ordinary resources and reserves defense exactly once.
 {
     const f = createFixture();
