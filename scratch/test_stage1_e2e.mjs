@@ -252,6 +252,17 @@ const uiPort = {
 const explicitLaunch = attachTrialLaunchSubsystem(engine, uiPort);
 check(explicitLaunch?.success === true, "Trial launch subsystem can attach to the live Stage1 runtime");
 check(typeof engine.retryPendingTrialLaunch === "function", "TurnLifecycle retry port is installed when launch composition is attached");
+check(
+    Boolean(engine.trialDeploymentService),
+    "Production Stage1 composes Trial Deployment Economy with a resolved cost policy",
+    JSON.stringify({
+        attachmentPresent: Boolean(engine.trialDeploymentAttachment),
+        attachmentSuccess: engine.trialDeploymentAttachment?.success ?? null,
+        attachmentReason: engine.trialDeploymentAttachment?.reason ?? null,
+        serviceAttached: Boolean(engine.trialDeploymentService),
+        defenseReservationAttached: Boolean(engine.trialDefenseReservation)
+    })
+);
 const trialTruth = engine.enemyTruthReadModel?.getSnapshot?.() || null;
 check(
     Number(trialTruth?.strategicSuppression) > 0,
@@ -368,6 +379,36 @@ if (explicitLaunchResult?.started === true && trialController.state) {
         JSON.stringify(confirmed || null)
     );
 
+    if (engine.trialDeploymentService) {
+        const deploymentPreview = confirmed?.deploymentPreview
+            || trialController.state?.deploymentPreview
+            || null;
+        check(
+            deploymentPreview?.success === true,
+            "Trial1 Deployment Economy resolves a canonical plan preview",
+            JSON.stringify(deploymentPreview || null)
+        );
+        check(
+            deploymentPreview?.affordable === true,
+            "Trial1 canonical deployment cost is affordable on the E2E path",
+            JSON.stringify(deploymentPreview || null)
+        );
+        check(
+            (Number(deploymentPreview?.foodCost) || 0) > 0
+                || (Number(deploymentPreview?.materialCost) || 0) > 0,
+            "Trial1 canonical deployment profile creates a positive resource sink",
+            JSON.stringify({
+                foodCost: deploymentPreview?.foodCost ?? null,
+                materialCost: deploymentPreview?.materialCost ?? null,
+                breakdown: deploymentPreview?.breakdown || null
+            })
+        );
+    }
+
+    const deploymentBalancesBeforeActivation = {
+        food: Math.max(0, Math.floor(Number(engine.state.food) || 0)),
+        material: Math.max(0, Math.floor(Number(engine.state.wood ?? engine.state.material ?? 0) || 0))
+    };
     const defenseBeforeActivation = Math.max(
         0,
         Math.floor(Number(engine.state.currentDefense) || 0)
@@ -384,6 +425,42 @@ if (explicitLaunchResult?.started === true && trialController.state) {
         "Trial1 confirmed plan activates",
         JSON.stringify(activated || null)
     );
+    if (activated?.success && engine.trialDeploymentService) {
+        const paid = activated.deploymentCommit?.payment?.paid || null;
+        const committedPreview = activated.deploymentCommit?.preview || confirmed?.deploymentPreview || null;
+        check(
+            paid
+                && Number(paid.food) === Number(committedPreview?.foodCost)
+                && Number(paid.material) === Number(committedPreview?.materialCost),
+            "Trial1 Deployment Economy pays exactly the committed preview cost",
+            JSON.stringify({
+                paid,
+                previewFood: committedPreview?.foodCost ?? null,
+                previewMaterial: committedPreview?.materialCost ?? null
+            })
+        );
+        check(
+            Math.floor(Number(engine.state.food) || 0)
+                === Math.max(0, deploymentBalancesBeforeActivation.food - (Number(paid?.food) || 0)),
+            "Trial1 deployment food payment writes through exactly once",
+            JSON.stringify({
+                before: deploymentBalancesBeforeActivation.food,
+                paid: paid?.food ?? null,
+                after: engine.state.food
+            })
+        );
+        check(
+            Math.floor(Number(engine.state.wood ?? engine.state.material ?? 0) || 0)
+                === Math.max(0, deploymentBalancesBeforeActivation.material - (Number(paid?.material) || 0)),
+            "Trial1 deployment material payment writes through exactly once",
+            JSON.stringify({
+                before: deploymentBalancesBeforeActivation.material,
+                paid: paid?.material ?? null,
+                after: engine.state.wood ?? engine.state.material ?? null
+            })
+        );
+    }
+
     if (activated?.success && expectedDefenseCommitted > 0) {
         check(
             Math.floor(Number(engine.state.currentDefense) || 0)
