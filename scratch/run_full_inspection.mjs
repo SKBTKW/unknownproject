@@ -466,6 +466,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Board Trial Deployment Semantics) で不合格が検出されました。");
         process.exit(1);
     }
+    const stage1ResourceSinkBudgetProbeOk = await runCommand("node", ["scratch/test_stage1_resource_sink_budget_probe.mjs"]);
+    if (!stage1ResourceSinkBudgetProbeOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Stage1 Resource Sink Budget Probe) で不合格が検出されました。");
+        process.exit(1);
+    }
     const stage1ResourceSinkPortfolioOk = await runCommand("node", ["scratch/test_stage1_resource_sink_portfolio.mjs"]);
     if (!stage1ResourceSinkPortfolioOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Stage1 Resource Sink Portfolio) で不合格が検出されました。");
