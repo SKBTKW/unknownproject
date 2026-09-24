@@ -424,6 +424,16 @@ assert.equal(serialized.mergedBlocks.zone_b.conversion.definitionId, "GARRISON_T
 const restored = makeState();
 hydrateGameState(restored, serialized, { resolveCardMaster: () => null });
 assert.equal(restored.mergedBlocks.zone_a.conversion.definitionId, "GARRISON_TEST");
+assert.deepEqual(
+    restored.mergedBlocks.zone_a.conversion.productionBonus,
+    { food: 2 },
+    "Zone Conversion production semantics survive serialize/hydrate"
+);
+assert.deepEqual(
+    restored.mergedBlocks.zone_a.conversion.creationReward,
+    { resources: { ember: 2 }, caps: { ember: 20 } },
+    "Zone Conversion creation reward metadata survives serialize/hydrate"
+);
 assert.equal(restored.mergedBlocks.zone_b.conversion.sequence, 2);
 
 // Verse initialization order: increment Verse -> settle Zone upkeep -> generate Offering.
