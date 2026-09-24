@@ -25,7 +25,9 @@ production Offering自体は変更しない。
 Trial noticeは現FirstRunではVerse10から有効
 （Trial1 = Verse15, remaining <= 5）。
 
-## 2. 実測結果
+## 2. 修正前実測結果（監査起点）
+
+以下は旧 `reqTrialOrLowDefense` を使用していた時点のbaseline。
 
 | Card | Eligible | Rate | Trial notice前 | Trial notice中 | Verse |
 | --- | ---: | ---: | ---: | ---: | --- |
@@ -151,11 +153,11 @@ Verse1〜14に🔥5以下へ落ちるsnapshotがなく、
 
 ## 6. Stage1 sinkへの含意
 
-3枚をそのままlive化しても、
+3枚をprototypeとして整備しても、
 平時sink問題は解決しない。
 
-- 緊急徴発: 現状Verse1だけ。しかも🌾→🧱変換
-- 警戒: 🧱15のsinkだが、現状は露出が広すぎる
+- 緊急徴発: 旧条件ではVerse1偏重。しかも🌾→🧱変換
+- 警戒: WATCH以降に絞ったTrial前短期sinkであり、通常時の恒久sinkではない
 - 再燃: 健全Runでは出現しないrescue
 
 したがってTrial Deployment Costを決める前に必要なのは引き続き、
