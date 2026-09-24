@@ -191,13 +191,54 @@ function captureTrial1Sample(engine, seed) {
     });
 }
 
+function countE2HillsOnBoard(state) {
+    let count = 0;
+    for (const row of state?.grid || []) {
+        for (const cell of row || []) {
+            const terrainId = cell?.terrain?.terrainId || cell?.terrain?.id || null;
+            if (cell?.placed && terrainId === "E2_HILL") count += 1;
+        }
+    }
+    return count;
+}
+
+function captureStage1EconomyCheckpoint(engine, seed) {
+    const production = engine.productionCalculator?.calculateTotalProduction?.(engine.state) || null;
+    const h2Count = countE2HillsOnBoard(engine.state);
+    const eligibleResourceCostCardIds = COMMAND_CARDS_MASTER
+        .filter(card => Number(card?.minStage || 1) <= 1)
+        .map(card => ({ card, cost: readFoodMaterialCost(card) }))
+        .filter(entry => entry.cost.food > 0 || entry.cost.material > 0)
+        .filter(({ card }) => engine.deckManager?.isCardEligible?.(
+            card,
+            1,
+            h2Count,
+            { ignoreCooldown: true, ignoreHold: true }
+        ) === true)
+        .map(({ card }) => card.id);
+
+    return Object.freeze({
+        seed,
+        verse: engine.state.turn,
+        grossFoodPerVerse: Math.max(0, Number(production?.grossFood) || 0),
+        grossMaterialPerVerse: Math.max(
+            0,
+            Number(production?.totalMaterial ?? production?.totalWood) || 0
+        ),
+        eligibleResourceCostCardIds: Object.freeze(eligibleResourceCostCardIds)
+    });
+}
+
 function playGrowthRun(seed) {
     const engine = GameEngine.createGame({
         runSeed: seed,
         firstRun: true
     });
+    const economyTimeline = [];
 
     while (engine.state.turn < 15) {
+        economyTimeline.push(captureStage1EconomyCheckpoint(engine, seed));
+
         if (engine.state.hasPickedThisTurn !== true) {
             const option = chooseGrowthLand(engine);
             assert.ok(option, `seed ${seed} V${engine.state.turn}: a legal LAND action must exist`);
@@ -223,7 +264,11 @@ function playGrowthRun(seed) {
         assert.ok(engine.state.ember > 0, `seed ${seed} V${engine.state.turn}: Ember must remain positive`);
     }
 
-    return captureTrial1Sample(engine, seed);
+    economyTimeline.push(captureStage1EconomyCheckpoint(engine, seed));
+    return Object.freeze({
+        sample: captureTrial1Sample(engine, seed),
+        economyTimeline: Object.freeze(economyTimeline)
+    });
 }
 
 function range(values) {
@@ -259,8 +304,15 @@ function summarizeLegacyDrift(liveSamples) {
 
 console.log("\n=== Stage1 Trial1 live experience audit ===");
 
-const liveSamples = LIVE_AUDIT_SEEDS.map(playGrowthRun);
+const growthRuns = LIVE_AUDIT_SEEDS.map(playGrowthRun);
+const liveSamples = growthRuns.map(run => run.sample);
+const stage1EconomyTimeline = growthRuns.flatMap(run => run.economyTimeline);
 assert.equal(liveSamples.length, LIVE_AUDIT_SEEDS.length);
+assert.equal(
+    stage1EconomyTimeline.length,
+    LIVE_AUDIT_SEEDS.length * 15,
+    "Stage1 economy curve must capture every Verse start from V1 through V15"
+);
 assert.equal(liveSamples.every(row => row.verse === 15), true);
 assert.equal(liveSamples.every(row => row.food > 0), true, "all live Stage1 samples must reach Trial1 with food remaining");
 assert.equal(liveSamples.every(row => row.material > 0), true, "all live Stage1 samples must reach Trial1 with material remaining");
@@ -306,6 +358,65 @@ console.log(
         `gross🧱/V=${formatRange(liveSamples.map(row => row.grossMaterialPerVerse))}`
     ].join(" ")
 );
+
+for (let verse = 1; verse <= 15; verse += 1) {
+    const checkpoints = stage1EconomyTimeline.filter(row => row.verse === verse);
+    assert.equal(
+        checkpoints.length,
+        LIVE_AUDIT_SEEDS.length,
+        `V${verse} economy curve must contain one checkpoint per seed`
+    );
+    const food = rangeWithMedian(checkpoints.map(row => row.grossFoodPerVerse));
+    const material = rangeWithMedian(checkpoints.map(row => row.grossMaterialPerVerse));
+    console.log(
+        [
+            "STAGE1_PRODUCTION_CURVE",
+            `V${verse}`,
+            `gross🌾=${food.min}..${food.max} med=${food.median.toFixed(1)}`,
+            `gross🧱=${material.min}..${material.max} med=${material.median.toFixed(1)}`
+        ].join(" ")
+    );
+}
+
+const stage1CostCardsForEligibility = COMMAND_CARDS_MASTER
+    .filter(card => Number(card?.minStage || 1) <= 1)
+    .map(card => ({ card, cost: readFoodMaterialCost(card) }))
+    .filter(entry => entry.cost.food > 0 || entry.cost.material > 0);
+
+for (const { card, cost } of stage1CostCardsForEligibility) {
+    const firstEligible = growthRuns
+        .map(run => run.economyTimeline.find(row =>
+            row.eligibleResourceCostCardIds.includes(card.id)
+        ) || null)
+        .filter(Boolean);
+
+    if (firstEligible.length === 0) {
+        console.log(
+            "STAGE1_CARD_FIRST_ELIGIBLE",
+            card.id,
+            "eligibleSeeds=0/8"
+        );
+        continue;
+    }
+
+    const verses = rangeWithMedian(firstEligible.map(row => row.verse));
+    const recoveryPve = rangeWithMedian(firstEligible.map(row => {
+        const foodPve = cost.food > 0 ? cost.food / row.grossFoodPerVerse : 0;
+        const materialPve = cost.material > 0 ? cost.material / row.grossMaterialPerVerse : 0;
+        return Math.max(foodPve, materialPve);
+    }));
+
+    console.log(
+        [
+            "STAGE1_CARD_FIRST_ELIGIBLE",
+            card.id,
+            `eligibleSeeds=${firstEligible.length}/${LIVE_AUDIT_SEEDS.length}`,
+            `firstV=${verses.min}..${verses.max} med=${verses.median.toFixed(1)}`,
+            `cost=🌾${cost.food}/🧱${cost.material}`,
+            `firstEligiblePVE=${recoveryPve.min.toFixed(2)}..${recoveryPve.max.toFixed(2)} med=${recoveryPve.median.toFixed(2)}`
+        ].join(" ")
+    );
+}
 
 const firstRunBurden = evaluateFirstRunBurdenAgainstSamples({
     samples: liveSamples,
