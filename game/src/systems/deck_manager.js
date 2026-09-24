@@ -60,9 +60,15 @@ class DeckManager {
         this.cardEffectHandlerRouter = resolveCardEffectHandlerRouter(this.engine);
         this.executionRequirementService = new CardExecutionRequirementService({
             evaluator: (requirement, context) => {
+                const requirementContext = {
+                    state: this.state,
+                    engine: this.engine,
+                    warningStateService: this.engine?.warningStateService || null,
+                    ...context
+                };
                 const evaluator = this.engine?.cardExecutionRequirementEvaluator;
-                if (typeof evaluator === "function") return Boolean(evaluator(requirement, context));
-                return Boolean(ConditionEvaluator.evaluate(requirement, { state: this.state, ...context }));
+                if (typeof evaluator === "function") return Boolean(evaluator(requirement, requirementContext));
+                return Boolean(ConditionEvaluator.evaluate(requirement, requirementContext));
             }
         });
         this.offeringEligibility = new CardOfferingEligibilityService({
