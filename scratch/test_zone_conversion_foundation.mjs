@@ -11,6 +11,12 @@ import { ZoneConversionService } from "../game/src/systems/zone_conversion_servi
 import { serializeGameState } from "../game/src/core/state_serializer.js";
 import { hydrateGameState } from "../game/src/core/hydrate_game_state.js";
 import { TurnLifecycleService } from "../game/src/core/turn_lifecycle_service.js";
+import {
+    ZONE_CONVERSION_DEFINITIONS,
+    hasZoneConversionDefinition,
+    listZoneConversionDefinitionIds
+} from "../game/src/core/zone_conversion_definitions.js";
+import { readFileSync } from "node:fs";
 
 function makeCell(r, c, terrainId = "E2_HILL") {
     return {
@@ -401,6 +407,43 @@ assert.equal(restored.mergedBlocks.zone_b.conversion.sequence, 2);
     assert.equal(lifecycle.engine.state.turn, 31);
     assert.deepEqual(order, ["maintenance:31", "offering"]);
     assert.equal(lifecycle.engine.lastZoneConversionMaintenanceResult.verse, 31);
+}
+
+// Canonical runtime definition registry stays Board-owned and empty until gameplay approval.
+{
+    assert.equal(Object.isFrozen(ZONE_CONVERSION_DEFINITIONS), true);
+    assert.deepEqual(listZoneConversionDefinitionIds(), []);
+    assert.equal(hasZoneConversionDefinition("RESETTLEMENT"), false);
+
+    const injectedDefinitions = new Map([
+        ["TEST_ONLY", {
+            id: "TEST_ONLY",
+            eligibleZoneAttributes: ["E2_HILL"],
+            requirements: { resources: {} },
+            creationCost: {
+                status: ZONE_CONVERSION_COST_STATUS.RESOLVED,
+                base: {}
+            },
+            maintenance: {
+                status: ZONE_CONVERSION_COST_STATUS.RESOLVED,
+                resources: {}
+            },
+            capabilities: []
+        }]
+    ]);
+    assert.equal(hasZoneConversionDefinition("TEST_ONLY", injectedDefinitions), true);
+    assert.deepEqual(listZoneConversionDefinitionIds(injectedDefinitions), ["TEST_ONLY"]);
+
+    const engineSource = readFileSync(
+        new URL("../game/src/core/game_engine.js", import.meta.url),
+        "utf8"
+    );
+    assert.ok(
+        engineSource.includes(
+            "zoneConversionDefinitions: dependencies.zoneConversionDefinitions ?? ZONE_CONVERSION_DEFINITIONS"
+        ),
+        "GameEngine must default to the canonical registry while preserving explicit empty overrides"
+    );
 }
 
 console.log("PASS zone conversion foundation");
