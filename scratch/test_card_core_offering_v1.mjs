@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 
 import { DeckManager } from "../game/src/systems/deck_manager.js";
 import { GameEngine } from "../game/src/core/game_engine.js";
+import { ConditionEvaluator } from "../game/src/core/condition_evaluator.js";
 import { UIController } from "../game/src/ui/ui_controller.js";
 import { DefenseSystem } from "../game/src/systems/defense_system.js";
 import { normalizeCardDefinitionV1 } from "../game/src/cards/card_definition_v1.js";
@@ -2336,6 +2337,38 @@ function makeGrid(rows, cols) {
     assert.equal(preflightCalls, 1, "post-payment execution must not repeat domain preflight");
     assert.equal(executeCalls, 1);
     assert.equal(state.wood, 15);
+}
+
+// AV. MATERIAL_SHORTAGE is a fail-closed Offering/world predicate backed by an external read model.
+{
+    const requirement = { type: "MATERIAL_SHORTAGE" };
+    assert.equal(
+        ConditionEvaluator.evaluateStrict(requirement, {}),
+        false,
+        "material shortage must fail closed when no Economy/Stage1 read model is wired"
+    );
+    assert.equal(
+        ConditionEvaluator.evaluateStrict(requirement, {
+            resourcePressureQuery: { isMaterialShortage: () => false }
+        }),
+        false
+    );
+    assert.equal(
+        ConditionEvaluator.evaluateStrict(requirement, {
+            resourcePressureQuery: { isMaterialShortage: () => true }
+        }),
+        true
+    );
+
+    const engine = GameEngine.createGame({
+        runSeed: 2026092406,
+        resourcePressureQuery: { isMaterialShortage: () => true }
+    });
+    assert.equal(
+        engine.evaluateWorldEligibilityRequirement(requirement),
+        true,
+        "GameEngine must expose the injected resource-pressure read model to Offering eligibility"
+    );
 }
 
 console.log("✅ Card Core / Offering v1 contract tests PASS");
