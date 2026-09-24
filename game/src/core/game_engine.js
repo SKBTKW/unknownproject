@@ -7,6 +7,7 @@ import { UndoLandSystem } from '../systems/undo_land_system.js';
 import { GridEngine } from '../systems/grid_engine.js';
 import { SpecialBlockService } from '../systems/special_block_service.js';
 import { BoardDomainAdapter } from './board_domain_adapter.js';
+import { ZONE_CONVERSION_DEFINITIONS } from './zone_conversion_definitions.js';
 import { createCardDomainActionExecutor } from '../cards/card_domain_action_executor.js';
 import { BoardHistoryQuery } from './board_history_query.js';
 import { BuffSystem } from '../systems/buff_system.js';
@@ -111,7 +112,7 @@ class GameEngine {
                 gridEngine: this.gridEngine,
                 specialBlockService: this.specialBlockService,
                 zoneConversionService: dependencies.zoneConversionService || null,
-                zoneConversionDefinitions: dependencies.zoneConversionDefinitions || null
+                zoneConversionDefinitions: dependencies.zoneConversionDefinitions ?? ZONE_CONVERSION_DEFINITIONS
             }) : null);
         this.zoneConversionService = dependencies.zoneConversionService
             || this.boardDomainAdapter?.zoneConversionService
