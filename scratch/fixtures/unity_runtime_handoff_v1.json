@@ -1,0 +1,140 @@
+{
+  "contractVersion": "unity-runtime-handoff-v1",
+  "contracts": {
+    "boardPresentation": "board-presentation-v1",
+    "boardInput": "board-input-v1",
+    "gameRuntimeSnapshot": "game-runtime-snapshot-v1"
+  },
+  "board": {
+    "contractVersion": "board-presentation-v1",
+    "presentation": {
+      "viewMode": "2D",
+      "contextMode": "NORMAL",
+      "viewPreset": "DEFAULT",
+      "selectedCell": {
+        "r": 0,
+        "c": 0
+      },
+      "hoveredCell": null,
+      "focusCell": null
+    },
+    "profile": {},
+    "board": {
+      "rows": 1,
+      "columns": 1
+    },
+    "trial": {
+      "available": false,
+      "activeRouteId": null,
+      "selectedInterceptCell": null,
+      "hoveredInterceptCell": null,
+      "routes": [],
+      "interceptionCandidates": [],
+      "plannedIntercepts": [],
+      "battleMarkers": [],
+      "tacticalEffects": [],
+      "enemyState": null
+    },
+    "cells": [
+      [
+        {
+          "r": 0,
+          "c": 0,
+          "placed": true,
+          "isHQ": true,
+          "terrainId": "HQ",
+          "category": null,
+          "nameKey": null,
+          "elevation": null,
+          "greenery": null,
+          "hasSocket": false,
+          "socketResource": null,
+          "yields": {},
+          "baseYields": {},
+          "productionStatus": null,
+          "productionScope": null,
+          "blockProduction": null,
+          "blockProductionPrimary": false,
+          "primaryYield": null,
+          "modifiers": [],
+          "placementGroupId": null,
+          "mergeGroupId": null,
+          "zone": null,
+          "links": [],
+          "display": {
+            "role": null,
+            "production": null
+          },
+          "history": {
+            "battleSite": false,
+            "battleSites": [],
+            "damage": {
+              "any": false,
+              "land": false,
+              "specialBlock": false,
+              "records": [],
+              "landRecords": [],
+              "specialBlockRecords": []
+            }
+          },
+          "influence": {
+            "hqVicinity": false,
+            "waterSource": false,
+            "waterSourceType": null
+          },
+          "edges": [],
+          "interaction": {
+            "selected": true,
+            "hovered": false,
+            "focused": false,
+            "placedThisTurn": false
+          },
+          "trial": {
+            "available": false,
+            "onRoute": false,
+            "route": null,
+            "interceptionCandidate": null,
+            "plannedIntercept": null,
+            "battleMarker": null,
+            "tacticalEffects": []
+          }
+        }
+      ]
+    ]
+  },
+  "runtime": {
+    "contractVersion": "game-runtime-snapshot-v1",
+    "progression": {
+      "verse": 7,
+      "stage": {
+        "id": 1,
+        "name": "Stage 1",
+        "size": 5,
+        "maxTiles": 25
+      }
+    },
+    "board": {
+      "rows": 5,
+      "columns": 5
+    },
+    "resources": {
+      "ember": {
+        "current": 8,
+        "max": 12
+      },
+      "food": {
+        "current": 9
+      },
+      "material": {
+        "current": 6
+      },
+      "defense": {
+        "current": 5,
+        "max": 5
+      },
+      "mystic": {
+        "current": 1
+      }
+    }
+  }
+}

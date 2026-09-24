@@ -1,0 +1,10 @@
+{
+  "contractVersion": "board-input-v1",
+  "type": "SELECT_CELL",
+  "payload": {
+    "cell": {
+      "r": 0,
+      "c": 0
+    }
+  }
+}

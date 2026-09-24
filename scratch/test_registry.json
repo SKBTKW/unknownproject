@@ -1448,6 +1448,14 @@
       ]
     },
     {
+      "path": "scratch/test_unity_runtime_contract_fixtures.mjs",
+      "purpose": "Unity runtime golden fixture compatibility for outbound handoff and inbound board input",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_ui_lifecycle.mjs",
       "purpose": "ui lifecycle",
       "suite": "existing",
