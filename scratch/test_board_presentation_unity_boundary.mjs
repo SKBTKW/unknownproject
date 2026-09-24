@@ -385,7 +385,7 @@ test("shared browser runtime keeps selection separate from primary gameplay acti
         "utf8"
     );
     const web25dSource = fs.readFileSync(
-        new URL("../game/src/ui/web25d_validation_runtime_bridge.js", import.meta.url),
+        new URL("../game/src/ui/web25d_board_runtime_bridge.js", import.meta.url),
         "utf8"
     );
     const resolverSource = fs.readFileSync(

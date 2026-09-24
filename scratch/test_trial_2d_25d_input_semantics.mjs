@@ -31,7 +31,7 @@ console.log("\n--- 2D / 2.5D Board Input Semantics Contract Tests ---");
 
 test("Web2D and Web2.5D wiring both consume the shared input boundary", () => {
     const gridSource = read("../game/src/ui/board_presentation_grid_component.js");
-    const runtimeSource = read("../game/src/ui/web25d_validation_runtime_bridge.js");
+    const runtimeSource = read("../game/src/ui/web25d_board_runtime_bridge.js");
     assert.equal(gridSource.includes("resolveBoardPointerCommand"), true);
     assert.equal(gridSource.includes("boardPresentationRuntimeBridge"), true);
     assert.equal(runtimeSource.includes("boardPresentationRuntimeBridge"), true);
