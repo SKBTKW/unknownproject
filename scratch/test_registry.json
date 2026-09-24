@@ -938,6 +938,14 @@
       ]
     },
     {
+      "path": "scratch/test_stage1_trial1_linear_cost_fit.mjs",
+      "purpose": "measure whether the fixed linear deployment-cost formula can hold the live FirstRun 70-80% burden target across Stage1 seeds",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_stage1_resource_sink_portfolio.mjs",
       "purpose": "Stage1 resource sink portfolio assumptions across command-card costs, Investigation, Special Blocks and choice Global Events",
       "suite": "existing",
