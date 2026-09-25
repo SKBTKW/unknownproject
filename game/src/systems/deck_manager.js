@@ -749,11 +749,34 @@ class DeckManager {
         return true;
     }
 
+    resolveCardExecutionVariant(cardObj) {
+        if (!cardObj || cardObj.category === "LAND") return cardObj;
+        const variants = Array.isArray(cardObj.executionVariants) ? cardObj.executionVariants : [];
+        if (variants.length === 0) return cardObj;
+
+        const selectedId = cardObj.selectedExecutionVariantId || null;
+        if (!selectedId) return null;
+        const variant = variants.find(candidate => candidate && candidate.id === selectedId);
+        if (!variant) return null;
+
+        return {
+            ...cardObj,
+            cost: { ...(variant.cost || {}) },
+            effects: Array.isArray(variant.effects) ? variant.effects.map(effect => ({ ...effect })) : [],
+            execution: {
+                ...(cardObj.execution || {}),
+                ...(variant.execution || {})
+            },
+            selectedExecutionVariantId: selectedId
+        };
+    }
+
     quoteCardExecutionCost(cardObj) {
         if (!cardObj || cardObj.category === "LAND") {
             return { success: false, reason: "NOT_A_COMMAND_CARD", resources: {} };
         }
-        const definitionV1 = normalizeCardDefinitionV1(cardObj);
+        const resolvedCard = this.resolveCardExecutionVariant(cardObj) || cardObj;
+        const definitionV1 = normalizeCardDefinitionV1(resolvedCard);
         const quote = this.cardEffectHandlerRouter?.quoteCost(definitionV1, {
             state: this.state,
             engine: this.engine,
@@ -772,7 +795,7 @@ class DeckManager {
 
         return {
             success: true,
-            resources: { ...(cardObj.cost || {}) },
+            resources: { ...(resolvedCard.cost || {}) },
             source: "CARD_COST",
             quote: null
         };
@@ -780,13 +803,17 @@ class DeckManager {
 
     cardRequiresExecutionTarget(cardObj) {
         if (!cardObj || cardObj.category === "LAND") return false;
-        const definitionV1 = normalizeCardDefinitionV1(cardObj);
+        const resolvedCard = this.resolveCardExecutionVariant(cardObj);
+        if (Array.isArray(cardObj.executionVariants) && cardObj.executionVariants.length > 0 && !resolvedCard) return false;
+        const definitionV1 = normalizeCardDefinitionV1(resolvedCard || cardObj);
         return this.cardEffectHandlerRouter?.requiresTarget(definitionV1) === true;
     }
 
     enumerateCardExecutionTargets(cardObj) {
         if (!cardObj || cardObj.category === "LAND") return [];
-        const definitionV1 = normalizeCardDefinitionV1(cardObj);
+        const resolvedCard = this.resolveCardExecutionVariant(cardObj);
+        if (Array.isArray(cardObj.executionVariants) && cardObj.executionVariants.length > 0 && !resolvedCard) return [];
+        const definitionV1 = normalizeCardDefinitionV1(resolvedCard || cardObj);
         return this.cardEffectHandlerRouter?.enumerateTargets(definitionV1, {
             state: this.state,
             engine: this.engine,
@@ -800,6 +827,11 @@ class DeckManager {
     playCommandCard(cardObj, targetTile = null, handIdx = -1, reserveIdx = -1) {
         if (!this.state || !cardObj || cardObj.category === "LAND") return { success: false, reason: "NOT_A_COMMAND_CARD" };
 
+        const resolvedCard = this.resolveCardExecutionVariant(cardObj);
+        if (Array.isArray(cardObj.executionVariants) && cardObj.executionVariants.length > 0 && !resolvedCard) {
+            return { success: false, reason: "EXECUTION_VARIANT_REQUIRED" };
+        }
+        cardObj = resolvedCard || cardObj;
         const definitionV1 = normalizeCardDefinitionV1(cardObj);
         const executionGate = this.executionRequirementService.evaluate(definitionV1, {
             state: this.state,

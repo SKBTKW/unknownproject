@@ -5,6 +5,8 @@ import { DeckManager } from "../game/src/systems/deck_manager.js";
 import { GameEngine } from "../game/src/core/game_engine.js";
 import { UIController } from "../game/src/ui/ui_controller.js";
 import { DefenseSystem } from "../game/src/systems/defense_system.js";
+import { TerrainTransformService } from "../game/src/systems/terrain_transform_service.js";
+import { isIrrigationSourceCell } from "../game/src/core/irrigation_rules.js";
 import { normalizeCardDefinitionV1 } from "../game/src/cards/card_definition_v1.js";
 import { LandPlacementAvailabilityQuery } from "../game/src/cards/land_placement_availability_query.js";
 import { CardOfferingEligibilityService } from "../game/src/cards/card_offering_eligibility_service.js";
@@ -2308,6 +2310,100 @@ function makeGrid(rows, cols) {
     assert.equal(preflightCalls, 1, "post-payment execution must not repeat domain preflight");
     assert.equal(executeCalls, 1);
     assert.equal(state.wood, 15);
+}
+
+// AV. Irrigation Plan is the model execution-variant card.
+{
+    const card = COMMAND_CARDS_MASTER.find(candidate => candidate.id === "CMD_WETLAND_RECLAMATION");
+    assert.ok(card, "Irrigation Plan master card must exist under the legacy-stable card id");
+    assert.equal(card.rarity, "UC");
+    assert.equal(card.reqWetland, undefined,
+        "Irrigation Plan eligibility must come from legal execution-variant targets");
+    assert.deepEqual(
+        card.executionVariants.map(variant => [variant.id, variant.cost.wood]),
+        [["RECLAIM", 30], ["IRRIGATION_WORKS", 70], ["EXPEDITE", 110]]
+    );
+
+    const manager = new DeckManager({
+        turn: 1,
+        food: 0,
+        wood: 200,
+        material: 200,
+        mystic: 0,
+        ember: 5,
+        reserveSlots: [],
+        consumedUniqueCards: [],
+        usedUniqueCards: [],
+        addLog() {}
+    }, {});
+    manager.cycleSystem = null;
+
+    assert.equal(
+        manager.playCommandCard(card).reason,
+        "EXECUTION_VARIANT_REQUIRED",
+        "variant cards must fail closed until a plan is selected"
+    );
+    assert.deepEqual(
+        manager.quoteCardExecutionCost({ ...card, selectedExecutionVariantId: "RECLAIM" }).resources,
+        { wood: 30 }
+    );
+    assert.deepEqual(
+        manager.quoteCardExecutionCost({ ...card, selectedExecutionVariantId: "IRRIGATION_WORKS" }).resources,
+        { wood: 70 }
+    );
+    assert.deepEqual(
+        manager.quoteCardExecutionCost({ ...card, selectedExecutionVariantId: "EXPEDITE" }).resources,
+        { wood: 110 }
+    );
+}
+
+// AW. Delayed irrigation completes on the authored Verse; expedited irrigation is immediate.
+{
+    const makeWetlandState = () => ({
+        grid: [[{
+            placed: true,
+            isHQ: false,
+            terrain: {
+                id: "E0_WETLAND",
+                terrainId: "E0_WETLAND",
+                e: 0,
+                gl: 1
+            },
+            socketResource: null,
+            production: { food: 99 }
+        }]]
+    });
+
+    const delayedState = makeWetlandState();
+    const delayedService = new TerrainTransformService({ state: delayedState });
+    const delayed = delayedService.transform({
+        fromTerrainIds: ["E0_WETLAND"],
+        toTerrainId: "E1_RECLAIMED_LAND",
+        development: { id: "IRRIGATION_WORKS", providesIrrigation: true },
+        developmentDelayVerses: 2
+    }, { r: 0, c: 0 }, { verse: 5, reconcileTopology: false });
+
+    assert.equal(delayed.success, true);
+    assert.equal(delayedState.grid[0][0].terrain.id, "E1_RECLAIMED_LAND");
+    assert.equal(delayedState.grid[0][0].development.status, "UNDER_CONSTRUCTION");
+    assert.equal(isIrrigationSourceCell(delayedState.grid[0][0]), false);
+    assert.equal(delayedService.processScheduledDevelopments(6).length, 0);
+    assert.equal(isIrrigationSourceCell(delayedState.grid[0][0]), false);
+    assert.equal(delayedService.processScheduledDevelopments(7).length, 1);
+    assert.equal(isIrrigationSourceCell(delayedState.grid[0][0]), true);
+
+    const instantState = makeWetlandState();
+    const instantService = new TerrainTransformService({ state: instantState });
+    const instant = instantService.transform({
+        fromTerrainIds: ["E0_WETLAND"],
+        toTerrainId: "E1_RECLAIMED_LAND",
+        development: { id: "IRRIGATION_WORKS", providesIrrigation: true }
+    }, { r: 0, c: 0 }, { verse: 5, reconcileTopology: false });
+
+    assert.equal(instant.success, true);
+    assert.equal(instantState.grid[0][0].terrain.id, "E1_RECLAIMED_LAND");
+    assert.equal(instantState.grid[0][0].development.status, "ACTIVE");
+    assert.equal(isIrrigationSourceCell(instantState.grid[0][0]), true);
 }
 
 console.log("✅ Card Core / Offering v1 contract tests PASS");

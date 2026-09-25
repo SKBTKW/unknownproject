@@ -151,19 +151,28 @@ for (const id of ["CMD_RATIONING", "CMD_EMERGENCY_LEVY", "CMD_REKINDLE_EMBER", "
 
 {
     const card = byId.get("CMD_WETLAND_RECLAMATION");
-    assert.equal(card.cost.wood, 15);
-    assert.equal(card.cost.ember, 1);
+    assert.deepEqual(card.cost, {});
     assert.equal(card.reqWetland, undefined,
-        "Wetland Reclamation eligibility must come from legal Terrain Transform targets");
-    assert.ok(effect("CMD_WETLAND_RECLAMATION", "DOMAIN_ACTION",
-        item => item.action === "TRANSFORM_TERRAIN"
+        "Irrigation Plan eligibility must come from legal execution-variant targets");
+    assert.deepEqual(
+        (card.executionVariants || []).map(variant => [variant.id, variant.cost?.wood]),
+        [["RECLAIM", 30], ["IRRIGATION_WORKS", 70], ["EXPEDITE", 110]]
+    );
+    assert.equal((card.effects || []).length, 0,
+        "Investment Variant card keeps concrete effects inside the selected variant");
+    for (const variant of card.executionVariants || []) {
+        assert.ok((variant.effects || []).some(item =>
+            item.type === "DOMAIN_ACTION"
+            && item.action === "TRANSFORM_TERRAIN"
             && item.toTerrainId === "E1_RECLAIMED_LAND"
             && Array.isArray(item.fromTerrainIds)
-            && item.fromTerrainIds.includes("E0_WETLAND")));
+            && item.fromTerrainIds.includes("E0_WETLAND")
+        ));
+    }
     assert.equal(
         deckSource.includes('cId === "CMD_WETLAND_RECLAMATION"'),
         false,
-        "Wetland Reclamation legacy auto-target branch must be removed"
+        "Irrigation Plan must not regain a card-ID-specific execution branch"
     );
 }
 

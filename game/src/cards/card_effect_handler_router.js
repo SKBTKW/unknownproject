@@ -50,7 +50,12 @@ class CardEffectHandlerRouter {
         if (typeof handler === "function") return false;
 
         const effects = cardDefinition?.effects;
-        return this.effectExecutor.requiresTarget(effects);
+        if (this.effectExecutor.requiresTarget(effects)) return true;
+
+        const variants = cardDefinition?.execution?.variants;
+        return Array.isArray(variants) && variants.some(variant =>
+            this.effectExecutor.requiresTarget(variant?.effects)
+        );
     }
 
     enumerateTargets(cardDefinition, context = {}) {
@@ -61,11 +66,31 @@ class CardEffectHandlerRouter {
         }
 
         const effects = cardDefinition?.effects;
-        if (!Array.isArray(effects) || effects.length === 0) return [];
-        return this.effectExecutor.enumerateTargets(effects, {
-            cardDefinition,
-            ...context
-        });
+        if (Array.isArray(effects) && effects.length > 0) {
+            return this.effectExecutor.enumerateTargets(effects, {
+                cardDefinition,
+                ...context
+            });
+        }
+
+        const variants = cardDefinition?.execution?.variants;
+        if (!Array.isArray(variants) || variants.length === 0) return [];
+
+        const seen = new Set();
+        const targets = [];
+        for (const variant of variants) {
+            const variantTargets = this.effectExecutor.enumerateTargets(variant?.effects, {
+                cardDefinition,
+                ...context
+            });
+            for (const target of variantTargets || []) {
+                const key = JSON.stringify(target);
+                if (seen.has(key)) continue;
+                seen.add(key);
+                targets.push(target);
+            }
+        }
+        return targets;
     }
 
     preflight(cardDefinition, context = {}) {

@@ -44,7 +44,7 @@ assert.deepEqual(
 
 const expectedCosts = new Map([
     ["CMD_RATIONING", {}],
-    ["CMD_WETLAND_RECLAMATION", { wood: 15, ember: 1 }],
+    ["CMD_WETLAND_RECLAMATION", {}],
     ["CMD_LOGGING_CAMP", {}],
     ["CMD_GRANARY", { wood: 20 }],
     ["CMD_AGRICULTURAL_REFORM", {}],
@@ -60,6 +60,17 @@ for (const card of stage1) {
         `${card.id}: audit must be updated when current Stage1 card cost changes`
     );
 }
+
+const irrigationPlan = stage1.find(card => card.id === "CMD_WETLAND_RECLAMATION");
+assert.deepEqual(
+    (irrigationPlan?.executionVariants || []).map(variant => [variant.id, variant.cost || {}]),
+    [
+        ["RECLAIM", { wood: 30 }],
+        ["IRRIGATION_WORKS", { wood: 70 }],
+        ["EXPEDITE", { wood: 110 }]
+    ],
+    "Irrigation Plan must expose the authored Stage1 material-sink range"
+);
 
 const agriculturalReformCost = resolveZoneConversionCost(
     { mergedBlocks: {} },

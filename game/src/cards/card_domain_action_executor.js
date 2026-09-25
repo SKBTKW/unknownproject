@@ -72,7 +72,13 @@ function resolveTerrainTransformSpec(effect = {}) {
         forbidTrueMerge: effect.forbidTrueMerge === true,
         forbiddenSocketIds: Array.isArray(effect.forbiddenSocketIds)
             ? [...effect.forbiddenSocketIds]
-            : []
+            : [],
+        development: effect.development && typeof effect.development === "object"
+            ? { ...effect.development }
+            : null,
+        developmentDelayVerses: Number.isFinite(Number(effect.developmentDelayVerses))
+            ? Math.max(0, Math.trunc(Number(effect.developmentDelayVerses)))
+            : 0
     });
 }
 
