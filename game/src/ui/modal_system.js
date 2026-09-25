@@ -297,7 +297,7 @@
             const overlay = document.getElementById("modalSystemOverlay");
             const content = document.getElementById("modalSystemContent");
             const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
-            const cancelBtnText = cancelLabel || (I18n ? I18n.t("UI_CANCEL") : "✖ キャンセル");
+            const cancelBtnText = cancelLabel || I18n.t("UI_CANCEL");
 
             const choiceHtml = choices.map((choice, index) => `
                 <button class="modal-system-btn modal-system-choice-btn" data-choice-index="${index}" ${choice.disabled ? "disabled" : ""}>
