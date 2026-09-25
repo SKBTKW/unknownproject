@@ -178,6 +178,22 @@ console.log("\nStage1 prototype cards: Offering -> payment -> effect -> Verse pr
     assert.equal(engine.deckManager.isCardEligible(card, 1, 0), true);
     generateOnlyPrototype(engine, id);
 
+    const stale = createPrototypeEngine(id, 2026092412);
+    stale.state.wood = 30;
+    stale.state.material = 30;
+    stale.warningStateService = new WarningStateService();
+    stale.warningStateService.markWatch({ source: "TEST", verse: stale.state.turn });
+    const staleSnapshot = { wood: stale.state.wood, turns: stale.state.vigilanceTurns };
+    const staleResult = stale.state.playCommandCard(card);
+    assert.equal(staleResult.success, false);
+    assert.equal(staleResult.reason, "VIGILANCE_WARNING_TENSE",
+        "Vigilance execution must revalidate the same TENSE semantic gate");
+    assert.deepEqual(
+        { wood: stale.state.wood, turns: stale.state.vigilanceTurns },
+        staleSnapshot,
+        "stale Vigilance rejection must occur before payment/effect"
+    );
+
     const maxBefore = state.getMaxDefense();
     const played = state.playCommandCard(card);
     assert.equal(played.success, true);

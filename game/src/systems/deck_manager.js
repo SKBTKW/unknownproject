@@ -66,6 +66,7 @@ class DeckManager {
                     engine: this.engine,
                     boardQuery: this.cardOfferingBoardQuery,
                     resourcePressureQuery: this.engine?.resourcePressureQuery || null,
+                    warningStateService: this.engine?.warningStateService || null,
                     ...context
                 }));
             }
