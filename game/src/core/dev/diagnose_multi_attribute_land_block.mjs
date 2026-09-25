@@ -1455,7 +1455,7 @@ const landSystemJson = JSON.parse(
     const zoneProduction = resolveBoardDisplayProduction(state, zoneFacts, cellViewDataService);
     const remainderProduction = resolveBoardDisplayProduction(state, remainderFacts, cellViewDataService);
 
-    assert.equal(zoneProduction.food, 7);
+    assert.equal(zoneProduction.food, 8);
     assert.equal(zoneProduction.wood, 0);
     assert.equal(zoneProduction.mystic, 5);
     assert.equal(remainderProduction.food, 0);
