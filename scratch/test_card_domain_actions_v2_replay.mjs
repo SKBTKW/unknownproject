@@ -46,16 +46,16 @@ const resettlementBlocker = blockers.find(entry => entry.cardId === "CMD_RESETTL
 assert.ok(resettlementBlocker);
 assert.equal(
     resettlementBlocker.blocker,
-    DOMAIN_ACTION_MIGRATION_BLOCKER.ZONE_CONVERSION_DEFINITION_MISSING
+    DOMAIN_ACTION_MIGRATION_BLOCKER.ZONE_CONVERSION_SEMANTIC_EXTENSION_REQUIRED
 );
 assert.equal(
     resettlementBlocker.foundationReady,
-    true,
-    "Zone Conversion bridge is ready; Resettlement now waits only on canonical domain definition"
+    false,
+    "Resettlement still needs Zone Conversion semantics for its legacy fixed production/reward behavior"
 );
-assert.equal(resettlementBlocker.remainingWork, "AUTHOR_DOMAIN_DEFINITION");
+assert.equal(resettlementBlocker.remainingWork, "EXTEND_DOMAIN_SEMANTICS");
 
-for (const entry of blockers.filter(item => item.cardId !== "CMD_RESETTLEMENT")) {
+for (const entry of blockers) {
     assert.equal(
         entry.foundationReady,
         false,
