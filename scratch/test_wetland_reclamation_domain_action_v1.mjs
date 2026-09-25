@@ -14,7 +14,7 @@ import {
     isCardRuntimeActive
 } from "../game/src/systems/card_runtime_policy.js";
 
-console.log("\nWetland Reclamation Domain Action v1");
+console.log("\nIrrigation Plan Domain Action v1");
 
 function emptyCell(r, c) {
     return {
@@ -57,12 +57,18 @@ function terrainCell(r, c, terrainId, extra = {}) {
 
 const wetlandCard = COMMAND_CARDS_MASTER.find(card => card.id === "CMD_WETLAND_RECLAMATION");
 assert.ok(wetlandCard);
-assert.equal(isCardRuntimeActive(wetlandCard), false, "production default keeps Wetland Reclamation dormant");
-assert.equal(wetlandCard.cost.wood, 15);
-assert.equal(wetlandCard.cost.ember, 1);
+assert.equal(isCardRuntimeActive(wetlandCard), false, "production default keeps Irrigation Plan dormant");
+assert.deepEqual(wetlandCard.cost, {});
 assert.equal(wetlandCard.reqWetland, undefined);
-assert.equal(wetlandCard.effects?.length, 1);
-assert.equal(wetlandCard.effects[0].action, "TRANSFORM_TERRAIN");
+assert.equal(wetlandCard.effects?.length || 0, 0);
+assert.deepEqual(
+    wetlandCard.executionVariants.map(variant => [variant.id, variant.cost?.wood]),
+    [["RECLAIM", 30], ["IRRIGATION_WORKS", 70], ["EXPEDITE", 110]]
+);
+for (const variant of wetlandCard.executionVariants) {
+    assert.equal(variant.effects?.length, 1);
+    assert.equal(variant.effects[0].action, "TRANSFORM_TERRAIN");
+}
 
 const grid = Array.from({ length: 3 }, (_, r) =>
     Array.from({ length: 3 }, (_, c) => emptyCell(r, c))
@@ -144,8 +150,10 @@ assert.equal(keys.has("1:0"), false, "true merged wetland is forbidden");
 assert.equal(keys.has("1:1"), false, "HQ is forbidden");
 assert.equal(keys.has("2:1"), false, "non-wetland is forbidden");
 
+const reclaimCard = { ...wetlandCard, selectedExecutionVariantId: "RECLAIM" };
+
 const beforeInvalid = { wood: state.wood, material: state.material, ember: state.ember };
-const invalid = deck.playCommandCard(wetlandCard, { r: 2, c: 1 }, 0, -1);
+const invalid = deck.playCommandCard(reclaimCard, { r: 2, c: 1 }, 0, -1);
 assert.equal(invalid.success, false);
 assert.deepEqual(
     { wood: state.wood, material: state.material, ember: state.ember },
@@ -155,11 +163,11 @@ assert.deepEqual(
 assert.equal(state.handOffering[0], wetlandCard);
 
 const before = { wood: state.wood, material: state.material, ember: state.ember };
-const played = deck.playCommandCard(wetlandCard, { r: 2, c: 0 }, 0, -1);
+const played = deck.playCommandCard(reclaimCard, { r: 2, c: 0 }, 0, -1);
 assert.equal(played.success, true);
-assert.equal(state.wood, before.wood - 15);
-assert.equal(state.material, before.material - 15);
-assert.equal(state.ember, before.ember - 1);
+assert.equal(state.wood, before.wood - 30);
+assert.equal(state.material, before.material - 30);
+assert.equal(state.ember, before.ember);
 assert.equal(state.grid[2][0].terrain.terrainId, "E1_RECLAIMED_LAND");
 assert.equal(state.grid[2][0].terrain.zoneCategory, "PLAINS");
 assert.equal(state.grid[2][0].terrain.food, 4);
@@ -183,8 +191,8 @@ assert.equal(
     "legacy Wetland auto-target branch is retired"
 );
 
-console.log("  explicit legal target enumeration PASS");
+console.log("  execution-variant legal target enumeration PASS");
 console.log("  invalid target fails before payment");
-console.log("  exact 🧱15 + 🔥1 payment and canonical terrain transform PASS");
+console.log("  A: exact 🧱30 payment and canonical terrain transform PASS");
 console.log("  legacy scan-first branch retired");
-console.log("✅ Wetland Reclamation Domain Action v1 PASS");
+console.log("✅ Irrigation Plan Domain Action v1 PASS");
