@@ -25,7 +25,7 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 | ID | 状態 | 現在の実挙動 / 注意点 |
 | :--- | :---: | :--- |
 | `CMD_RATIONING` | **Implemented / v1 semantic-aligned** | このVerseの最終食料維持費を50%化。カード定義は`foodCostHalvedTurns=1`へ一本化し、旧40%系state writeを廃止。 |
-| `CMD_WETLAND_RECLAMATION` | **Implemented foundation / Dormant** | 🧱15＋🔥1。explicit targetの`TRANSFORM_TERRAIN` Domain Actionで湖でない未地帯化湿原1マスを`E1_RECLAIMED_LAND`へ永久変換。HQ/完成Zone/LakeはBoard側で拒否。production既定ではDormant。 |
+| `CMD_WETLAND_RECLAMATION` | **Implemented / Investment Variant v1** | 表示名《灌漑計画》。湿原1マスを対象に A:🧱30干拓 / B:🧱70干拓＋2Verse後水源化 / C:🧱110即時水源化を選択。カードIDはセーブ互換のため維持。地形変換・遅延Development完了はBoard所有。 |
 | `CMD_LOGGING_CAMP` | **Board-owned v2 foundation / Unpriced / Dormant** | GL2以上の直交連結2セルを源として、その隣の未配置グリッドへ独立`LOGGING_CAMP`を建設する。土地GLは変更しない。隣接`LOGGING_CAMP`数で産出上昇するRELATION_COUNT方針。作成費・具体産出値は未確定のため通常runtimeはfail-closed。 |
 | `CMD_GRANARY` | **Implemented foundation / Dormant** | 🧱20。平地/干拓地へ`GRANARY` Special Blockを対象指定で設置。`FOOD_STORAGE` CapabilityをMaintenanceが読み、1基あたり維持費-2・最大2基分。production既定ではDormant。 |
 | `CMD_AGRICULTURAL_REFORM` | **Implemented / v1 Board-owned** | 完成済みPLAINS Zone 1つを明示選択し、Zone Conversionとして各メンバー🌾+1/Verse。作成費🧱20はBoard definitionが正本、維持費なし、UNIQUE。 |
@@ -45,15 +45,19 @@ v1表示 / runtime:
 
 カード定義は `foodCostHalvedTurns=1` の単一意味へ整理済み。
 
-#### 《干拓》
+#### 《灌漑計画》
 
-表示:
+追加投資型カードのモデルケース。
 
-> 盤面の湿原1マスを指定して干拓
+> A. 干拓 — 🧱30：選択した湿原を干拓地化。
+>
+> B. 灌漑整備 — 🧱70：選択した湿原を干拓地化し、2Verse後にその干拓地を水源化。
+>
+> C. 集中施工 — 🧱110：選択した湿原を水源を持つ干拓地へ即時変換。
 
-runtime:
-
-> `targetTile` を使わず盤面を走査し、最初の有効湿原を自動変換
+3案は別能力ではなく、同一の土地利用目的に対する投資量・完成速度の違いとして扱う。
+湿原を干拓した時点で湿原固有のTrial地形意味論を失い、`E1_RECLAIMED_LAND / STANDARD_E1`へ移行する。
+水源化は既存の灌漑源契約 `providesIrrigation` を再利用する。
 
 #### 《農地改革》
 
@@ -175,7 +179,7 @@ PERMANENT Buff
 ## 7. 既知の重要差分
 
 1. 《配給》: **表示40% / runtime50%**。
-2. 《干拓》: 表示は対象指定、runtimeは自動選択。
+2. 《灌漑計画》: Investment Variant v1として対象指定・3段階投資・遅延水源化まで接続済み。
 3. 《農地改革》: v1で完成済みPLAINS Zone 1つへのZone Conversionへ移行済み。旧global `permanentPlainsFoodBonus`は新規発動では使用しない。
 4. 《伐採拠点》: 表示の拠点化・周囲継続産出が未接続。
 5. 《灌漑》: 水源条件は有効だが平地/干拓地条件は未評価。表示の対象マス恒久強化も未接続。
