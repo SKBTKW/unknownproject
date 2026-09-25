@@ -2317,7 +2317,8 @@ function makeGrid(rows, cols) {
     const card = COMMAND_CARDS_MASTER.find(candidate => candidate.id === "CMD_WETLAND_RECLAMATION");
     assert.ok(card, "Irrigation Plan master card must exist under the legacy-stable card id");
     assert.equal(card.rarity, "UC");
-    assert.equal(card.reqWetland, 1);
+    assert.equal(card.reqWetland, undefined,
+        "Irrigation Plan eligibility must come from legal execution-variant targets");
     assert.deepEqual(
         card.executionVariants.map(variant => [variant.id, variant.cost.wood]),
         [["RECLAIM", 30], ["IRRIGATION_WORKS", 70], ["EXPEDITE", 110]]
