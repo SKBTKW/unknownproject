@@ -415,6 +415,23 @@ rotated local coordinate
 
 とする。
 
+盤面上の未地帯化LANDは、同属性・複数属性を問わず **placementGroup単位で表示を集約**する。
+Productionの計算正本は各cellのまま維持し、表示では同じ `placementGroupId` に属する構成cellの産出を合算して代表cellへ1回だけ表示する。非代表cellは重複表示しない。
+
+例:
+
+```text
+平地1x2
+[平 🌾4][平 🌾4]
+→ Block表示 🌾8
+
+平地+丘陵
+[平 🌾4][丘 🌾2 🧱1 🛡️1]
+→ Block表示 🌾6 🧱1 🛡️1
+```
+
+この表示集約はProduction ownershipをBlockへ変更するものではない。灌漑・近郊等のcell由来補正は各cellへ適用した後に合算する。
+
 Block ProductionはBoard semantic上でcell productionとは別フィールドとしてReadModelへ渡す。Rendererがblock yieldを各cellへ複製してはならない。
 
 表示集約では、代表表示対象に含まれる `placementGroupId` ごとのBlock Productionを1回ずつ加算する。地帯化されている場合も、cell/Zone産出へZone倍率を適用した**後**にBlock Productionを加算し、実決済と表示の倍率差を作らない。
