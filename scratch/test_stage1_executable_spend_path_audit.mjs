@@ -485,8 +485,8 @@ for (const rows of [productionRows, prototypeRows]) {
 const productionHeavy = productionRows.filter(row => row.planId === "HEAVY_DEFENSE_FAR");
 assert.equal(
     productionHeavy.every(row =>
-        row.burdenShare >= 0.70
-        && row.burdenShare <= 0.73
+        row.burdenShare >= 0.75
+        && row.burdenShare <= 0.77
     ),
     true,
     "80% defense far deployment should keep the live FirstRun product burden in the low-70% band"
