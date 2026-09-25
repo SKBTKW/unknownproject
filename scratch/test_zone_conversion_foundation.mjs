@@ -123,6 +123,7 @@ const definitions = {
     GARRISON_TEST: {
         id: "GARRISON_TEST",
         eligibleZoneAttributes: ["E2_HILL", "E3_MOUNTAIN"],
+        eligibleMergeTypes: ["L_SHAPE", "T_SHAPE"],
         requirements: {
             resources: { food: 10, wood: 8 }
         },
@@ -142,6 +143,21 @@ const definitions = {
             ZONE_CONVERSION_CAPABILITIES.GARRISON_SITE,
             ZONE_CONVERSION_CAPABILITIES.DEFENSE_ANCHOR
         ]
+    },
+    MERGE_TYPE_FILTER: {
+        id: "MERGE_TYPE_FILTER",
+        eligibleZoneAttributes: ["E2_HILL", "E3_MOUNTAIN"],
+        eligibleMergeTypes: ["L_SHAPE"],
+        requirements: { resources: {} },
+        creationCost: {
+            status: ZONE_CONVERSION_COST_STATUS.RESOLVED,
+            base: {}
+        },
+        maintenance: {
+            status: ZONE_CONVERSION_COST_STATUS.RESOLVED,
+            resources: {}
+        },
+        capabilities: []
     },
     UNRESOLVED_COST: {
         id: "UNRESOLVED_COST",
@@ -195,7 +211,7 @@ assert.equal(
 );
 assert.deepEqual(
     injectedDefinitionAdapter.listZoneConversionDefinitionIds(),
-    ["GARRISON_TEST", "UNRESOLVED_COST", "UNRESOLVED_MAINTENANCE"],
+    ["GARRISON_TEST", "MERGE_TYPE_FILTER", "UNRESOLVED_COST", "UNRESOLVED_MAINTENANCE"],
     "Board exposes deterministic canonical definition ids"
 );
 
@@ -207,6 +223,7 @@ assert.deepEqual(
         TEST_ONLY: {
             id: "TEST_ONLY",
             eligibleZoneAttributes: ["PLAINS"],
+            eligibleMergeTypes: ["2x2"],
             requirements: { resources: { food: 1 } },
             creationCost: {
                 status: ZONE_CONVERSION_COST_STATUS.RESOLVED,
@@ -244,10 +261,17 @@ assert.deepEqual(
     assert.equal(Object.isFrozen(snapshot), true);
     assert.equal(Object.isFrozen(snapshot.creationCost), true);
     assert.equal(Object.isFrozen(snapshot.creationCost.base), true);
+    assert.equal(Object.isFrozen(snapshot.eligibleMergeTypes), true);
     assert.equal(Object.isFrozen(snapshot.capabilities), true);
 
+    mutableDefinitions.TEST_ONLY.eligibleMergeTypes.push("MUTATED_AFTER_REGISTRATION");
     mutableDefinitions.TEST_ONLY.capabilities.push("MUTATED_AFTER_REGISTRATION");
     mutableDefinitions.TEST_ONLY.creationCost.base.wood = 999;
+    assert.deepEqual(
+        registry.get("TEST_ONLY").eligibleMergeTypes,
+        ["2x2"],
+        "registry snapshot keeps authoritative merge-type eligibility stable"
+    );
     assert.deepEqual(
         registry.get("TEST_ONLY").capabilities,
         [ZONE_CONVERSION_CAPABILITIES.DEFENSE_ANCHOR],
@@ -277,6 +301,19 @@ assert.deepEqual(
 }
 
 assert.equal(service.validateCandidate("GARRISON_TEST", "zone_a").valid, true);
+assert.equal(service.validateCandidate("MERGE_TYPE_FILTER", "zone_a").valid, true);
+const mergeTypeRejected = service.validateCandidate("MERGE_TYPE_FILTER", "zone_b");
+assert.equal(mergeTypeRejected.valid, false);
+assert.equal(
+    mergeTypeRejected.reasons.includes("ZONE_MERGE_TYPE_NOT_ALLOWED"),
+    true,
+    "definition-level merge type eligibility must fail closed"
+);
+assert.deepEqual(
+    service.enumerateCandidates("MERGE_TYPE_FILTER").map(candidate => candidate.groupId),
+    ["zone_a"],
+    "candidate enumeration must honor merge type eligibility"
+);
 assert.equal(
     service.validateCandidateAfterPayment("GARRISON_TEST", "zone_a", { wood: 6, ember: 1 }).valid,
     true,
