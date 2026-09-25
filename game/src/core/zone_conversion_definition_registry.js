@@ -56,7 +56,8 @@ function freezeDefinition(definition) {
         production: definition?.production
             ? Object.freeze({
                 ...definition.production,
-                perMemberYields: freezeResourceMap(definition.production.perMemberYields)
+                perMemberYields: freezeResourceMap(definition.production.perMemberYields),
+                fixedYields: freezeResourceMap(definition.production.fixedYields)
             })
             : null,
         capabilities: freezeStringArray(definition?.capabilities)
