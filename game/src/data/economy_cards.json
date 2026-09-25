@@ -231,7 +231,22 @@
     "descriptionKey": "CMD_EMERGENCY_LEVY_DESC",
     "cost": { "food": 20 },
     "tags": ["FOOD", "MATERIAL", "EMERGENCY"],
-    "reqWoodDeficit": true,
+    "offering": {
+      "requirements": [
+        {
+          "id": "EMERGENCY_LEVY_MATERIAL_SHORTAGE",
+          "type": "MATERIAL_SHORTAGE"
+        }
+      ]
+    },
+    "execution": {
+      "requirements": [
+        {
+          "id": "EMERGENCY_LEVY_MATERIAL_SHORTAGE",
+          "type": "MATERIAL_SHORTAGE"
+        }
+      ]
+    },
     "reqFood": 20,
     "minStage": 1,
     "rarity": "C",
