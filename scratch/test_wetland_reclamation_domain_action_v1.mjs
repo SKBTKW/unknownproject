@@ -141,7 +141,13 @@ const deck = new DeckManager(state, engine);
 engine.deckManager = deck;
 assert.equal(attachCardRuntimePolicy(deck).success, true);
 
-const targets = deck.enumerateCardExecutionTargets(wetlandCard);
+assert.deepEqual(
+    deck.enumerateCardExecutionTargets(wetlandCard),
+    [],
+    "execution targets remain unresolved until an investment variant is selected"
+);
+const reclaimCard = { ...wetlandCard, selectedExecutionVariantId: "RECLAIM" };
+const targets = deck.enumerateCardExecutionTargets(reclaimCard);
 const keys = new Set(targets.map(target => `${target.r}:${target.c}`));
 assert.equal(keys.has("0:0"), true, "normal wetland is targetable");
 assert.equal(keys.has("2:0"), true, "second normal wetland is targetable");
@@ -149,8 +155,6 @@ assert.equal(keys.has("0:1"), false, "Lake wetland is forbidden");
 assert.equal(keys.has("1:0"), false, "true merged wetland is forbidden");
 assert.equal(keys.has("1:1"), false, "HQ is forbidden");
 assert.equal(keys.has("2:1"), false, "non-wetland is forbidden");
-
-const reclaimCard = { ...wetlandCard, selectedExecutionVariantId: "RECLAIM" };
 
 const beforeInvalid = { wood: state.wood, material: state.material, ember: state.ember };
 const invalid = deck.playCommandCard(reclaimCard, { r: 2, c: 1 }, 0, -1);
