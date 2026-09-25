@@ -824,7 +824,13 @@ function makeGrid(rows, cols) {
                     foodCost: 20
                 })
             }
-            : {};
+            : testCase.id === "CMD_VIGILANCE"
+                ? {
+                    warningStateService: {
+                        getState: () => "TENSE"
+                    }
+                }
+                : {};
         const manager = new DeckManager(state, engine);
         manager.cycleSystem = null;
         const result = manager.playCommandCard(card);
