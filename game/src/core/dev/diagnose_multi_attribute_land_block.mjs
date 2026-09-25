@@ -330,6 +330,82 @@ const landSystemJson = JSON.parse(
 }
 
 {
+    // Shipped-card parity: the authored card preview, the sum of placed CELL
+    // production, and the unzoned placementGroup display must stay identical.
+    for (const card of actualMultiCards) {
+        const state = createState();
+        state.stage.id = card.minStage || 1;
+        placeExisting(state, 1, 0, DESERT, `support_${card.id}`);
+
+        const grid = new GridEngine(state, {
+            gameplayRandom: { nextFloat: () => 0.99 },
+            deckManager: { consumeCardIfUnique() {} }
+        });
+        const placed = grid.placeShape(
+            0,
+            0,
+            card.shape,
+            card,
+            -1,
+            card.cells
+        );
+        assert.equal(placed.success, true, card.id);
+
+        const placedCells = card.cells.map(authoredCell =>
+            state.grid[authoredCell.r][authoredCell.c]
+        );
+        assert.ok(placedCells.every(cell => cell?.placementGroupId));
+        assert.equal(new Set(placedCells.map(cell => cell.placementGroupId)).size, 1);
+        assert.ok(placedCells.every(cell => cell.mergeGroupId == null));
+
+        const expected = resolveCardProductionPreview({ terrain: card }).totalYields;
+        assert.ok(expected, card.id);
+
+        const settledBase = { food: 0, wood: 0, defense: 0, mystic: 0 };
+        for (const authoredCell of card.cells) {
+            const breakdown = ProductionCalculator.calculateCellYieldBreakdown(
+                state,
+                authoredCell.r,
+                authoredCell.c
+            );
+            settledBase.food += breakdown.baseYields.food || 0;
+            settledBase.wood += breakdown.baseYields.wood || 0;
+            settledBase.defense += breakdown.baseYields.defense || 0;
+            settledBase.mystic += breakdown.baseYields.mystic || 0;
+        }
+        assert.deepEqual(settledBase, expected, `${card.id} CELL sum must match card preview`);
+
+        const cellViewDataService = new CellViewDataService();
+        const facts = card.cells.map(authoredCell =>
+            cellViewDataService.getCellViewData(state, authoredCell.r, authoredCell.c)
+        );
+        const roles = facts.map(fact => resolveBoardDisplayRole(state, fact));
+        assert.equal(roles.filter(role => role === "LAND_PRIMARY").length, 1, card.id);
+        assert.equal(roles.filter(role => role === "CLEAN").length, card.cells.length - 1, card.id);
+
+        const primaryIndex = roles.indexOf("LAND_PRIMARY");
+        const display = resolveBoardDisplayProduction(
+            state,
+            facts[primaryIndex],
+            cellViewDataService
+        );
+        assert.equal(display.food, expected.food, card.id);
+        assert.equal(display.wood, expected.wood, card.id);
+        assert.equal(display.defense, expected.defense, card.id);
+        assert.equal(display.mystic, expected.mystic, card.id);
+
+        for (let index = 0; index < facts.length; index++) {
+            if (index === primaryIndex) continue;
+            assert.equal(
+                resolveBoardDisplayProduction(state, facts[index], cellViewDataService),
+                null,
+                `${card.id} secondary cell must not duplicate Block production display`
+            );
+        }
+    }
+}
+
+{
     // Presentation parity: an unzoned placementGroup displays the summed
     // production of all constituent cells exactly once, regardless of whether
     // the block is heterogeneous or homogeneous.
