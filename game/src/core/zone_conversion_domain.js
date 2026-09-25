@@ -32,7 +32,8 @@ export const ZONE_CONVERSION_REWARD_STATUS = Object.freeze({
 });
 
 export const ZONE_CONVERSION_PRODUCTION_KINDS = Object.freeze({
-    PER_MEMBER_CELL: 'PER_MEMBER_CELL'
+    PER_MEMBER_CELL: 'PER_MEMBER_CELL',
+    FIXED_PER_ZONE: 'FIXED_PER_ZONE'
 });
 
 const ZONE_PRODUCTION_RESOURCE_KEYS = Object.freeze(['food', 'wood', 'mystic']);
