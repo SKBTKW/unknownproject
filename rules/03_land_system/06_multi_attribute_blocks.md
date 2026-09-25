@@ -434,7 +434,7 @@ Productionの計算正本は各cellのまま維持し、表示では同じ `plac
 
 Block ProductionはBoard semantic上でcell productionとは別フィールドとしてReadModelへ渡す。Rendererがblock yieldを各cellへ複製してはならない。
 
-表示集約では、代表表示対象に含まれる `placementGroupId` ごとのBlock Productionを1回ずつ加算する。地帯化されている場合も、cell/Zone産出へZone倍率を適用した**後**にBlock Productionを加算し、実決済と表示の倍率差を作らない。
+表示集約では、代表表示対象に含まれる `placementGroupId` ごとのBlock Productionを1回ずつ加算する。地帯化されている場合も、cell/Zone産出へZone倍率を適用した**後**にBlock Productionを加算し、実決済と表示の倍率差を作らない。Zone倍率の端数処理もProduction決済と同じ規則を使用し、表示値と実際の獲得量を一致させる。
 
 ---
 
