@@ -185,6 +185,8 @@ placementGroupIdなし
 
 Multi-Attribute Blockの別セルを別ルートから選んでも、同一 `placementGroupId` なら `BLOCK_ALREADY_PLANNED` とする。
 
+同一 `placementGroupId` の一部cellだけがZoneへ所属して `mergeGroupId` を持つ場合も、このBlock identityは分割しない。Zone所属cellと未Zone cellを別ルートから選択しても、Trial計画上は同じPlaced Blockとして二重迎撃を拒否する。
+
 また、Trial draftの再検証時は保存済み `interceptBlockId` だけを信用しない。live boardの `cellResolver` からBlock identityを再導出し、旧形式・復元draftで `interceptBlockId` が欠落していても同一Block二重利用を禁止する。
 
 ### 6.2 Trial terrain
