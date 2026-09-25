@@ -432,6 +432,8 @@ Productionの計算正本は各cellのまま維持し、表示では同じ `plac
 
 この表示集約はProduction ownershipをBlockへ変更するものではない。灌漑・近郊等のcell由来補正は各cellへ適用した後に合算する。
 
+初期3枚の未地帯化状態では、`resolveCardProductionPreview` のカード面合計、配置済み各CELL Productionの基礎産出合計、`placementGroupId`代表表示の合計を一致させる。これら3経路のいずれかだけが別のProduction値を持つ状態を禁止する。
+
 Block ProductionはBoard semantic上でcell productionとは別フィールドとしてReadModelへ渡す。Rendererがblock yieldを各cellへ複製してはならない。
 
 表示集約では、代表表示対象に含まれる `placementGroupId` ごとのBlock Productionを1回ずつ加算する。地帯化されている場合も、cell/Zone産出へZone倍率を適用した**後**にBlock Productionを加算し、実決済と表示の倍率差を作らない。Zone倍率の端数処理もProduction決済と同じ規則を使用し、表示値と実際の獲得量を一致させる。
