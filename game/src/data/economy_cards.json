@@ -6,7 +6,22 @@
     "descriptionKey": "CMD_RATIONING_DESC",
     "cost": {},
     "tags": ["FOOD", "EMERGENCY"],
-    "reqFoodDeficitOrFallback": true,
+    "offering": {
+      "requirements": [
+        {
+          "id": "RATIONING_TURN_END_FOOD_DEFICIT",
+          "type": "TURN_END_FOOD_DEFICIT"
+        }
+      ]
+    },
+    "execution": {
+      "requirements": [
+        {
+          "id": "RATIONING_TURN_END_FOOD_DEFICIT",
+          "type": "TURN_END_FOOD_DEFICIT"
+        }
+      ]
+    },
     "minStage": 1,
     "rarity": "C",
     "weight": 0.40,
