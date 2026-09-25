@@ -63,6 +63,7 @@ class DeckManager {
                 if (typeof evaluator === "function") return Boolean(evaluator(requirement, context));
                 return Boolean(ConditionEvaluator.evaluate(requirement, {
                     state: this.state,
+                    engine: this.engine,
                     boardQuery: this.cardOfferingBoardQuery,
                     ...context
                 }));
@@ -85,7 +86,11 @@ class DeckManager {
                 if (typeof evaluator === "function") return Boolean(evaluator(requirement, context));
                 const worldEvaluator = this.engine?.evaluateWorldEligibilityRequirement;
                 if (typeof worldEvaluator === "function") return Boolean(worldEvaluator(requirement));
-                return Boolean(ConditionEvaluator.evaluate(requirement, { state: this.state, ...context }));
+                return Boolean(ConditionEvaluator.evaluate(requirement, {
+                    state: this.state,
+                    engine: this.engine,
+                    ...context
+                }));
             }
         });
         this.offeringCandidatePool = new OfferingCandidatePoolService({
