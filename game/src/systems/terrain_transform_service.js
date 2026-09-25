@@ -102,7 +102,7 @@ export class TerrainTransformService {
         return targets;
     }
 
-    transform(spec = {}, target = null, { reconcileTopology = true } = {}) {
+    transform(spec = {}, target = null, { reconcileTopology = true, verse = null } = {}) {
         const validation = this.validateTarget(spec, target);
         if (!validation.valid) {
             return {
@@ -126,6 +126,31 @@ export class TerrainTransformService {
         // Any per-cell production snapshot belongs to the old terrain identity.
         // Canonical terrain production must be resolved from the new terrain.
         cell.production = null;
+
+        if (spec.development && typeof spec.development === "object") {
+            const delay = Number.isFinite(Number(spec.developmentDelayVerses))
+                ? Math.max(0, Math.trunc(Number(spec.developmentDelayVerses)))
+                : 0;
+            const authoredDevelopment = { ...spec.development };
+            if (delay > 0) {
+                const startVerse = Number.isFinite(Number(verse)) ? Math.trunc(Number(verse)) : 0;
+                const completionPatch = { ...authoredDevelopment };
+                cell.development = {
+                    id: authoredDevelopment.id || "TERRAIN_DEVELOPMENT",
+                    status: "UNDER_CONSTRUCTION",
+                    providesIrrigation: false,
+                    schedule: {
+                        completeVerse: startVerse + delay,
+                        completionPatch
+                    }
+                };
+            } else {
+                cell.development = {
+                    ...authoredDevelopment,
+                    status: authoredDevelopment.status || "ACTIVE"
+                };
+            }
+        }
 
         let mergeResult = null;
         let linkResult = null;
@@ -161,6 +186,33 @@ export class TerrainTransformService {
                 linkResult
             }
         };
+    }
+
+    processScheduledDevelopments(verse) {
+        const currentVerse = Number.isFinite(Number(verse)) ? Math.trunc(Number(verse)) : null;
+        if (currentVerse === null || !Array.isArray(this.state?.grid)) return [];
+
+        const completed = [];
+        for (let r = 0; r < this.state.grid.length; r++) {
+            for (let c = 0; c < (this.state.grid[r]?.length || 0); c++) {
+                const cell = this.state.grid[r][c];
+                const schedule = cell?.development?.schedule;
+                if (!schedule || !Number.isFinite(Number(schedule.completeVerse))) continue;
+                if (currentVerse < Number(schedule.completeVerse)) continue;
+
+                const completionPatch = schedule.completionPatch && typeof schedule.completionPatch === "object"
+                    ? schedule.completionPatch
+                    : {};
+                cell.development = {
+                    ...cell.development,
+                    ...completionPatch,
+                    status: "ACTIVE"
+                };
+                delete cell.development.schedule;
+                completed.push({ r, c, developmentId: cell.development.id || null });
+            }
+        }
+        return completed;
     }
 }
 
