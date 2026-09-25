@@ -1592,7 +1592,7 @@ function makeGrid(rows, cols) {
     );
     assert.equal(
         resolveDomainActionMigrationBlocker("CMD_RESETTLEMENT"),
-        DOMAIN_ACTION_MIGRATION_BLOCKER.ZONE_CONVERSION_DEFINITION_MISSING
+        DOMAIN_ACTION_MIGRATION_BLOCKER.ZONE_CONVERSION_SEMANTIC_EXTENSION_REQUIRED
     );
     assert.equal(
         resolveDomainActionMigrationBlocker("CMD_ABANDONED_SETTLEMENT"),
