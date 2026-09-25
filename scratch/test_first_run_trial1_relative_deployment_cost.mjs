@@ -24,19 +24,19 @@ console.log("\nFirstRun Trial1 relative deployment cost v1");
         defenseAvailable: 24,
         distance: 4
     });
-    assert.equal(Number(halfFar.toFixed(3)), 0.575);
+    assert.equal(Number(halfFar.toFixed(3)), 0.625);
 
     const heavyFar = resolveFirstRunTrial1DeploymentBurdenShare({
         requestedDefense: 20,
         defenseAvailable: 24,
         distance: 4
     });
-    assert.equal(Number(heavyFar.toFixed(3)), 0.725);
+    assert.equal(Number(heavyFar.toFixed(3)), 0.775);
 
     assert.deepEqual(
         FIRST_RUN_TRIAL1_RELATIVE_DEPLOYMENT_POLICY_V1,
         {
-            baseShare: 0.25,
+            baseShare: 0.30,
             defenseShareWeight: 0.45,
             distanceShareWeight: 0.10,
             maxShare: 0.80,
