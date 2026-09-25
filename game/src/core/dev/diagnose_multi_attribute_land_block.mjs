@@ -1731,6 +1731,27 @@ const landSystemJson = JSON.parse(
     assert.equal(restored.grid[0][2].terrain.terrainId, "E3_MOUNTAIN");
     assert.equal(restored.placedBlockProduction[placedGroupId].yields.defense, 3);
 
+    const restoredViewDataService = new CellViewDataService();
+    const restoredPrimaryFacts = restoredViewDataService.getCellViewData(restored, 0, 1);
+    const restoredSecondaryFacts = restoredViewDataService.getCellViewData(restored, 0, 2);
+    assert.equal(resolveBoardDisplayRole(restored, restoredPrimaryFacts), "LAND_PRIMARY");
+    assert.equal(resolveBoardDisplayRole(restored, restoredSecondaryFacts), "CLEAN");
+
+    const restoredDisplay = resolveBoardDisplayProduction(
+        restored,
+        restoredPrimaryFacts,
+        restoredViewDataService
+    );
+    assert.equal(restoredDisplay.food, 0);
+    assert.equal(restoredDisplay.wood, 0);
+    assert.equal(restoredDisplay.defense, 3);
+    assert.equal(restoredDisplay.mystic, 0);
+    assert.deepEqual(restoredDisplay.primaryYield, { resource: "defense", amount: 3 });
+    assert.equal(
+        resolveBoardDisplayProduction(restored, restoredSecondaryFacts, restoredViewDataService),
+        null
+    );
+
     const terrainResolver = new TrialTerrainEffectResolver();
     assert.equal(terrainResolver.canInterceptAt(restored.grid[0][1]), true);
     assert.equal(terrainResolver.canInterceptAt(restored.grid[0][2]), false);
