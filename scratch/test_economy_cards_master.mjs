@@ -91,12 +91,25 @@ expected23.forEach(exp => {
 });
 
 console.log("\n--- 2. 発動ハンドラ (playCommandCard) 検問 ---");
-const persistentFeedbackCards = ["CMD_QUARRY", "CMD_RESETTLEMENT", "CMD_RATIONING"];
+const persistentFeedbackCards = ["CMD_QUARRY", "CMD_RATIONING"];
 persistentFeedbackCards.forEach(cId => {
     const cardObj = allCmdCards.find(c => c.id === cId);
     dm.playCommandCard(cardObj, -1, -1, null);
     assert(mockState.activeBuffs.some(b => b.id === cId), `playCommandCard(${cId}) added active/visible buff`);
 });
+
+{
+    const resettlement = allCmdCards.find(c => c.id === "CMD_RESETTLEMENT");
+    assert(resettlement && Object.keys(resettlement.cost || {}).length === 0,
+        "Resettlement card does not duplicate Board-owned creation cost");
+    assert(resettlement?.effects?.length === 1
+        && resettlement.effects[0].action === "CREATE_ZONE_CONVERSION"
+        && resettlement.effects[0].definitionId === "RESETTLEMENT_PLAINS_2X2"
+        && resettlement.effects[0].paymentMode === "DOMAIN_QUOTE",
+        "Resettlement delegates targeting, pricing, reward, and production semantics to Board");
+    assert(!mockState.activeBuffs.some(buff => buff.id === "CMD_RESETTLEMENT"),
+        "Resettlement no longer relies on a legacy visible Buff for persistent production");
+}
 
 {
     const loggingCamp = allCmdCards.find(c => c.id === "CMD_LOGGING_CAMP");
