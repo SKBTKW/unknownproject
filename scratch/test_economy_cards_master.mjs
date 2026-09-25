@@ -18,7 +18,12 @@ const mockState = {
     addLog: function(l) {}
 };
 
-const dm = new DeckManager(mockState);
+const dm = new DeckManager(mockState, {
+    previewTurnEndMaintenance: () => ({
+        foodAfterProduction: 10,
+        foodCost: 20
+    })
+});
 const allCmdCards = COMMAND_CARDS_MASTER;
 
 console.log(`Total Command Cards in Master: ${allCmdCards.length}`);
