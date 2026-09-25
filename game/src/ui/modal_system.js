@@ -246,7 +246,7 @@
                 </label>
             ` : '';
             const confirmBtnText = confirmLabel || (I18n ? I18n.t("UI_ACTIVATE_CMD") : "⚡ 発動する");
-            const cancelBtnText = cancelLabel || (I18n ? I18n.t("UI_CANCEL") : "Cancel");
+            const cancelBtnText = cancelLabel || I18n.t("UI_CANCEL");
 
             content.innerHTML = `
                 <div class="modal-system-strip-card">
