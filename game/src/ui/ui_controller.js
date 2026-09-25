@@ -1676,7 +1676,6 @@ class UIController {
             this.beginTargetedCommandSelection(card, idx, reserveIdx);
             return;
         }
-        const tObj = card.terrain || card;
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
         const cName = tObj.nameKey ? I18n.t(tObj.nameKey) : (tObj.id || "Card");
         const cDesc = tObj.descriptionKey ? I18n.t(tObj.descriptionKey) : "";
