@@ -126,6 +126,16 @@ const resolvedDefinition = {
     capabilities: []
 };
 
+const fixedDefinition = {
+    ...resolvedDefinition,
+    id: "FIXED_ZONE_TEST",
+    production: {
+        status: ZONE_CONVERSION_PRODUCTION_STATUS.RESOLVED,
+        kind: ZONE_CONVERSION_PRODUCTION_KINDS.FIXED_PER_ZONE,
+        fixedYields: { food: 2 }
+    }
+};
+
 const unresolvedDefinition = {
     ...resolvedDefinition,
     id: "UNRESOLVED_PRODUCTION",
@@ -210,6 +220,45 @@ assert.equal(
     cellBreakdown.totalYields.food,
     cellBreakdown.baseYields.food + 1,
     "cell breakdown and aggregate production must use the same per-member definition authority"
+);
+
+const fixedState = makeState();
+const fixedService = new ZoneConversionService({
+    state: fixedState,
+    definitions: { FIXED_ZONE_TEST: fixedDefinition }
+});
+fixedState.zoneConversionService = fixedService;
+const fixedBaseline = ProductionCalculator.calculateTotalProduction(fixedState);
+const fixedCreated = fixedService.createConversion("FIXED_ZONE_TEST", "zone_food", {
+    createdVerse: 10
+});
+assert.equal(fixedCreated.success, true);
+
+const fixedResolved = fixedService.resolveProduction("zone_food");
+assert.equal(fixedResolved.status, ZONE_CONVERSION_PRODUCTION_STATUS.RESOLVED);
+assert.equal(fixedResolved.kind, ZONE_CONVERSION_PRODUCTION_KINDS.FIXED_PER_ZONE);
+assert.equal(fixedResolved.memberCount, 4);
+assert.deepEqual(fixedResolved.yields, { food: 2, wood: 0, mystic: 0 });
+assert.deepEqual(fixedService.sumProduction().yields, {
+    food: 2,
+    wood: 0,
+    mystic: 0
+});
+assert.equal(
+    ProductionCalculator.calculateTotalProduction(fixedState).grossFood - fixedBaseline.grossFood,
+    2,
+    "FIXED_PER_ZONE production is counted once per Zone, independent of member count"
+);
+assert.deepEqual(
+    fixedService.resolveCellProduction({ r: 0, c: 0 }).yields,
+    { food: 0, wood: 0, mystic: 0 },
+    "Zone-level fixed production must not be duplicated into member-cell breakdowns"
+);
+const fixedCellBreakdown = ProductionCalculator.calculateCellYieldBreakdown(fixedState, 0, 0);
+assert.equal(
+    fixedCellBreakdown.modifiers.some(modifier => modifier.type === "ZONE_CONVERSION"),
+    false,
+    "fixed Zone production is aggregate-only and must not masquerade as a cell modifier"
 );
 
 const failedMaintenance = service.applyMaintenanceSettlement("zone_food", {
@@ -329,6 +378,7 @@ assert.equal(
 );
 
 console.log("  ACTIVE PER_MEMBER_CELL production aggregates once");
+console.log("  ACTIVE FIXED_PER_ZONE production aggregates once without cell duplication");
 console.log("  Production breakdown exposes Zone Conversion contribution");
 console.log("  DYSFUNCTIONAL conversion contributes zero");
 console.log("  restore + definition authority reproduces production");
