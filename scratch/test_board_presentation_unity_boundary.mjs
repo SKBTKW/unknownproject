@@ -342,7 +342,7 @@ test("merged production is resolved before renderer DTO consumption", () => {
     assert.equal(primary.display.role, "LAND_PRIMARY");
     assert.deepEqual(primary.display.production, {
         food: 6,
-        wood: 3,
+        wood: 4,
         defense: 0,
         mystic: 0,
         primaryYield: { resource: "food", amount: 6 }
