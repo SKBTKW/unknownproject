@@ -7,14 +7,16 @@
  *
  * Evidence after the Stage1 Board adjacency contract refresh
  * (8 seeded live Verse15 runs):
- * - current Stage1 food/material card max recovery PVE: 0.83
+ * - current Stage1 food/material card max recovery PVE at Verse15: 0.83
  * - FirstRun Trial1 heavy (80% defense, far) recovery PVE: 6.13..8.60
  * - FirstRun Trial1 all-in (100% defense, far) recovery PVE: 6.50..9.04
  *
  * Rounded guardrails intentionally leave a large unallocated middle band for
  * future GE / Project / special-development costs instead of inventing those
- * prices prematurely. Upper Trial guardrails are rounded outward to contain
- * the current seeded runtime envelope; this does not change runtime pricing.
+ * prices prematurely. The <=1 PVE card anchor is explicitly a mature Stage1
+ * Verse15 reference, not a claim that every live card should cost <=1 PVE at
+ * its actual first-availability Verse. Upper Trial guardrails are rounded
+ * outward to contain the current seeded runtime envelope.
  */
 export const ECONOMY_COST_AUTHORING_ANCHORS_V1 = Object.freeze({
     bve: Object.freeze({
@@ -24,7 +26,7 @@ export const ECONOMY_COST_AUTHORING_ANCHORS_V1 = Object.freeze({
         materialSourceTerrainId: "E3_MOUNTAIN"
     }),
     pve: Object.freeze({
-        routineStage1CardMax: 1.0,
+        matureStage1CardReferenceMax: 1.0,
         strategicAuthoringSpace: Object.freeze({
             min: 1.0,
             maxExclusive: 5.5
@@ -45,7 +47,7 @@ export function classifyEconomyPveForAuthoring(pve) {
     if (!Number.isFinite(value) || value < 0) return "UNRESOLVED";
 
     const anchors = ECONOMY_COST_AUTHORING_ANCHORS_V1.pve;
-    if (value <= anchors.routineStage1CardMax) return "ROUTINE_CARD";
+    if (value <= anchors.matureStage1CardReferenceMax) return "MATURE_STAGE1_REFERENCE";
     if (value < anchors.strategicAuthoringSpace.maxExclusive) return "STRATEGIC_OPEN";
     if (value <= anchors.firstRunTrial1Heavy.max) return "TRIAL_SCALE";
     return "ABOVE_CURRENT_TRIAL_SCALE";
