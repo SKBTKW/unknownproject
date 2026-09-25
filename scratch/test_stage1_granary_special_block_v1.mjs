@@ -4,6 +4,7 @@ import { BoardDomainAdapter } from "../game/src/core/board_domain_adapter.js";
 import {
     BOARD_CAPABILITIES,
     SPECIAL_BLOCK_TYPES,
+    getSpecialBlockDefinition,
     hasCellCapability
 } from "../game/src/core/special_block_domain.js";
 import { createCardDomainActionExecutor } from "../game/src/cards/card_domain_action_executor.js";
@@ -153,6 +154,12 @@ maintenance = MaintenanceFallbackSystem.resolveFoodMaintenanceCost(state);
 assert.equal(maintenance.foodStorageSites, 2, "maintenance benefit is capped at two Granaries");
 assert.equal(maintenance.granaryReduction, 4);
 assert.equal(maintenance.foodCost, 16);
+
+grid[0][0].specialBlock.state = "DAMAGED";
+boardMaintenance = boardDomainAdapter.resolveFoodMaintenanceModifiers();
+assert.equal(boardMaintenance.appliedInstances, 2, "damaged storage must not contribute to Board maintenance semantics");
+assert.equal(boardMaintenance.flatReduction, 4);
+grid[0][0].specialBlock.state = "ACTIVE";
 
 const duplicateBeforeWood = state.wood;
 const duplicate = deck.playCommandCard(granary, { r: 0, c: 0 });
