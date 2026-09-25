@@ -1,5 +1,5 @@
 export const FIRST_RUN_TRIAL1_RELATIVE_DEPLOYMENT_POLICY_V1 = Object.freeze({
-    baseShare: 0.25,
+    baseShare: 0.30,
     defenseShareWeight: 0.45,
     distanceShareWeight: 0.10,
     maxShare: 0.80,
