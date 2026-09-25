@@ -20,6 +20,7 @@ const base = {
     unpushedCommits: 0,
     uniqueCommits: 0,
     contentEquivalent: false,
+    patchEquivalent: false,
     remoteExists: true,
     openPrLookupVerified: true,
     openPrReferences: [],
@@ -55,6 +56,18 @@ const tests = [
         uniqueCommits: 4,
         contentEquivalent: true,
         openPrReferences: [{ number: 80, role: 'head' }],
+    }, 'BLOCKED'],
+    ['patch-equivalent unique commits are safe after target advances', {
+        ...base,
+        uniqueCommits: 4,
+        patchEquivalent: true,
+        prReason: 'No merged PR',
+    }, 'SAFE'],
+    ['patch-equivalent TASK still blocks while referenced by an open PR', {
+        ...base,
+        uniqueCommits: 4,
+        patchEquivalent: true,
+        openPrReferences: [{ number: 81, role: 'head' }],
     }, 'BLOCKED'],
     ['zero-unique TASK used as open PR head blocks', {
         ...base,
@@ -308,9 +321,9 @@ assert.equal(
     'replacement PR merge commit must already be contained in the integration target',
 );
 assert.equal(
-    sweeperSource.includes('!state.mergedPrVerified && !state.supersededVerified && !state.contentEquivalent'),
+    sweeperSource.includes('!state.mergedPrVerified && !state.supersededVerified && !state.contentEquivalent && !state.patchEquivalent'),
     true,
-    'unique commits may bypass the normal merged-head proof only through audited supersession or exact tree equivalence',
+    'unique commits may bypass the normal merged-head proof only through audited supersession, exact tree equivalence, or patch equivalence',
 );
 assert.equal(
     sweeperSource.includes("spawnSync('git', ['diff', '--quiet', leftRef, rightRef, '--']"),
@@ -321,6 +334,16 @@ assert.equal(
     sweeperSource.includes("reason: 'TASK tree is content-equivalent to target'"),
     true,
     'content-equivalent TASK cleanup must be explicit in the dry-run report',
+);
+assert.equal(
+    sweeperSource.includes("git(['cherry', targetRef, comparisonRef]"),
+    true,
+    'stale TASK absorption must use git cherry patch-equivalence instead of comparing against the moving target tree',
+);
+assert.equal(
+    sweeperSource.includes("reason: 'all TASK commits are patch-equivalent to target'"),
+    true,
+    'patch-equivalent TASK cleanup must be explicit in the dry-run report',
 );
 
 const supersededManifest = JSON.parse(
@@ -349,4 +372,4 @@ assert.equal(
     'GitHub header helper must not recurse into itself',
 );
 
-console.log(`✅ AoT Task Sweeper safety contract: ${passed}/19 classifications PASS + content-equivalence + open PR head/base protection + cleanup revalidation + naming/launcher contract PASS`);
+console.log(`✅ AoT Task Sweeper safety contract: ${passed}/21 classifications PASS + content/patch-equivalence + open PR head/base protection + cleanup revalidation + naming/launcher contract PASS`);
