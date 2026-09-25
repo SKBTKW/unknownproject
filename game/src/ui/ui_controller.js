@@ -1612,6 +1612,58 @@ class UIController {
 
     triggerCommandCardPlay(card, idx = -1, reserveIdx = -1) {
         if (!this.state || this.state.hasPickedThisTurn) return;
+
+        const variants = Array.isArray(card?.executionVariants) ? card.executionVariants : [];
+        if (variants.length > 0 && !card.selectedExecutionVariantId) {
+            const modalSys = (typeof window !== "undefined" && window.ModalSystem) ? window.ModalSystem : ModalSystem;
+            if (!modalSys || typeof modalSys.showChoiceDialog !== "function") return;
+
+            const tObj = card.terrain || card;
+            const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
+            const cName = tObj.nameKey ? I18n.t(tObj.nameKey) : (tObj.id || "Card");
+            const cDesc = tObj.descriptionKey ? I18n.t(tObj.descriptionKey) : "";
+            const resourceCostText = cost => {
+                const parts = [];
+                if (cost?.food) parts.push(`🌾${cost.food}`);
+                if (cost?.wood) parts.push(`🧱${cost.wood}`);
+                if (cost?.mystic) parts.push(`✨${cost.mystic}`);
+                if (cost?.ember) parts.push(`🔥${cost.ember}`);
+                return parts.join(" ");
+            };
+            const hasCost = cost => (
+                (!cost?.food || this.state.food >= cost.food)
+                && (!cost?.wood || Math.max(this.state.wood ?? 0, this.state.material ?? 0) >= cost.wood)
+                && (!cost?.mystic || this.state.mystic >= cost.mystic)
+                && (!cost?.ember || this.state.ember >= cost.ember)
+            );
+            modalSys.showChoiceDialog({
+                title: cName,
+                descText: cDesc,
+                choices: variants.map(variant => ({
+                    id: variant.id,
+                    label: variant.labelKey ? I18n.t(variant.labelKey) : variant.id,
+                    description: variant.descriptionKey ? I18n.t(variant.descriptionKey) : "",
+                    costText: resourceCostText(variant.cost || {}),
+                    disabled: !hasCost(variant.cost || {})
+                })),
+                onSelect: choice => {
+                    const selected = {
+                        ...card,
+                        selectedExecutionVariantId: choice.id
+                    };
+                    this.triggerCommandCardPlay(selected, idx, reserveIdx);
+                },
+                onCancel: () => {
+                    this.selectedCard = null;
+                    this.selectedCardIdx = -1;
+                    this.selectedReserveIdx = -1;
+                    if (focusLayerManager) focusLayerManager.onCardDeselect();
+                    this.render();
+                    this.highlightPlaceableCells();
+                }
+            });
+            return;
+        }
         if (this.commandCardRequiresTarget(card)) {
             this.beginTargetedCommandSelection(card, idx, reserveIdx);
             return;
