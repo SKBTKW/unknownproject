@@ -93,34 +93,27 @@ v2 foundation:
 | `CMD_MARKET` | **Partial / Player-facing description mismatch / Eligibility gap** | `marketCount` 登録。表示説明の連携資源カテゴリ継続産出は未接続。`reqMinLinks` は現Eligibilityで未評価。 |
 | `CMD_DEPOT` | **Partial / Player-facing description mismatch / Eligibility gap** | `depotCount` 登録。表示説明のProject🧱コスト15%軽減は未接続。`reqIndustrySpecialBlocks` 未評価。 |
 | `CMD_IRRIGATION` | **Partial / Player-facing description mismatch / Eligibility gap** | `irrigationCount` 登録。表示説明の対象農業マス恒久🌾+1は未接続。`reqWaterSource`は評価、`reqPlainsOrReclaimed`は未評価。 |
-| `CMD_RESETTLEMENT` | **Partial / Duplicate branch conflict / Player-facing description mismatch** | 同一ID分岐が2回ある。先行分岐が実際に発火し、🔥+2を30でcapし、`resettlementFoodBonus += 2` を設定する。後段の `EmberSystem.addBonus(2)` 分岐はshadowされる。表示説明の「指定平地2×2地帯」「その地帯全体🌾+2」は実装されていない。 |
+| `CMD_RESETTLEMENT` | **Implemented / Zone Conversion** | 完成済みPLAINS 2×2 Zoneを1つ指定し、Board-owned Zone Conversionとして🌾15/🧱10を支払う。成立時に🔥+2、以後そのZoneから固定🌾+2/T。旧`resettlementFoodBonus`と重複DeckManager分岐は廃止。 |
 | `CMD_WORKSHOP` | **Partial / Player-facing description mismatch / Eligibility gap** | `workshopCount` 登録。表示説明の特殊ブロック系🧱コスト10%軽減は未接続。`reqDistinctPrimaryIndustries`未評価。 |
 
-### 《移住》duplicate branch conflict
+### 《移住》Zone Conversion
 
-`DeckManager.playCommandCard()` には `CMD_RESETTLEMENT` が2回存在する。
+`CMD_RESETTLEMENT` はCard Coreのdeclarative Domain ActionからBoard-owned Zone Conversionへ委譲する。
 
-先行分岐は、
+正規契約:
 
 ```text
-ember = min(30, ember + 2)
-resettlementFoodBonus += 2
-PERMANENT Buff
+対象: 完成済み PLAINS 2×2 Zone 1つ
+作成コスト: 🌾15 / 🧱10
+成立時: 🔥+2
+恒常産出: Zone全体で固定 🌾+2/T
 ```
 
-を実行する。
+恒常産出は `FIXED_PER_ZONE` であり、4セルそれぞれへ🌾+2を配る効果ではない。
+そのためZoneのセル別breakdownへ重複加算せず、Zone Conversion集計へ1回だけ加算する。
 
-後段には `EmberSystem.addBonus(2)` を使う別分岐があるが、同じ `else-if` チェーンのため通常実行では到達しない。
-
-さらに `ProductionCalculator` は `resettlementFoodBonus` を参照しない。
-
-また現行🔥には固定30上限がなく、連携等で30超へ拡張できる。そのため🔥31以上で《移住》を使うと、先行分岐の `min(30, ember + 2)` により**回復カード使用で🔥が30へ減少する**可能性がある。
-
-したがって現在は、
-
-> **即時🔥処理自体にregressionがあり、継続🌾+2は未接続、後段の別実装はdead branch。**
-
-と扱う。
+旧 `resettlementFoodBonus` state writeと2本の `DeckManager.playCommandCard()` ID分岐は使用しない。
+🔥報酬もZone Conversion `creationReward` を正本とし、固定30capは持たない。
 
 ---
 
@@ -183,7 +176,7 @@ PERMANENT Buff
 3. 《農地改革》: v1で完成済みPLAINS Zone 1つへのZone Conversionへ移行済み。旧global `permanentPlainsFoodBonus`は新規発動では使用しない。
 4. 《伐採拠点》: 表示の拠点化・周囲継続産出が未接続。
 5. 《灌漑》: 水源条件は有効だが平地/干拓地条件は未評価。表示の対象マス恒久強化も未接続。
-6. 《移住》: 現役同一ID分岐が重複。先行分岐が後段をshadowし、30超🔥を30へ下げ得る。継続🌾stateはconsumerなし。
+6. 《移住》: Zone Conversionへ移行済み。PLAINS 2×2対象、🔥+2、固定🌾+2/TをBoard semanticで実行。
 7. 複数施設カード: counter/flagは存在するが、表示説明にある持続効果consumer未接続。
 8. Stage3事業: flag/Buff骨格中心でProduction/Cost/Trialへの接続が未完成。
 9. 《大防塁》: 現在はretired。旧重複分岐はlegacy cleanup対象。

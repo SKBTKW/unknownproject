@@ -1592,7 +1592,13 @@ function makeGrid(rows, cols) {
     );
     assert.equal(
         resolveDomainActionMigrationBlocker("CMD_RESETTLEMENT"),
-        DOMAIN_ACTION_MIGRATION_BLOCKER.ZONE_CONVERSION_SEMANTIC_EXTENSION_REQUIRED
+        null,
+        "Resettlement leaves the unresolved migration set once Zone Conversion semantics are canonical"
+    );
+    assert.equal(
+        DOMAIN_ACTION_REQUIRED_IDS.includes("CMD_RESETTLEMENT"),
+        false,
+        "Resettlement declarative Domain Action must not remain in legacy migration inventory"
     );
     assert.equal(
         resolveDomainActionMigrationBlocker("CMD_ABANDONED_SETTLEMENT"),
@@ -1669,17 +1675,12 @@ function makeGrid(rows, cols) {
 {
     assert.deepEqual(
         [...LEGACY_SHADOWED_BRANCH_IDS].sort(),
-        ["CMD_GREAT_RAMPART_PROJECT", "CMD_RESETTLEMENT"].sort()
+        ["CMD_GREAT_RAMPART_PROJECT"]
     );
     assert.equal(
         resolveDomainActionOwner("CMD_GREAT_RAMPART_PROJECT"),
         DOMAIN_ACTION_OWNER.PROJECT
     );
-    assert.equal(
-        resolveDomainActionOwner("CMD_RESETTLEMENT"),
-        DOMAIN_ACTION_OWNER.BOARD
-    );
-
     const deckManagerSource = readFileSync(
         new URL("../game/src/systems/deck_manager.js", import.meta.url),
         "utf8"
@@ -1706,11 +1707,10 @@ function makeGrid(rows, cols) {
         "first reachable Great Rampart branch must remain the current 4T legacy behavior"
     );
 
-    const resettlementFirst = deckManagerSource.indexOf('cId === "CMD_RESETTLEMENT"');
-    const resettlementSecond = deckManagerSource.indexOf('cId === "CMD_RESETTLEMENT"', resettlementFirst + 1);
-    assert.ok(
-        deckManagerSource.slice(resettlementFirst, resettlementSecond).includes("this.state.ember = Math.min"),
-        "first reachable Resettlement branch must remain distinguishable from its unreachable duplicate"
+    assert.equal(
+        deckManagerSource.includes('cId === "CMD_RESETTLEMENT"'),
+        false,
+        "Resettlement must execute only through declarative Zone Conversion"
     );
 }
 

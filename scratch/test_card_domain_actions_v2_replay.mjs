@@ -3,7 +3,6 @@ import { readFileSync } from "node:fs";
 import { resolveCardEffectHandlerRouter } from "../game/src/cards/card_effect_handler_router.js";
 import {
     DOMAIN_ACTION_REQUIRED_IDS,
-    DOMAIN_ACTION_MIGRATION_BLOCKER,
     LEGACY_ONLY_IDS,
     resolveDomainActionOwner,
     resolveDomainActionMigrationBlocker
@@ -42,18 +41,13 @@ for (const id of DOMAIN_ACTION_REQUIRED_IDS) {
     assert.equal(entry.blocker, resolveDomainActionMigrationBlocker(id));
 }
 
-const resettlementBlocker = blockers.find(entry => entry.cardId === "CMD_RESETTLEMENT");
-assert.ok(resettlementBlocker);
 assert.equal(
-    resettlementBlocker.blocker,
-    DOMAIN_ACTION_MIGRATION_BLOCKER.ZONE_CONVERSION_SEMANTIC_EXTENSION_REQUIRED
-);
-assert.equal(
-    resettlementBlocker.foundationReady,
+    blockers.some(entry => entry.cardId === "CMD_RESETTLEMENT"),
     false,
-    "Resettlement still needs Zone Conversion semantics for its legacy fixed production/reward behavior"
+    "Resettlement must leave the migration blocker projection after canonical Zone Conversion migration"
 );
-assert.equal(resettlementBlocker.remainingWork, "EXTEND_DOMAIN_SEMANTICS");
+assert.equal(resolveDomainActionOwner("CMD_RESETTLEMENT"), null);
+assert.equal(resolveDomainActionMigrationBlocker("CMD_RESETTLEMENT"), null);
 
 for (const entry of blockers) {
     assert.equal(
