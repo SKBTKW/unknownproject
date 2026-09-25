@@ -664,6 +664,15 @@ export const MILITARY_CARDS_MASTER = [
         }
       ]
     },
+    "execution": {
+      "requirements": [
+        {
+          "id": "VIGILANCE_WARNING_TENSE",
+          "type": "WARNING_STATE",
+          "state": "TENSE"
+        }
+      ]
+    },
     "minStage": 1,
     "rarity": "C",
     "weight": 0.35,
@@ -1929,6 +1938,15 @@ export const COMMAND_CARDS_MASTER = [
       "wood": 15
     },
     "offering": {
+      "requirements": [
+        {
+          "id": "VIGILANCE_WARNING_TENSE",
+          "type": "WARNING_STATE",
+          "state": "TENSE"
+        }
+      ]
+    },
+    "execution": {
       "requirements": [
         {
           "id": "VIGILANCE_WARNING_TENSE",
