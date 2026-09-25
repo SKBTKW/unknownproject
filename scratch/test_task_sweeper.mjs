@@ -256,6 +256,21 @@ assert.equal(
     'cleanup must refresh and revalidate immediately before mutation',
 );
 assert.equal(
+    sweeperSource.includes("remote TASK branch already absent"),
+    true,
+    'remote deletion must be idempotent when another cleanup wins the delete race',
+);
+assert.equal(
+    sweeperSource.includes("git(['fetch', 'origin', '--prune'], { cwd, allowFailure: true });"),
+    true,
+    'remote delete failure must refresh/prune before deciding that the branch is already absent',
+);
+assert.equal(
+    sweeperSource.includes("throw new Error(\`git push origin --delete \${branch} failed"),
+    true,
+    'remote deletion failures must remain fail-closed when the branch still exists after refresh',
+);
+assert.equal(
     (sweeperSource.match(/await loadOpenPullRequestSnapshot\(githubRepo\)/g) || []).length >= 3,
     true,
     'open PR references must be refreshed during dry-run, cleanup revalidation, and immediately before each destructive mutation',

@@ -586,7 +586,25 @@ function printReport(target, inspected) {
 }
 
 function deleteRemoteBranch(branch, cwd) {
-    git(['push', 'origin', '--delete', branch], { cwd });
+    const result = spawnSync('git', ['push', 'origin', '--delete', branch], {
+        cwd,
+        windowsHide: true,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    if (result.status === 0) return { deleted: true, alreadyAbsent: false };
+
+    // A branch can disappear after cleanup revalidation but before mutation
+    // (for example, another cleanup process deletes it first). Refresh the
+    // remote-tracking namespace and treat that specific race as idempotent.
+    git(['fetch', 'origin', '--prune'], { cwd, allowFailure: true });
+    if (!refExists(`refs/remotes/origin/${branch}`, cwd)) {
+        console.log('   - remote TASK branch already absent');
+        return { deleted: false, alreadyAbsent: true };
+    }
+
+    const stderr = result.stderr?.toString?.().trim();
+    throw new Error(`git push origin --delete ${branch} failed${stderr ? `: ${stderr}` : ''}`);
 }
 
 function removeWorktree(worktreePath, cwd) {
