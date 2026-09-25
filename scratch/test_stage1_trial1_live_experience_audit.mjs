@@ -418,6 +418,8 @@ const stage1CostCardsForEligibility = COMMAND_CARDS_MASTER
     .map(card => ({ card, cost: readFoodMaterialCost(card) }))
     .filter(entry => entry.cost.food > 0 || entry.cost.material > 0);
 
+const firstEligibleCardScaleRows = [];
+
 for (const { card, cost } of stage1CostCardsForEligibility) {
     const firstEligible = growthRuns
         .map(run => run.economyTimeline.find(row =>
@@ -441,6 +443,15 @@ for (const { card, cost } of stage1CostCardsForEligibility) {
         return Math.max(foodPve, materialPve);
     }));
 
+    const classification = classifyEconomyPveForAuthoring(recoveryPve.max);
+    firstEligibleCardScaleRows.push(Object.freeze({
+        id: card.id,
+        eligibleSeeds: firstEligible.length,
+        verses,
+        recoveryPve,
+        classification
+    }));
+
     console.log(
         [
             "STAGE1_CARD_FIRST_ELIGIBLE",
@@ -448,7 +459,8 @@ for (const { card, cost } of stage1CostCardsForEligibility) {
             `eligibleSeeds=${firstEligible.length}/${LIVE_AUDIT_SEEDS.length}`,
             `firstV=${verses.min}..${verses.max} med=${verses.median.toFixed(1)}`,
             `cost=🌾${cost.food}/🧱${cost.material}`,
-            `firstEligiblePVE=${recoveryPve.min.toFixed(2)}..${recoveryPve.max.toFixed(2)} med=${recoveryPve.median.toFixed(2)}`
+            `firstEligiblePVE=${recoveryPve.min.toFixed(2)}..${recoveryPve.max.toFixed(2)} med=${recoveryPve.median.toFixed(2)}`,
+            `class=${classification}`
         ].join(" ")
     );
 }
@@ -652,8 +664,8 @@ assert.ok(
 
 const authoringAnchors = ECONOMY_COST_AUTHORING_ANCHORS_V1.pve;
 assert.ok(
-    maxStage1CardPve <= authoringAnchors.routineStage1CardMax,
-    `current Stage1 card max PVE ${maxStage1CardPve.toFixed(2)} exceeds routine-card authoring anchor ${authoringAnchors.routineStage1CardMax.toFixed(2)}`
+    maxStage1CardPve <= authoringAnchors.matureStage1CardReferenceMax,
+    `current Stage1 Verse15 card max PVE ${maxStage1CardPve.toFixed(2)} exceeds mature-stage reference anchor ${authoringAnchors.matureStage1CardReferenceMax.toFixed(2)}`
 );
 assert.ok(
     heavyTrialPve.min >= authoringAnchors.firstRunTrial1Heavy.min
@@ -674,10 +686,24 @@ const stage1ExplicitGeCosts = GLOBAL_EVENTS_MASTER
 console.log(
     "AUTHORING_ANCHOR_STATUS",
     JSON.stringify({
-        routineCard: {
-            maxObservedPve: Number(maxStage1CardPve.toFixed(2)),
-            anchorMax: authoringAnchors.routineStage1CardMax,
+        matureStage1CardReference: {
+            maxObservedV15Pve: Number(maxStage1CardPve.toFixed(2)),
+            anchorMax: authoringAnchors.matureStage1CardReferenceMax,
             classification: classifyEconomyPveForAuthoring(maxStage1CardPve)
+        },
+        liveFirstEligibleCards: {
+            count: firstEligibleCardScaleRows.length,
+            cards: firstEligibleCardScaleRows.map(row => ({
+                id: row.id,
+                eligibleSeeds: row.eligibleSeeds,
+                firstVerseMin: row.verses.min,
+                firstVerseMedian: Number(row.verses.median.toFixed(1)),
+                firstVerseMax: row.verses.max,
+                firstEligiblePveMin: Number(row.recoveryPve.min.toFixed(2)),
+                firstEligiblePveMedian: Number(row.recoveryPve.median.toFixed(2)),
+                firstEligiblePveMax: Number(row.recoveryPve.max.toFixed(2)),
+                classification: row.classification
+            }))
         },
         strategicOpen: authoringAnchors.strategicAuthoringSpace,
         heavyTrial: {
