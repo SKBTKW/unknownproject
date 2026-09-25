@@ -1613,12 +1613,12 @@ class UIController {
     triggerCommandCardPlay(card, idx = -1, reserveIdx = -1) {
         if (!this.state || this.state.hasPickedThisTurn) return;
 
-        const variants = Array.isArray(card?.executionVariants) ? card.executionVariants : [];
-        if (variants.length > 0 && !card.selectedExecutionVariantId) {
+        const tObj = card?.terrain || card;
+        const variants = Array.isArray(tObj?.executionVariants) ? tObj.executionVariants : [];
+        if (variants.length > 0 && !tObj.selectedExecutionVariantId) {
             const modalSys = (typeof window !== "undefined" && window.ModalSystem) ? window.ModalSystem : ModalSystem;
             if (!modalSys || typeof modalSys.showChoiceDialog !== "function") return;
 
-            const tObj = card.terrain || card;
             const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
             const cName = tObj.nameKey ? I18n.t(tObj.nameKey) : (tObj.id || "Card");
             const cDesc = tObj.descriptionKey ? I18n.t(tObj.descriptionKey) : "";
@@ -1647,10 +1647,18 @@ class UIController {
                     disabled: !hasCost(variant.cost || {})
                 })),
                 onSelect: choice => {
-                    const selected = {
-                        ...card,
-                        selectedExecutionVariantId: choice.id
-                    };
+                    const selected = card?.terrain
+                        ? {
+                            ...card,
+                            terrain: {
+                                ...tObj,
+                                selectedExecutionVariantId: choice.id
+                            }
+                        }
+                        : {
+                            ...card,
+                            selectedExecutionVariantId: choice.id
+                        };
                     this.triggerCommandCardPlay(selected, idx, reserveIdx);
                 },
                 onCancel: () => {
