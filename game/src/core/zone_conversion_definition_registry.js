@@ -23,6 +23,7 @@ function freezeDefinition(definition) {
     return Object.freeze({
         ...definition,
         eligibleZoneAttributes: freezeStringArray(definition?.eligibleZoneAttributes),
+        eligibleMergeTypes: freezeStringArray(definition?.eligibleMergeTypes),
         requirements: Object.freeze({
             ...requirements,
             resources: freezeResourceMap(requirements.resources)
