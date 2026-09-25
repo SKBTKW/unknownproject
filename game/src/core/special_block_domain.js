@@ -224,6 +224,14 @@ function freezeDefinition(definition) {
             }
             : {}),
         production: freezeProductionDefinition(definition.production),
+        maintenanceModifiers: definition.maintenanceModifiers
+            ? Object.freeze({
+                ...definition.maintenanceModifiers,
+                food: definition.maintenanceModifiers.food
+                    ? Object.freeze({ ...definition.maintenanceModifiers.food })
+                    : null
+            })
+            : null,
         capabilities: Object.freeze([...(definition.capabilities || [])]),
         trialTraits: Object.freeze({
             ...defaultTrialTraits,
@@ -261,6 +269,14 @@ export const SPECIAL_BLOCK_DEFINITIONS = Object.freeze({
         },
         baseTerrainInteraction: { kind: BASE_TERRAIN_INTERACTIONS.TERRAIN_USING_OVERLAY },
         production: null,
+        maintenanceModifiers: {
+            food: {
+                status: 'RESOLVED',
+                kind: 'FLAT_REDUCTION',
+                amountPerInstance: 2,
+                maxInstances: 2
+            }
+        },
         capabilities: [BOARD_CAPABILITIES.FOOD_STORAGE],
         trialTraits: {},
         lifecycle: { initialState: 'ACTIVE' },
