@@ -311,6 +311,16 @@ assert.equal(
     'superseded cleanup must use an explicit audited manifest rather than branch-name heuristics',
 );
 assert.equal(
+    sweeperSource.includes("task_sweeper_superseded_${target}.json"),
+    true,
+    'Sweeper must support a target-scoped audited superseded manifest without mixing target histories',
+);
+assert.equal(
+    sweeperSource.includes('loadSupersededTaskManifest(cwd, target)'),
+    true,
+    'target resolution must select the matching audited superseded ledger',
+);
+assert.equal(
     sweeperSource.includes('entry.expectedHeadSha !== remoteSha'),
     true,
     'superseded proof must be pinned to the exact current remote TASK head',
@@ -354,6 +364,25 @@ assert.equal(supersededManifest.target, 'AoT260922');
 assert.equal(new Set(supersededManifest.entries.map(entry => entry.branch)).size, supersededManifest.entries.length);
 for (const entry of supersededManifest.entries) {
     assert.match(entry.branch, /^aot-task\/AoT260922\/[a-z0-9-]+\/[a-z0-9-]+$/);
+    assert.match(entry.expectedHeadSha, /^[0-9a-f]{40}$/);
+    const replacementPrs = Array.isArray(entry.replacementPrs)
+        ? entry.replacementPrs
+        : [entry.replacementPr];
+    assert.ok(replacementPrs.length > 0);
+    assert.equal(replacementPrs.every(Number.isInteger), true);
+}
+
+const targetScopedSupersededManifest = JSON.parse(
+    fs.readFileSync(new URL('./task_sweeper_superseded_AoT260924.json', import.meta.url), 'utf8')
+);
+assert.equal(targetScopedSupersededManifest.schemaVersion, 1);
+assert.equal(targetScopedSupersededManifest.target, 'AoT260924');
+assert.equal(
+    new Set(targetScopedSupersededManifest.entries.map(entry => entry.branch)).size,
+    targetScopedSupersededManifest.entries.length,
+);
+for (const entry of targetScopedSupersededManifest.entries) {
+    assert.match(entry.branch, /^aot-task\/AoT260924\/[a-z0-9-]+\/[a-z0-9-]+$/);
     assert.match(entry.expectedHeadSha, /^[0-9a-f]{40}$/);
     const replacementPrs = Array.isArray(entry.replacementPrs)
         ? entry.replacementPrs

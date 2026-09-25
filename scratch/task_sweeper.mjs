@@ -73,14 +73,37 @@ function readConfig(key, cwd) {
     return git(['config', '--get', key], { cwd, allowFailure: true });
 }
 
-function loadSupersededTaskManifest(cwd) {
-    const manifestPath = path.join(cwd, 'scratch', 'task_sweeper_superseded.json');
-    if (!fs.existsSync(manifestPath)) return { schemaVersion: 1, target: '', entries: [] };
+function readSupersededTaskManifestFile(manifestPath) {
     const parsed = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
     if (parsed?.schemaVersion !== 1 || !Array.isArray(parsed.entries)) {
-        throw new Error('Invalid scratch/task_sweeper_superseded.json');
+        throw new Error(`Invalid ${path.relative(process.cwd(), manifestPath) || manifestPath}`);
     }
     return parsed;
+}
+
+function loadSupersededTaskManifest(cwd, target) {
+    const manifestPaths = [
+        path.join(cwd, 'scratch', 'task_sweeper_superseded.json'),
+        target ? path.join(cwd, 'scratch', `task_sweeper_superseded_${target}.json`) : '',
+    ].filter(Boolean);
+
+    const entries = [];
+    const seenBranches = new Set();
+    for (const manifestPath of manifestPaths) {
+        if (!fs.existsSync(manifestPath)) continue;
+        const parsed = readSupersededTaskManifestFile(manifestPath);
+        if (parsed.target && target && parsed.target !== target) continue;
+        for (const entry of parsed.entries) {
+            if (!entry?.branch) continue;
+            if (seenBranches.has(entry.branch)) {
+                throw new Error(`Duplicate audited superseded TASK entry: ${entry.branch}`);
+            }
+            seenBranches.add(entry.branch);
+            entries.push(entry);
+        }
+    }
+
+    return { schemaVersion: 1, target: target || '', entries };
 }
 
 function gitIsAncestor(ancestor, descendant, cwd) {
@@ -718,7 +741,7 @@ async function main() {
 
     const originUrl = git(['remote', 'get-url', 'origin'], { cwd });
     const githubRepo = parseGitHubRepo(originUrl);
-    const supersededManifest = loadSupersededTaskManifest(cwd);
+    const supersededManifest = loadSupersededTaskManifest(cwd, target);
     const openPrSnapshot = githubRepo
         ? await loadOpenPullRequestSnapshot(githubRepo)
         : { verified: false, pulls: [], reason: 'origin is not a supported github.com repository' };
