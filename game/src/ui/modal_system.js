@@ -138,6 +138,41 @@
             background: rgba(255, 255, 255, 0.15);
             color: #ffffff;
         }
+        .modal-system-choice-list {
+            display: grid;
+            gap: 10px;
+            margin: 14px 0 18px;
+        }
+        .modal-system-choice-btn {
+            width: 100%;
+            text-align: left;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.07);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+        }
+        .modal-system-choice-btn:hover:not(:disabled) {
+            background: rgba(26, 188, 156, 0.16);
+            border-color: rgba(26, 188, 156, 0.55);
+        }
+        .modal-system-choice-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .modal-system-choice-copy {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .modal-system-choice-desc {
+            color: #bdc3c7;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .modal-system-choice-cost {
+            color: #f1c40f;
+            white-space: nowrap;
+        }
 
         /* 🎬 ターン開始・試練アイキャッチ演出 (Eyecatch Banner) */
         .modal-system-eyecatch-banner {
@@ -254,6 +289,58 @@
                     close();
                     if (typeof onCancel === "function") onCancel();
                 }
+            };
+        }
+
+        static showChoiceDialog({ title, descText, choices = [], cancelLabel, onSelect, onCancel }) {
+            this.init();
+            const overlay = document.getElementById("modalSystemOverlay");
+            const content = document.getElementById("modalSystemContent");
+            const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
+            const cancelBtnText = cancelLabel || (I18n ? I18n.t("UI_CANCEL") : "✖ キャンセル");
+
+            const choiceHtml = choices.map((choice, index) => `
+                <button class="modal-system-btn modal-system-choice-btn" data-choice-index="${index}" ${choice.disabled ? "disabled" : ""}>
+                    <span class="modal-system-choice-copy">
+                        <strong>${choice.label || choice.id || ""}</strong>
+                        <span class="modal-system-choice-desc">${choice.description || ""}</span>
+                    </span>
+                    <span class="modal-system-choice-cost">${choice.costText || ""}</span>
+                </button>
+            `).join("");
+
+            content.innerHTML = `
+                <div class="modal-system-strip-card">
+                    <div class="modal-system-header-title"><span>${title}</span></div>
+                    <div class="modal-system-body-desc">${descText || ""}</div>
+                    <div class="modal-system-choice-list">${choiceHtml}</div>
+                    <div class="modal-system-actions">
+                        <button id="modalSysBtnCancel" class="modal-system-btn modal-system-btn-cancel">${cancelBtnText}</button>
+                    </div>
+                </div>
+            `;
+
+            overlay.classList.add("active");
+            const close = () => {
+                overlay.classList.remove("active");
+                setTimeout(() => { content.innerHTML = ""; }, 200);
+            };
+            content.querySelectorAll("[data-choice-index]").forEach(button => {
+                button.onclick = () => {
+                    const choice = choices[Number(button.dataset.choiceIndex)];
+                    if (!choice || choice.disabled) return;
+                    close();
+                    if (typeof onSelect === "function") onSelect(choice);
+                };
+            });
+            document.getElementById("modalSysBtnCancel").onclick = () => {
+                close();
+                if (typeof onCancel === "function") onCancel();
+            };
+            overlay.onclick = e => {
+                if (e.target !== overlay) return;
+                close();
+                if (typeof onCancel === "function") onCancel();
             };
         }
 
