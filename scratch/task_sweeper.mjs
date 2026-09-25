@@ -37,6 +37,16 @@ function countCommits(range, cwd) {
     return Number.parseInt(output, 10) || 0;
 }
 
+function refsHaveIdenticalTrees(leftRef, rightRef, cwd) {
+    if (!leftRef || !rightRef) return false;
+    const result = spawnSync('git', ['diff', '--quiet', leftRef, rightRef, '--'], {
+        cwd,
+        windowsHide: true,
+        stdio: 'ignore',
+    });
+    return result.status === 0;
+}
+
 function parseArgs(argv) {
     const result = { target: '', interactive: false, execute: false, confirm: '' };
     for (let i = 0; i < argv.length; i += 1) {
@@ -381,7 +391,7 @@ export function classifyTaskCandidate(state) {
     if (Array.isArray(state.openPrReferences) && state.openPrReferences.length > 0) {
         blockers.push(`open PR reference protects this TASK: ${formatOpenPullRequestReferences(state.openPrReferences)}`);
     }
-    if (state.uniqueCommits > 0 && !state.mergedPrVerified && !state.supersededVerified) {
+    if (state.uniqueCommits > 0 && !state.mergedPrVerified && !state.supersededVerified && !state.contentEquivalent) {
         const fallbackReason = state.remoteExists
             ? 'unique commits exist and merged PR could not be verified'
             : 'local-only TASK has unique commits and merged PR could not be verified';
@@ -391,6 +401,9 @@ export function classifyTaskCandidate(state) {
     if (blockers.length > 0) return { status: 'BLOCKED', blockers };
     if (state.uniqueCommits === 0) {
         return { status: 'SAFE', reason: 'no unique commits against target' };
+    }
+    if (state.contentEquivalent) {
+        return { status: 'SAFE', reason: 'TASK tree is content-equivalent to target' };
     }
     if (state.mergedPrVerified) {
         return { status: 'SAFE', reason: `merged PR #${state.mergedPrNumber} verified at current remote head` };
@@ -416,6 +429,9 @@ async function inspectCandidate(candidate, context) {
     const remoteSha = remoteRef ? git(['rev-parse', remoteRef], { cwd }) : '';
     const comparisonRef = remoteRef || localRef;
     const uniqueCommits = comparisonRef ? countCommits(`${targetRef}..${comparisonRef}`, cwd) : 0;
+    const contentEquivalent = Boolean(
+        comparisonRef && refsHaveIdenticalTrees(targetRef, comparisonRef, cwd),
+    );
     const unpushedCommits = localRef && remoteRef ? countCommits(`${remoteRef}..${localRef}`, cwd) : 0;
     const worktree = worktreeByBranch.get(candidate.branch) ?? null;
     const currentRoot = fs.realpathSync(cwd);
@@ -471,6 +487,7 @@ async function inspectCandidate(candidate, context) {
         localRemoteMismatch,
         unpushedCommits,
         uniqueCommits,
+        contentEquivalent,
         remoteExists: candidate.remoteExists,
         openPrLookupVerified,
         openPrReferences,
@@ -489,6 +506,7 @@ async function inspectCandidate(candidate, context) {
         localSha,
         remoteSha,
         uniqueCommits,
+        contentEquivalent,
         unpushedCommits,
         worktree,
         currentWorktree,
