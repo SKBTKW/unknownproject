@@ -388,6 +388,13 @@ const CONDITION_HANDLERS = {
         return preview.foodAfterProduction < preview.foodCost;
     },
 
+    // 📉 Economy-owned semantic material-shortage predicate.
+    // Cards consume this read model instead of embedding resource thresholds.
+    MATERIAL_SHORTAGE: (_params, context) => {
+        const query = context?.resourcePressureQuery || context?.engine?.resourcePressureQuery || null;
+        return query?.isMaterialShortage?.() === true;
+    },
+
     // ⚠️ Semantic Warning-state predicate; never exposes exact Trial timing.
     WARNING_STATE: (params, context) => {
         const order = ["CALM", "OMEN", "WATCH", "TENSE", "IMMINENT"];
