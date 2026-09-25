@@ -543,6 +543,11 @@ export class ZoneConversionService {
             reasons.push('ZONE_ATTRIBUTE_NOT_ALLOWED');
         }
 
+        if (definition.eligibleMergeTypes.length > 0
+            && !definition.eligibleMergeTypes.includes(zone.mergeType)) {
+            reasons.push('ZONE_MERGE_TYPE_NOT_ALLOWED');
+        }
+
         const resourceCheck = checkResourceRequirements(
             this.state,
             definition.requirements?.resources
