@@ -219,7 +219,7 @@ export class ZoneConversionService {
         }
         if (
             production.status !== ZONE_CONVERSION_PRODUCTION_STATUS.RESOLVED
-            || production.kind !== ZONE_CONVERSION_PRODUCTION_KINDS.PER_MEMBER_CELL
+            || !Object.values(ZONE_CONVERSION_PRODUCTION_KINDS).includes(production.kind)
         ) {
             return Object.freeze({
                 status: ZONE_CONVERSION_PRODUCTION_STATUS.UNRESOLVED,
@@ -230,8 +230,40 @@ export class ZoneConversionService {
             });
         }
 
-        const perMemberYields = normalizeZoneProductionYieldMap(production.perMemberYields);
-        if (!perMemberYields) {
+        const memberCount = Array.isArray(zone?.cells)
+            ? zone.cells.filter(cell => Number.isInteger(cell?.r) && Number.isInteger(cell?.c)).length
+            : 0;
+
+        if (production.kind === ZONE_CONVERSION_PRODUCTION_KINDS.PER_MEMBER_CELL) {
+            const perMemberYields = normalizeZoneProductionYieldMap(production.perMemberYields);
+            if (!perMemberYields) {
+                return Object.freeze({
+                    status: ZONE_CONVERSION_PRODUCTION_STATUS.UNRESOLVED,
+                    kind: production.kind,
+                    yields: zeroYields,
+                    memberCount: 0,
+                    groupId: String(groupId)
+                });
+            }
+
+            const yields = Object.freeze({
+                food: Number(perMemberYields.food || 0) * memberCount,
+                wood: Number(perMemberYields.wood || 0) * memberCount,
+                mystic: Number(perMemberYields.mystic || 0) * memberCount
+            });
+            return Object.freeze({
+                status: ZONE_CONVERSION_PRODUCTION_STATUS.RESOLVED,
+                kind: production.kind,
+                definitionId: conversion.definitionId || null,
+                perMemberYields,
+                yields,
+                memberCount,
+                groupId: String(groupId)
+            });
+        }
+
+        const fixedYields = normalizeZoneProductionYieldMap(production.fixedYields);
+        if (!fixedYields) {
             return Object.freeze({
                 status: ZONE_CONVERSION_PRODUCTION_STATUS.UNRESOLVED,
                 kind: production.kind,
@@ -241,20 +273,16 @@ export class ZoneConversionService {
             });
         }
 
-        const memberCount = Array.isArray(zone?.cells)
-            ? zone.cells.filter(cell => Number.isInteger(cell?.r) && Number.isInteger(cell?.c)).length
-            : 0;
-        const yields = Object.freeze({
-            food: Number(perMemberYields.food || 0) * memberCount,
-            wood: Number(perMemberYields.wood || 0) * memberCount,
-            mystic: Number(perMemberYields.mystic || 0) * memberCount
-        });
         return Object.freeze({
             status: ZONE_CONVERSION_PRODUCTION_STATUS.RESOLVED,
             kind: production.kind,
             definitionId: conversion.definitionId || null,
-            perMemberYields,
-            yields,
+            fixedYields,
+            yields: Object.freeze({
+                food: Number(fixedYields.food || 0),
+                wood: Number(fixedYields.wood || 0),
+                mystic: Number(fixedYields.mystic || 0)
+            }),
             memberCount,
             groupId: String(groupId)
         });
@@ -278,6 +306,16 @@ export class ZoneConversionService {
                 kind: resolved.kind,
                 definitionId: zone?.conversion?.definitionId || null,
                 groupId: String(groupId),
+                yields: Object.freeze({ food: 0, wood: 0, mystic: 0 })
+            });
+        }
+
+        if (resolved.kind !== ZONE_CONVERSION_PRODUCTION_KINDS.PER_MEMBER_CELL) {
+            return Object.freeze({
+                status: resolved.status,
+                kind: resolved.kind,
+                definitionId: resolved.definitionId,
+                groupId: resolved.groupId,
                 yields: Object.freeze({ food: 0, wood: 0, mystic: 0 })
             });
         }
