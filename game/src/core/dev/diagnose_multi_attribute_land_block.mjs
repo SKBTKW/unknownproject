@@ -330,6 +330,84 @@ const landSystemJson = JSON.parse(
 }
 
 {
+    // Presentation parity: an unzoned placementGroup displays the summed
+    // production of all constituent cells exactly once, regardless of whether
+    // the block is heterogeneous or homogeneous.
+    const cellViewDataService = new CellViewDataService();
+
+    const heterogeneous = createState();
+    heterogeneous.grid[0][0] = createCell(0, 0, {
+        placed: true,
+        placementGroupId: "display_multi",
+        terrain: { ...resolveCanonicalTerrainSemantic("GL1_PLAINS") },
+        production: {
+            status: LAND_PRODUCTION_STATUS.RESOLVED,
+            scope: LAND_PRODUCTION_SCOPE.CELL,
+            cellYields: { food: 4, wood: 0, defense: 0, mystic: 0 }
+        }
+    });
+    heterogeneous.grid[0][1] = createCell(0, 1, {
+        placed: true,
+        placementGroupId: "display_multi",
+        terrain: { ...resolveCanonicalTerrainSemantic("E2_HILL") },
+        production: {
+            status: LAND_PRODUCTION_STATUS.RESOLVED,
+            scope: LAND_PRODUCTION_SCOPE.CELL,
+            cellYields: { food: 2, wood: 1, defense: 1, mystic: 0 }
+        }
+    });
+
+    const heterogeneousPrimary = cellViewDataService.getCellViewData(heterogeneous, 0, 0);
+    const heterogeneousSecondary = cellViewDataService.getCellViewData(heterogeneous, 0, 1);
+    assert.equal(resolveBoardDisplayRole(heterogeneous, heterogeneousPrimary), "LAND_PRIMARY");
+    assert.equal(resolveBoardDisplayRole(heterogeneous, heterogeneousSecondary), "CLEAN");
+
+    const heterogeneousDisplay = resolveBoardDisplayProduction(
+        heterogeneous,
+        heterogeneousPrimary,
+        cellViewDataService
+    );
+    assert.equal(heterogeneousDisplay.food, 6);
+    assert.equal(heterogeneousDisplay.wood, 1);
+    assert.equal(heterogeneousDisplay.defense, 1);
+    assert.equal(heterogeneousDisplay.mystic, 0);
+    assert.deepEqual(heterogeneousDisplay.primaryYield, { resource: "food", amount: 6 });
+    assert.equal(
+        resolveBoardDisplayProduction(heterogeneous, heterogeneousSecondary, cellViewDataService),
+        null
+    );
+
+    const homogeneous = createState();
+    for (const c of [0, 1]) {
+        homogeneous.grid[0][c] = createCell(0, c, {
+            placed: true,
+            placementGroupId: "display_plains_1x2",
+            terrain: { ...resolveCanonicalTerrainSemantic("GL1_PLAINS") }
+        });
+    }
+
+    const homogeneousPrimary = cellViewDataService.getCellViewData(homogeneous, 0, 0);
+    const homogeneousSecondary = cellViewDataService.getCellViewData(homogeneous, 0, 1);
+    assert.equal(resolveBoardDisplayRole(homogeneous, homogeneousPrimary), "LAND_PRIMARY");
+    assert.equal(resolveBoardDisplayRole(homogeneous, homogeneousSecondary), "CLEAN");
+
+    const homogeneousDisplay = resolveBoardDisplayProduction(
+        homogeneous,
+        homogeneousPrimary,
+        cellViewDataService
+    );
+    assert.equal(homogeneousDisplay.food, 8);
+    assert.equal(homogeneousDisplay.wood, 0);
+    assert.equal(homogeneousDisplay.defense, 0);
+    assert.equal(homogeneousDisplay.mystic, 0);
+    assert.deepEqual(homogeneousDisplay.primaryYield, { resource: "food", amount: 8 });
+    assert.equal(
+        resolveBoardDisplayProduction(homogeneous, homogeneousSecondary, cellViewDataService),
+        null
+    );
+}
+
+{
     for (const card of actualMultiCards) {
         for (const cell of card.cells || []) {
             assert.deepEqual(
