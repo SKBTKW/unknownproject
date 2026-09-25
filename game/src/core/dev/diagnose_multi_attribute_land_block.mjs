@@ -1709,6 +1709,71 @@ const landSystemJson = JSON.parse(
 }
 
 {
+    // Partial Zone membership must not split Trial block identity. Even when
+    // one cell has mergeGroupId and the other does not, placementGroupId stays
+    // authoritative for one-Block-per-Trial-planning semantics.
+    const makeState = () => {
+        const state = createState();
+        state.grid[1][0] = createCell(1, 0, {
+            placed: true,
+            merged: true,
+            mergeGroupId: "zone_plains_partial",
+            mergeType: "1x2",
+            placementGroupId: "place_multi_partial_zone",
+            terrain: { ...PLAINS }
+        });
+        state.grid[1][1] = createCell(1, 1, {
+            placed: true,
+            merged: false,
+            mergeGroupId: null,
+            mergeType: null,
+            placementGroupId: "place_multi_partial_zone",
+            terrain: { ...HILL }
+        });
+        return state;
+    };
+
+    const routes = [
+        { id: "R_ZONE", cells: [{ r: 1, c: 0 }] },
+        { id: "R_REMAINDER", cells: [{ r: 1, c: 1 }] }
+    ];
+
+    for (const order of [
+        [
+            { routeId: "R_ZONE", interceptCell: { r: 1, c: 0 } },
+            { routeId: "R_REMAINDER", interceptCell: { r: 1, c: 1 } }
+        ],
+        [
+            { routeId: "R_REMAINDER", interceptCell: { r: 1, c: 1 } },
+            { routeId: "R_ZONE", interceptCell: { r: 1, c: 0 } }
+        ]
+    ]) {
+        const state = makeState();
+        const drafts = new Map();
+        const cellResolver = (r, c) => state.grid[r][c];
+
+        const first = TrialPlanningDraftService.setIntercept(drafts, {
+            ...order[0],
+            defenseAllocation: 1,
+            availableDefense: 10,
+            routes,
+            cellResolver
+        });
+        assert.equal(first.success, true);
+
+        const second = TrialPlanningDraftService.setIntercept(drafts, {
+            ...order[1],
+            defenseAllocation: 1,
+            availableDefense: 10,
+            routes,
+            cellResolver
+        });
+        assert.equal(second.success, false);
+        assert.equal(second.reason, TRIAL_PLAN_REASONS.BLOCK_ALREADY_PLANNED);
+    }
+}
+
+{
     const state = createState();
     state.grid[1][0] = createCell(1, 0, {
         placed: true,
