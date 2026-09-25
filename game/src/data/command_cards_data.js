@@ -12,7 +12,22 @@ export const ECONOMY_CARDS_MASTER = [
       "FOOD",
       "EMERGENCY"
     ],
-    "reqFoodDeficitOrFallback": true,
+    "offering": {
+      "requirements": [
+        {
+          "id": "RATIONING_TURN_END_FOOD_DEFICIT",
+          "type": "TURN_END_FOOD_DEFICIT"
+        }
+      ]
+    },
+    "execution": {
+      "requirements": [
+        {
+          "id": "RATIONING_TURN_END_FOOD_DEFICIT",
+          "type": "TURN_END_FOOD_DEFICIT"
+        }
+      ]
+    },
     "minStage": 1,
     "rarity": "C",
     "weight": 0.4,
