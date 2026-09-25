@@ -555,7 +555,9 @@ function makeGrid(rows, cols) {
         addBuff(buff) { this.activeBuffs.push(buff); },
         addLog(log) { this.logs.push(log); }
     };
-    const emergencyManager = new DeckManager(emergencyState, {});
+    const emergencyManager = new DeckManager(emergencyState, {
+        resourcePressureQuery: new ResourcePressureReadModel({ state: emergencyState })
+    });
     emergencyManager.cycleSystem = null;
     const emergencyResult = emergencyManager.playCommandCard(emergency);
 
