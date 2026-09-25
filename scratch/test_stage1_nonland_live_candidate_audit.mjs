@@ -84,6 +84,14 @@ for (const id of PROTOTYPE) {
 {
     const card = byId.get("CMD_EMERGENCY_LEVY");
     assert.equal(card.cost.food, 20);
+    assert.equal(card.reqWoodDeficit, undefined,
+        "Emergency Levy must not retain the legacy card-owned material threshold");
+    assert.deepEqual(card.offering?.requirements, [{
+        id: "EMERGENCY_LEVY_MATERIAL_SHORTAGE",
+        type: "MATERIAL_SHORTAGE"
+    }]);
+    assert.deepEqual(card.execution?.requirements, card.offering?.requirements,
+        "Emergency Levy Offering and Execution must share one material-shortage semantic gate");
     assert.ok(effect("CMD_EMERGENCY_LEVY", "RESOURCE_DELTA",
         item => item.resource === "wood" && item.amount === 15));
     assert.equal(Boolean(effect("CMD_EMERGENCY_LEVY", "STATE_SET")), false,

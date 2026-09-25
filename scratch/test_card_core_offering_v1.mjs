@@ -3,6 +3,10 @@ import { readFileSync } from "node:fs";
 
 import { DeckManager } from "../game/src/systems/deck_manager.js";
 import { GameEngine } from "../game/src/core/game_engine.js";
+import {
+    DEFAULT_MATERIAL_SHORTAGE_THRESHOLD,
+    ResourcePressureReadModel
+} from "../game/src/systems/resource_pressure_read_model.js";
 import { UIController } from "../game/src/ui/ui_controller.js";
 import { DefenseSystem } from "../game/src/systems/defense_system.js";
 import { TerrainTransformService } from "../game/src/systems/terrain_transform_service.js";
@@ -551,7 +555,9 @@ function makeGrid(rows, cols) {
         addBuff(buff) { this.activeBuffs.push(buff); },
         addLog(log) { this.logs.push(log); }
     };
-    const emergencyManager = new DeckManager(emergencyState, {});
+    const emergencyManager = new DeckManager(emergencyState, {
+        resourcePressureQuery: new ResourcePressureReadModel({ state: emergencyState })
+    });
     emergencyManager.cycleSystem = null;
     const emergencyResult = emergencyManager.playCommandCard(emergency);
 
@@ -2365,7 +2371,46 @@ function makeGrid(rows, cols) {
     );
 }
 
-// AW. Delayed irrigation completes on the authored Verse; expedited irrigation is immediate.
+// AW. Material shortage is Economy-owned and preserves the legacy <=30 compatibility threshold.
+{
+    assert.equal(DEFAULT_MATERIAL_SHORTAGE_THRESHOLD, 30);
+
+    const state = { wood: 30, material: 30 };
+    const pressure = new ResourcePressureReadModel({ state });
+    assert.equal(pressure.isMaterialShortage(), true);
+    state.wood = 31;
+    state.material = 31;
+    assert.equal(pressure.isMaterialShortage(), false);
+
+    const requirement = { type: "MATERIAL_SHORTAGE" };
+    assert.equal(ConditionEvaluator.evaluateStrict(requirement, {}), false,
+        "material shortage must fail closed without the Economy read model");
+    assert.equal(ConditionEvaluator.evaluateStrict(requirement, {
+        resourcePressureQuery: new ResourcePressureReadModel({
+            state: { wood: 30, material: 30 }
+        })
+    }), true);
+
+    const engine = GameEngine.createGame({ runSeed: 2026092501 });
+    engine.state.wood = 30;
+    engine.state.material = 30;
+    assert.equal(engine.evaluateWorldEligibilityRequirement(requirement), true);
+    engine.state.wood = 31;
+    engine.state.material = 31;
+    assert.equal(engine.evaluateWorldEligibilityRequirement(requirement), false);
+
+    const levy = COMMAND_CARDS_MASTER.find(card => card.id === "CMD_EMERGENCY_LEVY");
+    assert.equal(levy.reqWoodDeficit, undefined,
+        "Emergency Levy must not retain the legacy card-owned wood threshold");
+    assert.deepEqual(levy.offering?.requirements, [{
+        id: "EMERGENCY_LEVY_MATERIAL_SHORTAGE",
+        type: "MATERIAL_SHORTAGE"
+    }]);
+    assert.deepEqual(levy.execution?.requirements, levy.offering?.requirements,
+        "Emergency Levy Offering and Execution must share the same shortage fact");
+}
+
+// AX. Delayed irrigation completes on the authored Verse; expedited irrigation is immediate.
 {
     const makeWetlandState = () => ({
         grid: [[{

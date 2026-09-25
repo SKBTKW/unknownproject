@@ -15,6 +15,7 @@ import { ChronicleSystem } from '../systems/chronicle_system.js';
 import { GlobalEventManager } from '../systems/global_event_system.js';
 import { ConditionEvaluator } from './condition_evaluator.js';
 import { RunHistoryReadModel } from '../systems/run_history_read_model.js';
+import { ResourcePressureReadModel } from '../systems/resource_pressure_read_model.js';
 import { EmberSystem } from '../systems/ember_system.js';
 import { CardCycleSystem } from '../systems/card_cycle_system.js';
 import { MaintenanceFallbackSystem } from '../systems/maintenance_fallback_system.js';
@@ -120,6 +121,9 @@ class GameEngine {
             || this.boardDomainAdapter?.zoneConversionService
             || null;
 
+        this.resourcePressureQuery = dependencies.resourcePressureQuery
+            || new ResourcePressureReadModel({ state: this.state });
+
         this.cardDomainActionExecutor = dependencies.cardDomainActionExecutor
             || createCardDomainActionExecutor(this);
 
@@ -152,7 +156,8 @@ class GameEngine {
             engine: this,
             boardQuery: this.boardWorldQuery || null,
             historyQuery: this.runHistoryReadModel || null,
-            warningStateService: this.warningStateService || null
+            warningStateService: this.warningStateService || null,
+            resourcePressureQuery: this.resourcePressureQuery || null
         });
         this.evaluateWorldEligibilityRequirement = (requirement) =>
             ConditionEvaluator.evaluateStrict(requirement, this.getWorldEligibilityContext());

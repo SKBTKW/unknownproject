@@ -65,6 +65,7 @@ class DeckManager {
                     state: this.state,
                     engine: this.engine,
                     boardQuery: this.cardOfferingBoardQuery,
+                    resourcePressureQuery: this.engine?.resourcePressureQuery || null,
                     ...context
                 }));
             }
@@ -89,6 +90,7 @@ class DeckManager {
                 return Boolean(ConditionEvaluator.evaluate(requirement, {
                     state: this.state,
                     engine: this.engine,
+                    resourcePressureQuery: this.engine?.resourcePressureQuery || null,
                     ...context
                 }));
             }

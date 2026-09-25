@@ -277,7 +277,22 @@ export const ECONOMY_CARDS_MASTER = [
       "MATERIAL",
       "EMERGENCY"
     ],
-    "reqWoodDeficit": true,
+    "offering": {
+      "requirements": [
+        {
+          "id": "EMERGENCY_LEVY_MATERIAL_SHORTAGE",
+          "type": "MATERIAL_SHORTAGE"
+        }
+      ]
+    },
+    "execution": {
+      "requirements": [
+        {
+          "id": "EMERGENCY_LEVY_MATERIAL_SHORTAGE",
+          "type": "MATERIAL_SHORTAGE"
+        }
+      ]
+    },
     "reqFood": 20,
     "minStage": 1,
     "rarity": "C",
@@ -1538,7 +1553,22 @@ export const COMMAND_CARDS_MASTER = [
       "MATERIAL",
       "EMERGENCY"
     ],
-    "reqWoodDeficit": true,
+    "offering": {
+      "requirements": [
+        {
+          "id": "EMERGENCY_LEVY_MATERIAL_SHORTAGE",
+          "type": "MATERIAL_SHORTAGE"
+        }
+      ]
+    },
+    "execution": {
+      "requirements": [
+        {
+          "id": "EMERGENCY_LEVY_MATERIAL_SHORTAGE",
+          "type": "MATERIAL_SHORTAGE"
+        }
+      ]
+    },
     "reqFood": 20,
     "minStage": 1,
     "rarity": "C",

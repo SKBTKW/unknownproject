@@ -110,6 +110,26 @@ console.log("\nStage1 prototype cards: Offering -> payment -> effect -> Verse pr
     assert.equal(engine.deckManager.isCardEligible(card, 1, 0), true);
     generateOnlyPrototype(engine, id);
 
+    const recovered = createPrototypeEngine(id, 2026092411);
+    recovered.state.food = 50;
+    recovered.state.wood = 31;
+    recovered.state.material = 31;
+    assert.equal(recovered.deckManager.isCardEligible(card, 1, 0), false,
+        "Levy must stay out once material shortage has cleared");
+    const recoveredSnapshot = {
+        food: recovered.state.food,
+        wood: recovered.state.wood,
+        material: recovered.state.material
+    };
+    const recoveredResult = recovered.state.playCommandCard(card);
+    assert.equal(recoveredResult.success, false);
+    assert.equal(recoveredResult.reason, "EMERGENCY_LEVY_MATERIAL_SHORTAGE");
+    assert.deepEqual({
+        food: recovered.state.food,
+        wood: recovered.state.wood,
+        material: recovered.state.material
+    }, recoveredSnapshot, "recovered material state must reject stale Levy before payment/effect");
+
     const before = { food: state.food, wood: state.wood, material: state.material };
     const played = state.playCommandCard(card);
     assert.equal(played.success, true);
