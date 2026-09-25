@@ -8,7 +8,7 @@
  * Evidence after the Stage1 Board adjacency contract refresh
  * (8 seeded live Verse15 runs):
  * - current Stage1 food/material card max recovery PVE: 0.83
- * - FirstRun Trial1 heavy (80% defense, far) recovery PVE: 5.72..8.04
+ * - FirstRun Trial1 heavy (80% defense, far) recovery PVE: 6.13..8.60
  * - FirstRun Trial1 all-in (100% defense, far) recovery PVE: 6.50..9.04
  *
  * Rounded guardrails intentionally leave a large unallocated middle band for
@@ -30,8 +30,8 @@ export const ECONOMY_COST_AUTHORING_ANCHORS_V1 = Object.freeze({
             maxExclusive: 5.5
         }),
         firstRunTrial1Heavy: Object.freeze({
-            min: 5.5,
-            max: 8.1
+            min: 6.0,
+            max: 8.7
         }),
         firstRunTrial1AllIn: Object.freeze({
             min: 6.5,
