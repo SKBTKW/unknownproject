@@ -5,6 +5,7 @@ import { WarningStateService } from "../game/src/warning/systems/warning_state_s
 import { COMMAND_CARDS_MASTER } from "../game/src/data/command_cards_data.js";
 
 const IDS = Object.freeze([
+    "CMD_RATIONING",
     "CMD_EMERGENCY_LEVY",
     "CMD_VIGILANCE",
     "CMD_REKINDLE_EMBER"
@@ -50,6 +51,51 @@ function generateOnlyPrototype(engine, id) {
 }
 
 console.log("\nStage1 prototype cards: Offering -> payment -> effect -> Verse progression");
+
+{
+    const id = "CMD_RATIONING";
+    const card = definition(id);
+    const engine = createPrototypeEngine(id, 2026092400);
+    const state = engine.state;
+
+    state.ember = 20;
+    state.food = 50;
+    state.calculateTotalProduction = () => ({
+        grossFood: 0,
+        totalWood: 0,
+        totalMystic: 0
+    });
+
+    assert.equal(
+        engine.deckManager.isCardEligible(card, 1, 0),
+        false,
+        "Rationing must stay out when turn-end food maintenance is already affordable"
+    );
+
+    state.food = 10;
+    const crisisPreview = engine.previewTurnEndMaintenance({ autoFallbackEnabled: false });
+    assert.ok(crisisPreview.foodAfterProduction < crisisPreview.foodCost);
+    assert.equal(engine.deckManager.isCardEligible(card, 1, 0), true);
+    generateOnlyPrototype(engine, id);
+
+    const recovered = createPrototypeEngine(id, 2026092410);
+    recovered.state.ember = 20;
+    recovered.state.food = 50;
+    recovered.state.calculateTotalProduction = state.calculateTotalProduction;
+    const recoveredResult = recovered.state.playCommandCard(card);
+    assert.equal(recoveredResult.success, false);
+    assert.equal(recoveredResult.reason, "RATIONING_TURN_END_FOOD_DEFICIT");
+    assert.equal(recovered.state.foodCostHalvedTurns || 0, 0,
+        "recovered food state must reject stale Rationing before effect");
+
+    const played = state.playCommandCard(card);
+    assert.equal(played.success, true);
+    assert.equal(state.foodCostHalvedTurns, 1);
+    const rationedPreview = engine.previewTurnEndMaintenance({ autoFallbackEnabled: false });
+    assert.equal(rationedPreview.foodCost, Math.floor(crisisPreview.foodCost / 2));
+    assert.equal(rationedPreview.deficit, 0,
+        "Rationing must remove the tested turn-end food deficit");
+}
 
 {
     const id = "CMD_EMERGENCY_LEVY";
@@ -209,6 +255,7 @@ console.log("\nStage1 prototype cards: Offering -> payment -> effect -> Verse pr
     }
 }
 
+console.log("  CMD_RATIONING: maintenance-preview gate + 50% upkeep PASS");
 console.log("  CMD_EMERGENCY_LEVY: Offering + 🌾 payment + 🧱 conversion + next Verse PASS");
 console.log("  CMD_VIGILANCE: Offering + 🧱 payment + delayed defense buff PASS");
 console.log("  CMD_REKINDLE_EMBER: Offering + ✨ payment + 🔥 recovery + no persistent waiver PASS");

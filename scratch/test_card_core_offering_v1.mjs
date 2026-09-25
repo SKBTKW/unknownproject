@@ -811,7 +811,15 @@ function makeGrid(rows, cols) {
             addLog(log) { this.logs.push(log); },
             ...testCase.initial
         };
-        const manager = new DeckManager(state, {});
+        const engine = testCase.id === "CMD_RATIONING"
+            ? {
+                previewTurnEndMaintenance: () => ({
+                    foodAfterProduction: 10,
+                    foodCost: 20
+                })
+            }
+            : {};
+        const manager = new DeckManager(state, engine);
         manager.cycleSystem = null;
         const result = manager.playCommandCard(card);
 

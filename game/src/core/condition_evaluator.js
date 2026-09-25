@@ -376,6 +376,18 @@ const CONDITION_HANDLERS = {
         return context?.historyQuery?.matches?.(params) === true;
     },
 
+    // 🍞 Turn-end maintenance preview predicate. Uses the same production + maintenance
+    // authority as Verse commit instead of a fixed current-food threshold.
+    TURN_END_FOOD_DEFICIT: (_params, context) => {
+        const preview = context?.engine?.previewTurnEndMaintenance?.({
+            autoFallbackEnabled: false
+        });
+        if (!preview || !Number.isFinite(preview.foodAfterProduction) || !Number.isFinite(preview.foodCost)) {
+            return false;
+        }
+        return preview.foodAfterProduction < preview.foodCost;
+    },
+
     // ⚠️ Semantic Warning-state predicate; never exposes exact Trial timing.
     WARNING_STATE: (params, context) => {
         const order = ["CALM", "OMEN", "WATCH", "TENSE", "IMMINENT"];
