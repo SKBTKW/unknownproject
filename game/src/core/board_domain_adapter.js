@@ -257,6 +257,10 @@ export class BoardDomainAdapter {
         return this.terrainTransformService.transform(spec, target, context);
     }
 
+    processScheduledTerrainDevelopments(verse) {
+        return this.terrainTransformService.processScheduledDevelopments(verse);
+    }
+
     validateSpecialBlockTarget(typeOrDefinition, target, context = {}) {
         return this.specialBlockService.validateTarget(typeOrDefinition, target, context);
     }
