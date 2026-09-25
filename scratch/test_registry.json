@@ -988,6 +988,14 @@
       ]
     },
     {
+      "path": "scratch/test_resettlement_zone_conversion_v2.mjs",
+      "purpose": "verify Resettlement canonical 2x2 PLAINS targeting, Board-owned payment, immediate Ember reward, fixed per-Zone food production, and legacy branch retirement",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_stage1_logging_camp_domain_bridge_v1.mjs",
       "purpose": "verify Logging Camp delegates to Board Special Block semantics, unresolved pricing fails closed, and resolved Special Block Domain quotes pay atomically",
       "suite": "existing",
