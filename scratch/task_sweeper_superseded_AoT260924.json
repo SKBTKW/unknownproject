@@ -3,6 +3,119 @@
   "target": "AoT260924",
   "entries": [
     {
+      "branch": "aot-task/AoT260924/balance/first-run-trial1-relative-burden-tune-v2",
+      "expectedHeadSha": "ce13c8a2f90845e5bc73a369e0d368e4994acdeb",
+      "replacementPrs": [
+        266,
+        275,
+        367
+      ],
+      "note": "The tuning branch's production coefficient and burden-probe changes are superseded by the canonical FirstRun Trial1 relative deployment implementation in PR #266, defense-relative probe normalization in PR #275, and final 76% heavy-burden tuning in PR #367."
+    },
+    {
+      "branch": "aot-task/AoT260924/balance/first-run-trial1-relative-burden-tune-v2-rebase",
+      "expectedHeadSha": "be784f59bd2e38116f5d1829baf131214c1cea26",
+      "replacementPrs": [
+        266,
+        275,
+        367
+      ],
+      "note": "This intermediate rebase of the Trial1 burden tuning is superseded by the canonical relative deployment implementation in PR #266, defense-relative probe normalization in PR #275, and final 76% heavy-burden tuning in PR #367."
+    },
+    {
+      "branch": "aot-task/AoT260924/balance/first-run-trial1-relative-deployment-cost-v1-rebase",
+      "expectedHeadSha": "55cb1f28fe363f64e2f3cceee78eab79763f116f",
+      "replacementPrs": [
+        266,
+        270,
+        275,
+        367
+      ],
+      "note": "The stale current-base replay of FirstRun Trial1 relative deployment composition is superseded by PR #266's canonical product implementation, PR #270's payment integration proof, PR #275's defense-relative probe semantics, and PR #367's final burden tuning."
+    },
+    {
+      "branch": "aot-task/AoT260924/balance/first-run-trial1-relative-deployment-v1",
+      "expectedHeadSha": "9406b9265df17d90f7525fbb9fb477bfbdd050e8",
+      "replacementPrs": [
+        266,
+        270,
+        275,
+        367
+      ],
+      "note": "The original scenario-scoped relative deployment prototype is superseded by PR #266's canonical FirstRun Trial1 applicability/composition, PR #270's runtime payment integration, PR #275's relative probe semantics, and PR #367's final 76% heavy-burden tuning."
+    },
+    {
+      "branch": "aot-task/AoT260924/balance/first-run-trial1-relative-deployment-v1-rebase",
+      "expectedHeadSha": "0e3f5bfb85574ddfd5e2c05c3e36002d5f6e862f",
+      "replacementPrs": [
+        266,
+        270,
+        275,
+        367
+      ],
+      "note": "This partial replay of the original relative deployment prototype is superseded by the merged canonical FirstRun Trial1 deployment chain: product composition #266, payment integration #270, probe normalization #275, and final burden tuning #367."
+    },
+    {
+      "branch": "aot-task/AoT260924/balance/stage1-prototype-card-first-eligible-pve-v1",
+      "expectedHeadSha": "568b98479299492f4e320e4ad67ea5d94e8604f7",
+      "replacementPr": 368,
+      "note": "The mature-vs-first-eligible Stage1 PVE audit was cleanly superseded by the current-base implementation merged as PR #368, which updates the same authoring-anchor and live-audit boundaries."
+    },
+    {
+      "branch": "aot-task/AoT260924/balance/stage1-prototype-card-first-eligible-pve-v1-rebase",
+      "expectedHeadSha": "568b98479299492f4e320e4ad67ea5d94e8604f7",
+      "replacementPr": 368,
+      "note": "This duplicate branch points at the same audited head as the original first-eligible PVE branch and is superseded by the current-base implementation merged as PR #368."
+    },
+    {
+      "branch": "aot-task/AoT260924/balance/stage1-pve-curve-audit-v1",
+      "expectedHeadSha": "d59aec459046913e1c51c179fd082d764e40d4aa",
+      "replacementPr": 300,
+      "note": "The checkpoint PVE-curve audit is superseded by PR #300's merged Stage1 production-curve and card-timing audit, which expands the live economy timeline beyond the older V1/V5/V8/V12/V15-only observation."
+    },
+    {
+      "branch": "aot-task/AoT260924/balance/stage1-trial1-experience-audit-r2",
+      "expectedHeadSha": "95d093ae4568954cfa8a35ce4186c931de3b4c2e",
+      "replacementPrs": [
+        231,
+        293,
+        296,
+        298,
+        300,
+        343,
+        368
+      ],
+      "note": "This stale replay of the live Stage1 Trial1 experience audit is superseded by the merged audit lineage: initial live audit #231, PVE conversion #293, card BVE/PVE scale #296, authoring anchors #298, production/card-timing curve #300, anchor rebaseline #343, and first-eligible semantics #368."
+    },
+    {
+      "branch": "aot-task/AoT260924/balance/stage1-trial1-experience-audit-r3",
+      "expectedHeadSha": "b51e73e9eed8ae0c61b3e55117a01b1c01171173",
+      "replacementPrs": [
+        231,
+        293,
+        296,
+        298,
+        300,
+        343,
+        368
+      ],
+      "note": "This later unmerged replay of the same live Stage1 Trial1 audit is superseded by the canonical merged audit lineage through PRs #231, #293, #296, #298, #300, #343, and #368."
+    },
+    {
+      "branch": "aot-task/AoT260924/balance/stage1-trial1-experience-audit-rebase",
+      "expectedHeadSha": "0e70582ab94ed68edaf7a9ad824e50b9ae95a106",
+      "replacementPrs": [
+        231,
+        293,
+        296,
+        298,
+        300,
+        343,
+        368
+      ],
+      "note": "This rebase of the live Trial1 audit carries the same audit/runner/registry scope and is superseded by the merged canonical audit lineage through PRs #231, #293, #296, #298, #300, #343, and #368."
+    },
+    {
       "branch": "aot-task/AoT260924/board/special-block-creation-cost-quote-v1",
       "expectedHeadSha": "1f3bd2ddafdd6a7ec35743aeea456337ab9e275f",
       "replacementPr": 328,
