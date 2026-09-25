@@ -45,7 +45,6 @@ export const ECONOMY_CARDS_MASTER = [
     "descriptionKey": "CMD_WETLAND_RECLAMATION_DESC",
     "cost": {},
     "tags": ["WETLAND", "RECLAIMED", "WATER", "FOOD", "DEVELOPMENT", "PROJECT"],
-    "reqWetland": 1,
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.25,
@@ -1292,7 +1291,6 @@ export const COMMAND_CARDS_MASTER = [
       "DEVELOPMENT",
       "PROJECT"
     ],
-    "reqWetland": 1,
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.25,
