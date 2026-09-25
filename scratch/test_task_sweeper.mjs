@@ -19,6 +19,7 @@ const base = {
     localRemoteMismatch: false,
     unpushedCommits: 0,
     uniqueCommits: 0,
+    contentEquivalent: false,
     remoteExists: true,
     openPrLookupVerified: true,
     openPrReferences: [],
@@ -43,6 +44,18 @@ const tests = [
     ['unpushed commits block', { ...base, unpushedCommits: 1 }, 'BLOCKED'],
     ['local-only unique commits block', { ...base, remoteExists: false, uniqueCommits: 1 }, 'BLOCKED'],
     ['unverified unique remote commits block', { ...base, uniqueCommits: 1, prReason: 'No merged PR' }, 'BLOCKED'],
+    ['content-equivalent unique remote commits are safe', {
+        ...base,
+        uniqueCommits: 4,
+        contentEquivalent: true,
+        prReason: 'No merged PR',
+    }, 'SAFE'],
+    ['content-equivalent TASK still blocks while referenced by an open PR', {
+        ...base,
+        uniqueCommits: 4,
+        contentEquivalent: true,
+        openPrReferences: [{ number: 80, role: 'head' }],
+    }, 'BLOCKED'],
     ['zero-unique TASK used as open PR head blocks', {
         ...base,
         openPrReferences: [{ number: 77, role: 'head' }],
@@ -295,9 +308,19 @@ assert.equal(
     'replacement PR merge commit must already be contained in the integration target',
 );
 assert.equal(
-    sweeperSource.includes('!state.mergedPrVerified && !state.supersededVerified'),
+    sweeperSource.includes('!state.mergedPrVerified && !state.supersededVerified && !state.contentEquivalent'),
     true,
-    'unique commits may bypass the normal merged-head proof only through an audited supersession proof',
+    'unique commits may bypass the normal merged-head proof only through audited supersession or exact tree equivalence',
+);
+assert.equal(
+    sweeperSource.includes("spawnSync('git', ['diff', '--quiet', leftRef, rightRef, '--']"),
+    true,
+    'content-equivalent cleanup must compare complete endpoint trees and fail closed on git diff errors',
+);
+assert.equal(
+    sweeperSource.includes("reason: 'TASK tree is content-equivalent to target'"),
+    true,
+    'content-equivalent TASK cleanup must be explicit in the dry-run report',
 );
 
 const supersededManifest = JSON.parse(
@@ -326,4 +349,4 @@ assert.equal(
     'GitHub header helper must not recurse into itself',
 );
 
-console.log(`✅ AoT Task Sweeper safety contract: ${passed}/17 classifications PASS + open PR head/base protection + cleanup revalidation + naming/launcher contract PASS`);
+console.log(`✅ AoT Task Sweeper safety contract: ${passed}/19 classifications PASS + content-equivalence + open PR head/base protection + cleanup revalidation + naming/launcher contract PASS`);
