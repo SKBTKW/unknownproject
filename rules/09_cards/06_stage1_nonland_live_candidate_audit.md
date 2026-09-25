@@ -21,7 +21,7 @@ Stage1非LAND 15枚を一括で復帰させてはいけない。
 | `CMD_VIGILANCE` | Trial前防衛準備 | 🧱15 | 2Tの`vigilanceTurns`をDefenseSystem / turn lifecycleが実際に消費する |
 | `CMD_REKINDLE_EMBER` | 神秘→🔥救済 | ✨10 | v1は`🔥+3`の即時回復に単純化。保留維持費免除は分離済み |
 | `CMD_GRANARY` | 盤面恒久投資 | 🧱20 | `GRANARY` Special Blockを対象指定で設置し、`FOOD_STORAGE` Capability経由で維持費-2（最大2基分）まで接続済み |
-| `CMD_WETLAND_RECLAMATION` | 湿原変換 | 🧱15＋🔥1 | explicit targetの`TRANSFORM_TERRAIN` Domain Actionで湿原1マスを干拓地へ変換。湖/HQ/完成ZoneはBoard側でfail-closed |
+| `CMD_WETLAND_RECLAMATION` | 《灌漑計画》 / 湿原変換 | A:🧱30 / B:🧱70 / C:🧱110 | Investment Variant v1。A=干拓、B=干拓＋2Verse後水源化、C=即時水源化。合法targetは各Variantの`TRANSFORM_TERRAIN`をBoard側で列挙し、湖/HQ/完成Zoneはfail-closed。 |
 | `CMD_AGRICULTURAL_REFORM` | 平地Zone恒久投資 | 🧱20 | 完成済みPLAINS Zone 1つへZone Conversionを付与し、各メンバー🌾+1/Verse。Domain quote/atomic commit接続済み |
 
 ここでの「候補」は **今すぐ通常Offeringへ有効化する** という意味ではない。
@@ -75,7 +75,7 @@ A候補5枚でも、Stage1平時sinkはまだ不足する。
 - `CMD_VIGILANCE`: 🧱15 の明確なTrial準備sink
 - `CMD_REKINDLE_EMBER`: ✨10を使うが `maxEmber: 5` の救済条件なので通常Runで常用しない
 - `CMD_GRANARY`: 🧱20を恒久施設へ変える本命sink候補。ただしproduction既定OFFのままprototypeで検証する
-- `CMD_WETLAND_RECLAMATION`: 🧱15＋🔥1を盤面価値へ変える土地投資sink。production既定OFFのままprototypeで検証する
+- `CMD_WETLAND_RECLAMATION`: 《灌漑計画》として🧱30/70/110の追加投資型sinkへ更新。干拓のみ / 2Verse工事 / 即時完成を1枚に圧縮し、使用機会を広げるモデルカードとして扱う
 - `CMD_AGRICULTURAL_REFORM`: 🧱20を完成PLAINS Zoneの恒久🌾+1/セルへ変えるZone投資sink。production既定OFFのままprototypeで検証する
 
 したがって、これらをprototype可能にしても、
