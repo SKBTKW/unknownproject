@@ -37,23 +37,76 @@
     "category": "COMMAND",
     "nameKey": "CMD_WETLAND_RECLAMATION_NAME",
     "descriptionKey": "CMD_WETLAND_RECLAMATION_DESC",
-    "cost": { "wood": 15, "ember": 1 },
-    "tags": ["WETLAND", "RECLAIMED", "FOOD", "DEVELOPMENT"],
-    "reqWood": 15,
+    "cost": {},
+    "tags": ["WETLAND", "RECLAIMED", "WATER", "FOOD", "DEVELOPMENT", "PROJECT"],
+    "reqWetland": 1,
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.25,
     "cyclePolicy": "RARITY",
-    "effects": [
+    "executionVariants": [
       {
-        "type": "DOMAIN_ACTION",
-        "action": "TRANSFORM_TERRAIN",
-        "fromTerrainIds": ["E0_WETLAND"],
-        "toTerrainId": "E1_RECLAIMED_LAND",
-        "excludeHQ": true,
-        "forbidTrueMerge": true,
-        "forbiddenSocketIds": ["SOCKET_LAKE"],
-        "logActivation": true
+        "id": "RECLAIM",
+        "labelKey": "CMD_IRRIGATION_PLAN_VARIANT_A_NAME",
+        "descriptionKey": "CMD_IRRIGATION_PLAN_VARIANT_A_DESC",
+        "cost": { "wood": 30 },
+        "effects": [
+          {
+            "type": "DOMAIN_ACTION",
+            "action": "TRANSFORM_TERRAIN",
+            "fromTerrainIds": ["E0_WETLAND"],
+            "toTerrainId": "E1_RECLAIMED_LAND",
+            "excludeHQ": true,
+            "forbidTrueMerge": true,
+            "forbiddenSocketIds": ["SOCKET_LAKE"],
+            "logActivation": true
+          }
+        ]
+      },
+      {
+        "id": "IRRIGATION_WORKS",
+        "labelKey": "CMD_IRRIGATION_PLAN_VARIANT_B_NAME",
+        "descriptionKey": "CMD_IRRIGATION_PLAN_VARIANT_B_DESC",
+        "cost": { "wood": 70 },
+        "effects": [
+          {
+            "type": "DOMAIN_ACTION",
+            "action": "TRANSFORM_TERRAIN",
+            "fromTerrainIds": ["E0_WETLAND"],
+            "toTerrainId": "E1_RECLAIMED_LAND",
+            "excludeHQ": true,
+            "forbidTrueMerge": true,
+            "forbiddenSocketIds": ["SOCKET_LAKE"],
+            "development": {
+              "id": "IRRIGATION_WORKS",
+              "providesIrrigation": true
+            },
+            "developmentDelayVerses": 2,
+            "logActivation": true
+          }
+        ]
+      },
+      {
+        "id": "EXPEDITE",
+        "labelKey": "CMD_IRRIGATION_PLAN_VARIANT_C_NAME",
+        "descriptionKey": "CMD_IRRIGATION_PLAN_VARIANT_C_DESC",
+        "cost": { "wood": 110 },
+        "effects": [
+          {
+            "type": "DOMAIN_ACTION",
+            "action": "TRANSFORM_TERRAIN",
+            "fromTerrainIds": ["E0_WETLAND"],
+            "toTerrainId": "E1_RECLAIMED_LAND",
+            "excludeHQ": true,
+            "forbidTrueMerge": true,
+            "forbiddenSocketIds": ["SOCKET_LAKE"],
+            "development": {
+              "id": "IRRIGATION_WORKS",
+              "providesIrrigation": true
+            },
+            "logActivation": true
+          }
+        ]
       }
     ]
   },
