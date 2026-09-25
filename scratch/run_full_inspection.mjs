@@ -315,6 +315,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Stage1 Agricultural Reform Zone Conversion v1) で不合格が検出されました。");
         process.exit(1);
     }
+    const resettlementZoneConversionV2Ok = await runCommand("node", ["scratch/test_resettlement_zone_conversion_v2.mjs"]);
+    if (!resettlementZoneConversionV2Ok) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Resettlement Zone Conversion v2) で不合格が検出されました。");
+        process.exit(1);
+    }
     const stage1LoggingCampDomainBridgeV1Ok = await runCommand("node", ["scratch/test_stage1_logging_camp_domain_bridge_v1.mjs"]);
     if (!stage1LoggingCampDomainBridgeV1Ok) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Stage1 Logging Camp Domain Bridge v1) で不合格が検出されました。");
