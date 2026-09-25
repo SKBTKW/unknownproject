@@ -172,7 +172,9 @@ const state = {
     currentDefense: 5,
     maxDefense: 5,
     mystic: 0,
-    ember: 10,
+    // Stay below the legacy Ember production-multiplier threshold (12)
+    // so this focused test isolates Resettlement's fixed Zone production.
+    ember: 5,
     maxEmber: 20,
     grid,
     mergedBlocks,
