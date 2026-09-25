@@ -195,8 +195,11 @@ for (const id of ["CMD_RATIONING", "CMD_EMERGENCY_LEVY", "CMD_REKINDLE_EMBER", "
     assert.equal(card.reqPlains, undefined);
     assert.ok(effect("CMD_GRANARY", "DOMAIN_ACTION",
         item => item.action === "CREATE_SPECIAL_BLOCK" && item.blockType === "GRANARY"));
-    assert.ok(maintenanceSource.includes("BOARD_CAPABILITIES.FOOD_STORAGE"),
-        "Granary maintenance effect must be capability-driven, never card-id-driven");
+    assert.ok(
+        maintenanceSource.includes("resolveBoardFoodMaintenanceModifiers")
+            && !maintenanceSource.includes("CMD_GRANARY"),
+        "Granary maintenance effect must come from the Board semantic read model, never card-id-driven"
+    );
 }
 
 {

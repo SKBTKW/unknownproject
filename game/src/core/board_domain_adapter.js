@@ -11,6 +11,7 @@ import {
     readSpecialBlockAdjacencyProfile
 } from './special_block_domain.js';
 import { BoardDamageService } from './board_damage_service.js';
+import { resolveBoardFoodMaintenanceModifiers } from './board_maintenance_modifier.js';
 import {
     isZoneConversionFunctional,
     readZoneConversion,
@@ -179,6 +180,10 @@ export class BoardDomainAdapter {
             }
         }
         return false;
+    }
+
+    resolveFoodMaintenanceModifiers() {
+        return resolveBoardFoodMaintenanceModifiers(this.state);
     }
 
     hasCapability(capability, options = {}) {

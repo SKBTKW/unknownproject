@@ -4,15 +4,13 @@ import { BoardDomainAdapter } from "../game/src/core/board_domain_adapter.js";
 import {
     BOARD_CAPABILITIES,
     SPECIAL_BLOCK_TYPES,
+    getSpecialBlockDefinition,
     hasCellCapability
 } from "../game/src/core/special_block_domain.js";
 import { createCardDomainActionExecutor } from "../game/src/cards/card_domain_action_executor.js";
 import { COMMAND_CARDS_MASTER } from "../game/src/data/command_cards_data.js";
-import {
-    GRANARY_FOOD_MAINTENANCE_CAP,
-    GRANARY_FOOD_MAINTENANCE_REDUCTION,
-    MaintenanceFallbackSystem
-} from "../game/src/systems/maintenance_fallback_system.js";
+import { MaintenanceFallbackSystem } from "../game/src/systems/maintenance_fallback_system.js";
+import { resolveBoardFoodMaintenanceModifiers } from "../game/src/core/board_maintenance_modifier.js";
 import { DeckManager } from "../game/src/systems/deck_manager.js";
 import {
     attachCardRuntimePolicy,
@@ -49,8 +47,16 @@ function cell(r, c, terrainId, { hq = false } = {}) {
 const granary = COMMAND_CARDS_MASTER.find(card => card.id === "CMD_GRANARY");
 assert.ok(granary, "CMD_GRANARY must exist");
 assert.equal(isCardRuntimeActive(granary), false, "production default keeps Granary dormant");
-assert.equal(GRANARY_FOOD_MAINTENANCE_REDUCTION, 2);
-assert.equal(GRANARY_FOOD_MAINTENANCE_CAP, 2);
+assert.deepEqual(
+    getSpecialBlockDefinition(SPECIAL_BLOCK_TYPES.GRANARY)?.maintenanceModifiers?.food,
+    {
+        status: "RESOLVED",
+        kind: "FLAT_REDUCTION",
+        amountPerInstance: 2,
+        maxInstances: 2
+    },
+    "Granary maintenance effect must be authored by the Board definition"
+);
 
 const grid = [
     [cell(0, 0, "GL1_PLAINS"), cell(0, 1, "GL1_PLAINS"), cell(0, 2, "GL1_PLAINS")],
@@ -127,6 +133,10 @@ assert.equal(
     hasCellCapability(grid[0][0], BOARD_CAPABILITIES.FOOD_STORAGE),
     true
 );
+let boardMaintenance = resolveBoardFoodMaintenanceModifiers(state);
+assert.equal(boardMaintenance.flatReduction, 2);
+assert.equal(boardMaintenance.appliedInstances, 1);
+
 let maintenance = MaintenanceFallbackSystem.resolveFoodMaintenanceCost(state);
 assert.equal(maintenance.baseFoodCost, 20);
 assert.equal(maintenance.foodStorageSites, 1);
@@ -144,6 +154,12 @@ maintenance = MaintenanceFallbackSystem.resolveFoodMaintenanceCost(state);
 assert.equal(maintenance.foodStorageSites, 2, "maintenance benefit is capped at two Granaries");
 assert.equal(maintenance.granaryReduction, 4);
 assert.equal(maintenance.foodCost, 16);
+
+grid[0][0].specialBlock.state = "DAMAGED";
+boardMaintenance = boardDomainAdapter.resolveFoodMaintenanceModifiers();
+assert.equal(boardMaintenance.appliedInstances, 2, "damaged storage must not contribute to Board maintenance semantics");
+assert.equal(boardMaintenance.flatReduction, 4);
+grid[0][0].specialBlock.state = "ACTIVE";
 
 const duplicateBeforeWood = state.wood;
 const duplicate = deck.playCommandCard(granary, { r: 0, c: 0 });
