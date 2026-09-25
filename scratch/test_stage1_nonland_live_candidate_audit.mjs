@@ -68,6 +68,20 @@ for (const id of PROTOTYPE) {
 }
 
 {
+    const card = byId.get("CMD_RATIONING");
+    assert.equal(card.reqFoodDeficitOrFallback, undefined,
+        "Rationing must not use the legacy fixed current-food gate");
+    assert.deepEqual(card.offering?.requirements?.[0], {
+        id: "RATIONING_TURN_END_FOOD_DEFICIT",
+        type: "TURN_END_FOOD_DEFICIT"
+    });
+    assert.deepEqual(card.execution?.requirements, card.offering?.requirements,
+        "Rationing Offering and Execution must share one maintenance-preview semantic gate");
+    assert.ok(effect("CMD_RATIONING", "STATE_SET",
+        item => item.key === "foodCostHalvedTurns" && item.value === 1));
+}
+
+{
     const card = byId.get("CMD_EMERGENCY_LEVY");
     assert.equal(card.cost.food, 20);
     assert.ok(effect("CMD_EMERGENCY_LEVY", "RESOURCE_DELTA",
