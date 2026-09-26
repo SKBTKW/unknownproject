@@ -19,13 +19,19 @@ const REKINDLE = { id: "CMD_REKINDLE_EMBER", category: "MYSTIC" };
 const BLOCKED = { id: "CMD_GRANARY", category: "COMMAND" };
 
 assert.deepEqual([...CARD_RUNTIME_ACTIVE_CATEGORIES], ["LAND", "INVESTIGATION"]);
-assert.deepEqual([...CARD_RUNTIME_DEFAULT_ACTIVE_CARD_IDS], []);
+assert.deepEqual([...CARD_RUNTIME_DEFAULT_ACTIVE_CARD_IDS], [
+    "CMD_WETLAND_RECLAMATION",
+    "CMD_LOGGING_CAMP",
+    "CMD_GRANARY",
+    "CMD_AGRICULTURAL_REFORM"
+]);
 
 assert.equal(isCardRuntimeActive(LAND), true);
 assert.equal(isCardRuntimeActive(INVESTIGATION), true);
 assert.equal(isCardRuntimeActive(LEVY), false);
 assert.equal(isCardRuntimeActive(VIGILANCE), false);
 assert.equal(isCardRuntimeActive(REKINDLE), false);
+assert.equal(isCardRuntimeActive(BLOCKED), true, "completed Board Investment IDs are active without category reactivation");
 
 const explicit = {
     activeCardIds: [
@@ -122,7 +128,7 @@ const productionDefault = GameEngine.createGame({ runSeed: 20260925 });
 assert.equal(productionDefault.cardRuntimeActivationProvider, null);
 assert.deepEqual(
     [...resolveCardRuntimeActivationPolicy(productionDefault.deckManager).activeCardIds],
-    []
+    [...CARD_RUNTIME_DEFAULT_ACTIVE_CARD_IDS]
 );
 assert.equal(
     isCardRuntimeActive(LEVY, resolveCardRuntimeActivationPolicy(productionDefault.deckManager)),
@@ -130,7 +136,7 @@ assert.equal(
     "production default must keep dormant command cards disabled"
 );
 
-console.log("  explicit prototype IDs are opt-in only");
+console.log("  completed Board Investment IDs are default-active; extra prototype IDs remain opt-in");
 console.log("  whole legacy categories remain dormant");
 console.log("  production default activeCardIds = []");
 console.log("✅ Card runtime ID-scoped activation boundary PASS");

@@ -57,7 +57,7 @@ function terrainCell(r, c, terrainId, extra = {}) {
 
 const wetlandCard = COMMAND_CARDS_MASTER.find(card => card.id === "CMD_WETLAND_RECLAMATION");
 assert.ok(wetlandCard);
-assert.equal(isCardRuntimeActive(wetlandCard), false, "production default keeps Irrigation Plan dormant");
+assert.equal(isCardRuntimeActive(wetlandCard), true, "completed Irrigation Plan is active by default through the ID-scoped runtime policy");
 assert.deepEqual(wetlandCard.cost, {});
 assert.equal(wetlandCard.reqWetland, undefined);
 assert.equal(wetlandCard.effects?.length || 0, 0);

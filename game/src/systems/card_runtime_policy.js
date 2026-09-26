@@ -3,7 +3,12 @@ export const CARD_RUNTIME_ACTIVE_CATEGORIES = Object.freeze([
     "INVESTIGATION"
 ]);
 
-export const CARD_RUNTIME_DEFAULT_ACTIVE_CARD_IDS = Object.freeze([]);
+export const CARD_RUNTIME_DEFAULT_ACTIVE_CARD_IDS = Object.freeze([
+    "CMD_WETLAND_RECLAMATION",
+    "CMD_LOGGING_CAMP",
+    "CMD_GRANARY",
+    "CMD_AGRICULTURAL_REFORM"
+]);
 
 function normalizeActiveCardIds(value) {
     const source = value instanceof Set
@@ -72,8 +77,11 @@ export function isCardRuntimeActive(card, policy = null) {
  * - LAND: normal board-forming gameplay
  * - INVESTIGATION: dedicated Warning / Investigation execution path
  *
+ * Default Stage1 Board Investment activation:
+ * - only semantically completed Board Investment card ids are active by default
+ *
  * Optional prototype activation:
- * - individual card ids supplied through engine.cardRuntimeActivationProvider
+ * - additional individual card ids supplied through engine.cardRuntimeActivationProvider
  *
  * Dormant categories remain available for data/restore compatibility but must not
  * re-enter Offering eligibility or command execution wholesale by accident.

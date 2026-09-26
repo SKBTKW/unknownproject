@@ -28,7 +28,7 @@ assert.strictEqual(singleChargePreview.production.netFood, -15);
 assert.strictEqual(singleChargePreview.production.grossFood, 5);
 assert.strictEqual(singleChargePreview.foodCost, 20);
 
-// 2. 配給・緊急徴発を含む最終維持費がpreviewと実決済で一致する。
+// 2. 配給は最終維持費へ適用し、旧緊急徴発の遅延維持費ペナルティは発生しない。
 const rationingEngine = GameEngine.createGame({ runSeed: 260902 });
 rationingEngine.state.foodCostHalvedTurns = 1;
 const rationingPreview = rationingEngine.previewTurnEndMaintenance({
@@ -46,11 +46,12 @@ levyEngine.state.emergencyLevyStartsNextTurn = false;
 const levyPreview = levyEngine.previewTurnEndMaintenance({
     autoFallbackEnabled: false
 });
-assert.strictEqual(levyPreview.foodCost, 25);
+assert.strictEqual(levyPreview.foodCost, 20);
+assert.strictEqual(levyPreview.emergencyLevyApplied, false);
 levyEngine.nextTurn({ autoFallbackEnabled: false });
-assert.strictEqual(levyEngine.lastTurnMaintenanceResult.foodCost, 25);
-assert.strictEqual(levyEngine.state.food, 30);
-assert.strictEqual(levyEngine.state.emergencyLevyTurns, 0);
+assert.strictEqual(levyEngine.lastTurnMaintenanceResult.foodCost, 20);
+assert.strictEqual(levyEngine.state.food, 35);
+assert.strictEqual(levyEngine.state.emergencyLevyTurns, 1); // legacy field is inert; maintenance no longer owns/decrements it
 
 // 3. OFFでもautomaticPlanと仮想計画を分離し、必要量を取得できる。
 const offFull = MaintenanceFallbackSystem.previewFoodDeficitFallback({

@@ -31,6 +31,17 @@ function cell(r, c, terrain = null) {
     };
 }
 
+function listSpecialBlocks(state, definitionId) {
+    const rows = [];
+    for (let r = 0; r < (state?.grid?.length || 0); r++) {
+        for (let c = 0; c < (state.grid[r]?.length || 0); c++) {
+            const entity = state.grid[r][c]?.specialBlock;
+            if ((entity?.definitionId || entity?.type) === definitionId) rows.push({ r, c, entity });
+        }
+    }
+    return rows;
+}
+
 const forest = {
     id: "GL2_FOREST",
     terrainId: "GL2_FOREST",
@@ -77,7 +88,11 @@ assert.equal(loggingDefinition.placement.sourceMinGL, 2);
 assert.equal(loggingDefinition.placement.minConnectedSourceCells, 2);
 assert.equal(loggingDefinition.baseTerrainInteraction.kind, "INDEPENDENT");
 assert.equal(loggingDefinition.production.kind, "RELATION_COUNT");
-assert.equal(loggingDefinition.production.status, "UNRESOLVED");
+assert.equal(loggingDefinition.creationCost.status, SPECIAL_BLOCK_COST_STATUS.RESOLVED);
+assert.deepEqual(loggingDefinition.creationCost.resources, { wood: 20 });
+assert.equal(loggingDefinition.production.status, "RESOLVED");
+assert.deepEqual(loggingDefinition.production.baseYields, { wood: 2 });
+assert.deepEqual(loggingDefinition.production.perRelationYields, { wood: 1 });
 assert.equal(loggingDefinition.production.relationDefinitionId, SPECIAL_BLOCK_TYPES.LOGGING_CAMP);
 assert.equal(loggingDefinition.production.relationNeighborhood, "ORTHOGONAL");
 
@@ -136,15 +151,31 @@ assert.equal(loggingDefinition.production.relationNeighborhood, "ORTHOGONAL");
     engine.deckManager = deck;
     assert.equal(attachCardRuntimePolicy(deck).success, true);
 
-    // Product creation cost and numeric production remain unresolved; runtime
-    // exposure therefore still fails closed until balance is selected.
     const quote = deck.quoteCardExecutionCost(loggingCard);
-    assert.equal(quote.success, false);
-    assert.equal(quote.reason, "SPECIAL_BLOCK_COST_UNRESOLVED");
-    assert.equal(quote.quote?.status, SPECIAL_BLOCK_COST_STATUS.UNRESOLVED);
+    assert.equal(quote.success, true);
+    assert.deepEqual(quote.resources, { wood: 20 });
+    assert.equal(quote.quote?.status, SPECIAL_BLOCK_COST_STATUS.RESOLVED);
 
-    assert.deepEqual(deck.enumerateCardExecutionTargets(loggingCard), []);
-    assert.equal(deck.isCardEligible(loggingCard, 1, 0), false);
+    const executionTargets = deck.enumerateCardExecutionTargets(loggingCard);
+    assert.ok(executionTargets.length > 0);
+
+    state.handOffering = [loggingCard];
+    state.hasPickedThisTurn = false;
+    const beforeWood = state.wood;
+    const played = deck.playCommandCard(loggingCard, executionTargets[0], 0, -1);
+    assert.equal(played.success, true);
+    assert.equal(state.wood, beforeWood - 20);
+    assert.equal(state.material, state.wood);
+
+    const production = new SpecialBlockProductionResolver().sum(state);
+    assert.equal(production.unresolved.length, 0);
+    assert.equal(production.yields.wood, 2, "single active Logging Camp produces base +2 material");
+
+    const built = listSpecialBlocks(state, SPECIAL_BLOCK_TYPES.LOGGING_CAMP)[0];
+    built.entity.state = "DAMAGED";
+    const damagedProduction = new SpecialBlockProductionResolver().sum(state);
+    assert.equal(damagedProduction.yields.wood, 0, "damaged Logging Camp production must stop");
+    built.entity.state = "ACTIVE";
 }
 
 // A single GL2+ source cell is not enough.
@@ -354,8 +385,7 @@ assert.equal(loggingDefinition.production.relationNeighborhood, "ORTHOGONAL");
 }
 
 // RELATION_COUNT can target the same Special Block definition without counting
-// unrelated production facilities. Numeric values here are synthetic test data;
-// the product definition itself remains UNRESOLVED.
+// unrelated production facilities.
 {
     const resolvedLoggingDefinition = {
         id: SPECIAL_BLOCK_TYPES.LOGGING_CAMP,
@@ -402,7 +432,7 @@ assert.equal(loggingDefinition.production.relationNeighborhood, "ORTHOGONAL");
 }
 
 console.log("  connected GL2+ pair -> adjacent empty-grid Logging Camp geometry is canonical");
-console.log("  unresolved DOMAIN_QUOTE fails closed before Offering exposure");
+console.log("  resolved Board quote exposes Logging Camp and charges atomically");
 console.log("  resolved Board quote pays atomically and forwards paidCost");
 console.log("  stale Special Block quote rolls payment back");
 console.log("  same-definition orthogonal adjacency scales production without counting other facilities");

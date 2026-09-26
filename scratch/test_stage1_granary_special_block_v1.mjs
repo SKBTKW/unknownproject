@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { BoardDomainAdapter } from "../game/src/core/board_domain_adapter.js";
 import {
     BOARD_CAPABILITIES,
+    SPECIAL_BLOCK_COST_STATUS,
     SPECIAL_BLOCK_TYPES,
     getSpecialBlockDefinition,
     hasCellCapability
@@ -46,7 +47,15 @@ function cell(r, c, terrainId, { hq = false } = {}) {
 
 const granary = COMMAND_CARDS_MASTER.find(card => card.id === "CMD_GRANARY");
 assert.ok(granary, "CMD_GRANARY must exist");
-assert.equal(isCardRuntimeActive(granary), false, "production default keeps Granary dormant");
+assert.equal(isCardRuntimeActive(granary), true, "completed Granary is active by default through the ID-scoped runtime policy");
+assert.deepEqual(granary.cost, {});
+assert.equal(granary.reqWood, undefined);
+assert.equal(granary.effects?.[0]?.paymentMode, "DOMAIN_QUOTE");
+assert.deepEqual(
+    getSpecialBlockDefinition(SPECIAL_BLOCK_TYPES.GRANARY)?.creationCost,
+    { status: SPECIAL_BLOCK_COST_STATUS.RESOLVED, resources: { wood: 20 } },
+    "Granary creation cost must be Board-owned"
+);
 assert.deepEqual(
     getSpecialBlockDefinition(SPECIAL_BLOCK_TYPES.GRANARY)?.maintenanceModifiers?.food,
     {
@@ -102,6 +111,10 @@ const deck = new DeckManager(state, engine);
 engine.deckManager = deck;
 assert.equal(attachCardRuntimePolicy(deck).success, true);
 
+const quote = deck.quoteCardExecutionCost(granary);
+assert.equal(quote.success, true);
+assert.deepEqual(quote.resources, { wood: 20 });
+
 const targets = deck.enumerateCardExecutionTargets(granary);
 const targetKeys = new Set(targets.map(target => `${target.r}:${target.c}`));
 assert.equal(targetKeys.has("0:0"), true);
@@ -154,6 +167,16 @@ maintenance = MaintenanceFallbackSystem.resolveFoodMaintenanceCost(state);
 assert.equal(maintenance.foodStorageSites, 2, "maintenance benefit is capped at two Granaries");
 assert.equal(maintenance.granaryReduction, 4);
 assert.equal(maintenance.foodCost, 16);
+
+state.foodCostHalvedTurns = 1;
+state.emergencyLevyTurns = 1;
+state.emergencyLevyStartsNextTurn = false;
+maintenance = MaintenanceFallbackSystem.resolveFoodMaintenanceCost(state);
+assert.equal(maintenance.preBoardFoodCost, 16, "Board flat reduction applies before temporary response modifiers");
+assert.equal(maintenance.foodCost, 8, "Rationing halves the post-Board maintenance cost");
+assert.equal(maintenance.emergencyLevyApplied, false, "legacy Emergency Levy maintenance surcharge is not part of First-Wave v1");
+state.foodCostHalvedTurns = 0;
+state.emergencyLevyTurns = 0;
 
 grid[0][0].specialBlock.state = "DAMAGED";
 boardMaintenance = boardDomainAdapter.resolveFoodMaintenanceModifiers();

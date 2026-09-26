@@ -46,7 +46,7 @@ const expectedCosts = new Map([
     ["CMD_RATIONING", {}],
     ["CMD_WETLAND_RECLAMATION", {}],
     ["CMD_LOGGING_CAMP", {}],
-    ["CMD_GRANARY", { wood: 20 }],
+    ["CMD_GRANARY", {}],
     ["CMD_AGRICULTURAL_REFORM", {}],
     ["CMD_PASTORAL_FARM", { wood: 15 }],
     ["CMD_ABANDONED_SETTLEMENT", { ember: 1 }],
@@ -102,12 +102,17 @@ assert.equal(
     true,
     "Special Block domain must expose the canonical creation-cost boundary"
 );
-for (const type of ["FARM", "LOGGING_CAMP", "ALTAR"]) {
+for (const type of ["FARM", "ALTAR"]) {
     assert.equal(
         resolveSpecialBlockCreationCost(SPECIAL_BLOCK_DEFINITIONS[type]).status,
         SPECIAL_BLOCK_COST_STATUS.UNRESOLVED,
         `${type} creation-cost balance must remain unresolved until explicitly authored`
     );
+}
+for (const type of ["LOGGING_CAMP", "GRANARY"]) {
+    const quote = resolveSpecialBlockCreationCost(SPECIAL_BLOCK_DEFINITIONS[type]);
+    assert.equal(quote.status, SPECIAL_BLOCK_COST_STATUS.RESOLVED);
+    assert.deepEqual(quote.resources, { wood: 20 }, `${type} Stage1 sink must be Board-owned at material 20`);
 }
 assert.equal(
     /maintenance\s*:|upkeep\s*:/.test(specialBlockSource),

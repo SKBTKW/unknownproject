@@ -808,15 +808,9 @@ async function main() {
         process.exit(1);
     }
 
-    const loggingCampBalanceProbeOk = await runCommand("node", ["scratch/test_stage1_logging_camp_balance_probe.mjs"]);
-    if (!loggingCampBalanceProbeOk) {
-        console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Logging Camp SOURCE_SIZE / Cost Probe) で不合格が検出されました。");
-        process.exit(1);
-    }
-
-    const loggingCampV2SpendProbeOk = await runCommand("node", ["scratch/test_stage1_logging_camp_v2_spend_path_probe.mjs"]);
-    if (!loggingCampV2SpendProbeOk) {
-        console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Logging Camp v2 Spend Path Probe) で不合格が検出されました。");
+    const stage1PreTrialEconomyEnvelopeOk = await runCommand("node", ["scratch/test_stage1_pretrial_economy_envelope.mjs"]);
+    if (!stage1PreTrialEconomyEnvelopeOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Stage1 Pre-Trial Economy Envelope) で不合格が検出されました。");
         process.exit(1);
     }
 

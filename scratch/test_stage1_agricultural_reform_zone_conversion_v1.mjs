@@ -92,7 +92,7 @@ grid[2][2] = {
 
 const card = COMMAND_CARDS_MASTER.find(candidate => candidate.id === "CMD_AGRICULTURAL_REFORM");
 assert.ok(card);
-assert.equal(isCardRuntimeActive(card), false, "production default keeps Agricultural Reform dormant");
+assert.equal(isCardRuntimeActive(card), true, "completed Agricultural Reform is active by default through the ID-scoped runtime policy");
 assert.deepEqual(card.cost, {}, "card must not duplicate Board-owned Zone Conversion cost");
 assert.equal(card.effects?.length, 1);
 assert.equal(card.effects[0].action, "CREATE_ZONE_CONVERSION");
