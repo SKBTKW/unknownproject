@@ -12,22 +12,27 @@ export const ECONOMY_CARDS_MASTER = [
       "FOOD",
       "EMERGENCY"
     ],
-    "reqFoodDeficitOrFallback": true,
+    "offering": {
+      "requirements": [
+        {
+          "id": "RATIONING_TURN_END_FOOD_DEFICIT",
+          "type": "TURN_END_FOOD_DEFICIT"
+        }
+      ]
+    },
+    "execution": {
+      "requirements": [
+        {
+          "id": "RATIONING_TURN_END_FOOD_DEFICIT",
+          "type": "TURN_END_FOOD_DEFICIT"
+        }
+      ]
+    },
     "minStage": 1,
     "rarity": "C",
     "weight": 0.4,
     "cyclePolicy": "RARITY",
     "effects": [
-      {
-        "type": "STATE_SET",
-        "key": "foodCostRationingActive",
-        "value": true
-      },
-      {
-        "type": "STATE_SET",
-        "key": "foodCostRationingDiscount",
-        "value": 0.4
-      },
       {
         "type": "STATE_SET",
         "key": "foodCostHalvedTurns",
@@ -53,58 +58,110 @@ export const ECONOMY_CARDS_MASTER = [
     "category": "COMMAND",
     "nameKey": "CMD_WETLAND_RECLAMATION_NAME",
     "descriptionKey": "CMD_WETLAND_RECLAMATION_DESC",
-    "cost": {
-      "wood": 15,
-      "ember": 1
-    },
-    "tags": [
-      "WETLAND",
-      "RECLAIMED",
-      "FOOD",
-      "DEVELOPMENT"
-    ],
-    "reqWetland": 1,
-    "reqWood": 15,
+    "cost": {},
+    "tags": ["WETLAND", "RECLAIMED", "WATER", "FOOD", "DEVELOPMENT", "PROJECT"],
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.25,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "executionVariants": [
+      {
+        "id": "RECLAIM",
+        "labelKey": "CMD_IRRIGATION_PLAN_VARIANT_A_NAME",
+        "descriptionKey": "CMD_IRRIGATION_PLAN_VARIANT_A_DESC",
+        "cost": { "wood": 30 },
+        "effects": [
+          {
+            "type": "DOMAIN_ACTION",
+            "action": "TRANSFORM_TERRAIN",
+            "fromTerrainIds": ["E0_WETLAND"],
+            "toTerrainId": "E1_RECLAIMED_LAND",
+            "excludeHQ": true,
+            "forbidTrueMerge": true,
+            "forbiddenSocketIds": ["SOCKET_LAKE"],
+            "logActivation": true
+          }
+        ]
+      },
+      {
+        "id": "IRRIGATION_WORKS",
+        "labelKey": "CMD_IRRIGATION_PLAN_VARIANT_B_NAME",
+        "descriptionKey": "CMD_IRRIGATION_PLAN_VARIANT_B_DESC",
+        "cost": { "wood": 70 },
+        "effects": [
+          {
+            "type": "DOMAIN_ACTION",
+            "action": "TRANSFORM_TERRAIN",
+            "fromTerrainIds": ["E0_WETLAND"],
+            "toTerrainId": "E1_RECLAIMED_LAND",
+            "excludeHQ": true,
+            "forbidTrueMerge": true,
+            "forbiddenSocketIds": ["SOCKET_LAKE"],
+            "development": {
+              "id": "IRRIGATION_WORKS",
+              "providesIrrigation": true
+            },
+            "developmentDelayVerses": 2,
+            "logActivation": true
+          }
+        ]
+      },
+      {
+        "id": "EXPEDITE",
+        "labelKey": "CMD_IRRIGATION_PLAN_VARIANT_C_NAME",
+        "descriptionKey": "CMD_IRRIGATION_PLAN_VARIANT_C_DESC",
+        "cost": { "wood": 110 },
+        "effects": [
+          {
+            "type": "DOMAIN_ACTION",
+            "action": "TRANSFORM_TERRAIN",
+            "fromTerrainIds": ["E0_WETLAND"],
+            "toTerrainId": "E1_RECLAIMED_LAND",
+            "excludeHQ": true,
+            "forbidTrueMerge": true,
+            "forbiddenSocketIds": ["SOCKET_LAKE"],
+            "development": {
+              "id": "IRRIGATION_WORKS",
+              "providesIrrigation": true
+            },
+            "logActivation": true
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "CMD_LOGGING_CAMP",
     "category": "COMMAND",
     "nameKey": "CMD_LOGGING_CAMP_NAME",
     "descriptionKey": "CMD_LOGGING_CAMP_DESC",
-    "cost": {
-      "ember": 1
-    },
+    "cost": {},
     "tags": [
       "FOREST",
       "MATERIAL",
       "INDUSTRY",
       "SPECIAL_BLOCK"
     ],
-    "reqForestNearby": 3,
     "minStage": 1,
     "rarity": "C",
     "weight": 0.35,
     "cyclePolicy": "RARITY",
+    "offering": {
+      "requirements": [
+        {
+          "type": "CONNECTED_GL_AT_LEAST",
+          "minimumGL": 2,
+          "value": 2
+        }
+      ]
+    },
     "effects": [
       {
-        "type": "RESOURCE_DELTA",
-        "resource": "wood",
-        "amount": 8
-      },
-      {
-        "type": "BUFF_ADD",
-        "fromSourceCard": true,
-        "buff": {
-          "icon": "🪵",
-          "category": "CARD_EFFECT"
-        }
-      },
-      {
-        "type": "LOG_CARD_ACTIVATED"
+        "type": "DOMAIN_ACTION",
+        "action": "CREATE_SPECIAL_BLOCK",
+        "blockType": "LOGGING_CAMP",
+        "paymentMode": "DOMAIN_QUOTE",
+        "logActivation": true
       }
     ]
   },
@@ -124,7 +181,6 @@ export const ECONOMY_CARDS_MASTER = [
       "INDUSTRY",
       "SPECIAL_BLOCK"
     ],
-    "reqPlains": 4,
     "reqWood": 20,
     "minStage": 1,
     "rarity": "UC",
@@ -132,20 +188,10 @@ export const ECONOMY_CARDS_MASTER = [
     "cyclePolicy": "RARITY",
     "effects": [
       {
-        "type": "STATE_INCREMENT",
-        "key": "granaryCount",
-        "amount": 1
-      },
-      {
-        "type": "BUFF_ADD",
-        "fromSourceCard": true,
-        "buff": {
-          "icon": "🏛️",
-          "category": "CARD_EFFECT"
-        }
-      },
-      {
-        "type": "LOG_CARD_ACTIVATED"
+        "type": "DOMAIN_ACTION",
+        "action": "CREATE_SPECIAL_BLOCK",
+        "blockType": "GRANARY",
+        "logActivation": true
       }
     ]
   },
@@ -154,9 +200,7 @@ export const ECONOMY_CARDS_MASTER = [
     "category": "COMMAND",
     "nameKey": "CMD_AGRICULTURAL_REFORM_NAME",
     "descriptionKey": "CMD_AGRICULTURAL_REFORM_DESC",
-    "cost": {
-      "wood": 20
-    },
+    "cost": {},
     "tags": [
       "PLAINS",
       "RECLAIMED",
@@ -164,28 +208,17 @@ export const ECONOMY_CARDS_MASTER = [
       "AGRICULTURE",
       "DEVELOPMENT"
     ],
-    "reqConnectedPlainsOrReclaimed": 3,
-    "reqWood": 20,
     "minStage": 1,
     "rarity": "R",
     "weight": 0.2,
     "cyclePolicy": "UNIQUE",
     "effects": [
       {
-        "type": "STATE_INCREMENT",
-        "key": "permanentPlainsFoodBonus",
-        "amount": 1
-      },
-      {
-        "type": "BUFF_ADD",
-        "fromSourceCard": true,
-        "buff": {
-          "icon": "📜",
-          "category": "CARD_EFFECT"
-        }
-      },
-      {
-        "type": "LOG_CARD_ACTIVATED"
+        "type": "DOMAIN_ACTION",
+        "action": "CREATE_ZONE_CONVERSION",
+        "definitionId": "AGRICULTURAL_REFORM",
+        "paymentMode": "DOMAIN_QUOTE",
+        "logActivation": true
       }
     ]
   },
@@ -244,7 +277,22 @@ export const ECONOMY_CARDS_MASTER = [
       "MATERIAL",
       "EMERGENCY"
     ],
-    "reqWoodDeficit": true,
+    "offering": {
+      "requirements": [
+        {
+          "id": "EMERGENCY_LEVY_MATERIAL_SHORTAGE",
+          "type": "MATERIAL_SHORTAGE"
+        }
+      ]
+    },
+    "execution": {
+      "requirements": [
+        {
+          "id": "EMERGENCY_LEVY_MATERIAL_SHORTAGE",
+          "type": "MATERIAL_SHORTAGE"
+        }
+      ]
+    },
     "reqFood": 20,
     "minStage": 1,
     "rarity": "C",
@@ -255,14 +303,6 @@ export const ECONOMY_CARDS_MASTER = [
         "type": "RESOURCE_DELTA",
         "resource": "wood",
         "amount": 15
-      },
-      {
-        "type": "BUFF_ADD",
-        "fromSourceCard": true,
-        "buff": {
-          "icon": "🧱",
-          "category": "CARD_EFFECT"
-        }
       },
       {
         "type": "LOG_CARD_ACTIVATED"
@@ -460,10 +500,7 @@ export const ECONOMY_CARDS_MASTER = [
     "category": "COMMAND",
     "nameKey": "CMD_RESETTLEMENT_NAME",
     "descriptionKey": "CMD_RESETTLEMENT_DESC",
-    "cost": {
-      "food": 15,
-      "wood": 10
-    },
+    "cost": {},
     "tags": [
       "PLAINS",
       "MERGE",
@@ -476,7 +513,16 @@ export const ECONOMY_CARDS_MASTER = [
     "minStage": 2,
     "rarity": "R",
     "weight": 0.2,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "DOMAIN_ACTION",
+        "action": "CREATE_ZONE_CONVERSION",
+        "definitionId": "RESETTLEMENT_PLAINS_2X2",
+        "paymentMode": "DOMAIN_QUOTE",
+        "logActivation": true
+      }
+    ]
   },
   {
     "id": "CMD_WORKSHOP",
@@ -615,7 +661,24 @@ export const MILITARY_CARDS_MASTER = [
     "cost": {
       "wood": 15
     },
-    "reqTrialOrLowDefense": true,
+    "offering": {
+      "requirements": [
+        {
+          "id": "VIGILANCE_WARNING_TENSE",
+          "type": "WARNING_STATE",
+          "state": "TENSE"
+        }
+      ]
+    },
+    "execution": {
+      "requirements": [
+        {
+          "id": "VIGILANCE_WARNING_TENSE",
+          "type": "WARNING_STATE",
+          "state": "TENSE"
+        }
+      ]
+    },
     "minStage": 1,
     "rarity": "C",
     "weight": 0.35,
@@ -1022,27 +1085,6 @@ export const MYSTIC_CARDS_MASTER = [
         "amount": 3
       },
       {
-        "type": "STATE_SET",
-        "key": "reserveFeeWaivedTurns",
-        "value": 3
-      },
-      {
-        "type": "STATE_SET",
-        "key": "reserveFeeWaivedStartsNextTurn",
-        "value": true
-      },
-      {
-        "type": "BUFF_ADD",
-        "fromSourceCard": true,
-        "badgeTextRemainingTurns": true,
-        "buff": {
-          "icon": "✨",
-          "category": "CARD_EFFECT",
-          "remainingTurns": 3,
-          "startsNextTurn": true
-        }
-      },
-      {
         "type": "LOG_CARD_ACTIVATED"
       }
     ]
@@ -1254,22 +1296,27 @@ export const COMMAND_CARDS_MASTER = [
       "FOOD",
       "EMERGENCY"
     ],
-    "reqFoodDeficitOrFallback": true,
+    "offering": {
+      "requirements": [
+        {
+          "id": "RATIONING_TURN_END_FOOD_DEFICIT",
+          "type": "TURN_END_FOOD_DEFICIT"
+        }
+      ]
+    },
+    "execution": {
+      "requirements": [
+        {
+          "id": "RATIONING_TURN_END_FOOD_DEFICIT",
+          "type": "TURN_END_FOOD_DEFICIT"
+        }
+      ]
+    },
     "minStage": 1,
     "rarity": "C",
     "weight": 0.4,
     "cyclePolicy": "RARITY",
     "effects": [
-      {
-        "type": "STATE_SET",
-        "key": "foodCostRationingActive",
-        "value": true
-      },
-      {
-        "type": "STATE_SET",
-        "key": "foodCostRationingDiscount",
-        "value": 0.4
-      },
       {
         "type": "STATE_SET",
         "key": "foodCostHalvedTurns",
@@ -1295,58 +1342,117 @@ export const COMMAND_CARDS_MASTER = [
     "category": "COMMAND",
     "nameKey": "CMD_WETLAND_RECLAMATION_NAME",
     "descriptionKey": "CMD_WETLAND_RECLAMATION_DESC",
-    "cost": {
-      "wood": 15,
-      "ember": 1
-    },
+    "cost": {},
     "tags": [
       "WETLAND",
       "RECLAIMED",
+      "WATER",
       "FOOD",
-      "DEVELOPMENT"
+      "DEVELOPMENT",
+      "PROJECT"
     ],
-    "reqWetland": 1,
-    "reqWood": 15,
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.25,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "executionVariants": [
+      {
+        "id": "RECLAIM",
+        "labelKey": "CMD_IRRIGATION_PLAN_VARIANT_A_NAME",
+        "descriptionKey": "CMD_IRRIGATION_PLAN_VARIANT_A_DESC",
+        "cost": { "wood": 30 },
+        "effects": [
+          {
+            "type": "DOMAIN_ACTION",
+            "action": "TRANSFORM_TERRAIN",
+            "fromTerrainIds": ["E0_WETLAND"],
+            "toTerrainId": "E1_RECLAIMED_LAND",
+            "excludeHQ": true,
+            "forbidTrueMerge": true,
+            "forbiddenSocketIds": ["SOCKET_LAKE"],
+            "logActivation": true
+          }
+        ]
+      },
+      {
+        "id": "IRRIGATION_WORKS",
+        "labelKey": "CMD_IRRIGATION_PLAN_VARIANT_B_NAME",
+        "descriptionKey": "CMD_IRRIGATION_PLAN_VARIANT_B_DESC",
+        "cost": { "wood": 70 },
+        "effects": [
+          {
+            "type": "DOMAIN_ACTION",
+            "action": "TRANSFORM_TERRAIN",
+            "fromTerrainIds": ["E0_WETLAND"],
+            "toTerrainId": "E1_RECLAIMED_LAND",
+            "excludeHQ": true,
+            "forbidTrueMerge": true,
+            "forbiddenSocketIds": ["SOCKET_LAKE"],
+            "development": {
+              "id": "IRRIGATION_WORKS",
+              "providesIrrigation": true
+            },
+            "developmentDelayVerses": 2,
+            "logActivation": true
+          }
+        ]
+      },
+      {
+        "id": "EXPEDITE",
+        "labelKey": "CMD_IRRIGATION_PLAN_VARIANT_C_NAME",
+        "descriptionKey": "CMD_IRRIGATION_PLAN_VARIANT_C_DESC",
+        "cost": { "wood": 110 },
+        "effects": [
+          {
+            "type": "DOMAIN_ACTION",
+            "action": "TRANSFORM_TERRAIN",
+            "fromTerrainIds": ["E0_WETLAND"],
+            "toTerrainId": "E1_RECLAIMED_LAND",
+            "excludeHQ": true,
+            "forbidTrueMerge": true,
+            "forbiddenSocketIds": ["SOCKET_LAKE"],
+            "development": {
+              "id": "IRRIGATION_WORKS",
+              "providesIrrigation": true
+            },
+            "logActivation": true
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "CMD_LOGGING_CAMP",
     "category": "COMMAND",
     "nameKey": "CMD_LOGGING_CAMP_NAME",
     "descriptionKey": "CMD_LOGGING_CAMP_DESC",
-    "cost": {
-      "ember": 1
-    },
+    "cost": {},
     "tags": [
       "FOREST",
       "MATERIAL",
       "INDUSTRY",
       "SPECIAL_BLOCK"
     ],
-    "reqForestNearby": 3,
     "minStage": 1,
     "rarity": "C",
     "weight": 0.35,
     "cyclePolicy": "RARITY",
+    "offering": {
+      "requirements": [
+        {
+          "type": "CONNECTED_GL_AT_LEAST",
+          "minimumGL": 2,
+          "value": 2
+        }
+      ]
+    },
     "effects": [
       {
-        "type": "RESOURCE_DELTA",
-        "resource": "wood",
-        "amount": 8
-      },
-      {
-        "type": "BUFF_ADD",
-        "fromSourceCard": true,
-        "buff": {
-          "icon": "🪵",
-          "category": "CARD_EFFECT"
-        }
-      },
-      {
-        "type": "LOG_CARD_ACTIVATED"
+        "type": "DOMAIN_ACTION",
+        "action": "CREATE_SPECIAL_BLOCK",
+        "blockType": "LOGGING_CAMP",
+        "paymentMode": "DOMAIN_QUOTE",
+        "logActivation": true
       }
     ]
   },
@@ -1366,7 +1472,6 @@ export const COMMAND_CARDS_MASTER = [
       "INDUSTRY",
       "SPECIAL_BLOCK"
     ],
-    "reqPlains": 4,
     "reqWood": 20,
     "minStage": 1,
     "rarity": "UC",
@@ -1374,20 +1479,10 @@ export const COMMAND_CARDS_MASTER = [
     "cyclePolicy": "RARITY",
     "effects": [
       {
-        "type": "STATE_INCREMENT",
-        "key": "granaryCount",
-        "amount": 1
-      },
-      {
-        "type": "BUFF_ADD",
-        "fromSourceCard": true,
-        "buff": {
-          "icon": "🏛️",
-          "category": "CARD_EFFECT"
-        }
-      },
-      {
-        "type": "LOG_CARD_ACTIVATED"
+        "type": "DOMAIN_ACTION",
+        "action": "CREATE_SPECIAL_BLOCK",
+        "blockType": "GRANARY",
+        "logActivation": true
       }
     ]
   },
@@ -1396,9 +1491,7 @@ export const COMMAND_CARDS_MASTER = [
     "category": "COMMAND",
     "nameKey": "CMD_AGRICULTURAL_REFORM_NAME",
     "descriptionKey": "CMD_AGRICULTURAL_REFORM_DESC",
-    "cost": {
-      "wood": 20
-    },
+    "cost": {},
     "tags": [
       "PLAINS",
       "RECLAIMED",
@@ -1406,28 +1499,17 @@ export const COMMAND_CARDS_MASTER = [
       "AGRICULTURE",
       "DEVELOPMENT"
     ],
-    "reqConnectedPlainsOrReclaimed": 3,
-    "reqWood": 20,
     "minStage": 1,
     "rarity": "R",
     "weight": 0.2,
     "cyclePolicy": "UNIQUE",
     "effects": [
       {
-        "type": "STATE_INCREMENT",
-        "key": "permanentPlainsFoodBonus",
-        "amount": 1
-      },
-      {
-        "type": "BUFF_ADD",
-        "fromSourceCard": true,
-        "buff": {
-          "icon": "📜",
-          "category": "CARD_EFFECT"
-        }
-      },
-      {
-        "type": "LOG_CARD_ACTIVATED"
+        "type": "DOMAIN_ACTION",
+        "action": "CREATE_ZONE_CONVERSION",
+        "definitionId": "AGRICULTURAL_REFORM",
+        "paymentMode": "DOMAIN_QUOTE",
+        "logActivation": true
       }
     ]
   },
@@ -1486,7 +1568,22 @@ export const COMMAND_CARDS_MASTER = [
       "MATERIAL",
       "EMERGENCY"
     ],
-    "reqWoodDeficit": true,
+    "offering": {
+      "requirements": [
+        {
+          "id": "EMERGENCY_LEVY_MATERIAL_SHORTAGE",
+          "type": "MATERIAL_SHORTAGE"
+        }
+      ]
+    },
+    "execution": {
+      "requirements": [
+        {
+          "id": "EMERGENCY_LEVY_MATERIAL_SHORTAGE",
+          "type": "MATERIAL_SHORTAGE"
+        }
+      ]
+    },
     "reqFood": 20,
     "minStage": 1,
     "rarity": "C",
@@ -1497,14 +1594,6 @@ export const COMMAND_CARDS_MASTER = [
         "type": "RESOURCE_DELTA",
         "resource": "wood",
         "amount": 15
-      },
-      {
-        "type": "BUFF_ADD",
-        "fromSourceCard": true,
-        "buff": {
-          "icon": "🧱",
-          "category": "CARD_EFFECT"
-        }
       },
       {
         "type": "LOG_CARD_ACTIVATED"
@@ -1702,10 +1791,7 @@ export const COMMAND_CARDS_MASTER = [
     "category": "COMMAND",
     "nameKey": "CMD_RESETTLEMENT_NAME",
     "descriptionKey": "CMD_RESETTLEMENT_DESC",
-    "cost": {
-      "food": 15,
-      "wood": 10
-    },
+    "cost": {},
     "tags": [
       "PLAINS",
       "MERGE",
@@ -1718,7 +1804,16 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 2,
     "rarity": "R",
     "weight": 0.2,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "DOMAIN_ACTION",
+        "action": "CREATE_ZONE_CONVERSION",
+        "definitionId": "RESETTLEMENT_PLAINS_2X2",
+        "paymentMode": "DOMAIN_QUOTE",
+        "logActivation": true
+      }
+    ]
   },
   {
     "id": "CMD_WORKSHOP",
@@ -1854,7 +1949,24 @@ export const COMMAND_CARDS_MASTER = [
     "cost": {
       "wood": 15
     },
-    "reqTrialOrLowDefense": true,
+    "offering": {
+      "requirements": [
+        {
+          "id": "VIGILANCE_WARNING_TENSE",
+          "type": "WARNING_STATE",
+          "state": "TENSE"
+        }
+      ]
+    },
+    "execution": {
+      "requirements": [
+        {
+          "id": "VIGILANCE_WARNING_TENSE",
+          "type": "WARNING_STATE",
+          "state": "TENSE"
+        }
+      ]
+    },
     "minStage": 1,
     "rarity": "C",
     "weight": 0.35,
@@ -2256,27 +2368,6 @@ export const COMMAND_CARDS_MASTER = [
         "type": "RESOURCE_DELTA",
         "resource": "ember",
         "amount": 3
-      },
-      {
-        "type": "STATE_SET",
-        "key": "reserveFeeWaivedTurns",
-        "value": 3
-      },
-      {
-        "type": "STATE_SET",
-        "key": "reserveFeeWaivedStartsNextTurn",
-        "value": true
-      },
-      {
-        "type": "BUFF_ADD",
-        "fromSourceCard": true,
-        "badgeTextRemainingTurns": true,
-        "buff": {
-          "icon": "✨",
-          "category": "CARD_EFFECT",
-          "remainingTurns": 3,
-          "startsNextTurn": true
-        }
       },
       {
         "type": "LOG_CARD_ACTIVATED"

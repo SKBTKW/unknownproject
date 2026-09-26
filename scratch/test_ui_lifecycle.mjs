@@ -266,7 +266,7 @@ export async function runUILifecycleInspection() {
         assert("ターン数 (#valTurn) に初期値 '1' がセットされていること", valTurn.innerText === "1", `実際: ${valTurn.innerText}`);
 
         const valDefense = mockDoc.getElementById("valDefense");
-        assert("防衛力 (#valDefense) が初期値 '10 / 10' で表示されること", valDefense.innerText === "10 / 10", `実際: ${valDefense.innerText}`);
+        assert("防衛力 (#valDefense) が初期値 '5 / 5' で表示されること", valDefense.innerText === "5 / 5", `実際: ${valDefense.innerText}`);
 
         const hqEmberBadge = mockDoc.getElementById("hqEmberValBadge");
         assert("本営残り火バッジ (#hqEmberValBadge) に初期値 '20' がセットされていること", hqEmberBadge && hqEmberBadge.innerText === "20", `実際: ${hqEmberBadge?.innerText}`);

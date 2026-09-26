@@ -13,6 +13,7 @@ export const BOARD_CAPABILITIES = Object.freeze({
     INVESTIGATION_SITE: 'INVESTIGATION_SITE',
     OBSERVATION_SITE: 'OBSERVATION_SITE',
     PRODUCTION_SITE: 'PRODUCTION_SITE',
+    FOOD_STORAGE: 'FOOD_STORAGE',
     DEFENSE_ANCHOR: 'DEFENSE_ANCHOR',
     REINFORCEMENT_ORIGIN: 'REINFORCEMENT_ORIGIN',
     GARRISON_SITE: 'GARRISON_SITE'
@@ -20,6 +21,7 @@ export const BOARD_CAPABILITIES = Object.freeze({
 
 export const SPECIAL_BLOCK_TYPES = Object.freeze({
     FARM: 'FARM',
+    GRANARY: 'GRANARY',
     LOGGING_CAMP: 'LOGGING_CAMP',
     MINE: 'MINE',
     ALTAR: 'ALTAR',
@@ -33,6 +35,137 @@ export const BASE_TERRAIN_INTERACTIONS = Object.freeze({
     TRANSFORMING_OVERLAY: 'TRANSFORMING_OVERLAY',
     TERRAIN_USING_OVERLAY: 'TERRAIN_USING_OVERLAY'
 });
+
+export const SPECIAL_BLOCK_COST_STATUS = Object.freeze({
+    RESOLVED: 'RESOLVED',
+    UNRESOLVED: 'UNRESOLVED'
+});
+
+export const SPECIAL_BLOCK_ADJACENCY_GL = 1;
+
+function finiteTerrainAxis(value) {
+    if (value === null || value === undefined || value === '') return null;
+    const number = Number(value);
+    return Number.isFinite(number) ? number : null;
+}
+
+/**
+ * Special Blocks participate in Board adjacency without becoming normal Terrain.
+ * E is copied from the terrain used as the construction reference; GL is always
+ * treated as 1. The persisted profile keeps independent/special-only cells
+ * deterministic across save/restore.
+ */
+export function createSpecialBlockAdjacencyProfile(referenceCell, source = null) {
+    const elevation = finiteTerrainAxis(referenceCell?.terrain?.e);
+    return Object.freeze({
+        e: elevation,
+        gl: SPECIAL_BLOCK_ADJACENCY_GL,
+        ...(source && Number.isInteger(source.r) && Number.isInteger(source.c)
+            ? { source: Object.freeze({ r: source.r, c: source.c }) }
+            : {})
+    });
+}
+
+export function readSpecialBlockAdjacencyProfile(entityOrCell) {
+    const cell = entityOrCell?.specialBlock ? entityOrCell : null;
+    const entity = cell?.specialBlock || entityOrCell;
+    if (!entity || typeof entity !== 'object') return null;
+
+    const stored = entity.terrainAdjacencyProfile;
+    const storedE = finiteTerrainAxis(stored?.e);
+    const fallbackE = finiteTerrainAxis(cell?.terrain?.e);
+
+    return Object.freeze({
+        e: storedE !== null ? storedE : fallbackE,
+        gl: SPECIAL_BLOCK_ADJACENCY_GL,
+        ...(stored?.source && Number.isInteger(stored.source.r) && Number.isInteger(stored.source.c)
+            ? { source: Object.freeze({ r: stored.source.r, c: stored.source.c }) }
+            : {})
+    });
+}
+
+export function validateTerrainAgainstSpecialBlockAdjacency(terrain, profile) {
+    if (!terrain || !profile) return { valid: true, reasons: [] };
+
+    const terrainGL = finiteTerrainAxis(terrain.gl);
+    const terrainE = finiteTerrainAxis(terrain.e);
+    const reasons = [];
+
+    // Absolute facility-edge exclusions. GL0 is not enough to identify a
+    // desert because canonical mountains also use GL0; keep the two semantics
+    // explicit so facilities such as mines are not misclassified.
+    const id = String(terrain.terrainId || terrain.id || '').toUpperCase();
+    const isDesert = id.includes('DESERT');
+    const isMountain = terrainE === 3 || id.includes('MOUNTAIN');
+    if (isDesert) reasons.push('SPECIAL_BLOCK_DESERT_NEIGHBOR_FORBIDDEN');
+    if (isMountain) reasons.push('SPECIAL_BLOCK_MOUNTAIN_NEIGHBOR_FORBIDDEN');
+
+    if (
+        terrainGL !== null
+        && Number.isFinite(profile.gl)
+        && Math.abs(terrainGL - profile.gl) >= 2
+    ) {
+        reasons.push('INVALID_GL_NEIGHBOR');
+    }
+
+    if (
+        terrainE !== null
+        && Number.isFinite(profile.e)
+        && Math.abs(terrainE - profile.e) >= 2
+    ) {
+        if ((terrainE === 0 && profile.e === 3) || (terrainE === 3 && profile.e === 0)) {
+            reasons.push('WETLAND_MOUNTAIN_NEIGHBOR');
+        } else if ((terrainE === 0 && profile.e === 2) || (terrainE === 2 && profile.e === 0)) {
+            reasons.push('WETLAND_HILL_NEIGHBOR');
+        } else {
+            reasons.push('INVALID_ELEVATION_NEIGHBOR');
+        }
+    }
+
+    return {
+        valid: reasons.length === 0,
+        reasons: [...new Set(reasons)]
+    };
+}
+
+const SPECIAL_BLOCK_RESOURCE_KEYS = Object.freeze(['food', 'wood', 'defense', 'mystic', 'ember']);
+
+function validNonNegativeNumber(value) {
+    return typeof value === 'number' && Number.isFinite(value) && value >= 0;
+}
+
+export function normalizeSpecialBlockResourceMap(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+    const normalized = {};
+    for (const key of SPECIAL_BLOCK_RESOURCE_KEYS) {
+        const raw = value[key];
+        if (raw === undefined) continue;
+        if (!validNonNegativeNumber(raw)) return null;
+        normalized[key] = raw;
+    }
+    return Object.freeze(normalized);
+}
+
+export function resolveSpecialBlockCreationCost(definition) {
+    const cost = definition?.creationCost;
+    if (!cost || cost.status !== SPECIAL_BLOCK_COST_STATUS.RESOLVED) {
+        return Object.freeze({
+            status: SPECIAL_BLOCK_COST_STATUS.UNRESOLVED,
+            resources: null
+        });
+    }
+    const resources = normalizeSpecialBlockResourceMap(cost.resources);
+    if (!resources) {
+        return Object.freeze({
+            status: SPECIAL_BLOCK_COST_STATUS.UNRESOLVED,
+            resources: null
+        });
+    }
+    return Object.freeze({
+        status: SPECIAL_BLOCK_COST_STATUS.RESOLVED,
+        resources
+    });
+}
 
 const defaultTrialTraits = Object.freeze({
     interceptionAllowed: null,
@@ -64,6 +197,7 @@ function freezeProductionDefinition(production) {
     return Object.freeze({
         ...production,
         yields: freezeYieldMap(production.yields),
+        baseYields: freezeYieldMap(production.baseYields),
         perSourceYields: freezeYieldMap(production.perSourceYields),
         perRelationYields: freezeYieldMap(production.perRelationYields)
     });
@@ -79,7 +213,25 @@ function freezeDefinition(definition) {
         ...definition,
         placement: Object.freeze(placement),
         baseTerrainInteraction: Object.freeze({ ...(definition.baseTerrainInteraction || {}) }),
+        ...(definition.creationCost
+            ? {
+                creationCost: Object.freeze({
+                    ...definition.creationCost,
+                    resources: definition.creationCost.resources
+                        ? Object.freeze({ ...definition.creationCost.resources })
+                        : definition.creationCost.resources
+                })
+            }
+            : {}),
         production: freezeProductionDefinition(definition.production),
+        maintenanceModifiers: definition.maintenanceModifiers
+            ? Object.freeze({
+                ...definition.maintenanceModifiers,
+                food: definition.maintenanceModifiers.food
+                    ? Object.freeze({ ...definition.maintenanceModifiers.food })
+                    : null
+            })
+            : null,
         capabilities: Object.freeze([...(definition.capabilities || [])]),
         trialTraits: Object.freeze({
             ...defaultTrialTraits,
@@ -98,7 +250,8 @@ export const SPECIAL_BLOCK_DEFINITIONS = Object.freeze({
         placement: {
             mode: 'INDEPENDENT_CELL_GENERATION',
             targeting: 'SOURCE_AND_ADJACENT_EMPTY',
-            sourceTerrainIds: ['GL1_PLAINS']
+            sourceTerrainIds: ['GL1_PLAINS'],
+            requiresSourceIsolation: true
         },
         baseTerrainInteraction: { kind: BASE_TERRAIN_INTERACTIONS.INDEPENDENT },
         production: { kind: 'FIXED', status: 'UNRESOLVED' },
@@ -107,20 +260,44 @@ export const SPECIAL_BLOCK_DEFINITIONS = Object.freeze({
         lifecycle: { initialState: 'ACTIVE' },
         presentation: { nameKey: 'SPECIAL_BLOCK_FARM' }
     }),
+    [SPECIAL_BLOCK_TYPES.GRANARY]: freezeDefinition({
+        id: SPECIAL_BLOCK_TYPES.GRANARY,
+        category: 'STORAGE',
+        placement: {
+            ...overlayPlacement,
+            terrainIds: ['GL1_PLAINS', 'E1_RECLAIMED_LAND']
+        },
+        baseTerrainInteraction: { kind: BASE_TERRAIN_INTERACTIONS.TERRAIN_USING_OVERLAY },
+        production: null,
+        maintenanceModifiers: {
+            food: {
+                status: 'RESOLVED',
+                kind: 'FLAT_REDUCTION',
+                amountPerInstance: 2,
+                maxInstances: 2
+            }
+        },
+        capabilities: [BOARD_CAPABILITIES.FOOD_STORAGE],
+        trialTraits: {},
+        lifecycle: { initialState: 'ACTIVE' },
+        presentation: { nameKey: 'SPECIAL_BLOCK_GRANARY' }
+    }),
     [SPECIAL_BLOCK_TYPES.LOGGING_CAMP]: freezeDefinition({
         id: SPECIAL_BLOCK_TYPES.LOGGING_CAMP,
         category: 'PRODUCTION',
         placement: {
-            ...overlayPlacement,
-            terrainIds: ['GL2_FOREST', 'GL3_DEEP_FOREST', 'E2_FOREST_HILL', 'E2_DEEP_HILL'],
-            minGL: 2,
-            requiresSourceCluster: true
+            mode: 'INDEPENDENT_CELL_GENERATION',
+            targeting: 'SOURCE_AND_ADJACENT_EMPTY',
+            sourceMinGL: 2,
+            minConnectedSourceCells: 2
         },
-        baseTerrainInteraction: {
-            kind: BASE_TERRAIN_INTERACTIONS.TRANSFORMING_OVERLAY,
-            glDelta: -1
+        baseTerrainInteraction: { kind: BASE_TERRAIN_INTERACTIONS.INDEPENDENT },
+        production: {
+            kind: 'RELATION_COUNT',
+            status: 'UNRESOLVED',
+            relationDefinitionId: SPECIAL_BLOCK_TYPES.LOGGING_CAMP,
+            relationNeighborhood: 'ORTHOGONAL'
         },
-        production: { kind: 'SOURCE_SIZE', status: 'UNRESOLVED' },
         capabilities: [BOARD_CAPABILITIES.PRODUCTION_SITE],
         trialTraits: {},
         lifecycle: { initialState: 'ACTIVE' },
@@ -204,6 +381,14 @@ export function getSpecialBlockDefinition(type) {
     return SPECIAL_BLOCK_DEFINITIONS[type] || null;
 }
 
+export function isSpecialBlockFunctional(entityOrCell) {
+    const entity = entityOrCell?.specialBlock || entityOrCell;
+    if (!entity || typeof entity !== 'object') return false;
+    return entity.state === undefined
+        || entity.state === null
+        || entity.state === 'ACTIVE';
+}
+
 function addCapabilities(target, values) {
     for (const value of values || []) {
         if (typeof value === 'string' && value) target.add(value);
@@ -225,16 +410,18 @@ export function readCellCapabilities(cell) {
     addCapabilities(capabilities, cell.capabilities);
     addCapabilities(capabilities, cell.terrain?.capabilities);
     addCapabilities(capabilities, cell.socketResource?.capabilities);
-    addCapabilities(capabilities, cell.specialBlock?.capabilities);
 
     const id = terrainId(cell);
     if (id === 'E0_WETLAND') capabilities.add(BOARD_CAPABILITIES.WATER_SOURCE);
     if (isIrrigationSourceCell(cell)) capabilities.add(BOARD_CAPABILITIES.WATER_SOURCE);
 
-    const specialDefinition = getSpecialBlockDefinition(
-        cell.specialBlock?.definitionId || cell.specialBlock?.type
-    );
-    addCapabilities(capabilities, specialDefinition?.capabilities);
+    if (isSpecialBlockFunctional(cell.specialBlock)) {
+        addCapabilities(capabilities, cell.specialBlock?.capabilities);
+        const specialDefinition = getSpecialBlockDefinition(
+            cell.specialBlock?.definitionId || cell.specialBlock?.type
+        );
+        addCapabilities(capabilities, specialDefinition?.capabilities);
+    }
 
     // HQ is never promoted to MYSTIC_SOURCE by production values.
     if (cell.isHQ) capabilities.delete(BOARD_CAPABILITIES.MYSTIC_SOURCE);
@@ -263,6 +450,7 @@ export function readEffectiveGreenery(cell) {
 export function readSpecialBlockTrialTraits(entityOrCell) {
     const entity = entityOrCell?.specialBlock || entityOrCell;
     if (!entity || typeof entity !== 'object') return null;
+    if (!isSpecialBlockFunctional(entity)) return null;
     const definition = getSpecialBlockDefinition(entity.definitionId || entity.type);
     if (!definition) return null;
     return {

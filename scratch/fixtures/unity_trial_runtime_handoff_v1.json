@@ -1,0 +1,282 @@
+{
+  "contractVersion": "unity-runtime-handoff-v1",
+  "contracts": {
+    "boardPresentation": "board-presentation-v1",
+    "boardInput": "board-input-v1",
+    "gameRuntimeSnapshot": "game-runtime-snapshot-v1"
+  },
+  "board": {
+    "contractVersion": "board-presentation-v1",
+    "presentation": {
+      "viewMode": "2_5D",
+      "contextMode": "TRIAL",
+      "viewPreset": "TACTICAL",
+      "selectedCell": {
+        "r": 0,
+        "c": 1
+      },
+      "hoveredCell": {
+        "r": 0,
+        "c": 0
+      },
+      "focusCell": {
+        "r": 0,
+        "c": 1
+      }
+    },
+    "profile": {},
+    "board": {
+      "rows": 1,
+      "columns": 2
+    },
+    "trial": {
+      "available": true,
+      "activeRouteId": "route-1",
+      "selectedInterceptCell": {
+        "r": 0,
+        "c": 1
+      },
+      "hoveredInterceptCell": {
+        "r": 0,
+        "c": 0
+      },
+      "routes": [
+        {
+          "routeId": "route-1",
+          "cells": [
+            {
+              "r": 0,
+              "c": 0
+            },
+            {
+              "r": 0,
+              "c": 1
+            }
+          ],
+          "entryCell": {
+            "r": 0,
+            "c": 0
+          },
+          "entrySide": "W",
+          "isActive": true
+        }
+      ],
+      "interceptionCandidates": [
+        {
+          "routeId": "route-1",
+          "cell": {
+            "r": 0,
+            "c": 1
+          },
+          "eligible": true
+        }
+      ],
+      "plannedIntercepts": [],
+      "battleMarkers": [],
+      "tacticalEffects": [
+        {
+          "id": "FOREST_AMBUSH",
+          "cell": {
+            "r": 0,
+            "c": 1
+          }
+        }
+      ],
+      "enemyState": {
+        "phase": "PLANNING"
+      }
+    },
+    "cells": [
+      [
+        {
+          "r": 0,
+          "c": 0,
+          "placed": true,
+          "isHQ": false,
+          "terrainId": "PLAINS",
+          "category": null,
+          "nameKey": null,
+          "elevation": null,
+          "greenery": null,
+          "hasSocket": false,
+          "socketResource": null,
+          "yields": {},
+          "baseYields": {},
+          "productionStatus": null,
+          "productionScope": null,
+          "blockProduction": null,
+          "blockProductionPrimary": false,
+          "primaryYield": null,
+          "modifiers": [],
+          "placementGroupId": null,
+          "mergeGroupId": null,
+          "zone": null,
+          "links": [],
+          "display": {
+            "role": null,
+            "production": null
+          },
+          "history": {
+            "battleSite": false,
+            "battleSites": [],
+            "damage": {
+              "any": false,
+              "land": false,
+              "specialBlock": false,
+              "records": [],
+              "landRecords": [],
+              "specialBlockRecords": []
+            }
+          },
+          "influence": {
+            "hqVicinity": false,
+            "waterSource": false,
+            "waterSourceType": null
+          },
+          "edges": [],
+          "interaction": {
+            "selected": false,
+            "hovered": true,
+            "focused": false,
+            "placedThisTurn": false
+          },
+          "trial": {
+            "available": true,
+            "onRoute": true,
+            "route": {
+              "routeId": "route-1",
+              "routeIndex": 0,
+              "isRouteEntry": true,
+              "isRouteEnd": false,
+              "routeDirection": "E",
+              "isActiveRoute": true
+            },
+            "interceptionCandidate": null,
+            "plannedIntercept": null,
+            "battleMarker": null,
+            "tacticalEffects": []
+          }
+        },
+        {
+          "r": 0,
+          "c": 1,
+          "placed": true,
+          "isHQ": false,
+          "terrainId": "FOREST",
+          "category": null,
+          "nameKey": null,
+          "elevation": null,
+          "greenery": null,
+          "hasSocket": false,
+          "socketResource": null,
+          "yields": {},
+          "baseYields": {},
+          "productionStatus": null,
+          "productionScope": null,
+          "blockProduction": null,
+          "blockProductionPrimary": false,
+          "primaryYield": null,
+          "modifiers": [],
+          "placementGroupId": null,
+          "mergeGroupId": null,
+          "zone": null,
+          "links": [],
+          "display": {
+            "role": null,
+            "production": null
+          },
+          "history": {
+            "battleSite": false,
+            "battleSites": [],
+            "damage": {
+              "any": false,
+              "land": false,
+              "specialBlock": false,
+              "records": [],
+              "landRecords": [],
+              "specialBlockRecords": []
+            }
+          },
+          "influence": {
+            "hqVicinity": false,
+            "waterSource": false,
+            "waterSourceType": null
+          },
+          "edges": [],
+          "interaction": {
+            "selected": true,
+            "hovered": false,
+            "focused": true,
+            "placedThisTurn": false
+          },
+          "trial": {
+            "available": true,
+            "onRoute": true,
+            "route": {
+              "routeId": "route-1",
+              "routeIndex": 1,
+              "isRouteEntry": false,
+              "isRouteEnd": true,
+              "routeDirection": null,
+              "isActiveRoute": true
+            },
+            "interceptionCandidate": {
+              "routeId": "route-1",
+              "cell": {
+                "r": 0,
+                "c": 1
+              },
+              "eligible": true
+            },
+            "plannedIntercept": null,
+            "battleMarker": null,
+            "tacticalEffects": [
+              {
+                "id": "FOREST_AMBUSH",
+                "cell": {
+                  "r": 0,
+                  "c": 1
+                }
+              }
+            ]
+          }
+        }
+      ]
+    ]
+  },
+  "runtime": {
+    "contractVersion": "game-runtime-snapshot-v1",
+    "progression": {
+      "verse": 15,
+      "stage": {
+        "id": 1,
+        "name": "Stage 1",
+        "size": 5,
+        "maxTiles": 25
+      }
+    },
+    "board": {
+      "rows": 5,
+      "columns": 5
+    },
+    "resources": {
+      "ember": {
+        "current": 7,
+        "max": 12
+      },
+      "food": {
+        "current": 8
+      },
+      "material": {
+        "current": 5
+      },
+      "defense": {
+        "current": 4,
+        "max": 5
+      },
+      "mystic": {
+        "current": 1
+      }
+    }
+  }
+}

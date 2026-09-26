@@ -41,6 +41,7 @@ export class TrialController {
         this.gameFactHub = gameFactHub;
         this.emberSystem = emberSystem;
         this.deploymentService = deploymentService || null;
+        this.sessionDeploymentService = null;
         this.defenseReservation = defenseReservation || null;
         this.sessionDefenseReservation = null;
         this.state = null;
@@ -54,7 +55,11 @@ export class TrialController {
             ? null
             : this.defenseReservation;
         this.state.enemy.totalSuppression = this.powerResolver.resolveSuppression(this.state.enemy.strategicSuppression);
-        this.deploymentService?.beginSession?.({ trialState: this.state });
+        const deploymentSession = this.deploymentService?.beginSession?.({ trialState: this.state }) || null;
+        this.sessionDeploymentService = this.deploymentService
+            && deploymentSession?.applicable !== false
+            ? this.deploymentService
+            : null;
         return this.state;
     }
 
@@ -217,6 +222,81 @@ export class TrialController {
         });
     }
 
+    buildInterceptionPlanSnapshot(drafts) {
+        const map = drafts instanceof Map
+            ? drafts
+            : new Map(Array.isArray(drafts) ? drafts.map(d => [d.routeId, d]) : Object.entries(drafts || {}));
+        const confirmedRoutes = [];
+        for (const route of this.state?.routes || []) {
+            const rId = route.id ?? route.routeId;
+            const decision = map.get(rId);
+            if (decision && (
+                decision.status === TRIAL_ROUTE_PLAN_STATUSES.INTERCEPT
+                || decision.status === TRIAL_ROUTE_PLAN_STATUSES.SKIP
+            )) {
+                confirmedRoutes.push({
+                    routeId: rId,
+                    status: decision.status,
+                    interceptCell: decision.interceptCell ? { ...decision.interceptCell } : null,
+                    interceptBlockId: decision.interceptBlockId || null,
+                    defenseAllocation: Number(decision.defenseAllocation) || 0
+                });
+            }
+        }
+
+        return {
+            routes: confirmedRoutes,
+            totalDefenseAllocated: confirmedRoutes.reduce(
+                (sum, route) => sum + (
+                    route.status === TRIAL_ROUTE_PLAN_STATUSES.INTERCEPT
+                        ? route.defenseAllocation
+                        : 0
+                ),
+                0
+            )
+        };
+    }
+
+    previewPlanningDraftDeployment(drafts, context = {}) {
+        if (!this.state) {
+            return {
+                success: false,
+                applicable: false,
+                affordable: false,
+                reasons: ["TRIAL_NOT_STARTED"]
+            };
+        }
+
+        const validation = this.validatePlanningDraft(drafts);
+        if (!validation.valid || (validation.errors && validation.errors.length > 0)) {
+            return {
+                success: false,
+                applicable: Boolean(this.sessionDeploymentService),
+                affordable: false,
+                reasons: validation.errors || []
+            };
+        }
+
+        if (!this.sessionDeploymentService) {
+            return {
+                success: true,
+                applicable: false,
+                affordable: true,
+                foodCost: 0,
+                materialCost: 0,
+                reasons: []
+            };
+        }
+
+        const plan = this.buildInterceptionPlanSnapshot(drafts);
+        const preview = this.sessionDeploymentService.previewPlan(plan, context);
+        return {
+            ...preview,
+            applicable: true,
+            plan
+        };
+    }
+
     confirmInterceptionPlan(drafts, { allowWarnings = false } = {}) {
         if (!this.state) return { success: false, errors: ["TRIAL_NOT_STARTED"], warnings: [] };
         if (this.state.interceptionPlan !== null) {
@@ -234,35 +314,11 @@ export class TrialController {
             return { success: false, requiresConfirmation: true, warnings: validation.warnings };
         }
 
-        const map = drafts instanceof Map
-            ? drafts
-            : new Map(Array.isArray(drafts) ? drafts.map(d => [d.routeId, d]) : Object.entries(drafts || {}));
-        const confirmedRoutes = [];
-        for (const route of this.state.routes) {
-            const rId = route.id ?? route.routeId;
-            const decision = map.get(rId);
-            if (decision && (decision.status === TRIAL_ROUTE_PLAN_STATUSES.INTERCEPT || decision.status === TRIAL_ROUTE_PLAN_STATUSES.SKIP)) {
-                confirmedRoutes.push({
-                    routeId: rId,
-                    status: decision.status,
-                    interceptCell: decision.interceptCell ? { ...decision.interceptCell } : null,
-                    interceptBlockId: decision.interceptBlockId || null,
-                    defenseAllocation: Number(decision.defenseAllocation) || 0
-                });
-            }
-        }
-
-        const totalDefenseAllocated = confirmedRoutes.reduce(
-            (sum, r) => sum + (r.status === TRIAL_ROUTE_PLAN_STATUSES.INTERCEPT ? r.defenseAllocation : 0),
-            0
-        );
-
-        this.state.interceptionPlan = {
-            routes: confirmedRoutes,
-            totalDefenseAllocated
-        };
-        if (this.deploymentService) {
-            this.state.deploymentPreview = this.deploymentService.previewPlan(this.state.interceptionPlan);
+        this.state.interceptionPlan = this.buildInterceptionPlanSnapshot(drafts);
+        const confirmedRoutes = this.state.interceptionPlan.routes;
+        const totalDefenseAllocated = this.state.interceptionPlan.totalDefenseAllocated;
+        if (this.sessionDeploymentService) {
+            this.state.deploymentPreview = this.sessionDeploymentService.previewPlan(this.state.interceptionPlan);
         }
 
         this.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_PLAN_CONFIRMED, {
@@ -360,10 +416,10 @@ export class TrialController {
         if (!this.state) {
             return { success: false, reasons: ["TRIAL_NOT_STARTED"] };
         }
-        if (!this.deploymentService) {
+        if (!this.sessionDeploymentService) {
             return { success: false, reasons: ["DEPLOYMENT_ECONOMY_NOT_ATTACHED"] };
         }
-        const preview = this.deploymentService.previewPlan(plan, context);
+        const preview = this.sessionDeploymentService.previewPlan(plan, context);
         if (plan === this.state.interceptionPlan) {
             this.state.deploymentPreview = preview;
         }
@@ -371,11 +427,12 @@ export class TrialController {
     }
 
     getDeploymentHistory() {
-        return this.deploymentService?.getDeploymentHistory?.() || [];
+        return this.sessionDeploymentService?.getDeploymentHistory?.() || [];
     }
 
     endScenario() {
         this.deploymentService?.endSession?.();
+        this.sessionDeploymentService = null;
         this.state = null;
         this.cellResolver = null;
         this.sessionDefenseReservation = null;
@@ -418,9 +475,9 @@ export class TrialController {
         const defenseToCommit = Number(plan.totalDefenseAllocated) || 0;
         let deploymentCommit = null;
         let defenseReservationCommit = null;
-        if (this.deploymentService) {
+        if (this.sessionDeploymentService) {
             const expectedPreview = deploymentPreview || this.state.deploymentPreview || null;
-            deploymentCommit = this.deploymentService.commitPlan(plan, {
+            deploymentCommit = this.sessionDeploymentService.commitPlan(plan, {
                 expectedPreview,
                 context: deploymentContext
             });

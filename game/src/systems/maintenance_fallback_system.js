@@ -1,3 +1,5 @@
+import { resolveBoardFoodMaintenanceModifiers } from '../core/board_maintenance_modifier.js';
+
 /* =============================================================
    MaintenanceFallbackSystem
    ターン終了時の食料維持費予測・不足補填・状態適用の正本
@@ -80,16 +82,30 @@ class MaintenanceFallbackSystem {
             && state.emergencyLevyTurns > 0
             && !state.emergencyLevyStartsNextTurn
         );
-        let foodCost = rationingApplied
+        let preBoardFoodCost = rationingApplied
             ? Math.floor(baseFoodCost / 2)
             : baseFoodCost;
-        if (emergencyLevyApplied) foodCost += 5;
+        if (emergencyLevyApplied) preBoardFoodCost += 5;
+
+        const boardMaintenance = state?.boardDomainAdapter?.resolveFoodMaintenanceModifiers?.()
+            || resolveBoardFoodMaintenanceModifiers(state);
+        const boardFoodMaintenanceReduction = Math.max(
+            0,
+            Number(boardMaintenance?.flatReduction || 0)
+        );
+        const foodCost = Math.max(0, preBoardFoodCost - boardFoodMaintenanceReduction);
 
         return Object.freeze({
             baseFoodCost,
+            preBoardFoodCost,
+            boardFoodMaintenanceReduction,
             foodCost,
             rationingApplied,
-            emergencyLevyApplied
+            emergencyLevyApplied,
+            boardMaintenance,
+            // Compatibility aliases for current diagnostics/UI.
+            foodStorageSites: Number(boardMaintenance?.appliedInstances || 0),
+            granaryReduction: boardFoodMaintenanceReduction
         });
     }
 

@@ -19,6 +19,8 @@ const base = {
     localRemoteMismatch: false,
     unpushedCommits: 0,
     uniqueCommits: 0,
+    contentEquivalent: false,
+    patchEquivalent: false,
     remoteExists: true,
     openPrLookupVerified: true,
     openPrReferences: [],
@@ -43,6 +45,30 @@ const tests = [
     ['unpushed commits block', { ...base, unpushedCommits: 1 }, 'BLOCKED'],
     ['local-only unique commits block', { ...base, remoteExists: false, uniqueCommits: 1 }, 'BLOCKED'],
     ['unverified unique remote commits block', { ...base, uniqueCommits: 1, prReason: 'No merged PR' }, 'BLOCKED'],
+    ['content-equivalent unique remote commits are safe', {
+        ...base,
+        uniqueCommits: 4,
+        contentEquivalent: true,
+        prReason: 'No merged PR',
+    }, 'SAFE'],
+    ['content-equivalent TASK still blocks while referenced by an open PR', {
+        ...base,
+        uniqueCommits: 4,
+        contentEquivalent: true,
+        openPrReferences: [{ number: 80, role: 'head' }],
+    }, 'BLOCKED'],
+    ['patch-equivalent unique commits are safe after target advances', {
+        ...base,
+        uniqueCommits: 4,
+        patchEquivalent: true,
+        prReason: 'No merged PR',
+    }, 'SAFE'],
+    ['patch-equivalent TASK still blocks while referenced by an open PR', {
+        ...base,
+        uniqueCommits: 4,
+        patchEquivalent: true,
+        openPrReferences: [{ number: 81, role: 'head' }],
+    }, 'BLOCKED'],
     ['zero-unique TASK used as open PR head blocks', {
         ...base,
         openPrReferences: [{ number: 77, role: 'head' }],
@@ -230,6 +256,21 @@ assert.equal(
     'cleanup must refresh and revalidate immediately before mutation',
 );
 assert.equal(
+    sweeperSource.includes("remote TASK branch already absent"),
+    true,
+    'remote deletion must be idempotent when another cleanup wins the delete race',
+);
+assert.equal(
+    sweeperSource.includes("git(['fetch', 'origin', '--prune'], { cwd, allowFailure: true });"),
+    true,
+    'remote delete failure must refresh/prune before deciding that the branch is already absent',
+);
+assert.equal(
+    sweeperSource.includes("throw new Error(\`git push origin --delete \${branch} failed"),
+    true,
+    'remote deletion failures must remain fail-closed when the branch still exists after refresh',
+);
+assert.equal(
     (sweeperSource.match(/await loadOpenPullRequestSnapshot\(githubRepo\)/g) || []).length >= 3,
     true,
     'open PR references must be refreshed during dry-run, cleanup revalidation, and immediately before each destructive mutation',
@@ -285,6 +326,16 @@ assert.equal(
     'superseded cleanup must use an explicit audited manifest rather than branch-name heuristics',
 );
 assert.equal(
+    sweeperSource.includes("task_sweeper_superseded_${target}.json"),
+    true,
+    'Sweeper must support a target-scoped audited superseded manifest without mixing target histories',
+);
+assert.equal(
+    sweeperSource.includes('loadSupersededTaskManifest(cwd, target)'),
+    true,
+    'target resolution must select the matching audited superseded ledger',
+);
+assert.equal(
     sweeperSource.includes('entry.expectedHeadSha !== remoteSha'),
     true,
     'superseded proof must be pinned to the exact current remote TASK head',
@@ -295,9 +346,29 @@ assert.equal(
     'replacement PR merge commit must already be contained in the integration target',
 );
 assert.equal(
-    sweeperSource.includes('!state.mergedPrVerified && !state.supersededVerified'),
+    sweeperSource.includes('!state.mergedPrVerified && !state.supersededVerified && !state.contentEquivalent && !state.patchEquivalent'),
     true,
-    'unique commits may bypass the normal merged-head proof only through an audited supersession proof',
+    'unique commits may bypass the normal merged-head proof only through audited supersession, exact tree equivalence, or patch equivalence',
+);
+assert.equal(
+    sweeperSource.includes("spawnSync('git', ['diff', '--quiet', leftRef, rightRef, '--']"),
+    true,
+    'content-equivalent cleanup must compare complete endpoint trees and fail closed on git diff errors',
+);
+assert.equal(
+    sweeperSource.includes("reason: 'TASK tree is content-equivalent to target'"),
+    true,
+    'content-equivalent TASK cleanup must be explicit in the dry-run report',
+);
+assert.equal(
+    sweeperSource.includes("git(['cherry', targetRef, comparisonRef]"),
+    true,
+    'stale TASK absorption must use git cherry patch-equivalence instead of comparing against the moving target tree',
+);
+assert.equal(
+    sweeperSource.includes("reason: 'all TASK commits are patch-equivalent to target'"),
+    true,
+    'patch-equivalent TASK cleanup must be explicit in the dry-run report',
 );
 
 const supersededManifest = JSON.parse(
@@ -308,6 +379,25 @@ assert.equal(supersededManifest.target, 'AoT260922');
 assert.equal(new Set(supersededManifest.entries.map(entry => entry.branch)).size, supersededManifest.entries.length);
 for (const entry of supersededManifest.entries) {
     assert.match(entry.branch, /^aot-task\/AoT260922\/[a-z0-9-]+\/[a-z0-9-]+$/);
+    assert.match(entry.expectedHeadSha, /^[0-9a-f]{40}$/);
+    const replacementPrs = Array.isArray(entry.replacementPrs)
+        ? entry.replacementPrs
+        : [entry.replacementPr];
+    assert.ok(replacementPrs.length > 0);
+    assert.equal(replacementPrs.every(Number.isInteger), true);
+}
+
+const targetScopedSupersededManifest = JSON.parse(
+    fs.readFileSync(new URL('./task_sweeper_superseded_AoT260924.json', import.meta.url), 'utf8')
+);
+assert.equal(targetScopedSupersededManifest.schemaVersion, 1);
+assert.equal(targetScopedSupersededManifest.target, 'AoT260924');
+assert.equal(
+    new Set(targetScopedSupersededManifest.entries.map(entry => entry.branch)).size,
+    targetScopedSupersededManifest.entries.length,
+);
+for (const entry of targetScopedSupersededManifest.entries) {
+    assert.match(entry.branch, /^aot-task\/AoT260924\/[a-z0-9-]+\/[a-z0-9-]+$/);
     assert.match(entry.expectedHeadSha, /^[0-9a-f]{40}$/);
     const replacementPrs = Array.isArray(entry.replacementPrs)
         ? entry.replacementPrs
@@ -326,4 +416,4 @@ assert.equal(
     'GitHub header helper must not recurse into itself',
 );
 
-console.log(`✅ AoT Task Sweeper safety contract: ${passed}/17 classifications PASS + open PR head/base protection + cleanup revalidation + naming/launcher contract PASS`);
+console.log(`✅ AoT Task Sweeper safety contract: ${passed}/21 classifications PASS + content/patch-equivalence + open PR head/base protection + cleanup revalidation + naming/launcher contract PASS`);

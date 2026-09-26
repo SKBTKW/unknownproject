@@ -14,7 +14,6 @@ import {
     validatePlacementAttributeMap
 } from '../core/placement_geometry.js';
 import { isMultiAttributeProductionResolved } from '../core/land_production_contract.js';
-import { isTrueMergedCell } from '../core/merge_rules.js';
 import { getWaterSourceSpawnChance } from '../core/lake_rules.js';
 import { normalizeCardDefinitionV1, unwrapCardDefinition } from '../cards/card_definition_v1.js';
 import { LandPlacementAvailabilityQuery } from '../cards/land_placement_availability_query.js';
@@ -62,7 +61,14 @@ class DeckManager {
             evaluator: (requirement, context) => {
                 const evaluator = this.engine?.cardExecutionRequirementEvaluator;
                 if (typeof evaluator === "function") return Boolean(evaluator(requirement, context));
-                return Boolean(ConditionEvaluator.evaluate(requirement, { state: this.state, ...context }));
+                return Boolean(ConditionEvaluator.evaluate(requirement, {
+                    state: this.state,
+                    engine: this.engine,
+                    boardQuery: this.cardOfferingBoardQuery,
+                    resourcePressureQuery: this.engine?.resourcePressureQuery || null,
+                    warningStateService: this.engine?.warningStateService || null,
+                    ...context
+                }));
             }
         });
         this.offeringEligibility = new CardOfferingEligibilityService({
@@ -82,7 +88,12 @@ class DeckManager {
                 if (typeof evaluator === "function") return Boolean(evaluator(requirement, context));
                 const worldEvaluator = this.engine?.evaluateWorldEligibilityRequirement;
                 if (typeof worldEvaluator === "function") return Boolean(worldEvaluator(requirement));
-                return Boolean(ConditionEvaluator.evaluate(requirement, { state: this.state, ...context }));
+                return Boolean(ConditionEvaluator.evaluate(requirement, {
+                    state: this.state,
+                    engine: this.engine,
+                    resourcePressureQuery: this.engine?.resourcePressureQuery || null,
+                    ...context
+                }));
             }
         });
         this.offeringCandidatePool = new OfferingCandidatePoolService({
@@ -746,11 +757,34 @@ class DeckManager {
         return true;
     }
 
+    resolveCardExecutionVariant(cardObj) {
+        if (!cardObj || cardObj.category === "LAND") return cardObj;
+        const variants = Array.isArray(cardObj.executionVariants) ? cardObj.executionVariants : [];
+        if (variants.length === 0) return cardObj;
+
+        const selectedId = cardObj.selectedExecutionVariantId || null;
+        if (!selectedId) return null;
+        const variant = variants.find(candidate => candidate && candidate.id === selectedId);
+        if (!variant) return null;
+
+        return {
+            ...cardObj,
+            cost: { ...(variant.cost || {}) },
+            effects: Array.isArray(variant.effects) ? variant.effects.map(effect => ({ ...effect })) : [],
+            execution: {
+                ...(cardObj.execution || {}),
+                ...(variant.execution || {})
+            },
+            selectedExecutionVariantId: selectedId
+        };
+    }
+
     quoteCardExecutionCost(cardObj) {
         if (!cardObj || cardObj.category === "LAND") {
             return { success: false, reason: "NOT_A_COMMAND_CARD", resources: {} };
         }
-        const definitionV1 = normalizeCardDefinitionV1(cardObj);
+        const resolvedCard = this.resolveCardExecutionVariant(cardObj) || cardObj;
+        const definitionV1 = normalizeCardDefinitionV1(resolvedCard);
         const quote = this.cardEffectHandlerRouter?.quoteCost(definitionV1, {
             state: this.state,
             engine: this.engine,
@@ -769,7 +803,7 @@ class DeckManager {
 
         return {
             success: true,
-            resources: { ...(cardObj.cost || {}) },
+            resources: { ...(resolvedCard.cost || {}) },
             source: "CARD_COST",
             quote: null
         };
@@ -777,13 +811,17 @@ class DeckManager {
 
     cardRequiresExecutionTarget(cardObj) {
         if (!cardObj || cardObj.category === "LAND") return false;
-        const definitionV1 = normalizeCardDefinitionV1(cardObj);
+        const resolvedCard = this.resolveCardExecutionVariant(cardObj);
+        if (Array.isArray(cardObj.executionVariants) && cardObj.executionVariants.length > 0 && !resolvedCard) return false;
+        const definitionV1 = normalizeCardDefinitionV1(resolvedCard || cardObj);
         return this.cardEffectHandlerRouter?.requiresTarget(definitionV1) === true;
     }
 
     enumerateCardExecutionTargets(cardObj) {
         if (!cardObj || cardObj.category === "LAND") return [];
-        const definitionV1 = normalizeCardDefinitionV1(cardObj);
+        const resolvedCard = this.resolveCardExecutionVariant(cardObj);
+        if (Array.isArray(cardObj.executionVariants) && cardObj.executionVariants.length > 0 && !resolvedCard) return [];
+        const definitionV1 = normalizeCardDefinitionV1(resolvedCard || cardObj);
         return this.cardEffectHandlerRouter?.enumerateTargets(definitionV1, {
             state: this.state,
             engine: this.engine,
@@ -797,6 +835,11 @@ class DeckManager {
     playCommandCard(cardObj, targetTile = null, handIdx = -1, reserveIdx = -1) {
         if (!this.state || !cardObj || cardObj.category === "LAND") return { success: false, reason: "NOT_A_COMMAND_CARD" };
 
+        const resolvedCard = this.resolveCardExecutionVariant(cardObj);
+        if (Array.isArray(cardObj.executionVariants) && cardObj.executionVariants.length > 0 && !resolvedCard) {
+            return { success: false, reason: "EXECUTION_VARIANT_REQUIRED" };
+        }
+        cardObj = resolvedCard || cardObj;
         const definitionV1 = normalizeCardDefinitionV1(cardObj);
         const executionGate = this.executionRequirementService.evaluate(definitionV1, {
             state: this.state,
@@ -850,6 +893,13 @@ class DeckManager {
         const cost = resolvedPaymentCost;
         const matCost = cost.material !== undefined ? cost.material : (cost.wood || 0);
         const curMat = Math.max(this.state.material !== undefined ? this.state.material : 0, this.state.wood !== undefined ? this.state.wood : 0);
+        const routedPaymentSnapshot = {
+            food: this.state.food,
+            wood: this.state.wood,
+            material: this.state.material,
+            mystic: this.state.mystic,
+            ember: this.state.ember
+        };
 
         if (cost.food && this.state.food < cost.food) return { success: false, reason: "NOT_ENOUGH_FOOD" };
         if (matCost > 0 && curMat < matCost) return { success: false, reason: "NOT_ENOUGH_MATERIAL" };
@@ -868,22 +918,23 @@ class DeckManager {
         const cName = I18n.t(cardObj.nameKey) || I18n.t(`${cardObj.id}_NAME`) || I18n.t(cardObj.id) || cardObj.id;
         const cDesc = I18n.t(`${cardObj.id}_DESC`) || "";
 
-        // 🎴 発動スロットの消費（手札の場合は空きスロット化、保留の場合は空スロット化）
-        if (handIdx >= 0 && this.state.handOffering && this.state.handOffering[handIdx]) {
-            this.state.handOffering[handIdx] = { isBlank: true, originalCard: cardObj, id: this._nextGameplayId("blank", `${this.state.turn || 1}_${handIdx}`) };
-            this.state.hasPickedThisTurn = true;
-        } else if (reserveIdx >= 0 && this.state.reserveSlots) {
-            this.state.reserveSlots[reserveIdx] = null;
-            this.state.hasPickedThisTurn = true;
-        }
+        const consumePlayedCardSlot = () => {
+            if (handIdx >= 0 && this.state.handOffering && this.state.handOffering[handIdx]) {
+                this.state.handOffering[handIdx] = {
+                    isBlank: true,
+                    originalCard: cardObj,
+                    id: this._nextGameplayId("blank", `${this.state.turn || 1}_${handIdx}`)
+                };
+                this.state.hasPickedThisTurn = true;
+            } else if (reserveIdx >= 0 && this.state.reserveSlots) {
+                this.state.reserveSlots[reserveIdx] = null;
+                this.state.hasPickedThisTurn = true;
+            }
+            this.consumeCardIfUnique(cardObj);
+        };
 
-        // ⭐ 選択時消費: UNIQUE カードなら consumedUniqueCards へ登録
-        this.consumeCardIfUnique(cardObj);
-
-        // Card Effect Handler v1 boundary.
-        // No legacy effect is registered by default. Registered effects may
-        // migrate one-by-one; every unregistered card falls through to the
-        // existing if/else implementation unchanged.
+        // Declarative/domain effects commit before the card slot is consumed.
+        // Legacy branches retain their historical consume-before-effect order.
         const routedEffect = this.cardEffectHandlerRouter?.execute(cardObj, {
             state: this.state,
             engine: this.engine,
@@ -898,15 +949,29 @@ class DeckManager {
             cardDescription: cDesc
         });
         if (routedEffect?.handled) {
-            if (routedEffect.success === false) return routedEffect;
+            if (routedEffect.success === false) {
+                this.state.food = routedPaymentSnapshot.food;
+                this.state.wood = routedPaymentSnapshot.wood;
+                if (routedPaymentSnapshot.material !== undefined) {
+                    this.state.material = routedPaymentSnapshot.material;
+                } else {
+                    this.state.material = this.state.wood;
+                }
+                this.state.mystic = routedPaymentSnapshot.mystic;
+                this.state.ember = routedPaymentSnapshot.ember;
+                return routedEffect;
+            }
 
+            consumePlayedCardSlot();
             if (cardObj.isUnique) {
                 if (!this.state.usedUniqueCards) this.state.usedUniqueCards = [];
-                this.state.usedUniqueCards.push(cId);
+                if (!this.state.usedUniqueCards.includes(cId)) this.state.usedUniqueCards.push(cId);
             }
             this.state.hasPickedThisTurn = true;
             return { ...routedEffect, success: true };
         }
+
+        consumePlayedCardSlot();
 
            if (cId === "CMD_TRANSMUTE_GOLDEN") {
             // 💎 黄金秘境への変容: コスト ✨-20
@@ -918,19 +983,6 @@ class DeckManager {
                 this.state.mystic += 10;
                 this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `💎【${cName}】`);
             }
-        } else       if (cId === "CMD_RESETTLEMENT") {
-            // 👥 人口移住令: コスト 🌾-15 🧱-10 (平地2x2マージ指定 🔥+2 ＆ 🌾+2/T永続)
-            this.state.ember = Math.min(30, (this.state.ember || 20) + 2);
-            this.state.resettlementFoodBonus = (this.state.resettlementFoodBonus || 0) + 2;
-            this.state.addBuff({
-                id: cId,
-                name: cName,
-                shortName: cName,
-                icon: "👥",
-                description: cDesc,
-                category: "PERMANENT"
-            });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `👥【${cName}】`);
         } else if (cId === "CMD_GREAT_RAMPART_PROJECT") {
             // 🏯 特別プロジェクト：大防塁 (4T継続投資 🧱-45/T ＆ 試練進軍効率大幅低下)
             this.state.greatRampartTurns = 4;
@@ -945,52 +997,7 @@ class DeckManager {
                 remainingTurns: 4
             });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🏯【${cName}】`);
-        } else           if (cId === "CMD_WETLAND_RECLAMATION") {
-            // 🌾 干拓: コスト 🧱-15, 🔥-1 (湖以外の湿原1マスを干拓地へ永久転換)
-            let reclaimed = false;
-            let reclaimedCoord = null;
-            if (this.state.grid) {
-                for (let r = 0; r < this.state.grid.length && !reclaimed; r++) {
-                    for (let c = 0; c < this.state.grid[r].length && !reclaimed; c++) {
-                        const cell = this.state.grid[r][c];
-                        if (cell && cell.placed && !cell.isHQ && cell.terrain) {
-                            const tid = cell.terrain.terrainId || cell.terrain.id || "";
-                            const isLakeCell = cell.socketResource && (cell.socketResource.id === "SOCKET_LAKE" || cell.socketResource.isLake);
-                            if (tid.includes("WETLAND") && !isTrueMergedCell(this.state, cell) && !isLakeCell) {
-                                cell.terrain = {
-                                    id: "E1_RECLAIMED_LAND",
-                                    terrainId: "E1_RECLAIMED_LAND",
-                                    nameKey: "TERRAIN_RECLAIMED_LAND",
-                                    gl: 1,
-                                    e: 1,
-                                    food: 4,
-                                    wood: 1,
-                                    material: 1,
-                                    defense: 0,
-                                    mystic: 0,
-                                    category: "BASE",
-                                    zoneCategory: "PLAINS",
-                                    trialTerrainCategory: "STANDARD_E1",
-                                    isSpecialBlock: true,
-                                    isArtificialTerrain: true
-                                };
-                                reclaimed = true;
-                                reclaimedCoord = { r, c };
-                            }
-                        }
-                    }
-                }
-            }
-            const gridEngine = this.engine?.gridEngine || this.state?.gridEngine;
-            if (reclaimedCoord && gridEngine && typeof gridEngine.checkMergePatterns === "function") {
-                const mergeResult = gridEngine.checkMergePatterns([reclaimedCoord]);
-                if (mergeResult?.merge2x2 && typeof gridEngine.checkNewMergeLinks === "function") {
-                    gridEngine.checkNewMergeLinks();
-                }
-            }
-            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🌾", description: cDesc, category: "CARD_EFFECT" });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🌾【${cName}】`);
-        } else  if (cId === "CMD_PASTORAL_FARM") {
+        } else if (cId === "CMD_PASTORAL_FARM") {
             // 🐄 牧畜場: コスト 🧱-15 (平地を牧畜場化、🌾産出追加)
             this.state.food = (this.state.food || 0) + 2;
             this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🐄", description: cDesc, category: "CARD_EFFECT" });
@@ -1035,15 +1042,6 @@ class DeckManager {
             this.state.irrigationCount = (this.state.irrigationCount || 0) + 1;
             this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "💧", description: cDesc, category: "CARD_EFFECT" });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `💧【${cName}】`);
-        } else if (cId === "CMD_RESETTLEMENT") {
-            // 🏕️ 移住: コスト 🌾-15 🧱-10 (平地MERGEに 🔥+2、🌾+2/T)
-            if (this.state.emberSystem && typeof this.state.emberSystem.addBonus === 'function') {
-                this.state.emberSystem.addBonus(2);
-            } else {
-                this.state.ember = (this.state.ember || 0) + 2;
-            }
-            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🏕️", description: cDesc, category: "CARD_EFFECT" });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🏕️【${cName}】`);
         } else if (cId === "CMD_WORKSHOP") {
             // 🔨 工房: コスト 🧱-30 (SPECIAL_BLOCKカード🧱コスト-10%)
             this.state.workshopCount = (this.state.workshopCount || 0) + 1;

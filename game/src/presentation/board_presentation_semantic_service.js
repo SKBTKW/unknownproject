@@ -228,10 +228,11 @@ export function resolveBoardDisplayProduction(state, facts, cellViewDataService)
             && facts.mergeGroupId != null) {
             const group = state?.mergedBlocks?.[facts.mergeGroupId];
             const multiplier = group?.yieldMultiplier || 1.20;
-            production.food = Math.floor(production.food * multiplier);
-            production.wood = Math.floor(production.wood * multiplier);
-            production.defense = Math.floor(production.defense * multiplier);
-            production.mystic = Math.floor(production.mystic * multiplier);
+            // Keep presentation rounding identical to ProductionCalculator settlement.
+            production.food = Math.ceil(production.food * multiplier);
+            production.wood = Math.ceil(production.wood * multiplier);
+            production.defense = Math.ceil(production.defense * multiplier);
+            production.mystic = Math.ceil(production.mystic * multiplier);
         }
 
         // Block-owned output is not a cell/Zone output. Add it once per

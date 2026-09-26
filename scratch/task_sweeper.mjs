@@ -37,6 +37,24 @@ function countCommits(range, cwd) {
     return Number.parseInt(output, 10) || 0;
 }
 
+function refsHaveIdenticalTrees(leftRef, rightRef, cwd) {
+    if (!leftRef || !rightRef) return false;
+    const result = spawnSync('git', ['diff', '--quiet', leftRef, rightRef, '--'], {
+        cwd,
+        windowsHide: true,
+        stdio: 'ignore',
+    });
+    return result.status === 0;
+}
+
+function hasOnlyPatchEquivalentCommits(targetRef, comparisonRef, cwd) {
+    if (!targetRef || !comparisonRef) return false;
+    const output = git(['cherry', targetRef, comparisonRef], { cwd, allowFailure: true });
+    if (!output) return false;
+    const lines = output.split(/\r?\n/).filter(Boolean);
+    return lines.length > 0 && lines.every((line) => line.startsWith('- '));
+}
+
 function parseArgs(argv) {
     const result = { target: '', interactive: false, execute: false, confirm: '' };
     for (let i = 0; i < argv.length; i += 1) {
@@ -55,14 +73,37 @@ function readConfig(key, cwd) {
     return git(['config', '--get', key], { cwd, allowFailure: true });
 }
 
-function loadSupersededTaskManifest(cwd) {
-    const manifestPath = path.join(cwd, 'scratch', 'task_sweeper_superseded.json');
-    if (!fs.existsSync(manifestPath)) return { schemaVersion: 1, target: '', entries: [] };
+function readSupersededTaskManifestFile(manifestPath) {
     const parsed = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
     if (parsed?.schemaVersion !== 1 || !Array.isArray(parsed.entries)) {
-        throw new Error('Invalid scratch/task_sweeper_superseded.json');
+        throw new Error(`Invalid ${path.relative(process.cwd(), manifestPath) || manifestPath}`);
     }
     return parsed;
+}
+
+function loadSupersededTaskManifest(cwd, target) {
+    const manifestPaths = [
+        path.join(cwd, 'scratch', 'task_sweeper_superseded.json'),
+        target ? path.join(cwd, 'scratch', `task_sweeper_superseded_${target}.json`) : '',
+    ].filter(Boolean);
+
+    const entries = [];
+    const seenBranches = new Set();
+    for (const manifestPath of manifestPaths) {
+        if (!fs.existsSync(manifestPath)) continue;
+        const parsed = readSupersededTaskManifestFile(manifestPath);
+        if (parsed.target && target && parsed.target !== target) continue;
+        for (const entry of parsed.entries) {
+            if (!entry?.branch) continue;
+            if (seenBranches.has(entry.branch)) {
+                throw new Error(`Duplicate audited superseded TASK entry: ${entry.branch}`);
+            }
+            seenBranches.add(entry.branch);
+            entries.push(entry);
+        }
+    }
+
+    return { schemaVersion: 1, target: target || '', entries };
 }
 
 function gitIsAncestor(ancestor, descendant, cwd) {
@@ -381,7 +422,7 @@ export function classifyTaskCandidate(state) {
     if (Array.isArray(state.openPrReferences) && state.openPrReferences.length > 0) {
         blockers.push(`open PR reference protects this TASK: ${formatOpenPullRequestReferences(state.openPrReferences)}`);
     }
-    if (state.uniqueCommits > 0 && !state.mergedPrVerified && !state.supersededVerified) {
+    if (state.uniqueCommits > 0 && !state.mergedPrVerified && !state.supersededVerified && !state.contentEquivalent && !state.patchEquivalent) {
         const fallbackReason = state.remoteExists
             ? 'unique commits exist and merged PR could not be verified'
             : 'local-only TASK has unique commits and merged PR could not be verified';
@@ -391,6 +432,12 @@ export function classifyTaskCandidate(state) {
     if (blockers.length > 0) return { status: 'BLOCKED', blockers };
     if (state.uniqueCommits === 0) {
         return { status: 'SAFE', reason: 'no unique commits against target' };
+    }
+    if (state.contentEquivalent) {
+        return { status: 'SAFE', reason: 'TASK tree is content-equivalent to target' };
+    }
+    if (state.patchEquivalent) {
+        return { status: 'SAFE', reason: 'all TASK commits are patch-equivalent to target' };
     }
     if (state.mergedPrVerified) {
         return { status: 'SAFE', reason: `merged PR #${state.mergedPrNumber} verified at current remote head` };
@@ -416,6 +463,12 @@ async function inspectCandidate(candidate, context) {
     const remoteSha = remoteRef ? git(['rev-parse', remoteRef], { cwd }) : '';
     const comparisonRef = remoteRef || localRef;
     const uniqueCommits = comparisonRef ? countCommits(`${targetRef}..${comparisonRef}`, cwd) : 0;
+    const contentEquivalent = Boolean(
+        comparisonRef && refsHaveIdenticalTrees(targetRef, comparisonRef, cwd),
+    );
+    const patchEquivalent = Boolean(
+        uniqueCommits > 0 && comparisonRef && hasOnlyPatchEquivalentCommits(targetRef, comparisonRef, cwd),
+    );
     const unpushedCommits = localRef && remoteRef ? countCommits(`${remoteRef}..${localRef}`, cwd) : 0;
     const worktree = worktreeByBranch.get(candidate.branch) ?? null;
     const currentRoot = fs.realpathSync(cwd);
@@ -471,6 +524,8 @@ async function inspectCandidate(candidate, context) {
         localRemoteMismatch,
         unpushedCommits,
         uniqueCommits,
+        contentEquivalent,
+        patchEquivalent,
         remoteExists: candidate.remoteExists,
         openPrLookupVerified,
         openPrReferences,
@@ -489,6 +544,8 @@ async function inspectCandidate(candidate, context) {
         localSha,
         remoteSha,
         uniqueCommits,
+        contentEquivalent,
+        patchEquivalent,
         unpushedCommits,
         worktree,
         currentWorktree,
@@ -529,7 +586,25 @@ function printReport(target, inspected) {
 }
 
 function deleteRemoteBranch(branch, cwd) {
-    git(['push', 'origin', '--delete', branch], { cwd });
+    const result = spawnSync('git', ['push', 'origin', '--delete', branch], {
+        cwd,
+        windowsHide: true,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    if (result.status === 0) return { deleted: true, alreadyAbsent: false };
+
+    // A branch can disappear after cleanup revalidation but before mutation
+    // (for example, another cleanup process deletes it first). Refresh the
+    // remote-tracking namespace and treat that specific race as idempotent.
+    git(['fetch', 'origin', '--prune'], { cwd, allowFailure: true });
+    if (!refExists(`refs/remotes/origin/${branch}`, cwd)) {
+        console.log('   - remote TASK branch already absent');
+        return { deleted: false, alreadyAbsent: true };
+    }
+
+    const stderr = result.stderr?.toString?.().trim();
+    throw new Error(`git push origin --delete ${branch} failed${stderr ? `: ${stderr}` : ''}`);
 }
 
 function removeWorktree(worktreePath, cwd) {
@@ -684,7 +759,7 @@ async function main() {
 
     const originUrl = git(['remote', 'get-url', 'origin'], { cwd });
     const githubRepo = parseGitHubRepo(originUrl);
-    const supersededManifest = loadSupersededTaskManifest(cwd);
+    const supersededManifest = loadSupersededTaskManifest(cwd, target);
     const openPrSnapshot = githubRepo
         ? await loadOpenPullRequestSnapshot(githubRepo)
         : { verified: false, pulls: [], reason: 'origin is not a supported github.com repository' };

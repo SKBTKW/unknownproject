@@ -6,22 +6,27 @@
     "descriptionKey": "CMD_RATIONING_DESC",
     "cost": {},
     "tags": ["FOOD", "EMERGENCY"],
-    "reqFoodDeficitOrFallback": true,
+    "offering": {
+      "requirements": [
+        {
+          "id": "RATIONING_TURN_END_FOOD_DEFICIT",
+          "type": "TURN_END_FOOD_DEFICIT"
+        }
+      ]
+    },
+    "execution": {
+      "requirements": [
+        {
+          "id": "RATIONING_TURN_END_FOOD_DEFICIT",
+          "type": "TURN_END_FOOD_DEFICIT"
+        }
+      ]
+    },
     "minStage": 1,
     "rarity": "C",
     "weight": 0.40,
     "cyclePolicy": "RARITY",
     "effects": [
-      {
-        "type": "STATE_SET",
-        "key": "foodCostRationingActive",
-        "value": true
-      },
-      {
-        "type": "STATE_SET",
-        "key": "foodCostRationingDiscount",
-        "value": 0.4
-      },
       {
         "type": "STATE_SET",
         "key": "foodCostHalvedTurns",
@@ -47,43 +52,105 @@
     "category": "COMMAND",
     "nameKey": "CMD_WETLAND_RECLAMATION_NAME",
     "descriptionKey": "CMD_WETLAND_RECLAMATION_DESC",
-    "cost": { "wood": 15, "ember": 1 },
-    "tags": ["WETLAND", "RECLAIMED", "FOOD", "DEVELOPMENT"],
-    "reqWetland": 1,
-    "reqWood": 15,
+    "cost": {},
+    "tags": ["WETLAND", "RECLAIMED", "WATER", "FOOD", "DEVELOPMENT", "PROJECT"],
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.25,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "executionVariants": [
+      {
+        "id": "RECLAIM",
+        "labelKey": "CMD_IRRIGATION_PLAN_VARIANT_A_NAME",
+        "descriptionKey": "CMD_IRRIGATION_PLAN_VARIANT_A_DESC",
+        "cost": { "wood": 30 },
+        "effects": [
+          {
+            "type": "DOMAIN_ACTION",
+            "action": "TRANSFORM_TERRAIN",
+            "fromTerrainIds": ["E0_WETLAND"],
+            "toTerrainId": "E1_RECLAIMED_LAND",
+            "excludeHQ": true,
+            "forbidTrueMerge": true,
+            "forbiddenSocketIds": ["SOCKET_LAKE"],
+            "logActivation": true
+          }
+        ]
+      },
+      {
+        "id": "IRRIGATION_WORKS",
+        "labelKey": "CMD_IRRIGATION_PLAN_VARIANT_B_NAME",
+        "descriptionKey": "CMD_IRRIGATION_PLAN_VARIANT_B_DESC",
+        "cost": { "wood": 70 },
+        "effects": [
+          {
+            "type": "DOMAIN_ACTION",
+            "action": "TRANSFORM_TERRAIN",
+            "fromTerrainIds": ["E0_WETLAND"],
+            "toTerrainId": "E1_RECLAIMED_LAND",
+            "excludeHQ": true,
+            "forbidTrueMerge": true,
+            "forbiddenSocketIds": ["SOCKET_LAKE"],
+            "development": {
+              "id": "IRRIGATION_WORKS",
+              "providesIrrigation": true
+            },
+            "developmentDelayVerses": 2,
+            "logActivation": true
+          }
+        ]
+      },
+      {
+        "id": "EXPEDITE",
+        "labelKey": "CMD_IRRIGATION_PLAN_VARIANT_C_NAME",
+        "descriptionKey": "CMD_IRRIGATION_PLAN_VARIANT_C_DESC",
+        "cost": { "wood": 110 },
+        "effects": [
+          {
+            "type": "DOMAIN_ACTION",
+            "action": "TRANSFORM_TERRAIN",
+            "fromTerrainIds": ["E0_WETLAND"],
+            "toTerrainId": "E1_RECLAIMED_LAND",
+            "excludeHQ": true,
+            "forbidTrueMerge": true,
+            "forbiddenSocketIds": ["SOCKET_LAKE"],
+            "development": {
+              "id": "IRRIGATION_WORKS",
+              "providesIrrigation": true
+            },
+            "logActivation": true
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "CMD_LOGGING_CAMP",
     "category": "COMMAND",
     "nameKey": "CMD_LOGGING_CAMP_NAME",
     "descriptionKey": "CMD_LOGGING_CAMP_DESC",
-    "cost": { "ember": 1 },
+    "cost": {},
     "tags": ["FOREST", "MATERIAL", "INDUSTRY", "SPECIAL_BLOCK"],
-    "reqForestNearby": 3,
     "minStage": 1,
     "rarity": "C",
     "weight": 0.35,
     "cyclePolicy": "RARITY",
+    "offering": {
+      "requirements": [
+        {
+          "type": "CONNECTED_GL_AT_LEAST",
+          "minimumGL": 2,
+          "value": 2
+        }
+      ]
+    },
     "effects": [
       {
-        "type": "RESOURCE_DELTA",
-        "resource": "wood",
-        "amount": 8
-      },
-      {
-        "type": "BUFF_ADD",
-        "fromSourceCard": true,
-        "buff": {
-          "icon": "🪵",
-          "category": "CARD_EFFECT"
-        }
-      },
-      {
-        "type": "LOG_CARD_ACTIVATED"
+        "type": "DOMAIN_ACTION",
+        "action": "CREATE_SPECIAL_BLOCK",
+        "blockType": "LOGGING_CAMP",
+        "paymentMode": "DOMAIN_QUOTE",
+        "logActivation": true
       }
     ]
   },
@@ -94,7 +161,6 @@
     "descriptionKey": "CMD_GRANARY_DESC",
     "cost": { "wood": 20 },
     "tags": ["PLAINS", "RECLAIMED", "FOOD", "STORAGE", "INDUSTRY", "SPECIAL_BLOCK"],
-    "reqPlains": 4,
     "reqWood": 20,
     "minStage": 1,
     "rarity": "UC",
@@ -102,20 +168,10 @@
     "cyclePolicy": "RARITY",
     "effects": [
       {
-        "type": "STATE_INCREMENT",
-        "key": "granaryCount",
-        "amount": 1
-      },
-      {
-        "type": "BUFF_ADD",
-        "fromSourceCard": true,
-        "buff": {
-          "icon": "🏛️",
-          "category": "CARD_EFFECT"
-        }
-      },
-      {
-        "type": "LOG_CARD_ACTIVATED"
+        "type": "DOMAIN_ACTION",
+        "action": "CREATE_SPECIAL_BLOCK",
+        "blockType": "GRANARY",
+        "logActivation": true
       }
     ]
   },
@@ -124,30 +180,19 @@
     "category": "COMMAND",
     "nameKey": "CMD_AGRICULTURAL_REFORM_NAME",
     "descriptionKey": "CMD_AGRICULTURAL_REFORM_DESC",
-    "cost": { "wood": 20 },
+    "cost": {},
     "tags": ["PLAINS", "RECLAIMED", "FOOD", "AGRICULTURE", "DEVELOPMENT"],
-    "reqConnectedPlainsOrReclaimed": 3,
-    "reqWood": 20,
     "minStage": 1,
     "rarity": "R",
     "weight": 0.20,
     "cyclePolicy": "UNIQUE",
     "effects": [
       {
-        "type": "STATE_INCREMENT",
-        "key": "permanentPlainsFoodBonus",
-        "amount": 1
-      },
-      {
-        "type": "BUFF_ADD",
-        "fromSourceCard": true,
-        "buff": {
-          "icon": "📜",
-          "category": "CARD_EFFECT"
-        }
-      },
-      {
-        "type": "LOG_CARD_ACTIVATED"
+        "type": "DOMAIN_ACTION",
+        "action": "CREATE_ZONE_CONVERSION",
+        "definitionId": "AGRICULTURAL_REFORM",
+        "paymentMode": "DOMAIN_QUOTE",
+        "logActivation": true
       }
     ]
   },
@@ -186,7 +231,22 @@
     "descriptionKey": "CMD_EMERGENCY_LEVY_DESC",
     "cost": { "food": 20 },
     "tags": ["FOOD", "MATERIAL", "EMERGENCY"],
-    "reqWoodDeficit": true,
+    "offering": {
+      "requirements": [
+        {
+          "id": "EMERGENCY_LEVY_MATERIAL_SHORTAGE",
+          "type": "MATERIAL_SHORTAGE"
+        }
+      ]
+    },
+    "execution": {
+      "requirements": [
+        {
+          "id": "EMERGENCY_LEVY_MATERIAL_SHORTAGE",
+          "type": "MATERIAL_SHORTAGE"
+        }
+      ]
+    },
     "reqFood": 20,
     "minStage": 1,
     "rarity": "C",
@@ -197,14 +257,6 @@
         "type": "RESOURCE_DELTA",
         "resource": "wood",
         "amount": 15
-      },
-      {
-        "type": "BUFF_ADD",
-        "fromSourceCard": true,
-        "buff": {
-          "icon": "🧱",
-          "category": "CARD_EFFECT"
-        }
       },
       {
         "type": "LOG_CARD_ACTIVATED"
@@ -332,7 +384,7 @@
     "category": "COMMAND",
     "nameKey": "CMD_RESETTLEMENT_NAME",
     "descriptionKey": "CMD_RESETTLEMENT_DESC",
-    "cost": { "food": 15, "wood": 10 },
+    "cost": {},
     "tags": ["PLAINS", "MERGE", "FOOD", "DEVELOPMENT"],
     "reqPlainsMerge2x2": 1,
     "reqFood": 15,
@@ -340,7 +392,16 @@
     "minStage": 2,
     "rarity": "R",
     "weight": 0.20,
-    "cyclePolicy": "RARITY"
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "DOMAIN_ACTION",
+        "action": "CREATE_ZONE_CONVERSION",
+        "definitionId": "RESETTLEMENT_PLAINS_2X2",
+        "paymentMode": "DOMAIN_QUOTE",
+        "logActivation": true
+      }
+    ]
   },
   {
     "id": "CMD_WORKSHOP",

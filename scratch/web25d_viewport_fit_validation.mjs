@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-import { resolveWeb25DViewportProjection } from '../game/src/ui/web25d_validation_runtime_bridge.js';
+import { resolveWeb25DViewportProjection } from '../game/src/ui/web25d_board_runtime_bridge.js';
 
 const standardViewport = { width: 584, height: 584 };
 
@@ -58,7 +58,7 @@ assert.equal(narrowFit.tileWidth, narrowFit.tileHeight * 2);
 assert.ok(9 * narrowFit.tileWidth + 44 <= 400, 'narrow Stage 3 keeps horizontal coordinate gutters');
 
 const runtimeSource = fs.readFileSync(
-    new URL('../game/src/ui/web25d_validation_runtime_bridge.js', import.meta.url),
+    new URL('../game/src/ui/web25d_board_runtime_bridge.js', import.meta.url),
     'utf8'
 );
 assert.match(

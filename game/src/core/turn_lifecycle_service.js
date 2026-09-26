@@ -116,6 +116,9 @@ export class TurnLifecycleService {
         const engine = this.engine;
         const state = engine.state;
         this._advanceTurnState();
+        if (engine.boardDomainAdapter && typeof engine.boardDomainAdapter.processScheduledTerrainDevelopments === "function") {
+            engine.lastTerrainDevelopmentCompletion = engine.boardDomainAdapter.processScheduledTerrainDevelopments(state?.turn);
+        }
         if (engine.zoneConversionService) {
             engine.lastZoneConversionMaintenanceResult = this.settleZoneConversionMaintenanceForVerse(state?.turn);
         }

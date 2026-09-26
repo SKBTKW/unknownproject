@@ -342,7 +342,7 @@ test("merged production is resolved before renderer DTO consumption", () => {
     assert.equal(primary.display.role, "LAND_PRIMARY");
     assert.deepEqual(primary.display.production, {
         food: 6,
-        wood: 3,
+        wood: 4,
         defense: 0,
         mystic: 0,
         primaryYield: { resource: "food", amount: 6 }
@@ -385,7 +385,7 @@ test("shared browser runtime keeps selection separate from primary gameplay acti
         "utf8"
     );
     const web25dSource = fs.readFileSync(
-        new URL("../game/src/ui/web25d_validation_runtime_bridge.js", import.meta.url),
+        new URL("../game/src/ui/web25d_board_runtime_bridge.js", import.meta.url),
         "utf8"
     );
     const resolverSource = fs.readFileSync(
@@ -589,7 +589,7 @@ test("runtime HUD snapshot is JSON-safe and does not expose GameState internals"
     assert.deepEqual(runtimeDto.resources.ember, { current: 7, max: 13 });
     assert.deepEqual(runtimeDto.resources.food, { current: 9 });
     assert.deepEqual(runtimeDto.resources.material, { current: 5 });
-    assert.deepEqual(runtimeDto.resources.defense, { current: 6, max: 10 });
+    assert.deepEqual(runtimeDto.resources.defense, { current: 5, max: 5 });
     assert.deepEqual(runtimeDto.resources.mystic, { current: 4 });
     const serialized = JSON.stringify(runtimeDto);
     for (const forbidden of ["grid", "mergedBlocks", "mergeLinks", "directiveSystem", "document", "window", "GameObject", "Transform"]) {

@@ -1,0 +1,39 @@
+{
+  "contractVersion": "unity-trial-board-input-fixtures-v1",
+  "commands": [
+    {
+      "contractVersion": "board-input-v1",
+      "type": "SELECT_TRIAL_ROUTE",
+      "payload": {
+        "routeId": "route-1"
+      }
+    },
+    {
+      "contractVersion": "board-input-v1",
+      "type": "SELECT_TRIAL_INTERCEPTION",
+      "payload": {
+        "routeId": "route-1",
+        "cell": {
+          "r": 0,
+          "c": 1
+        }
+      }
+    },
+    {
+      "contractVersion": "board-input-v1",
+      "type": "HOVER_TRIAL_INTERCEPTION",
+      "payload": {
+        "routeId": "route-1",
+        "cell": {
+          "r": 0,
+          "c": 0
+        }
+      }
+    },
+    {
+      "contractVersion": "board-input-v1",
+      "type": "CLEAR_TRIAL_HOVER",
+      "payload": {}
+    }
+  ]
+}

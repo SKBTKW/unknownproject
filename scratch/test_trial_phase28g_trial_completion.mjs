@@ -538,10 +538,12 @@ test("2.6 Precondition check order: Ember 0 cannot bypass incomplete battles", (
 
 // 3. UI Component Tests
 test("3.1 UI displays Complete Trial button when all battles resolved and canCompleteTrial()", () => {
-    const { ui } = createCompletedHarness({
+    const { engine, ui } = createCompletedHarness({
         allIntercept: true,
         initialEmber: 20
     });
+    const stageBeforeCompletion = engine.state.stage?.id ?? null;
+    const postTrialBeforeCompletion = engine.state.postTrialTransition ?? null;
 
     ui.render();
     const btnComplete = mockDoc.getElementById("btnTrialCompleteTrial");
@@ -553,6 +555,19 @@ test("3.1 UI displays Complete Trial button when all battles resolved and canCom
     // Verify trial completed
     assert.equal(ui.isTrialCompleted(), true);
     assert.equal(ui.trialController.state.phase, "RESULT");
+
+    // Presentation completion must stop at Trial RESULT. Settlement / Post-Trial /
+    // Stage progression are owned by their canonical boundaries, not this button.
+    assert.equal(
+        engine.state.postTrialTransition ?? null,
+        postTrialBeforeCompletion,
+        "Complete Trial UI must not create Post-Trial transition state"
+    );
+    assert.equal(
+        engine.state.stage?.id ?? null,
+        stageBeforeCompletion,
+        "Complete Trial UI must not advance Stage"
+    );
 
     // Verify completion banner rendered
     ui.render();

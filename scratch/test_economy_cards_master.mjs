@@ -18,7 +18,12 @@ const mockState = {
     addLog: function(l) {}
 };
 
-const dm = new DeckManager(mockState);
+const dm = new DeckManager(mockState, {
+    previewTurnEndMaintenance: () => ({
+        foodAfterProduction: 10,
+        foodCost: 20
+    })
+});
 const allCmdCards = COMMAND_CARDS_MASTER;
 
 console.log(`Total Command Cards in Master: ${allCmdCards.length}`);
@@ -86,12 +91,44 @@ expected23.forEach(exp => {
 });
 
 console.log("\n--- 2. 発動ハンドラ (playCommandCard) 検問 ---");
-const testCards = ["CMD_LOGGING_CAMP", "CMD_QUARRY", "CMD_RESETTLEMENT", "CMD_EMERGENCY_LEVY", "CMD_RATIONING"];
-testCards.forEach(cId => {
+const persistentFeedbackCards = ["CMD_QUARRY", "CMD_RATIONING"];
+persistentFeedbackCards.forEach(cId => {
     const cardObj = allCmdCards.find(c => c.id === cId);
     dm.playCommandCard(cardObj, -1, -1, null);
-    assert(mockState.activeBuffs.some(b => b.id === cId), `playCommandCard(${cId}) added active buff`);
+    assert(mockState.activeBuffs.some(b => b.id === cId), `playCommandCard(${cId}) added active/visible buff`);
 });
+
+{
+    const resettlement = allCmdCards.find(c => c.id === "CMD_RESETTLEMENT");
+    assert(resettlement && Object.keys(resettlement.cost || {}).length === 0,
+        "Resettlement card does not duplicate Board-owned creation cost");
+    assert(resettlement?.effects?.length === 1
+        && resettlement.effects[0].action === "CREATE_ZONE_CONVERSION"
+        && resettlement.effects[0].definitionId === "RESETTLEMENT_PLAINS_2X2"
+        && resettlement.effects[0].paymentMode === "DOMAIN_QUOTE",
+        "Resettlement delegates targeting, pricing, reward, and production semantics to Board");
+    assert(!mockState.activeBuffs.some(buff => buff.id === "CMD_RESETTLEMENT"),
+        "Resettlement no longer relies on a legacy visible Buff for persistent production");
+}
+
+{
+    const loggingCamp = allCmdCards.find(c => c.id === "CMD_LOGGING_CAMP");
+    assert(loggingCamp && Object.keys(loggingCamp.cost || {}).length === 0,
+        "Logging Camp card does not duplicate Board-owned creation cost");
+    assert(loggingCamp?.effects?.length === 1
+        && loggingCamp.effects[0].action === "CREATE_SPECIAL_BLOCK"
+        && loggingCamp.effects[0].blockType === "LOGGING_CAMP"
+        && loggingCamp.effects[0].paymentMode === "DOMAIN_QUOTE",
+        "Logging Camp delegates creation and pricing to Board");
+}
+
+{
+    const levy = allCmdCards.find(c => c.id === "CMD_EMERGENCY_LEVY");
+    const stateSets = (levy.effects || []).filter(effect => effect.type === "STATE_SET");
+    const buffs = (levy.effects || []).filter(effect => effect.type === "BUFF_ADD");
+    assert(stateSets.length === 0, "Emergency Levy has no delayed maintenance penalty state");
+    assert(buffs.length === 0, "Emergency Levy is immediate-only and has no persistent buff");
+}
 
 console.log("\n============================================================");
 console.log(`📊 検問集計: ${passCount} PASS / ${failCount} FAIL`);

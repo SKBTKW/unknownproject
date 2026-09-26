@@ -161,4 +161,53 @@ import {
     );
 }
 
+{
+    const original = new FirstRunState({ active: true });
+    const service = new FirstRunTrialTutorialService();
+    service.begin({ firstRunState: original, trialIndex: 1 });
+    service.record({
+        firstRunState: original,
+        trialIndex: 1,
+        event: FIRST_RUN_TRIAL_TUTORIAL_EVENTS.ROUTE_ACKNOWLEDGED
+    });
+    service.record({
+        firstRunState: original,
+        trialIndex: 1,
+        event: FIRST_RUN_TRIAL_TUTORIAL_EVENTS.INTERCEPTION_SELECTED
+    });
+    service.record({
+        firstRunState: original,
+        trialIndex: 1,
+        event: FIRST_RUN_TRIAL_TUTORIAL_EVENTS.DEFENSE_CHANGED
+    });
+    service.record({
+        firstRunState: original,
+        trialIndex: 1,
+        event: FIRST_RUN_TRIAL_TUTORIAL_EVENTS.BATTLE_STARTED
+    });
+    service.record({
+        firstRunState: original,
+        trialIndex: 1,
+        event: FIRST_RUN_TRIAL_TUTORIAL_EVENTS.RESULT_OBSERVED
+    });
+
+    const snapshot = original.getRestoreState();
+    const restored = new FirstRunState();
+    restored.restoreState(snapshot);
+
+    assert.equal(
+        restored.getTrialTutorialState().currentStep,
+        FIRST_RUN_TRIAL_TUTORIAL_STEPS.RESULT_CAUSALITY,
+        "restore before causality acknowledgement must remain inside the tutorial"
+    );
+    assert.equal(restored.getTrialTutorialState().completed, false);
+    const completed = service.record({
+        firstRunState: restored,
+        trialIndex: 1,
+        event: FIRST_RUN_TRIAL_TUTORIAL_EVENTS.CAUSALITY_OBSERVED
+    });
+    assert.equal(completed.completed, true, "restored RESULT_CAUSALITY must complete only after acknowledgement");
+    assert.equal(completed.currentStep, FIRST_RUN_TRIAL_TUTORIAL_STEPS.COMPLETED);
+}
+
 console.log("✅ FirstRun Trial tutorial state/presentation policy contract PASS");

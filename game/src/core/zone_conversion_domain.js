@@ -19,6 +19,42 @@ export const ZONE_CONVERSION_COST_STATUS = Object.freeze({
     UNRESOLVED: 'UNRESOLVED'
 });
 
+export const ZONE_CONVERSION_PRODUCTION_STATUS = Object.freeze({
+    RESOLVED: 'RESOLVED',
+    UNRESOLVED: 'UNRESOLVED',
+    NONE: 'NONE'
+});
+
+export const ZONE_CONVERSION_REWARD_STATUS = Object.freeze({
+    RESOLVED: 'RESOLVED',
+    UNRESOLVED: 'UNRESOLVED',
+    NONE: 'NONE'
+});
+
+export const ZONE_CONVERSION_PRODUCTION_KINDS = Object.freeze({
+    PER_MEMBER_CELL: 'PER_MEMBER_CELL',
+    FIXED_PER_ZONE: 'FIXED_PER_ZONE'
+});
+
+const ZONE_PRODUCTION_RESOURCE_KEYS = Object.freeze(['food', 'wood', 'mystic']);
+
+export function normalizeZoneProductionYieldMap(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+    const normalized = {};
+    for (const key of ZONE_PRODUCTION_RESOURCE_KEYS) {
+        const raw = value[key];
+        if (raw === undefined) continue;
+        if (!validNonNegativeNumber(raw)) return null;
+        normalized[key] = raw;
+    }
+    for (const key of Object.keys(value)) {
+        if (!ZONE_PRODUCTION_RESOURCE_KEYS.includes(key) && Number(value[key] || 0) !== 0) {
+            return null;
+        }
+    }
+    return Object.freeze(normalized);
+}
+
 export const ZONE_CONVERSION_ESCALATION_SCOPES = Object.freeze({
     SAME_DEFINITION: 'SAME_DEFINITION',
     ALL_CONVERSIONS: 'ALL_CONVERSIONS'
@@ -51,6 +87,39 @@ export function normalizeZoneResourceMap(value) {
         normalized[key] = raw;
     }
     return Object.freeze(normalized);
+}
+
+export function resolveZoneConversionCreationReward(definition) {
+    const reward = definition?.creationReward;
+    if (!reward) {
+        return Object.freeze({
+            status: ZONE_CONVERSION_REWARD_STATUS.NONE,
+            resources: Object.freeze({})
+        });
+    }
+    if (reward.status !== ZONE_CONVERSION_REWARD_STATUS.RESOLVED) {
+        return Object.freeze({
+            status: ZONE_CONVERSION_REWARD_STATUS.UNRESOLVED,
+            resources: null
+        });
+    }
+    const resourceSource = reward.resources;
+    const resources = normalizeZoneResourceMap(resourceSource);
+    const unsupported = resourceSource && typeof resourceSource === 'object'
+        ? Object.keys(resourceSource).some(key => (
+            !RESOURCE_KEYS.includes(key) && Number(resourceSource[key] || 0) !== 0
+        ))
+        : false;
+    if (!resources || unsupported) {
+        return Object.freeze({
+            status: ZONE_CONVERSION_REWARD_STATUS.UNRESOLVED,
+            resources: null
+        });
+    }
+    return Object.freeze({
+        status: ZONE_CONVERSION_REWARD_STATUS.RESOLVED,
+        resources
+    });
 }
 
 export function readZoneRecord(state, groupId) {

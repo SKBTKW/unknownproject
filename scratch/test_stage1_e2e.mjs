@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 import { GameEngine } from "../game/src/core/game_engine.js";
+import { GAME_FACT_TYPES } from "../game/src/core/game_fact.js";
 import { resolvePlacementGeometry } from "../game/src/core/placement_geometry.js";
 import { WARNING_STATES } from "../game/src/warning/domain/warning_state.js";
 import { attachTrialRuntimeSubsystems } from "../game/src/trial/integration/trial_runtime_bootstrap.js";
@@ -159,6 +160,7 @@ if (investigationIndex >= 0) {
     );
 
     const card = verse8Offering[investigationIndex];
+    const truthBeforeInvestigation = JSON.stringify(truthSnapshot);
     const result = engine.executeInvestigationCard?.(card, {
         type: "OFFERING",
         index: investigationIndex
@@ -171,6 +173,10 @@ if (investigationIndex >= 0) {
     check(
         (engine.state.knownEnemyState?.reports?.length || 0) === beforeReports + 1,
         "Investigation updates KnownEnemyState"
+    );
+    check(
+        JSON.stringify(engine.enemyTruthReadModel?.getSnapshot?.() || null) === truthBeforeInvestigation,
+        "Investigation does not mutate TrueEnemyState / EnemyTruthReadModel"
     );
     check(engine.warningStateService?.getState?.() === WARNING_STATES.WATCH, "Investigation advances Warning to WATCH");
 }
@@ -221,6 +227,16 @@ check(
 
 advanceTo(15);
 check(engine.state.turn === 15, "TurnLifecycle reaches fixed FirstRun Trial1 Verse15");
+const verseCommittedFacts = engine.gameFactHub?.getFacts?.()
+    ?.filter(fact => fact.type === GAME_FACT_TYPES.VERSE_COMMITTED) || [];
+const committedVerseIds = verseCommittedFacts.map(fact => fact.payload?.completedTurn);
+check(
+    verseCommittedFacts.length === 14
+        && new Set(committedVerseIds).size === verseCommittedFacts.length
+        && committedVerseIds.every((verse, index) => verse === index + 1),
+    "Verse1-14 commit exactly once each before Trial1",
+    JSON.stringify(committedVerseIds)
+);
 check(
     engine.state.grid.some((row, r) => row.some((cell, c) =>
         Boolean(cell) && (r === 0 || c === 0 || r === engine.state.grid.length - 1 || c === engine.state.grid.length - 1)
@@ -252,6 +268,17 @@ const uiPort = {
 const explicitLaunch = attachTrialLaunchSubsystem(engine, uiPort);
 check(explicitLaunch?.success === true, "Trial launch subsystem can attach to the live Stage1 runtime");
 check(typeof engine.retryPendingTrialLaunch === "function", "TurnLifecycle retry port is installed when launch composition is attached");
+check(
+    Boolean(engine.trialDeploymentService),
+    "Production Stage1 composes Trial Deployment Economy with a resolved cost policy",
+    JSON.stringify({
+        attachmentPresent: Boolean(engine.trialDeploymentAttachment),
+        attachmentSuccess: engine.trialDeploymentAttachment?.success ?? null,
+        attachmentReason: engine.trialDeploymentAttachment?.reason ?? null,
+        serviceAttached: Boolean(engine.trialDeploymentService),
+        defenseReservationAttached: Boolean(engine.trialDefenseReservation)
+    })
+);
 const trialTruth = engine.enemyTruthReadModel?.getSnapshot?.() || null;
 check(
     Number(trialTruth?.strategicSuppression) > 0,
@@ -368,6 +395,36 @@ if (explicitLaunchResult?.started === true && trialController.state) {
         JSON.stringify(confirmed || null)
     );
 
+    if (engine.trialDeploymentService) {
+        const deploymentPreview = confirmed?.deploymentPreview
+            || trialController.state?.deploymentPreview
+            || null;
+        check(
+            deploymentPreview?.success === true,
+            "Trial1 Deployment Economy resolves a canonical plan preview",
+            JSON.stringify(deploymentPreview || null)
+        );
+        check(
+            deploymentPreview?.affordable === true,
+            "Trial1 canonical deployment cost is affordable on the E2E path",
+            JSON.stringify(deploymentPreview || null)
+        );
+        check(
+            (Number(deploymentPreview?.foodCost) || 0) > 0
+                || (Number(deploymentPreview?.materialCost) || 0) > 0,
+            "Trial1 canonical deployment profile creates a positive resource sink",
+            JSON.stringify({
+                foodCost: deploymentPreview?.foodCost ?? null,
+                materialCost: deploymentPreview?.materialCost ?? null,
+                breakdown: deploymentPreview?.breakdown || null
+            })
+        );
+    }
+
+    const deploymentBalancesBeforeActivation = {
+        food: Math.max(0, Math.floor(Number(engine.state.food) || 0)),
+        material: Math.max(0, Math.floor(Number(engine.state.wood ?? engine.state.material ?? 0) || 0))
+    };
     const defenseBeforeActivation = Math.max(
         0,
         Math.floor(Number(engine.state.currentDefense) || 0)
@@ -384,6 +441,42 @@ if (explicitLaunchResult?.started === true && trialController.state) {
         "Trial1 confirmed plan activates",
         JSON.stringify(activated || null)
     );
+    if (activated?.success && engine.trialDeploymentService) {
+        const paid = activated.deploymentCommit?.payment?.paid || null;
+        const committedPreview = activated.deploymentCommit?.preview || confirmed?.deploymentPreview || null;
+        check(
+            paid
+                && Number(paid.food) === Number(committedPreview?.foodCost)
+                && Number(paid.material) === Number(committedPreview?.materialCost),
+            "Trial1 Deployment Economy pays exactly the committed preview cost",
+            JSON.stringify({
+                paid,
+                previewFood: committedPreview?.foodCost ?? null,
+                previewMaterial: committedPreview?.materialCost ?? null
+            })
+        );
+        check(
+            Math.floor(Number(engine.state.food) || 0)
+                === Math.max(0, deploymentBalancesBeforeActivation.food - (Number(paid?.food) || 0)),
+            "Trial1 deployment food payment writes through exactly once",
+            JSON.stringify({
+                before: deploymentBalancesBeforeActivation.food,
+                paid: paid?.food ?? null,
+                after: engine.state.food
+            })
+        );
+        check(
+            Math.floor(Number(engine.state.wood ?? engine.state.material ?? 0) || 0)
+                === Math.max(0, deploymentBalancesBeforeActivation.material - (Number(paid?.material) || 0)),
+            "Trial1 deployment material payment writes through exactly once",
+            JSON.stringify({
+                before: deploymentBalancesBeforeActivation.material,
+                paid: paid?.material ?? null,
+                after: engine.state.wood ?? engine.state.material ?? null
+            })
+        );
+    }
+
     if (activated?.success && expectedDefenseCommitted > 0) {
         check(
             Math.floor(Number(engine.state.currentDefense) || 0)
@@ -473,15 +566,49 @@ if (explicitLaunchResult?.started === true && trialController.state) {
     );
 
     if (completed?.success) {
+        const settledFactCountBefore = engine.gameFactHub?.getFacts?.()
+            ?.filter(fact => fact.type === GAME_FACT_TYPES.TRIAL_RESULT_SETTLED).length || 0;
+        const transitionFactCountBefore = engine.gameFactHub?.getFacts?.()
+            ?.filter(fact => fact.type === GAME_FACT_TYPES.POST_TRIAL_TRANSITION_CREATED).length || 0;
         const settled = trialController.settleTrialResult();
         check(
             settled?.success === true,
             "Trial1 result settles through the canonical settlement boundary",
             JSON.stringify(settled || null)
         );
+        const settledFactCountAfter = engine.gameFactHub?.getFacts?.()
+            ?.filter(fact => fact.type === GAME_FACT_TYPES.TRIAL_RESULT_SETTLED).length || 0;
+        const transitionFactCountAfter = engine.gameFactHub?.getFacts?.()
+            ?.filter(fact => fact.type === GAME_FACT_TYPES.POST_TRIAL_TRANSITION_CREATED).length || 0;
+        check(
+            settledFactCountAfter === settledFactCountBefore + 1,
+            "TRIAL_RESULT_SETTLED is emitted exactly once for Trial1 settlement",
+            JSON.stringify({ before: settledFactCountBefore, after: settledFactCountAfter })
+        );
+        check(
+            transitionFactCountAfter === transitionFactCountBefore + 1,
+            "Post-Trial transition is created exactly once from settlement",
+            JSON.stringify({ before: transitionFactCountBefore, after: transitionFactCountAfter })
+        );
         check(
             Boolean(engine.state.postTrialTransition),
             "Trial1 settlement creates Post-Trial progression state"
+        );
+        const postTrialStepTypes = (engine.state.postTrialTransition?.steps || []).map(step => step.type);
+        const canonicalStepOrder = [
+            "REWARD_SELECTION",
+            "UNLOCK_APPLY",
+            "STAGE_ADVANCE",
+            "SKILL_PROGRESSION",
+            "FINAL_RUN_COMPLETION"
+        ];
+        check(
+            postTrialStepTypes.every((type, index, all) =>
+                index === 0
+                || canonicalStepOrder.indexOf(all[index - 1]) < canonicalStepOrder.indexOf(type)
+            ),
+            "Post-Trial steps preserve Reward -> Unlock -> Stage -> Skill -> Final order",
+            JSON.stringify(postTrialStepTypes)
         );
         check(
             engine.state.stage?.id === 1 && engine.state.grid?.length === 5,

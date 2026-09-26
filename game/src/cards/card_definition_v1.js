@@ -34,12 +34,20 @@ function normalizeCardDefinitionV1(source) {
         rarity: source.rarity || "C",
         tags: freezeArray(source.tags),
         offering: Object.freeze({
+            category: authoredOffering.category ?? source.offeringCategory ?? source.category ?? "LAND",
             requirements: normalizeRequirementList(authoredOffering.requirements),
             weight: authoredOffering.weight ?? source.weight ?? 0.1
         }),
         execution: Object.freeze({
             requirements: normalizeRequirementList(authoredExecution.requirements),
-            targeting: authoredExecution.targeting ?? source.targeting ?? null
+            targeting: authoredExecution.targeting ?? source.targeting ?? null,
+            variants: Object.freeze((Array.isArray(source.executionVariants) ? source.executionVariants : [])
+                .filter(Boolean)
+                .map(variant => Object.freeze({
+                    ...variant,
+                    cost: Object.freeze({ ...(variant.cost || {}) }),
+                    effects: freezeArray(variant.effects)
+                })))
         }),
         effects: freezeArray(source.effects),
         lifecycle: Object.freeze({

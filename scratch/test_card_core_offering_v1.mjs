@@ -3,8 +3,14 @@ import { readFileSync } from "node:fs";
 
 import { DeckManager } from "../game/src/systems/deck_manager.js";
 import { GameEngine } from "../game/src/core/game_engine.js";
+import {
+    DEFAULT_MATERIAL_SHORTAGE_THRESHOLD,
+    ResourcePressureReadModel
+} from "../game/src/systems/resource_pressure_read_model.js";
 import { UIController } from "../game/src/ui/ui_controller.js";
 import { DefenseSystem } from "../game/src/systems/defense_system.js";
+import { TerrainTransformService } from "../game/src/systems/terrain_transform_service.js";
+import { isIrrigationSourceCell } from "../game/src/core/irrigation_rules.js";
 import { normalizeCardDefinitionV1 } from "../game/src/cards/card_definition_v1.js";
 import { LandPlacementAvailabilityQuery } from "../game/src/cards/land_placement_availability_query.js";
 import { CardOfferingEligibilityService } from "../game/src/cards/card_offering_eligibility_service.js";
@@ -61,10 +67,31 @@ function makeGrid(rows, cols) {
     assert.equal(v1.schemaVersion, 1);
     assert.equal(v1.id, legacy.id);
     assert.equal(v1.lifecycle.minStage, 2);
+    assert.equal(v1.offering.category, "LAND");
     assert.equal(v1.offering.weight, 0.25);
     assert.equal(v1.offering.requirements.length, 1);
     assert.equal(v1.execution.requirements.length, 1);
     assert.equal(v1.legacy, legacy);
+}
+
+{
+    const explicitOfferingCategory = normalizeCardDefinitionV1({
+        id: "COMMAND_WITH_OFFERING_CATEGORY",
+        category: "COMMAND",
+        offeringCategory: "TEST_BUCKET_A"
+    });
+    assert.equal(explicitOfferingCategory.category, "COMMAND",
+        "gameplay category remains independent from Offering category");
+    assert.equal(explicitOfferingCategory.offering.category, "TEST_BUCKET_A");
+
+    const nestedOfferingCategory = normalizeCardDefinitionV1({
+        id: "COMMAND_WITH_NESTED_OFFERING_CATEGORY",
+        category: "COMMAND",
+        offeringCategory: "TEST_BUCKET_A",
+        offering: { category: "TEST_BUCKET_B" }
+    });
+    assert.equal(nestedOfferingCategory.offering.category, "TEST_BUCKET_B",
+        "authored offering.category takes precedence over the legacy-friendly alias");
 }
 
 // B. LAND availability asks the Placement Domain and checks rotations.
@@ -376,7 +403,7 @@ function makeGrid(rows, cols) {
 
     assert.equal(result.success, true);
     assert.equal(state.wood, 7);
-    assert.equal(state.material, 2, "resource delta mutates only the authored resource");
+    assert.equal(state.material, 7, "material alias must stay synchronized with wood");
     assert.equal(state.guidedDefenseActive, true);
     assert.equal(state.testCounter, 2);
     assert.equal(state.activeBuffs.length, 1);
@@ -507,12 +534,11 @@ function makeGrid(rows, cols) {
     assert.equal(state.shouldNotRun, undefined);
 }
 
-// O. First real migrations preserve legacy state/cost semantics without DeckManager ID branches.
+// O. First real migrations preserve intended state/cost semantics without DeckManager ID branches.
 {
     const emergency = COMMAND_CARDS_MASTER.find(card => card.id === "CMD_EMERGENCY_LEVY");
     const loggingCamp = COMMAND_CARDS_MASTER.find(card => card.id === "CMD_LOGGING_CAMP");
-    assert.ok(Array.isArray(emergency?.effects) && emergency.effects.length === 3);
-    assert.ok(Array.isArray(loggingCamp?.effects) && loggingCamp.effects.length === 3);
+    assert.ok(Array.isArray(emergency?.effects) && emergency.effects.length === 2);
 
     const emergencyState = {
         turn: 1,
@@ -529,47 +555,33 @@ function makeGrid(rows, cols) {
         addBuff(buff) { this.activeBuffs.push(buff); },
         addLog(log) { this.logs.push(log); }
     };
-    const emergencyManager = new DeckManager(emergencyState, {});
+    const emergencyManager = new DeckManager(emergencyState, {
+        resourcePressureQuery: new ResourcePressureReadModel({ state: emergencyState })
+    });
     emergencyManager.cycleSystem = null;
     const emergencyResult = emergencyManager.playCommandCard(emergency);
 
     assert.equal(emergencyResult.success, true);
     assert.equal(emergencyState.food, 10, "legacy food cost remains 20");
     assert.equal(emergencyState.wood, 19, "legacy immediate material gain remains +15 wood");
-    assert.equal(emergencyState.material, 99, "legacy effect did not mirror gained wood into material");
-    assert.equal(emergencyState.activeBuffs.length, 1);
-    assert.equal(emergencyState.activeBuffs[0].id, "CMD_EMERGENCY_LEVY");
-    assert.equal(emergencyState.activeBuffs[0].icon, "🧱");
-    assert.equal(emergencyState.activeBuffs[0].category, "CARD_EFFECT");
+    assert.equal(emergencyState.material, 19, "Emergency Levy must keep wood/material aliases synchronized");
+    assert.equal(emergencyState.activeBuffs.length, 0,
+        "Emergency Levy v1 is immediate-only");
+    assert.equal(emergencyState.emergencyLevyTurns, undefined,
+        "Emergency Levy v1 must not schedule a future maintenance penalty");
     assert.equal(emergencyState.logs.length, 1);
 
-    const campState = {
-        turn: 1,
-        food: 10,
-        wood: 2,
-        material: 77,
-        mystic: 0,
-        ember: 2,
-        reserveSlots: [],
-        consumedUniqueCards: [],
-        usedUniqueCards: [],
-        activeBuffs: [],
-        logs: [],
-        addBuff(buff) { this.activeBuffs.push(buff); },
-        addLog(log) { this.logs.push(log); }
-    };
-    const campManager = new DeckManager(campState, {});
-    campManager.cycleSystem = null;
-    const campResult = campManager.playCommandCard(loggingCamp);
-
-    assert.equal(campResult.success, true);
-    assert.equal(campState.ember, 1, "legacy ember cost remains 1");
-    assert.equal(campState.wood, 10, "legacy immediate gain remains +8 wood");
-    assert.equal(campState.material, 77);
-    assert.equal(campState.activeBuffs.length, 1);
-    assert.equal(campState.activeBuffs[0].id, "CMD_LOGGING_CAMP");
-    assert.equal(campState.activeBuffs[0].icon, "🪵");
-    assert.equal(campState.logs.length, 1);
+    assert.deepEqual(loggingCamp?.cost, {},
+        "Logging Camp cost authority belongs to the Special Block domain");
+    assert.equal(loggingCamp?.reqForestNearby, undefined,
+        "Logging Camp Offering legality must come from Board target enumeration");
+    assert.deepEqual(loggingCamp?.effects, [{
+        type: "DOMAIN_ACTION",
+        action: "CREATE_SPECIAL_BLOCK",
+        blockType: "LOGGING_CAMP",
+        paymentMode: "DOMAIN_QUOTE",
+        logActivation: true
+    }]);
 }
 
 // P. Simple Mystic cards migrated from ID branches remain behavior-equivalent.
@@ -660,7 +672,7 @@ function makeGrid(rows, cols) {
     }
 }
 
-// Q. Mystic utility migrations preserve multi-effect legacy behavior.
+// Q. Mystic utility migrations preserve current v1 behavior.
 {
     const makeState = ({ mystic = 20, ember = 5 } = {}) => ({
         turn: 1,
@@ -716,10 +728,11 @@ function makeGrid(rows, cols) {
         assert.equal(manager.playCommandCard(card).success, true);
         assert.equal(state.mystic, 10, "rekindle mystic cost drift");
         assert.equal(state.ember, 7, "rekindle ember gain drift");
-        assert.equal(state.reserveFeeWaivedTurns, 3);
-        assert.equal(state.reserveFeeWaivedStartsNextTurn, true);
-        assert.equal(state.activeBuffs[0].remainingTurns, 3);
-        assert.equal(state.activeBuffs[0].startsNextTurn, true);
+        assert.equal(state.reserveFeeWaivedTurns, undefined,
+            "Rekindle v1 must not grant reserve-upkeep waiver state");
+        assert.equal(state.reserveFeeWaivedStartsNextTurn, undefined);
+        assert.equal(state.activeBuffs.length, 0,
+            "Rekindle v1 is immediate-only");
         assert.equal(state.logs.length, 1);
     }
 
@@ -739,15 +752,15 @@ function makeGrid(rows, cols) {
     }
 }
 
-// R. Next declarative migrations preserve legacy behavior.
+// R. Declarative migrations preserve current semantic contracts.
 {
     const cases = [
         {
             id: "CMD_RATIONING",
             initial: { food: 10, wood: 10, material: 10, mystic: 5, ember: 5 },
             assertState(state) {
-                assert.equal(state.foodCostRationingActive, true);
-                assert.equal(state.foodCostRationingDiscount, 0.4);
+                assert.equal(state.foodCostRationingActive, undefined);
+                assert.equal(state.foodCostRationingDiscount, undefined);
                 assert.equal(state.foodCostHalvedTurns, 1);
                 assert.equal(state.activeBuffs[0].remainingTurns, 1);
                 assert.equal(state.activeBuffs[0].icon, "🌾");
@@ -804,7 +817,21 @@ function makeGrid(rows, cols) {
             addLog(log) { this.logs.push(log); },
             ...testCase.initial
         };
-        const manager = new DeckManager(state, {});
+        const engine = testCase.id === "CMD_RATIONING"
+            ? {
+                previewTurnEndMaintenance: () => ({
+                    foodAfterProduction: 10,
+                    foodCost: 20
+                })
+            }
+            : testCase.id === "CMD_VIGILANCE"
+                ? {
+                    warningStateService: {
+                        getState: () => "TENSE"
+                    }
+                }
+                : {};
+        const manager = new DeckManager(state, engine);
         manager.cycleSystem = null;
         const result = manager.playCommandCard(card);
 
@@ -815,72 +842,36 @@ function makeGrid(rows, cols) {
     }
 }
 
-// S. Granary migration preserves legacy behavior.
+// S. Granary is a Board-owned targeted Special Block action.
 {
     const card = COMMAND_CARDS_MASTER.find(candidate => candidate.id === "CMD_GRANARY");
-    assert.ok(card?.effects?.length === 3);
-
-    const state = {
-        turn: 1,
-        food: 20,
-        wood: 30,
-        material: 30,
-        mystic: 0,
-        ember: 5,
-        granaryCount: 2,
-        reserveSlots: [],
-        consumedUniqueCards: [],
-        usedUniqueCards: [],
-        activeBuffs: [],
-        logs: [],
-        addBuff(buff) { this.activeBuffs.push(buff); },
-        addLog(log) { this.logs.push(log); }
-    };
-    const manager = new DeckManager(state, {});
-    manager.cycleSystem = null;
-    const result = manager.playCommandCard(card);
-
-    assert.equal(result.success, true);
-    assert.equal(state.wood, 10, "granary wood cost drift");
-    assert.equal(state.material, 10, "shared command cost keeps material mirror behavior");
-    assert.equal(state.granaryCount, 3);
-    assert.equal(state.activeBuffs[0].id, "CMD_GRANARY");
-    assert.equal(state.activeBuffs[0].icon, "🏛️");
-    assert.equal(state.logs.length, 1);
+    assert.equal(card?.cost?.wood, 20);
+    assert.equal(card?.reqPlains, undefined,
+        "Granary Offering eligibility must come from legal Domain Action targets");
+    assert.equal(card?.effects?.length, 1);
+    assert.deepEqual(card.effects[0], {
+        type: "DOMAIN_ACTION",
+        action: "CREATE_SPECIAL_BLOCK",
+        blockType: "GRANARY",
+        logActivation: true
+    });
 }
 
-// T. Agricultural Reform migration preserves legacy behavior.
+// T. Agricultural Reform is a Board-owned targeted Zone Conversion action.
 {
     const card = COMMAND_CARDS_MASTER.find(candidate => candidate.id === "CMD_AGRICULTURAL_REFORM");
-    assert.ok(card?.effects?.length === 3);
-
-    const state = {
-        turn: 1,
-        food: 20,
-        wood: 30,
-        material: 30,
-        mystic: 0,
-        ember: 5,
-        permanentPlainsFoodBonus: 2,
-        reserveSlots: [],
-        consumedUniqueCards: [],
-        usedUniqueCards: [],
-        activeBuffs: [],
-        logs: [],
-        addBuff(buff) { this.activeBuffs.push(buff); },
-        addLog(log) { this.logs.push(log); }
-    };
-    const manager = new DeckManager(state, {});
-    manager.cycleSystem = null;
-    const result = manager.playCommandCard(card);
-
-    assert.equal(result.success, true);
-    assert.equal(state.wood, 10, "agricultural reform wood cost drift");
-    assert.equal(state.material, 10, "shared command cost keeps material mirror behavior");
-    assert.equal(state.permanentPlainsFoodBonus, 3);
-    assert.equal(state.activeBuffs[0].id, "CMD_AGRICULTURAL_REFORM");
-    assert.equal(state.activeBuffs[0].icon, "📜");
-    assert.equal(state.logs.length, 1);
+    assert.deepEqual(card?.cost, {},
+        "Agricultural Reform cost authority belongs to the Zone Conversion definition");
+    assert.equal(card?.reqConnectedPlainsOrReclaimed, undefined);
+    assert.equal(card?.reqWood, undefined);
+    assert.equal(card?.effects?.length, 1);
+    assert.deepEqual(card.effects[0], {
+        type: "DOMAIN_ACTION",
+        action: "CREATE_ZONE_CONVERSION",
+        definitionId: "AGRICULTURAL_REFORM",
+        paymentMode: "DOMAIN_QUOTE",
+        logActivation: true
+    });
 }
 
 // U. Military Focus migration preserves legacy immediate conditional reconciliation.
@@ -989,9 +980,9 @@ function makeGrid(rows, cols) {
     assert.equal(state.wood, 20, "iron rampart wood cost drift");
     assert.equal(state.material, 20, "shared command cost material mirror drift");
     assert.equal(state.defenseCapacityBonus, 25);
-    assert.equal(state.defense, 35, "legacy defense compatibility value must include capacity bonus");
+    assert.equal(state.defense, 30, "legacy defense compatibility value must include capacity bonus");
     assert.equal(state.permanentVicinityDefenseBonus, 2);
-    assert.equal(defenseSystem.getMaxDefense(), 35);
+    assert.equal(defenseSystem.getMaxDefense(), 30);
     assert.equal(state.logs.length, 1);
 }
 
@@ -1591,11 +1582,23 @@ function makeGrid(rows, cols) {
     );
     assert.equal(
         resolveDomainActionMigrationBlocker("CMD_WETLAND_RECLAMATION"),
-        DOMAIN_ACTION_MIGRATION_BLOCKER.BOARD_MUTATION_API_MISSING
+        null,
+        "Wetland Reclamation leaves the unresolved migration set once Terrain Transform is canonical"
+    );
+    assert.equal(
+        DOMAIN_ACTION_REQUIRED_IDS.includes("CMD_WETLAND_RECLAMATION"),
+        false,
+        "Wetland Reclamation declarative Domain Action must not remain in legacy migration inventory"
     );
     assert.equal(
         resolveDomainActionMigrationBlocker("CMD_RESETTLEMENT"),
-        DOMAIN_ACTION_MIGRATION_BLOCKER.ZONE_CONVERSION_DEFINITION_MISSING
+        null,
+        "Resettlement leaves the unresolved migration set once Zone Conversion semantics are canonical"
+    );
+    assert.equal(
+        DOMAIN_ACTION_REQUIRED_IDS.includes("CMD_RESETTLEMENT"),
+        false,
+        "Resettlement declarative Domain Action must not remain in legacy migration inventory"
     );
     assert.equal(
         resolveDomainActionMigrationBlocker("CMD_ABANDONED_SETTLEMENT"),
@@ -1668,27 +1671,47 @@ function makeGrid(rows, cols) {
     );
 }
 
-// AK. Shadowed duplicate legacy branches stay explicit and Great Rampart remains Project-owned.
+// AK. Shadowed duplicate legacy branches stay explicit until owning-Domain migration removes them.
 {
     assert.deepEqual(
-        [...LEGACY_SHADOWED_BRANCH_IDS],
+        [...LEGACY_SHADOWED_BRANCH_IDS].sort(),
         ["CMD_GREAT_RAMPART_PROJECT"]
     );
     assert.equal(
         resolveDomainActionOwner("CMD_GREAT_RAMPART_PROJECT"),
         DOMAIN_ACTION_OWNER.PROJECT
     );
-
     const deckManagerSource = readFileSync(
         new URL("../game/src/systems/deck_manager.js", import.meta.url),
         "utf8"
     );
-    const first = deckManagerSource.indexOf('cId === "CMD_GREAT_RAMPART_PROJECT"');
-    const second = deckManagerSource.indexOf('cId === "CMD_GREAT_RAMPART_PROJECT"', first + 1);
-    assert.ok(first >= 0 && second > first, "Great Rampart legacy duplicate must remain detectable until Project migration");
-    const firstBranch = deckManagerSource.slice(first, second);
-    assert.ok(firstBranch.includes("greatRampartTurns = 4"),
-        "first reachable Great Rampart branch must remain the 4T project behavior");
+
+    for (const id of LEGACY_SHADOWED_BRANCH_IDS) {
+        const first = deckManagerSource.indexOf(`cId === "${id}"`);
+        const second = deckManagerSource.indexOf(`cId === "${id}"`, first + 1);
+        assert.ok(
+            first >= 0 && second > first,
+            `${id} shadowed duplicate must remain detectable until Domain migration`
+        );
+        const between = deckManagerSource.slice(first, second);
+        assert.ok(
+            between.includes("} else"),
+            `${id} first branch must participate in the same else-if chain that shadows the later duplicate`
+        );
+    }
+
+    const rampartFirst = deckManagerSource.indexOf('cId === "CMD_GREAT_RAMPART_PROJECT"');
+    const rampartSecond = deckManagerSource.indexOf('cId === "CMD_GREAT_RAMPART_PROJECT"', rampartFirst + 1);
+    assert.ok(
+        deckManagerSource.slice(rampartFirst, rampartSecond).includes("greatRampartTurns = 4"),
+        "first reachable Great Rampart branch must remain the current 4T legacy behavior"
+    );
+
+    assert.equal(
+        deckManagerSource.includes('cId === "CMD_RESETTLEMENT"'),
+        false,
+        "Resettlement must execute only through declarative Zone Conversion"
+    );
 }
 
 // AL. Candidate narrowing can never re-introduce a card rejected by full eligibility.
@@ -2307,6 +2330,139 @@ function makeGrid(rows, cols) {
     assert.equal(preflightCalls, 1, "post-payment execution must not repeat domain preflight");
     assert.equal(executeCalls, 1);
     assert.equal(state.wood, 15);
+}
+
+// AV. Irrigation Plan is the model execution-variant card.
+{
+    const card = COMMAND_CARDS_MASTER.find(candidate => candidate.id === "CMD_WETLAND_RECLAMATION");
+    assert.ok(card, "Irrigation Plan master card must exist under the legacy-stable card id");
+    assert.equal(card.rarity, "UC");
+    assert.equal(card.reqWetland, undefined,
+        "Irrigation Plan eligibility must come from legal execution-variant targets");
+    assert.deepEqual(
+        card.executionVariants.map(variant => [variant.id, variant.cost.wood]),
+        [["RECLAIM", 30], ["IRRIGATION_WORKS", 70], ["EXPEDITE", 110]]
+    );
+
+    const manager = new DeckManager({
+        turn: 1,
+        food: 0,
+        wood: 200,
+        material: 200,
+        mystic: 0,
+        ember: 5,
+        reserveSlots: [],
+        consumedUniqueCards: [],
+        usedUniqueCards: [],
+        addLog() {}
+    }, {});
+    manager.cycleSystem = null;
+
+    assert.equal(
+        manager.playCommandCard(card).reason,
+        "EXECUTION_VARIANT_REQUIRED",
+        "variant cards must fail closed until a plan is selected"
+    );
+    assert.deepEqual(
+        manager.quoteCardExecutionCost({ ...card, selectedExecutionVariantId: "RECLAIM" }).resources,
+        { wood: 30 }
+    );
+    assert.deepEqual(
+        manager.quoteCardExecutionCost({ ...card, selectedExecutionVariantId: "IRRIGATION_WORKS" }).resources,
+        { wood: 70 }
+    );
+    assert.deepEqual(
+        manager.quoteCardExecutionCost({ ...card, selectedExecutionVariantId: "EXPEDITE" }).resources,
+        { wood: 110 }
+    );
+}
+
+// AW. Material shortage is Economy-owned and preserves the legacy <=30 compatibility threshold.
+{
+    assert.equal(DEFAULT_MATERIAL_SHORTAGE_THRESHOLD, 30);
+
+    const state = { wood: 30, material: 30 };
+    const pressure = new ResourcePressureReadModel({ state });
+    assert.equal(pressure.isMaterialShortage(), true);
+    state.wood = 31;
+    state.material = 31;
+    assert.equal(pressure.isMaterialShortage(), false);
+
+    const requirement = { type: "MATERIAL_SHORTAGE" };
+    assert.equal(ConditionEvaluator.evaluateStrict(requirement, {}), false,
+        "material shortage must fail closed without the Economy read model");
+    assert.equal(ConditionEvaluator.evaluateStrict(requirement, {
+        resourcePressureQuery: new ResourcePressureReadModel({
+            state: { wood: 30, material: 30 }
+        })
+    }), true);
+
+    const engine = GameEngine.createGame({ runSeed: 2026092501 });
+    engine.state.wood = 30;
+    engine.state.material = 30;
+    assert.equal(engine.evaluateWorldEligibilityRequirement(requirement), true);
+    engine.state.wood = 31;
+    engine.state.material = 31;
+    assert.equal(engine.evaluateWorldEligibilityRequirement(requirement), false);
+
+    const levy = COMMAND_CARDS_MASTER.find(card => card.id === "CMD_EMERGENCY_LEVY");
+    assert.equal(levy.reqWoodDeficit, undefined,
+        "Emergency Levy must not retain the legacy card-owned wood threshold");
+    assert.deepEqual(levy.offering?.requirements, [{
+        id: "EMERGENCY_LEVY_MATERIAL_SHORTAGE",
+        type: "MATERIAL_SHORTAGE"
+    }]);
+    assert.deepEqual(levy.execution?.requirements, levy.offering?.requirements,
+        "Emergency Levy Offering and Execution must share the same shortage fact");
+}
+
+// AX. Delayed irrigation completes on the authored Verse; expedited irrigation is immediate.
+{
+    const makeWetlandState = () => ({
+        grid: [[{
+            placed: true,
+            isHQ: false,
+            terrain: {
+                id: "E0_WETLAND",
+                terrainId: "E0_WETLAND",
+                e: 0,
+                gl: 1
+            },
+            socketResource: null,
+            production: { food: 99 }
+        }]]
+    });
+
+    const delayedState = makeWetlandState();
+    const delayedService = new TerrainTransformService({ state: delayedState });
+    const delayed = delayedService.transform({
+        fromTerrainIds: ["E0_WETLAND"],
+        toTerrainId: "E1_RECLAIMED_LAND",
+        development: { id: "IRRIGATION_WORKS", providesIrrigation: true },
+        developmentDelayVerses: 2
+    }, { r: 0, c: 0 }, { verse: 5, reconcileTopology: false });
+
+    assert.equal(delayed.success, true);
+    assert.equal(delayedState.grid[0][0].terrain.id, "E1_RECLAIMED_LAND");
+    assert.equal(delayedState.grid[0][0].development.status, "UNDER_CONSTRUCTION");
+    assert.equal(isIrrigationSourceCell(delayedState.grid[0][0]), false);
+    assert.equal(delayedService.processScheduledDevelopments(6).length, 0);
+    assert.equal(isIrrigationSourceCell(delayedState.grid[0][0]), false);
+    assert.equal(delayedService.processScheduledDevelopments(7).length, 1);
+    assert.equal(isIrrigationSourceCell(delayedState.grid[0][0]), true);
+
+    const instantState = makeWetlandState();
+    const instantService = new TerrainTransformService({ state: instantState });
+    const instant = instantService.transform({
+        fromTerrainIds: ["E0_WETLAND"],
+        toTerrainId: "E1_RECLAIMED_LAND",
+        development: { id: "IRRIGATION_WORKS", providesIrrigation: true }
+    }, { r: 0, c: 0 }, { verse: 5, reconcileTopology: false });
+
+    assert.equal(instant.success, true);
+    assert.equal(instantState.grid[0][0].terrain.id, "E1_RECLAIMED_LAND");
+    assert.equal(instantState.grid[0][0].development.status, "ACTIVE");
+    assert.equal(isIrrigationSourceCell(instantState.grid[0][0]), true);
 }
 
 console.log("✅ Card Core / Offering v1 contract tests PASS");

@@ -19,12 +19,16 @@ function getCardDomainMigrationBlocker(cardId) {
     if (!owner || !blocker) return null;
     const foundationReady =
         blocker === DOMAIN_ACTION_MIGRATION_BLOCKER.ZONE_CONVERSION_DEFINITION_MISSING;
+    const remainingWork =
+        blocker === DOMAIN_ACTION_MIGRATION_BLOCKER.ZONE_CONVERSION_SEMANTIC_EXTENSION_REQUIRED
+            ? "EXTEND_DOMAIN_SEMANTICS"
+            : (foundationReady ? "AUTHOR_DOMAIN_DEFINITION" : "DOMAIN_FOUNDATION_OR_SEMANTICS");
     return Object.freeze({
         cardId,
         owner,
         blocker,
         foundationReady,
-        remainingWork: foundationReady ? "AUTHOR_DOMAIN_DEFINITION" : "DOMAIN_FOUNDATION_OR_SEMANTICS"
+        remainingWork
     });
 }
 

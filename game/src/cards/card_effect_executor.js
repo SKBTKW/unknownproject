@@ -209,6 +209,19 @@ class CardEffectExecutor {
                 const resource = effect.resource;
                 const amount = Number(effect.amount || 0);
                 if (!resource) return { success: false, reason: "RESOURCE_KEY_REQUIRED" };
+
+                if (resource === "wood" || resource === "material") {
+                    const currentMaterial = Number(
+                        state.wood !== undefined
+                            ? state.wood
+                            : (state.material || 0)
+                    );
+                    const nextMaterial = currentMaterial + amount;
+                    state.wood = nextMaterial;
+                    state.material = nextMaterial;
+                    return { success: true };
+                }
+
                 state[resource] = Number(state[resource] || 0) + amount;
                 return { success: true };
             }
