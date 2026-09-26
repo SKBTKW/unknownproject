@@ -225,13 +225,11 @@ function runStage1Path(seed, {
     const engine = GameEngine.createGame({
         runSeed: seed,
         firstRun: true,
-        ...(activatePrototypeSpends
-            ? {
-                cardRuntimeActivationProvider: () => ({
-                    activeCardIds: [...SPEND_PRIORITY]
-                })
-            }
-            : {})
+        // This legacy Trial burden audit owns only SPEND_PRIORITY prototypes.
+        // Explicitly isolate it from the newly live Board Investment portfolio.
+        cardRuntimeActivationProvider: () => ({
+            activeCardIds: activatePrototypeSpends ? [...SPEND_PRIORITY] : []
+        })
     });
     const trialRuntime = attachTrialRuntimeSubsystems(engine);
     assert.equal(trialRuntime?.success, true,
