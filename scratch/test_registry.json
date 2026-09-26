@@ -1672,18 +1672,12 @@
     {
       "path": "scratch/test_stage1_logging_camp_balance_probe.mjs",
       "purpose": "Stage1 Logging Camp legal source-cluster timing, candidate creation-cost PVE, and SOURCE_SIZE gross payback probe",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
+      "suite": "supplemental"
     },
     {
       "path": "scratch/test_stage1_logging_camp_v2_spend_path_probe.mjs",
       "purpose": "Stage1 Logging Camp v2 adjacent-site spend path, candidate cost/base/relation production, V15 residual material, and Trial1 heavy PVE probe",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
+      "suite": "supplemental"
     }
 ,
     {
