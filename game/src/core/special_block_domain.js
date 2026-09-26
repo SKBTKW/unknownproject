@@ -268,6 +268,10 @@ export const SPECIAL_BLOCK_DEFINITIONS = Object.freeze({
             terrainIds: ['GL1_PLAINS', 'E1_RECLAIMED_LAND']
         },
         baseTerrainInteraction: { kind: BASE_TERRAIN_INTERACTIONS.TERRAIN_USING_OVERLAY },
+        creationCost: {
+            status: SPECIAL_BLOCK_COST_STATUS.RESOLVED,
+            resources: { wood: 20 }
+        },
         production: null,
         maintenanceModifiers: {
             food: {
@@ -292,11 +296,17 @@ export const SPECIAL_BLOCK_DEFINITIONS = Object.freeze({
             minConnectedSourceCells: 2
         },
         baseTerrainInteraction: { kind: BASE_TERRAIN_INTERACTIONS.INDEPENDENT },
+        creationCost: {
+            status: SPECIAL_BLOCK_COST_STATUS.RESOLVED,
+            resources: { wood: 20 }
+        },
         production: {
             kind: 'RELATION_COUNT',
-            status: 'UNRESOLVED',
+            status: 'RESOLVED',
             relationDefinitionId: SPECIAL_BLOCK_TYPES.LOGGING_CAMP,
-            relationNeighborhood: 'ORTHOGONAL'
+            relationNeighborhood: 'ORTHOGONAL',
+            baseYields: { wood: 2 },
+            perRelationYields: { wood: 1 }
         },
         capabilities: [BOARD_CAPABILITIES.PRODUCTION_SITE],
         trialTraits: {},
