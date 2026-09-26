@@ -10,7 +10,7 @@ import {
     rotatePlacementClockwise
 } from "../game/src/core/placement_geometry.js";
 import {
-    resolveFirstRunTrial1DeploymentBurdenShare
+    createFirstRunTrial1RelativeDeploymentCostResolver
 } from "../game/src/trial/config/first_run_trial1_relative_deployment_policy_v1.js";
 import {
     resolveDeploymentProbeRequestedDefense
@@ -341,13 +341,17 @@ function evaluateProductDeployment({
         requestedDefense,
         requestedDefenseFraction
     });
-    const burdenShare = resolveFirstRunTrial1DeploymentBurdenShare({
-        requestedDefense: committedDefense,
-        defenseAvailable,
-        distance
-    });
-    const foodCost = Math.ceil(sample.food * burdenShare);
-    const materialCost = Math.ceil(sample.material * burdenShare);
+    const quote = createFirstRunTrial1RelativeDeploymentCostResolver({
+        balanceProvider: () => ({ food: sample.food, material: sample.material }),
+        defenseBalanceProvider: () => defenseAvailable
+    })({ requestedDefense: committedDefense, distance, context: {
+        trialIndex: 1, interceptionCount: 1, defenseAvailable
+    } });
+    assert.ok(quote);
+    const burdenShare = quote.breakdown.burdenShare;
+    const foodShare = quote.breakdown.foodShare;
+    const foodCost = quote.food;
+    const materialCost = quote.material;
     const foodAfter = sample.food - foodCost;
     const materialAfter = sample.material - materialCost;
     const preTrialFoodBurden = 1 - ratio(sample.food, baseline.food);
@@ -362,6 +366,7 @@ function evaluateProductDeployment({
         defenseAvailable,
         distance,
         burdenShare,
+        foodShare,
         baselineFood: baseline.food,
         baselineMaterial: baseline.material,
         preTrialFood: sample.food,
@@ -447,7 +452,7 @@ function evaluateSampleSet(label, samples) {
                     `seed=${row.seed}`,
                     row.planId,
                     `def=${row.requestedDefense}/${row.defenseAvailable}`,
-                    `deployment=${pct(row.burdenShare)}`,
+                    `deployment=🌾${pct(row.foodShare)}/🧱${pct(row.burdenShare)}`,
                     `preTrial=🌾${pct(row.preTrialFoodBurden)}/🧱${pct(row.preTrialMaterialBurden)}`,
                     `cost=🌾${row.foodCost}/🧱${row.materialCost}`,
                     `final=🌾${row.foodAfter}/🧱${row.materialAfter}`,
@@ -483,26 +488,26 @@ for (const rows of [productionRows, prototypeRows]) {
 const productionHeavy = productionRows.filter(row => row.planId === "HEAVY_DEFENSE_FAR");
 assert.equal(
     productionHeavy.every(row =>
-        row.burdenShare >= 0.75
-        && row.burdenShare <= 0.77
+        row.burdenShare >= 0.57
+        && row.burdenShare <= 0.60
     ),
     true,
-    "80% defense far deployment should keep the live FirstRun product burden in the low-70% band"
+    "80% defense far deployment uses the paid-Board portfolio's lower relative share"
 );
 
 const productionFull = productionRows.filter(row => row.planId === "ALL_DEFENSE_FAR");
 assert.equal(
-    productionFull.every(row => Number(row.burdenShare.toFixed(2)) === 0.80),
+    productionFull.every(row => Number(row.burdenShare.toFixed(2)) === 0.65),
     true,
-    "full-defense far deployment must remain the 80% product cap"
+    "full-defense far deployment resolves to 65% of the Trial-entry stock"
 );
 assert.equal(
     productionFull.every(row =>
-        Math.abs(row.totalFoodBurden - row.burdenShare) < 0.01
+        Math.abs(row.totalFoodBurden - row.foodShare) < 0.01
         && Math.abs(row.totalMaterialBurden - row.burdenShare) < 0.01
     ),
     true,
-    "with no production pre-Trial command sinks, total resource burden should equal the deployment burden"
+    "this isolated legacy no-investment path has total burden equal to deployment burden"
 );
 
 function printSummary(label, rows) {
@@ -532,8 +537,8 @@ console.log(
         productionSpendCount,
         prototypeSpendCount,
         productPolicy: "FIRST_RUN_TRIAL1_RELATIVE_V1",
-        productionConclusion: "no live pre-Trial command sink yet; current total burden equals deployment burden",
-        prototypeConclusion: "future live sinks must trigger a deployment-burden retune instead of stacking blindly"
+        productionConclusion: "isolated no-investment counterfactual; use the paid Board Investment envelope for product certification",
+        prototypeConclusion: "prototype spends remain isolated from the live Board Investment portfolio"
     })
 );
 

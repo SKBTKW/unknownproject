@@ -1687,6 +1687,14 @@
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
       ]
+    },
+    {
+      "path": "scratch/test_stage1_trial1_burden_certification.mjs",
+      "purpose": "measure FirstRun Trial1 light, medium, and heavy near/far concrete cost against the paid Board Investment envelope and guard heavy portfolio conversion",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
     }
   ]
 }

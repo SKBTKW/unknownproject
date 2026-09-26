@@ -813,8 +813,15 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Stage1 Pre-Trial Economy Envelope) で不合格が検出されました。");
         process.exit(1);
     }
+    const stage1Trial1BurdenCertificationOk = await runCommand("node", ["scratch/test_stage1_trial1_burden_certification.mjs"]);
+    if (!stage1Trial1BurdenCertificationOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Stage1 Trial1 Burden Certification Probe) で不合格が検出されました。");
+        process.exit(1);
+    }
 
-    const supplementalOk = await runCommand("node", ["scratch/scratch_registry.mjs", "--run", "supplemental"]);
+    // The aggregate runs 54 independently timed tests and currently takes
+    // about 32 seconds; keep the per-test registry timeout unchanged.
+    const supplementalOk = await runCommand("node", ["scratch/scratch_registry.mjs", "--run", "supplemental"], { timeoutMs: 45_000 });
     if (!supplementalOk) {
         console.error("\n[PIPELINE BLOCKED] Supplemental scratch tests failed.");
         process.exit(1);
