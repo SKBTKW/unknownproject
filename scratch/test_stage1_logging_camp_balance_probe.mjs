@@ -161,7 +161,11 @@ function captureOpportunity(engine, seed) {
 }
 
 function playGrowthRun(seed) {
-    const engine = GameEngine.createGame({ runSeed: seed, firstRun: true });
+    const engine = GameEngine.createGame({
+        runSeed: seed,
+        firstRun: true,
+        cardRuntimeActivationProvider: () => ({ activeCardIds: [] })
+    });
     const timeline = [];
 
     while (engine.state.turn < 15) {
