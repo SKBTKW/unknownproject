@@ -6,7 +6,24 @@ import { PLAYER_TRAY_MODES } from "../game/src/ui/layout_state_manager.js";
 const read = path => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 const indexSource = read("../game/index.html");
 const bridgeSource = read("../game/src/ui/trial_action_tray_runtime_bridge.js");
+const componentSource = read("../game/src/ui/trial_action_tray_component.js");
+const uiControllerSource = read("../game/src/ui/ui_controller.js");
+const i18nSource = read("../game/src/i18n.js");
 const trayCss = read("../game/css/3_bottom_area/trial_action_tray.css");
+
+function extractMethod(source, startSignature, nextSignature) {
+    const start = source.indexOf(startSignature);
+    const end = start >= 0 ? source.indexOf(nextSignature, start + startSignature.length) : -1;
+    return start >= 0 && end > start ? source.slice(start, end) : "";
+}
+
+const startBattleSource = extractMethod(uiControllerSource, "startTrialBattle() {", "resolveCurrentTrialBattle() {");
+const resolveBattleSource = extractMethod(uiControllerSource, "resolveCurrentTrialBattle() {", "advanceCurrentTrialBattle() {");
+const advanceBattleSource = extractMethod(uiControllerSource, "advanceCurrentTrialBattle() {", "getCurrentTrialTraversalResult() {");
+const transitionBattleSource = extractMethod(uiControllerSource, "transitionTrialAfterCurrentBattle() {", "isTrialBattleSequenceAdvanced() {");
+const completeTrialSource = extractMethod(uiControllerSource, "completeTrial() {", "isTrialCompleted() {");
+const completedReadSource = extractMethod(uiControllerSource, "isTrialCompleted() {", "getTrialResult() {");
+const trialResultReadSource = extractMethod(uiControllerSource, "getTrialResult() {", "/**");
 
 let passed = 0;
 const check = (condition, message) => {
@@ -86,5 +103,49 @@ check(!trayCss.includes(".trial-defense-allocation-panel")
 check(bridgeSource.includes("attachTrialRouteBoardSelection(uiController)")
     && bridgeSource.includes("uiController.trialActionTrayComponent.render?.()"),
     "bootstrap preserves board-route wiring when UIController already owns the tray");
+
+check(componentSource.includes('btnStartBattle.onclick = () => this.ui.startTrialBattle()')
+    && componentSource.includes('btnResolveBattle.onclick = () => this.ui.resolveCurrentTrialBattle()')
+    && componentSource.includes('btnAdvanceEnemy.onclick = () => this.ui.advanceCurrentTrialBattle()')
+    && componentSource.includes('btnNextBattle.onclick = () => this.ui.transitionTrialAfterCurrentBattle()')
+    && componentSource.includes('btnCompleteTrial.onclick = () => this.ui.completeTrial()'),
+    "Trial tray progression buttons delegate through UIController instead of mutating Trial state directly");
+
+check(startBattleSource.includes("this.trialController.startNextBattle()")
+    && resolveBattleSource.includes("this.trialController.resolveCurrentBattle()")
+    && advanceBattleSource.includes("this.trialController.advanceAfterCurrentBattle()")
+    && transitionBattleSource.includes("this.trialController.transitionAfterCurrentBattle()"),
+    "UIController battle progression methods delegate to canonical TrialController lifecycle operations");
+
+check(componentSource.includes("const completionResult = this.ui.getTrialResult?.()")
+    && completedReadSource.includes("this.trialController.isTrialCompleted()")
+    && trialResultReadSource.includes("this.trialController.getTrialResult()"),
+    "completed Trial tray summary reads canonical completion state/result through UIController");
+
+check(completeTrialSource.includes("this.trialController.completeTrial()")
+    && !completeTrialSource.includes("settleTrialResult")
+    && !completeTrialSource.includes("postTrialProgression")
+    && !completeTrialSource.includes("completePostTrialStagePrelude")
+    && !completeTrialSource.includes("advanceStage"),
+    "Presentation completeTrial stops at TrialController completion and does not own settlement or Stage progression");
+
+check(componentSource.includes("getTrialPlanningDeploymentPreview")
+    && componentSource.includes("deploymentPreview.foodCost")
+    && componentSource.includes("deploymentPreview.materialCost")
+    && componentSource.includes('id="trialDeploymentCostPreview"'),
+    "review surface renders deployment food/material cost before execution");
+check(componentSource.includes("deploymentBlocksConfirm")
+    && componentSource.includes('disabled aria-disabled="true"'),
+    "unaffordable or unresolved deployment preview disables confirm/execute actions");
+check(uiControllerSource.includes("previewPlanningDraftDeployment")
+    && uiControllerSource.includes("UI_TRIAL_DEPLOYMENT_INSUFFICIENT_RESOURCES")
+    && uiControllerSource.includes("UI_TRIAL_DEPLOYMENT_COST_UNAVAILABLE"),
+    "UIController resolves draft deployment preview and fails closed before plan confirmation");
+check(i18nSource.includes('UI_TRIAL_DEPLOYMENT_COST_TITLE: "配備コスト"')
+    && i18nSource.includes('UI_TRIAL_DEPLOYMENT_COST_TITLE: "Deployment Cost"'),
+    "deployment cost presentation is localized in Japanese and English");
+check(trayCss.includes(".trial-deployment-cost-box")
+    && trayCss.includes(".trial-action-progress .btn-trial-action:disabled"),
+    "Trial tray styles deployment cost state and disabled confirmation controls");
 
 console.log(`Trial Action Tray runtime: ${passed}/${passed} PASS`);

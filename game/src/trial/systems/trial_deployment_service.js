@@ -47,14 +47,19 @@ export class TrialDeploymentService {
         costPolicy = null,
         originResolver = null,
         resourcePayment = null,
-        defenseReservation = null
+        defenseReservation = null,
+        applicabilityPredicate = null
     } = {}) {
         this.boardQuery = boardQuery || null;
         this.costPolicy = costPolicy || null;
         this.originResolver = originResolver || null;
         this.resourcePayment = resourcePayment || null;
         this.defenseReservation = defenseReservation || null;
+        this.applicabilityPredicate = typeof applicabilityPredicate === "function"
+            ? applicabilityPredicate
+            : null;
         this.trialState = null;
+        this.sessionApplicable = false;
         this.deploymentHistory = [];
         this.committedPreviewTokens = new Set();
         this.sessionCommitted = false;
@@ -67,16 +72,34 @@ export class TrialDeploymentService {
         this.committedPreviewTokens.clear();
         this.sessionCommitted = false;
         this.sessionResourceSnapshot = null;
+        this.sessionApplicable = Boolean(this.trialState) && (
+            this.applicabilityPredicate
+                ? this.applicabilityPredicate({ trialState: this.trialState }) === true
+                : true
+        );
+
+        if (!this.sessionApplicable) {
+            return {
+                success: Boolean(this.trialState),
+                applicable: false,
+                resourceSnapshot: null
+            };
+        }
+
         const resourceSnapshot = this.resourcePayment?.readAuditSnapshot?.() || null;
         const liveDefense = this.defenseReservation?.readBalance?.();
-        this.sessionResourceSnapshot = this.trialState ? Object.freeze({
+        this.sessionResourceSnapshot = Object.freeze({
             ...(resourceSnapshot || {}),
             defense: Number.isFinite(liveDefense)
                 ? liveDefense
                 : Math.max(0, Number(this.trialState?.human?.availableDefense) || 0),
             mystic: resourceSnapshot?.mystic ?? Math.max(0, Number(this.trialState?.human?.mystic) || 0)
-        }) : null;
-        return { success: Boolean(this.trialState), resourceSnapshot: this.getSessionResourceSnapshot() };
+        });
+        return {
+            success: true,
+            applicable: true,
+            resourceSnapshot: this.getSessionResourceSnapshot()
+        };
     }
 
     endSession() {
@@ -85,10 +108,15 @@ export class TrialDeploymentService {
         this.committedPreviewTokens.clear();
         this.sessionCommitted = false;
         this.sessionResourceSnapshot = null;
+        this.sessionApplicable = false;
+    }
+
+    isSessionApplicable() {
+        return this.sessionApplicable === true;
     }
 
     _sessionActive() {
-        return Boolean(this.trialState);
+        return Boolean(this.trialState) && this.sessionApplicable === true;
     }
 
     validateAllocation({ interceptCell, requestedDefense } = {}) {
@@ -166,7 +194,12 @@ export class TrialDeploymentService {
             boardFacts,
             origin: originResult.origin,
             distance: originResult.distance,
-            context: { routeId, ...context }
+            context: {
+                trialIndex: this.trialState?.trialIndex ?? null,
+                defenseAvailable: Number(this.trialState?.human?.availableDefense) || 0,
+                routeId,
+                ...context
+            }
         }) || { resolved: false, reason: DEPLOYMENT_COST_REASONS.COST_POLICY_UNRESOLVED };
 
         if (!cost.resolved) {
@@ -250,12 +283,19 @@ export class TrialDeploymentService {
         }
 
         const previews = [];
+        const planContext = {
+            ...context,
+            trialIndex: this.trialState?.trialIndex ?? null,
+            defenseAvailable: availableDefense,
+            planTotalDefense: totalDefense,
+            interceptionCount: intercepts.length
+        };
         for (const route of intercepts) {
             const preview = this._previewAllocation({
                 routeId: route.routeId,
                 interceptCell: route.interceptCell,
                 requestedDefense: route.defenseAllocation,
-                context
+                context: planContext
             });
             if (!preview.success) {
                 return {

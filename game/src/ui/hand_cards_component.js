@@ -112,7 +112,25 @@ export class HandCardsComponent {
             // 💰 発動コスト判定 (コマンドカード)
             let costMet = true;
             let costBadgeText = "";
-            if (category !== "LAND" && tObj.cost) {
+            const executionVariants = Array.isArray(tObj.executionVariants) ? tObj.executionVariants : [];
+            if (category !== "LAND" && executionVariants.length > 0) {
+                const woodCosts = executionVariants
+                    .map(variant => Number(variant?.cost?.wood || 0))
+                    .filter(value => Number.isFinite(value) && value > 0);
+                const affordable = executionVariants.some(variant => {
+                    const cost = variant?.cost || {};
+                    return (!cost.food || this.state.food >= cost.food)
+                        && (!cost.wood || Math.max(this.state.wood ?? 0, this.state.material ?? 0) >= cost.wood)
+                        && (!cost.mystic || this.state.mystic >= cost.mystic)
+                        && (!cost.ember || this.state.ember >= cost.ember);
+                });
+                costMet = affordable;
+                if (woodCosts.length > 0) {
+                    const min = Math.min(...woodCosts);
+                    const max = Math.max(...woodCosts);
+                    costBadgeText = min === max ? `🧱-${min}` : `🧱-${min}〜${max}`;
+                }
+            } else if (category !== "LAND" && tObj.cost) {
                 const c = tObj.cost;
                 const parts = [];
                 if (c.food) { parts.push(`🌾-${c.food}`); if (this.state.food < c.food) costMet = false; }

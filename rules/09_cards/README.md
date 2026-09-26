@@ -11,19 +11,28 @@
 
 ## 1. 現行Runtime正本
 
-現在の `DeckManager` は以下を読み込んでOffering候補を構築する。
+現在の `DeckManager` は基本masterとして以下を読み込む。
 
 - `game/src/data/land_cards_data.js`
 - `game/src/data/command_cards_data.js`
 
-これらの生成元として、以下のJSONデータが存在する。
+加えて、Investigation subsystem が解禁後に
+`game/src/data/investigation_cards_data.js` を Offering master へ拡張する。
+
+生成元JSON:
 
 - `game/src/data/land_cards.json`
 - `game/src/data/economy_cards.json`
 - `game/src/data/military_cards.json`
 - `game/src/data/mystic_cards.json`
+- `game/src/data/investigation_cards.json`
 
-したがって、**現在ゲーム内で有効なカードID、cost、rarity、weight、tags、minStage、Offering条件等の事実確認はgame側データを優先する。**
+ただし「masterに存在する」ことと「live runtimeでOffering対象になる」ことは別。
+現在の `CardRuntimePolicy` は `LAND` と `INVESTIGATION` のみをActive扱いし、
+`COMMAND / MILITARY / MYSTIC` は通常Offeringへ再流入させない。
+
+したがって、**カードID、cost、rarity、weight、tags、minStage等のデータ事実はgame側masterを優先し、
+live Offering可否はCardRuntimePolicyとInvestigation解禁条件も合わせて確認する。**
 
 `rules/09_cards/` に異なる数値が書かれている場合、それだけを理由にgameを変更してはならない。
 
@@ -80,7 +89,27 @@
 ### ✨ `04_mystic_cards.md`
 神秘・予兆・Offering操作・🔥回復等。
 
-実装上は非土地カードの多くが `category: "COMMAND"` として統一されており、上記4分類は主に設計・文書整理上の分類である。
+### 🗂️ `05_offering_category_inventory.md`
+Stage1のlive / dormantカードとOfferingカテゴリ未確定境界の棚卸し。
+
+### 🔎 `06_stage1_nonland_live_candidate_audit.md`
+Stage1のDormant非LAND 15枚を、現在の実装意味論のままliveへ戻せるか監査した台帳。
+カテゴリ・weightを決める前に、prototype可能 / support / semantic repair requiredへ切り分ける。
+
+### 🧪 `06_stage1_dormant_card_triage.md`
+Stage1 Dormantカード15枚の復帰・再設計・保留判断。runtime再有効化は行わない。
+
+### 🧭 `07_stage1_first_wave_card_intents.md`
+Stage1で優先して具体化する非LANDカードの判断軸。Offering正式カテゴリ・weightはまだ確定しない。
+
+### 📐 `08_stage1_first_wave_spec_v1.md`
+盤面投資4枚＋状況対応3枚のv1意味論。runtime再有効化・Offeringカテゴリ確定は別工程。
+
+### 🔬 `09_stage1_prototype_exposure_audit.md`
+Stage1 prototype 3枚のVerse別Offering eligibilityを、production activationを変えずにseed監査する台帳。
+
+実装上は非土地カードの多くが `category: "COMMAND"` として残っており、上記テーマ分類とruntime categoryは一致しない。
+Offering用taxonomyは `offering.category` 境界へ段階的に移すが、現時点で正式確定している系統はLANDのみとする。
 
 ---
 
@@ -113,13 +142,18 @@ Trial専用カードを別手札として持ち込む構造は採用しない。
 
 ---
 
-## 6. 調査・情報カテゴリ
+## 6. 調査・情報カード
 
-第1 Trial前の異変認識後に、調査・情報系カードをOfferingへ解禁する方針を採用している。
+第1 Trial前の異変認識後に、調査カードをOfferingへ解禁する導線はlive runtimeへ接続済み。
 
-ただし現行 `command_cards_data.js` には、このカテゴリを完成した独立カード群として扱う実装はまだない。
+- `investigation_cards_data.js` に3枚
+- `InvestigationOfferingAdapter` が解禁後にmasterへ追加
+- `CardRuntimePolicy` では `INVESTIGATION` をActive扱い
 
-よって現在は **Planned / Not fully implemented** とする。
+ただしこれは現在のruntime categoryであり、
+将来のStage別Offering weightで `INVESTIGATION` を独立カテゴリとして固定することまでは意味しない。
+
+Offering taxonomyの確定状況は `05_offering_category_inventory.md` を参照する。
 
 ---
 

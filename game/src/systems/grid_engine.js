@@ -35,6 +35,10 @@ import {
     validatePlacementAttributeMap
 } from '../core/placement_geometry.js';
 import { isBoardCellOccupied } from '../core/board_cell_occupancy.js';
+import {
+    readSpecialBlockAdjacencyProfile,
+    validateTerrainAgainstSpecialBlockAdjacency
+} from '../core/special_block_domain.js';
 function coordinateKey(r, c) {
     return `${r}:${c}`;
 }
@@ -141,7 +145,7 @@ class GridEngine {
                     mergeGroupId: null,
                     mergeType: null,
                     placementGroupId: null,
-                    terrain: isHQ ? { id: "HQ", nameKey: "TERRAIN_HQ", food: 10, wood: 10, defense: 10, mystic: 1 } : null,
+                    terrain: isHQ ? { id: "HQ", nameKey: "TERRAIN_HQ", food: 5, wood: 5, defense: 5, mystic: 1 } : null,
                     specialBlock: null,
                     searched: false,
                     hasSocket: false,
@@ -467,6 +471,7 @@ class GridEngine {
         let hasInvalidGL = false;
         let isWetlandTooClose = false;
         const elevationReasons = new Set();
+        const specialBlockAdjacencyReasons = new Set();
 
         // Card-internal edges are owned by the card definition. Only the board
         // outside the placement footprint participates in normal adjacency rules.
@@ -524,14 +529,46 @@ class GridEngine {
                     for (const [nr, nc] of neighbors) {
                         if (nr < 0 || nr >= size || nc < 0 || nc >= size) continue;
                         const neighborCell = this.state.grid[nr][nc];
-                        if (placingKeys.has(coordinateKey(nr, nc)) && !neighborCell.placed) continue;
-                        if (!neighborCell.placed) continue;
+                        if (
+                            placingKeys.has(coordinateKey(nr, nc))
+                            && !neighborCell.placed
+                            && !neighborCell.specialBlock
+                        ) continue;
+                        if (!neighborCell.placed && !neighborCell.specialBlock) continue;
                         isAdjacent = true;
 
-                        if (!neighborCell.isHQ && neighborCell.terrain) {
+                        if (neighborCell.isHQ) continue;
+
+                        // A Special Block is a Board adjacency proxy, not ordinary Terrain.
+                        // Its E is copied from the construction reference and its GL is
+                        // canonically treated as 1. This also makes special-only cells
+                        // participate in placement legality instead of acting as a bypass.
+                        if (neighborCell.specialBlock) {
+                            const specialProfile = readSpecialBlockAdjacencyProfile(neighborCell);
+                            const specialCheck = validateTerrainAgainstSpecialBlockAdjacency(
+                                cellTerrain,
+                                specialProfile
+                            );
+                            for (const reason of specialCheck.reasons) {
+                                if (reason === "INVALID_GL_NEIGHBOR") {
+                                    hasInvalidGL = true;
+                                } else if (
+                                    reason === "WETLAND_MOUNTAIN_NEIGHBOR"
+                                    || reason === "WETLAND_HILL_NEIGHBOR"
+                                    || reason === "INVALID_ELEVATION_NEIGHBOR"
+                                ) {
+                                    elevationReasons.add(reason);
+                                } else {
+                                    specialBlockAdjacencyReasons.add(reason);
+                                }
+                            }
+                            continue;
+                        }
+
+                        if (neighborCell.terrain) {
                             if (targetGL !== null) {
                                 const placedGL = neighborCell.terrain.gl !== undefined ? neighborCell.terrain.gl : 1;
-                                if ((targetGL === 0 && placedGL >= 2) || (targetGL >= 2 && placedGL === 0)) {
+                                if (Math.abs(targetGL - placedGL) >= 2) {
                                     hasInvalidGL = true;
                                 }
                             }
@@ -555,6 +592,7 @@ class GridEngine {
 
             if (!isAdjacent && !isAlreadyPlaced) reasons.push("NOT_ADJACENT");
             if (hasInvalidGL) reasons.push("INVALID_GL_NEIGHBOR");
+            specialBlockAdjacencyReasons.forEach(reason => reasons.push(reason));
             if (isWetlandTooClose) reasons.push("WETLAND_TOO_CLOSE");
             elevationReasons.forEach(reason => reasons.push(reason));
 

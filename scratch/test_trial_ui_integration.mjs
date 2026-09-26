@@ -9,6 +9,7 @@ import {
     UI_LAYOUT_STATES
 } from "../game/src/ui/layout_state_manager.js";
 import { BoardPresentationState } from "../game/src/presentation/board_presentation_state.js";
+import { TrialPresentationState } from "../game/src/trial/presentation/trial_presentation_state.js";
 
 let passed = 0;
 function check(condition, message) {
@@ -19,6 +20,8 @@ function check(condition, message) {
 
 const read = path => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 const uiSource = read("../game/src/ui/ui_controller.js");
+const layoutSource = read("../game/src/ui/layout_state_manager.js");
+const routeSelectionBridgeSource = read("../game/src/ui/trial_route_board_selection_bridge.js");
 const actionTraySource = read("../game/src/ui/trial_action_tray_component.js");
 const boardSource = read("../game/src/ui/board_grid_component.js");
 const boardCss = read("../game/css/2_center_area/land_grid.css");
@@ -33,7 +36,17 @@ const trayModes = [];
 const boardViewModes = [];
 const camera = { zoom: 1.35, panX: 44, panY: -18, selectedCell: "3:2" };
 const manager = new LayoutStateManager({ documentRef: { documentElement: root, body } });
-manager.bindBoardPresentationState(new BoardPresentationState());
+const boardPresentationState = new BoardPresentationState({
+    selectedCell: { r: 2, c: 3 },
+    hoveredCell: { r: 1, c: 2 },
+    focusCell: { r: 3, c: 1 }
+});
+const trialPresentationState = new TrialPresentationState();
+trialPresentationState.selectInterceptCell({ r: 2, c: 2 });
+trialPresentationState.setHoveredCell({ r: 2, c: 3 });
+trialPresentationState.setPreviewDefenseAllocation(4, 8);
+trialPresentationState.setActiveEnemyRoute("route-a");
+manager.bindBoardPresentationState(boardPresentationState);
 manager.setAdapters({
     setTrialContextVisible: visible => visibility.push(visible),
     setPlayerTrayMode: mode => trayModes.push(mode),
@@ -89,6 +102,15 @@ check(boardSource.includes('data-trial-direction') && boardSource.includes("tria
 "Board remains responsible for route direction and ingress markers");
 check(boardCss.includes("pointer-events: none") && boardCss.includes(".cell.trial-route-cell::before"),
 "Board route markers do not block interception input");
+check(!layoutSource.includes("boardCameraSystem")
+    && !layoutSource.includes("resetCamera(")
+    && !layoutSource.includes("resetZoom("),
+"Layout state transitions do not own or reset Board camera pan/zoom");
+check(routeSelectionBridgeSource.includes("clearMarkers(boardEl);")
+    && routeSelectionBridgeSource.includes('document.body?.classList.toggle("trial-route-selection-on-board", active)')
+    && routeSelectionBridgeSource.indexOf("clearMarkers(boardEl);")
+        < routeSelectionBridgeSource.indexOf("if (!active) return;"),
+"Trial route selector sync clears stale markers and body state before inactive exit");
 
 manager.setBoardViewMode(BOARD_VIEW_MODES.WORLD_2_5D);
 check(manager.getBoardViewMode() === BOARD_VIEW_MODES.WORLD_2_5D
@@ -107,6 +129,33 @@ check(manager.getPlayerTrayMode() === PLAYER_TRAY_MODES.TRIAL
 check(manager.getBoardViewMode() === BOARD_VIEW_MODES.WORLD_2_5D && root.dataset.boardView === "quarter",
 "Advisor expansion preserves 2.5D board view");
 
+manager.setBoardViewMode(BOARD_VIEW_MODES.STRATEGIC_2D);
+check(manager.getBoardViewMode() === BOARD_VIEW_MODES.STRATEGIC_2D
+    && root.dataset.boardView === "top"
+    && manager.getState() === UI_LAYOUT_STATES.ADVISOR_EXPANDED
+    && manager.getPlayerTrayMode() === PLAYER_TRAY_MODES.TRIAL,
+"2.5D -> 2D switch while Advisor is expanded preserves Trial layout ownership");
+check(boardPresentationState.selectedCell?.r === 2
+    && boardPresentationState.selectedCell?.c === 3
+    && boardPresentationState.hoveredCell?.r === 1
+    && boardPresentationState.hoveredCell?.c === 2
+    && boardPresentationState.focusCell?.r === 3
+    && boardPresentationState.focusCell?.c === 1,
+"2D / 2.5D switching preserves logical Board selection, hover, and focus");
+check(trialPresentationState.selectedInterceptCell?.r === 2
+    && trialPresentationState.selectedInterceptCell?.c === 2
+    && trialPresentationState.hoveredCell?.r === 2
+    && trialPresentationState.hoveredCell?.c === 3
+    && trialPresentationState.previewDefenseAllocation === 4
+    && trialPresentationState.activeEnemyRoute === "route-a",
+"view switching and Advisor expansion do not recreate or clear Trial presentation planning state");
+
+manager.setBoardViewMode(BOARD_VIEW_MODES.WORLD_2_5D);
+check(manager.getBoardViewMode() === BOARD_VIEW_MODES.WORLD_2_5D
+    && root.dataset.boardView === "quarter"
+    && trialPresentationState.activeEnemyRoute === "route-a",
+"2D -> 2.5D round-trip restores normal quarter placement without losing active Trial route");
+
 manager.closeAdvisor();
 check(manager.getState() === UI_LAYOUT_STATES.TRIAL
     && manager.getContextOwner() === RIGHT_CONTEXT_OWNERS.NONE
@@ -114,7 +163,29 @@ check(manager.getState() === UI_LAYOUT_STATES.TRIAL
 "closing Advisor returns to Trial without restoring a Trial right panel");
 check(manager.getPlayerTrayMode() === PLAYER_TRAY_MODES.TRIAL, "Trial Player Tray remains active after Advisor closes");
 
+const stopTrialStart = uiSource.indexOf("stopTrialInterceptionPreview() {");
+const stopTrialEnd = uiSource.indexOf("\n    getTrialAvailableDefense()", stopTrialStart);
+const stopTrialSource = stopTrialStart >= 0 && stopTrialEnd > stopTrialStart
+    ? uiSource.slice(stopTrialStart, stopTrialEnd)
+    : "";
+check(stopTrialSource.includes("this.trialPreviewConfig = null;")
+    && stopTrialSource.includes("this.trialPresentationState.clearPlanningState();")
+    && stopTrialSource.includes("this.hideCellTooltip();")
+    && stopTrialSource.includes("this.layoutStateManager.exitTrial();")
+    && stopTrialSource.includes("this.render();")
+    && stopTrialSource.indexOf("this.trialPresentationState.clearPlanningState();")
+        < stopTrialSource.indexOf("this.layoutStateManager.exitTrial();")
+    && stopTrialSource.indexOf("this.layoutStateManager.exitTrial();")
+        < stopTrialSource.indexOf("this.render();"),
+"Trial stop clears temporary Presentation state, exits Trial layout, then re-renders marker cleanup");
+trialPresentationState.clearPlanningState();
 manager.exitTrial();
+check(trialPresentationState.selectedInterceptCell === null
+    && trialPresentationState.hoveredCell === null
+    && trialPresentationState.previewDefenseAllocation === 0
+    && trialPresentationState.activeEnemyRoute === null
+    && trialPresentationState.interceptionPreview === null,
+"Trial cleanup clears temporary selection, hover, allocation, route focus, and preview state");
 check(manager.getState() === UI_LAYOUT_STATES.NORMAL
     && manager.getContextOwner() === RIGHT_CONTEXT_OWNERS.NONE
     && manager.getPlayerTrayMode() === PLAYER_TRAY_MODES.NORMAL

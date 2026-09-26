@@ -7,7 +7,7 @@ export const GLOBAL_EVENTS_MASTER = [
     {
         id: "EVENT_COLD_WAVE", category: "ENVIRONMENT", nameKey: "EVENT_COLD_WAVE_NAME", descKey: "EVENT_COLD_WAVE_DESC", icon: "🌨️", minStage: 1, duration: 3, baseWeight: 100, importance: "MAJOR",
         conditions: [{ type: "STAGE_AT_LEAST", value: 1 }, { type: "TERRAIN_COUNT_AT_LEAST", terrain: "PLAINS", value: 4 }], effects: [{ type: "PRODUCTION_MULTIPLIER", target: "PLAINS_FOOD", value: 0.75 }],
-        endEffects: [{ type: "EVENT_WEIGHT_MODIFIER", targetTag: "FOOD_CRISIS", multiplier: 1.5, expiry: { type: "NEXT_GLOBAL_EVENT" } }]
+        endEffects: []
     },
     {
         id: "EVENT_DROUGHT", category: "ENVIRONMENT", nameKey: "EVENT_DROUGHT_NAME", descKey: "EVENT_DROUGHT_DESC", icon: "☀️", minStage: 2, duration: 3, baseWeight: 70, importance: "MAJOR",

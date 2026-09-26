@@ -16,7 +16,8 @@ export function attachTrialDeploymentEconomy(engine, {
     costResolver = null,
     costProfile = null,
     distanceResolver = null,
-    originSelector = null
+    originSelector = null,
+    applicabilityPredicate = null
 } = {}) {
     if (!engine?.state || !engine?.boardDomainAdapter) {
         return { success: false, reason: "TRIAL_DEPLOYMENT_ENGINE_BOUNDARIES_REQUIRED" };
@@ -53,7 +54,8 @@ export function attachTrialDeploymentEconomy(engine, {
         costPolicy,
         originResolver,
         resourcePayment,
-        defenseReservation
+        defenseReservation,
+        applicabilityPredicate
     });
 
     engine.trialDeploymentResourcePayment = resourcePayment;

@@ -641,171 +641,112 @@ console.log('Board / Special Block / Defense v1 contract');
     const state = state5();
     const grid = new GridEngine(state);
     state.isHQVicinity = grid.isHQVicinity.bind(grid);
-    state.grid[1][2] = cell(1, 2, {
+
+    // Two separately placed 1x1 GL2 lands may form the Logging Camp source pair.
+    state.grid[0][0] = cell(0, 0, {
         placed: true,
         placementGroupId: 'forest-a',
         terrain: { ...FOREST }
     });
-    state.grid[1][1] = cell(1, 1, {
+    state.grid[0][1] = cell(0, 1, {
         placed: true,
         placementGroupId: 'forest-b',
         terrain: { ...FOREST }
     });
+
     const service = new SpecialBlockService(state);
     const targets = service.enumerateLegalTargets(SPECIAL_BLOCK_TYPES.LOGGING_CAMP);
-    const target = targets.find(entry => entry.r === 1 && entry.c === 2);
-    assert.equal(target?.sourceClusterSize, 2);
-    assert.equal(target?.sourceGroupKind, 'CONNECTED_TERRAIN_CLUSTER');
-    assert.equal(target?.sourceGroupId, null);
+    const target = targets.find(entry =>
+        entry.source?.r === 0
+        && entry.source?.c === 0
+        && entry.destination?.r === 1
+        && entry.destination?.c === 0
+    );
+    assert.ok(target, 'connected GL2+ pair exposes an adjacent empty-grid Logging Camp target');
+    assert.equal(target.sourceClusterSize, 2);
 
-    const logging = service.createSpecialBlock(SPECIAL_BLOCK_TYPES.LOGGING_CAMP, { r: 1, c: 2 });
+    const logging = service.createSpecialBlock(
+        SPECIAL_BLOCK_TYPES.LOGGING_CAMP,
+        target
+    );
     assert.equal(logging.success, true);
-    assert.equal(logging.sourceGroup.kind, 'CONNECTED_TERRAIN_CLUSTER');
-    assert.equal(logging.sourceGroup.size, 2);
-    assert.equal(
-        state.grid[1][2].terrain.gl,
-        2,
-        'LOGGING_CAMP preserves canonical Base Terrain GL'
-    );
-    assert.equal(
-        state.grid[1][2].terrain.terrainId,
-        'GL2_FOREST',
-        'LOGGING_CAMP preserves canonical Base Terrain identity'
-    );
+    assert.equal(logging.specialOnly, true);
+    assert.deepEqual(logging.source, { r: 0, c: 0 });
+    assert.equal(state.grid[1][0].placed, false);
+    assert.equal(state.grid[1][0].terrain, null);
+    assert.equal(state.grid[1][0].specialBlock.definitionId, SPECIAL_BLOCK_TYPES.LOGGING_CAMP);
     assert.deepEqual(
-        state.grid[1][2].specialBlock.baseTerrainEffect,
-        { glDelta: -1, sourceGL: 2 }
+        state.grid[1][0].specialBlock.terrainAdjacencyProfile,
+        { e: 1, gl: 1, source: { r: 0, c: 0 } },
+        'Logging Camp copies source E and uses canonical GL1 only for adjacency'
     );
+    assert.equal(
+        state.grid[0][0].terrain.gl,
+        2,
+        'Logging Camp no longer mutates source terrain GL'
+    );
+    assert.equal(
+        state.grid[0][0].terrain.terrainId,
+        'GL2_FOREST',
+        'Logging Camp no longer mutates source terrain identity'
+    );
+    assert.equal(state.grid[1][0].specialBlock.baseTerrainEffect, undefined);
+    assert.equal(state.grid[1][0].specialBlock.sourceGroupReference, undefined);
+
     const board = new BoardDomainAdapter({ state, gridEngine: grid, specialBlockService: service });
     assert.equal(
-        board.readEffectiveGreenery({ r: 1, c: 2 }),
-        1,
-        'Board effective greenery reflects LOGGING_CAMP GL-1'
+        board.readEffectiveGreenery({ r: 0, c: 0 }),
+        2,
+        'source greenery remains canonical after independent Logging Camp construction'
     );
-    assert.equal(
-        new CellViewDataService().getCellViewData(state, 1, 2).greenery,
-        1,
-        'presentation reads effective greenery without rewriting terrain'
-    );
-    assert.equal(state.grid[1][1].terrain.gl, 2, 'selected-cell effect does not destroy source cluster');
-
-    const legacyLoggingCell = cell(0, 0, {
-        placed: true,
-        terrain: { ...FOREST, gl: 1 },
-        specialBlock: {
-            type: SPECIAL_BLOCK_TYPES.LOGGING_CAMP,
-            definitionId: SPECIAL_BLOCK_TYPES.LOGGING_CAMP,
-            state: 'ACTIVE'
-        }
-    });
-    assert.equal(
-        new BoardDomainAdapter({
-            state: { grid: [[legacyLoggingCell]] },
-            gridEngine: null
-        }).readEffectiveGreenery({ r: 0, c: 0 }),
-        1,
-        'legacy saves with already-materialized GL-1 are not decremented twice'
-    );
-}
-
-{
-    const state = state5();
-    const grid = new GridEngine(state);
-    state.isHQVicinity = grid.isHQVicinity.bind(grid);
-
-    state.grid[0][0] = cell(0, 0, {
-        placed: true,
-        merged: true,
-        mergeGroupId: 'forest-zone',
-        placementGroupId: 'forest-zone-a',
-        terrain: { ...FOREST }
-    });
-    state.grid[0][1] = cell(0, 1, {
-        placed: true,
-        merged: true,
-        mergeGroupId: 'forest-zone',
-        placementGroupId: 'forest-zone-b',
-        terrain: { ...FOREST }
-    });
-    state.grid[1][0] = cell(1, 0, {
-        placed: true,
-        merged: true,
-        mergeGroupId: 'forest-zone',
-        placementGroupId: 'forest-zone-c',
-        terrain: { ...FOREST }
-    });
-    state.grid[1][1] = cell(1, 1, {
-        placed: true,
-        merged: true,
-        mergeGroupId: 'forest-zone',
-        placementGroupId: 'forest-zone-d',
-        terrain: { ...FOREST }
-    });
-
-    // Deliberately stale/incomplete summary data: source membership must follow
-    // live cell.mergeGroupId, not mergedBlocks[group].cells.
-    state.mergedBlocks = {
-        'forest-zone': {
-            groupId: 'forest-zone',
-            terrainId: 'GL2_FOREST',
-            mergeType: '2x2',
-            cells: [{ r: 0, c: 0 }]
-        }
-    };
-
-    const service = new SpecialBlockService(state);
-    const group = service.resolveSourceGroup(
-        { r: 0, c: 0 },
-        getSpecialBlockDefinition(SPECIAL_BLOCK_TYPES.LOGGING_CAMP)
-    );
-    assert.equal(group.kind, 'MERGE_GROUP');
-    assert.equal(group.groupId, 'forest-zone');
-    assert.equal(group.cells.length, 4, 'live mergeGroupId membership is canonical');
-
-    const zoneLogging = service.createSpecialBlock(
-        SPECIAL_BLOCK_TYPES.LOGGING_CAMP,
-        { r: 0, c: 0 }
-    );
-    assert.equal(zoneLogging.success, true);
-    assert.equal(zoneLogging.entity.sourceGroupReference.kind, 'MERGE_GROUP');
-    assert.equal(zoneLogging.entity.sourceGroupReference.groupId, 'forest-zone');
-    assert.equal(zoneLogging.entity.sourceGroupReference.initialSize, 4);
-    assert.equal(zoneLogging.entity.sourceGroupReference.cells.length, 4);
 
     const serializedLogging = serializeGameState(state);
     const restoredLogging = {};
     hydrateGameState(restoredLogging, serializedLogging);
     assert.equal(
-        restoredLogging.grid[0][0].specialBlock.sourceGroupReference.initialSize,
-        4,
-        'source group reference survives save/restore'
+        restoredLogging.grid[1][0].specialBlock.definitionId,
+        SPECIAL_BLOCK_TYPES.LOGGING_CAMP,
+        'special-only Logging Camp survives save/restore'
+    );
+    assert.deepEqual(
+        restoredLogging.grid[1][0].specialBlock.terrainAdjacencyProfile,
+        { e: 1, gl: 1, source: { r: 0, c: 0 } },
+        'Logging Camp adjacency provenance survives save/restore'
     );
     assert.equal(
         restoredLogging.grid[0][0].terrain.gl,
         2,
-        'save/restore keeps canonical Base Terrain GL'
+        'save/restore preserves the unchanged GL2 source terrain'
     );
-    assert.equal(
-        new BoardDomainAdapter({ state: restoredLogging, gridEngine: null })
-            .readEffectiveGreenery({ r: 0, c: 0 }),
-        1,
-        'save/restore preserves effective LOGGING_CAMP GL modifier'
-    );
+}
 
-    // An unzoned forest adjacent to a zoned forest stays in its own fallback
-    // connected cluster instead of silently joining the Zone source.
-    state.grid[2][0] = cell(2, 0, {
+{
+    const state = state5();
+    const service = new SpecialBlockService(state);
+
+    // A single GL2 source is insufficient.
+    state.grid[0][0] = cell(0, 0, {
         placed: true,
-        placementGroupId: 'raw-forest',
+        placementGroupId: 'forest-single',
         terrain: { ...FOREST }
     });
-    const raw = service.resolveSourceGroup(
-        { r: 2, c: 0 },
-        getSpecialBlockDefinition(SPECIAL_BLOCK_TYPES.LOGGING_CAMP)
+    assert.equal(
+        service.enumerateLegalTargets(SPECIAL_BLOCK_TYPES.LOGGING_CAMP).length,
+        0,
+        'Logging Camp requires at least two orthogonally connected GL2+ source cells'
     );
-    assert.equal(raw.kind, 'CONNECTED_TERRAIN_CLUSTER');
-    assert.equal(raw.groupId, null);
-    assert.equal(raw.cells.length, 1);
+
+    // A diagonal second source still does not satisfy the connected-pair contract.
+    state.grid[1][1] = cell(1, 1, {
+        placed: true,
+        placementGroupId: 'forest-diagonal',
+        terrain: { ...FOREST }
+    });
+    assert.equal(
+        service.enumerateLegalTargets(SPECIAL_BLOCK_TYPES.LOGGING_CAMP).length,
+        0,
+        'diagonal GL2+ cells do not form the required source pair'
+    );
 }
 
 {
@@ -1182,7 +1123,11 @@ console.log('Board / Special Block / Defense v1 contract');
     const logging = getSpecialBlockDefinition(SPECIAL_BLOCK_TYPES.LOGGING_CAMP);
     assert.equal(Object.isFrozen(logging), true);
     assert.equal(Object.isFrozen(logging.placement), true);
-    assert.equal(Object.isFrozen(logging.placement.terrainIds), true);
+    assert.equal(logging.placement.sourceMinGL, 2);
+    assert.equal(logging.placement.minConnectedSourceCells, 2);
+    assert.equal(logging.production.kind, 'RELATION_COUNT');
+    assert.equal(logging.production.relationDefinitionId, SPECIAL_BLOCK_TYPES.LOGGING_CAMP);
+    assert.equal(logging.production.relationNeighborhood, 'ORTHOGONAL');
     assert.equal(Object.isFrozen(logging.production), true);
     assert.equal(Object.isFrozen(logging.lifecycle), true);
     assert.equal(Object.isFrozen(logging.capabilities), true);

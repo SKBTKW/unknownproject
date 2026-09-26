@@ -7,9 +7,11 @@ import { resolvePlacementGeometry } from './placement_geometry.js';
 import {
     BOARD_CAPABILITIES,
     readCellCapabilities,
-    readEffectiveGreenery
+    readEffectiveGreenery,
+    readSpecialBlockAdjacencyProfile
 } from './special_block_domain.js';
 import { BoardDamageService } from './board_damage_service.js';
+import { resolveBoardFoodMaintenanceModifiers } from './board_maintenance_modifier.js';
 import {
     isZoneConversionFunctional,
     readZoneConversion,
@@ -17,6 +19,7 @@ import {
     readZoneSemantic
 } from './zone_conversion_domain.js';
 import { SpecialBlockService } from '../systems/special_block_service.js';
+import { TerrainTransformService } from '../systems/terrain_transform_service.js';
 import { ZoneConversionService } from '../systems/zone_conversion_service.js';
 
 function resolveLandSemantic(definition) {
@@ -77,6 +80,7 @@ export class BoardDomainAdapter {
         state,
         gridEngine,
         specialBlockService = null,
+        terrainTransformService = null,
         boardDamageService = null,
         zoneConversionService = null,
         zoneConversionDefinitions = null,
@@ -85,6 +89,10 @@ export class BoardDomainAdapter {
         this.state = state || gridEngine?.state || null;
         this.gridEngine = gridEngine || null;
         this.specialBlockService = specialBlockService || new SpecialBlockService(this.state);
+        this.terrainTransformService = terrainTransformService || new TerrainTransformService({
+            state: this.state,
+            gridEngine: this.gridEngine
+        });
         this.boardDamageService = boardDamageService || new BoardDamageService({ state: this.state });
         this.zoneConversionService = zoneConversionService || new ZoneConversionService({
             state: this.state,
@@ -103,6 +111,51 @@ export class BoardDomainAdapter {
             for (const cell of row || []) {
                 if (!cell?.placed || !cell.terrain) continue;
                 if (matchesTerrainId(cellTerrainId(cell), query) && ++count >= minimum) return true;
+            }
+        }
+        return false;
+    }
+
+    hasConnectedTerrainGLAtLeast(minimumGL, { minimum = 2 } = {}) {
+        const threshold = Number(minimumGL);
+        const required = Math.max(1, Math.trunc(Number(minimum) || 1));
+        if (!Number.isFinite(threshold) || !Array.isArray(this.state?.grid)) return false;
+
+        const grid = this.state.grid;
+        const visited = new Set();
+        const matches = (r, c) => {
+            const cell = grid?.[r]?.[c];
+            return Boolean(
+                cell?.placed
+                && !cell.isHQ
+                && !cell.specialBlock
+                && cell.terrain
+                && Number(cell.terrain.gl) >= threshold
+            );
+        };
+
+        for (let r = 0; r < grid.length; r++) {
+            for (let c = 0; c < (grid[r]?.length || 0); c++) {
+                const startKey = `${r}:${c}`;
+                if (visited.has(startKey) || !matches(r, c)) continue;
+
+                let count = 0;
+                const queue = [{ r, c }];
+                visited.add(startKey);
+                while (queue.length > 0) {
+                    const current = queue.shift();
+                    count++;
+                    if (count >= required) return true;
+
+                    for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+                        const nr = current.r + dr;
+                        const nc = current.c + dc;
+                        const key = `${nr}:${nc}`;
+                        if (visited.has(key) || !matches(nr, nc)) continue;
+                        visited.add(key);
+                        queue.push({ r: nr, c: nc });
+                    }
+                }
             }
         }
         return false;
@@ -127,6 +180,10 @@ export class BoardDomainAdapter {
             }
         }
         return false;
+    }
+
+    resolveFoodMaintenanceModifiers() {
+        return resolveBoardFoodMaintenanceModifiers(this.state);
     }
 
     hasCapability(capability, options = {}) {
@@ -193,8 +250,32 @@ export class BoardDomainAdapter {
         return false;
     }
 
+    validateTerrainTransform(spec, target) {
+        return this.terrainTransformService.validateTarget(spec, target);
+    }
+
+    enumerateTerrainTransformTargets(spec) {
+        return this.terrainTransformService.enumerateTargets(spec);
+    }
+
+    transformTerrain(spec, target, context = {}) {
+        return this.terrainTransformService.transform(spec, target, context);
+    }
+
+    processScheduledTerrainDevelopments(verse) {
+        return this.terrainTransformService.processScheduledDevelopments(verse);
+    }
+
     validateSpecialBlockTarget(typeOrDefinition, target, context = {}) {
         return this.specialBlockService.validateTarget(typeOrDefinition, target, context);
+    }
+
+    validateSpecialBlockTargetAfterPayment(typeOrDefinition, target, payment = {}, context = {}) {
+        return this.specialBlockService.validateTargetAfterPayment(typeOrDefinition, target, payment, context);
+    }
+
+    quoteSpecialBlockCost(typeOrDefinition) {
+        return this.specialBlockService.quoteCost(typeOrDefinition);
     }
 
     enumerateLegalSpecialBlockTargets(typeOrDefinition, context = {}) {
@@ -213,12 +294,32 @@ export class BoardDomainAdapter {
         return readZoneConversion(this.state, groupId);
     }
 
+    hasZoneConversionDefinition(definitionId) {
+        return this.zoneConversionService.hasDefinition(definitionId);
+    }
+
+    listZoneConversionDefinitionIds() {
+        return this.zoneConversionService.listDefinitionIds();
+    }
+
     isZoneConversionFunctional(groupId) {
         return isZoneConversionFunctional(this.state, groupId);
     }
 
     getZoneConversionCount(definitionId = null) {
         return this.zoneConversionService.getConversionCount(definitionId);
+    }
+
+    resolveZoneConversionProduction(groupId) {
+        return this.zoneConversionService.resolveProduction(groupId);
+    }
+
+    sumZoneConversionProduction() {
+        return this.zoneConversionService.sumProduction();
+    }
+
+    resolveZoneConversionCellProduction(target) {
+        return this.zoneConversionService.resolveCellProduction(target);
     }
 
     validateZoneConversionCandidate(definitionId, groupId) {
@@ -255,6 +356,10 @@ export class BoardDomainAdapter {
         return this.zoneConversionService.quoteCost(definitionId);
     }
 
+    resolveZoneConversionCreationReward(definitionId) {
+        return this.zoneConversionService.resolveCreationReward(definitionId);
+    }
+
     getZoneConversionMaintenancePlan(groupId, verse = this.state?.turn) {
         return this.zoneConversionService.getMaintenancePlan(groupId, verse);
     }
@@ -282,6 +387,10 @@ export class BoardDomainAdapter {
         return readCellCapabilities(target);
     }
 
+    isSpecialBlockFunctional(entityOrTarget) {
+        return this.specialBlockService.isFunctional(entityOrTarget);
+    }
+
     readTrialTraits(entityOrTarget) {
         return this.specialBlockService.readTrialTraits(entityOrTarget);
     }
@@ -291,6 +400,13 @@ export class BoardDomainAdapter {
             return readEffectiveGreenery(this.state?.grid?.[target.r]?.[target.c] || null);
         }
         return readEffectiveGreenery(target);
+    }
+
+    readSpecialBlockAdjacencyProfile(target) {
+        if (Number.isInteger(target?.r) && Number.isInteger(target?.c)) {
+            return readSpecialBlockAdjacencyProfile(this.state?.grid?.[target.r]?.[target.c] || null);
+        }
+        return readSpecialBlockAdjacencyProfile(target);
     }
 
     readTrialDeploymentFacts(target) {

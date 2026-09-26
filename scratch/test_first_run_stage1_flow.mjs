@@ -113,14 +113,53 @@ assert.equal(engine.state.turn, 7);
 assert.equal(traceStarts, 1, "Verse7 demihuman traces must start exactly once");
 assert.equal(engine.warningStateService.getState(), WARNING_STATES.OMEN);
 assert.equal(engine.state.investigationUnlocked, true, "canonical GE unlock bridge must unlock Investigation");
+assert.equal(
+    Number.isFinite(engine.state.eventCooldowns?.[FIRST_RUN_DEMIHUMAN_TRACES_EVENT_ID]),
+    true,
+    "Verse7 restore authority must retain the GE dedupe marker"
+);
 
 assert.equal(engine.nextTurn(), 8);
 assert.equal(traceStarts, 1, "Verse8 progression must not retrigger the Verse7 trace event");
 
-const investigationIndex = engine.state.handOffering.findIndex(card =>
+const restoredVerse7 = engine.historyRestoreService.restoreVerse(7);
+assert.equal(restoredVerse7.success, true, "Verse7 GE-complete FirstRun state must be restorable");
+assert.equal(engine.state.turn, 7);
+assert.equal(engine.firstRunState.active, true);
+assert.equal(engine.state.investigationUnlocked, true, "Verse7 restore must retain Investigation unlock");
+assert.equal(engine.warningStateService.getState(), WARNING_STATES.OMEN, "Verse7 restore must retain OMEN");
+assert.equal(
+    Number.isFinite(engine.state.eventCooldowns?.[FIRST_RUN_DEMIHUMAN_TRACES_EVENT_ID]),
+    true,
+    "Verse7 restore must retain the canonical GE dedupe marker"
+);
+assert.equal(traceStarts, 1, "restoring Verse7 must not replay the scheduled traces event");
+
+assert.equal(engine.nextTurn(), 8);
+assert.equal(traceStarts, 1, "replaying Verse7 -> Verse8 after restore must not duplicate the traces event");
+
+let investigationIndex = engine.state.handOffering.findIndex(card =>
     (card?.terrain || card)?.category === "INVESTIGATION"
 );
 assert.notEqual(investigationIndex, -1, "Verse8 Offering must guarantee at least one Investigation card");
+
+const verse8OfferingIds = engine.state.handOffering.map(card => (card?.terrain || card)?.id || null);
+const restoredVerse8 = engine.historyRestoreService.restoreVerse(8);
+assert.equal(restoredVerse8.success, true, "Verse8 Investigation-guarantee state must be restorable");
+assert.equal(engine.state.turn, 8);
+assert.equal(engine.firstRunState.active, true);
+assert.equal(engine.state.investigationUnlocked, true);
+assert.equal(engine.warningStateService.getState(), WARNING_STATES.OMEN);
+assert.deepEqual(
+    engine.state.handOffering.map(card => (card?.terrain || card)?.id || null),
+    verse8OfferingIds,
+    "Verse8 restore must preserve the already-generated Offering instead of regenerating it"
+);
+investigationIndex = engine.state.handOffering.findIndex(card =>
+    (card?.terrain || card)?.category === "INVESTIGATION"
+);
+assert.notEqual(investigationIndex, -1, "Verse8 restore must preserve the Investigation minimum guarantee");
+assert.equal(traceStarts, 1, "Verse8 restore must not replay the Verse7 Global Event");
 
 const investigationCard = engine.state.handOffering[investigationIndex];
 const reportsBefore = engine.state.knownEnemyState?.reports?.length || 0;

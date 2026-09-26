@@ -1,5 +1,6 @@
 import { I18n } from '../i18n.js';
 import { LAND_SYSTEM_DATA } from '../data/land_system.js';
+import { ZONE_CONVERSION_DEFINITIONS } from '../data/zone_conversion_definitions.js';
 import { DIRECTIVES, DirectiveSystem } from '../systems/directive_system.js';
 import { DeckManager, OFFERING_GENERATION_REASONS } from '../systems/deck_manager.js';
 import { ProductionCalculator } from '../systems/production_calculator.js';
@@ -14,6 +15,7 @@ import { ChronicleSystem } from '../systems/chronicle_system.js';
 import { GlobalEventManager } from '../systems/global_event_system.js';
 import { ConditionEvaluator } from './condition_evaluator.js';
 import { RunHistoryReadModel } from '../systems/run_history_read_model.js';
+import { ResourcePressureReadModel } from '../systems/resource_pressure_read_model.js';
 import { EmberSystem } from '../systems/ember_system.js';
 import { CardCycleSystem } from '../systems/card_cycle_system.js';
 import { MaintenanceFallbackSystem } from '../systems/maintenance_fallback_system.js';
@@ -33,6 +35,7 @@ import { FirstRunState } from '../tutorial/first_run_state.js';
 import { TrialTimingAuthorityService } from '../trial/systems/trial_timing_authority_service.js';
 import { attachTrialDeploymentEconomy } from '../trial/integration/trial_deployment_economy_bootstrap.js';
 import { TrialDefenseReservation } from '../trial/systems/trial_defense_reservation.js';
+import { createFirstRunTrial1RelativeDeploymentCostResolver } from '../trial/config/first_run_trial1_relative_deployment_policy_v1.js';
 
 function normalizeRunSeed(seed) {
     if (!Number.isFinite(seed)) return null;
@@ -70,6 +73,7 @@ class GameEngine {
         this.offeringMinimumRequirementProvider = dependencies.offeringMinimumRequirementProvider
             || this.firstRunService
             || null;
+        this.cardRuntimeActivationProvider = dependencies.cardRuntimeActivationProvider || null;
 
         const injectedCheckSystem = dependencies.checkSystem || dependencies.state?.checkSystem || null;
         const injectedRngState = injectedCheckSystem && typeof injectedCheckSystem.getState === "function"
@@ -93,7 +97,7 @@ class GameEngine {
             this.state = dependencies.state;
         } else {
             const GameStateClass = dependencies.GameStateClass || GameState;
-            this.state = GameStateClass ? new GameStateClass({ engine: this }) : { turn: 1, ember: 20, food: 50, wood: 30, defense: 10, currentDefense: 10, maxDefense: 10, mystic: 0, handOffering: [], reserveSlots: [null] };
+            this.state = GameStateClass ? new GameStateClass({ engine: this }) : { turn: 1, ember: 20, food: 50, wood: 30, defense: 5, currentDefense: 5, maxDefense: 5, mystic: 0, handOffering: [], reserveSlots: [null] };
         }
 
         // 3. ドメインサブシステムの初期化と注入
@@ -111,11 +115,14 @@ class GameEngine {
                 gridEngine: this.gridEngine,
                 specialBlockService: this.specialBlockService,
                 zoneConversionService: dependencies.zoneConversionService || null,
-                zoneConversionDefinitions: dependencies.zoneConversionDefinitions || null
+                zoneConversionDefinitions: dependencies.zoneConversionDefinitions || ZONE_CONVERSION_DEFINITIONS
             }) : null);
         this.zoneConversionService = dependencies.zoneConversionService
             || this.boardDomainAdapter?.zoneConversionService
             || null;
+
+        this.resourcePressureQuery = dependencies.resourcePressureQuery
+            || new ResourcePressureReadModel({ state: this.state });
 
         this.cardDomainActionExecutor = dependencies.cardDomainActionExecutor
             || createCardDomainActionExecutor(this);
@@ -149,7 +156,8 @@ class GameEngine {
             engine: this,
             boardQuery: this.boardWorldQuery || null,
             historyQuery: this.runHistoryReadModel || null,
-            warningStateService: this.warningStateService || null
+            warningStateService: this.warningStateService || null,
+            resourcePressureQuery: this.resourcePressureQuery || null
         });
         this.evaluateWorldEligibilityRequirement = (requirement) =>
             ConditionEvaluator.evaluateStrict(requirement, this.getWorldEligibilityContext());
@@ -182,13 +190,36 @@ class GameEngine {
             });
 
         this.trialDeploymentAttachment = null;
-        if (
+        const explicitTrialDeploymentEconomy = (
             dependencies.trialDeploymentEconomy
             && typeof dependencies.trialDeploymentEconomy === "object"
-        ) {
+        )
+            ? dependencies.trialDeploymentEconomy
+            : null;
+        const firstRunTrial1DeploymentEconomy = (
+            !explicitTrialDeploymentEconomy
+            && this.firstRunState?.active === true
+        )
+            ? {
+                costResolver: createFirstRunTrial1RelativeDeploymentCostResolver({
+                    balanceProvider: () => ({
+                        food: Number(this.state?.food) || 0,
+                        material: Number(this.state?.wood ?? this.state?.material) || 0
+                    }),
+                    defenseBalanceProvider: () => this.getTrialAvailableDefense()
+                }),
+                applicabilityPredicate: ({ trialState }) =>
+                    this.firstRunState?.active === true
+                    && Number(trialState?.trialIndex) === 1
+            }
+            : null;
+        const trialDeploymentEconomy = explicitTrialDeploymentEconomy
+            || firstRunTrial1DeploymentEconomy;
+
+        if (trialDeploymentEconomy) {
             this.trialDeploymentAttachment = attachTrialDeploymentEconomy(
                 this,
-                dependencies.trialDeploymentEconomy
+                trialDeploymentEconomy
             );
         }
 

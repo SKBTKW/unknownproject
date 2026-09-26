@@ -236,6 +236,31 @@ body[data-player-tray-mode="trial"] #trialActionTrayHost {
     justify-content: flex-end;
 }
 
+.trial-action-progress .trial-deployment-cost-box {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 4px 10px;
+    padding: 8px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 7px;
+    background: rgba(20, 27, 38, 0.72);
+}
+
+.trial-action-progress .trial-deployment-cost-resources {
+    font-weight: 800;
+    text-align: right;
+}
+
+.trial-action-progress .trial-deployment-cost-box small {
+    grid-column: 1 / -1;
+    opacity: 0.82;
+}
+
+.trial-action-progress .trial-deployment-cost-box.is-unaffordable {
+    border-color: rgba(231, 76, 60, 0.82);
+}
+
 .trial-action-progress .trial-plan-review-requested-banner,
 .trial-action-progress .trial-plan-confirmed-banner,
 .trial-action-progress .trial-plan-activated-banner,
@@ -264,6 +289,11 @@ body[data-player-tray-mode="trial"] #trialActionTrayHost {
     color: #ffffff;
     font-weight: 800;
     cursor: pointer;
+}
+
+.trial-action-progress .btn-trial-action:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
 }
 
 @media (max-width: 900px) {

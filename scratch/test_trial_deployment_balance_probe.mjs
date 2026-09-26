@@ -12,9 +12,9 @@ import {
 
 {
     const liveStage1Engine = GameEngine.createGame({ runSeed: 20260924, firstRun: true });
-    assert.equal(liveStage1Engine.trialDeploymentAttachment, null);
-    assert.equal(liveStage1Engine.trialDeploymentService, undefined);
-    console.log("LIVE_STAGE1_DEPLOYMENT_PROFILE=UNRESOLVED sink=0 until explicitly configured");
+    assert.equal(liveStage1Engine.trialDeploymentAttachment?.success, true);
+    assert.equal(typeof liveStage1Engine.trialDeploymentService?.previewPlan, "function");
+    console.log("LIVE_STAGE1_DEPLOYMENT_PROFILE=FIRST_RUN_TRIAL1_RELATIVE_V1");
 
     const unresolved = evaluateDeploymentProfileAgainstSamples({
         profile: UNRESOLVED_DEPLOYMENT_PROFILE,
@@ -142,8 +142,8 @@ console.log("test_trial_deployment_balance_probe: PASS");
     assert.ok(halfFarMin);
 
     assert.ok(
-        heavyMin.burdenShare >= 0.74 && heavyMin.burdenShare <= 0.76,
-        "heavy first-run commitment should land around 75% burden"
+        heavyMin.burdenShare >= 0.75 && heavyMin.burdenShare <= 0.77,
+        "80% defense first-run commitment should land around 76% burden"
     );
     assert.equal(
         Number(allMin.burdenShare.toFixed(2)),
@@ -151,7 +151,7 @@ console.log("test_trial_deployment_balance_probe: PASS");
         "all-defense far deployment should cap at 80% burden"
     );
     assert.ok(
-        halfFarMin.burdenShare >= 0.57 && halfFarMin.burdenShare <= 0.59,
+        halfFarMin.burdenShare >= 0.63 && halfFarMin.burdenShare <= 0.64,
         "half-defense far deployment should stay dramatic without matching full mobilization"
     );
 

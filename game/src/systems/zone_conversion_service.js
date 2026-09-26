@@ -8,73 +8,24 @@
 import {
     ZONE_CONVERSION_CAPABILITIES,
     ZONE_CONVERSION_COST_STATUS,
+    ZONE_CONVERSION_PRODUCTION_KINDS,
+    ZONE_CONVERSION_PRODUCTION_STATUS,
+    ZONE_CONVERSION_REWARD_STATUS,
     ZONE_CONVERSION_STATES,
     isConvertibleCompletedZone,
+    normalizeZoneProductionYieldMap,
     normalizeZoneResourceMap,
     readZoneRecord,
     resolveZoneConversionCost,
+    resolveZoneConversionCreationReward,
     zoneConversionCount
 } from '../core/zone_conversion_domain.js';
 import { resolveMergeTerrainAttribute } from '../core/merge_rules.js';
+import { ZoneConversionDefinitionRegistry } from '../core/zone_conversion_definition_registry.js';
 
 function clone(value, fallback = null) {
     if (value === undefined) return fallback;
     return JSON.parse(JSON.stringify(value));
-}
-
-function freezeStringArray(values) {
-    return Object.freeze([...(Array.isArray(values) ? values : [])]);
-}
-
-function freezeDefinition(definition) {
-    const requirements = definition?.requirements || {};
-    return Object.freeze({
-        ...definition,
-        eligibleZoneAttributes: freezeStringArray(definition?.eligibleZoneAttributes),
-        requirements: Object.freeze({
-            ...requirements,
-            resources: requirements.resources
-                ? Object.freeze({ ...requirements.resources })
-                : null
-        }),
-        creationCost: definition?.creationCost
-            ? Object.freeze({
-                ...definition.creationCost,
-                base: definition.creationCost.base
-                    ? Object.freeze({ ...definition.creationCost.base })
-                    : null,
-                escalation: definition.creationCost.escalation
-                    ? Object.freeze({
-                        ...definition.creationCost.escalation,
-                        perConversion: definition.creationCost.escalation.perConversion
-                            ? Object.freeze({ ...definition.creationCost.escalation.perConversion })
-                            : null
-                    })
-                    : null
-            })
-            : null,
-        maintenance: definition?.maintenance
-            ? Object.freeze({
-                ...definition.maintenance,
-                resources: definition.maintenance.resources
-                    ? Object.freeze({ ...definition.maintenance.resources })
-                    : null
-            })
-            : null,
-        capabilities: freezeStringArray(definition?.capabilities)
-    });
-}
-
-function normalizeDefinitions(definitions) {
-    const entries = definitions instanceof Map
-        ? [...definitions.entries()]
-        : Object.entries(definitions || {});
-    const result = new Map();
-    for (const [id, definition] of entries) {
-        if (!id || !definition || typeof definition !== 'object') continue;
-        result.set(String(id), freezeDefinition({ ...definition, id: definition.id || String(id) }));
-    }
-    return result;
 }
 
 function stateResource(state, key) {
@@ -116,6 +67,64 @@ function hasAnyCost(resources) {
     return Object.values(resources || {}).some(value => Number(value) > 0);
 }
 
+function applyCreationReward(state, resources = {}) {
+    const applied = {};
+    for (const [key, rawAmount] of Object.entries(resources || {})) {
+        const amount = Number(rawAmount || 0);
+        if (!Number.isFinite(amount) || amount <= 0) continue;
+
+        if (key === 'ember') {
+            let gained = 0;
+            if (state?.emberSystem && typeof state.emberSystem.recoverInstant === 'function') {
+                gained = Number(state.emberSystem.recoverInstant(amount)) || 0;
+            } else {
+                const before = Number(state?.ember || 0);
+                const max = Number.isFinite(Number(state?.maxEmber))
+                    ? Number(state.maxEmber)
+                    : before + amount;
+                const after = Math.min(max, before + amount);
+                if (state) state.ember = after;
+                gained = after - before;
+            }
+            if (gained > 0) applied.ember = gained;
+            continue;
+        }
+
+        if (key === 'defense') {
+            let gained = 0;
+            if (state?.defenseSystem && typeof state.defenseSystem.recoverCurrentDefense === 'function') {
+                gained = Number(state.defenseSystem.recoverCurrentDefense(amount)?.recovered || 0);
+            } else {
+                const before = Number(state?.currentDefense ?? state?.defense ?? 0);
+                const max = Number.isFinite(Number(state?.maxDefense))
+                    ? Number(state.maxDefense)
+                    : before + amount;
+                const after = Math.min(max, before + amount);
+                if (state) state.currentDefense = after;
+                gained = after - before;
+            }
+            if (gained > 0) applied.defense = gained;
+            continue;
+        }
+
+        if (key === 'wood') {
+            const before = Number(state?.wood ?? state?.material ?? 0) || 0;
+            const after = before + amount;
+            if (state) {
+                state.wood = after;
+                state.material = after;
+            }
+            applied.wood = amount;
+            continue;
+        }
+
+        const before = Number(state?.[key] || 0) || 0;
+        if (state) state[key] = before + amount;
+        applied[key] = amount;
+    }
+    return Object.freeze(applied);
+}
+
 function representativeZoneCell(zone) {
     const cells = Array.isArray(zone?.cells) ? zone.cells : [];
     return cells
@@ -135,17 +144,220 @@ function activeConversionCapabilities(zone) {
 }
 
 export class ZoneConversionService {
-    constructor({ state, definitions = {} } = {}) {
+    constructor({
+        state,
+        definitions = {},
+        definitionRegistry = null
+    } = {}) {
         this.state = state || null;
-        this.definitions = normalizeDefinitions(definitions);
+        this.definitionRegistry = definitionRegistry instanceof ZoneConversionDefinitionRegistry
+            ? definitionRegistry
+            : new ZoneConversionDefinitionRegistry(definitions);
     }
 
     getDefinition(definitionId) {
-        return this.definitions.get(String(definitionId)) || null;
+        return this.definitionRegistry.get(definitionId);
+    }
+
+    hasDefinition(definitionId) {
+        return this.definitionRegistry.has(definitionId);
+    }
+
+    listDefinitionIds() {
+        return this.definitionRegistry.listIds();
     }
 
     getConversionCount(definitionId = null) {
         return zoneConversionCount(this.state, { definitionId });
+    }
+
+    resolveProduction(groupId) {
+        const zone = readZoneRecord(this.state, groupId);
+        const conversion = zone?.conversion || null;
+        const zeroYields = Object.freeze({ food: 0, wood: 0, mystic: 0 });
+
+        if (!conversion || conversion.state !== ZONE_CONVERSION_STATES.ACTIVE) {
+            return Object.freeze({
+                status: ZONE_CONVERSION_PRODUCTION_STATUS.NONE,
+                kind: null,
+                yields: zeroYields,
+                memberCount: 0,
+                groupId: String(groupId)
+            });
+        }
+
+        if (!isConvertibleCompletedZone(this.state, groupId)) {
+            return Object.freeze({
+                status: ZONE_CONVERSION_PRODUCTION_STATUS.UNRESOLVED,
+                kind: null,
+                yields: zeroYields,
+                memberCount: 0,
+                groupId: String(groupId)
+            });
+        }
+
+        const definition = this.getDefinition(conversion.definitionId);
+        if (!definition) {
+            return Object.freeze({
+                status: ZONE_CONVERSION_PRODUCTION_STATUS.UNRESOLVED,
+                kind: null,
+                yields: zeroYields,
+                memberCount: 0,
+                groupId: String(groupId)
+            });
+        }
+
+        const production = definition.production || null;
+        if (!production) {
+            return Object.freeze({
+                status: ZONE_CONVERSION_PRODUCTION_STATUS.NONE,
+                kind: null,
+                yields: zeroYields,
+                memberCount: 0,
+                groupId: String(groupId)
+            });
+        }
+        if (
+            production.status !== ZONE_CONVERSION_PRODUCTION_STATUS.RESOLVED
+            || !Object.values(ZONE_CONVERSION_PRODUCTION_KINDS).includes(production.kind)
+        ) {
+            return Object.freeze({
+                status: ZONE_CONVERSION_PRODUCTION_STATUS.UNRESOLVED,
+                kind: production.kind || null,
+                yields: zeroYields,
+                memberCount: 0,
+                groupId: String(groupId)
+            });
+        }
+
+        const memberCount = Array.isArray(zone?.cells)
+            ? zone.cells.filter(cell => Number.isInteger(cell?.r) && Number.isInteger(cell?.c)).length
+            : 0;
+
+        if (production.kind === ZONE_CONVERSION_PRODUCTION_KINDS.PER_MEMBER_CELL) {
+            const perMemberYields = normalizeZoneProductionYieldMap(production.perMemberYields);
+            if (!perMemberYields) {
+                return Object.freeze({
+                    status: ZONE_CONVERSION_PRODUCTION_STATUS.UNRESOLVED,
+                    kind: production.kind,
+                    yields: zeroYields,
+                    memberCount: 0,
+                    groupId: String(groupId)
+                });
+            }
+
+            const yields = Object.freeze({
+                food: Number(perMemberYields.food || 0) * memberCount,
+                wood: Number(perMemberYields.wood || 0) * memberCount,
+                mystic: Number(perMemberYields.mystic || 0) * memberCount
+            });
+            return Object.freeze({
+                status: ZONE_CONVERSION_PRODUCTION_STATUS.RESOLVED,
+                kind: production.kind,
+                definitionId: conversion.definitionId || null,
+                perMemberYields,
+                yields,
+                memberCount,
+                groupId: String(groupId)
+            });
+        }
+
+        const fixedYields = normalizeZoneProductionYieldMap(production.fixedYields);
+        if (!fixedYields) {
+            return Object.freeze({
+                status: ZONE_CONVERSION_PRODUCTION_STATUS.UNRESOLVED,
+                kind: production.kind,
+                yields: zeroYields,
+                memberCount: 0,
+                groupId: String(groupId)
+            });
+        }
+
+        return Object.freeze({
+            status: ZONE_CONVERSION_PRODUCTION_STATUS.RESOLVED,
+            kind: production.kind,
+            definitionId: conversion.definitionId || null,
+            fixedYields,
+            yields: Object.freeze({
+                food: Number(fixedYields.food || 0),
+                wood: Number(fixedYields.wood || 0),
+                mystic: Number(fixedYields.mystic || 0)
+            }),
+            memberCount,
+            groupId: String(groupId)
+        });
+    }
+
+    resolveCellProduction({ r, c } = {}) {
+        if (!Number.isInteger(r) || !Number.isInteger(c)) return null;
+        const cell = this.state?.grid?.[r]?.[c] || null;
+        const groupId = cell?.mergeGroupId;
+        if (groupId === null || groupId === undefined) return null;
+
+        const zone = readZoneRecord(this.state, groupId);
+        const belongs = Array.isArray(zone?.cells)
+            && zone.cells.some(member => member?.r === r && member?.c === c);
+        if (!belongs) return null;
+
+        const resolved = this.resolveProduction(groupId);
+        if (resolved.status !== ZONE_CONVERSION_PRODUCTION_STATUS.RESOLVED) {
+            return Object.freeze({
+                status: resolved.status,
+                kind: resolved.kind,
+                definitionId: zone?.conversion?.definitionId || null,
+                groupId: String(groupId),
+                yields: Object.freeze({ food: 0, wood: 0, mystic: 0 })
+            });
+        }
+
+        if (resolved.kind !== ZONE_CONVERSION_PRODUCTION_KINDS.PER_MEMBER_CELL) {
+            return Object.freeze({
+                status: resolved.status,
+                kind: resolved.kind,
+                definitionId: resolved.definitionId,
+                groupId: resolved.groupId,
+                yields: Object.freeze({ food: 0, wood: 0, mystic: 0 })
+            });
+        }
+
+        return Object.freeze({
+            status: resolved.status,
+            kind: resolved.kind,
+            definitionId: resolved.definitionId,
+            groupId: resolved.groupId,
+            yields: Object.freeze({
+                food: Number(resolved.perMemberYields?.food || 0),
+                wood: Number(resolved.perMemberYields?.wood || 0),
+                mystic: Number(resolved.perMemberYields?.mystic || 0)
+            })
+        });
+    }
+
+    sumProduction() {
+        const total = { food: 0, wood: 0, mystic: 0 };
+        const unresolved = [];
+
+        for (const groupId of Object.keys(this.state?.mergedBlocks || {})) {
+            const zone = readZoneRecord(this.state, groupId);
+            if (!zone?.conversion) continue;
+            const resolved = this.resolveProduction(groupId);
+            if (resolved.status === ZONE_CONVERSION_PRODUCTION_STATUS.RESOLVED) {
+                total.food += resolved.yields.food;
+                total.wood += resolved.yields.wood;
+                total.mystic += resolved.yields.mystic;
+            } else if (resolved.status === ZONE_CONVERSION_PRODUCTION_STATUS.UNRESOLVED) {
+                unresolved.push(Object.freeze({
+                    groupId: String(groupId),
+                    definitionId: zone.conversion.definitionId || null,
+                    kind: resolved.kind
+                }));
+            }
+        }
+
+        return Object.freeze({
+            yields: Object.freeze(total),
+            unresolved: Object.freeze(unresolved)
+        });
     }
 
     readCellDeploymentSemantics({ r, c } = {}) {
@@ -306,6 +518,10 @@ export class ZoneConversionService {
         return resolveZoneConversionCost(this.state, definition);
     }
 
+    resolveCreationReward(definitionId) {
+        return resolveZoneConversionCreationReward(this.getDefinition(definitionId));
+    }
+
     validateCandidate(definitionId, groupId) {
         const definition = this.getDefinition(definitionId);
         if (!definition) {
@@ -327,6 +543,11 @@ export class ZoneConversionService {
             reasons.push('ZONE_ATTRIBUTE_NOT_ALLOWED');
         }
 
+        if (definition.eligibleMergeTypes.length > 0
+            && !definition.eligibleMergeTypes.includes(zone.mergeType)) {
+            reasons.push('ZONE_MERGE_TYPE_NOT_ALLOWED');
+        }
+
         const resourceCheck = checkResourceRequirements(
             this.state,
             definition.requirements?.resources
@@ -342,6 +563,11 @@ export class ZoneConversionService {
             && normalizeZoneResourceMap(definition.maintenance?.resources || {}) !== null;
         if (!maintenanceResolved) {
             reasons.push('MAINTENANCE_DEFINITION_UNRESOLVED');
+        }
+
+        const creationReward = this.resolveCreationReward(definitionId);
+        if (creationReward.status === ZONE_CONVERSION_REWARD_STATUS.UNRESOLVED) {
+            reasons.push('CREATION_REWARD_UNRESOLVED');
         }
 
         return {
@@ -429,7 +655,20 @@ export class ZoneConversionService {
             };
         }
 
+        const reward = this.resolveCreationReward(definitionId);
+        if (reward.status === ZONE_CONVERSION_REWARD_STATUS.UNRESOLVED) {
+            return {
+                success: false,
+                reason: 'CREATION_REWARD_UNRESOLVED',
+                validation,
+                reward
+            };
+        }
+
         const zone = readZoneRecord(this.state, groupId);
+        const appliedCreationReward = reward.status === ZONE_CONVERSION_REWARD_STATUS.RESOLVED
+            ? applyCreationReward(this.state, reward.resources)
+            : Object.freeze({});
         const conversion = Object.freeze({
             instanceId: `ZONE_CONVERSION@${String(groupId)}@${definition.id}`,
             definitionId: definition.id,
@@ -448,6 +687,11 @@ export class ZoneConversionService {
                 lastSettledVerse: null,
                 lastPaymentSucceeded: null
             }),
+            creationReward: Object.freeze({
+                status: reward.status,
+                requested: Object.freeze(clone(reward.resources, {})),
+                applied: appliedCreationReward
+            }),
             capabilities: Object.freeze([...definition.capabilities])
         });
 
@@ -456,6 +700,7 @@ export class ZoneConversionService {
             success: true,
             groupId: String(groupId),
             conversion: clone(conversion),
+            creationReward: clone(conversion.creationReward),
             cost
         };
     }

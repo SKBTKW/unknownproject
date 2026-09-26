@@ -1,0 +1,317 @@
+{
+  "schemaVersion": 1,
+  "target": "AoT260924",
+  "entries": [
+    {
+      "branch": "aot-task/AoT260924/balance/first-run-trial1-relative-burden-tune-v2",
+      "expectedHeadSha": "ce13c8a2f90845e5bc73a369e0d368e4994acdeb",
+      "replacementPrs": [
+        266,
+        275,
+        367
+      ],
+      "note": "The tuning branch's production coefficient and burden-probe changes are superseded by the canonical FirstRun Trial1 relative deployment implementation in PR #266, defense-relative probe normalization in PR #275, and final 76% heavy-burden tuning in PR #367."
+    },
+    {
+      "branch": "aot-task/AoT260924/balance/first-run-trial1-relative-burden-tune-v2-rebase",
+      "expectedHeadSha": "be784f59bd2e38116f5d1829baf131214c1cea26",
+      "replacementPrs": [
+        266,
+        275,
+        367
+      ],
+      "note": "This intermediate rebase of the Trial1 burden tuning is superseded by the canonical relative deployment implementation in PR #266, defense-relative probe normalization in PR #275, and final 76% heavy-burden tuning in PR #367."
+    },
+    {
+      "branch": "aot-task/AoT260924/balance/first-run-trial1-relative-deployment-cost-v1-rebase",
+      "expectedHeadSha": "55cb1f28fe363f64e2f3cceee78eab79763f116f",
+      "replacementPrs": [
+        266,
+        270,
+        275,
+        367
+      ],
+      "note": "The stale current-base replay of FirstRun Trial1 relative deployment composition is superseded by PR #266's canonical product implementation, PR #270's payment integration proof, PR #275's defense-relative probe semantics, and PR #367's final burden tuning."
+    },
+    {
+      "branch": "aot-task/AoT260924/balance/first-run-trial1-relative-deployment-v1",
+      "expectedHeadSha": "9406b9265df17d90f7525fbb9fb477bfbdd050e8",
+      "replacementPrs": [
+        266,
+        270,
+        275,
+        367
+      ],
+      "note": "The original scenario-scoped relative deployment prototype is superseded by PR #266's canonical FirstRun Trial1 applicability/composition, PR #270's runtime payment integration, PR #275's relative probe semantics, and PR #367's final 76% heavy-burden tuning."
+    },
+    {
+      "branch": "aot-task/AoT260924/balance/first-run-trial1-relative-deployment-v1-rebase",
+      "expectedHeadSha": "0e3f5bfb85574ddfd5e2c05c3e36002d5f6e862f",
+      "replacementPrs": [
+        266,
+        270,
+        275,
+        367
+      ],
+      "note": "This partial replay of the original relative deployment prototype is superseded by the merged canonical FirstRun Trial1 deployment chain: product composition #266, payment integration #270, probe normalization #275, and final burden tuning #367."
+    },
+    {
+      "branch": "aot-task/AoT260924/balance/stage1-prototype-card-first-eligible-pve-v1",
+      "expectedHeadSha": "568b98479299492f4e320e4ad67ea5d94e8604f7",
+      "replacementPr": 368,
+      "note": "The mature-vs-first-eligible Stage1 PVE audit was cleanly superseded by the current-base implementation merged as PR #368, which updates the same authoring-anchor and live-audit boundaries."
+    },
+    {
+      "branch": "aot-task/AoT260924/balance/stage1-prototype-card-first-eligible-pve-v1-rebase",
+      "expectedHeadSha": "568b98479299492f4e320e4ad67ea5d94e8604f7",
+      "replacementPr": 368,
+      "note": "This duplicate branch points at the same audited head as the original first-eligible PVE branch and is superseded by the current-base implementation merged as PR #368."
+    },
+    {
+      "branch": "aot-task/AoT260924/balance/stage1-pve-curve-audit-v1",
+      "expectedHeadSha": "d59aec459046913e1c51c179fd082d764e40d4aa",
+      "replacementPr": 300,
+      "note": "The checkpoint PVE-curve audit is superseded by PR #300's merged Stage1 production-curve and card-timing audit, which expands the live economy timeline beyond the older V1/V5/V8/V12/V15-only observation."
+    },
+    {
+      "branch": "aot-task/AoT260924/balance/stage1-trial1-experience-audit-r2",
+      "expectedHeadSha": "95d093ae4568954cfa8a35ce4186c931de3b4c2e",
+      "replacementPrs": [
+        231,
+        293,
+        296,
+        298,
+        300,
+        343,
+        368
+      ],
+      "note": "This stale replay of the live Stage1 Trial1 experience audit is superseded by the merged audit lineage: initial live audit #231, PVE conversion #293, card BVE/PVE scale #296, authoring anchors #298, production/card-timing curve #300, anchor rebaseline #343, and first-eligible semantics #368."
+    },
+    {
+      "branch": "aot-task/AoT260924/balance/stage1-trial1-experience-audit-r3",
+      "expectedHeadSha": "b51e73e9eed8ae0c61b3e55117a01b1c01171173",
+      "replacementPrs": [
+        231,
+        293,
+        296,
+        298,
+        300,
+        343,
+        368
+      ],
+      "note": "This later unmerged replay of the same live Stage1 Trial1 audit is superseded by the canonical merged audit lineage through PRs #231, #293, #296, #298, #300, #343, and #368."
+    },
+    {
+      "branch": "aot-task/AoT260924/balance/stage1-trial1-experience-audit-rebase",
+      "expectedHeadSha": "0e70582ab94ed68edaf7a9ad824e50b9ae95a106",
+      "replacementPrs": [
+        231,
+        293,
+        296,
+        298,
+        300,
+        343,
+        368
+      ],
+      "note": "This rebase of the live Trial1 audit carries the same audit/runner/registry scope and is superseded by the merged canonical audit lineage through PRs #231, #293, #296, #298, #300, #343, and #368."
+    },
+    {
+      "branch": "aot-task/AoT260924/board/special-block-creation-cost-quote-v1",
+      "expectedHeadSha": "1f3bd2ddafdd6a7ec35743aeea456337ab9e275f",
+      "replacementPr": 328,
+      "note": "Superseded by the final current-base Special Block creation-cost quote implementation merged as PR #328 (r6)."
+    },
+    {
+      "branch": "aot-task/AoT260924/board/special-block-creation-cost-quote-v1-r2",
+      "expectedHeadSha": "a3ef868ec7e24248b4ffe1defdfbef7b7b6d93c3",
+      "replacementPr": 328,
+      "note": "Superseded by the final current-base Special Block creation-cost quote implementation merged as PR #328 (r6)."
+    },
+    {
+      "branch": "aot-task/AoT260924/board/special-block-creation-cost-quote-v1-r3",
+      "expectedHeadSha": "d87a5318feb3ea20b879fbe75f47cadffbaae8d5",
+      "replacementPr": 328,
+      "note": "Superseded by the final current-base Special Block creation-cost quote implementation merged as PR #328 (r6)."
+    },
+    {
+      "branch": "aot-task/AoT260924/board/special-block-lifecycle-functional-gate-v1",
+      "expectedHeadSha": "3c20e6d9acc8f76ee23b27587b0431ddc93493d7",
+      "replacementPr": 335,
+      "note": "Superseded by the final Special Block lifecycle functional gate merged as PR #335."
+    },
+    {
+      "branch": "aot-task/AoT260924/board/special-block-lifecycle-functional-gate-v1-r2",
+      "expectedHeadSha": "ce6d0c013456e01b804947828960990faf189edf",
+      "replacementPr": 335,
+      "note": "Superseded by the final Special Block lifecycle functional gate merged as PR #335."
+    },
+    {
+      "branch": "aot-task/AoT260924/board/special-block-lifecycle-functional-gate-v1-r3",
+      "expectedHeadSha": "304dcc5c3ab0d27456475a57a49fa32ad368b4c3",
+      "replacementPr": 335,
+      "note": "Superseded by the final Special Block lifecycle functional gate merged as PR #335."
+    },
+    {
+      "branch": "aot-task/AoT260924/board/wetland-reclamation-mutation-v1",
+      "expectedHeadSha": "225e86330ae00e5146abecec0ffc206559134147",
+      "replacementPr": 286,
+      "note": "Superseded by the final explicit terrain-transform foundation merged as PR #286 (r3)."
+    },
+    {
+      "branch": "aot-task/AoT260924/board/zone-conversion-creation-reward-v1",
+      "expectedHeadSha": "726ad520b30caf9db8e68c9c7d9dceca3ff90fd4",
+      "replacementPr": 329,
+      "note": "Superseded by the final Zone Conversion creation-reward boundary merged as PR #329 (r3)."
+    },
+    {
+      "branch": "aot-task/AoT260924/cards/id-scoped-runtime-activation",
+      "expectedHeadSha": "2dd61bb549bbe739c139a83eecd14ccae63f4a46",
+      "replacementPr": 263,
+      "note": "Superseded by the r2 ID-scoped runtime activation implementation merged as PR #263."
+    },
+    {
+      "branch": "aot-task/AoT260924/cards/logging-camp-product-v1",
+      "expectedHeadSha": "833f036865faab9d63d17fbac40c9793203a53d4",
+      "replacementPrs": [
+        349,
+        356,
+        357
+      ],
+      "note": "Logging Camp product-v1 was superseded by the SOURCE_SIZE economy probe, adjacent-site v2 implementation, and final spend-path probe merged as PRs #349, #356, and #357."
+    },
+    {
+      "branch": "aot-task/AoT260924/cards/material-alias-resource-delta",
+      "expectedHeadSha": "caffd73888ce7c1f877af699ac3d330b9e53504d",
+      "replacementPr": 292,
+      "note": "Superseded by the final material-alias resource-delta synchronization merged as PR #292."
+    },
+    {
+      "branch": "aot-task/AoT260924/cards/material-alias-resource-delta-r2",
+      "expectedHeadSha": "537f8bc2b99bd9d32a737f5ba14032c8a5d1c3a5",
+      "replacementPr": 292,
+      "note": "Superseded by the final material-alias resource-delta synchronization merged as PR #292."
+    },
+    {
+      "branch": "aot-task/AoT260924/cards/material-shortage-offering-port-v1",
+      "expectedHeadSha": "848f4b1eb2f2adfbb6826fcca91da9ee443f9b44",
+      "replacementPr": 366,
+      "note": "Superseded by the final Emergency Levy material-shortage semantic gate through the Economy read model merged as PR #366."
+    },
+    {
+      "branch": "aot-task/AoT260924/cards/rationing-maintenance-preview-gate-v1",
+      "expectedHeadSha": "9b0ef318fb2723ca62ca66a10025a1527ac601a7",
+      "replacementPr": 365,
+      "note": "Superseded by the final Rationing turn-end maintenance preview gate merged as PR #365."
+    },
+    {
+      "branch": "aot-task/AoT260924/cards/resettlement-zone-semantic-blocker-r2",
+      "expectedHeadSha": "d044d37188c6e2665ad04d4153cf227921cfc29a",
+      "replacementPrs": [
+        370,
+        371,
+        372,
+        373
+      ],
+      "note": "The blocker lineage was finalized in PR #370, then retired by the fixed per-Zone production, merge-type eligibility, and Resettlement migration chain in PRs #371-#373."
+    },
+    {
+      "branch": "aot-task/AoT260924/cards/stage1-agricultural-reform-zone-v1",
+      "expectedHeadSha": "c847da2929f7bd5c22cda878af2fbb4a511ef57a",
+      "replacementPr": 345,
+      "note": "Superseded by the final Agricultural Reform Zone Conversion implementation merged as PR #345."
+    },
+    {
+      "branch": "aot-task/AoT260924/cards/stage1-agricultural-reform-zone-v1-r2",
+      "expectedHeadSha": "4aba2b0199b06018157fc5a0b47671fb1273e14d",
+      "replacementPr": 345,
+      "note": "Superseded by the final Agricultural Reform Zone Conversion implementation merged as PR #345."
+    },
+    {
+      "branch": "aot-task/AoT260924/cards/stage1-granary-special-block-v1",
+      "expectedHeadSha": "7a59bb379d4c5c1d301cbc5ab5972948c9134333",
+      "replacementPr": 283,
+      "note": "Superseded by the r2 Stage1 Granary Special Block implementation merged as PR #283."
+    },
+    {
+      "branch": "aot-task/AoT260924/cards/stage1-nonland-live-candidate-audit",
+      "expectedHeadSha": "85192eb58dff68f28be0842f39c8b96ac9a1b73b",
+      "replacementPr": 249,
+      "note": "Superseded by the final r3 Stage1 non-LAND live-candidate audit merged as PR #249."
+    },
+    {
+      "branch": "aot-task/AoT260924/cards/stage1-prototype-exposure-audit",
+      "expectedHeadSha": "cbc467eafb11e05aeee0c1b7ce7c352af6b18a47",
+      "replacementPr": 289,
+      "note": "Superseded by the final r8 Stage1 prototype exposure audit merged as PR #289."
+    },
+    {
+      "branch": "aot-task/AoT260924/cards/stage1-prototype-exposure-audit-r2",
+      "expectedHeadSha": "6ca364ea8004092f58985f57886c8d5f5e907a8d",
+      "replacementPr": 289,
+      "note": "Superseded by the final r8 Stage1 prototype exposure audit merged as PR #289."
+    },
+    {
+      "branch": "aot-task/AoT260924/cards/stage1-response-semantic-cleanup-v1",
+      "expectedHeadSha": "850732b89ef17a6bd822b5f09f63e95ea80cfcb6",
+      "replacementPr": 265,
+      "note": "Superseded by the final r3 Stage1 response semantic cleanup merged as PR #265."
+    },
+    {
+      "branch": "aot-task/AoT260924/cards/vigilance-warning-gate-v1",
+      "expectedHeadSha": "99e3718f06e1eca8142082f6bd397315b5139d59",
+      "replacementPrs": [
+        281,
+        369
+      ],
+      "note": "The Vigilance warning contract was finalized across Offering-time Warning eligibility in PR #281 and execution-time TENSE revalidation in PR #369."
+    },
+    {
+      "branch": "aot-task/AoT260924/cards/zone-conversion-domain-action-v1",
+      "expectedHeadSha": "b40355332d26092d1f4afca2e28d5887551e3ac2",
+      "replacementPr": 259,
+      "note": "Superseded by the final atomic Zone Conversion Card domain-action implementation merged as PR #259 (r5)."
+    },
+    {
+      "branch": "aot-task/AoT260924/cards/zone-conversion-domain-action-v1-r2",
+      "expectedHeadSha": "37b0c66f91720588e1e01bfa6e1d9a734ee9943b",
+      "replacementPr": 259,
+      "note": "Superseded by the final atomic Zone Conversion Card domain-action implementation merged as PR #259 (r5)."
+    },
+    {
+      "branch": "aot-task/AoT260924/cards/zone-conversion-domain-action-v1-r3",
+      "expectedHeadSha": "92cf6af3ad3bfb98a436f7e2441391a42646aa89",
+      "replacementPr": 259,
+      "note": "Superseded by the final atomic Zone Conversion Card domain-action implementation merged as PR #259 (r5)."
+    },
+    {
+      "branch": "aot-task/AoT260924/economy/board-maintenance-modifier-v1",
+      "expectedHeadSha": "d993bd551f5d7769688519f86d1f8b06db1d1a5d",
+      "replacementPr": 364,
+      "note": "Superseded by the current-base Board maintenance-modifier ownership refactor merged as PR #364."
+    },
+    {
+      "branch": "aot-task/AoT260924/presentation/web25d-production-runtime-v1",
+      "expectedHeadSha": "1c752496a468deda943320f2e4f477c62fc5651a",
+      "replacementPr": 331,
+      "note": "Superseded by the final Web 2.5D production runtime r4 merged as PR #331."
+    },
+    {
+      "branch": "aot-task/AoT260924/presentation/web25d-production-runtime-v1-r2",
+      "expectedHeadSha": "039c0192bc767204db5acc1b171e91ec3fedbc29",
+      "replacementPr": 331,
+      "note": "Superseded by the final Web 2.5D production runtime r4 merged as PR #331."
+    },
+    {
+      "branch": "aot-task/AoT260924/presentation/web25d-production-runtime-v1-r3",
+      "expectedHeadSha": "5cfb424f6ea59b7be9fb925b33842b78cb8e3e32",
+      "replacementPr": 331,
+      "note": "Superseded by the final Web 2.5D production runtime r4 merged as PR #331."
+    },
+    {
+      "branch": "aot-task/AoT260924/world/demihuman-raid-boundary-v1",
+      "expectedHeadSha": "c3c22ddee6ec3476165db7c077ee733acd3fd4a3",
+      "replacementPr": 304,
+      "note": "Superseded by the v2 Demihuman Raid boundary implementation merged as PR #304."
+    }
+  ]
+}

@@ -145,6 +145,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Board / Special Block / Defense v1 Contract) で不合格が検出されました。");
         process.exit(1);
     }
+    const specialBlockTerrainAdjacencyOk = await runCommand("node", ["scratch/test_special_block_terrain_adjacency_contract.mjs"]);
+    if (!specialBlockTerrainAdjacencyOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Special Block Terrain Adjacency Contract) で不合格が検出されました。");
+        process.exit(1);
+    }
     const boardWorldEligibilityOk = await runCommand("node", ["scratch/test_board_world_eligibility_integration.mjs"]);
     if (!boardWorldEligibilityOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Board / World Eligibility Integration) で不合格が検出されました.");
@@ -280,9 +285,69 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Card Core / Offering v1 Contract) で不合格が検出されました。");
         process.exit(1);
     }
+    const stage1DormantCardTriageOk = await runCommand("node", ["scratch/test_stage1_dormant_card_triage.mjs"]);
+    if (!stage1DormantCardTriageOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Stage1 Dormant Card Triage Inventory) で不合格が検出されました。");
+        process.exit(1);
+    }
     const stage1OfferingEconomyOk = await runCommand("node", ["scratch/test_stage1_offering_economy_playability.mjs"]);
     if (!stage1OfferingEconomyOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Stage1 Offering / Economy / Board Playability) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const stage1NonlandLiveCandidateAuditOk = await runCommand("node", ["scratch/test_stage1_nonland_live_candidate_audit.mjs"]);
+    if (!stage1NonlandLiveCandidateAuditOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Stage1 Non-LAND Live Candidate Audit) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const wetlandReclamationDomainActionV1Ok = await runCommand("node", ["scratch/test_wetland_reclamation_domain_action_v1.mjs"]);
+    if (!wetlandReclamationDomainActionV1Ok) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Wetland Reclamation Domain Action v1) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const stage1GranarySpecialBlockV1Ok = await runCommand("node", ["scratch/test_stage1_granary_special_block_v1.mjs"]);
+    if (!stage1GranarySpecialBlockV1Ok) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Stage1 Granary Special Block v1) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const stage1AgriculturalReformZoneConversionV1Ok = await runCommand("node", ["scratch/test_stage1_agricultural_reform_zone_conversion_v1.mjs"]);
+    if (!stage1AgriculturalReformZoneConversionV1Ok) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Stage1 Agricultural Reform Zone Conversion v1) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const resettlementZoneConversionV2Ok = await runCommand("node", ["scratch/test_resettlement_zone_conversion_v2.mjs"]);
+    if (!resettlementZoneConversionV2Ok) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Resettlement Zone Conversion v2) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const stage1LoggingCampDomainBridgeV1Ok = await runCommand("node", ["scratch/test_stage1_logging_camp_domain_bridge_v1.mjs"]);
+    if (!stage1LoggingCampDomainBridgeV1Ok) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Stage1 Logging Camp Domain Bridge v1) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const cardRuntimeIdScopedActivationOk = await runCommand("node", ["scratch/test_card_runtime_id_scoped_activation.mjs"]);
+    if (!cardRuntimeIdScopedActivationOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Card Runtime ID-Scoped Activation) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const stage1PrototypeCardE2EOk = await runCommand("node", ["scratch/test_stage1_prototype_card_e2e.mjs"]);
+    if (!stage1PrototypeCardE2EOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Stage1 Prototype Card E2E) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const stage1PrototypeExposureAuditOk = await runCommand("node", ["scratch/test_stage1_prototype_exposure_audit.mjs"]);
+    if (!stage1PrototypeExposureAuditOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Stage1 Prototype Exposure Audit) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const stage1Trial1LiveExperienceOk = await runCommand("node", ["scratch/test_stage1_trial1_live_experience_audit.mjs"]);
+    if (!stage1Trial1LiveExperienceOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Stage1 Trial1 Live Experience Audit) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const economyUnpricedDomainInventoryOk = await runCommand("node", ["scratch/test_economy_unpriced_domain_inventory.mjs"]);
+    if (!economyUnpricedDomainInventoryOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Economy Unpriced Domain Inventory) で不合格が検出されました。");
         process.exit(1);
     }
     const cardDomainActionsV2ReplayOk = await runCommand("node", ["scratch/test_card_domain_actions_v2_replay.mjs"]);
@@ -356,9 +421,12 @@ async function main() {
         ["Run History Read Model", "scratch/test_run_history_read_model.mjs"],
         ["Global Event Eligibility v1", "scratch/test_global_event_eligibility_v1.mjs"],
         ["Global Event NEXT_GLOBAL_EVENT Expiry", "scratch/test_global_event_next_event_expiry.mjs"],
+        ["Global Event Weight Target Contract", "scratch/test_global_event_weight_target_contract.mjs"],
         ["Global Event Recovery History Eligibility", "scratch/test_global_event_recovery_history_eligibility.mjs"],
         ["Global Event Offering Weight Hook", "scratch/test_global_event_offering_weight_hook.mjs"],
         ["Post-Trial Threat History Gate", "scratch/test_post_trial_threat_history_gate.mjs"],
+        ["Post-Trial History Runtime Gate", "scratch/test_post_trial_history_runtime_gate.mjs"],
+        ["Demihuman Raid Boundary", "scratch/test_demihuman_raid_boundary.mjs"],
     ];
     for (const [label, testPath] of investigationContracts) {
         const ok = await runCommand("node", [testPath]);
@@ -451,9 +519,49 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Board Trial Deployment Semantics) で不合格が検出されました。");
         process.exit(1);
     }
+    const stage1ResourceSinkBudgetProbeOk = await runCommand("node", ["scratch/test_stage1_resource_sink_budget_probe.mjs"]);
+    if (!stage1ResourceSinkBudgetProbeOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Stage1 Resource Sink Budget Probe) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const stage1ResourceSinkPortfolioOk = await runCommand("node", ["scratch/test_stage1_resource_sink_portfolio.mjs"]);
+    if (!stage1ResourceSinkPortfolioOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Stage1 Resource Sink Portfolio) で不合格が検出されました。");
+        process.exit(1);
+    }
     const trialDeploymentBalanceProbeOk = await runCommand("node", ["scratch/test_trial_deployment_balance_probe.mjs"]);
     if (!trialDeploymentBalanceProbeOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Trial Deployment Balance Probe) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const trial1LinearCostFitOk = await runCommand("node", ["scratch/test_stage1_trial1_linear_cost_fit.mjs"]);
+    if (!trial1LinearCostFitOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Stage1 Trial1 Fixed Linear Cost Fit) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const firstRunTrial1RelativeCostOk = await runCommand("node", ["scratch/test_first_run_trial1_relative_deployment_cost.mjs"]);
+    if (!firstRunTrial1RelativeCostOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (FirstRun Trial1 Relative Deployment Cost) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const firstRunTrial1RelativePaymentIntegrationOk = await runCommand("node", ["scratch/test_first_run_trial1_relative_payment_integration.mjs"]);
+    if (!firstRunTrial1RelativePaymentIntegrationOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (FirstRun Trial1 Relative Payment Integration) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const stage1Trial1DeploymentCostCandidateOk = await runCommand("node", ["scratch/test_stage1_trial1_deployment_cost_candidate_v1.mjs"]);
+    if (!stage1Trial1DeploymentCostCandidateOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Stage1 Trial1 Deployment Cost Candidate Audit) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const stage1Trial1DeploymentHeadroomOk = await runCommand("node", ["scratch/test_stage1_trial1_deployment_headroom_v1.mjs"]);
+    if (!stage1Trial1DeploymentHeadroomOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Stage1 Trial1 Deployment Headroom Audit) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const stage1ExecutableSpendPathOk = await runCommand("node", ["scratch/test_stage1_executable_spend_path_audit.mjs"]);
+    if (!stage1ExecutableSpendPathOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 4 (Stage1 Executable Spend Path + Product Trial1 Burden) で不合格が検出されました。");
         process.exit(1);
     }
     const trialDeploymentEngineAttachOk = await runCommand("node", ["scratch/test_trial_deployment_engine_attach.mjs"]);
@@ -538,6 +646,10 @@ async function main() {
         ["Board presentation axes", "node", ["scratch/test_board_presentation_axes.mjs"]],
         ["Board profile consumption audit", "node", ["scratch/test_board_presentation_profile_consumption_contract.mjs"]],
         ["Board presentation Unity boundary", "node", ["scratch/test_board_presentation_unity_boundary.mjs"]],
+        ["Unity runtime handoff contract", "node", ["scratch/test_unity_runtime_handoff_contract.mjs"]],
+        ["Unity runtime golden fixtures", "node", ["scratch/test_unity_runtime_contract_fixtures.mjs"]],
+        ["Unity Trial runtime golden fixtures", "node", ["scratch/test_unity_trial_runtime_contract_fixtures.mjs"]],
+        ["Unity runtime fixture generator", "node", ["scratch/test_unity_runtime_fixture_generator.mjs"]],
         ["Legacy Web2D board input adapter", "node", ["scratch/test_legacy_web2d_board_input_adapter.mjs"]],
     ]);
     if (!presentationFocusedOk) process.exit(1);
@@ -593,6 +705,7 @@ async function main() {
         ["Zone / Link overlay", "node", ["scratch/test_web25d_zone_link_overlay_renderer.mjs"]],
         ["Road overlay", "node", ["scratch/test_web25d_road_overlay_renderer.mjs"]],
         ["Viewport fit", "node", ["scratch/web25d_viewport_fit_validation.mjs"]],
+        ["Production runtime boundary", "node", ["scratch/test_web25d_production_runtime.mjs"]],
     ]);
     if (!web25DVisualFocusedOk) process.exit(1);
     const advisorFoundationOk = await runCommand("node", ["scratch/test_advisor_foundation.mjs"]);
@@ -653,9 +766,57 @@ async function main() {
         process.exit(1);
     }
 
+    const terrainTransformFoundationOk = await runCommand("node", ["scratch/test_terrain_transform_foundation.mjs"]);
+    if (!terrainTransformFoundationOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Terrain Transform Foundation) で不合格が検出されました。");
+        process.exit(1);
+    }
+
+    const specialBlockCreationCostOk = await runCommand("node", ["scratch/test_special_block_creation_cost_quote.mjs"]);
+    if (!specialBlockCreationCostOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Special Block Creation Cost Quote) で不合格が検出されました。");
+        process.exit(1);
+    }
+
+    const zoneConversionCreationRewardOk = await runCommand("node", ["scratch/test_zone_conversion_creation_reward.mjs"]);
+    if (!zoneConversionCreationRewardOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Zone Conversion Creation Reward) で不合格が検出されました。");
+        process.exit(1);
+    }
+
+    const specialBlockLifecycleGateOk = await runCommand("node", ["scratch/test_special_block_lifecycle_functional_gate.mjs"]);
+    if (!specialBlockLifecycleGateOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Special Block Lifecycle Functional Gate) で不合格が検出されました。");
+        process.exit(1);
+    }
+
     const zoneConversionFoundationOk = await runCommand("node", ["scratch/test_zone_conversion_foundation.mjs"]);
     if (!zoneConversionFoundationOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Zone Conversion Foundation) で不合格が検出されました。");
+        process.exit(1);
+    }
+
+    const zoneConversionProductionModifierOk = await runCommand("node", ["scratch/test_zone_conversion_production_modifier.mjs"]);
+    if (!zoneConversionProductionModifierOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Zone Conversion Production Modifier) で不合格が検出されました。");
+        process.exit(1);
+    }
+
+    const zoneConversionCardAtomicityOk = await runCommand("node", ["scratch/test_zone_conversion_card_atomicity.mjs"]);
+    if (!zoneConversionCardAtomicityOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Zone Conversion Card Atomicity) で不合格が検出されました。");
+        process.exit(1);
+    }
+
+    const loggingCampBalanceProbeOk = await runCommand("node", ["scratch/test_stage1_logging_camp_balance_probe.mjs"]);
+    if (!loggingCampBalanceProbeOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Logging Camp SOURCE_SIZE / Cost Probe) で不合格が検出されました。");
+        process.exit(1);
+    }
+
+    const loggingCampV2SpendProbeOk = await runCommand("node", ["scratch/test_stage1_logging_camp_v2_spend_path_probe.mjs"]);
+    if (!loggingCampV2SpendProbeOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Logging Camp v2 Spend Path Probe) で不合格が検出されました。");
         process.exit(1);
     }
 
@@ -670,6 +831,11 @@ async function main() {
     const stage1E2EOk = await runCommand("node", ["scratch/test_stage1_e2e.mjs"]);
     if (!stage1E2EOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Final Gate (Stage1 E2E Boundary Audit) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const stage1CanonicalPathOk = await runCommand("node", ["scratch/test_stage1_canonical_runtime_path.mjs"]);
+    if (!stage1CanonicalPathOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Final Gate (Stage1 Canonical Runtime Path Guard) で不合格が検出されました。");
         process.exit(1);
     }
 

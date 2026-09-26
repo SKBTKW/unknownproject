@@ -1,0 +1,27 @@
+{
+  "contractVersion": "unity-runtime-fixtures-v1",
+  "encoding": "utf-8-json",
+  "direction": {
+    "outbound": "JavaScript runtime -> Unity",
+    "inbound": "Unity -> JavaScript/runtime command boundary"
+  },
+  "contracts": {
+    "handoff": "unity-runtime-handoff-v1",
+    "boardPresentation": "board-presentation-v1",
+    "boardInput": "board-input-v1",
+    "gameRuntimeSnapshot": "game-runtime-snapshot-v1"
+  },
+  "fixtures": {
+    "outbound": "unity_runtime_handoff_v1.json",
+    "inbound": "unity_board_input_select_cell_v1.json",
+    "trialOutbound": "unity_trial_runtime_handoff_v1.json",
+    "trialInbound": "unity_trial_board_input_matrix_v1.json"
+  },
+  "invariants": [
+    "board.cells is a row-major nested array",
+    "cell references use logical integer r/c only",
+    "payloads contain no DOM, screen-space, world-space, GameObject, Transform, or Sprite data",
+    "unknown contract versions must fail closed",
+    "Trial fixtures preserve logical route/interception semantics without renderer coordinates"
+  ]
+}

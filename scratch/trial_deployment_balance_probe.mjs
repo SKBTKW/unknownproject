@@ -2,10 +2,32 @@ import {
     TRIAL_DEPLOYMENT_COST_PROFILE_STATUS,
     createTrialDeploymentCostResolver
 } from "../game/src/trial/domain/trial_deployment_cost_resolver.js";
+import {
+    FIRST_RUN_TRIAL1_RELATIVE_DEPLOYMENT_POLICY_V1,
+    resolveFirstRunTrial1DeploymentBurdenShare
+} from "../game/src/trial/config/first_run_trial1_relative_deployment_policy_v1.js";
 
 function pct(part, whole) {
     if (!Number.isFinite(whole) || whole <= 0) return null;
     return (part / whole) * 100;
+}
+
+export function resolveDeploymentProbeRequestedDefense(sample = {}, plan = {}) {
+    const available = Math.max(0, Number(sample.defense) || 0);
+    const fraction = Number(plan.requestedDefenseFraction);
+    let requested;
+
+    if (Number.isFinite(fraction)) {
+        const normalizedFraction = Math.min(1, Math.max(0, fraction));
+        requested = Math.round(available * normalizedFraction);
+        if (available > 0 && normalizedFraction > 0) {
+            requested = Math.max(1, requested);
+        }
+    } else {
+        requested = Number(plan.requestedDefense ?? available) || 0;
+    }
+
+    return Math.max(0, Math.min(available, requested));
 }
 
 export function evaluateDeploymentProfileAgainstSamples({
@@ -25,13 +47,7 @@ export function evaluateDeploymentProfileAgainstSamples({
     const rows = [];
     for (const sample of samples) {
         for (const plan of plans) {
-            const requestedDefense = Math.max(
-                0,
-                Math.min(
-                    Number(sample.defense) || 0,
-                    Number(plan.requestedDefense ?? sample.defense) || 0
-                )
-            );
+            const requestedDefense = resolveDeploymentProbeRequestedDefense(sample, plan);
             const distance = Math.max(0, Number(plan.distance) || 0);
             const cost = resolver({
                 requestedDefense,
@@ -116,22 +132,22 @@ export const STAGE1_TRIAL1_AUDIT_ENVELOPE_20260923 = Object.freeze([
 export const STAGE1_TRIAL1_PROBE_PLANS = Object.freeze([
     Object.freeze({
         id: "HALF_DEFENSE_NEAR",
-        requestedDefense: 14,
+        requestedDefenseFraction: 0.5,
         distance: 2
     }),
     Object.freeze({
         id: "HALF_DEFENSE_FAR",
-        requestedDefense: 14,
+        requestedDefenseFraction: 0.5,
         distance: 4
     }),
     Object.freeze({
         id: "HEAVY_DEFENSE_FAR",
-        requestedDefense: 24,
+        requestedDefenseFraction: 0.8,
         distance: 4
     }),
     Object.freeze({
         id: "ALL_DEFENSE_FAR",
-        requestedDefense: Number.MAX_SAFE_INTEGER,
+        requestedDefenseFraction: 1,
         distance: 4
     })
 ]);
@@ -145,27 +161,17 @@ export function resolveFirstRunBurdenShare({
     requestedDefense = 0,
     defenseAvailable = 0,
     distance = 0,
-    stage1MaxDistance = 4
+    stage1MaxDistance = FIRST_RUN_TRIAL1_RELATIVE_DEPLOYMENT_POLICY_V1.stage1MaxDistance
 } = {}) {
-    const defense = Math.max(0, Number(requestedDefense) || 0);
-    const available = Math.max(0, Number(defenseAvailable) || 0);
-    const defenseFraction = available > 0
-        ? Math.min(1, defense / available)
-        : 0;
-    const distanceFraction = stage1MaxDistance > 0
-        ? Math.min(1, Math.max(0, Number(distance) || 0) / stage1MaxDistance)
-        : 0;
-
-    // FirstRun spectacle probe only:
-    // - meaningful deployment starts expensive
-    // - committing most defense drives the burden toward 75%
-    // - a far deployment can push a full commitment to 80%
-    // This is intentionally NOT a product balance rule yet.
-    const share = 0.25
-        + (0.45 * defenseFraction)
-        + (0.10 * distanceFraction);
-
-    return Math.min(0.80, Math.max(0, share));
+    return resolveFirstRunTrial1DeploymentBurdenShare({
+        requestedDefense,
+        defenseAvailable,
+        distance,
+        policy: {
+            ...FIRST_RUN_TRIAL1_RELATIVE_DEPLOYMENT_POLICY_V1,
+            stage1MaxDistance
+        }
+    });
 }
 
 export function evaluateFirstRunBurdenAgainstSamples({
@@ -176,13 +182,7 @@ export function evaluateFirstRunBurdenAgainstSamples({
     for (const sample of samples) {
         for (const plan of plans) {
             const defenseAvailable = Math.max(0, Number(sample.defense) || 0);
-            const requestedDefense = Math.max(
-                0,
-                Math.min(
-                    defenseAvailable,
-                    Number(plan.requestedDefense ?? defenseAvailable) || 0
-                )
-            );
+            const requestedDefense = resolveDeploymentProbeRequestedDefense(sample, plan);
             const distance = Math.max(0, Number(plan.distance) || 0);
             const burdenShare = resolveFirstRunBurdenShare({
                 requestedDefense,

@@ -746,6 +746,26 @@ class UIController {
         return Boolean(this.trialController?.state?.interceptionPlan);
     }
 
+    getTrialPlanningDeploymentPreview() {
+        if (!this.trialPreviewConfig || !this.trialController?.state) return null;
+
+        const confirmedPreview = this.trialController.state.deploymentPreview || null;
+        if (this.isTrialPlanningConfirmed() && confirmedPreview) {
+            return {
+                ...confirmedPreview,
+                applicable: Boolean(this.trialController.sessionDeploymentService)
+            };
+        }
+
+        if (typeof this.trialController.previewPlanningDraftDeployment !== "function") {
+            return null;
+        }
+
+        return this.trialController.previewPlanningDraftDeployment(
+            this.trialPresentationState.routePlanDrafts
+        );
+    }
+
     confirmTrialPlanning() {
         if (!this.trialPreviewConfig || !this.trialController?.state) {
             return { success: false, errors: ["TRIAL_NOT_STARTED"], warnings: [] };
@@ -772,6 +792,27 @@ class UIController {
                 requiresConfirmation: true,
                 warnings: validation.warnings,
                 errors: []
+            };
+        }
+
+        const deploymentPreview = this.getTrialPlanningDeploymentPreview();
+        if (
+            deploymentPreview?.applicable === true
+            && (
+                deploymentPreview.success !== true
+                || deploymentPreview.affordable !== true
+            )
+        ) {
+            const errorKey = deploymentPreview.success === true
+                ? "UI_TRIAL_DEPLOYMENT_INSUFFICIENT_RESOURCES"
+                : "UI_TRIAL_DEPLOYMENT_COST_UNAVAILABLE";
+            this.trialPresentationState.planningValidationErrors = [errorKey];
+            this.render();
+            return {
+                success: false,
+                errors: [errorKey],
+                warnings: validation.warnings || [],
+                deploymentPreview
             };
         }
 
@@ -1571,11 +1612,70 @@ class UIController {
 
     triggerCommandCardPlay(card, idx = -1, reserveIdx = -1) {
         if (!this.state || this.state.hasPickedThisTurn) return;
+
+        const tObj = card?.terrain || card;
+        const variants = Array.isArray(tObj?.executionVariants) ? tObj.executionVariants : [];
+        if (variants.length > 0 && !tObj.selectedExecutionVariantId) {
+            const modalSys = (typeof window !== "undefined" && window.ModalSystem) ? window.ModalSystem : ModalSystem;
+            if (!modalSys || typeof modalSys.showChoiceDialog !== "function") return;
+
+            const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
+            const cName = tObj.nameKey ? I18n.t(tObj.nameKey) : (tObj.id || "Card");
+            const cDesc = tObj.descriptionKey ? I18n.t(tObj.descriptionKey) : "";
+            const resourceCostText = cost => {
+                const parts = [];
+                if (cost?.food) parts.push(`🌾${cost.food}`);
+                if (cost?.wood) parts.push(`🧱${cost.wood}`);
+                if (cost?.mystic) parts.push(`✨${cost.mystic}`);
+                if (cost?.ember) parts.push(`🔥${cost.ember}`);
+                return parts.join(" ");
+            };
+            const hasCost = cost => (
+                (!cost?.food || this.state.food >= cost.food)
+                && (!cost?.wood || Math.max(this.state.wood ?? 0, this.state.material ?? 0) >= cost.wood)
+                && (!cost?.mystic || this.state.mystic >= cost.mystic)
+                && (!cost?.ember || this.state.ember >= cost.ember)
+            );
+            modalSys.showChoiceDialog({
+                title: cName,
+                descText: cDesc,
+                choices: variants.map(variant => ({
+                    id: variant.id,
+                    label: variant.labelKey ? I18n.t(variant.labelKey) : variant.id,
+                    description: variant.descriptionKey ? I18n.t(variant.descriptionKey) : "",
+                    costText: resourceCostText(variant.cost || {}),
+                    disabled: !hasCost(variant.cost || {})
+                })),
+                onSelect: choice => {
+                    const selected = card?.terrain
+                        ? {
+                            ...card,
+                            terrain: {
+                                ...tObj,
+                                selectedExecutionVariantId: choice.id
+                            }
+                        }
+                        : {
+                            ...card,
+                            selectedExecutionVariantId: choice.id
+                        };
+                    this.triggerCommandCardPlay(selected, idx, reserveIdx);
+                },
+                onCancel: () => {
+                    this.selectedCard = null;
+                    this.selectedCardIdx = -1;
+                    this.selectedReserveIdx = -1;
+                    if (focusLayerManager) focusLayerManager.onCardDeselect();
+                    this.render();
+                    this.highlightPlaceableCells();
+                }
+            });
+            return;
+        }
         if (this.commandCardRequiresTarget(card)) {
             this.beginTargetedCommandSelection(card, idx, reserveIdx);
             return;
         }
-        const tObj = card.terrain || card;
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
         const cName = tObj.nameKey ? I18n.t(tObj.nameKey) : (tObj.id || "Card");
         const cDesc = tObj.descriptionKey ? I18n.t(tObj.descriptionKey) : "";

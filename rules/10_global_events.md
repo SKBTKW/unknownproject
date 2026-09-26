@@ -37,13 +37,13 @@ Global Eventは、長期計画を無作為に無効化するためではなく�
 
 | ID | 名称 | 実装状態 |
 | :--- | :--- | :--- |
-| `EVENT_COLD_WAVE` | 寒波 | **Implemented / Partial chain** — 平地🌾倍率0.75は産出計算へ接続済み。終了後の`FOOD_CRISIS`イベントWeight補正は現イベントID/categoryに対応先がなく、実効先を確認できない。 |
+| `EVENT_COLD_WAVE` | 寒波 | **Implemented** — 平地🌾倍率0.75は産出計算へ接続済み。旧`FOOD_CRISIS` Weight補正は実効対象が存在しなかったため削除済み。 |
 | `EVENT_DROUGHT` | 旱魃 | **Implemented** — 平地🌾倍率0.60は産出計算へ接続済み。 |
 | `EVENT_NEW_GENERATION` | 新たな世代 | **Implemented** — `OFFERING_WEIGHT_TAG_BOOST(POPULATION)` はCard Coreの共通Weight Policyへ `tagMultipliers` として接続済み。 |
 | `EVENT_CRAFTSMAN_BOOM` | 職人たちの活況 | **Implemented** — `OFFERING_WEIGHT_TAG_BOOST(CONSTRUCTION)` はCard Coreの共通Weight Policyへ接続済み。 |
 | `EVENT_BOUNTIFUL_SEASON` | 豊穣の季節 | **Implemented / Partial chain** — 平地🌾倍率1.25は産出計算へ接続済み。終了後の`EVENT_NEW_GENERATION` Weight補正はSelector側で参照され、`NEXT_GLOBAL_EVENT`寿命は次の成功したGlobal Event発火時に1回消費される。 |
 | `EVENT_RECOVERY_MOMENTUM` | 復興の機運 | **Implemented** — 発生条件は `HAS_HISTORY → RunHistoryReadModel → Chronicle` で直近Trialの被害を参照し、`OFFERING_WEIGHT_TAG_BOOST(RECOVERY)` もOffering抽選へ接続済み。 |
-| `EVENT_DEMIHUMAN_RAID` | 亜人襲撃 | **Partial / History-gated** — `HAS_HISTORY(TRIAL_SURVIVED)` により少なくとも1回のTrial突破後のみ候補化。`effects: []` のため襲撃本体効果は未実装。 |
+| `EVENT_DEMIHUMAN_RAID` | 亜人襲撃 | **Partial / Boundary locked** — `HAS_HISTORY(TRIAL_SURVIVED)` により少なくとも1回のTrial突破後のみ候補化。通常Trial lifecycleは再利用せず、専用Minor Raid encounter port未実装の間は `effects: []` / `endEffects: []` のfail-closed状態を維持する。 |
 | `EVENT_DEMIHUMAN_SCOUTS` | 亜人の斥候 | **Partial / History-gated** — `HAS_HISTORY(TRIAL_SURVIVED)` により少なくとも1回のTrial突破後のみ候補化。Captured Scout選択イベントへの導線はあるが、追加効果は未実装。 |
 
 《寒波》《旱魃》《豊穣の季節》の `PRODUCTION_MULTIPLIER` は `ProductionCalculator` が `globalEventManager.applyProductionEffects()` を呼ぶため実効する。
@@ -199,8 +199,6 @@ Trial接近時は、数値カウントダウンではなく**警戒状態**と�
 
 したがって、`NEXT_GLOBAL_EVENT` は**次に成功したGlobal Event発火で一度だけ消費される寿命**として実装済み。
 
-さらに《寒波》終了時の `targetTag: "FOOD_CRISIS"` は、現8イベントの `id` / `category` と一致する対象を確認できないため、現マスターでは実効対象なし。
-
 《豊穣の季節》終了時の `targetTag: "EVENT_NEW_GENERATION"` はEvent IDに一致するためSelectorのWeight計算対象にはなるが、上記expiry未消費問題を持つ。
 
 第1 Trial前の異変シーケンスのみ、導入体験として保証する。
@@ -220,9 +218,9 @@ Trial接近時は、数値カウントダウンではなく**警戒状態**と�
 1. 通常Global Eventの発生・候補抽選・継続管理基盤は実装済み。
 2. 寒波 / 旱魃 / 豊穣のProduction倍率は産出計算へ接続済み。
 3. 新たな世代 / 職人活況 / 復興の機運のOffering Weight効果は、Card Core共通Weight Policyへ接続済み。
-4. 亜人襲撃・斥候は `HAS_HISTORY(TRIAL_SURVIVED)` で第1 Trial後に限定済みだが、イベント固有効果は未実装。
+4. 亜人襲撃・斥候は `HAS_HISTORY(TRIAL_SURVIVED)` で第1 Trial後に限定済み。亜人襲撃は通常Trial lifecycleを再利用せず、専用Minor Raid encounter port未実装の間はfail-closedとする。
 5. `EVENT_WEIGHT_MODIFIER` の `NEXT_GLOBAL_EVENT` expiryは、次に成功したGlobal Event発火で一度だけ消費される。
-6. 寒波の終了Weight補正`FOOD_CRISIS`は現イベントマスターに実効対象がない。
+6. `EVENT_WEIGHT_MODIFIER` のtargetは現イベントID/categoryへ解決可能なものだけをデータ契約として許可する。旧`FOOD_CRISIS` dead targetは削除済み。
 7. 第1 Trial前の固定異変シーケンスは未実装。
 8. 調査・情報カテゴリの解禁状態は未実装。
 9. 警戒状態の環境Presentationは未実装。
@@ -230,3 +228,22 @@ Trial接近時は、数値カウントダウンではなく**警戒状態**と�
 11. `DeckManager.isCardEligible()` の一部カード条件は、警戒状態ではなく `nextTrialTurn - currentTurn` を直接参照している。
 12. そのため、固定異変・脅威認識・調査解禁より先にTrial接近条件だけで候補化し得るカードがある。
 13. 通常Verse進行からTrial本体を自動起動する配線は未実装。
+
+
+### Demihuman Raid lifecycle boundary
+
+`EVENT_DEMIHUMAN_RAID` は第1 Trial後に発生し得る小規模脅威だが、通常Trialそのものではない。
+
+現時点の禁止境界:
+
+- GEから `TrialController.startScenario()` を直接呼ばない。
+- Raid解決で通常TrialのSettlementを再利用しない。
+- Raid解決でStage progressionを発火させない。
+- Raid解決でPost-Trial interlude / reward / skill progressionを発火させない。
+- GE definitionがTrial scenario ID / Trial index progression / Trial session stateを所有しない。
+- 専用Minor Raid encounter portがない間、`effects: []` / `endEffects: []` を「襲撃成功・無害・無料解決」と解釈せず、combat resolution未実装のfail-closed状態として扱う。
+
+将来の実装では、通常Trial lifecycleから独立した `MinorRaidEncounterPort` 相当を先に定義する。
+そのPortは小規模敵戦力、局所損害、Board被害、Resource損失などを扱ってよいが、通常TrialのStage transition / reward / Post-Trial / Advisor Trial lifecycle / Trial index progressionを発火させない。
+
+GEは専用Portへ要求を渡すだけとし、enemy truth、route、ingress、通常Trial scheduleの正本を所有しない。

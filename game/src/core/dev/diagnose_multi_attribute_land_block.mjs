@@ -330,6 +330,160 @@ const landSystemJson = JSON.parse(
 }
 
 {
+    // Shipped-card parity: the authored card preview, the sum of placed CELL
+    // production, and the unzoned placementGroup display must stay identical.
+    for (const card of actualMultiCards) {
+        const state = createState();
+        state.stage.id = card.minStage || 1;
+        placeExisting(state, 1, 0, DESERT, `support_${card.id}`);
+
+        const grid = new GridEngine(state, {
+            gameplayRandom: { nextFloat: () => 0.99 },
+            deckManager: { consumeCardIfUnique() {} }
+        });
+        const placed = grid.placeShape(
+            0,
+            0,
+            card.shape,
+            card,
+            -1,
+            card.cells
+        );
+        assert.equal(placed.success, true, card.id);
+
+        const placedCells = card.cells.map(authoredCell =>
+            state.grid[authoredCell.r][authoredCell.c]
+        );
+        assert.ok(placedCells.every(cell => cell?.placementGroupId));
+        assert.equal(new Set(placedCells.map(cell => cell.placementGroupId)).size, 1);
+        assert.ok(placedCells.every(cell => cell.mergeGroupId == null));
+
+        const expected = resolveCardProductionPreview({ terrain: card }).totalYields;
+        assert.ok(expected, card.id);
+
+        const settledBase = { food: 0, wood: 0, defense: 0, mystic: 0 };
+        for (const authoredCell of card.cells) {
+            const breakdown = ProductionCalculator.calculateCellYieldBreakdown(
+                state,
+                authoredCell.r,
+                authoredCell.c
+            );
+            settledBase.food += breakdown.baseYields.food || 0;
+            settledBase.wood += breakdown.baseYields.wood || 0;
+            settledBase.defense += breakdown.baseYields.defense || 0;
+            settledBase.mystic += breakdown.baseYields.mystic || 0;
+        }
+        assert.deepEqual(settledBase, expected, `${card.id} CELL sum must match card preview`);
+
+        const cellViewDataService = new CellViewDataService();
+        const facts = card.cells.map(authoredCell =>
+            cellViewDataService.getCellViewData(state, authoredCell.r, authoredCell.c)
+        );
+        const roles = facts.map(fact => resolveBoardDisplayRole(state, fact));
+        assert.equal(roles.filter(role => role === "LAND_PRIMARY").length, 1, card.id);
+        assert.equal(roles.filter(role => role === "CLEAN").length, card.cells.length - 1, card.id);
+
+        const primaryIndex = roles.indexOf("LAND_PRIMARY");
+        const display = resolveBoardDisplayProduction(
+            state,
+            facts[primaryIndex],
+            cellViewDataService
+        );
+        assert.equal(display.food, expected.food, card.id);
+        assert.equal(display.wood, expected.wood, card.id);
+        assert.equal(display.defense, expected.defense, card.id);
+        assert.equal(display.mystic, expected.mystic, card.id);
+
+        for (let index = 0; index < facts.length; index++) {
+            if (index === primaryIndex) continue;
+            assert.equal(
+                resolveBoardDisplayProduction(state, facts[index], cellViewDataService),
+                null,
+                `${card.id} secondary cell must not duplicate Block production display`
+            );
+        }
+    }
+}
+
+{
+    // Presentation parity: an unzoned placementGroup displays the summed
+    // production of all constituent cells exactly once, regardless of whether
+    // the block is heterogeneous or homogeneous.
+    const cellViewDataService = new CellViewDataService();
+
+    const heterogeneous = createState();
+    heterogeneous.grid[0][0] = createCell(0, 0, {
+        placed: true,
+        placementGroupId: "display_multi",
+        terrain: { ...resolveCanonicalTerrainSemantic("GL1_PLAINS") },
+        production: {
+            status: LAND_PRODUCTION_STATUS.RESOLVED,
+            scope: LAND_PRODUCTION_SCOPE.CELL,
+            cellYields: { food: 4, wood: 0, defense: 0, mystic: 0 }
+        }
+    });
+    heterogeneous.grid[0][1] = createCell(0, 1, {
+        placed: true,
+        placementGroupId: "display_multi",
+        terrain: { ...resolveCanonicalTerrainSemantic("E2_HILL") },
+        production: {
+            status: LAND_PRODUCTION_STATUS.RESOLVED,
+            scope: LAND_PRODUCTION_SCOPE.CELL,
+            cellYields: { food: 2, wood: 1, defense: 1, mystic: 0 }
+        }
+    });
+
+    const heterogeneousPrimary = cellViewDataService.getCellViewData(heterogeneous, 0, 0);
+    const heterogeneousSecondary = cellViewDataService.getCellViewData(heterogeneous, 0, 1);
+    assert.equal(resolveBoardDisplayRole(heterogeneous, heterogeneousPrimary), "LAND_PRIMARY");
+    assert.equal(resolveBoardDisplayRole(heterogeneous, heterogeneousSecondary), "CLEAN");
+
+    const heterogeneousDisplay = resolveBoardDisplayProduction(
+        heterogeneous,
+        heterogeneousPrimary,
+        cellViewDataService
+    );
+    assert.equal(heterogeneousDisplay.food, 6);
+    assert.equal(heterogeneousDisplay.wood, 1);
+    assert.equal(heterogeneousDisplay.defense, 1);
+    assert.equal(heterogeneousDisplay.mystic, 0);
+    assert.deepEqual(heterogeneousDisplay.primaryYield, { resource: "food", amount: 6 });
+    assert.equal(
+        resolveBoardDisplayProduction(heterogeneous, heterogeneousSecondary, cellViewDataService),
+        null
+    );
+
+    const homogeneous = createState();
+    for (const c of [0, 1]) {
+        homogeneous.grid[0][c] = createCell(0, c, {
+            placed: true,
+            placementGroupId: "display_plains_1x2",
+            terrain: { ...resolveCanonicalTerrainSemantic("GL1_PLAINS") }
+        });
+    }
+
+    const homogeneousPrimary = cellViewDataService.getCellViewData(homogeneous, 0, 0);
+    const homogeneousSecondary = cellViewDataService.getCellViewData(homogeneous, 0, 1);
+    assert.equal(resolveBoardDisplayRole(homogeneous, homogeneousPrimary), "LAND_PRIMARY");
+    assert.equal(resolveBoardDisplayRole(homogeneous, homogeneousSecondary), "CLEAN");
+
+    const homogeneousDisplay = resolveBoardDisplayProduction(
+        homogeneous,
+        homogeneousPrimary,
+        cellViewDataService
+    );
+    assert.equal(homogeneousDisplay.food, 8);
+    assert.equal(homogeneousDisplay.wood, 0);
+    assert.equal(homogeneousDisplay.defense, 0);
+    assert.equal(homogeneousDisplay.mystic, 0);
+    assert.deepEqual(homogeneousDisplay.primaryYield, { resource: "food", amount: 8 });
+    assert.equal(
+        resolveBoardDisplayProduction(homogeneous, homogeneousSecondary, cellViewDataService),
+        null
+    );
+}
+
+{
     for (const card of actualMultiCards) {
         for (const cell of card.cells || []) {
             assert.deepEqual(
@@ -1377,7 +1531,7 @@ const landSystemJson = JSON.parse(
     const zoneProduction = resolveBoardDisplayProduction(state, zoneFacts, cellViewDataService);
     const remainderProduction = resolveBoardDisplayProduction(state, remainderFacts, cellViewDataService);
 
-    assert.equal(zoneProduction.food, 7);
+    assert.equal(zoneProduction.food, 8);
     assert.equal(zoneProduction.wood, 0);
     assert.equal(zoneProduction.mystic, 5);
     assert.equal(remainderProduction.food, 0);
@@ -1555,6 +1709,71 @@ const landSystemJson = JSON.parse(
 }
 
 {
+    // Partial Zone membership must not split Trial block identity. Even when
+    // one cell has mergeGroupId and the other does not, placementGroupId stays
+    // authoritative for one-Block-per-Trial-planning semantics.
+    const makeState = () => {
+        const state = createState();
+        state.grid[1][0] = createCell(1, 0, {
+            placed: true,
+            merged: true,
+            mergeGroupId: "zone_plains_partial",
+            mergeType: "1x2",
+            placementGroupId: "place_multi_partial_zone",
+            terrain: { ...PLAINS }
+        });
+        state.grid[1][1] = createCell(1, 1, {
+            placed: true,
+            merged: false,
+            mergeGroupId: null,
+            mergeType: null,
+            placementGroupId: "place_multi_partial_zone",
+            terrain: { ...HILL }
+        });
+        return state;
+    };
+
+    const routes = [
+        { id: "R_ZONE", cells: [{ r: 1, c: 0 }] },
+        { id: "R_REMAINDER", cells: [{ r: 1, c: 1 }] }
+    ];
+
+    for (const order of [
+        [
+            { routeId: "R_ZONE", interceptCell: { r: 1, c: 0 } },
+            { routeId: "R_REMAINDER", interceptCell: { r: 1, c: 1 } }
+        ],
+        [
+            { routeId: "R_REMAINDER", interceptCell: { r: 1, c: 1 } },
+            { routeId: "R_ZONE", interceptCell: { r: 1, c: 0 } }
+        ]
+    ]) {
+        const state = makeState();
+        const drafts = new Map();
+        const cellResolver = (r, c) => state.grid[r][c];
+
+        const first = TrialPlanningDraftService.setIntercept(drafts, {
+            ...order[0],
+            defenseAllocation: 1,
+            availableDefense: 10,
+            routes,
+            cellResolver
+        });
+        assert.equal(first.success, true);
+
+        const second = TrialPlanningDraftService.setIntercept(drafts, {
+            ...order[1],
+            defenseAllocation: 1,
+            availableDefense: 10,
+            routes,
+            cellResolver
+        });
+        assert.equal(second.success, false);
+        assert.equal(second.reason, TRIAL_PLAN_REASONS.BLOCK_ALREADY_PLANNED);
+    }
+}
+
+{
     const state = createState();
     state.grid[1][0] = createCell(1, 0, {
         placed: true,
@@ -1652,6 +1871,27 @@ const landSystemJson = JSON.parse(
     assert.equal(restored.grid[0][1].terrain.terrainId, "E2_HILL");
     assert.equal(restored.grid[0][2].terrain.terrainId, "E3_MOUNTAIN");
     assert.equal(restored.placedBlockProduction[placedGroupId].yields.defense, 3);
+
+    const restoredViewDataService = new CellViewDataService();
+    const restoredPrimaryFacts = restoredViewDataService.getCellViewData(restored, 0, 1);
+    const restoredSecondaryFacts = restoredViewDataService.getCellViewData(restored, 0, 2);
+    assert.equal(resolveBoardDisplayRole(restored, restoredPrimaryFacts), "LAND_PRIMARY");
+    assert.equal(resolveBoardDisplayRole(restored, restoredSecondaryFacts), "CLEAN");
+
+    const restoredDisplay = resolveBoardDisplayProduction(
+        restored,
+        restoredPrimaryFacts,
+        restoredViewDataService
+    );
+    assert.equal(restoredDisplay.food, 0);
+    assert.equal(restoredDisplay.wood, 0);
+    assert.equal(restoredDisplay.defense, 3);
+    assert.equal(restoredDisplay.mystic, 0);
+    assert.deepEqual(restoredDisplay.primaryYield, { resource: "defense", amount: 3 });
+    assert.equal(
+        resolveBoardDisplayProduction(restored, restoredSecondaryFacts, restoredViewDataService),
+        null
+    );
 
     const terrainResolver = new TrialTerrainEffectResolver();
     assert.equal(terrainResolver.canInterceptAt(restored.grid[0][1]), true);

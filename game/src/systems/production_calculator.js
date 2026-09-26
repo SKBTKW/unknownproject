@@ -17,6 +17,7 @@ import {
 } from '../core/land_production_contract.js';
 import { sumSpecialBlockProduction } from '../core/special_block_production.js';
 import { resolveLandDamageEffect } from '../core/board_damage_effect_policy.js';
+import { ZONE_CONVERSION_PRODUCTION_STATUS } from '../core/zone_conversion_domain.js';
 
 (function() {
     class ProductionCalculator {
@@ -146,25 +147,30 @@ import { resolveLandDamageEffect } from '../core/board_damage_effect_policy.js';
             // 表示予測も実決済も同じ最終維持費 resolver を参照する。
             const foodCost = MaintenanceFallbackSystem.resolveFoodMaintenanceCost(state).foodCost;
 
-            // 🏰 本営 (HQ) 基礎産出の動的解決 (Stage 1: 10/10/10/1, Stage 2: 14/14/14/2)
+            // 🏰 本営 (HQ) 基礎産出の動的解決 (Stage 1: 5/5/5/1)
             const center = Math.floor(size / 2);
             const hqTerrain = (state.grid && state.grid[center] && state.grid[center][center] && state.grid[center][center].terrain) 
                 ? state.grid[center][center].terrain 
-                : { food: 10, wood: 10, defense: 10, mystic: 1 };
-            const hqFood = (hqTerrain.food !== undefined) ? hqTerrain.food : 10;
-            const hqWood = (hqTerrain.wood !== undefined) ? (hqTerrain.material !== undefined ? hqTerrain.material : hqTerrain.wood) : 10;
+                : { food: 5, wood: 5, defense: 5, mystic: 1 };
+            const hqFood = (hqTerrain.food !== undefined) ? hqTerrain.food : 5;
+            const hqWood = (hqTerrain.wood !== undefined) ? (hqTerrain.material !== undefined ? hqTerrain.material : hqTerrain.wood) : 5;
             const hqMystic = (hqTerrain.mystic !== undefined) ? hqTerrain.mystic : 1;
 
             const blockProduction = sumPlacedBlockProduction(state);
             const specialBlockProduction = sumSpecialBlockProduction(state);
             const specialYields = specialBlockProduction.yields;
+            const zoneConversionProduction = state?.zoneConversionService?.sumProduction?.() || {
+                yields: { food: 0, wood: 0, mystic: 0 },
+                unresolved: []
+            };
+            const zoneYields = zoneConversionProduction.yields || { food: 0, wood: 0, mystic: 0 };
             const adjustedPlainsFood = Math.floor((foodTiles + plainsBuffBonus) * plainsFoodMultiplier);
-            const grossFood = Math.floor((hqFood + adjustedPlainsFood + blockProduction.food + specialYields.food + foodSockets + foodVicinity + foodLakeIrrigation) * foodMult * buffFoodMult);
+            const grossFood = Math.floor((hqFood + adjustedPlainsFood + blockProduction.food + specialYields.food + zoneYields.food + foodSockets + foodVicinity + foodLakeIrrigation) * foodMult * buffFoodMult);
             const netFood = grossFood - foodCost;
             const totalFood = netFood; // 表示互換用。実state加算は必ずgrossFoodを使用する。
-            const totalWood = Math.max(0, Math.floor((hqWood + woodTiles + blockProduction.wood + specialYields.wood + woodSockets + woodVicinity - systematicLoggingPenalty) * woodMult * buffWoodMult));
+            const totalWood = Math.max(0, Math.floor((hqWood + woodTiles + blockProduction.wood + specialYields.wood + zoneYields.wood + woodSockets + woodVicinity - systematicLoggingPenalty) * woodMult * buffWoodMult));
             const totalMaterial = totalWood;
-            const totalMystic = Math.floor((hqMystic + mysticTiles + blockProduction.mystic + specialYields.mystic + mysticSockets + mysticVicinity + flatMysticBonus) * mysticMult * buffMysticMult);
+            const totalMystic = Math.floor((hqMystic + mysticTiles + blockProduction.mystic + specialYields.mystic + zoneYields.mystic + mysticSockets + mysticVicinity + flatMysticBonus) * mysticMult * buffMysticMult);
 
             return {
                 totalFood,
@@ -179,7 +185,8 @@ import { resolveLandDamageEffect } from '../core/board_damage_effect_policy.js';
                 hqWood,
                 hqMystic,
                 blockProduction,
-                specialBlockProduction
+                specialBlockProduction,
+                zoneConversionProduction
             };
         }
 
@@ -199,10 +206,10 @@ import { resolveLandDamageEffect } from '../core/board_damage_effect_policy.js';
             const center = Math.floor(size / 2);
             const hqTerrain = (state.grid && state.grid[center] && state.grid[center][center] && state.grid[center][center].terrain) 
                 ? state.grid[center][center].terrain 
-                : { food: 10, wood: 10, defense: 10, mystic: 1 };
-            const hqFood = (hqTerrain.food !== undefined) ? hqTerrain.food : 10;
-            const hqWood = (hqTerrain.wood !== undefined) ? (hqTerrain.material !== undefined ? hqTerrain.material : hqTerrain.wood) : 10;
-            const hqDefense = (hqTerrain.defense !== undefined) ? hqTerrain.defense : 10;
+                : { food: 5, wood: 5, defense: 5, mystic: 1 };
+            const hqFood = (hqTerrain.food !== undefined) ? hqTerrain.food : 5;
+            const hqWood = (hqTerrain.wood !== undefined) ? (hqTerrain.material !== undefined ? hqTerrain.material : hqTerrain.wood) : 5;
+            const hqDefense = (hqTerrain.defense !== undefined) ? hqTerrain.defense : 5;
             const hqMystic = (hqTerrain.mystic !== undefined) ? hqTerrain.mystic : 1;
 
             for (let r = 0; r < size; r++) {
@@ -271,8 +278,8 @@ import { resolveLandDamageEffect } from '../core/board_damage_effect_policy.js';
             }
 
             return {
-                food: { hqBase: hqFood, tiles: foodTiles, blocks: blockProduction.food, specialBlocks: specialBlockProduction.yields.food, sockets: foodSockets, vicinity: foodVicinity, lakeIrrigation: prods.foodLakeIrrigation || 0, emberPct, gross: prods.grossFood, foodCost: prods.foodCost, net: prods.netFood, total: prods.totalFood },
-                wood: { hqBase: hqWood, tiles: woodTiles, blocks: blockProduction.wood, specialBlocks: specialBlockProduction.yields.wood, sockets: woodSockets, vicinity: woodVicinity, emberPct, total: prods.totalWood },
+                food: { hqBase: hqFood, tiles: foodTiles, blocks: blockProduction.food, specialBlocks: specialBlockProduction.yields.food, zoneConversions: prods.zoneConversionProduction?.yields?.food || 0, sockets: foodSockets, vicinity: foodVicinity, lakeIrrigation: prods.foodLakeIrrigation || 0, emberPct, gross: prods.grossFood, foodCost: prods.foodCost, net: prods.netFood, total: prods.totalFood },
+                wood: { hqBase: hqWood, tiles: woodTiles, blocks: blockProduction.wood, specialBlocks: specialBlockProduction.yields.wood, zoneConversions: prods.zoneConversionProduction?.yields?.wood || 0, sockets: woodSockets, vicinity: woodVicinity, emberPct, total: prods.totalWood },
                 defense: {
                     hqBase: hqDefense,
                     tiles: defenseTiles,
@@ -285,7 +292,7 @@ import { resolveLandDamageEffect } from '../core/board_damage_effect_policy.js';
                         ? state.defenseSystem.getCurrentDefense()
                         : Math.min(state?.currentDefense ?? defTotal, defTotal)
                 },
-                mystic: { hqBase: hqMystic, tiles: mysticTiles, blocks: blockProduction.mystic, specialBlocks: specialBlockProduction.yields.mystic, sockets: mysticSockets, vicinity: mysticVicinity, emberMystic, emberPct, total: prods.totalMystic }
+                mystic: { hqBase: hqMystic, tiles: mysticTiles, blocks: blockProduction.mystic, specialBlocks: specialBlockProduction.yields.mystic, zoneConversions: prods.zoneConversionProduction?.yields?.mystic || 0, sockets: mysticSockets, vicinity: mysticVicinity, emberMystic, emberPct, total: prods.totalMystic }
             };
         }
 
@@ -314,10 +321,10 @@ import { resolveLandDamageEffect } from '../core/board_damage_effect_policy.js';
 
             // 1. 本営マスの場合
             if (cell.isHQ) {
-                const hqTerrain = cell.terrain || { food: 10, wood: 10, defense: 10, mystic: 1 };
-                const hqFood = (hqTerrain.food !== undefined) ? hqTerrain.food : 10;
-                const hqWood = (hqTerrain.wood !== undefined) ? (hqTerrain.material !== undefined ? hqTerrain.material : hqTerrain.wood) : 10;
-                const hqDefense = (hqTerrain.defense !== undefined) ? hqTerrain.defense : 10;
+                const hqTerrain = cell.terrain || { food: 5, wood: 5, defense: 5, mystic: 1 };
+                const hqFood = (hqTerrain.food !== undefined) ? hqTerrain.food : 5;
+                const hqWood = (hqTerrain.wood !== undefined) ? (hqTerrain.material !== undefined ? hqTerrain.material : hqTerrain.wood) : 5;
+                const hqDefense = (hqTerrain.defense !== undefined) ? hqTerrain.defense : 5;
                 const hqMystic = (hqTerrain.mystic !== undefined) ? hqTerrain.mystic : 1;
                 return {
                     productionStatus: LAND_PRODUCTION_STATUS.LEGACY,
@@ -374,14 +381,23 @@ import { resolveLandDamageEffect } from '../core/board_damage_effect_policy.js';
                 totalFood += lakeIrrigation;
             }
 
-            // ④ 永続平地強化バフ
+            // ④ Zone Conversion の局所恒久産出補正
+            const zoneConversionCell = state?.zoneConversionService?.resolveCellProduction?.({ r, c }) || null;
+            if (zoneConversionCell?.status === ZONE_CONVERSION_PRODUCTION_STATUS.RESOLVED) {
+                const z = zoneConversionCell.yields || {};
+                if (z.food > 0) { modifiers.push({ type: "ZONE_CONVERSION", resource: "food", amount: z.food, definitionId: zoneConversionCell.definitionId, groupId: zoneConversionCell.groupId }); totalFood += z.food; }
+                if (z.wood > 0) { modifiers.push({ type: "ZONE_CONVERSION", resource: "wood", amount: z.wood, definitionId: zoneConversionCell.definitionId, groupId: zoneConversionCell.groupId }); totalWood += z.wood; }
+                if (z.mystic > 0) { modifiers.push({ type: "ZONE_CONVERSION", resource: "mystic", amount: z.mystic, definitionId: zoneConversionCell.definitionId, groupId: zoneConversionCell.groupId }); totalMystic += z.mystic; }
+            }
+
+            // ⑤ 永続平地強化バフ（legacy）
             const tid = t.terrainId || t.id || "";
             if (state.permanentPlainsFoodBonus && tid.includes("PLAINS")) {
                 modifiers.push({ type: "PERMANENT_PLAINS", resource: "food", amount: state.permanentPlainsFoodBonus });
                 totalFood += state.permanentPlainsFoodBonus;
             }
 
-            // ⑤ 永続近郊防衛バフ
+            // ⑥ 永続近郊防衛バフ
             if (state.permanentVicinityDefenseBonus && isHQVic) {
                 modifiers.push({ type: "PERMANENT_VICINITY_DEFENSE", resource: "defense", amount: state.permanentVicinityDefenseBonus });
                 totalDefense += state.permanentVicinityDefenseBonus;
