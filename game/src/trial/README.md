@@ -84,7 +84,7 @@ Owns runtime composition boundaries.
 - `trial_launch_coordinator.js` consumes a due request, validates authoritative EnemyTruth/scenario readiness, starts the Trial session, and acknowledges the request only after a successful start.
 - `trial_launch_bootstrap.js` is idempotent and fail-closed. It does not invent ingress-count or movement-cost policy.
 
-The production browser does **not** attach Trial launch merely to make the pipeline look complete. Launch composition remains intentionally unattached until the production ingress-count and route-cost policies are supplied. Missing policy is a readiness failure, not permission to use dev fixtures.
+The production browser attaches Trial launch after the runtime subsystems and UI controller in `game/index.html`: `attachTrialRuntimeSubsystems(engine)` -> `new UIController(engine)` -> `attachTrialLaunchSubsystem(engine, ui)`. The launch bootstrap resolves production ingress-count and route-cost policies and fails closed when they are unavailable. Missing policy is a readiness failure, not permission to use dev fixtures.
 
 ### `presentation/`
 
