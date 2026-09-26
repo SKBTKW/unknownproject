@@ -112,7 +112,7 @@ function findInvestmentAction(engine, firstEligible) {
         const definition = definitionOf(card);
         const cardId = card?.cardMasterId || definition?.id || null;
         if (!INVESTMENT_IDS.includes(cardId)) continue;
-        const eligible = engine.deckManager.isCardEligible(card, stageNum, h2Count, {
+        const eligible = engine.deckManager.isCardEligible(definition, stageNum, h2Count, {
             ignoreCooldown: true, ignoreHold: true, placeabilityCache: new WeakMap()
         }) === true;
         if (!eligible) continue;
