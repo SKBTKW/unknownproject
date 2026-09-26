@@ -845,7 +845,8 @@ function makeGrid(rows, cols) {
 // S. Granary is a Board-owned targeted Special Block action.
 {
     const card = COMMAND_CARDS_MASTER.find(candidate => candidate.id === "CMD_GRANARY");
-    assert.equal(card?.cost?.wood, 20);
+    assert.deepEqual(card?.cost, {});
+    assert.equal(card?.reqWood, undefined);
     assert.equal(card?.reqPlains, undefined,
         "Granary Offering eligibility must come from legal Domain Action targets");
     assert.equal(card?.effects?.length, 1);
@@ -853,6 +854,7 @@ function makeGrid(rows, cols) {
         type: "DOMAIN_ACTION",
         action: "CREATE_SPECIAL_BLOCK",
         blockType: "GRANARY",
+        paymentMode: "DOMAIN_QUOTE",
         logActivation: true
     });
 }
