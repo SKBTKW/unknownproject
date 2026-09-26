@@ -128,7 +128,7 @@ const productionDefault = GameEngine.createGame({ runSeed: 20260925 });
 assert.equal(productionDefault.cardRuntimeActivationProvider, null);
 assert.deepEqual(
     [...resolveCardRuntimeActivationPolicy(productionDefault.deckManager).activeCardIds],
-    []
+    [...CARD_RUNTIME_DEFAULT_ACTIVE_CARD_IDS]
 );
 assert.equal(
     isCardRuntimeActive(LEVY, resolveCardRuntimeActivationPolicy(productionDefault.deckManager)),
@@ -136,7 +136,7 @@ assert.equal(
     "production default must keep dormant command cards disabled"
 );
 
-console.log("  explicit prototype IDs are opt-in only");
+console.log("  completed Board Investment IDs are default-active; extra prototype IDs remain opt-in");
 console.log("  whole legacy categories remain dormant");
 console.log("  production default activeCardIds = []");
 console.log("✅ Card runtime ID-scoped activation boundary PASS");
