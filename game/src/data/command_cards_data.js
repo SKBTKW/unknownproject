@@ -1459,9 +1459,7 @@ export const COMMAND_CARDS_MASTER = [
     "category": "COMMAND",
     "nameKey": "CMD_GRANARY_NAME",
     "descriptionKey": "CMD_GRANARY_DESC",
-    "cost": {
-      "wood": 20
-    },
+    "cost": {},
     "tags": [
       "PLAINS",
       "RECLAIMED",
@@ -1470,7 +1468,6 @@ export const COMMAND_CARDS_MASTER = [
       "INDUSTRY",
       "SPECIAL_BLOCK"
     ],
-    "reqWood": 20,
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.25,
@@ -1480,6 +1477,7 @@ export const COMMAND_CARDS_MASTER = [
         "type": "DOMAIN_ACTION",
         "action": "CREATE_SPECIAL_BLOCK",
         "blockType": "GRANARY",
+        "paymentMode": "DOMAIN_QUOTE",
         "logActivation": true
       }
     ]
