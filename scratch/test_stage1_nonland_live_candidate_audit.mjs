@@ -63,8 +63,18 @@ assert.deepEqual(
     ["LAND", "INVESTIGATION"],
     "audit must not silently reactivate legacy categories"
 );
+const LIVE_BOARD_INVESTMENTS = new Set([
+    "CMD_GRANARY",
+    "CMD_WETLAND_RECLAMATION",
+    "CMD_AGRICULTURAL_REFORM",
+    "CMD_LOGGING_CAMP"
+]);
 for (const id of PROTOTYPE) {
-    assert.equal(isCardRuntimeActive(byId.get(id)), false, `${id} remains dormant until an explicit activation change`);
+    assert.equal(
+        isCardRuntimeActive(byId.get(id)),
+        LIVE_BOARD_INVESTMENTS.has(id),
+        `${id} runtime activation must match the Stage1 completion disposition`
+    );
 }
 
 {
