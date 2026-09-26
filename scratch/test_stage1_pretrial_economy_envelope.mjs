@@ -109,16 +109,18 @@ function findInvestmentAction(engine, firstEligible) {
     const h2Count = engine.deckManager?._countE2HillsOnBoard?.() || 0;
     for (let index = 0; index < (engine.state.handOffering || []).length; index++) {
         const card = engine.state.handOffering[index];
-        if (!INVESTMENT_IDS.includes(card?.id)) continue;
+        const definition = definitionOf(card);
+        const cardId = card?.cardMasterId || definition?.id || null;
+        if (!INVESTMENT_IDS.includes(cardId)) continue;
         const eligible = engine.deckManager.isCardEligible(card, stageNum, h2Count, {
             ignoreCooldown: true, ignoreHold: true, placeabilityCache: new WeakMap()
         }) === true;
         if (!eligible) continue;
-        if (firstEligible[card.id] == null) firstEligible[card.id] = engine.state.turn;
+        if (firstEligible[cardId] == null) firstEligible[cardId] = engine.state.turn;
 
         // Investment-variant Wetland Reclamation requires explicit player variant choice.
         // Record its real eligibility, but do not synthesize a choice in this envelope trace.
-        if (card.id === "CMD_WETLAND_RECLAMATION") continue;
+        if (cardId === "CMD_WETLAND_RECLAMATION") continue;
 
         const quote = engine.getCommandCardExecutionCost(card);
         if (quote?.success === false) continue;
@@ -157,7 +159,7 @@ function run(seed) {
                 if (result?.success === true) {
                     const spent = Math.max(0, before - material(engine.state));
                     totalSpend += spent;
-                    spends.push({ verse: engine.state.turn, cardId: investment.card.id, materialSpend: spent });
+                    spends.push({ verse: engine.state.turn, cardId: investment.card.cardMasterId || definitionOf(investment.card)?.id || null, materialSpend: spent });
                     acted = true;
                 }
             }
