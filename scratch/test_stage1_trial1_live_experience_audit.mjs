@@ -232,7 +232,11 @@ function captureStage1EconomyCheckpoint(engine, seed) {
 function playGrowthRun(seed) {
     const engine = GameEngine.createGame({
         runSeed: seed,
-        firstRun: true
+        firstRun: true,
+        // This audit owns the pre-existing Trial authoring anchor, not the new
+        // Stage1 Board Investment envelope. Keep that baseline isolated here;
+        // 담당A hands the live investment envelope to 담당B separately.
+        cardRuntimeActivationProvider: () => ({ activeCardIds: [] })
     });
     const economyTimeline = [];
 
