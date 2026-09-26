@@ -48,8 +48,13 @@ assert.deepEqual(
 );
 assert.deepEqual(
     unresolvedService.quoteCost(SPECIAL_BLOCK_TYPES.LOGGING_CAMP),
-    { status: SPECIAL_BLOCK_COST_STATUS.UNRESOLVED, resources: null },
-    "foundation must not invent LOGGING_CAMP balance values"
+    { status: SPECIAL_BLOCK_COST_STATUS.RESOLVED, resources: { wood: 20 } },
+    "Logging Camp product cost is authored by the Board definition"
+);
+assert.deepEqual(
+    unresolvedService.quoteCost(SPECIAL_BLOCK_TYPES.GRANARY),
+    { status: SPECIAL_BLOCK_COST_STATUS.RESOLVED, resources: { wood: 20 } },
+    "Granary product cost is authored by the Board definition"
 );
 assert.deepEqual(
     unresolvedService.quoteCost(SPECIAL_BLOCK_TYPES.ALTAR),
