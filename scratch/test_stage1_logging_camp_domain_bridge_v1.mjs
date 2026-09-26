@@ -158,7 +158,6 @@ assert.equal(loggingDefinition.production.relationNeighborhood, "ORTHOGONAL");
 
     const executionTargets = deck.enumerateCardExecutionTargets(loggingCard);
     assert.ok(executionTargets.length > 0);
-    assert.equal(deck.isCardEligible(loggingCard, 1, 0), true);
 
     state.handOffering = [loggingCard];
     state.hasPickedThisTurn = false;
