@@ -168,6 +168,16 @@ assert.equal(maintenance.foodStorageSites, 2, "maintenance benefit is capped at 
 assert.equal(maintenance.granaryReduction, 4);
 assert.equal(maintenance.foodCost, 16);
 
+state.foodCostHalvedTurns = 1;
+state.emergencyLevyTurns = 1;
+state.emergencyLevyStartsNextTurn = false;
+maintenance = MaintenanceFallbackSystem.resolveFoodMaintenanceCost(state);
+assert.equal(maintenance.preBoardFoodCost, 16, "Board flat reduction applies before temporary response modifiers");
+assert.equal(maintenance.foodCost, 8, "Rationing halves the post-Board maintenance cost");
+assert.equal(maintenance.emergencyLevyApplied, false, "legacy Emergency Levy maintenance surcharge is not part of First-Wave v1");
+state.foodCostHalvedTurns = 0;
+state.emergencyLevyTurns = 0;
+
 grid[0][0].specialBlock.state = "DAMAGED";
 boardMaintenance = boardDomainAdapter.resolveFoodMaintenanceModifiers();
 assert.equal(boardMaintenance.appliedInstances, 2, "damaged storage must not contribute to Board maintenance semantics");
