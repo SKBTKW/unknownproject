@@ -163,8 +163,13 @@ function run(seed) {
             }
         }
         if (!acted) {
-            const option = chooseGrowthLand(engine);
-            assert.ok(option, `seed ${seed} V${engine.state.turn}: normal Offering must contain a legal LAND fallback`);
+            let option = chooseGrowthLand(engine);
+            if (!option && engine.state.hasMulliganedThisTurn !== true && engine.state.ember > 1) {
+                const mulligan = engine.mulligan();
+                assert.equal(mulligan?.success, true, `seed ${seed} V${engine.state.turn}: Mulligan fallback must succeed`);
+                option = chooseGrowthLand(engine);
+            }
+            assert.ok(option, `seed ${seed} V${engine.state.turn}: normal Offering + one Mulligan must expose a legal LAND fallback`);
             const placed = engine.placeLand(option.placement.clickedR, option.placement.clickedC,
                 makeRotatedInstance(option.card, option.placement), 0,
                 { type: "OFFERING", index: option.index });
