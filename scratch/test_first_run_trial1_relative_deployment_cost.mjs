@@ -17,29 +17,29 @@ console.log("\nFirstRun Trial1 relative deployment cost v1");
         defenseAvailable: 24,
         distance: 4
     });
-    assert.equal(Number(fullFar.toFixed(3)), 0.800);
+    assert.equal(Number(fullFar.toFixed(3)), 0.650);
 
     const halfFar = resolveFirstRunTrial1DeploymentBurdenShare({
         requestedDefense: 12,
         defenseAvailable: 24,
         distance: 4
     });
-    assert.equal(Number(halfFar.toFixed(3)), 0.625);
+    assert.equal(Number(halfFar.toFixed(3)), 0.475);
 
     const heavyFar = resolveFirstRunTrial1DeploymentBurdenShare({
         requestedDefense: 20,
         defenseAvailable: 24,
         distance: 4
     });
-    assert.equal(Number(heavyFar.toFixed(3)), 0.775);
+    assert.equal(Number(heavyFar.toFixed(3)), 0.592);
 
     assert.deepEqual(
         FIRST_RUN_TRIAL1_RELATIVE_DEPLOYMENT_POLICY_V1,
         {
-            baseShare: 0.30,
-            defenseShareWeight: 0.45,
+            baseShare: 0.20,
+            defenseShareWeight: 0.35,
             distanceShareWeight: 0.10,
-            maxShare: 0.80,
+            maxShare: 0.70,
             stage1MaxDistance: 4
         }
     );
@@ -61,10 +61,10 @@ console.log("\nFirstRun Trial1 relative deployment cost v1");
             interceptionCount: 1
         }
     });
-    assert.equal(cost.food, 80);
-    assert.equal(cost.material, 64);
+    assert.equal(cost.food, 65);
+    assert.equal(cost.material, 52);
     assert.equal(cost.breakdown.mode, "FIRST_RUN_TRIAL1_RELATIVE_V1");
-    assert.equal(Number(cost.breakdown.burdenShare.toFixed(2)), 0.80);
+    assert.equal(Number(cost.breakdown.burdenShare.toFixed(2)), 0.65);
 
     assert.equal(
         resolver({
