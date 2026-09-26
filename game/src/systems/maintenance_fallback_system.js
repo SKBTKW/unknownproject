@@ -77,31 +77,26 @@ class MaintenanceFallbackSystem {
         }
 
         const rationingApplied = Boolean(state && state.foodCostHalvedTurns > 0);
-        const emergencyLevyApplied = Boolean(
-            state
-            && state.emergencyLevyTurns > 0
-            && !state.emergencyLevyStartsNextTurn
-        );
-        let preBoardFoodCost = rationingApplied
-            ? Math.floor(baseFoodCost / 2)
-            : baseFoodCost;
-        if (emergencyLevyApplied) preBoardFoodCost += 5;
-
         const boardMaintenance = state?.boardDomainAdapter?.resolveFoodMaintenanceModifiers?.()
             || resolveBoardFoodMaintenanceModifiers(state);
         const boardFoodMaintenanceReduction = Math.max(
             0,
             Number(boardMaintenance?.flatReduction || 0)
         );
-        const foodCost = Math.max(0, preBoardFoodCost - boardFoodMaintenanceReduction);
+        const preTemporaryFoodCost = Math.max(0, baseFoodCost - boardFoodMaintenanceReduction);
+        const foodCost = Math.max(
+            0,
+            rationingApplied ? Math.floor(preTemporaryFoodCost / 2) : preTemporaryFoodCost
+        );
 
         return Object.freeze({
             baseFoodCost,
-            preBoardFoodCost,
+            preBoardFoodCost: preTemporaryFoodCost,
+            preTemporaryFoodCost,
             boardFoodMaintenanceReduction,
             foodCost,
             rationingApplied,
-            emergencyLevyApplied,
+            emergencyLevyApplied: false,
             boardMaintenance,
             // Compatibility aliases for current diagnostics/UI.
             foodStorageSites: Number(boardMaintenance?.appliedInstances || 0),
