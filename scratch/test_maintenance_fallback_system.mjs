@@ -51,7 +51,7 @@ assert.strictEqual(levyPreview.emergencyLevyApplied, false);
 levyEngine.nextTurn({ autoFallbackEnabled: false });
 assert.strictEqual(levyEngine.lastTurnMaintenanceResult.foodCost, 20);
 assert.strictEqual(levyEngine.state.food, 35);
-assert.strictEqual(levyEngine.state.emergencyLevyTurns, 0);
+assert.strictEqual(levyEngine.state.emergencyLevyTurns, 1); // legacy field is inert; maintenance no longer owns/decrements it
 
 // 3. OFFでもautomaticPlanと仮想計画を分離し、必要量を取得できる。
 const offFull = MaintenanceFallbackSystem.previewFoodDeficitFallback({
