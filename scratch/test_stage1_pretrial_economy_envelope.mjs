@@ -206,10 +206,9 @@ function summary(values) {
 
 console.log("\n=== Stage1 pre-Trial economy envelope (no Trial cost) ===");
 const rows = SEEDS.map(run);
+for (const row of rows) console.log("STAGE1_PRETRIAL_ECONOMY_SNAPSHOT", JSON.stringify(row));
 assert.equal(rows.every(row => row.verse === 15), true);
 assert.ok(rows.some(row => row.boardInvestmentSpend > 0), "normal Offering traces must execute real paid Board investments");
-
-for (const row of rows) console.log("STAGE1_PRETRIAL_ECONOMY_SNAPSHOT", JSON.stringify(row));
 console.log("STAGE1_PRETRIAL_ECONOMY_ENVELOPE", JSON.stringify({
     seeds: rows.length,
     food: summary(rows.map(r=>r.food)),
