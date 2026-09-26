@@ -1685,5 +1685,14 @@
         "scratch/run_full_inspection.mjs"
       ]
     }
+,
+    {
+      "path": "scratch/test_stage1_pretrial_economy_envelope.mjs",
+      "purpose": "Stage1 Verse15 pre-Trial economy snapshot across normal Offering, Board investments, production, and maintenance without Trial cost",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    }
   ]
 }
