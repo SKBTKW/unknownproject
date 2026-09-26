@@ -10,7 +10,7 @@ import {
     rotatePlacementClockwise
 } from "../game/src/core/placement_geometry.js";
 import {
-    resolveFirstRunTrial1DeploymentBurdenShare
+    createFirstRunTrial1RelativeDeploymentCostResolver
 } from "../game/src/trial/config/first_run_trial1_relative_deployment_policy_v1.js";
 import {
     resolveDeploymentProbeRequestedDefense
@@ -341,13 +341,17 @@ function evaluateProductDeployment({
         requestedDefense,
         requestedDefenseFraction
     });
-    const burdenShare = resolveFirstRunTrial1DeploymentBurdenShare({
-        requestedDefense: committedDefense,
-        defenseAvailable,
-        distance
-    });
-    const foodCost = Math.ceil(sample.food * burdenShare);
-    const materialCost = Math.ceil(sample.material * burdenShare);
+    const quote = createFirstRunTrial1RelativeDeploymentCostResolver({
+        balanceProvider: () => ({ food: sample.food, material: sample.material }),
+        defenseBalanceProvider: () => defenseAvailable
+    })({ requestedDefense: committedDefense, distance, context: {
+        trialIndex: 1, interceptionCount: 1, defenseAvailable
+    } });
+    assert.ok(quote);
+    const burdenShare = quote.breakdown.burdenShare;
+    const foodShare = quote.breakdown.foodShare;
+    const foodCost = quote.food;
+    const materialCost = quote.material;
     const foodAfter = sample.food - foodCost;
     const materialAfter = sample.material - materialCost;
     const preTrialFoodBurden = 1 - ratio(sample.food, baseline.food);
@@ -362,6 +366,7 @@ function evaluateProductDeployment({
         defenseAvailable,
         distance,
         burdenShare,
+        foodShare,
         baselineFood: baseline.food,
         baselineMaterial: baseline.material,
         preTrialFood: sample.food,
@@ -447,7 +452,7 @@ function evaluateSampleSet(label, samples) {
                     `seed=${row.seed}`,
                     row.planId,
                     `def=${row.requestedDefense}/${row.defenseAvailable}`,
-                    `deployment=${pct(row.burdenShare)}`,
+                    `deployment=🌾${pct(row.foodShare)}/🧱${pct(row.burdenShare)}`,
                     `preTrial=🌾${pct(row.preTrialFoodBurden)}/🧱${pct(row.preTrialMaterialBurden)}`,
                     `cost=🌾${row.foodCost}/🧱${row.materialCost}`,
                     `final=🌾${row.foodAfter}/🧱${row.materialAfter}`,
@@ -498,7 +503,7 @@ assert.equal(
 );
 assert.equal(
     productionFull.every(row =>
-        Math.abs(row.totalFoodBurden - row.burdenShare) < 0.01
+        Math.abs(row.totalFoodBurden - row.foodShare) < 0.01
         && Math.abs(row.totalMaterialBurden - row.burdenShare) < 0.01
     ),
     true,

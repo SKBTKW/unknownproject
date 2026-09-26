@@ -2,6 +2,7 @@ export const FIRST_RUN_TRIAL1_RELATIVE_DEPLOYMENT_POLICY_V1 = Object.freeze({
     baseShare: 0.20,
     defenseShareWeight: 0.35,
     distanceShareWeight: 0.10,
+    foodShareBonus: 0.08,
     maxShare: 0.70,
     stage1MaxDistance: 4
 });
@@ -81,13 +82,15 @@ export function createFirstRunTrial1RelativeDeploymentCostResolver({
             distance: travel,
             policy
         });
+        const foodShare = Math.min(1, burdenShare + Math.max(0, Number(policy.foodShareBonus) || 0));
 
         return {
-            food: Math.ceil(food * burdenShare),
+            food: Math.ceil(food * foodShare),
             material: Math.ceil(material * burdenShare),
             breakdown: {
                 mode: "FIRST_RUN_TRIAL1_RELATIVE_V1",
                 burdenShare,
+                foodShare,
                 requestedDefense: defense,
                 defenseAvailable,
                 defenseFraction: defenseAvailable > 0 ? Math.min(1, defense / defenseAvailable) : 0,

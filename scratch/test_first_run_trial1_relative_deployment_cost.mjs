@@ -39,6 +39,7 @@ console.log("\nFirstRun Trial1 relative deployment cost v1");
             baseShare: 0.20,
             defenseShareWeight: 0.35,
             distanceShareWeight: 0.10,
+            foodShareBonus: 0.08,
             maxShare: 0.70,
             stage1MaxDistance: 4
         }
@@ -61,10 +62,11 @@ console.log("\nFirstRun Trial1 relative deployment cost v1");
             interceptionCount: 1
         }
     });
-    assert.equal(cost.food, 65);
+    assert.equal(cost.food, 73);
     assert.equal(cost.material, 52);
     assert.equal(cost.breakdown.mode, "FIRST_RUN_TRIAL1_RELATIVE_V1");
     assert.equal(Number(cost.breakdown.burdenShare.toFixed(2)), 0.65);
+    assert.equal(Number(cost.breakdown.foodShare.toFixed(2)), 0.73);
 
     assert.equal(
         resolver({

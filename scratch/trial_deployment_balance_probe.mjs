@@ -4,6 +4,7 @@ import {
 } from "../game/src/trial/domain/trial_deployment_cost_resolver.js";
 import {
     FIRST_RUN_TRIAL1_RELATIVE_DEPLOYMENT_POLICY_V1,
+    createFirstRunTrial1RelativeDeploymentCostResolver,
     resolveFirstRunTrial1DeploymentBurdenShare
 } from "../game/src/trial/config/first_run_trial1_relative_deployment_policy_v1.js";
 
@@ -184,16 +185,18 @@ export function evaluateFirstRunBurdenAgainstSamples({
             const defenseAvailable = Math.max(0, Number(sample.defense) || 0);
             const requestedDefense = resolveDeploymentProbeRequestedDefense(sample, plan);
             const distance = Math.max(0, Number(plan.distance) || 0);
-            const burdenShare = resolveFirstRunBurdenShare({
-                requestedDefense,
-                defenseAvailable,
-                distance
-            });
-
             const foodAvailable = Math.max(0, Number(sample.food) || 0);
             const materialAvailable = Math.max(0, Number(sample.material) || 0);
-            const foodCost = Math.ceil(foodAvailable * burdenShare);
-            const materialCost = Math.ceil(materialAvailable * burdenShare);
+            const quote = createFirstRunTrial1RelativeDeploymentCostResolver({
+                balanceProvider: () => ({ food: foodAvailable, material: materialAvailable }),
+                defenseBalanceProvider: () => defenseAvailable
+            })({ requestedDefense, distance, context: {
+                trialIndex: 1, interceptionCount: 1, defenseAvailable
+            } });
+            const burdenShare = quote.breakdown.burdenShare;
+            const foodShare = quote.breakdown.foodShare;
+            const foodCost = quote.food;
+            const materialCost = quote.material;
 
             rows.push({
                 sampleId: sample.id,
@@ -202,6 +205,7 @@ export function evaluateFirstRunBurdenAgainstSamples({
                 defenseAvailable,
                 distance,
                 burdenShare,
+                foodShare,
                 foodAvailable,
                 materialAvailable,
                 foodCost,
