@@ -47,7 +47,7 @@ function cell(r, c, terrainId, { hq = false } = {}) {
 
 const granary = COMMAND_CARDS_MASTER.find(card => card.id === "CMD_GRANARY");
 assert.ok(granary, "CMD_GRANARY must exist");
-assert.equal(isCardRuntimeActive(granary), false, "production default keeps Granary dormant");
+assert.equal(isCardRuntimeActive(granary), true, "completed Granary is active by default through the ID-scoped runtime policy");
 assert.deepEqual(granary.cost, {});
 assert.equal(granary.reqWood, undefined);
 assert.equal(granary.effects?.[0]?.paymentMode, "DOMAIN_QUOTE");
