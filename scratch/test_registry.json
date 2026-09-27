@@ -347,6 +347,11 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_demihuman_traces_major_presentation_runtime.mjs",
+      "purpose": "demihuman traces major presentation runtime integration",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_dev_chronicle_restore_ui.mjs",
       "purpose": "dev chronicle restore ui",
       "suite": "existing",
@@ -1678,8 +1683,7 @@
       "path": "scratch/test_stage1_logging_camp_v2_spend_path_probe.mjs",
       "purpose": "Stage1 Logging Camp v2 adjacent-site spend path, candidate cost/base/relation production, V15 residual material, and Trial1 heavy PVE probe",
       "suite": "supplemental"
-    }
-,
+    },
     {
       "path": "scratch/test_stage1_pretrial_economy_envelope.mjs",
       "purpose": "Stage1 Verse15 pre-Trial economy snapshot across normal Offering, Board investments, production, and maintenance without Trial cost",

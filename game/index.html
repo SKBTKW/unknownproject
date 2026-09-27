@@ -123,6 +123,7 @@
         import { attachTrialRuntimeSubsystems } from './src/trial/integration/trial_runtime_bootstrap.js?v=20260916_v1';
         import { attachTrialLaunchSubsystem } from './src/trial/integration/trial_launch_bootstrap.js?v=20260923_first_run_flow1';
         import { BrowserFirstRunActivationStore } from './src/tutorial/browser_first_run_activation_store.js?v=20260924_first_run_activation1';
+        import { GlobalEventMajorPresentationRuntimeIntegration } from './src/ui/global_event_major_presentation_runtime_integration.js?v=20260927_traces1';
 
         class BrowserGameState extends PlatformNeutralGameState {
             constructor(dependencies = {}) {
@@ -146,6 +147,10 @@
                 const trialLaunch = attachTrialLaunchSubsystem(engine, ui);
                 if (!trialLaunch.success) {
                     throw new Error(`TRIAL_LAUNCH_BOOTSTRAP_FAILED:${trialLaunch.reason || 'UNKNOWN'}`);
+                }
+                const majorEventPresentation = new GlobalEventMajorPresentationRuntimeIntegration({ engine });
+                if (!majorEventPresentation.attachResult?.success) {
+                    throw new Error(`MAJOR_EVENT_PRESENTATION_BOOTSTRAP_FAILED:${majorEventPresentation.attachResult?.reason || 'UNKNOWN'}`);
                 }
                 attachBoardPresentationRuntime(ui);
                 attachWeb25DBoardRuntime(ui);

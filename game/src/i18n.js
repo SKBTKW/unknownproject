@@ -270,6 +270,9 @@
             LGD_DESPERATE_PACT_DESC: "即座に 🔥+5 を獲得し、毎ターンの手札オファリング枠が永久に 4 枚へ拡張される。",
 
             // 🌍 グローバルイベント (Global Events)
+            EVENT_UNKNOWN_TRACES_NAME: "見慣れぬ痕跡",
+            EVENT_UNKNOWN_TRACES_DESC: "生存圏の外縁で、これまで見たことのない足跡が見つかった。人のものとも獣のものとも断定できない。折られた枝と踏み荒らされた草が、何かが近くを通ったことだけを示している。",
+            UI_GLOBAL_EVENT_CLOSE: "閉じる",
             EVENT_COLD_WAVE_NAME: "寒波",
             EVENT_COLD_WAVE_DESC: "平地の食料産出が -25% 低下する。(持続 3T)",
             EVENT_DROUGHT_NAME: "旱魃",
@@ -1311,6 +1314,9 @@
             LGD_DESPERATE_PACT_DESC: "Immediately gain 🔥+5 and permanently expand hand offering size to 4 cards.",
 
             // 🌍 Global Events
+            EVENT_UNKNOWN_TRACES_NAME: "Unfamiliar Tracks",
+            EVENT_UNKNOWN_TRACES_DESC: "Unfamiliar tracks have been found at the edge of the human habitat. They cannot yet be identified as human or animal. Broken branches and trampled grass show only that something passed nearby.",
+            UI_GLOBAL_EVENT_CLOSE: "Close",
             EVENT_COLD_WAVE_NAME: "Cold Wave",
             EVENT_COLD_WAVE_DESC: "Plains food yield reduced by -25%. (Duration 3T)",
             EVENT_DROUGHT_NAME: "Drought",
