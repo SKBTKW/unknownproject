@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { GlobalEventManager } from "../game/src/systems/global_event_system.js";
 import { GlobalEventMajorPresentationRuntimeIntegration } from "../game/src/ui/global_event_major_presentation_runtime_integration.js";
 
@@ -28,6 +29,14 @@ const integration = new GlobalEventMajorPresentationRuntimeIntegration({
     engine: { globalEventManager: manager },
     component
 });
+
+const browserBootstrap = fs.readFileSync(new URL("../game/index.html", import.meta.url), "utf8");
+assert.match(browserBootstrap, /new GlobalEventMajorPresentationRuntimeIntegration\(\{ engine \}\)/,
+    "production browser must attach the presentation bridge to the live GameEngine");
+assert.ok(browserBootstrap.indexOf("new GlobalEventMajorPresentationRuntimeIntegration")
+    < browserBootstrap.indexOf("ui.init();"), "presentation must attach before normal play begins");
+assert.ok(fs.statSync(new URL("../game/assets/events/unknown_traces.svg", import.meta.url)).size > 0,
+    "the public traces still must be shipped with the game");
 
 assert.deepEqual(integration.attachResult, { success: true });
 manager.triggerEvent("EVENT_DEMIHUMAN_TRACES");
