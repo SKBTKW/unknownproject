@@ -136,7 +136,8 @@ const unknownRuntime = new GlobalEventPresentationRuntimeIntegration(
 assert.equal(unknownRuntime.reconcileActive(), null);
 assert.equal(unknownComponent.shown.length, 0);
 
-assert.equal(UILayoutConfig.globalEventPresentation.overlay.position, "fixed");\nassert.equal(UILayoutConfig.globalEventPresentation.overlay.zIndex, "910");
+assert.equal(UILayoutConfig.globalEventPresentation.overlay.position, "fixed");
+assert.equal(UILayoutConfig.globalEventPresentation.overlay.zIndex, "910");
 assert.equal(UILayoutConfig.globalEventPresentation.overlay.alignItems, "center");
 assert.equal(UILayoutConfig.globalEventPresentation.overlay.justifyContent, "center");
 assert.equal(UILayoutConfig.globalEventPresentation.advisorOverlapSafeArea, "IMAGE_RIGHT_EDGE");
