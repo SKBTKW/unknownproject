@@ -20,6 +20,7 @@
     <link rel="stylesheet" href="css/4_right_sidebar/advisor_ui.css?v=20260909_v6">
     <link rel="stylesheet" href="css/layout.css?v=20260827_v38">
     <link rel="stylesheet" href="css/0_global_common/layer_contract.css?v=20260913_v3">
+    <link rel="stylesheet" href="css/0_global_common/global_event_presentation.css?v=20260928_ge1">
 </head>
 <body>
 
@@ -123,6 +124,7 @@
         import { attachTrialRuntimeSubsystems } from './src/trial/integration/trial_runtime_bootstrap.js?v=20260916_v1';
         import { attachTrialLaunchSubsystem } from './src/trial/integration/trial_launch_bootstrap.js?v=20260923_first_run_flow1';
         import { BrowserFirstRunActivationStore } from './src/tutorial/browser_first_run_activation_store.js?v=20260924_first_run_activation1';
+        import { attachGlobalEventPresentation } from './src/ui/global_event_presentation_runtime_integration.js?v=20260928_ge1';
 
         class BrowserGameState extends PlatformNeutralGameState {
             constructor(dependencies = {}) {
@@ -150,6 +152,10 @@
                 attachBoardPresentationRuntime(ui);
                 attachWeb25DBoardRuntime(ui);
                 attachTrialActionTray(ui);
+                const globalEventPresentation = attachGlobalEventPresentation(ui);
+                if (!globalEventPresentation.success) {
+                    throw new Error(`GLOBAL_EVENT_PRESENTATION_BOOTSTRAP_FAILED:${globalEventPresentation.reason || 'UNKNOWN'}`);
+                }
 
                 window.gameEngine = engine;
                 window.ui = ui;
