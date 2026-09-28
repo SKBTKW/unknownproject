@@ -13,17 +13,23 @@ export class GlobalEventAdvisorPresentationIntegration {
         this.runtime = null;
     }
 
-    onPresented(presentation, runtime) {
+    onPresented(presentation, runtime, { source = "LIFECYCLE" } = {}) {
         if (presentation?.eventId !== DEMIHUMAN_TRACES_EVENT_ID) return false;
 
         const dock = this.ui?.advisorDockComponent || null;
         if (!dock?.isEnabled?.()) return false;
-        this.runtime = runtime || null;
+        if (typeof dock.dialogueSystem?.subscribe !== "function") return false;
+        if (typeof dock.consumeSemanticScene !== "function") return false;
 
         const firstRunState = this.engine?.firstRunState || null;
         const firstRun = firstRunState?.active === true;
         const firstPresentation = firstRun
             && firstRunState?.hasSceneOccurred?.(FIRST_RUN_BACKGROUND_SCENE_KEY) !== true;
+
+        // Restore may reconstruct the GE shell, but must not replay an Advisor line
+        // that was already presented and recorded before the snapshot.
+        if (source === "RESTORE" && !firstPresentation) return false;
+
         const expectedEvent = firstPresentation
             ? ADVISOR_EVENTS.GLOBAL_EVENT_PRESENTED_FIRST_RUN
             : ADVISOR_EVENTS.GLOBAL_EVENT_PRESENTED_BRIEF;
@@ -31,37 +37,51 @@ export class GlobalEventAdvisorPresentationIntegration {
         this.detachDialogueSubscription();
         this.activeAdvisorSpeechEvent = expectedEvent;
         let speechStarted = false;
-        this.unsubscribeAdvisorDialogue = dock.dialogueSystem?.subscribe?.(item => {
+        let occurrenceRecorded = false;
+        const unsubscribe = dock.dialogueSystem.subscribe(item => {
             if (item?.event === expectedEvent) {
                 speechStarted = true;
+                if (firstPresentation && !occurrenceRecorded) {
+                    firstRunState?.recordScene?.(FIRST_RUN_BACKGROUND_SCENE_KEY);
+                    occurrenceRecorded = true;
+                }
                 return;
             }
             if (speechStarted && item === null) this.releaseRuntimeLock();
-        }) || null;
+        });
+        if (typeof unsubscribe !== "function") {
+            this.activeAdvisorSpeechEvent = null;
+            return false;
+        }
+        this.unsubscribeAdvisorDialogue = unsubscribe;
+        this.runtime = runtime || null;
 
-        runtime?.setAdvisorActive?.(true);
-        dock.expand?.("click");
+        try {
+            runtime?.setAdvisorActive?.(true);
+            dock.expand?.("click");
 
-        const emitted = dock.consumeSemanticScene?.({
-            sceneId: ADVISOR_SCENES.GLOBAL_EVENT_PRESENTED,
-            verse: Number.isInteger(presentation.turn) ? presentation.turn : Number(this.ui?.state?.turn || 1),
-            context: Object.freeze({
-                eventId: presentation.eventId,
-                category: presentation.category || null,
-                presentationKind: presentation.presentationKind || null,
-                publicKnowledge: presentation.publicKnowledge || null,
-                firstRun,
-                firstPresentation
-            })
-        }) === true;
+            const emitted = dock.consumeSemanticScene({
+                sceneId: ADVISOR_SCENES.GLOBAL_EVENT_PRESENTED,
+                verse: Number.isInteger(presentation.turn) ? presentation.turn : Number(this.ui?.state?.turn || 1),
+                context: Object.freeze({
+                    eventId: presentation.eventId,
+                    category: presentation.category || null,
+                    presentationKind: presentation.presentationKind || null,
+                    publicKnowledge: presentation.publicKnowledge || null,
+                    firstRun,
+                    firstPresentation
+                })
+            }) === true;
 
-        if (!emitted) {
+            if (!emitted) {
+                this.releaseRuntimeLock();
+                return false;
+            }
+            return true;
+        } catch {
             this.releaseRuntimeLock();
             return false;
         }
-
-        if (firstPresentation) firstRunState?.recordScene?.(FIRST_RUN_BACKGROUND_SCENE_KEY);
-        return true;
     }
 
     releaseRuntimeLock() {
