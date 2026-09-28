@@ -1,0 +1,115 @@
+.ge-presentation-overlay[hidden] {
+    display: none;
+}
+
+.ge-presentation-overlay {
+    background: rgba(7, 10, 14, 0.78);
+    backdrop-filter: blur(1px);
+}
+
+.ge-presentation-shell {
+    box-sizing: border-box;
+    overflow: auto;
+    background: rgba(20, 24, 31, 0.98);
+    border: 1px solid rgba(212, 188, 132, 0.52);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.72);
+}
+
+.ge-presentation-title {
+    margin: 0 auto 16px;
+    font-size: clamp(22px, 2vw, 30px);
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    text-align: center;
+}
+
+.ge-presentation-image-slot {
+    margin: 0 auto 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    image-rendering: pixelated;
+}
+
+.ge-presentation-image,
+.ge-presentation-image-placeholder {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.ge-presentation-image-placeholder {
+    opacity: 0.45;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+}
+
+.ge-presentation-copy {
+    max-width: 620px;
+    margin-inline: auto;
+}
+
+.ge-presentation-body {
+    line-height: 1.75;
+    margin-bottom: 18px;
+}
+
+.ge-presentation-details {
+    display: grid;
+    gap: 6px;
+    margin-bottom: 18px;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.045);
+    border-left: 2px solid rgba(212, 188, 132, 0.55);
+}
+
+.ge-presentation-detail-row {
+    font-size: 13px;
+    line-height: 1.5;
+    opacity: 0.86;
+}
+
+.ge-presentation-advisor {
+    margin-bottom: 18px;
+    padding: 12px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.11);
+    background: rgba(0, 0, 0, 0.18);
+}
+
+.ge-presentation-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+}
+
+.ge-presentation-action {
+    padding: 13px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.06);
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.ge-presentation-action:hover,
+.ge-presentation-action:focus-visible {
+    background: rgba(255, 255, 255, 0.11);
+}
+
+body[data-global-event-presentation="open"] {
+    --z-advisor: 940;
+}
+
+@media (max-width: 760px) {
+    .ge-presentation-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .ge-presentation-copy {
+        max-width: 100%;
+    }
+}
