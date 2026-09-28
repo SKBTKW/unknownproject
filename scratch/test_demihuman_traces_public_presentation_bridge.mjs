@@ -40,9 +40,9 @@ assert.deepEqual(
 manager.triggerEvent("EVENT_DEMIHUMAN_TRACES");
 assert.equal(emitted.length, 1, "Traces START must emit one public presentation request");
 assert.equal(emitted[0].eventId, "EVENT_DEMIHUMAN_TRACES");
-assert.equal(emitted[0].titleKey, "EVENT_UNKNOWN_TRACES_NAME");
-assert.equal(emitted[0].descriptionKey, "EVENT_UNKNOWN_TRACES_DESC");
-assert.equal(emitted[0].publicKnowledge, "ANOMALY_ONLY");
+assert.equal(emitted[0].titleKey, "EVENT_DEMIHUMAN_TRACES_NAME");
+assert.equal(emitted[0].descriptionKey, "EVENT_DEMIHUMAN_TRACES_DESC");
+assert.equal(emitted[0].publicKnowledge, "DEMIHUMAN_ACTIVITY_NEAR_SURVIVAL_ZONE");
 
 manager.emitLifecycle("END", { id: "EVENT_DEMIHUMAN_TRACES", category: "THREAT", importance: "MAJOR" }, 7);
 assert.equal(emitted.length, 1, "END must not emit a new presentation request");

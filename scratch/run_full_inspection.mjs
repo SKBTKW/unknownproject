@@ -718,6 +718,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Advisor Semantic Scene Consumer) で不合格が検出されました。");
         process.exit(1);
     }
+    const globalEventAdvisorIntegrationOk = await runCommand("node", ["scratch/test_global_event_advisor_integration.mjs"]);
+    if (!globalEventAdvisorIntegrationOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Global Event Advisor Integration) で不合格が検出されました。");
+        process.exit(1);
+    }
     const globalEventChoiceRestoreOk = await runCommand("node", ["scratch/test_global_event_choice_restore_reconciliation.mjs"]);
     if (!globalEventChoiceRestoreOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Global Event Choice Restore Reconciliation) で不合格が検出されました。");

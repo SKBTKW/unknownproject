@@ -47,6 +47,11 @@ export class GlobalEventPresentationRuntimeState {
         return this.advisorActive;
     }
 
+    setInteractionLocked(locked) {
+        this.interactionLocked = locked === true;
+        return this.interactionLocked;
+    }
+
     isOpen() {
         return this.state !== GLOBAL_EVENT_PRESENTATION_STATES.CLOSED;
     }

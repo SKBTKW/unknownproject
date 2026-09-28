@@ -57,7 +57,7 @@ const notice = readModel.project({
 assert.equal(notice.presentationKind, "MAJOR_EVENT");
 assert.equal(notice.presentationMode, "NOTICE");
 assert.equal(notice.actionKind, "CONFIRM");
-assert.equal(notice.stillId, "STILL_UNKNOWN_TRACES");
+assert.equal(notice.stillId, "STILL_DEMIHUMAN_TRACES");
 assert.equal(readModel.project({ timing: "START", eventId: "EVENT_UNKNOWN" }), null);
 const choiceContract = projectGlobalEventChoiceToCommonPresentation({
     eventId: "CHOICE_SAMPLE",
@@ -98,7 +98,7 @@ manager.emit({
     importance: "MAJOR"
 });
 assert.equal(component.shown.length, 1);
-assert.equal(integration.isInteractionLocked(), true);
+assert.equal(integration.isInteractionLocked(), false, "NOTICE without active Advisor explanation must remain confirmable");
 
 manager.emit({
     timing: "START",
