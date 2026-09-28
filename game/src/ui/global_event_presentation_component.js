@@ -21,6 +21,7 @@ export class GlobalEventPresentationComponent {
         this.root = null;
         this.shell = null;
         this.presentation = null;
+        this.interactionLocked = false;
         this.keydownHandler = event => {
             if (!this.root || this.root.hidden) return;
             if (event.key === "Tab") return;
@@ -126,11 +127,28 @@ export class GlobalEventPresentationComponent {
             button.dataset.geAction = action.id;
             if (action.primary) button.dataset.gePrimaryAction = "true";
             button.textContent = action.label || translated(this.i18n, action.labelKey, action.id);
-            button.addEventListener("click", () => this.onAction?.(action.id, p));
+            button.disabled = this.interactionLocked;
+            button.setAttribute("aria-disabled", this.interactionLocked ? "true" : "false");
+            button.addEventListener("click", () => {
+                if (this.interactionLocked) return;
+                this.onAction?.(action.id, p);
+            });
             actions.appendChild(button);
         }
         this.shell.appendChild(actions);
         return true;
+    }
+
+    setInteractionLocked(locked) {
+        this.interactionLocked = locked === true;
+        this.root?.querySelectorAll?.("[data-ge-action]")?.forEach?.(button => {
+            button.disabled = this.interactionLocked;
+            button.setAttribute("aria-disabled", this.interactionLocked ? "true" : "false");
+        });
+        if (!this.interactionLocked) {
+            queueMicrotask(() => this.root?.querySelector?.("[data-ge-primary-action]")?.focus?.());
+        }
+        return this.interactionLocked;
     }
 
     hide() {

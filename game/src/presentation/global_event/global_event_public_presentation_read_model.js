@@ -1,10 +1,10 @@
 const EVENT_PUBLIC_PRESENTATION_POLICIES = Object.freeze({
     EVENT_DEMIHUMAN_TRACES: Object.freeze({
         presentationKind: "MAJOR_EVENT",
-        titleKey: "EVENT_UNKNOWN_TRACES_NAME",
-        descriptionKey: "EVENT_UNKNOWN_TRACES_DESC",
-        stillId: "STILL_UNKNOWN_TRACES",
-        publicKnowledge: "ANOMALY_ONLY"
+        titleKey: "EVENT_DEMIHUMAN_TRACES_NAME",
+        descriptionKey: "EVENT_DEMIHUMAN_TRACES_DESC",
+        stillId: "STILL_DEMIHUMAN_TRACES",
+        publicKnowledge: "DEMIHUMAN_ACTIVITY_NEAR_SURVIVAL_ZONE"
     })
 });
 

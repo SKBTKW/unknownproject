@@ -64,7 +64,9 @@ export const ADVISOR_EVENT_RESPONSIBILITY = Object.freeze({
     STABLE_OVERALL: advice("survival"),
     GENERAL_AMBIENT: ambient(),
     MILITARY_ACTION: advice("defense"),
-    GLOBAL_EVENT_SURVIVAL: advice("survival")
+    GLOBAL_EVENT_SURVIVAL: advice("survival"),
+    GLOBAL_EVENT_PRESENTED_FIRST_RUN: duty(),
+    GLOBAL_EVENT_PRESENTED_BRIEF: advice("survival")
 });
 
 // Scene ownership is separate from Advice depth. Missing Reaction data means intentional silence.
@@ -75,6 +77,7 @@ export const ADVISOR_SCENE_RESPONSIBILITY = Object.freeze({
     [ADVISOR_SCENES.REFUGEES_FOUND]: reaction(),
     [ADVISOR_SCENES.CIVILIANS_LOST]: reaction(),
     [ADVISOR_SCENES.TRIAL_WARNING]: reaction(),
+    [ADVISOR_SCENES.GLOBAL_EVENT_PRESENTED]: reaction(ADVISOR_DIALOGUE_CHANNELS.DUTY),
     [ADVISOR_SCENES.FIRST_RUN_TRIAL_ROUTE]: duty(),
     [ADVISOR_SCENES.FIRST_RUN_TRIAL_TERRAIN]: duty(),
     [ADVISOR_SCENES.FIRST_RUN_TRIAL_DEFENSE]: duty(),

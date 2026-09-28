@@ -496,6 +496,12 @@
       ]
     },
     {
+      "path": "scratch/test_global_event_advisor_integration.mjs",
+      "purpose": "Global Event presented semantic Advisor bridge, FirstRun background dedupe, presentation-only interaction lock, and hidden-info boundary",
+      "suite": "existing",
+      "entryPoints": ["scratch/run_full_inspection.mjs"]
+    },
+    {
       "path": "scratch/test_global_event_choice_contract.mjs",
       "purpose": "global event choice contract",
       "suite": "supplemental"

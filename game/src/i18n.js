@@ -286,6 +286,8 @@
             EVENT_DEMIHUMAN_RAID_DESC: "小規模な亜人部隊が1方向から襲撃を仕掛けてきた！",
             EVENT_DEMIHUMAN_SCOUTS_NAME: "亜人の斥候",
             EVENT_DEMIHUMAN_SCOUTS_DESC: "亜人の斥候部隊が出現。次の試練に関する情報を察知可能！",
+            EVENT_DEMIHUMAN_TRACES_NAME: "亜人の痕跡",
+            EVENT_DEMIHUMAN_TRACES_DESC: "生存圏のごく近くで、亜人の活動痕跡が確認された。本営から無視できる距離ではない。",
 
             // 📜 UIボタン・システムログ
             UI_UNDO_PLACEMENT_BTN: "開発を取り消す",
@@ -471,6 +473,9 @@
             UI_ADVISOR_DIALOGUE_FIRST_RUN_TRIAL_TERRAIN: "迎え撃つ場所で条件が変わります。地形を見て選んでください。",
             UI_ADVISOR_DIALOGUE_FIRST_RUN_TRIAL_DEFENSE: "地点を決めたら、そこへ防衛力を回します。",
             UI_ADVISOR_DIALOGUE_FIRST_RUN_TRIAL_CAUSALITY: "結果だけでなく、何が戦いに影響したかも確認してください。次の迎撃で役に立ちます。",
+            UI_ADVISOR_DIALOGUE_DEMIHUMAN_TRACES_FIRST_1: "亜人です。見間違えるものではありません。奴らについては、我々も嫌というほど知っています。",
+            UI_ADVISOR_DIALOGUE_DEMIHUMAN_TRACES_FIRST_2: "問題は、この生存圏のすぐ近くに活動の痕跡が残っていることです。",
+            UI_ADVISOR_DIALOGUE_DEMIHUMAN_TRACES_BRIEF: "……近いですね。",
             UI_ADVISOR_DIALOGUE_EMBER_WARNING_1: "民の疲れが目立ちます。",
             UI_ADVISOR_DIALOGUE_EMBER_WARNING_2: "人々に余裕がありません。これ以上の負担は避けるべきでしょう。",
             UI_ADVISOR_DIALOGUE_EMBER_CRITICAL_1: "民の疲弊が深刻です。まず立て直すべきでしょう。",
@@ -1327,6 +1332,8 @@
             EVENT_DEMIHUMAN_RAID_DESC: "A small demihuman force raids from 1 direction!",
             EVENT_DEMIHUMAN_SCOUTS_NAME: "Demihuman Scouts",
             EVENT_DEMIHUMAN_SCOUTS_DESC: "Demihuman scouts appear, providing early intelligence on next trial!",
+            EVENT_DEMIHUMAN_TRACES_NAME: "Demihuman Traces",
+            EVENT_DEMIHUMAN_TRACES_DESC: "Signs of demihuman activity were found close to the survival zone, near enough that they cannot be ignored.",
 
             SOCKET_WILD_WHEAT: "Wild Wheat 🌾+3/T",
             SOCKET_APPLES: "Apples 🌾+3/T",
@@ -1432,6 +1439,9 @@
             UI_ADVISOR_DIALOGUE_FIRST_RUN_TRIAL_TERRAIN: "Where we intercept them changes the conditions. Read the terrain before you choose.",
             UI_ADVISOR_DIALOGUE_FIRST_RUN_TRIAL_DEFENSE: "Once the position is set, commit defense there.",
             UI_ADVISOR_DIALOGUE_FIRST_RUN_TRIAL_CAUSALITY: "Do not look only at the result. Check what shaped the battle; it will matter at the next interception.",
+            UI_ADVISOR_DIALOGUE_DEMIHUMAN_TRACES_FIRST_1: "Demihumans. There is no mistaking the signs. We have known this threat for far too long.",
+            UI_ADVISOR_DIALOGUE_DEMIHUMAN_TRACES_FIRST_2: "What matters is that their activity reached this close to our survival zone.",
+            UI_ADVISOR_DIALOGUE_DEMIHUMAN_TRACES_BRIEF: "...Too close.",
             UI_ADVISOR_DIALOGUE_EMBER_WARNING_1: "The people are showing signs of fatigue.",
             UI_ADVISOR_DIALOGUE_EMBER_WARNING_2: "The people have little room left. Further strain should be avoided.",
             UI_ADVISOR_DIALOGUE_EMBER_CRITICAL_1: "The people's exhaustion is severe. Recovery should come first.",
