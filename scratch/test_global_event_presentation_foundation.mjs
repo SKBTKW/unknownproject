@@ -9,6 +9,9 @@ import { GlobalEventPresentationRuntimeIntegration } from "../game/src/ui/global
 import { UILayoutConfig } from "../game/src/ui/layout_config.js";
 import { projectGlobalEventChoiceToCommonPresentation } from "../game/src/presentation/global_event/global_event_choice_presentation_adapter.js";
 
+const commonRuntimeSource = fs.readFileSync(new URL("../game/src/ui/global_event_presentation_runtime_integration.js", import.meta.url), "utf8");
+assert.doesNotMatch(commonRuntimeSource, /EVENT_DEMIHUMAN_TRACES|ADVISOR_SCENES|ADVISOR_EVENTS/, "common GE runtime must not own Advisor/event-specific semantics");
+
 function createManager() {
     const listeners = new Set();
     return {
