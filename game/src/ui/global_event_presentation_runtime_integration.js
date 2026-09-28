@@ -4,8 +4,6 @@ import GlobalEventPublicPresentationBridge from "../presentation/global_event/gl
 import { GlobalEventPresentationComponent } from "./global_event_presentation_component.js";
 import { GlobalEventPresentationRuntimeState } from "./global_event_presentation_runtime_state.js";
 import { GlobalEventChoiceRuntimeIntegration } from "./global_event_choice_runtime_integration.js";
-import { ADVISOR_SCENES } from "../data/advisor_scene_catalog.js";
-import { ADVISOR_EVENTS } from "./advisor/advisor_dialogue_database.js";
 
 function presentationKey(presentation) {
     if (!presentation?.eventId) return null;
@@ -15,15 +13,15 @@ function presentationKey(presentation) {
 export class GlobalEventPresentationRuntimeIntegration {
     constructor(uiController, {
         readModel = new GlobalEventPublicPresentationReadModel(),
-        component = null
+        component = null,
+        presentationHook = null
     } = {}) {
         this.ui = uiController || null;
         this.engine = uiController?.engine || null;
         this.manager = this.engine?.globalEventManager || null;
         this.readModel = readModel;
+        this.presentationHook = presentationHook || null;
         this.state = new GlobalEventPresentationRuntimeState();
-        this.unsubscribeAdvisorDialogue = null;
-        this.activeAdvisorSpeechEvent = null;
         this.component = component || (typeof document !== "undefined"
             ? new GlobalEventPresentationComponent({
                 i18n: I18n,
@@ -59,68 +57,13 @@ export class GlobalEventPresentationRuntimeIntegration {
         this.state.open(key);
         this.component?.show?.(view);
         this.component?.setInteractionLocked?.(true);
-        this.activateAdvisorForPresentation(view);
+
+        const hookOwnsInput = this.presentationHook?.onPresented?.(view, this) === true;
+        if (!hookOwnsInput) this.releaseInteractionLock();
         return view;
     }
 
-    activateAdvisorForPresentation(presentation) {
-        if (presentation?.eventId !== "EVENT_DEMIHUMAN_TRACES") {
-            this.releaseInteractionLock();
-            return false;
-        }
-
-        const dock = this.ui?.advisorDockComponent || null;
-        if (!dock?.isEnabled?.()) {
-            this.releaseInteractionLock();
-            return false;
-        }
-
-        const firstRunState = this.engine?.firstRunState || null;
-        const firstRun = firstRunState?.active === true;
-        const backgroundSceneKey = "GLOBAL_EVENT_DEMIHUMAN_TRACES_ADVISOR_BACKGROUND";
-        const firstPresentation = firstRun && firstRunState?.hasSceneOccurred?.(backgroundSceneKey) !== true;
-        if (firstPresentation) firstRunState?.recordScene?.(backgroundSceneKey);
-
-        const expectedEvent = firstPresentation
-            ? ADVISOR_EVENTS.GLOBAL_EVENT_PRESENTED_FIRST_RUN
-            : ADVISOR_EVENTS.GLOBAL_EVENT_PRESENTED_BRIEF;
-
-        this.unsubscribeAdvisorDialogue?.();
-        this.unsubscribeAdvisorDialogue = null;
-        this.activeAdvisorSpeechEvent = expectedEvent;
-        let speechStarted = false;
-        this.unsubscribeAdvisorDialogue = dock.dialogueSystem?.subscribe?.(item => {
-            if (item?.event === expectedEvent) {
-                speechStarted = true;
-                return;
-            }
-            if (speechStarted && item === null) this.releaseInteractionLock();
-        }) || null;
-
-        this.state.setAdvisorActive(true);
-        dock.expand?.("click");
-
-        const emitted = dock.consumeSemanticScene?.({
-            sceneId: ADVISOR_SCENES.GLOBAL_EVENT_PRESENTED,
-            verse: Number.isInteger(presentation.turn) ? presentation.turn : Number(this.ui?.state?.turn || 1),
-            context: Object.freeze({
-                eventId: presentation.eventId,
-                category: presentation.category || null,
-                presentationKind: presentation.presentationKind || null,
-                publicKnowledge: presentation.publicKnowledge || null,
-                firstRun,
-                firstPresentation
-            })
-        }) === true;
-
-        if (!emitted) this.releaseInteractionLock();
-        return emitted;
-    }
-
     releaseInteractionLock() {
-        this.unsubscribeAdvisorDialogue?.();
-        this.unsubscribeAdvisorDialogue = null;
-        this.activeAdvisorSpeechEvent = null;
         this.state.setAdvisorActive(false);
         this.state.setInteractionLocked(false);
         this.component?.setInteractionLocked?.(false);
@@ -161,19 +104,22 @@ export class GlobalEventPresentationRuntimeIntegration {
 
     destroy() {
         this.bridge?.detach?.();
-        this.unsubscribeAdvisorDialogue?.();
-        this.unsubscribeAdvisorDialogue = null;
+        this.presentationHook?.destroy?.(this);
         this.component?.destroy?.();
         this.state.close();
     }
 }
 
-export function attachGlobalEventPresentation(uiController) {
+export function attachGlobalEventPresentation(uiController, {
+    noticePresentationHook = null
+} = {}) {
     if (!uiController?.engine?.globalEventManager) {
         return { success: false, reason: "GLOBAL_EVENT_MANAGER_REQUIRED" };
     }
 
-    const notice = new GlobalEventPresentationRuntimeIntegration(uiController);
+    const notice = new GlobalEventPresentationRuntimeIntegration(uiController, {
+        presentationHook: noticePresentationHook
+    });
     const choice = new GlobalEventChoiceRuntimeIntegration(uiController);
     notice.reconcileActive();
     choice.reconcilePending();
