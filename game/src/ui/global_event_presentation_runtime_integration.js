@@ -31,7 +31,7 @@ export class GlobalEventPresentationRuntimeIntegration {
         this.component?.mount?.(typeof document !== "undefined" ? document.body : null);
         this.bridge = new GlobalEventPublicPresentationBridge({
             readModel: this.readModel,
-            sink: presentation => this.present(presentation)
+            sink: presentation => this.present(presentation, { source: "LIFECYCLE" })
         });
         this.attachResult = this.manager ? this.bridge.attach({ globalEventManager: this.manager }) : {
             success: false,
@@ -39,7 +39,7 @@ export class GlobalEventPresentationRuntimeIntegration {
         };
     }
 
-    present(presentation) {
+    present(presentation, { source = "LIFECYCLE" } = {}) {
         if (!presentation || presentation.presentationMode !== "NOTICE" || presentation.actionKind !== "CONFIRM") return null;
         const key = presentationKey(presentation);
         if (!key) return null;
@@ -58,7 +58,7 @@ export class GlobalEventPresentationRuntimeIntegration {
         this.component?.show?.(view);
         this.component?.setInteractionLocked?.(true);
 
-        const hookOwnsInput = this.presentationHook?.onPresented?.(view, this) === true;
+        const hookOwnsInput = this.presentationHook?.onPresented?.(view, this, Object.freeze({ source })) === true;
         if (!hookOwnsInput) this.releaseInteractionLock();
         return view;
     }
@@ -96,7 +96,7 @@ export class GlobalEventPresentationRuntimeIntegration {
                 turn: Number.isInteger(this.manager?.state?.turn) ? this.manager.state.turn : null
             });
             if (!projection) continue;
-            const result = this.present(projection);
+            const result = this.present(projection, { source: "RESTORE" });
             if (result) return result;
         }
         return null;

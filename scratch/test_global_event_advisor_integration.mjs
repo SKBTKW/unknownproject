@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { GlobalEventPublicPresentationReadModel } from "../game/src/presentation/global_event/global_event_public_presentation_read_model.js";
 import { GlobalEventPresentationRuntimeIntegration } from "../game/src/ui/global_event_presentation_runtime_integration.js";
 import { GlobalEventAdvisorPresentationIntegration } from "../game/src/ui/global_event_advisor_presentation_integration.js";
@@ -25,13 +26,13 @@ function createComponent(order) {
     };
 }
 
-function createAdvisorDock(order, scenes, { emitScene = true } = {}) {
+function createAdvisorDock(order, scenes, { emitScene = true, enabled = true, subscribe = true } = {}) {
     const listeners = new Set();
     return {
         expanded: 0,
-        isEnabled() { return true; },
+        isEnabled() { return enabled; },
         expand() { this.expanded += 1; order.push("ADVISOR_EXPANDED"); },
-        dialogueSystem: { subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); } },
+        dialogueSystem: subscribe ? { subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); } } : {},
         consumeSemanticScene(scene) {
             scenes.push(scene);
             order.push("SCENE_CONSUMED");
@@ -100,11 +101,29 @@ const restored = new GlobalEventPresentationRuntimeIntegration(restoredUi, {
     presentationHook: new GlobalEventAdvisorPresentationIntegration(restoredUi)
 });
 assert.equal(restored.reconcileActive().eventId, "EVENT_DEMIHUMAN_TRACES");
-assert.equal(restoredScenes[0].context.firstPresentation, false);
-assert.equal(resolveAdvisorSemanticScene(restoredScenes[0]).advisorEvent, "GLOBAL_EVENT_PRESENTED_BRIEF");
-const payloadText = JSON.stringify(restoredScenes[0]);
+assert.equal(restoredScenes.length, 0, "restore must not replay Advisor speech once FirstRun presentation was recorded");
+assert.equal(restored.isInteractionLocked(), false, "restored GE shell must remain confirmable when Advisor replay is suppressed");
+assert.equal(firstRunState.hasSceneOccurred("GLOBAL_EVENT_DEMIHUMAN_TRACES_ADVISOR_BACKGROUND"), true);
+
+const restoreFreshState = new FirstRunState({ active: true });
+const restoreFreshOrder = [], restoreFreshScenes = [];
+const restoreFreshDock = createAdvisorDock(restoreFreshOrder, restoreFreshScenes);
+const restoreFreshUi = {
+    state: { turn: 7 },
+    engine: { globalEventManager: manager, firstRunState: restoreFreshState },
+    advisorDockComponent: restoreFreshDock
+};
+const restoreFresh = new GlobalEventPresentationRuntimeIntegration(restoreFreshUi, {
+    component: createComponent(restoreFreshOrder),
+    presentationHook: new GlobalEventAdvisorPresentationIntegration(restoreFreshUi)
+});
+assert.equal(restoreFresh.reconcileActive().eventId, "EVENT_DEMIHUMAN_TRACES");
+assert.equal(restoreFreshScenes.length, 1, "restore may present Advisor context when it was never recorded");
+assert.equal(restoreFreshScenes[0].context.firstPresentation, true);
+assert.equal(resolveAdvisorSemanticScene(restoreFreshScenes[0]).advisorEvent, "GLOBAL_EVENT_PRESENTED_FIRST_RUN");
+const payloadText = JSON.stringify(restoreFreshScenes[0]);
 for (const forbidden of ["enemyRoute","ingress","enemyInternalState","trialVerse","enemyTruth"]) assert.equal(payloadText.includes(forbidden), false);
-restoredDock.finish();
+restoreFreshDock.finish();
 
 const failedState = new FirstRunState({ active: true });
 const failedOrder = [], failedScenes = [];
@@ -124,6 +143,44 @@ assert.equal(failedRuntime.isInteractionLocked(), false, "failed Advisor emissio
 assert.equal(failedState.hasSceneOccurred("GLOBAL_EVENT_DEMIHUMAN_TRACES_ADVISOR_BACKGROUND"), false, "failed Advisor emission must not consume FirstRun background occurrence");
 failedRuntime.destroy();
 
+const disabledManager = createManager();
+const disabledDock = createAdvisorDock([], [], { enabled: false });
+const disabledUi = {
+    state: { turn: 7 },
+    engine: { globalEventManager: disabledManager, firstRunState: new FirstRunState({ active: true }) },
+    advisorDockComponent: disabledDock
+};
+const disabledRuntime = new GlobalEventPresentationRuntimeIntegration(disabledUi, {
+    component: createComponent([]),
+    presentationHook: new GlobalEventAdvisorPresentationIntegration(disabledUi)
+});
+disabledManager.emit({ timing: "START", eventId: "EVENT_DEMIHUMAN_TRACES", turn: 7, category: "WARNING", importance: "MAJOR" });
+assert.equal(disabledRuntime.isInteractionLocked(), false, "Advisor disabled must never lock GE confirmation");
+
+const unsubscribableManager = createManager();
+const unsubscribableDock = createAdvisorDock([], [], { subscribe: false });
+const unsubscribableUi = {
+    state: { turn: 7 },
+    engine: { globalEventManager: unsubscribableManager, firstRunState: new FirstRunState({ active: true }) },
+    advisorDockComponent: unsubscribableDock
+};
+const unsubscribableRuntime = new GlobalEventPresentationRuntimeIntegration(unsubscribableUi, {
+    component: createComponent([]),
+    presentationHook: new GlobalEventAdvisorPresentationIntegration(unsubscribableUi)
+});
+unsubscribableManager.emit({ timing: "START", eventId: "EVENT_DEMIHUMAN_TRACES", turn: 7, category: "WARNING", importance: "MAJOR" });
+assert.equal(unsubscribableRuntime.isInteractionLocked(), false, "missing dialogue subscription must fail open");
+
+const browserBootstrap = fs.readFileSync(new URL("../game/index.html", import.meta.url), "utf8");
+assert.match(browserBootstrap, /GlobalEventAdvisorPresentationIntegration/);
+assert.match(browserBootstrap, /noticePresentationHook:\s*globalEventAdvisorPresentation/);
+
+const advisorIntegrationSource = fs.readFileSync(new URL("../game/src/ui/global_event_advisor_presentation_integration.js", import.meta.url), "utf8");
+assert.doesNotMatch(advisorIntegrationSource, /from\s+["'][^"']*(?:warning|investigation|chronicle|enemy_truth)[^"']*["']/i);
+
+unsubscribableRuntime.destroy();
+disabledRuntime.destroy();
+restoreFresh.destroy();
 restored.destroy();
 runtime.destroy();
 console.log("✅ Global Event Advisor / FirstRun Presentation Integration passed");
