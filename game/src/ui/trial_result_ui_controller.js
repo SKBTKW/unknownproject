@@ -188,6 +188,10 @@ export class TrialResultUIController extends BoardAwareUIController {
             });
         }
 
+        // super.resolveCurrentTrialBattle() renders before this projection exists.
+        // Re-render once so the same resolved battle can expose the new read model immediately.
+        this.render();
+
         return {
             ...result,
             battleResolutionSnapshot: snapshot,
