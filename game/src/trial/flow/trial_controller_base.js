@@ -11,6 +11,7 @@ import { GAME_FACT_TYPES, GameFactHub } from "../../core/game_fact.js";
 import { InterceptionPowerResolver } from "../systems/interception_power_resolver.js";
 import { TrialCombatResolver } from "../systems/trial_combat_resolver.js";
 import { TrialBattleSequenceService } from "../systems/trial_battle_sequence_service.js";
+import { BattleResolutionSnapshotFactory } from "../systems/battle_resolution_snapshot_factory.js";
 import { TrialEnemyAdvanceService } from "../systems/trial_enemy_advance_service.js";
 import { TrialHqDamageResolver } from "../systems/trial_hq_damage_resolver.js";
 import { TrialCompletionService } from "../systems/trial_completion_service.js";
@@ -22,6 +23,7 @@ export class TrialController {
         powerResolver = new InterceptionPowerResolver(),
         combatResolver = new TrialCombatResolver(),
         sequenceService = new TrialBattleSequenceService(),
+        battleResolutionSnapshotFactory = new BattleResolutionSnapshotFactory(),
         enemyAdvanceService = new TrialEnemyAdvanceService(),
         damageResolver = new TrialHqDamageResolver(),
         completionService = new TrialCompletionService(),
@@ -34,6 +36,8 @@ export class TrialController {
         this.powerResolver = powerResolver;
         this.combatResolver = combatResolver;
         this.sequenceService = sequenceService;
+        this.battleResolutionSnapshotFactory = battleResolutionSnapshotFactory;
+        this.battleResolutionSnapshots = [];
         this.enemyAdvanceService = enemyAdvanceService;
         this.damageResolver = damageResolver;
         this.completionService = completionService;
@@ -50,6 +54,7 @@ export class TrialController {
 
     startScenario(scenario, { cellResolver = null, useCanonicalDefenseReservation = true } = {}) {
         this.state = createTrialState(scenario);
+        this.battleResolutionSnapshots = [];
         this.cellResolver = typeof cellResolver === "function" ? cellResolver : null;
         this.sessionDefenseReservation = useCanonicalDefenseReservation === false
             ? null
@@ -434,6 +439,7 @@ export class TrialController {
         this.deploymentService?.endSession?.();
         this.sessionDeploymentService = null;
         this.state = null;
+        this.battleResolutionSnapshots = [];
         this.cellResolver = null;
         this.sessionDefenseReservation = null;
     }
@@ -542,6 +548,18 @@ export class TrialController {
         return this.state ? this.state.getBattleResults() : null;
     }
 
+    getBattleResolutionSnapshot(battleIndex) {
+        if (!Number.isInteger(battleIndex) || battleIndex < 0) return null;
+        return this.battleResolutionSnapshots?.[battleIndex] || null;
+    }
+
+    getCurrentBattleResolutionSnapshot() {
+        const battleIndex = this.state?.currentBattleIndex;
+        return Number.isInteger(battleIndex)
+            ? this.getBattleResolutionSnapshot(battleIndex)
+            : null;
+    }
+
     startNextBattle() {
         const startResult = this.sequenceService.startNextBattle(this.state);
         if (!startResult.success) {
@@ -605,13 +623,47 @@ export class TrialController {
             return { success: false, errors: [combatResult.reason || "COMBAT_RESOLUTION_FAILED"] };
         }
 
-        // 3. Complete current battle state via sequenceService
+        // 3. Build the immutable Battle Resolution Snapshot before committing
+        // the RESOLVED battle state. This keeps snapshot failure fail-closed and
+        // prevents Presentation from reconstructing gameplay causality later.
+        const battleIndex = this.state.currentBattleIndex;
+        const scenarioId = this.state.scenarioId || "trial";
+        const trialIndex = Number.isInteger(this.state.trialIndex) ? this.state.trialIndex : 1;
+        const battleId = `${scenarioId}:trial:${trialIndex}:battle:${battleIndex}`;
+        const battleResolutionSnapshot = this.battleResolutionSnapshotFactory.create({
+            battleId,
+            routeId: currentBattle.routeId,
+            battleContext: context,
+            combatResult,
+            actions: [{
+                actionId: `${battleId}:intercept`,
+                type: "INTERCEPT",
+                actor: "HUMAN",
+                target: "ENEMY_FORCE",
+                location: {
+                    r: currentBattle.interceptCell.r,
+                    c: currentBattle.interceptCell.c
+                },
+                timing: "CONTACT",
+                provenance: {
+                    source: "TRIAL_BATTLE_SEQUENCE",
+                    scenarioId: this.state.scenarioId || null,
+                    trialIndex,
+                    battleIndex,
+                    routeId: currentBattle.routeId
+                }
+            }]
+        });
+
+        // 4. Complete current battle state via sequenceService only after the
+        // authoritative snapshot has been created successfully.
         const completionResult = this.sequenceService.completeCurrentBattle(this.state, combatResult);
         if (!completionResult.success) {
             return completionResult;
         }
+        this.battleResolutionSnapshots[battleIndex] = battleResolutionSnapshot;
 
-        // 4. Emit exactly 1 GameFact
+        // 5. Emit exactly 1 GameFact
         const factPayload = {
             scenarioId: this.state.scenarioId || null,
             trialIndex: this.state.trialIndex,
@@ -628,7 +680,8 @@ export class TrialController {
         return {
             success: true,
             battleIndex: this.state.currentBattleIndex,
-            combatResult: completionResult.battleResult
+            combatResult: completionResult.battleResult,
+            battleResolutionSnapshot
         };
     }
 

@@ -7,6 +7,7 @@ import { AdvisorPostTrialScenePresenter } from './advisor/advisor_post_trial_sce
 import { PostTrialInterludeComponent } from './post_trial_interlude_component.js';
 import { PostTrialInterludePresentationBridge } from '../trial/presentation/post_trial_interlude_presentation_bridge.js';
 import { PostTrialInterludeProgressService } from '../trial/systems/post_trial_interlude_progress_service.js';
+import { BattlePresentationRuntimeBridge } from '../trial/presentation/battle_presentation_runtime_bridge.js';
 
 export class TrialResultUIController extends BoardAwareUIController {
     constructor(engine) {
@@ -42,6 +43,8 @@ export class TrialResultUIController extends BoardAwareUIController {
         this.postTrialInterludePresentationBridge = null;
         this.postTrialInterludeProgressService = null;
         this.postTrialInterludeComponent = null;
+        this.battlePresentationRuntimeBridge = new BattlePresentationRuntimeBridge();
+        this.currentBattlePresentationReadModel = null;
         this.configurePostTrialInterlude();
     }
 
@@ -130,6 +133,7 @@ export class TrialResultUIController extends BoardAwareUIController {
     }
 
     startTrialSession(scenario, options = {}) {
+        this.currentBattlePresentationReadModel = null;
         const state = super.startTrialSession(scenario, options);
         this.engine?.trialSessionBoundaryService?.beginTrial?.({
             startVerse: this.state?.turn
@@ -143,6 +147,7 @@ export class TrialResultUIController extends BoardAwareUIController {
     }
 
     stopTrialSession() {
+        this.currentBattlePresentationReadModel = null;
         this.engine?.trialSessionBoundaryService?.abortTrial?.();
         return super.stopTrialSession();
     }
@@ -150,6 +155,58 @@ export class TrialResultUIController extends BoardAwareUIController {
     /** @deprecated Use stopTrialSession(). */
     stopTrialInterceptionPreview() {
         return this.stopTrialSession();
+    }
+
+    startTrialBattle() {
+        const result = super.startTrialBattle();
+        if (result?.success) this.currentBattlePresentationReadModel = null;
+        return result;
+    }
+
+    resolveCurrentTrialBattle() {
+        const result = super.resolveCurrentTrialBattle();
+        if (!result?.success) return result;
+
+        const snapshot = result.battleResolutionSnapshot
+            || this.trialController?.getCurrentBattleResolutionSnapshot?.()
+            || null;
+        if (!snapshot) {
+            this.currentBattlePresentationReadModel = null;
+            return result;
+        }
+
+        try {
+            this.currentBattlePresentationReadModel = this.battlePresentationRuntimeBridge.project(snapshot);
+        } catch {
+            // Presentation is optional and must never roll back or mutate a
+            // successfully resolved battle. Surface an unavailable read model.
+            this.currentBattlePresentationReadModel = Object.freeze({
+                available: false,
+                battleId: snapshot.battleId ?? null,
+                routeId: snapshot.routeId ?? null,
+                reason: "BATTLE_PRESENTATION_PROJECTION_FAILED"
+            });
+        }
+
+        // super.resolveCurrentTrialBattle() renders before this projection exists.
+        // Re-render once so the same resolved battle can expose the new read model immediately.
+        this.render();
+
+        return {
+            ...result,
+            battleResolutionSnapshot: snapshot,
+            battlePresentation: this.currentBattlePresentationReadModel
+        };
+    }
+
+    getCurrentBattlePresentationReadModel() {
+        return this.currentBattlePresentationReadModel;
+    }
+
+    transitionTrialAfterCurrentBattle() {
+        const result = super.transitionTrialAfterCurrentBattle();
+        if (result?.success) this.currentBattlePresentationReadModel = null;
+        return result;
     }
 
     releaseSettledTrialPresentation() {
