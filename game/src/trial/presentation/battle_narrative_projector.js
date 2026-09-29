@@ -25,15 +25,36 @@ function ids(value) {
     return value.filter(id => typeof id === "string" || Number.isInteger(id));
 }
 
+function severityImportance(severity) {
+    switch (severity) {
+    case "CRITICAL": return 100;
+    case "MAJOR": return 80;
+    case "NORMAL": return 60;
+    case "MINOR": return 40;
+    default: return 50;
+    }
+}
+
+function inferredImportance(event) {
+    const explicit = event?.importance ?? event?.priority;
+    if (Number.isFinite(Number(explicit))) return Number(explicit);
+
+    let value = severityImportance(event?.severity);
+    const tags = Array.isArray(event?.tags) ? event.tags : [];
+    if (tags.includes("DANGER")) value += 5;
+    if (tags.includes("FAVORABLE")) value += 3;
+    return value;
+}
+
 function causalRows(snapshot) {
     const rows = [];
     for (const event of snapshot?.causalEvents || []) {
         if (!event || typeof event !== "object") continue;
         rows.push(freezeEvent({
             type: semanticType(event, "CAUSAL_EVENT"),
-            importance: event.importance ?? event.priority ?? 0,
-            sourceCauseIds: ids(event.sourceCauseIds ?? event.causeIds),
-            sourceFactIds: ids(event.sourceFactIds ?? event.factIds),
+            importance: inferredImportance(event),
+            sourceCauseIds: ids(event.sourceCauseIds ?? event.causeIds ?? event.sourceCauses),
+            sourceFactIds: ids(event.sourceFactIds ?? event.factIds ?? event.sourceFacts),
             payload: event.payload ?? event.publicPayload ?? {},
             emphasis: event.emphasis,
             presentationGroup: event.presentationGroup ?? "CAUSALITY"
