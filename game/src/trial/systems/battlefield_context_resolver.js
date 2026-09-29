@@ -1,3 +1,5 @@
+import { BattlefieldCapabilityProjector, familyFromTerrainId } from "./battlefield_capability_projector.js";
+
 function finiteOrNull(value) {
     const numeric = Number(value);
     return Number.isFinite(numeric) ? numeric : null;
@@ -12,12 +14,15 @@ function projectCell(cell) {
     if (!cell) return null;
     const row = Number.isInteger(cell.row) ? cell.row : (Number.isInteger(cell.r) ? cell.r : null);
     const column = Number.isInteger(cell.column) ? cell.column : (Number.isInteger(cell.c) ? cell.c : null);
+    const terrainId = cell.terrainId || cell.terrain?.terrainId || cell.terrain?.id || null;
     return {
         cellId: cell.cellId || cell.id || null,
         row,
         column,
-        terrainId: cell.terrainId || cell.terrain?.terrainId || cell.terrain?.id || null,
-        elevation: finiteOrNull(cell.elevation ?? cell.terrain?.e)
+        terrainId,
+        terrainFamily: familyFromTerrainId(terrainId),
+        elevation: finiteOrNull(cell.elevation ?? cell.e ?? cell.terrain?.e),
+        growthLevel: finiteOrNull(cell.growthLevel ?? cell.gl ?? cell.terrain?.gl)
     };
 }
 
@@ -54,7 +59,12 @@ function projectFutureInputs(input = {}) {
         "formationStretch",
         "commanderPersonality",
         "commandDisruption",
-        "maneuverSemantics"
+        "maneuverSemantics",
+        "zoneContinuity",
+        "terrainDepth",
+        "linkedTerrainNetwork",
+        "tacticalContinuity",
+        "battlefieldObjects"
     ];
     const result = {};
     for (const key of keys) {
@@ -68,9 +78,15 @@ function projectFutureInputs(input = {}) {
  * Hidden Enemy Truth is deliberately not retained in this read model.
  */
 export class BattlefieldContextResolver {
+    constructor({ capabilityProjector = new BattlefieldCapabilityProjector() } = {}) {
+        this.capabilityProjector = capabilityProjector;
+    }
+
     resolve({ battleId = null, routeId = null, battleContext = {}, combatResult = {}, futureInputs = {} } = {}) {
         const interaction = battleContext.enemy?.deployment?.interaction || null;
         const deployment = battleContext.enemy?.deployment?.deployment || null;
+        const interceptTerrain = projectCell(battleContext.interceptCell);
+        const approachTerrain = projectCell(battleContext.approachCell);
 
         const strategicSuppression = finiteOrNull(
             battleContext.enemy?.strategicSuppression
@@ -89,9 +105,13 @@ export class BattlefieldContextResolver {
         return {
             battleId,
             routeId,
-            interceptionLocation: projectCell(battleContext.interceptCell),
-            interceptTerrain: projectCell(battleContext.interceptCell),
-            approachTerrain: projectCell(battleContext.approachCell),
+            interceptionLocation: interceptTerrain,
+            interceptTerrain,
+            approachTerrain,
+            battlefieldCapabilities: {
+                intercept: this.capabilityProjector.project(interceptTerrain),
+                approach: this.capabilityProjector.project(approachTerrain)
+            },
             enemy: {
                 bodySize: interaction?.bodySize
                     || battleContext.enemy?.deployment?.profile?.bodySize

@@ -17,16 +17,19 @@ function normalizeList(value) {
  * Stable semantic snapshot for one normal Trial battle resolution.
  *
  * A owns battlefieldContext through normalOutcome. Later stages may create a
- * new snapshot with the optional B/C fields populated without mutating this
- * instance or changing the causality resolvers.
+ * new snapshot with optional Opportunity/Fortune/Presentation fields populated
+ * without mutating this instance or changing the causality resolvers.
  */
 export function createBattleResolutionSnapshot({
     battleId = null,
     routeId = null,
     battlefieldContext = null,
     initialFacts = [],
+    actions = [],
     causes = [],
     causalEvents = [],
+    consequences = [],
+    battleState = null,
     normalOutcome = null,
     opportunity = null,
     emberCommit = null,
@@ -34,15 +37,20 @@ export function createBattleResolutionSnapshot({
     decisiveEvent = null,
     finalCombatResult = null,
     flavorEvents = [],
-    presentationFacts = []
+    presentationFacts = [],
+    resolutionPhase = null,
+    finalized = false
 } = {}) {
     return deepFreeze({
         battleId,
         routeId,
         battlefieldContext: cloneData(battlefieldContext),
         initialFacts: normalizeList(initialFacts),
+        actions: normalizeList(actions),
         causes: normalizeList(causes),
         causalEvents: normalizeList(causalEvents),
+        consequences: normalizeList(consequences),
+        battleState: cloneData(battleState),
         normalOutcome: cloneData(normalOutcome),
         opportunity: cloneData(opportunity),
         emberCommit: cloneData(emberCommit),
@@ -50,7 +58,35 @@ export function createBattleResolutionSnapshot({
         decisiveEvent: cloneData(decisiveEvent),
         finalCombatResult: cloneData(finalCombatResult),
         flavorEvents: normalizeList(flavorEvents),
-        presentationFacts: normalizeList(presentationFacts)
+        presentationFacts: normalizeList(presentationFacts),
+        resolutionPhase,
+        finalized: finalized === true
+    });
+}
+
+/**
+ * Explicit copy-on-write evolution. Domain facts through normalOutcome are
+ * immutable once established and cannot be replaced by Presentation/lifecycle.
+ */
+export function evolveBattleResolutionSnapshot(snapshot, patch = {}) {
+    if (!snapshot || typeof snapshot !== "object") {
+        throw new TypeError("BATTLE_RESOLUTION_SNAPSHOT_REQUIRED");
+    }
+    return createBattleResolutionSnapshot({
+        ...snapshot,
+        ...cloneData(patch),
+        battleId: snapshot.battleId ?? null,
+        routeId: snapshot.routeId ?? null,
+        battlefieldContext: snapshot.battlefieldContext,
+        initialFacts: snapshot.initialFacts,
+        actions: snapshot.actions,
+        causes: snapshot.causes,
+        causalEvents: snapshot.causalEvents,
+        consequences: snapshot.consequences,
+        battleState: snapshot.battleState,
+        normalOutcome: snapshot.normalOutcome,
+        flavorEvents: patch.flavorEvents ?? snapshot.flavorEvents,
+        presentationFacts: patch.presentationFacts ?? snapshot.presentationFacts
     });
 }
 
