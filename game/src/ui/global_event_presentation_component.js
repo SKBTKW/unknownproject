@@ -37,7 +37,10 @@ export class GlobalEventPresentationComponent {
         root.hidden = true;
         root.setAttribute("role", "dialog");
         root.setAttribute("aria-modal", "true");
-        applyLayout(root, UILayoutConfig.globalEventPresentation?.overlay);
+        // Keep the native hidden attribute effective until a presentation is shown.
+        // An inline display:flex overrides the [hidden] CSS rule.
+        const { display: visibleDisplay, ...overlayLayout } = UILayoutConfig.globalEventPresentation?.overlay || {};
+        applyLayout(root, overlayLayout);
 
         const shell = document.createElement("section");
         shell.className = "ge-presentation-shell";
@@ -61,6 +64,7 @@ export class GlobalEventPresentationComponent {
         this.presentation = presentation;
         this.render();
         this.root.hidden = false;
+        this.root.style.display = UILayoutConfig.globalEventPresentation?.overlay?.display || "flex";
         document.body?.setAttribute?.("data-global-event-presentation", "open");
         queueMicrotask(() => this.root?.querySelector?.("[data-ge-primary-action]")?.focus?.());
         return true;
@@ -153,6 +157,7 @@ export class GlobalEventPresentationComponent {
 
     hide() {
         if (!this.root) return false;
+        this.root.style.removeProperty("display");
         this.root.hidden = true;
         this.shell?.replaceChildren?.();
         this.presentation = null;
