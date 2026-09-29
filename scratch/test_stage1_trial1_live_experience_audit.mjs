@@ -232,7 +232,11 @@ function captureStage1EconomyCheckpoint(engine, seed) {
 function playGrowthRun(seed) {
     const engine = GameEngine.createGame({
         runSeed: seed,
-        firstRun: true
+        firstRun: true,
+        // This audit owns the pre-existing Trial authoring anchor, not the new
+        // Stage1 Board Investment envelope. Keep that baseline isolated here;
+        // 담당A hands the live investment envelope to 담당B separately.
+        cardRuntimeActivationProvider: () => ({ activeCardIds: [] })
     });
     const economyTimeline = [];
 
@@ -240,8 +244,13 @@ function playGrowthRun(seed) {
         economyTimeline.push(captureStage1EconomyCheckpoint(engine, seed));
 
         if (engine.state.hasPickedThisTurn !== true) {
-            const option = chooseGrowthLand(engine);
-            assert.ok(option, `seed ${seed} V${engine.state.turn}: a legal LAND action must exist`);
+            let option = chooseGrowthLand(engine);
+            if (!option && engine.state.hasMulliganedThisTurn !== true && engine.state.ember > 1) {
+                const mulligan = engine.mulligan();
+                assert.equal(mulligan?.success, true);
+                option = chooseGrowthLand(engine);
+            }
+            assert.ok(option, `seed ${seed} V${engine.state.turn}: a legal LAND action must exist after normal Mulligan fallback`);
 
             const card = makeRotatedInstance(option.card, option.placement);
             const placed = engine.placeLand(
