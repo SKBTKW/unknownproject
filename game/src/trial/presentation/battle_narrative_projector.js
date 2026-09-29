@@ -20,6 +20,8 @@ function freezeEvent(event) {
         sourceCauseIds: freezeList(event.sourceCauseIds),
         sourceFactIds: freezeList(event.sourceFactIds),
         derivedFrom: freezeList(event.derivedFrom),
+        whyRefs: freezeList(event.whyRefs),
+        leadsToRefs: freezeList(event.leadsToRefs),
         payload: Object.freeze(cloneData(event.payload || {})),
         emphasis: event.emphasis || null,
         presentationGroup: event.presentationGroup || null
@@ -169,6 +171,27 @@ function orderByProvenance(events) {
     return emitted;
 }
 
+function linkNarrativeGraph(events) {
+    const knownIds = new Set(events.map(event => event.id).filter(Boolean));
+    const dependencies = event => [...new Set([
+        ...(event.sourceAction ? [event.sourceAction] : []),
+        ...event.sourceCauseIds,
+        ...event.derivedFrom
+    ].filter(ref => knownIds.has(ref) && ref !== event.id))];
+
+    return Object.freeze(events.map(event => {
+        const whyRefs = dependencies(event);
+        const leadsToRefs = events
+            .filter(candidate => candidate.id && dependencies(candidate).includes(event.id))
+            .map(candidate => candidate.id);
+        return freezeEvent({
+            ...event,
+            whyRefs,
+            leadsToRefs
+        });
+    }));
+}
+
 function highlightCauses(snapshot, limit = 3) {
     return Object.freeze((snapshot?.causes || [])
         .filter(row => row && typeof row === "object")
@@ -212,12 +235,12 @@ function resultSummary(snapshot) {
 }
 
 function buildFullTimeline(snapshot) {
-    const causal = orderByProvenance([
+    const causal = linkNarrativeGraph(orderByProvenance([
         ...(snapshot.actions || []).map(actionEvent).filter(Boolean),
         ...(snapshot.causes || []).map(causeEvent).filter(Boolean),
         ...(snapshot.causalEvents || []).map(causalEvent).filter(Boolean),
         ...(snapshot.consequences || []).map(consequenceEvent).filter(Boolean)
-    ]);
+    ]));
 
     const events = [];
     const contact = fixedEvent(
@@ -305,6 +328,7 @@ export class BattleNarrativeProjector {
                 fullTimeline: Object.freeze([]),
                 compactTimeline: Object.freeze([]),
                 instantSummary: Object.freeze([]),
+                causalGraph: Object.freeze([]),
                 highlightedCauses: Object.freeze([]),
                 resultSummary: null,
                 gameplay: null
@@ -316,6 +340,12 @@ export class BattleNarrativeProjector {
 
         const highlightedCauses = highlightCauses(snapshot, 3);
         const fullTimeline = buildFullTimeline(snapshot);
+        const causalGraph = Object.freeze(fullTimeline.filter(row =>
+            row.sourceType === "ACTION"
+            || row.sourceType === "CAUSE"
+            || row.sourceType === "CAUSAL_EVENT"
+            || row.sourceType === "CONSEQUENCE"
+        ));
         const compactTimeline = buildCompactTimeline(snapshot, highlightedCauses);
         const instantSummary = buildInstantTimeline(snapshot, highlightedCauses);
         const events = mode === BATTLE_PRESENTATION_MODES.FULL
@@ -344,6 +374,7 @@ export class BattleNarrativeProjector {
             fullTimeline,
             compactTimeline,
             instantSummary,
+            causalGraph,
             highlightedCauses,
             resultSummary: resultSummary(snapshot),
             opportunity: cloneData(snapshot.opportunity ?? null),

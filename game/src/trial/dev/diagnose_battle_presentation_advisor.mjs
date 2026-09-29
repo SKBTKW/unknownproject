@@ -103,6 +103,19 @@ assert.ok(positions.A1 < positions.C1);
 assert.ok(positions.C1 < positions.K1);
 assert.ok(positions.K1 < positions.C2);
 assert.ok(positions.C2 < positions.E1);
+
+const graphById = Object.fromEntries(
+    projections[0].causalGraph.map(row => [row.id, row])
+);
+assert.deepEqual(graphById.C1.whyRefs, ["A1"]);
+assert.deepEqual(graphById.K1.whyRefs, ["C1"]);
+assert.deepEqual(graphById.C2.whyRefs, ["C1", "K1"]);
+assert.deepEqual(graphById.E1.whyRefs, ["C2", "C1", "K1"]);
+assert.ok(graphById.A1.leadsToRefs.includes("C1"));
+assert.ok(graphById.C1.leadsToRefs.includes("K1"));
+assert.ok(graphById.K1.leadsToRefs.includes("C2"));
+assert.ok(graphById.C2.leadsToRefs.includes("E1"));
+
 assert.equal(projections[0].highlightedCauses[0].id, "C2");
 assert.equal(projections[0].resultSummary.battleControl, "REPEL");
 assert.equal(projections[0].chronicleProjection.majorCauseRefs[0], "C2");

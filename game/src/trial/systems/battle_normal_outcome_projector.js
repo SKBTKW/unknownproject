@@ -10,7 +10,7 @@ function hasCause(causes, type) {
 }
 
 export class BattleNormalOutcomeProjector {
-    project({ battlefieldContext = {}, causes = [] } = {}) {
+    project({ battlefieldContext = {}, causes = [], battleState = null } = {}) {
         const reserve = Number(battlefieldContext.enemy?.reserveSuppression) || 0;
         const favorableCauses = causes.filter(row => row?.tags?.includes("FAVORABLE")).map(row => row.type);
         const dangerCauses = causes.filter(row => row?.tags?.includes("DANGER")).map(row => row.type);
@@ -23,6 +23,19 @@ export class BattleNormalOutcomeProjector {
             damageToSuppression: battlefieldContext.combat?.damageToSuppression ?? null,
             remainingSuppression: battlefieldContext.combat?.remainingSuppression ?? null,
             remainingForceSuppression: battlefieldContext.combat?.remainingForceSuppression ?? null,
+
+            engagedPower: {
+                human: battlefieldContext.human?.finalPower ?? null,
+                enemy: battlefieldContext.combat?.enemyFinalPower ?? null
+            },
+            enemyLoss: {
+                suppressionDamage: battlefieldContext.combat?.damageToSuppression ?? null
+            },
+            humanLoss: null,
+            battleControl: battlefieldContext.combat?.outcome || null,
+            postBattleState: cloneData(battleState),
+            exploitationPotential: null,
+
             favorableCauses,
             dangerCauses,
             localAdvantage: hasCause(causes, BATTLE_CAUSE_TYPES.LOCAL_SUPERIORITY),
