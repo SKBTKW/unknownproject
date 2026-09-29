@@ -15,14 +15,18 @@ function projectCell(cell) {
     const row = Number.isInteger(cell.row) ? cell.row : (Number.isInteger(cell.r) ? cell.r : null);
     const column = Number.isInteger(cell.column) ? cell.column : (Number.isInteger(cell.c) ? cell.c : null);
     const terrainId = cell.terrainId || cell.terrain?.terrainId || cell.terrain?.id || null;
+    const e = finiteOrNull(cell.e ?? cell.elevation ?? cell.terrain?.e);
+    const gl = finiteOrNull(cell.gl ?? cell.growthLevel ?? cell.terrain?.gl);
     return {
         cellId: cell.cellId || cell.id || null,
         row,
         column,
         terrainId,
         terrainFamily: familyFromTerrainId(terrainId),
-        elevation: finiteOrNull(cell.elevation ?? cell.e ?? cell.terrain?.e),
-        growthLevel: finiteOrNull(cell.growthLevel ?? cell.gl ?? cell.terrain?.gl)
+        e,
+        gl,
+        elevation: e,
+        growthLevel: gl
     };
 }
 
@@ -62,6 +66,7 @@ function projectFutureInputs(input = {}) {
         "maneuverSemantics",
         "zoneContinuity",
         "terrainDepth",
+        "tacticalDepth",
         "linkedTerrainNetwork",
         "tacticalContinuity",
         "battlefieldObjects"

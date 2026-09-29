@@ -22,6 +22,8 @@ export class BattleConsequenceResolver {
                 consequenceId: consequenceId(BATTLE_CONSEQUENCE_TYPES.SUPPORT_DELAYED, consequences.length),
                 type: BATTLE_CONSEQUENCE_TYPES.SUPPORT_DELAYED,
                 sourceCauses: [cause.causeId || cause.type],
+                sourceFacts: [...(cause.sourceFacts || [])],
+                sourceAction: cause.sourceAction || null,
                 target: cause.target || "ENEMY_FORCE",
                 payload: {
                     mobility: cause.payload?.mobility ?? null,
@@ -32,7 +34,10 @@ export class BattleConsequenceResolver {
                 },
                 persistence: "BATTLE",
                 resolved: true,
-                derivedFrom: [cause.causeId || cause.type]
+                derivedFrom: [cause.causeId || cause.type],
+                severity: cause.severity ?? 1,
+                presentationPriority: cause.presentationPriority ?? 0,
+                tags: [...(cause.tags || [])]
             });
         }
 

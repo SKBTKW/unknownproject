@@ -14,13 +14,29 @@ export class BattleStateProjector {
         const humanPower = Number(battlefieldContext.human?.finalPower);
         const enemyPower = Number(battlefieldContext.combat?.enemyFinalPower);
 
+        const mobility = (
+            interaction.mobility === "DISADVANTAGE"
+            || interaction.equipmentMobility === "DISADVANTAGE"
+            || hasType(causes, BATTLE_CAUSE_TYPES.MOVEMENT_CONSTRAINED)
+        )
+            ? "CONSTRAINED"
+            : (
+                interaction.mobility === "ADVANTAGE"
+                || interaction.equipmentMobility === "ADVANTAGE"
+            )
+                ? "ADVANTAGED"
+                : "NORMAL";
+
         return {
             deployment: interaction.deployment === "SEVERELY_CONSTRAINED"
                 ? "SEVERELY_CONSTRAINED"
                 : hasType(causes, BATTLE_CAUSE_TYPES.DEPLOYMENT_CONSTRAINED)
                     ? "CONSTRAINED"
                     : "NORMAL",
-            cohesion: "ORDERED",
+            mobility,
+            cohesion: hasType(causes, BATTLE_CAUSE_TYPES.VANGUARD_ISOLATED)
+                ? "SHAKEN"
+                : "ORDERED",
             reserveAvailability: reserve > 0 ? "AVAILABLE" : "NONE",
             localSuperiority: Number.isFinite(humanPower) && Number.isFinite(enemyPower)
                 ? (humanPower > enemyPower ? "HUMAN" : humanPower < enemyPower ? "ENEMY" : "EVEN")

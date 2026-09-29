@@ -1214,6 +1214,14 @@
       ]
     },
     {
+      "path": "scratch/test_battle_causality_resolution_domain.mjs",
+      "purpose": "Trial Battle Causality / Resolution Domain actions, consequences, battle state, capability projection, Opportunity provenance, and immutable snapshot ownership",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_trial_causality_presenter.mjs",
       "purpose": "trial causality presenter",
       "suite": "existing",

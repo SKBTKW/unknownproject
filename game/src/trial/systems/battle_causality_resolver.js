@@ -93,7 +93,7 @@ export class BattleCausalityResolver {
         const interaction = battlefieldContext.enemy?.terrainInteraction;
         const movementConstrained = interaction?.mobility === "DISADVANTAGE"
             || interaction?.equipmentMobility === "DISADVANTAGE";
-        if (movementConstrained) {
+        if (movementConstrained && actions.length > 0) {
             causes.push(cause(BATTLE_CAUSE_TYPES.MOVEMENT_CONSTRAINED, {
                 facts: facts.filter(row => ROUGH_TERRAIN_FACTS.has(row.type)),
                 actions,

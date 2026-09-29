@@ -3,10 +3,12 @@ import { EnemyForceTerrainInteractionResolver } from "../game/src/trial/systems/
 import { EnemyForceDeploymentResolver } from "../game/src/trial/systems/enemy_force_deployment_resolver.js";
 import { BattleResolutionSnapshotFactory } from "../game/src/trial/systems/battle_resolution_snapshot_factory.js";
 import { evolveBattleResolutionSnapshot } from "../game/src/trial/domain/battle_resolution_snapshot.js";
+import { createBattleOpportunityState } from "../game/src/trial/domain/battle_opportunity_domain.js";
 import {
     BATTLE_CAUSE_CATEGORIES,
     BATTLE_CAUSE_TYPES,
-    BATTLE_CONSEQUENCE_TYPES
+    BATTLE_CONSEQUENCE_TYPES,
+    BATTLE_FACT_TYPES
 } from "../game/src/trial/domain/battle_causality_types.js";
 
 const interaction = new EnemyForceTerrainInteractionResolver().resolve({
@@ -20,8 +22,8 @@ const deployment = new EnemyForceDeploymentResolver().resolve({
 });
 
 const battleContext = {
-    interceptCell: { cellId: "2:2", r: 2, c: 2, terrainId: "E2_HILL", elevation: 2 },
-    approachCell: { cellId: "2:1", r: 2, c: 1, terrainId: "E0_WETLAND", elevation: 0 },
+    interceptCell: { cellId: "2:2", r: 2, c: 2, terrainId: "E2_HILL", e: 2, gl: 1 },
+    approachCell: { cellId: "2:1", r: 2, c: 1, terrainId: "E0_WETLAND", e: 0, gl: 1 },
     human: { allocatedDefense: 12, baseInterceptionPower: 60 },
     enemy: {
         suppression: deployment.deployedSuppression,
@@ -47,6 +49,16 @@ const combatResult = {
     events: []
 };
 
+const action = {
+    actionId: "action:intercept:0",
+    type: "INTERCEPT",
+    actor: "HUMAN",
+    target: "ENEMY_FORCE",
+    location: "2:2",
+    timing: "CONTACT",
+    provenance: { source: "TRIAL_BATTLE_SEQUENCE" }
+};
+
 const originalRandom = Math.random;
 Math.random = () => { throw new Error("Battle causality domain must not use RNG"); };
 
@@ -57,54 +69,102 @@ try {
         routeId: "route-a",
         battleContext,
         combatResult,
-        actions: [{
-            type: "INTERCEPT",
-            actor: "HUMAN",
-            target: "ENEMY_FORCE",
-            location: "2:2",
-            timing: "CONTACT"
-        }],
-        futureInputs: { formationStretch: "STRETCHED" }
+        actions: [action],
+        futureInputs: {
+            formationStretch: "STRETCHED",
+            zoneContinuity: null,
+            terrainDepth: null,
+            tacticalDepth: null,
+            linkedTerrainNetwork: null
+        }
     });
 } finally {
     Math.random = originalRandom;
 }
 
 assert.equal(snapshot.actions.length, 1);
+assert.equal(snapshot.actions[0].provenance.source, "TRIAL_BATTLE_SEQUENCE");
 assert.equal(snapshot.battlefieldContext.approachTerrain.terrainFamily, "WETLAND");
+assert.equal(snapshot.battlefieldContext.approachTerrain.e, 0);
+assert.equal(snapshot.battlefieldContext.approachTerrain.gl, 1);
+assert.equal(snapshot.battlefieldContext.approachTerrain.elevation, 0);
+assert.equal(snapshot.battlefieldContext.approachTerrain.growthLevel, 1);
 assert.equal(snapshot.battlefieldContext.battlefieldCapabilities.approach.capabilities.footing, "POOR");
 
 const movementCause = snapshot.causes.find(row => row.type === BATTLE_CAUSE_TYPES.MOVEMENT_CONSTRAINED);
 assert.ok(movementCause);
 assert.equal(movementCause.category, BATTLE_CAUSE_CATEGORIES.MOBILITY);
+assert.equal(movementCause.sourceAction, action.actionId);
 
 const supportDelayed = snapshot.consequences.find(row => row.type === BATTLE_CONSEQUENCE_TYPES.SUPPORT_DELAYED);
 assert.ok(supportDelayed);
+assert.equal(supportDelayed.sourceAction, action.actionId);
+assert.ok(supportDelayed.sourceFacts.includes(BATTLE_FACT_TYPES.TERRAIN_WETLAND));
+assert.equal(supportDelayed.severity, movementCause.severity);
+assert.equal(supportDelayed.presentationPriority, movementCause.presentationPriority);
 
 const isolated = snapshot.causes.find(row => row.type === BATTLE_CAUSE_TYPES.VANGUARD_ISOLATED);
 assert.ok(isolated);
 assert.equal(isolated.category, BATTLE_CAUSE_CATEGORIES.COHESION);
 assert.ok(isolated.derivedFrom.includes(supportDelayed.consequenceId));
 
+assert.equal(snapshot.battleState.mobility, "CONSTRAINED");
+assert.equal(snapshot.battleState.cohesion, "SHAKEN");
 assert.equal(snapshot.battleState.supportDelay, "DELAYED");
 assert.equal(snapshot.normalOutcome.engagedPower.human, 75);
 assert.equal(snapshot.normalOutcome.engagedPower.enemy, 45);
 assert.equal(snapshot.normalOutcome.enemyLoss.suppressionDamage, 45);
+assert.equal(snapshot.normalOutcome.damageToSuppression, 45);
 assert.equal(snapshot.normalOutcome.battleControl, "REPEL");
 assert.equal(snapshot.normalOutcome.humanLoss, null);
 assert.equal(snapshot.normalOutcome.exploitationPotential, null);
 assert.equal(JSON.stringify(snapshot).includes("DO_NOT_COPY"), false);
 
-const evolved = evolveBattleResolutionSnapshot(snapshot, {
-    opportunity: {
-        state: "AVAILABLE",
-        eligibility: "ELIGIBLE",
-        normalOutcomeProvenance: { battleId: snapshot.battleId }
-    }
+const contextOnly = new BattleResolutionSnapshotFactory().create({
+    battleId: "trial-1:battle-context-only",
+    routeId: "route-a",
+    battleContext,
+    combatResult,
+    actions: [],
+    futureInputs: { formationStretch: "STRETCHED" }
 });
+assert.equal(contextOnly.causes.some(row => row.type === BATTLE_CAUSE_TYPES.MOVEMENT_CONSTRAINED), false);
+assert.equal(contextOnly.consequences.some(row => row.type === BATTLE_CONSEQUENCE_TYPES.SUPPORT_DELAYED), false);
+assert.equal(contextOnly.causes.some(row => row.type === BATTLE_CAUSE_TYPES.VANGUARD_ISOLATED), false);
+assert.equal(contextOnly.causes.some(row => row.type === BATTLE_CAUSE_TYPES.DEPLOYMENT_CONSTRAINED), true);
+
+const opportunity = createBattleOpportunityState({
+    opportunityId: "battle-opportunity:trial-1:battle-0",
+    battleId: snapshot.battleId,
+    state: "AVAILABLE",
+    eligibility: "ELIGIBLE",
+    normalOutcomeProvenance: { battleId: snapshot.battleId },
+    causalProvenance: {
+        causeIds: snapshot.causes.map(row => row.causeId),
+        consequenceIds: snapshot.consequences.map(row => row.consequenceId)
+    },
+    sourceCauses: snapshot.causes.map(row => row.causeId),
+    emberCommitHook: { status: "UNRESOLVED" },
+    fortuneResultHook: { status: "UNRESOLVED" }
+});
+assert.equal(opportunity.battleId, snapshot.battleId);
+assert.ok(opportunity.sourceCauses.includes(movementCause.causeId));
+assert.ok(opportunity.causalProvenance.consequenceIds.includes(supportDelayed.consequenceId));
+
+const evolved = evolveBattleResolutionSnapshot(snapshot, { opportunity });
 assert.equal(snapshot.opportunity, null);
 assert.equal(evolved.opportunity.state, "AVAILABLE");
 assert.deepEqual(evolved.normalOutcome, snapshot.normalOutcome);
+assert.deepEqual(evolved.actions, snapshot.actions);
+assert.deepEqual(evolved.consequences, snapshot.consequences);
+assert.throws(
+    () => evolveBattleResolutionSnapshot(snapshot, { normalOutcome: { outcome: "MUTATED" } }),
+    /BATTLE_RESOLUTION_A_OWNED_FIELD_IMMUTABLE:normalOutcome/
+);
+assert.throws(
+    () => evolveBattleResolutionSnapshot(snapshot, { unknownField: true }),
+    /BATTLE_RESOLUTION_EVOLVE_FIELD_NOT_ALLOWED:unknownField/
+);
 assert.throws(() => evolved.causes.push({}), TypeError);
 
 console.log("✅ Battle Causality / Resolution Domain focused test PASS");

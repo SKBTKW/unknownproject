@@ -64,13 +64,35 @@ export function createBattleResolutionSnapshot({
     });
 }
 
+const A_OWNED_SNAPSHOT_FIELDS = new Set([
+    "battleId", "routeId", "battlefieldContext", "initialFacts", "actions",
+    "causes", "causalEvents", "consequences", "battleState", "normalOutcome"
+]);
+
+const EVOLVABLE_SNAPSHOT_FIELDS = new Set([
+    "opportunity", "emberCommit", "fortuneRoll", "decisiveEvent",
+    "finalCombatResult", "flavorEvents", "presentationFacts",
+    "resolutionPhase", "finalized"
+]);
+
 /**
- * Explicit copy-on-write evolution. Domain facts through normalOutcome are
- * immutable once established and cannot be replaced by Presentation/lifecycle.
+ * Explicit copy-on-write evolution.
+ * Causality/normal-outcome fields are A-owned once established.
  */
 export function evolveBattleResolutionSnapshot(snapshot, patch = {}) {
     if (!snapshot || typeof snapshot !== "object") {
         throw new TypeError("BATTLE_RESOLUTION_SNAPSHOT_REQUIRED");
+    }
+    if (!patch || typeof patch !== "object" || Array.isArray(patch)) {
+        throw new TypeError("BATTLE_RESOLUTION_PATCH_REQUIRED");
+    }
+    for (const key of Object.keys(patch)) {
+        if (A_OWNED_SNAPSHOT_FIELDS.has(key)) {
+            throw new TypeError(`BATTLE_RESOLUTION_A_OWNED_FIELD_IMMUTABLE:${key}`);
+        }
+        if (!EVOLVABLE_SNAPSHOT_FIELDS.has(key)) {
+            throw new TypeError(`BATTLE_RESOLUTION_EVOLVE_FIELD_NOT_ALLOWED:${key}`);
+        }
     }
     return createBattleResolutionSnapshot({
         ...snapshot,

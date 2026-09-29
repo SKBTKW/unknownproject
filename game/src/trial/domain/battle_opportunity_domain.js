@@ -11,20 +11,26 @@ function cloneData(value) {
  */
 export function createBattleOpportunityState({
     opportunityId = null,
+    battleId = null,
     state = "UNRESOLVED",
     eligibility = "UNRESOLVED",
     normalOutcome = null,
     normalOutcomeProvenance = null,
+    causalProvenance = null,
+    sourceCauses = [],
     emberCommitHook = null,
     fortuneResultHook = null,
     metadata = {}
 } = {}) {
     return Object.freeze({
         opportunityId,
+        battleId,
         state,
         eligibility,
         normalOutcome: cloneData(normalOutcome),
         normalOutcomeProvenance: cloneData(normalOutcomeProvenance),
+        causalProvenance: cloneData(causalProvenance),
+        sourceCauses: Object.freeze([...(Array.isArray(sourceCauses) ? sourceCauses : [])]),
         emberCommitHook: cloneData(emberCommitHook),
         fortuneResultHook: cloneData(fortuneResultHook),
         metadata: cloneData(metadata) || {}

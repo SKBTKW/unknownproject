@@ -11,6 +11,7 @@ export function createBattleAction({
     location = null,
     timing = null,
     metadata = {},
+    provenance = null,
     source = null
 } = {}) {
     return Object.freeze({
@@ -21,7 +22,7 @@ export function createBattleAction({
         location: cloneData(location),
         timing,
         metadata: cloneData(metadata) || {},
-        source: cloneData(source)
+        provenance: cloneData(provenance ?? source)
     });
 }
 
