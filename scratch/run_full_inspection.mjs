@@ -488,6 +488,7 @@ async function main() {
         ["Enemy tactic selection", "node", ["game/src/trial/dev/diagnose_enemy_tactic_selection.mjs"]],
         ["Trial force deployment bridge", "node", ["game/src/trial/dev/diagnose_trial_force_deployment_bridge.mjs"]],
         ["Trial route cost policy", "node", ["game/src/trial/dev/diagnose_trial_route_cost_policy.mjs"]],
+        ["Battle causality domain", "node", ["scratch/test_battle_causality_domain.mjs"]],
         ["Road network foundation", "node", ["scratch/test_road_network_foundation.mjs"]],
         ["Trial route visual semantics", "node", ["scratch/test_trial_route_visual_semantics.mjs"]],
         ["Trial tactical effect board semantics", "node", ["scratch/test_trial_tactical_effect_board_semantics.mjs"]],

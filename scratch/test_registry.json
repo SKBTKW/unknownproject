@@ -499,7 +499,9 @@
       "path": "scratch/test_global_event_advisor_integration.mjs",
       "purpose": "Global Event presented semantic Advisor bridge, FirstRun background dedupe, presentation-only interaction lock, and hidden-info boundary",
       "suite": "existing",
-      "entryPoints": ["scratch/run_full_inspection.mjs"]
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
     },
     {
       "path": "scratch/test_global_event_choice_contract.mjs",
@@ -1198,6 +1200,14 @@
     {
       "path": "scratch/test_trial_board_damage_policy.mjs",
       "purpose": "Trial non-repel outcomes stage Board damage and commit only after settlement",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_battle_causality_domain.mjs",
+      "purpose": "Trial Battle Causality Domain facts, causes, causal events, deterministic snapshot, and hidden-truth boundary",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
