@@ -84,6 +84,7 @@ const combatResult = {
     prediction: { outcome: "REPEL", margin: 30 },
     humanInterception: 75,
     enemySuppression: 45,
+    damageToSuppression: 45,
     reserveSuppression: deployment.reserveSuppression,
     remainingSuppression: 0,
     remainingForceSuppression: deployment.reserveSuppression,
@@ -133,6 +134,7 @@ assert.ok(causeTypes.includes(BATTLE_CAUSE_TYPES.TERRAIN_ADVANTAGE));
 assert.ok(causeTypes.includes(BATTLE_CAUSE_TYPES.LOCAL_SUPERIORITY));
 assert.ok(causeTypes.includes(BATTLE_CAUSE_TYPES.HUMAN_PRESSURE_ADVANTAGE));
 
+assert.equal(snapshot.normalOutcome.damageToSuppression, 45);
 assert.equal(snapshot.normalOutcome.suppression.strategic, 100);
 assert.equal(snapshot.normalOutcome.suppression.deployed, deployment.deployedSuppression);
 assert.equal(snapshot.normalOutcome.suppression.reserve, deployment.reserveSuppression);
