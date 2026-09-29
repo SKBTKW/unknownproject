@@ -829,6 +829,18 @@ async function main() {
         process.exit(1);
     }
 
+    const stage1EconomyEnvelopeOk = await runCommand("node", ["scratch/test_stage1_pretrial_economy_envelope.mjs"]);
+    if (!stage1EconomyEnvelopeOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Stage1 Pre-Trial Economy Envelope) で不合格が検出されました。");
+        process.exit(1);
+    }
+
+    const stage1Trial1BurdenOk = await runCommand("node", ["scratch/test_stage1_trial1_burden_certification.mjs"]);
+    if (!stage1Trial1BurdenOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Stage1 Trial1 Burden Certification) で不合格が検出されました。");
+        process.exit(1);
+    }
+
     const supplementalOk = await runCommand("node", ["scratch/scratch_registry.mjs", "--run", "supplemental"]);
     if (!supplementalOk) {
         console.error("\n[PIPELINE BLOCKED] Supplemental scratch tests failed.");
