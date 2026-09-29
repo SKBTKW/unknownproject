@@ -8,38 +8,69 @@ import { BattleEpithetResolver } from "../presentation/battle_epithet_resolver.j
 
 const snapshot = Object.freeze({
     battleId: "B1",
-    causalEvents: Object.freeze([
+    routeId: "R1",
+    actions: Object.freeze([
+        Object.freeze({ actionId: "A1", type: "INTERCEPT", actor: "HUMAN_FORCE" })
+    ]),
+    causes: Object.freeze([
         Object.freeze({
-            type: "ENEMY_DEPLOYMENT_LIMITED",
-            sourceFacts: ["TERRAIN_WETLAND", "ENEMY_DEPLOYMENT_CONSTRAINED"],
-            sourceCauses: ["DEPLOYMENT_CONSTRAINED"],
-            severity: "MAJOR",
-            tags: ["FAVORABLE", "DEPLOYMENT"],
-            payload: { deploymentRatio: 0.5 }
+            causeId: "C1",
+            type: "MOVEMENT_CONSTRAINED",
+            sourceAction: "A1",
+            sourceFacts: ["TERRAIN_WETLAND"],
+            severity: 2,
+            presentationPriority: 20,
+            payload: { mobility: "DISADVANTAGE" }
         }),
         Object.freeze({
-            type: "HUMAN_LOCAL_SUPERIORITY_ESTABLISHED",
-            sourceFacts: ["HUMAN_LOCAL_POWER_PRESENT", "ENEMY_LOCAL_POWER_PRESENT"],
-            sourceCauses: ["LOCAL_SUPERIORITY"],
-            severity: "NORMAL",
-            tags: ["FAVORABLE", "LOCAL_POWER"],
-            payload: { humanPower: 9, enemyPower: 6 }
-        }),
-        Object.freeze({
-            type: "HUMAN_PRESSURE_MAINTAINED",
-            sourceFacts: [],
-            sourceCauses: ["HUMAN_PRESSURE_ADVANTAGE", "LOCAL_SUPERIORITY"],
-            severity: "NORMAL",
-            tags: ["FAVORABLE", "PRESSURE"],
-            payload: { margin: 3 }
+            causeId: "C2",
+            type: "VANGUARD_ISOLATED",
+            derivedFrom: ["C1", "K1"],
+            severity: 2,
+            presentationPriority: 30,
+            payload: { formationStretch: true }
         })
     ]),
-    normalOutcome: Object.freeze({ outcome: "HUMAN_ADVANTAGE" }),
-    opportunity: Object.freeze({ status: "OPPORTUNITY_PENDING" }),
-    emberCommit: Object.freeze({ amount: 2 }),
-    fortuneRoll: Object.freeze({ die1: 4, die2: 5, total: 9, outcome: "SUCCESS" }),
-    decisiveEvent: Object.freeze({ type: "BREAKTHROUGH" }),
-    finalCombatResult: Object.freeze({ outcome: "VICTORY" }),
+    causalEvents: Object.freeze([
+        Object.freeze({
+            eventId: "E1",
+            type: "ENEMY_VANGUARD_ISOLATED",
+            sourceCauses: ["C2"],
+            derivedFrom: ["C1", "K1"],
+            severity: 2,
+            presentationPriority: 30,
+            payload: {}
+        })
+    ]),
+    consequences: Object.freeze([
+        Object.freeze({
+            consequenceId: "K1",
+            type: "SUPPORT_DELAYED",
+            sourceCauses: ["C1"],
+            resultingState: { supportDelay: "DELAYED" }
+        })
+    ]),
+    battleState: Object.freeze({ supportDelay: "DELAYED", cohesion: "ORDERED" }),
+    normalOutcome: Object.freeze({
+        outcome: "REPEL",
+        battleControl: "REPEL",
+        enemyLoss: { suppressionDamage: 45 },
+        humanLoss: null,
+        reserveState: "HELD_BACK",
+        postBattleState: { supportDelay: "DELAYED" }
+    }),
+    opportunity: Object.freeze({
+        opportunityId: "battle-opportunity:B1",
+        available: true,
+        emberCost: 2,
+        commitReady: true,
+        declined: false,
+        resolved: false
+    }),
+    emberCommit: Object.freeze({ paidCost: 2, committed: true }),
+    fortuneRoll: Object.freeze({ die1: 4, die2: 5, total: 9, result: "NORMAL_OUTCOME_MAINTAINED" }),
+    decisiveEvent: null,
+    finalCombatResult: Object.freeze({ outcome: "REPEL" }),
     hidden: Object.freeze({
         trueEnemyState: Object.freeze({ reserves: 99 }),
         rngState: "secret"
@@ -47,35 +78,62 @@ const snapshot = Object.freeze({
     flavorEvents: Object.freeze([
         Object.freeze({ id: "F1", type: "BATTLE_FLAVOR", payload: { key: "FLAG_HELD" }, gameplayImpact: true })
     ]),
-    resultEpithetKey: "TRIAL_EPITHET_TURNING_POINT"
+    presentationFacts: Object.freeze([
+        Object.freeze({ type: "BATTLE_EPITHET", key: "TRIAL_EPITHET_TURNING_POINT" })
+    ])
 });
 
 const before = JSON.stringify(snapshot);
 const projector = new BattleNarrativeProjector();
 const projections = Object.values(BATTLE_PRESENTATION_MODES).map(mode => projector.project(snapshot, { mode }));
 for (const projection of projections) {
-    assert.deepEqual(projection.gameplay.finalCombatResult, snapshot.finalCombatResult);
+    assert.deepEqual(projection.gameplay.causes, snapshot.causes);
+    assert.deepEqual(projection.gameplay.consequences, snapshot.consequences);
+    assert.deepEqual(projection.gameplay.normalOutcome, snapshot.normalOutcome);
+    assert.deepEqual(projection.gameplay.opportunity, snapshot.opportunity);
     assert.deepEqual(projection.gameplay.fortuneRoll, snapshot.fortuneRoll);
+    assert.deepEqual(projection.gameplay.finalCombatResult, snapshot.finalCombatResult);
 }
 assert.ok(projections[0].events.length >= projections[1].events.length);
 assert.ok(projections[1].events.length >= projections[2].events.length);
 
-const fullCausal = projections[0].events.filter(event => event.presentationGroup === "CAUSALITY");
-assert.equal(fullCausal[0].type, "ENEMY_DEPLOYMENT_LIMITED");
-assert.deepEqual(fullCausal[0].sourceCauseIds, ["DEPLOYMENT_CONSTRAINED"]);
-assert.deepEqual(fullCausal[0].sourceFactIds, ["TERRAIN_WETLAND", "ENEMY_DEPLOYMENT_CONSTRAINED"]);
-assert.ok(fullCausal[0].importance > fullCausal[1].importance);
+const full = projections[0].fullTimeline;
+const positions = Object.fromEntries(full.filter(row => row.id).map((row, index) => [row.id, index]));
+assert.ok(positions.A1 < positions.C1);
+assert.ok(positions.C1 < positions.K1);
+assert.ok(positions.K1 < positions.C2);
+assert.ok(positions.C2 < positions.E1);
+assert.equal(projections[0].highlightedCauses[0].id, "C2");
+assert.equal(projections[0].resultSummary.battleControl, "REPEL");
+assert.equal(projections[0].chronicleProjection.majorCauseRefs[0], "C2");
 
 const state = new BattlePresentationState();
 state.restoreFromSnapshot(snapshot);
 assert.equal(state.opportunityPanelOpen, true);
-state.closeOpportunityPanel();
-assert.equal(snapshot.opportunity.status, "OPPORTUNITY_PENDING");
-state.skipToResult();
-assert.equal(JSON.stringify(snapshot), before);
-state.startReplay();
-assert.equal(state.markAdvisorScenePlayed("X", "1"), true);
-assert.equal(state.markAdvisorScenePlayed("X", "1"), false);
+state.advanceNarrative();
+state.markSemanticEventEmitted("TRIAL_NORMAL_RESULT:B1");
+state.markPresentationPhaseComplete("NORMAL_RESULT");
+state.markFlavorViewed("F1");
+state.markAdvisorScenePlayed("TRIAL_NORMAL_RESULT", "B1");
+const saved = state.serialize();
+
+const restored = new BattlePresentationState();
+restored.restoreFromSnapshot(snapshot, saved);
+assert.equal(restored.presentationCursor, 1);
+assert.equal(restored.markSemanticEventEmitted("TRIAL_NORMAL_RESULT:B1"), false);
+assert.equal(restored.markAdvisorScenePlayed("TRIAL_NORMAL_RESULT", "B1"), false);
+assert.equal(restored.markFlavorViewed("F1"), false);
+
+const beforeSkip = JSON.stringify(snapshot);
+restored.skipToResult();
+restored.setFastForward(true);
+restored.startReplay();
+assert.equal(JSON.stringify(snapshot), beforeSkip);
+
+assert.throws(
+    () => restored.bindSnapshot({ battleId: "B2", routeId: "R2" }),
+    /BATTLE_PRESENTATION_BATTLE_MISMATCH/
+);
 
 const dice = createResolvedBattleDicePresentation(snapshot);
 assert.equal(dice.available, true);
@@ -84,18 +142,23 @@ assert.equal(dice.result.total, 9);
 
 const advisor = new TrialBattleAdvisorSemanticProvider();
 const publicPayload = advisor.project({
-    sceneId: TRIAL_BATTLE_ADVISOR_HOOKS.DECISIVE_RESULT,
+    sceneId: TRIAL_BATTLE_ADVISOR_HOOKS.NORMAL_RESULT,
     snapshot: {
         ...snapshot,
-        finalCombatResult: { outcome: "VICTORY", trueEnemyState: { reserves: 3 }, rngState: "secret" }
+        normalOutcome: {
+            ...snapshot.normalOutcome,
+            trueEnemyState: { reserves: 3 },
+            rngState: "secret"
+        }
     }
 });
-assert.equal(publicPayload.finalCombatResult.trueEnemyState, undefined);
-assert.equal(publicPayload.finalCombatResult.rngState, undefined);
+assert.equal(publicPayload.normalOutcome.trueEnemyState, undefined);
+assert.equal(publicPayload.normalOutcome.rngState, undefined);
+assert.equal(advisor.projectOptional({ sceneId: "UNKNOWN", snapshot }), null);
 
 const flavors = new BattleFlavorResolver().resolve(snapshot);
 assert.equal(flavors[0].gameplayImpact, false);
 assert.equal(new BattleEpithetResolver().resolve(snapshot), "TRIAL_EPITHET_TURNING_POINT");
 assert.equal(JSON.stringify(snapshot), before);
 
-console.log("Battle Presentation / Advisor focused diagnostic: PASS");
+console.log("Battle Presentation / Advisor reconciled focused diagnostic: PASS");

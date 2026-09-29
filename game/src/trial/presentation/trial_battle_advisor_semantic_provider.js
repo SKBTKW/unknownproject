@@ -10,6 +10,8 @@ const FORBIDDEN_PUBLIC_KEYS = new Set([
     "enemyintent",
     "enemyobjective",
     "enemytarget",
+    "unseenequipment",
+    "undiscoveredinvestigation",
     "internalrng",
     "gameplayrandom",
     "randomseed",
@@ -39,10 +41,12 @@ export const TRIAL_BATTLE_ADVISOR_HOOKS = Object.freeze({
     BATTLEFIELD_READ: ADVISOR_SCENES.TRIAL_BATTLEFIELD_READ,
     CAUSAL_ADVANTAGE: ADVISOR_SCENES.TRIAL_CAUSAL_ADVANTAGE,
     CAUSAL_DANGER: ADVISOR_SCENES.TRIAL_CAUSAL_DANGER,
+    TURNING_POINT: ADVISOR_SCENES.TRIAL_BATTLE_TURNING_POINT,
     OPPORTUNITY: ADVISOR_SCENES.TRIAL_OPPORTUNITY,
     FORTUNE_SUCCESS: ADVISOR_SCENES.TRIAL_FORTUNE_SUCCESS,
     FORTUNE_MISSED: ADVISOR_SCENES.TRIAL_FORTUNE_MISSED,
-    DECISIVE_RESULT: ADVISOR_SCENES.TRIAL_DECISIVE_RESULT
+    DECISIVE_RESULT: ADVISOR_SCENES.TRIAL_DECISIVE_RESULT,
+    NORMAL_RESULT: ADVISOR_SCENES.TRIAL_NORMAL_RESULT
 });
 
 export class TrialBattleAdvisorSemanticProvider {
@@ -53,7 +57,9 @@ export class TrialBattleAdvisorSemanticProvider {
         return Object.freeze({
             sceneId,
             battleId: snapshot.battleId ?? snapshot.id ?? null,
+            routeId: snapshot.routeId ?? null,
             normalOutcome: sanitize(snapshot.normalOutcome ?? null),
+            battleState: sanitize(snapshot.battleState ?? null),
             finalCombatResult: sanitize(snapshot.finalCombatResult ?? null),
             opportunity: sceneId === ADVISOR_SCENES.TRIAL_OPPORTUNITY
                 ? sanitize(snapshot.opportunity ?? null) : null,
@@ -65,6 +71,14 @@ export class TrialBattleAdvisorSemanticProvider {
                 ? sanitize(snapshot.decisiveEvent ?? null) : null,
             narrativeEvent: sanitize(narrativeEvent)
         });
+    }
+
+    projectOptional(args = {}) {
+        try {
+            return this.project(args);
+        } catch {
+            return null;
+        }
     }
 }
 
