@@ -20,6 +20,7 @@ export class BattleNormalOutcomeProjector {
             margin: battlefieldContext.combat?.margin ?? null,
             humanFinalPower: battlefieldContext.human?.finalPower ?? null,
             enemyFinalPower: battlefieldContext.combat?.enemyFinalPower ?? null,
+            damageToSuppression: battlefieldContext.combat?.damageToSuppression ?? null,
             remainingSuppression: battlefieldContext.combat?.remainingSuppression ?? null,
             remainingForceSuppression: battlefieldContext.combat?.remainingForceSuppression ?? null,
             favorableCauses,

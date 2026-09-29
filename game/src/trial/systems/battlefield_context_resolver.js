@@ -112,6 +112,7 @@ export class BattlefieldContextResolver {
                 enemyFinalPower: finiteOrNull(combatResult.enemy?.finalPower ?? combatResult.enemySuppression),
                 margin: finiteOrNull(combatResult.prediction?.margin),
                 outcome: combatResult.prediction?.outcome || null,
+                damageToSuppression: finiteOrNull(combatResult.damageToSuppression),
                 remainingSuppression: finiteOrNull(combatResult.remainingSuppression),
                 remainingForceSuppression: finiteOrNull(
                     combatResult.remainingForceSuppression
