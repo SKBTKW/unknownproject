@@ -7,6 +7,7 @@ import {
 } from "../game/src/ui/global_event_presentation_runtime_state.js";
 import { GlobalEventPresentationRuntimeIntegration } from "../game/src/ui/global_event_presentation_runtime_integration.js";
 import { UILayoutConfig } from "../game/src/ui/layout_config.js";
+import { GlobalEventPresentationComponent } from "../game/src/ui/global_event_presentation_component.js";
 import { projectGlobalEventChoiceToCommonPresentation } from "../game/src/presentation/global_event/global_event_choice_presentation_adapter.js";
 
 const commonRuntimeSource = fs.readFileSync(new URL("../game/src/ui/global_event_presentation_runtime_integration.js", import.meta.url), "utf8");
@@ -148,6 +149,43 @@ assert.equal(UILayoutConfig.globalEventPresentation.advisorOverlapSafeArea, "IMA
 const css = fs.readFileSync(new URL("../game/css/0_global_common/global_event_presentation.css", import.meta.url), "utf8");
 assert.match(css, /body\[data-global-event-presentation="open"\]/);
 assert.doesNotMatch(css, /!important/);
+
+// The overlay is mounted on startup, before any event has been presented.
+// Its hidden attribute must not be overridden by an inline display value.
+function element() {
+    return {
+        style: { removeProperty(key) { delete this[key]; } },
+        dataset: {},
+        children: [],
+        hidden: false,
+        appendChild(child) { this.children.push(child); },
+        replaceChildren(...children) { this.children = children; },
+        setAttribute() {},
+        addEventListener() {},
+        removeEventListener() {},
+        querySelector() { return null; }
+    };
+}
+const priorDocument = globalThis.document;
+const body = element();
+body.removeAttribute = () => {};
+globalThis.document = { body, createElement: () => element() };
+try {
+    const surface = new GlobalEventPresentationComponent();
+    assert.equal(surface.mount(), true);
+    assert.equal(surface.root.hidden, true);
+    assert.equal(surface.root.style.display, undefined, "hidden overlay cannot have inline display:flex");
+    surface.show({ title: "Event", actions: [{ id: "CONFIRM", label: "Confirm", primary: true }] });
+    assert.equal(surface.root.hidden, false);
+    assert.equal(surface.root.style.display, "flex");
+    surface.hide();
+    assert.equal(surface.root.hidden, true);
+    assert.equal(surface.root.style.display, undefined, "dismissed overlay must stop intercepting input");
+    surface.destroy();
+} finally {
+    if (priorDocument === undefined) delete globalThis.document;
+    else globalThis.document = priorDocument;
+}
 
 restored.destroy();
 unknownRuntime.destroy();
