@@ -1230,6 +1230,14 @@
       ]
     },
     {
+      "path": "scratch/test_battle_presentation_runtime_integration.mjs",
+      "purpose": "Trial flow creates immutable Battle Resolution Snapshot before state commit and exposes it to presentation runtime without cross-battle contamination",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_trial_causality_presenter.mjs",
       "purpose": "trial causality presenter",
       "suite": "existing",
