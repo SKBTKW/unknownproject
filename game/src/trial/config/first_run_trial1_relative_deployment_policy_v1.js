@@ -1,8 +1,9 @@
 export const FIRST_RUN_TRIAL1_RELATIVE_DEPLOYMENT_POLICY_V1 = Object.freeze({
-    baseShare: 0.30,
-    defenseShareWeight: 0.45,
+    baseShare: 0.20,
+    defenseShareWeight: 0.35,
     distanceShareWeight: 0.10,
-    maxShare: 0.80,
+    foodShareBonus: 0.08,
+    maxShare: 0.70,
     stage1MaxDistance: 4
 });
 
@@ -43,9 +44,9 @@ export function resolveFirstRunTrial1DeploymentBurdenShare({
  * FirstRun Trial1-only deployment cost resolver.
  *
  * This policy intentionally derives food/material cost from the live balances
- * rather than fixed absolute coefficients. Stage1 economy varies enough across
- * valid runs that a single linear profile cannot hold the intended dramatic
- * 70-80% heavy-mobilization band consistently.
+ * rather than fixed absolute coefficients. Its burden is calibrated alongside
+ * the paid Stage1 board investments, so the deployment share alone is not the
+ * total pre-Trial resource conversion target.
  *
  * Composition owns applicability. The resolver still fail-closes for any
  * non-Trial1 context so it cannot silently become a later-Trial balance rule.
@@ -81,13 +82,15 @@ export function createFirstRunTrial1RelativeDeploymentCostResolver({
             distance: travel,
             policy
         });
+        const foodShare = Math.min(1, burdenShare + Math.max(0, Number(policy.foodShareBonus) || 0));
 
         return {
-            food: Math.ceil(food * burdenShare),
+            food: Math.ceil(food * foodShare),
             material: Math.ceil(material * burdenShare),
             breakdown: {
                 mode: "FIRST_RUN_TRIAL1_RELATIVE_V1",
                 burdenShare,
+                foodShare,
                 requestedDefense: defense,
                 defenseAvailable,
                 defenseFraction: defenseAvailable > 0 ? Math.min(1, defense / defenseAvailable) : 0,

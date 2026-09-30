@@ -12,7 +12,7 @@ const EVENT_PUBLIC_PRESENTATION_CONTRACTS = Object.freeze({
     EVENT_DEMIHUMAN_TRACES: Object.freeze({
         presentationMode: "NOTICE",
         actionKind: "CONFIRM",
-        assetReference: null
+        assetReference: "./assets/events/unknown_traces.svg"
     })
 });
 

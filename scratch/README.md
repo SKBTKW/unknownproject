@@ -104,4 +104,4 @@ node scratch/scratch_registry.mjs --run quarantined
 
 ## Dormant COMMAND runtime
 
-Current runtime policy activates only `LAND` and `INVESTIGATION`. Legacy `COMMAND` definitions remain in data for restore/reference compatibility but are not live Offering/execution targets. The runtime gate is already covered by `test_investigation_game_engine_attach.mjs` and `test_all_modules.mjs`; supplemental checks do not duplicate it. `test_reclaimed_land.mjs` retains only restored-terrain compatibility semantics.
+Current runtime policy activates `LAND`, `INVESTIGATION`, and four completed Stage1 Board Investment IDs (`CMD_WETLAND_RECLAMATION`, `CMD_LOGGING_CAMP`, `CMD_GRANARY`, `CMD_AGRICULTURAL_REFORM`). Other legacy `COMMAND` definitions remain in data for restore/reference compatibility and are not live Offering/execution targets. `test_card_runtime_id_scoped_activation.mjs` guards the ID allowlist; `test_reclaimed_land.mjs` retains restored-terrain compatibility semantics.

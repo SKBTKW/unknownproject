@@ -21,10 +21,6 @@ const TRIAGE = Object.freeze({
         "CMD_REKINDLE_EMBER"
     ]),
     REWORK_BEFORE_RETURN: Object.freeze([
-        "CMD_WETLAND_RECLAMATION",
-        "CMD_LOGGING_CAMP",
-        "CMD_GRANARY",
-        "CMD_AGRICULTURAL_REFORM",
         "CMD_PASTORAL_FARM",
         "CMD_VIGILANCE",
         "CMD_MEDITATION"
@@ -49,7 +45,7 @@ const dormantStage1 = authoredStage1.filter(card => !isCardRuntimeActive(card));
 const dormantIds = dormantStage1.map(card => card.id).sort();
 const triagedIds = Object.values(TRIAGE).flat().sort();
 
-assert.equal(dormantIds.length, 15, "Stage1 dormant authored non-LAND baseline changed; revisit triage");
+assert.equal(dormantIds.length, 11, "Stage1 dormant authored non-LAND baseline changed; revisit triage");
 assert.deepEqual(
     triagedIds,
     dormantIds,
