@@ -88,8 +88,36 @@ if (verse1Placement) {
     check(engine.state.hasPickedThisTurn === true, "Verse1 placement consumes the Verse action");
 }
 
+const paidBoardInvestmentIds = new Set([
+    "CMD_LOGGING_CAMP", "CMD_GRANARY", "CMD_AGRICULTURAL_REFORM", "CMD_WETLAND_RECLAMATION"
+]);
+let paidBoardInvestments = 0;
+
 function playNormalLandActionIfAvailable() {
     if (engine.state.hasPickedThisTurn === true) return { skipped: true, reason: "ACTION_ALREADY_USED" };
+    for (let index = 0; index < (engine.state.handOffering || []).length; index += 1) {
+        const card = engine.state.handOffering[index];
+        const definition = card?.terrain || card;
+        const id = card?.cardMasterId || definition?.id;
+        if (!paidBoardInvestmentIds.has(id) || id === "CMD_WETLAND_RECLAMATION") continue;
+        const quote = engine.getCommandCardExecutionCost(card);
+        if (quote?.success === false) continue;
+        const cost = quote?.resources || card?.cost || {};
+        if ((Number(cost.food) || 0) > engine.state.food
+            || (Number(cost.wood ?? cost.material) || 0) > engine.state.wood
+            || (Number(cost.mystic) || 0) > engine.state.mystic
+            || (Number(cost.ember) || 0) > engine.state.ember) continue;
+        const targets = engine.commandCardRequiresTarget(card)
+            ? engine.getCommandCardExecutionTargets(card) : [null];
+        if (!Array.isArray(targets) || targets.length === 0) continue;
+        const beforeMaterial = engine.state.wood;
+        const result = engine.playCommandCard(card, { type: "OFFERING", index }, targets[0]);
+        if (result?.success === true) {
+            check(engine.state.wood < beforeMaterial, `Verse ${engine.state.turn} Board Investment pays material through GameEngine`);
+            paidBoardInvestments += 1;
+            return result;
+        }
+    }
     const placement = findLegalLandPlacement();
     if (!placement) return { skipped: true, reason: "NO_LEGAL_LAND" };
     return engine.placeLand(
@@ -132,6 +160,7 @@ check(
 );
 
 advanceTo(7);
+check(paidBoardInvestments > 0, "FirstRun Stage1 uses at least one paid Board Investment before Trial1");
 check(engine.state.turn === 7, "TurnLifecycle reaches Verse7 through nextTurn()");
 check(engine.state.investigationUnlocked === true, "Verse7 traces unlock Investigation through GE lifecycle");
 check(engine.state.investigationUnlockedAtVerse === 7, "Investigation unlock records Verse7");

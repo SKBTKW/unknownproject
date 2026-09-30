@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 360" role="img" aria-label="Disturbed earth and broken branches at dusk">
+  <defs>
+    <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#101b23"/><stop offset=".65" stop-color="#314047"/><stop offset="1" stop-color="#55483b"/></linearGradient>
+    <linearGradient id="earth" x2="0" y2="1"><stop stop-color="#323b34"/><stop offset="1" stop-color="#171c1b"/></linearGradient>
+    <radialGradient id="mist"><stop stop-color="#c3ac85" stop-opacity=".28"/><stop offset="1" stop-color="#c3ac85" stop-opacity="0"/></radialGradient>
+  </defs>
+  <path fill="url(#sky)" d="M0 0h960v360H0z"/>
+  <path fill="#172927" d="M0 193q125-80 247-21t256-20q100-36 207 16t250-22v214H0z"/>
+  <path fill="url(#earth)" d="M0 268q220-51 398 21t562-31v102H0z"/>
+  <ellipse cx="539" cy="224" rx="430" ry="115" fill="url(#mist)"/>
+  <g fill="none" stroke="#0c1718" stroke-linecap="round">
+    <path stroke-width="17" d="M76 360Q132 209 175 28M173 192Q106 98 30 58M145 260Q249 136 334 105M826 360Q794 206 841 0M811 213Q714 92 637 66M816 184Q882 100 940 76"/>
+    <path stroke-width="7" d="M140 174l-74-90m102 41L224 42m42 100l60-90M792 151l-75-90m117 59l91-92"/>
+  </g>
+  <g fill="#0a1415" opacity=".92"><path d="m478 286 17-8 13 8-4 13-20 3zM503 270l5-9 6 5-2 9zM518 269l6-8 6 6-4 8zM533 275l7-7 5 8-7 7zM397 325l19-8 12 7-5 13-21 3zM421 309l6-10 7 6-3 9zM437 307l6-10 7 6-4 9zM451 314l7-9 6 8-6 8z"/></g>
+  <g fill="none" stroke="#a49070" stroke-width="3" opacity=".6"><path d="m327 275 74 9 33-21m136 25 102-21 31-37"/><path d="m651 267 49-7m-35 11 47-26"/></g>
+  <path fill="#0a1113" opacity=".42" d="M0 0h960v360H0z"/>
+</svg>

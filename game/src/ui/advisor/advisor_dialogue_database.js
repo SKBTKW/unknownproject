@@ -16,7 +16,9 @@ export const ADVISOR_EVENTS = Object.freeze({
     FIRST_LINK_COMPLETED: "FIRST_LINK_COMPLETED", LINK_COMPLETED: "LINK_COMPLETED",
     BOARD_FRAGMENTED: "BOARD_FRAGMENTED", CONNECTION_HEALTHY: "CONNECTION_HEALTHY",
     MAJOR_DEVELOPMENT: "MAJOR_DEVELOPMENT", STABLE_OVERALL: "STABLE_OVERALL", GENERAL_AMBIENT: "GENERAL_AMBIENT",
-    MILITARY_ACTION: "MILITARY_ACTION", GLOBAL_EVENT_SURVIVAL: "GLOBAL_EVENT_SURVIVAL"
+    MILITARY_ACTION: "MILITARY_ACTION", GLOBAL_EVENT_SURVIVAL: "GLOBAL_EVENT_SURVIVAL",
+    GLOBAL_EVENT_PRESENTED_FIRST_RUN: "GLOBAL_EVENT_PRESENTED_FIRST_RUN",
+    GLOBAL_EVENT_PRESENTED_BRIEF: "GLOBAL_EVENT_PRESENTED_BRIEF"
 });
 
 // Character lines describe only facts and implications available to the active Advisor.
@@ -28,6 +30,11 @@ export const ADVISOR_DIALOGUES = Object.freeze([
     { event: ADVISOR_EVENTS.TRIAL_START, personality: "stern", priority: 100, cooldownMs: Infinity, durationMs: 5200, lineKeys: ["UI_ADVISOR_DIALOGUE_TRIAL_START"] },
     { event: ADVISOR_EVENTS.TRIAL_END, personality: "stern", priority: 90, cooldownMs: Infinity, durationMs: 4200, lineKeys: ["UI_ADVISOR_DIALOGUE_TRIAL_END"] },
     { event: ADVISOR_EVENTS.TRIAL_PLAN_CONFIRMED, personality: "stern", priority: 70, cooldownMs: 1000, durationMs: 3600, lineKeys: ["UI_ADVISOR_DIALOGUE_PLAN_CONFIRMED"] },
+    { event: ADVISOR_EVENTS.GLOBAL_EVENT_PRESENTED_FIRST_RUN, personality: "stern", priority: 98, cooldownMs: Infinity, durationMs: 5200,
+        segmentGroups: [["UI_ADVISOR_DIALOGUE_DEMIHUMAN_TRACES_FIRST_1", "UI_ADVISOR_DIALOGUE_DEMIHUMAN_TRACES_FIRST_2"]],
+        lineKeys: ["UI_ADVISOR_DIALOGUE_DEMIHUMAN_TRACES_FIRST_1"] },
+    { event: ADVISOR_EVENTS.GLOBAL_EVENT_PRESENTED_BRIEF, personality: "stern", policyKey: "survival", priority: 86, cooldownMs: 0, durationMs: 3000,
+        lineKeys: ["UI_ADVISOR_DIALOGUE_DEMIHUMAN_TRACES_BRIEF"] },
     { event: ADVISOR_EVENTS.FIRST_RUN_TRIAL_ROUTE, personality: "stern", priority: 96, cooldownMs: Infinity, durationMs: 3600, lineKeys: ["UI_ADVISOR_DIALOGUE_FIRST_RUN_TRIAL_ROUTE"] },
     { event: ADVISOR_EVENTS.FIRST_RUN_TRIAL_TERRAIN, personality: "stern", priority: 95, cooldownMs: Infinity, durationMs: 3800, lineKeys: ["UI_ADVISOR_DIALOGUE_FIRST_RUN_TRIAL_TERRAIN"] },
     { event: ADVISOR_EVENTS.FIRST_RUN_TRIAL_DEFENSE, personality: "stern", priority: 94, cooldownMs: Infinity, durationMs: 3600, lineKeys: ["UI_ADVISOR_DIALOGUE_FIRST_RUN_TRIAL_DEFENSE"] },

@@ -29,7 +29,8 @@ const PROTOTYPE = Object.freeze([
     "CMD_REKINDLE_EMBER",
     "CMD_GRANARY",
     "CMD_WETLAND_RECLAMATION",
-    "CMD_AGRICULTURAL_REFORM"
+    "CMD_AGRICULTURAL_REFORM",
+    "CMD_LOGGING_CAMP"
 ]);
 const SUPPORT = Object.freeze([
     "CMD_RATIONING",
@@ -37,7 +38,6 @@ const SUPPORT = Object.freeze([
     "CMD_ABANDONED_SETTLEMENT"
 ]);
 const BLOCKED = Object.freeze([
-    "CMD_LOGGING_CAMP",
     "CMD_PASTORAL_FARM",
     "CMD_MILITARY_FOCUS",
     "CMD_FILL_THE_VOID",
@@ -63,8 +63,18 @@ assert.deepEqual(
     ["LAND", "INVESTIGATION"],
     "audit must not silently reactivate legacy categories"
 );
+const LIVE_BOARD_INVESTMENTS = new Set([
+    "CMD_GRANARY",
+    "CMD_WETLAND_RECLAMATION",
+    "CMD_AGRICULTURAL_REFORM",
+    "CMD_LOGGING_CAMP"
+]);
 for (const id of PROTOTYPE) {
-    assert.equal(isCardRuntimeActive(byId.get(id)), false, `${id} remains dormant until an explicit activation change`);
+    assert.equal(
+        isCardRuntimeActive(byId.get(id)),
+        LIVE_BOARD_INVESTMENTS.has(id),
+        `${id} runtime activation must match the Stage1 completion disposition`
+    );
 }
 
 {
@@ -213,10 +223,13 @@ for (const id of ["CMD_RATIONING", "CMD_EMERGENCY_LEVY", "CMD_REKINDLE_EMBER", "
 
 {
     const card = byId.get("CMD_GRANARY");
-    assert.equal(card.cost.wood, 20);
+    assert.deepEqual(card.cost, {});
+    assert.equal(card.reqWood, undefined);
     assert.equal(card.reqPlains, undefined);
     assert.ok(effect("CMD_GRANARY", "DOMAIN_ACTION",
-        item => item.action === "CREATE_SPECIAL_BLOCK" && item.blockType === "GRANARY"));
+        item => item.action === "CREATE_SPECIAL_BLOCK"
+            && item.blockType === "GRANARY"
+            && item.paymentMode === "DOMAIN_QUOTE"));
     assert.ok(
         maintenanceSource.includes("resolveBoardFoodMaintenanceModifiers")
             && !maintenanceSource.includes("CMD_GRANARY"),

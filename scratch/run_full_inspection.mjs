@@ -488,6 +488,11 @@ async function main() {
         ["Enemy tactic selection", "node", ["game/src/trial/dev/diagnose_enemy_tactic_selection.mjs"]],
         ["Trial force deployment bridge", "node", ["game/src/trial/dev/diagnose_trial_force_deployment_bridge.mjs"]],
         ["Trial route cost policy", "node", ["game/src/trial/dev/diagnose_trial_route_cost_policy.mjs"]],
+        ["Battle causality domain", "node", ["scratch/test_battle_causality_domain.mjs"]],
+        ["Battle causality resolution domain", "node", ["scratch/test_battle_causality_resolution_domain.mjs"]],
+        ["Battle Opportunity / Fortune lifecycle", "node", ["scratch/test_battle_opportunity_fortune_lifecycle.mjs"]],
+        ["Battle presentation runtime bridge", "node", ["scratch/test_battle_presentation_runtime_bridge.mjs"]],
+        ["Battle presentation runtime integration", "node", ["scratch/test_battle_presentation_runtime_integration.mjs"]],
         ["Road network foundation", "node", ["scratch/test_road_network_foundation.mjs"]],
         ["Trial route visual semantics", "node", ["scratch/test_trial_route_visual_semantics.mjs"]],
         ["Trial tactical effect board semantics", "node", ["scratch/test_trial_tactical_effect_board_semantics.mjs"]],
@@ -718,6 +723,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Advisor Semantic Scene Consumer) で不合格が検出されました。");
         process.exit(1);
     }
+    const globalEventAdvisorIntegrationOk = await runCommand("node", ["scratch/test_global_event_advisor_integration.mjs"]);
+    if (!globalEventAdvisorIntegrationOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Global Event Advisor Integration) で不合格が検出されました。");
+        process.exit(1);
+    }
     const globalEventChoiceRestoreOk = await runCommand("node", ["scratch/test_global_event_choice_restore_reconciliation.mjs"]);
     if (!globalEventChoiceRestoreOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Global Event Choice Restore Reconciliation) で不合格が検出されました。");
@@ -817,6 +827,18 @@ async function main() {
     const loggingCampV2SpendProbeOk = await runCommand("node", ["scratch/test_stage1_logging_camp_v2_spend_path_probe.mjs"]);
     if (!loggingCampV2SpendProbeOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Logging Camp v2 Spend Path Probe) で不合格が検出されました。");
+        process.exit(1);
+    }
+
+    const stage1EconomyEnvelopeOk = await runCommand("node", ["scratch/test_stage1_pretrial_economy_envelope.mjs"]);
+    if (!stage1EconomyEnvelopeOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Stage1 Pre-Trial Economy Envelope) で不合格が検出されました。");
+        process.exit(1);
+    }
+
+    const stage1Trial1BurdenOk = await runCommand("node", ["scratch/test_stage1_trial1_burden_certification.mjs"]);
+    if (!stage1Trial1BurdenOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Stage1 Trial1 Burden Certification) で不合格が検出されました。");
         process.exit(1);
     }
 

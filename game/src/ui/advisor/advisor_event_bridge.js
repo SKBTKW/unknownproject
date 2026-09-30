@@ -67,6 +67,7 @@ export class AdvisorEventBridge {
         if (!this.globalEventManager?.subscribe) return;
         this.unsubscribeGlobalEvent = this.globalEventManager.subscribe(notification => {
             if (!notification || notification.timing !== "START") return;
+            if (notification.eventId === "EVENT_DEMIHUMAN_TRACES") return;
             if (!this.enabledProvider()) return;
             if (String(notification.importance || "MAJOR").toUpperCase() !== "MAJOR") return;
             const turn = Number(notification.turn || 1);
@@ -143,7 +144,8 @@ export class AdvisorEventBridge {
         if (!this.enabledProvider()) return false;
 
         const turn = resolved.verse ?? Number(this.previous?.turn || 1);
-        const topic = resolved.topic === "development" ? ADVISOR_TOPICS.DEVELOPMENT : ADVISOR_TOPICS.CONNECTION;
+        const topic = Object.values(ADVISOR_TOPICS).includes(resolved.topic) ? resolved.topic : null;
+        if (!topic) return false;
         return this.emitImmediate({
             id: resolved.advisorEvent,
             topic,

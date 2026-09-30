@@ -496,6 +496,14 @@
       ]
     },
     {
+      "path": "scratch/test_global_event_advisor_integration.mjs",
+      "purpose": "Global Event presented semantic Advisor bridge, FirstRun background dedupe, presentation-only interaction lock, and hidden-info boundary",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_global_event_choice_contract.mjs",
       "purpose": "global event choice contract",
       "suite": "supplemental"
@@ -533,6 +541,11 @@
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
       ]
+    },
+    {
+      "path": "scratch/test_global_event_presentation_foundation.mjs",
+      "purpose": "common Global Event NOTICE/CHOICE presentation contract, restore-safe notice projection, central layout and DOM-free runtime boundary",
+      "suite": "supplemental"
     },
     {
       "path": "scratch/test_global_event_weight_target_contract.mjs",
@@ -1193,6 +1206,46 @@
       ]
     },
     {
+      "path": "scratch/test_battle_causality_domain.mjs",
+      "purpose": "Trial Battle Causality Domain facts, causes, causal events, deterministic snapshot, and hidden-truth boundary",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_battle_causality_resolution_domain.mjs",
+      "purpose": "Trial Battle Causality / Resolution Domain actions, consequences, battle state, capability projection, Opportunity provenance, and immutable snapshot ownership",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_battle_opportunity_fortune_lifecycle.mjs",
+      "purpose": "Battle Opportunity / Ember / Gameplay RNG 2D6 / Fortune lifecycle orchestration with policy-injected balance semantics and immutable snapshot evolution",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_battle_presentation_runtime_bridge.mjs",
+      "purpose": "Battle Resolution Snapshot to read-only Narrative, PresentationState restore/dedupe, Advisor semantic payload, and dice presentation bridge",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_battle_presentation_runtime_integration.mjs",
+      "purpose": "Trial flow creates immutable Battle Resolution Snapshot before state commit and exposes it to presentation runtime without cross-battle contamination",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_trial_causality_presenter.mjs",
       "purpose": "trial causality presenter",
       "suite": "existing",
@@ -1680,6 +1733,22 @@
     {
       "path": "scratch/test_stage1_logging_camp_v2_spend_path_probe.mjs",
       "purpose": "Stage1 Logging Camp v2 adjacent-site spend path, candidate cost/base/relation production, V15 residual material, and Trial1 heavy PVE probe",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_stage1_pretrial_economy_envelope.mjs",
+      "purpose": "Stage1 Verse15 pre-Trial economy envelope with actual Offering, Board investments, production, and maintenance",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_stage1_trial1_burden_certification.mjs",
+      "purpose": "FirstRun Trial1 deployment burden against paid Stage1 Board investment balances",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
