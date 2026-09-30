@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { statSync } from "node:fs";
 import {
     GlobalEventPublicPresentationReadModel,
     EVENT_PUBLIC_PRESENTATION_POLICIES
@@ -21,6 +22,8 @@ assert.equal(projected.presentationKind, "MAJOR_EVENT");
 assert.equal(projected.titleKey, "EVENT_DEMIHUMAN_TRACES_NAME");
 assert.equal(projected.descriptionKey, "EVENT_DEMIHUMAN_TRACES_DESC");
 assert.equal(projected.stillId, "STILL_DEMIHUMAN_TRACES");
+assert.equal(projected.assetReference, "./assets/events/unknown_traces.svg");
+assert.ok(statSync(new URL("../game/assets/events/unknown_traces.svg", import.meta.url)).size > 0);
 assert.equal(projected.publicKnowledge, "DEMIHUMAN_ACTIVITY_NEAR_SURVIVAL_ZONE");
 
 assert.equal(

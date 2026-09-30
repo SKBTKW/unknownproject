@@ -1737,6 +1737,22 @@
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
       ]
+    },
+    {
+      "path": "scratch/test_stage1_pretrial_economy_envelope.mjs",
+      "purpose": "Stage1 Verse15 pre-Trial economy envelope with actual Offering, Board investments, production, and maintenance",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_stage1_trial1_burden_certification.mjs",
+      "purpose": "FirstRun Trial1 deployment burden against paid Stage1 Board investment balances",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
     }
   ]
 }

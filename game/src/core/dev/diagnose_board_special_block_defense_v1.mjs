@@ -665,9 +665,12 @@ console.log('Board / Special Block / Defense v1 contract');
     assert.ok(target, 'connected GL2+ pair exposes an adjacent empty-grid Logging Camp target');
     assert.equal(target.sourceClusterSize, 2);
 
+    const loggingQuote = service.quoteCost(SPECIAL_BLOCK_TYPES.LOGGING_CAMP);
+    assert.deepEqual(loggingQuote.resources, { wood: 20 });
     const logging = service.createSpecialBlock(
         SPECIAL_BLOCK_TYPES.LOGGING_CAMP,
-        target
+        target,
+        { paymentConfirmed: true, paidCost: { wood: 20 } }
     );
     assert.equal(logging.success, true);
     assert.equal(logging.specialOnly, true);
