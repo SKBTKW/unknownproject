@@ -20,7 +20,7 @@ const SCALAR_FIELDS = Object.freeze([
 ]);
 const OBJECT_FIELDS = Object.freeze([
     "trialSchedule", "activeConstructionProjects", "activeDrawBias",
-    "cardCooldowns", "usedUniqueCards", "consumedUniqueCards", "mergedBlocks",
+    "cardCooldowns", "cardStageUsage", "usedUniqueCards", "consumedUniqueCards", "mergedBlocks",
     "placedBlockProduction", "stage"
 ]);
 const SET_FIELDS = Object.freeze(["mergeLinks", "roadEdges", "grantedConnectionPairs"]);
