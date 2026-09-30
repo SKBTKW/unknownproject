@@ -1222,6 +1222,14 @@
       ]
     },
     {
+      "path": "scratch/test_battle_opportunity_fortune_lifecycle.mjs",
+      "purpose": "Battle Opportunity / Ember / Gameplay RNG 2D6 / Fortune lifecycle orchestration with policy-injected balance semantics and immutable snapshot evolution",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_battle_presentation_runtime_bridge.mjs",
       "purpose": "Battle Resolution Snapshot to read-only Narrative, PresentationState restore/dedupe, Advisor semantic payload, and dice presentation bridge",
       "suite": "existing",
