@@ -128,37 +128,43 @@ foodAfterProduction < normalFoodMaintenance
 
 ---
 
-## 4. 《残火再燃》 `CMD_REKINDLE_EMBER`
+## 4. 《祝祭》 `CMD_FESTIVAL`
 
 ### プレイヤーへの問い
 
-> 貴重な✨を使い、🔥危機から立て直すか。
+> 成長や備えに使える物資を共同体へ振り向け、人々の活力を取り戻すか。
 
 ### v1仕様
 
-- cost: **✨10**
+- rarity: **C**
+- offering category: **SOCIAL_ACTIVITY**
+- tags: **SOCIAL_ACTIVITY / COMMUNITY / EMBER_RECOVERY**
+- base cost: **🌾20 + 🧱20**
+- Stage2 cost multiplier: **x5** → 🌾100 + 🧱100
+- Stage3 cost multiplier: **x10** → 🌾200 + 🧱200
 - immediate result: **🔥+3**
-- eligibility ceiling: **現在🔥5以下**
+- eligibility ceiling: **現在🔥10以下**
+- Warning: **CALMのみ**（警戒フェイズ外）
+- affordability: **現在Stageの実支払い額を全額支払える時だけ候補化**
+- lifecycle: **1 Stageにつき1回使用可能**
 - duration: **即時完結**
 - Board mutation: **なし**
 
-### v1から外す効果
+Offering条件とExecution条件は同じ意味論を再検証する。
+Reserveで保持したままWarningへ入った場合や、資源・🔥状態が変化した場合は実行時にfail-closedとする。
 
-現在実装にある
+### ✨代替支払い
 
-```text
-reserveFeeWaivedTurns = 3
-```
+✨による代替支払いは設計検討中とし、v1では未実装。
 
-はFirst-Wave v1から外す。
+通常支払い `🌾+🧱` を正本として先に実測し、
+✨条件・必要量・通常コストとの価値差が決まってからAlternate Cost境界へ追加する。
 
-理由:
+### 旧《残火再燃》
 
-- 🔥回復とHold維持費免除で役割が2つになる。
-- 危機回復カードの価値評価が難しくなる。
-- Offering/Reserve economyを別カードなしで大きく触ってしまう。
-
-Hold維持費免除を将来使う場合は、別カードまたは別の神秘効果として再検討する。
+`CMD_REKINDLE_EMBER` は互換データとして残すが、
+First Run Stage1の🔥回復役は《祝祭》へ置き換える。
+「残火」は世界内で人々が直接管理する火ではなく、人類社会の活力を示すプレイヤー向け抽象値として扱う。
 
 ---
 
