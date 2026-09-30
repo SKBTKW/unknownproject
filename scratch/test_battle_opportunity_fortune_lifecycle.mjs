@@ -30,11 +30,19 @@ const emberSystem = {
 const rolls = [4, 5];
 const gameplayRandom = {
     calls: 0,
+    cursor: 0,
     nextInt(min, max) {
         assert.equal(min, 1);
         assert.equal(max, 6);
         this.calls += 1;
-        return rolls.shift();
+        return rolls[this.cursor++];
+    },
+    getState() {
+        return { cursor: this.cursor, calls: this.calls };
+    },
+    setState(state) {
+        this.cursor = state.cursor;
+        this.calls = state.calls;
     }
 };
 
@@ -173,5 +181,28 @@ const noRng = new BattleOpportunityFortuneLifecycleService({
 const noRngOpened = noRng.openOpportunity(base).snapshot;
 const noRngCommitted = noRng.commitOpportunity(noRngOpened);
 assert.throws(() => noRng.resolveFortune(noRngCommitted), /BATTLE_GAMEPLAY_RNG_REQUIRED/);
+
+const rollbackRng = {
+    cursor: 0,
+    values: [2, 6],
+    nextInt() { return this.values[this.cursor++]; },
+    getState() { return { cursor: this.cursor }; },
+    setState(state) { this.cursor = state.cursor; }
+};
+const rollbackLifecycle = new BattleOpportunityFortuneLifecycleService({
+    opportunityPolicy: lifecycle.opportunityPolicy,
+    emberCostPolicy: { resolve: () => 0 },
+    emberSystem: { current: 5, consume: () => true },
+    gameplayRandom: rollbackRng,
+    fortuneResultPolicy: {
+        resolve() { throw new Error("POLICY_FAILURE"); }
+    },
+    decisiveEventPolicy: lifecycle.decisiveEventPolicy,
+    finalResultPolicy: lifecycle.finalResultPolicy
+});
+const rollbackOpened = rollbackLifecycle.openOpportunity(base).snapshot;
+const rollbackCommitted = rollbackLifecycle.commitOpportunity(rollbackOpened);
+assert.throws(() => rollbackLifecycle.resolveFortune(rollbackCommitted), /POLICY_FAILURE/);
+assert.equal(rollbackRng.cursor, 0);
 
 console.log("✅ Battle Opportunity / Fortune lifecycle focused test PASS");
