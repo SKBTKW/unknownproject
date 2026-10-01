@@ -8,6 +8,7 @@ import {
     LAND_PRODUCTION_STATUS,
     resolveCardProductionPreview
 } from '../core/land_production_contract.js';
+import { resolveCardResourceCost } from '../cards/card_cost_policy.js';
 
 /**
  * 📦 ReserveSlotComponent (保留スロット ＆ HOLD カード操作専門コンポーネント)
@@ -61,7 +62,7 @@ export class ReserveSlotComponent {
             let costMet = true;
             let costBadgeText = "";
             if (category !== "LAND" && tObj.cost) {
-                const c = tObj.cost;
+                const c = resolveCardResourceCost(tObj, this.state);
                 const parts = [];
                 if (c.food) { parts.push(`🌾-${c.food}`); if (this.state.food < c.food) costMet = false; }
                 if (c.wood) { parts.push(`🧱-${c.wood}`); if (this.state.wood < c.wood) costMet = false; }

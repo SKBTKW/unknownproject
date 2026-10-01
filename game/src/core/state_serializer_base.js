@@ -206,6 +206,7 @@ export function serializeGameState(state) {
         handOffering: serializedOffering,
         reserveSlots: serializedReserve,
         cardCooldowns: serializedCooldowns,
+        cardStageUsage: cloneData(state.cardStageUsage, {}),
         usedUniqueCards: serializedUsedUniques,
         consumedUniqueCards: serializedConsumedUniques,
         mergedBlocks: state.mergedBlocks

@@ -6,6 +6,8 @@
 import {
     createLegacyTrialTimingReadModel
 } from './legacy_trial_schedule_compat.js';
+import { canAffordCardResourceCost } from '../cards/card_cost_policy.js';
+import { getCardStageUsage } from '../cards/card_stage_usage.js';
 
 /**
  * 🔍 条件判定ハンドラ Registry
@@ -407,6 +409,22 @@ const CONDITION_HANDLERS = {
         const requiredRank = order.indexOf(required);
         if (currentRank < 0 || requiredRank < 0) return false;
         return params.atLeast === false ? current === required : currentRank >= requiredRank;
+    },
+
+    // 💳 Card-authored resource cost affordability, including stage scaling.
+    CARD_COST_AFFORDABLE: (_params, context) => {
+        const card = context?.card || context?.definition?.legacy || context?.definition || null;
+        return canAffordCardResourceCost(card, context?.state);
+    },
+
+    // 🎴 Per-stage card-use cap. The current card id is supplied by the
+    // Offering / Execution requirement boundary, so definitions stay id-agnostic.
+    CARD_STAGE_USAGE_BELOW: (params, context) => {
+        const card = context?.card || context?.definition?.legacy || context?.definition || null;
+        const cardId = params.cardId || card?.id || null;
+        if (!cardId || !context?.state) return false;
+        const maxUses = Math.max(1, Math.trunc(Number(params.maxUses ?? params.value ?? 1)));
+        return getCardStageUsage(context.state, cardId) < maxUses;
     },
 
     // 📜 履歴・フラグ判定 (直近Nターンで食料不足がないか等)

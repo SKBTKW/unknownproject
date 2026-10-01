@@ -8,6 +8,7 @@
 
 const CARD_EFFECT_TYPES = Object.freeze({
     RESOURCE_DELTA: "RESOURCE_DELTA",
+    EMBER_RECOVER: "EMBER_RECOVER",
     STATE_SET: "STATE_SET",
     STATE_INCREMENT: "STATE_INCREMENT",
     BUFF_ADD: "BUFF_ADD",
@@ -146,6 +147,10 @@ class CardEffectExecutor {
                 return effect.resource
                     ? { success: true }
                     : { success: false, reason: "RESOURCE_KEY_REQUIRED" };
+            case CARD_EFFECT_TYPES.EMBER_RECOVER:
+                return Number(effect.amount) > 0
+                    ? { success: true }
+                    : { success: false, reason: "EMBER_RECOVERY_AMOUNT_REQUIRED" };
             case CARD_EFFECT_TYPES.STATE_SET:
             case CARD_EFFECT_TYPES.STATE_INCREMENT:
                 return effect.key
@@ -223,6 +228,19 @@ class CardEffectExecutor {
                 }
 
                 state[resource] = Number(state[resource] || 0) + amount;
+                return { success: true };
+            }
+
+            case CARD_EFFECT_TYPES.EMBER_RECOVER: {
+                const amount = Math.max(0, Number(effect.amount || 0));
+                if (amount <= 0) return { success: false, reason: "EMBER_RECOVERY_AMOUNT_REQUIRED" };
+                if (state.emberSystem && typeof state.emberSystem.recoverInstant === "function") {
+                    state.emberSystem.recoverInstant(amount, false);
+                } else {
+                    const current = Number(state.ember || 0);
+                    const max = Number(state.maxEmber ?? current + amount);
+                    state.ember = Math.min(max, current + amount);
+                }
                 return { success: true };
             }
 
