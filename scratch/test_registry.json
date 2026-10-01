@@ -2,6 +2,11 @@
   "schemaVersion": 1,
   "tests": [
     {
+      "path": "scratch/test_battle_opportunity_fortune_runtime_bridge.mjs",
+      "purpose": "Fortune runtime bridge pending completion boundary, decline, commit, resolve and finalize ordering",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_festival_card.mjs",
       "purpose": "Festival Offering eligibility, stage-scaled payment, Ember recovery, per-stage usage and save/restore contracts",
       "suite": "supplemental"
