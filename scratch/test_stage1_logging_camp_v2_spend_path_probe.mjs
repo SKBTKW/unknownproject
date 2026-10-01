@@ -292,8 +292,13 @@ function playRun(seed, candidate = null, mode = "BASELINE") {
         }
 
         if (engine.state.hasPickedThisTurn !== true) {
-            const option = chooseGrowthLand(engine);
-            assert.ok(option, `seed ${seed} V${engine.state.turn}: legal LAND action required`);
+            let option = chooseGrowthLand(engine);
+            if (!option && engine.state.hasMulliganedThisTurn !== true && engine.state.ember > 1) {
+                const mulligan = engine.mulligan();
+                assert.equal(mulligan?.success, true, `seed ${seed} V${engine.state.turn}: Mulligan fallback must succeed`);
+                option = chooseGrowthLand(engine);
+            }
+            assert.ok(option, `seed ${seed} V${engine.state.turn}: normal Offering + one Mulligan must expose a legal LAND fallback`);
             const card = makeRotatedInstance(option.card, option.placement);
             const placed = engine.placeLand(
                 option.placement.clickedR,

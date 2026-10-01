@@ -54,6 +54,80 @@ export const ECONOMY_CARDS_MASTER = [
     ]
   },
   {
+    "id": "CMD_FESTIVAL",
+    "category": "COMMAND",
+    "nameKey": "CMD_FESTIVAL_NAME",
+    "descriptionKey": "CMD_FESTIVAL_DESC",
+    "cost": { "food": 20, "wood": 20 },
+    "stageCostMultipliers": { "1": 1, "2": 5, "3": 10 },
+    "maxUsesPerStage": 1,
+    "tags": ["SOCIAL_ACTIVITY", "COMMUNITY", "EMBER_RECOVERY"],
+    "offering": {
+      "category": "SOCIAL_ACTIVITY",
+      "requirements": [
+        {
+          "id": "FESTIVAL_OUTSIDE_WARNING",
+          "type": "WARNING_STATE",
+          "state": "CALM",
+          "atLeast": false
+        },
+        {
+          "id": "FESTIVAL_EMBER_10_OR_BELOW",
+          "type": "RESOURCE_BELOW",
+          "resource": "ember",
+          "value": 10
+        },
+        {
+          "id": "FESTIVAL_COST_AFFORDABLE",
+          "type": "CARD_COST_AFFORDABLE"
+        },
+        {
+          "id": "FESTIVAL_STAGE_LIMIT",
+          "type": "CARD_STAGE_USAGE_BELOW",
+          "maxUses": 1
+        }
+      ]
+    },
+    "execution": {
+      "requirements": [
+        {
+          "id": "FESTIVAL_OUTSIDE_WARNING",
+          "type": "WARNING_STATE",
+          "state": "CALM",
+          "atLeast": false
+        },
+        {
+          "id": "FESTIVAL_EMBER_10_OR_BELOW",
+          "type": "RESOURCE_BELOW",
+          "resource": "ember",
+          "value": 10
+        },
+        {
+          "id": "FESTIVAL_COST_AFFORDABLE",
+          "type": "CARD_COST_AFFORDABLE"
+        },
+        {
+          "id": "FESTIVAL_STAGE_LIMIT",
+          "type": "CARD_STAGE_USAGE_BELOW",
+          "maxUses": 1
+        }
+      ]
+    },
+    "minStage": 1,
+    "rarity": "C",
+    "weight": 0.35,
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "EMBER_RECOVER",
+        "amount": 3
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
+  },
+  {
     "id": "CMD_WETLAND_RECLAMATION",
     "category": "COMMAND",
     "nameKey": "CMD_WETLAND_RECLAMATION_NAME",
@@ -170,9 +244,7 @@ export const ECONOMY_CARDS_MASTER = [
     "category": "COMMAND",
     "nameKey": "CMD_GRANARY_NAME",
     "descriptionKey": "CMD_GRANARY_DESC",
-    "cost": {
-      "wood": 20
-    },
+    "cost": {},
     "tags": [
       "PLAINS",
       "RECLAIMED",
@@ -181,7 +253,6 @@ export const ECONOMY_CARDS_MASTER = [
       "INDUSTRY",
       "SPECIAL_BLOCK"
     ],
-    "reqWood": 20,
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.25,
@@ -191,6 +262,7 @@ export const ECONOMY_CARDS_MASTER = [
         "type": "DOMAIN_ACTION",
         "action": "CREATE_SPECIAL_BLOCK",
         "blockType": "GRANARY",
+        "paymentMode": "DOMAIN_QUOTE",
         "logActivation": true
       }
     ]
@@ -1338,6 +1410,80 @@ export const COMMAND_CARDS_MASTER = [
     ]
   },
   {
+    "id": "CMD_FESTIVAL",
+    "category": "COMMAND",
+    "nameKey": "CMD_FESTIVAL_NAME",
+    "descriptionKey": "CMD_FESTIVAL_DESC",
+    "cost": { "food": 20, "wood": 20 },
+    "stageCostMultipliers": { "1": 1, "2": 5, "3": 10 },
+    "maxUsesPerStage": 1,
+    "tags": ["SOCIAL_ACTIVITY", "COMMUNITY", "EMBER_RECOVERY"],
+    "offering": {
+      "category": "SOCIAL_ACTIVITY",
+      "requirements": [
+        {
+          "id": "FESTIVAL_OUTSIDE_WARNING",
+          "type": "WARNING_STATE",
+          "state": "CALM",
+          "atLeast": false
+        },
+        {
+          "id": "FESTIVAL_EMBER_10_OR_BELOW",
+          "type": "RESOURCE_BELOW",
+          "resource": "ember",
+          "value": 10
+        },
+        {
+          "id": "FESTIVAL_COST_AFFORDABLE",
+          "type": "CARD_COST_AFFORDABLE"
+        },
+        {
+          "id": "FESTIVAL_STAGE_LIMIT",
+          "type": "CARD_STAGE_USAGE_BELOW",
+          "maxUses": 1
+        }
+      ]
+    },
+    "execution": {
+      "requirements": [
+        {
+          "id": "FESTIVAL_OUTSIDE_WARNING",
+          "type": "WARNING_STATE",
+          "state": "CALM",
+          "atLeast": false
+        },
+        {
+          "id": "FESTIVAL_EMBER_10_OR_BELOW",
+          "type": "RESOURCE_BELOW",
+          "resource": "ember",
+          "value": 10
+        },
+        {
+          "id": "FESTIVAL_COST_AFFORDABLE",
+          "type": "CARD_COST_AFFORDABLE"
+        },
+        {
+          "id": "FESTIVAL_STAGE_LIMIT",
+          "type": "CARD_STAGE_USAGE_BELOW",
+          "maxUses": 1
+        }
+      ]
+    },
+    "minStage": 1,
+    "rarity": "C",
+    "weight": 0.35,
+    "cyclePolicy": "RARITY",
+    "effects": [
+      {
+        "type": "EMBER_RECOVER",
+        "amount": 3
+      },
+      {
+        "type": "LOG_CARD_ACTIVATED"
+      }
+    ]
+  },
+  {
     "id": "CMD_WETLAND_RECLAMATION",
     "category": "COMMAND",
     "nameKey": "CMD_WETLAND_RECLAMATION_NAME",
@@ -1461,9 +1607,7 @@ export const COMMAND_CARDS_MASTER = [
     "category": "COMMAND",
     "nameKey": "CMD_GRANARY_NAME",
     "descriptionKey": "CMD_GRANARY_DESC",
-    "cost": {
-      "wood": 20
-    },
+    "cost": {},
     "tags": [
       "PLAINS",
       "RECLAIMED",
@@ -1472,7 +1616,6 @@ export const COMMAND_CARDS_MASTER = [
       "INDUSTRY",
       "SPECIAL_BLOCK"
     ],
-    "reqWood": 20,
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.25,
@@ -1482,6 +1625,7 @@ export const COMMAND_CARDS_MASTER = [
         "type": "DOMAIN_ACTION",
         "action": "CREATE_SPECIAL_BLOCK",
         "blockType": "GRANARY",
+        "paymentMode": "DOMAIN_QUOTE",
         "logActivation": true
       }
     ]

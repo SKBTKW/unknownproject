@@ -31,8 +31,6 @@ const duty = () => Object.freeze({ channel: ADVISOR_DIALOGUE_CHANNELS.DUTY, poli
 const ambient = () => Object.freeze({ channel: ADVISOR_DIALOGUE_CHANNELS.AMBIENT, policyKey: null });
 const silent = () => Object.freeze({ channel: ADVISOR_DIALOGUE_CHANNELS.SILENT, policyKey: null });
 
-// Semantic Advisor event ownership. Reaction-owned events may retain a Duty fallback
-// for characters without a character-specific reaction line.
 export const ADVISOR_EVENT_RESPONSIBILITY = Object.freeze({
     GAME_START: ambient(),
     TURN_START: silent(),
@@ -64,10 +62,11 @@ export const ADVISOR_EVENT_RESPONSIBILITY = Object.freeze({
     STABLE_OVERALL: advice("survival"),
     GENERAL_AMBIENT: ambient(),
     MILITARY_ACTION: advice("defense"),
-    GLOBAL_EVENT_SURVIVAL: advice("survival")
+    GLOBAL_EVENT_SURVIVAL: advice("survival"),
+    GLOBAL_EVENT_PRESENTED_FIRST_RUN: duty(),
+    GLOBAL_EVENT_PRESENTED_BRIEF: advice("survival")
 });
 
-// Scene ownership is separate from Advice depth. Missing Reaction data means intentional silence.
 export const ADVISOR_SCENE_RESPONSIBILITY = Object.freeze({
     [ADVISOR_SCENES.SEVERAL_LANDS_PLACED]: silent(),
     [ADVISOR_SCENES.LARGE_EXPANSION]: reaction(),
@@ -75,10 +74,20 @@ export const ADVISOR_SCENE_RESPONSIBILITY = Object.freeze({
     [ADVISOR_SCENES.REFUGEES_FOUND]: reaction(),
     [ADVISOR_SCENES.CIVILIANS_LOST]: reaction(),
     [ADVISOR_SCENES.TRIAL_WARNING]: reaction(),
+    [ADVISOR_SCENES.GLOBAL_EVENT_PRESENTED]: reaction(ADVISOR_DIALOGUE_CHANNELS.DUTY),
     [ADVISOR_SCENES.FIRST_RUN_TRIAL_ROUTE]: duty(),
     [ADVISOR_SCENES.FIRST_RUN_TRIAL_TERRAIN]: duty(),
     [ADVISOR_SCENES.FIRST_RUN_TRIAL_DEFENSE]: duty(),
     [ADVISOR_SCENES.FIRST_RUN_TRIAL_CAUSALITY]: duty(),
+    [ADVISOR_SCENES.TRIAL_BATTLEFIELD_READ]: reaction(),
+    [ADVISOR_SCENES.TRIAL_CAUSAL_ADVANTAGE]: reaction(),
+    [ADVISOR_SCENES.TRIAL_CAUSAL_DANGER]: reaction(),
+    [ADVISOR_SCENES.TRIAL_BATTLE_TURNING_POINT]: reaction(),
+    [ADVISOR_SCENES.TRIAL_OPPORTUNITY]: reaction(),
+    [ADVISOR_SCENES.TRIAL_FORTUNE_SUCCESS]: reaction(),
+    [ADVISOR_SCENES.TRIAL_FORTUNE_MISSED]: reaction(),
+    [ADVISOR_SCENES.TRIAL_DECISIVE_RESULT]: reaction(),
+    [ADVISOR_SCENES.TRIAL_NORMAL_RESULT]: reaction(),
     [ADVISOR_SCENES.TRIAL_INTERCEPTION_CONFIRMED]: reaction(),
     [ADVISOR_SCENES.TRIAL_REGION_ABANDONED]: reaction(),
     [ADVISOR_SCENES.TRIAL_PREPARED_DEFENSE_SUCCESS]: reaction(),

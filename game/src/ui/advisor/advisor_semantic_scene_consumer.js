@@ -11,6 +11,11 @@ const ADVISOR_SEMANTIC_SCENE_ROUTES = Object.freeze({
         topic: "connection",
         legacyMilestone: "link"
     }),
+    GLOBAL_EVENT_PRESENTED: Object.freeze({
+        advisorEvent: "GLOBAL_EVENT_PRESENTED_BRIEF",
+        topic: "survival",
+        legacyMilestone: null
+    }),
     FIRST_RUN_TRIAL_ROUTE: Object.freeze({
         advisorEvent: "FIRST_RUN_TRIAL_ROUTE",
         topic: "defense",
@@ -47,12 +52,16 @@ export function resolveAdvisorSemanticScene(scene = {}) {
         ? scene.context
         : {};
 
+    const firstRunBackground = sceneId === "GLOBAL_EVENT_PRESENTED"
+        && context.firstRun === true
+        && context.firstPresentation === true;
+
     return Object.freeze({
         sceneId,
-        advisorEvent: route.advisorEvent,
+        advisorEvent: firstRunBackground ? "GLOBAL_EVENT_PRESENTED_FIRST_RUN" : route.advisorEvent,
         topic: route.topic,
         legacyMilestone: route.legacyMilestone,
-        mandatory: route.mandatory === true,
+        mandatory: firstRunBackground || route.mandatory === true,
         verse: Number.isFinite(verse) && verse > 0 ? verse : null,
         context
     });

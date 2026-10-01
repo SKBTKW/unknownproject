@@ -29,7 +29,8 @@ const PROTOTYPE = Object.freeze([
     "CMD_REKINDLE_EMBER",
     "CMD_GRANARY",
     "CMD_WETLAND_RECLAMATION",
-    "CMD_AGRICULTURAL_REFORM"
+    "CMD_AGRICULTURAL_REFORM",
+    "CMD_LOGGING_CAMP"
 ]);
 const SUPPORT = Object.freeze([
     "CMD_RATIONING",
@@ -37,7 +38,6 @@ const SUPPORT = Object.freeze([
     "CMD_ABANDONED_SETTLEMENT"
 ]);
 const BLOCKED = Object.freeze([
-    "CMD_LOGGING_CAMP",
     "CMD_PASTORAL_FARM",
     "CMD_MILITARY_FOCUS",
     "CMD_FILL_THE_VOID",
@@ -50,10 +50,11 @@ const effect = (id, type, predicate = () => true) =>
 
 console.log("\nStage1 non-LAND live candidate audit");
 
-assert.equal(stage1.length, 15, "Stage1 source JSON must expose exactly 15 dormant non-LAND definitions");
-assert.equal(new Set([...PROTOTYPE, ...SUPPORT, ...BLOCKED]).size, 15);
+const LIVE_SOCIAL_ACTIVITY = ["CMD_FESTIVAL"];
+assert.equal(stage1.length, 16, "Stage1 source JSON must expose 15 prior definitions and Festival");
+assert.equal(new Set([...PROTOTYPE, ...SUPPORT, ...BLOCKED, ...LIVE_SOCIAL_ACTIVITY]).size, 16);
 assert.deepEqual(
-    [...new Set([...PROTOTYPE, ...SUPPORT, ...BLOCKED])].sort(),
+    [...new Set([...PROTOTYPE, ...SUPPORT, ...BLOCKED, ...LIVE_SOCIAL_ACTIVITY])].sort(),
     [...byId.keys()].sort(),
     "every Stage1 non-LAND source card must have an explicit audit disposition"
 );
@@ -63,8 +64,20 @@ assert.deepEqual(
     ["LAND", "INVESTIGATION"],
     "audit must not silently reactivate legacy categories"
 );
+const LIVE_BOARD_INVESTMENTS = new Set([
+    "CMD_GRANARY",
+    "CMD_WETLAND_RECLAMATION",
+    "CMD_AGRICULTURAL_REFORM",
+    "CMD_LOGGING_CAMP"
+]);
+assert.equal(isCardRuntimeActive(byId.get("CMD_FESTIVAL")), true);
+assert.deepEqual(generatedById.get("CMD_FESTIVAL"), byId.get("CMD_FESTIVAL"));
 for (const id of PROTOTYPE) {
-    assert.equal(isCardRuntimeActive(byId.get(id)), false, `${id} remains dormant until an explicit activation change`);
+    assert.equal(
+        isCardRuntimeActive(byId.get(id)),
+        LIVE_BOARD_INVESTMENTS.has(id),
+        `${id} runtime activation must match the Stage1 completion disposition`
+    );
 }
 
 {
@@ -213,10 +226,13 @@ for (const id of ["CMD_RATIONING", "CMD_EMERGENCY_LEVY", "CMD_REKINDLE_EMBER", "
 
 {
     const card = byId.get("CMD_GRANARY");
-    assert.equal(card.cost.wood, 20);
+    assert.deepEqual(card.cost, {});
+    assert.equal(card.reqWood, undefined);
     assert.equal(card.reqPlains, undefined);
     assert.ok(effect("CMD_GRANARY", "DOMAIN_ACTION",
-        item => item.action === "CREATE_SPECIAL_BLOCK" && item.blockType === "GRANARY"));
+        item => item.action === "CREATE_SPECIAL_BLOCK"
+            && item.blockType === "GRANARY"
+            && item.paymentMode === "DOMAIN_QUOTE"));
     assert.ok(
         maintenanceSource.includes("resolveBoardFoodMaintenanceModifiers")
             && !maintenanceSource.includes("CMD_GRANARY"),

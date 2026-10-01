@@ -17,6 +17,32 @@ const UI_FEATURE_FLAGS = {
 };
 
 const UILayoutConfig = {
+    // 🌍 Global Event: central modal surface. Advisor may temporarily rise above
+    // this overlay; the GE shell itself remains centered and does not shift.
+    globalEventPresentation: {
+        overlay: {
+            position: "fixed",
+            inset: "0",
+            zIndex: "910",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "32px",
+            pointerEvents: "auto"
+        },
+        shell: {
+            position: "relative",
+            width: "min(800px, calc(100vw - 64px))",
+            maxHeight: "min(860px, calc(100vh - 64px))",
+            padding: "26px"
+        },
+        imageSlot: {
+            width: "min(720px, 100%)",
+            height: "min(360px, 38vh)"
+        },
+        advisorOverlapSafeArea: "IMAGE_RIGHT_EDGE"
+    },
+
     // 🎲 画面右辺右下隅ダイストレイ HUD (完全受動 / pointer-events: none / 右辺沿い)
     diceWidget: {
         desktop: {

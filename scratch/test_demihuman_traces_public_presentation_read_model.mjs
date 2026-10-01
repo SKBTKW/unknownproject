@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { statSync } from "node:fs";
 import {
     GlobalEventPublicPresentationReadModel,
     EVENT_PUBLIC_PRESENTATION_POLICIES
@@ -18,15 +19,17 @@ assert.ok(projected, "Traces START must project into public presentation metadat
 assert.equal(projected.eventId, "EVENT_DEMIHUMAN_TRACES");
 assert.equal(projected.turn, 7);
 assert.equal(projected.presentationKind, "MAJOR_EVENT");
-assert.equal(projected.titleKey, "EVENT_UNKNOWN_TRACES_NAME");
-assert.equal(projected.descriptionKey, "EVENT_UNKNOWN_TRACES_DESC");
-assert.equal(projected.stillId, "STILL_UNKNOWN_TRACES");
-assert.equal(projected.publicKnowledge, "ANOMALY_ONLY");
+assert.equal(projected.titleKey, "EVENT_DEMIHUMAN_TRACES_NAME");
+assert.equal(projected.descriptionKey, "EVENT_DEMIHUMAN_TRACES_DESC");
+assert.equal(projected.stillId, "STILL_DEMIHUMAN_TRACES");
+assert.equal(projected.assetReference, "./assets/events/unknown_traces.svg");
+assert.ok(statSync(new URL("../game/assets/events/unknown_traces.svg", import.meta.url)).size > 0);
+assert.equal(projected.publicKnowledge, "DEMIHUMAN_ACTIVITY_NEAR_SURVIVAL_ZONE");
 
 assert.equal(
-    /DEMIHUMAN/.test(projected.titleKey) || /DEMIHUMAN/.test(projected.descriptionKey),
-    false,
-    "public copy keys must not reveal the internal Demihuman identity"
+    /DEMIHUMAN/.test(projected.titleKey) && /DEMIHUMAN/.test(projected.descriptionKey),
+    true,
+    "public copy must identify the traces as known Demihuman activity"
 );
 
 assert.equal(
@@ -45,12 +48,12 @@ assert.deepEqual(
     EVENT_PUBLIC_PRESENTATION_POLICIES.EVENT_DEMIHUMAN_TRACES,
     {
         presentationKind: "MAJOR_EVENT",
-        titleKey: "EVENT_UNKNOWN_TRACES_NAME",
-        descriptionKey: "EVENT_UNKNOWN_TRACES_DESC",
-        stillId: "STILL_UNKNOWN_TRACES",
-        publicKnowledge: "ANOMALY_ONLY"
+        titleKey: "EVENT_DEMIHUMAN_TRACES_NAME",
+        descriptionKey: "EVENT_DEMIHUMAN_TRACES_DESC",
+        stillId: "STILL_DEMIHUMAN_TRACES",
+        publicKnowledge: "DEMIHUMAN_ACTIVITY_NEAR_SURVIVAL_ZONE"
     },
-    "Traces presentation policy must remain explicit and neutral"
+    "Traces presentation policy must remain explicit and presentation-safe"
 );
 
 console.log("✅ Demihuman Traces public presentation read model OK");
