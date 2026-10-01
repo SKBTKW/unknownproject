@@ -22,8 +22,13 @@ class CardExecutionRequirementService {
             });
         }
 
+        const evaluationContext = {
+            ...context,
+            definition: cardDefinition,
+            card: cardDefinition?.legacy || null
+        };
         const failures = requirements
-            .filter(requirement => !this.evaluator(requirement, context))
+            .filter(requirement => !this.evaluator(requirement, evaluationContext))
             .map(requirement => requirement.id || requirement.type || "EXECUTION_REQUIREMENT_FAILED");
 
         return Object.freeze({

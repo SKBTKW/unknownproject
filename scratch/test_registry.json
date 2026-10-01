@@ -2,6 +2,11 @@
   "schemaVersion": 1,
   "tests": [
     {
+      "path": "scratch/test_festival_card.mjs",
+      "purpose": "Festival Offering eligibility, stage-scaled payment, Ember recovery, per-stage usage and save/restore contracts",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_advisor_character_contract.mjs",
       "purpose": "advisor character contract",
       "suite": "existing",

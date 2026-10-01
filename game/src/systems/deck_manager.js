@@ -29,6 +29,8 @@ import { evaluateLegacyOfferingRequirements } from '../cards/legacy_offering_req
 import { resolveCardOfferingBoardQuery } from '../cards/card_offering_board_query.js';
 import { resolveCardEffectHandlerRouter } from '../cards/card_effect_handler_router.js';
 import { CardExecutionRequirementService } from '../cards/card_execution_requirement_service.js';
+import { resolveCardResourceCost } from '../cards/card_cost_policy.js';
+import { incrementCardStageUsage } from '../cards/card_stage_usage.js';
 
 export const OFFERING_GENERATION_REASONS = Object.freeze({
     INITIAL: "INITIAL",
@@ -803,7 +805,7 @@ class DeckManager {
 
         return {
             success: true,
-            resources: { ...(resolvedCard.cost || {}) },
+            resources: { ...resolveCardResourceCost(resolvedCard, this.state) },
             source: "CARD_COST",
             quote: null
         };
@@ -827,6 +829,13 @@ class DeckManager {
             engine: this.engine,
             deckManager: this
         }) || [];
+    }
+
+    _recordStageCardUsageIfConfigured(cardObj) {
+        const maxUses = Number(cardObj?.maxUsesPerStage ?? 0);
+        const cardId = cardObj?.id || null;
+        if (!cardId || !Number.isFinite(maxUses) || maxUses <= 0) return 0;
+        return incrementCardStageUsage(this.state, cardId);
     }
 
     /**
@@ -962,6 +971,7 @@ class DeckManager {
                 return routedEffect;
             }
 
+            this._recordStageCardUsageIfConfigured(cardObj);
             consumePlayedCardSlot();
             if (cardObj.isUnique) {
                 if (!this.state.usedUniqueCards) this.state.usedUniqueCards = [];
@@ -1108,6 +1118,8 @@ class DeckManager {
                 }
             };
         } else     
+
+        this._recordStageCardUsageIfConfigured(cardObj);
 
         if (cardObj.isUnique) {
             if (!this.state.usedUniqueCards) this.state.usedUniqueCards = [];
