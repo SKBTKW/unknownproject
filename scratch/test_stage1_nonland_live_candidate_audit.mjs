@@ -50,10 +50,11 @@ const effect = (id, type, predicate = () => true) =>
 
 console.log("\nStage1 non-LAND live candidate audit");
 
-assert.equal(stage1.length, 15, "Stage1 source JSON must expose exactly 15 dormant non-LAND definitions");
-assert.equal(new Set([...PROTOTYPE, ...SUPPORT, ...BLOCKED]).size, 15);
+const LIVE_SOCIAL_ACTIVITY = ["CMD_FESTIVAL"];
+assert.equal(stage1.length, 16, "Stage1 source JSON must expose 15 prior definitions and Festival");
+assert.equal(new Set([...PROTOTYPE, ...SUPPORT, ...BLOCKED, ...LIVE_SOCIAL_ACTIVITY]).size, 16);
 assert.deepEqual(
-    [...new Set([...PROTOTYPE, ...SUPPORT, ...BLOCKED])].sort(),
+    [...new Set([...PROTOTYPE, ...SUPPORT, ...BLOCKED, ...LIVE_SOCIAL_ACTIVITY])].sort(),
     [...byId.keys()].sort(),
     "every Stage1 non-LAND source card must have an explicit audit disposition"
 );
@@ -69,6 +70,8 @@ const LIVE_BOARD_INVESTMENTS = new Set([
     "CMD_AGRICULTURAL_REFORM",
     "CMD_LOGGING_CAMP"
 ]);
+assert.equal(isCardRuntimeActive(byId.get("CMD_FESTIVAL")), true);
+assert.deepEqual(generatedById.get("CMD_FESTIVAL"), byId.get("CMD_FESTIVAL"));
 for (const id of PROTOTYPE) {
     assert.equal(
         isCardRuntimeActive(byId.get(id)),

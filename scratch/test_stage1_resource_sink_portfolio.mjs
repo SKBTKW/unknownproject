@@ -31,6 +31,7 @@ assert.deepEqual(
     stage1.map(card => card.id),
     [
         "CMD_RATIONING",
+        "CMD_FESTIVAL",
         "CMD_WETLAND_RECLAMATION",
         "CMD_LOGGING_CAMP",
         "CMD_GRANARY",
@@ -44,6 +45,7 @@ assert.deepEqual(
 
 const expectedCosts = new Map([
     ["CMD_RATIONING", {}],
+    ["CMD_FESTIVAL", { food: 20, wood: 20 }],
     ["CMD_WETLAND_RECLAMATION", {}],
     ["CMD_LOGGING_CAMP", {}],
     ["CMD_GRANARY", {}],
