@@ -1812,9 +1812,7 @@
     {
       "path": "scratch/test_first_run_stage1_completion.mjs",
       "purpose": "FirstRun Stage1 Verse1 through Trial1, post-Trial settlement, Stage2 progression, and completion-boundary certification",
-      "suite": "quarantined",
-      "reason": "Known failure: browser-wide FirstRun completion persists at Trial causality acknowledgment before Stage2; repair remains isolated in PR #414.",
-      "nextAction": "After the completion-persistence boundary fix is integrated, switch this test to supplemental and require it to pass in Full Inspection."
+      "suite": "supplemental"
     }
   ]
 }

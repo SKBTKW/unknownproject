@@ -260,23 +260,62 @@ class UIController {
             trialIndex,
             event
         });
-        if (
-            event === FIRST_RUN_TRIAL_TUTORIAL_EVENTS.CAUSALITY_OBSERVED
-            && next?.completed === true
-            && typeof this.engine?.firstRunActivationStore?.markCompleted === "function"
-        ) {
-            try {
-                this.lastFirstRunActivationPersistenceResult = this.engine.firstRunActivationStore.markCompleted();
-            } catch (error) {
-                this.lastFirstRunActivationPersistenceResult = {
-                    success: false,
-                    reason: "FIRST_RUN_ACTIVATION_PERSISTENCE_FAILED",
-                    errorMessage: error?.message || String(error)
-                };
-            }
-        }
         this.trialActionTrayComponent?.render?.();
         return next;
+    }
+
+    persistFirstRunCompletionAfterStageAdvance({ transition = null } = {}) {
+        const firstRunState = this.engine?.firstRunState || null;
+        const stageId = Number(this.engine?.state?.stage?.id) || null;
+        const stageAdvanceApplied = transition?.stageAdvance?.status === "APPLIED";
+        const tutorialCompleted = firstRunState?.getTrialTutorialState?.().completed === true;
+
+        if (!firstRunState?.active || !tutorialCompleted || !stageAdvanceApplied || stageId < 2) {
+            return Object.freeze({
+                success: true,
+                persisted: false,
+                reason: "FIRST_RUN_COMPLETION_BOUNDARY_NOT_REACHED"
+            });
+        }
+
+        if (this.lastFirstRunActivationPersistenceResult?.success === true) {
+            return Object.freeze({
+                success: true,
+                persisted: false,
+                alreadyPersisted: true
+            });
+        }
+
+        const store = this.engine?.firstRunActivationStore || null;
+        if (typeof store?.markCompleted !== "function") {
+            return Object.freeze({
+                success: false,
+                persisted: false,
+                reason: "FIRST_RUN_ACTIVATION_STORE_UNAVAILABLE"
+            });
+        }
+
+        try {
+            const result = store.markCompleted();
+            this.lastFirstRunActivationPersistenceResult = result;
+            return Object.freeze({
+                success: result?.success === true,
+                persisted: result?.success === true,
+                result
+            });
+        } catch (error) {
+            const result = {
+                success: false,
+                reason: "FIRST_RUN_ACTIVATION_PERSISTENCE_FAILED",
+                errorMessage: error?.message || String(error)
+            };
+            this.lastFirstRunActivationPersistenceResult = result;
+            return Object.freeze({
+                success: false,
+                persisted: false,
+                result
+            });
+        }
     }
 
     acknowledgeFirstRunTrialRoute() {
