@@ -1811,6 +1811,19 @@
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
       ]
+    },
+    {
+      "path": "scratch/test_first_run_stage1_completion.mjs",
+      "purpose": "FirstRun Stage1 end-to-end completion certification coverage",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_investigation_presentation_polish.mjs",
+      "purpose": "Investigation report and narrative presentation polish coverage",
+      "suite": "supplemental"
     }
   ]
 }
