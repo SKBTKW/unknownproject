@@ -127,8 +127,8 @@ assert.equal(integration.reconcileActive(), null, "dismissed notice must not re-
 const restoredComponent = createComponentSpy();
 const restored = new GlobalEventPresentationRuntimeIntegration(ui, { component: restoredComponent });
 const restoredView = restored.reconcileActive();
-assert.equal(restoredView.eventId, "EVENT_DEMIHUMAN_TRACES");
-assert.equal(restoredComponent.shown.length, 1);
+assert.equal(restoredView, null, "dismissed notice must remain deduped after runtime restore");
+assert.equal(restoredComponent.shown.length, 0);
 
 const unknownComponent = createComponentSpy();
 const unknownManager = createManager();
