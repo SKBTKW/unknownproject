@@ -98,4 +98,63 @@ export function projectBattleResolutionResult(snapshot) {
     });
 }
 
+/**
+ * Legacy-compatible BattleSequence read projection.
+ *
+ * This is an aliasing/shape projection only. It never recalculates combat
+ * values and never needs the original CombatResult once a canonical snapshot
+ * exists.
+ */
+export function projectBattleSequenceCombatResult(snapshot) {
+    const resolution = projectBattleResolutionResult(snapshot);
+    const effective = resolution.effectiveCombatResult || {};
+    const modifiers = cloneData(
+        effective.modifiers
+            ?? effective.appliedModifiers
+            ?? []
+    );
+    const events = cloneData(
+        effective.events
+            ?? effective.terrainEvents
+            ?? []
+    );
+
+    return freezeBattleResolutionData({
+        battleId: resolution.battleId,
+        routeId: resolution.routeId,
+        interceptionLocation: cloneData(resolution.interceptionLocation),
+        outcome: effective.outcome ?? null,
+        margin: effective.margin ?? null,
+        playerActualPower: effective.humanFinalPower ?? null,
+        enemyActualPower: effective.enemyFinalPower ?? null,
+        human: {
+            finalPower: effective.humanFinalPower ?? null
+        },
+        enemy: {
+            finalPower: effective.enemyFinalPower ?? null,
+            remainingForceSuppression: effective.remainingForceSuppression ?? null
+        },
+        prediction: {
+            outcome: effective.outcome ?? null,
+            margin: effective.margin ?? null
+        },
+        damageToSuppression: effective.damageToSuppression ?? null,
+        remainingSuppression: effective.remainingSuppression ?? null,
+        remainingForceSuppression: effective.remainingForceSuppression ?? null,
+        modifiers,
+        appliedModifiers: cloneData(effective.appliedModifiers ?? modifiers),
+        events,
+        terrainEvents: cloneData(effective.terrainEvents ?? events),
+        normalOutcome: cloneData(resolution.normalOutcome),
+        finalCombatResult: cloneData(resolution.finalCombatResult),
+        opportunity: cloneData(resolution.intervention.opportunity),
+        emberCommit: cloneData(resolution.intervention.emberCommit),
+        fortuneRoll: cloneData(resolution.intervention.fortuneRoll),
+        decisiveEvent: cloneData(resolution.intervention.decisiveEvent),
+        resolutionPhase: resolution.resolutionPhase,
+        finalized: resolution.finalized,
+        provenance: cloneData(resolution.provenance)
+    });
+}
+
 export default projectBattleResolutionResult;

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { EnemyForceTerrainInteractionResolver } from "../game/src/trial/systems/enemy_force_terrain_interaction_resolver.js";
 import { EnemyForceDeploymentResolver } from "../game/src/trial/systems/enemy_force_deployment_resolver.js";
 import { BattleResolutionSnapshotFactory } from "../game/src/trial/systems/battle_resolution_snapshot_factory.js";
-import { projectBattleResolutionResult } from "../game/src/trial/systems/battle_resolution_result_projector.js";
+import { projectBattleResolutionResult, projectBattleSequenceCombatResult } from "../game/src/trial/systems/battle_resolution_result_projector.js";
 import { evolveBattleResolutionSnapshot } from "../game/src/trial/domain/battle_resolution_snapshot.js";
 import { createBattleOpportunityState } from "../game/src/trial/domain/battle_opportunity_domain.js";
 import {
@@ -221,5 +221,32 @@ assert.ok(finalProjection.provenance.consequenceIds.includes(supportDelayed.cons
 assert.throws(() => { finalProjection.outcome = "MUTATED"; }, TypeError);
 assert.deepEqual(snapshot.normalOutcome, evolved.normalOutcome);
 assert.equal(snapshot.finalCombatResult, null);
+
+const baselineSequenceResult = projectBattleSequenceCombatResult(snapshot);
+assert.equal(baselineSequenceResult.prediction.outcome, "REPEL");
+assert.equal(baselineSequenceResult.prediction.margin, 30);
+assert.equal(baselineSequenceResult.human.finalPower, 75);
+assert.equal(baselineSequenceResult.enemy.finalPower, 45);
+assert.equal(baselineSequenceResult.playerActualPower, 75);
+assert.equal(baselineSequenceResult.enemyActualPower, 45);
+assert.equal(
+    baselineSequenceResult.remainingForceSuppression,
+    snapshot.normalOutcome.remainingForceSuppression
+);
+assert.equal(baselineSequenceResult.finalCombatResult, null);
+
+const finalSequenceResult = projectBattleSequenceCombatResult(finalSnapshot);
+assert.equal(finalSequenceResult.prediction.outcome, "DECISIVE_REPEL");
+assert.equal(finalSequenceResult.prediction.margin, snapshot.normalOutcome.margin);
+assert.equal(finalSequenceResult.human.finalPower, snapshot.normalOutcome.humanFinalPower);
+assert.equal(finalSequenceResult.enemy.finalPower, snapshot.normalOutcome.enemyFinalPower);
+assert.equal(
+    finalSequenceResult.remainingForceSuppression,
+    snapshot.normalOutcome.remainingForceSuppression
+);
+assert.equal(finalSequenceResult.damageToSuppression, snapshot.normalOutcome.damageToSuppression);
+assert.equal(finalSequenceResult.finalCombatResult.outcome, "DECISIVE_REPEL");
+assert.equal(finalSequenceResult.fortuneRoll.total, 9);
+assert.throws(() => { finalSequenceResult.prediction.outcome = "MUTATED"; }, TypeError);
 
 console.log("✅ Battle Causality / Resolution Domain focused test PASS");
