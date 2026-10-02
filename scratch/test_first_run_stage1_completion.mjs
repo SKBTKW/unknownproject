@@ -33,7 +33,12 @@ function certify(label, fn) {
     }
 }
 function requireSuccess(result, label) {
-    assert.equal(result?.success, true, `${label}: ${JSON.stringify(result)}`);
+    if (result?.success !== true) {
+        const reason = result?.reason
+            ?? (Array.isArray(result?.errors) ? result.errors.join(",") : null)
+            ?? "UNKNOWN_FAILURE";
+        assert.fail(`${label}: ${reason}`);
+    }
     return result;
 }
 
@@ -214,6 +219,10 @@ const ui = new UIController(engine);
 ui.render = () => {};
 ui.renderBoardGrid = () => {};
 ui.hideCellTooltip = () => {};
+if (ui.postTrialInterludeComponent) {
+    ui.postTrialInterludeComponent.open = () => true;
+    ui.postTrialInterludeComponent.close = () => {};
+}
 requireSuccess(attachTrialLaunchSubsystem(engine, ui), "attachTrialLaunchSubsystem");
 
 let traceStarts = 0;
@@ -454,6 +463,10 @@ if (selectedRoute && selectedCell) {
         assert.equal(engine.state.stage.size, 7);
         assert.equal(engine.state.grid.length, 7);
         assert.equal(engine.state.grid.every(row => row.length === 7), true);
+    });
+    certify("FIRST_RUN_PERSISTENCE: activation persists only after Stage2", () => {
+        assert.equal(activationWrites.length, 1, `expected one completion write after Stage2: ${JSON.stringify(activationWrites)}`);
+        assert.equal(activationWrites[0].stageId, 2);
     });
     certify("STAGE2: normal progression resume gate open", () => {
         assert.equal(engine.postTrialProgressionReadService.read().canResumeNormalProgression, true);
