@@ -399,6 +399,14 @@
       ]
     },
     {
+      "path": "scratch/test_first_run_semantic_boundaries.mjs",
+      "purpose": "One-shot FirstRun Offering guarantee scope and separation between Trial tutorial completion and whole-FirstRun persistence",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_first_run_stage1_flow.mjs",
       "purpose": "connected FirstRun Verse7 trace, Investigation, Warning, restore, and Verse15 Trial1 launch flow",
       "suite": "existing",

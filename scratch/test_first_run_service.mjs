@@ -64,6 +64,19 @@ import { OFFERING_GENERATION_REASONS } from "../game/src/systems/deck_manager.js
     }), [], "Mulligan must remain ordinary RNG without FirstRun guarantee");
 }
 
+    for (let verse = 9; verse <= 15; verse += 1) {
+        state.turn = verse;
+        assert.deepEqual(
+            service.getMinimumRequirements({
+                reason: OFFERING_GENERATION_REASONS.VERSE_START,
+                state
+            }),
+            [],
+            `Verse ${verse} must not repeat the one-shot Verse8 Investigation guarantee`
+        );
+    }
+}
+
 {
     const service = new FirstRunService({ enabled: true });
     const state = { turn: 8, investigationUnlocked: false };
