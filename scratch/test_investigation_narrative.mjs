@@ -52,8 +52,11 @@ const unknownReport = {
 const unknownOutput = narrativeRenderer.render(
     composer.compose(textRenderer.render(presenter.present(unknownReport)))
 );
-if (!unknownOutput.text.includes('INVESTIGATION_TAG_UNMAPPED_TRACE')) {
-    throw new Error('unknown observation did not fall back visibly');
+if (!unknownOutput.text.includes('未整理の観測記録')) {
+    throw new Error('unknown observation did not use safe player-facing fallback');
+}
+if (unknownOutput.text.includes('UNMAPPED_TRACE')) {
+    throw new Error('internal observation tag leaked into narrative');
 }
 
 console.log('PASS investigation narrative');
