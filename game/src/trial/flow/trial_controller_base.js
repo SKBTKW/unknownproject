@@ -24,6 +24,7 @@ export class TrialController {
         combatResolver = new TrialCombatResolver(),
         sequenceService = new TrialBattleSequenceService(),
         battleResolutionSnapshotFactory = new BattleResolutionSnapshotFactory(),
+        battleOpportunityFortuneRuntimeBridge = null,
         enemyAdvanceService = new TrialEnemyAdvanceService(),
         damageResolver = new TrialHqDamageResolver(),
         completionService = new TrialCompletionService(),
@@ -37,7 +38,9 @@ export class TrialController {
         this.combatResolver = combatResolver;
         this.sequenceService = sequenceService;
         this.battleResolutionSnapshotFactory = battleResolutionSnapshotFactory;
+        this.battleOpportunityFortuneRuntimeBridge = battleOpportunityFortuneRuntimeBridge || null;
         this.battleResolutionSnapshots = [];
+        this.battleOpportunityFortuneRuntime = null;
         this.enemyAdvanceService = enemyAdvanceService;
         this.damageResolver = damageResolver;
         this.completionService = completionService;
@@ -55,6 +58,7 @@ export class TrialController {
     startScenario(scenario, { cellResolver = null, useCanonicalDefenseReservation = true } = {}) {
         this.state = createTrialState(scenario);
         this.battleResolutionSnapshots = [];
+        this.battleOpportunityFortuneRuntime = null;
         this.cellResolver = typeof cellResolver === "function" ? cellResolver : null;
         this.sessionDefenseReservation = useCanonicalDefenseReservation === false
             ? null
@@ -655,34 +659,133 @@ export class TrialController {
             }]
         });
 
-        // 4. Complete current battle state via sequenceService only after the
-        // authoritative snapshot has been created successfully.
-        const completionResult = this.sequenceService.completeCurrentBattle(this.state, combatResult);
-        if (!completionResult.success) {
-            return completionResult;
-        }
         this.battleResolutionSnapshots[battleIndex] = battleResolutionSnapshot;
 
-        // 5. Emit exactly 1 GameFact
-        const factPayload = {
+        if (!this.battleOpportunityFortuneRuntimeBridge) {
+            const completionResult = this.sequenceService.completeCurrentBattle(this.state, combatResult);
+            if (!completionResult.success) return completionResult;
+            this.#emitBattleResolvedFact({ currentBattle, combatResult, battleIndex });
+            return {
+                success: true,
+                battleIndex,
+                combatResult: completionResult.battleResult,
+                battleResolutionSnapshot
+            };
+        }
+
+        const opened = this.battleOpportunityFortuneRuntimeBridge.open({
+            snapshot: battleResolutionSnapshot,
+            combatResult
+        });
+        this.battleResolutionSnapshots[battleIndex] = opened.snapshot;
+        this.battleOpportunityFortuneRuntime = {
+            battleIndex,
+            currentBattle,
+            combatResult,
+            snapshot: opened.snapshot
+        };
+
+        if (opened.pending) {
+            return {
+                success: true,
+                pendingOpportunity: true,
+                battleIndex,
+                combatResult,
+                battleResolutionSnapshot: opened.snapshot
+            };
+        }
+
+        return this.#completeBattleOpportunityFortuneRuntime(
+            this.battleOpportunityFortuneRuntimeBridge.completeWithoutOpportunity({
+                trialState: this.state,
+                snapshot: opened.snapshot,
+                combatResult
+            })
+        );
+    }
+
+    getCurrentBattleOpportunityFortuneRuntime() {
+        return this.battleOpportunityFortuneRuntime;
+    }
+
+    declineCurrentBattleOpportunity() {
+        const runtime = this.#requireBattleOpportunityFortuneRuntime();
+        return this.#completeBattleOpportunityFortuneRuntime(
+            this.battleOpportunityFortuneRuntimeBridge.decline({
+                trialState: this.state,
+                snapshot: runtime.snapshot,
+                combatResult: runtime.combatResult
+            })
+        );
+    }
+
+    commitCurrentBattleOpportunity() {
+        const runtime = this.#requireBattleOpportunityFortuneRuntime();
+        const snapshot = this.battleOpportunityFortuneRuntimeBridge.commit({ snapshot: runtime.snapshot });
+        runtime.snapshot = snapshot;
+        this.battleResolutionSnapshots[runtime.battleIndex] = snapshot;
+        return { success: true, pendingOpportunity: true, battleIndex: runtime.battleIndex, battleResolutionSnapshot: snapshot };
+    }
+
+    resolveCurrentBattleFortune() {
+        const runtime = this.#requireBattleOpportunityFortuneRuntime();
+        const snapshot = this.battleOpportunityFortuneRuntimeBridge.resolveFortune({ snapshot: runtime.snapshot });
+        runtime.snapshot = snapshot;
+        this.battleResolutionSnapshots[runtime.battleIndex] = snapshot;
+        return { success: true, pendingOpportunity: true, battleIndex: runtime.battleIndex, battleResolutionSnapshot: snapshot };
+    }
+
+    finalizeCurrentBattleFortune() {
+        const runtime = this.#requireBattleOpportunityFortuneRuntime();
+        return this.#completeBattleOpportunityFortuneRuntime(
+            this.battleOpportunityFortuneRuntimeBridge.finalizeFortune({
+                trialState: this.state,
+                snapshot: runtime.snapshot,
+                combatResult: runtime.combatResult
+            })
+        );
+    }
+
+    #requireBattleOpportunityFortuneRuntime() {
+        if (!this.battleOpportunityFortuneRuntimeBridge || !this.battleOpportunityFortuneRuntime) {
+            throw new Error("BATTLE_OPPORTUNITY_FORTUNE_RUNTIME_NOT_PENDING");
+        }
+        return this.battleOpportunityFortuneRuntime;
+    }
+
+    #completeBattleOpportunityFortuneRuntime(result) {
+        if (!result?.success) return result;
+        const runtime = this.#requireBattleOpportunityFortuneRuntime();
+        runtime.snapshot = result.snapshot;
+        this.battleResolutionSnapshots[runtime.battleIndex] = result.snapshot;
+        this.#emitBattleResolvedFact({
+            currentBattle: runtime.currentBattle,
+            combatResult: runtime.combatResult,
+            battleIndex: runtime.battleIndex
+        });
+        const response = {
+            success: true,
+            pendingOpportunity: false,
+            battleIndex: runtime.battleIndex,
+            combatResult: result.completionResult?.battleResult ?? result.sequenceCombatResult,
+            battleResolutionSnapshot: result.snapshot
+        };
+        this.battleOpportunityFortuneRuntime = null;
+        return response;
+    }
+
+    #emitBattleResolvedFact({ currentBattle, combatResult, battleIndex }) {
+        this.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_BATTLE_RESOLVED, {
             scenarioId: this.state.scenarioId || null,
             trialIndex: this.state.trialIndex,
-            battleIndex: this.state.currentBattleIndex,
+            battleIndex,
             routeId: currentBattle.routeId,
             interceptCell: { r: currentBattle.interceptCell.r, c: currentBattle.interceptCell.c },
             outcome: combatResult.prediction.outcome,
             playerActualPower: combatResult.human.finalPower,
             enemyActualPower: combatResult.enemy.finalPower,
             margin: combatResult.prediction.margin
-        };
-        this.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_BATTLE_RESOLVED, factPayload);
-
-        return {
-            success: true,
-            battleIndex: this.state.currentBattleIndex,
-            combatResult: completionResult.battleResult,
-            battleResolutionSnapshot
-        };
+        });
     }
 
     advanceAfterCurrentBattle() {
