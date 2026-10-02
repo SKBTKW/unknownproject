@@ -16,6 +16,7 @@ import { TrialEnemyAdvanceService } from "../systems/trial_enemy_advance_service
 import { TrialHqDamageResolver } from "../systems/trial_hq_damage_resolver.js";
 import { TrialCompletionService } from "../systems/trial_completion_service.js";
 import { TrialFlow } from "./trial_flow.js";
+import { TrialBattleCoordinator } from "./trial_battle_coordinator.js";
 import { readSpecialBlockTrialTraits } from "../../core/special_block_domain.js";
 
 export class TrialController {
@@ -39,8 +40,6 @@ export class TrialController {
         this.sequenceService = sequenceService;
         this.battleResolutionSnapshotFactory = battleResolutionSnapshotFactory;
         this.battleOpportunityFortuneRuntimeBridge = battleOpportunityFortuneRuntimeBridge || null;
-        this.battleResolutionSnapshots = [];
-        this.battleOpportunityFortuneRuntime = null;
         this.enemyAdvanceService = enemyAdvanceService;
         this.damageResolver = damageResolver;
         this.completionService = completionService;
@@ -53,6 +52,28 @@ export class TrialController {
         this.sessionDefenseReservation = null;
         this.state = null;
         this.cellResolver = null;
+
+        const controller = this;
+        this.battleCoordinator = new TrialBattleCoordinator({
+            get state() { return controller.state; },
+            get sequenceService() { return controller.sequenceService; },
+            get combatResolver() { return controller.combatResolver; },
+            get battleResolutionSnapshotFactory() { return controller.battleResolutionSnapshotFactory; },
+            get battleOpportunityFortuneRuntimeBridge() { return controller.battleOpportunityFortuneRuntimeBridge; },
+            get gameFactHub() { return controller.gameFactHub; },
+            createRouteInterceptionInput: (...args) => controller.createRouteInterceptionInput(...args),
+            createBattleContext: input => controller.createBattleContext(input)
+        });
+        // Preserve writable, enumerable runtime properties for existing callers.
+        // The coordinator owns the values; the Facade does not keep a second copy.
+        for (const property of ["battleResolutionSnapshots", "battleOpportunityFortuneRuntime"]) {
+            Object.defineProperty(this, property, {
+                enumerable: true,
+                configurable: true,
+                get: () => this.battleCoordinator[property],
+                set: value => { this.battleCoordinator[property] = value; }
+            });
+        }
     }
 
     startScenario(scenario, { cellResolver = null, useCanonicalDefenseReservation = true } = {}) {
@@ -444,6 +465,7 @@ export class TrialController {
         this.sessionDeploymentService = null;
         this.state = null;
         this.battleResolutionSnapshots = [];
+        this.battleOpportunityFortuneRuntime = null;
         this.cellResolver = null;
         this.sessionDefenseReservation = null;
     }
@@ -553,239 +575,39 @@ export class TrialController {
     }
 
     getBattleResolutionSnapshot(battleIndex) {
-        if (!Number.isInteger(battleIndex) || battleIndex < 0) return null;
-        return this.battleResolutionSnapshots?.[battleIndex] || null;
+        return this.battleCoordinator.getBattleResolutionSnapshot(battleIndex);
     }
 
     getCurrentBattleResolutionSnapshot() {
-        const battleIndex = this.state?.currentBattleIndex;
-        return Number.isInteger(battleIndex)
-            ? this.getBattleResolutionSnapshot(battleIndex)
-            : null;
+        return this.battleCoordinator.getCurrentBattleResolutionSnapshot();
     }
 
     startNextBattle() {
-        const startResult = this.sequenceService.startNextBattle(this.state);
-        if (!startResult.success) {
-            return startResult;
-        }
-
-        // Emit GameFact
-        const factPayload = {
-            battleIndex: startResult.battleIndex,
-            routeId: startResult.currentBattle.routeId,
-            interceptCell: { r: startResult.currentBattle.interceptCell.r, c: startResult.currentBattle.interceptCell.c },
-            defenseAllocation: startResult.currentBattle.defenseAllocation
-        };
-        this.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_BATTLE_STARTED, factPayload);
-
-        return startResult;
+        return this.battleCoordinator.startNextBattle();
     }
 
     resolveCurrentBattle() {
-        if (!this.state) {
-            return { success: false, errors: ["TRIAL_NOT_STARTED"] };
-        }
-        if (!this.state.planActivated) {
-            return { success: false, errors: [TRIAL_PLAN_REASONS.PLAN_NOT_ACTIVATED] };
-        }
-        if (this.state.currentBattleIndex === null) {
-            return { success: false, errors: [TRIAL_PLAN_REASONS.NO_ACTIVE_BATTLE] };
-        }
-        if (!Array.isArray(this.state.battleQueue)) {
-            return { success: false, errors: [TRIAL_PLAN_REASONS.NO_CONFIRMED_PLAN] };
-        }
-
-        const currentBattle = this.state.battleQueue[this.state.currentBattleIndex];
-        if (!currentBattle || typeof currentBattle !== "object") {
-            return { success: false, errors: [TRIAL_PLAN_REASONS.INVALID_CURRENT_BATTLE] };
-        }
-        if (currentBattle.status === TRIAL_BATTLE_STATUSES.RESOLVED) {
-            return { success: false, errors: [TRIAL_PLAN_REASONS.BATTLE_ALREADY_RESOLVED] };
-        }
-        if (currentBattle.status !== TRIAL_BATTLE_STATUSES.ACTIVE) {
-            return { success: false, errors: [TRIAL_PLAN_REASONS.NO_ACTIVE_BATTLE] };
-        }
-
-        // 1. Build combat input from current battle snapshot
-        const interceptionInput = this.createRouteInterceptionInput(
-            currentBattle.routeId,
-            currentBattle.interceptCell,
-            currentBattle.defenseAllocation
-        );
-        if (!interceptionInput.success) {
-            return { success: false, errors: [interceptionInput.reason || TRIAL_PLAN_REASONS.INVALID_CURRENT_BATTLE] };
-        }
-
-        // 2. Resolve combat via CombatResolver
-        const context = this.createBattleContext({
-            ...interceptionInput.input,
-            skipAvailableCheck: true
-        });
-        const combatResult = this.combatResolver.resolve(context);
-        if (!combatResult.success) {
-            return { success: false, errors: [combatResult.reason || "COMBAT_RESOLUTION_FAILED"] };
-        }
-
-        // 3. Build the immutable Battle Resolution Snapshot before committing
-        // the RESOLVED battle state. This keeps snapshot failure fail-closed and
-        // prevents Presentation from reconstructing gameplay causality later.
-        const battleIndex = this.state.currentBattleIndex;
-        const scenarioId = this.state.scenarioId || "trial";
-        const trialIndex = Number.isInteger(this.state.trialIndex) ? this.state.trialIndex : 1;
-        const battleId = `${scenarioId}:trial:${trialIndex}:battle:${battleIndex}`;
-        const battleResolutionSnapshot = this.battleResolutionSnapshotFactory.create({
-            battleId,
-            routeId: currentBattle.routeId,
-            battleContext: context,
-            combatResult,
-            actions: [{
-                actionId: `${battleId}:intercept`,
-                type: "INTERCEPT",
-                actor: "HUMAN",
-                target: "ENEMY_FORCE",
-                location: {
-                    r: currentBattle.interceptCell.r,
-                    c: currentBattle.interceptCell.c
-                },
-                timing: "CONTACT",
-                provenance: {
-                    source: "TRIAL_BATTLE_SEQUENCE",
-                    scenarioId: this.state.scenarioId || null,
-                    trialIndex,
-                    battleIndex,
-                    routeId: currentBattle.routeId
-                }
-            }]
-        });
-
-        this.battleResolutionSnapshots[battleIndex] = battleResolutionSnapshot;
-
-        if (!this.battleOpportunityFortuneRuntimeBridge) {
-            const completionResult = this.sequenceService.completeCurrentBattle(this.state, combatResult);
-            if (!completionResult.success) return completionResult;
-            this.#emitBattleResolvedFact({ currentBattle, combatResult, battleIndex });
-            return {
-                success: true,
-                battleIndex,
-                combatResult: completionResult.battleResult,
-                battleResolutionSnapshot
-            };
-        }
-
-        const opened = this.battleOpportunityFortuneRuntimeBridge.open({
-            snapshot: battleResolutionSnapshot,
-            combatResult
-        });
-        this.battleResolutionSnapshots[battleIndex] = opened.snapshot;
-        this.battleOpportunityFortuneRuntime = {
-            battleIndex,
-            currentBattle,
-            combatResult,
-            snapshot: opened.snapshot
-        };
-
-        if (opened.pending) {
-            return {
-                success: true,
-                pendingOpportunity: true,
-                battleIndex,
-                combatResult,
-                battleResolutionSnapshot: opened.snapshot
-            };
-        }
-
-        return this.#completeBattleOpportunityFortuneRuntime(
-            this.battleOpportunityFortuneRuntimeBridge.completeWithoutOpportunity({
-                trialState: this.state,
-                snapshot: opened.snapshot,
-                combatResult
-            })
-        );
+        return this.battleCoordinator.resolveCurrentBattle();
     }
 
     getCurrentBattleOpportunityFortuneRuntime() {
-        return this.battleOpportunityFortuneRuntime;
+        return this.battleCoordinator.getCurrentBattleOpportunityFortuneRuntime();
     }
 
     declineCurrentBattleOpportunity() {
-        const runtime = this.#requireBattleOpportunityFortuneRuntime();
-        return this.#completeBattleOpportunityFortuneRuntime(
-            this.battleOpportunityFortuneRuntimeBridge.decline({
-                trialState: this.state,
-                snapshot: runtime.snapshot,
-                combatResult: runtime.combatResult
-            })
-        );
+        return this.battleCoordinator.declineCurrentBattleOpportunity();
     }
 
     commitCurrentBattleOpportunity() {
-        const runtime = this.#requireBattleOpportunityFortuneRuntime();
-        const snapshot = this.battleOpportunityFortuneRuntimeBridge.commit({ snapshot: runtime.snapshot });
-        runtime.snapshot = snapshot;
-        this.battleResolutionSnapshots[runtime.battleIndex] = snapshot;
-        return { success: true, pendingOpportunity: true, battleIndex: runtime.battleIndex, battleResolutionSnapshot: snapshot };
+        return this.battleCoordinator.commitCurrentBattleOpportunity();
     }
 
     resolveCurrentBattleFortune() {
-        const runtime = this.#requireBattleOpportunityFortuneRuntime();
-        const snapshot = this.battleOpportunityFortuneRuntimeBridge.resolveFortune({ snapshot: runtime.snapshot });
-        runtime.snapshot = snapshot;
-        this.battleResolutionSnapshots[runtime.battleIndex] = snapshot;
-        return { success: true, pendingOpportunity: true, battleIndex: runtime.battleIndex, battleResolutionSnapshot: snapshot };
+        return this.battleCoordinator.resolveCurrentBattleFortune();
     }
 
     finalizeCurrentBattleFortune() {
-        const runtime = this.#requireBattleOpportunityFortuneRuntime();
-        return this.#completeBattleOpportunityFortuneRuntime(
-            this.battleOpportunityFortuneRuntimeBridge.finalizeFortune({
-                trialState: this.state,
-                snapshot: runtime.snapshot,
-                combatResult: runtime.combatResult
-            })
-        );
-    }
-
-    #requireBattleOpportunityFortuneRuntime() {
-        if (!this.battleOpportunityFortuneRuntimeBridge || !this.battleOpportunityFortuneRuntime) {
-            throw new Error("BATTLE_OPPORTUNITY_FORTUNE_RUNTIME_NOT_PENDING");
-        }
-        return this.battleOpportunityFortuneRuntime;
-    }
-
-    #completeBattleOpportunityFortuneRuntime(result) {
-        if (!result?.success) return result;
-        const runtime = this.#requireBattleOpportunityFortuneRuntime();
-        runtime.snapshot = result.snapshot;
-        this.battleResolutionSnapshots[runtime.battleIndex] = result.snapshot;
-        this.#emitBattleResolvedFact({
-            currentBattle: runtime.currentBattle,
-            combatResult: runtime.combatResult,
-            battleIndex: runtime.battleIndex
-        });
-        const response = {
-            success: true,
-            pendingOpportunity: false,
-            battleIndex: runtime.battleIndex,
-            combatResult: result.completionResult?.battleResult ?? result.sequenceCombatResult,
-            battleResolutionSnapshot: result.snapshot
-        };
-        this.battleOpportunityFortuneRuntime = null;
-        return response;
-    }
-
-    #emitBattleResolvedFact({ currentBattle, combatResult, battleIndex }) {
-        this.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_BATTLE_RESOLVED, {
-            scenarioId: this.state.scenarioId || null,
-            trialIndex: this.state.trialIndex,
-            battleIndex,
-            routeId: currentBattle.routeId,
-            interceptCell: { r: currentBattle.interceptCell.r, c: currentBattle.interceptCell.c },
-            outcome: combatResult.prediction.outcome,
-            playerActualPower: combatResult.human.finalPower,
-            enemyActualPower: combatResult.enemy.finalPower,
-            margin: combatResult.prediction.margin
-        });
+        return this.battleCoordinator.finalizeCurrentBattleFortune();
     }
 
     advanceAfterCurrentBattle() {

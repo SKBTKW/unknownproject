@@ -451,6 +451,7 @@ async function main() {
     console.log("\n⚔️  [LAYER 4/6] Trial Subsystem Tests (迎撃・戦闘・完了)...");
 
     const trialRuntimeFocusedOk = await runChecks("Trial Runtime Focused Contracts", [
+        ["Controller battle/Fortune characterization", "node", ["scratch/test_trial_battle_coordinator_characterization.mjs"]],
         ["Warning timing bridge", "node", ["game/src/trial/dev/diagnose_warning_timing_bridge.mjs"]],
         ["Trial due state service", "node", ["game/src/trial/dev/diagnose_trial_due_state_service.mjs"]],
         ["Trial launch coordinator", "node", ["game/src/trial/dev/diagnose_trial_launch_coordinator.mjs"]],

@@ -2,6 +2,14 @@
   "schemaVersion": 1,
   "tests": [
     {
+      "path": "scratch/test_trial_battle_coordinator_characterization.mjs",
+      "purpose": "Controller battle and Fortune observable contracts, exactly-once calls and runtime reference restoration",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_battle_opportunity_fortune_runtime_bridge.mjs",
       "purpose": "Fortune runtime bridge pending completion boundary, decline, commit, resolve and finalize ordering",
       "suite": "supplemental"
