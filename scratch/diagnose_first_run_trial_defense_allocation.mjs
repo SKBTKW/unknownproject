@@ -20,6 +20,9 @@ import {
     rotatePlacementClockwise
 } from "../game/src/core/placement_geometry.js";
 
+const inputMode = process.argv.find(arg => arg.startsWith("--input="))?.split("=")[1] || "direct";
+assert.ok(["direct", "slider", "increase", "max"].includes(inputMode), "unsupported diagnostic input mode");
+
 class MockElement {
     constructor(id = "", tagName = "div") {
         this._id = id;
@@ -50,7 +53,27 @@ class MockElement {
     get className() { return [...this._classes].join(" "); }
     set className(v) { this._classes = new Set(String(v || "").split(/\s+/).filter(Boolean)); }
     get innerHTML() { return this._innerHTML; }
-    set innerHTML(v) { this._innerHTML = String(v ?? ""); this.children = []; }
+    set innerHTML(v) {
+        // A narrow control DOM fixture: render replaces nodes and handlers just
+        // as innerHTML does. It does not model layout, hit testing or bubbling.
+        for (const child of this.children) {
+            if (elements.get(child.id) === child) elements.delete(child.id);
+        }
+        this._innerHTML = String(v ?? "");
+        this.children = [];
+        for (const match of this._innerHTML.matchAll(/<(input|button)\b([^>]*)>/gi)) {
+            const attributes = match[2];
+            const id = attributes.match(/\bid=["']([^"']+)["']/i)?.[1];
+            if (!id) continue;
+            const child = new MockElement(id, match[1]);
+            for (const attribute of attributes.matchAll(/([\w-]+)=["']([^"']*)["']/g)) {
+                child.setAttribute(attribute[1], attribute[2]);
+            }
+            child.disabled = /\sdisabled(?:\s|$|=)/i.test(attributes);
+            child.value = child.getAttribute("value") || "";
+            this.appendChild(child);
+        }
+    }
     get innerText() { return this._innerText; }
     set innerText(v) { this._innerText = String(v ?? ""); }
     get textContent() { return this._innerText; }
@@ -65,7 +88,12 @@ class MockElement {
     }
     removeAttribute(k) { delete this.attributes[k]; }
     appendChild(child) { this.children.push(child); child.parentNode = this; return child; }
-    querySelector() { return null; }
+    querySelector(selector) {
+        const action = selector.match(/^\[data-trial-action=["']([^"']+)["']\]$/)?.[1];
+        return this.children.find(child => action
+            ? child.getAttribute("data-trial-action") === action
+            : selector === "#" + child.id) || null;
+    }
     querySelectorAll() { return []; }
     getBoundingClientRect() { return { top: 0, left: 0, width: 100, height: 100, right: 100, bottom: 100 }; }
 }
@@ -281,7 +309,10 @@ function captureDefenseDiagnostic(engine, ui) {
             sliderDisabled: sliderTag ? hasDisabledAttribute(sliderTag) : null,
             sliderMax: numericAttribute(sliderTag, "max"),
             increaseDisabled: increaseTag ? hasDisabledAttribute(increaseTag) : null,
-            maxButtonDisabled: maxTag ? hasDisabledAttribute(maxTag) : null
+            maxButtonDisabled: maxTag ? hasDisabledAttribute(maxTag) : null,
+            sliderInputBound: typeof document.getElementById("trialDefenseAllocationSlider")?.oninput === "function",
+            increaseClickBound: typeof document.getElementById("btnTrialDefenseIncrease")?.onclick === "function",
+            maxClickBound: typeof document.getElementById("btnTrialDefenseMax")?.onclick === "function"
         }
     };
 }
@@ -440,9 +471,30 @@ failWithSnapshot("Action Tray defense input must be enabled", snapshot, () => {
     assert.equal(snapshot.actionTray.maxButtonDisabled, false);
 });
 
-const requested = Math.max(1, Math.min(3, snapshot.maxForActive));
-const allocation = ui.setTrialDefenseAllocation(requested);
+const requested = inputMode === "max" ? snapshot.maxForActive
+    : inputMode === "increase" ? 1 : Math.max(1, Math.min(3, snapshot.maxForActive));
+let allocation;
+if (inputMode === "direct") {
+    allocation = ui.setTrialDefenseAllocation(requested);
+} else {
+    const id = inputMode === "slider" ? "trialDefenseAllocationSlider"
+        : inputMode === "increase" ? "btnTrialDefenseIncrease" : "btnTrialDefenseMax";
+    const control = document.getElementById(id);
+    assert.ok(control, "ACTION_TRAY_EVENT_CONTROL_NOT_RENDERED: " + id);
+    assert.equal(control.disabled, false, "ACTION_TRAY_EVENT_CONTROL_DISABLED: " + id);
+    const handler = inputMode === "slider" ? "oninput" : "onclick";
+    assert.equal(typeof control[handler], "function", "ACTION_TRAY_EVENT_HANDLER_NOT_BOUND: " + id);
+    control.value = String(requested);
+    allocation = control[handler]({ target: control, type: inputMode === "slider" ? "input" : "click" });
+    const replacement = document.getElementById(id);
+    assert.notEqual(replacement, control, "Action Tray must replace rendered control after allocation");
+    assert.equal(typeof replacement?.[handler], "function", "Action Tray must rebind replacement control");
+    // Event handlers may intentionally discard the Domain method return value.
+    allocation = ui.trialPresentationState.previewDefenseAllocation;
+}
 const afterAllocation = captureDefenseDiagnostic(engine, ui);
+console.log("P0 DEFENSE ALLOCATION AFTER INPUT: " + inputMode);
+console.log(JSON.stringify(afterAllocation, null, 2));
 
 failWithSnapshot("defense allocation must advance tutorial and remain in draft preview", afterAllocation, () => {
     assert.equal(allocation, requested);
@@ -454,6 +506,8 @@ failWithSnapshot("defense allocation must advance tutorial and remain in draft p
 
 const committedDraft = ui.setTrialActiveRouteIntercept();
 const afterDraft = captureDefenseDiagnostic(engine, ui);
+console.log("P0 DEFENSE ALLOCATION AFTER DRAFT");
+console.log(JSON.stringify(afterDraft, null, 2));
 
 failWithSnapshot("defense allocation must commit into Trial Planning Draft", afterDraft, () => {
     assert.equal(committedDraft?.success, true);
@@ -464,4 +518,4 @@ failWithSnapshot("defense allocation must commit into Trial Planning Draft", aft
     assert.deepEqual(row.interceptCell, { r: selectedCell.r, c: selectedCell.c });
 });
 
-console.log("\n✅ FirstRun Trial1 Defense Allocation production-path diagnostic PASS");
+console.log("\n✅ FirstRun Trial1 Defense Allocation production-path diagnostic PASS (input=" + inputMode + ")");
