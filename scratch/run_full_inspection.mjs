@@ -425,6 +425,8 @@ async function main() {
         ["Investigation Report Presenter", "scratch/test_investigation_report_presenter.mjs"],
         ["Investigation Report Text Renderer", "scratch/test_investigation_report_text_renderer.mjs"],
         ["Investigation Narrative", "scratch/test_investigation_narrative.mjs"],
+        ["Investigation Runtime Presentation Connection", "scratch/test_investigation_runtime_presentation_connection.mjs"],
+        ["Investigation Report Component DOM", "scratch/test_investigation_report_component_dom.mjs"],
         ["Investigation Request v1", "scratch/test_investigation_request_v1.mjs"],
         ["Investigation Chronicle Bridge", "scratch/test_investigation_chronicle_bridge.mjs"],
         ["Captured Scout Investigation Bridge", "scratch/test_captured_scout_investigation_bridge.mjs"],

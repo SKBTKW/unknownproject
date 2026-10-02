@@ -52,6 +52,8 @@ import {
     FirstRunTrialTutorialService,
     FIRST_RUN_TRIAL_TUTORIAL_EVENTS
 } from '../tutorial/first_run_trial_tutorial_service.js';
+import { InvestigationReportComponent } from './investigation_report_component.js';
+import { InvestigationCardPresentationRuntime } from './investigation_card_presentation_runtime.js';
 
 class UIController {
     /**
@@ -85,6 +87,12 @@ class UIController {
         this.diceQueue = new DiceDisplayQueue(this.diceWidget);
         this.devDiceControls = (typeof document !== 'undefined') ? new DevDiceControlsComponent(this) : null;
         this.buildIdentityBadge = (typeof document !== 'undefined') ? new BuildIdentityBadgeComponent() : null;
+        this.investigationReportComponent = (typeof document !== 'undefined')
+            ? new InvestigationReportComponent()
+            : null;
+        this.investigationCardPresentationRuntime = new InvestigationCardPresentationRuntime({
+            component: this.investigationReportComponent
+        });
         this.layoutStateManager = new LayoutStateManager();
         this.trialActionTrayComponent = (typeof document !== 'undefined')
             ? new TrialActionTrayComponent(this)
@@ -1614,6 +1622,7 @@ class UIController {
         if (!this.state || this.state.hasPickedThisTurn) return;
 
         const tObj = card?.terrain || card;
+        const category = card?.category || tObj?.category || "LAND";
         const variants = Array.isArray(tObj?.executionVariants) ? tObj.executionVariants : [];
         if (variants.length > 0 && !tObj.selectedExecutionVariantId) {
             const modalSys = (typeof window !== "undefined" && window.ModalSystem) ? window.ModalSystem : ModalSystem;
@@ -1693,8 +1702,12 @@ class UIController {
 
         if (typeof window !== "undefined" && window.ModalSystem) {
             const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
-            const titleStr = I18n ? I18n.t("UI_CMD_CONFIRM_TITLE", { name: cName }) : `📜 ${cName}`;
-            const confirmStr = I18n ? I18n.t("UI_ACTIVATE_CMD") : "⚡ 発動する";
+            const titleStr = category === "INVESTIGATION"
+                ? (I18n ? I18n.t("UI_INVESTIGATION_CONFIRM_TITLE", { name: cName }) : cName)
+                : (I18n ? I18n.t("UI_CMD_CONFIRM_TITLE", { name: cName }) : `📜 ${cName}`);
+            const confirmStr = category === "INVESTIGATION"
+                ? (I18n ? I18n.t("UI_INVESTIGATION_EXECUTE") : "調査する")
+                : (I18n ? I18n.t("UI_ACTIVATE_CMD") : "⚡ 発動する");
             const cancelStr = I18n ? I18n.t("UI_CANCEL") : "✖ キャンセル";
 
             window.ModalSystem.showConfirmDialog({
@@ -1704,6 +1717,10 @@ class UIController {
                 confirmLabel: confirmStr,
                 cancelLabel: cancelStr,
                 onConfirm: () => {
+                    if (category === "INVESTIGATION") {
+                        this.playInvestigationCard(card, idx, reserveIdx);
+                        return;
+                    }
                     this.playCommandCard(card, idx);
                     this.selectedCard = null;
                     this.selectedCardIdx = -1;
@@ -2389,6 +2406,30 @@ class UIController {
         }
     }
 
+    playInvestigationCard(card, targetIdx, reserveIdx = -1) {
+        if (!this.investigationCardPresentationRuntime) {
+            return { success: false, reason: "INVESTIGATION_PRESENTATION_RUNTIME_UNAVAILABLE" };
+        }
+        const cardIdx = (typeof targetIdx === "number" && targetIdx >= 0)
+            ? targetIdx
+            : (this.state?.handOffering ? this.state.handOffering.indexOf(card) : -1);
+        const resolvedReserveIdx = reserveIdx >= 0 ? reserveIdx : this.selectedReserveIdx;
+        const source = resolvedReserveIdx !== -1
+            ? { type: "RESERVE", index: resolvedReserveIdx }
+            : { type: "OFFERING", index: cardIdx };
+
+        const res = this.investigationCardPresentationRuntime.execute(this.engine, card, source);
+        if (res?.success) {
+            sfxManager.play("COMMAND_EXECUTE");
+            this.selectedCard = null;
+            this.selectedCardIdx = -1;
+            this.selectedReserveIdx = -1;
+            if (focusLayerManager) focusLayerManager.onCardDeselect();
+            this.render();
+        }
+        return res;
+    }
+
     playCommandCard(card, targetIdx, target = null) {
         if (!this.engine || typeof this.engine.playCommandCard !== "function") return;
         let cardIdx = (typeof targetIdx === "number" && targetIdx >= 0) ? targetIdx : (this.state && this.state.handOffering ? this.state.handOffering.indexOf(card) : -1);
@@ -2585,6 +2626,17 @@ class UIController {
                 <div class="card-action-hint-item">
                     <span class="card-action-hint-bullet">&bull;</span>
                     <span>${I18n.t("UI_CARD_HINT_ROTATE")}</span>
+                </div>
+                <div class="card-action-hint-item">
+                    <span class="card-action-hint-bullet">&bull;</span>
+                    <span>${I18n.t("UI_CARD_HINT_RESERVE")}</span>
+                </div>
+            `;
+        } else if (category === "INVESTIGATION") {
+            popover.innerHTML = `
+                <div class="card-action-hint-item">
+                    <span class="card-action-hint-bullet">&bull;</span>
+                    <span>${I18n.t("UI_CARD_HINT_INVESTIGATE")}</span>
                 </div>
                 <div class="card-action-hint-item">
                     <span class="card-action-hint-bullet">&bull;</span>
