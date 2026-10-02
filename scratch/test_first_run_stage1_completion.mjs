@@ -32,7 +32,12 @@ function certify(label, fn) {
     }
 }
 function requireSuccess(result, label) {
-    assert.equal(result?.success, true, `${label}: ${JSON.stringify(result)}`);
+    if (result?.success !== true) {
+        const reason = result?.reason
+            ?? (Array.isArray(result?.errors) ? result.errors.join(",") : null)
+            ?? "UNKNOWN_FAILURE";
+        assert.fail(`${label}: ${reason}`);
+    }
     return result;
 }
 
