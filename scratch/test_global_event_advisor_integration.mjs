@@ -28,6 +28,25 @@ function createComponent(order) {
     };
 }
 
+function createTimerHarness() {
+    const callbacks = new Map();
+    let nextId = 1;
+    return {
+        setTimer(callback) {
+            const id = nextId++;
+            callbacks.set(id, callback);
+            return id;
+        },
+        clearTimer(id) { callbacks.delete(id); },
+        runAll() {
+            const pending = [...callbacks.values()];
+            callbacks.clear();
+            for (const callback of pending) callback();
+        },
+        size() { return callbacks.size; }
+    };
+}
+
 function createAdvisorDock(order, scenes, { emitScene = true, enabled = true, subscribe = true } = {}) {
     const listeners = new Set();
     return {
@@ -179,6 +198,32 @@ const unsubscribableRuntime = new GlobalEventPresentationRuntimeIntegration(unsu
 });
 unsubscribableManager.emit({ timing: "START", eventId: "EVENT_DEMIHUMAN_TRACES", turn: 7, category: "WARNING", importance: "MAJOR" });
 assert.equal(unsubscribableRuntime.isInteractionLocked(), false, "missing dialogue subscription must fail open");
+
+const stalledManager = createManager();
+const stalledState = new FirstRunState({ active: true });
+const stalledOrder = [], stalledScenes = [];
+const stalledDock = createAdvisorDock(stalledOrder, stalledScenes);
+const stalledTimers = createTimerHarness();
+const stalledUi = {
+    state: { turn: 7 },
+    engine: { globalEventManager: stalledManager, firstRunState: stalledState },
+    advisorDockComponent: stalledDock
+};
+const stalledRuntime = new GlobalEventPresentationRuntimeIntegration(stalledUi, {
+    component: createComponent(stalledOrder),
+    presentationHook: new GlobalEventAdvisorPresentationIntegration(stalledUi, {
+        setTimer: callback => stalledTimers.setTimer(callback),
+        clearTimer: id => stalledTimers.clearTimer(id),
+        failSafeMs: 1
+    })
+});
+stalledManager.emit({ timing: "START", eventId: "EVENT_DEMIHUMAN_TRACES", turn: 7, category: "WARNING", importance: "MAJOR" });
+assert.equal(stalledRuntime.isInteractionLocked(), true, "Advisor speech should initially own Confirm lock");
+assert.equal(stalledTimers.size(), 1, "successful Advisor presentation should arm one fail-open watchdog");
+stalledTimers.runAll();
+assert.equal(stalledRuntime.isInteractionLocked(), false, "missing Advisor completion must fail open after watchdog");
+assert.equal(stalledRuntime.handleAction("CONFIRM"), true, "watchdog release must leave Confirm usable");
+stalledRuntime.destroy();
 
 const throwingManager = createManager();
 const throwingUi = { engine: { globalEventManager: throwingManager } };
