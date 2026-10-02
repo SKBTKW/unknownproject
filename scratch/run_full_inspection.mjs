@@ -380,6 +380,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (FirstRun Stage1 Verse7→Trial1 Connected Flow) で不合格が検出されました。");
         process.exit(1);
     }
+    const firstRunSharedDiceDeterminismOk = await runCommand("node", ["scratch/test_first_run_shared_dice_determinism.mjs"]);
+    if (!firstRunSharedDiceDeterminismOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (FirstRun Shared Dice Determinism / Restore Contract) で不合格が検出されました。");
+        process.exit(1);
+    }
     const firstRunTrialTimingOk = await runCommand("node", ["scratch/test_first_run_trial_timing.mjs"]);
     if (!firstRunTrialTimingOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (FirstRun Trial1 Verse15 Timing) で不合格が検出されました。");
