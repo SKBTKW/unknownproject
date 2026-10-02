@@ -80,9 +80,21 @@ const before = JSON.stringify({
 });
 const source = [
     fs.readFileSync(new URL("../game/src/ui/global_event_presentation_runtime_integration.js", import.meta.url), "utf8"),
-    fs.readFileSync(new URL("../game/src/ui/global_event_advisor_presentation_integration.js", import.meta.url), "utf8")
+    fs.readFileSync(new URL("../game/src/ui/global_event_advisor_presentation_integration.js", import.meta.url), "utf8"),
+    fs.readFileSync(new URL("../game/src/presentation/global_event/global_event_public_presentation_read_model.js", import.meta.url), "utf8"),
+    fs.readFileSync(new URL("../game/src/ui/global_event_presentation_component.js", import.meta.url), "utf8")
 ].join("\n");
 assert.doesNotMatch(source, /from\s+["'][^"']*(?:warning|investigation|enemy_truth)[^"']*["']/i);
+assert.doesNotMatch(
+    source,
+    /from\s+["'][^"']*(?:dice|check_system|gameplay_random|rng)[^"']*["']/i,
+    "GE Presentation must not own Shared Dice / Check infrastructure"
+);
+assert.doesNotMatch(
+    source,
+    /\b(?:DicePool|roll2d6|roll2D6|checkSystem|gameplayRandom|Math\.random)\b/,
+    "GE Presentation must consume resolved public facts only, never roll or resolve checks"
+);
 assert.equal(JSON.stringify({
     warningState: ui.engine.warningState ?? null,
     investigationUnlocked: ui.engine.investigationUnlocked ?? null,
