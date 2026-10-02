@@ -2,6 +2,7 @@ import { I18n } from "../i18n.js";
 import { resolveModifierTag } from "./trial_interception_preview_component.js";
 import { MODIFIER_TARGETS, TRIAL_BATTLE_STATUSES } from "../trial/domain/trial_types.js";
 import { PLAYER_TRAY_MODES } from "./layout_state_manager.js";
+import { renderBattleExplanationHtml } from "./battle_explanation_ui_presenter.js";
 
 export class TrialActionTrayComponent {
     constructor(uiController, { hostId = "trialActionTrayHost" } = {}) {
@@ -388,6 +389,11 @@ export class TrialActionTrayComponent {
                     }
                 }
 
+                const battleExplanationHtml = renderBattleExplanationHtml(
+                    this.ui.getCurrentBattlePresentationReadModel?.() || null,
+                    I18n
+                );
+
                 const tutorialPolicy = this.ui.getFirstRunTrialTutorialPolicy?.() || { tutorialActive: false };
                 const showTutorialCausality = tutorialPolicy.tutorialActive
                     && tutorialPolicy.step === "RESULT_CAUSALITY";
@@ -481,6 +487,7 @@ export class TrialActionTrayComponent {
                         ${battleDetailsHtml}
                         ${powerComparisonHtml}
                         ${tagsHtml}
+                        ${battleExplanationHtml}
                         ${tutorialCausalityHtml}
                         ${traversalControlsHtml}
                     </div>

@@ -1280,6 +1280,14 @@
       ]
     },
     {
+      "path": "scratch/test_battle_narrative_result_ui_presenter.mjs",
+      "purpose": "Render canonical WHAT/WHY/DECISIVE/CONSEQUENCE/FORTUNE Battle explanation read model into Trial result UI without gameplay inference",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_battle_presentation_runtime_integration.mjs",
       "purpose": "Trial flow creates immutable Battle Resolution Snapshot before state commit and exposes it to presentation runtime without cross-battle contamination",
       "suite": "existing",
@@ -1791,6 +1799,22 @@
     {
       "path": "scratch/test_stage1_trial1_burden_certification.mjs",
       "purpose": "FirstRun Trial1 deployment burden against paid Stage1 Board investment balances",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_first_run_stage1_completion.mjs",
+      "purpose": "FirstRun Stage1 end-to-end completion certification coverage",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_investigation_presentation_polish.mjs",
+      "purpose": "Investigation report and narrative presentation polish coverage",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
