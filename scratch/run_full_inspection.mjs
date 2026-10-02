@@ -501,6 +501,7 @@ async function main() {
         ["Battle causality domain", "node", ["scratch/test_battle_causality_domain.mjs"]],
         ["Battle causality resolution domain", "node", ["scratch/test_battle_causality_resolution_domain.mjs"]],
         ["Battle Opportunity / Fortune lifecycle", "node", ["scratch/test_battle_opportunity_fortune_lifecycle.mjs"]],
+        ["Battle Fortune CheckResult adapter boundary", "node", ["scratch/test_battle_fortune_check_result_adapter.mjs"]],
         ["Battle presentation runtime bridge", "node", ["scratch/test_battle_presentation_runtime_bridge.mjs"]],
         ["Battle Narrative / Advisor Presentation v2", "node", ["scratch/test_battle_narrative_advisor_presentation_v2.mjs"]],
         ["Battle Advisor runtime delivery", "node", ["scratch/test_battle_advisor_runtime_delivery.mjs"]],
