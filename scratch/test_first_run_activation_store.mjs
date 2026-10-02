@@ -101,12 +101,17 @@ console.log("\nFirstRun browser activation store contract");
         fakeUi,
         FIRST_RUN_TRIAL_TUTORIAL_EVENTS.CAUSALITY_OBSERVED
     );
-    assert.equal(completed.completed, true);
-    assert.equal(completionWrites, 1, "causality acknowledgement must persist FirstRun completion");
-    assert.deepEqual(fakeUi.lastFirstRunActivationPersistenceResult, {
-        success: true,
-        completed: true
-    });
+    assert.equal(completed.completed, true, "Trial tutorial may complete at causality acknowledgment");
+    assert.equal(
+        completionWrites,
+        0,
+        "Trial tutorial completion must not persist browser-wide FirstRun completion before Stage2"
+    );
+    assert.equal(
+        fakeUi.lastFirstRunActivationPersistenceResult,
+        undefined,
+        "Stage1 tutorial completion must remain separate from FirstRun run completion persistence"
+    );
 }
 
 {

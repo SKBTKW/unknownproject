@@ -365,6 +365,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (FirstRun Browser Activation Persistence) で不合格が検出されました。");
         process.exit(1);
     }
+    const firstRunSemanticBoundaryOk = await runCommand("node", ["scratch/test_first_run_semantic_boundaries.mjs"]);
+    if (!firstRunSemanticBoundaryOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (FirstRun Semantic Boundaries) で不合格が検出されました。");
+        process.exit(1);
+    }
     const firstRunIntegrationOk = await runCommand("node", ["scratch/test_first_run_game_engine_integration.mjs"]);
     if (!firstRunIntegrationOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (FirstRun GameEngine Integration) で不合格が検出されました。");
@@ -865,6 +870,11 @@ async function main() {
     const stage1CanonicalPathOk = await runCommand("node", ["scratch/test_stage1_canonical_runtime_path.mjs"]);
     if (!stage1CanonicalPathOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Final Gate (Stage1 Canonical Runtime Path Guard) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const firstRunStage1CompletionOk = await runCommand("node", ["scratch/test_first_run_stage1_completion.mjs"]);
+    if (!firstRunStage1CompletionOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Final Gate (FirstRun Stage1 Completion Certification) で不合格が検出されました。");
         process.exit(1);
     }
 

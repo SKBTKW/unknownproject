@@ -11,6 +11,7 @@ import { attachTrialLaunchSubsystem } from "../game/src/trial/integration/trial_
 import { FIRST_RUN_DEMIHUMAN_TRACES_EVENT_ID } from "../game/src/tutorial/first_run_service.js";
 import { FIRST_RUN_TRIAL_TUTORIAL_STEPS } from "../game/src/tutorial/first_run_state.js";
 import { GLOBAL_EVENT_TIMINGS } from "../game/src/systems/global_event_system.js";
+import { OFFERING_GENERATION_REASONS } from "../game/src/systems/deck_manager.js";
 import {
     resolvePlacementAnchor,
     resolvePlacementAttributeCells,
@@ -245,6 +246,32 @@ certify("PRE_TRIAL: Verse8 Investigation available", () => {
     assert.equal(engine.state.turn, 8);
     assert.notEqual(investigationIndex, -1);
 });
+
+certify("VERSE8_INVESTIGATION_GUARANTEE: Verse8 only / no Mulligan re-guarantee", () => {
+    const verseStartMinimums = engine.firstRunService.getMinimumRequirements({
+        reason: OFFERING_GENERATION_REASONS.VERSE_START,
+        state: engine.state
+    });
+    assert.equal(
+        verseStartMinimums.some(requirement => requirement?.id === "FIRST_RUN_INVESTIGATION"),
+        true,
+        "Verse8 must request the FirstRun Investigation minimum"
+    );
+    assert.equal(
+        engine.deckManager.lastOfferingGeneration?.requestedMinimums,
+        1,
+        "Verse8 Offering must be generated with the FirstRun minimum requirement"
+    );
+    const mulliganMinimums = engine.firstRunService.getMinimumRequirements({
+        reason: OFFERING_GENERATION_REASONS.MULLIGAN,
+        state: engine.state
+    });
+    assert.equal(
+        mulliganMinimums.some(requirement => requirement?.id === "FIRST_RUN_INVESTIGATION"),
+        false,
+        "Mulligan must not re-apply the FirstRun Investigation guarantee"
+    );
+});
 const reportsBefore = engine.state.knownEnemyState?.reports?.length || 0;
 const investigationCard = engine.state.handOffering[investigationIndex];
 const investigation = engine.executeInvestigationCard(investigationCard, { type: "OFFERING", index: investigationIndex });
@@ -252,6 +279,21 @@ certify("PRE_TRIAL: Investigation executes and KnownEnemyState advances", () => 
     assert.equal(investigation?.success, true);
     assert.equal(engine.state.knownEnemyState.reports.length, reportsBefore + 1);
     assert.equal(engine.warningStateService.getState(), WARNING_STATES.WATCH);
+});
+
+placeRepresentativeLand(engine);
+engine.nextTurn();
+certify("FIRST_RUN_INVESTIGATION_GUARANTEE_SCOPE", () => {
+    assert.equal(engine.state.turn, 9);
+    assert.equal(
+        engine.deckManager.lastOfferingGeneration?.reason,
+        OFFERING_GENERATION_REASONS.VERSE_START
+    );
+    assert.equal(
+        engine.deckManager.lastOfferingGeneration?.requestedMinimums,
+        0,
+        "Verse9+ must not force the FirstRun Investigation minimum every Verse"
+    );
 });
 
 while (engine.state.turn < 14) {
@@ -335,12 +377,17 @@ if (selectedRoute && selectedCell) {
     requireSuccess(ui.activateTrialPlan(), "activateTrialPlan");
 
     let firstBattleResolved = false;
-    while ((ui.getTrialBattleQueue() || []).some(b => b.status !== "RESOLVED")) {
+    const battleCount = (ui.getTrialBattleQueue() || []).length;
+    for (let battleOrdinal = 0; battleOrdinal < battleCount; battleOrdinal += 1) {
         const started = requireSuccess(ui.startTrialBattle(), "startTrialBattle");
         const resolved = requireSuccess(ui.resolveCurrentTrialBattle(), "resolveCurrentTrialBattle");
         firstBattleResolved = true;
         certify("TRIAL: Battle result and causality are observable", () => {
-            assert.ok(resolved.battleResolutionSnapshot || ui.getCurrentTrialBattleResult());
+            assert.ok(resolved.battleResolutionSnapshot, "canonical Battle Resolution Snapshot required");
+            assert.ok(ui.getCurrentTrialBattleResult(), "Battle result required");
+            const presentation = ui.battlePresentationRuntimeBridge?.project?.(resolved.battleResolutionSnapshot);
+            assert.equal(presentation?.available, true, "Battle Presentation projection required");
+            assert.ok(presentation?.narrative, "Battle Narrative projection required");
             const causality = ui.getCurrentTrialCausality();
             assert.equal(causality?.available, true);
             assert.equal(engine.firstRunState.getTrialTutorialState().currentStep, FIRST_RUN_TRIAL_TUTORIAL_STEPS.RESULT_CAUSALITY);
@@ -411,6 +458,13 @@ if (selectedRoute && selectedCell) {
     certify("STAGE2: normal progression resume gate open", () => {
         assert.equal(engine.postTrialProgressionReadService.read().canResumeNormalProgression, true);
         assert.equal(engine.trialSessionBoundaryService?.getState?.().active ?? false, false);
+    });
+    certify("FIRST_RUN_PERSISTENCE: activation persists exactly once at Stage2 completion boundary", () => {
+        assert.deepEqual(
+            activationWrites,
+            [{ verse: engine.state.turn, stageId: 2 }],
+            "whole-FirstRun completion must persist once, and only after Stage2 is active"
+        );
     });
 }
 
