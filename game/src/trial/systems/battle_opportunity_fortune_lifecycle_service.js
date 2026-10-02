@@ -33,6 +33,28 @@ function validateCost(cost) {
     return normalized;
 }
 
+function requireFortuneInput(fortuneInput) {
+    if (!fortuneInput || typeof fortuneInput !== "object") {
+        throw new TypeError("BATTLE_FORTUNE_INPUT_REQUIRED");
+    }
+    if (!Array.isArray(fortuneInput.dice) || fortuneInput.dice.length === 0) {
+        throw new TypeError("BATTLE_FORTUNE_INPUT_DICE_REQUIRED");
+    }
+    const dice = fortuneInput.dice.map(value => Number(value));
+    if (dice.some(value => !Number.isFinite(value))) {
+        throw new TypeError("BATTLE_FORTUNE_INPUT_DICE_INVALID");
+    }
+    const total = Number(fortuneInput.total);
+    if (!Number.isFinite(total)) {
+        throw new TypeError("BATTLE_FORTUNE_INPUT_TOTAL_REQUIRED");
+    }
+    return Object.freeze({
+        dice: Object.freeze(dice),
+        total,
+        provenance: cloneData(fortuneInput.provenance ?? null)
+    });
+}
+
 function requireOpportunityPending(snapshot) {
     if (snapshot.resolutionPhase !== BATTLE_RESOLUTION_PHASES.OPPORTUNITY_PENDING) {
         throw new Error(BATTLE_RESOLUTION_ERRORS.OPPORTUNITY_NOT_PENDING);
@@ -187,6 +209,89 @@ export class BattleOpportunityFortuneLifecycleService {
         return nextSnapshot;
     }
 
+    resolveFortuneInput(snapshot, fortuneInput) {
+        requireSnapshot(snapshot);
+        requireOpportunityPending(snapshot);
+        if (!snapshot.emberCommit?.committed) {
+            throw new Error(BATTLE_RESOLUTION_ERRORS.ALREADY_COMMITTED);
+        }
+        if (snapshot.fortuneRoll) {
+            throw new Error(BATTLE_RESOLUTION_ERRORS.FORTUNE_ALREADY_RESOLVED);
+        }
+
+        const normalizedInput = requireFortuneInput(fortuneInput);
+        const fortunePolicy = requirePolicy(
+            this.fortuneResultPolicy,
+            "resolve",
+            BATTLE_RESOLUTION_ERRORS.FORTUNE_ALREADY_RESOLVED
+        );
+        const decisivePolicy = requirePolicy(
+            this.decisiveEventPolicy,
+            "select",
+            BATTLE_RESOLUTION_ERRORS.FINAL_RESULT_REQUIRED
+        );
+        const finalPolicy = requirePolicy(
+            this.finalResultPolicy,
+            "projectFortune",
+            BATTLE_RESOLUTION_ERRORS.FINAL_RESULT_REQUIRED
+        );
+
+        const fortuneResolution = fortunePolicy.resolve({
+            snapshot,
+            opportunity: snapshot.opportunity,
+            dice: normalizedInput.dice,
+            total: normalizedInput.total,
+            checkProvenance: normalizedInput.provenance
+        });
+        if (!fortuneResolution || typeof fortuneResolution !== "object") {
+            throw new TypeError(BATTLE_RESOLUTION_ERRORS.FINAL_RESULT_REQUIRED);
+        }
+
+        const decisiveEvent = decisivePolicy.select({
+            snapshot,
+            opportunity: snapshot.opportunity,
+            fortuneResolution
+        }) ?? null;
+        const finalCombatResult = finalPolicy.projectFortune({
+            snapshot,
+            opportunity: snapshot.opportunity,
+            fortuneResolution,
+            decisiveEvent
+        });
+        if (!finalCombatResult || typeof finalCombatResult !== "object") {
+            throw new TypeError(BATTLE_RESOLUTION_ERRORS.FINAL_RESULT_REQUIRED);
+        }
+
+        const fortuneRoll = Object.freeze({
+            die1: normalizedInput.dice[0] ?? null,
+            die2: normalizedInput.dice[1] ?? null,
+            dice: normalizedInput.dice,
+            total: normalizedInput.total,
+            result: fortuneResolution.result ?? null,
+            payload: cloneData(fortuneResolution.payload ?? {}),
+            checkProvenance: cloneData(normalizedInput.provenance)
+        });
+        const opportunity = {
+            ...cloneData(snapshot.opportunity),
+            state: "RESOLVED",
+            declined: false,
+            resolved: true
+        };
+        return evolveBattleResolutionSnapshot(snapshot, {
+            opportunity,
+            fortuneRoll,
+            decisiveEvent: cloneData(decisiveEvent),
+            finalCombatResult: cloneData(finalCombatResult),
+            resolutionPhase: BATTLE_RESOLUTION_PHASES.FORTUNE_RESOLVED,
+            finalized: false
+        });
+    }
+
+    /**
+     * Legacy compatibility path until Shared Check Infrastructure is connected.
+     * New integrations should resolve the shared check elsewhere and call
+     * resolveFortuneInput() through the Fortune CheckResult adapter instead.
+     */
     resolveFortune(snapshot) {
         requireSnapshot(snapshot);
         requireOpportunityPending(snapshot);
@@ -204,77 +309,18 @@ export class BattleOpportunityFortuneLifecycleService {
             || typeof rng.setState !== "function") {
             throw new TypeError(BATTLE_RESOLUTION_ERRORS.GAMEPLAY_RNG_REQUIRED);
         }
-        const fortunePolicy = requirePolicy(
-            this.fortuneResultPolicy,
-            "resolve",
-            BATTLE_RESOLUTION_ERRORS.FORTUNE_ALREADY_RESOLVED
-        );
-        const decisivePolicy = requirePolicy(
-            this.decisiveEventPolicy,
-            "select",
-            BATTLE_RESOLUTION_ERRORS.FINAL_RESULT_REQUIRED
-        );
-        const finalPolicy = requirePolicy(
-            this.finalResultPolicy,
-            "projectFortune",
-            BATTLE_RESOLUTION_ERRORS.FINAL_RESULT_REQUIRED
-        );
 
         const rngCheckpoint = cloneData(rng.getState());
         try {
             const die1 = rng.nextInt(1, 6);
             const die2 = rng.nextInt(1, 6);
-            const total = die1 + die2;
-            const fortuneResolution = fortunePolicy.resolve({
-                snapshot,
-                opportunity: snapshot.opportunity,
-                dice: Object.freeze([die1, die2]),
-                total
-            });
-            if (!fortuneResolution || typeof fortuneResolution !== "object") {
-                throw new TypeError(BATTLE_RESOLUTION_ERRORS.FINAL_RESULT_REQUIRED);
-            }
-
-            const decisiveEvent = decisivePolicy.select({
-                snapshot,
-                opportunity: snapshot.opportunity,
-                fortuneResolution
-            }) ?? null;
-            const finalCombatResult = finalPolicy.projectFortune({
-                snapshot,
-                opportunity: snapshot.opportunity,
-                fortuneResolution,
-                decisiveEvent
-            });
-            if (!finalCombatResult || typeof finalCombatResult !== "object") {
-                throw new TypeError(BATTLE_RESOLUTION_ERRORS.FINAL_RESULT_REQUIRED);
-            }
-
-            const fortuneRoll = Object.freeze({
-                die1,
-                die2,
-                dice: Object.freeze([die1, die2]),
-                total,
-                result: fortuneResolution.result ?? null,
-                payload: cloneData(fortuneResolution.payload ?? {})
-            });
-            const opportunity = {
-                ...cloneData(snapshot.opportunity),
-                state: "RESOLVED",
-                declined: false,
-                resolved: true
-            };
-            return evolveBattleResolutionSnapshot(snapshot, {
-                opportunity,
-                fortuneRoll,
-                decisiveEvent: cloneData(decisiveEvent),
-                finalCombatResult: cloneData(finalCombatResult),
-                resolutionPhase: BATTLE_RESOLUTION_PHASES.FORTUNE_RESOLVED,
-                finalized: false
+            return this.resolveFortuneInput(snapshot, {
+                dice: [die1, die2],
+                total: die1 + die2,
+                provenance: { source: "LEGACY_GAMEPLAY_RANDOM" }
             });
         } catch (error) {
-            // Failed policy/projection work must not advance canonical Gameplay RNG.
-            // Otherwise retrying the same persisted battle could reroll Fortune.
+            // Legacy path preserves exact retry determinism until it is retired.
             rng.setState(rngCheckpoint);
             throw error;
         }

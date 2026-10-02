@@ -1264,6 +1264,14 @@
       ]
     },
     {
+      "path": "scratch/test_battle_fortune_check_result_adapter.mjs",
+      "purpose": "Shared CheckResult anti-corruption boundary into Battle Fortune Domain without owning DicePool, RNG, generic CheckResult, or dice presentation",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_battle_presentation_runtime_bridge.mjs",
       "purpose": "Battle Resolution Snapshot to read-only Narrative, PresentationState restore/dedupe, Advisor semantic payload, and dice presentation bridge",
       "suite": "existing",
@@ -1803,6 +1811,19 @@
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
       ]
+    },
+    {
+      "path": "scratch/test_first_run_stage1_completion.mjs",
+      "purpose": "FirstRun Stage1 end-to-end completion certification coverage",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_investigation_presentation_polish.mjs",
+      "purpose": "Investigation report and narrative presentation polish coverage",
+      "suite": "supplemental"
     }
   ]
-}\n
+}
