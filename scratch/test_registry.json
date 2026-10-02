@@ -415,6 +415,14 @@
       ]
     },
     {
+      "path": "scratch/test_first_run_shared_dice_determinism.mjs",
+      "purpose": "FirstRun Verse7→Verse9 Investigation replay determinism across Check RNG and gameplay RNG state restore",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_first_run_trial_ingress_policy.mjs",
       "purpose": "first run trial ingress policy",
       "suite": "existing",
@@ -1797,4 +1805,4 @@
       ]
     }
   ]
-}
+}\n
