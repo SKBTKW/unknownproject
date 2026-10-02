@@ -1248,6 +1248,14 @@
       ]
     },
     {
+      "path": "scratch/test_battle_narrative_advisor_presentation_v2.mjs",
+      "purpose": "Snapshot-only WHAT/WHY/DECISIVE/CONSEQUENCE/FORTUNE explanation projection, canonical Decisive preservation, Advisor fail-open delivery, restore dedupe, and no context re-inference",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_battle_presentation_runtime_integration.mjs",
       "purpose": "Trial flow creates immutable Battle Resolution Snapshot before state commit and exposes it to presentation runtime without cross-battle contamination",
       "suite": "existing",
