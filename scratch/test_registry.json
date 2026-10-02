@@ -1815,10 +1815,7 @@
     {
       "path": "scratch/test_investigation_presentation_polish.mjs",
       "purpose": "Investigation report and narrative presentation polish coverage",
-      "suite": "existing",
-      "entryPoints": [
-        "scratch/run_full_inspection.mjs"
-      ]
+      "suite": "supplemental"
     }
   ]
 }
