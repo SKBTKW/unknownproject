@@ -115,6 +115,39 @@ console.log("\nFirstRun browser activation store contract");
 }
 
 {
+    let completionWrites = 0;
+    const fakeUi = {
+        engine: {
+            state: { stage: { id: 2 } },
+            firstRunState: {
+                active: true,
+                getTrialTutorialState() {
+                    return { completed: true };
+                }
+            },
+            firstRunActivationStore: {
+                markCompleted() {
+                    completionWrites += 1;
+                    return { success: true, completed: true };
+                }
+            }
+        }
+    };
+    const result = UIController.prototype.persistFirstRunCompletionAfterStageAdvance.call(fakeUi, {
+        transition: { stageAdvance: { status: "APPLIED" } }
+    });
+    assert.equal(result.success, true);
+    assert.equal(result.persisted, true);
+    assert.equal(completionWrites, 1, "Stage2 application must persist FirstRun completion exactly at the completion boundary");
+
+    const repeated = UIController.prototype.persistFirstRunCompletionAfterStageAdvance.call(fakeUi, {
+        transition: { stageAdvance: { status: "APPLIED" } }
+    });
+    assert.equal(repeated.alreadyPersisted, true);
+    assert.equal(completionWrites, 1, "completion persistence must be idempotent within the active UI runtime");
+}
+
+{
     const indexHtml = fs.readFileSync(new URL("../game/index.html", import.meta.url), "utf8");
     const normalized = indexHtml.replace(/\s+/g, " ");
     assert.match(

@@ -114,7 +114,7 @@ export class FirstRunService {
 
         if (
             reason === OFFERING_GENERATION_REASONS.VERSE_START
-            && verse >= this.investigationGuaranteeVerse
+            && verse === this.investigationGuaranteeVerse
             && state.investigationUnlocked === true
         ) {
             return [Object.freeze({
