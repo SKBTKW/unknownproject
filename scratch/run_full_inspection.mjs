@@ -493,6 +493,7 @@ async function main() {
         ["Battle Opportunity / Fortune lifecycle", "node", ["scratch/test_battle_opportunity_fortune_lifecycle.mjs"]],
         ["Battle presentation runtime bridge", "node", ["scratch/test_battle_presentation_runtime_bridge.mjs"]],
         ["Battle Narrative / Advisor Presentation v2", "node", ["scratch/test_battle_narrative_advisor_presentation_v2.mjs"]],
+        ["Battle Advisor runtime delivery", "node", ["scratch/test_battle_advisor_runtime_delivery.mjs"]],
         ["Battle presentation runtime integration", "node", ["scratch/test_battle_presentation_runtime_integration.mjs"]],
         ["Road network foundation", "node", ["scratch/test_road_network_foundation.mjs"]],
         ["Trial route visual semantics", "node", ["scratch/test_trial_route_visual_semantics.mjs"]],
@@ -727,6 +728,11 @@ async function main() {
     const globalEventAdvisorIntegrationOk = await runCommand("node", ["scratch/test_global_event_advisor_integration.mjs"]);
     if (!globalEventAdvisorIntegrationOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Global Event Advisor Integration) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const firstRunVerse7GlobalEventPresentationOk = await runCommand("node", ["scratch/test_first_run_verse7_global_event_presentation_polish.mjs"]);
+    if (!firstRunVerse7GlobalEventPresentationOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (FirstRun Verse7 Global Event Presentation) で不合格が検出されました。");
         process.exit(1);
     }
     const globalEventChoiceRestoreOk = await runCommand("node", ["scratch/test_global_event_choice_restore_reconciliation.mjs"]);
