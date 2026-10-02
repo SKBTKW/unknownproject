@@ -6,6 +6,12 @@ import { I18n } from "../game/src/i18n.js";
 import { createObservableEnemyProfile } from "../game/src/warning/domain/observable_enemy_profile.js";
 import { attachTrialRuntimeSubsystems } from "../game/src/trial/integration/trial_runtime_bootstrap.js";
 import { attachTrialLaunchSubsystem } from "../game/src/trial/integration/trial_launch_bootstrap.js";
+import { attachBoardPresentationRuntime } from "../game/src/ui/board_presentation_runtime_bridge.js";
+import { attachTrialActionTray } from "../game/src/ui/trial_action_tray_runtime_bridge.js";
+import {
+    BOARD_INPUT_COMMANDS,
+    createBoardInputCommand
+} from "../game/src/presentation/board_input_contract.js";
 import { FIRST_RUN_TRIAL_TUTORIAL_STEPS } from "../game/src/tutorial/first_run_state.js";
 import {
     resolvePlacementAnchor,
@@ -297,6 +303,8 @@ ui.render = () => {};
 ui.renderBoardGrid = () => {};
 ui.hideCellTooltip = () => {};
 assert.equal(attachTrialLaunchSubsystem(engine, ui).success, true);
+attachBoardPresentationRuntime(ui);
+attachTrialActionTray(ui);
 
 while (engine.state.turn < 7) {
     placeRepresentativeLand(engine);
@@ -344,10 +352,26 @@ for (const route of routes) {
 assert.ok(selectedRoute, "P0_REPRO_NO_ROUTE");
 assert.ok(selectedCell, "P0_REPRO_NO_LEGAL_INTERCEPTION_CELL");
 assert.equal(ui.selectTrialRoute(selectedRoute.id), true);
-ui.updateTrialInterceptionPreview(selectedCell.r, selectedCell.c);
-assert.equal(ui.selectTrialInterceptionCell(selectedCell.r, selectedCell.c), true);
+const interceptionInput = createBoardInputCommand(
+    BOARD_INPUT_COMMANDS.SELECT_TRIAL_INTERCEPTION,
+    {
+        routeId: selectedRoute.id,
+        cell: { r: selectedCell.r, c: selectedCell.c }
+    }
+);
+const interceptionDispatch = ui.boardPresentationRuntimeBridge.dispatchInput(interceptionInput);
+assert.equal(
+    interceptionDispatch?.success,
+    true,
+    "production BoardPresentationRuntime must deliver interception selection"
+);
 
-const snapshot = captureDefenseDiagnostic(engine, ui);
+const snapshot = {
+    ...captureDefenseDiagnostic(engine, ui),
+    boardInput: {
+        interceptionDispatch
+    }
+};
 console.log("\nP0 DEFENSE ALLOCATION SNAPSHOT");
 console.log(JSON.stringify(snapshot, null, 2));
 
