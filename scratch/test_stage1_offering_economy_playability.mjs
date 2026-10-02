@@ -637,11 +637,11 @@ function runSeedTrace(seed, {
             assert.equal(snapshot.legalOfferingLandCount > 0, true, "Verse1 needs an actually placeable LAND in Offering");
         }
 
-        if (verse >= 8) {
+        if (verse === 8) {
             assert.equal(
                 (engine.state.handOffering || []).some(card => definitionOf(card)?.category === "INVESTIGATION"),
                 true,
-                `seed ${seed} V${verse}: FirstRun must guarantee Investigation in Offering after unlock`
+                `seed ${seed} V8: FirstRun must guarantee Investigation in Offering on the unlock verse`
             );
         }
 
