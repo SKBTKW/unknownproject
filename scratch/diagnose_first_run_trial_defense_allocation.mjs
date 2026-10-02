@@ -412,6 +412,19 @@ console.log("\nP0 DEFENSE ALLOCATION SNAPSHOT");
 console.log(JSON.stringify(snapshot, null, 2));
 console.log("CLASSIFICATION: " + classifyDefenseStop(snapshot));
 
+// A real pointer may hover again after selection re-renders the board.
+// Keep this production UI event in the diagnose; direct allocation misses it.
+ui.updateTrialInterceptionPreview(selectedCell.r, selectedCell.c);
+const afterSelectionHover = captureDefenseDiagnostic(engine, ui);
+console.log("\nP0 POST-SELECTION HOVER SNAPSHOT");
+console.log(JSON.stringify(afterSelectionHover, null, 2));
+console.log("POST_SELECTION_HOVER_CLASSIFICATION: " + classifyDefenseStop(afterSelectionHover));
+failWithSnapshot("post-selection hover must keep defense input open", afterSelectionHover, () => {
+    assert.equal(afterSelectionHover.tutorial.currentStep, FIRST_RUN_TRIAL_TUTORIAL_STEPS.DEFENSE_ALLOCATION);
+    assert.equal(afterSelectionHover.policy.allowDefenseInput, true);
+    assert.equal(afterSelectionHover.actionTray.sliderDisabled, false);
+});
+
 failWithSnapshot("tutorial must enter DEFENSE_ALLOCATION", snapshot, () => {
     assert.equal(snapshot.tutorial.currentStep, FIRST_RUN_TRIAL_TUTORIAL_STEPS.DEFENSE_ALLOCATION);
     assert.equal(snapshot.policy.allowInterceptionSelection, true);

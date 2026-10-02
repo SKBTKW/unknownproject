@@ -94,7 +94,11 @@ export class FirstRunTrialTutorialService {
                 if (!next.routeIntroduced) return current;
                 next.interceptionIntroduced = true;
                 next.terrainIntroduced = true;
-                next.currentStep = FIRST_RUN_TRIAL_TUTORIAL_STEPS.TERRAIN_COMPARE;
+                // Pointer hover can recur after the selected cell re-renders.
+                // Terrain observations must not revoke Defense/Review input.
+                if (!next.interceptionSelected) {
+                    next.currentStep = FIRST_RUN_TRIAL_TUTORIAL_STEPS.TERRAIN_COMPARE;
+                }
                 break;
 
             case FIRST_RUN_TRIAL_TUTORIAL_EVENTS.INTERCEPTION_SELECTED:

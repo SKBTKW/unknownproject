@@ -57,6 +57,12 @@ import {
     assert.equal(policy.allowTrialConfirm, false);
     assert.equal(policy.qualitativePreviewOnly, true);
 
+    state = service.record({ firstRunState, trialIndex: 1,
+        event: FIRST_RUN_TRIAL_TUTORIAL_EVENTS.INTERCEPTION_HOVERED });
+    assert.equal(state.currentStep, FIRST_RUN_TRIAL_TUTORIAL_STEPS.DEFENSE_ALLOCATION,
+        "hover after selection must not rewind the tutorial");
+    assert.equal(service.getPresentationPolicy({ firstRunState }).allowDefenseInput, true);
+
     state = service.record({
         firstRunState,
         trialIndex: 1,
@@ -67,6 +73,12 @@ import {
 
     policy = service.getPresentationPolicy({ firstRunState });
     assert.equal(policy.allowTrialConfirm, true);
+
+    state = service.record({ firstRunState, trialIndex: 1,
+        event: FIRST_RUN_TRIAL_TUTORIAL_EVENTS.INTERCEPTION_HOVERED });
+    assert.equal(state.currentStep, FIRST_RUN_TRIAL_TUTORIAL_STEPS.FINAL_REVIEW,
+        "hover after allocation must not close final review");
+    assert.equal(service.getPresentationPolicy({ firstRunState }).allowTrialConfirm, true);
 
     service.record({
         firstRunState,
