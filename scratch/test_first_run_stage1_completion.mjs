@@ -2,10 +2,8 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 import { GameEngine, UIController } from "../game/src/app.js";
-import { GameState } from "../game/src/v2_unity_ready_main.js";
 import { I18n } from "../game/src/i18n.js";
 import { WARNING_STATES } from "../game/src/warning/domain/warning_state.js";
-import { createObservableEnemyProfile } from "../game/src/warning/domain/observable_enemy_profile.js";
 import { attachTrialRuntimeSubsystems } from "../game/src/trial/integration/trial_runtime_bootstrap.js";
 import { attachTrialLaunchSubsystem } from "../game/src/trial/integration/trial_launch_bootstrap.js";
 import { FIRST_RUN_DEMIHUMAN_TRACES_EVENT_ID } from "../game/src/tutorial/first_run_service.js";
@@ -115,34 +113,6 @@ globalThis.window = {
     I18n
 };
 
-class SustainedFirstRunState extends GameState {
-    constructor(dependencies = {}) {
-        super({
-            ...dependencies,
-            food: 1000,
-            material: 1000,
-            wood: 1000,
-            defense: 100,
-            currentDefense: 100,
-            maxDefense: 100,
-            ember: 20,
-            maxEmber: 20
-        });
-    }
-}
-
-const observationProjector = {
-    project(truth) {
-        return createObservableEnemyProfile({
-            trialIndex: Number.isInteger(truth?.trialIndex) ? truth.trialIndex : 1,
-            threatRevision: Number.isInteger(truth?.revision) ? truth.revision : 0,
-            directionHints: ["NORTH_ACTIVITY"],
-            physiqueTraits: ["LARGE_BODY_PRESENT"],
-            scaleBand: "SMALL"
-        });
-    }
-};
-
 function definitionOf(card) { return card?.terrain || card || null; }
 function geometryKey(shape, anchor, attributeCells) {
     return JSON.stringify({
@@ -208,8 +178,6 @@ const firstRunActivationStore = {
 const engine = GameEngine.createGame({
     runSeed: 20261002,
     firstRun: true,
-    GameStateClass: SustainedFirstRunState,
-    enemyObservationProjector: observationProjector,
     firstRunActivationStore
 });
 requireSuccess(attachTrialRuntimeSubsystems(engine), "attachTrialRuntimeSubsystems");
