@@ -859,7 +859,11 @@ async function main() {
         process.exit(1);
     }
 
-    const supplementalOk = await runCommand("node", ["scratch/scratch_registry.mjs", "--run", "supplemental"]);
+    // The registry enforces 30 seconds per test. Its sequential suite needs a
+    // separate aggregate budget; otherwise passing tests can exhaust it.
+    const supplementalOk = await runCommand("node", ["scratch/scratch_registry.mjs", "--run", "supplemental"], {
+        timeoutMs: 180000
+    });
     if (!supplementalOk) {
         console.error("\n[PIPELINE BLOCKED] Supplemental scratch tests failed.");
         process.exit(1);

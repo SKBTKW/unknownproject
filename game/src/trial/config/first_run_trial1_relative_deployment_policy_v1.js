@@ -1,8 +1,10 @@
 export const FIRST_RUN_TRIAL1_RELATIVE_DEPLOYMENT_POLICY_V1 = Object.freeze({
     baseShare: 0.20,
-    defenseShareWeight: 0.35,
+    defenseShareWeight: 0.32,
     distanceShareWeight: 0.10,
-    foodShareBonus: 0.08,
+    foodShareBonus: 0.11,
+    minimumFoodReserve: 35,
+    foodReserveShare: 0.35,
     maxShare: 0.70,
     stage1MaxDistance: 4
 });
@@ -84,13 +86,26 @@ export function createFirstRunTrial1RelativeDeploymentCostResolver({
         });
         const foodShare = Math.min(1, burdenShare + Math.max(0, Number(policy.foodShareBonus) || 0));
 
+        const nominalFoodCost = Math.ceil(food * foodShare);
+        const minimumFoodReserve = finiteNonNegative(policy.minimumFoodReserve) ?? 0;
+        // Scale the reserve down at low balances so crossing the reserve
+        // threshold cannot make a larger food balance cheaper to deploy.
+        const foodReserveShare = Math.min(1, finiteNonNegative(policy.foodReserveShare) ?? 0);
+        const protectedFoodReserve = Math.min(minimumFoodReserve, food * foodReserveShare);
+        const foodCost = Math.min(nominalFoodCost,
+            Math.max(food > 0 ? 1 : 0, Math.floor(food - protectedFoodReserve)));
+
         return {
-            food: Math.ceil(food * foodShare),
+            food: foodCost,
             material: Math.ceil(material * burdenShare),
             breakdown: {
                 mode: "FIRST_RUN_TRIAL1_RELATIVE_V1",
                 burdenShare,
                 foodShare,
+                nominalFoodCost,
+                minimumFoodReserve,
+                protectedFoodReserve,
+                foodReserveDiscount: nominalFoodCost - foodCost,
                 requestedDefense: defense,
                 defenseAvailable,
                 defenseFraction: defenseAvailable > 0 ? Math.min(1, defense / defenseAvailable) : 0,

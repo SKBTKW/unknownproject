@@ -488,8 +488,8 @@ for (const rows of [productionRows, prototypeRows]) {
 const productionHeavy = productionRows.filter(row => row.planId === "HEAVY_DEFENSE_FAR");
 assert.equal(
     productionHeavy.every(row =>
-        row.burdenShare >= 0.57
-        && row.burdenShare <= 0.60
+        row.burdenShare >= 0.54
+        && row.burdenShare <= 0.58
     ),
     true,
     "80% defense far deployment uses the paid-Board portfolio's lower relative share"
@@ -497,9 +497,9 @@ assert.equal(
 
 const productionFull = productionRows.filter(row => row.planId === "ALL_DEFENSE_FAR");
 assert.equal(
-    productionFull.every(row => Number(row.burdenShare.toFixed(2)) === 0.65),
+    productionFull.every(row => Number(row.burdenShare.toFixed(2)) === 0.62),
     true,
-    "full-defense far deployment resolves to 65% of the Trial-entry stock"
+    "full-defense far deployment resolves to 62% of the Trial-entry stock"
 );
 assert.equal(
     productionFull.every(row =>
