@@ -84,17 +84,27 @@ export class GlobalEventPresentationComponent {
         imageSlot.className = "ge-presentation-image-slot";
         applyLayout(imageSlot, UILayoutConfig.globalEventPresentation?.imageSlot);
         imageSlot.dataset.stillId = p.stillId || "";
+        const renderImageFallback = () => {
+            imageSlot.replaceChildren();
+            imageSlot.dataset.visualFallback = "true";
+            const placeholder = document.createElement("div");
+            placeholder.className = "ge-presentation-image-placeholder";
+            placeholder.textContent = translated(
+                this.i18n,
+                "UI_GLOBAL_EVENT_VISUAL_FALLBACK",
+                "Visual record unavailable"
+            );
+            imageSlot.appendChild(placeholder);
+        };
         if (p.assetReference) {
             const image = document.createElement("img");
             image.className = "ge-presentation-image";
             image.src = p.assetReference;
             image.alt = title.textContent || p.eventId || "";
+            image.addEventListener("error", renderImageFallback, { once: true });
             imageSlot.appendChild(image);
         } else {
-            const placeholder = document.createElement("div");
-            placeholder.className = "ge-presentation-image-placeholder";
-            placeholder.textContent = p.stillId || "";
-            imageSlot.appendChild(placeholder);
+            renderImageFallback();
         }
         this.shell.appendChild(imageSlot);
 

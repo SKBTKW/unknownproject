@@ -17,8 +17,8 @@ const UI_FEATURE_FLAGS = {
 };
 
 const UILayoutConfig = {
-    // 🌍 Global Event: central modal surface. Advisor may temporarily rise above
-    // this overlay; the GE shell itself remains centered and does not shift.
+    // 🌍 Global Event: left-weighted presentation surface. Advisor may temporarily
+    // rise above the overlay on the right while the board remains visually legible.
     globalEventPresentation: {
         overlay: {
             position: "fixed",
@@ -26,19 +26,19 @@ const UILayoutConfig = {
             zIndex: "910",
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            padding: "32px",
+            justifyContent: "flex-start",
+            padding: "32px clamp(24px, 4vw, 72px)",
             pointerEvents: "auto"
         },
         shell: {
             position: "relative",
-            width: "min(800px, calc(100vw - 64px))",
-            maxHeight: "min(860px, calc(100vh - 64px))",
-            padding: "26px"
+            width: "min(680px, calc(100vw - 64px))",
+            maxHeight: "min(820px, calc(100vh - 64px))",
+            padding: "24px"
         },
         imageSlot: {
-            width: "min(720px, 100%)",
-            height: "min(360px, 38vh)"
+            width: "min(620px, 100%)",
+            height: "min(320px, 34vh)"
         },
         advisorOverlapSafeArea: "IMAGE_RIGHT_EDGE"
     },

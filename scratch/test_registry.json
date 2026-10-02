@@ -514,6 +514,14 @@
       ]
     },
     {
+      "path": "scratch/test_first_run_verse7_global_event_presentation_polish.mjs",
+      "purpose": "FirstRun Verse7 Demihuman Traces presentation, Advisor lock fallback, confirm flow, restore dedupe, and presentation authority boundary",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_global_event_choice_contract.mjs",
       "purpose": "global event choice contract",
       "suite": "supplemental"

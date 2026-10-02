@@ -143,11 +143,12 @@ assert.equal(unknownComponent.shown.length, 0);
 assert.equal(UILayoutConfig.globalEventPresentation.overlay.position, "fixed");
 assert.equal(UILayoutConfig.globalEventPresentation.overlay.zIndex, "910");
 assert.equal(UILayoutConfig.globalEventPresentation.overlay.alignItems, "center");
-assert.equal(UILayoutConfig.globalEventPresentation.overlay.justifyContent, "center");
+assert.equal(UILayoutConfig.globalEventPresentation.overlay.justifyContent, "flex-start");
 assert.equal(UILayoutConfig.globalEventPresentation.advisorOverlapSafeArea, "IMAGE_RIGHT_EDGE");
 
 const css = fs.readFileSync(new URL("../game/css/0_global_common/global_event_presentation.css", import.meta.url), "utf8");
 assert.match(css, /body\[data-global-event-presentation="open"\]/);
+assert.match(css, /linear-gradient\(90deg/);
 assert.doesNotMatch(css, /!important/);
 
 // The overlay is mounted on startup, before any event has been presented.
