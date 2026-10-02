@@ -492,6 +492,7 @@ async function main() {
         ["Battle causality resolution domain", "node", ["scratch/test_battle_causality_resolution_domain.mjs"]],
         ["Battle Opportunity / Fortune lifecycle", "node", ["scratch/test_battle_opportunity_fortune_lifecycle.mjs"]],
         ["Battle presentation runtime bridge", "node", ["scratch/test_battle_presentation_runtime_bridge.mjs"]],
+        ["Battle Narrative / Advisor Presentation v2", "node", ["scratch/test_battle_narrative_advisor_presentation_v2.mjs"]],
         ["Battle presentation runtime integration", "node", ["scratch/test_battle_presentation_runtime_integration.mjs"]],
         ["Road network foundation", "node", ["scratch/test_road_network_foundation.mjs"]],
         ["Trial route visual semantics", "node", ["scratch/test_trial_route_visual_semantics.mjs"]],
