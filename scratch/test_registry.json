@@ -1256,6 +1256,14 @@
       ]
     },
     {
+      "path": "scratch/test_battle_advisor_runtime_delivery.mjs",
+      "purpose": "Controller-independent Battle Advisor semantic-to-character-reaction delivery, intentional silence, hidden-truth sanitization, fail-open UI emission, and restore dedupe",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_battle_presentation_runtime_integration.mjs",
       "purpose": "Trial flow creates immutable Battle Resolution Snapshot before state commit and exposes it to presentation runtime without cross-battle contamination",
       "suite": "existing",
