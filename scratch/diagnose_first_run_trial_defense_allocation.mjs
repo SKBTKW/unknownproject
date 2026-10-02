@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 
 import { GameEngine, UIController } from "../game/src/app.js";
-import { GameState } from "../game/src/v2_unity_ready_main.js";
+import { PlatformNeutralGameState } from "../game/src/core/platform_neutral_game_state.js";
 import { I18n } from "../game/src/i18n.js";
 import { createObservableEnemyProfile } from "../game/src/warning/domain/observable_enemy_profile.js";
 import { attachTrialRuntimeSubsystems } from "../game/src/trial/integration/trial_runtime_bootstrap.js";
@@ -97,7 +97,7 @@ globalThis.window = {
     I18n
 };
 
-class DiagnosticFirstRunState extends GameState {
+class DiagnosticFirstRunState extends PlatformNeutralGameState {
     constructor(dependencies = {}) {
         super({
             ...dependencies,
@@ -251,6 +251,12 @@ function captureDefenseDiagnostic(engine, ui) {
             ? { ...ui.trialPresentationState.selectedInterceptCell }
             : null,
         previewDefenseAllocation: ui.trialPresentationState.previewDefenseAllocation,
+        defenseSources: {
+            stateCurrentDefense: Number(engine.state.currentDefense),
+            stateMaxDefense: Number(engine.state.maxDefense),
+            engineAvailableDefense: Number(engine.getTrialAvailableDefense?.()),
+            trialStateAvailableDefense: Number(ui.trialController?.state?.human?.availableDefense)
+        },
         availableDefense,
         maxForActive,
         remainingDefense: ui.getTrialRemainingDefense(),
@@ -280,12 +286,42 @@ function captureDefenseDiagnostic(engine, ui) {
     };
 }
 
+function classifyDefenseStop(snapshot) {
+    if (!snapshot) return "DIAGNOSTIC_SNAPSHOT_UNAVAILABLE";
+    if (snapshot.tutorial?.currentStep !== FIRST_RUN_TRIAL_TUTORIAL_STEPS.DEFENSE_ALLOCATION) {
+        return "TUTORIAL_STEP_NOT_DEFENSE_ALLOCATION";
+    }
+    if (snapshot.policy?.allowDefenseInput !== true) {
+        return "TUTORIAL_POLICY_BLOCKS_DEFENSE_INPUT";
+    }
+    if (!(snapshot.availableDefense > 0)) {
+        return "TRIAL_AVAILABLE_DEFENSE_ZERO_OR_INVALID";
+    }
+    if (!(snapshot.maxForActive > 0)) {
+        return "TRIAL_PLANNING_MAX_ALLOCATION_ZERO";
+    }
+    if (snapshot.canonicalReservation?.attached !== true || snapshot.canonicalReservation?.available !== true) {
+        return "CANONICAL_DEFENSE_RESERVATION_UNAVAILABLE";
+    }
+    if (snapshot.actionTray?.sliderPresent !== true) {
+        return "ACTION_TRAY_SLIDER_NOT_RENDERED";
+    }
+    if (snapshot.actionTray?.sliderDisabled === true) {
+        return "ACTION_TRAY_SLIDER_DISABLED";
+    }
+    if (!(snapshot.actionTray?.sliderMax > 0)) {
+        return "ACTION_TRAY_SLIDER_MAX_ZERO_OR_INVALID";
+    }
+    return "DEFENSE_INPUT_CONTRACT_OPEN";
+}
+
 function failWithSnapshot(label, snapshot, assertion) {
     try {
         assertion();
     } catch (error) {
         console.error("\nP0 DEFENSE ALLOCATION DIAGNOSTIC");
         console.error(JSON.stringify(snapshot, null, 2));
+        console.error("CLASSIFICATION: " + classifyDefenseStop(snapshot));
         assert.fail(label + ": " + (error?.message || error));
     }
 }
@@ -374,6 +410,7 @@ const snapshot = {
 };
 console.log("\nP0 DEFENSE ALLOCATION SNAPSHOT");
 console.log(JSON.stringify(snapshot, null, 2));
+console.log("CLASSIFICATION: " + classifyDefenseStop(snapshot));
 
 failWithSnapshot("tutorial must enter DEFENSE_ALLOCATION", snapshot, () => {
     assert.equal(snapshot.tutorial.currentStep, FIRST_RUN_TRIAL_TUTORIAL_STEPS.DEFENSE_ALLOCATION);
