@@ -62,7 +62,6 @@ import { OFFERING_GENERATION_REASONS } from "../game/src/systems/deck_manager.js
         reason: OFFERING_GENERATION_REASONS.MULLIGAN,
         state
     }), [], "Mulligan must remain ordinary RNG without FirstRun guarantee");
-}
 
     for (let verse = 9; verse <= 15; verse += 1) {
         state.turn = verse;
