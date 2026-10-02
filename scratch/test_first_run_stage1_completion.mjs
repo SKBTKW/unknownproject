@@ -459,6 +459,13 @@ if (selectedRoute && selectedCell) {
         assert.equal(engine.postTrialProgressionReadService.read().canResumeNormalProgression, true);
         assert.equal(engine.trialSessionBoundaryService?.getState?.().active ?? false, false);
     });
+    certify("FIRST_RUN_PERSISTENCE: activation persists exactly once at Stage2 completion boundary", () => {
+        assert.deepEqual(
+            activationWrites,
+            [{ verse: engine.state.turn, stageId: 2 }],
+            "whole-FirstRun completion must persist once, and only after Stage2 is active"
+        );
+    });
 }
 
 // Restore coverage: the canonical pre-Trial restore points are exercised by the
