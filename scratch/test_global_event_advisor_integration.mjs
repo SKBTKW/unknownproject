@@ -5,6 +5,8 @@ import { GlobalEventPresentationRuntimeIntegration } from "../game/src/ui/global
 import { GlobalEventAdvisorPresentationIntegration } from "../game/src/ui/global_event_advisor_presentation_integration.js";
 import { FirstRunState } from "../game/src/tutorial/first_run_state.js";
 import { resolveAdvisorSemanticScene } from "../game/src/ui/advisor/advisor_semantic_scene_consumer.js";
+import { ADVISOR_DIALOGUES, ADVISOR_EVENTS } from "../game/src/ui/advisor/advisor_dialogue_database.js";
+import { I18n } from "../game/src/i18n.js";
 
 function createManager() {
     const listeners = new Set();
@@ -51,6 +53,13 @@ assert.equal(projected.titleKey, "EVENT_DEMIHUMAN_TRACES_NAME");
 assert.equal(projected.descriptionKey, "EVENT_DEMIHUMAN_TRACES_DESC");
 assert.equal(projected.stillId, "STILL_DEMIHUMAN_TRACES");
 assert.equal(projected.publicKnowledge, "DEMIHUMAN_ACTIVITY_NEAR_SURVIVAL_ZONE");
+const firstRunDialogue = ADVISOR_DIALOGUES.find(entry => entry.event === ADVISOR_EVENTS.GLOBAL_EVENT_PRESENTED_FIRST_RUN);
+assert.deepEqual(firstRunDialogue.segmentGroups[0], [
+    "UI_ADVISOR_DIALOGUE_DEMIHUMAN_TRACES_FIRST_1",
+    "UI_ADVISOR_DIALOGUE_DEMIHUMAN_TRACES_FIRST_2",
+    "UI_ADVISOR_DIALOGUE_DEMIHUMAN_TRACES_FIRST_3"
+]);
+assert.match(I18n.t("UI_ADVISOR_DIALOGUE_DEMIHUMAN_TRACES_FIRST_3"), /調査/);
 
 const manager = createManager();
 const firstRunState = new FirstRunState({ active: true });
@@ -170,6 +179,17 @@ const unsubscribableRuntime = new GlobalEventPresentationRuntimeIntegration(unsu
 });
 unsubscribableManager.emit({ timing: "START", eventId: "EVENT_DEMIHUMAN_TRACES", turn: 7, category: "WARNING", importance: "MAJOR" });
 assert.equal(unsubscribableRuntime.isInteractionLocked(), false, "missing dialogue subscription must fail open");
+
+const throwingManager = createManager();
+const throwingUi = { engine: { globalEventManager: throwingManager } };
+const throwingRuntime = new GlobalEventPresentationRuntimeIntegration(throwingUi, {
+    component: createComponent([]),
+    presentationHook: { onPresented() { throw new Error("presentation hook failure"); } }
+});
+throwingManager.emit({ timing: "START", eventId: "EVENT_DEMIHUMAN_TRACES", turn: 7, category: "WARNING", importance: "MAJOR" });
+assert.equal(throwingRuntime.isInteractionLocked(), false, "throwing presentation hook must fail open");
+assert.equal(throwingRuntime.handleAction("CONFIRM"), true, "throwing presentation hook must leave Confirm usable");
+throwingRuntime.destroy();
 
 const browserBootstrap = fs.readFileSync(new URL("../game/index.html", import.meta.url), "utf8");
 assert.match(browserBootstrap, /GlobalEventAdvisorPresentationIntegration/);

@@ -3,8 +3,8 @@
 }
 
 .ge-presentation-overlay {
-    background: rgba(7, 10, 14, 0.78);
-    backdrop-filter: blur(1px);
+    background: linear-gradient(90deg, rgba(7, 10, 14, 0.84) 0%, rgba(7, 10, 14, 0.62) 46%, rgba(7, 10, 14, 0.16) 78%, rgba(7, 10, 14, 0.06) 100%);
+    backdrop-filter: blur(0.6px);
 }
 
 .ge-presentation-shell {
@@ -12,7 +12,8 @@
     overflow: auto;
     background: rgba(20, 24, 31, 0.98);
     border: 1px solid rgba(212, 188, 132, 0.52);
-    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.72);
+    box-shadow: 0 20px 54px rgba(0, 0, 0, 0.68);
+    image-rendering: pixelated;
 }
 
 .ge-presentation-title {
@@ -43,9 +44,16 @@
 }
 
 .ge-presentation-image-placeholder {
-    opacity: 0.45;
+    width: 100%;
+    min-height: 120px;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    box-sizing: border-box;
+    opacity: 0.62;
     font-size: 12px;
     letter-spacing: 0.08em;
+    text-align: center;
 }
 
 .ge-presentation-copy {
@@ -105,6 +113,10 @@ body[data-global-event-presentation="open"] {
 }
 
 @media (max-width: 760px) {
+    .ge-presentation-overlay {
+        background: rgba(7, 10, 14, 0.82);
+    }
+
     .ge-presentation-actions {
         grid-template-columns: 1fr;
     }
