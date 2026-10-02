@@ -304,12 +304,17 @@ export class TrialResultUIController extends BoardAwareUIController {
             };
         }
 
+        const completionPersistence = this.persistFirstRunCompletionAfterStageAdvance?.({
+            transition: after
+        }) || null;
+
         this.postTrialStageGateDeferred = false;
         if (render) this.render();
         return {
             success: true,
             progression,
-            stageProgression: progression?.stageProgression || null
+            stageProgression: progression?.stageProgression || null,
+            firstRunCompletionPersistence: completionPersistence
         };
     }
 

@@ -17,29 +17,31 @@ console.log("\nFirstRun Trial1 relative deployment cost v1");
         defenseAvailable: 24,
         distance: 4
     });
-    assert.equal(Number(fullFar.toFixed(3)), 0.650);
+    assert.equal(Number(fullFar.toFixed(3)), 0.620);
 
     const halfFar = resolveFirstRunTrial1DeploymentBurdenShare({
         requestedDefense: 12,
         defenseAvailable: 24,
         distance: 4
     });
-    assert.equal(Number(halfFar.toFixed(3)), 0.475);
+    assert.equal(Number(halfFar.toFixed(3)), 0.460);
 
     const heavyFar = resolveFirstRunTrial1DeploymentBurdenShare({
         requestedDefense: 20,
         defenseAvailable: 24,
         distance: 4
     });
-    assert.equal(Number(heavyFar.toFixed(3)), 0.592);
+    assert.equal(Number(heavyFar.toFixed(3)), 0.567);
 
     assert.deepEqual(
         FIRST_RUN_TRIAL1_RELATIVE_DEPLOYMENT_POLICY_V1,
         {
             baseShare: 0.20,
-            defenseShareWeight: 0.35,
+            defenseShareWeight: 0.32,
             distanceShareWeight: 0.10,
-            foodShareBonus: 0.08,
+            foodShareBonus: 0.11,
+            minimumFoodReserve: 35,
+            foodReserveShare: 0.35,
             maxShare: 0.70,
             stage1MaxDistance: 4
         }
@@ -62,10 +64,10 @@ console.log("\nFirstRun Trial1 relative deployment cost v1");
             interceptionCount: 1
         }
     });
-    assert.equal(cost.food, 73);
-    assert.equal(cost.material, 52);
+    assert.equal(cost.food, 65);
+    assert.equal(cost.material, 50);
     assert.equal(cost.breakdown.mode, "FIRST_RUN_TRIAL1_RELATIVE_V1");
-    assert.equal(Number(cost.breakdown.burdenShare.toFixed(2)), 0.65);
+    assert.equal(Number(cost.breakdown.burdenShare.toFixed(2)), 0.62);
     assert.equal(Number(cost.breakdown.foodShare.toFixed(2)), 0.73);
 
     assert.equal(
@@ -86,6 +88,36 @@ console.log("\nFirstRun Trial1 relative deployment cost v1");
         null,
         "v1 must fail closed if FirstRun Trial1 ever becomes multi-front"
     );
+}
+
+// Reserve protection must not grant free deployment at low balances.
+{
+    for (const [food, expectedCost] of [[108, 73], [36, 23], [35, 22], [20, 13], [0, 0]]) {
+        const resolver = createFirstRunTrial1RelativeDeploymentCostResolver({
+            balanceProvider: () => ({ food, material: 80 }),
+            defenseBalanceProvider: () => 20
+        });
+        const cost = resolver({ requestedDefense: 20, distance: 4, context: { trialIndex: 1 } });
+        assert.equal(cost.food, expectedCost, `food balance ${food}`);
+        if (food >= 100) assert.ok(food - cost.food >= 35);
+        if (food > 0) assert.ok(cost.food > 0);
+        assert.equal(cost.breakdown.nominalFoodCost - cost.breakdown.foodReserveDiscount, cost.food);
+    }
+}
+
+// Increasing the balance must never reduce the charge at reserve boundaries.
+{
+    let previousCost = 0;
+    for (let food = 0; food <= 150; food += 1) {
+        const resolver = createFirstRunTrial1RelativeDeploymentCostResolver({
+            balanceProvider: () => ({ food, material: 80 }),
+            defenseBalanceProvider: () => 20
+        });
+        const cost = resolver({ requestedDefense: 20, distance: 4, context: { trialIndex: 1 } });
+        assert.ok(cost.food >= previousCost, `cost must be monotonic at balance ${food}`);
+        assert.ok(cost.food <= food);
+        previousCost = cost.food;
+    }
 }
 
 // Normal runs keep the previous product behavior: no deployment economy by default.

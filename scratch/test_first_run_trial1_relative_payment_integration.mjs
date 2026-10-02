@@ -139,11 +139,11 @@ console.log("\nFirstRun Trial1 relative payment integration");
 
     const confirmed = confirmFullFarPlan(fixture);
 
-    assert.equal(confirmed.deploymentPreview.foodCost, 73);
-    assert.equal(confirmed.deploymentPreview.materialCost, 52);
+    assert.equal(confirmed.deploymentPreview.foodCost, 65);
+    assert.equal(confirmed.deploymentPreview.materialCost, 50);
     assert.equal(
         Number(confirmed.deploymentPreview.breakdown.fronts[0].modifiers.burdenShare.toFixed(2)),
-        0.65
+        0.62
     );
     assert.deepEqual(
         {
@@ -159,12 +159,12 @@ console.log("\nFirstRun Trial1 relative payment integration");
     assert.equal(activated.success, true);
     assert.equal(activated.deploymentCommit?.success, true);
     assert.deepEqual(activated.deploymentCommit?.payment?.paid, {
-        food: 73,
-        material: 52
+        food: 65,
+        material: 50
     });
-    assert.equal(engine.state.food, 27);
-    assert.equal(engine.state.wood, 28);
-    if ("material" in engine.state) assert.equal(engine.state.material, 28);
+    assert.equal(engine.state.food, 35);
+    assert.equal(engine.state.wood, 30);
+    if ("material" in engine.state) assert.equal(engine.state.material, 30);
     assert.equal(engine.getTrialAvailableDefense(), 0);
     assert.equal(controller.state.human.availableDefense, 0);
     assert.equal(controller.getDeploymentHistory().length, 1);
@@ -177,7 +177,7 @@ console.log("\nFirstRun Trial1 relative payment integration");
     const fixture = createFirstRunFixture();
     const { engine, controller } = fixture;
     const confirmed = confirmFullFarPlan(fixture);
-    assert.equal(confirmed.deploymentPreview.foodCost, 73);
+    assert.equal(confirmed.deploymentPreview.foodCost, 65);
 
     engine.state.food -= 1;
     const beforeActivation = {
