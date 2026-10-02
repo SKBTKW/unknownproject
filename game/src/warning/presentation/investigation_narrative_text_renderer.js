@@ -41,7 +41,13 @@ export class InvestigationNarrativeTextRenderer {
                 ? narrativeModel.observedAtVerse
                 : null,
             title: narrativeModel?.title || "",
-            text: [intro, ...sentences].filter(Boolean).join(" "),
+            text: [
+                narrativeModel?.observationVolume || "",
+                intro,
+                ...sentences,
+                narrativeModel?.summary || "",
+                narrativeModel?.preparationHint || ""
+            ].filter(Boolean).join(" "),
             highlights
         };
     }
