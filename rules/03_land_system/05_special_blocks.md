@@ -1,6 +1,6 @@
 # 05. 特殊ブロック / 土地改良 — 現行設計と実装状況
 
-> **Status:** Mixed — one implemented terrain conversion, several planned/partial facilities
+> **Status:** Mixed — implemented terrain conversion and selected facilities, several planned/partial facilities
 >
 > 本文書は「特殊ブロック」という設計概念と、現在gameで実際に盤面へ作用している要素を分けて記録する。
 
@@ -36,9 +36,10 @@
 
 現在の関連要素は3種類に分ける。
 
-### A. Implemented — 実際に盤面地形を変更する
+### A. Implemented — 現行gameplayへ実効接続済み
 
 - `E1_RECLAIMED_LAND` 干拓地
+- `MINE` 採掘所 — 鉱物資源に隣接する独立Special Block
 
 ### B. Partial — カード・状態フラグはあるが施設機能が未接続
 
@@ -49,7 +50,6 @@
 - 牧畜場
 - 製材所
 - 採石場
-- 鉱山
 - 厩舎
 - 石灰窯
 - 市場
@@ -306,7 +306,7 @@ Stage 3級の大型UNIQUEカード群。
 | 牧畜場 | **Partial** |
 | 製材所 | **Partial** |
 | 採石場 | **Partial** |
-| 鉱山 | **Partial** |
+| 採掘所 | **Implemented** |
 | 厩舎 | **Partial** |
 | 市場/倉庫/工房 | **Partial** |
 | Stage 3国家事業 | **Partial** |
