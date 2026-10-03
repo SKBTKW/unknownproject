@@ -56,7 +56,7 @@ assert.equal(repeated?.success, false);
 assert.equal(engine.state.knownEnemyState.reports.length, reportsBefore + 1);
 console.log("PASS FirstRun Verse8 UI Investigation execution / source rejection / no duplicate report");
 
-// Independent observed Domain rejection; no fabricated observations or bypass.
+// Initial canonical Threat must reach Truth even without a development action.
 const undeveloped = GameEngine.createGame({ runSeed: 20261002, firstRun: true });
 assert.equal(attachTrialRuntimeSubsystems(undeveloped).success, true);
 while (undeveloped.state.turn < 8) undeveloped.nextTurn();
@@ -66,8 +66,8 @@ const noLandCard = undeveloped.state.handOffering[noLandIndex];
 const noLandUi = new UIController(undeveloped);
 noLandUi.render = () => {};
 const noFragments = noLandUi.playCommandCard(noLandCard, noLandIndex);
-assert.equal(noFragments?.reason, "NO_OBSERVABLE_FRAGMENTS");
-assert.equal(undeveloped.state.hasPickedThisTurn, false);
-assert.equal(undeveloped.state.handOffering[noLandIndex], noLandCard);
-assert.equal(undeveloped.state.knownEnemyState.reports.length, 0);
-console.log("KNOWN B CANDIDATE: undeveloped canonical Verse8 rejects Investigation with NO_OBSERVABLE_FRAGMENTS");
+assert.equal(noFragments?.success, true, "undeveloped Verse8 must observe actual initialized enemy truth");
+assert.equal(undeveloped.state.hasPickedThisTurn, true);
+assert.notEqual(undeveloped.state.handOffering[noLandIndex], noLandCard);
+assert.equal(undeveloped.state.knownEnemyState.reports.length, 1);
+console.log("PASS undeveloped Verse8 canonical Investigation records actual enemy observations");
