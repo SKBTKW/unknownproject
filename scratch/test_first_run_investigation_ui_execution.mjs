@@ -30,6 +30,8 @@ while (engine.state.turn < 8) {
 const index = engine.state.handOffering.findIndex(card => (card?.terrain || card)?.category === "INVESTIGATION");
 assert.notEqual(index, -1, "canonical Verse8 Offering must contain Investigation");
 const card = engine.state.handOffering[index];
+const shownReports = [];
+ui.investigationCardPresentationRuntime.component = { show: report => shownReports.push(report) };
 const reportsBefore = engine.state.knownEnemyState?.reports?.length || 0;
 
 const mismatch = ui.playCommandCard(card, (index + 1) % engine.state.handOffering.length);
@@ -45,6 +47,9 @@ assert.equal(engine.warningStateService.getState(), WARNING_STATES.WATCH);
 assert.equal(engine.state.hasPickedThisTurn, true);
 assert.notEqual(engine.state.handOffering[index], card);
 assert.equal(engine.state.lastInvestigationReport, result.report);
+assert.equal(shownReports.length, 1, "production UI dispatch presents exactly one report");
+assert.equal(shownReports[0].available, true);
+assert.equal(shownReports[0].report.observedAtVerse, 8);
 
 const repeated = ui.playCommandCard(card, index);
 assert.equal(repeated?.success, false);

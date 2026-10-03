@@ -54,12 +54,40 @@ function observationVolume(roll, critical) {
     return { band: "LIMITED", key: "INVESTIGATION_VOLUME_LIMITED" };
 }
 
-function statusFor(tag, comparison, firstObservation) {
+function statusFor(tag, comparison, firstObservation, knownPriorTags) {
+    const prior = knownPriorTags instanceof Set ? knownPriorTags : new Set();
     const newTags = new Set(Array.isArray(comparison?.newTags) ? comparison.newTags : []);
     const repeatedTags = new Set(Array.isArray(comparison?.repeatedTags) ? comparison.repeatedTags : []);
+
+    // Historical knowledge is authoritative for presentation semantics:
+    // a tag seen in any earlier immutable report is a reconfirmation even when
+    // it was absent from the immediately previous report.
+    if (prior.has(tag)) return "RECONFIRMED";
     if (newTags.has(tag) || firstObservation === true) return "NEW";
     if (repeatedTags.has(tag)) return "RECONFIRMED";
     return "OBSERVED";
+}
+
+function collectPriorTags(result, currentReport) {
+    const reports = Array.isArray(result?.state?.reports) ? result.state.reports : [];
+    if (reports.length === 0) return new Set();
+
+    let currentIndex = -1;
+    for (let index = reports.length - 1; index >= 0; index -= 1) {
+        if (currentReport?.id && reports[index]?.id === currentReport.id) {
+            currentIndex = index;
+            break;
+        }
+    }
+    const priorReports = currentIndex >= 0 ? reports.slice(0, currentIndex) : reports;
+    const tags = new Set();
+    for (const report of priorReports) {
+        for (const observation of report?.observations || []) {
+            const tag = normalizeTag(observation?.tag);
+            if (tag) tags.add(tag);
+        }
+    }
+    return tags;
 }
 
 function summaryKey(observations) {
@@ -76,7 +104,8 @@ export class InvestigationReportPresenter {
         roll = null,
         critical = false,
         comparison = null,
-        firstObservation = false
+        firstObservation = false,
+        knownPriorTags = null
     } = {}) {
         const sourceType = typeof report?.sourceType === "string" && report.sourceType.length > 0
             ? report.sourceType
@@ -91,7 +120,7 @@ export class InvestigationReportPresenter {
                         ? observation.facet
                         : "UNKNOWN";
                     const group = FACET_GROUPS[facet] || "OTHER";
-                    const status = statusFor(tag, comparison, firstObservation);
+                    const status = statusFor(tag, comparison, firstObservation, knownPriorTags);
                     return {
                         facet,
                         group,
@@ -137,7 +166,8 @@ export class InvestigationReportPresenter {
             roll: result?.roll || null,
             critical: result?.critical === true,
             comparison: result?.comparison || null,
-            firstObservation: Boolean(report) && !result?.previousReport
+            firstObservation: Boolean(report) && !result?.previousReport,
+            knownPriorTags: collectPriorTags(result, report)
         });
     }
 }
