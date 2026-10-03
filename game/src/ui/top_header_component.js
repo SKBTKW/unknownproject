@@ -1,3 +1,4 @@
+import { readResourceStorage } from '../core/resource_storage_policy.js';
 import { TerritoryBadgeComponent } from './territory_badge_component.js';
 import { EmberStatusComponent } from './ember_status_component.js';
 import { FloatingFeedbackService } from './floating_feedback_service.js';
@@ -73,7 +74,8 @@ export class TopHeaderComponent {
         }
 
         // 3. 🌾 食料 ＆ 純収支
-        this.setElementText("valFood", this.state.food);
+        const storage = readResourceStorage(this.state);
+        this.setElementText("valFood", `${this.state.food} / ${storage.food}`);
         if (this.lastFood !== null && this.state.food !== this.lastFood) {
             FloatingFeedbackService.spawnOnElement("#valFood", this.state.food - this.lastFood);
         }
@@ -88,7 +90,7 @@ export class TopHeaderComponent {
         }
 
         // 4. 🧱 資材 ＆ 🛡️ 防衛力 ＆ ✨ 神秘
-        this.setElementText("valWood", this.state.wood);
+        this.setElementText("valWood", `${this.state.wood} / ${storage.wood}`);
         if (this.lastWood !== null && this.state.wood !== this.lastWood) {
             FloatingFeedbackService.spawnOnElement("#valWood", this.state.wood - this.lastWood);
         }

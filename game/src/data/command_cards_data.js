@@ -721,7 +721,33 @@ export const ECONOMY_CARDS_MASTER = [
     "rarity": "UR",
     "weight": 0.1,
     "cyclePolicy": "UNIQUE"
-  }
+  },
+{
+  "id": "CMD_CULTIVATION",
+  "category": "COMMAND",
+  "nameKey": "CMD_CULTIVATION_NAME",
+  "descriptionKey": "CMD_CULTIVATION_DESC",
+  "cost": {},
+  "tags": [
+    "PLAINS",
+    "FOOD",
+    "AGRICULTURE",
+    "SPECIAL_BLOCK"
+  ],
+  "minStage": 1,
+  "rarity": "C",
+  "weight": 0.25,
+  "cyclePolicy": "RARITY",
+  "effects": [
+    {
+      "type": "DOMAIN_ACTION",
+      "action": "CREATE_SPECIAL_BLOCK",
+      "blockType": "FARM",
+      "paymentMode": "DOMAIN_QUOTE",
+      "logActivation": true
+    }
+  ]
+}
 ];
 
 export const MILITARY_CARDS_MASTER = [
@@ -2711,7 +2737,33 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 3,
     "rarity": "UR",
     "weight": 0.1
-  }
+  },
+{
+  "id": "CMD_CULTIVATION",
+  "category": "COMMAND",
+  "nameKey": "CMD_CULTIVATION_NAME",
+  "descriptionKey": "CMD_CULTIVATION_DESC",
+  "cost": {},
+  "tags": [
+    "PLAINS",
+    "FOOD",
+    "AGRICULTURE",
+    "SPECIAL_BLOCK"
+  ],
+  "minStage": 1,
+  "rarity": "C",
+  "weight": 0.25,
+  "cyclePolicy": "RARITY",
+  "effects": [
+    {
+      "type": "DOMAIN_ACTION",
+      "action": "CREATE_SPECIAL_BLOCK",
+      "blockType": "FARM",
+      "paymentMode": "DOMAIN_QUOTE",
+      "logActivation": true
+    }
+  ]
+}
 ];
 
 if (typeof window !== "undefined") {

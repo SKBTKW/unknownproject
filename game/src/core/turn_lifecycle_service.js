@@ -1,3 +1,4 @@
+import { enforceResourceStorage } from './resource_storage_policy.js';
 import { GAME_FACT_TYPES, GameFactHub } from './game_fact.js';
 import { HistorySnapshotService } from './history_snapshot_service.js';
 import { RunTerminationService } from './run_termination_service.js';
@@ -107,8 +108,12 @@ export class TurnLifecycleService {
         if (state && typeof state.processTurnEndMaintenance === "function") {
             engine.lastTurnMaintenanceResult = state.processTurnEndMaintenance({ ...maintenancePreview, fallbackPlan });
         }
+        engine.lastResourceStorageResult = enforceResourceStorage(state);
         const runTermination = engine.runTerminationService?.evaluate?.({ source: "VERSE_COMMIT" }) || null;
-        if (engine.globalEventManager && !runTermination?.terminated) engine.globalEventManager.tickTurn();
+        if (engine.globalEventManager && !runTermination?.terminated) {
+            engine.globalEventManager.tickTurn();
+            enforceResourceStorage(state);
+        }
         return Object.freeze({ completedTurn, nextTurn: completedTurn + 1, runTermination });
     }
 

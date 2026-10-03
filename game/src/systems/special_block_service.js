@@ -205,7 +205,11 @@ export class SpecialBlockService {
     }
 
     _matchesIndependentSourceCell(definition, cell, { allowSpecialBlock = false } = {}) {
-        if (!cell?.placed || !cell.terrain || cell.isHQ) return false;
+        if (cell?.isHQ) return false;
+        if (cell?.specialBlock && definition?.placement?.sourceSpecialBlockTypes?.includes(cell.specialBlock.definitionId || cell.specialBlock.type)) {
+            return isSpecialBlockFunctional(cell);
+        }
+        if (!cell?.placed || !cell.terrain) return false;
         if (!allowSpecialBlock && cell.specialBlock) return false;
 
         const placement = definition?.placement || {};
@@ -246,16 +250,30 @@ export class SpecialBlockService {
     }
 
     _validateIndependentGenerationTarget(definition, target) {
-        const source = coords(target?.source);
-        const destination = coords(target?.destination || target?.target);
+        let source = coords(target?.source);
+        const destination = coords(target?.destination || target?.target || target);
+        if (destination && definition.placement?.mode === 'OVERLAY_OR_INDEPENDENT') {
+            const reference = this.findAdjacentCells(destination.r, destination.c)
+                .find(entry => this._matchesIndependentSourceCell(definition, entry.cell));
+            if (!reference) return { valid: false, reason: 'SOURCE_TERRAIN_REQUIRED' };
+            source = { r: reference.r, c: reference.c };
+        }
+        if (destination && definition.placement?.elevationInheritance === 'MAX_ADJACENT_SOURCE') {
+            const minimum = Math.max(1, Number(definition.placement.minConnectedSourceCells) || 1);
+            const qualified = this.findAdjacentCells(destination.r, destination.c)
+                .find(entry => this._matchesIndependentSourceCell(definition, entry.cell)
+                    && this._resolveIndependentSourceCluster(definition, entry).length >= minimum);
+            if (!qualified) return { valid: false, reason: 'SOURCE_CLUSTER_TOO_SMALL' };
+            source = { r: qualified.r, c: qualified.c };
+        }
         if (!source || !destination) return { valid: false, reason: 'SOURCE_AND_DESTINATION_REQUIRED' };
 
-        const sourceCell = this.getCell(source.r, source.c);
+        let sourceCell = this.getCell(source.r, source.c);
         const destinationCell = this.getCell(destination.r, destination.c);
-        if (!sourceCell?.placed || !sourceCell.terrain || sourceCell.isHQ) {
+        if ((!sourceCell?.placed || !sourceCell.terrain) && !this._matchesIndependentSourceCell(definition, sourceCell) || sourceCell?.isHQ) {
             return { valid: false, reason: 'SOURCE_TERRAIN_REQUIRED' };
         }
-        if (sourceCell.specialBlock) return { valid: false, reason: 'SOURCE_SPECIAL_BLOCK_OCCUPIED' };
+        if (sourceCell.specialBlock && !definition.placement?.sourceSpecialBlockTypes?.includes(sourceCell.specialBlock.definitionId || sourceCell.specialBlock.type)) return { valid: false, reason: 'SOURCE_SPECIAL_BLOCK_OCCUPIED' };
         if (!this._matchesIndependentSourceCell(definition, sourceCell)) {
             return { valid: false, reason: 'SOURCE_TERRAIN_NOT_ALLOWED' };
         }
@@ -286,6 +304,17 @@ export class SpecialBlockService {
         if (!destinationCell) return { valid: false, reason: 'OUT_OF_BOUNDS' };
         if (destinationCell.placed || destinationCell.specialBlock) {
             return { valid: false, reason: 'DESTINATION_OCCUPIED' };
+        }
+
+        // Choose the maximum E before applying placement restrictions. A lower
+        // neighbor is never a fallback when the maximum makes placement illegal.
+        if (definition.placement?.elevationInheritance === 'MAX_ADJACENT_SOURCE') {
+            const reference = this.findAdjacentCells(destination.r, destination.c)
+                .filter(entry => this._matchesIndependentSourceCell(definition, entry.cell))
+                .sort((a, b) => Number(b.cell.terrain.e) - Number(a.cell.terrain.e)
+                    || a.r - b.r || a.c - b.c)[0];
+            source = { r: reference.r, c: reference.c };
+            sourceCell = reference.cell;
         }
 
         return {
@@ -395,16 +424,21 @@ export class SpecialBlockService {
             : typeOrDefinition;
         if (!definition?.id) return { valid: false, reason: 'UNKNOWN_SPECIAL_BLOCK' };
 
-        const independent = definition.placement?.mode === 'INDEPENDENT_CELL_GENERATION';
+        const dual = definition.placement?.mode === 'OVERLAY_OR_INDEPENDENT';
+        const point = coords(target?.destination || target?.target || target);
+        const independent = definition.placement?.mode === 'INDEPENDENT_CELL_GENERATION'
+            || (dual && !this.getCell(point?.r, point?.c)?.placed);
         const structural = independent
             ? this._validateIndependentGenerationTarget(definition, target)
-            : this._validateOverlayTarget(definition, target, context, options);
+            : this._validateOverlayTarget(definition, target?.destination || target?.target || target, context, options);
         if (!structural.valid) return { ...structural, definition };
 
         const referenceCell = independent ? structural.sourceCell : structural.cell;
         const referencePoint = independent ? structural.source : structural.target;
         const placementPoint = independent ? structural.destination : structural.target;
-        const adjacencyProfile = createSpecialBlockAdjacencyProfile(referenceCell, referencePoint);
+        const adjacencyProfile = referenceCell?.specialBlock
+            ? createSpecialBlockAdjacencyProfile({ terrain: { e: readSpecialBlockAdjacencyProfile(referenceCell)?.e } }, referencePoint, definition)
+            : createSpecialBlockAdjacencyProfile(referenceCell, referencePoint, definition);
         const adjacency = this._validateAdjacencyAt(placementPoint, adjacencyProfile);
         if (!adjacency.valid) {
             return {
@@ -418,6 +452,7 @@ export class SpecialBlockService {
         return {
             ...structural,
             adjacencyProfile,
+            independent,
             definition
         };
     }
@@ -429,6 +464,14 @@ export class SpecialBlockService {
         if (!definition?.id || !Array.isArray(this.state?.grid)) return [];
 
         const targets = [];
+        if (definition.placement?.mode === 'OVERLAY_OR_INDEPENDENT') {
+            for (let r = 0; r < this.state.grid.length; r++) {
+                for (let c = 0; c < this.state.grid[r].length; c++) {
+                    if (this.validateTarget(definition, { r, c }, context).valid) targets.push({ r, c });
+                }
+            }
+            return targets;
+        }
         if (definition.placement?.mode === 'INDEPENDENT_CELL_GENERATION') {
             for (let r = 0; r < this.state.grid.length; r++) {
                 for (let c = 0; c < (this.state.grid[r]?.length || 0); c++) {
@@ -440,8 +483,14 @@ export class SpecialBlockService {
                         const validation = this.validateTarget(definition, candidate, context);
                         if (validation.valid) {
                             if (Number(definition.placement?.minConnectedSourceCells) > 1) {
+                                if (definition.placement?.elevationInheritance === 'MAX_ADJACENT_SOURCE'
+                                    && targets.some(entry => entry.destination.r === destination.r
+                                        && entry.destination.c === destination.c)) continue;
                                 targets.push({
                                     ...candidate,
+                                    source: validation.source,
+                                    ...(definition.placement?.elevationInheritance === 'MAX_ADJACENT_SOURCE'
+                                        ? { r: destination.r, c: destination.c } : {}),
                                     sourceClusterSize: Array.isArray(validation.sourceCluster)
                                         ? validation.sourceCluster.length
                                         : null
@@ -558,7 +607,7 @@ export class SpecialBlockService {
             ? { ...adjacencyContext, paidCost: cost.resources }
             : adjacencyContext;
 
-        if (definition?.placement?.mode === 'INDEPENDENT_CELL_GENERATION') {
+        if (validation.independent === true) {
             const { r, c } = validation.destination;
             const cell = validation.destinationCell;
             const entity = createSpecialBlockEntity(definition, r, c, this.state, creationContext);
@@ -600,6 +649,22 @@ export class SpecialBlockService {
             };
         }
         cell.specialBlock = entity;
+        if (definition.placement?.participatesInZones === false && cell.mergeGroupId) {
+            const groupId = cell.mergeGroupId;
+            for (const row of this.state.grid) for (const member of row) {
+                if (member.mergeGroupId === groupId) {
+                    member.mergeGroupId = null;
+                    member.mergeType = null;
+                    member.merged = false;
+                }
+            }
+            if (this.state.mergedBlocks) delete this.state.mergedBlocks[groupId];
+            if (this.state.mergeLinks instanceof Set) {
+                for (const key of this.state.mergeLinks) {
+                    if (String(key).split('::').includes(String(groupId))) this.state.mergeLinks.delete(key);
+                }
+            }
+        }
 
         return {
             success: true,

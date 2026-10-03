@@ -1,3 +1,4 @@
+import { replacesBaseTerrainProduction } from '../core/special_block_domain.js';
 /* =============================================================
    game/src/systems/production_calculator.js
    リソース産出（食料/資材/防衛/神秘）＆詳細内訳計算専用独立コンポーネント
@@ -101,7 +102,7 @@ import { ZONE_CONVERSION_PRODUCTION_STATUS } from '../core/zone_conversion_domai
                     const cell = state.grid[r][c];
                     if (cell && cell.placed && !cell.isHQ && cell.terrain) {
                         const tid = cell.terrain.terrainId || cell.terrain.id || "";
-                        if (tid.includes("PLAINS")) plainsCount++;
+                        if (tid.includes("PLAINS") && !replacesBaseTerrainProduction(cell)) plainsCount++;
                         if (tid.includes("FOREST")) forestCount++;
                         if (state.isHQVicinity(r, c)) vicinityCount++;
                     }
@@ -392,7 +393,7 @@ import { ZONE_CONVERSION_PRODUCTION_STATUS } from '../core/zone_conversion_domai
 
             // ⑤ 永続平地強化バフ（legacy）
             const tid = t.terrainId || t.id || "";
-            if (state.permanentPlainsFoodBonus && tid.includes("PLAINS")) {
+            if (state.permanentPlainsFoodBonus && tid.includes("PLAINS") && !replacesBaseTerrainProduction(cell)) {
                 modifiers.push({ type: "PERMANENT_PLAINS", resource: "food", amount: state.permanentPlainsFoodBonus });
                 totalFood += state.permanentPlainsFoodBonus;
             }

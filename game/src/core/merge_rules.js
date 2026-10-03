@@ -1,3 +1,4 @@
+import { excludesCellFromZones } from './special_block_domain.js';
 /* =============================================================
    game/src/core/merge_rules.js
    真の4セルMERGE判定とLINK属性比較の純粋ドメインhelper
@@ -50,7 +51,7 @@ function isCompletedMergeGroup(state, groupId) {
 }
 
 function isTrueMergedCell(state, cell) {
-    if (!cell || cell.mergeGroupId === null || cell.mergeGroupId === undefined) return false;
+    if (!cell || excludesCellFromZones(cell) || cell.mergeGroupId === null || cell.mergeGroupId === undefined) return false;
     return cell.merged === true || isCompletedMergeGroup(state, cell.mergeGroupId);
 }
 
