@@ -17,6 +17,80 @@ const UI_FEATURE_FLAGS = {
 };
 
 const UILayoutConfig = {
+    investigationReportStyles: `
+            .investigation-report-overlay {
+                position: fixed;
+                inset: 0;
+                z-index: 920;
+                display: grid;
+                place-items: center;
+                padding: 28px;
+                background: rgba(6, 9, 13, 0.76);
+            }
+            .investigation-report-overlay[hidden] { display: none; }
+            .investigation-report-panel {
+                box-sizing: border-box;
+                width: min(720px, calc(100vw - 56px));
+                max-height: min(820px, calc(100vh - 56px));
+                overflow: auto;
+                padding: 26px;
+                border: 1px solid rgba(214, 192, 144, 0.58);
+                background: rgba(20, 24, 31, 0.98);
+                box-shadow: 0 22px 64px rgba(0, 0, 0, 0.7);
+            }
+            .investigation-report-kicker,
+            .investigation-report-observation-status {
+                font-size: 12px;
+                opacity: 0.72;
+                letter-spacing: 0.05em;
+            }
+            .investigation-report-title { margin: 6px 0 16px; }
+            .investigation-report-roll,
+            .investigation-report-volume,
+            .investigation-report-summary,
+            .investigation-report-preparation { margin: 10px 0; }
+            .investigation-report-group {
+                margin: 16px 0;
+                padding-top: 12px;
+                border-top: 1px solid rgba(255, 255, 255, 0.12);
+            }
+            .investigation-report-group-title { margin: 0 0 8px; font-size: 15px; }
+            .investigation-report-observation {
+                display: grid;
+                grid-template-columns: minmax(88px, auto) 1fr;
+                gap: 12px;
+                align-items: baseline;
+                padding: 5px 0;
+            }
+            .investigation-report-narrative {
+                margin: 16px 0 0;
+                opacity: 0.84;
+                line-height: 1.7;
+            }
+            .investigation-report-actions {
+                display: flex;
+                justify-content: flex-end;
+                margin-top: 22px;
+            }
+            .investigation-report-close {
+                min-width: 128px;
+                padding: 10px 18px;
+                cursor: pointer;
+            }
+            @media (max-width: 640px) {
+                .investigation-report-overlay { padding: 16px; }
+                .investigation-report-panel {
+                    width: calc(100vw - 32px);
+                    max-height: calc(100vh - 32px);
+                    padding: 20px;
+                }
+                .investigation-report-observation {
+                    grid-template-columns: 1fr;
+                    gap: 2px;
+                }
+            }
+        `,
+
     // 🌍 Global Event: left-weighted presentation surface. Advisor may temporarily
     // rise above the overlay on the right while the board remains visually legible.
     globalEventPresentation: {
