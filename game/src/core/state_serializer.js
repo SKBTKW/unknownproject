@@ -1,3 +1,4 @@
+import { restoreDiscoveryLedger } from "../investigation/domain/world_discovery.js";
 import { serializeGameState as serializeBaseGameState } from "./state_serializer_base.js";
 import { createSerializerStateView } from "./state_serializer_state_view.js";
 
@@ -30,6 +31,7 @@ export function serializeGameState(state) {
         investigationUnlockedAtVerse: Number.isInteger(state?.investigationUnlockedAtVerse)
             ? state.investigationUnlockedAtVerse
             : null,
+        discoveryLedger: restoreDiscoveryLedger(state?.discoveryLedger ?? null),
         knownEnemyState: serializeKnownEnemyState(state),
         lastInvestigationReport: cloneData(state?.lastInvestigationReport),
         lastInvestigationComparison: cloneData(state?.lastInvestigationComparison),
