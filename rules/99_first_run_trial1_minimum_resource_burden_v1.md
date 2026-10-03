@@ -29,3 +29,14 @@
 - 被害を伴う生存と復興余力の複数seed総合認証、割合方式そのものの再設計は未完。
 - 敵の強さ・戦闘結果・Tutorial・施設・通常Runの意味論は変更しない。
 - 開墾・製材所の未統合TASK（PR #428）を前提に検証する。
+
+## 検証結果
+
+- focused：費用計算、0–150の単調性、低残高・施設拡張容量・距離・配備割合の最低80%検査 PASS。
+- integration：実GameEngine/TrialControllerによるPreview純粋性、atomic支払い、stale拒否 PASS。
+- live Stage1：8 seedの実進行・有償盤面投資・実行可能支出の3監査で各資源最低80% PASS。
+- 開墾・保持上限 focused regression PASS。
+- FirstRun Stage1 completion certification：23 PASS / 0 FAIL、Stage2通常ゲーム復帰 PASS。
+- Full Inspection：Layer1–6 PASS、138.57秒。
+- 実ブラウザ：未検証。本調整TASKは未push / 未統合。
+- この費用認証は全初見プレイヤーの生存・被害量・復興余力を保証しない。
