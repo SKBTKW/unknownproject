@@ -1823,6 +1823,11 @@
       "path": "scratch/test_farm_storage_v1.mjs",
       "purpose": "Cultivation direct and chained expansion, replacement production, grain bonus, Zone exclusion and derived food/material storage",
       "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_irrigation_choice_resource_preview.mjs",
+      "purpose": "Irrigation choice current balance, per-variant payment forecast, zero and insufficient resources, pure preview and board target handoff",
+      "suite": "supplemental"
     }
   ]
 }
