@@ -30,7 +30,8 @@ const PROTOTYPE = Object.freeze([
     "CMD_GRANARY",
     "CMD_WETLAND_RECLAMATION",
     "CMD_AGRICULTURAL_REFORM",
-    "CMD_LOGGING_CAMP"
+    "CMD_LOGGING_CAMP",
+    "CMD_CULTIVATION"
 ]);
 const SUPPORT = Object.freeze([
     "CMD_RATIONING",
@@ -51,8 +52,8 @@ const effect = (id, type, predicate = () => true) =>
 console.log("\nStage1 non-LAND live candidate audit");
 
 const LIVE_SOCIAL_ACTIVITY = ["CMD_FESTIVAL"];
-assert.equal(stage1.length, 16, "Stage1 source JSON must expose 15 prior definitions and Festival");
-assert.equal(new Set([...PROTOTYPE, ...SUPPORT, ...BLOCKED, ...LIVE_SOCIAL_ACTIVITY]).size, 16);
+assert.equal(stage1.length, 17, "Stage1 source JSON includes Festival and Cultivation");
+assert.equal(new Set([...PROTOTYPE, ...SUPPORT, ...BLOCKED, ...LIVE_SOCIAL_ACTIVITY]).size, 17);
 assert.deepEqual(
     [...new Set([...PROTOTYPE, ...SUPPORT, ...BLOCKED, ...LIVE_SOCIAL_ACTIVITY])].sort(),
     [...byId.keys()].sort(),
@@ -68,7 +69,8 @@ const LIVE_BOARD_INVESTMENTS = new Set([
     "CMD_GRANARY",
     "CMD_WETLAND_RECLAMATION",
     "CMD_AGRICULTURAL_REFORM",
-    "CMD_LOGGING_CAMP"
+    "CMD_LOGGING_CAMP",
+    "CMD_CULTIVATION"
 ]);
 assert.equal(isCardRuntimeActive(byId.get("CMD_FESTIVAL")), true);
 assert.deepEqual(generatedById.get("CMD_FESTIVAL"), byId.get("CMD_FESTIVAL"));
@@ -282,3 +284,6 @@ console.log("  prototype candidates:", PROTOTYPE.join(", "));
 console.log("  support / migration:", SUPPORT.join(", "));
 console.log("  blocked until semantic repair:", BLOCKED.join(", "));
 console.log("✅ Stage1 non-LAND live candidate audit PASS");
+
+assert.deepEqual(generatedById.get('CMD_CULTIVATION'), byId.get('CMD_CULTIVATION'));
+assert.ok(effect('CMD_CULTIVATION', 'DOMAIN_ACTION', e => e.blockType === 'FARM' && e.paymentMode === 'DOMAIN_QUOTE'));

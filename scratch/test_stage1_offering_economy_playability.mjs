@@ -1,3 +1,4 @@
+import { readResourceStorage } from '../game/src/core/resource_storage_policy.js';
 import assert from "node:assert/strict";
 
 import { GameEngine } from "../game/src/core/game_engine.js";
@@ -692,6 +693,7 @@ function runSeedTrace(seed, {
             mystic: engine.state.mystic,
             ember: engine.state.ember
         };
+        const storageCapacity = readResourceStorage(engine.state);
         const settlementPreview = engine.previewTurnEndMaintenance();
         const settlementBreakdown = engine.state.getResourceBreakdown();
         const productionContribution = analyzeProductionContribution(engine.state, placementOrigins);
@@ -717,21 +719,29 @@ function runSeedTrace(seed, {
             mysticAfter: engine.state.mystic,
             foodBreakdown: settlementBreakdown?.food || null,
             materialBreakdown: settlementBreakdown?.wood || null,
-            productionContribution
+            productionContribution,
+            storageOverflow: engine.lastResourceStorageResult?.overflow || null
         });
         assert.equal(
             engine.state.food,
-            Math.max(
+            Math.min(storageCapacity.food, Math.max(
                 0,
                 beforeSettlement.food + settlementPreview.production.grossFood - settlementPreview.production.foodCost
-            ),
-            `seed ${seed} V${verse}: food stock must equal nonnegative stock + gross production - one maintenance payment`
+            )),
+            `seed ${seed} V${verse}: food stock must equal net settlement limited by storage capacity`
         );
         assert.equal(
             engine.state.wood ?? engine.state.material ?? 0,
-            beforeSettlement.material + (settlementPreview.production.totalMaterial ?? settlementPreview.production.totalWood ?? 0),
-            `seed ${seed} V${verse}: material stock must equal stock + production when the chosen Stage1 action has no material cost`
+            Math.min(storageCapacity.wood, beforeSettlement.material + (settlementPreview.production.totalMaterial ?? settlementPreview.production.totalWood ?? 0)),
+            `seed ${seed} V${verse}: material stock must equal settlement limited by storage capacity`
         );
+        assert.equal(engine.lastResourceStorageResult.overflow.food,
+            Math.max(0, beforeSettlement.food + settlementPreview.production.grossFood
+                - settlementPreview.production.foodCost - storageCapacity.food),
+            'excess food must be accounted for after maintenance');
+        assert.equal(engine.lastResourceStorageResult.overflow.wood,
+            Math.max(0, beforeSettlement.material + settlementPreview.production.totalWood - storageCapacity.wood),
+            'excess material must be accounted for');
         assert.equal(boundary?.runTermination?.terminated === true, false, `seed ${seed} V${verse}: run must not terminate`);
         assert.equal(engine.state.gameOver === true, false, `seed ${seed} V${verse}: Stage1 must stay alive`);
     }

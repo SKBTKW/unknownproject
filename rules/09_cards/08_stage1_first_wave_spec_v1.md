@@ -207,59 +207,40 @@ terrain identity mutationとZone/Link整合性はBoard側が所有する。
 
 ---
 
-## 5.2 《伐採拠点》 `CMD_LOGGING_CAMP`
+## 5.2 《製材所》 `CMD_LOGGING_CAMP`
 
-### プレイヤーへの問い
+### 確定仕様（2026-10-03）
 
-> GL2以上の土地をつなぎ、その周囲へ林業拠点を集積して継続的な資材生産を作るか。
-
-### v2仕様
-
-Special Block `LOGGING_CAMP` を正本にする。
-
-- Offering condition: **GL2以上の土地セルが直交連結で2セル以上存在**
-- 2枚の1x1土地カードを後から隣接させても条件を満たす
-- 同一 `placementGroupId` は要求しない
-- target: 上記連結源の構成セルに直交隣接する**未配置グリッド**
-- result: terrainを持たない独立 `LOGGING_CAMP` Special Block
-- source terrainのGL/terrain identityは変更しない
-- Special Block共通隣接契約を適用:
-  - Eは参照元セルからコピー
-  - GLは隣接判定上1
-  - 砂漠系 / 山岳系への直交隣接は禁止
-  - GL差2以上の地形へは隣接不可
-- 最終的な配置合法性はBoard Domainが所有する
+- 内部ID `CMD_LOGGING_CAMP` / `LOGGING_CAMP` は保存互換のため維持。
+- コモン。作成費🧱20、既存Offering weight 0.35を維持。
+- GL2以上の森林が直交連結で2マス以上存在すること。GL2 / GL3混在可、地帯化・同一配置グループは不要。
+- さらに、その連結森林に直交隣接する合法な未配置マスがある場合だけOfferingされる。
+- 自身は1×1の独立Special Block。基礎Terrainは生成・変換しない。
+- 配置時に隣接する対象森林の最大Eを自動継承し、GLは1。プレイヤーによる継承元選択は不要。
+- 継承した最大Eで全隣接制限を検査する。低いEへの代替はしない。
+- 製材所とGL2以上の森林の辺だけGL差制限の例外。他の施設・地形の隣接制限、E差・砂漠・山岳制限は維持。
+- E / GLは配置後に参照森林が変化しても再計算しない。Trialも保存されたE / GLを使用。
+- 既存土地上に配置する他のSpecial Blockも、元土地のEを継承しGL1として扱う。
 
 ### Production
 
-production shapeは隣接施設数ベースへ変更する:
+直交隣接するGL2以上の森林**マス数×🧱2 / Verse**。
 
-```text
-RELATION_COUNT
-relationDefinitionId = LOGGING_CAMP
-relationNeighborhood = ORTHOGONAL
-```
+- 地帯・連結クラスタ全体のマス数は数えない。
+- 斜め隣接、GL1以下、他のSpecial Blockは対象外。
+- 同じ森林を複数の製材所で共有できる。
+- 配置後も対象森林の増減・GL変更に応じて毎回更新。最大4マスで🧱8。
+- 独立した基礎産出・隣接製材所によるボーナスはない。
 
-隣接する `LOGGING_CAMP` の数に応じて🧱産出が上昇する。
-**基礎🧱産出・隣接1基あたりの加算値・作成費は未確定** とし、
-数値を決めるまではDomain quote / productionをfail-closedで維持する。
+### 状態
 
-数値は、
+IMPLEMENTED（focused / Board統合PASS）。配置・Offering・生産・Trial・保存復元・UI配置先選択を検証。
 
-- HQ基礎産出5/5/5/1
-- Stage1 LAND頻度
-- 平時sink
-- Trial Deployment
-
-を含む再試算後に確定する。
-
-### Cost ownership
-
-Special Block作成費はBoard側quoteを正本にする方向。
-
-カード側 `cost` とSpecial Block definition側で二重に値を持たない。
-
-現 `🔥1` は製品v1の確定値とはしない。
+全体Gateは未成立。2026-10-03のFull InspectionはLayer 6の
+`test_stage1_trial1_burden_certification.mjs`で停止。新生産仕様下のseed 20260924で、
+HEAVY_FARの投資＋Trial資材負担率が84.6%となり既存70–80%帯を超える
+（分類D：Gameplay品質）。Gameplayや認証閾値の変更は行わず、バランス再評価TODOとする。
+配置回数によるweight低下の具体値は新設せず、既存weightを使用する。
 
 ---
 
