@@ -372,7 +372,7 @@
     "nameKey": "CMD_MINE_NAME",
     "descriptionKey": "CMD_MINE_DESC",
     "cost": {},
-    "tags": ["MINERAL", "RESOURCE", "EXTRACTION", "INDUSTRY", "SPECIAL_BLOCK"],
+    "tags": ["STONE", "MINERAL", "RESOURCE", "EXTRACTION", "INDUSTRY", "SPECIAL_BLOCK"],
     "minStage": 1,
     "rarity": "UC",
     "weight": 0.25,
@@ -381,7 +381,7 @@
       "requirements": [
         {
           "type": "SOCKET_CATEGORY_ANY",
-          "categories": ["CAT_STRATEGIC_MINERAL", "CAT_PRECIOUS_METAL", "CAT_SPECIAL_MINERAL"]
+          "categories": ["CAT_STONE", "CAT_STRATEGIC_MINERAL", "CAT_PRECIOUS_METAL", "CAT_SPECIAL_MINERAL"]
         }
       ]
     },

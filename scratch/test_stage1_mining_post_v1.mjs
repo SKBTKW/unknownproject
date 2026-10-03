@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 
 import { BoardDomainAdapter } from "../game/src/core/board_domain_adapter.js";
 import {
-    MINERAL_RESOURCE_CATEGORIES,
+    MINING_POST_RESOURCE_CATEGORIES,
     SPECIAL_BLOCK_COST_STATUS,
     SPECIAL_BLOCK_TYPES,
     getSpecialBlockDefinition,
@@ -50,12 +50,13 @@ function cell(r, c, base = null, socketResource = null) {
     };
 }
 
-const mineralCategories = [
+const miningPostCategories = [
+    "CAT_STONE",
     "CAT_STRATEGIC_MINERAL",
     "CAT_PRECIOUS_METAL",
     "CAT_SPECIAL_MINERAL"
 ];
-assert.deepEqual([...MINERAL_RESOURCE_CATEGORIES], mineralCategories);
+assert.deepEqual([...MINING_POST_RESOURCE_CATEGORIES], miningPostCategories);
 
 const card = COMMAND_CARDS_MASTER.find(candidate => candidate.id === "CMD_MINE");
 assert.ok(card, "CMD_MINE must exist");
@@ -67,7 +68,7 @@ assert.equal(card.reqOreSocket, undefined);
 assert.equal(card.reqWood, undefined);
 assert.deepEqual(card.offering?.requirements, [{
     type: "SOCKET_CATEGORY_ANY",
-    categories: mineralCategories
+    categories: miningPostCategories
 }]);
 assert.deepEqual(card.effects, [{
     type: "DOMAIN_ACTION",
@@ -80,7 +81,7 @@ assert.equal(isCardRuntimeActive(card), true, "Mining Post is active by default"
 
 const definition = getSpecialBlockDefinition(SPECIAL_BLOCK_TYPES.MINE);
 assert.equal(definition.placement.mode, "INDEPENDENT_CELL_GENERATION");
-assert.deepEqual([...definition.placement.sourceResourceCategories], mineralCategories);
+assert.deepEqual([...definition.placement.sourceResourceCategories], miningPostCategories);
 assert.equal(definition.placement.sourceSelection, "MAX_RESOURCE_BONUS_CHANNELS");
 assert.equal(definition.placement.maxPerSource, 1);
 assert.equal(definition.placement.allowSourceTerrainAdjacency, true);
@@ -92,7 +93,7 @@ assert.deepEqual(definition.creationCost, {
 });
 assert.equal(definition.production.kind, SPECIAL_BLOCK_PRODUCTION_KINDS.SOURCE_RESOURCE_BONUS);
 assert.equal(definition.production.status, "RESOLVED");
-assert.deepEqual([...definition.production.allowedResourceCategories], mineralCategories);
+assert.deepEqual([...definition.production.allowedResourceCategories], miningPostCategories);
 assert.equal(definition.production.perPositiveYield, 1);
 
 const hematite = {
@@ -223,10 +224,12 @@ assert.ok(targets.some(target =>
 assert.ok(targets.some(target =>
     target.source?.r === 3 && target.source?.c === 3
 ), "special mineral can be the bound source");
-assert.equal(
-    targets.some(target => target.source?.r === 0 && target.source?.c === 2),
-    false,
-    "stone resources are intentionally outside the Mining Post mineral umbrella"
+assert.ok(
+    targets.some(target =>
+        target.source?.r === 0 && target.source?.c === 2
+        && target.destination?.r === 0 && target.destination?.c === 3
+    ),
+    "stone resources are valid Mining Post sources because 採掘所 includes quarrying"
 );
 
 state.handOffering = [card];
@@ -341,8 +344,8 @@ noMineralEngine.cardDomainActionExecutor = createCardDomainActionExecutor(noMine
 const noMineralDeck = new DeckManager(noMineralState, noMineralEngine);
 assert.equal(
     noMineralDeck.isCardEligible(card, 1, 0),
-    false,
-    "stone alone does not satisfy the mineral Offering condition"
+    true,
+    "stone alone satisfies the Mining Post Offering condition"
 );
 
 console.log("✅ Stage1 Mining Post v1 PASS");

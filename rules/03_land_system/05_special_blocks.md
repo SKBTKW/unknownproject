@@ -39,7 +39,7 @@
 ### A. Implemented — 現行gameplayへ実効接続済み
 
 - `E1_RECLAIMED_LAND` 干拓地
-- `MINE` 採掘所 — 鉱物資源に隣接する独立Special Block
+- `MINE` 採掘所 — 石材・鉱物資源に隣接する独立Special Block
 
 ### B. Partial — カード・状態フラグはあるが施設機能が未接続
 
@@ -145,14 +145,13 @@
 
 - `granaryCount`
 - `sawmillCount`
-- `mineCount`
 - `stableCount`
 - `marketCount`
 - `workshopCount`
 
 などの状態値を立てる段階に留まる。
 
-これらの値をProductionCalculator、コストresolver、Trial等が消費していない場合、そのカードは**Partial**と扱う。
+これらの値をProductionCalculator、コストresolver、Trial等が消費していない場合、そのカードは**Partial**と扱う。採掘所はこの旧counter方式から離れ、Board-owned Special Blockとして実計算へ接続済み。
 
 「カードが発動できる」だけで「施設システムが完成している」と判断しない。
 
