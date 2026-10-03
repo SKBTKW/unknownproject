@@ -1661,12 +1661,12 @@ class UIController {
             const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
             const cName = tObj.nameKey ? I18n.t(tObj.nameKey) : (tObj.id || "Card");
             const cDesc = tObj.descriptionKey ? I18n.t(tObj.descriptionKey) : "";
-            const resourceCostText = cost => {
+            const resourceCostText = (cost, includeZero = false) => {
                 const parts = [];
-                if (cost?.food) parts.push(`🌾${cost.food}`);
-                if (cost?.wood) parts.push(`🧱${cost.wood}`);
-                if (cost?.mystic) parts.push(`✨${cost.mystic}`);
-                if (cost?.ember) parts.push(`🔥${cost.ember}`);
+                if (cost?.food || (includeZero && cost?.food === 0)) parts.push(`🌾${cost.food}`);
+                if (cost?.wood || (includeZero && cost?.wood === 0)) parts.push(`🧱${cost.wood}`);
+                if (cost?.mystic || (includeZero && cost?.mystic === 0)) parts.push(`✨${cost.mystic}`);
+                if (cost?.ember || (includeZero && cost?.ember === 0)) parts.push(`🔥${cost.ember}`);
                 return parts.join(" ");
             };
             const hasCost = cost => (
@@ -1675,14 +1675,28 @@ class UIController {
                 && (!cost?.mystic || this.state.mystic >= cost.mystic)
                 && (!cost?.ember || this.state.ember >= cost.ember)
             );
+            const resourceKeys = [...new Set(variants.flatMap(variant =>
+                Object.keys(variant.cost || {}).filter(key => Number(variant.cost[key]) > 0)
+            ))];
+            const balances = Object.fromEntries(resourceKeys.map(key => [key,
+                key === "wood" ? Math.max(this.state.wood ?? 0, this.state.material ?? 0)
+                    : Number(this.state[key] || 0)
+            ]));
             modalSys.showChoiceDialog({
                 title: cName,
                 descText: cDesc,
+                currentText: I18n.t("UI_CARD_CURRENT_RESOURCES", { resources: resourceCostText(balances, true) }),
                 choices: variants.map(variant => ({
                     id: variant.id,
                     label: variant.labelKey ? I18n.t(variant.labelKey) : variant.id,
                     description: variant.descriptionKey ? I18n.t(variant.descriptionKey) : "",
-                    costText: resourceCostText(variant.cost || {}),
+                    costText: I18n.t("UI_CARD_COST_PREFIX", { cost: resourceCostText(variant.cost || {}) }),
+                    afterText: hasCost(variant.cost || {})
+                        ? I18n.t("UI_CARD_AFTER_PAYMENT", { resources: resourceCostText(
+                            Object.fromEntries(resourceKeys.map(key => [key, balances[key] - Number(variant.cost?.[key] || 0)])),
+                            true
+                        ) })
+                        : I18n.t("UI_CARD_PAYMENT_UNAVAILABLE"),
                     disabled: !hasCost(variant.cost || {})
                 })),
                 onSelect: choice => {
