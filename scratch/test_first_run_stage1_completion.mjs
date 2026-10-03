@@ -74,7 +74,18 @@ class MockElement {
     get className() { return [...this._classes].join(" "); }
     set className(v) { this._classes = new Set(String(v || "").split(/\s+/).filter(Boolean)); }
     get innerHTML() { return this._innerHTML; }
-    set innerHTML(v) { this._innerHTML = String(v ?? ""); this.children = []; }
+    set innerHTML(v) {
+        this._innerHTML = String(v ?? "");
+        for (const child of this.children) if (child.id) elements.delete(child.id);
+        this.children = [];
+        // Only supply DOM button nodes; production tray rendering and event binding
+        // must decide whether a player can reach Settlement.
+        for (const match of this._innerHTML.matchAll(/<button\b[^>]*id="([^"]+)"[^>]*>/g)) {
+            const button = new MockElement(match[1], "button");
+            button.disabled = /\bdisabled\b/.test(match[0]);
+            this.appendChild(button);
+        }
+    }
     get innerText() { return this._innerText; }
     set innerText(v) { this._innerText = String(v ?? ""); }
     get textContent() { return this._innerText; }
@@ -408,7 +419,12 @@ if (selectedRoute && selectedCell) {
         assert.ok(ui.getTrialResult()?.completed);
     });
 
-    const settled = requireSuccess(ui.settleCurrentTrialResult(), "settleCurrentTrialResult");
+    ui.trialActionTrayComponent.render();
+    const settlementButton = elements.get("btnTrialSettleResult");
+    assert.ok(settlementButton, "completed Trial must render a player-facing Settlement action");
+    assert.equal(settlementButton.disabled, false);
+    assert.equal(typeof settlementButton.onclick, "function", "Settlement action must be bound by production tray");
+    const settled = requireSuccess(settlementButton.onclick(), "clickTrialSettlement");
     certify("SETTLEMENT: TRIAL_RESULT_SETTLED creates Post-Trial transition", () => {
         assert.equal(settled.settlement?.settled, true);
         assert.ok(engine.state.postTrialTransition);
