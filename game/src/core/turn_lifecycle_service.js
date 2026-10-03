@@ -45,6 +45,14 @@ export class TurnLifecycleService {
             gameFactHub: this.gameFactHub,
             transitionResolver: enemyStateTransitionResolver
         });
+        // Seed newly owned Truth from the already resolved initial Threat.
+        // Later transitions remain driven by committed development changes.
+        // Injected/restored Truth services retain their existing state.
+        if (!engine.trueEnemyStateService) {
+            this.trueEnemyStateService.applyThreatUpdate({
+                currentThreatState: this.threatStateService.getReadModel().current
+            });
+        }
         this.engine.trueEnemyStateService = this.trueEnemyStateService;
         this.engine.enemyTruthReadModel = engine.enemyTruthReadModel || new EnemyTruthReadModel(this.trueEnemyStateService);
         this.historySnapshotService = engine.historySnapshotService || new HistorySnapshotService(engine);
