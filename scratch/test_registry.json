@@ -1810,6 +1810,11 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_first_run_investigation_ui_execution.mjs",
+      "purpose": "FirstRun Investigation UI dedicated execution, source rejection, no duplicate report, and undeveloped-board diagnostic",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_first_run_stage1_completion.mjs",
       "purpose": "FirstRun Stage1 Verse1 through Trial1, post-Trial settlement, Stage2 progression, and completion-boundary certification",
       "suite": "supplemental"

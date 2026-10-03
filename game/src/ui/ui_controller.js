@@ -2435,9 +2435,11 @@ class UIController {
             ? { type: "RESERVE", index: this.selectedReserveIdx }
             : { type: "OFFERING", index: cardIdx };
 
-        const res = this.engine.playCommandCard(card, source, target);
+        const cardData = card?.terrain || card || {};
+        const res = cardData.category === "INVESTIGATION"
+            ? this.engine.executeInvestigationCard(card, source)
+            : this.engine.playCommandCard(card, source, target);
         if (res && res.success) {
-            const cardData = card?.terrain || card || {};
             if ((cardData.category || card?.category) === "MILITARY") this.advisorDockComponent?.observeMilitaryAction?.(cardData.id || cardData.nameKey || "MILITARY");
             sfxManager.play("COMMAND_EXECUTE");
             const diceCheck = res.diceCheck || (res.result && res.result.diceCheck);
