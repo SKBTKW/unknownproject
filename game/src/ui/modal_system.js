@@ -292,7 +292,7 @@
             };
         }
 
-        static showChoiceDialog({ title, descText, choices = [], cancelLabel, onSelect, onCancel }) {
+        static showChoiceDialog({ title, descText, currentText, choices = [], cancelLabel, onSelect, onCancel }) {
             this.init();
             const overlay = document.getElementById("modalSystemOverlay");
             const content = document.getElementById("modalSystemContent");
@@ -305,7 +305,7 @@
                         <strong>${choice.label || choice.id || ""}</strong>
                         <span class="modal-system-choice-desc">${choice.description || ""}</span>
                     </span>
-                    <span class="modal-system-choice-cost">${choice.costText || ""}</span>
+                    <span class="modal-system-choice-cost">${choice.costText || ""}${choice.afterText ? `<br>${choice.afterText}` : ""}</span>
                 </button>
             `).join("");
 
@@ -313,6 +313,7 @@
                 <div class="modal-system-strip-card">
                     <div class="modal-system-header-title"><span>${title}</span></div>
                     <div class="modal-system-body-desc">${descText || ""}</div>
+                    ${currentText ? `<div class="modal-system-body-desc">${currentText}</div>` : ""}
                     <div class="modal-system-choice-list">${choiceHtml}</div>
                     <div class="modal-system-actions">
                         <button id="modalSysBtnCancel" class="modal-system-btn modal-system-btn-cancel">${cancelBtnText}</button>
