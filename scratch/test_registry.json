@@ -771,6 +771,22 @@
       ]
     },
     {
+      "path": "scratch/test_investigation_runtime_presentation_connection.mjs",
+      "purpose": "Investigation card UI routes through canonical execution and projects player-facing report presentation",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_investigation_report_component_dom.mjs",
+      "purpose": "Investigation report overlay DOM rendering, focus restoration, Escape dismissal, and listener cleanup",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_investigation_unlock_bridge.mjs",
       "purpose": "investigation unlock bridge",
       "suite": "existing",

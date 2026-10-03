@@ -96,6 +96,11 @@ class MockElement {
     removeAttribute(k) { delete this.attributes[k]; }
     appendChild(child) { this.children.push(child); child.parentNode = this; return child; }
     removeChild(child) { this.children = this.children.filter(x => x !== child); return child; }
+    get firstElementChild() { return this.children[0] || null; }
+    get isConnected() { return this === body || this === head || Boolean(this.parentNode?.isConnected); }
+    replaceChildren(...children) { this.children = []; children.forEach(child => this.appendChild(child)); }
+    addEventListener(type, listener) { this[`on${type}`] = listener; }
+    focus() { documentMock.activeElement = this; }
     querySelector() { return null; }
     querySelectorAll() { return []; }
     getBoundingClientRect() { return { top: 0, left: 0, width: 100, height: 100, right: 100, bottom: 100 }; }
@@ -271,6 +276,18 @@ ui.selectCard(investigationIndex);
 const confirmInvestigation = elements.get("modalSysBtnConfirm")?.onclick;
 assert.equal(typeof confirmInvestigation, "function", "production Investigation confirmation handler must exist");
 confirmInvestigation();
+certify("PRESENTATION: Investigation report opens and confirmation resumes play", () => {
+    const overlay = ui.investigationReportComponent.overlay;
+    assert.equal(overlay.hidden, false);
+    assert.equal(overlay.getAttribute("role"), "dialog");
+    const panel = overlay.firstElementChild;
+    const close = panel.children.at(-1).firstElementChild;
+    assert.equal(close.tagName, "BUTTON");
+    assert.equal(typeof close.onclick, "function");
+    close.onclick();
+    assert.equal(overlay.hidden, true);
+    assert.equal(engine.state.knownEnemyState.reports.length, reportsBefore + 1);
+});
 certify("PRE_TRIAL: Investigation executes and KnownEnemyState advances", () => {
     assert.equal(engine.state.knownEnemyState.reports.length, reportsBefore + 1);
     assert.equal(engine.warningStateService.getState(), WARNING_STATES.WATCH);
