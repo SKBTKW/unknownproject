@@ -55,11 +55,13 @@ function finiteTerrainAxis(value) {
  * treated as 1. The persisted profile keeps independent/special-only cells
  * deterministic across save/restore.
  */
-export function createSpecialBlockAdjacencyProfile(referenceCell, source = null) {
+export function createSpecialBlockAdjacencyProfile(referenceCell, source = null, definition = null) {
     const elevation = finiteTerrainAxis(referenceCell?.terrain?.e);
     return Object.freeze({
         e: elevation,
         gl: SPECIAL_BLOCK_ADJACENCY_GL,
+        ...(definition?.placement?.glAdjacencyException
+            ? { glAdjacencyException: definition.placement.glAdjacencyException } : {}),
         ...(source && Number.isInteger(source.r) && Number.isInteger(source.c)
             ? { source: Object.freeze({ r: source.r, c: source.c }) }
             : {})
@@ -74,10 +76,13 @@ export function readSpecialBlockAdjacencyProfile(entityOrCell) {
     const stored = entity.terrainAdjacencyProfile;
     const storedE = finiteTerrainAxis(stored?.e);
     const fallbackE = finiteTerrainAxis(cell?.terrain?.e);
+    const definition = getSpecialBlockDefinition(entity.definitionId || entity.type);
 
     return Object.freeze({
         e: storedE !== null ? storedE : fallbackE,
         gl: SPECIAL_BLOCK_ADJACENCY_GL,
+        ...(definition?.placement?.glAdjacencyException
+            ? { glAdjacencyException: definition.placement.glAdjacencyException } : {}),
         ...(stored?.source && Number.isInteger(stored.source.r) && Number.isInteger(stored.source.c)
             ? { source: Object.freeze({ r: stored.source.r, c: stored.source.c }) }
             : {})
@@ -104,6 +109,9 @@ export function validateTerrainAgainstSpecialBlockAdjacency(terrain, profile) {
         terrainGL !== null
         && Number.isFinite(profile.gl)
         && Math.abs(terrainGL - profile.gl) >= 2
+        && !(profile.glAdjacencyException
+            && profile.glAdjacencyException.terrainIds.includes(id)
+            && terrainGL >= profile.glAdjacencyException.minGL)
     ) {
         reasons.push('INVALID_GL_NEIGHBOR');
     }
@@ -199,7 +207,8 @@ function freezeProductionDefinition(production) {
         yields: freezeYieldMap(production.yields),
         baseYields: freezeYieldMap(production.baseYields),
         perSourceYields: freezeYieldMap(production.perSourceYields),
-        perRelationYields: freezeYieldMap(production.perRelationYields)
+        perRelationYields: freezeYieldMap(production.perRelationYields),
+        relationTerrainIds: freezeStringArray(production.relationTerrainIds)
     });
 }
 
@@ -207,7 +216,13 @@ function freezeDefinition(definition) {
     const placement = {
         ...(definition.placement || {}),
         terrainIds: freezeStringArray(definition.placement?.terrainIds),
-        sourceTerrainIds: freezeStringArray(definition.placement?.sourceTerrainIds)
+        sourceTerrainIds: freezeStringArray(definition.placement?.sourceTerrainIds),
+        ...(definition.placement?.glAdjacencyException ? {
+            glAdjacencyException: Object.freeze({
+                ...definition.placement.glAdjacencyException,
+                terrainIds: freezeStringArray(definition.placement.glAdjacencyException.terrainIds)
+            })
+        } : {})
     };
     return Object.freeze({
         ...definition,
@@ -224,6 +239,7 @@ function freezeDefinition(definition) {
             }
             : {}),
         production: freezeProductionDefinition(definition.production),
+        storageCapacity: definition.storageCapacity ? Object.freeze({ ...definition.storageCapacity }) : null,
         maintenanceModifiers: definition.maintenanceModifiers
             ? Object.freeze({
                 ...definition.maintenanceModifiers,
@@ -248,13 +264,21 @@ export const SPECIAL_BLOCK_DEFINITIONS = Object.freeze({
         id: SPECIAL_BLOCK_TYPES.FARM,
         category: 'PRODUCTION',
         placement: {
-            mode: 'INDEPENDENT_CELL_GENERATION',
-            targeting: 'SOURCE_AND_ADJACENT_EMPTY',
+            ...overlayPlacement,
+            mode: 'OVERLAY_OR_INDEPENDENT',
+            terrainIds: ['GL1_PLAINS'],
             sourceTerrainIds: ['GL1_PLAINS'],
-            requiresSourceIsolation: true
+            sourceSpecialBlockTypes: ['FARM'],
+            participatesInZones: false
         },
-        baseTerrainInteraction: { kind: BASE_TERRAIN_INTERACTIONS.INDEPENDENT },
-        production: { kind: 'FIXED', status: 'UNRESOLVED' },
+        baseTerrainInteraction: { kind: BASE_TERRAIN_INTERACTIONS.TERRAIN_USING_OVERLAY, replacesProduction: true },
+        creationCost: { status: SPECIAL_BLOCK_COST_STATUS.RESOLVED, resources: { wood: 30 } },
+        production: {
+            kind: 'RELATION_COUNT', status: 'RESOLVED',
+            relationResourceCategory: 'CAT_GRAIN', relationExcludeSpecialBlockTypes: ['FARM'], relationNeighborhood: 'ORTHOGONAL',
+            baseYields: { food: 6 }, perRelationYields: { food: 1 }, maxRelations: 1
+        },
+        storageCapacity: { food: 20 },
         capabilities: [BOARD_CAPABILITIES.PRODUCTION_SITE],
         trialTraits: {},
         lifecycle: { initialState: 'ACTIVE' },
@@ -293,7 +317,13 @@ export const SPECIAL_BLOCK_DEFINITIONS = Object.freeze({
             mode: 'INDEPENDENT_CELL_GENERATION',
             targeting: 'SOURCE_AND_ADJACENT_EMPTY',
             sourceMinGL: 2,
-            minConnectedSourceCells: 2
+            sourceTerrainIds: ['GL2_FOREST', 'GL3_DEEP_FOREST', 'E2_FOREST_HILL', 'E2_DEEP_HILL'],
+            minConnectedSourceCells: 2,
+            elevationInheritance: 'MAX_ADJACENT_SOURCE',
+            glAdjacencyException: {
+                terrainIds: ['GL2_FOREST', 'GL3_DEEP_FOREST', 'E2_FOREST_HILL', 'E2_DEEP_HILL'],
+                minGL: 2
+            }
         },
         baseTerrainInteraction: { kind: BASE_TERRAIN_INTERACTIONS.INDEPENDENT },
         creationCost: {
@@ -303,14 +333,16 @@ export const SPECIAL_BLOCK_DEFINITIONS = Object.freeze({
         production: {
             kind: 'RELATION_COUNT',
             status: 'RESOLVED',
-            relationDefinitionId: SPECIAL_BLOCK_TYPES.LOGGING_CAMP,
+            relationTerrainIds: ['GL2_FOREST', 'GL3_DEEP_FOREST', 'E2_FOREST_HILL', 'E2_DEEP_HILL'],
+            relationMinGL: 2,
             relationNeighborhood: 'ORTHOGONAL',
-            baseYields: { wood: 2 },
-            perRelationYields: { wood: 1 }
+            baseYields: { wood: 0 },
+            perRelationYields: { wood: 2 }
         },
         capabilities: [BOARD_CAPABILITIES.PRODUCTION_SITE],
         trialTraits: {},
         lifecycle: { initialState: 'ACTIVE' },
+        storageCapacity: { wood: 50 },
         presentation: { nameKey: 'SPECIAL_BLOCK_LOGGING_CAMP' }
     }),
     [SPECIAL_BLOCK_TYPES.MINE]: freezeDefinition({
@@ -470,4 +502,13 @@ export function readSpecialBlockTrialTraits(entityOrCell) {
             ...(entity.trialTraits?.specialTactics || definition.trialTraits.specialTactics || [])
         ]
     };
+}
+
+export function excludesCellFromZones(cell) {
+    const entity = cell?.specialBlock;
+    return Boolean(entity && getSpecialBlockDefinition(entity.definitionId || entity.type)?.placement?.participatesInZones === false);
+}
+export function replacesBaseTerrainProduction(cell) {
+    const entity = cell?.specialBlock;
+    return Boolean(entity && getSpecialBlockDefinition(entity.definitionId || entity.type)?.baseTerrainInteraction?.replacesProduction === true);
 }

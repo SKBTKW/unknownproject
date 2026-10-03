@@ -1818,6 +1818,11 @@
       "path": "scratch/test_first_run_stage1_completion.mjs",
       "purpose": "FirstRun Stage1 Verse1 through Trial1, post-Trial settlement, Stage2 progression, and completion-boundary certification",
       "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_farm_storage_v1.mjs",
+      "purpose": "Cultivation direct and chained expansion, replacement production, grain bonus, Zone exclusion and derived food/material storage",
+      "suite": "supplemental"
     }
   ]
 }

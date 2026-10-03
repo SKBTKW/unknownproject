@@ -676,16 +676,15 @@ assert.ok(
     maxStage1CardPve <= authoringAnchors.matureStage1CardReferenceMax,
     `current Stage1 Verse15 card max PVE ${maxStage1CardPve.toFixed(2)} exceeds mature-stage reference anchor ${authoringAnchors.matureStage1CardReferenceMax.toFixed(2)}`
 );
-assert.ok(
-    heavyTrialPve.min >= authoringAnchors.firstRunTrial1Heavy.min
-        && heavyTrialPve.max <= authoringAnchors.firstRunTrial1Heavy.max,
-    `FirstRun Trial1 heavy PVE ${heavyTrialPve.min.toFixed(2)}..${heavyTrialPve.max.toFixed(2)} moved outside authoring anchor ${authoringAnchors.firstRunTrial1Heavy.min.toFixed(2)}..${authoringAnchors.firstRunTrial1Heavy.max.toFixed(2)}`
-);
-assert.ok(
-    allTrialPve.min >= authoringAnchors.firstRunTrial1AllIn.min
-        && allTrialPve.max <= authoringAnchors.firstRunTrial1AllIn.max,
-    `FirstRun Trial1 all-in PVE ${allTrialPve.min.toFixed(2)}..${allTrialPve.max.toFixed(2)} moved outside authoring anchor ${authoringAnchors.firstRunTrial1AllIn.min.toFixed(2)}..${authoringAnchors.firstRunTrial1AllIn.max.toFixed(2)}`
-);
+// The former uncapped-stock PVE envelope remains an authoring reference.
+// The 2026-10-03 user target is >=80% of each live deployment balance;
+// storage caps change cost/gross-production ratios, so certify the new target
+// directly across real Stage1 runs instead of retaining the obsolete PVE gate.
+assert.ok(firstRunBurden.rows.every(row => row.foodCost >= Math.ceil(row.foodAvailable * 0.8)
+    && row.materialCost >= Math.ceil(row.materialAvailable * 0.8)),
+    "every live FirstRun deployment consumes at least 80% of each resource");
+assert.ok(firstRunBurden.rows.every(row => row.affordable),
+    "every live deployment remains payable at the minimum-80% burden");
 
 const stage1ExplicitGeCosts = GLOBAL_EVENTS_MASTER
     .filter(event => Number(event?.minStage || 1) <= 1)

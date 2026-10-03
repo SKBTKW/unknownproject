@@ -1,6 +1,9 @@
+import { readSpecialBlockAdjacencyProfile } from '../../core/special_block_domain.js';
+
 function normalizeCell(cell) {
     if (!cell) return null;
     const terrain = cell.terrain || null;
+    const specialAxes = cell.specialBlock ? readSpecialBlockAdjacencyProfile(cell) : null;
     const row = Number.isInteger(cell.row)
         ? cell.row
         : (Number.isInteger(cell.r) ? cell.r : null);
@@ -17,10 +20,10 @@ function normalizeCell(cell) {
         isHQ: cell.isHQ === true,
         terrain,
         terrainId: terrain?.terrainId || terrain?.id || cell.terrainId || null,
-        elevation: Number.isFinite(terrain?.e)
+        elevation: specialAxes ? specialAxes.e : Number.isFinite(terrain?.e)
             ? terrain.e
             : (Number.isFinite(cell.elevation) ? cell.elevation : null),
-        growthLevel: Number.isFinite(terrain?.gl)
+        growthLevel: specialAxes ? specialAxes.gl : Number.isFinite(terrain?.gl)
             ? terrain.gl
             : (Number.isFinite(cell.growthLevel) ? cell.growthLevel : null),
         specialBlock: cell.specialBlock

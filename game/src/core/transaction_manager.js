@@ -1,3 +1,4 @@
+import { enforceResourceStorage } from './resource_storage_policy.js';
 import { GAME_FACT_TYPES } from "./game_fact.js";
 
 /**
@@ -56,13 +57,16 @@ export class ActionTransactionManager {
                 }
             }
 
+            const storage = enforceResourceStorage(state);
+
             const record = {
                 id: `act_${Date.now()}_${this.history.length}`,
                 type: actionType,
                 payload: { ...payload },
                 timestamp: Date.now(),
                 result: execResult,
-                derived: derivedResult
+                derived: derivedResult,
+                storage
             };
             this.history.push(record);
 

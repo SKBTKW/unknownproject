@@ -1,3 +1,4 @@
+import { readResourceStorage } from './resource_storage_policy.js';
 /* =============================================================
    game/src/core/board_domain_adapter.js
    Side-effect-free Board read/query boundary for Card Core and other domains.
@@ -180,6 +181,10 @@ export class BoardDomainAdapter {
             }
         }
         return false;
+    }
+
+    readResourceStorage() {
+        return readResourceStorage(this.state);
     }
 
     resolveFoodMaintenanceModifiers() {
@@ -417,6 +422,7 @@ export class BoardDomainAdapter {
         if (!cell) return null;
 
         const terrain = cell.terrain || null;
+        const specialAxes = cell.specialBlock ? readSpecialBlockAdjacencyProfile(cell) : null;
         const capabilities = new Set(this.readCapabilities({ r, c }));
         const baseTrialTraits = this.readTrialTraits({ r, c }) || null;
         const external = this.trialDeploymentSemanticSource?.readCellDeploymentSemantics?.({ r, c }) || null;
@@ -433,8 +439,8 @@ export class BoardDomainAdapter {
             isHQ: cell.isHQ === true,
             terrain: {
                 terrainId: terrain?.terrainId || terrain?.id || cell.terrainId || null,
-                elevation: Number.isFinite(terrain?.e) ? terrain.e : null,
-                growthLevel: Number.isFinite(terrain?.gl) ? terrain.gl : null
+                elevation: specialAxes ? specialAxes.e : Number.isFinite(terrain?.e) ? terrain.e : null,
+                growthLevel: specialAxes ? specialAxes.gl : Number.isFinite(terrain?.gl) ? terrain.gl : null
             },
             capabilities: [...capabilities],
             trialTraits: Object.keys(trialTraits).length > 0

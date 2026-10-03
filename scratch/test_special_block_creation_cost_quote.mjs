@@ -43,8 +43,8 @@ assert.deepEqual(
 const unresolvedService = new SpecialBlockService({ grid: [] });
 assert.deepEqual(
     unresolvedService.quoteCost(SPECIAL_BLOCK_TYPES.FARM),
-    { status: SPECIAL_BLOCK_COST_STATUS.UNRESOLVED, resources: null },
-    "foundation must not invent FARM balance values"
+    { status: SPECIAL_BLOCK_COST_STATUS.RESOLVED, resources: { wood: 30 } },
+    "cultivation uses the explicitly authored provisional FARM cost"
 );
 assert.deepEqual(
     unresolvedService.quoteCost(SPECIAL_BLOCK_TYPES.LOGGING_CAMP),

@@ -435,7 +435,7 @@ console.log('Board / Special Block / Defense v1 contract');
 
 {
     const farm = getSpecialBlockDefinition(SPECIAL_BLOCK_TYPES.FARM);
-    assert.equal(farm.baseTerrainInteraction.kind, BASE_TERRAIN_INTERACTIONS.INDEPENDENT);
+    assert.equal(farm.baseTerrainInteraction.kind, BASE_TERRAIN_INTERACTIONS.TERRAIN_USING_OVERLAY);
     assert.deepEqual(farm.placement.sourceTerrainIds, ['GL1_PLAINS']);
 }
 
@@ -452,8 +452,7 @@ console.log('Board / Special Block / Defense v1 contract');
     const farmTargets = service.enumerateLegalTargets(SPECIAL_BLOCK_TYPES.FARM);
     assert.ok(
         farmTargets.some(entry =>
-            entry.source.r === 1 && entry.source.c === 1
-            && entry.destination.r === 1 && entry.destination.c === 2
+            entry.r === 1 && entry.c === 2
         ),
         'isolated 1x1 plains exposes adjacent empty FARM destination'
     );
@@ -467,7 +466,7 @@ console.log('Board / Special Block / Defense v1 contract');
     const farmCreated = service.createSpecialBlock(SPECIAL_BLOCK_TYPES.FARM, {
         source: { r: 1, c: 1 },
         destination: { r: 1, c: 2 }
-    });
+    }, { paymentConfirmed: true, paidCost: { wood: 30 } });
     assert.equal(farmCreated.success, true);
     assert.equal(farmCreated.specialOnly, true);
     assert.equal(state.grid[1][2].placed, false, 'FARM does not become base terrain');
@@ -501,8 +500,8 @@ console.log('Board / Special Block / Defense v1 contract');
     );
     assert.deepEqual(
         semanticService.getDisplayProduction(state, farmView),
-        { food: 0, wood: 0, defense: 0, mystic: 0, primaryYield: null },
-        'unresolved FARM production stays neutral in presentation'
+        { food: 6, wood: 0, defense: 0, mystic: 0, primaryYield: { resource: 'food', amount: 6 } },
+        'resolved FARM production is displayed'
     );
 
     const serializedFarm = serializeGameState(state);
@@ -586,9 +585,9 @@ console.log('Board / Special Block / Defense v1 contract');
         service.validateTarget(SPECIAL_BLOCK_TYPES.FARM, {
             source: { r: 1, c: 1 },
             destination: { r: 0, c: 1 }
-        }).reason,
-        'SOURCE_TERRAIN_NOT_ISOLATED',
-        'connected 1x2+ plains cannot be a FARM source'
+        }).valid,
+        true,
+        'connected plains can be a FARM source'
     );
 }
 
@@ -1129,7 +1128,7 @@ console.log('Board / Special Block / Defense v1 contract');
     assert.equal(logging.placement.sourceMinGL, 2);
     assert.equal(logging.placement.minConnectedSourceCells, 2);
     assert.equal(logging.production.kind, 'RELATION_COUNT');
-    assert.equal(logging.production.relationDefinitionId, SPECIAL_BLOCK_TYPES.LOGGING_CAMP);
+    assert.equal(logging.production.relationMinGL, 2);
     assert.equal(logging.production.relationNeighborhood, 'ORTHOGONAL');
     assert.equal(Object.isFrozen(logging.production), true);
     assert.equal(Object.isFrozen(logging.lifecycle), true);

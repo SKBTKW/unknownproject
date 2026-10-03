@@ -1,11 +1,11 @@
 export const FIRST_RUN_TRIAL1_RELATIVE_DEPLOYMENT_POLICY_V1 = Object.freeze({
-    baseShare: 0.20,
-    defenseShareWeight: 0.32,
-    distanceShareWeight: 0.10,
-    foodShareBonus: 0.11,
+    baseShare: 0.80,
+    defenseShareWeight: 0.08,
+    distanceShareWeight: 0.02,
+    foodShareBonus: 0,
     minimumFoodReserve: 35,
-    foodReserveShare: 0.35,
-    maxShare: 0.70,
+    foodReserveShare: 0.10,
+    maxShare: 0.90,
     stage1MaxDistance: 4
 });
 
@@ -38,7 +38,7 @@ export function resolveFirstRunTrial1DeploymentBurdenShare({
 
     return Math.min(
         Math.max(0, Number(policy?.maxShare) || 0),
-        Math.max(0, share)
+        Math.max(0, Number(share.toFixed(12)))
     );
 }
 
@@ -46,9 +46,9 @@ export function resolveFirstRunTrial1DeploymentBurdenShare({
  * FirstRun Trial1-only deployment cost resolver.
  *
  * This policy intentionally derives food/material cost from the live balances
- * rather than fixed absolute coefficients. Its burden is calibrated alongside
- * the paid Stage1 board investments, so the deployment share alone is not the
- * total pre-Trial resource conversion target.
+ * rather than fixed absolute coefficients. The provisional FirstRun target is
+ * at least 80% of each resource held at deployment, independently of earlier
+ * Board investments. Defense commitment and distance raise the share to 90%.
  *
  * Composition owns applicability. The resolver still fail-closes for any
  * non-Trial1 context so it cannot silently become a later-Trial balance rule.
@@ -92,8 +92,10 @@ export function createFirstRunTrial1RelativeDeploymentCostResolver({
         // threshold cannot make a larger food balance cheaper to deploy.
         const foodReserveShare = Math.min(1, finiteNonNegative(policy.foodReserveShare) ?? 0);
         const protectedFoodReserve = Math.min(minimumFoodReserve, food * foodReserveShare);
-        const foodCost = Math.min(nominalFoodCost,
-            Math.max(food > 0 ? 1 : 0, Math.floor(food - protectedFoodReserve)));
+        // Integer reserve rounding must not undercut the minimum deployment burden.
+        const minimumFoodCost = Math.ceil(food * Math.max(0, Number(policy.baseShare) || 0));
+        const foodCost = Math.max(minimumFoodCost, Math.min(nominalFoodCost,
+            Math.max(food > 0 ? 1 : 0, Math.floor(food - protectedFoodReserve))));
 
         return {
             food: foodCost,

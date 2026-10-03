@@ -134,7 +134,10 @@ export class SpecialBlockProductionResolver {
             && production.relationDefinitionId
             ? production.relationDefinitionId
             : null;
-        if (!relationCapability && !relationDefinitionId) return null;
+        const relationTerrainIds = production?.relationTerrainIds;
+        const hasTerrainRelation = Array.isArray(relationTerrainIds) && relationTerrainIds.length > 0;
+        const relationResourceCategory = production?.relationResourceCategory;
+        if (!relationCapability && !relationDefinitionId && !hasTerrainRelation && !relationResourceCategory) return null;
         if (!isValidYieldMap(production?.perRelationYields)) return null;
 
         const offsets = relationOffsets(production.relationNeighborhood);
@@ -144,6 +147,21 @@ export class SpecialBlockProductionResolver {
         for (const [dr, dc] of offsets) {
             const neighbor = state?.grid?.[r + dr]?.[c + dc];
             if (!neighbor) continue;
+
+            if (relationResourceCategory) {
+                if (neighbor.socketResource?.category === relationResourceCategory
+                    && !production.relationExcludeSpecialBlockTypes?.includes(neighbor.specialBlock?.definitionId || neighbor.specialBlock?.type)) count++;
+                continue;
+            }
+
+            if (hasTerrainRelation) {
+                const terrain = neighbor.terrain;
+                if (neighbor.placed && !neighbor.isHQ && !neighbor.specialBlock && terrain
+                    && relationTerrainIds.includes(terrain.terrainId || terrain.id)
+                    && Number.isFinite(terrain.gl)
+                    && terrain.gl >= production.relationMinGL) count++;
+                continue;
+            }
 
             if (relationDefinitionId) {
                 const entity = neighbor.specialBlock;
