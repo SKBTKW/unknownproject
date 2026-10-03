@@ -71,13 +71,15 @@ for (const [name, fraction, distance] of [
         seeds: rows
     };
     console.log("TRIAL1_BURDEN_MEASURED", JSON.stringify(result));
-    if (name === "HEAVY_FAR") {
-        assert.ok(rows.every(row => row.materialPortfolioShare >= 0.70 && row.materialPortfolioShare <= 0.80),
-            "heavy far paid-investment material portfolio stays in the 70-80% design band for all observed seeds");
-        assert.ok(rows.every(row => row.combinedPortfolioShare >= 0.70 && row.combinedPortfolioShare <= 0.80),
-            "heavy far paid-investment food and material portfolio stays in the 70-80% design band for all observed seeds");
-        assert.ok(rows.every(row => row.foodRemaining >= 35 && row.materialRemaining >= 35),
-            "heavy far preview retains a nontrivial food and material reserve in every observed seed");
+    {
+        // Earlier Board investment is reported separately, never credited
+        // toward the current minimum resource consumption at deployment.
+        assert.ok(rows.every((row, index) => row.foodCost >= Math.ceil(samples[index].food * 0.8)
+            && row.materialCost >= Math.ceil(samples[index].material * 0.8)),
+            "every live seed and commitment consumes at least 80% of each Trial-entry resource");
+        assert.ok(rows.every((row, index) => row.foodRemaining >= 0 && row.materialRemaining >= 0
+            && row.foodCost <= samples[index].food && row.materialCost <= samples[index].material),
+            "minimum burden stays payable without negative resource balances");
     }
 }
 console.log("✅ Stage1 Trial1 burden certification probe PASS");

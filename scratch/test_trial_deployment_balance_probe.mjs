@@ -142,16 +142,16 @@ console.log("test_trial_deployment_balance_probe: PASS");
     assert.ok(halfFarMin);
 
     assert.ok(
-        heavyMin.burdenShare >= 0.56 && heavyMin.burdenShare <= 0.57,
-        "80% defense commitment uses the measured portfolio's lower deployment share"
+        heavyMin.burdenShare >= 0.884 && heavyMin.burdenShare <= 0.89,
+        "80% defense commitment uses the minimum-80% deployment policy with commitment modifiers"
     );
     assert.equal(
         Number(allMin.burdenShare.toFixed(2)),
-        0.62,
-        "all-defense far deployment should resolve to 62% of the Trial-entry stock"
+        0.90,
+        "all-defense far deployment should resolve to 90% of the Trial-entry stock"
     );
     assert.ok(
-        halfFarMin.burdenShare >= 0.46 && halfFarMin.burdenShare <= 0.47,
+        halfFarMin.burdenShare >= 0.86 && halfFarMin.burdenShare <= 0.87,
         "half-defense far deployment should stay dramatic without matching full mobilization"
     );
 
@@ -161,6 +161,6 @@ console.log("test_trial_deployment_balance_probe: PASS");
             defenseAvailable: 27,
             distance: 4
         }).toFixed(2)),
-        0.62
+        0.90
     );
 }
