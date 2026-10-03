@@ -251,11 +251,20 @@ certify("VERSE8_INVESTIGATION_GUARANTEE: Verse8 only / no Mulligan re-guarantee"
 });
 const reportsBefore = engine.state.knownEnemyState?.reports?.length || 0;
 const investigationCard = engine.state.handOffering[investigationIndex];
-const investigation = engine.executeInvestigationCard(investigationCard, { type: "OFFERING", index: investigationIndex });
+window.ModalSystem = (await import("../game/src/ui/modal_system.js")).ModalSystem;
+for (const id of ["modalSystemOverlay", "modalSystemContent", "modalSysBtnConfirm", "modalSysBtnCancel"]) {
+    new MockElement(id);
+}
+ui.selectCard(investigationIndex);
+ui.selectCard(investigationIndex);
+const confirmInvestigation = elements.get("modalSysBtnConfirm")?.onclick;
+assert.equal(typeof confirmInvestigation, "function", "production Investigation confirmation handler must exist");
+confirmInvestigation();
 certify("PRE_TRIAL: Investigation executes and KnownEnemyState advances", () => {
-    assert.equal(investigation?.success, true);
     assert.equal(engine.state.knownEnemyState.reports.length, reportsBefore + 1);
     assert.equal(engine.warningStateService.getState(), WARNING_STATES.WATCH);
+    assert.equal(engine.state.hasPickedThisTurn, true);
+    assert.notEqual(engine.state.handOffering[investigationIndex], investigationCard);
 });
 
 placeRepresentativeLand(engine);
