@@ -252,6 +252,13 @@ export class TrialActionTrayComponent {
                 });
                 const damageText = I18n.t("UI_TRIAL_RESULT_DAMAGE", { damage: completionResult?.totalEmberDamage ?? 0 });
 
+                const lifecycle = this.ui.getTrialLifecycleReadModel?.();
+                const settlementActionHtml = lifecycle?.resultReady && !lifecycle.settlementConsumed
+                    ? `<button type="button" id="btnTrialSettleResult" class="btn-trial-action">
+                        ${I18n.t("UI_TRIAL_SETTLE_RESULT")}
+                    </button>`
+                    : "";
+
                 reviewActionsHtml = `
                     <div class="trial-completed-banner ${bannerClass}" id="trialCompletedBanner">
                         <div class="trial-completed-status">${outcomeBannerText}</div>
@@ -262,6 +269,7 @@ export class TrialActionTrayComponent {
                                 <span>${damageText}</span>
                             </div>
                         </div>
+                        ${settlementActionHtml}
                     </div>
                 `;
             } else if (!isConfirmed && !isActivated && !isBattleActive && !isBattleResolved) {
@@ -538,6 +546,9 @@ export class TrialActionTrayComponent {
 
             const btnCompleteTrial = document.getElementById("btnTrialCompleteTrial");
             if (btnCompleteTrial) btnCompleteTrial.onclick = () => this.ui.completeTrial();
+
+            const btnSettleResult = document.getElementById("btnTrialSettleResult");
+            if (btnSettleResult) btnSettleResult.onclick = () => this.ui.settleCurrentTrialResult();
 
             return;
         }

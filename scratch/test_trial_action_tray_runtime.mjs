@@ -148,4 +148,47 @@ check(trayCss.includes(".trial-deployment-cost-box")
     && trayCss.includes(".trial-action-progress .btn-trial-action:disabled"),
     "Trial tray styles deployment cost state and disabled confirmation controls");
 
+// Exercise rendered controls and their production event binding, not just source strings.
+const buttons = new Map();
+const root = {
+    classList: { toggle() {} },
+    setAttribute() {},
+    set innerHTML(html) {
+        this.html = html;
+        buttons.clear();
+        for (const match of html.matchAll(/<button\b[^>]*id="([^"]+)"[^>]*>/g)) {
+            buttons.set(match[1], { disabled: /\bdisabled\b/.test(match[0]) });
+        }
+    }
+};
+globalThis.document = { getElementById: id => id === "trialActionTrayHost" ? root : buttons.get(id) || null };
+Object.assign(ui, {
+    trialPreviewConfig: {},
+    getTrialAvailableDefense: () => 0,
+    getTrialRemainingDefense: () => 0,
+    getTrialPlannedDefenseTotal: () => 1,
+    getTrialPlanningRoutes: () => [],
+    getActiveTrialRoute: () => null,
+    getTrialResult: () => ({ outcome: "SURVIVED", completed: true }),
+    getTrialLifecycleReadModel: () => ({ resultReady: true, settlementConsumed: false })
+});
+let settlementCalls = 0;
+ui.settleCurrentTrialResult = () => { settlementCalls += 1; return { success: true }; };
+lifecycle.completed = true;
+component.render();
+check(buttons.has("btnTrialSettleResult"), "completed result renders a reachable Settlement action");
+check(buttons.get("btnTrialSettleResult").disabled === false, "unsettled result enables Settlement");
+check(buttons.get("btnTrialSettleResult").onclick().success === true && settlementCalls === 1,
+    "Settlement click delegates once to the existing UI settlement boundary");
+ui.getTrialResult = () => ({ outcome: "FAILED", completed: true });
+component.render();
+check(buttons.has("btnTrialSettleResult"), "failed Trial result also reaches canonical settlement");
+ui.getTrialLifecycleReadModel = () => ({ resultReady: true, settlementConsumed: true });
+component.render();
+check(!buttons.has("btnTrialSettleResult"), "consumed Settlement does not offer another action");
+lifecycle.completed = false;
+lifecycle.confirmed = true;
+component.render();
+check(!buttons.has("btnTrialSettleResult"), "uncompleted Trial cannot offer Settlement");
+delete globalThis.document;
 console.log(`Trial Action Tray runtime: ${passed}/${passed} PASS`);
