@@ -1811,7 +1811,7 @@
     },
     {
       "path": "scratch/test_first_run_investigation_ui_execution.mjs",
-      "purpose": "FirstRun Investigation UI routes to dedicated Domain and preserves source/no-observation rejection",
+      "purpose": "FirstRun Investigation UI dedicated execution, source rejection, no duplicate report, and undeveloped-board diagnostic",
       "suite": "supplemental"
     },
     {
