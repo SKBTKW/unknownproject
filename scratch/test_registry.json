@@ -1849,6 +1849,11 @@
       "path": "scratch/test_world_discovery_foundation.mjs",
       "purpose": "Inactive exploration world observation/report contracts, immutable Discovery history, common Offering requirement and legacy save roundtrip",
       "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_world_observation_boundary.mjs",
+      "purpose": "Inactive world observation eligibility boundary and legacy THREAT source policy reuse",
+      "suite": "supplemental"
     }
   ]
 }
