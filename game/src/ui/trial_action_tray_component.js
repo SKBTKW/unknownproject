@@ -2,6 +2,7 @@ import { I18n } from "../i18n.js";
 import { resolveModifierTag } from "./trial_interception_preview_component.js";
 import { MODIFIER_TARGETS, TRIAL_BATTLE_STATUSES } from "../trial/domain/trial_types.js";
 import { PLAYER_TRAY_MODES } from "./layout_state_manager.js";
+import { InterceptionPowerResolver } from "../trial/systems/interception_power_resolver.js";
 
 export class TrialActionTrayComponent {
     constructor(uiController, { hostId = "trialActionTrayHost" } = {}) {
@@ -45,15 +46,18 @@ export class TrialActionTrayComponent {
         const available = this.ui.getTrialAvailableDefense();
         const remaining = this.ui.getTrialRemainingDefense();
         const plannedTotal = this.ui.getTrialPlannedDefenseTotal();
+        const powerResolver = this.ui.trialController.powerResolver || new InterceptionPowerResolver();
+        const combatDefense = value => powerResolver.resolveDefense(value);
+        const combatStep = combatDefense(1);
         const routes = this.ui.getTrialPlanningRoutes();
-        const budgetUsedText = I18n.t("UI_TRIAL_PLAN_DEFENSE_USED", { used: plannedTotal, total: available });
-        const budgetRemainingText = I18n.t("UI_TRIAL_PLAN_DEFENSE_REMAINING", { remaining });
+        const budgetUsedText = I18n.t("UI_TRIAL_PLAN_COMBAT_USED", { used: combatDefense(plannedTotal), total: combatDefense(available) });
+        const budgetRemainingText = I18n.t("UI_TRIAL_PLAN_COMBAT_REMAINING", { remaining: combatDefense(remaining) });
         const activeRoute = this.ui.getActiveTrialRoute();
         const activeRouteId = activeRoute?.id || null;
         const activeRouteName = activeRoute
             ? I18n.t(activeRoute.nameKey || activeRoute.id)
             : I18n.t("UI_TRIAL_ROUTE_NONE");
-        const enemySuppression = Number(activeRoute?.suppression ?? this.ui.trialController?.state?.enemySuppression ?? 0);
+        const enemySuppression = powerResolver.resolveSuppression(Number(activeRoute?.suppression ?? this.ui.trialController?.state?.enemySuppression ?? 0));
         const maxForActive = activeRouteId
             ? this.ui.trialPresentationState.getMaxAllocationForRoute(activeRouteId, available)
             : available;
@@ -186,7 +190,7 @@ export class TrialActionTrayComponent {
                     const terrainName = I18n.t(terrainNameKey);
                     detailsHtml = `
                         <span class="trial-review-location">[${coordStr}] ${terrainName}</span>
-                        <span class="trial-review-defense">🛡️ ${rDecision.defenseAllocation}</span>
+                        <span class="trial-review-defense">⚔ ${combatDefense(rDecision.defenseAllocation)}</span>
                     `;
                 } else if (rStatus === "SKIP") {
                     detailsHtml = `<span class="trial-review-status status-skip">${I18n.t("UI_TRIAL_REVIEW_SKIP")}</span>`;
@@ -334,7 +338,7 @@ export class TrialActionTrayComponent {
                         <div class="trial-battle-active-route">${routeName}</div>
                         <div class="trial-battle-active-details">
                             <span class="trial-battle-active-cell">[${coordStr}]</span>
-                            <span class="trial-battle-active-defense">🛡️ ${currentBattle.defenseAllocation}</span>
+                            <span class="trial-battle-active-defense">⚔ ${combatDefense(currentBattle.defenseAllocation)}</span>
                         </div>
                     `;
                 }
@@ -609,15 +613,15 @@ export class TrialActionTrayComponent {
                 <div class="trial-action-control-cluster">
                     <div class="trial-action-budget-line">
                         ${tutorialPolicy.qualitativePreviewOnly ? "" : '<span>' + I18n.t("UI_TRIAL_ENEMY_SUPPRESSION") + ' <strong>' + enemySuppression + '</strong></span>'}
-                        <span>${I18n.t("UI_TRIAL_PLAN_DEFENSE_REMAINING", { remaining })}</span>
+                        <span>${I18n.t("UI_TRIAL_PLAN_COMBAT_REMAINING", { remaining: combatDefense(remaining) })}</span>
                     </div>
                     <div class="trial-action-allocation-value">
-                        <span>${I18n.t("UI_TRIAL_DEFENSE_ALLOCATION")}</span>
-                        <strong>🛡️ ${allocated} / ${maxForActive}</strong>
+                        <span>${I18n.t("UI_TRIAL_COMBAT_ALLOCATION")}</span>
+                        <strong>⚔ ${combatDefense(allocated)} / ${combatDefense(maxForActive)}</strong>
                     </div>
                     <div class="trial-action-slider-row">
                         <button type="button" id="btnTrialDefenseDecrease" data-trial-action="decrease" ${allocated <= 0 || disabledSlider ? "disabled" : ""}>−</button>
-                        <input id="trialDefenseAllocationSlider" data-trial-action="slider" type="range" min="0" max="${maxForActive}" step="1" value="${allocated}" ${disabledSlider ? "disabled" : ""}>
+                        <input id="trialDefenseAllocationSlider" data-trial-action="slider" type="range" min="0" max="${combatDefense(maxForActive)}" step="${combatStep}" value="${combatDefense(allocated)}" ${disabledSlider ? "disabled" : ""}>
                         <button type="button" id="btnTrialDefenseIncrease" data-trial-action="increase" ${allocated >= maxForActive || disabledSlider ? "disabled" : ""}>＋</button>
                         <button type="button" id="btnTrialDefenseMax" class="trial-action-max" data-trial-action="max" ${allocated >= maxForActive || disabledSlider ? "disabled" : ""}>${I18n.t("UI_TRIAL_DEFENSE_MAX")}</button>
                     </div>
@@ -647,7 +651,7 @@ export class TrialActionTrayComponent {
         if (decrease) decrease.onclick = () => this.ui.adjustTrialDefenseAllocation(-1);
         if (increase) increase.onclick = () => this.ui.adjustTrialDefenseAllocation(1);
         if (max) max.onclick = () => this.ui.setTrialDefenseAllocation(maxForActive);
-        if (slider) slider.oninput = event => this.ui.setTrialDefenseAllocation(event?.target?.value);
+        if (slider) slider.oninput = event => this.ui.setTrialDefenseAllocation(Number(event?.target?.value) / combatStep);
         if (intercept) intercept.onclick = () => this.ui.setTrialActiveRouteIntercept();
         if (skip) skip.onclick = () => this.ui.setTrialActiveRouteSkip();
         if (clear) clear.onclick = () => this.ui.clearTrialActiveRouteDecision();

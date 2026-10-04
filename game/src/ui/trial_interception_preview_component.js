@@ -82,7 +82,7 @@ export class TrialInterceptionPreviewComponent {
         return `
             <section class="trial-interception-preview">
                 <div class="trial-preview-heading">${I18n.t("UI_TRIAL_INTERCEPTION_PREVIEW")}</div>
-                <div class="trial-preview-defense">${I18n.t("UI_TRIAL_DEPLOYED_DEFENSE")}: 🛡️${preview.deployedDefense}</div>
+                <div class="trial-preview-defense">${I18n.t("UI_TRIAL_COMBAT_ALLOCATION")}: ⚔${preview.baseHumanPower}</div>
                 ${tagsHtml}
                 <div class="trial-preview-outcome"><span>${I18n.t("UI_TRIAL_PREDICTION")}</span><strong>${I18n.t(outcomeKey)}</strong></div>
                 <div class="trial-preview-margin">${I18n.t("UI_TRIAL_MARGIN")}: ${preview.prediction.margin}</div>

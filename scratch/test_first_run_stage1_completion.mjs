@@ -360,7 +360,10 @@ if (selectedRoute && selectedCell) {
     ui.selectTrialRoute(selectedRoute.id);
     ui.updateTrialInterceptionPreview(selectedCell.r, selectedCell.c);
     assert.equal(ui.selectTrialInterceptionCell(selectedCell.r, selectedCell.c), true);
-    const allocation = ui.setTrialDefenseAllocation(Math.max(1, Math.min(10, ui.getTrialAvailableDefense())));
+    // Certify the successful production path with committed defense, rather
+    // than a fixed ten-unit budget tied to the previous Stage1 Offering pool.
+    // Leave one strategic unit for each other route that cannot be skipped.
+    const allocation = ui.setTrialDefenseAllocation(Math.max(1, ui.getTrialAvailableDefense() - (routes.length - 1)));
     certify("TRIAL: DEFENSE_ALLOCATION -> FINAL_REVIEW unlock", () => {
         assert.ok(allocation > 0);
         const tutorial = engine.firstRunState.getTrialTutorialState();

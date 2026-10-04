@@ -158,6 +158,12 @@ export class BoardGridComponent {
                         cellEl.classList.add("hq");
                         cellEl.innerHTML = `<img src="assets/campfire_background.png" class="hq-bg-img" alt="${I18n.t("TERRAIN_HQ")}" /><div class="hq-campfire-sprite"></div><span id="hqEmberValBadge" class="hq-ember-val-badge">${this.state.ember}</span>`;
                     }
+                } else if (cellData.specialBlock) {
+                    cellEl.classList.add("cell-special-block");
+                    const view = this.engine?.getCellViewData?.(r, c);
+                    const name = I18n.t(view?.specialBlock?.nameKey || cellData.specialBlock.type);
+                    cellEl.setAttribute("aria-label", name);
+                    cellEl.innerHTML = '<span class="special-block-marker" aria-hidden="true">▣</span>';
                 } else if (cellData.placed && cellData.terrain) {
                     cellEl.classList.add("placed");
 

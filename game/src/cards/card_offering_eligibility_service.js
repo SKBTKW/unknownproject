@@ -26,6 +26,10 @@ class CardOfferingEligibilityService {
         const card = normalizeCardDefinitionV1(cardDefinition);
         if (!card?.id) return Object.freeze({ eligible: false, reason: "INVALID_CARD_DEFINITION" });
 
+        if (card.legacy?.offeringDisabled === true) {
+            return Object.freeze({ eligible: false, reason: "OFFERING_FROZEN" });
+        }
+
         const visibility = evaluateCardRuntimeVisibility(card.legacy || cardDefinition);
         if (!visibility.visible) {
             return Object.freeze({

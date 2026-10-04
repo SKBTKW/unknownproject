@@ -325,7 +325,7 @@ export class HandCardsComponent {
                 const yieldPlainText = productionUnresolved
                     ? unresolvedLabel
                     : (yieldPlainParts.length > 0 ? yieldPlainParts.join(" ") : "-");
-                const yieldLabel = I18n.t("UI_YIELD_LABEL") || "産出:";
+                const yieldLabel = I18n.t("UI_CARD_TOTAL_OUTPUT");
                 const yieldText = `<span style="font-size:15px; color:#ffffff; font-weight:bold; margin-right:4px; white-space:nowrap;">${yieldLabel}</span> <span style="font-size:17px; font-weight:900; letter-spacing:0.5px; color:#ffffff; white-space:nowrap; display:inline-flex; align-items:center; gap:5px;">${yieldContent}</span>`;
 
                 const fullInnerHtml = `

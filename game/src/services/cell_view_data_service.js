@@ -15,6 +15,7 @@ import {
 } from '../core/board_cell_occupancy.js';
 import {
     getSpecialBlockDefinition,
+    isSpecialBlockFunctional,
     readEffectiveGreenery
 } from '../core/special_block_domain.js';
 import {
@@ -47,6 +48,7 @@ function normalizeSpecialBlock(cell, production) {
         category: definition?.category || null,
         nameKey: definition?.presentation?.nameKey || null,
         capabilities: [...(definition?.capabilities || [])],
+        storageCapacity: isSpecialBlockFunctional(entity) ? { ...(definition?.storageCapacity || {}) } : {},
         productionStatus: production?.status || SPECIAL_BLOCK_PRODUCTION_STATUS.NONE,
         productionKind: production?.kind || null,
         yields: production?.yields || { food: 0, wood: 0, defense: 0, mystic: 0 },

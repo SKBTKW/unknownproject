@@ -130,6 +130,34 @@ test("blocked Trial target is never selectable and hover clears Trial preview", 
     assert.equal(hover.type, BOARD_INPUT_COMMANDS.CLEAR_TRIAL_HOVER);
 });
 
+test("clicking a route endpoint confirms its route without selecting an illegal interception", () => {
+    const readModel = {
+        ...blockedTrialReadModel,
+        cells: [[{ trial: { onRoute: true, route: { routeId: "route-a" } } }]]
+    };
+    const click = resolveBoardPointerCommand(BOARD_POINTER_ACTIONS.CLICK,
+        { readModel, cell: { r: 0, c: 0 } });
+    assert.equal(click.type, BOARD_INPUT_COMMANDS.SELECT_TRIAL_ROUTE);
+    assert.equal(click.payload.routeId, "route-a");
+});
+
+test("a board interception click acknowledges the route lesson before selecting the cell", () => {
+    const calls = [];
+    let acknowledged = false;
+    const ui = {
+        boardPresentationState: new BoardPresentationState({ contextMode: BOARD_CONTEXT_MODES.TRIAL }),
+        isTrialInteractionActive: () => true,
+        getActiveTrialRoute: () => ({ id: "route-a" }),
+        acknowledgeFirstRunTrialRoute() { acknowledged = true; calls.push("route"); },
+        selectTrialInterceptionCell() { assert.equal(acknowledged, true); calls.push("cell"); return true; }
+    };
+    const runtime = attachBoardPresentationRuntime(ui);
+    const result = runtime.dispatchInput(resolveBoardPointerCommand(BOARD_POINTER_ACTIONS.CLICK,
+        { readModel: legalTrialReadModel, cell: { r: 0, c: 0 } }));
+    assert.equal(result.success, true);
+    assert.deepEqual(calls, ["route", "cell"]);
+});
+
 test("leave command follows presentation context without renderer coordinates", () => {
     const normalLeave = resolveBoardPointerCommand(
         BOARD_POINTER_ACTIONS.LEAVE,
