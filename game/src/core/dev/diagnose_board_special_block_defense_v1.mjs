@@ -781,19 +781,40 @@ console.log('Board / Special Block / Defense v1 contract');
     state.grid[0][0] = cell(0, 0, {
         placed: true,
         placementGroupId: 'mine-prod',
-        terrain: { ...HILL }
+        terrain: { ...HILL },
+        searched: true,
+        hasSocket: true,
+        socketResource: {
+            id: 'SOCKET_GRANITE',
+            category: 'CAT_STONE',
+            bonusFood: 0,
+            bonusWood: 2,
+            bonusDefense: 1,
+            bonusMystic: 0
+        }
     });
     const service = new SpecialBlockService(state);
-    const created = service.createSpecialBlock(SPECIAL_BLOCK_TYPES.MINE, { r: 0, c: 0 });
+    const created = service.createSpecialBlock(
+        SPECIAL_BLOCK_TYPES.MINE,
+        {
+            source: { r: 0, c: 0 },
+            destination: { r: 0, c: 1 }
+        },
+        {
+            paymentConfirmed: true,
+            paidCost: { food: 20, wood: 30 }
+        }
+    );
     assert.equal(created.success, true);
+    assert.equal(created.specialOnly, true);
+    assert.deepEqual(created.source, { r: 0, c: 0 });
     const production = sumSpecialBlockProduction(state);
     assert.deepEqual(
         production.yields,
-        { food: 0, wood: 0, defense: 0, mystic: 0 },
-        'unresolved Special Block production never invents numeric output'
+        { food: 0, wood: 1, defense: 1, mystic: 0 },
+        'Mining Site adds +1 only to positive yield channels from the linked stone/mineral resource'
     );
-    assert.equal(production.unresolved.length, 1);
-    assert.equal(production.unresolved[0].type, SPECIAL_BLOCK_TYPES.MINE);
+    assert.equal(production.unresolved.length, 0);
 }
 
 {
