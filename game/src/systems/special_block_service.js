@@ -216,6 +216,12 @@ export class SpecialBlockService {
         const sourceTerrainIds = placement.sourceTerrainIds || [];
         if (sourceTerrainIds.length > 0 && !sourceTerrainIds.includes(terrainId(cell))) return false;
 
+        const sourceResourceCategories = placement.sourceResourceCategories || [];
+        if (
+            sourceResourceCategories.length > 0
+            && !sourceResourceCategories.includes(cell.socketResource?.category)
+        ) return false;
+
         const sourceMinGL = Number(placement.sourceMinGL);
         if (Number.isFinite(sourceMinGL) && Number(cell.terrain?.gl) < sourceMinGL) return false;
 
@@ -249,6 +255,35 @@ export class SpecialBlockService {
         return cells;
     }
 
+    _resourcePositiveYieldChannelCount(cell) {
+        const resource = cell?.socketResource;
+        if (!resource) return 0;
+        const raw = resource.bonusYields || {};
+        const values = [
+            resource.bonusFood ?? raw.food ?? 0,
+            resource.bonusWood ?? resource.bonusMaterial ?? raw.material ?? raw.wood ?? 0,
+            resource.bonusDefense ?? raw.defense ?? 0,
+            resource.bonusMystic ?? raw.mystic ?? 0
+        ];
+        return values.filter(value => Number(value || 0) > 0).length;
+    }
+
+    _countDefinitionBoundToSource(definitionId, source) {
+        if (!definitionId || !source || !Array.isArray(this.state?.grid)) return 0;
+        let count = 0;
+        for (let r = 0; r < this.state.grid.length; r++) {
+            for (let c = 0; c < (this.state.grid[r]?.length || 0); c++) {
+                const cell = this.state.grid[r][c];
+                const entity = cell?.specialBlock;
+                if (!entity) continue;
+                if ((entity.definitionId || entity.type) !== definitionId) continue;
+                const profile = readSpecialBlockAdjacencyProfile(cell);
+                if (profile?.source?.r === source.r && profile?.source?.c === source.c) count++;
+            }
+        }
+        return count;
+    }
+
     _validateIndependentGenerationTarget(definition, target) {
         let source = coords(target?.source);
         const destination = coords(target?.destination || target?.target || target);
@@ -276,6 +311,15 @@ export class SpecialBlockService {
         if (sourceCell.specialBlock && !definition.placement?.sourceSpecialBlockTypes?.includes(sourceCell.specialBlock.definitionId || sourceCell.specialBlock.type)) return { valid: false, reason: 'SOURCE_SPECIAL_BLOCK_OCCUPIED' };
         if (!this._matchesIndependentSourceCell(definition, sourceCell)) {
             return { valid: false, reason: 'SOURCE_TERRAIN_NOT_ALLOWED' };
+        }
+
+        const maxPerSource = Number(definition.placement?.maxPerSource);
+        if (
+            Number.isFinite(maxPerSource)
+            && maxPerSource >= 0
+            && this._countDefinitionBoundToSource(definition.id, source) >= Math.trunc(maxPerSource)
+        ) {
+            return { valid: false, reason: 'SOURCE_ALREADY_SERVICED' };
         }
 
         if (definition.placement?.requiresSourceIsolation === true) {
@@ -377,7 +421,7 @@ export class SpecialBlockService {
     }
 
 
-    _validateAdjacencyAt(point, profile) {
+    _validateAdjacencyAt(point, profile, definition = null) {
         if (!point || !profile) return { valid: false, reason: 'ADJACENCY_PROFILE_UNAVAILABLE', reasons: ['ADJACENCY_PROFILE_UNAVAILABLE'] };
 
         const reasons = [];
@@ -405,7 +449,17 @@ export class SpecialBlockService {
             }
 
             if (neighbor.placed && neighbor.terrain) {
-                const terrainCheck = validateTerrainAgainstSpecialBlockAdjacency(neighbor.terrain, profile);
+                const isBoundSource = profile?.source?.r === entry.r && profile?.source?.c === entry.c;
+                const allowSourceTerrainAdjacency =
+                    isBoundSource && definition?.placement?.allowSourceTerrainAdjacency === true;
+                const terrainCheck = validateTerrainAgainstSpecialBlockAdjacency(
+                    neighbor.terrain,
+                    profile,
+                    {
+                        allowDesert: allowSourceTerrainAdjacency,
+                        allowMountain: allowSourceTerrainAdjacency
+                    }
+                );
                 reasons.push(...terrainCheck.reasons);
             }
         }
@@ -426,6 +480,43 @@ export class SpecialBlockService {
 
         const dual = definition.placement?.mode === 'OVERLAY_OR_INDEPENDENT';
         const point = coords(target?.destination || target?.target || target);
+
+        if (
+            definition.placement?.mode === 'INDEPENDENT_CELL_GENERATION'
+            && !coords(target?.source)
+            && point
+            && definition.placement?.sourceSelection === 'MAX_RESOURCE_BONUS_CHANNELS'
+        ) {
+            const candidates = this.findAdjacentCells(point.r, point.c)
+                .filter(entry => this._matchesIndependentSourceCell(definition, entry.cell))
+                .sort((a, b) =>
+                    this._resourcePositiveYieldChannelCount(b.cell)
+                    - this._resourcePositiveYieldChannelCount(a.cell)
+                    || a.r - b.r
+                    || a.c - b.c
+                );
+
+            let firstFailure = null;
+            for (const candidate of candidates) {
+                const candidateValidation = this.validateTarget(
+                    definition,
+                    {
+                        source: { r: candidate.r, c: candidate.c },
+                        destination: point
+                    },
+                    context,
+                    options
+                );
+                if (candidateValidation.valid) return candidateValidation;
+                if (!firstFailure) firstFailure = candidateValidation;
+            }
+            return firstFailure || {
+                valid: false,
+                reason: 'SOURCE_TERRAIN_REQUIRED',
+                definition
+            };
+        }
+
         const independent = definition.placement?.mode === 'INDEPENDENT_CELL_GENERATION'
             || (dual && !this.getCell(point?.r, point?.c)?.placed);
         const structural = independent
@@ -439,7 +530,7 @@ export class SpecialBlockService {
         const adjacencyProfile = referenceCell?.specialBlock
             ? createSpecialBlockAdjacencyProfile({ terrain: { e: readSpecialBlockAdjacencyProfile(referenceCell)?.e } }, referencePoint, definition)
             : createSpecialBlockAdjacencyProfile(referenceCell, referencePoint, definition);
-        const adjacency = this._validateAdjacencyAt(placementPoint, adjacencyProfile);
+        const adjacency = this._validateAdjacencyAt(placementPoint, adjacencyProfile, definition);
         if (!adjacency.valid) {
             return {
                 ...structural,
@@ -473,6 +564,27 @@ export class SpecialBlockService {
             return targets;
         }
         if (definition.placement?.mode === 'INDEPENDENT_CELL_GENERATION') {
+            if (definition.placement?.sourceSelection === 'MAX_RESOURCE_BONUS_CHANNELS') {
+                for (let r = 0; r < this.state.grid.length; r++) {
+                    for (let c = 0; c < (this.state.grid[r]?.length || 0); c++) {
+                        const destination = { r, c };
+                        const validation = this.validateTarget(
+                            definition,
+                            { destination },
+                            context
+                        );
+                        if (!validation.valid) continue;
+                        targets.push({
+                            r,
+                            c,
+                            source: { ...validation.source },
+                            destination: { ...validation.destination }
+                        });
+                    }
+                }
+                return targets;
+            }
+
             for (let r = 0; r < this.state.grid.length; r++) {
                 for (let c = 0; c < (this.state.grid[r]?.length || 0); c++) {
                     for (const destination of orthogonalNeighbors(r, c)) {

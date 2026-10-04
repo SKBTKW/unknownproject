@@ -99,6 +99,28 @@ const CONDITION_HANDLERS = {
         return false;
     },
 
+    // 💎 指定した資源カテゴリ群のいずれかを盤面上に保持しているか
+    SOCKET_CATEGORY_ANY: (params, context) => {
+        if (!context || !context.state || !context.state.grid) return false;
+        const categories = new Set(
+            (Array.isArray(params?.categories) ? params.categories : [params?.category])
+                .filter(Boolean)
+        );
+        if (categories.size === 0) return false;
+
+        for (let r = 0; r < context.state.grid.length; r++) {
+            for (let c = 0; c < context.state.grid[r].length; c++) {
+                const cell = context.state.grid[r][c];
+                if (
+                    cell?.placed
+                    && cell.socketResource
+                    && categories.has(cell.socketResource.category)
+                ) return true;
+            }
+        }
+        return false;
+    },
+
     // 💎 発見済みユニーク資源数判定
     DISCOVERED_RESOURCES_COUNT: (params, context) => {
         if (!context || !context.state || !context.state.grid) return false;
