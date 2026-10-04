@@ -1869,6 +1869,11 @@
       "path": "scratch/test_battle_narrative_result_ui_presenter.mjs",
       "purpose": "Canonical Battle Narrative result explanation, Fortune roll absence and HTML escaping",
       "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_battle_fortune_check_result_adapter.mjs",
+      "purpose": "Shared CheckResult to Fortune boundary, missing numeric facts rejection and legacy compatibility",
+      "suite": "supplemental"
     }
   ]
 }
