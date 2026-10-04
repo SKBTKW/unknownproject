@@ -1874,6 +1874,11 @@
       "path": "scratch/test_stage1_mining_site_v1.mjs",
       "purpose": "Mining Site source identity stale rollback, resolved discovery, shared UI target forwarding and production restore hardening",
       "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_battle_fortune_check_result_adapter.mjs",
+      "purpose": "Shared CheckResult to Fortune boundary, missing numeric facts rejection and legacy compatibility",
+      "suite": "supplemental"
     }
   ]
 }
