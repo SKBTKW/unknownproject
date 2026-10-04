@@ -1,3 +1,4 @@
+import { hasRecordedDiscovery } from "../investigation/domain/world_discovery.js";
 /* =============================================================
    game/src/core/condition_evaluator.js
    ゲームルールの条件判定を処理する汎用Registry型評価エンジン (Pure & Unity Ready)
@@ -13,6 +14,7 @@ import { getCardStageUsage } from '../cards/card_stage_usage.js';
  * 🔍 条件判定ハンドラ Registry
  */
 const CONDITION_HANDLERS = {
+    DISCOVERY_RECORDED: (params, context) => hasRecordedDiscovery(context?.state?.discoveryLedger, params.discoveryId),
     // 🗺️ 指定地形のマス数判定
     TERRAIN_COUNT_AT_LEAST: (params, context) => {
         if (!context || !context.state) return false;

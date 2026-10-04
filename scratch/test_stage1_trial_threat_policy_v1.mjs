@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 
+import { TurnLifecycleService } from "../game/src/core/turn_lifecycle_service.js";
 import { GameEngine } from "../game/src/core/game_engine.js";
 import { TrialThreatResolver } from "../game/src/trial/systems/trial_threat_resolver.js";
 import { EnemyArmyStructureResolver } from "../game/src/trial/systems/enemy_army_structure_resolver.js";
@@ -140,3 +141,20 @@ console.log("\nStage1 Trial1 threat policy v1");
 }
 
 console.log("✅ Stage1 Trial1 threat policy v1 PASS");
+
+// A fresh run owns initial Threat before the player changes civilization.
+for (const firstRun of [true, false]) {
+    const engine = GameEngine.createGame({ firstRun, runSeed: 20261002 });
+    const initial = engine.enemyTruthReadModel.getSnapshot();
+    assert.equal(initial.strategicSuppression, engine.trialThreatStateService.getCurrentThreat().strategicSuppression);
+    assert.ok(initial.forces.length > 0);
+    assert.ok(initial.observable.physiqueTraits.length > 0);
+    while (engine.state.turn < 8) engine.nextTurn();
+    assert.deepEqual(engine.enemyTruthReadModel.getSnapshot(), initial,
+        "advancing without development must neither leave initial truth empty nor repeatedly transition it");
+    const lifecycle = new TurnLifecycleService(engine);
+    assert.equal(lifecycle.trueEnemyStateService, engine.trueEnemyStateService);
+    assert.deepEqual(engine.enemyTruthReadModel.getSnapshot(), initial,
+        "reusing an injected/restored Truth service must not reinitialize it");
+}
+console.log("PASS initial Threat/Truth synchronization, no-development stability and service reuse");

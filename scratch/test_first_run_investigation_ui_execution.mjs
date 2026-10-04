@@ -30,6 +30,8 @@ while (engine.state.turn < 8) {
 const index = engine.state.handOffering.findIndex(card => (card?.terrain || card)?.category === "INVESTIGATION");
 assert.notEqual(index, -1, "canonical Verse8 Offering must contain Investigation");
 const card = engine.state.handOffering[index];
+const shownReports = [];
+ui.investigationCardPresentationRuntime.component = { show: report => shownReports.push(report) };
 const reportsBefore = engine.state.knownEnemyState?.reports?.length || 0;
 
 const mismatch = ui.playCommandCard(card, (index + 1) % engine.state.handOffering.length);
@@ -45,13 +47,16 @@ assert.equal(engine.warningStateService.getState(), WARNING_STATES.WATCH);
 assert.equal(engine.state.hasPickedThisTurn, true);
 assert.notEqual(engine.state.handOffering[index], card);
 assert.equal(engine.state.lastInvestigationReport, result.report);
+assert.equal(shownReports.length, 1, "production UI dispatch presents exactly one report");
+assert.equal(shownReports[0].available, true);
+assert.equal(shownReports[0].report.observedAtVerse, 8);
 
 const repeated = ui.playCommandCard(card, index);
 assert.equal(repeated?.success, false);
 assert.equal(engine.state.knownEnemyState.reports.length, reportsBefore + 1);
 console.log("PASS FirstRun Verse8 UI Investigation execution / source rejection / no duplicate report");
 
-// Independent observed Domain rejection; no fabricated observations or bypass.
+// Initial canonical Threat must reach Truth even without a development action.
 const undeveloped = GameEngine.createGame({ runSeed: 20261002, firstRun: true });
 assert.equal(attachTrialRuntimeSubsystems(undeveloped).success, true);
 while (undeveloped.state.turn < 8) undeveloped.nextTurn();
@@ -61,8 +66,8 @@ const noLandCard = undeveloped.state.handOffering[noLandIndex];
 const noLandUi = new UIController(undeveloped);
 noLandUi.render = () => {};
 const noFragments = noLandUi.playCommandCard(noLandCard, noLandIndex);
-assert.equal(noFragments?.reason, "NO_OBSERVABLE_FRAGMENTS");
-assert.equal(undeveloped.state.hasPickedThisTurn, false);
-assert.equal(undeveloped.state.handOffering[noLandIndex], noLandCard);
-assert.equal(undeveloped.state.knownEnemyState.reports.length, 0);
-console.log("KNOWN B CANDIDATE: undeveloped canonical Verse8 rejects Investigation with NO_OBSERVABLE_FRAGMENTS");
+assert.equal(noFragments?.success, true, "undeveloped Verse8 must observe actual initialized enemy truth");
+assert.equal(undeveloped.state.hasPickedThisTurn, true);
+assert.notEqual(undeveloped.state.handOffering[noLandIndex], noLandCard);
+assert.equal(undeveloped.state.knownEnemyState.reports.length, 1);
+console.log("PASS undeveloped Verse8 canonical Investigation records actual enemy observations");

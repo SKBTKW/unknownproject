@@ -771,6 +771,22 @@
       ]
     },
     {
+      "path": "scratch/test_investigation_runtime_presentation_connection.mjs",
+      "purpose": "Investigation card UI routes through canonical execution and projects player-facing report presentation",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_investigation_report_component_dom.mjs",
+      "purpose": "Investigation report overlay DOM rendering, focus restoration, Escape dismissal, and listener cleanup",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_investigation_unlock_bridge.mjs",
       "purpose": "investigation unlock bridge",
       "suite": "existing",
@@ -1827,6 +1843,11 @@
     {
       "path": "scratch/test_irrigation_choice_resource_preview.mjs",
       "purpose": "Irrigation choice current balance, per-variant payment forecast, zero and insufficient resources, pure preview and board target handoff",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_world_discovery_foundation.mjs",
+      "purpose": "Inactive exploration world observation/report contracts, immutable Discovery history, common Offering requirement and legacy save roundtrip",
       "suite": "supplemental"
     }
   ]
