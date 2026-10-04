@@ -1,3 +1,4 @@
+import { readDiscoveredSocketResource, readSocketResourceIdentity, readSocketResourceYields } from './socket_resource_read_model.js';
 /* =============================================================
    game/src/core/special_block_production.js
    Minimal production policy boundary for Special Blocks.
@@ -197,23 +198,16 @@ export class SpecialBlockProductionResolver {
         const source = entity?.terrainAdjacencyProfile?.source;
         if (!Number.isInteger(source?.r) || !Number.isInteger(source?.c)) return null;
 
-        const resource = state?.grid?.[source.r]?.[source.c]?.socketResource;
-        if (!resource) return null;
+        const cell = state?.grid?.[source.r]?.[source.c];
+        const resource = readDiscoveredSocketResource(cell, production?.allowedResourceCategories);
+        const reference = entity.sourceResourceReference;
+        if (!resource || (reference && (
+            reference.r !== source.r || reference.c !== source.c
+            || reference.resourceId !== readSocketResourceIdentity(resource)
+            || reference.category !== resource.category
+        ))) return { status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED, yields: { ...ZERO_YIELDS } };
 
-        const allowedCategories = production?.allowedResourceCategories;
-        if (
-            Array.isArray(allowedCategories)
-            && allowedCategories.length > 0
-            && !allowedCategories.includes(resource.category)
-        ) return null;
-
-        const raw = resource.bonusYields || {};
-        const sourceYields = normalizeYields({
-            food: resource.bonusFood ?? raw.food ?? 0,
-            wood: resource.bonusWood ?? resource.bonusMaterial ?? raw.material ?? raw.wood ?? 0,
-            defense: resource.bonusDefense ?? raw.defense ?? 0,
-            mystic: resource.bonusMystic ?? raw.mystic ?? 0
-        });
+        const sourceYields = normalizeYields(readSocketResourceYields(resource));
         const increment = Number(production?.perPositiveYield);
         if (!sourceYields || !Number.isFinite(increment) || increment < 0) return null;
 

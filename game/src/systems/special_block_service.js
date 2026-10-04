@@ -1,3 +1,4 @@
+import { readDiscoveredSocketResource, readSocketResourceIdentity, readSocketResourceYields } from '../core/socket_resource_read_model.js';
 /* =============================================================
    game/src/systems/special_block_service.js
    Board-owned targeting / creation boundary for Special Blocks.
@@ -219,7 +220,7 @@ export class SpecialBlockService {
         const sourceResourceCategories = placement.sourceResourceCategories || [];
         if (
             sourceResourceCategories.length > 0
-            && !sourceResourceCategories.includes(cell.socketResource?.category)
+            && !readDiscoveredSocketResource(cell, sourceResourceCategories)
         ) return false;
 
         const sourceMinGL = Number(placement.sourceMinGL);
@@ -258,14 +259,7 @@ export class SpecialBlockService {
     _resourcePositiveYieldChannelCount(cell) {
         const resource = cell?.socketResource;
         if (!resource) return 0;
-        const raw = resource.bonusYields || {};
-        const values = [
-            resource.bonusFood ?? raw.food ?? 0,
-            resource.bonusWood ?? resource.bonusMaterial ?? raw.material ?? raw.wood ?? 0,
-            resource.bonusDefense ?? raw.defense ?? 0,
-            resource.bonusMystic ?? raw.mystic ?? 0
-        ];
-        return values.filter(value => Number(value || 0) > 0).length;
+        return Object.values(readSocketResourceYields(resource)).filter(value => value > 0).length;
     }
 
     _countDefinitionBoundToSource(definitionId, source) {
@@ -311,6 +305,14 @@ export class SpecialBlockService {
         if (sourceCell.specialBlock && !definition.placement?.sourceSpecialBlockTypes?.includes(sourceCell.specialBlock.definitionId || sourceCell.specialBlock.type)) return { valid: false, reason: 'SOURCE_SPECIAL_BLOCK_OCCUPIED' };
         if (!this._matchesIndependentSourceCell(definition, sourceCell)) {
             return { valid: false, reason: 'SOURCE_TERRAIN_NOT_ALLOWED' };
+        }
+
+        if (definition.placement?.sourceResourceCategories && target.sourceResourceReference) {
+            const resource = readDiscoveredSocketResource(sourceCell, definition.placement.sourceResourceCategories);
+            const reference = target.sourceResourceReference;
+            if (reference.r !== source.r || reference.c !== source.c
+                || reference.resourceId !== readSocketResourceIdentity(resource)
+                || reference.category !== resource?.category) return { valid: false, reason: 'SOURCE_RESOURCE_STALE' };
         }
 
         const maxPerSource = Number(definition.placement?.maxPerSource);
@@ -578,7 +580,12 @@ export class SpecialBlockService {
                             r,
                             c,
                             source: { ...validation.source },
-                            destination: { ...validation.destination }
+                            destination: { ...validation.destination },
+                            sourceResourceReference: {
+                                ...validation.source,
+                                resourceId: readSocketResourceIdentity(validation.sourceCell.socketResource),
+                                category: validation.sourceCell.socketResource.category
+                            }
                         });
                     }
                 }
@@ -723,6 +730,14 @@ export class SpecialBlockService {
             const { r, c } = validation.destination;
             const cell = validation.destinationCell;
             const entity = createSpecialBlockEntity(definition, r, c, this.state, creationContext);
+            if (definition.placement?.sourceResourceCategories) {
+                const resource = readDiscoveredSocketResource(validation.sourceCell, definition.placement.sourceResourceCategories);
+                entity.sourceResourceReference = Object.freeze({
+                    ...validation.source,
+                    resourceId: readSocketResourceIdentity(resource),
+                    category: resource.category
+                });
+            }
             cell.specialBlock = entity;
 
             return {
