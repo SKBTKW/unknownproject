@@ -758,6 +758,7 @@ const landSystemJson = JSON.parse(
 
     const makeOfferingState = () => {
         const state = createState();
+        state.stage.id = 2;
         state.handOfferingSize = 1;
         state.canPlaceShape = (_r, _c, _shape, definition, attributeCells) => {
             if (definition?.id === productionReadyMulti.id) {
@@ -1082,6 +1083,7 @@ const landSystemJson = JSON.parse(
     };
 
     const state = createState();
+    state.stage.id = 2;
     state.handOfferingSize = 1;
     let sawDefaultOrientation = false;
     let sawRotatedOrientation = false;
