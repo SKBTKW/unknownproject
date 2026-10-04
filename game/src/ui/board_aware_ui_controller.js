@@ -249,7 +249,7 @@ export class BoardAwareUIController extends LegacyUIController {
             return;
         }
 
-        if (this.selectedCard && !cell.placed) return;
+        if (this.selectedCard && !cell.occupied && !cell.placed) return;
 
         const previewModal = document.getElementById("cardHoverPreviewModal");
         if (previewModal && previewModal.classList.contains("active")) {
@@ -285,6 +285,18 @@ export class BoardAwareUIController extends LegacyUIController {
         if (cell.isHQ) {
             title = I18n ? I18n.t("UI_CELL_HQ_TITLE", { coord: coordStr }) : `🏛️ HQ [${coordStr}]`;
             desc = I18n ? I18n.t("UI_CELL_HQ_DESC") : "🌾+10 🧱+10 🛡️10 ✨+1";
+        } else if (cell.specialBlock) {
+            title = `${I18n.t(cell.specialBlock.nameKey || cell.specialBlock.type)} [${coordStr}]`;
+            const yields = cell.yields || {};
+            const icons = { food: '🌾', wood: '🧱', defense: '🛡️', mystic: '✨' };
+            const parts = Object.entries(icons)
+                .filter(([key]) => Number(yields[key]) > 0)
+                .map(([key, icon]) => `${icon}+${yields[key]}`);
+            desc = `${I18n.t('UI_CELL_PER_TURN_YIELD')} <strong>${parts.join(' ') || I18n.t('UI_CELL_YIELD_NONE')}</strong>`;
+            const storage = Object.entries(cell.specialBlock.storageCapacity || {})
+                .filter(([key, amount]) => icons[key] && amount > 0)
+                .map(([key, amount]) => `${icons[key]}+${amount}`);
+            if (storage.length) desc += `<div>${I18n.t('UI_SPECIAL_BLOCK_STORAGE', { capacity: storage.join(' ') })}</div>`;
         } else if (cell.hasSocket && !cell.placed) {
             title = I18n ? I18n.t("UI_CELL_SOCKET_TITLE", { coord: coordStr }) : `★ [${coordStr}]`;
             desc = I18n.t("UI_CELL_SOCKET_DESC");

@@ -1856,6 +1856,11 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_playtest_card_and_display_contract.mjs",
+      "purpose": "Offering freeze/fallback, Stage2 mixed land, Farm visual facts and combat-scale input regression",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_battle_narrative_result_ui_presenter.mjs",
       "purpose": "Canonical Battle Narrative result explanation, Fortune roll absence and HTML escaping",
       "suite": "supplemental"

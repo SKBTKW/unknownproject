@@ -811,7 +811,7 @@ export async function runUILifecycleInspection() {
         const currentDefenseBeforeAllocation = engine.state.currentDefense;
         mockDoc.getElementById("btnTrialDefenseDecrease").onclick();
         assert("配分-1操作がPresentationStateだけを更新すること", ui.trialPresentationState.previewDefenseAllocation === allocationBefore - 1 && engine.state.currentDefense === currentDefenseBeforeAllocation);
-        mockDoc.getElementById("trialDefenseAllocationSlider").oninput({ target: { value: "10" } });
+        mockDoc.getElementById("trialDefenseAllocationSlider").oninput({ target: { value: String(ui.trialController.powerResolver.resolveDefense(10)) } });
         assert("slider操作で配分10のDomain Previewへ再計算されること", ui.trialPresentationState.previewDefenseAllocation === 10 && ui.trialPresentationState.interceptionPreview.deployedDefense === 10);
         mockDoc.getElementById("btnTrialDefenseMax").onclick();
         assert("MAX操作で利用可能🛡まで戻ること", ui.trialPresentationState.previewDefenseAllocation === ui.getTrialAvailableDefense());

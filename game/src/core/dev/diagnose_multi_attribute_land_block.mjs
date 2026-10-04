@@ -176,7 +176,7 @@ const landSystemJson = JSON.parse(
     assert.ok(actualMultiCards.every(Boolean));
     assert.deepEqual(actualMultiCards.map(card => card.rarity), ["R", "R", "R"]);
     assert.deepEqual(actualMultiCards.map(card => card.weight), [0.08, 0.08, 0.05]);
-    assert.deepEqual(actualMultiCards.map(card => card.minStage), [1, 1, 2]);
+    assert.deepEqual(actualMultiCards.map(card => card.minStage), [2, 2, 2]);
     assert.ok(actualMultiCards.every(card =>
         card.productionContract?.status === LAND_PRODUCTION_STATUS.RESOLVED
         && card.productionContract?.scope === LAND_PRODUCTION_SCOPE.CELL
@@ -612,6 +612,10 @@ const landSystemJson = JSON.parse(
     assert.equal(manager.isCardEligible(actualMultiCards[0], 1, 0, {
         ignoreCooldown: true,
         ignoreHold: true
+    }), false);
+    assert.equal(manager.isCardEligible(actualMultiCards[0], 2, 0, {
+        ignoreCooldown: true,
+        ignoreHold: true
     }), true);
 
     const productionReadyPlainsHill = {
@@ -637,6 +641,10 @@ const landSystemJson = JSON.parse(
     assert.equal(manager.isCardEligible(productionReadyPlainsHill, 1, 0, {
         ignoreCooldown: true,
         ignoreHold: true
+    }), false);
+    assert.equal(manager.isCardEligible(productionReadyPlainsHill, 2, 0, {
+        ignoreCooldown: true,
+        ignoreHold: true
     }), true);
     assert.equal(manager.isCardEligible(productionReadyHillMountain, 1, 0, {
         ignoreCooldown: true,
@@ -659,6 +667,13 @@ const landSystemJson = JSON.parse(
         }
     });
 
+    for (const card of actualMultiCards) {
+        manager.getLandCardMaster = () => [card];
+        assert.equal(manager.drawSingleCard([], {
+            ignoreCooldown: true, ignoreHold: true
+        }), null);
+    }
+    state.stage.id = 2;
     manager.getLandCardMaster = () => [actualMultiCards[0]];
     const plainsHill = manager.drawSingleCard([], {
         ignoreCooldown: true,
@@ -743,6 +758,7 @@ const landSystemJson = JSON.parse(
 
     const makeOfferingState = () => {
         const state = createState();
+        state.stage.id = 2;
         state.handOfferingSize = 1;
         state.canPlaceShape = (_r, _c, _shape, definition, attributeCells) => {
             if (definition?.id === productionReadyMulti.id) {
@@ -1067,6 +1083,7 @@ const landSystemJson = JSON.parse(
     };
 
     const state = createState();
+    state.stage.id = 2;
     state.handOfferingSize = 1;
     let sawDefaultOrientation = false;
     let sawRotatedOrientation = false;

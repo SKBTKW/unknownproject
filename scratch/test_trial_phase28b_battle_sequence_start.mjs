@@ -752,7 +752,7 @@ test("V. Start後UIがactive battle表示", () => {
     const banner = document.getElementById("trialBattleActiveBanner");
     assert.notEqual(banner, null);
     assert.equal(banner.textContent.includes(I18n.t("UI_TRIAL_BATTLE_ACTIVE")), true);
-    assert.equal(banner.textContent.includes("20"), true);
+    assert.equal(banner.textContent.includes(String(ui.trialController.powerResolver.resolveDefense(20))), true);
 });
 
 // --- W. current battle snapshotをUI側からmutateしてもDomain stateが壊れない ---
@@ -886,4 +886,3 @@ test("AC. Phase 2.7C-F regression維持", () => {
 });
 
 console.log(`\nAll ${passed} Phase 2.8B tests passed!`);
-

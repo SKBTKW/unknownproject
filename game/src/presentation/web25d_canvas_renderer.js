@@ -308,7 +308,7 @@ export class Web25DCanvasRenderer {
         const hovered = Boolean(cell.interaction?.hovered);
         const focused = Boolean(cell.interaction?.focused);
 
-        ctx.fillStyle = 'rgba(198, 210, 216, 0.16)';
+        ctx.fillStyle = cell.specialBlock ? '#555b63' : 'rgba(198, 210, 216, 0.16)';
         ctx.fill();
         ctx.lineWidth = selected ? 2.5 : (hovered || focused ? 2 : 1);
         ctx.strokeStyle = selected
@@ -367,6 +367,7 @@ export class Web25DCanvasRenderer {
     }
 
     resolveTerrainTopFill(cell) {
+        if (cell.specialBlock) return '#555b63';
         return resolveWeb25DTerrainTopFill(cell);
     }
 

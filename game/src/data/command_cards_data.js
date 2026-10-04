@@ -241,6 +241,7 @@ export const ECONOMY_CARDS_MASTER = [
   },
   {
     "id": "CMD_GRANARY",
+    "offeringDisabled": true,
     "category": "COMMAND",
     "nameKey": "CMD_GRANARY_NAME",
     "descriptionKey": "CMD_GRANARY_DESC",
@@ -1630,6 +1631,7 @@ export const COMMAND_CARDS_MASTER = [
   },
   {
     "id": "CMD_GRANARY",
+    "offeringDisabled": true,
     "category": "COMMAND",
     "nameKey": "CMD_GRANARY_NAME",
     "descriptionKey": "CMD_GRANARY_DESC",

@@ -448,7 +448,7 @@ failWithSnapshot("Action Tray defense input must be enabled", snapshot, () => {
     assert.equal(snapshot.actionTray.active, true);
     assert.equal(snapshot.actionTray.sliderPresent, true);
     assert.equal(snapshot.actionTray.sliderDisabled, false);
-    assert.equal(snapshot.actionTray.sliderMax, snapshot.maxForActive);
+    assert.equal(snapshot.actionTray.sliderMax, ui.trialController.powerResolver.resolveDefense(snapshot.maxForActive));
     assert.equal(snapshot.actionTray.increaseDisabled, false);
     assert.equal(snapshot.actionTray.maxButtonDisabled, false);
 });

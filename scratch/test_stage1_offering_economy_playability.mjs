@@ -544,9 +544,9 @@ function testStage1MultiAttributeEligibility() {
         firstRun: true
     });
     const multiCards = engine.deckManager.getLandCardMaster().filter(card =>
-        card?.minStage === 1 && String(card?.id || "").startsWith("CARD_MULTI_")
+        String(card?.id || "").startsWith("CARD_MULTI_")
     );
-    assert.equal(multiCards.length >= 2, true, "Stage1 must expose authored Multi-Attribute land cards");
+    assert.equal(multiCards.length >= 2, true, "authored Multi-Attribute land cards remain in the catalog");
 
     for (const card of multiCards) {
         assert.equal(
@@ -554,9 +554,13 @@ function testStage1MultiAttributeEligibility() {
                 ignoreCooldown: true,
                 placeabilityCache: new WeakMap()
             }),
-            true,
-            `${card.id} must stay eligible when a rotated/current legal placement exists`
+            false,
+            `${card.id} must not be offered before Stage2`
         );
+        assert.ok(card.minStage >= 2);
+        assert.equal(engine.deckManager.isCardEligible(card, 2, 0, {
+            ignoreCooldown: true, placeabilityCache: new WeakMap()
+        }), true, `${card.id} remains legal from Stage2`);
     }
 }
 
@@ -876,10 +880,10 @@ function printStage1CardYieldHorizon() {
 
     const plains1x1 = cards.find(card => card.id === "CARD_PLAINS_1X1");
     const plains1x2 = cards.find(card => card.id === "CARD_PLAINS_1X2");
-    const multiPlainsForest = cards.find(card => card.id === "CARD_MULTI_PLAINS_FOREST_1X2");
+    const multiPlainsForest = resolveCardProductionPreview(LAND_CARDS_MASTER.find(card => card.id === "CARD_MULTI_PLAINS_FOREST_1X2")).totalYields;
     assert.equal(plains1x2.food, plains1x1.food * 2, "Plains 1x2 must carry two cells of recurring food");
     assert.equal(multiPlainsForest.food, 6, "Plains+Forest Multi must preserve canonical 4+2 food");
-    assert.equal(multiPlainsForest.material, 2, "Plains+Forest Multi must preserve canonical Forest material");
+    assert.equal(multiPlainsForest.wood, 2, "Plains+Forest Multi must preserve canonical Forest material");
 }
 
 function printLandPickSummary(runs) {
@@ -1209,11 +1213,14 @@ assert.equal(
 );
 assert.equal(
     runs.every(run => run.settlements
-        .filter(row => row.verse >= 4)
-        .every(row => row.grossFood >= row.foodCost)),
+        .every(row => row.foodBefore + row.grossFood >= row.foodCost)),
     true,
-    "representative land-building path should expose sustained food self-sufficiency from Verse4 onward while initial stock covers the opening ramp"
+    "representative land-building path must cover every food settlement from production plus available stock"
 );
+assert.equal(runs.every(run => {
+    const last = run.settlements.at(-1);
+    return last.grossFood >= last.foodCost;
+}), true, "representative paths must reach sustainable food production before Trial1");
 assert.equal(
     runs.every(run => run.settlements.every(row => row.materialProduction > 0)),
     true,

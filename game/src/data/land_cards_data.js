@@ -672,7 +672,7 @@ export const LAND_CARDS_MASTER = [
         "terrainId": "E2_HILL"
       }
     ],
-    "minStage": 1,
+    "minStage": 2,
     "reqE2": 0,
     "rarity": "R",
     "weight": 0.08,
@@ -709,7 +709,7 @@ export const LAND_CARDS_MASTER = [
         "terrainId": "GL2_FOREST"
       }
     ],
-    "minStage": 1,
+    "minStage": 2,
     "reqE2": 0,
     "rarity": "R",
     "weight": 0.08,
