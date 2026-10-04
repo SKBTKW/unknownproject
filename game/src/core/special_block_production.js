@@ -21,7 +21,8 @@ export const SPECIAL_BLOCK_PRODUCTION_KINDS = Object.freeze({
     FIXED: 'FIXED',
     SOURCE_SIZE: 'SOURCE_SIZE',
     CONDITIONAL: 'CONDITIONAL',
-    RELATION_COUNT: 'RELATION_COUNT'
+    RELATION_COUNT: 'RELATION_COUNT',
+    SOURCE_RESOURCE_BONUS: 'SOURCE_RESOURCE_BONUS'
 });
 
 export const SPECIAL_BLOCK_RELATION_NEIGHBORHOODS = Object.freeze({
@@ -192,12 +193,50 @@ export class SpecialBlockProductionResolver {
         };
     }
 
+    _resolveSourceResourceBonus(state, entity, production) {
+        const source = entity?.terrainAdjacencyProfile?.source;
+        if (!Number.isInteger(source?.r) || !Number.isInteger(source?.c)) return null;
+
+        const resource = state?.grid?.[source.r]?.[source.c]?.socketResource;
+        if (!resource) return null;
+
+        const allowedCategories = production?.allowedResourceCategories;
+        if (
+            Array.isArray(allowedCategories)
+            && allowedCategories.length > 0
+            && !allowedCategories.includes(resource.category)
+        ) return null;
+
+        const raw = resource.bonusYields || {};
+        const sourceYields = normalizeYields({
+            food: resource.bonusFood ?? raw.food ?? 0,
+            wood: resource.bonusWood ?? resource.bonusMaterial ?? raw.material ?? raw.wood ?? 0,
+            defense: resource.bonusDefense ?? raw.defense ?? 0,
+            mystic: resource.bonusMystic ?? raw.mystic ?? 0
+        });
+        const increment = Number(production?.perPositiveYield);
+        if (!sourceYields || !Number.isFinite(increment) || increment < 0) return null;
+
+        return {
+            status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
+            yields: {
+                food: sourceYields.food > 0 ? increment : 0,
+                wood: sourceYields.wood > 0 ? increment : 0,
+                defense: sourceYields.defense > 0 ? increment : 0,
+                mystic: sourceYields.mystic > 0 ? increment : 0
+            }
+        };
+    }
+
     _resolveBuiltIn(state, cell, position, entity, production) {
         if (production.kind === SPECIAL_BLOCK_PRODUCTION_KINDS.SOURCE_SIZE) {
             return this._resolveSourceSize(entity, production);
         }
         if (production.kind === SPECIAL_BLOCK_PRODUCTION_KINDS.RELATION_COUNT) {
             return this._resolveRelationCount(state, position.r, position.c, production);
+        }
+        if (production.kind === SPECIAL_BLOCK_PRODUCTION_KINDS.SOURCE_RESOURCE_BONUS) {
+            return this._resolveSourceResourceBonus(state, entity, production);
         }
         return null;
     }

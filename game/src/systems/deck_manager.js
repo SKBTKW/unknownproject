@@ -1022,11 +1022,6 @@ class DeckManager {
             this.state.wood = (this.state.wood || 0) + 10;
             this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "🪨", description: cDesc, category: "CARD_EFFECT" });
             this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `🪨【${cName}】`);
-        } else if (cId === "CMD_MINE") {
-            // ⛏️ 鉱山: コスト 🧱-25 (鉱物ソケット産出 x1.5)
-            this.state.mineCount = (this.state.mineCount || 0) + 1;
-            this.state.addBuff({ id: cId, name: cName, shortName: cName, icon: "⛏️", description: cDesc, category: "CARD_EFFECT" });
-            this.state.addLog(I18n ? I18n.t("LOG_CMD_ACTIVATED", { name: cName, desc: cDesc }) : `⛏️【${cName}】`);
         } else if (cId === "CMD_STABLE") {
             // 🐎 厩舎: コスト 🧱-20 (騎馬カード提示率上昇、🧱コスト-5)
             this.state.stableCount = (this.state.stableCount || 0) + 1;

@@ -30,6 +30,13 @@ export const SPECIAL_BLOCK_TYPES = Object.freeze({
     WATCHTOWER: 'WATCHTOWER'
 });
 
+export const MINING_SITE_RESOURCE_CATEGORIES = Object.freeze([
+    'CAT_STONE',
+    'CAT_STRATEGIC_MINERAL',
+    'CAT_PRECIOUS_METAL',
+    'CAT_SPECIAL_MINERAL'
+]);
+
 export const BASE_TERRAIN_INTERACTIONS = Object.freeze({
     INDEPENDENT: 'INDEPENDENT',
     TRANSFORMING_OVERLAY: 'TRANSFORMING_OVERLAY',
@@ -89,7 +96,11 @@ export function readSpecialBlockAdjacencyProfile(entityOrCell) {
     });
 }
 
-export function validateTerrainAgainstSpecialBlockAdjacency(terrain, profile) {
+export function validateTerrainAgainstSpecialBlockAdjacency(
+    terrain,
+    profile,
+    { allowDesert = false, allowMountain = false } = {}
+) {
     if (!terrain || !profile) return { valid: true, reasons: [] };
 
     const terrainGL = finiteTerrainAxis(terrain.gl);
@@ -102,8 +113,8 @@ export function validateTerrainAgainstSpecialBlockAdjacency(terrain, profile) {
     const id = String(terrain.terrainId || terrain.id || '').toUpperCase();
     const isDesert = id.includes('DESERT');
     const isMountain = terrainE === 3 || id.includes('MOUNTAIN');
-    if (isDesert) reasons.push('SPECIAL_BLOCK_DESERT_NEIGHBOR_FORBIDDEN');
-    if (isMountain) reasons.push('SPECIAL_BLOCK_MOUNTAIN_NEIGHBOR_FORBIDDEN');
+    if (isDesert && !allowDesert) reasons.push('SPECIAL_BLOCK_DESERT_NEIGHBOR_FORBIDDEN');
+    if (isMountain && !allowMountain) reasons.push('SPECIAL_BLOCK_MOUNTAIN_NEIGHBOR_FORBIDDEN');
 
     if (
         terrainGL !== null
@@ -208,7 +219,8 @@ function freezeProductionDefinition(production) {
         baseYields: freezeYieldMap(production.baseYields),
         perSourceYields: freezeYieldMap(production.perSourceYields),
         perRelationYields: freezeYieldMap(production.perRelationYields),
-        relationTerrainIds: freezeStringArray(production.relationTerrainIds)
+        relationTerrainIds: freezeStringArray(production.relationTerrainIds),
+        allowedResourceCategories: freezeStringArray(production.allowedResourceCategories)
     });
 }
 
@@ -217,6 +229,7 @@ function freezeDefinition(definition) {
         ...(definition.placement || {}),
         terrainIds: freezeStringArray(definition.placement?.terrainIds),
         sourceTerrainIds: freezeStringArray(definition.placement?.sourceTerrainIds),
+        sourceResourceCategories: freezeStringArray(definition.placement?.sourceResourceCategories),
         ...(definition.placement?.glAdjacencyException ? {
             glAdjacencyException: Object.freeze({
                 ...definition.placement.glAdjacencyException,
@@ -349,11 +362,25 @@ export const SPECIAL_BLOCK_DEFINITIONS = Object.freeze({
         id: SPECIAL_BLOCK_TYPES.MINE,
         category: 'PRODUCTION',
         placement: {
-            ...overlayPlacement,
-            terrainIds: ['E2_HILL', 'E3_MOUNTAIN']
+            mode: 'INDEPENDENT_CELL_GENERATION',
+            targeting: 'SOURCE_AND_ADJACENT_EMPTY',
+            sourceResourceCategories: MINING_SITE_RESOURCE_CATEGORIES,
+            sourceSelection: 'MAX_RESOURCE_BONUS_CHANNELS',
+            maxPerSource: 1,
+            allowSourceTerrainAdjacency: true,
+            participatesInZones: false
         },
-        baseTerrainInteraction: { kind: BASE_TERRAIN_INTERACTIONS.TERRAIN_USING_OVERLAY },
-        production: { kind: 'CONDITIONAL', status: 'UNRESOLVED' },
+        baseTerrainInteraction: { kind: BASE_TERRAIN_INTERACTIONS.INDEPENDENT },
+        creationCost: {
+            status: SPECIAL_BLOCK_COST_STATUS.RESOLVED,
+            resources: { food: 20, wood: 30 }
+        },
+        production: {
+            kind: 'SOURCE_RESOURCE_BONUS',
+            status: 'RESOLVED',
+            allowedResourceCategories: MINING_SITE_RESOURCE_CATEGORIES,
+            perPositiveYield: 1
+        },
         capabilities: [BOARD_CAPABILITIES.PRODUCTION_SITE],
         trialTraits: {},
         lifecycle: { initialState: 'ACTIVE' },
