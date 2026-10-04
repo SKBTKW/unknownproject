@@ -60,3 +60,46 @@ Unresolved: investment cost/Stage multipliers, category/result catalogues,
 Critical rewards, immediate placement/Ember expansion, final natural-heritage
 and oasis effects, continuing-exploration GE and card weight. No balance values
 or placeholder product discoveries are authored here.
+
+## Observation boundary v1 — IMPLEMENTED / runtime NOT CONNECTED
+
+`collectWorldObservationCandidates` accepts an already-redacted schema-1 world
+profile and externally authored source definitions. It never reads unknown-world,
+enemy or Trial truth. Definitions refer to observations already supplied by their
+owner; missing or category-mismatched observations are excluded, never generated.
+Each definition explicitly supplies id, category, sourceType, discoveryIds,
+requirements and allowRediscovery. Requirements reuse ConditionEvaluator's strict
+variant; unknown predicates exclude the source. Malformed definitions are rejected.
+The upstream owner remains responsible for observation eligibility and redaction;
+a schema or allowlist cannot prove that an observation actually exists in the world.
+Only eligible observations are returned in immutable profiles. No category is
+chosen and no report is recorded; the original order is preserved without RNG.
+
+`projectThreatObservationSources` reuses every existing investigation source's
+facet policy and labels its future category THREAT. FOOTPRINTS, CAMP_REMAINS and
+SCOUT_SIGHTING are observation sources, not separate exploration cards or categories.
+Enemy observations still use ObservableEnemyProfile and KnownEnemyState; they are
+not world Discovery records. Legacy card execution and FirstRun remain unchanged.
+
+Production source definitions, world-state projection, category selection, card
+replacement, payment/checks and actual Offering activation remain unimplemented.
+No result tables, category catalog, balance values or rediscovery policy defaults
+are introduced. Future definitions must be data assets; the regression fixtures
+are TEST-only and do not constitute authored world content.
+
+## Owner projection v1 — IMPLEMENTED / production source NOT CONNECTED
+
+`WorldObservationProjector` consumes only an explicitly supplied
+`ownerSnapshot.observable.observations` section, reusing the schema-1 world profile
+allowlist and immutable copy. An absent section produces an empty profile; malformed
+explicit observations are rejected. It ignores all other owner fields, including
+board cells, unresolved sockets, enemy/Trial truth and unknown-world records.
+The resulting profile can feed `collectWorldObservationCandidates` directly.
+
+Current WorldInitializationService owns grid/socket initialization, not an authored
+unknown-world Discovery catalog. No new owner field is installed in Run state by
+this task. This projection contract is therefore not a claim that live world
+sources, observation eligibility, world existence or persistence are implemented.
+Future world owners must first supply meaningful existing-world observation data;
+unresolved socket seeds must not become Discovery results through an implicit
+conversion or a new random draw in this projector.
