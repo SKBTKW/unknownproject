@@ -1854,6 +1854,11 @@
       "path": "scratch/test_world_observation_boundary.mjs",
       "purpose": "Inactive world observation eligibility boundary and legacy THREAT source policy reuse",
       "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_battle_narrative_result_ui_presenter.mjs",
+      "purpose": "Canonical Battle Narrative result explanation, Fortune roll absence and HTML escaping",
+      "suite": "supplemental"
     }
   ]
 }
