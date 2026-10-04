@@ -1854,6 +1854,11 @@
       "path": "scratch/test_world_observation_boundary.mjs",
       "purpose": "Inactive world observation eligibility boundary and legacy THREAT source policy reuse",
       "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_playtest_card_and_display_contract.mjs",
+      "purpose": "Offering freeze/fallback, Stage2 mixed land, Farm visual facts and combat-scale input regression",
+      "suite": "supplemental"
     }
   ]
 }
