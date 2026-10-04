@@ -84,7 +84,7 @@ assert.equal(definition.placement.mode, "INDEPENDENT_CELL_GENERATION");
 assert.deepEqual([...definition.placement.sourceResourceCategories], miningSiteCategories);
 assert.equal(definition.placement.sourceSelection, "MAX_RESOURCE_BONUS_CHANNELS");
 assert.equal(definition.placement.maxPerSource, 1);
-assert.equal(definition.placement.allowSourceTerrainAdjacency, true);
+assert.equal(definition.placement.allowSourceTerrainAdjacency, undefined);
 assert.equal(definition.placement.participatesInZones, false);
 assert.equal(definition.baseTerrainInteraction.kind, "INDEPENDENT");
 assert.deepEqual(definition.creationCost, {
@@ -131,7 +131,7 @@ const stone = {
 
 const grid = [
     [
-        cell(0, 0, terrain("E2_DESERT_HILL", 2, 0, { wood: 1, defense: 1, mystic: 2 }), hematite),
+        cell(0, 0, terrain("E2_HILL", 2, 1, { wood: 1, defense: 1, mystic: 2 }), hematite),
         cell(0, 1),
         cell(0, 2, terrain("E2_HILL", 2, 1), stone),
         cell(0, 3)
@@ -216,14 +216,14 @@ assert.ok(
 assert.ok(targets.some(target =>
     target.r === 0 && target.c === 1
     && target.source?.r === 0 && target.source?.c === 0
-), "strategic mineral exposes adjacent empty target even when source is desert-like");
-assert.ok(targets.some(target =>
+), "strategic mineral exposes adjacent empty target under normal adjacency");
+assert.ok(!targets.some(target =>
     target.r === 2 && target.c === 1
     && target.source?.r === 2 && target.source?.c === 0
-), "precious metal on mountain can be the bound source");
-assert.ok(targets.some(target =>
+), "mountain source follows the common Special Block edge ban");
+assert.ok(!targets.some(target =>
     target.source?.r === 3 && target.source?.c === 3
-), "special mineral can be the bound source");
+), "special mineral on mountain still requires legal adjacency");
 assert.ok(
     targets.some(target =>
         target.source?.r === 0 && target.source?.c === 2

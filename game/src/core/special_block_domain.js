@@ -367,7 +367,6 @@ export const SPECIAL_BLOCK_DEFINITIONS = Object.freeze({
             sourceResourceCategories: MINING_SITE_RESOURCE_CATEGORIES,
             sourceSelection: 'MAX_RESOURCE_BONUS_CHANNELS',
             maxPerSource: 1,
-            allowSourceTerrainAdjacency: true,
             participatesInZones: false
         },
         baseTerrainInteraction: { kind: BASE_TERRAIN_INTERACTIONS.INDEPENDENT },

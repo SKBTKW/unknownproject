@@ -1878,7 +1878,10 @@ class UIController {
             if (!this.isCommandExecutionTarget(this.selectedCard, r, c)) return false;
             const selectedCard = this.selectedCard;
             const selectedIdx = this.selectedCardIdx;
-            const result = this.playCommandCard(selectedCard, selectedIdx, { r, c });
+            const target = this.getCommandCardExecutionTargets(selectedCard).find(candidate =>
+                Number(candidate?.r) === r && Number(candidate?.c) === c
+            );
+            const result = this.playCommandCard(selectedCard, selectedIdx, target);
             return result?.success === true;
         }
 

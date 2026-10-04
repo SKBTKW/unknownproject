@@ -1,3 +1,4 @@
+import { readDiscoveredSocketResource } from './socket_resource_read_model.js';
 import { hasRecordedDiscovery } from "../investigation/domain/world_discovery.js";
 /* =============================================================
    game/src/core/condition_evaluator.js
@@ -112,9 +113,7 @@ const CONDITION_HANDLERS = {
             for (let c = 0; c < context.state.grid[r].length; c++) {
                 const cell = context.state.grid[r][c];
                 if (
-                    cell?.placed
-                    && cell.socketResource
-                    && categories.has(cell.socketResource.category)
+                    readDiscoveredSocketResource(cell, [...categories])
                 ) return true;
             }
         }

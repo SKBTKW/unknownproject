@@ -1453,6 +1453,7 @@ function makeGrid(rows, cols) {
         commandCardRequiresTarget() { return true; },
         hideCellTooltip() {},
         isCommandExecutionTarget(_card, r, c) { return r === 2 && c === 3; },
+        getCommandCardExecutionTargets() { return [{ r: 2, c: 3 }]; },
         playCommandCard(card, idx, target) {
             played.push({ card, idx, target });
             return { success: true };

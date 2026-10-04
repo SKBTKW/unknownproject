@@ -1,3 +1,4 @@
+import { readSocketResourceYields } from './socket_resource_read_model.js';
 import { hasMultiplePlacementTerrainAttributes } from './placement_geometry.js';
 import { normalizeRoadEdgeIds } from './road_network.js';
 /**
@@ -84,11 +85,11 @@ export function serializeGameState(state) {
                         category: cell.socketResource.category || null,
                         icon: cell.socketResource.icon || null,
                         yields: cell.socketResource.yields ? { ...cell.socketResource.yields } : null,
-                        bonusFood: cell.socketResource.bonusFood || 0,
-                        bonusWood: cell.socketResource.bonusWood || 0,
-                        bonusMaterial: cell.socketResource.bonusMaterial || 0,
-                        bonusDefense: cell.socketResource.bonusDefense || 0,
-                        bonusMystic: cell.socketResource.bonusMystic || 0,
+                        bonusFood: readSocketResourceYields(cell.socketResource).food,
+                        bonusWood: readSocketResourceYields(cell.socketResource).wood,
+                        bonusMaterial: readSocketResourceYields(cell.socketResource).wood,
+                        bonusDefense: readSocketResourceYields(cell.socketResource).defense,
+                        bonusMystic: readSocketResourceYields(cell.socketResource).mystic,
                         isLake: !!cell.socketResource.isLake,
                         capabilities: Array.isArray(cell.socketResource.capabilities)
                             ? [...cell.socketResource.capabilities]
