@@ -372,14 +372,29 @@
     "category": "COMMAND",
     "nameKey": "CMD_MINE_NAME",
     "descriptionKey": "CMD_MINE_DESC",
-    "cost": { "wood": 25 },
-    "tags": ["HILL", "MOUNTAIN", "ORE", "MATERIAL", "MYSTIC", "EXTRACTION", "SPECIAL_BLOCK"],
-    "reqOreSocket": true,
-    "reqWood": 25,
-    "minStage": 2,
-    "rarity": "R",
-    "weight": 0.20,
-    "cyclePolicy": "RARITY"
+    "cost": {},
+    "tags": ["STONE", "MINERAL", "RESOURCE", "EXTRACTION", "INDUSTRY", "SPECIAL_BLOCK"],
+    "minStage": 1,
+    "rarity": "UC",
+    "weight": 0.25,
+    "cyclePolicy": "RARITY",
+    "offering": {
+      "requirements": [
+        {
+          "type": "SOCKET_CATEGORY_ANY",
+          "categories": ["CAT_STONE", "CAT_STRATEGIC_MINERAL", "CAT_PRECIOUS_METAL", "CAT_SPECIAL_MINERAL"]
+        }
+      ]
+    },
+    "effects": [
+      {
+        "type": "DOMAIN_ACTION",
+        "action": "CREATE_SPECIAL_BLOCK",
+        "blockType": "MINE",
+        "paymentMode": "DOMAIN_QUOTE",
+        "logActivation": true
+      }
+    ]
   },
   {
     "id": "CMD_STABLE",
