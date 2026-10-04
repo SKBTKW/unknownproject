@@ -39,6 +39,7 @@ assert.deepEqual(
         "CMD_PASTORAL_FARM",
         "CMD_ABANDONED_SETTLEMENT",
         "CMD_EMERGENCY_LEVY",
+        "CMD_MINE",
         "CMD_CULTIVATION"
     ],
     "Stage1 sink portfolio audit must be updated when the Stage1 economy-card set changes"
@@ -54,6 +55,7 @@ const expectedCosts = new Map([
     ["CMD_PASTORAL_FARM", { wood: 15 }],
     ["CMD_ABANDONED_SETTLEMENT", { ember: 1 }],
     ["CMD_EMERGENCY_LEVY", { food: 20 }],
+    ["CMD_MINE", {}],
     ["CMD_CULTIVATION", {}]
 ]);
 
@@ -94,7 +96,7 @@ assert.equal(
     "current Stage1 Investigation cards are resource-free; update portfolio audit when this changes"
 );
 
-for (const type of ["FARM", "LOGGING_CAMP", "ALTAR"]) {
+for (const type of ["FARM", "LOGGING_CAMP", "MINE", "ALTAR"]) {
     assert.equal(
         specialBlockSource.includes(`${type}: '${type}'`),
         true,
@@ -117,6 +119,15 @@ for (const type of ["LOGGING_CAMP", "GRANARY"]) {
     const quote = resolveSpecialBlockCreationCost(SPECIAL_BLOCK_DEFINITIONS[type]);
     assert.equal(quote.status, SPECIAL_BLOCK_COST_STATUS.RESOLVED);
     assert.deepEqual(quote.resources, { wood: 20 }, `${type} Stage1 sink must be Board-owned at material 20`);
+}
+{
+    const quote = resolveSpecialBlockCreationCost(SPECIAL_BLOCK_DEFINITIONS.MINE);
+    assert.equal(quote.status, SPECIAL_BLOCK_COST_STATUS.RESOLVED);
+    assert.deepEqual(
+        quote.resources,
+        { food: 20, wood: 30 },
+        "Mining Site Stage1 sink must be Board-owned at food 20 / material 30"
+    );
 }
 assert.equal(
     /maintenance\s*:|upkeep\s*:/.test(specialBlockSource),
