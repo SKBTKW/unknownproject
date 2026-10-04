@@ -29,7 +29,7 @@ Offering条件・Weight・コストは実装データを現在値の正本とし
 | `CMD_LOGGING_CAMP` | **Board-owned v2 foundation / Unpriced / Dormant** | GL2以上の直交連結2セルを源として、その隣の未配置グリッドへ独立`LOGGING_CAMP`を建設する。土地GLは変更しない。隣接`LOGGING_CAMP`数で産出上昇するRELATION_COUNT方針。作成費・具体産出値は未確定のため通常runtimeはfail-closed。 |
 | `CMD_GRANARY` | **Implemented foundation / Dormant** | 🧱20。平地/干拓地へ`GRANARY` Special Blockを対象指定で設置。`FOOD_STORAGE` CapabilityをMaintenanceが読み、1基あたり維持費-2・最大2基分。production既定ではDormant。 |
 | `CMD_AGRICULTURAL_REFORM` | **Implemented / v1 Board-owned** | 完成済みPLAINS Zone 1つを明示選択し、Zone Conversionとして各メンバー🌾+1/Verse。作成費🧱20はBoard definitionが正本、維持費なし、UNIQUE。 |
-| `CMD_MINE` | **Implemented / Board-owned v1** | 表示名《採掘所》、UC。石材/戦略鉱物/貴金属/特殊鉱物資源の直交隣接未配置セルへ設置。起点Eを継承しGL1、1資源につき1基。🧱25。紐づいた資源由来の正の各産出チャネルを+1/Verse。 |
+| `CMD_MINE` | **Implemented / Board-owned v1** | 表示名《採掘場》、UC。石材/戦略鉱物/貴金属/特殊鉱物資源の直交隣接未配置セルへ設置。起点Eを継承しGL1、1資源につき1基。🌾20/🧱30。紐づいた資源由来の正の各産出チャネルを+1/Verse。 |
 | `CMD_PASTORAL_FARM` | **Partial** | 即時🌾+2中心。表示説明の持続施設効果は未接続。 |
 | `CMD_ABANDONED_SETTLEMENT` | **Implemented** | 🔥1、2D6。2–5:🌾+15 / 6–8:🧱+15 / 9–11:✨+10 / 12:🌾+20🧱+20✨+15。 |
 | `CMD_EMERGENCY_LEVY` | **Implemented** | 🌾20→即時🧱+15。旧維持費+5ペナルティは現発動では設定しない。 |

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 
 import { BoardDomainAdapter } from "../game/src/core/board_domain_adapter.js";
 import {
-    MINING_POST_RESOURCE_CATEGORIES,
+    MINING_SITE_RESOURCE_CATEGORIES,
     SPECIAL_BLOCK_COST_STATUS,
     SPECIAL_BLOCK_TYPES,
     getSpecialBlockDefinition,
@@ -50,13 +50,13 @@ function cell(r, c, base = null, socketResource = null) {
     };
 }
 
-const miningPostCategories = [
+const miningSiteCategories = [
     "CAT_STONE",
     "CAT_STRATEGIC_MINERAL",
     "CAT_PRECIOUS_METAL",
     "CAT_SPECIAL_MINERAL"
 ];
-assert.deepEqual([...MINING_POST_RESOURCE_CATEGORIES], miningPostCategories);
+assert.deepEqual([...MINING_SITE_RESOURCE_CATEGORIES], miningSiteCategories);
 
 const card = COMMAND_CARDS_MASTER.find(candidate => candidate.id === "CMD_MINE");
 assert.ok(card, "CMD_MINE must exist");
@@ -68,7 +68,7 @@ assert.equal(card.reqOreSocket, undefined);
 assert.equal(card.reqWood, undefined);
 assert.deepEqual(card.offering?.requirements, [{
     type: "SOCKET_CATEGORY_ANY",
-    categories: miningPostCategories
+    categories: miningSiteCategories
 }]);
 assert.deepEqual(card.effects, [{
     type: "DOMAIN_ACTION",
@@ -77,11 +77,11 @@ assert.deepEqual(card.effects, [{
     paymentMode: "DOMAIN_QUOTE",
     logActivation: true
 }]);
-assert.equal(isCardRuntimeActive(card), true, "Mining Post is active by default");
+assert.equal(isCardRuntimeActive(card), true, "Mining Site is active by default");
 
 const definition = getSpecialBlockDefinition(SPECIAL_BLOCK_TYPES.MINE);
 assert.equal(definition.placement.mode, "INDEPENDENT_CELL_GENERATION");
-assert.deepEqual([...definition.placement.sourceResourceCategories], miningPostCategories);
+assert.deepEqual([...definition.placement.sourceResourceCategories], miningSiteCategories);
 assert.equal(definition.placement.sourceSelection, "MAX_RESOURCE_BONUS_CHANNELS");
 assert.equal(definition.placement.maxPerSource, 1);
 assert.equal(definition.placement.allowSourceTerrainAdjacency, true);
@@ -89,11 +89,11 @@ assert.equal(definition.placement.participatesInZones, false);
 assert.equal(definition.baseTerrainInteraction.kind, "INDEPENDENT");
 assert.deepEqual(definition.creationCost, {
     status: SPECIAL_BLOCK_COST_STATUS.RESOLVED,
-    resources: { wood: 25 }
+    resources: { food: 20, wood: 30 }
 });
 assert.equal(definition.production.kind, SPECIAL_BLOCK_PRODUCTION_KINDS.SOURCE_RESOURCE_BONUS);
 assert.equal(definition.production.status, "RESOLVED");
-assert.deepEqual([...definition.production.allowedResourceCategories], miningPostCategories);
+assert.deepEqual([...definition.production.allowedResourceCategories], miningSiteCategories);
 assert.equal(definition.production.perPositiveYield, 1);
 
 const hematite = {
@@ -197,11 +197,11 @@ assert.equal(attachCardRuntimePolicy(deck).success, true);
 
 assert.deepEqual(deck.quoteCardExecutionCost(card), {
     success: true,
-    resources: { wood: 25 },
+    resources: { food: 20, wood: 30 },
     source: "DOMAIN_QUOTE",
     quote: {
         status: SPECIAL_BLOCK_COST_STATUS.RESOLVED,
-        resources: { wood: 25 }
+        resources: { food: 20, wood: 30 }
     }
 });
 
@@ -229,24 +229,26 @@ assert.ok(
         target.source?.r === 0 && target.source?.c === 2
         && target.destination?.r === 0 && target.destination?.c === 3
     ),
-    "stone resources are valid Mining Post sources because 採掘所 includes quarrying"
+    "stone resources are valid Mining Site sources because 採掘場 includes quarrying"
 );
 
 state.handOffering = [card];
 state.hasPickedThisTurn = false;
+const beforeFood = state.food;
 const beforeWood = state.wood;
 const result = deck.playCommandCard(card, { r: 0, c: 1 }, 0, -1);
 assert.equal(result.success, true);
-assert.equal(state.wood, beforeWood - 25);
+assert.equal(state.food, beforeFood - 20);
+assert.equal(state.wood, beforeWood - 30);
 assert.equal(state.material, state.wood);
 
 const builtCell = state.grid[0][1];
-assert.equal(builtCell.placed, false, "Mining Post is a special-only block");
+assert.equal(builtCell.placed, false, "Mining Site is a special-only block");
 assert.equal(builtCell.specialBlock?.definitionId, SPECIAL_BLOCK_TYPES.MINE);
 assert.deepEqual(
     readSpecialBlockAdjacencyProfile(builtCell),
     { e: 2, gl: 1, source: { r: 0, c: 0 } },
-    "Mining Post inherits source E and uses GL1"
+    "Mining Site inherits source E and uses GL1"
 );
 
 const production = new SpecialBlockProductionResolver().resolveCell(
@@ -265,7 +267,7 @@ const duplicateTargets = deck.enumerateCardExecutionTargets(card);
 assert.equal(
     duplicateTargets.some(target => target.source?.r === 0 && target.source?.c === 0),
     false,
-    "one mineral resource may bind only one active Mining Post"
+    "one mineral resource may bind only one active Mining Site"
 );
 assert.equal(
     boardDomainAdapter.validateSpecialBlockTarget(
@@ -284,7 +286,7 @@ assert.equal(damagedDuplicate.valid, false);
 assert.equal(
     damagedDuplicate.reason,
     "SOURCE_ALREADY_SERVICED",
-    "a damaged Mining Post still occupies the one-per-resource slot"
+    "a damaged Mining Site still occupies the one-per-resource slot"
 );
 state.grid[0][1].specialBlock.state = "ACTIVE";
 
@@ -345,7 +347,7 @@ const noMineralDeck = new DeckManager(noMineralState, noMineralEngine);
 assert.equal(
     noMineralDeck.isCardEligible(card, 1, 0),
     true,
-    "stone alone satisfies the Mining Post Offering condition"
+    "stone alone satisfies the Mining Site Offering condition"
 );
 
-console.log("✅ Stage1 Mining Post v1 PASS");
+console.log("✅ Stage1 Mining Site v1 PASS");

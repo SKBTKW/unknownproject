@@ -30,7 +30,7 @@ export const SPECIAL_BLOCK_TYPES = Object.freeze({
     WATCHTOWER: 'WATCHTOWER'
 });
 
-export const MINING_POST_RESOURCE_CATEGORIES = Object.freeze([
+export const MINING_SITE_RESOURCE_CATEGORIES = Object.freeze([
     'CAT_STONE',
     'CAT_STRATEGIC_MINERAL',
     'CAT_PRECIOUS_METAL',
@@ -364,7 +364,7 @@ export const SPECIAL_BLOCK_DEFINITIONS = Object.freeze({
         placement: {
             mode: 'INDEPENDENT_CELL_GENERATION',
             targeting: 'SOURCE_AND_ADJACENT_EMPTY',
-            sourceResourceCategories: MINING_POST_RESOURCE_CATEGORIES,
+            sourceResourceCategories: MINING_SITE_RESOURCE_CATEGORIES,
             sourceSelection: 'MAX_RESOURCE_BONUS_CHANNELS',
             maxPerSource: 1,
             allowSourceTerrainAdjacency: true,
@@ -373,12 +373,12 @@ export const SPECIAL_BLOCK_DEFINITIONS = Object.freeze({
         baseTerrainInteraction: { kind: BASE_TERRAIN_INTERACTIONS.INDEPENDENT },
         creationCost: {
             status: SPECIAL_BLOCK_COST_STATUS.RESOLVED,
-            resources: { wood: 25 }
+            resources: { food: 20, wood: 30 }
         },
         production: {
             kind: 'SOURCE_RESOURCE_BONUS',
             status: 'RESOLVED',
-            allowedResourceCategories: MINING_POST_RESOURCE_CATEGORIES,
+            allowedResourceCategories: MINING_SITE_RESOURCE_CATEGORIES,
             perPositiveYield: 1
         },
         capabilities: [BOARD_CAPABILITIES.PRODUCTION_SITE],
