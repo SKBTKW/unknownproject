@@ -3,6 +3,8 @@ import { resolveModifierTag } from "./trial_interception_preview_component.js";
 import { MODIFIER_TARGETS, TRIAL_BATTLE_STATUSES } from "../trial/domain/trial_types.js";
 import { PLAYER_TRAY_MODES } from "./layout_state_manager.js";
 import { InterceptionPowerResolver } from "../trial/systems/interception_power_resolver.js";
+import { UILayoutConfig } from "./layout_config.js";
+import { renderBattleExplanationHtml } from "./battle_explanation_ui_presenter.js";
 
 export class TrialActionTrayComponent {
     constructor(uiController, { hostId = "trialActionTrayHost" } = {}) {
@@ -12,6 +14,12 @@ export class TrialActionTrayComponent {
 
     getHost() {
         if (typeof document === "undefined") return null;
+        if (!document.getElementById("trial-battle-explanation-layout") && document.head?.appendChild) {
+            const style = document.createElement("style");
+            style.id = "trial-battle-explanation-layout";
+            style.textContent = UILayoutConfig.battleExplanationLayoutStyles;
+            document.head.appendChild(style);
+        }
         let host = document.getElementById(this.hostId);
         if (host) return host;
 
@@ -400,6 +408,11 @@ export class TrialActionTrayComponent {
                     }
                 }
 
+                const battleExplanationHtml = renderBattleExplanationHtml(
+                    this.ui.getCurrentBattlePresentationReadModel?.() || null,
+                    I18n
+                );
+
                 const tutorialPolicy = this.ui.getFirstRunTrialTutorialPolicy?.() || { tutorialActive: false };
                 const showTutorialCausality = tutorialPolicy.tutorialActive
                     && tutorialPolicy.step === "RESULT_CAUSALITY";
@@ -493,6 +506,7 @@ export class TrialActionTrayComponent {
                         ${battleDetailsHtml}
                         ${powerComparisonHtml}
                         ${tagsHtml}
+                        ${battleExplanationHtml}
                         ${tutorialCausalityHtml}
                         ${traversalControlsHtml}
                     </div>

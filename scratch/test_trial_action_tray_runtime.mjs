@@ -190,5 +190,20 @@ lifecycle.completed = false;
 lifecycle.confirmed = true;
 component.render();
 check(!buttons.has("btnTrialSettleResult"), "uncompleted Trial cannot offer Settlement");
+lifecycle.battleResolved = true;
+const readModel = Object.freeze({ narrative: { explanation: {
+    what: { source: "NORMAL_OUTCOME", result: { outcome: "REPEL" } },
+    why: [{ causeId: "CAUSE_CANONICAL", type: "TERRAIN_ADVANTAGE" }],
+    consequences: [], fortune: { present: false }
+} } });
+ui.getCurrentBattlePresentationReadModel = () => readModel;
+ui.getFirstRunTrialTutorialPolicy = () => ({ tutorialActive: true, step: "RESULT_CAUSALITY" });
+component.render();
+check(root.html.includes('id="trialBattleExplanation"'), "resolved battle renders canonical narrative explanation");
+check(root.html.includes('data-cause-id="CAUSE_CANONICAL"'), "canonical cause identifiers reach the result tray");
+check(buttons.has("btnFirstRunTrialCausalityConfirm") && !buttons.has("btnTrialAdvanceEnemy"), "FirstRun causality confirmation remains the progression gate");
+ui.getCurrentBattlePresentationReadModel = () => null;
+component.render();
+check(!root.html.includes('id="trialBattleExplanation"') && buttons.has("btnFirstRunTrialCausalityConfirm"), "missing narrative preserves FirstRun progression controls");
 delete globalThis.document;
 console.log(`Trial Action Tray runtime: ${passed}/${passed} PASS`);

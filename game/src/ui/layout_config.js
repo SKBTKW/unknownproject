@@ -17,6 +17,13 @@ const UI_FEATURE_FLAGS = {
 };
 
 const UILayoutConfig = {
+    battleExplanationLayoutStyles: `
+        .trial-battle-explanation { display: grid; gap: 6px; margin-top: 8px; padding: 8px 10px; }
+        .trial-battle-explanation-row { display: grid; grid-template-columns: minmax(92px, auto) 1fr; gap: 8px; align-items: start; }
+        .trial-battle-explanation-list { margin: 0; padding-left: 18px; }
+        .trial-battle-explanation-row.is-fortune { padding-top: 6px; }
+        @media (max-width: 980px) { .trial-battle-explanation-row { grid-template-columns: 1fr; gap: 2px; } }
+    `,
     investigationReportStyles: `
             .investigation-report-overlay {
                 position: fixed;
