@@ -8,6 +8,8 @@ import {
 import { BattleFortuneCheckResultAdapter } from "../game/src/trial/systems/battle_fortune_check_result_adapter.js";
 import { BattleOpportunityFortuneLifecycleService } from "../game/src/trial/systems/battle_opportunity_fortune_lifecycle_service.js";
 
+import { CheckSystem } from "../game/src/core/check_system/check_system.js";
+
 const adapter = new BattleFortuneCheckResultAdapter();
 
 const adapted = adapter.adapt({
@@ -121,4 +123,31 @@ assert.equal(resolved.fortuneRoll.result, BATTLE_FORTUNE_RESULTS.DECISIVE_SUCCES
 assert.equal(resolved.finalCombatResult.source, "SHARED_CHECK_ADAPTER_TEST");
 assert.equal(resolved.decisiveEvent.eventId, "D1");
 
+const committedBefore = JSON.stringify(committed);
+for (const invalid of [null, undefined, "", false, "9", NaN, Infinity]) {
+    assert.throws(() => adapter.adapt({ dice: { kept: [4, 5] }, finalTotal: invalid }), /BATTLE_FORTUNE_CHECK_TOTAL_REQUIRED/);
+    assert.throws(() => adapter.adapt({ dice: { kept: [4, invalid] }, finalTotal: 9 }), /BATTLE_FORTUNE_CHECK_DICE_INVALID/);
+    assert.throws(() => lifecycle.resolveFortuneInput(committed, { dice: [4, 5], total: invalid }), /BATTLE_FORTUNE_INPUT_TOTAL_REQUIRED/);
+    assert.throws(() => lifecycle.resolveFortuneInput(committed, { dice: [4, invalid], total: 9 }), /BATTLE_FORTUNE_INPUT_DICE_INVALID/);
+}
+assert.equal(JSON.stringify(committed), committedBefore, "rejected input must preserve the committed snapshot");
+
+// Connect the production Shared Check facade to the Fortune boundary without rerolling.
+const shared = new CheckSystem({ seed: 4321 });
+const checkResult = shared.resolve({ checkId: "standard_2d6", actionId: "A:connected", checkSequence: 3,
+    modifiers: [{ source: "fixture", operation: "add", value: 1 }] });
+const sharedCheckpoint = shared.getState();
+lifecycle.gameplayRandom = { nextInt() { throw new Error("FORTUNE_BOUNDARY_MUST_NOT_ROLL"); } };
+lifecycle.fortuneResultPolicy.resolve = ({ dice, total, checkProvenance }) => {
+    assert.deepEqual(dice, checkResult.dice.kept);
+    assert.equal(total, checkResult.finalTotal, "preserve canonical modified total instead of recomputing dice");
+    assert.equal(checkProvenance.actionId, "A:connected");
+    return { result: BATTLE_FORTUNE_RESULTS.DECISIVE_SUCCESS, payload: {} };
+};
+const connected = lifecycle.resolveFortuneInput(committed, adapter.adapt(checkResult));
+assert.equal(connected.fortuneRoll.total, checkResult.finalTotal);
+assert.equal(connected.fortuneRoll.checkProvenance.checkSequence, 3);
+assert.equal(connected.fortuneRoll.checkProvenance.outcomeId, checkResult.outcome.id);
+assert.deepEqual(shared.getState(), sharedCheckpoint, "Fortune projection must not advance Shared RNG");
+assert.equal(JSON.stringify(committed), committedBefore);
 console.log("✅ Battle Fortune CheckResult adapter boundary PASS");

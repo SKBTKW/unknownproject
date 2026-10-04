@@ -40,11 +40,11 @@ function requireFortuneInput(fortuneInput) {
     if (!Array.isArray(fortuneInput.dice) || fortuneInput.dice.length === 0) {
         throw new TypeError("BATTLE_FORTUNE_INPUT_DICE_REQUIRED");
     }
-    const dice = fortuneInput.dice.map(value => Number(value));
+    const dice = [...fortuneInput.dice];
     if (dice.some(value => !Number.isFinite(value))) {
         throw new TypeError("BATTLE_FORTUNE_INPUT_DICE_INVALID");
     }
-    const total = Number(fortuneInput.total);
+    const total = fortuneInput.total;
     if (!Number.isFinite(total)) {
         throw new TypeError("BATTLE_FORTUNE_INPUT_TOTAL_REQUIRED");
     }

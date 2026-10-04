@@ -31,12 +31,12 @@ export class BattleFortuneCheckResultAdapter {
         if (!Array.isArray(kept) || kept.length === 0) {
             throw new TypeError("BATTLE_FORTUNE_CHECK_DICE_REQUIRED");
         }
-        const dice = kept.map(value => Number(value));
+        const dice = [...kept];
         if (dice.some(value => !Number.isFinite(value))) {
             throw new TypeError("BATTLE_FORTUNE_CHECK_DICE_INVALID");
         }
 
-        const total = Number(checkResult.finalTotal);
+        const total = checkResult.finalTotal;
         if (!Number.isFinite(total)) {
             throw new TypeError("BATTLE_FORTUNE_CHECK_TOTAL_REQUIRED");
         }
