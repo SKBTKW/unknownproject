@@ -75,7 +75,12 @@ export function resolveBoardPointerCommand(action, {
 
         const readCell = getReadCell(readModel, cell);
         const routeId = getTrialRouteId(readModel, readCell);
-        if (!canIntercept(readCell) || !routeId) return null;
+        if (!routeId) return null;
+        if (!canIntercept(readCell)) {
+            return readCell?.trial?.onRoute
+                ? createBoardInputCommand(BOARD_INPUT_COMMANDS.SELECT_TRIAL_ROUTE, { routeId })
+                : null;
+        }
         return createBoardInputCommand(
             BOARD_INPUT_COMMANDS.SELECT_TRIAL_INTERCEPTION,
             { cell, routeId }
