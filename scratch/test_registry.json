@@ -1067,6 +1067,14 @@
       ]
     },
     {
+      "path": "scratch/test_stage1_mining_post_v1.mjs",
+      "purpose": "Stage1 Mining Site stone/mineral Offering, Board-owned dual-resource payment, linked-resource yield amplification, placement semantics, and one-site-per-resource lifecycle",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_card_runtime_id_scoped_activation.mjs",
       "purpose": "verify dormant non-LAND cards can only be enabled by explicit card id while legacy categories remain disabled and production defaults stay unchanged",
       "suite": "existing",
