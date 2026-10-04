@@ -669,6 +669,12 @@ body.is-camera-dragging-global * {
 }
 
 /* 🌾 各土地属性の独立カラーパターン定義 (専用CSS管理) */
+.cell.cell-special-block {
+    background: #555b63;
+    border-color: #9ca3af;
+    color: #e5e7eb;
+}
+
 .cell.terrain-wetland {
     background: linear-gradient(135deg, #0d4a4d 0%, #062b2e 100%) !important;
     border-color: #14b8a6 !important;

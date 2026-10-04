@@ -42,14 +42,14 @@ export function resolveTrialTacticalEffectBadges(effects = []) {
     return Object.freeze(badges);
 }
 
-export function resolveTrialDefenseAllocationBadge(trial) {
+export function resolveTrialDefenseAllocationBadge(trial, powerResolver = null) {
     const source = trial?.battleMarker || trial?.plannedIntercept || null;
     if (!source) return null;
     const amount = Number(source.defenseAllocation);
     if (!Number.isFinite(amount) || amount <= 0) return null;
 
     return Object.freeze({
-        amount: Math.trunc(amount),
+        amount: powerResolver ? powerResolver.resolveDefense(amount) : Math.trunc(amount),
         source: trial?.battleMarker ? 'BATTLE' : 'PLANNED'
     });
 }
@@ -286,11 +286,11 @@ export class BoardPresentationGridComponent extends LegacyBoardGridComponent {
             cellEl.classList.toggle('trial-battle-resolved', Boolean(battleState?.isResolved));
             cellEl.classList.toggle('trial-battle-current', Boolean(battleState?.isCurrent));
 
-            const defenseBadge = resolveTrialDefenseAllocationBadge(trial);
+            const defenseBadge = resolveTrialDefenseAllocationBadge(trial, this.ui?.trialController?.powerResolver);
             if (defenseBadge) {
                 const badgeEl = document.createElement('span');
                 badgeEl.className = `trial-defense-allocation-badge is-${defenseBadge.source.toLowerCase()}`;
-                badgeEl.textContent = `🛡️${defenseBadge.amount}`;
+                badgeEl.textContent = `⚔${defenseBadge.amount}`;
                 badgeEl.setAttribute('aria-hidden', 'true');
                 cellEl.appendChild(badgeEl);
             }

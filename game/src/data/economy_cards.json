@@ -230,6 +230,7 @@
   },
   {
     "id": "CMD_GRANARY",
+    "offeringDisabled": true,
     "category": "COMMAND",
     "nameKey": "CMD_GRANARY_NAME",
     "descriptionKey": "CMD_GRANARY_DESC",
