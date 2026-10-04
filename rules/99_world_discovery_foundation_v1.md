@@ -86,3 +86,20 @@ replacement, payment/checks and actual Offering activation remain unimplemented.
 No result tables, category catalog, balance values or rediscovery policy defaults
 are introduced. Future definitions must be data assets; the regression fixtures
 are TEST-only and do not constitute authored world content.
+
+## Owner projection v1 — IMPLEMENTED / production source NOT CONNECTED
+
+`WorldObservationProjector` consumes only an explicitly supplied
+`ownerSnapshot.observable.observations` section, reusing the schema-1 world profile
+allowlist and immutable copy. An absent section produces an empty profile; malformed
+explicit observations are rejected. It ignores all other owner fields, including
+board cells, unresolved sockets, enemy/Trial truth and unknown-world records.
+The resulting profile can feed `collectWorldObservationCandidates` directly.
+
+Current WorldInitializationService owns grid/socket initialization, not an authored
+unknown-world Discovery catalog. No new owner field is installed in Run state by
+this task. This projection contract is therefore not a claim that live world
+sources, observation eligibility, world existence or persistence are implemented.
+Future world owners must first supply meaningful existing-world observation data;
+unresolved socket seeds must not become Discovery results through an implicit
+conversion or a new random draw in this projector.
