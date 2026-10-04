@@ -416,7 +416,7 @@
     },
     {
       "path": "scratch/test_first_run_shared_dice_determinism.mjs",
-      "purpose": "FirstRun Verse7→Verse9 Investigation replay determinism across Check RNG and gameplay RNG state restore",
+      "purpose": "FirstRun Verse7\u2192Verse9 Investigation replay determinism across Check RNG and gameplay RNG state restore",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -1868,6 +1868,11 @@
     {
       "path": "scratch/test_battle_narrative_result_ui_presenter.mjs",
       "purpose": "Canonical Battle Narrative result explanation, Fortune roll absence and HTML escaping",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_stage1_mining_site_v1.mjs",
+      "purpose": "Mining Site source identity stale rollback, resolved discovery, shared UI target forwarding and production restore hardening",
       "suite": "supplemental"
     }
   ]
