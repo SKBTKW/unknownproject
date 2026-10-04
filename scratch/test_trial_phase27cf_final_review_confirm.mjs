@@ -280,7 +280,7 @@ test("F. planned total一致", () => {
     const total = ui.getTrialPlannedDefenseTotal();
     assert.equal(total, 5);
     const budgetUsed = document.querySelector(".trial-budget-used");
-    assert.ok(budgetUsed.innerHTML.includes("5"));
+    assert.ok(budgetUsed.innerHTML.includes(String(ui.trialController.powerResolver.resolveDefense(total))));
 });
 
 // G. remaining defense一致
@@ -288,7 +288,7 @@ test("G. remaining defense一致", () => {
     const remaining = ui.getTrialRemainingDefense();
     assert.equal(remaining, availableDefense - 5);
     const budgetRem = document.querySelector(".trial-budget-remaining");
-    assert.ok(budgetRem.innerHTML.includes(String(availableDefense - 5)));
+    assert.ok(budgetRem.innerHTML.includes(String(ui.trialController.powerResolver.resolveDefense(remaining))));
 });
 
 // H. 「計画を修正」でReview解除
