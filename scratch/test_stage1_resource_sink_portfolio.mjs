@@ -40,7 +40,8 @@ assert.deepEqual(
         "CMD_ABANDONED_SETTLEMENT",
         "CMD_EMERGENCY_LEVY",
         "CMD_MINE",
-        "CMD_CULTIVATION"
+        "CMD_CULTIVATION",
+        "CMD_ALTAR"
     ],
     "Stage1 sink portfolio audit must be updated when the Stage1 economy-card set changes"
 );
@@ -56,7 +57,8 @@ const expectedCosts = new Map([
     ["CMD_ABANDONED_SETTLEMENT", { ember: 1 }],
     ["CMD_EMERGENCY_LEVY", { food: 20 }],
     ["CMD_MINE", {}],
-    ["CMD_CULTIVATION", {}]
+    ["CMD_CULTIVATION", {}],
+    ["CMD_ALTAR", {}]
 ]);
 
 for (const card of stage1) {
@@ -108,12 +110,10 @@ assert.equal(
     true,
     "Special Block domain must expose the canonical creation-cost boundary"
 );
-for (const type of ["ALTAR"]) {
-    assert.equal(
-        resolveSpecialBlockCreationCost(SPECIAL_BLOCK_DEFINITIONS[type]).status,
-        SPECIAL_BLOCK_COST_STATUS.UNRESOLVED,
-        `${type} creation-cost balance must remain unresolved until explicitly authored`
-    );
+{
+    const quote = resolveSpecialBlockCreationCost(SPECIAL_BLOCK_DEFINITIONS.ALTAR);
+    assert.equal(quote.status, SPECIAL_BLOCK_COST_STATUS.RESOLVED);
+    assert.deepEqual(quote.resources, { food: 10, wood: 30 }, "Altar uses Board-owned food 10 / material 30");
 }
 for (const type of ["LOGGING_CAMP", "GRANARY"]) {
     const quote = resolveSpecialBlockCreationCost(SPECIAL_BLOCK_DEFINITIONS[type]);

@@ -27,7 +27,8 @@ assert.deepEqual([...CARD_RUNTIME_DEFAULT_ACTIVE_CARD_IDS], [
     "CMD_MINE",
     "CMD_GRANARY",
     "CMD_AGRICULTURAL_REFORM",
-    "CMD_FESTIVAL"
+    "CMD_FESTIVAL",
+    "CMD_ALTAR"
 ]);
 
 assert.equal(isCardRuntimeActive(LAND), true);

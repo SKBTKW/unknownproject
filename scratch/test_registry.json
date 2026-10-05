@@ -416,7 +416,7 @@
     },
     {
       "path": "scratch/test_first_run_shared_dice_determinism.mjs",
-      "purpose": "FirstRun Verse7\u2192Verse9 Investigation replay determinism across Check RNG and gameplay RNG state restore",
+      "purpose": "FirstRun Verse7→Verse9 Investigation replay determinism across Check RNG and gameplay RNG state restore",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -1886,6 +1886,11 @@
     {
       "path": "scratch/test_battle_fortune_check_result_adapter.mjs",
       "purpose": "Shared CheckResult to Fortune boundary, missing numeric facts rejection and legacy compatibility",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_stage1_altar_v1.mjs",
+      "purpose": "Altar outer-vicinity eight-way placement, Stage construction limit, distance 3, dynamic capped mystic production, rollback and restore",
       "suite": "supplemental"
     }
   ]
