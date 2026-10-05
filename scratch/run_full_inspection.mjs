@@ -645,6 +645,7 @@ async function main() {
         ["Trial Plan Activation", "scratch/test_trial_phase28a_plan_activation.mjs"],
         ["Trial Battle Sequence Start", "scratch/test_trial_phase28b_battle_sequence_start.mjs"],
         ["Trial Battle Resolution", "scratch/test_trial_phase28c_battle_resolution.mjs"],
+        ["Trial Spatial Engagement Tactical Foundation", "scratch/test_trial_spatial_engagement_tactical_foundation.mjs"],
         ["Trial Enemy Traversal", "scratch/test_trial_phase28d_enemy_traversal.mjs"],
         ["Trial Next Battle Transition", "scratch/test_trial_phase28e_next_battle_transition.mjs"],
         ["Trial HQ Ember Damage", "scratch/test_trial_phase28f_hq_ember_damage.mjs"],
