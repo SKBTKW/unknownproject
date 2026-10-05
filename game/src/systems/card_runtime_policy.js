@@ -10,7 +10,8 @@ export const CARD_RUNTIME_DEFAULT_ACTIVE_CARD_IDS = Object.freeze([
     "CMD_MINE",
     "CMD_GRANARY",
     "CMD_AGRICULTURAL_REFORM",
-    "CMD_FESTIVAL"
+    "CMD_FESTIVAL",
+    "CMD_ALTAR"
 ]);
 
 function normalizeActiveCardIds(value) {
