@@ -9,7 +9,10 @@ export function createBattleAction({
     actor = null,
     target = null,
     location = null,
+    origin = null,
     timing = null,
+    deliveryMethod = null,
+    requirements = null,
     metadata = {},
     provenance = null,
     source = null
@@ -20,7 +23,10 @@ export function createBattleAction({
         actor,
         target,
         location: cloneData(location),
+        origin: cloneData(origin),
         timing,
+        deliveryMethod,
+        requirements: cloneData(requirements),
         metadata: cloneData(metadata) || {},
         provenance: cloneData(provenance ?? source)
     });
