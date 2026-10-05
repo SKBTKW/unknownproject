@@ -1,4 +1,5 @@
 import { BattlefieldCapabilityProjector, familyFromTerrainId } from "./battlefield_capability_projector.js";
+import { RelativeEngagementResolver } from "./relative_engagement_resolver.js";
 
 function finiteOrNull(value) {
     const numeric = Number(value);
@@ -21,12 +22,17 @@ function projectCell(cell) {
         cellId: cell.cellId || cell.id || null,
         row,
         column,
+        r: row,
+        c: column,
         terrainId,
         terrainFamily: familyFromTerrainId(terrainId),
         e,
         gl,
         elevation: e,
-        growthLevel: gl
+        growthLevel: gl,
+        engagementCapabilities: Array.isArray(cell.engagementCapabilities)
+            ? [...cell.engagementCapabilities]
+            : []
     };
 }
 
@@ -83,8 +89,12 @@ function projectFutureInputs(input = {}) {
  * Hidden Enemy Truth is deliberately not retained in this read model.
  */
 export class BattlefieldContextResolver {
-    constructor({ capabilityProjector = new BattlefieldCapabilityProjector() } = {}) {
+    constructor({
+        capabilityProjector = new BattlefieldCapabilityProjector(),
+        relativeEngagementResolver = new RelativeEngagementResolver()
+    } = {}) {
         this.capabilityProjector = capabilityProjector;
+        this.relativeEngagementResolver = relativeEngagementResolver;
     }
 
     resolve({ battleId = null, routeId = null, battleContext = {}, combatResult = {}, futureInputs = {} } = {}) {
@@ -92,6 +102,12 @@ export class BattlefieldContextResolver {
         const deployment = battleContext.enemy?.deployment?.deployment || null;
         const interceptTerrain = projectCell(battleContext.interceptCell);
         const approachTerrain = projectCell(battleContext.approachCell);
+        const humanOriginTerrain = projectCell(battleContext.humanEngagementOrigin);
+        const spatialEngagement = this.relativeEngagementResolver.resolve({
+            battleLocation: interceptTerrain,
+            enemyApproach: approachTerrain,
+            humanEngagementOrigin: humanOriginTerrain
+        });
 
         const strategicSuppression = finiteOrNull(
             battleContext.enemy?.strategicSuppression
@@ -111,11 +127,16 @@ export class BattlefieldContextResolver {
             battleId,
             routeId,
             interceptionLocation: interceptTerrain,
+            battleLocation: interceptTerrain,
+            enemyApproach: approachTerrain,
+            humanEngagementOrigin: humanOriginTerrain,
+            spatialEngagement,
             interceptTerrain,
             approachTerrain,
             battlefieldCapabilities: {
                 intercept: this.capabilityProjector.project(interceptTerrain),
-                approach: this.capabilityProjector.project(approachTerrain)
+                approach: this.capabilityProjector.project(approachTerrain),
+                humanOrigin: this.capabilityProjector.project(humanOriginTerrain)
             },
             enemy: {
                 bodySize: interaction?.bodySize

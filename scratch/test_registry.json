@@ -1511,6 +1511,14 @@
       ]
     },
     {
+      "path": "scratch/test_trial_spatial_engagement_tactical_foundation.mjs",
+      "purpose": "Trial spatial engagement geometry, semantic human origins, tactic requirements and Battle Context projection",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_trial_phase28d_enemy_traversal.mjs",
       "purpose": "trial phase28d enemy traversal",
       "suite": "existing",
