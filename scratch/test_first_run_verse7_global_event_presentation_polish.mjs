@@ -36,6 +36,11 @@ assert.match(I18n.t(projection.descriptionKey), /調査/);
 assert.equal(projection.actionKind, "CONFIRM");
 assert.equal(I18n.t("UI_GLOBAL_EVENT_CONFIRM"), "確認して戻る");
 
+const visualAsset = fs.readFileSync(new URL("../game/assets/events/unknown_traces.svg", import.meta.url), "utf8");
+assert.match(visualAsset, /shape-rendering="crispEdges"/, "Verse7 still should keep hard pixel edges");
+assert.doesNotMatch(visualAsset, /<(?:linearGradient|radialGradient)\b/i, "Verse7 still should avoid smooth vector gradients");
+assert.doesNotMatch(visualAsset, /\b(?:enemy|demihuman|humanoid|figure)\b/i, "Verse7 still must show traces, not reveal the enemy");
+
 const manager = createManager();
 const ui = { engine: { globalEventManager: manager } };
 const component = createComponent();
@@ -75,9 +80,21 @@ const before = JSON.stringify({
 });
 const source = [
     fs.readFileSync(new URL("../game/src/ui/global_event_presentation_runtime_integration.js", import.meta.url), "utf8"),
-    fs.readFileSync(new URL("../game/src/ui/global_event_advisor_presentation_integration.js", import.meta.url), "utf8")
+    fs.readFileSync(new URL("../game/src/ui/global_event_advisor_presentation_integration.js", import.meta.url), "utf8"),
+    fs.readFileSync(new URL("../game/src/presentation/global_event/global_event_public_presentation_read_model.js", import.meta.url), "utf8"),
+    fs.readFileSync(new URL("../game/src/ui/global_event_presentation_component.js", import.meta.url), "utf8")
 ].join("\n");
 assert.doesNotMatch(source, /from\s+["'][^"']*(?:warning|investigation|enemy_truth)[^"']*["']/i);
+assert.doesNotMatch(
+    source,
+    /from\s+["'][^"']*(?:dice|check_system|gameplay_random|rng)[^"']*["']/i,
+    "GE Presentation must not own Shared Dice / Check infrastructure"
+);
+assert.doesNotMatch(
+    source,
+    /\b(?:DicePool|roll2d6|roll2D6|checkSystem|gameplayRandom|Math\.random)\b/,
+    "GE Presentation must consume resolved public facts only, never roll or resolve checks"
+);
 assert.equal(JSON.stringify({
     warningState: ui.engine.warningState ?? null,
     investigationUnlocked: ui.engine.investigationUnlocked ?? null,
