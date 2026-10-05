@@ -58,8 +58,8 @@ assert.deepEqual(
 );
 assert.deepEqual(
     unresolvedService.quoteCost(SPECIAL_BLOCK_TYPES.ALTAR),
-    { status: SPECIAL_BLOCK_COST_STATUS.UNRESOLVED, resources: null },
-    "foundation must not invent ALTAR balance values"
+    { status: SPECIAL_BLOCK_COST_STATUS.RESOLVED, resources: { food: 10, wood: 30 } },
+    "Altar uses the authored Board-owned cost"
 );
 
 function cell(r, c, terrain = null) {

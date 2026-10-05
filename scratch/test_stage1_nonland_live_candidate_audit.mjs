@@ -32,7 +32,8 @@ const PROTOTYPE = Object.freeze([
     "CMD_AGRICULTURAL_REFORM",
     "CMD_LOGGING_CAMP",
     "CMD_CULTIVATION",
-    "CMD_MINE"
+    "CMD_MINE",
+    "CMD_ALTAR"
 ]);
 const SUPPORT = Object.freeze([
     "CMD_RATIONING",
@@ -53,8 +54,8 @@ const effect = (id, type, predicate = () => true) =>
 console.log("\nStage1 non-LAND live candidate audit");
 
 const LIVE_SOCIAL_ACTIVITY = ["CMD_FESTIVAL"];
-assert.equal(stage1.length, 18, "Stage1 source JSON includes Festival, Cultivation, and Mining Site");
-assert.equal(new Set([...PROTOTYPE, ...SUPPORT, ...BLOCKED, ...LIVE_SOCIAL_ACTIVITY]).size, 18);
+assert.equal(stage1.length, 19, "Stage1 source JSON includes Festival, Cultivation, and Mining Site");
+assert.equal(new Set([...PROTOTYPE, ...SUPPORT, ...BLOCKED, ...LIVE_SOCIAL_ACTIVITY]).size, 19);
 assert.deepEqual(
     [...new Set([...PROTOTYPE, ...SUPPORT, ...BLOCKED, ...LIVE_SOCIAL_ACTIVITY])].sort(),
     [...byId.keys()].sort(),
@@ -72,7 +73,8 @@ const LIVE_BOARD_INVESTMENTS = new Set([
     "CMD_AGRICULTURAL_REFORM",
     "CMD_LOGGING_CAMP",
     "CMD_CULTIVATION",
-    "CMD_MINE"
+    "CMD_MINE",
+    "CMD_ALTAR"
 ]);
 assert.equal(isCardRuntimeActive(byId.get("CMD_FESTIVAL")), true);
 assert.deepEqual(generatedById.get("CMD_FESTIVAL"), byId.get("CMD_FESTIVAL"));
