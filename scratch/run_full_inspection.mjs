@@ -400,11 +400,13 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (FirstRun Trial UI Boundary) で不合格が検出されました。");
         process.exit(1);
     }
-    const defenseAllocationDiagnoseOk = await runCommand("node", ["scratch/diagnose_first_run_trial_defense_allocation.mjs"]);
-    if (!defenseAllocationDiagnoseOk) {
-        console.error("\n❌ [PIPELINE BLOCKED] FirstRun Trial1 Defense Allocation Production-Path Diagnose failed.");
-        process.exit(1);
-    }
+    const defenseAllocationDiagnoseOk = await runChecks("FirstRun Trial1 Defense Allocation Production-Path Diagnose", [
+        ["Direct runtime contract", "node", ["scratch/diagnose_first_run_trial_defense_allocation.mjs"]],
+        ["Slider input binding", "node", ["scratch/diagnose_first_run_trial_defense_allocation.mjs", "--input=slider"]],
+        ["Increase click binding", "node", ["scratch/diagnose_first_run_trial_defense_allocation.mjs", "--input=increase"]],
+        ["MAX click binding", "node", ["scratch/diagnose_first_run_trial_defense_allocation.mjs", "--input=max"]],
+    ]);
+    if (!defenseAllocationDiagnoseOk) process.exit(1);
     const firstRunTrialIngressPolicyOk = await runCommand("node", ["scratch/test_first_run_trial_ingress_policy.mjs"]);
     if (!firstRunTrialIngressPolicyOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (FirstRun Trial Ingress Policy) で不合格が検出されました。");
