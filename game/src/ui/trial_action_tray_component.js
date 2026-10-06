@@ -17,7 +17,8 @@ export class TrialActionTrayComponent {
         if (!document.getElementById("trial-battle-explanation-layout") && document.head?.appendChild) {
             const style = document.createElement("style");
             style.id = "trial-battle-explanation-layout";
-            style.textContent = UILayoutConfig.battleExplanationLayoutStyles;
+            style.textContent = UILayoutConfig.battleExplanationLayoutStyles
+                + UILayoutConfig.trialEngagementOriginLayoutStyles;
             document.head.appendChild(style);
         }
         let host = document.getElementById(this.hostId);
@@ -350,10 +351,51 @@ export class TrialActionTrayComponent {
                         </div>
                     `;
                 }
+                const engagementOrigins = this.ui.getCurrentTrialEngagementOrigins?.() || null;
+                const engagementCandidates = Array.isArray(engagementOrigins?.candidates)
+                    ? engagementOrigins.candidates
+                    : [];
+                let engagementOriginHtml = "";
+                if (engagementCandidates.length > 1) {
+                    const selectedCell = engagementOrigins?.selectedOrigin?.cell || engagementOrigins?.selectedOrigin || null;
+                    const originButtons = engagementCandidates.map((candidate, index) => {
+                        const originCell = candidate?.cell || candidate;
+                        const coord = originCell && Number.isInteger(originCell.r) && Number.isInteger(originCell.c)
+                            ? `${String.fromCharCode(65 + originCell.c)}${originCell.r + 1}`
+                            : "—";
+                        const selected = Boolean(
+                            selectedCell
+                            && selectedCell.r === originCell?.r
+                            && selectedCell.c === originCell?.c
+                        );
+                        const type = I18n.t("UI_TRIAL_ENGAGEMENT_ORIGIN_GENERIC");
+                        return `
+                            <button type="button"
+                                id="btnTrialEngagementOrigin${index}"
+                                class="btn-trial-action trial-engagement-origin-option ${selected ? "is-selected" : ""}"
+                                aria-pressed="${selected ? "true" : "false"}">
+                                [${coord}] ${type}
+                            </button>
+                        `;
+                    }).join("");
+                    const selectedText = selectedCell
+                        ? I18n.t("UI_TRIAL_ENGAGEMENT_ORIGIN_SELECTED", {
+                            coord: `${String.fromCharCode(65 + selectedCell.c)}${selectedCell.r + 1}`
+                        })
+                        : I18n.t("UI_TRIAL_ENGAGEMENT_ORIGIN_OPTIONAL");
+                    engagementOriginHtml = `
+                        <div class="trial-engagement-origin-selector" id="trialEngagementOriginSelector">
+                            <strong>${I18n.t("UI_TRIAL_ENGAGEMENT_ORIGIN_TITLE")}</strong>
+                            <small>${selectedText}</small>
+                            <div class="trial-engagement-origin-options">${originButtons}</div>
+                        </div>
+                    `;
+                }
                 reviewActionsHtml = `
                     <div class="trial-battle-active-banner" id="trialBattleActiveBanner">
                         <div class="trial-battle-active-status">⚔️ ${I18n.t("UI_TRIAL_BATTLE_ACTIVE")}</div>
                         ${battleDetailsHtml}
+                        ${engagementOriginHtml}
                         <button type="button" id="btnTrialResolveBattle" class="btn-trial-action btn-resolve-battle">
                             ${I18n.t("UI_TRIAL_RESOLVE_BATTLE")}
                         </button>
@@ -547,6 +589,19 @@ export class TrialActionTrayComponent {
 
             const btnResolveBattle = document.getElementById("btnTrialResolveBattle");
             if (btnResolveBattle) btnResolveBattle.onclick = () => this.ui.resolveCurrentTrialBattle();
+
+            const engagementOrigins = this.ui.getCurrentTrialEngagementOrigins?.() || null;
+            const engagementCandidates = Array.isArray(engagementOrigins?.candidates)
+                ? engagementOrigins.candidates
+                : [];
+            if (engagementCandidates.length > 1) {
+                engagementCandidates.forEach((candidate, index) => {
+                    const button = document.getElementById(`btnTrialEngagementOrigin${index}`);
+                    if (button) {
+                        button.onclick = () => this.ui.selectCurrentTrialEngagementOrigin(candidate?.cell || candidate);
+                    }
+                });
+            }
 
             const btnCausalityConfirm = document.getElementById("btnFirstRunTrialCausalityConfirm");
             if (btnCausalityConfirm) {

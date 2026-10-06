@@ -17,6 +17,11 @@ const UI_FEATURE_FLAGS = {
 };
 
 const UILayoutConfig = {
+    trialEngagementOriginLayoutStyles: `
+        .trial-engagement-origin-selector { display: grid; gap: 6px; padding: 8px 10px; }
+        .trial-engagement-origin-options { display: flex; gap: 6px; flex-wrap: wrap; }
+        .trial-engagement-origin-option { padding: 6px 10px; }
+    `,
     battleExplanationLayoutStyles: `
         .trial-battle-explanation { display: grid; gap: 6px; margin-top: 8px; padding: 8px 10px; }
         .trial-battle-explanation-row { display: grid; grid-template-columns: minmax(92px, auto) 1fr; gap: 8px; align-items: start; }
