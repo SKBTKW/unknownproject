@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "target": "AoT261002",
+  "entries": [
+    {
+      "branch": "aot-task/AoT261002/cards/farm-storage-v1",
+      "expectedHeadSha": "7eaf0e1c00739c830595f21d5f2e65c3a3d618c2",
+      "replacementPrs": [
+        429
+      ],
+      "note": "Farm production/storage scope is present in #429. Current resource_storage_policy and test_farm_storage_v1 match the old head exactly; later Mining/Altar generic special-block extensions are retained."
+    },
+    {
+      "branch": "aot-task/AoT261002/cards/mining-post-v1",
+      "expectedHeadSha": "f9fd8a645d28edd1725912a190fcdaef89f7e2db",
+      "replacementPrs": [
+        440,
+        442
+      ],
+      "note": "The stale Mining Site implementation was reconciled in #440 and hardened in #442. Stage1 UC master expectations, discovered-source identity and current placement consumers replace the old definitions. Do not restore the stale Stage2/R assertions."
+    },
+    {
+      "branch": "aot-task/AoT261002/first-run/completion-persistence-boundary-v1",
+      "expectedHeadSha": "55382eb1b0892dfcfada25fd65054eba315a6477",
+      "replacementPrs": [
+        419
+      ],
+      "note": "#419 explicitly includes Stage2-only completion persistence. Three-way replay of this exact source head changes no target content."
+    },
+    {
+      "branch": "aot-task/AoT261002/first-run/full-inspection-baseline-repair-v3",
+      "expectedHeadSha": "17ef19d3fa6cc099e940204334d4a3e4bce8e58d",
+      "replacementPrs": [
+        419,
+        438
+      ],
+      "note": "#419 explicitly includes #418 repairs. Three-way replay differs only in test_registry.json; current supplemental entries already exist once. #438 updates the later production-path FirstRun certification."
+    },
+    {
+      "branch": "aot-task/AoT261002/integration/full-inspection-hygiene-v2",
+      "expectedHeadSha": "c3166f3ed90da7e0c05823fe0895d4ba0759ed22",
+      "replacementPrs": [
+        419
+      ],
+      "note": "Three-way replay differs only in registry entries already present. Current Stage1 completion is supplemental, not the obsolete quarantine proposed by this head; #419 reinstated active certification."
+    },
+    {
+      "branch": "aot-task/AoT261002/integration/test-registry-repair-v1",
+      "expectedHeadSha": "115a58c3656aae4d2dac32ecd6e38b9ed0ac71f0",
+      "replacementPrs": [
+        419,
+        438
+      ],
+      "note": "Remaining replay delta is obsolete quarantine/duplicate registry entries and a second duplicate Verse9 scope assertion. Current test already asserts Verse9 no forced minimum and passes through the production path after #438."
+    },
+    {
+      "branch": "aot-task/AoT261002/first-run/verse7-global-event-visual-polish-v1",
+      "expectedHeadSha": "f0c63d93e97bbef214b0a4599b582611e97455bf",
+      "replacementPrs": [
+        443
+      ],
+      "note": "#443 transferred the exact visual-polish scope and added the completion watchdog; current SVG is identical to this source head. Later callback/timer cleanup is retained."
+    },
+    {
+      "branch": "aot-task/AoT261002/investigation/runtime-presentation-connection-v1",
+      "expectedHeadSha": "7ce5501099bc27c4a3c28fcb4212b25d529b3a2e",
+      "replacementPrs": [
+        431
+      ],
+      "note": "#431 incorporates this runtime presentation connection. Later UIController changes are retained; the source regression differs only by asserting the current investigationCardPresentationRuntime.execute boundary."
+    },
+    {
+      "branch": "aot-task/AoT261002/trial/battle-presentation-runtime-consumption-v1",
+      "expectedHeadSha": "5234bbde65cd53bc3df450e8cf8db7efff3aa780",
+      "replacementPrs": [
+        439
+      ],
+      "note": "#439 reconciled the immutable snapshot result explanation, localization and Player Tray consumption with canonical layout and total handling. Stale UI/source files must not replace later Trial fixes."
+    },
+    {
+      "branch": "aot-task/AoT261002/trial/fortune-check-result-adapter-v1",
+      "expectedHeadSha": "d0b6aae40d7fe5a66513b1209f70ec5f713b2479",
+      "replacementPrs": [
+        441
+      ],
+      "note": "#441 reconciled the Shared CheckResult adapter and lifecycle input while preserving legacy Fortune/RNG semantics; strict finite-fact validation supersedes old coercion."
+    },
+    {
+      "branch": "aot-task/AoT261002/trial/trial-controller-responsibility-refactor-v1",
+      "expectedHeadSha": "b85a25e1b9c4351047a3fe05fa80240a04dd17d5",
+      "replacementPrs": [
+        447
+      ],
+      "note": "#447 migrated the coordinator extraction and pending guard/end cleanup onto the current battle methods, preserving #445 origin context/action provenance. The 12-case characterization file is identical to this source."
+    },
+    {
+      "branch": "aot-task/AoT261002/trial/engagement-origin-selection-ui-v1",
+      "expectedHeadSha": "fd824d2144de0dbd3ae9f85c7015c171ef86e172",
+      "replacementPrs": [
+        450
+      ],
+      "note": "#450 preserves the selector, UIController API and 32-case connected regression from #448, moving new geometry into UILayoutConfig. UIController and connected test match; component differs only by applying the central layout styles."
+    }
+  ]
+}
