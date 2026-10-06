@@ -1096,6 +1096,48 @@ export const MILITARY_CARDS_MASTER = [
     "rarity": "C",
     "weight": 0.35,
     "cyclePolicy": "RARITY"
+  },
+  {
+    "id": "CMD_BARRACKS",
+    "category": "MILITARY",
+    "nameKey": "CMD_BARRACKS_NAME",
+    "descriptionKey": "CMD_BARRACKS_DESC",
+    "cost": {},
+    "tags": [
+      "MILITARY",
+      "SPECIAL_BLOCK",
+      "DEPLOYMENT"
+    ],
+    "minStage": 2,
+    "rarity": "UC",
+    "weight": 0.25,
+    "cyclePolicy": "RARITY",
+    "maxUsesPerStage": 1,
+    "offering": {
+      "requirements": [
+        {
+          "type": "CARD_STAGE_USAGE_BELOW",
+          "maxUses": 1
+        }
+      ]
+    },
+    "execution": {
+      "requirements": [
+        {
+          "type": "CARD_STAGE_USAGE_BELOW",
+          "maxUses": 1
+        }
+      ]
+    },
+    "effects": [
+      {
+        "type": "DOMAIN_ACTION",
+        "action": "CREATE_SPECIAL_BLOCK",
+        "blockType": "BARRACKS",
+        "paymentMode": "DOMAIN_QUOTE",
+        "logActivation": true
+      }
+    ]
   }
 ];
 
@@ -2879,6 +2921,48 @@ export const COMMAND_CARDS_MASTER = [
       "type": "DOMAIN_ACTION",
       "action": "CREATE_SPECIAL_BLOCK",
       "blockType": "ALTAR",
+      "paymentMode": "DOMAIN_QUOTE",
+      "logActivation": true
+    }
+  ]
+},
+{
+  "id": "CMD_BARRACKS",
+  "category": "MILITARY",
+  "nameKey": "CMD_BARRACKS_NAME",
+  "descriptionKey": "CMD_BARRACKS_DESC",
+  "cost": {},
+  "tags": [
+    "MILITARY",
+    "SPECIAL_BLOCK",
+    "DEPLOYMENT"
+  ],
+  "minStage": 2,
+  "rarity": "UC",
+  "weight": 0.25,
+  "cyclePolicy": "RARITY",
+  "maxUsesPerStage": 1,
+  "offering": {
+    "requirements": [
+      {
+        "type": "CARD_STAGE_USAGE_BELOW",
+        "maxUses": 1
+      }
+    ]
+  },
+  "execution": {
+    "requirements": [
+      {
+        "type": "CARD_STAGE_USAGE_BELOW",
+        "maxUses": 1
+      }
+    ]
+  },
+  "effects": [
+    {
+      "type": "DOMAIN_ACTION",
+      "action": "CREATE_SPECIAL_BLOCK",
+      "blockType": "BARRACKS",
       "paymentMode": "DOMAIN_QUOTE",
       "logActivation": true
     }
