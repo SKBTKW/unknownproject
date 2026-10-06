@@ -372,12 +372,9 @@ export class SpecialBlockService {
         if (destinationCell.placed || destinationCell.specialBlock) {
             return { valid: false, reason: 'DESTINATION_OCCUPIED' };
         }
-        if (definition.placement?.destinationRegion === 'HQ_VICINITY_OUTER_EDGE') {
-            if (this.isHQVicinity(destination.r, destination.c) || destinationCell.isHQ
-                || !sourceNeighbors(destination.r, destination.c, 'EIGHT_WAY')
-                    .some(point => this.getCell(point.r, point.c) && this.isHQVicinity(point.r, point.c))) {
-                return { valid: false, reason: 'DESTINATION_REGION_NOT_ALLOWED' };
-            }
+        if (definition.placement?.destinationRegion === 'HQ_VICINITY'
+            && (destinationCell.isHQ || !this.isHQVicinity(destination.r, destination.c))) {
+            return { valid: false, reason: 'DESTINATION_REGION_NOT_ALLOWED' };
         }
 
         // Choose the maximum E before applying placement restrictions. A lower
