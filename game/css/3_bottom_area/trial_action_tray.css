@@ -296,6 +296,34 @@ body[data-player-tray-mode="trial"] #trialActionTrayHost {
     cursor: not-allowed;
 }
 
+.trial-engagement-origin-selector {
+    display: grid;
+    gap: 6px;
+    padding: 8px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 7px;
+    background: rgba(20, 27, 38, 0.72);
+}
+
+.trial-engagement-origin-selector small {
+    opacity: 0.82;
+}
+
+.trial-engagement-origin-options {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.trial-engagement-origin-option {
+    padding: 6px 10px;
+}
+
+.trial-engagement-origin-option.is-selected {
+    border-color: #1abc9c;
+    background: rgba(15, 115, 100, 0.92);
+}
+
 @media (max-width: 900px) {
     .trial-action-tray {
         width: var(--layout-trial-action-tray-width-compact);
