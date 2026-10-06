@@ -61,3 +61,21 @@ The existing engagement-origin selection API remains a lower-level primitive.
 A future runtime adapter may project the selected plan's
 humanEngagementOrigin into that API without exposing origin selection directly
 to the player.
+
+
+## Requirement evaluation preparation
+
+A pure TacticRequirementEvaluator may be used by future plan generation to
+answer whether declared semantic prerequisites are currently present.
+
+It reports missing axes separately (Context / Capability / Deployment / State /
+Infrastructure / Timing). It intentionally does not:
+
+- infer tactic success
+- convert eligibility into Battle Outcome
+- produce a universal score
+- inspect card or facility IDs
+- roll dice
+- mutate Battle State
+
+This keeps "can attempt this plan" separate from "the tactic succeeds".

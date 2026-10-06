@@ -1527,6 +1527,14 @@
       ]
     },
     {
+      "path": "scratch/test_trial_tactic_requirement_evaluator.mjs",
+      "purpose": "Pure TacticRequirement semantic eligibility with explicit per-axis reasons and no outcome scoring",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_trial_battle_coordinator_characterization.mjs",
       "purpose": "Controller battle and Fortune observable contracts, exactly-once calls and runtime reference restoration",
       "suite": "existing",
