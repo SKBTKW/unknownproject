@@ -919,6 +919,31 @@ class UIController {
         return this.trialController?.state?.getCurrentBattleResult?.() || null;
     }
 
+    getCurrentTrialEngagementOrigins() {
+        return this.trialController?.getCurrentBattleEngagementOrigins?.() || {
+            success: false,
+            reason: "NO_ACTIVE_BATTLE",
+            candidates: [],
+            selectedOrigin: null,
+            requiresSelection: false
+        };
+    }
+
+    selectCurrentTrialEngagementOrigin(origin) {
+        if (!this.trialPreviewConfig || !this.trialController?.state) {
+            return { success: false, reason: "TRIAL_NOT_STARTED" };
+        }
+        const result = this.trialController.selectCurrentBattleEngagementOrigin(origin);
+        if (!result.success) {
+            this.trialPresentationState.planningValidationErrors = result.reason ? [result.reason] : [];
+            this.render();
+            return result;
+        }
+        this.trialPresentationState.planningValidationErrors = [];
+        this.render();
+        return result;
+    }
+
     startTrialBattle() {
         if (!this.trialPreviewConfig || !this.trialController?.state) {
             return { success: false, errors: ["TRIAL_NOT_STARTED"] };
