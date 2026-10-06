@@ -6,7 +6,7 @@ This manifest records reviewed replacements; it does not merge stale branches or
 
 ## Retained protection
 
-- PR #421 and #422 are diagnostic branches with explicit do-not-merge instructions. Neither is included.
+- Initial audit excluded #421 and #422. The 2026-10-06 follow-up below records their closed, superseded state after #453 certification.
 - Future changes or open PR references invalidate automatic cleanup eligibility.
 
 ## Replacement evidence
@@ -31,3 +31,12 @@ Old baseline/hygiene replay changes only registry content. The registry-repair r
 ## Validation
 
 Replacement PR snapshots were read through authenticated GitHub access; every listed merge commit was verified as an ancestor of the audited target. Existing Sweeper tests and clean-worktree Full Inspection are required before publishing. Real browser rendering is outside this metadata-only change.
+
+## Defense diagnostic follow-up (2026-10-06)
+
+Audited target: `5de00ce213cf5b4bc9e9789f77b78a71bbdfcacd`. PR #453 was merged at this commit; PR Full Inspection run 37480738513, target Full Inspection run 37481347907 and Pages run 37481348111 all succeeded. The merged tree matches tested tree `94ba66c2359c055461a11116e2625e1e376d0227`.
+
+- `trial-defense-allocation-diagnose-ci-v1` at `12895356eba1c99a5583c572ecd8b6db2504f473`: The direct production-path Full Inspection gate is already present; #453 retains it and expands certification to four control input modes. #421 was closed as redundant.
+- `trial-defense-allocation-dom-diagnose-v1` at `6ea7f8c980805a8f9eccc09f2f71f693bbca4941`: The control DOM fixture and direct/slider/increase/MAX gates were reconciled in #453. Current post-selection hover regression, combat-defense slider maximum and value conversion are retained. #422 was closed after successful PR and target certification.
+
+This is cleanup evidence, not certification of real-browser layout or pointer hit testing. Existing exact-head, merged replacement ancestry and open-PR reference protections remain unchanged. No production or Sweeper logic changes.
