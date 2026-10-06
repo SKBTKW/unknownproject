@@ -1,3 +1,5 @@
+import { buildBattleExplanationModel } from "./battle_explanation_model.js";
+
 function cloneData(value) {
     if (value === undefined) return undefined;
     return JSON.parse(JSON.stringify(value));
@@ -245,7 +247,7 @@ function buildFullTimeline(snapshot) {
     const events = [];
     const contact = fixedEvent(
         "CONTACT",
-        snapshot.contact ?? snapshot.battlefieldContext?.contact ?? null,
+        snapshot.presentationFacts?.find?.(row => row?.type === "BATTLE_CONTACT") ?? null,
         "CONTACT"
     );
     if (contact) events.push(contact);
@@ -272,7 +274,7 @@ function buildCompactTimeline(snapshot, highlights) {
     const events = [];
     const contact = fixedEvent(
         "CONTACT",
-        snapshot.contact ?? snapshot.battlefieldContext?.contact ?? null,
+        snapshot.presentationFacts?.find?.(row => row?.type === "BATTLE_CONTACT") ?? null,
         "CONTACT"
     );
     if (contact) events.push(contact);
@@ -330,6 +332,7 @@ export class BattleNarrativeProjector {
                 instantSummary: Object.freeze([]),
                 causalGraph: Object.freeze([]),
                 highlightedCauses: Object.freeze([]),
+                explanation: null,
                 resultSummary: null,
                 gameplay: null
             });
@@ -376,6 +379,7 @@ export class BattleNarrativeProjector {
             instantSummary,
             causalGraph,
             highlightedCauses,
+            explanation: buildBattleExplanationModel(snapshot, { highlightedCauses }),
             resultSummary: resultSummary(snapshot),
             opportunity: cloneData(snapshot.opportunity ?? null),
             chronicleProjection: chronicleProjection(snapshot, highlightedCauses),

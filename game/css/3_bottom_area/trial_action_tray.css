@@ -296,6 +296,21 @@ body[data-player-tray-mode="trial"] #trialActionTrayHost {
     cursor: not-allowed;
 }
 
+.trial-engagement-origin-selector {
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 7px;
+    background: rgba(20, 27, 38, 0.72);
+}
+
+.trial-engagement-origin-selector small {
+    opacity: 0.82;
+}
+
+.trial-engagement-origin-option.is-selected {
+    border-color: #1abc9c;
+    background: rgba(15, 115, 100, 0.92);
+}
+
 @media (max-width: 900px) {
     .trial-action-tray {
         width: var(--layout-trial-action-tray-width-compact);
@@ -330,3 +345,14 @@ body[data-player-tray-mode="trial"] #trialActionTrayHost {
     font-weight: 800;
     letter-spacing: 0.02em;
 }
+
+/* Battle Narrative explanation: read-only canonical Snapshot projection. */
+.trial-battle-explanation {
+    border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.14));
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.16);
+    font-size: 0.86rem;
+    line-height: 1.35;
+}
+.trial-battle-explanation-title { font-weight: 700; }
+.trial-battle-explanation-row.is-fortune { border-top: 1px solid rgba(255, 255, 255, 0.10); }

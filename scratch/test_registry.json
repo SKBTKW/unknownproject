@@ -399,8 +399,24 @@
       ]
     },
     {
+      "path": "scratch/test_first_run_semantic_boundaries.mjs",
+      "purpose": "One-shot FirstRun Offering guarantee scope and separation between Trial tutorial completion and whole-FirstRun persistence",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_first_run_stage1_flow.mjs",
       "purpose": "connected FirstRun Verse7 trace, Investigation, Warning, restore, and Verse15 Trial1 launch flow",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_first_run_shared_dice_determinism.mjs",
+      "purpose": "FirstRun Verse7→Verse9 Investigation replay determinism across Check RNG and gameplay RNG state restore",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -508,6 +524,14 @@
     {
       "path": "scratch/test_global_event_advisor_integration.mjs",
       "purpose": "Global Event presented semantic Advisor bridge, FirstRun background dedupe, presentation-only interaction lock, and hidden-info boundary",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_first_run_verse7_global_event_presentation_polish.mjs",
+      "purpose": "FirstRun Verse7 Demihuman Traces presentation, Advisor lock fallback, confirm flow, restore dedupe, and presentation authority boundary",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -741,6 +765,22 @@
     {
       "path": "scratch/test_investigation_runtime_bridge.mjs",
       "purpose": "investigation runtime bridge",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_investigation_runtime_presentation_connection.mjs",
+      "purpose": "Investigation card UI routes through canonical execution and projects player-facing report presentation",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_investigation_report_component_dom.mjs",
+      "purpose": "Investigation report overlay DOM rendering, focus restoration, Escape dismissal, and listener cleanup",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -1027,6 +1067,11 @@
       ]
     },
     {
+      "path": "scratch/test_stage1_mining_post_v1.mjs",
+      "purpose": "Stage1 Mining Site stone/mineral Offering, Board-owned dual-resource payment, linked-resource yield amplification, placement semantics, and one-site-per-resource lifecycle",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_card_runtime_id_scoped_activation.mjs",
       "purpose": "verify dormant non-LAND cards can only be enabled by explicit card id while legacy categories remain disabled and production defaults stay unchanged",
       "suite": "existing",
@@ -1248,6 +1293,22 @@
       ]
     },
     {
+      "path": "scratch/test_battle_narrative_advisor_presentation_v2.mjs",
+      "purpose": "Snapshot-only WHAT/WHY/DECISIVE/CONSEQUENCE/FORTUNE explanation projection, canonical Decisive preservation, Advisor fail-open delivery, restore dedupe, and no context re-inference",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_battle_advisor_runtime_delivery.mjs",
+      "purpose": "Controller-independent Battle Advisor semantic-to-character-reaction delivery, intentional silence, hidden-truth sanitization, fail-open UI emission, and restore dedupe",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_battle_presentation_runtime_integration.mjs",
       "purpose": "Trial flow creates immutable Battle Resolution Snapshot before state commit and exposes it to presentation runtime without cross-battle contamination",
       "suite": "existing",
@@ -1444,6 +1505,54 @@
     {
       "path": "scratch/test_trial_phase28c_battle_resolution.mjs",
       "purpose": "trial phase28c battle resolution",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_trial_spatial_engagement_tactical_foundation.mjs",
+      "purpose": "Trial spatial engagement geometry, semantic human origins, tactic requirements and Battle Context projection",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_trial_interception_plan_candidate_foundation.mjs",
+      "purpose": "Interception plan semantic candidate separation, non-outcome intent and representative compaction foundation",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_trial_tactic_requirement_evaluator.mjs",
+      "purpose": "Pure TacticRequirement semantic eligibility with explicit per-axis reasons and no outcome scoring",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_trial_interception_plan_candidate_generator.mjs",
+      "purpose": "Semantic interception-plan generation from deployment origins and external maneuver proposals without pathfinding or tactic-success logic",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_trial_battle_coordinator_characterization.mjs",
+      "purpose": "Controller battle and Fortune observable contracts, exactly-once calls and runtime reference restoration",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_trial_engagement_origin_runtime_connection.mjs",
+      "purpose": "Production TrialController engagement-origin discovery, selection persistence, non-blocking fallback and BattleContext/action injection",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -1763,6 +1872,66 @@
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
       ]
+    },
+    {
+      "path": "scratch/test_investigation_presentation_polish.mjs",
+      "purpose": "Investigation report and narrative presentation clarity, localization, history, and presentation-only semantics",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_first_run_investigation_ui_execution.mjs",
+      "purpose": "FirstRun Investigation UI dedicated execution, source rejection, no duplicate report, and undeveloped-board diagnostic",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_first_run_stage1_completion.mjs",
+      "purpose": "FirstRun Stage1 Verse1 through Trial1, post-Trial settlement, Stage2 progression, and completion-boundary certification",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_farm_storage_v1.mjs",
+      "purpose": "Cultivation direct and chained expansion, replacement production, grain bonus, Zone exclusion and derived food/material storage",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_irrigation_choice_resource_preview.mjs",
+      "purpose": "Irrigation choice current balance, per-variant payment forecast, zero and insufficient resources, pure preview and board target handoff",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_world_discovery_foundation.mjs",
+      "purpose": "Inactive exploration world observation/report contracts, immutable Discovery history, common Offering requirement and legacy save roundtrip",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_world_observation_boundary.mjs",
+      "purpose": "Inactive world observation eligibility boundary and legacy THREAT source policy reuse",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_playtest_card_and_display_contract.mjs",
+      "purpose": "Offering freeze/fallback, Stage2 mixed land, Farm visual facts and combat-scale input regression",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_battle_narrative_result_ui_presenter.mjs",
+      "purpose": "Canonical Battle Narrative result explanation, Fortune roll absence and HTML escaping",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_stage1_mining_site_v1.mjs",
+      "purpose": "Mining Site source identity stale rollback, resolved discovery, shared UI target forwarding and production restore hardening",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_battle_fortune_check_result_adapter.mjs",
+      "purpose": "Shared CheckResult to Fortune boundary, missing numeric facts rejection and legacy compatibility",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_stage1_altar_v1.mjs",
+      "purpose": "Altar outer-vicinity eight-way placement, Stage construction limit, distance 3, dynamic capped mystic production, rollback and restore",
+      "suite": "supplemental"
     }
   ]
 }

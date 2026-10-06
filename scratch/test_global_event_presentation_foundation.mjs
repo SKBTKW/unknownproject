@@ -127,8 +127,8 @@ assert.equal(integration.reconcileActive(), null, "dismissed notice must not re-
 const restoredComponent = createComponentSpy();
 const restored = new GlobalEventPresentationRuntimeIntegration(ui, { component: restoredComponent });
 const restoredView = restored.reconcileActive();
-assert.equal(restoredView.eventId, "EVENT_DEMIHUMAN_TRACES");
-assert.equal(restoredComponent.shown.length, 1);
+assert.equal(restoredView, null, "dismissed notice must remain deduped after runtime restore");
+assert.equal(restoredComponent.shown.length, 0);
 
 const unknownComponent = createComponentSpy();
 const unknownManager = createManager();
@@ -143,11 +143,12 @@ assert.equal(unknownComponent.shown.length, 0);
 assert.equal(UILayoutConfig.globalEventPresentation.overlay.position, "fixed");
 assert.equal(UILayoutConfig.globalEventPresentation.overlay.zIndex, "910");
 assert.equal(UILayoutConfig.globalEventPresentation.overlay.alignItems, "center");
-assert.equal(UILayoutConfig.globalEventPresentation.overlay.justifyContent, "center");
+assert.equal(UILayoutConfig.globalEventPresentation.overlay.justifyContent, "flex-start");
 assert.equal(UILayoutConfig.globalEventPresentation.advisorOverlapSafeArea, "IMAGE_RIGHT_EDGE");
 
 const css = fs.readFileSync(new URL("../game/css/0_global_common/global_event_presentation.css", import.meta.url), "utf8");
 assert.match(css, /body\[data-global-event-presentation="open"\]/);
+assert.match(css, /linear-gradient\(90deg/);
 assert.doesNotMatch(css, /!important/);
 
 // The overlay is mounted on startup, before any event has been presented.

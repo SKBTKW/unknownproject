@@ -1,3 +1,4 @@
+import { replacesBaseTerrainProduction } from './special_block_domain.js';
 /* =============================================================
    game/src/core/land_production_contract.js
    Land production ownership boundary.
@@ -196,6 +197,7 @@ function isMultiAttributeProductionResolved(card) {
 }
 
 function resolveCellProductionBase(cell) {
+    if (replacesBaseTerrainProduction(cell)) return { status: LAND_PRODUCTION_STATUS.RESOLVED, scope: LAND_PRODUCTION_SCOPE.CELL, yields: { ...ZERO_LAND_YIELDS } };
     const production = cell?.production || null;
 
     if (production?.status === LAND_PRODUCTION_STATUS.UNRESOLVED) {

@@ -1,3 +1,6 @@
+import { readDiscoveredSocketResource, readSocketResourceIdentity, readSocketResourceYields } from '../core/socket_resource_read_model.js';
+import { hasCellPositiveProduction } from '../core/special_block_production.js';
+import { resolveStageId } from '../cards/card_stage_usage.js';
 /* =============================================================
    game/src/systems/special_block_service.js
    Board-owned targeting / creation boundary for Special Blocks.
@@ -40,6 +43,15 @@ function orthogonalNeighbors(r, c) {
     ];
 }
 
+function sourceNeighbors(r, c, neighborhood) {
+    if (neighborhood !== 'EIGHT_WAY') return orthogonalNeighbors(r, c);
+    const result = [];
+    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+        if (dr || dc) result.push({ r: r + dr, c: c + dc });
+    }
+    return result;
+}
+
 function sameResourceMap(left = {}, right = {}) {
     const keys = new Set([...Object.keys(left || {}), ...Object.keys(right || {})]);
     for (const key of keys) {
@@ -63,6 +75,8 @@ function createSpecialBlockEntity(definition, r, c, state, context = {}) {
         createdVerse: Number.isInteger(context.verse)
             ? context.verse
             : (Number.isInteger(state?.turn) ? state.turn : null),
+        ...(definition.placement?.maxCreationsPerStage
+            ? { createdStage: resolveStageId(state) } : {}),
         ...(context.paidCost
             ? { paidCost: Object.freeze({ ...context.paidCost }) }
             : {}),
@@ -204,13 +218,29 @@ export class SpecialBlockService {
         return this.resolveSourceGroup(target, definition).cells;
     }
 
-    _matchesIndependentSourceCell(definition, cell, { allowSpecialBlock = false } = {}) {
-        if (!cell?.placed || !cell.terrain || cell.isHQ) return false;
+    _matchesIndependentSourceCell(definition, cell, { allowSpecialBlock = false, position = cell } = {}) {
+        if (cell?.isHQ) return false;
+        if (definition?.placement?.sourcePositiveProductionResource) {
+            return hasCellPositiveProduction(this.state, cell, position,
+                definition.placement.sourcePositiveProductionResource, {
+                    excludedDefinitionIds: definition.placement.sourceExcludedDefinitionIds
+                });
+        }
+        if (cell?.specialBlock && definition?.placement?.sourceSpecialBlockTypes?.includes(cell.specialBlock.definitionId || cell.specialBlock.type)) {
+            return isSpecialBlockFunctional(cell);
+        }
+        if (!cell?.placed || !cell.terrain) return false;
         if (!allowSpecialBlock && cell.specialBlock) return false;
 
         const placement = definition?.placement || {};
         const sourceTerrainIds = placement.sourceTerrainIds || [];
         if (sourceTerrainIds.length > 0 && !sourceTerrainIds.includes(terrainId(cell))) return false;
+
+        const sourceResourceCategories = placement.sourceResourceCategories || [];
+        if (
+            sourceResourceCategories.length > 0
+            && !readDiscoveredSocketResource(cell, sourceResourceCategories)
+        ) return false;
 
         const sourceMinGL = Number(placement.sourceMinGL);
         if (Number.isFinite(sourceMinGL) && Number(cell.terrain?.gl) < sourceMinGL) return false;
@@ -235,7 +265,7 @@ export class SpecialBlockService {
             visited.add(key);
 
             const cell = this.getCell(current.r, current.c);
-            if (!this._matchesIndependentSourceCell(definition, cell)) continue;
+            if (!this._matchesIndependentSourceCell(definition, cell, { position: current })) continue;
 
             cells.push({ r: current.r, c: current.c, cell });
             for (const next of orthogonalNeighbors(current.r, current.c)) {
@@ -245,19 +275,72 @@ export class SpecialBlockService {
         return cells;
     }
 
+    _resourcePositiveYieldChannelCount(cell) {
+        const resource = cell?.socketResource;
+        if (!resource) return 0;
+        return Object.values(readSocketResourceYields(resource)).filter(value => value > 0).length;
+    }
+
+    _countDefinitionBoundToSource(definitionId, source) {
+        if (!definitionId || !source || !Array.isArray(this.state?.grid)) return 0;
+        let count = 0;
+        for (let r = 0; r < this.state.grid.length; r++) {
+            for (let c = 0; c < (this.state.grid[r]?.length || 0); c++) {
+                const cell = this.state.grid[r][c];
+                const entity = cell?.specialBlock;
+                if (!entity) continue;
+                if ((entity.definitionId || entity.type) !== definitionId) continue;
+                const profile = readSpecialBlockAdjacencyProfile(cell);
+                if (profile?.source?.r === source.r && profile?.source?.c === source.c) count++;
+            }
+        }
+        return count;
+    }
+
     _validateIndependentGenerationTarget(definition, target) {
-        const source = coords(target?.source);
-        const destination = coords(target?.destination || target?.target);
+        let source = coords(target?.source);
+        const destination = coords(target?.destination || target?.target || target);
+        if (destination && definition.placement?.mode === 'OVERLAY_OR_INDEPENDENT') {
+            const reference = this.findAdjacentCells(destination.r, destination.c)
+                .find(entry => this._matchesIndependentSourceCell(definition, entry.cell));
+            if (!reference) return { valid: false, reason: 'SOURCE_TERRAIN_REQUIRED' };
+            source = { r: reference.r, c: reference.c };
+        }
+        if (destination && definition.placement?.elevationInheritance === 'MAX_ADJACENT_SOURCE') {
+            const minimum = Math.max(1, Number(definition.placement.minConnectedSourceCells) || 1);
+            const qualified = this.findAdjacentCells(destination.r, destination.c)
+                .find(entry => this._matchesIndependentSourceCell(definition, entry.cell)
+                    && this._resolveIndependentSourceCluster(definition, entry).length >= minimum);
+            if (!qualified) return { valid: false, reason: 'SOURCE_CLUSTER_TOO_SMALL' };
+            source = { r: qualified.r, c: qualified.c };
+        }
         if (!source || !destination) return { valid: false, reason: 'SOURCE_AND_DESTINATION_REQUIRED' };
 
-        const sourceCell = this.getCell(source.r, source.c);
+        let sourceCell = this.getCell(source.r, source.c);
         const destinationCell = this.getCell(destination.r, destination.c);
-        if (!sourceCell?.placed || !sourceCell.terrain || sourceCell.isHQ) {
+        if ((!sourceCell?.placed || !sourceCell.terrain) && !this._matchesIndependentSourceCell(definition, sourceCell, { position: source }) || sourceCell?.isHQ) {
             return { valid: false, reason: 'SOURCE_TERRAIN_REQUIRED' };
         }
-        if (sourceCell.specialBlock) return { valid: false, reason: 'SOURCE_SPECIAL_BLOCK_OCCUPIED' };
-        if (!this._matchesIndependentSourceCell(definition, sourceCell)) {
+        if (sourceCell.specialBlock && !definition.placement?.sourcePositiveProductionResource && !definition.placement?.sourceSpecialBlockTypes?.includes(sourceCell.specialBlock.definitionId || sourceCell.specialBlock.type)) return { valid: false, reason: 'SOURCE_SPECIAL_BLOCK_OCCUPIED' };
+        if (!this._matchesIndependentSourceCell(definition, sourceCell, { position: source })) {
             return { valid: false, reason: 'SOURCE_TERRAIN_NOT_ALLOWED' };
+        }
+
+        if (definition.placement?.sourceResourceCategories && target.sourceResourceReference) {
+            const resource = readDiscoveredSocketResource(sourceCell, definition.placement.sourceResourceCategories);
+            const reference = target.sourceResourceReference;
+            if (reference.r !== source.r || reference.c !== source.c
+                || reference.resourceId !== readSocketResourceIdentity(resource)
+                || reference.category !== resource?.category) return { valid: false, reason: 'SOURCE_RESOURCE_STALE' };
+        }
+
+        const maxPerSource = Number(definition.placement?.maxPerSource);
+        if (
+            Number.isFinite(maxPerSource)
+            && maxPerSource >= 0
+            && this._countDefinitionBoundToSource(definition.id, source) >= Math.trunc(maxPerSource)
+        ) {
+            return { valid: false, reason: 'SOURCE_ALREADY_SERVICED' };
         }
 
         if (definition.placement?.requiresSourceIsolation === true) {
@@ -281,11 +364,28 @@ export class SpecialBlockService {
             return { valid: false, reason: 'SOURCE_CLUSTER_TOO_SMALL' };
         }
 
-        const orthogonallyAdjacent = Math.abs(source.r - destination.r) + Math.abs(source.c - destination.c) === 1;
-        if (!orthogonallyAdjacent) return { valid: false, reason: 'DESTINATION_NOT_ADJACENT' };
+        if (!sourceNeighbors(source.r, source.c, definition.placement?.sourceNeighborhood)
+            .some(point => point.r === destination.r && point.c === destination.c)) {
+            return { valid: false, reason: 'DESTINATION_NOT_ADJACENT' };
+        }
         if (!destinationCell) return { valid: false, reason: 'OUT_OF_BOUNDS' };
         if (destinationCell.placed || destinationCell.specialBlock) {
             return { valid: false, reason: 'DESTINATION_OCCUPIED' };
+        }
+        if (definition.placement?.destinationRegion === 'HQ_VICINITY'
+            && (destinationCell.isHQ || !this.isHQVicinity(destination.r, destination.c))) {
+            return { valid: false, reason: 'DESTINATION_REGION_NOT_ALLOWED' };
+        }
+
+        // Choose the maximum E before applying placement restrictions. A lower
+        // neighbor is never a fallback when the maximum makes placement illegal.
+        if (definition.placement?.elevationInheritance === 'MAX_ADJACENT_SOURCE') {
+            const reference = this.findAdjacentCells(destination.r, destination.c)
+                .filter(entry => this._matchesIndependentSourceCell(definition, entry.cell))
+                .sort((a, b) => Number(b.cell.terrain.e) - Number(a.cell.terrain.e)
+                    || a.r - b.r || a.c - b.c)[0];
+            source = { r: reference.r, c: reference.c };
+            sourceCell = reference.cell;
         }
 
         return {
@@ -348,7 +448,7 @@ export class SpecialBlockService {
     }
 
 
-    _validateAdjacencyAt(point, profile) {
+    _validateAdjacencyAt(point, profile, definition = null) {
         if (!point || !profile) return { valid: false, reason: 'ADJACENCY_PROFILE_UNAVAILABLE', reasons: ['ADJACENCY_PROFILE_UNAVAILABLE'] };
 
         const reasons = [];
@@ -376,7 +476,17 @@ export class SpecialBlockService {
             }
 
             if (neighbor.placed && neighbor.terrain) {
-                const terrainCheck = validateTerrainAgainstSpecialBlockAdjacency(neighbor.terrain, profile);
+                const isBoundSource = profile?.source?.r === entry.r && profile?.source?.c === entry.c;
+                const allowSourceTerrainAdjacency =
+                    isBoundSource && definition?.placement?.allowSourceTerrainAdjacency === true;
+                const terrainCheck = validateTerrainAgainstSpecialBlockAdjacency(
+                    neighbor.terrain,
+                    profile,
+                    {
+                        allowDesert: allowSourceTerrainAdjacency,
+                        allowMountain: allowSourceTerrainAdjacency
+                    }
+                );
                 reasons.push(...terrainCheck.reasons);
             }
         }
@@ -395,17 +505,80 @@ export class SpecialBlockService {
             : typeOrDefinition;
         if (!definition?.id) return { valid: false, reason: 'UNKNOWN_SPECIAL_BLOCK' };
 
-        const independent = definition.placement?.mode === 'INDEPENDENT_CELL_GENERATION';
+        const placement = definition.placement || {};
+        let stageCreations = 0;
+        const pointForDistance = coords(target?.destination || target?.target || target);
+        if (placement.maxCreationsPerStage || placement.minimumSameDefinitionDistance) {
+            for (let r = 0; r < (this.state?.grid?.length || 0); r++) {
+                for (let c = 0; c < (this.state.grid[r]?.length || 0); c++) {
+                    const entity = this.state.grid[r][c]?.specialBlock;
+                    if ((entity?.definitionId || entity?.type) !== definition.id) continue;
+                    if (entity.createdStage === resolveStageId(this.state)) stageCreations++;
+                    if (pointForDistance && Math.max(Math.abs(r - pointForDistance.r), Math.abs(c - pointForDistance.c))
+                        < Number(placement.minimumSameDefinitionDistance || 0)) {
+                        return { valid: false, reason: 'SAME_DEFINITION_TOO_CLOSE', definition };
+                    }
+                }
+            }
+            if (stageCreations >= Number(placement.maxCreationsPerStage ?? Infinity)) {
+                return { valid: false, reason: 'STAGE_CREATION_LIMIT', definition };
+            }
+        }
+
+        const dual = definition.placement?.mode === 'OVERLAY_OR_INDEPENDENT';
+        const point = coords(target?.destination || target?.target || target);
+
+        if (
+            definition.placement?.mode === 'INDEPENDENT_CELL_GENERATION'
+            && !coords(target?.source)
+            && point
+            && ['MAX_RESOURCE_BONUS_CHANNELS', 'FIRST_LEGAL_SOURCE'].includes(definition.placement?.sourceSelection)
+        ) {
+            const candidates = sourceNeighbors(point.r, point.c, definition.placement?.sourceNeighborhood)
+                .map(entry => ({ ...entry, cell: this.getCell(entry.r, entry.c) }))
+                .filter(entry => this._matchesIndependentSourceCell(definition, entry.cell, { position: entry }))
+                .sort((a, b) =>
+                    (definition.placement?.sourceSelection === 'MAX_RESOURCE_BONUS_CHANNELS'
+                        ? this._resourcePositiveYieldChannelCount(b.cell) - this._resourcePositiveYieldChannelCount(a.cell) : 0)
+                    || a.r - b.r
+                    || a.c - b.c
+                );
+
+            let firstFailure = null;
+            for (const candidate of candidates) {
+                const candidateValidation = this.validateTarget(
+                    definition,
+                    {
+                        source: { r: candidate.r, c: candidate.c },
+                        destination: point
+                    },
+                    context,
+                    options
+                );
+                if (candidateValidation.valid) return candidateValidation;
+                if (!firstFailure) firstFailure = candidateValidation;
+            }
+            return firstFailure || {
+                valid: false,
+                reason: 'SOURCE_TERRAIN_REQUIRED',
+                definition
+            };
+        }
+
+        const independent = definition.placement?.mode === 'INDEPENDENT_CELL_GENERATION'
+            || (dual && !this.getCell(point?.r, point?.c)?.placed);
         const structural = independent
             ? this._validateIndependentGenerationTarget(definition, target)
-            : this._validateOverlayTarget(definition, target, context, options);
+            : this._validateOverlayTarget(definition, target?.destination || target?.target || target, context, options);
         if (!structural.valid) return { ...structural, definition };
 
         const referenceCell = independent ? structural.sourceCell : structural.cell;
         const referencePoint = independent ? structural.source : structural.target;
         const placementPoint = independent ? structural.destination : structural.target;
-        const adjacencyProfile = createSpecialBlockAdjacencyProfile(referenceCell, referencePoint);
-        const adjacency = this._validateAdjacencyAt(placementPoint, adjacencyProfile);
+        const adjacencyProfile = referenceCell?.specialBlock
+            ? createSpecialBlockAdjacencyProfile({ terrain: { e: readSpecialBlockAdjacencyProfile(referenceCell)?.e } }, referencePoint, definition)
+            : createSpecialBlockAdjacencyProfile(referenceCell, referencePoint, definition);
+        const adjacency = this._validateAdjacencyAt(placementPoint, adjacencyProfile, definition);
         if (!adjacency.valid) {
             return {
                 ...structural,
@@ -418,6 +591,7 @@ export class SpecialBlockService {
         return {
             ...structural,
             adjacencyProfile,
+            independent,
             definition
         };
     }
@@ -429,10 +603,44 @@ export class SpecialBlockService {
         if (!definition?.id || !Array.isArray(this.state?.grid)) return [];
 
         const targets = [];
+        if (definition.placement?.mode === 'OVERLAY_OR_INDEPENDENT') {
+            for (let r = 0; r < this.state.grid.length; r++) {
+                for (let c = 0; c < this.state.grid[r].length; c++) {
+                    if (this.validateTarget(definition, { r, c }, context).valid) targets.push({ r, c });
+                }
+            }
+            return targets;
+        }
         if (definition.placement?.mode === 'INDEPENDENT_CELL_GENERATION') {
+            if (['MAX_RESOURCE_BONUS_CHANNELS', 'FIRST_LEGAL_SOURCE'].includes(definition.placement?.sourceSelection)) {
+                for (let r = 0; r < this.state.grid.length; r++) {
+                    for (let c = 0; c < (this.state.grid[r]?.length || 0); c++) {
+                        const destination = { r, c };
+                        const validation = this.validateTarget(
+                            definition,
+                            { destination },
+                            context
+                        );
+                        if (!validation.valid) continue;
+                        targets.push({
+                            r,
+                            c,
+                            source: { ...validation.source },
+                            destination: { ...validation.destination },
+                            ...(definition.placement?.sourceResourceCategories ? { sourceResourceReference: {
+                                ...validation.source,
+                                resourceId: readSocketResourceIdentity(validation.sourceCell.socketResource),
+                                category: validation.sourceCell.socketResource.category
+                            } } : {})
+                        });
+                    }
+                }
+                return targets;
+            }
+
             for (let r = 0; r < this.state.grid.length; r++) {
                 for (let c = 0; c < (this.state.grid[r]?.length || 0); c++) {
-                    for (const destination of orthogonalNeighbors(r, c)) {
+                    for (const destination of sourceNeighbors(r, c, definition.placement?.sourceNeighborhood)) {
                         const candidate = {
                             source: { r, c },
                             destination
@@ -440,8 +648,14 @@ export class SpecialBlockService {
                         const validation = this.validateTarget(definition, candidate, context);
                         if (validation.valid) {
                             if (Number(definition.placement?.minConnectedSourceCells) > 1) {
+                                if (definition.placement?.elevationInheritance === 'MAX_ADJACENT_SOURCE'
+                                    && targets.some(entry => entry.destination.r === destination.r
+                                        && entry.destination.c === destination.c)) continue;
                                 targets.push({
                                     ...candidate,
+                                    source: validation.source,
+                                    ...(definition.placement?.elevationInheritance === 'MAX_ADJACENT_SOURCE'
+                                        ? { r: destination.r, c: destination.c } : {}),
                                     sourceClusterSize: Array.isArray(validation.sourceCluster)
                                         ? validation.sourceCluster.length
                                         : null
@@ -558,10 +772,18 @@ export class SpecialBlockService {
             ? { ...adjacencyContext, paidCost: cost.resources }
             : adjacencyContext;
 
-        if (definition?.placement?.mode === 'INDEPENDENT_CELL_GENERATION') {
+        if (validation.independent === true) {
             const { r, c } = validation.destination;
             const cell = validation.destinationCell;
             const entity = createSpecialBlockEntity(definition, r, c, this.state, creationContext);
+            if (definition.placement?.sourceResourceCategories) {
+                const resource = readDiscoveredSocketResource(validation.sourceCell, definition.placement.sourceResourceCategories);
+                entity.sourceResourceReference = Object.freeze({
+                    ...validation.source,
+                    resourceId: readSocketResourceIdentity(resource),
+                    category: resource.category
+                });
+            }
             cell.specialBlock = entity;
 
             return {
@@ -600,6 +822,22 @@ export class SpecialBlockService {
             };
         }
         cell.specialBlock = entity;
+        if (definition.placement?.participatesInZones === false && cell.mergeGroupId) {
+            const groupId = cell.mergeGroupId;
+            for (const row of this.state.grid) for (const member of row) {
+                if (member.mergeGroupId === groupId) {
+                    member.mergeGroupId = null;
+                    member.mergeType = null;
+                    member.merged = false;
+                }
+            }
+            if (this.state.mergedBlocks) delete this.state.mergedBlocks[groupId];
+            if (this.state.mergeLinks instanceof Set) {
+                for (const key of this.state.mergeLinks) {
+                    if (String(key).split('::').includes(String(groupId))) this.state.mergeLinks.delete(key);
+                }
+            }
+        }
 
         return {
             success: true,

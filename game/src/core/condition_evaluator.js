@@ -1,3 +1,5 @@
+import { readDiscoveredSocketResource } from './socket_resource_read_model.js';
+import { hasRecordedDiscovery } from "../investigation/domain/world_discovery.js";
 /* =============================================================
    game/src/core/condition_evaluator.js
    ゲームルールの条件判定を処理する汎用Registry型評価エンジン (Pure & Unity Ready)
@@ -13,6 +15,7 @@ import { getCardStageUsage } from '../cards/card_stage_usage.js';
  * 🔍 条件判定ハンドラ Registry
  */
 const CONDITION_HANDLERS = {
+    DISCOVERY_RECORDED: (params, context) => hasRecordedDiscovery(context?.state?.discoveryLedger, params.discoveryId),
     // 🗺️ 指定地形のマス数判定
     TERRAIN_COUNT_AT_LEAST: (params, context) => {
         if (!context || !context.state) return false;
@@ -92,6 +95,26 @@ const CONDITION_HANDLERS = {
                         return true;
                     }
                 }
+            }
+        }
+        return false;
+    },
+
+    // 💎 指定した資源カテゴリ群のいずれかを盤面上に保持しているか
+    SOCKET_CATEGORY_ANY: (params, context) => {
+        if (!context || !context.state || !context.state.grid) return false;
+        const categories = new Set(
+            (Array.isArray(params?.categories) ? params.categories : [params?.category])
+                .filter(Boolean)
+        );
+        if (categories.size === 0) return false;
+
+        for (let r = 0; r < context.state.grid.length; r++) {
+            for (let c = 0; c < context.state.grid[r].length; c++) {
+                const cell = context.state.grid[r][c];
+                if (
+                    readDiscoveredSocketResource(cell, [...categories])
+                ) return true;
             }
         }
         return false;

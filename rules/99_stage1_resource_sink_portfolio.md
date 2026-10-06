@@ -1,3 +1,9 @@
+# 2026-10-03 FirstRun Trial1負担目標の更新
+
+現行正本は `99_first_run_trial1_minimum_resource_burden_v1.md`。
+以下の旧70–80%総獲得資源・平時投資込みの検討は履歴として保存する。
+現行は平時支出を算入せず、Trial配備時の🌾・🧱を各最低80%消費する暫定policy。
+
 # Stage1 Resource Sink Portfolio Audit
 
 > Status: Balance Audit / Non-Authority

@@ -17,30 +17,32 @@ console.log("\nFirstRun Trial1 relative deployment cost v1");
         defenseAvailable: 24,
         distance: 4
     });
-    assert.equal(Number(fullFar.toFixed(3)), 0.650);
+    assert.equal(Number(fullFar.toFixed(3)), 0.900);
 
     const halfFar = resolveFirstRunTrial1DeploymentBurdenShare({
         requestedDefense: 12,
         defenseAvailable: 24,
         distance: 4
     });
-    assert.equal(Number(halfFar.toFixed(3)), 0.475);
+    assert.equal(Number(halfFar.toFixed(3)), 0.860);
 
     const heavyFar = resolveFirstRunTrial1DeploymentBurdenShare({
         requestedDefense: 20,
         defenseAvailable: 24,
         distance: 4
     });
-    assert.equal(Number(heavyFar.toFixed(3)), 0.592);
+    assert.equal(Number(heavyFar.toFixed(3)), 0.887);
 
     assert.deepEqual(
         FIRST_RUN_TRIAL1_RELATIVE_DEPLOYMENT_POLICY_V1,
         {
-            baseShare: 0.20,
-            defenseShareWeight: 0.35,
-            distanceShareWeight: 0.10,
-            foodShareBonus: 0.08,
-            maxShare: 0.70,
+            baseShare: 0.80,
+            defenseShareWeight: 0.08,
+            distanceShareWeight: 0.02,
+            foodShareBonus: 0,
+            minimumFoodReserve: 35,
+            foodReserveShare: 0.10,
+            maxShare: 0.90,
             stage1MaxDistance: 4
         }
     );
@@ -62,11 +64,11 @@ console.log("\nFirstRun Trial1 relative deployment cost v1");
             interceptionCount: 1
         }
     });
-    assert.equal(cost.food, 73);
-    assert.equal(cost.material, 52);
+    assert.equal(cost.food, 90);
+    assert.equal(cost.material, 72);
     assert.equal(cost.breakdown.mode, "FIRST_RUN_TRIAL1_RELATIVE_V1");
-    assert.equal(Number(cost.breakdown.burdenShare.toFixed(2)), 0.65);
-    assert.equal(Number(cost.breakdown.foodShare.toFixed(2)), 0.73);
+    assert.equal(Number(cost.breakdown.burdenShare.toFixed(2)), 0.90);
+    assert.equal(Number(cost.breakdown.foodShare.toFixed(2)), 0.90);
 
     assert.equal(
         resolver({
@@ -86,6 +88,57 @@ console.log("\nFirstRun Trial1 relative deployment cost v1");
         null,
         "v1 must fail closed if FirstRun Trial1 ever becomes multi-front"
     );
+}
+
+// Reserve protection must not grant free deployment at low balances.
+{
+    for (const [food, expectedCost] of [[108, 97], [36, 32], [35, 31], [20, 18], [0, 0]]) {
+        const resolver = createFirstRunTrial1RelativeDeploymentCostResolver({
+            balanceProvider: () => ({ food, material: 80 }),
+            defenseBalanceProvider: () => 20
+        });
+        const cost = resolver({ requestedDefense: 20, distance: 4, context: { trialIndex: 1 } });
+        assert.equal(cost.food, expectedCost, `food balance ${food}`);
+        assert.ok(cost.food >= Math.ceil(food * 0.8));
+        if (food > 0) assert.ok(cost.food > 0);
+        assert.equal(cost.breakdown.nominalFoodCost - cost.breakdown.foodReserveDiscount, cost.food);
+    }
+}
+
+// Increasing the balance must never reduce the charge at reserve boundaries.
+{
+    let previousCost = 0;
+    for (let food = 0; food <= 150; food += 1) {
+        const resolver = createFirstRunTrial1RelativeDeploymentCostResolver({
+            balanceProvider: () => ({ food, material: 80 }),
+            defenseBalanceProvider: () => 20
+        });
+        const cost = resolver({ requestedDefense: 20, distance: 4, context: { trialIndex: 1 } });
+        assert.ok(cost.food >= previousCost, `cost must be monotonic at balance ${food}`);
+        assert.ok(cost.food <= food);
+        previousCost = cost.food;
+    }
+}
+
+// Sweep low balances, reserve boundaries, and expanded storage. Earlier spending
+// must not count toward the minimum: both live resource balances pay >=80%.
+{
+    for (const balance of [0, 1, 2, 5, 20, 35, 99, 100, 150, 170, 200, 350, 1000]) {
+        for (const fraction of [0.1, 0.5, 0.8, 1]) {
+            for (const distance of [0, 2, 4]) {
+                const resolver = createFirstRunTrial1RelativeDeploymentCostResolver({
+                    balanceProvider: () => ({ food: balance, material: balance }),
+                    defenseBalanceProvider: () => 100
+                });
+                const quote = resolver({ requestedDefense: fraction * 100, distance,
+                    context: { trialIndex: 1, interceptionCount: 1 } });
+                for (const amount of [quote.food, quote.material]) {
+                    assert.ok(amount >= Math.ceil(balance * 0.8));
+                    assert.ok(amount <= balance);
+                }
+            }
+        }
+    }
 }
 
 // Normal runs keep the previous product behavior: no deployment economy by default.

@@ -1,3 +1,4 @@
+import { excludesCellFromZones } from '../core/special_block_domain.js';
 /* =============================================================
    game/src/systems/grid_engine.js
    盤面初期化・ソケット配置・配置検証・マージ判定専用独立ドメインモジュール
@@ -910,7 +911,7 @@ class GridEngine {
     checkConnectionBonus(r, c, terrain) {
         if (!this.state || !this.state.grid) return;
         const currentCell = this.state.grid[r] && this.state.grid[r][c];
-        if (!currentCell || isWetlandTerrain(terrain) || isIrrigationSourceCell(currentCell)) {
+        if (!currentCell || excludesCellFromZones(currentCell) || isWetlandTerrain(terrain) || isIrrigationSourceCell(currentCell)) {
             return { connected: false };
         }
         const baseTerrainId = terrain.terrainId || terrain.id;
@@ -949,7 +950,7 @@ class GridEngine {
         const isMatch = (nr, nc) => {
             if (nr < 0 || nr >= this.state.grid.length || nc < 0 || nc >= this.state.grid.length) return false;
             const cell = this.state.grid[nr][nc];
-            if (!cell.placed || cell.isHQ || !cell.terrain) return false;
+            if (!cell.placed || cell.isHQ || !cell.terrain || excludesCellFromZones(cell)) return false;
             if (isWetlandTerrain(cell.terrain) || isIrrigationSourceCell(cell)) return false;
             
             if (currentCell.placementGroupId && cell.placementGroupId && currentCell.placementGroupId === cell.placementGroupId) {
@@ -1032,6 +1033,7 @@ class GridEngine {
                         && currPlaceId
                         && cell.placementGroupId === currPlaceId
                         && areTerrainsZoneCompatible(cell.terrain, currentCell.terrain)
+                        && !excludesCellFromZones(cell)
                         && !isWetlandTerrain(cell.terrain)
                         && !isIrrigationSourceCell(cell)) {
                         cell.mergeGroupId = targetGroupId;
@@ -1058,7 +1060,8 @@ class GridEngine {
                         if (cell
                             && cell.mergeGroupId
                             && oldGroupIds.has(cell.mergeGroupId)
-                            && !isWetlandTerrain(cell.terrain)
+                            && !excludesCellFromZones(cell)
+                        && !isWetlandTerrain(cell.terrain)
                             && !isIrrigationSourceCell(cell)) {
                             cell.mergeGroupId = targetGroupId;
                             cell.mergeType = is1x3 ? "1x3" : "1x2";
@@ -1136,6 +1139,7 @@ class GridEngine {
                 const cells = [c1, c2, c3, c4];
                 const allPlaced = cells.every(cell =>
                     cell.placed
+                    && !excludesCellFromZones(cell)
                     && !cell.isHQ
                     && !isWetlandTerrain(cell.terrain)
                     && (!cell.merged || cell.mergeType !== "2x2")

@@ -89,7 +89,7 @@ if (verse1Placement) {
 }
 
 const paidBoardInvestmentIds = new Set([
-    "CMD_LOGGING_CAMP", "CMD_GRANARY", "CMD_AGRICULTURAL_REFORM", "CMD_WETLAND_RECLAMATION"
+    "CMD_LOGGING_CAMP", "CMD_CULTIVATION", "CMD_AGRICULTURAL_REFORM", "CMD_WETLAND_RECLAMATION"
 ]);
 let paidBoardInvestments = 0;
 
@@ -160,7 +160,6 @@ check(
 );
 
 advanceTo(7);
-check(paidBoardInvestments > 0, "FirstRun Stage1 uses at least one paid Board Investment before Trial1");
 check(engine.state.turn === 7, "TurnLifecycle reaches Verse7 through nextTurn()");
 check(engine.state.investigationUnlocked === true, "Verse7 traces unlock Investigation through GE lifecycle");
 check(engine.state.investigationUnlockedAtVerse === 7, "Investigation unlock records Verse7");
@@ -213,6 +212,7 @@ if (investigationIndex >= 0) {
 advanceTo(10);
 check(engine.warningStateService?.getState?.() === WARNING_STATES.TENSE, "Warning timing advances to TENSE at Trial1 T-5");
 advanceTo(14);
+check(paidBoardInvestments > 0, "FirstRun Stage1 uses at least one paid Board Investment before Trial1");
 check(engine.warningStateService?.getState?.() === WARNING_STATES.IMMINENT, "Warning timing advances to IMMINENT at Trial1 T-1");
 
 const indexHtml = fs.readFileSync(new URL("../game/index.html", import.meta.url), "utf8");

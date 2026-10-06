@@ -475,7 +475,9 @@ const prototypeRows = evaluateSampleSet("PROTOTYPE", prototypeSamples);
 for (const rows of [productionRows, prototypeRows]) {
     assert.equal(
         rows.every(row =>
-            row.foodCost <= row.preTrialFood
+            row.foodCost >= Math.ceil(row.preTrialFood * 0.8)
+            && row.materialCost >= Math.ceil(row.preTrialMaterial * 0.8)
+            && row.foodCost <= row.preTrialFood
             && row.materialCost <= row.preTrialMaterial
             && row.foodAfter >= 0
             && row.materialAfter >= 0
@@ -488,18 +490,18 @@ for (const rows of [productionRows, prototypeRows]) {
 const productionHeavy = productionRows.filter(row => row.planId === "HEAVY_DEFENSE_FAR");
 assert.equal(
     productionHeavy.every(row =>
-        row.burdenShare >= 0.57
-        && row.burdenShare <= 0.60
+        row.burdenShare >= 0.88
+        && row.burdenShare <= 0.89
     ),
     true,
-    "80% defense far deployment uses the paid-Board portfolio's lower relative share"
+    "80% defense far deployment respects the minimum burden plus commitment modifiers"
 );
 
 const productionFull = productionRows.filter(row => row.planId === "ALL_DEFENSE_FAR");
 assert.equal(
-    productionFull.every(row => Number(row.burdenShare.toFixed(2)) === 0.65),
+    productionFull.every(row => Number(row.burdenShare.toFixed(2)) === 0.90),
     true,
-    "full-defense far deployment resolves to 65% of the Trial-entry stock"
+    "full-defense far deployment resolves to 90% of the Trial-entry stock"
 );
 assert.equal(
     productionFull.every(row =>

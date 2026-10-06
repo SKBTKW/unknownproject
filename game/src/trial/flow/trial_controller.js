@@ -8,6 +8,7 @@ import { EnemyForceDeploymentResolver } from "../systems/enemy_force_deployment_
 import { EnemyTacticResolver } from "../systems/enemy_tactic_resolver.js";
 import { EnemyTacticSelectionResolver } from "../systems/enemy_tactic_selection_resolver.js";
 import { TrialLifecycleReadService } from "../read/trial_lifecycle_read_service.js";
+import { HumanEngagementOriginResolver } from "../systems/human_engagement_origin_resolver.js";
 
 function resolveTerrainId(cell) {
     const terrain = cell?.terrain || cell || {};
@@ -25,7 +26,11 @@ function resolveForceProfile(route) {
 
 export class TrialController extends TrialControllerBase {
     constructor(options = {}) {
-        super(options);
+        super({
+            ...options,
+            engagementOriginResolver: options.engagementOriginResolver
+                || new HumanEngagementOriginResolver()
+        });
         this.hqResolutionService = options.hqResolutionService || new TrialHqResolutionService({
             damageResolver: this.damageResolver,
             powerResolver: this.powerResolver

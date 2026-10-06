@@ -101,12 +101,50 @@ console.log("\nFirstRun browser activation store contract");
         fakeUi,
         FIRST_RUN_TRIAL_TUTORIAL_EVENTS.CAUSALITY_OBSERVED
     );
-    assert.equal(completed.completed, true);
-    assert.equal(completionWrites, 1, "causality acknowledgement must persist FirstRun completion");
-    assert.deepEqual(fakeUi.lastFirstRunActivationPersistenceResult, {
-        success: true,
-        completed: true
+    assert.equal(completed.completed, true, "Trial tutorial may complete at causality acknowledgment");
+    assert.equal(
+        completionWrites,
+        0,
+        "Trial tutorial completion must not persist browser-wide FirstRun completion before Stage2"
+    );
+    assert.equal(
+        fakeUi.lastFirstRunActivationPersistenceResult,
+        undefined,
+        "Stage1 tutorial completion must remain separate from FirstRun run completion persistence"
+    );
+}
+
+{
+    let completionWrites = 0;
+    const fakeUi = {
+        engine: {
+            state: { stage: { id: 2 } },
+            firstRunState: {
+                active: true,
+                getTrialTutorialState() {
+                    return { completed: true };
+                }
+            },
+            firstRunActivationStore: {
+                markCompleted() {
+                    completionWrites += 1;
+                    return { success: true, completed: true };
+                }
+            }
+        }
+    };
+    const result = UIController.prototype.persistFirstRunCompletionAfterStageAdvance.call(fakeUi, {
+        transition: { stageAdvance: { status: "APPLIED" } }
     });
+    assert.equal(result.success, true);
+    assert.equal(result.persisted, true);
+    assert.equal(completionWrites, 1, "Stage2 application must persist FirstRun completion exactly at the completion boundary");
+
+    const repeated = UIController.prototype.persistFirstRunCompletionAfterStageAdvance.call(fakeUi, {
+        transition: { stageAdvance: { status: "APPLIED" } }
+    });
+    assert.equal(repeated.alreadyPersisted, true);
+    assert.equal(completionWrites, 1, "completion persistence must be idempotent within the active UI runtime");
 }
 
 {

@@ -38,4 +38,5 @@ export { InvestigationReportTextRenderer } from './presentation/investigation_re
 export { InvestigationNarrativeComposer } from './presentation/investigation_narrative_composer.js';
 export { InvestigationNarrativeTextRenderer } from './presentation/investigation_narrative_text_renderer.js';
 export { InvestigationHistoryPresenter } from './presentation/investigation_history_presenter.js';
+export { InvestigationResultPresentationBridge } from './presentation/investigation_result_presentation_bridge.js';
 export { INVESTIGATION_LOCALIZATION } from './presentation/investigation_localization_fragment.js';

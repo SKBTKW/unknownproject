@@ -61,6 +61,9 @@ export function attachBoardPresentationRuntime(uiController, {
             },
             selectTrialInterception: ({ cell }) => {
                 if (!cell) return false;
+                // A click on the visible route also confirms the route lesson.
+                // The controller still owns eligibility and tutorial transitions.
+                uiController.acknowledgeFirstRunTrialRoute?.();
                 return uiController.selectTrialInterceptionCell?.(cell.r, cell.c) ?? false;
             },
             hoverTrialInterception: ({ cell }) => {

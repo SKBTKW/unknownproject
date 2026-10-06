@@ -408,11 +408,12 @@ console.log('Board / Special Block / Defense v1 contract');
         terrain: { ...PLAINS, capabilities: [BOARD_CAPABILITIES.MYSTIC_SOURCE] },
         socketResource: {
             id: 'TEST_MYSTIC_SOCKET',
+            category: 'CAT_MYSTIC',
             capabilities: [BOARD_CAPABILITIES.MYSTIC_SOURCE],
             bonusMystic: 2
         }
     });
-    state.grid[0][2] = cell(0, 2, { placed: true, terrain: { ...PLAINS } });
+    state.grid[1][2] = cell(1, 2);
 
     const serializedCapabilities = serializeGameState(state);
     const restoredCapabilities = {};
@@ -424,10 +425,12 @@ console.log('Board / Special Block / Defense v1 contract');
         'terrain/socket capability survives save/restore'
     );
 
-    const altar = service.createSpecialBlock(SPECIAL_BLOCK_TYPES.ALTAR, { r: 0, c: 2 });
+    const altar = service.createSpecialBlock(SPECIAL_BLOCK_TYPES.ALTAR, { r: 1, c: 2 }, {
+        paymentConfirmed: true, paidCost: { food: 10, wood: 30 }
+    });
     assert.equal(altar.success, true);
     assert.equal(
-        service.readCapabilities({ r: 0, c: 2 }).has(BOARD_CAPABILITIES.MYSTIC_SOURCE),
+        service.readCapabilities({ r: 1, c: 2 }).has(BOARD_CAPABILITIES.MYSTIC_SOURCE),
         false,
         'ALTAR never becomes its own MYSTIC_SOURCE'
     );
@@ -435,7 +438,7 @@ console.log('Board / Special Block / Defense v1 contract');
 
 {
     const farm = getSpecialBlockDefinition(SPECIAL_BLOCK_TYPES.FARM);
-    assert.equal(farm.baseTerrainInteraction.kind, BASE_TERRAIN_INTERACTIONS.INDEPENDENT);
+    assert.equal(farm.baseTerrainInteraction.kind, BASE_TERRAIN_INTERACTIONS.TERRAIN_USING_OVERLAY);
     assert.deepEqual(farm.placement.sourceTerrainIds, ['GL1_PLAINS']);
 }
 
@@ -452,8 +455,7 @@ console.log('Board / Special Block / Defense v1 contract');
     const farmTargets = service.enumerateLegalTargets(SPECIAL_BLOCK_TYPES.FARM);
     assert.ok(
         farmTargets.some(entry =>
-            entry.source.r === 1 && entry.source.c === 1
-            && entry.destination.r === 1 && entry.destination.c === 2
+            entry.r === 1 && entry.c === 2
         ),
         'isolated 1x1 plains exposes adjacent empty FARM destination'
     );
@@ -467,7 +469,7 @@ console.log('Board / Special Block / Defense v1 contract');
     const farmCreated = service.createSpecialBlock(SPECIAL_BLOCK_TYPES.FARM, {
         source: { r: 1, c: 1 },
         destination: { r: 1, c: 2 }
-    });
+    }, { paymentConfirmed: true, paidCost: { wood: 30 } });
     assert.equal(farmCreated.success, true);
     assert.equal(farmCreated.specialOnly, true);
     assert.equal(state.grid[1][2].placed, false, 'FARM does not become base terrain');
@@ -501,8 +503,8 @@ console.log('Board / Special Block / Defense v1 contract');
     );
     assert.deepEqual(
         semanticService.getDisplayProduction(state, farmView),
-        { food: 0, wood: 0, defense: 0, mystic: 0, primaryYield: null },
-        'unresolved FARM production stays neutral in presentation'
+        { food: 6, wood: 0, defense: 0, mystic: 0, primaryYield: { resource: 'food', amount: 6 } },
+        'resolved FARM production is displayed'
     );
 
     const serializedFarm = serializeGameState(state);
@@ -586,9 +588,9 @@ console.log('Board / Special Block / Defense v1 contract');
         service.validateTarget(SPECIAL_BLOCK_TYPES.FARM, {
             source: { r: 1, c: 1 },
             destination: { r: 0, c: 1 }
-        }).reason,
-        'SOURCE_TERRAIN_NOT_ISOLATED',
-        'connected 1x2+ plains cannot be a FARM source'
+        }).valid,
+        true,
+        'connected plains can be a FARM source'
     );
 }
 
@@ -782,19 +784,40 @@ console.log('Board / Special Block / Defense v1 contract');
     state.grid[0][0] = cell(0, 0, {
         placed: true,
         placementGroupId: 'mine-prod',
-        terrain: { ...HILL }
+        terrain: { ...HILL },
+        searched: true,
+        hasSocket: true,
+        socketResource: {
+            id: 'SOCKET_GRANITE',
+            category: 'CAT_STONE',
+            bonusFood: 0,
+            bonusWood: 2,
+            bonusDefense: 1,
+            bonusMystic: 0
+        }
     });
     const service = new SpecialBlockService(state);
-    const created = service.createSpecialBlock(SPECIAL_BLOCK_TYPES.MINE, { r: 0, c: 0 });
+    const created = service.createSpecialBlock(
+        SPECIAL_BLOCK_TYPES.MINE,
+        {
+            source: { r: 0, c: 0 },
+            destination: { r: 0, c: 1 }
+        },
+        {
+            paymentConfirmed: true,
+            paidCost: { food: 20, wood: 30 }
+        }
+    );
     assert.equal(created.success, true);
+    assert.equal(created.specialOnly, true);
+    assert.deepEqual(created.source, { r: 0, c: 0 });
     const production = sumSpecialBlockProduction(state);
     assert.deepEqual(
         production.yields,
-        { food: 0, wood: 0, defense: 0, mystic: 0 },
-        'unresolved Special Block production never invents numeric output'
+        { food: 0, wood: 1, defense: 1, mystic: 0 },
+        'Mining Site adds +1 only to positive yield channels from the linked stone/mineral resource'
     );
-    assert.equal(production.unresolved.length, 1);
-    assert.equal(production.unresolved[0].type, SPECIAL_BLOCK_TYPES.MINE);
+    assert.equal(production.unresolved.length, 0);
 }
 
 {
@@ -1129,7 +1152,7 @@ console.log('Board / Special Block / Defense v1 contract');
     assert.equal(logging.placement.sourceMinGL, 2);
     assert.equal(logging.placement.minConnectedSourceCells, 2);
     assert.equal(logging.production.kind, 'RELATION_COUNT');
-    assert.equal(logging.production.relationDefinitionId, SPECIAL_BLOCK_TYPES.LOGGING_CAMP);
+    assert.equal(logging.production.relationMinGL, 2);
     assert.equal(logging.production.relationNeighborhood, 'ORTHOGONAL');
     assert.equal(Object.isFrozen(logging.production), true);
     assert.equal(Object.isFrozen(logging.lifecycle), true);

@@ -38,10 +38,10 @@ const expected23 = [
     { id: "CMD_PASTORAL_FARM", stage: 1, rarity: "UC" },
     { id: "CMD_ABANDONED_SETTLEMENT", stage: 1, rarity: "UC" },
     { id: "CMD_EMERGENCY_LEVY", stage: 1, rarity: "C" },
+    { id: "CMD_MINE", stage: 1, rarity: "UC" },
     // Stage 2
     { id: "CMD_SAWMILL", stage: 2, rarity: "R" },
     { id: "CMD_QUARRY", stage: 2, rarity: "UC" },
-    { id: "CMD_MINE", stage: 2, rarity: "R" },
     { id: "CMD_STABLE", stage: 2, rarity: "R" },
     { id: "CMD_LIME_KILN", stage: 2, rarity: "UC" },
     { id: "CMD_MARKET", stage: 2, rarity: "R" },

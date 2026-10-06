@@ -1453,6 +1453,7 @@ function makeGrid(rows, cols) {
         commandCardRequiresTarget() { return true; },
         hideCellTooltip() {},
         isCommandExecutionTarget(_card, r, c) { return r === 2 && c === 3; },
+        getCommandCardExecutionTargets() { return [{ r: 2, c: 3 }]; },
         playCommandCard(card, idx, target) {
             played.push({ card, idx, target });
             return { success: true };
@@ -1576,7 +1577,13 @@ function makeGrid(rows, cols) {
 
     assert.equal(
         resolveDomainActionMigrationBlocker("CMD_MINE"),
-        DOMAIN_ACTION_MIGRATION_BLOCKER.SPECIAL_BLOCK_SEMANTIC_MISMATCH
+        null,
+        "Mining Site leaves the unresolved migration set once Special Block semantics are canonical"
+    );
+    assert.equal(
+        DOMAIN_ACTION_REQUIRED_IDS.includes("CMD_MINE"),
+        false,
+        "Mining Site declarative Domain Action must not remain in legacy migration inventory"
     );
     assert.equal(
         resolveDomainActionMigrationBlocker("CMD_GREAT_RAMPART_PROJECT"),

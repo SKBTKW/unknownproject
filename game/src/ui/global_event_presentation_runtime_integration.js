@@ -22,6 +22,9 @@ export class GlobalEventPresentationRuntimeIntegration {
         this.readModel = readModel;
         this.presentationHook = presentationHook || null;
         this.state = new GlobalEventPresentationRuntimeState();
+        if (uiController?.globalEventPresentationRuntimeStateSnapshot) {
+            this.state.restore(uiController.globalEventPresentationRuntimeStateSnapshot);
+        }
         this.component = component || (typeof document !== "undefined"
             ? new GlobalEventPresentationComponent({
                 i18n: I18n,
@@ -50,22 +53,34 @@ export class GlobalEventPresentationRuntimeIntegration {
             ...presentation,
             actions: Object.freeze([Object.freeze({
                 id: "CONFIRM",
-                labelKey: "UI_CONFIRM",
+                labelKey: "UI_GLOBAL_EVENT_CONFIRM",
                 primary: true
             })])
         });
         this.state.open(key);
+        this.persistRuntimeState();
         this.component?.show?.(view);
         this.component?.setInteractionLocked?.(true);
 
-        const hookOwnsInput = this.presentationHook?.onPresented?.(view, this, Object.freeze({ source })) === true;
+        let hookOwnsInput = false;
+        try {
+            hookOwnsInput = this.presentationHook?.onPresented?.(view, this, Object.freeze({ source })) === true;
+        } catch {
+            hookOwnsInput = false;
+        }
         if (!hookOwnsInput) this.releaseInteractionLock();
         return view;
+    }
+
+    persistRuntimeState() {
+        if (this.ui) this.ui.globalEventPresentationRuntimeStateSnapshot = this.state.snapshot();
+        return this.state.snapshot();
     }
 
     releaseInteractionLock() {
         this.state.setAdvisorActive(false);
         this.state.setInteractionLocked(false);
+        this.persistRuntimeState();
         this.component?.setInteractionLocked?.(false);
         return true;
     }
@@ -73,8 +88,10 @@ export class GlobalEventPresentationRuntimeIntegration {
     handleAction(actionId) {
         if (actionId !== "CONFIRM" || !this.state.isOpen() || this.state.isInteractionLocked()) return false;
         this.state.beginResolution();
+        this.persistRuntimeState();
         this.component?.hide?.();
         this.state.close();
+        this.persistRuntimeState();
         return true;
     }
 
@@ -83,7 +100,9 @@ export class GlobalEventPresentationRuntimeIntegration {
     }
 
     setAdvisorActive(active) {
-        return this.state.setAdvisorActive(active);
+        const result = this.state.setAdvisorActive(active);
+        this.persistRuntimeState();
+        return result;
     }
 
     reconcileActive() {
@@ -106,7 +125,7 @@ export class GlobalEventPresentationRuntimeIntegration {
         this.bridge?.detach?.();
         this.presentationHook?.destroy?.(this);
         this.component?.destroy?.();
-        this.state.close();
+        this.persistRuntimeState();
     }
 }
 

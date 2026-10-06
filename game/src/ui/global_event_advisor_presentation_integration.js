@@ -3,14 +3,27 @@ import { ADVISOR_EVENTS } from "./advisor/advisor_dialogue_database.js";
 
 const DEMIHUMAN_TRACES_EVENT_ID = "EVENT_DEMIHUMAN_TRACES";
 const FIRST_RUN_BACKGROUND_SCENE_KEY = "GLOBAL_EVENT_DEMIHUMAN_TRACES_ADVISOR_BACKGROUND";
+const ADVISOR_PRESENTATION_FAILSAFE_MS = 7000;
+const defaultSetTimer = (callback, delay) => setTimeout(callback, delay);
+const defaultClearTimer = timerId => clearTimeout(timerId);
 
 export class GlobalEventAdvisorPresentationIntegration {
-    constructor(uiController) {
+    constructor(uiController, {
+        setTimer = defaultSetTimer,
+        clearTimer = defaultClearTimer,
+        failSafeMs = ADVISOR_PRESENTATION_FAILSAFE_MS
+    } = {}) {
         this.ui = uiController || null;
         this.engine = uiController?.engine || null;
         this.unsubscribeAdvisorDialogue = null;
         this.activeAdvisorSpeechEvent = null;
         this.runtime = null;
+        this.setTimer = setTimer;
+        this.clearTimer = clearTimer;
+        this.failSafeMs = Number.isFinite(failSafeMs) && failSafeMs > 0
+            ? failSafeMs
+            : ADVISOR_PRESENTATION_FAILSAFE_MS;
+        this.failSafeTimer = null;
     }
 
     onPresented(presentation, runtime, { source = "LIFECYCLE" } = {}) {
@@ -77,6 +90,7 @@ export class GlobalEventAdvisorPresentationIntegration {
                 this.releaseRuntimeLock();
                 return false;
             }
+            if (this.runtime === runtime) this.armFailSafe(runtime);
             return true;
         } catch {
             this.releaseRuntimeLock();
@@ -84,7 +98,22 @@ export class GlobalEventAdvisorPresentationIntegration {
         }
     }
 
+    armFailSafe(runtime) {
+        this.clearFailSafe();
+        this.failSafeTimer = this.setTimer(() => {
+            this.failSafeTimer = null;
+            if (this.runtime === runtime) this.releaseRuntimeLock();
+        }, this.failSafeMs);
+        return true;
+    }
+
+    clearFailSafe() {
+        if (this.failSafeTimer !== null) this.clearTimer(this.failSafeTimer);
+        this.failSafeTimer = null;
+    }
+
     releaseRuntimeLock() {
+        this.clearFailSafe();
         this.detachDialogueSubscription();
         this.activeAdvisorSpeechEvent = null;
         this.runtime?.releaseInteractionLock?.();
@@ -98,6 +127,7 @@ export class GlobalEventAdvisorPresentationIntegration {
     }
 
     destroy(runtime = null) {
+        this.clearFailSafe();
         this.detachDialogueSubscription();
         this.activeAdvisorSpeechEvent = null;
         if (runtime && this.runtime === runtime) this.runtime = null;

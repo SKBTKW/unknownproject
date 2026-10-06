@@ -17,14 +17,18 @@ const LEVY = { id: "CMD_EMERGENCY_LEVY", category: "COMMAND" };
 const VIGILANCE = { id: "CMD_VIGILANCE", category: "COMMAND" };
 const REKINDLE = { id: "CMD_REKINDLE_EMBER", category: "MYSTIC" };
 const BLOCKED = { id: "CMD_GRANARY", category: "COMMAND" };
+const MINING_SITE = { id: "CMD_MINE", category: "COMMAND" };
 
 assert.deepEqual([...CARD_RUNTIME_ACTIVE_CATEGORIES], ["LAND", "INVESTIGATION"]);
 assert.deepEqual([...CARD_RUNTIME_DEFAULT_ACTIVE_CARD_IDS], [
     "CMD_WETLAND_RECLAMATION",
     "CMD_LOGGING_CAMP",
+    "CMD_CULTIVATION",
+    "CMD_MINE",
     "CMD_GRANARY",
     "CMD_AGRICULTURAL_REFORM",
-    "CMD_FESTIVAL"
+    "CMD_FESTIVAL",
+    "CMD_ALTAR"
 ]);
 
 assert.equal(isCardRuntimeActive(LAND), true);
@@ -33,6 +37,7 @@ assert.equal(isCardRuntimeActive(LEVY), false);
 assert.equal(isCardRuntimeActive(VIGILANCE), false);
 assert.equal(isCardRuntimeActive(REKINDLE), false);
 assert.equal(isCardRuntimeActive(BLOCKED), true, "completed Board Investment IDs are active without category reactivation");
+assert.equal(isCardRuntimeActive(MINING_SITE), true, "Stage1 Mining Site is an explicitly active Board Investment ID");
 
 const explicit = {
     activeCardIds: [

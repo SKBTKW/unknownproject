@@ -241,6 +241,7 @@ export const ECONOMY_CARDS_MASTER = [
   },
   {
     "id": "CMD_GRANARY",
+    "offeringDisabled": true,
     "category": "COMMAND",
     "nameKey": "CMD_GRANARY_NAME",
     "descriptionKey": "CMD_GRANARY_DESC",
@@ -431,24 +432,41 @@ export const ECONOMY_CARDS_MASTER = [
     "category": "COMMAND",
     "nameKey": "CMD_MINE_NAME",
     "descriptionKey": "CMD_MINE_DESC",
-    "cost": {
-      "wood": 25
-    },
+    "cost": {},
     "tags": [
-      "HILL",
-      "MOUNTAIN",
-      "ORE",
-      "MATERIAL",
-      "MYSTIC",
+      "STONE",
+      "MINERAL",
+      "RESOURCE",
       "EXTRACTION",
+      "INDUSTRY",
       "SPECIAL_BLOCK"
     ],
-    "reqOreSocket": true,
-    "reqWood": 25,
-    "minStage": 2,
-    "rarity": "R",
-    "weight": 0.2,
-    "cyclePolicy": "RARITY"
+    "minStage": 1,
+    "rarity": "UC",
+    "weight": 0.25,
+    "cyclePolicy": "RARITY",
+    "offering": {
+      "requirements": [
+        {
+          "type": "SOCKET_CATEGORY_ANY",
+          "categories": [
+            "CAT_STONE",
+            "CAT_STRATEGIC_MINERAL",
+            "CAT_PRECIOUS_METAL",
+            "CAT_SPECIAL_MINERAL"
+          ]
+        }
+      ]
+    },
+    "effects": [
+      {
+        "type": "DOMAIN_ACTION",
+        "action": "CREATE_SPECIAL_BLOCK",
+        "blockType": "MINE",
+        "paymentMode": "DOMAIN_QUOTE",
+        "logActivation": true
+      }
+    ]
   },
   {
     "id": "CMD_STABLE",
@@ -721,7 +739,75 @@ export const ECONOMY_CARDS_MASTER = [
     "rarity": "UR",
     "weight": 0.1,
     "cyclePolicy": "UNIQUE"
-  }
+  },
+{
+  "id": "CMD_CULTIVATION",
+  "category": "COMMAND",
+  "nameKey": "CMD_CULTIVATION_NAME",
+  "descriptionKey": "CMD_CULTIVATION_DESC",
+  "cost": {},
+  "tags": [
+    "PLAINS",
+    "FOOD",
+    "AGRICULTURE",
+    "SPECIAL_BLOCK"
+  ],
+  "minStage": 1,
+  "rarity": "C",
+  "weight": 0.25,
+  "cyclePolicy": "RARITY",
+  "effects": [
+    {
+      "type": "DOMAIN_ACTION",
+      "action": "CREATE_SPECIAL_BLOCK",
+      "blockType": "FARM",
+      "paymentMode": "DOMAIN_QUOTE",
+      "logActivation": true
+    }
+  ]
+},
+{
+  "id": "CMD_ALTAR",
+  "category": "COMMAND",
+  "nameKey": "CMD_ALTAR_NAME",
+  "descriptionKey": "CMD_ALTAR_DESC",
+  "cost": {},
+  "tags": [
+    "MYSTIC",
+    "SPECIAL_BLOCK",
+    "BOARD_INVESTMENT"
+  ],
+  "minStage": 1,
+  "rarity": "UC",
+  "weight": 0.25,
+  "cyclePolicy": "RARITY",
+  "maxUsesPerStage": 1,
+  "offering": {
+    "requirements": [
+      {
+        "type": "CARD_STAGE_USAGE_BELOW",
+        "maxUses": 1
+      }
+    ]
+  },
+  "execution": {
+    "requirements": [
+      {
+        "type": "CARD_STAGE_USAGE_BELOW",
+        "maxUses": 1
+      }
+    ]
+  },
+  "effects": [
+    {
+      "type": "DOMAIN_ACTION",
+      "action": "CREATE_SPECIAL_BLOCK",
+      "blockType": "ALTAR",
+      "paymentMode": "DOMAIN_QUOTE",
+      "logActivation": true
+    }
+  ]
+}
 ];
 
 export const MILITARY_CARDS_MASTER = [
@@ -1604,6 +1690,7 @@ export const COMMAND_CARDS_MASTER = [
   },
   {
     "id": "CMD_GRANARY",
+    "offeringDisabled": true,
     "category": "COMMAND",
     "nameKey": "CMD_GRANARY_NAME",
     "descriptionKey": "CMD_GRANARY_DESC",
@@ -1794,24 +1881,41 @@ export const COMMAND_CARDS_MASTER = [
     "category": "COMMAND",
     "nameKey": "CMD_MINE_NAME",
     "descriptionKey": "CMD_MINE_DESC",
-    "cost": {
-      "wood": 25
-    },
+    "cost": {},
     "tags": [
-      "HILL",
-      "MOUNTAIN",
-      "ORE",
-      "MATERIAL",
-      "MYSTIC",
+      "STONE",
+      "MINERAL",
+      "RESOURCE",
       "EXTRACTION",
+      "INDUSTRY",
       "SPECIAL_BLOCK"
     ],
-    "reqOreSocket": true,
-    "reqWood": 25,
-    "minStage": 2,
-    "rarity": "R",
-    "weight": 0.2,
-    "cyclePolicy": "RARITY"
+    "minStage": 1,
+    "rarity": "UC",
+    "weight": 0.25,
+    "cyclePolicy": "RARITY",
+    "offering": {
+      "requirements": [
+        {
+          "type": "SOCKET_CATEGORY_ANY",
+          "categories": [
+            "CAT_STONE",
+            "CAT_STRATEGIC_MINERAL",
+            "CAT_PRECIOUS_METAL",
+            "CAT_SPECIAL_MINERAL"
+          ]
+        }
+      ]
+    },
+    "effects": [
+      {
+        "type": "DOMAIN_ACTION",
+        "action": "CREATE_SPECIAL_BLOCK",
+        "blockType": "MINE",
+        "paymentMode": "DOMAIN_QUOTE",
+        "logActivation": true
+      }
+    ]
   },
   {
     "id": "CMD_STABLE",
@@ -2711,7 +2815,75 @@ export const COMMAND_CARDS_MASTER = [
     "minStage": 3,
     "rarity": "UR",
     "weight": 0.1
-  }
+  },
+{
+  "id": "CMD_CULTIVATION",
+  "category": "COMMAND",
+  "nameKey": "CMD_CULTIVATION_NAME",
+  "descriptionKey": "CMD_CULTIVATION_DESC",
+  "cost": {},
+  "tags": [
+    "PLAINS",
+    "FOOD",
+    "AGRICULTURE",
+    "SPECIAL_BLOCK"
+  ],
+  "minStage": 1,
+  "rarity": "C",
+  "weight": 0.25,
+  "cyclePolicy": "RARITY",
+  "effects": [
+    {
+      "type": "DOMAIN_ACTION",
+      "action": "CREATE_SPECIAL_BLOCK",
+      "blockType": "FARM",
+      "paymentMode": "DOMAIN_QUOTE",
+      "logActivation": true
+    }
+  ]
+},
+{
+  "id": "CMD_ALTAR",
+  "category": "COMMAND",
+  "nameKey": "CMD_ALTAR_NAME",
+  "descriptionKey": "CMD_ALTAR_DESC",
+  "cost": {},
+  "tags": [
+    "MYSTIC",
+    "SPECIAL_BLOCK",
+    "BOARD_INVESTMENT"
+  ],
+  "minStage": 1,
+  "rarity": "UC",
+  "weight": 0.25,
+  "cyclePolicy": "RARITY",
+  "maxUsesPerStage": 1,
+  "offering": {
+    "requirements": [
+      {
+        "type": "CARD_STAGE_USAGE_BELOW",
+        "maxUses": 1
+      }
+    ]
+  },
+  "execution": {
+    "requirements": [
+      {
+        "type": "CARD_STAGE_USAGE_BELOW",
+        "maxUses": 1
+      }
+    ]
+  },
+  "effects": [
+    {
+      "type": "DOMAIN_ACTION",
+      "action": "CREATE_SPECIAL_BLOCK",
+      "blockType": "ALTAR",
+      "paymentMode": "DOMAIN_QUOTE",
+      "logActivation": true
+    }
+  ]
+}
 ];
 
 if (typeof window !== "undefined") {

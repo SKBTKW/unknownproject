@@ -1,3 +1,4 @@
+import { enforceResourceStorage } from './resource_storage_policy.js';
 import { GAME_FACT_TYPES, GameFactHub } from './game_fact.js';
 import { HistorySnapshotService } from './history_snapshot_service.js';
 import { RunTerminationService } from './run_termination_service.js';
@@ -44,6 +45,14 @@ export class TurnLifecycleService {
             gameFactHub: this.gameFactHub,
             transitionResolver: enemyStateTransitionResolver
         });
+        // Seed newly owned Truth from the already resolved initial Threat.
+        // Later transitions remain driven by committed development changes.
+        // Injected/restored Truth services retain their existing state.
+        if (!engine.trueEnemyStateService) {
+            this.trueEnemyStateService.applyThreatUpdate({
+                currentThreatState: this.threatStateService.getReadModel().current
+            });
+        }
         this.engine.trueEnemyStateService = this.trueEnemyStateService;
         this.engine.enemyTruthReadModel = engine.enemyTruthReadModel || new EnemyTruthReadModel(this.trueEnemyStateService);
         this.historySnapshotService = engine.historySnapshotService || new HistorySnapshotService(engine);
@@ -107,8 +116,12 @@ export class TurnLifecycleService {
         if (state && typeof state.processTurnEndMaintenance === "function") {
             engine.lastTurnMaintenanceResult = state.processTurnEndMaintenance({ ...maintenancePreview, fallbackPlan });
         }
+        engine.lastResourceStorageResult = enforceResourceStorage(state);
         const runTermination = engine.runTerminationService?.evaluate?.({ source: "VERSE_COMMIT" }) || null;
-        if (engine.globalEventManager && !runTermination?.terminated) engine.globalEventManager.tickTurn();
+        if (engine.globalEventManager && !runTermination?.terminated) {
+            engine.globalEventManager.tickTurn();
+            enforceResourceStorage(state);
+        }
         return Object.freeze({ completedTurn, nextTurn: completedTurn + 1, runTermination });
     }
 

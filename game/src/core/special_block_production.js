@@ -1,3 +1,4 @@
+import { readDiscoveredSocketResource, readSocketResourceIdentity, readSocketResourceYields } from './socket_resource_read_model.js';
 /* =============================================================
    game/src/core/special_block_production.js
    Minimal production policy boundary for Special Blocks.
@@ -10,6 +11,7 @@ import {
     readCellCapabilities
 } from './special_block_domain.js';
 import { resolveSpecialBlockDamageEffect } from './board_damage_effect_policy.js';
+import { resolveCellProductionBase, resolvePlacedBlockProduction } from './land_production_contract.js';
 
 export const SPECIAL_BLOCK_PRODUCTION_STATUS = Object.freeze({
     RESOLVED: 'RESOLVED',
@@ -21,7 +23,8 @@ export const SPECIAL_BLOCK_PRODUCTION_KINDS = Object.freeze({
     FIXED: 'FIXED',
     SOURCE_SIZE: 'SOURCE_SIZE',
     CONDITIONAL: 'CONDITIONAL',
-    RELATION_COUNT: 'RELATION_COUNT'
+    RELATION_COUNT: 'RELATION_COUNT',
+    SOURCE_RESOURCE_BONUS: 'SOURCE_RESOURCE_BONUS'
 });
 
 export const SPECIAL_BLOCK_RELATION_NEIGHBORHOODS = Object.freeze({
@@ -134,7 +137,11 @@ export class SpecialBlockProductionResolver {
             && production.relationDefinitionId
             ? production.relationDefinitionId
             : null;
-        if (!relationCapability && !relationDefinitionId) return null;
+        const relationTerrainIds = production?.relationTerrainIds;
+        const hasTerrainRelation = Array.isArray(relationTerrainIds) && relationTerrainIds.length > 0;
+        const relationResourceCategory = production?.relationResourceCategory;
+        const relationProductionResource = production?.relationPositiveProductionResource;
+        if (!relationCapability && !relationDefinitionId && !hasTerrainRelation && !relationResourceCategory && !relationProductionResource) return null;
         if (!isValidYieldMap(production?.perRelationYields)) return null;
 
         const offsets = relationOffsets(production.relationNeighborhood);
@@ -144,6 +151,29 @@ export class SpecialBlockProductionResolver {
         for (const [dr, dc] of offsets) {
             const neighbor = state?.grid?.[r + dr]?.[c + dc];
             if (!neighbor) continue;
+
+            if (relationProductionResource) {
+                if (hasCellPositiveProduction(state, neighbor, { r: r + dr, c: c + dc }, relationProductionResource, {
+                    resolver: this,
+                    excludedDefinitionIds: production.relationExcludedDefinitionIds
+                })) count++;
+                continue;
+            }
+
+            if (relationResourceCategory) {
+                if (neighbor.socketResource?.category === relationResourceCategory
+                    && !production.relationExcludeSpecialBlockTypes?.includes(neighbor.specialBlock?.definitionId || neighbor.specialBlock?.type)) count++;
+                continue;
+            }
+
+            if (hasTerrainRelation) {
+                const terrain = neighbor.terrain;
+                if (neighbor.placed && !neighbor.isHQ && !neighbor.specialBlock && terrain
+                    && relationTerrainIds.includes(terrain.terrainId || terrain.id)
+                    && Number.isFinite(terrain.gl)
+                    && terrain.gl >= production.relationMinGL) count++;
+                continue;
+            }
 
             if (relationDefinitionId) {
                 const entity = neighbor.specialBlock;
@@ -174,12 +204,43 @@ export class SpecialBlockProductionResolver {
         };
     }
 
+    _resolveSourceResourceBonus(state, entity, production) {
+        const source = entity?.terrainAdjacencyProfile?.source;
+        if (!Number.isInteger(source?.r) || !Number.isInteger(source?.c)) return null;
+
+        const cell = state?.grid?.[source.r]?.[source.c];
+        const resource = readDiscoveredSocketResource(cell, production?.allowedResourceCategories);
+        const reference = entity.sourceResourceReference;
+        if (!resource || (reference && (
+            reference.r !== source.r || reference.c !== source.c
+            || reference.resourceId !== readSocketResourceIdentity(resource)
+            || reference.category !== resource.category
+        ))) return { status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED, yields: { ...ZERO_YIELDS } };
+
+        const sourceYields = normalizeYields(readSocketResourceYields(resource));
+        const increment = Number(production?.perPositiveYield);
+        if (!sourceYields || !Number.isFinite(increment) || increment < 0) return null;
+
+        return {
+            status: SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED,
+            yields: {
+                food: sourceYields.food > 0 ? increment : 0,
+                wood: sourceYields.wood > 0 ? increment : 0,
+                defense: sourceYields.defense > 0 ? increment : 0,
+                mystic: sourceYields.mystic > 0 ? increment : 0
+            }
+        };
+    }
+
     _resolveBuiltIn(state, cell, position, entity, production) {
         if (production.kind === SPECIAL_BLOCK_PRODUCTION_KINDS.SOURCE_SIZE) {
             return this._resolveSourceSize(entity, production);
         }
         if (production.kind === SPECIAL_BLOCK_PRODUCTION_KINDS.RELATION_COUNT) {
             return this._resolveRelationCount(state, position.r, position.c, production);
+        }
+        if (production.kind === SPECIAL_BLOCK_PRODUCTION_KINDS.SOURCE_RESOURCE_BONUS) {
+            return this._resolveSourceResourceBonus(state, entity, production);
         }
         return null;
     }
@@ -334,6 +395,29 @@ export class SpecialBlockProductionResolver {
 }
 
 const defaultResolver = new SpecialBlockProductionResolver();
+
+/** Count a public producing cell once, regardless of yield magnitude or vicinity bonuses.
+ * Reuse canonical Land, Socket, Zone Conversion and Special Block projections;
+ * cached/unresolved socket seeds and HQ are never production relation sources.
+ */
+export function hasCellPositiveProduction(state, cell, position, resource, {
+    resolver = runtimeResolver(state), excludedDefinitionIds = []
+} = {}) {
+    if (!cell || cell.isHQ || !Object.hasOwn(ZERO_YIELDS, resource)) return false;
+    const definitionId = cell.specialBlock?.definitionId || cell.specialBlock?.type;
+    if (excludedDefinitionIds?.includes(definitionId)) return false;
+    if (cell.placed && cell.terrain) {
+        if (resolveCellProductionBase(cell).yields[resource] > 0) return true;
+        if (cell.placementGroupId && resolvePlacedBlockProduction(state, cell.placementGroupId).yields[resource] > 0) return true;
+        const socket = readDiscoveredSocketResource(cell);
+        if (socket && readSocketResourceYields(socket)[resource] > 0) return true;
+        const conversion = state?.zoneConversionService?.resolveCellProduction?.(position);
+        if (conversion?.status === 'RESOLVED' && conversion.yields?.[resource] > 0) return true;
+    }
+    if (!cell.specialBlock) return false;
+    const special = resolver.resolveCell(state, cell, position);
+    return special.status === SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED && special.yields[resource] > 0;
+}
 
 function runtimeResolver(state) {
     const resolver = state?.specialBlockProductionResolver;

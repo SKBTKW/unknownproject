@@ -2,6 +2,9 @@ import { I18n } from "../i18n.js";
 import { resolveModifierTag } from "./trial_interception_preview_component.js";
 import { MODIFIER_TARGETS, TRIAL_BATTLE_STATUSES } from "../trial/domain/trial_types.js";
 import { PLAYER_TRAY_MODES } from "./layout_state_manager.js";
+import { InterceptionPowerResolver } from "../trial/systems/interception_power_resolver.js";
+import { UILayoutConfig } from "./layout_config.js";
+import { renderBattleExplanationHtml } from "./battle_explanation_ui_presenter.js";
 
 export class TrialActionTrayComponent {
     constructor(uiController, { hostId = "trialActionTrayHost" } = {}) {
@@ -11,6 +14,13 @@ export class TrialActionTrayComponent {
 
     getHost() {
         if (typeof document === "undefined") return null;
+        if (!document.getElementById("trial-battle-explanation-layout") && document.head?.appendChild) {
+            const style = document.createElement("style");
+            style.id = "trial-battle-explanation-layout";
+            style.textContent = UILayoutConfig.battleExplanationLayoutStyles
+                + UILayoutConfig.trialEngagementOriginLayoutStyles;
+            document.head.appendChild(style);
+        }
         let host = document.getElementById(this.hostId);
         if (host) return host;
 
@@ -45,15 +55,18 @@ export class TrialActionTrayComponent {
         const available = this.ui.getTrialAvailableDefense();
         const remaining = this.ui.getTrialRemainingDefense();
         const plannedTotal = this.ui.getTrialPlannedDefenseTotal();
+        const powerResolver = this.ui.trialController.powerResolver || new InterceptionPowerResolver();
+        const combatDefense = value => powerResolver.resolveDefense(value);
+        const combatStep = combatDefense(1);
         const routes = this.ui.getTrialPlanningRoutes();
-        const budgetUsedText = I18n.t("UI_TRIAL_PLAN_DEFENSE_USED", { used: plannedTotal, total: available });
-        const budgetRemainingText = I18n.t("UI_TRIAL_PLAN_DEFENSE_REMAINING", { remaining });
+        const budgetUsedText = I18n.t("UI_TRIAL_PLAN_COMBAT_USED", { used: combatDefense(plannedTotal), total: combatDefense(available) });
+        const budgetRemainingText = I18n.t("UI_TRIAL_PLAN_COMBAT_REMAINING", { remaining: combatDefense(remaining) });
         const activeRoute = this.ui.getActiveTrialRoute();
         const activeRouteId = activeRoute?.id || null;
         const activeRouteName = activeRoute
             ? I18n.t(activeRoute.nameKey || activeRoute.id)
             : I18n.t("UI_TRIAL_ROUTE_NONE");
-        const enemySuppression = Number(activeRoute?.suppression ?? this.ui.trialController?.state?.enemySuppression ?? 0);
+        const enemySuppression = powerResolver.resolveSuppression(Number(activeRoute?.suppression ?? this.ui.trialController?.state?.enemySuppression ?? 0));
         const maxForActive = activeRouteId
             ? this.ui.trialPresentationState.getMaxAllocationForRoute(activeRouteId, available)
             : available;
@@ -186,7 +199,7 @@ export class TrialActionTrayComponent {
                     const terrainName = I18n.t(terrainNameKey);
                     detailsHtml = `
                         <span class="trial-review-location">[${coordStr}] ${terrainName}</span>
-                        <span class="trial-review-defense">🛡️ ${rDecision.defenseAllocation}</span>
+                        <span class="trial-review-defense">⚔ ${combatDefense(rDecision.defenseAllocation)}</span>
                     `;
                 } else if (rStatus === "SKIP") {
                     detailsHtml = `<span class="trial-review-status status-skip">${I18n.t("UI_TRIAL_REVIEW_SKIP")}</span>`;
@@ -252,6 +265,13 @@ export class TrialActionTrayComponent {
                 });
                 const damageText = I18n.t("UI_TRIAL_RESULT_DAMAGE", { damage: completionResult?.totalEmberDamage ?? 0 });
 
+                const lifecycle = this.ui.getTrialLifecycleReadModel?.();
+                const settlementActionHtml = lifecycle?.resultReady && !lifecycle.settlementConsumed
+                    ? `<button type="button" id="btnTrialSettleResult" class="btn-trial-action">
+                        ${I18n.t("UI_TRIAL_SETTLE_RESULT")}
+                    </button>`
+                    : "";
+
                 reviewActionsHtml = `
                     <div class="trial-completed-banner ${bannerClass}" id="trialCompletedBanner">
                         <div class="trial-completed-status">${outcomeBannerText}</div>
@@ -262,6 +282,7 @@ export class TrialActionTrayComponent {
                                 <span>${damageText}</span>
                             </div>
                         </div>
+                        ${settlementActionHtml}
                     </div>
                 `;
             } else if (!isConfirmed && !isActivated && !isBattleActive && !isBattleResolved) {
@@ -326,7 +347,47 @@ export class TrialActionTrayComponent {
                         <div class="trial-battle-active-route">${routeName}</div>
                         <div class="trial-battle-active-details">
                             <span class="trial-battle-active-cell">[${coordStr}]</span>
-                            <span class="trial-battle-active-defense">🛡️ ${currentBattle.defenseAllocation}</span>
+                            <span class="trial-battle-active-defense">⚔ ${combatDefense(currentBattle.defenseAllocation)}</span>
+                        </div>
+                    `;
+                }
+                const engagementOrigins = this.ui.getCurrentTrialEngagementOrigins?.() || null;
+                const engagementCandidates = Array.isArray(engagementOrigins?.candidates)
+                    ? engagementOrigins.candidates
+                    : [];
+                let engagementOriginHtml = "";
+                if (engagementCandidates.length > 1) {
+                    const selectedCell = engagementOrigins?.selectedOrigin?.cell || engagementOrigins?.selectedOrigin || null;
+                    const originButtons = engagementCandidates.map((candidate, index) => {
+                        const originCell = candidate?.cell || candidate;
+                        const coord = originCell && Number.isInteger(originCell.r) && Number.isInteger(originCell.c)
+                            ? `${String.fromCharCode(65 + originCell.c)}${originCell.r + 1}`
+                            : "—";
+                        const selected = Boolean(
+                            selectedCell
+                            && selectedCell.r === originCell?.r
+                            && selectedCell.c === originCell?.c
+                        );
+                        const type = I18n.t("UI_TRIAL_ENGAGEMENT_ORIGIN_GENERIC");
+                        return `
+                            <button type="button"
+                                id="btnTrialEngagementOrigin${index}"
+                                class="btn-trial-action trial-engagement-origin-option ${selected ? "is-selected" : ""}"
+                                aria-pressed="${selected ? "true" : "false"}">
+                                [${coord}] ${type}
+                            </button>
+                        `;
+                    }).join("");
+                    const selectedText = selectedCell
+                        ? I18n.t("UI_TRIAL_ENGAGEMENT_ORIGIN_SELECTED", {
+                            coord: `${String.fromCharCode(65 + selectedCell.c)}${selectedCell.r + 1}`
+                        })
+                        : I18n.t("UI_TRIAL_ENGAGEMENT_ORIGIN_OPTIONAL");
+                    engagementOriginHtml = `
+                        <div class="trial-engagement-origin-selector" id="trialEngagementOriginSelector">
+                            <strong>${I18n.t("UI_TRIAL_ENGAGEMENT_ORIGIN_TITLE")}</strong>
+                            <small>${selectedText}</small>
+                            <div class="trial-engagement-origin-options">${originButtons}</div>
                         </div>
                     `;
                 }
@@ -334,6 +395,7 @@ export class TrialActionTrayComponent {
                     <div class="trial-battle-active-banner" id="trialBattleActiveBanner">
                         <div class="trial-battle-active-status">⚔️ ${I18n.t("UI_TRIAL_BATTLE_ACTIVE")}</div>
                         ${battleDetailsHtml}
+                        ${engagementOriginHtml}
                         <button type="button" id="btnTrialResolveBattle" class="btn-trial-action btn-resolve-battle">
                             ${I18n.t("UI_TRIAL_RESOLVE_BATTLE")}
                         </button>
@@ -387,6 +449,11 @@ export class TrialActionTrayComponent {
                         }
                     }
                 }
+
+                const battleExplanationHtml = renderBattleExplanationHtml(
+                    this.ui.getCurrentBattlePresentationReadModel?.() || null,
+                    I18n
+                );
 
                 const tutorialPolicy = this.ui.getFirstRunTrialTutorialPolicy?.() || { tutorialActive: false };
                 const showTutorialCausality = tutorialPolicy.tutorialActive
@@ -481,6 +548,7 @@ export class TrialActionTrayComponent {
                         ${battleDetailsHtml}
                         ${powerComparisonHtml}
                         ${tagsHtml}
+                        ${battleExplanationHtml}
                         ${tutorialCausalityHtml}
                         ${traversalControlsHtml}
                     </div>
@@ -522,6 +590,19 @@ export class TrialActionTrayComponent {
             const btnResolveBattle = document.getElementById("btnTrialResolveBattle");
             if (btnResolveBattle) btnResolveBattle.onclick = () => this.ui.resolveCurrentTrialBattle();
 
+            const engagementOrigins = this.ui.getCurrentTrialEngagementOrigins?.() || null;
+            const engagementCandidates = Array.isArray(engagementOrigins?.candidates)
+                ? engagementOrigins.candidates
+                : [];
+            if (engagementCandidates.length > 1) {
+                engagementCandidates.forEach((candidate, index) => {
+                    const button = document.getElementById(`btnTrialEngagementOrigin${index}`);
+                    if (button) {
+                        button.onclick = () => this.ui.selectCurrentTrialEngagementOrigin(candidate?.cell || candidate);
+                    }
+                });
+            }
+
             const btnCausalityConfirm = document.getElementById("btnFirstRunTrialCausalityConfirm");
             if (btnCausalityConfirm) {
                 btnCausalityConfirm.onclick = () => {
@@ -538,6 +619,9 @@ export class TrialActionTrayComponent {
 
             const btnCompleteTrial = document.getElementById("btnTrialCompleteTrial");
             if (btnCompleteTrial) btnCompleteTrial.onclick = () => this.ui.completeTrial();
+
+            const btnSettleResult = document.getElementById("btnTrialSettleResult");
+            if (btnSettleResult) btnSettleResult.onclick = () => this.ui.settleCurrentTrialResult();
 
             return;
         }
@@ -598,15 +682,15 @@ export class TrialActionTrayComponent {
                 <div class="trial-action-control-cluster">
                     <div class="trial-action-budget-line">
                         ${tutorialPolicy.qualitativePreviewOnly ? "" : '<span>' + I18n.t("UI_TRIAL_ENEMY_SUPPRESSION") + ' <strong>' + enemySuppression + '</strong></span>'}
-                        <span>${I18n.t("UI_TRIAL_PLAN_DEFENSE_REMAINING", { remaining })}</span>
+                        <span>${I18n.t("UI_TRIAL_PLAN_COMBAT_REMAINING", { remaining: combatDefense(remaining) })}</span>
                     </div>
                     <div class="trial-action-allocation-value">
-                        <span>${I18n.t("UI_TRIAL_DEFENSE_ALLOCATION")}</span>
-                        <strong>🛡️ ${allocated} / ${maxForActive}</strong>
+                        <span>${I18n.t("UI_TRIAL_COMBAT_ALLOCATION")}</span>
+                        <strong>⚔ ${combatDefense(allocated)} / ${combatDefense(maxForActive)}</strong>
                     </div>
                     <div class="trial-action-slider-row">
                         <button type="button" id="btnTrialDefenseDecrease" data-trial-action="decrease" ${allocated <= 0 || disabledSlider ? "disabled" : ""}>−</button>
-                        <input id="trialDefenseAllocationSlider" data-trial-action="slider" type="range" min="0" max="${maxForActive}" step="1" value="${allocated}" ${disabledSlider ? "disabled" : ""}>
+                        <input id="trialDefenseAllocationSlider" data-trial-action="slider" type="range" min="0" max="${combatDefense(maxForActive)}" step="${combatStep}" value="${combatDefense(allocated)}" ${disabledSlider ? "disabled" : ""}>
                         <button type="button" id="btnTrialDefenseIncrease" data-trial-action="increase" ${allocated >= maxForActive || disabledSlider ? "disabled" : ""}>＋</button>
                         <button type="button" id="btnTrialDefenseMax" class="trial-action-max" data-trial-action="max" ${allocated >= maxForActive || disabledSlider ? "disabled" : ""}>${I18n.t("UI_TRIAL_DEFENSE_MAX")}</button>
                     </div>
@@ -636,7 +720,7 @@ export class TrialActionTrayComponent {
         if (decrease) decrease.onclick = () => this.ui.adjustTrialDefenseAllocation(-1);
         if (increase) increase.onclick = () => this.ui.adjustTrialDefenseAllocation(1);
         if (max) max.onclick = () => this.ui.setTrialDefenseAllocation(maxForActive);
-        if (slider) slider.oninput = event => this.ui.setTrialDefenseAllocation(event?.target?.value);
+        if (slider) slider.oninput = event => this.ui.setTrialDefenseAllocation(Number(event?.target?.value) / combatStep);
         if (intercept) intercept.onclick = () => this.ui.setTrialActiveRouteIntercept();
         if (skip) skip.onclick = () => this.ui.setTrialActiveRouteSkip();
         if (clear) clear.onclick = () => this.ui.clearTrialActiveRouteDecision();

@@ -52,6 +52,8 @@ import {
     FirstRunTrialTutorialService,
     FIRST_RUN_TRIAL_TUTORIAL_EVENTS
 } from '../tutorial/first_run_trial_tutorial_service.js';
+import { InvestigationReportComponent } from './investigation_report_component.js';
+import { InvestigationCardPresentationRuntime } from './investigation_card_presentation_runtime.js';
 
 class UIController {
     /**
@@ -85,6 +87,12 @@ class UIController {
         this.diceQueue = new DiceDisplayQueue(this.diceWidget);
         this.devDiceControls = (typeof document !== 'undefined') ? new DevDiceControlsComponent(this) : null;
         this.buildIdentityBadge = (typeof document !== 'undefined') ? new BuildIdentityBadgeComponent() : null;
+        this.investigationReportComponent = (typeof document !== 'undefined')
+            ? new InvestigationReportComponent()
+            : null;
+        this.investigationCardPresentationRuntime = new InvestigationCardPresentationRuntime({
+            component: this.investigationReportComponent
+        });
         this.layoutStateManager = new LayoutStateManager();
         this.trialActionTrayComponent = (typeof document !== 'undefined')
             ? new TrialActionTrayComponent(this)
@@ -260,23 +268,62 @@ class UIController {
             trialIndex,
             event
         });
-        if (
-            event === FIRST_RUN_TRIAL_TUTORIAL_EVENTS.CAUSALITY_OBSERVED
-            && next?.completed === true
-            && typeof this.engine?.firstRunActivationStore?.markCompleted === "function"
-        ) {
-            try {
-                this.lastFirstRunActivationPersistenceResult = this.engine.firstRunActivationStore.markCompleted();
-            } catch (error) {
-                this.lastFirstRunActivationPersistenceResult = {
-                    success: false,
-                    reason: "FIRST_RUN_ACTIVATION_PERSISTENCE_FAILED",
-                    errorMessage: error?.message || String(error)
-                };
-            }
-        }
         this.trialActionTrayComponent?.render?.();
         return next;
+    }
+
+    persistFirstRunCompletionAfterStageAdvance({ transition = null } = {}) {
+        const firstRunState = this.engine?.firstRunState || null;
+        const stageId = Number(this.engine?.state?.stage?.id) || null;
+        const stageAdvanceApplied = transition?.stageAdvance?.status === "APPLIED";
+        const tutorialCompleted = firstRunState?.getTrialTutorialState?.().completed === true;
+
+        if (!firstRunState?.active || !tutorialCompleted || !stageAdvanceApplied || stageId < 2) {
+            return Object.freeze({
+                success: true,
+                persisted: false,
+                reason: "FIRST_RUN_COMPLETION_BOUNDARY_NOT_REACHED"
+            });
+        }
+
+        if (this.lastFirstRunActivationPersistenceResult?.success === true) {
+            return Object.freeze({
+                success: true,
+                persisted: false,
+                alreadyPersisted: true
+            });
+        }
+
+        const store = this.engine?.firstRunActivationStore || null;
+        if (typeof store?.markCompleted !== "function") {
+            return Object.freeze({
+                success: false,
+                persisted: false,
+                reason: "FIRST_RUN_ACTIVATION_STORE_UNAVAILABLE"
+            });
+        }
+
+        try {
+            const result = store.markCompleted();
+            this.lastFirstRunActivationPersistenceResult = result;
+            return Object.freeze({
+                success: result?.success === true,
+                persisted: result?.success === true,
+                result
+            });
+        } catch (error) {
+            const result = {
+                success: false,
+                reason: "FIRST_RUN_ACTIVATION_PERSISTENCE_FAILED",
+                errorMessage: error?.message || String(error)
+            };
+            this.lastFirstRunActivationPersistenceResult = result;
+            return Object.freeze({
+                success: false,
+                persisted: false,
+                result
+            });
+        }
     }
 
     acknowledgeFirstRunTrialRoute() {
@@ -870,6 +917,31 @@ class UIController {
 
     getCurrentTrialBattleResult() {
         return this.trialController?.state?.getCurrentBattleResult?.() || null;
+    }
+
+    getCurrentTrialEngagementOrigins() {
+        return this.trialController?.getCurrentBattleEngagementOrigins?.() || {
+            success: false,
+            reason: "NO_ACTIVE_BATTLE",
+            candidates: [],
+            selectedOrigin: null,
+            requiresSelection: false
+        };
+    }
+
+    selectCurrentTrialEngagementOrigin(origin) {
+        if (!this.trialPreviewConfig || !this.trialController?.state) {
+            return { success: false, reason: "TRIAL_NOT_STARTED" };
+        }
+        const result = this.trialController.selectCurrentBattleEngagementOrigin(origin);
+        if (!result.success) {
+            this.trialPresentationState.planningValidationErrors = result.reason ? [result.reason] : [];
+            this.render();
+            return result;
+        }
+        this.trialPresentationState.planningValidationErrors = [];
+        this.render();
+        return result;
     }
 
     startTrialBattle() {
@@ -1614,6 +1686,7 @@ class UIController {
         if (!this.state || this.state.hasPickedThisTurn) return;
 
         const tObj = card?.terrain || card;
+        const category = card?.category || tObj?.category || "LAND";
         const variants = Array.isArray(tObj?.executionVariants) ? tObj.executionVariants : [];
         if (variants.length > 0 && !tObj.selectedExecutionVariantId) {
             const modalSys = (typeof window !== "undefined" && window.ModalSystem) ? window.ModalSystem : ModalSystem;
@@ -1622,12 +1695,12 @@ class UIController {
             const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
             const cName = tObj.nameKey ? I18n.t(tObj.nameKey) : (tObj.id || "Card");
             const cDesc = tObj.descriptionKey ? I18n.t(tObj.descriptionKey) : "";
-            const resourceCostText = cost => {
+            const resourceCostText = (cost, includeZero = false) => {
                 const parts = [];
-                if (cost?.food) parts.push(`🌾${cost.food}`);
-                if (cost?.wood) parts.push(`🧱${cost.wood}`);
-                if (cost?.mystic) parts.push(`✨${cost.mystic}`);
-                if (cost?.ember) parts.push(`🔥${cost.ember}`);
+                if (cost?.food || (includeZero && cost?.food === 0)) parts.push(`🌾${cost.food}`);
+                if (cost?.wood || (includeZero && cost?.wood === 0)) parts.push(`🧱${cost.wood}`);
+                if (cost?.mystic || (includeZero && cost?.mystic === 0)) parts.push(`✨${cost.mystic}`);
+                if (cost?.ember || (includeZero && cost?.ember === 0)) parts.push(`🔥${cost.ember}`);
                 return parts.join(" ");
             };
             const hasCost = cost => (
@@ -1636,14 +1709,28 @@ class UIController {
                 && (!cost?.mystic || this.state.mystic >= cost.mystic)
                 && (!cost?.ember || this.state.ember >= cost.ember)
             );
+            const resourceKeys = [...new Set(variants.flatMap(variant =>
+                Object.keys(variant.cost || {}).filter(key => Number(variant.cost[key]) > 0)
+            ))];
+            const balances = Object.fromEntries(resourceKeys.map(key => [key,
+                key === "wood" ? Math.max(this.state.wood ?? 0, this.state.material ?? 0)
+                    : Number(this.state[key] || 0)
+            ]));
             modalSys.showChoiceDialog({
                 title: cName,
                 descText: cDesc,
+                currentText: I18n.t("UI_CARD_CURRENT_RESOURCES", { resources: resourceCostText(balances, true) }),
                 choices: variants.map(variant => ({
                     id: variant.id,
                     label: variant.labelKey ? I18n.t(variant.labelKey) : variant.id,
                     description: variant.descriptionKey ? I18n.t(variant.descriptionKey) : "",
-                    costText: resourceCostText(variant.cost || {}),
+                    costText: I18n.t("UI_CARD_COST_PREFIX", { cost: resourceCostText(variant.cost || {}) }),
+                    afterText: hasCost(variant.cost || {})
+                        ? I18n.t("UI_CARD_AFTER_PAYMENT", { resources: resourceCostText(
+                            Object.fromEntries(resourceKeys.map(key => [key, balances[key] - Number(variant.cost?.[key] || 0)])),
+                            true
+                        ) })
+                        : I18n.t("UI_CARD_PAYMENT_UNAVAILABLE"),
                     disabled: !hasCost(variant.cost || {})
                 })),
                 onSelect: choice => {
@@ -1693,8 +1780,12 @@ class UIController {
 
         if (typeof window !== "undefined" && window.ModalSystem) {
             const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: k => k });
-            const titleStr = I18n ? I18n.t("UI_CMD_CONFIRM_TITLE", { name: cName }) : `📜 ${cName}`;
-            const confirmStr = I18n ? I18n.t("UI_ACTIVATE_CMD") : "⚡ 発動する";
+            const titleStr = category === "INVESTIGATION"
+                ? (I18n ? I18n.t("UI_INVESTIGATION_CONFIRM_TITLE", { name: cName }) : cName)
+                : (I18n ? I18n.t("UI_CMD_CONFIRM_TITLE", { name: cName }) : `📜 ${cName}`);
+            const confirmStr = category === "INVESTIGATION"
+                ? I18n.t("UI_INVESTIGATION_EXECUTE")
+                : I18n.t("UI_ACTIVATE_CMD");
             const cancelStr = I18n ? I18n.t("UI_CANCEL") : "✖ キャンセル";
 
             window.ModalSystem.showConfirmDialog({
@@ -1704,6 +1795,10 @@ class UIController {
                 confirmLabel: confirmStr,
                 cancelLabel: cancelStr,
                 onConfirm: () => {
+                    if (category === "INVESTIGATION") {
+                        this.playInvestigationCard(card, idx, reserveIdx);
+                        return;
+                    }
                     this.playCommandCard(card, idx);
                     this.selectedCard = null;
                     this.selectedCardIdx = -1;
@@ -1808,7 +1903,10 @@ class UIController {
             if (!this.isCommandExecutionTarget(this.selectedCard, r, c)) return false;
             const selectedCard = this.selectedCard;
             const selectedIdx = this.selectedCardIdx;
-            const result = this.playCommandCard(selectedCard, selectedIdx, { r, c });
+            const target = this.getCommandCardExecutionTargets(selectedCard).find(candidate =>
+                Number(candidate?.r) === r && Number(candidate?.c) === c
+            );
+            const result = this.playCommandCard(selectedCard, selectedIdx, target);
             return result?.success === true;
         }
 
@@ -2389,6 +2487,30 @@ class UIController {
         }
     }
 
+    playInvestigationCard(card, targetIdx, reserveIdx = -1) {
+        if (!this.investigationCardPresentationRuntime) {
+            return { success: false, reason: "INVESTIGATION_PRESENTATION_RUNTIME_UNAVAILABLE" };
+        }
+        const cardIdx = (typeof targetIdx === "number" && targetIdx >= 0)
+            ? targetIdx
+            : (this.state?.handOffering ? this.state.handOffering.indexOf(card) : -1);
+        const resolvedReserveIdx = reserveIdx >= 0 ? reserveIdx : this.selectedReserveIdx;
+        const source = resolvedReserveIdx !== -1
+            ? { type: "RESERVE", index: resolvedReserveIdx }
+            : { type: "OFFERING", index: cardIdx };
+
+        const res = this.investigationCardPresentationRuntime.execute(this.engine, card, source);
+        if (res?.success) {
+            sfxManager.play("COMMAND_EXECUTE");
+            this.selectedCard = null;
+            this.selectedCardIdx = -1;
+            this.selectedReserveIdx = -1;
+            if (focusLayerManager) focusLayerManager.onCardDeselect();
+            this.render();
+        }
+        return res;
+    }
+
     playCommandCard(card, targetIdx, target = null) {
         if (!this.engine || typeof this.engine.playCommandCard !== "function") return;
         let cardIdx = (typeof targetIdx === "number" && targetIdx >= 0) ? targetIdx : (this.state && this.state.handOffering ? this.state.handOffering.indexOf(card) : -1);
@@ -2396,9 +2518,11 @@ class UIController {
             ? { type: "RESERVE", index: this.selectedReserveIdx }
             : { type: "OFFERING", index: cardIdx };
 
-        const res = this.engine.playCommandCard(card, source, target);
+        const cardData = card?.terrain || card || {};
+        const res = cardData.category === "INVESTIGATION"
+            ? this.investigationCardPresentationRuntime.execute(this.engine, card, source)
+            : this.engine.playCommandCard(card, source, target);
         if (res && res.success) {
-            const cardData = card?.terrain || card || {};
             if ((cardData.category || card?.category) === "MILITARY") this.advisorDockComponent?.observeMilitaryAction?.(cardData.id || cardData.nameKey || "MILITARY");
             sfxManager.play("COMMAND_EXECUTE");
             const diceCheck = res.diceCheck || (res.result && res.result.diceCheck);
@@ -2585,6 +2709,17 @@ class UIController {
                 <div class="card-action-hint-item">
                     <span class="card-action-hint-bullet">&bull;</span>
                     <span>${I18n.t("UI_CARD_HINT_ROTATE")}</span>
+                </div>
+                <div class="card-action-hint-item">
+                    <span class="card-action-hint-bullet">&bull;</span>
+                    <span>${I18n.t("UI_CARD_HINT_RESERVE")}</span>
+                </div>
+            `;
+        } else if (category === "INVESTIGATION") {
+            popover.innerHTML = `
+                <div class="card-action-hint-item">
+                    <span class="card-action-hint-bullet">&bull;</span>
+                    <span>${I18n.t("UI_CARD_HINT_INVESTIGATE")}</span>
                 </div>
                 <div class="card-action-hint-item">
                     <span class="card-action-hint-bullet">&bull;</span>

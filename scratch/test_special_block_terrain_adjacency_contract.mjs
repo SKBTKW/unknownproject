@@ -175,24 +175,43 @@ function landCheckWithNeighbor(neighborCell, targetTerrain) {
 }
 
 // Reference E is copied while GL remains canonical 1, including E2 sources.
+// Mining Site is independent: the linked resource is the reference and the
+// facility occupies an adjacent special-only cell.
 {
     const state = makeState(3);
     const hill = placeTerrain(state, 0, 0, terrain("E2_HILL", 2, 1));
+    hill.searched = true;
+    hill.hasSocket = true;
+    hill.socketResource = {
+        id: "SOCKET_GRANITE",
+        category: "CAT_STONE",
+        bonusWood: 2
+    };
     const profile = createSpecialBlockAdjacencyProfile(hill, { r: 0, c: 0 });
     assert.deepEqual(profile, { e: 2, gl: 1, source: { r: 0, c: 0 } });
 
     const service = new SpecialBlockService(state);
-    const created = service.createSpecialBlock("MINE", { r: 0, c: 0 });
+    const created = service.createSpecialBlock(
+        "MINE",
+        {
+            source: { r: 0, c: 0 },
+            destination: { r: 0, c: 1 }
+        },
+        {
+            paymentConfirmed: true,
+            paidCost: { food: 20, wood: 30 }
+        }
+    );
     assert.equal(created.success, true);
     assert.deepEqual(
-        readSpecialBlockAdjacencyProfile(state.grid[0][0]),
+        readSpecialBlockAdjacencyProfile(state.grid[0][1]),
         { e: 2, gl: 1, source: { r: 0, c: 0 } }
     );
 
     const restored = {};
     hydrateGameState(restored, serializeGameState(state));
     assert.deepEqual(
-        readSpecialBlockAdjacencyProfile(restored.grid[0][0]),
+        readSpecialBlockAdjacencyProfile(restored.grid[0][1]),
         { e: 2, gl: 1, source: { r: 0, c: 0 } },
         "Special Block adjacency profile survives canonical save/restore"
     );

@@ -1,3 +1,4 @@
+import { restoreDiscoveryLedger } from "../investigation/domain/world_discovery.js";
 import { hydrateGameState as hydrateBaseGameState } from "./hydrate_game_state_base.js";
 
 function cloneData(value) {
@@ -27,6 +28,7 @@ export function hydrateGameState(state, serialized, options = {}) {
         postTrialTransition = null,
         investigationUnlocked = false,
         investigationUnlockedAtVerse = null,
+        discoveryLedger = null,
         knownEnemyState = null,
         lastInvestigationReport = null,
         lastInvestigationComparison = null,
@@ -34,6 +36,7 @@ export function hydrateGameState(state, serialized, options = {}) {
         ...baseSerialized
     } = serialized;
 
+    const restoredDiscoveryLedger = restoreDiscoveryLedger(discoveryLedger);
     const hydrated = hydrateBaseGameState(state, baseSerialized, options);
     hydrated.isGameOver = !!isGameOver;
     hydrated.runTermination = cloneData(runTermination) ?? null;
@@ -42,6 +45,7 @@ export function hydrateGameState(state, serialized, options = {}) {
     hydrated.investigationUnlockedAtVerse = Number.isInteger(investigationUnlockedAtVerse)
         ? investigationUnlockedAtVerse
         : null;
+    hydrated.discoveryLedger = restoredDiscoveryLedger;
     hydrated.knownEnemyState = hydrateKnownEnemyState(knownEnemyState);
     hydrated.lastInvestigationReport = cloneData(lastInvestigationReport) ?? null;
     hydrated.lastInvestigationComparison = cloneData(lastInvestigationComparison) ?? null;

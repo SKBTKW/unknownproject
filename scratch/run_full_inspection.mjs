@@ -365,6 +365,11 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (FirstRun Browser Activation Persistence) で不合格が検出されました。");
         process.exit(1);
     }
+    const firstRunSemanticBoundaryOk = await runCommand("node", ["scratch/test_first_run_semantic_boundaries.mjs"]);
+    if (!firstRunSemanticBoundaryOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (FirstRun Semantic Boundaries) で不合格が検出されました。");
+        process.exit(1);
+    }
     const firstRunIntegrationOk = await runCommand("node", ["scratch/test_first_run_game_engine_integration.mjs"]);
     if (!firstRunIntegrationOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (FirstRun GameEngine Integration) で不合格が検出されました。");
@@ -373,6 +378,11 @@ async function main() {
     const firstRunStage1FlowOk = await runCommand("node", ["scratch/test_first_run_stage1_flow.mjs"]);
     if (!firstRunStage1FlowOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (FirstRun Stage1 Verse7→Trial1 Connected Flow) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const firstRunSharedDiceDeterminismOk = await runCommand("node", ["scratch/test_first_run_shared_dice_determinism.mjs"]);
+    if (!firstRunSharedDiceDeterminismOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (FirstRun Shared Dice Determinism / Restore Contract) で不合格が検出されました。");
         process.exit(1);
     }
     const firstRunTrialTimingOk = await runCommand("node", ["scratch/test_first_run_trial_timing.mjs"]);
@@ -390,6 +400,13 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (FirstRun Trial UI Boundary) で不合格が検出されました。");
         process.exit(1);
     }
+    const defenseAllocationDiagnoseOk = await runChecks("FirstRun Trial1 Defense Allocation Production-Path Diagnose", [
+        ["Direct runtime contract", "node", ["scratch/diagnose_first_run_trial_defense_allocation.mjs"]],
+        ["Slider input binding", "node", ["scratch/diagnose_first_run_trial_defense_allocation.mjs", "--input=slider"]],
+        ["Increase click binding", "node", ["scratch/diagnose_first_run_trial_defense_allocation.mjs", "--input=increase"]],
+        ["MAX click binding", "node", ["scratch/diagnose_first_run_trial_defense_allocation.mjs", "--input=max"]],
+    ]);
+    if (!defenseAllocationDiagnoseOk) process.exit(1);
     const firstRunTrialIngressPolicyOk = await runCommand("node", ["scratch/test_first_run_trial_ingress_policy.mjs"]);
     if (!firstRunTrialIngressPolicyOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (FirstRun Trial Ingress Policy) で不合格が検出されました。");
@@ -415,6 +432,8 @@ async function main() {
         ["Investigation Report Presenter", "scratch/test_investigation_report_presenter.mjs"],
         ["Investigation Report Text Renderer", "scratch/test_investigation_report_text_renderer.mjs"],
         ["Investigation Narrative", "scratch/test_investigation_narrative.mjs"],
+        ["Investigation Runtime Presentation Connection", "scratch/test_investigation_runtime_presentation_connection.mjs"],
+        ["Investigation Report Component DOM", "scratch/test_investigation_report_component_dom.mjs"],
         ["Investigation Request v1", "scratch/test_investigation_request_v1.mjs"],
         ["Investigation Chronicle Bridge", "scratch/test_investigation_chronicle_bridge.mjs"],
         ["Captured Scout Investigation Bridge", "scratch/test_captured_scout_investigation_bridge.mjs"],
@@ -492,6 +511,8 @@ async function main() {
         ["Battle causality resolution domain", "node", ["scratch/test_battle_causality_resolution_domain.mjs"]],
         ["Battle Opportunity / Fortune lifecycle", "node", ["scratch/test_battle_opportunity_fortune_lifecycle.mjs"]],
         ["Battle presentation runtime bridge", "node", ["scratch/test_battle_presentation_runtime_bridge.mjs"]],
+        ["Battle Narrative / Advisor Presentation v2", "node", ["scratch/test_battle_narrative_advisor_presentation_v2.mjs"]],
+        ["Battle Advisor runtime delivery", "node", ["scratch/test_battle_advisor_runtime_delivery.mjs"]],
         ["Battle presentation runtime integration", "node", ["scratch/test_battle_presentation_runtime_integration.mjs"]],
         ["Road network foundation", "node", ["scratch/test_road_network_foundation.mjs"]],
         ["Trial route visual semantics", "node", ["scratch/test_trial_route_visual_semantics.mjs"]],
@@ -626,6 +647,12 @@ async function main() {
         ["Trial Plan Activation", "scratch/test_trial_phase28a_plan_activation.mjs"],
         ["Trial Battle Sequence Start", "scratch/test_trial_phase28b_battle_sequence_start.mjs"],
         ["Trial Battle Resolution", "scratch/test_trial_phase28c_battle_resolution.mjs"],
+        ["Trial Spatial Engagement Tactical Foundation", "scratch/test_trial_spatial_engagement_tactical_foundation.mjs"],
+        ["Trial Interception Plan Candidate Foundation", "scratch/test_trial_interception_plan_candidate_foundation.mjs"],
+        ["Trial Tactic Requirement Evaluator", "scratch/test_trial_tactic_requirement_evaluator.mjs"],
+        ["Trial Interception Plan Candidate Generator", "scratch/test_trial_interception_plan_candidate_generator.mjs"],
+        ["Trial Battle Coordinator Characterization", "scratch/test_trial_battle_coordinator_characterization.mjs"],
+        ["Trial Engagement Origin Runtime Connection", "scratch/test_trial_engagement_origin_runtime_connection.mjs"],
         ["Trial Enemy Traversal", "scratch/test_trial_phase28d_enemy_traversal.mjs"],
         ["Trial Next Battle Transition", "scratch/test_trial_phase28e_next_battle_transition.mjs"],
         ["Trial HQ Ember Damage", "scratch/test_trial_phase28f_hq_ember_damage.mjs"],
@@ -726,6 +753,11 @@ async function main() {
     const globalEventAdvisorIntegrationOk = await runCommand("node", ["scratch/test_global_event_advisor_integration.mjs"]);
     if (!globalEventAdvisorIntegrationOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Global Event Advisor Integration) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const firstRunVerse7GlobalEventPresentationOk = await runCommand("node", ["scratch/test_first_run_verse7_global_event_presentation_polish.mjs"]);
+    if (!firstRunVerse7GlobalEventPresentationOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (FirstRun Verse7 Global Event Presentation) で不合格が検出されました。");
         process.exit(1);
     }
     const globalEventChoiceRestoreOk = await runCommand("node", ["scratch/test_global_event_choice_restore_reconciliation.mjs"]);
@@ -842,7 +874,11 @@ async function main() {
         process.exit(1);
     }
 
-    const supplementalOk = await runCommand("node", ["scratch/scratch_registry.mjs", "--run", "supplemental"]);
+    // The registry enforces 30 seconds per test. Its sequential suite needs a
+    // separate aggregate budget; otherwise passing tests can exhaust it.
+    const supplementalOk = await runCommand("node", ["scratch/scratch_registry.mjs", "--run", "supplemental"], {
+        timeoutMs: 180000
+    });
     if (!supplementalOk) {
         console.error("\n[PIPELINE BLOCKED] Supplemental scratch tests failed.");
         process.exit(1);
@@ -858,6 +894,11 @@ async function main() {
     const stage1CanonicalPathOk = await runCommand("node", ["scratch/test_stage1_canonical_runtime_path.mjs"]);
     if (!stage1CanonicalPathOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Final Gate (Stage1 Canonical Runtime Path Guard) で不合格が検出されました。");
+        process.exit(1);
+    }
+    const firstRunStage1CompletionOk = await runCommand("node", ["scratch/test_first_run_stage1_completion.mjs"]);
+    if (!firstRunStage1CompletionOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Final Gate (FirstRun Stage1 Completion Certification) で不合格が検出されました。");
         process.exit(1);
     }
 

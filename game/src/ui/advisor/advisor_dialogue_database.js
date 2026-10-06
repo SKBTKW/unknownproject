@@ -31,7 +31,7 @@ export const ADVISOR_DIALOGUES = Object.freeze([
     { event: ADVISOR_EVENTS.TRIAL_END, personality: "stern", priority: 90, cooldownMs: Infinity, durationMs: 4200, lineKeys: ["UI_ADVISOR_DIALOGUE_TRIAL_END"] },
     { event: ADVISOR_EVENTS.TRIAL_PLAN_CONFIRMED, personality: "stern", priority: 70, cooldownMs: 1000, durationMs: 3600, lineKeys: ["UI_ADVISOR_DIALOGUE_PLAN_CONFIRMED"] },
     { event: ADVISOR_EVENTS.GLOBAL_EVENT_PRESENTED_FIRST_RUN, personality: "stern", priority: 98, cooldownMs: Infinity, durationMs: 5200,
-        segmentGroups: [["UI_ADVISOR_DIALOGUE_DEMIHUMAN_TRACES_FIRST_1", "UI_ADVISOR_DIALOGUE_DEMIHUMAN_TRACES_FIRST_2"]],
+        segmentGroups: [["UI_ADVISOR_DIALOGUE_DEMIHUMAN_TRACES_FIRST_1", "UI_ADVISOR_DIALOGUE_DEMIHUMAN_TRACES_FIRST_2", "UI_ADVISOR_DIALOGUE_DEMIHUMAN_TRACES_FIRST_3"]],
         lineKeys: ["UI_ADVISOR_DIALOGUE_DEMIHUMAN_TRACES_FIRST_1"] },
     { event: ADVISOR_EVENTS.GLOBAL_EVENT_PRESENTED_BRIEF, personality: "stern", policyKey: "survival", priority: 86, cooldownMs: 0, durationMs: 3000,
         lineKeys: ["UI_ADVISOR_DIALOGUE_DEMIHUMAN_TRACES_BRIEF"] },
