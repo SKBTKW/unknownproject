@@ -100,6 +100,22 @@
         450
       ],
       "note": "#450 preserves the selector, UIController API and 32-case connected regression from #448, moving new geometry into UILayoutConfig. UIController and connected test match; component differs only by applying the central layout styles."
+    },
+    {
+      "branch": "aot-task/AoT261002/first-run/trial-defense-allocation-diagnose-ci-v1",
+      "expectedHeadSha": "12895356eba1c99a5583c572ecd8b6db2504f473",
+      "replacementPrs": [
+        453
+      ],
+      "note": "The direct production-path Full Inspection gate is already present; #453 retains it and expands certification to four control input modes. #421 was closed as redundant."
+    },
+    {
+      "branch": "aot-task/AoT261002/first-run/trial-defense-allocation-dom-diagnose-v1",
+      "expectedHeadSha": "6ea7f8c980805a8f9eccc09f2f71f693bbca4941",
+      "replacementPrs": [
+        453
+      ],
+      "note": "The control DOM fixture and direct/slider/increase/MAX gates were reconciled in #453. Current post-selection hover regression, combat-defense slider maximum and value conversion are retained. #422 was closed after successful PR and target certification."
     }
   ]
 }
