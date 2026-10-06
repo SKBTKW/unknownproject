@@ -1519,6 +1519,14 @@
       ]
     },
     {
+      "path": "scratch/test_trial_interception_plan_candidate_foundation.mjs",
+      "purpose": "Interception plan semantic candidate separation, non-outcome intent and representative compaction foundation",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_trial_battle_coordinator_characterization.mjs",
       "purpose": "Controller battle and Fortune observable contracts, exactly-once calls and runtime reference restoration",
       "suite": "existing",
