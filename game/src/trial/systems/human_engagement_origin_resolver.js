@@ -48,11 +48,13 @@ export class HumanEngagementOriginResolver {
         if (!center) return { success: false, reason: "BATTLE_LOCATION_REQUIRED", candidates: [] };
 
         const raw = [];
-        if (this.cellResolver) {
+        const cellResolver = this.cellResolver
+            || (typeof context?.cellResolver === "function" ? context.cellResolver : null);
+        if (cellResolver) {
             for (let dr = -1; dr <= 1; dr++) {
                 for (let dc = -1; dc <= 1; dc++) {
                     if (dr === 0 && dc === 0) continue;
-                    const cell = this.cellResolver(center.r + dr, center.c + dc);
+                    const cell = cellResolver(center.r + dr, center.c + dc);
                     if (cell) raw.push(cell);
                 }
             }

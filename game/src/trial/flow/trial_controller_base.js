@@ -17,6 +17,7 @@ import { TrialHqDamageResolver } from "../systems/trial_hq_damage_resolver.js";
 import { TrialCompletionService } from "../systems/trial_completion_service.js";
 import { TrialFlow } from "./trial_flow.js";
 import { readSpecialBlockTrialTraits } from "../../core/special_block_domain.js";
+import { EngagementOriginRuntime } from "../systems/engagement_origin_runtime.js";
 
 export class TrialController {
     constructor({
@@ -32,7 +33,9 @@ export class TrialController {
         gameFactHub = new GameFactHub(),
         emberSystem = null,
         deploymentService = null,
-        defenseReservation = null
+        defenseReservation = null,
+        engagementOriginResolver = null,
+        engagementOriginRuntime = null
     } = {}) {
         this.powerResolver = powerResolver;
         this.combatResolver = combatResolver;
@@ -51,6 +54,8 @@ export class TrialController {
         this.sessionDeploymentService = null;
         this.defenseReservation = defenseReservation || null;
         this.sessionDefenseReservation = null;
+        this.engagementOriginRuntime = engagementOriginRuntime
+            || new EngagementOriginRuntime({ originResolver: engagementOriginResolver });
         this.state = null;
         this.cellResolver = null;
     }
@@ -474,6 +479,8 @@ export class TrialController {
                     interceptCell: { r: routePlan.interceptCell.r, c: routePlan.interceptCell.c },
                     interceptBlockId: routePlan.interceptBlockId || null,
                     defenseAllocation: routePlan.defenseAllocation,
+                    engagementOriginCandidates: [],
+                    humanEngagementOrigin: null,
                     status: TRIAL_BATTLE_STATUSES.PENDING
                 });
             }
@@ -570,6 +577,25 @@ export class TrialController {
             return startResult;
         }
 
+        const liveBattle = this.state?.battleQueue?.[startResult.battleIndex] || null;
+        const originPreparation = liveBattle
+            ? this.engagementOriginRuntime.prepareBattle({
+                battleLocation: liveBattle.interceptCell,
+                context: {
+                    routeId: liveBattle.routeId,
+                    trialIndex: this.state?.trialIndex ?? null,
+                    battleIndex: startResult.battleIndex,
+                    cellResolver: this.cellResolver
+                }
+            })
+            : { applicable: false, candidates: [], selectedOrigin: null, autoSelected: false };
+
+        if (liveBattle) {
+            liveBattle.engagementOriginCandidates = originPreparation.candidates || [];
+            liveBattle.humanEngagementOrigin = originPreparation.selectedOrigin || null;
+            startResult.currentBattle = JSON.parse(JSON.stringify(liveBattle));
+        }
+
         // Emit GameFact
         const factPayload = {
             battleIndex: startResult.battleIndex,
@@ -579,7 +605,63 @@ export class TrialController {
         };
         this.gameFactHub.emit(GAME_FACT_TYPES.TRIAL_BATTLE_STARTED, factPayload);
 
-        return startResult;
+        return {
+            ...startResult,
+            engagementOrigin: {
+                applicable: originPreparation.applicable === true,
+                candidateCount: originPreparation.candidates?.length || 0,
+                autoSelected: originPreparation.autoSelected === true,
+                selectedOrigin: originPreparation.selectedOrigin || null
+            }
+        };
+    }
+
+    getCurrentBattleEngagementOrigins() {
+        const currentBattle = this.state?.currentBattleIndex == null
+            ? null
+            : this.state?.battleQueue?.[this.state.currentBattleIndex];
+        if (!currentBattle) {
+            return {
+                success: false,
+                reason: "NO_ACTIVE_BATTLE",
+                candidates: [],
+                selectedOrigin: null,
+                requiresSelection: false
+            };
+        }
+        const candidates = Array.isArray(currentBattle.engagementOriginCandidates)
+            ? JSON.parse(JSON.stringify(currentBattle.engagementOriginCandidates))
+            : [];
+        const selectedOrigin = currentBattle.humanEngagementOrigin
+            ? JSON.parse(JSON.stringify(currentBattle.humanEngagementOrigin))
+            : null;
+        return {
+            success: true,
+            candidates,
+            selectedOrigin,
+            requiresSelection: candidates.length > 1 && !selectedOrigin
+        };
+    }
+
+    selectCurrentBattleEngagementOrigin(origin) {
+        const battleIndex = this.state?.currentBattleIndex;
+        const currentBattle = Number.isInteger(battleIndex)
+            ? this.state?.battleQueue?.[battleIndex]
+            : null;
+        if (!currentBattle || currentBattle.status !== TRIAL_BATTLE_STATUSES.ACTIVE) {
+            return { success: false, reason: "NO_ACTIVE_BATTLE" };
+        }
+        const selection = this.engagementOriginRuntime.selectOrigin({
+            candidates: currentBattle.engagementOriginCandidates,
+            origin
+        });
+        if (!selection.success) return selection;
+        currentBattle.humanEngagementOrigin = selection.selectedOrigin;
+        return {
+            success: true,
+            battleIndex,
+            selectedOrigin: JSON.parse(JSON.stringify(selection.selectedOrigin))
+        };
     }
 
     resolveCurrentBattle() {
@@ -618,8 +700,12 @@ export class TrialController {
         }
 
         // 2. Resolve combat via CombatResolver
+        const selectedEngagementOrigin = this.engagementOriginRuntime.readSelectedCell(
+            currentBattle.humanEngagementOrigin
+        );
         const context = this.createBattleContext({
             ...interceptionInput.input,
+            humanEngagementOrigin: selectedEngagementOrigin,
             skipAvailableCheck: true
         });
         const combatResult = this.combatResolver.resolve(context);
@@ -648,6 +734,9 @@ export class TrialController {
                     r: currentBattle.interceptCell.r,
                     c: currentBattle.interceptCell.c
                 },
+                origin: selectedEngagementOrigin
+                    ? { r: selectedEngagementOrigin.r, c: selectedEngagementOrigin.c }
+                    : null,
                 timing: "CONTACT",
                 provenance: {
                     source: "TRIAL_BATTLE_SEQUENCE",

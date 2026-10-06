@@ -1519,6 +1519,14 @@
       ]
     },
     {
+      "path": "scratch/test_trial_engagement_origin_runtime_connection.mjs",
+      "purpose": "Production TrialController engagement-origin discovery, selection persistence, non-blocking fallback and BattleContext/action injection",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_trial_phase28d_enemy_traversal.mjs",
       "purpose": "trial phase28d enemy traversal",
       "suite": "existing",
