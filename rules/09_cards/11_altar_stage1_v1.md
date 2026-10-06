@@ -1,15 +1,15 @@
 # 祭壇 — Stage1 基本特殊ブロック
 
-Status: IN PROGRESS / VALIDATION（TASK実装、未push・未統合）
+Status: IN PROGRESS / VALIDATION（HQ近郊配置改訂TASK、未push・未統合）
 
 - Card: CMD_ALTAR / Altar、Stage1以上、UC、初期weight 0.25。
 - カードcostは空。Board-owned建設quoteは🌾10・🧱30。
 - 公開済みの正の✨産出があるセルに8方向で隣接する未配置セルへ独立生成。
-- 配置先は近郊外、かつ現在の近郊セルに8方向で隣接する外縁。
+- 配置先はHQ周囲8セルの近郊内にある未配置セルのみ。外側へのfallbackなし。
 - Special Blockの共通隣接合法性を踏襲。Eは建設参照セルから継承、GL1。
 - Base Terrainは生成しない。special-only、地帯化不参加、直接Trial Bonusなし。
 - 全既存祭壇からChebyshev距離3以上。直交・斜めとも間に2マス空ける。
-- 各Stageで新規建設1基。以前のStageの祭壇は存続。
+- 各Stageで新規建設1基。以前のStageの祭壇は存続。近郊内の最大距離は2のため、既存祭壇が近郊に残る限り2基目は配置できない（Run全体capではない）。
 - 建設Stageを通常Special Block entityに保存。カードStage使用台帳も共通経路で更新。
 - 現在の8方向隣接セルで、✨の正産出があるセル1つにつき✨+1/T、1基最大+3。
 - 同一セルの地形・資源・施設の産出が重なっても計数は1。産出量や近郊倍率は計数を増やさない。

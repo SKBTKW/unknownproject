@@ -397,7 +397,7 @@ export const SPECIAL_BLOCK_DEFINITIONS = Object.freeze({
             sourceExcludedDefinitionIds: ['ALTAR'],
             sourceSelection: 'FIRST_LEGAL_SOURCE',
             sourceNeighborhood: 'EIGHT_WAY',
-            destinationRegion: 'HQ_VICINITY_OUTER_EDGE',
+            destinationRegion: 'HQ_VICINITY',
             minimumSameDefinitionDistance: 3,
             maxCreationsPerStage: 1,
             participatesInZones: false

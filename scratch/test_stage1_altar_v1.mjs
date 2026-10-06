@@ -17,7 +17,7 @@ import { pickWeightedCard, resolveOfferingWeight } from '../game/src/cards/offer
 const card = COMMAND_CARDS_MASTER.find(c => c.id === 'CMD_ALTAR');
 const sourceCard = JSON.parse(readFileSync(new URL('../game/src/data/economy_cards.json', import.meta.url))).find(c => c.id === 'CMD_ALTAR');
 const definition = getSpecialBlockDefinition('ALTAR');
-const target = { source: { r: 1, c: 1 }, destination: { r: 0, c: 0 } };
+const target = { source: { r: 0, c: 1 }, destination: { r: 1, c: 2 } };
 function setup(size = 5, seed = 101) {
     const state = {
         turn: 6, stage: { id: size === 5 ? 1 : 2 }, food: 100, wood: 100, material: 100,
@@ -32,7 +32,7 @@ function setup(size = 5, seed = 101) {
     const center = Math.floor(size / 2);
     state.isHQVicinity = (r, c) => !(r === center && c === center) && Math.abs(r - center) <= 1 && Math.abs(c - center) <= 1;
     Object.assign(state.grid[center][center], { isHQ: true, placed: true, terrain: { id: 'HQ', e: 1, gl: 1, mystic: 1 } });
-    const cell = state.grid[1][1];
+    const cell = state.grid[0][1];
     Object.assign(cell, { placed: true, terrain: { id: 'GL1_PLAINS', e: 1, gl: 1, mystic: 0 },
         socketResource: { id: 'SOCKET_CRYSTAL', category: 'CAT_SPECIAL_MINERAL', bonusMystic: 2 } });
     const board = new BoardDomainAdapter({ state });
@@ -56,7 +56,7 @@ test('data parity, explicit runtime activation and Board-owned quote', () => {
     assert.equal(definition.trialTraits.defenseModifier, null);
     assert.deepEqual(definition.trialTraits.specialTactics, []);
 });
-test('Offering requires public positive mystic, legal outer-edge destination and affordability', () => {
+test('Offering requires public positive mystic, legal HQ-vicinity destination and affordability', () => {
     const { state, cell, deck } = setup();
     assert.equal(deck.isCardEligible(card), true);
     const socket = cell.socketResource; cell.socketResource = null;
@@ -73,123 +73,171 @@ test('Offering requires public positive mystic, legal outer-edge destination and
     for (const row of state.grid) for (const entry of row) if (!entry.placed) entry.placed = true;
     assert.equal(deck.isCardEligible(card), false);
 });
-test('eight-way source adjacency, exterior-only region and normal terrain legality', () => {
+test('eight-way source adjacency, HQ-vicinity only and common terrain legality', () => {
     const { state, service, cell } = setup();
-    assert.equal(service.validateTarget('ALTAR', target).valid, true, 'diagonal allowed');
-    assert.equal(service.validateTarget('ALTAR', { ...target, destination: { r: 0, c: 1 } }).valid, true);
-    assert.equal(service.validateTarget('ALTAR', { ...target, destination: { r: 1, c: 2 } }).valid, false, 'inside vicinity');
+    assert.equal(service.validateTarget('ALTAR', target).valid, true, 'diagonal source');
+    assert.equal(service.validateTarget('ALTAR', { ...target, destination: { r: 1, c: 1 } }).valid, true, 'orthogonal source');
+    for (const destination of [{ r: 0, c: 0 }, { r: 0, c: 2 }]) {
+        assert.equal(service.validateTarget('ALTAR', { ...target, destination }).reason, 'DESTINATION_REGION_NOT_ALLOWED');
+    }
     assert.equal(service.validateTarget('ALTAR', { ...target, destination: { r: -1, c: 0 } }).valid, false);
-    state.grid[0][0].placed = true; assert.equal(service.validateTarget('ALTAR', target).valid, false);
-    state.grid[0][0].placed = false; state.grid[0][0].specialBlock = { type: 'FARM' };
-    assert.equal(service.validateTarget('ALTAR', target).valid, false); state.grid[0][0].specialBlock = null;
-    state.grid[0][1].placed = true; state.grid[0][1].terrain = { id: 'E3_MOUNTAIN', e: 3, gl: 0 };
+    assert.equal(service.validateTarget('ALTAR', { source: { r: 0, c: 1 }, destination: { r: 2, c: 2 } }).valid, false, 'HQ');
+    state.grid[1][2].placed = true;
+    assert.equal(service.validateTarget('ALTAR', target).reason, 'DESTINATION_OCCUPIED');
+    state.grid[1][2].placed = false; state.grid[1][2].specialBlock = { type: 'FARM' };
+    assert.equal(service.validateTarget('ALTAR', target).reason, 'DESTINATION_OCCUPIED');
+    state.grid[1][2].specialBlock = null;
+    Object.assign(state.grid[1][3], { placed: true, terrain: { id: 'E3_MOUNTAIN', e: 3, gl: 0 } });
     assert.equal(service.validateTarget('ALTAR', target).valid, false, 'common mountain restriction');
-    state.grid[0][1].placed = false; state.grid[0][1].terrain = null;
+    state.grid[1][3].placed = false; state.grid[1][3].terrain = null;
     cell.socketResource = null; cell.terrain.mystic = 1;
-    assert.equal(service.validateTarget('ALTAR', target).valid, true, 'terrain mystic is also a source');
+    assert.equal(service.validateTarget('ALTAR', target).valid, true, 'terrain source');
+    cell.terrain.mystic = 0;
+    assert.equal(service.validateTarget('ALTAR', target).valid, false, 'HQ mystic alone is excluded');
 });
-test('Stage2 outer-edge follows current vicinity rather than Stage1 border', () => {
+test('all eight source directions are queried with HQ excluded', () => {
+    for (const [dr, dc] of [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]) {
+        const { state, cell, service } = setup();
+        cell.socketResource = null;
+        const source = { r: 1 + dr, c: 1 + dc };
+        const src = state.grid[source.r][source.c];
+        if (!src.isHQ) Object.assign(src, { placed:true, terrain:{id:'GL1_PLAINS',e:1,gl:1,mystic:1} });
+        assert.equal(service.validateTarget('ALTAR', {source, destination:{r:1,c:1}}).valid, !src.isHQ);
+    }
+});
+test('Stage2 and restored fallback use the current eight-cell vicinity', () => {
     const { state, service } = setup(7);
-    Object.assign(state.grid[2][2], { placed: true, terrain: { id: 'GL1_PLAINS', e: 1, gl: 1, mystic: 2 } });
-    assert.equal(service.validateTarget('ALTAR', { source: { r: 2, c: 2 }, destination: { r: 1, c: 1 } }).valid, false, 'occupied');
-    assert.equal(service.validateTarget('ALTAR', { source: { r: 2, c: 2 }, destination: { r: 1, c: 2 } }).valid, true);
-    assert.equal(service.validateTarget('ALTAR', { source: { r: 1, c: 1 }, destination: { r: 0, c: 0 } }).valid, false, 'too far outside');
+    Object.assign(state.grid[1][3], { placed: true, terrain: { id: 'GL1_PLAINS', e: 1, gl: 1, mystic: 2 } });
+    const t = { source: { r: 1, c: 3 }, destination: { r: 2, c: 3 } };
+    assert.equal(service.validateTarget('ALTAR', t).valid, true);
+    assert.equal(service.validateTarget('ALTAR', { ...t, destination: { r: 1, c: 2 } }).reason, 'DESTINATION_REGION_NOT_ALLOWED');
+    delete state.isHQVicinity;
+    assert.equal(service.validateTarget('ALTAR', t).valid, true);
+});
+test('Offering rejects outer-edge-only targets and enumeration exposes only HQ vicinity', () => {
+    const { state, deck } = setup();
+    const targets = deck.enumerateCardExecutionTargets(card);
+    assert.ok(targets.length > 0);
+    assert.ok(targets.every(t => state.isHQVicinity(t.r, t.c) && !state.grid[t.r][t.c].isHQ));
+    for (const row of state.grid) for (const cell of row) if (state.isHQVicinity(cell.r, cell.c)) cell.placed = true;
+    assert.equal(state.grid[0][2].placed, false, 'old outer-edge destination still empty');
+    assert.equal(deck.isCardEligible(card), false);
+    assert.deepEqual(deck.enumerateCardExecutionTargets(card), []);
 });
 test('shared Preview/Commit pays exactly and saves special-only E/GL without zone participation', () => {
     const { state, deck } = setup();
     const targets = deck.enumerateCardExecutionTargets(card);
-    assert.ok(targets.some(t => t.r === 0 && t.c === 0));
+    assert.ok(targets.some(t => t.r === 1 && t.c === 2));
     assert.deepEqual([state.food, state.wood], [100, 100]);
-    assert.equal(deck.playCommandCard(card, targets.find(t => t.r === 0 && t.c === 0), 0, -1).success, true);
+    assert.equal(deck.playCommandCard(card, targets.find(t => t.r === 1 && t.c === 2), 0, -1).success, true);
     assert.deepEqual([state.food, state.wood, state.material], [90, 70, 70]);
-    const altar = state.grid[0][0];
+    const altar = state.grid[1][2];
     assert.equal(altar.terrain, null); assert.equal(altar.placed, false);
-    assert.deepEqual(readSpecialBlockAdjacencyProfile(altar), { e: 1, gl: 1, source: { r: 1, c: 1 } });
+    assert.deepEqual(readSpecialBlockAdjacencyProfile(altar), { e: 1, gl: 1, source: { r: 0, c: 1 } });
     assert.equal(excludesCellFromZones(altar), true);
     assert.deepEqual(altar.specialBlock.paidCost, { food: 10, wood: 30 });
     assert.equal(altar.specialBlock.createdStage, 1);
     assert.equal(state.cardStageUsage['1'].CMD_ALTAR, 1);
     assert.equal(deck.isCardEligible(card), false);
 });
-test('current neighbors count once regardless of yield magnitude; cap 3 and lifecycle gate', () => {
+test('dynamic production counts 1/2/3/4 sources once, excludes HQ/ALTAR and retains construction E', () => {
     const { state, cell, service } = setup();
+    cell.terrain.e = 0;
+    const previews = service.enumerateLegalTargets('ALTAR');
     assert.equal(service.createSpecialBlock('ALTAR', target, paid).success, true);
+    const altar = state.grid[1][2].specialBlock;
+    assert.equal(altar.terrainAdjacencyProfile.e, 0);
+    assert.equal(altar.terrainAdjacencyProfile.gl, 1);
     assert.equal(sumSpecialBlockProduction(state).yields.mystic, 1);
     cell.terrain.mystic = 10; cell.socketResource.bonusMystic = 20;
-    assert.equal(sumSpecialBlockProduction(state).yields.mystic, 1, 'terrain + resource + vicinity are one source');
-    for (const [r, c] of [[0, 1], [1, 0]]) Object.assign(state.grid[r][c], {
-        placed: true, terrain: { id: 'GL1_PLAINS', e: 1, gl: 1, mystic: 2 }
+    assert.equal(sumSpecialBlockProduction(state).yields.mystic, 1, 'multiple components still one source');
+    const additions = [[0, 2], [0, 3], [1, 3]];
+    additions.forEach(([r,c], i) => {
+        Object.assign(state.grid[r][c], { placed: true, terrain: { id: 'GL1_PLAINS', e: 1, gl: 1, mystic: 2 } });
+        assert.equal(sumSpecialBlockProduction(state).yields.mystic, Math.min(i + 2, 3));
     });
-    assert.equal(sumSpecialBlockProduction(state).yields.mystic, 3);
-    // A non-corner Altar can see more than three cells; production remains capped.
-    state.grid[0][2].specialBlock = state.grid[0][0].specialBlock;
-    state.grid[0][0].specialBlock = null;
-    for (const [r, c] of [[0, 3], [1, 2], [1, 3]]) Object.assign(state.grid[r][c], {
-        placed: true, terrain: { id: 'GL1_PLAINS', e: 1, gl: 1, mystic: 1 }
-    });
-    assert.equal(sumSpecialBlockProduction(state).yields.mystic, 3);
-    for (const row of state.grid) for (const entry of row) if (!entry.isHQ) {
-        if (entry.terrain) entry.terrain.mystic = 0; entry.socketResource = null;
-    }
-    assert.equal(sumSpecialBlockProduction(state).yields.mystic, 0, 'no construction snapshot yield');
-    cell.terrain.mystic = 1; assert.equal(sumSpecialBlockProduction(state).yields.mystic, 1);
-    state.grid[0][2].specialBlock.state = 'DYSFUNCTIONAL';
+    cell.terrain.mystic = 0; cell.socketResource = null;
+    for (const [r,c] of additions.slice(1)) state.grid[r][c].terrain.mystic = 0;
+    assert.equal(sumSpecialBlockProduction(state).yields.mystic, 1, 'source removal');
+    state.grid[0][3].terrain.mystic = 1;
+    assert.equal(sumSpecialBlockProduction(state).yields.mystic, 2, 'source increase');
+    assert.equal(altar.terrainAdjacencyProfile.e, 0, 'E fixed after sources change');
+    for (const [r,c] of additions) state.grid[r][c].terrain.mystic = 0;
+    state.grid[1][1].specialBlock = { type: 'ALTAR', state: 'DYSFUNCTIONAL' };
+    assert.equal(sumSpecialBlockProduction(state).yields.mystic, 0, 'HQ and ALTAR do not qualify');
+    cell.terrain.mystic = 1;
+    assert.equal(sumSpecialBlockProduction(state).yields.mystic, 1);
+    altar.state = 'DYSFUNCTIONAL';
     assert.equal(sumSpecialBlockProduction(state).yields.mystic, 0);
+    assert.ok(previews.length > 0);
+});
+test('multiple source selection is deterministic and Preview exposes inherited E source', () => {
+    const { state, service } = setup();
+    state.grid[0][1].terrain.e = 0;
+    Object.assign(state.grid[0][2], { placed: true, terrain: { id: 'GL1_PLAINS', e: 1, gl: 1, mystic: 2 } });
+    const first = service.validateTarget('ALTAR', { r: 1, c: 2 });
+    const second = service.validateTarget('ALTAR', { r: 1, c: 2 });
+    assert.deepEqual(first.source, { r: 0, c: 1 });
+    assert.deepEqual(second.source, first.source);
+    assert.equal(first.adjacencyProfile.e, 0);
 });
 test('positive special-block and converted yields use shared projections; Altars excluded', () => {
     const { state } = setup();
     const cell = state.grid[0][0];
-    cell.specialBlock = { type: 'MINE', state: 'ACTIVE', terrainAdjacencyProfile: { e: 1, gl: 1, source: { r: 1, c: 1 } } };
+    cell.specialBlock = { type: 'MINE', state: 'ACTIVE', terrainAdjacencyProfile: { e: 1, gl: 1, source: { r: 0, c: 1 } } };
     assert.equal(hasCellPositiveProduction(state, cell, { r: 0, c: 0 }, 'mystic'), true);
     cell.specialBlock.state = 'DYSFUNCTIONAL';
     assert.equal(hasCellPositiveProduction(state, cell, { r: 0, c: 0 }, 'mystic'), false);
     cell.specialBlock = { type: 'ALTAR', state: 'ACTIVE' };
     assert.equal(hasCellPositiveProduction(state, cell, { r: 0, c: 0 }, 'mystic', { excludedDefinitionIds: ['ALTAR'] }), false);
-    const land = state.grid[1][1]; land.socketResource = null;
+    const land = state.grid[0][1]; land.socketResource = null;
     state.zoneConversionService = { resolveCellProduction: () => ({ status: 'RESOLVED', yields: { mystic: 2 } }) };
-    assert.equal(hasCellPositiveProduction(state, land, { r: 1, c: 1 }, 'mystic'), true);
+    assert.equal(hasCellPositiveProduction(state, land, { r: 0, c: 1 }, 'mystic'), true);
 });
-test('one creation per Stage and two empty cells between all Altars, including diagonal', () => {
+test('Stage usage remains per Stage while vicinity spacing prevents a second Altar', () => {
     const { state, service, deck } = setup();
     assert.equal(service.createSpecialBlock('ALTAR', target, paid).success, true);
-    Object.assign(state.grid[1][3], { placed: true, terrain: { id: 'GL1_PLAINS', e: 1, gl: 1, mystic: 1 } });
-    const far = { source: { r: 1, c: 3 }, destination: { r: 0, c: 3 } };
-    assert.equal(service.validateTarget('ALTAR', far).reason, 'STAGE_CREATION_LIMIT');
     state.stage.id = 2;
-    assert.equal(service.validateTarget('ALTAR', { source: { r: 1, c: 1 }, destination: { r: 0, c: 2 } }).reason, 'SAME_DEFINITION_TOO_CLOSE');
-    assert.equal(service.validateTarget('ALTAR', { source: { r: 1, c: 3 }, destination: { r: 0, c: 3 } }).valid, true);
-    assert.equal(deck.isCardEligible(card), true);
-    assert.equal(service.createSpecialBlock('ALTAR', far, paid).success, true);
-    state.stage.id = 3;
-    const nearDiagonal = { source: { r: 1, c: 1 }, destination: { r: 2, c: 2 } };
-    assert.equal(service.validateTarget('ALTAR', nearDiagonal).reason, 'SAME_DEFINITION_TOO_CLOSE');
-    const farDiagonal = { source: { r: 3, c: 3 }, destination: { r: 4, c: 4 } };
-    Object.assign(state.grid[3][3], { placed: true, terrain: { id: 'GL1_PLAINS', e: 1, gl: 1, mystic: 1 } });
-    assert.equal(service.validateTarget('ALTAR', farDiagonal).valid, true);
+    assert.deepEqual(service.enumerateLegalTargets('ALTAR'), []);
+    assert.equal(deck.isCardEligible(card), false);
+    assert.equal(definition.placement.maxCreationsPerStage, 1);
+    assert.equal(definition.placement.minimumSameDefinitionDistance, 3);
+    for (const destination of [{r:1,c:1}, {r:3,c:2}, {r:3,c:0}]) {
+        assert.equal(service.validateTarget('ALTAR', { source: target.source, destination }).reason, 'SAME_DEFINITION_TOO_CLOSE');
+    }
+    const far = service.validateTarget('ALTAR', {source:{r:0,c:1}, destination:{r:1,c:5}});
+    assert.equal(far.reason, 'DESTINATION_NOT_ADJACENT', 'distance 3 passes spacing; source adjacency fails separately');
+    // A retained old exterior Altar at distance 3 may coexist: no new global cap or migration.
+    state.grid[1][2].specialBlock = null;
+    state.grid[4][2].specialBlock = { type:'ALTAR', state:'ACTIVE', createdStage:1 };
+    assert.equal(service.validateTarget('ALTAR', target).valid, true);
+    state.stage.id = 1;
+    assert.equal(service.validateTarget('ALTAR', target).reason, 'STAGE_CREATION_LIMIT');
 });
 for (const mutation of ['source', 'destination', 'nearby', 'stage']) test(`post-payment stale ${mutation} rolls back payment and preserves card/use ledger`, () => {
     const { state, cell, board, deck } = setup();
-    const preview = deck.enumerateCardExecutionTargets(card).find(t => t.r === 0 && t.c === 0);
+    const preview = deck.enumerateCardExecutionTargets(card).find(t => t.r === 1 && t.c === 2);
     const create = board.createSpecialBlock.bind(board);
     board.createSpecialBlock = (...args) => {
         assert.deepEqual([state.food, state.wood], [90, 70]);
         if (mutation === 'source') cell.socketResource = null;
-        if (mutation === 'destination') state.grid[0][0].placed = true;
+        if (mutation === 'destination') state.grid[1][2].placed = true;
         if (mutation === 'nearby') state.grid[0][2].specialBlock = { type: 'ALTAR', state: 'DYSFUNCTIONAL', createdStage: 0 };
         if (mutation === 'stage') state.grid[4][4].specialBlock = { type: 'ALTAR', createdStage: 1 };
         return create(...args);
     };
     assert.equal(deck.playCommandCard(card, preview, 0, -1).success, false);
     assert.deepEqual([state.food, state.wood, state.material], [100, 100, 100]);
-    assert.equal(state.grid[0][0].specialBlock, null);
+    assert.equal(state.grid[1][2].specialBlock, null);
     assert.equal(state.handOffering[0], card);
     assert.equal(state.cardStageUsage['1']?.CMD_ALTAR ?? 0, 0);
 });
 test('Save/Restore preserves entity, production, stage limit and distance without double production', () => {
-    const { state, deck } = setup();
+    const { state, deck, cell } = setup();
+    cell.terrain.e = 0;
     assert.equal(deck.playCommandCard(card, target, 0, -1).success, true);
     const saved = serializeGameState(state); const restored = {}; hydrateGameState(restored, saved);
-    assert.deepEqual(restored.grid[0][0].specialBlock, state.grid[0][0].specialBlock);
+    assert.deepEqual(restored.grid[1][2].specialBlock, state.grid[1][2].specialBlock);
     assert.deepEqual(restored.cardStageUsage, state.cardStageUsage);
     for (let i = 0; i < 2; i++) assert.equal(sumSpecialBlockProduction(restored).yields.mystic, 1);
     assert.deepEqual(new SpecialBlockService(restored).enumerateLegalTargets('ALTAR'), []);
@@ -203,7 +251,7 @@ test('Board click keeps source-bearing target through shared UI', () => {
         commandCardRequiresTarget: () => true, hideCellTooltip() {}, getCommandCardExecutionTargets: () => targets,
         isCommandExecutionTarget: UIController.prototype.isCommandExecutionTarget,
         playCommandCard(_c, _idx, t) { selected = t; return deck.playCommandCard(card, t, 0, -1); } };
-    assert.equal(UIController.prototype.onCellClick.call(ui, 0, 0), true);
+    assert.equal(UIController.prototype.onCellClick.call(ui, 1, 2), true);
     assert.deepEqual(selected.source, target.source);
 });
 console.log(`Altar: ${cases}/${cases} cases PASS`);
