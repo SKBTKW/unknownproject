@@ -1535,6 +1535,14 @@
       ]
     },
     {
+      "path": "scratch/test_trial_interception_plan_candidate_generator.mjs",
+      "purpose": "Semantic interception-plan generation from deployment origins and external maneuver proposals without pathfinding or tactic-success logic",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_trial_battle_coordinator_characterization.mjs",
       "purpose": "Controller battle and Fortune observable contracts, exactly-once calls and runtime reference restoration",
       "suite": "existing",

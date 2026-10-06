@@ -79,3 +79,23 @@ Infrastructure / Timing). It intentionally does not:
 - mutate Battle State
 
 This keeps "can attempt this plan" separate from "the tactic succeeds".
+
+
+## Candidate generation preparation
+
+The InterceptionPlanCandidateGenerator composes existing semantic boundaries:
+
+1. DeploymentOriginResolver provides semantic departure origins.
+2. An injected maneuverProvider supplies maneuver/route proposals.
+3. TacticRequirementEvaluator filters only by declared prerequisite eligibility.
+4. InterceptionPlanCandidate captures the preserved causal inputs.
+5. InterceptionPlanCandidateCompactor reduces route multiplicity to a small semantic set.
+
+The generator intentionally performs no pathfinding. It does not infer a
+Barracks/HQ identity from card IDs and it does not treat tactic intent or
+initial Positioning as success.
+
+A future runtime adapter may feed the selected candidate's
+humanEngagementOrigin into the existing engagement-origin runtime. That hookup
+is intentionally deferred until selection lifecycle and UI ownership are
+defined.

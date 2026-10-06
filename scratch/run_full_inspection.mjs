@@ -648,6 +648,7 @@ async function main() {
         ["Trial Spatial Engagement Tactical Foundation", "scratch/test_trial_spatial_engagement_tactical_foundation.mjs"],
         ["Trial Interception Plan Candidate Foundation", "scratch/test_trial_interception_plan_candidate_foundation.mjs"],
         ["Trial Tactic Requirement Evaluator", "scratch/test_trial_tactic_requirement_evaluator.mjs"],
+        ["Trial Interception Plan Candidate Generator", "scratch/test_trial_interception_plan_candidate_generator.mjs"],
         ["Trial Battle Coordinator Characterization", "scratch/test_trial_battle_coordinator_characterization.mjs"],
         ["Trial Engagement Origin Runtime Connection", "scratch/test_trial_engagement_origin_runtime_connection.mjs"],
         ["Trial Enemy Traversal", "scratch/test_trial_phase28d_enemy_traversal.mjs"],
