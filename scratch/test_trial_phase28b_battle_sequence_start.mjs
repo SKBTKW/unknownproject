@@ -861,6 +861,99 @@ test("Y. Battle開始後はcurrent battle routeがPresentationの正本になる
     assert.equal(ui.getActiveTrialRoute().id, routes[0].id);
 });
 
+function prepareBattleWithEngagementOrigins(ui, candidates) {
+    ui.trialController.engagementOriginRuntime.originResolver = {
+        resolveCandidates() {
+            return {
+                success: candidates.length > 0,
+                reason: candidates.length > 0 ? null : "ENGAGEMENT_ORIGIN_UNAVAILABLE",
+                candidates: JSON.parse(JSON.stringify(candidates))
+            };
+        }
+    };
+
+    const routes = ui.getTrialPlanningRoutes();
+    ui.selectTrialRoute(routes[0].id);
+    ui.selectTrialInterceptionCell(2, 1);
+    ui.setTrialDefenseAllocation(10);
+    ui.setTrialActiveRouteIntercept();
+    for (let i = 1; i < routes.length; i++) {
+        ui.selectTrialRoute(routes[i].id);
+        ui.setTrialActiveRouteSkip();
+    }
+    ui.finishTrialPlanning();
+    ui.confirmTrialPlanning();
+    ui.activateTrialPlan();
+    return ui.startTrialBattle();
+}
+
+// --- Z1. 複数Engagement Origin候補はPlayer Trayで選択可能 ---
+test("Z1. 複数Engagement Origin候補はPlayer Trayで選択可能", () => {
+    const { ui } = createFreshHarness();
+    const candidates = [
+        { cell: { r: 1, c: 2 }, originType: "BARRACKS", capabilities: ["LOCAL_ENGAGEMENT_ORIGIN"] },
+        { cell: { r: 3, c: 2 }, originType: "OUTPOST", capabilities: ["LOCAL_ENGAGEMENT_ORIGIN"] }
+    ];
+    const start = prepareBattleWithEngagementOrigins(ui, candidates);
+    assert.equal(start.success, true);
+
+    const before = ui.getCurrentTrialEngagementOrigins();
+    assert.equal(before.requiresSelection, true);
+    assert.equal(before.selectedOrigin, null);
+    assert.notEqual(document.getElementById("trialEngagementOriginSelector"), null);
+    assert.notEqual(document.getElementById("btnTrialEngagementOrigin0"), null);
+    const second = document.getElementById("btnTrialEngagementOrigin1");
+    assert.notEqual(second, null);
+
+    second.onclick();
+
+    const after = ui.getCurrentTrialEngagementOrigins();
+    assert.equal(after.requiresSelection, false);
+    assert.deepEqual(
+        { r: after.selectedOrigin.cell.r, c: after.selectedOrigin.cell.c },
+        { r: 3, c: 2 }
+    );
+    const selector = document.getElementById("trialEngagementOriginSelector");
+    assert.notEqual(selector, null);
+    assert.equal(selector.textContent.includes(I18n.t("UI_TRIAL_ENGAGEMENT_ORIGIN_SELECTED", { coord: "C4" })), true);
+});
+
+// --- Z2. 候補1件は自動選択され追加UIを出さない ---
+test("Z2. Engagement Origin候補1件は自動選択され追加UIを出さない", () => {
+    const { ui } = createFreshHarness();
+    const start = prepareBattleWithEngagementOrigins(ui, [
+        { cell: { r: 1, c: 2 }, originType: "BARRACKS", capabilities: ["LOCAL_ENGAGEMENT_ORIGIN"] }
+    ]);
+    assert.equal(start.success, true);
+
+    const state = ui.getCurrentTrialEngagementOrigins();
+    assert.equal(state.requiresSelection, false);
+    assert.deepEqual(
+        { r: state.selectedOrigin.cell.r, c: state.selectedOrigin.cell.c },
+        { r: 1, c: 2 }
+    );
+    assert.equal(document.getElementById("trialEngagementOriginSelector"), null);
+    assert.notEqual(document.getElementById("btnTrialResolveBattle"), null);
+});
+
+// --- Z3. 複数候補を選ばなくても既存Resolveを阻害しない ---
+test("Z3. Engagement Origin未選択でも既存Resolveを阻害しない", () => {
+    const { ui } = createFreshHarness();
+    const start = prepareBattleWithEngagementOrigins(ui, [
+        { cell: { r: 1, c: 2 }, originType: "BARRACKS", capabilities: ["LOCAL_ENGAGEMENT_ORIGIN"] },
+        { cell: { r: 3, c: 2 }, originType: "OUTPOST", capabilities: ["LOCAL_ENGAGEMENT_ORIGIN"] }
+    ]);
+    assert.equal(start.success, true);
+    assert.equal(ui.getCurrentTrialEngagementOrigins().requiresSelection, true);
+
+    const resolve = document.getElementById("btnTrialResolveBattle");
+    assert.notEqual(resolve, null);
+    assert.equal(resolve.disabled, false);
+    resolve.onclick();
+
+    assert.equal(ui.isTrialBattleResolved(), true);
+});
+
 // --- Z. Advisor Foundation regression維持 ---
 test("Z. Advisor Foundation regression維持", () => {
     
