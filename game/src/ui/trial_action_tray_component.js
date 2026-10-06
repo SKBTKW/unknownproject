@@ -367,7 +367,7 @@ export class TrialActionTrayComponent {
                             && selectedCell.r === originCell?.r
                             && selectedCell.c === originCell?.c
                         );
-                        const type = candidate?.originType || I18n.t("UI_TRIAL_ENGAGEMENT_ORIGIN_GENERIC");
+                        const type = I18n.t("UI_TRIAL_ENGAGEMENT_ORIGIN_GENERIC");
                         return `
                             <button type="button"
                                 id="btnTrialEngagementOrigin${index}"
