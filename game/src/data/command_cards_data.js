@@ -765,6 +765,48 @@ export const ECONOMY_CARDS_MASTER = [
       "logActivation": true
     }
   ]
+},
+{
+  "id": "CMD_ALTAR",
+  "category": "COMMAND",
+  "nameKey": "CMD_ALTAR_NAME",
+  "descriptionKey": "CMD_ALTAR_DESC",
+  "cost": {},
+  "tags": [
+    "MYSTIC",
+    "SPECIAL_BLOCK",
+    "BOARD_INVESTMENT"
+  ],
+  "minStage": 1,
+  "rarity": "UC",
+  "weight": 0.25,
+  "cyclePolicy": "RARITY",
+  "maxUsesPerStage": 1,
+  "offering": {
+    "requirements": [
+      {
+        "type": "CARD_STAGE_USAGE_BELOW",
+        "maxUses": 1
+      }
+    ]
+  },
+  "execution": {
+    "requirements": [
+      {
+        "type": "CARD_STAGE_USAGE_BELOW",
+        "maxUses": 1
+      }
+    ]
+  },
+  "effects": [
+    {
+      "type": "DOMAIN_ACTION",
+      "action": "CREATE_SPECIAL_BLOCK",
+      "blockType": "ALTAR",
+      "paymentMode": "DOMAIN_QUOTE",
+      "logActivation": true
+    }
+  ]
 }
 ];
 
@@ -2795,6 +2837,48 @@ export const COMMAND_CARDS_MASTER = [
       "type": "DOMAIN_ACTION",
       "action": "CREATE_SPECIAL_BLOCK",
       "blockType": "FARM",
+      "paymentMode": "DOMAIN_QUOTE",
+      "logActivation": true
+    }
+  ]
+},
+{
+  "id": "CMD_ALTAR",
+  "category": "COMMAND",
+  "nameKey": "CMD_ALTAR_NAME",
+  "descriptionKey": "CMD_ALTAR_DESC",
+  "cost": {},
+  "tags": [
+    "MYSTIC",
+    "SPECIAL_BLOCK",
+    "BOARD_INVESTMENT"
+  ],
+  "minStage": 1,
+  "rarity": "UC",
+  "weight": 0.25,
+  "cyclePolicy": "RARITY",
+  "maxUsesPerStage": 1,
+  "offering": {
+    "requirements": [
+      {
+        "type": "CARD_STAGE_USAGE_BELOW",
+        "maxUses": 1
+      }
+    ]
+  },
+  "execution": {
+    "requirements": [
+      {
+        "type": "CARD_STAGE_USAGE_BELOW",
+        "maxUses": 1
+      }
+    ]
+  },
+  "effects": [
+    {
+      "type": "DOMAIN_ACTION",
+      "action": "CREATE_SPECIAL_BLOCK",
+      "blockType": "ALTAR",
       "paymentMode": "DOMAIN_QUOTE",
       "logActivation": true
     }

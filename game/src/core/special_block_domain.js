@@ -220,6 +220,7 @@ function freezeProductionDefinition(production) {
         perSourceYields: freezeYieldMap(production.perSourceYields),
         perRelationYields: freezeYieldMap(production.perRelationYields),
         relationTerrainIds: freezeStringArray(production.relationTerrainIds),
+        relationExcludedDefinitionIds: freezeStringArray(production.relationExcludedDefinitionIds),
         allowedResourceCategories: freezeStringArray(production.allowedResourceCategories)
     });
 }
@@ -230,6 +231,7 @@ function freezeDefinition(definition) {
         terrainIds: freezeStringArray(definition.placement?.terrainIds),
         sourceTerrainIds: freezeStringArray(definition.placement?.sourceTerrainIds),
         sourceResourceCategories: freezeStringArray(definition.placement?.sourceResourceCategories),
+        sourceExcludedDefinitionIds: freezeStringArray(definition.placement?.sourceExcludedDefinitionIds),
         ...(definition.placement?.glAdjacencyException ? {
             glAdjacencyException: Object.freeze({
                 ...definition.placement.glAdjacencyException,
@@ -389,11 +391,30 @@ export const SPECIAL_BLOCK_DEFINITIONS = Object.freeze({
         id: SPECIAL_BLOCK_TYPES.ALTAR,
         category: 'PRODUCTION',
         placement: {
-            ...overlayPlacement,
-            requiresAdjacentCapability: BOARD_CAPABILITIES.MYSTIC_SOURCE
+            mode: 'INDEPENDENT_CELL_GENERATION',
+            targeting: 'SOURCE_AND_ADJACENT_EMPTY',
+            sourcePositiveProductionResource: 'mystic',
+            sourceExcludedDefinitionIds: ['ALTAR'],
+            sourceSelection: 'FIRST_LEGAL_SOURCE',
+            sourceNeighborhood: 'EIGHT_WAY',
+            destinationRegion: 'HQ_VICINITY_OUTER_EDGE',
+            minimumSameDefinitionDistance: 3,
+            maxCreationsPerStage: 1,
+            participatesInZones: false
         },
-        baseTerrainInteraction: { kind: BASE_TERRAIN_INTERACTIONS.TERRAIN_USING_OVERLAY },
-        production: { kind: 'RELATION_COUNT', status: 'UNRESOLVED' },
+        baseTerrainInteraction: { kind: BASE_TERRAIN_INTERACTIONS.INDEPENDENT },
+        creationCost: {
+            status: SPECIAL_BLOCK_COST_STATUS.RESOLVED,
+            resources: { food: 10, wood: 30 }
+        },
+        production: {
+            kind: 'RELATION_COUNT', status: 'RESOLVED',
+            relationPositiveProductionResource: 'mystic',
+            relationExcludedDefinitionIds: ['ALTAR'],
+            relationNeighborhood: 'EIGHT_WAY',
+            perRelationYields: { mystic: 1 },
+            maxRelations: 3
+        },
         capabilities: [BOARD_CAPABILITIES.PRODUCTION_SITE],
         trialTraits: {},
         lifecycle: { initialState: 'ACTIVE' },

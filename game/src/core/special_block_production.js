@@ -11,6 +11,7 @@ import {
     readCellCapabilities
 } from './special_block_domain.js';
 import { resolveSpecialBlockDamageEffect } from './board_damage_effect_policy.js';
+import { resolveCellProductionBase, resolvePlacedBlockProduction } from './land_production_contract.js';
 
 export const SPECIAL_BLOCK_PRODUCTION_STATUS = Object.freeze({
     RESOLVED: 'RESOLVED',
@@ -139,7 +140,8 @@ export class SpecialBlockProductionResolver {
         const relationTerrainIds = production?.relationTerrainIds;
         const hasTerrainRelation = Array.isArray(relationTerrainIds) && relationTerrainIds.length > 0;
         const relationResourceCategory = production?.relationResourceCategory;
-        if (!relationCapability && !relationDefinitionId && !hasTerrainRelation && !relationResourceCategory) return null;
+        const relationProductionResource = production?.relationPositiveProductionResource;
+        if (!relationCapability && !relationDefinitionId && !hasTerrainRelation && !relationResourceCategory && !relationProductionResource) return null;
         if (!isValidYieldMap(production?.perRelationYields)) return null;
 
         const offsets = relationOffsets(production.relationNeighborhood);
@@ -149,6 +151,14 @@ export class SpecialBlockProductionResolver {
         for (const [dr, dc] of offsets) {
             const neighbor = state?.grid?.[r + dr]?.[c + dc];
             if (!neighbor) continue;
+
+            if (relationProductionResource) {
+                if (hasCellPositiveProduction(state, neighbor, { r: r + dr, c: c + dc }, relationProductionResource, {
+                    resolver: this,
+                    excludedDefinitionIds: production.relationExcludedDefinitionIds
+                })) count++;
+                continue;
+            }
 
             if (relationResourceCategory) {
                 if (neighbor.socketResource?.category === relationResourceCategory
@@ -385,6 +395,29 @@ export class SpecialBlockProductionResolver {
 }
 
 const defaultResolver = new SpecialBlockProductionResolver();
+
+/** Count a public producing cell once, regardless of yield magnitude or vicinity bonuses.
+ * Reuse canonical Land, Socket, Zone Conversion and Special Block projections;
+ * cached/unresolved socket seeds and HQ are never production relation sources.
+ */
+export function hasCellPositiveProduction(state, cell, position, resource, {
+    resolver = runtimeResolver(state), excludedDefinitionIds = []
+} = {}) {
+    if (!cell || cell.isHQ || !Object.hasOwn(ZERO_YIELDS, resource)) return false;
+    const definitionId = cell.specialBlock?.definitionId || cell.specialBlock?.type;
+    if (excludedDefinitionIds?.includes(definitionId)) return false;
+    if (cell.placed && cell.terrain) {
+        if (resolveCellProductionBase(cell).yields[resource] > 0) return true;
+        if (cell.placementGroupId && resolvePlacedBlockProduction(state, cell.placementGroupId).yields[resource] > 0) return true;
+        const socket = readDiscoveredSocketResource(cell);
+        if (socket && readSocketResourceYields(socket)[resource] > 0) return true;
+        const conversion = state?.zoneConversionService?.resolveCellProduction?.(position);
+        if (conversion?.status === 'RESOLVED' && conversion.yields?.[resource] > 0) return true;
+    }
+    if (!cell.specialBlock) return false;
+    const special = resolver.resolveCell(state, cell, position);
+    return special.status === SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED && special.yields[resource] > 0;
+}
 
 function runtimeResolver(state) {
     const resolver = state?.specialBlockProductionResolver;

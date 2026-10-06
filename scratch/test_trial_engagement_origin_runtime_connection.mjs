@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { TrialController } from "../game/src/trial/flow/trial_controller_base.js";
-import { HumanEngagementOriginResolver } from "../game/src/trial/systems/human_engagement_origin_resolver.js";
+import { TrialController } from "../game/src/trial/flow/trial_controller.js";
+import { EngagementOriginRuntime } from "../game/src/trial/systems/engagement_origin_runtime.js";
 import { TRIAL_BATTLE_STATUSES } from "../game/src/trial/domain/trial_types.js";
 
 let cases = 0;
@@ -20,7 +20,7 @@ function makeCell(r, c, capabilities = []) {
     };
 }
 
-function createHarness(originCells = []) {
+function createHarness(originCells = [], controllerOptions = {}) {
     const cells = new Map([
         ["2:1", makeCell(2, 1)],
         ["2:2", makeCell(2, 2)],
@@ -50,7 +50,7 @@ function createHarness(originCells = []) {
                 return Object.freeze({ battleId: input.battleId, actions: input.actions });
             }
         },
-        engagementOriginResolver: new HumanEngagementOriginResolver()
+        ...controllerOptions
     });
 
     controller.startScenario({
@@ -144,8 +144,44 @@ test("no origin candidate preserves current Trial resolution", () => {
     const { controller, getCapturedSnapshotInput } = createHarness([]);
     const started = controller.startNextBattle();
     assert.equal(started.success, true);
+    assert.equal(started.engagementOrigin.applicable, true);
     assert.equal(started.engagementOrigin.candidateCount, 0);
     assert.equal(started.engagementOrigin.selectedOrigin, null);
+
+    const result = controller.resolveCurrentBattle();
+    assert.equal(result.success, true);
+    const captured = getCapturedSnapshotInput();
+    assert.equal(captured.battleContext.humanEngagementOrigin, null);
+    assert.equal(captured.actions[0].origin, null);
+});
+
+test("multiple unselected candidates never create a new progression blocker", () => {
+    const { controller, getCapturedSnapshotInput } = createHarness([
+        makeCell(1, 2, ["LOCAL_ENGAGEMENT_ORIGIN"]),
+        makeCell(3, 2, ["PROJECTILE_DELIVERY"])
+    ]);
+    const started = controller.startNextBattle();
+    assert.equal(started.success, true);
+    assert.equal(started.engagementOrigin.candidateCount, 2);
+    assert.equal(started.engagementOrigin.selectedOrigin, null);
+    assert.equal(controller.getCurrentBattleEngagementOrigins().requiresSelection, true);
+
+    const result = controller.resolveCurrentBattle();
+    assert.equal(result.success, true);
+    const captured = getCapturedSnapshotInput();
+    assert.equal(captured.battleContext.humanEngagementOrigin, null);
+    assert.equal(captured.actions[0].origin, null);
+});
+
+test("explicit no-resolver runtime preserves legacy Trial progression", () => {
+    const { controller, getCapturedSnapshotInput } = createHarness(
+        [makeCell(1, 2, ["LOCAL_ENGAGEMENT_ORIGIN"])],
+        { engagementOriginRuntime: new EngagementOriginRuntime() }
+    );
+    const started = controller.startNextBattle();
+    assert.equal(started.success, true);
+    assert.equal(started.engagementOrigin.applicable, false);
+    assert.equal(started.engagementOrigin.candidateCount, 0);
 
     const result = controller.resolveCurrentBattle();
     assert.equal(result.success, true);
