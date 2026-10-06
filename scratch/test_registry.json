@@ -1519,6 +1519,14 @@
       ]
     },
     {
+      "path": "scratch/test_trial_battle_coordinator_characterization.mjs",
+      "purpose": "Controller battle and Fortune observable contracts, exactly-once calls and runtime reference restoration",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_trial_engagement_origin_runtime_connection.mjs",
       "purpose": "Production TrialController engagement-origin discovery, selection persistence, non-blocking fallback and BattleContext/action injection",
       "suite": "existing",
