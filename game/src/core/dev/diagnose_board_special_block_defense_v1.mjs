@@ -413,7 +413,7 @@ console.log('Board / Special Block / Defense v1 contract');
             bonusMystic: 2
         }
     });
-    state.grid[0][2] = cell(0, 2);
+    state.grid[1][2] = cell(1, 2);
 
     const serializedCapabilities = serializeGameState(state);
     const restoredCapabilities = {};
@@ -425,12 +425,12 @@ console.log('Board / Special Block / Defense v1 contract');
         'terrain/socket capability survives save/restore'
     );
 
-    const altar = service.createSpecialBlock(SPECIAL_BLOCK_TYPES.ALTAR, { r: 0, c: 2 }, {
+    const altar = service.createSpecialBlock(SPECIAL_BLOCK_TYPES.ALTAR, { r: 1, c: 2 }, {
         paymentConfirmed: true, paidCost: { food: 10, wood: 30 }
     });
     assert.equal(altar.success, true);
     assert.equal(
-        service.readCapabilities({ r: 0, c: 2 }).has(BOARD_CAPABILITIES.MYSTIC_SOURCE),
+        service.readCapabilities({ r: 1, c: 2 }).has(BOARD_CAPABILITIES.MYSTIC_SOURCE),
         false,
         'ALTAR never becomes its own MYSTIC_SOURCE'
     );
