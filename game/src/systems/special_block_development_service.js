@@ -55,6 +55,7 @@ export class SpecialBlockDevelopmentService {
 
     previewDevelopment({
         instanceId,
+        target = null,
         developmentDefinitionId,
         optionIds
     } = {}) {
@@ -62,7 +63,7 @@ export class SpecialBlockDevelopmentService {
         if (!definition) {
             return { success: false, reason: 'DEVELOPMENT_DEFINITION_NOT_FOUND' };
         }
-        const instance = resolveSpecialBlockInstance(this.state, instanceId);
+        const instance = resolveSpecialBlockInstance(this.state, instanceId || target);
         const target = validateDevelopmentTarget(instance, definition);
         if (!target.valid) return { success: false, ...target };
 
@@ -85,7 +86,10 @@ export class SpecialBlockDevelopmentService {
         const preview = this.previewDevelopment(request);
         if (!preview.success) return preview;
 
-        const instance = resolveSpecialBlockInstance(this.state, request.instanceId);
+        const instance = resolveSpecialBlockInstance(
+            this.state,
+            request.instanceId || request.target
+        );
         if (!instance) return { success: false, reason: 'SPECIAL_BLOCK_INSTANCE_REQUIRED' };
 
         const record = {
