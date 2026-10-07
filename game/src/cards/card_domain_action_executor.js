@@ -217,35 +217,6 @@ function createCardDomainActionExecutor(engine) {
             return withOptionalActivationLog(effect, context, result);
         }
 
-        if (effect.action === CARD_DOMAIN_ACTIONS.APPLY_SPECIAL_BLOCK_DEVELOPMENT) {
-            const board = engine?.boardDomainAdapter;
-            if (
-                !board
-                || typeof board.enumerateSpecialBlockDevelopmentTargets !== "function"
-                || !effect.developmentDefinitionId
-            ) {
-                return [];
-            }
-            const instances = board.enumerateSpecialBlockDevelopmentTargets(
-                effect.developmentDefinitionId
-            ) || [];
-            return instances.flatMap(instance => {
-                const footprint = Array.isArray(instance?.footprint) && instance.footprint.length > 0
-                    ? instance.footprint
-                    : [instance?.anchor].filter(Boolean);
-                return footprint.map(point => ({
-                    r: point.r,
-                    c: point.c,
-                    instanceId: instance.instanceId,
-                    definitionId: instance.definitionId,
-                    anchor: instance.anchor ? { ...instance.anchor } : { r: point.r, c: point.c },
-                    footprint: Array.isArray(instance.footprint)
-                        ? instance.footprint.map(cell => ({ ...cell }))
-                        : [{ r: point.r, c: point.c }]
-                }));
-            });
-        }
-
         if (effect.action === CARD_DOMAIN_ACTIONS.CREATE_ZONE_CONVERSION) {
             const board = engine?.boardDomainAdapter;
             if (
@@ -445,6 +416,35 @@ function createCardDomainActionExecutor(engine) {
 
     execute.enumerateTargets = (effect, context = {}) => {
         if (!effect || typeof effect !== "object") return [];
+
+        if (effect.action === CARD_DOMAIN_ACTIONS.APPLY_SPECIAL_BLOCK_DEVELOPMENT) {
+            const board = engine?.boardDomainAdapter;
+            if (
+                !board
+                || typeof board.enumerateSpecialBlockDevelopmentTargets !== "function"
+                || !effect.developmentDefinitionId
+            ) {
+                return [];
+            }
+            const instances = board.enumerateSpecialBlockDevelopmentTargets(
+                effect.developmentDefinitionId
+            ) || [];
+            return instances.flatMap(instance => {
+                const footprint = Array.isArray(instance?.footprint) && instance.footprint.length > 0
+                    ? instance.footprint
+                    : [instance?.anchor].filter(Boolean);
+                return footprint.map(point => ({
+                    r: point.r,
+                    c: point.c,
+                    instanceId: instance.instanceId,
+                    definitionId: instance.definitionId,
+                    anchor: instance.anchor ? { ...instance.anchor } : { r: point.r, c: point.c },
+                    footprint: Array.isArray(instance.footprint)
+                        ? instance.footprint.map(cell => ({ ...cell }))
+                        : [{ r: point.r, c: point.c }]
+                }));
+            });
+        }
 
         if (effect.action === CARD_DOMAIN_ACTIONS.CREATE_ZONE_CONVERSION) {
             const board = engine?.boardDomainAdapter;
