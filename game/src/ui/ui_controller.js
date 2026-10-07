@@ -1903,11 +1903,15 @@ class UIController {
             if (!this.isCommandExecutionTarget(this.selectedCard, r, c)) return false;
             const selectedCard = this.selectedCard;
             const selectedIdx = this.selectedCardIdx;
-            const target = this.getCommandCardExecutionTargets(selectedCard).find(candidate =>
+            const matchingTargets = this.getCommandCardExecutionTargets(selectedCard).filter(candidate =>
                 Number(candidate?.r) === r && Number(candidate?.c) === c
             );
-            const result = this.playCommandCard(selectedCard, selectedIdx, target);
-            return result?.success === true;
+            if (matchingTargets.length === 0) return false;
+            if (matchingTargets.length === 1) {
+                const result = this.playCommandCard(selectedCard, selectedIdx, matchingTargets[0]);
+                return result?.success === true;
+            }
+            return this.promptCommandTargetSelection(selectedCard, selectedIdx, matchingTargets);
         }
 
         // ↩️ 当ターン配置済みマスをクリックした場合は配置取り消し（Undo）
@@ -2082,6 +2086,70 @@ class UIController {
         return this.getCommandCardExecutionTargets(card).some(target =>
             Number(target?.r) === r && Number(target?.c) === c
         );
+    }
+
+    promptCommandTargetSelection(card, cardIdx, candidates) {
+        if (!Array.isArray(candidates) || candidates.length === 0) return false;
+
+        if (typeof this.onCommandTargetPrompt === "function") {
+            const selected = this.onCommandTargetPrompt(candidates, card, cardIdx);
+            if (selected) {
+                const result = this.playCommandCard(card, cardIdx, selected);
+                return result?.success === true;
+            }
+            return false;
+        }
+
+        const modalSys = (typeof window !== "undefined" && window.ModalSystem) ? window.ModalSystem : (typeof ModalSystem !== "undefined" ? ModalSystem : null);
+        const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: (k, p) => k });
+
+        if (!modalSys || typeof modalSys.showChoiceDialog !== "function") {
+            const result = this.playCommandCard(card, cardIdx, candidates[0]);
+            return result?.success === true;
+        }
+
+        const cardName = card.nameKey ? I18n.t(card.nameKey) : (card.id || "Card");
+        const title = I18n.t("UI_COMMAND_TARGET_SELECT_TITLE", { name: cardName });
+        const descText = I18n.t("UI_COMMAND_TARGET_SELECT_DESC");
+
+        const choices = candidates.map((candidate, idx) => {
+            const dirKey = candidate.direction ? `DIRECTION_${candidate.direction}` : null;
+            const dirLabel = dirKey ? I18n.t(dirKey) : (candidate.direction || "");
+            const label = dirLabel
+                ? I18n.t("UI_COMMAND_TARGET_DIRECTION", { direction: dirLabel })
+                : I18n.t("UI_COMMAND_TARGET_OPTION", { index: idx + 1 });
+
+            const descParts = [];
+            if (candidate.source) {
+                descParts.push(I18n.t("UI_COMMAND_TARGET_SOURCE", { r: candidate.source.r, c: candidate.source.c }));
+            }
+            if (Array.isArray(candidate.footprint) && candidate.footprint.length > 0) {
+                const fpStr = candidate.footprint.map(p => `(${p.r},${p.c})`).join(" -> ");
+                descParts.push(I18n.t("UI_COMMAND_TARGET_FOOTPRINT", { footprint: fpStr }));
+            }
+            const description = descParts.join(" | ");
+
+            return {
+                id: `target_choice_${idx}`,
+                target: candidate,
+                label,
+                description
+            };
+        });
+
+        modalSys.showChoiceDialog({
+            title,
+            descText,
+            choices,
+            onSelect: (choice) => {
+                if (choice?.target) {
+                    this.playCommandCard(card, cardIdx, choice.target);
+                }
+            },
+            onCancel: () => {}
+        });
+
+        return true;
     }
 
     beginTargetedCommandSelection(card, handIdx = -1, reserveIdx = -1) {
