@@ -142,13 +142,15 @@ function createCardDomainActionExecutor(engine) {
             if (!effect.developmentDefinitionId) {
                 return { success: false, reason: "SPECIAL_BLOCK_DEVELOPMENT_DEFINITION_REQUIRED" };
             }
+            const target = resolveTarget(effect, context);
             const instanceId = resolveDevelopmentInstanceId(effect, context);
-            if (!instanceId) {
+            if (!instanceId && !target) {
                 return { success: false, reason: "SPECIAL_BLOCK_DEVELOPMENT_TARGET_REQUIRED" };
             }
             const optionIds = resolveDevelopmentOptionIds(effect);
             const preview = board.previewSpecialBlockDevelopment({
                 instanceId,
+                target,
                 developmentDefinitionId: effect.developmentDefinitionId,
                 optionIds
             });
@@ -173,6 +175,7 @@ function createCardDomainActionExecutor(engine) {
                 : null;
             const result = board.applySpecialBlockDevelopment({
                 instanceId,
+                target,
                 developmentDefinitionId: effect.developmentDefinitionId,
                 optionIds
             }, {
@@ -574,8 +577,9 @@ function createCardDomainActionExecutor(engine) {
             if (!effect.developmentDefinitionId) {
                 return { success: false, reason: "SPECIAL_BLOCK_DEVELOPMENT_DEFINITION_REQUIRED" };
             }
+            const target = resolveTarget(effect, context);
             const instanceId = resolveDevelopmentInstanceId(effect, context);
-            if (!instanceId) {
+            if (!instanceId && !target) {
                 return { success: false, reason: "SPECIAL_BLOCK_DEVELOPMENT_TARGET_REQUIRED" };
             }
             const optionIds = resolveDevelopmentOptionIds(effect);
@@ -588,6 +592,7 @@ function createCardDomainActionExecutor(engine) {
             }
             const preview = board.previewSpecialBlockDevelopment({
                 instanceId,
+                target,
                 developmentDefinitionId: effect.developmentDefinitionId,
                 optionIds
             });
