@@ -2736,7 +2736,9 @@ class UIController {
 
     playCommandCard(card, targetIdx, target = null) {
         if (!this.engine || typeof this.engine.playCommandCard !== "function") return;
-        const pendingEffectSelection = this.getPendingCommandEffectSelection(card);
+        const pendingEffectSelection = typeof this.getPendingCommandEffectSelection === "function"
+            ? this.getPendingCommandEffectSelection(card)
+            : null;
         if (pendingEffectSelection) {
             return this.promptCommandEffectSelection(
                 card,
