@@ -1,4 +1,5 @@
 import { GAME_FACT_TYPES } from "../../core/game_fact.js";
+import { syncLegacyNextTrialTurn } from "../../core/legacy_trial_schedule_compat.js";
 
 const STAGE_TRANSITIONS = Object.freeze({
     1: Object.freeze({ fromStageId: 1, toStageId: 2, size: 7, maxTiles: 48, nextTrialIndex: 2 }),
@@ -123,12 +124,9 @@ export class TrialStageProgressionService {
             maxTiles: pending.maxTiles
         };
 
-        const nextTrialVerse = state.trialSchedule?.[`trial${pending.nextTrialIndex}`];
-        if (Number.isFinite(nextTrialVerse)) {
-            // Compatibility mirror only. Exact Trial authority remains the modern
-            // timing service; legacy card predicates still read nextTrialTurn.
-            state.nextTrialTurn = nextTrialVerse;
-        }
+        // Compatibility mirror only. Exact Trial authority remains the modern
+        // timing service; legacy card predicates still read nextTrialTurn.
+        syncLegacyNextTrialTurn(state, pending.nextTrialIndex);
 
         state.addLog?.(
             typeof translate === "function"

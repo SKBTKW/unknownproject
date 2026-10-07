@@ -144,4 +144,24 @@ export function applyLegacyTrialScheduleStageProgression(engine, { translate = n
     return { changed: false, stageId: currentStageId };
 }
 
+export function findLegacyTrialIndexAtVerse(state, verse) {
+    if (!state?.trialSchedule || !Number.isInteger(verse)) return null;
+    const timing = createLegacyTrialTimingReadModel(state);
+    for (let idx = 1; idx <= 3; idx++) {
+        if (timing.getScheduledVerse(idx) === verse) {
+            return idx;
+        }
+    }
+    return null;
+}
+
+export function syncLegacyNextTrialTurn(state, nextTrialIndex) {
+    if (!state || !Number.isInteger(nextTrialIndex)) return;
+    const timing = createLegacyTrialTimingReadModel(state);
+    const nextTrialVerse = timing.getScheduledVerse(nextTrialIndex);
+    if (Number.isFinite(nextTrialVerse)) {
+        state.nextTrialTurn = nextTrialVerse;
+    }
+}
+
 export default applyLegacyTrialScheduleStageProgression;
