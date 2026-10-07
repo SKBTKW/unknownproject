@@ -24,7 +24,8 @@ import {
 import { SpecialBlockDevelopmentService } from "../game/src/systems/special_block_development_service.js";
 import {
     resolveSpecialBlockProduction,
-    sumSpecialBlockProduction
+    sumSpecialBlockProduction,
+    sumSpecialBlockProductionBreakdown
 } from "../game/src/core/special_block_production.js";
 import { DefenseSystem } from "../game/src/systems/defense_system.js";
 import { serializeGameState } from "../game/src/core/state_serializer_base.js";
@@ -343,7 +344,7 @@ test("Development yields join effective Special Block production without multi-c
     assert.deepEqual(left.yields, { food: 2, wood: 0, defense: 0, mystic: 1 });
     assert.deepEqual(right.yields, left.yields);
 
-    const total = sumSpecialBlockProduction(state);
+    const total = sumSpecialBlockProductionBreakdown(state);
     assert.equal(total.developmentYields.food, 2);
     assert.equal(total.developmentYields.mystic, 1);
 });
@@ -397,7 +398,7 @@ test("Defense capacity is derived from Development and one-shot recovery happens
     const stableCurrent = defense.getCurrentDefense();
     assert.equal(defense.getMaxDefense(), beforeMax + 1);
     assert.equal(defense.getCurrentDefense(), stableCurrent);
-    assert.equal(sumSpecialBlockProduction(state).developmentYields.defense, 0);
+    assert.equal(sumSpecialBlockProductionBreakdown(state).developmentYields.defense, 0);
 });
 
 console.log(`test_special_block_development_layer_v1: PASS (${count} cases)`);
