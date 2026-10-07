@@ -115,6 +115,11 @@ export function auditSystemAuthorityBoundaries() {
     // --------------------------------------------------------------------------
     // Rule 5: DeckManager legacy command card hardcoding lock
     // --------------------------------------------------------------------------
+    // [POLICY: LEGACY_ONLY / DO NOT EXPAND / MIGRATION CANDIDATES]
+    // The command card IDs below are strictly frozen historical implementations
+    // scheduled for future migration to cardEffectHandlerRouter.
+    // Under NO circumstances should new command cards be added to this allowlist
+    // or directly hardcoded into deck_manager.js. Always use cardEffectHandlerRouter!
     const deckManagerPath = path.resolve(ROOT_DIR, 'game/src/systems/deck_manager.js');
     if (fs.existsSync(deckManagerPath)) {
         const deckContent = fs.readFileSync(deckManagerPath, 'utf8');
@@ -145,7 +150,7 @@ export function auditSystemAuthorityBoundaries() {
                     rule: 'DECK_MANAGER_NEW_COMMAND_BRANCH',
                     file: 'game/src/systems/deck_manager.js',
                     line: 0,
-                    code: `Found new unrouted command branch: ${foundId}. New command cards MUST be registered in cardEffectHandlerRouter instead!`
+                    code: `Found new unrouted command branch: ${foundId}. [POLICY VIOLATION] DeckManager allowlist is LEGACY_ONLY / DO NOT EXPAND. New command cards MUST be registered in cardEffectHandlerRouter instead!`
                 });
             }
         }
