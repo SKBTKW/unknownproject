@@ -1826,6 +1826,22 @@
       ]
     },
     {
+      "path": "scratch/test_special_block_development_layer_v1.mjs",
+      "purpose": "generic Special Block instance Development Layer, Trial-causality exclusion, multi-cell atomic persistence, modifier semantics, and restore determinism",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_site_development_card_v1.mjs",
+      "purpose": "Site Development card SSOT/runtime eligibility, atomic 50/50 payment, Special Block development targeting, defense one-shot, and generic multi-option UI selection",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_special_block_lifecycle_functional_gate.mjs",
       "purpose": "Special Block lifecycle functional gating for capability, Trial traits, production, legacy compatibility, and persistence",
       "suite": "existing",
