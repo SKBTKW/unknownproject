@@ -64,8 +64,10 @@ export class SpecialBlockDevelopmentService {
             return { success: false, reason: 'DEVELOPMENT_DEFINITION_NOT_FOUND' };
         }
         const instance = resolveSpecialBlockInstance(this.state, instanceId || target);
-        const target = validateDevelopmentTarget(instance, definition);
-        if (!target.valid) return { success: false, ...target };
+        const targetValidation = validateDevelopmentTarget(instance, definition);
+        if (!targetValidation.valid) {
+            return { success: false, ...targetValidation };
+        }
 
         const effects = resolveDevelopmentEffects(definition, optionIds);
         if (!effects.valid) return { success: false, ...effects };
