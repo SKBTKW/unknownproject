@@ -9,7 +9,8 @@ const CARD_DOMAIN_ACTIONS = Object.freeze({
     CREATE_SPECIAL_BLOCK: "CREATE_SPECIAL_BLOCK",
     CREATE_ZONE_CONVERSION: "CREATE_ZONE_CONVERSION",
     TRANSFORM_TERRAIN: "TRANSFORM_TERRAIN",
-    APPLY_DEFENSE_DEVELOPMENT: "APPLY_DEFENSE_DEVELOPMENT"
+    APPLY_DEFENSE_DEVELOPMENT: "APPLY_DEFENSE_DEVELOPMENT",
+    APPLY_SPECIAL_BLOCK_DEVELOPMENT: "APPLY_SPECIAL_BLOCK_DEVELOPMENT"
 });
 
 const CARD_DOMAIN_PAYMENT_MODES = Object.freeze({
@@ -19,6 +20,19 @@ const CARD_DOMAIN_PAYMENT_MODES = Object.freeze({
 
 function resolveTarget(effect, context) {
     return effect?.target || context?.targetTile || null;
+}
+
+function resolveDevelopmentInstanceId(effect, context) {
+    const target = resolveTarget(effect, context);
+    if (typeof effect?.instanceId === "string" && effect.instanceId) return effect.instanceId;
+    if (typeof target?.instanceId === "string" && target.instanceId) return target.instanceId;
+    return null;
+}
+
+function resolveDevelopmentOptionIds(effect) {
+    return Array.isArray(effect?.selectedOptionIds)
+        ? [...effect.selectedOptionIds]
+        : [];
 }
 
 function normalizeCardCost(cardDefinition) {
@@ -116,6 +130,81 @@ function createCardDomainActionExecutor(engine) {
             return { success: false, reason: "INVALID_DOMAIN_ACTION" };
         }
 
+        if (effect.action === CARD_DOMAIN_ACTIONS.APPLY_SPECIAL_BLOCK_DEVELOPMENT) {
+            const board = engine?.boardDomainAdapter;
+            if (
+                !board
+                || typeof board.applySpecialBlockDevelopment !== "function"
+                || typeof board.previewSpecialBlockDevelopment !== "function"
+            ) {
+                return { success: false, reason: "SPECIAL_BLOCK_DEVELOPMENT_DOMAIN_UNAVAILABLE" };
+            }
+            if (!effect.developmentDefinitionId) {
+                return { success: false, reason: "SPECIAL_BLOCK_DEVELOPMENT_DEFINITION_REQUIRED" };
+            }
+            const instanceId = resolveDevelopmentInstanceId(effect, context);
+            if (!instanceId) {
+                return { success: false, reason: "SPECIAL_BLOCK_DEVELOPMENT_TARGET_REQUIRED" };
+            }
+            const optionIds = resolveDevelopmentOptionIds(effect);
+            const preview = board.previewSpecialBlockDevelopment({
+                instanceId,
+                developmentDefinitionId: effect.developmentDefinitionId,
+                optionIds
+            });
+            if (!preview?.success) {
+                return {
+                    success: false,
+                    reason: preview?.reason || "SPECIAL_BLOCK_DEVELOPMENT_INVALID",
+                    preview
+                };
+            }
+
+            const defense = engine?.defenseSystem || context?.state?.defenseSystem || null;
+            const needsDefenseRecovery = (preview.onApplyEffects || []).some(candidate =>
+                candidate?.kind === "RECOVER_CURRENT_DEFENSE" && Number(candidate?.amount || 0) > 0
+            );
+            if (needsDefenseRecovery && (!defense || typeof defense.recoverCurrentDefense !== "function")) {
+                return { success: false, reason: "DEFENSE_DOMAIN_ACTION_UNAVAILABLE" };
+            }
+
+            const beforeCurrentDefense = needsDefenseRecovery && typeof defense?.getCurrentDefense === "function"
+                ? defense.getCurrentDefense()
+                : null;
+            const result = board.applySpecialBlockDevelopment({
+                instanceId,
+                developmentDefinitionId: effect.developmentDefinitionId,
+                optionIds
+            }, {
+                onApplyEffectHandler(effects) {
+                    for (const developmentEffect of effects || []) {
+                        if (developmentEffect?.kind === "RECOVER_CURRENT_DEFENSE") {
+                            if (!defense || typeof defense.recoverCurrentDefense !== "function") {
+                                return { success: false, reason: "DEFENSE_DOMAIN_ACTION_UNAVAILABLE" };
+                            }
+                            defense.recoverCurrentDefense(Number(developmentEffect.amount || 0));
+                            continue;
+                        }
+                        return {
+                            success: false,
+                            reason: "SPECIAL_BLOCK_DEVELOPMENT_ON_APPLY_EFFECT_UNSUPPORTED"
+                        };
+                    }
+                    return { success: true };
+                }
+            });
+
+            if (
+                result?.success === false
+                && beforeCurrentDefense !== null
+                && defense
+                && typeof defense.setCurrentDefense === "function"
+            ) {
+                defense.setCurrentDefense(beforeCurrentDefense);
+            }
+            return withOptionalActivationLog(effect, context, result);
+        }
+
         if (effect.action === CARD_DOMAIN_ACTIONS.APPLY_DEFENSE_DEVELOPMENT) {
             const defense = engine?.defenseSystem || context?.state?.defenseSystem;
             if (!defense || typeof defense.applyPermanentDefenseDevelopment !== "function") {
@@ -126,6 +215,35 @@ function createCardDomainActionExecutor(engine) {
                 vicinityDefenseBonus: effect.vicinityDefenseBonus
             });
             return withOptionalActivationLog(effect, context, result);
+        }
+
+        if (effect.action === CARD_DOMAIN_ACTIONS.APPLY_SPECIAL_BLOCK_DEVELOPMENT) {
+            const board = engine?.boardDomainAdapter;
+            if (
+                !board
+                || typeof board.enumerateSpecialBlockDevelopmentTargets !== "function"
+                || !effect.developmentDefinitionId
+            ) {
+                return [];
+            }
+            const instances = board.enumerateSpecialBlockDevelopmentTargets(
+                effect.developmentDefinitionId
+            ) || [];
+            return instances.flatMap(instance => {
+                const footprint = Array.isArray(instance?.footprint) && instance.footprint.length > 0
+                    ? instance.footprint
+                    : [instance?.anchor].filter(Boolean);
+                return footprint.map(point => ({
+                    r: point.r,
+                    c: point.c,
+                    instanceId: instance.instanceId,
+                    definitionId: instance.definitionId,
+                    anchor: instance.anchor ? { ...instance.anchor } : { r: point.r, c: point.c },
+                    footprint: Array.isArray(instance.footprint)
+                        ? instance.footprint.map(cell => ({ ...cell }))
+                        : [{ r: point.r, c: point.c }]
+                }));
+            });
         }
 
         if (effect.action === CARD_DOMAIN_ACTIONS.CREATE_ZONE_CONVERSION) {
@@ -322,7 +440,8 @@ function createCardDomainActionExecutor(engine) {
     execute.requiresTarget = (effect) =>
         effect?.action === CARD_DOMAIN_ACTIONS.CREATE_SPECIAL_BLOCK
         || effect?.action === CARD_DOMAIN_ACTIONS.CREATE_ZONE_CONVERSION
-        || effect?.action === CARD_DOMAIN_ACTIONS.TRANSFORM_TERRAIN;
+        || effect?.action === CARD_DOMAIN_ACTIONS.TRANSFORM_TERRAIN
+        || effect?.action === CARD_DOMAIN_ACTIONS.APPLY_SPECIAL_BLOCK_DEVELOPMENT;
 
     execute.enumerateTargets = (effect, context = {}) => {
         if (!effect || typeof effect !== "object") return [];
@@ -445,6 +564,50 @@ function createCardDomainActionExecutor(engine) {
     execute.preflight = (effect, context = {}) => {
         if (!effect || typeof effect !== "object") {
             return { success: false, reason: "INVALID_DOMAIN_ACTION" };
+        }
+
+        if (effect.action === CARD_DOMAIN_ACTIONS.APPLY_SPECIAL_BLOCK_DEVELOPMENT) {
+            const board = engine?.boardDomainAdapter;
+            if (!board || typeof board.previewSpecialBlockDevelopment !== "function") {
+                return { success: false, reason: "SPECIAL_BLOCK_DEVELOPMENT_DOMAIN_UNAVAILABLE" };
+            }
+            if (!effect.developmentDefinitionId) {
+                return { success: false, reason: "SPECIAL_BLOCK_DEVELOPMENT_DEFINITION_REQUIRED" };
+            }
+            const instanceId = resolveDevelopmentInstanceId(effect, context);
+            if (!instanceId) {
+                return { success: false, reason: "SPECIAL_BLOCK_DEVELOPMENT_TARGET_REQUIRED" };
+            }
+            const optionIds = resolveDevelopmentOptionIds(effect);
+            if (optionIds.length === 0) {
+                return { success: false, reason: "SPECIAL_BLOCK_DEVELOPMENT_OPTIONS_REQUIRED" };
+            }
+            const paymentCost = context?.resolvedPaymentCost || normalizeCardCost(context?.cardDefinition);
+            if (!hasReliableCardPaymentState(context?.state, paymentCost)) {
+                return { success: false, reason: "SPECIAL_BLOCK_DEVELOPMENT_PAYMENT_STATE_UNSAFE" };
+            }
+            const preview = board.previewSpecialBlockDevelopment({
+                instanceId,
+                developmentDefinitionId: effect.developmentDefinitionId,
+                optionIds
+            });
+            if (!preview?.success) {
+                return {
+                    success: false,
+                    reason: preview?.reason || "SPECIAL_BLOCK_DEVELOPMENT_INVALID",
+                    preview
+                };
+            }
+            const needsDefenseRecovery = (preview.onApplyEffects || []).some(candidate =>
+                candidate?.kind === "RECOVER_CURRENT_DEFENSE" && Number(candidate?.amount || 0) > 0
+            );
+            if (needsDefenseRecovery) {
+                const defense = engine?.defenseSystem || context?.state?.defenseSystem;
+                if (!defense || typeof defense.recoverCurrentDefense !== "function") {
+                    return { success: false, reason: "DEFENSE_DOMAIN_ACTION_UNAVAILABLE" };
+                }
+            }
+            return { success: true, preview };
         }
 
         if (effect.action === CARD_DOMAIN_ACTIONS.APPLY_DEFENSE_DEVELOPMENT) {
