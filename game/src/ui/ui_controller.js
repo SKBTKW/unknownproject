@@ -2100,12 +2100,12 @@ class UIController {
             return false;
         }
 
-        const modalSys = (typeof window !== "undefined" && window.ModalSystem) ? window.ModalSystem : (typeof ModalSystem !== "undefined" ? ModalSystem : null);
+        const hasDom = typeof document !== "undefined";
+        const modalSys = hasDom ? ((typeof window !== "undefined" && window.ModalSystem) ? window.ModalSystem : (typeof ModalSystem !== "undefined" ? ModalSystem : null)) : null;
         const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: (k, p) => k });
 
         if (!modalSys || typeof modalSys.showChoiceDialog !== "function") {
-            const result = this.playCommandCard(card, cardIdx, candidates[0]);
-            return result?.success === true;
+            return false;
         }
 
         const cardName = card.nameKey ? I18n.t(card.nameKey) : (card.id || "Card");
