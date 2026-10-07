@@ -1826,6 +1826,14 @@
       ]
     },
     {
+      "path": "scratch/test_special_block_development_layer_v1.mjs",
+      "purpose": "generic Special Block instance Development Layer, Trial-causality exclusion, multi-cell atomic persistence, modifier semantics, and restore determinism",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_special_block_lifecycle_functional_gate.mjs",
       "purpose": "Special Block lifecycle functional gating for capability, Trial traits, production, legacy compatibility, and persistence",
       "suite": "existing",
