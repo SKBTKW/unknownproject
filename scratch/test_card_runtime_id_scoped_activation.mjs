@@ -28,7 +28,8 @@ assert.deepEqual([...CARD_RUNTIME_DEFAULT_ACTIVE_CARD_IDS], [
     "CMD_GRANARY",
     "CMD_AGRICULTURAL_REFORM",
     "CMD_FESTIVAL",
-    "CMD_ALTAR"
+    "CMD_ALTAR",
+    "CMD_BARRACKS"
 ]);
 
 assert.equal(isCardRuntimeActive(LAND), true);
@@ -38,6 +39,7 @@ assert.equal(isCardRuntimeActive(VIGILANCE), false);
 assert.equal(isCardRuntimeActive(REKINDLE), false);
 assert.equal(isCardRuntimeActive(BLOCKED), true, "completed Board Investment IDs are active without category reactivation");
 assert.equal(isCardRuntimeActive(MINING_SITE), true, "Stage1 Mining Site is an explicitly active Board Investment ID");
+assert.equal(isCardRuntimeActive({ id: "CMD_BARRACKS", category: "COMMAND" }), true, "Stage2 Barracks is an explicitly active Board Investment ID");
 
 const explicit = {
     activeCardIds: [

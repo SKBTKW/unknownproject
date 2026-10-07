@@ -18,6 +18,8 @@ import { serializeGameState } from "../game/src/core/state_serializer_base.js";
 import { hydrateGameState } from "../game/src/core/hydrate_game_state_base.js";
 import { GameplayRandomService } from "../game/src/core/gameplay_random_service.js";
 import { DeploymentOriginResolver } from "../game/src/trial/domain/deployment_origin_resolver.js";
+import { UIController } from "../game/src/ui/ui_controller.js";
+import { I18n } from "../game/src/i18n.js";
 
 console.log("\n🧪 Running Stage 2 Barracks (兵舎) Comprehensive Test Suite...");
 
@@ -455,4 +457,117 @@ test("semantic capabilities supply MILITARY_SITE and ATTACHMENT_HOST without alt
     assert.equal(resolved.candidates[0].kind, "HQ");
 });
 
+// -------------------------------------------------------------
+// 10. UI Target Disambiguation & Prompt Selection
+// -------------------------------------------------------------
+test("UI target selection resolves ambiguous overlapping targets via generic prompt", () => {
+    const { state, deck } = setup(7, 2);
+    // Setup overlapping candidates at (1,1):
+    // Source A: (1, 0) -> RIGHT => footprint [(1, 1), (1, 2)]
+    // Source B: (2, 1) -> UP    => footprint [(1, 1), (0, 1)]
+    Object.assign(state.grid[1][0], {
+        placed: true,
+        terrain: { id: "GL1_PLAINS", e: 1, gl: 1 }
+    });
+    Object.assign(state.grid[2][1], {
+        placed: true,
+        terrain: { id: "GL1_PLAINS", e: 2, gl: 1 }
+    });
+
+    const targets = deck.enumerateCardExecutionTargets(card);
+    const cell11Targets = targets.filter(t => t.r === 1 && t.c === 1);
+    assert.equal(cell11Targets.length, 2, "There must be 2 distinct legal candidates starting at (1, 1)");
+
+    const rightTarget = cell11Targets.find(t => t.direction === "RIGHT");
+    const upTarget = cell11Targets.find(t => t.direction === "UP");
+    assert.ok(rightTarget, "Must have RIGHT candidate from (1,0)");
+    assert.ok(upTarget, "Must have UP candidate from (2,1)");
+
+    // Test UIController handling
+    let promptedCandidates = null;
+    let playedTarget = null;
+    const ui = {
+        state,
+        selectedCard: card,
+        selectedCardIdx: 0,
+        isTrialInteractionActive: () => false,
+        commandCardRequiresTarget: () => true,
+        hideCellTooltip() {},
+        getCommandCardExecutionTargets: () => targets,
+        isCommandExecutionTarget: UIController.prototype.isCommandExecutionTarget,
+        promptCommandTargetSelection: UIController.prototype.promptCommandTargetSelection,
+        onCommandTargetPrompt: (candidates) => {
+            promptedCandidates = candidates;
+            // Explicitly choose UP target
+            return upTarget;
+        },
+        playCommandCard(_c, _idx, t) {
+            playedTarget = t;
+            return deck.playCommandCard(card, t, 0, -1);
+        }
+    };
+
+    // Clicking (1, 1) must trigger promptCommandTargetSelection and allow choosing UP
+    const clickResult = UIController.prototype.onCellClick.call(ui, 1, 1);
+    assert.equal(clickResult, true, "onCellClick must succeed via choice prompt");
+    assert.equal(promptedCandidates.length, 2, "Both candidates must be presented to player");
+    assert.equal(playedTarget.direction, "UP");
+    assert.equal(state.grid[1][1].specialBlock.type, "BARRACKS");
+    assert.equal(state.grid[0][1].specialBlock.type, "BARRACKS");
+    assert.equal(readSpecialBlockAdjacencyProfile(state.grid[1][1]).e, 2, "Must inherit E=2 from UP source (2,1)");
+
+    // Verify i18n keys for prompt
+    assert.ok(I18n.t("UI_COMMAND_TARGET_SELECT_TITLE", { name: "Barracks" }));
+    assert.ok(I18n.t("UI_COMMAND_TARGET_SELECT_DESC"));
+    assert.ok(I18n.t("DIRECTION_UP"));
+    assert.ok(I18n.t("DIRECTION_RIGHT"));
+    assert.ok(I18n.t("UI_COMMAND_TARGET_SOURCE", { r: 1, c: 0 }));
+    assert.ok(I18n.t("UI_COMMAND_TARGET_FOOTPRINT", { footprint: "(1,1) -> (1,2)" }));
+});
+
+// -------------------------------------------------------------
+// 11. UI Target Single Candidate Direct Execution
+// -------------------------------------------------------------
+test("UI target selection directly executes when only single candidate exists", () => {
+    const { state, deck } = setup(7, 2);
+    // Source only at (0, 0) -> DOWN => footprint [(1, 0), (2, 0)]
+    Object.assign(state.grid[0][0], {
+        placed: true,
+        terrain: { id: "GL1_PLAINS", e: 1, gl: 1 }
+    });
+
+    const targets = deck.enumerateCardExecutionTargets(card);
+    const cell10Targets = targets.filter(t => t.r === 1 && t.c === 0);
+    assert.equal(cell10Targets.length, 1);
+
+    let promptCalled = false;
+    let playedTarget = null;
+    const ui = {
+        state,
+        selectedCard: card,
+        selectedCardIdx: 0,
+        isTrialInteractionActive: () => false,
+        commandCardRequiresTarget: () => true,
+        hideCellTooltip() {},
+        getCommandCardExecutionTargets: () => targets,
+        isCommandExecutionTarget: UIController.prototype.isCommandExecutionTarget,
+        promptCommandTargetSelection: () => {
+            promptCalled = true;
+            return false;
+        },
+        playCommandCard(_c, _idx, t) {
+            playedTarget = t;
+            return deck.playCommandCard(card, t, 0, -1);
+        }
+    };
+
+    const clickResult = UIController.prototype.onCellClick.call(ui, 1, 0);
+    assert.equal(clickResult, true);
+    assert.equal(promptCalled, false, "Prompt must NOT be called when only 1 candidate exists");
+    assert.equal(playedTarget.direction, "DOWN");
+    assert.equal(state.grid[1][0].specialBlock.type, "BARRACKS");
+    assert.equal(state.grid[2][0].specialBlock.type, "BARRACKS");
+});
+
 console.log(`\n🎉 All ${testCount} Barracks Tests PASSED successfully!`);
+
