@@ -22,6 +22,11 @@ import {
     SPECIAL_BLOCK_DEVELOPMENT_DEFINITION_IDS
 } from "../game/src/data/special_block_development_definitions.js";
 import { SpecialBlockDevelopmentService } from "../game/src/systems/special_block_development_service.js";
+import {
+    resolveSpecialBlockProduction,
+    sumSpecialBlockProduction
+} from "../game/src/core/special_block_production.js";
+import { DefenseSystem } from "../game/src/systems/defense_system.js";
 import { serializeGameState } from "../game/src/core/state_serializer_base.js";
 import { hydrateGameState } from "../game/src/core/hydrate_game_state_base.js";
 
@@ -320,6 +325,79 @@ test("Development state survives canonical Save/Restore without reference identi
         sumSpecialBlockDevelopmentModifiers(restored).yields,
         { food: 2, wood: 0, defense: 0, mystic: 1 }
     );
+});
+
+test("Development yields join effective Special Block production without multi-cell double counting", () => {
+    const state = makeState();
+    const service = new SpecialBlockDevelopmentService({ state });
+    assert.equal(service.applyDevelopment({
+        instanceId: "GRANARY@1:0",
+        developmentDefinitionId: SPECIAL_BLOCK_DEVELOPMENT_DEFINITION_IDS.BASIC_SITE_DEVELOPMENT,
+        optionIds: ["FOOD_YIELD", "MYSTIC_YIELD"]
+    }).success, true);
+
+    const left = resolveSpecialBlockProduction(state, state.grid[1][0], { r: 1, c: 0 });
+    const right = resolveSpecialBlockProduction(state, state.grid[1][1], { r: 1, c: 1 });
+    assert.deepEqual(left.baseYields, { food: 0, wood: 0, defense: 0, mystic: 0 });
+    assert.deepEqual(left.developmentYields, { food: 2, wood: 0, defense: 0, mystic: 1 });
+    assert.deepEqual(left.yields, { food: 2, wood: 0, defense: 0, mystic: 1 });
+    assert.deepEqual(right.yields, left.yields);
+
+    const total = sumSpecialBlockProduction(state);
+    assert.equal(total.developmentYields.food, 2);
+    assert.equal(total.developmentYields.mystic, 1);
+});
+
+test("Development-created mystic output participates in Altar relation semantics once per logical instance", () => {
+    const state = makeState();
+    state.grid[0][1].specialBlock = {
+        instanceId: "ALTAR@0:1",
+        type: SPECIAL_BLOCK_TYPES.ALTAR,
+        definitionId: SPECIAL_BLOCK_TYPES.ALTAR,
+        state: "ACTIVE"
+    };
+
+    const service = new SpecialBlockDevelopmentService({ state });
+    assert.equal(service.applyDevelopment({
+        instanceId: "GRANARY@1:0",
+        developmentDefinitionId: SPECIAL_BLOCK_DEVELOPMENT_DEFINITION_IDS.BASIC_SITE_DEVELOPMENT,
+        optionIds: ["FOOD_YIELD", "MYSTIC_YIELD"]
+    }).success, true);
+
+    const altar = resolveSpecialBlockProduction(state, state.grid[0][1], { r: 0, c: 1 });
+    assert.equal(altar.status, "RESOLVED");
+    assert.equal(altar.yields.mystic, 1);
+});
+
+test("Defense capacity is derived from Development and one-shot recovery happens exactly once on apply", () => {
+    const state = makeState();
+    const defense = new DefenseSystem(state);
+    const service = new SpecialBlockDevelopmentService({ state });
+    const beforeMax = defense.getMaxDefense();
+    const beforeCurrent = defense.getCurrentDefense();
+
+    const result = service.applyDevelopment({
+        instanceId: "FARM@0:0",
+        developmentDefinitionId: SPECIAL_BLOCK_DEVELOPMENT_DEFINITION_IDS.BASIC_SITE_DEVELOPMENT,
+        optionIds: ["DEFENSE_CAPACITY", "FOOD_YIELD"]
+    }, {
+        onApplyEffectHandler(effects) {
+            for (const effect of effects) {
+                if (effect.kind === SPECIAL_BLOCK_DEVELOPMENT_EFFECT_KINDS.RECOVER_CURRENT_DEFENSE) {
+                    defense.recoverCurrentDefense(effect.amount);
+                }
+            }
+            return { success: true };
+        }
+    });
+    assert.equal(result.success, true);
+    assert.equal(defense.getMaxDefense(), beforeMax + 1);
+    assert.equal(defense.getCurrentDefense(), Math.min(beforeCurrent + 1, beforeMax + 1));
+
+    const stableCurrent = defense.getCurrentDefense();
+    assert.equal(defense.getMaxDefense(), beforeMax + 1);
+    assert.equal(defense.getCurrentDefense(), stableCurrent);
+    assert.equal(sumSpecialBlockProduction(state).developmentYields.defense, 0);
 });
 
 console.log(`test_special_block_development_layer_v1: PASS (${count} cases)`);
