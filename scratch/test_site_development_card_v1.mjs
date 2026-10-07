@@ -192,8 +192,13 @@ test("2 selected effects apply atomically with 50/50 payment and defense one-sho
 
     const beforeMax = defenseSystem.getMaxDefense();
     const beforeCurrent = defenseSystem.getCurrentDefense();
-    const result = deck.playCommandCard(selectedCard, target, 0, -1);
-    assert.equal(result.success, true);
+    const result = deck.playCommandCard(
+        selectedCard,
+        { r: target.r, c: target.c },
+        0,
+        -1
+    );
+    assert.equal(result.success, true, "coordinate-only clients resolve the logical instance safely");
 
     assert.equal(state.food, 100);
     assert.equal(state.wood, 100);
