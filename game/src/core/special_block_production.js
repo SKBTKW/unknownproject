@@ -481,17 +481,25 @@ export function resolveSpecialBlockProduction(state, cell, position = {}) {
     };
 }
 
-export function sumSpecialBlockProduction(state) {
+export function sumSpecialBlockProductionBreakdown(state) {
     const base = runtimeResolver(state).sum(state);
     const development = sumSpecialBlockDevelopmentModifiers(state);
     const baseYields = normalizeYields(base?.yields || ZERO_YIELDS) || { ...ZERO_YIELDS };
     const developmentYields = normalizeYields(development?.yields || ZERO_YIELDS) || { ...ZERO_YIELDS };
     return {
-        ...base,
         yields: addYields({ ...baseYields }, developmentYields),
+        unresolved: base?.unresolved || [],
         baseYields,
         developmentYields,
         developmentUnresolved: development?.unresolved || []
+    };
+}
+
+export function sumSpecialBlockProduction(state) {
+    const effective = sumSpecialBlockProductionBreakdown(state);
+    return {
+        yields: effective.yields,
+        unresolved: effective.unresolved
     };
 }
 
