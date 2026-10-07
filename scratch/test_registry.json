@@ -1953,6 +1953,11 @@
       "path": "scratch/test_stage2_barracks_v1.mjs",
       "purpose": "Stage 2 Barracks 1x2 orthogonal placement, HQ vicinity exclusion, inherited E, GL1, atomic payment, stage creation limit, save/restore, semantic capabilities and UI target disambiguation",
       "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_investigation_composition_router.mjs",
+      "purpose": "Investigation composition router separating Threat (KnownEnemyState) and World Discovery (DiscoveryLedger) categories and follow-up handoff",
+      "suite": "supplemental"
     }
   ]
 }
