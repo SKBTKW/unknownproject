@@ -483,7 +483,30 @@ test("UI target selection resolves ambiguous overlapping targets via generic pro
     assert.ok(rightTarget, "Must have RIGHT candidate from (1,0)");
     assert.ok(upTarget, "Must have UP candidate from (2,1)");
 
-    // Test UIController handling
+    // 10A: Verify fail-closed behavior when ModalSystem is unavailable and no prompt hook exists
+    const failClosedUi = {
+        state,
+        selectedCard: card,
+        selectedCardIdx: 0,
+        isTrialInteractionActive: () => false,
+        commandCardRequiresTarget: () => true,
+        hideCellTooltip() {},
+        getCommandCardExecutionTargets: () => targets,
+        isCommandExecutionTarget: UIController.prototype.isCommandExecutionTarget,
+        promptCommandTargetSelection: UIController.prototype.promptCommandTargetSelection,
+        playCommandCard() {
+            throw new Error("playCommandCard must NOT be called when modalSys is unavailable");
+        }
+    };
+    const initialFood = state.food;
+    const initialWood = state.wood;
+    const failClosedResult = UIController.prototype.onCellClick.call(failClosedUi, 1, 1);
+    assert.equal(failClosedResult, false, "Must fail-closed and return false when selection cannot be safely prompted");
+    assert.equal(state.food, initialFood, "Food must NOT be consumed");
+    assert.equal(state.wood, initialWood, "Wood must NOT be consumed");
+    assert.equal(state.grid[1][1].specialBlock, null, "No block placed on fail-closed");
+
+    // 10B: Test UIController handling via choice prompt hook
     let promptedCandidates = null;
     let playedTarget = null;
     const ui = {
