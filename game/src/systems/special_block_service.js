@@ -398,6 +398,79 @@ export class SpecialBlockService {
         };
     }
 
+    _validateOrthogonal1x2Target(definition, target) {
+        const source = coords(target?.source);
+        if (!source) return { valid: false, reason: 'SOURCE_TERRAIN_REQUIRED' };
+
+        const sourceCell = this.getCell(source.r, source.c);
+        if (!sourceCell?.placed || !sourceCell.terrain || sourceCell.isHQ) {
+            return { valid: false, reason: 'SOURCE_TERRAIN_REQUIRED' };
+        }
+        if (sourceCell.specialBlock) {
+            return { valid: false, reason: 'SOURCE_SPECIAL_BLOCK_OCCUPIED' };
+        }
+
+        let dr = 0;
+        let dc = 0;
+        let dir = target?.direction || null;
+
+        if (target?.footprint && Array.isArray(target.footprint)) {
+            if (target.footprint.length !== 2) {
+                return { valid: false, reason: 'INVALID_FOOTPRINT_SHAPE' };
+            }
+            const p0 = coords(target.footprint[0]);
+            const p1 = coords(target.footprint[1]);
+            if (!p0 || !p1) return { valid: false, reason: 'INVALID_FOOTPRINT_SHAPE' };
+            dr = p0.r - source.r;
+            dc = p0.c - source.c;
+            if (Math.abs(dr) + Math.abs(dc) !== 1) {
+                return { valid: false, reason: 'ORTHOGONAL_DIRECTION_REQUIRED' };
+            }
+            if (p1.r !== source.r + 2 * dr || p1.c !== source.c + 2 * dc) {
+                return { valid: false, reason: 'INVALID_FOOTPRINT_SHAPE' };
+            }
+        } else if (dir) {
+            const dirNorm = String(dir).toUpperCase();
+            if (dirNorm === 'UP' || dirNorm === 'N') { dr = -1; dc = 0; }
+            else if (dirNorm === 'DOWN' || dirNorm === 'S') { dr = 1; dc = 0; }
+            else if (dirNorm === 'LEFT' || dirNorm === 'W') { dr = 0; dc = -1; }
+            else if (dirNorm === 'RIGHT' || dirNorm === 'E') { dr = 0; dc = 1; }
+            else return { valid: false, reason: 'ORTHOGONAL_DIRECTION_REQUIRED' };
+        } else {
+            const destination = coords(target?.destination || target?.target || target);
+            if (!destination) return { valid: false, reason: 'DIRECTION_OR_DESTINATION_REQUIRED' };
+            dr = destination.r - source.r;
+            dc = destination.c - source.c;
+            if (Math.abs(dr) + Math.abs(dc) !== 1) {
+                return { valid: false, reason: 'ORTHOGONAL_DIRECTION_REQUIRED' };
+            }
+        }
+
+        const footprint = [
+            { r: source.r + dr, c: source.c + dc },
+            { r: source.r + 2 * dr, c: source.c + 2 * dc }
+        ];
+
+        for (const p of footprint) {
+            const cell = this.getCell(p.r, p.c);
+            if (!cell) return { valid: false, reason: 'OUT_OF_BOUNDS' };
+            if (cell.placed || cell.specialBlock) return { valid: false, reason: 'DESTINATION_OCCUPIED' };
+            if (cell.isHQ) return { valid: false, reason: 'HQ_FORBIDDEN' };
+            if (this.isHQVicinity(p.r, p.c)) return { valid: false, reason: 'DESTINATION_REGION_NOT_ALLOWED' };
+        }
+
+        const canonicalDir = dr === -1 ? 'UP' : dr === 1 ? 'DOWN' : dc === -1 ? 'LEFT' : 'RIGHT';
+
+        return {
+            valid: true,
+            source,
+            destination: footprint[0],
+            footprint,
+            direction: canonicalDir,
+            sourceCell
+        };
+    }
+
     _validateOverlayTarget(definition, target, context = {}, { forCreation = false } = {}) {
         const point = coords(target);
         if (!point) return { valid: false, reason: 'INVALID_TARGET' };
@@ -509,11 +582,16 @@ export class SpecialBlockService {
         let stageCreations = 0;
         const pointForDistance = coords(target?.destination || target?.target || target);
         if (placement.maxCreationsPerStage || placement.minimumSameDefinitionDistance) {
+            const seenEntities = new Set();
             for (let r = 0; r < (this.state?.grid?.length || 0); r++) {
                 for (let c = 0; c < (this.state.grid[r]?.length || 0); c++) {
                     const entity = this.state.grid[r][c]?.specialBlock;
-                    if ((entity?.definitionId || entity?.type) !== definition.id) continue;
-                    if (entity.createdStage === resolveStageId(this.state)) stageCreations++;
+                    if (!entity || (entity.definitionId || entity.type) !== definition.id) continue;
+                    const entityKey = entity.instanceId || `${r}:${c}`;
+                    if (!seenEntities.has(entityKey)) {
+                        seenEntities.add(entityKey);
+                        if (entity.createdStage === resolveStageId(this.state)) stageCreations++;
+                    }
                     if (pointForDistance && Math.max(Math.abs(r - pointForDistance.r), Math.abs(c - pointForDistance.c))
                         < Number(placement.minimumSameDefinitionDistance || 0)) {
                         return { valid: false, reason: 'SAME_DEFINITION_TOO_CLOSE', definition };
@@ -523,6 +601,33 @@ export class SpecialBlockService {
             if (stageCreations >= Number(placement.maxCreationsPerStage ?? Infinity)) {
                 return { valid: false, reason: 'STAGE_CREATION_LIMIT', definition };
             }
+        }
+
+        if (definition.placement?.targeting === 'SOURCE_AND_ORTHOGONAL_1X2') {
+            const structural = this._validateOrthogonal1x2Target(definition, target);
+            if (!structural.valid) return { ...structural, definition };
+
+            const referenceCell = structural.sourceCell;
+            const adjacencyProfile = createSpecialBlockAdjacencyProfile(referenceCell, structural.source, definition);
+
+            for (const cellPoint of structural.footprint) {
+                const adjacency = this._validateAdjacencyAt(cellPoint, adjacencyProfile, definition);
+                if (!adjacency.valid) {
+                    return {
+                        ...structural,
+                        ...adjacency,
+                        adjacencyProfile,
+                        definition
+                    };
+                }
+            }
+
+            return {
+                ...structural,
+                adjacencyProfile,
+                independent: true,
+                definition
+            };
         }
 
         const dual = definition.placement?.mode === 'OVERLAY_OR_INDEPENDENT';
@@ -612,6 +717,37 @@ export class SpecialBlockService {
             return targets;
         }
         if (definition.placement?.mode === 'INDEPENDENT_CELL_GENERATION') {
+            if (definition.placement?.targeting === 'SOURCE_AND_ORTHOGONAL_1X2') {
+                for (let r = 0; r < this.state.grid.length; r++) {
+                    for (let c = 0; c < (this.state.grid[r]?.length || 0); c++) {
+                        const sourceCell = this.getCell(r, c);
+                        if (!sourceCell?.placed || !sourceCell.terrain || sourceCell.isHQ || sourceCell.specialBlock) continue;
+                        for (const [dr, dc, dir] of [[-1, 0, 'UP'], [1, 0, 'DOWN'], [0, -1, 'LEFT'], [0, 1, 'RIGHT']]) {
+                            const candidate = {
+                                source: { r, c },
+                                destination: { r: r + dr, c: c + dc },
+                                direction: dir
+                            };
+                            const validation = this.validateTarget(definition, candidate, context);
+                            if (validation.valid) {
+                                targets.push({
+                                    r: r + dr,
+                                    c: c + dc,
+                                    source: { r, c },
+                                    destination: { r: r + dr, c: c + dc },
+                                    direction: dir,
+                                    footprint: [
+                                        { r: r + dr, c: c + dc },
+                                        { r: r + 2 * dr, c: c + 2 * dc }
+                                    ]
+                                });
+                            }
+                        }
+                    }
+                }
+                return targets;
+            }
+
             if (['MAX_RESOURCE_BONUS_CHANNELS', 'FIRST_LEGAL_SOURCE'].includes(definition.placement?.sourceSelection)) {
                 for (let r = 0; r < this.state.grid.length; r++) {
                     for (let c = 0; c < (this.state.grid[r]?.length || 0); c++) {
@@ -773,6 +909,43 @@ export class SpecialBlockService {
             : adjacencyContext;
 
         if (validation.independent === true) {
+            if (definition.placement?.targeting === 'SOURCE_AND_ORTHOGONAL_1X2') {
+                const instanceId = `${definition.id}@${validation.footprint[0].r}:${validation.footprint[0].c}`;
+                const entity = createSpecialBlockEntity(
+                    definition,
+                    validation.footprint[0].r,
+                    validation.footprint[0].c,
+                    this.state,
+                    creationContext
+                );
+                entity.instanceId = instanceId;
+                entity.placementGroupId = instanceId;
+                entity.orientation = validation.direction || null;
+                entity.direction = validation.direction || null;
+                entity.footprint = validation.footprint.map(p => ({ r: p.r, c: p.c }));
+                entity.source = { r: validation.source.r, c: validation.source.c };
+
+                for (const p of validation.footprint) {
+                    const c = this.getCell(p.r, p.c);
+                    c.specialBlock = { ...entity };
+                    c.placementGroupId = instanceId;
+                }
+
+                const primaryCell = this.getCell(validation.footprint[0].r, validation.footprint[0].c);
+                return {
+                    success: true,
+                    target: { r: validation.footprint[0].r, c: validation.footprint[0].c },
+                    source: { ...validation.source },
+                    footprint: validation.footprint.map(p => ({ ...p })),
+                    direction: validation.direction,
+                    entity: { ...entity },
+                    baseTerrain: null,
+                    specialOnly: true,
+                    capabilities: [...readCellCapabilities(primaryCell)],
+                    trialTraits: readSpecialBlockTrialTraits(primaryCell)
+                };
+            }
+
             const { r, c } = validation.destination;
             const cell = validation.destinationCell;
             const entity = createSpecialBlockEntity(definition, r, c, this.state, creationContext);

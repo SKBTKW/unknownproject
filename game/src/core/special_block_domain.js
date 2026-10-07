@@ -16,7 +16,9 @@ export const BOARD_CAPABILITIES = Object.freeze({
     FOOD_STORAGE: 'FOOD_STORAGE',
     DEFENSE_ANCHOR: 'DEFENSE_ANCHOR',
     REINFORCEMENT_ORIGIN: 'REINFORCEMENT_ORIGIN',
-    GARRISON_SITE: 'GARRISON_SITE'
+    GARRISON_SITE: 'GARRISON_SITE',
+    MILITARY_ATTACHMENT_HOST: 'MILITARY_ATTACHMENT_HOST',
+    DEPLOYMENT_ORIGIN_CANDIDATE: 'DEPLOYMENT_ORIGIN_CANDIDATE'
 });
 
 export const SPECIAL_BLOCK_TYPES = Object.freeze({
@@ -27,7 +29,8 @@ export const SPECIAL_BLOCK_TYPES = Object.freeze({
     ALTAR: 'ALTAR',
     PALISADE: 'PALISADE',
     EARTHWORK: 'EARTHWORK',
-    WATCHTOWER: 'WATCHTOWER'
+    WATCHTOWER: 'WATCHTOWER',
+    BARRACKS: 'BARRACKS'
 });
 
 export const MINING_SITE_RESOURCE_CATEGORIES = Object.freeze([
@@ -463,6 +466,32 @@ export const SPECIAL_BLOCK_DEFINITIONS = Object.freeze({
         trialTraits: {},
         lifecycle: { initialState: 'ACTIVE' },
         presentation: { nameKey: 'SPECIAL_BLOCK_WATCHTOWER' }
+    }),
+    [SPECIAL_BLOCK_TYPES.BARRACKS]: freezeDefinition({
+        id: SPECIAL_BLOCK_TYPES.BARRACKS,
+        category: 'MILITARY',
+        placement: {
+            mode: 'INDEPENDENT_CELL_GENERATION',
+            shape: '1x2',
+            targeting: 'SOURCE_AND_ORTHOGONAL_1X2',
+            maxCreationsPerStage: 1,
+            participatesInZones: false,
+            destinationRegion: 'OUTSIDE_HQ_VICINITY'
+        },
+        baseTerrainInteraction: { kind: BASE_TERRAIN_INTERACTIONS.INDEPENDENT },
+        creationCost: {
+            status: SPECIAL_BLOCK_COST_STATUS.RESOLVED,
+            resources: { food: 80, wood: 80 }
+        },
+        production: null,
+        capabilities: [
+            BOARD_CAPABILITIES.MILITARY_SITE,
+            BOARD_CAPABILITIES.MILITARY_ATTACHMENT_HOST,
+            BOARD_CAPABILITIES.DEPLOYMENT_ORIGIN_CANDIDATE
+        ],
+        trialTraits: {},
+        lifecycle: { initialState: 'ACTIVE' },
+        presentation: { nameKey: 'SPECIAL_BLOCK_BARRACKS' }
     })
 });
 

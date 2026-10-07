@@ -1932,6 +1932,11 @@
       "path": "scratch/test_stage1_altar_v1.mjs",
       "purpose": "Altar outer-vicinity eight-way placement, Stage construction limit, distance 3, dynamic capped mystic production, rollback and restore",
       "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_stage2_barracks_v1.mjs",
+      "purpose": "Stage 2 Barracks 1x2 orthogonal placement, HQ vicinity exclusion, inherited E, GL1, atomic payment, stage creation limit, save/restore, semantic capabilities and UI target disambiguation",
+      "suite": "supplemental"
     }
   ]
 }
