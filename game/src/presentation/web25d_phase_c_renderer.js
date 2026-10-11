@@ -256,6 +256,7 @@ export class Web25DPhaseCRenderer extends Web25DCanvasRenderer {
             : type === 'EARTHWORK' ? 'E'
             : type === 'WATCHTOWER' ? 'W'
             : type === 'LOGGING_CAMP' ? 'L'
+            : type === 'BARRACKS' ? 'B'
             : '•';
 
         ctx.beginPath();

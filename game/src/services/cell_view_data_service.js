@@ -51,6 +51,9 @@ function normalizeSpecialBlock(cell, production) {
         storageCapacity: isSpecialBlockFunctional(entity) ? { ...(definition?.storageCapacity || {}) } : {},
         productionStatus: production?.status || SPECIAL_BLOCK_PRODUCTION_STATUS.NONE,
         productionKind: production?.kind || null,
+        baseYields: production?.baseYields || production?.yields || { food: 0, wood: 0, defense: 0, mystic: 0 },
+        developmentYields: production?.developmentYields || { food: 0, wood: 0, defense: 0, mystic: 0 },
+        developmentDefenseCapacityBonus: Number(production?.developmentDefenseCapacityBonus || 0),
         yields: production?.yields || { food: 0, wood: 0, defense: 0, mystic: 0 },
         damageEffect: production?.damageEffect || null
     };

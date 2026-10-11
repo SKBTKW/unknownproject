@@ -1,4 +1,5 @@
 import { CHRONICLE_IMPORTANCE } from '../systems/chronicle_system.js';
+import { findLegacyTrialIndexAtVerse } from '../core/legacy_trial_schedule_compat.js';
 
 const weight = { MINOR: 1, MAJOR: 2, HISTORIC: 3 };
 
@@ -10,8 +11,8 @@ export function describeChronicleVerse(point, previousPoint, i18n) {
         event.type !== 'VERSE_COMMITTED');
     const representative = events.reduce((best, event) =>
         !best || (weight[event.importance] || 1) > (weight[best.importance] || 1) ? event : best, null);
-    const schedule = point.gameState?.trialSchedule || {};
-    const trialIndex = Object.keys(schedule).find(key => /^trial\d+$/.test(key) && schedule[key] === verse);
+    const trialIndexNum = findLegacyTrialIndexAtVerse(point.gameState, verse);
+    const trialIndex = trialIndexNum ? `trial${trialIndexNum}` : null;
     const stage = point.gameState?.stage?.id;
     const stageChange = previousPoint && stage !== previousPoint.gameState?.stage?.id;
     const title = trialIndex

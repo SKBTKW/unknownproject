@@ -832,6 +832,18 @@ async function main() {
         process.exit(1);
     }
 
+    const specialBlockDevelopmentLayerOk = await runCommand("node", ["scratch/test_special_block_development_layer_v1.mjs"]);
+    if (!specialBlockDevelopmentLayerOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Special Block Development Layer v1) で不合格が検出されました。");
+        process.exit(1);
+    }
+
+    const siteDevelopmentCardOk = await runCommand("node", ["scratch/test_site_development_card_v1.mjs"]);
+    if (!siteDevelopmentCardOk) {
+        console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Site Development Card v1) で不合格が検出されました。");
+        process.exit(1);
+    }
+
     const zoneConversionFoundationOk = await runCommand("node", ["scratch/test_zone_conversion_foundation.mjs"]);
     if (!zoneConversionFoundationOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 6 (Zone Conversion Foundation) で不合格が検出されました。");

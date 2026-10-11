@@ -5,6 +5,11 @@
    Card Definition v1 requirements independent from legacy field names.
    ============================================================= */
 
+import {
+    isLegacyTrialNoticeActive,
+    isLegacyTrialWithin
+} from "../core/legacy_trial_schedule_compat.js";
+
 function push(requirements, condition, requirement) {
     if (condition) requirements.push(Object.freeze(requirement));
 }
@@ -275,17 +280,10 @@ function evaluateLegacyOfferingRequirement(requirement, { state, boardQuery } = 
         return (state[requirement.key] || 0) >= requirement.value;
     }
     if (requirement.type === "LEGACY_TRIAL_NOTICE_ACTIVE") {
-        const notice = typeof state.getTrialNotice === "function"
-            ? state.getTrialNotice()
-            : { active: false };
-        const nextTrialTurn = state.nextTrialTurn || 20;
-        const currentTurn = state.turn || 1;
-        return Boolean((notice && notice.active) || (nextTrialTurn - currentTurn <= 5));
+        return isLegacyTrialNoticeActive(state, { fallbackThreshold: 5 });
     }
     if (requirement.type === "LEGACY_TRIAL_WITHIN") {
-        const nextTrialTurn = state.nextTrialTurn || 20;
-        const currentTurn = state.turn || 1;
-        return (nextTrialTurn - currentTurn) <= requirement.value;
+        return isLegacyTrialWithin(state, requirement.value);
     }
     if (requirement.type === "LEGACY_FOOD_DEFICIT_OR_FALLBACK") {
         const currentFood = state.food || 0;
@@ -321,10 +319,7 @@ function evaluateLegacyOfferingRequirement(requirement, { state, boardQuery } = 
     }
     if (requirement.type === "LEGACY_TRIAL_OR_LOW_DEFENSE") {
         if (!state) return true;
-        const notice = typeof state.getTrialNotice === "function"
-            ? state.getTrialNotice()
-            : { active: false };
-        if (notice?.active) return true;
+        if (isLegacyTrialNoticeActive(state)) return true;
         if (!boardQuery || typeof boardQuery.currentDefense !== "function") return true;
         return !(boardQuery.currentDefense() > requirement.value);
     }

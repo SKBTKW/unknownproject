@@ -16,7 +16,9 @@ export const BOARD_CAPABILITIES = Object.freeze({
     FOOD_STORAGE: 'FOOD_STORAGE',
     DEFENSE_ANCHOR: 'DEFENSE_ANCHOR',
     REINFORCEMENT_ORIGIN: 'REINFORCEMENT_ORIGIN',
-    GARRISON_SITE: 'GARRISON_SITE'
+    GARRISON_SITE: 'GARRISON_SITE',
+    MILITARY_ATTACHMENT_HOST: 'MILITARY_ATTACHMENT_HOST',
+    DEPLOYMENT_ORIGIN_CANDIDATE: 'DEPLOYMENT_ORIGIN_CANDIDATE'
 });
 
 export const SPECIAL_BLOCK_TYPES = Object.freeze({
@@ -27,7 +29,8 @@ export const SPECIAL_BLOCK_TYPES = Object.freeze({
     ALTAR: 'ALTAR',
     PALISADE: 'PALISADE',
     EARTHWORK: 'EARTHWORK',
-    WATCHTOWER: 'WATCHTOWER'
+    WATCHTOWER: 'WATCHTOWER',
+    BARRACKS: 'BARRACKS'
 });
 
 export const MINING_SITE_RESOURCE_CATEGORIES = Object.freeze([
@@ -46,6 +49,22 @@ export const BASE_TERRAIN_INTERACTIONS = Object.freeze({
 export const SPECIAL_BLOCK_COST_STATUS = Object.freeze({
     RESOLVED: 'RESOLVED',
     UNRESOLVED: 'UNRESOLVED'
+});
+
+export const TRIAL_CAUSALITY_CHANNELS = Object.freeze({
+    OBSERVATION: 'OBSERVATION',
+    POSITIONING: 'POSITIONING',
+    MOBILITY: 'MOBILITY',
+    DEPLOYMENT: 'DEPLOYMENT',
+    INITIATIVE: 'INITIATIVE',
+    COHESION: 'COHESION',
+    ATTRITION: 'ATTRITION',
+    COLLAPSE: 'COLLAPSE'
+});
+
+export const TRIAL_CAUSALITY_RUNTIME_STATUS = Object.freeze({
+    FOUNDATION: 'FOUNDATION',
+    ACTIVE: 'ACTIVE'
 });
 
 export const SPECIAL_BLOCK_ADJACENCY_GL = 1;
@@ -264,6 +283,11 @@ function freezeDefinition(definition) {
             })
             : null,
         capabilities: Object.freeze([...(definition.capabilities || [])]),
+        trialCausality: Object.freeze({
+            participates: definition.trialCausality?.participates === true,
+            channels: Object.freeze([...(definition.trialCausality?.channels || [])]),
+            runtimeStatus: definition.trialCausality?.runtimeStatus || null
+        }),
         trialTraits: Object.freeze({
             ...defaultTrialTraits,
             ...(definition.trialTraits || {}),
@@ -430,6 +454,11 @@ export const SPECIAL_BLOCK_DEFINITIONS = Object.freeze({
         baseTerrainInteraction: { kind: BASE_TERRAIN_INTERACTIONS.TERRAIN_USING_OVERLAY },
         production: null,
         capabilities: [BOARD_CAPABILITIES.MILITARY_SITE],
+        trialCausality: {
+            participates: true,
+            channels: [TRIAL_CAUSALITY_CHANNELS.POSITIONING],
+            runtimeStatus: TRIAL_CAUSALITY_RUNTIME_STATUS.ACTIVE
+        },
         trialTraits: {
             interceptionAllowed: true,
             suppressTerrainTactic: true,
@@ -445,6 +474,11 @@ export const SPECIAL_BLOCK_DEFINITIONS = Object.freeze({
         baseTerrainInteraction: { kind: BASE_TERRAIN_INTERACTIONS.TERRAIN_USING_OVERLAY },
         production: null,
         capabilities: [BOARD_CAPABILITIES.MILITARY_SITE],
+        trialCausality: {
+            participates: true,
+            channels: [TRIAL_CAUSALITY_CHANNELS.POSITIONING],
+            runtimeStatus: TRIAL_CAUSALITY_RUNTIME_STATUS.ACTIVE
+        },
         trialTraits: {
             interceptionAllowed: true,
             suppressTerrainTactic: false,
@@ -460,14 +494,72 @@ export const SPECIAL_BLOCK_DEFINITIONS = Object.freeze({
         baseTerrainInteraction: { kind: BASE_TERRAIN_INTERACTIONS.TERRAIN_USING_OVERLAY },
         production: null,
         capabilities: [BOARD_CAPABILITIES.OBSERVATION_SITE],
+        trialCausality: {
+            participates: true,
+            channels: [TRIAL_CAUSALITY_CHANNELS.OBSERVATION],
+            runtimeStatus: TRIAL_CAUSALITY_RUNTIME_STATUS.FOUNDATION
+        },
         trialTraits: {},
         lifecycle: { initialState: 'ACTIVE' },
         presentation: { nameKey: 'SPECIAL_BLOCK_WATCHTOWER' }
+    }),
+    [SPECIAL_BLOCK_TYPES.BARRACKS]: freezeDefinition({
+        id: SPECIAL_BLOCK_TYPES.BARRACKS,
+        category: 'MILITARY',
+        placement: {
+            mode: 'INDEPENDENT_CELL_GENERATION',
+            shape: '1x2',
+            targeting: 'SOURCE_AND_ORTHOGONAL_1X2',
+            maxCreationsPerStage: 1,
+            participatesInZones: false,
+            destinationRegion: 'OUTSIDE_HQ_VICINITY'
+        },
+        baseTerrainInteraction: { kind: BASE_TERRAIN_INTERACTIONS.INDEPENDENT },
+        creationCost: {
+            status: SPECIAL_BLOCK_COST_STATUS.RESOLVED,
+            resources: { food: 80, wood: 80 }
+        },
+        production: null,
+        capabilities: [
+            BOARD_CAPABILITIES.MILITARY_SITE,
+            BOARD_CAPABILITIES.MILITARY_ATTACHMENT_HOST,
+            BOARD_CAPABILITIES.DEPLOYMENT_ORIGIN_CANDIDATE
+        ],
+        trialCausality: {
+            participates: true,
+            channels: [TRIAL_CAUSALITY_CHANNELS.DEPLOYMENT],
+            runtimeStatus: TRIAL_CAUSALITY_RUNTIME_STATUS.FOUNDATION
+        },
+        trialTraits: {},
+        lifecycle: { initialState: 'ACTIVE' },
+        presentation: { nameKey: 'SPECIAL_BLOCK_BARRACKS' }
     })
 });
 
 export function getSpecialBlockDefinition(type) {
     return SPECIAL_BLOCK_DEFINITIONS[type] || null;
+}
+
+const EMPTY_TRIAL_CAUSALITY = Object.freeze({
+    participates: false,
+    channels: Object.freeze([]),
+    runtimeStatus: null
+});
+
+export function readSpecialBlockTrialCausality(entityOrDefinition) {
+    if (!entityOrDefinition || typeof entityOrDefinition !== 'object') {
+        return EMPTY_TRIAL_CAUSALITY;
+    }
+    if (entityOrDefinition.trialCausality && entityOrDefinition.placement) {
+        return entityOrDefinition.trialCausality;
+    }
+    const entity = entityOrDefinition.specialBlock || entityOrDefinition;
+    const definition = getSpecialBlockDefinition(entity.definitionId || entity.type || entity.id);
+    return definition?.trialCausality || EMPTY_TRIAL_CAUSALITY;
+}
+
+export function hasSpecialBlockTrialCausality(entityOrDefinition) {
+    return readSpecialBlockTrialCausality(entityOrDefinition).participates === true;
 }
 
 export function isSpecialBlockFunctional(entityOrCell) {

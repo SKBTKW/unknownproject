@@ -229,8 +229,9 @@ export function checkUnityRuntimeFixtures({ fixtureDir = FIXTURE_DIR } = {}) {
 
     for (const [filename, value] of Object.entries(expected)) {
         const filePath = path.join(fixtureDir, filename);
-        const actual = fs.existsSync(filePath) ? fs.readFileSync(filePath, "utf8") : null;
-        const expectedText = jsonText(value);
+        const actualRaw = fs.existsSync(filePath) ? fs.readFileSync(filePath, "utf8") : null;
+        const actual = actualRaw !== null ? actualRaw.replace(/\r\n/g, "\n") : null;
+        const expectedText = jsonText(value).replace(/\r\n/g, "\n");
         if (actual !== expectedText) {
             mismatches.push(filename);
         }

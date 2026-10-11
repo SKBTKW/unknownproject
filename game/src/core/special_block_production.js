@@ -12,6 +12,10 @@ import {
 } from './special_block_domain.js';
 import { resolveSpecialBlockDamageEffect } from './board_damage_effect_policy.js';
 import { resolveCellProductionBase, resolvePlacedBlockProduction } from './land_production_contract.js';
+import {
+    resolveSpecialBlockDevelopmentModifiers,
+    sumSpecialBlockDevelopmentModifiers
+} from './special_block_development_domain.js';
 
 export const SPECIAL_BLOCK_PRODUCTION_STATUS = Object.freeze({
     RESOLVED: 'RESOLVED',
@@ -148,6 +152,7 @@ export class SpecialBlockProductionResolver {
         if (!offsets) return null;
 
         let count = 0;
+        const countedRelationInstances = new Set();
         for (const [dr, dc] of offsets) {
             const neighbor = state?.grid?.[r + dr]?.[c + dc];
             if (!neighbor) continue;
@@ -156,7 +161,13 @@ export class SpecialBlockProductionResolver {
                 if (hasCellPositiveProduction(state, neighbor, { r: r + dr, c: c + dc }, relationProductionResource, {
                     resolver: this,
                     excludedDefinitionIds: production.relationExcludedDefinitionIds
-                })) count++;
+                })) {
+                    const relatedInstanceId = neighbor.specialBlock?.instanceId || null;
+                    if (!relatedInstanceId || !countedRelationInstances.has(relatedInstanceId)) {
+                        count++;
+                        if (relatedInstanceId) countedRelationInstances.add(relatedInstanceId);
+                    }
+                }
                 continue;
             }
 
@@ -416,7 +427,14 @@ export function hasCellPositiveProduction(state, cell, position, resource, {
     }
     if (!cell.specialBlock) return false;
     const special = resolver.resolveCell(state, cell, position);
-    return special.status === SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED && special.yields[resource] > 0;
+    if (special.status === SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED && special.yields[resource] > 0) {
+        return true;
+    }
+    const development = resolveSpecialBlockDevelopmentModifiers(
+        state,
+        cell.specialBlock.instanceId || position
+    );
+    return development.active === true && Number(development.yields?.[resource] || 0) > 0;
 }
 
 function runtimeResolver(state) {
@@ -429,11 +447,60 @@ function runtimeResolver(state) {
 }
 
 export function resolveSpecialBlockProduction(state, cell, position = {}) {
-    return runtimeResolver(state).resolveCell(state, cell, position);
+    const base = runtimeResolver(state).resolveCell(state, cell, position);
+    const baseYields = normalizeYields(base?.yields || ZERO_YIELDS) || { ...ZERO_YIELDS };
+    const development = cell?.specialBlock
+        ? resolveSpecialBlockDevelopmentModifiers(
+            state,
+            cell.specialBlock.instanceId || position
+        )
+        : null;
+    const developmentYields = normalizeYields(development?.yields || ZERO_YIELDS) || { ...ZERO_YIELDS };
+
+    if (base.status === SPECIAL_BLOCK_PRODUCTION_STATUS.UNRESOLVED) {
+        return {
+            ...base,
+            baseYields,
+            developmentYields,
+            developmentDefenseCapacityBonus: Number(development?.defenseCapacityBonus || 0)
+        };
+    }
+
+    const effectiveYields = addYields({ ...baseYields }, developmentYields);
+    const hasDevelopmentYield = Object.values(developmentYields).some(value => Number(value || 0) > 0);
+    return {
+        ...base,
+        status: base.status === SPECIAL_BLOCK_PRODUCTION_STATUS.NONE && hasDevelopmentYield
+            ? SPECIAL_BLOCK_PRODUCTION_STATUS.RESOLVED
+            : base.status,
+        kind: base.kind || (hasDevelopmentYield ? 'DEVELOPMENT' : null),
+        yields: effectiveYields,
+        baseYields,
+        developmentYields,
+        developmentDefenseCapacityBonus: Number(development?.defenseCapacityBonus || 0)
+    };
+}
+
+export function sumSpecialBlockProductionBreakdown(state) {
+    const base = runtimeResolver(state).sum(state);
+    const development = sumSpecialBlockDevelopmentModifiers(state);
+    const baseYields = normalizeYields(base?.yields || ZERO_YIELDS) || { ...ZERO_YIELDS };
+    const developmentYields = normalizeYields(development?.yields || ZERO_YIELDS) || { ...ZERO_YIELDS };
+    return {
+        yields: addYields({ ...baseYields }, developmentYields),
+        unresolved: base?.unresolved || [],
+        baseYields,
+        developmentYields,
+        developmentUnresolved: development?.unresolved || []
+    };
 }
 
 export function sumSpecialBlockProduction(state) {
-    return runtimeResolver(state).sum(state);
+    const effective = sumSpecialBlockProductionBreakdown(state);
+    return {
+        yields: effective.yields,
+        unresolved: effective.unresolved
+    };
 }
 
 export { ZERO_YIELDS as SPECIAL_BLOCK_ZERO_YIELDS };

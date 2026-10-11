@@ -767,6 +767,80 @@ export const ECONOMY_CARDS_MASTER = [
   ]
 },
 {
+  "id": "CMD_SITE_DEVELOPMENT",
+  "category": "COMMAND",
+  "nameKey": "CMD_SITE_DEVELOPMENT_NAME",
+  "descriptionKey": "CMD_SITE_DEVELOPMENT_DESC",
+  "cost": {
+    "food": 50,
+    "wood": 50
+  },
+  "tags": [
+    "DEVELOPMENT",
+    "SPECIAL_BLOCK",
+    "CIVILIAN",
+    "BOARD_INVESTMENT"
+  ],
+  "minStage": 1,
+  "rarity": "UC",
+  "weight": 0.25,
+  "cyclePolicy": "RARITY",
+  "offering": {
+    "requirements": [
+      {
+        "id": "SITE_DEVELOPMENT_COST_AFFORDABLE",
+        "type": "CARD_COST_AFFORDABLE"
+      }
+    ]
+  },
+  "execution": {
+    "requirements": [
+      {
+        "id": "SITE_DEVELOPMENT_COST_AFFORDABLE",
+        "type": "CARD_COST_AFFORDABLE"
+      }
+    ]
+  },
+  "effects": [
+    {
+      "type": "DOMAIN_ACTION",
+      "action": "APPLY_SPECIAL_BLOCK_DEVELOPMENT",
+      "developmentDefinitionId": "BASIC_SITE_DEVELOPMENT",
+      "paymentMode": "CARD_COST",
+      "selection": {
+        "mode": "MULTI_OPTION",
+        "exactCount": 2,
+        "titleKey": "UI_SITE_DEVELOPMENT_SELECT_TITLE",
+        "descriptionKey": "UI_SITE_DEVELOPMENT_SELECT_DESC",
+        "confirmTitleKey": "UI_SITE_DEVELOPMENT_CONFIRM_TITLE",
+        "options": [
+          {
+            "id": "FOOD_YIELD",
+            "labelKey": "SITE_DEVELOPMENT_OPTION_FOOD",
+            "descriptionKey": "SITE_DEVELOPMENT_OPTION_FOOD_DESC"
+          },
+          {
+            "id": "MATERIAL_YIELD",
+            "labelKey": "SITE_DEVELOPMENT_OPTION_MATERIAL",
+            "descriptionKey": "SITE_DEVELOPMENT_OPTION_MATERIAL_DESC"
+          },
+          {
+            "id": "MYSTIC_YIELD",
+            "labelKey": "SITE_DEVELOPMENT_OPTION_MYSTIC",
+            "descriptionKey": "SITE_DEVELOPMENT_OPTION_MYSTIC_DESC"
+          },
+          {
+            "id": "DEFENSE_CAPACITY",
+            "labelKey": "SITE_DEVELOPMENT_OPTION_DEFENSE",
+            "descriptionKey": "SITE_DEVELOPMENT_OPTION_DEFENSE_DESC"
+          }
+        ]
+      },
+      "logActivation": true
+    }
+  ]
+},
+{
   "id": "CMD_ALTAR",
   "category": "COMMAND",
   "nameKey": "CMD_ALTAR_NAME",
@@ -1096,6 +1170,48 @@ export const MILITARY_CARDS_MASTER = [
     "rarity": "C",
     "weight": 0.35,
     "cyclePolicy": "RARITY"
+  },
+  {
+    "id": "CMD_BARRACKS",
+    "category": "MILITARY",
+    "nameKey": "CMD_BARRACKS_NAME",
+    "descriptionKey": "CMD_BARRACKS_DESC",
+    "cost": {},
+    "tags": [
+      "MILITARY",
+      "SPECIAL_BLOCK",
+      "DEPLOYMENT"
+    ],
+    "minStage": 2,
+    "rarity": "UC",
+    "weight": 0.25,
+    "cyclePolicy": "RARITY",
+    "maxUsesPerStage": 1,
+    "offering": {
+      "requirements": [
+        {
+          "type": "CARD_STAGE_USAGE_BELOW",
+          "maxUses": 1
+        }
+      ]
+    },
+    "execution": {
+      "requirements": [
+        {
+          "type": "CARD_STAGE_USAGE_BELOW",
+          "maxUses": 1
+        }
+      ]
+    },
+    "effects": [
+      {
+        "type": "DOMAIN_ACTION",
+        "action": "CREATE_SPECIAL_BLOCK",
+        "blockType": "BARRACKS",
+        "paymentMode": "DOMAIN_QUOTE",
+        "logActivation": true
+      }
+    ]
   }
 ];
 
@@ -2879,6 +2995,48 @@ export const COMMAND_CARDS_MASTER = [
       "type": "DOMAIN_ACTION",
       "action": "CREATE_SPECIAL_BLOCK",
       "blockType": "ALTAR",
+      "paymentMode": "DOMAIN_QUOTE",
+      "logActivation": true
+    }
+  ]
+},
+{
+  "id": "CMD_BARRACKS",
+  "category": "MILITARY",
+  "nameKey": "CMD_BARRACKS_NAME",
+  "descriptionKey": "CMD_BARRACKS_DESC",
+  "cost": {},
+  "tags": [
+    "MILITARY",
+    "SPECIAL_BLOCK",
+    "DEPLOYMENT"
+  ],
+  "minStage": 2,
+  "rarity": "UC",
+  "weight": 0.25,
+  "cyclePolicy": "RARITY",
+  "maxUsesPerStage": 1,
+  "offering": {
+    "requirements": [
+      {
+        "type": "CARD_STAGE_USAGE_BELOW",
+        "maxUses": 1
+      }
+    ]
+  },
+  "execution": {
+    "requirements": [
+      {
+        "type": "CARD_STAGE_USAGE_BELOW",
+        "maxUses": 1
+      }
+    ]
+  },
+  "effects": [
+    {
+      "type": "DOMAIN_ACTION",
+      "action": "CREATE_SPECIAL_BLOCK",
+      "blockType": "BARRACKS",
       "paymentMode": "DOMAIN_QUOTE",
       "logActivation": true
     }

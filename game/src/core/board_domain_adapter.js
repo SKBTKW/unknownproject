@@ -20,6 +20,7 @@ import {
     readZoneSemantic
 } from './zone_conversion_domain.js';
 import { SpecialBlockService } from '../systems/special_block_service.js';
+import { SpecialBlockDevelopmentService } from '../systems/special_block_development_service.js';
 import { TerrainTransformService } from '../systems/terrain_transform_service.js';
 import { ZoneConversionService } from '../systems/zone_conversion_service.js';
 
@@ -81,6 +82,7 @@ export class BoardDomainAdapter {
         state,
         gridEngine,
         specialBlockService = null,
+        specialBlockDevelopmentService = null,
         terrainTransformService = null,
         boardDamageService = null,
         zoneConversionService = null,
@@ -90,6 +92,8 @@ export class BoardDomainAdapter {
         this.state = state || gridEngine?.state || null;
         this.gridEngine = gridEngine || null;
         this.specialBlockService = specialBlockService || new SpecialBlockService(this.state);
+        this.specialBlockDevelopmentService = specialBlockDevelopmentService
+            || new SpecialBlockDevelopmentService({ state: this.state });
         this.terrainTransformService = terrainTransformService || new TerrainTransformService({
             state: this.state,
             gridEngine: this.gridEngine
@@ -383,6 +387,18 @@ export class BoardDomainAdapter {
 
     readZoneConversionCapabilities(groupId) {
         return readZoneConversionCapabilities(this.state, groupId);
+    }
+
+    enumerateSpecialBlockDevelopmentTargets(developmentDefinitionId) {
+        return this.specialBlockDevelopmentService.enumerateEligibleTargets(developmentDefinitionId);
+    }
+
+    previewSpecialBlockDevelopment(request) {
+        return this.specialBlockDevelopmentService.previewDevelopment(request);
+    }
+
+    applySpecialBlockDevelopment(request, options = {}) {
+        return this.specialBlockDevelopmentService.applyDevelopment(request, options);
     }
 
     readCapabilities(target) {

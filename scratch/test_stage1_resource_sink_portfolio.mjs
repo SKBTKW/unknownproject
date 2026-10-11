@@ -41,6 +41,7 @@ assert.deepEqual(
         "CMD_EMERGENCY_LEVY",
         "CMD_MINE",
         "CMD_CULTIVATION",
+        "CMD_SITE_DEVELOPMENT",
         "CMD_ALTAR"
     ],
     "Stage1 sink portfolio audit must be updated when the Stage1 economy-card set changes"
@@ -58,6 +59,7 @@ const expectedCosts = new Map([
     ["CMD_EMERGENCY_LEVY", { food: 20 }],
     ["CMD_MINE", {}],
     ["CMD_CULTIVATION", {}],
+    ["CMD_SITE_DEVELOPMENT", { food: 50, wood: 50 }],
     ["CMD_ALTAR", {}]
 ]);
 

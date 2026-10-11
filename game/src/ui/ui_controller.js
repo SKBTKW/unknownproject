@@ -1903,11 +1903,15 @@ class UIController {
             if (!this.isCommandExecutionTarget(this.selectedCard, r, c)) return false;
             const selectedCard = this.selectedCard;
             const selectedIdx = this.selectedCardIdx;
-            const target = this.getCommandCardExecutionTargets(selectedCard).find(candidate =>
+            const matchingTargets = this.getCommandCardExecutionTargets(selectedCard).filter(candidate =>
                 Number(candidate?.r) === r && Number(candidate?.c) === c
             );
-            const result = this.playCommandCard(selectedCard, selectedIdx, target);
-            return result?.success === true;
+            if (matchingTargets.length === 0) return false;
+            if (matchingTargets.length === 1) {
+                const result = this.playCommandCard(selectedCard, selectedIdx, matchingTargets[0]);
+                return result?.success === true || result?.pending === true;
+            }
+            return this.promptCommandTargetSelection(selectedCard, selectedIdx, matchingTargets);
         }
 
         // ↩️ 当ターン配置済みマスをクリックした場合は配置取り消し（Undo）
@@ -2067,6 +2071,161 @@ class UIController {
         this.hideCellTooltip();
     }
 
+    getPendingCommandEffectSelection(card) {
+        const definition = card?.terrain || card || null;
+        const effects = Array.isArray(definition?.effects) ? definition.effects : [];
+        for (let effectIndex = 0; effectIndex < effects.length; effectIndex++) {
+            const effect = effects[effectIndex];
+            const selection = effect?.selection;
+            if (!selection || selection.mode !== "MULTI_OPTION") continue;
+
+            const exactCount = Math.max(1, Math.trunc(Number(selection.exactCount || 1)));
+            const allowed = new Set(
+                (Array.isArray(selection.options) ? selection.options : [])
+                    .map(option => option?.id)
+                    .filter(Boolean)
+            );
+            const selected = Array.isArray(effect.selectedOptionIds)
+                ? [...effect.selectedOptionIds].map(String)
+                : [];
+            const valid = selected.length === exactCount
+                && new Set(selected).size === exactCount
+                && selected.every(id => allowed.has(id));
+            if (!valid) {
+                return Object.freeze({
+                    effectIndex,
+                    exactCount,
+                    selection,
+                    selectedOptionIds: Object.freeze(selected)
+                });
+            }
+        }
+        return null;
+    }
+
+    withCommandEffectSelection(card, effectIndex, optionIds) {
+        const definition = card?.terrain || card || null;
+        if (!definition || !Array.isArray(definition.effects)) return card;
+        const canonical = [...new Set((optionIds || []).map(String))]
+            .sort((a, b) => a.localeCompare(b));
+        const effects = definition.effects.map((effect, index) =>
+            index === effectIndex
+                ? { ...effect, selectedOptionIds: canonical }
+                : { ...effect }
+        );
+        const selectedDefinition = { ...definition, effects };
+        return card?.terrain
+            ? { ...card, terrain: selectedDefinition }
+            : selectedDefinition;
+    }
+
+    promptCommandEffectSelection(card, cardIdx, target, pending = null) {
+        const request = pending || this.getPendingCommandEffectSelection(card);
+        if (!request) return { success: false, reason: "COMMAND_EFFECT_SELECTION_NOT_REQUIRED" };
+
+        const options = Array.isArray(request.selection?.options)
+            ? request.selection.options.filter(option => option?.id)
+            : [];
+        const allowed = new Set(options.map(option => option.id));
+        const finish = (selectedOptionIds) => {
+            const canonical = [...new Set((selectedOptionIds || []).map(String))]
+                .sort((a, b) => a.localeCompare(b));
+            if (
+                canonical.length !== request.exactCount
+                || !canonical.every(id => allowed.has(id))
+            ) {
+                return { success: false, reason: "COMMAND_EFFECT_SELECTION_INVALID" };
+            }
+            const selectedCard = this.withCommandEffectSelection(
+                card,
+                request.effectIndex,
+                canonical
+            );
+            return this.playCommandCard(selectedCard, cardIdx, target);
+        };
+
+        if (typeof this.onCommandEffectSelectionPrompt === "function") {
+            return finish(this.onCommandEffectSelectionPrompt(
+                Object.freeze(options.map(option => Object.freeze({ ...option }))),
+                request.exactCount,
+                card,
+                target
+            ));
+        }
+
+        const hasDom = typeof document !== "undefined";
+        const modalSys = hasDom
+            ? ((typeof window !== "undefined" && window.ModalSystem)
+                ? window.ModalSystem
+                : (typeof ModalSystem !== "undefined" ? ModalSystem : null))
+            : null;
+        if (!modalSys || typeof modalSys.showChoiceDialog !== "function") {
+            return { success: false, reason: "COMMAND_EFFECT_SELECTION_UI_UNAVAILABLE" };
+        }
+
+        const I18n = (typeof globalThis !== "undefined" && globalThis.I18n)
+            ? globalThis.I18n
+            : (typeof window !== "undefined" && window.I18n
+                ? window.I18n
+                : { t: key => key });
+        const selected = [];
+
+        const confirmSelection = () => {
+            if (typeof modalSys.showConfirmDialog !== "function") {
+                return { success: false, reason: "COMMAND_EFFECT_CONFIRM_UI_UNAVAILABLE" };
+            }
+            const selectedOptions = selected
+                .map(id => options.find(option => option.id === id))
+                .filter(Boolean);
+            const descText = selectedOptions
+                .map(option => "• " + I18n.t(option.labelKey || option.id) + " — " + I18n.t(option.descriptionKey || ""))
+                .join("\n");
+            const definition = card?.terrain || card || {};
+            const cost = definition.cost || {};
+            const costParts = [];
+            if (cost.food) costParts.push("🌾-" + cost.food);
+            if (cost.wood) costParts.push("🧱-" + cost.wood);
+            if (cost.mystic) costParts.push("✨-" + cost.mystic);
+            if (cost.ember) costParts.push("🔥-" + cost.ember);
+
+            modalSys.showConfirmDialog({
+                title: I18n.t(request.selection.confirmTitleKey || "UI_CMD_CONFIRM_TITLE"),
+                descText,
+                costText: costParts.join(" "),
+                confirmLabel: I18n.t("UI_ACTIVATE_CMD"),
+                cancelLabel: I18n.t("UI_CANCEL"),
+                onConfirm: () => finish(selected),
+                onCancel: () => {}
+            });
+            return { success: false, pending: true, reason: "COMMAND_EFFECT_CONFIRM_PENDING" };
+        };
+
+        const askNext = () => {
+            if (selected.length >= request.exactCount) return confirmSelection();
+            const choices = options
+                .filter(option => !selected.includes(option.id))
+                .map(option => ({
+                    id: option.id,
+                    label: I18n.t(option.labelKey || option.id),
+                    description: I18n.t(option.descriptionKey || "")
+                }));
+            modalSys.showChoiceDialog({
+                title: I18n.t(request.selection.titleKey || "UI_COMMAND_TARGET_SELECT_TITLE"),
+                descText: I18n.t(request.selection.descriptionKey || ""),
+                choices,
+                onSelect: choice => {
+                    if (!choice?.id || !allowed.has(choice.id) || selected.includes(choice.id)) return;
+                    selected.push(choice.id);
+                    askNext();
+                },
+                onCancel: () => {}
+            });
+            return { success: false, pending: true, reason: "COMMAND_EFFECT_SELECTION_PENDING" };
+        };
+
+        return askNext();
+    }
+
     commandCardRequiresTarget(card = this.selectedCard) {
         if (!card || !this.engine || typeof this.engine.commandCardRequiresTarget !== "function") return false;
         return this.engine.commandCardRequiresTarget(card) === true;
@@ -2082,6 +2241,70 @@ class UIController {
         return this.getCommandCardExecutionTargets(card).some(target =>
             Number(target?.r) === r && Number(target?.c) === c
         );
+    }
+
+    promptCommandTargetSelection(card, cardIdx, candidates) {
+        if (!Array.isArray(candidates) || candidates.length === 0) return false;
+
+        if (typeof this.onCommandTargetPrompt === "function") {
+            const selected = this.onCommandTargetPrompt(candidates, card, cardIdx);
+            if (selected) {
+                const result = this.playCommandCard(card, cardIdx, selected);
+                return result?.success === true || result?.pending === true;
+            }
+            return false;
+        }
+
+        const hasDom = typeof document !== "undefined";
+        const modalSys = hasDom ? ((typeof window !== "undefined" && window.ModalSystem) ? window.ModalSystem : (typeof ModalSystem !== "undefined" ? ModalSystem : null)) : null;
+        const I18n = (typeof globalThis !== 'undefined' && globalThis.I18n) ? globalThis.I18n : (typeof window !== 'undefined' ? window.I18n : { t: (k, p) => k });
+
+        if (!modalSys || typeof modalSys.showChoiceDialog !== "function") {
+            return false;
+        }
+
+        const cardName = card.nameKey ? I18n.t(card.nameKey) : (card.id || "Card");
+        const title = I18n.t("UI_COMMAND_TARGET_SELECT_TITLE", { name: cardName });
+        const descText = I18n.t("UI_COMMAND_TARGET_SELECT_DESC");
+
+        const choices = candidates.map((candidate, idx) => {
+            const dirKey = candidate.direction ? `DIRECTION_${candidate.direction}` : null;
+            const dirLabel = dirKey ? I18n.t(dirKey) : (candidate.direction || "");
+            const label = dirLabel
+                ? I18n.t("UI_COMMAND_TARGET_DIRECTION", { direction: dirLabel })
+                : I18n.t("UI_COMMAND_TARGET_OPTION", { index: idx + 1 });
+
+            const descParts = [];
+            if (candidate.source) {
+                descParts.push(I18n.t("UI_COMMAND_TARGET_SOURCE", { r: candidate.source.r, c: candidate.source.c }));
+            }
+            if (Array.isArray(candidate.footprint) && candidate.footprint.length > 0) {
+                const fpStr = candidate.footprint.map(p => `(${p.r},${p.c})`).join(" -> ");
+                descParts.push(I18n.t("UI_COMMAND_TARGET_FOOTPRINT", { footprint: fpStr }));
+            }
+            const description = descParts.join(" | ");
+
+            return {
+                id: `target_choice_${idx}`,
+                target: candidate,
+                label,
+                description
+            };
+        });
+
+        modalSys.showChoiceDialog({
+            title,
+            descText,
+            choices,
+            onSelect: (choice) => {
+                if (choice?.target) {
+                    this.playCommandCard(card, cardIdx, choice.target);
+                }
+            },
+            onCancel: () => {}
+        });
+
+        return true;
     }
 
     beginTargetedCommandSelection(card, handIdx = -1, reserveIdx = -1) {
@@ -2513,6 +2736,17 @@ class UIController {
 
     playCommandCard(card, targetIdx, target = null) {
         if (!this.engine || typeof this.engine.playCommandCard !== "function") return;
+        const pendingEffectSelection = typeof this.getPendingCommandEffectSelection === "function"
+            ? this.getPendingCommandEffectSelection(card)
+            : null;
+        if (pendingEffectSelection) {
+            return this.promptCommandEffectSelection(
+                card,
+                targetIdx,
+                target,
+                pendingEffectSelection
+            );
+        }
         let cardIdx = (typeof targetIdx === "number" && targetIdx >= 0) ? targetIdx : (this.state && this.state.handOffering ? this.state.handOffering.indexOf(card) : -1);
         const source = this.selectedReserveIdx !== -1
             ? { type: "RESERVE", index: this.selectedReserveIdx }
