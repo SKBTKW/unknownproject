@@ -330,17 +330,7 @@ class GridEngine {
 
         this.state.grid = newGrid;
 
-        // 🏰 1. 本営 (HQ) 産出の 1.4 倍強化 (Stage 2: 🌾14, 🧱14, 🛡️14, ✨2)
-        if (newGrid[newCenter] && newGrid[newCenter][newCenter] && newGrid[newCenter][newCenter].isHQ) {
-            newGrid[newCenter][newCenter].terrain = {
-                id: "HQ",
-                nameKey: "TERRAIN_HQ",
-                food: 14,
-                wood: 14,
-                defense: 14,
-                mystic: 2
-            };
-        }
+        // Stage transition does not upgrade HQ production; the original HQ terrain is retained.
 
         // 🎲 2. 資源ソケットの追加配置 (+4個: 最外周3マス + 全域未配置1マス)
         const existingSockets = [];
