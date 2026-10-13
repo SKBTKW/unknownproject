@@ -18,7 +18,7 @@ class GameState {
         this.turn = dependencies.turn !== undefined ? dependencies.turn : 1;
         this.ember = dependencies.ember !== undefined ? dependencies.ember : 20;
         this.maxEmber = dependencies.maxEmber !== undefined ? dependencies.maxEmber : 20;
-        this.food = dependencies.food !== undefined ? dependencies.food : 50; // 🌾 初期食料 50 (戦略的猶予確保)
+        this.food = dependencies.food !== undefined ? dependencies.food : 30; // 🌾 Stage1 balance trial: initial food 30
         this.wood = dependencies.material !== undefined ? dependencies.material : (dependencies.wood !== undefined ? dependencies.wood : 30);
         this.material = this.wood;
         const legacyDefense = dependencies.defense !== undefined ? dependencies.defense : 5;
