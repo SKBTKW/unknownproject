@@ -1,3 +1,4 @@
+import { BASELINE_ECONOMY } from './baseline_economy.js';
 import { I18n } from '../i18n.js';
 import { LAND_SYSTEM_DATA } from '../data/land_system.js';
 import { ZONE_CONVERSION_DEFINITIONS } from '../data/zone_conversion_definitions.js';
@@ -97,7 +98,7 @@ class GameEngine {
             this.state = dependencies.state;
         } else {
             const GameStateClass = dependencies.GameStateClass || GameState;
-            this.state = GameStateClass ? new GameStateClass({ engine: this }) : { turn: 1, ember: 20, food: 30, wood: 30, defense: 5, currentDefense: 5, maxDefense: 5, mystic: 0, handOffering: [], reserveSlots: [null] };
+            this.state = GameStateClass ? new GameStateClass({ engine: this }) : { turn: 1, ember: 20, food: BASELINE_ECONOMY.initial.food, wood: BASELINE_ECONOMY.initial.wood, defense: BASELINE_ECONOMY.hqYields.defense, currentDefense: 5, maxDefense: 5, mystic: 0, handOffering: [], reserveSlots: [null] };
         }
 
         // 3. ドメインサブシステムの初期化と注入
