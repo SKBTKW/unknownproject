@@ -1,3 +1,4 @@
+import { BASELINE_ECONOMY } from '../core/baseline_economy.js';
 import { replacesBaseTerrainProduction } from '../core/special_block_domain.js';
 /* =============================================================
    game/src/systems/production_calculator.js
@@ -152,10 +153,10 @@ import { ZONE_CONVERSION_PRODUCTION_STATUS } from '../core/zone_conversion_domai
             const center = Math.floor(size / 2);
             const hqTerrain = (state.grid && state.grid[center] && state.grid[center][center] && state.grid[center][center].terrain) 
                 ? state.grid[center][center].terrain 
-                : { food: 5, wood: 5, defense: 5, mystic: 1 };
-            const hqFood = (hqTerrain.food !== undefined) ? hqTerrain.food : 5;
-            const hqWood = (hqTerrain.wood !== undefined) ? (hqTerrain.material !== undefined ? hqTerrain.material : hqTerrain.wood) : 5;
-            const hqMystic = (hqTerrain.mystic !== undefined) ? hqTerrain.mystic : 1;
+                : BASELINE_ECONOMY.hqYields;
+            const hqFood = (hqTerrain.food !== undefined) ? hqTerrain.food : BASELINE_ECONOMY.hqYields.food;
+            const hqWood = (hqTerrain.wood !== undefined) ? (hqTerrain.material !== undefined ? hqTerrain.material : hqTerrain.wood) : BASELINE_ECONOMY.hqYields.wood;
+            const hqMystic = (hqTerrain.mystic !== undefined) ? hqTerrain.mystic : BASELINE_ECONOMY.hqYields.mystic;
 
             const blockProduction = sumPlacedBlockProduction(state);
             const specialBlockProduction = sumSpecialBlockProduction(state);
@@ -207,11 +208,11 @@ import { ZONE_CONVERSION_PRODUCTION_STATUS } from '../core/zone_conversion_domai
             const center = Math.floor(size / 2);
             const hqTerrain = (state.grid && state.grid[center] && state.grid[center][center] && state.grid[center][center].terrain) 
                 ? state.grid[center][center].terrain 
-                : { food: 5, wood: 5, defense: 5, mystic: 1 };
-            const hqFood = (hqTerrain.food !== undefined) ? hqTerrain.food : 5;
-            const hqWood = (hqTerrain.wood !== undefined) ? (hqTerrain.material !== undefined ? hqTerrain.material : hqTerrain.wood) : 5;
-            const hqDefense = (hqTerrain.defense !== undefined) ? hqTerrain.defense : 5;
-            const hqMystic = (hqTerrain.mystic !== undefined) ? hqTerrain.mystic : 1;
+                : BASELINE_ECONOMY.hqYields;
+            const hqFood = (hqTerrain.food !== undefined) ? hqTerrain.food : BASELINE_ECONOMY.hqYields.food;
+            const hqWood = (hqTerrain.wood !== undefined) ? (hqTerrain.material !== undefined ? hqTerrain.material : hqTerrain.wood) : BASELINE_ECONOMY.hqYields.wood;
+            const hqDefense = (hqTerrain.defense !== undefined) ? hqTerrain.defense : BASELINE_ECONOMY.hqYields.defense;
+            const hqMystic = (hqTerrain.mystic !== undefined) ? hqTerrain.mystic : BASELINE_ECONOMY.hqYields.mystic;
 
             for (let r = 0; r < size; r++) {
                 for (let c = 0; c < size; c++) {
@@ -322,11 +323,11 @@ import { ZONE_CONVERSION_PRODUCTION_STATUS } from '../core/zone_conversion_domai
 
             // 1. 本営マスの場合
             if (cell.isHQ) {
-                const hqTerrain = cell.terrain || { food: 5, wood: 5, defense: 5, mystic: 1 };
-                const hqFood = (hqTerrain.food !== undefined) ? hqTerrain.food : 5;
-                const hqWood = (hqTerrain.wood !== undefined) ? (hqTerrain.material !== undefined ? hqTerrain.material : hqTerrain.wood) : 5;
-                const hqDefense = (hqTerrain.defense !== undefined) ? hqTerrain.defense : 5;
-                const hqMystic = (hqTerrain.mystic !== undefined) ? hqTerrain.mystic : 1;
+                const hqTerrain = cell.terrain || BASELINE_ECONOMY.hqYields;
+                const hqFood = (hqTerrain.food !== undefined) ? hqTerrain.food : BASELINE_ECONOMY.hqYields.food;
+                const hqWood = (hqTerrain.wood !== undefined) ? (hqTerrain.material !== undefined ? hqTerrain.material : hqTerrain.wood) : BASELINE_ECONOMY.hqYields.wood;
+                const hqDefense = (hqTerrain.defense !== undefined) ? hqTerrain.defense : BASELINE_ECONOMY.hqYields.defense;
+                const hqMystic = (hqTerrain.mystic !== undefined) ? hqTerrain.mystic : BASELINE_ECONOMY.hqYields.mystic;
                 return {
                     productionStatus: LAND_PRODUCTION_STATUS.LEGACY,
                     productionScope: "CELL",
