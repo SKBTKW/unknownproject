@@ -1,7 +1,7 @@
 import { getSpecialBlockDefinition, isSpecialBlockFunctional } from './special_block_domain.js';
 
 // Provisional balance values; capacity is derived, never accumulated by cards.
-export const BASE_RESOURCE_STORAGE = Object.freeze({ food: 150, wood: 150 });
+export const BASE_RESOURCE_STORAGE = Object.freeze({ food: 200, wood: 200 });
 
 export function readResourceStorage(state) {
     const bonus = { food: 0, wood: 0 };
