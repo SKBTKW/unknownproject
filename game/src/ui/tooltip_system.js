@@ -319,7 +319,7 @@ export class TooltipSystem {
                         <span style="color:${netFoodColor}; font-size:15px;">${netFoodSign} /T ${netTag}</span>
                     </div>
                     <div style="font-size:11.5px; color:#a4b0be; line-height:1.4;">
-                        ${grossLabel} +${grossFood} (${hqBaseLabel} +10 | ${tilesLabel} +${foodTiles} | ★${socketsLabel} +${foodSockets} | ${vicinityLabel} +${foodVicinity}${emberStr})<br>
+                        ${grossLabel} +${grossFood} (${hqBaseLabel} +${bd?.food.hqBase ?? 5} | ${tilesLabel} +${foodTiles} | ★${socketsLabel} +${foodSockets} | ${vicinityLabel} +${foodVicinity}${emberStr})<br>
                         <span style="color:#ff9f43; font-weight:bold;">🔥 ${foodMaintLabel} -${foodCost} / T</span>
                     </div>
                 </div>
@@ -331,7 +331,7 @@ export class TooltipSystem {
                         <span style="color:#2ecc71; font-size:15px;">+${woodTotal} /T</span>
                     </div>
                     <div style="font-size:11.5px; color:#a4b0be; line-height:1.4;">
-                        ${hqBaseLabel} +10 | ${tilesLabel} +${woodTiles} | ${socketsLabel} +${woodSockets} | ${vicinityLabel} +${woodVicinity}${emberStr}
+                        ${hqBaseLabel} +${bd?.wood.hqBase ?? 5} | ${tilesLabel} +${woodTiles} | ${socketsLabel} +${woodSockets} | ${vicinityLabel} +${woodVicinity}${emberStr}
                     </div>
                 </div>
 
@@ -343,7 +343,7 @@ export class TooltipSystem {
                     </div>
                     <div style="font-size:11.5px; color:#a4b0be; line-height:1.4;">
                         ${defCurrentLabel}: ${defCurrent} | ${defMaxLabel}: ${defMax}<br>
-                        ${hqBaseLabel} 10 | ${tilesLabel} +${defTiles} | ${socketsLabel} +${defSockets}
+                        ${hqBaseLabel} ${bd?.defense.hqBase ?? 5} | ${tilesLabel} +${defTiles} | ${socketsLabel} +${defSockets}
                     </div>
                 </div>
 
@@ -354,7 +354,7 @@ export class TooltipSystem {
                         <span style="color:#2ecc71; font-size:15px;">+${mysticTotal} /T</span>
                     </div>
                     <div style="font-size:11.5px; color:#a4b0be; line-height:1.4;">
-                        ${hqBaseLabel} +1 | ${tilesLabel} +${mysticTiles} | ${socketsLabel} +${mysticSockets} | ${emberAutoLabel} +${emberMystic}${emberStr}
+                        ${hqBaseLabel} +${bd?.mystic.hqBase ?? 1} | ${tilesLabel} +${mysticTiles} | ${socketsLabel} +${mysticSockets} | ${emberAutoLabel} +${emberMystic}${emberStr}
                     </div>
                 </div>
             </div>
