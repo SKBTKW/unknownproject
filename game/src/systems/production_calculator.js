@@ -150,11 +150,9 @@ import { ZONE_CONVERSION_PRODUCTION_STATUS } from '../core/zone_conversion_domai
             const foodCost = MaintenanceFallbackSystem.resolveFoodMaintenanceCost(state).foodCost;
 
             // 🏰 本営 (HQ) 基礎産出の動的解決 (Stage 1: 5/5/5/1)
-            const center = Math.floor(size / 2);
             const hqTerrain = resolveHQBaseYields();
             const hqFood = hqTerrain.food;
             const hqWood = hqTerrain.wood;
-            const hqDefense = hqTerrain.defense;
             const hqMystic = hqTerrain.mystic;
 
             const blockProduction = sumPlacedBlockProduction(state);
@@ -204,7 +202,6 @@ import { ZONE_CONVERSION_PRODUCTION_STATUS } from '../core/zone_conversion_domai
             let foodVicinity = 0, woodVicinity = 0, mysticVicinity = 0;
             const groupSums = {};
             const size = (state && state.grid && state.grid.length) ? state.grid.length : 5;
-            const center = Math.floor(size / 2);
             const hqTerrain = resolveHQBaseYields();
             const hqFood = hqTerrain.food;
             const hqWood = hqTerrain.wood;
