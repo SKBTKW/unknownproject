@@ -1,5 +1,4 @@
 import { normalizeHQTerrain } from '../core/hq_production_policy.js';
-import { BASELINE_ECONOMY } from '../core/baseline_economy.js';
 import { excludesCellFromZones } from '../core/special_block_domain.js';
 /* =============================================================
    game/src/systems/grid_engine.js
