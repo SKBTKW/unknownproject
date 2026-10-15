@@ -1,3 +1,4 @@
+import { normalizeHQTerrain } from './core/hq_production_policy.js';
 import { BASELINE_ECONOMY } from './core/baseline_economy.js';
 import { I18n } from './i18n.js';
 import { GridEngine } from './systems/grid_engine.js';
@@ -172,7 +173,7 @@ class GameState {
                         mergeGroupId: null,
                         mergeType: null,
                         placementGroupId: null,
-                        terrain: isHQ ? { id: "HQ", nameKey: "TERRAIN_HQ", ...BASELINE_ECONOMY.hqYields } : null,
+                        terrain: isHQ ? normalizeHQTerrain(null) : null,
                         searched: false,
                         hasSocket: false,
                         socketResource: null,
