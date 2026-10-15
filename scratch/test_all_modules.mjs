@@ -79,7 +79,7 @@ assert(!!engine.deckManager, 'DeckManager が DI 注入されていること');
 assert(!!engine.buffSystem, 'BuffSystem が DI 注入されていること');
 assert(engine.state.ember === 20 && engine.state.maxEmber === 20, '初期残り火が 20 / 20 であること');
 assert(engine.state.food === 50, '初期食料が 50 であること');
-assert(engine.state.wood === 30 && engine.state.material === 30, '初期資材が 30 で内部互換名も同期していること');
+assert(engine.state.wood === 50 && engine.state.material === 50, '初期資材が 50 で内部互換名も同期していること');
 assert(engine.state.currentDefense === 5 && engine.state.maxDefense === 5, '初期防衛が 5 / 5 であること');
 assert(engine.state.mystic === 0, '初期神秘が 0 であること');
 
@@ -644,6 +644,8 @@ emberEngine.state.processTurnEndMaintenance();
 assert(emberEngine.state.ember === emberBeforeReserve, '自家発熱(+1)と保留維持費(-1)で相殺されること');
 
 // ⑥ 食料不足ペナルティ (🔥-1)
+emberEngine.state.wood = emberEngine.state.material = 0;
+emberEngine.state.mystic = 0;
 emberEngine.state.food = 5; // 危機維持費 15 に対して 5 しかない
 emberEngine.state.ember = 9;
 emberEngine.state.reserveSlots[0] = null;
@@ -1167,17 +1169,17 @@ stageEngine.gridEngine.expandGrid(7);
 assert(stageEngine.state.grid.length === 7, '盤面行数が 7 であること');
 assert(stageEngine.state.grid[0].length === 7, '盤面列数が 7 であること');
 
-// 2. 本営産出が 1.4倍 (14/14/14/2)
+// 2. 本営産出が 維持 (5/5/5/1)
 const stageProds = stageEngine.state.calculateTotalProduction();
 const stageDef = stageEngine.state.calculateTotalDefense();
-assert(stageEngine.state.grid[3][3].terrain.food === 14, '本営食料基礎産出が 14 (1.4倍) であること');
-assert(stageEngine.state.grid[3][3].terrain.wood === 14, '本営資材基礎産出が 14 (1.4倍) であること');
-assert(stageEngine.state.grid[3][3].terrain.defense === 14, '本営防衛基礎産出が 14 (1.4倍) であること');
-assert(stageEngine.state.grid[3][3].terrain.mystic === 2, '本営神秘基礎産出が 2 (1.4倍切上) であること');
-assert(stageProds.grossFood === 14, 'Stage 2 初期食料総産出が 14 であること');
-assert(stageProds.totalWood === 14, 'Stage 2 初期資材総産出が 14 であること');
-assert(stageDef === 14, 'Stage 2 初期防衛力が 14 であること');
-assert(stageProds.totalMystic === 2, 'Stage 2 初期神秘産出が 2 であること');
+assert(stageEngine.state.grid[3][3].terrain.food === 5, '本営食料基礎産出が 5 (維持) であること');
+assert(stageEngine.state.grid[3][3].terrain.wood === 5, '本営資材基礎産出が 5 (維持) であること');
+assert(stageEngine.state.grid[3][3].terrain.defense === 5, '本営防衛基礎産出が 5 (維持) であること');
+assert(stageEngine.state.grid[3][3].terrain.mystic === 1, '本営神秘基礎産出が 1 (維持) であること');
+assert(stageProds.grossFood === 5, 'Stage 2 初期食料総産出が 5 であること');
+assert(stageProds.totalWood === 5, 'Stage 2 初期資材総産出が 5 であること');
+assert(stageDef === 5, 'Stage 2 初期防衛力が 5 であること');
+assert(stageProds.totalMystic === 1, 'Stage 2 初期神秘産出が 1 であること');
 
 // 3. 資源ソケットが +4 個追加（計 7 個）
 let totalSockets = 0;

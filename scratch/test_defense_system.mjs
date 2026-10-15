@@ -77,7 +77,7 @@ assert(
 // Stage拡張によるHQ強化は土地配置ではないため現在値を自動充填しない。
 const expandedEngine = GameEngine.createGame();
 expandedEngine.gridEngine.expandGrid(7);
-assert(expandedEngine.defenseSystem.getMaxDefense() === 14, 'Stage盤面拡張後は強化本営から最大🛡️14を再計算する');
+assert(expandedEngine.defenseSystem.getMaxDefense() === 5, 'Stage盤面拡張後は本営の最大🛡️5を維持する');
 assert(expandedEngine.defenseSystem.getCurrentDefense() === 5, 'Stage盤面拡張では現在🛡️を自動回復しない');
 
 // D/F/G: 損耗・回復・最大低下時クランプ。

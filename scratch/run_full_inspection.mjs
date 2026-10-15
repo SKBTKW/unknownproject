@@ -130,6 +130,9 @@ async function main() {
 
     // 🎮 Layer 3: Domain Unit Tests (経済・配置・マージ・探索)
     console.log("\n🧪 [LAYER 3/6] Domain Unit Tests (ゲームロジック検証)...");
+    const baselineEconomyOk = await runCommand("node", ["scratch/test_baseline_economy.mjs"]);
+    const farmStorageOk = await runCommand("node", ["scratch/test_farm_storage_v1.mjs"]);
+    if (!baselineEconomyOk || !farmStorageOk) process.exit(1);
     const step3Ok = await runCommand("node", ["scratch/test_all_modules.mjs"]);
     if (!step3Ok) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 3 (Domain Tests) で不合格が検出されました。");
