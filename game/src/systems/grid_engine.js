@@ -1,3 +1,4 @@
+import { normalizeHQTerrain } from '../core/hq_production_policy.js';
 import { BASELINE_ECONOMY } from '../core/baseline_economy.js';
 import { excludesCellFromZones } from '../core/special_block_domain.js';
 /* =============================================================
@@ -147,7 +148,7 @@ class GridEngine {
                     mergeGroupId: null,
                     mergeType: null,
                     placementGroupId: null,
-                    terrain: isHQ ? { id: "HQ", nameKey: "TERRAIN_HQ", ...BASELINE_ECONOMY.hqYields } : null,
+                    terrain: isHQ ? normalizeHQTerrain(null) : null,
                     specialBlock: null,
                     searched: false,
                     hasSocket: false,
