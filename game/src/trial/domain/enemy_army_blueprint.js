@@ -65,7 +65,7 @@ export class EnemyArmyBlueprint {
         if (!Array.isArray(snapshot.forces) || snapshot.forces.length !== 3) {
             throw new TypeError('ENEMY_BLUEPRINT_FORCES_INVALID');
         }
-        snapshot.forces.forEach((force, index) => {
+        Array.from(snapshot.forces).forEach((force, index) => {
             requireKeys(force, ['id', 'slot', 'composition'], 'FORCE');
             const slot = ENEMY_BLUEPRINT_SLOTS[index];
             if (force.slot !== slot || force.id !== `${snapshot.armyId}_${slot}`) {

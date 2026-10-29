@@ -2,6 +2,26 @@
   "schemaVersion": 1,
   "tests": [
     {
+      "path": "scratch/test_enemy_army_blueprint_first_run_regression.mjs",
+      "purpose": "Unchanged canonical FirstRun Stage1 completion with a registered Blueprint through Stage2",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_blueprint_persistence_regression.mjs",
+      "purpose": "Blueprint persistence RNG and live Truth isolation without automatic generation",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_blueprint_persistence_integration.mjs",
+      "purpose": "Blueprint JSON and History persistence, legacy restore and atomic failure rollback",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_blueprint_lifecycle_unit.mjs",
+      "purpose": "Blueprint lifecycle registration, idempotency, validation and detached ownership",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_enemy_army_blueprint_integration.mjs",
       "purpose": "Blueprint observation isolation and production Truth and RNG non-interference",
       "suite": "supplemental"
