@@ -2,6 +2,21 @@
   "schemaVersion": 1,
   "tests": [
     {
+      "path": "scratch/test_enemy_army_blueprint_stage_first_run.mjs",
+      "purpose": "Canonical FirstRun with Stage adapter, immutable Stage1 blueprint and no Stage2 generation",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_blueprint_stage_integration.mjs",
+      "purpose": "Actual Stage2/3 application, snapshot/restore ordering and RNG/Truth/scenario isolation",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_blueprint_stage_adapter_unit.mjs",
+      "purpose": "Stage applied adapter policy validation, model no-op, registration idempotency and restore suppression",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_enemy_army_blueprint_new_run_first_run.mjs",
       "purpose": "Automatic opt-in Blueprint creation then Save/Restore and unchanged FirstRun Stage1 completion",
       "suite": "supplemental"
