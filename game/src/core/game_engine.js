@@ -1,3 +1,4 @@
+import { bootstrapEnemyArmyBlueprintNewRun } from '../trial/integration/enemy_army_blueprint_new_run_bootstrap.js';
 import { BASELINE_ECONOMY } from './baseline_economy.js';
 import { I18n } from '../i18n.js';
 import { LAND_SYSTEM_DATA } from '../data/land_system.js';
@@ -286,6 +287,15 @@ class GameEngine {
         if (this.deckManager && (!this.state.handOffering || this.state.handOffering.length === 0)) {
             this.deckManager.generateOfferingCards({ reason: OFFERING_GENERATION_REASONS.INITIAL });
         }
+
+        this.enemyArmyBlueprintBootstrap = bootstrapEnemyArmyBlueprintNewRun({
+            gameState: this.state,
+            runSeed: this.runSeed,
+            isNewRun: !dependencies.state,
+            policy: dependencies.enemyArmyBlueprintPolicy ?? null,
+            generator: dependencies.enemyArmyBlueprintGenerator
+        });
+        this.enemyArmyBlueprintLifecycleService = this.enemyArmyBlueprintBootstrap.lifecycleService;
 
         // Verse 1 begins only after initial world/socket and Offering generation.
         // An injected already-started state must not be re-captured as Verse 1.
