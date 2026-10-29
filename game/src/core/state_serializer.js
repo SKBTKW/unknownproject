@@ -1,3 +1,4 @@
+import { readBlueprintLifecycleSnapshot } from '../trial/domain/enemy_army_blueprint_lifecycle_state.js';
 import { restoreDiscoveryLedger } from "../investigation/domain/world_discovery.js";
 import { serializeGameState as serializeBaseGameState } from "./state_serializer_base.js";
 import { createSerializerStateView } from "./state_serializer_state_view.js";
@@ -20,10 +21,12 @@ function serializeKnownEnemyState(state) {
 }
 
 export function serializeGameState(state) {
+    const blueprintState = state ? readBlueprintLifecycleSnapshot(state) : null;
     const serialized = serializeBaseGameState(createSerializerStateView(state));
     if (!serialized) return serialized;
     return {
         ...serialized,
+        ...(blueprintState?.blueprints.length ? { enemyArmyBlueprintState: blueprintState } : {}),
         isGameOver: !!state?.isGameOver,
         runTermination: cloneData(state?.runTermination),
         postTrialTransition: cloneData(state?.postTrialTransition),
