@@ -1,6 +1,6 @@
 import { RandomSource } from '../../core/check_system/random_source.js';
 import {
-    EnemyArmyBlueprint, ENEMY_BLUEPRINT_SLOTS, ENEMY_BLUEPRINT_SCHEMA_VERSION,
+    EnemyArmyBlueprint, ENEMY_BLUEPRINT_SLOTS, ENEMY_BLUEPRINT_SCHEMA_VERSION, ENEMY_BLUEPRINT_SUPPORTED_STAGE_IDS,
     blueprintArmyId, requireKeys, validateForceComposition
 } from '../domain/enemy_army_blueprint.js';
 
@@ -13,7 +13,7 @@ function streamSeed(parts) {
     return hash;
 }
 
-function validatePolicy(policy) {
+export function validateEnemyArmyBlueprintGenerationPolicy(policy) {
     requireKeys(policy, ['id', 'version', 'slots'], 'POLICY');
     if (typeof policy.id !== 'string' || !/^[a-z0-9][a-z0-9-]*$/.test(policy.id)
         || !Number.isInteger(policy.version) || policy.version < 1) {
@@ -36,10 +36,10 @@ function validatePolicy(policy) {
 
 /** No default balance policy: callers must explicitly supply complete candidates. */
 export function generateEnemyArmyBlueprint({ runSeed, stageId, policy } = {}) {
-    if (!Number.isInteger(runSeed) || runSeed < 0 || runSeed > 0xffffffff || stageId !== 1) {
+    if (!Number.isInteger(runSeed) || runSeed < 0 || runSeed > 0xffffffff || !ENEMY_BLUEPRINT_SUPPORTED_STAGE_IDS.includes(stageId)) {
         throw new TypeError('ENEMY_BLUEPRINT_GENERATION_INPUT_INVALID');
     }
-    validatePolicy(policy);
+    validateEnemyArmyBlueprintGenerationPolicy(policy);
     const armyId = blueprintArmyId(runSeed, stageId);
     const forces = ENEMY_BLUEPRINT_SLOTS.map(slot => {
         const candidates = policy.slots[slot];

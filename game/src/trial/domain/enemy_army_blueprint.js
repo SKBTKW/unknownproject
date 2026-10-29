@@ -3,6 +3,7 @@ import { ACTIVE_EQUIPMENT_TYPES } from '../systems/enemy_force_terrain_interacti
 export const ENEMY_BLUEPRINT_SPECIES = Object.freeze(['LARGE', 'MEDIUM', 'SMALL']);
 export const ENEMY_BLUEPRINT_SLOTS = Object.freeze(['A', 'B', 'C']);
 export const ENEMY_BLUEPRINT_SCHEMA_VERSION = 1;
+export const ENEMY_BLUEPRINT_SUPPORTED_STAGE_IDS = Object.freeze([1]);
 
 export function requireKeys(value, keys, label) {
     if (!value || Object.getPrototypeOf(value) !== Object.prototype
@@ -53,7 +54,7 @@ export class EnemyArmyBlueprint {
         requireKeys(snapshot, ['schemaVersion', 'runSeed', 'stageId', 'armyId', 'generationPolicy', 'forces'], 'SNAPSHOT');
         if (snapshot.schemaVersion !== ENEMY_BLUEPRINT_SCHEMA_VERSION
             || !Number.isInteger(snapshot.runSeed) || snapshot.runSeed < 0 || snapshot.runSeed > 0xffffffff
-            || snapshot.stageId !== 1
+            || !ENEMY_BLUEPRINT_SUPPORTED_STAGE_IDS.includes(snapshot.stageId)
             || snapshot.armyId !== blueprintArmyId(snapshot.runSeed, snapshot.stageId)) {
             throw new TypeError('ENEMY_BLUEPRINT_IDENTITY_INVALID');
         }
