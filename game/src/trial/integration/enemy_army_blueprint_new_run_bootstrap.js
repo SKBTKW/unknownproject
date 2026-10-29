@@ -1,3 +1,4 @@
+import { ENEMY_BLUEPRINT_SUPPORTED_STAGE_IDS } from '../domain/enemy_army_blueprint.js';
 import { EnemyArmyBlueprintLifecycleService } from '../systems/enemy_army_blueprint_lifecycle_service.js';
 import { generateEnemyArmyBlueprint } from '../systems/enemy_army_blueprint_generator.js';
 
@@ -24,7 +25,7 @@ export function bootstrapEnemyArmyBlueprintNewRun({
     try {
         let status;
         if (!isNewRun) status = 'RESTORE_ONLY';
-        else if (gameState.stage?.id !== 1) status = 'STAGE_NOT_SUPPORTED';
+        else if (!ENEMY_BLUEPRINT_SUPPORTED_STAGE_IDS.includes(gameState.stage?.id)) status = 'STAGE_NOT_SUPPORTED';
         else if (lifecycleService.getBlueprint(1)) status = 'EXISTING_BLUEPRINT';
         else if (policy === null || policy === undefined) status = 'POLICY_NOT_CONFIGURED';
         else {
