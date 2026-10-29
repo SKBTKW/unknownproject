@@ -1,3 +1,4 @@
+import { normalizeHQTerrain } from './hq_production_policy.js';
 import { normalizeRoadEdgeIds } from './road_network.js';
 /**
  * Pure inverse boundary for StateSerializer's world data. The caller owns
@@ -93,7 +94,8 @@ export function hydrateGameState(state, serialized, { resolveCardMaster } = {}) 
     // Serializer uses null for an absent terrain.material. Live HQ production
     // distinguishes absent material from a value and otherwise overrides wood.
     for (const row of values.grid) for (const cell of row) {
-        if (cell?.terrain?.material === null) delete cell.terrain.material;
+        if (cell?.isHQ) cell.terrain = normalizeHQTerrain(cell.terrain);
+        else if (cell?.terrain?.material === null) delete cell.terrain.material;
     }
     values.handOffering = serialized.handOffering.map(card => restoreCard(card, resolveCardMaster));
     values.reserveSlots = serialized.reserveSlots.map(card => restoreCard(card, resolveCardMaster));

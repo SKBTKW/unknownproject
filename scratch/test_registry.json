@@ -2,6 +2,16 @@
   "schemaVersion": 1,
   "tests": [
     {
+      "path": "scratch/test_enemy_truth_known_boundary_guard.mjs",
+      "purpose": "Enemy truth observability, known-report-only unlocking and repeated observations",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_trial_bidirectional_tactical_causality.mjs",
+      "purpose": "Development-only bidirectional tactical state propagation, external evidence validation and deterministic replay",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_battle_opportunity_fortune_runtime_bridge.mjs",
       "purpose": "Fortune runtime bridge pending completion boundary, decline, commit, resolve and finalize ordering",
       "suite": "supplemental"
@@ -1963,6 +1973,14 @@
       "path": "scratch/test_system_authority_boundaries.mjs",
       "purpose": "Static audit test guarding UI/Warning/Cards/Investigation authority boundaries and DeckManager command branches",
       "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_baseline_economy.mjs",
+      "purpose": "Shared economy baseline, Stage2/3 HQ retention and restored tooltip breakdown parity",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
     }
   ]
 }

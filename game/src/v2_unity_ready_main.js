@@ -1,3 +1,5 @@
+import { normalizeHQTerrain } from './core/hq_production_policy.js';
+import { BASELINE_ECONOMY } from './core/baseline_economy.js';
 import { I18n } from './i18n.js';
 import { GridEngine } from './systems/grid_engine.js';
 import { DeckManager } from './systems/deck_manager.js';
@@ -18,8 +20,8 @@ class GameState {
         this.turn = dependencies.turn !== undefined ? dependencies.turn : 1;
         this.ember = dependencies.ember !== undefined ? dependencies.ember : 20;
         this.maxEmber = dependencies.maxEmber !== undefined ? dependencies.maxEmber : 20;
-        this.food = dependencies.food !== undefined ? dependencies.food : 50; // 🌾 初期食料 50 (戦略的猶予確保)
-        this.wood = dependencies.material !== undefined ? dependencies.material : (dependencies.wood !== undefined ? dependencies.wood : 30);
+        this.food = dependencies.food !== undefined ? dependencies.food : BASELINE_ECONOMY.initial.food;
+        this.wood = dependencies.material !== undefined ? dependencies.material : (dependencies.wood !== undefined ? dependencies.wood : BASELINE_ECONOMY.initial.wood);
         this.material = this.wood;
         const legacyDefense = dependencies.defense !== undefined ? dependencies.defense : 5;
         this.defenseCapacityBonus = dependencies.defenseCapacityBonus !== undefined
@@ -171,7 +173,7 @@ class GameState {
                         mergeGroupId: null,
                         mergeType: null,
                         placementGroupId: null,
-                        terrain: isHQ ? { id: "HQ", nameKey: "TERRAIN_HQ", food: 5, wood: 5, defense: 5, mystic: 1 } : null,
+                        terrain: isHQ ? normalizeHQTerrain(null) : null,
                         searched: false,
                         hasSocket: false,
                         socketResource: null,
