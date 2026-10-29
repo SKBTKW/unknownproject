@@ -2,6 +2,21 @@
   "schemaVersion": 1,
   "tests": [
     {
+      "path": "scratch/test_enemy_army_blueprint_new_run_first_run.mjs",
+      "purpose": "Automatic opt-in Blueprint creation then Save/Restore and unchanged FirstRun Stage1 completion",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_blueprint_new_run_integration.mjs",
+      "purpose": "Engine initial snapshot, JSON/History restore and live RNG/Truth isolation",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_blueprint_bootstrap_unit.mjs",
+      "purpose": "Exactly-once Blueprint bootstrap, policy gating, restore suppression and atomic failure",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_enemy_army_blueprint_first_run_regression.mjs",
       "purpose": "Unchanged canonical FirstRun Stage1 completion with a registered Blueprint through Stage2",
       "suite": "supplemental"
