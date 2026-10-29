@@ -2,6 +2,16 @@
   "schemaVersion": 1,
   "tests": [
     {
+      "path": "scratch/test_enemy_army_generation_distribution_cli.mjs",
+      "purpose": "Distribution CLI deterministic output, model selection and bounded numeric input validation",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_generation_distribution.mjs",
+      "purpose": "Development hypothesis distribution replay, actual-data tally consistency, bulk immutability and RNG/Trial isolation",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_enemy_army_blueprint_stage_first_run.mjs",
       "purpose": "Canonical FirstRun with Stage adapter, immutable Stage1 blueprint and no Stage2 generation",
       "suite": "supplemental"
