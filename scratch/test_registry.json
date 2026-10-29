@@ -2,6 +2,16 @@
   "schemaVersion": 1,
   "tests": [
     {
+      "path": "scratch/test_enemy_army_blueprint_integration.mjs",
+      "purpose": "Blueprint observation isolation and production Truth and RNG non-interference",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_blueprint_unit.mjs",
+      "purpose": "Immutable blueprint schema, explicit policy validation and independent deterministic generation",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_enemy_truth_known_boundary_guard.mjs",
       "purpose": "Enemy truth observability, known-report-only unlocking and repeated observations",
       "suite": "supplemental"
