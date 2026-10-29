@@ -1,0 +1,204 @@
+{
+  "schemaVersion": 1,
+  "status": "DEVELOPMENT_HYPOTHESES_ONLY",
+  "speciesProfiles": {
+    "large-mixed": {
+      "LARGE": 0.6,
+      "MEDIUM": 0.25,
+      "SMALL": 0.15
+    },
+    "medium-mixed": {
+      "LARGE": 0.15,
+      "MEDIUM": 0.6,
+      "SMALL": 0.25
+    },
+    "small-mixed": {
+      "LARGE": 0.25,
+      "MEDIUM": 0.15,
+      "SMALL": 0.6
+    },
+    "large-only": {
+      "LARGE": 1
+    },
+    "medium-only": {
+      "MEDIUM": 1
+    },
+    "small-only": {
+      "SMALL": 1
+    },
+    "medium-core": {
+      "LARGE": 0.15,
+      "MEDIUM": 0.75,
+      "SMALL": 0.1
+    },
+    "large-secondary": {
+      "LARGE": 0.65,
+      "MEDIUM": 0.3,
+      "SMALL": 0.05
+    },
+    "small-secondary": {
+      "LARGE": 0.05,
+      "MEDIUM": 0.3,
+      "SMALL": 0.65
+    }
+  },
+  "equipmentProfiles": {
+    "light-mix": {
+      "LIGHT": 0.7,
+      "STANDARD": 0.3
+    },
+    "standard-mix": {
+      "STANDARD": 0.7,
+      "HEAVY": 0.3
+    },
+    "heavy-mix": {
+      "HEAVY": 0.7,
+      "LIGHT": 0.3
+    }
+  },
+  "models": {
+    "A": {
+      "id": "hypothesis-uniform-v1",
+      "version": 1,
+      "slots": {
+        "A": {
+          "speciesWeights": {
+            "large-mixed": 4,
+            "medium-mixed": 4,
+            "small-mixed": 4,
+            "large-only": 1,
+            "medium-only": 1,
+            "small-only": 1
+          },
+          "equipmentWeights": {
+            "light-mix": 1,
+            "standard-mix": 1,
+            "heavy-mix": 1
+          }
+        },
+        "B": {
+          "speciesWeights": {
+            "large-mixed": 4,
+            "medium-mixed": 4,
+            "small-mixed": 4,
+            "large-only": 1,
+            "medium-only": 1,
+            "small-only": 1
+          },
+          "equipmentWeights": {
+            "light-mix": 1,
+            "standard-mix": 1,
+            "heavy-mix": 1
+          }
+        },
+        "C": {
+          "speciesWeights": {
+            "large-mixed": 4,
+            "medium-mixed": 4,
+            "small-mixed": 4,
+            "large-only": 1,
+            "medium-only": 1,
+            "small-only": 1
+          },
+          "equipmentWeights": {
+            "light-mix": 1,
+            "standard-mix": 1,
+            "heavy-mix": 1
+          }
+        }
+      }
+    },
+    "B": {
+      "id": "hypothesis-medium-core-v1",
+      "version": 1,
+      "slots": {
+        "A": {
+          "speciesWeights": {
+            "medium-core": 8,
+            "large-secondary": 1,
+            "small-secondary": 1,
+            "medium-only": 1
+          },
+          "equipmentWeights": {
+            "light-mix": 1,
+            "standard-mix": 3,
+            "heavy-mix": 1
+          }
+        },
+        "B": {
+          "speciesWeights": {
+            "medium-core": 8,
+            "large-secondary": 1,
+            "small-secondary": 1,
+            "medium-only": 1
+          },
+          "equipmentWeights": {
+            "light-mix": 1,
+            "standard-mix": 3,
+            "heavy-mix": 1
+          }
+        },
+        "C": {
+          "speciesWeights": {
+            "medium-core": 8,
+            "large-secondary": 1,
+            "small-secondary": 1,
+            "medium-only": 1
+          },
+          "equipmentWeights": {
+            "light-mix": 1,
+            "standard-mix": 3,
+            "heavy-mix": 1
+          }
+        }
+      }
+    },
+    "C": {
+      "id": "hypothesis-force-character-v1",
+      "version": 1,
+      "slots": {
+        "A": {
+          "speciesWeights": {
+            "large-mixed": 4,
+            "medium-mixed": 5,
+            "small-mixed": 1,
+            "large-only": 1,
+            "medium-only": 1,
+            "small-only": 0.5
+          },
+          "equipmentWeights": {
+            "light-mix": 1,
+            "standard-mix": 2,
+            "heavy-mix": 3
+          }
+        },
+        "B": {
+          "speciesWeights": {
+            "medium-core": 8,
+            "large-secondary": 1,
+            "small-secondary": 1,
+            "medium-only": 1
+          },
+          "equipmentWeights": {
+            "light-mix": 1,
+            "standard-mix": 3,
+            "heavy-mix": 1
+          }
+        },
+        "C": {
+          "speciesWeights": {
+            "large-mixed": 1,
+            "medium-mixed": 2,
+            "small-mixed": 7,
+            "small-only": 1
+          },
+          "equipmentWeights": {
+            "light-mix": 3,
+            "standard-mix": 2,
+            "heavy-mix": 1
+          }
+        }
+      }
+    }
+  }
+}
