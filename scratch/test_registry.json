@@ -2,6 +2,11 @@
   "schemaVersion": 1,
   "tests": [
     {
+      "path": "scratch/test_enemy_truth_known_boundary_guard.mjs",
+      "purpose": "Enemy truth observability, known-report-only unlocking and repeated observations",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_trial_bidirectional_tactical_causality.mjs",
       "purpose": "Development-only bidirectional tactical state propagation, external evidence validation and deterministic replay",
       "suite": "supplemental"
