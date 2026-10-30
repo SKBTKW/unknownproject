@@ -4,6 +4,8 @@ import { mkdtempSync, rmSync, writeFileSync } from 'fs';
 import os from 'os';
 import path from 'path';
 import { MERGE_PREVIEW_STATUS, previewMerge } from './task_merge_preview.mjs';
+import { classifyObservedTask } from './integration_guard_core.mjs';
+import { buildMergeDecisionProof } from './merge_decision_core.mjs';
 
 let passed = 0;
 function check(actual, expected, label) {
@@ -51,6 +53,39 @@ withRepo((root) => {
     const task = commitAll(root, 'task');
     const result = previewMerge(root, base, task);
     check(result.status, MERGE_PREVIEW_STATUS.NOT_REQUIRED, 'contained target does not require preview merge');
+
+    writeFileSync(path.join(root, 'base.txt'), 'staged change\n');
+    git(root, 'add', 'base.txt');
+    writeFileSync(path.join(root, 'base.txt'), 'working change\n');
+    writeFileSync(path.join(root, 'untracked.txt'), 'user asset\n');
+    const beforeHead = git(root, 'rev-parse', 'HEAD');
+    const beforeIndex = git(root, 'write-tree');
+    const beforeStatus = git(root, 'status', '--porcelain=v1');
+    const measured = previewMerge(root, base, task, { requireMergeTree: true });
+    check(measured.status, MERGE_PREVIEW_STATUS.CLEAN, 'integration requests measured CLEAN for contained target');
+    check(measured.mergeTreeSha, git(root, 'rev-parse', `${task}^{tree}`), 'contained merge has the committed TASK tree, not dirty index');
+    check(git(root, 'rev-parse', 'HEAD'), beforeHead, 'contained preview preserves HEAD');
+    check(git(root, 'write-tree'), beforeIndex, 'contained preview preserves staged user changes');
+    check(git(root, 'status', '--porcelain=v1'), beforeStatus, 'contained preview preserves working and untracked changes');
+
+    const branch = 'aot-task/AoT261029/tooling/preview-contract';
+    const status = classifyObservedTask({ targetIsAncestor: true, mergePreviewStatus: measured.status });
+    check(status, 'READY', 'real contained preview satisfies Guard contract');
+    const analysis = {
+        target: 'AoT261029', targetSha: base,
+        tasks: [{ branch, sha: task, status, localRemoteMismatch: false, mergePreview: measured }],
+        integrationOrder: [{ branch, status, action: 'INTEGRATE_ONE_AT_A_TIME' }],
+    };
+    const pr = {
+        number: 473, headRefName: branch, headRefOid: task,
+        baseRefName: 'AoT261029', mergeStateStatus: 'CLEAN',
+        statusCheckRollup: [{ name: 'Full Inspection', conclusion: 'SUCCESS' }],
+    };
+    check(buildMergeDecisionProof(analysis, pr).decision, 'READY', 'measured Guard output reaches Runner proof without status rewriting');
+    check(buildMergeDecisionProof(analysis, pr).proof.mergePreview, 'CLEAN', 'proof records actual CLEAN evidence');
+    check(buildMergeDecisionProof(analysis, { ...pr, statusCheckRollup: [] }).decision, 'BLOCKED', 'measured preview does not bypass required CI');
+    check(buildMergeDecisionProof(analysis, { ...pr, headRefOid: base }).decision, 'BLOCKED', 'measured preview does not bypass exact PR head');
+
 });
 
 withRepo((root) => {
@@ -144,4 +179,6 @@ withRepo((root) => {
 const unknown = previewMerge('/definitely/not/a/repository', 'deadbeef', 'HEAD');
 check(unknown.status, MERGE_PREVIEW_STATUS.UNKNOWN, 'Git execution failure is UNKNOWN rather than CLEAN');
 
-console.log(`Task merge preview contract: ${passed}/13 PASS`);
+check(previewMerge('/definitely/not/a/repository', 'deadbeef', 'HEAD', { requireMergeTree: true }).status, MERGE_PREVIEW_STATUS.UNKNOWN, 'required preview keeps Git failures UNKNOWN');
+
+console.log(`Task merge preview contract: ${passed}/24 PASS`);

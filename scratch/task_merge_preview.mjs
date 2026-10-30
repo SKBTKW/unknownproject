@@ -34,8 +34,10 @@ function failureReason(result, fallback) {
  * Preview merging targetSha into headSha without moving refs or changing the
  * index/worktree. `git merge-tree --write-tree` may write unreachable Git
  * objects, but it does not update branch history or checkout state.
+ * Integration proof callers require an actual merge-tree result even when
+ * target is contained. Ordinary health callers may retain the cheap shortcut.
  */
-export function previewMerge(cwd, targetSha, headSha = 'HEAD') {
+export function previewMerge(cwd, targetSha, headSha = 'HEAD', { requireMergeTree = false } = {}) {
     if (!cwd || !targetSha || !headSha) {
         return {
             status: MERGE_PREVIEW_STATUS.UNKNOWN,
@@ -46,7 +48,7 @@ export function previewMerge(cwd, targetSha, headSha = 'HEAD') {
     }
 
     const containment = runGit(cwd, ['merge-base', '--is-ancestor', targetSha, headSha]);
-    if (containment.status === 0) {
+    if (containment.status === 0 && !requireMergeTree) {
         return {
             status: MERGE_PREVIEW_STATUS.NOT_REQUIRED,
             conflictPaths: [],
@@ -54,7 +56,7 @@ export function previewMerge(cwd, targetSha, headSha = 'HEAD') {
             reason: 'Latest target is already contained in TASK HEAD.',
         };
     }
-    if (containment.status !== 1) {
+    if (containment.status !== 0 && containment.status !== 1) {
         return {
             status: MERGE_PREVIEW_STATUS.UNKNOWN,
             conflictPaths: [],
