@@ -285,7 +285,8 @@ function inspectTask(cwd, targetSha, task) {
   const aheadCount = Number(runGit(cwd, ['rev-list', '--count', `${targetSha}..${task.sha}`]) || 0);
   const behindCount = Number(runGit(cwd, ['rev-list', '--count', `${task.sha}..${targetSha}`]) || 0);
   const overlap = classifyOverlap(targetFiles, taskFiles);
-  const mergePreview = previewMerge(cwd, targetSha, task.sha);
+  // Merge Decision Proof requires measured CLEAN, not the health shortcut.
+  const mergePreview = previewMerge(cwd, targetSha, task.sha, { requireMergeTree: true });
   const targetIsAncestor = isAncestor(cwd, targetSha, task.sha);
   const taskIsAncestor = isAncestor(cwd, task.sha, targetSha);
   const status = classifyObservedTask({
