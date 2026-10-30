@@ -2,6 +2,11 @@
   "schemaVersion": 1,
   "tests": [
     {
+      "path": "scratch/test_enemy_army_variable_force_policy.mjs",
+      "purpose": "Development-only D/E variable-force policies, hierarchical army trait determinism, relationship metrics and RNG isolation",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_enemy_army_generation_distribution_cli.mjs",
       "purpose": "Distribution CLI deterministic output, model selection and bounded numeric input validation",
       "suite": "supplemental"
