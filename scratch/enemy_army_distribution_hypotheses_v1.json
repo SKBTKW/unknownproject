@@ -199,6 +199,111 @@
           }
         }
       }
+    },
+    "D": {
+      "id": "hypothesis-shared-variable-force-v1",
+      "version": 1,
+      "slots": {
+        "A": {
+          "speciesWeights": {
+            "medium-core": 6,
+            "large-secondary": 2,
+            "small-secondary": 2,
+            "medium-mixed": 2,
+            "medium-only": 0.5
+          },
+          "equipmentWeights": {
+            "light-mix": 2,
+            "standard-mix": 3,
+            "heavy-mix": 2
+          }
+        },
+        "B": {
+          "speciesWeights": {
+            "medium-core": 6,
+            "large-secondary": 2,
+            "small-secondary": 2,
+            "medium-mixed": 2,
+            "medium-only": 0.5
+          },
+          "equipmentWeights": {
+            "light-mix": 2,
+            "standard-mix": 3,
+            "heavy-mix": 2
+          }
+        },
+        "C": {
+          "speciesWeights": {
+            "medium-core": 6,
+            "large-secondary": 2,
+            "small-secondary": 2,
+            "medium-mixed": 2,
+            "medium-only": 0.5
+          },
+          "equipmentWeights": {
+            "light-mix": 2,
+            "standard-mix": 3,
+            "heavy-mix": 2
+          }
+        }
+      }
+    }
+  },
+  "hierarchicalModels": {
+    "E": {
+      "id": "hypothesis-army-trait-variable-force-v1",
+      "version": 1,
+      "selectorDerivation": "fnv1a-mulberry32-v1",
+      "variants": [
+        {
+          "id": "medium-core",
+          "weight": 6,
+          "speciesWeights": {
+            "medium-core": 8,
+            "large-secondary": 1,
+            "small-secondary": 1,
+            "medium-mixed": 2,
+            "medium-only": 0.5
+          },
+          "equipmentWeights": {
+            "light-mix": 2,
+            "standard-mix": 4,
+            "heavy-mix": 2
+          }
+        },
+        {
+          "id": "large-leaning",
+          "weight": 2,
+          "speciesWeights": {
+            "medium-core": 5,
+            "large-secondary": 4,
+            "small-secondary": 1,
+            "medium-mixed": 1,
+            "large-mixed": 1
+          },
+          "equipmentWeights": {
+            "light-mix": 1,
+            "standard-mix": 3,
+            "heavy-mix": 3
+          }
+        },
+        {
+          "id": "small-leaning",
+          "weight": 2,
+          "speciesWeights": {
+            "medium-core": 5,
+            "large-secondary": 1,
+            "small-secondary": 4,
+            "medium-mixed": 1,
+            "small-mixed": 1
+          },
+          "equipmentWeights": {
+            "light-mix": 3,
+            "standard-mix": 3,
+            "heavy-mix": 1
+          }
+        }
+      ]
     }
   }
 }

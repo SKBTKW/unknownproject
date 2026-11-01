@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { analyzeArmyDistribution, distributionMarkdown, validateSeedRange } from './enemy_army_generation_distribution.mjs';
+import { analyzeArmyDistribution, DISTRIBUTION_MODEL_NAMES, distributionMarkdown, validateSeedRange } from './enemy_army_generation_distribution.mjs';
 
 export function parseDistributionArgs(args) {
     const options = { count: 1000, startSeed: 0, models: ['A','B','C'], format: 'json' };
@@ -20,7 +20,7 @@ export function parseDistributionArgs(args) {
         }
     }
     validateSeedRange(options.count,options.startSeed);
-    if(!options.models.length||new Set(options.models).size!==options.models.length||options.models.some(m=>!['A','B','C'].includes(m))) throw Error('DISTRIBUTION_MODELS_INVALID');
+    if(!options.models.length||new Set(options.models).size!==options.models.length||options.models.some(m=>!DISTRIBUTION_MODEL_NAMES.includes(m))) throw Error('DISTRIBUTION_MODELS_INVALID');
     return options;
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
