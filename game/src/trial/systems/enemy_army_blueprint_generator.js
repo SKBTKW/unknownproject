@@ -1,17 +1,9 @@
 import { RandomSource } from '../../core/check_system/random_source.js';
+import { deriveEnemyArmyStreamSeed } from './enemy_army_seed_derivation.js';
 import {
     EnemyArmyBlueprint, ENEMY_BLUEPRINT_SLOTS, ENEMY_BLUEPRINT_SCHEMA_VERSION, ENEMY_BLUEPRINT_SUPPORTED_STAGE_IDS,
     blueprintArmyId, requireKeys, validateForceComposition
 } from '../domain/enemy_army_blueprint.js';
-
-// FNV-1a over a versioned ASCII JSON tuple; independent from both live RNG streams.
-function streamSeed(parts) {
-    let hash = 0x811c9dc5;
-    for (const character of JSON.stringify(parts)) {
-        hash = Math.imul(hash ^ character.charCodeAt(0), 0x01000193) >>> 0;
-    }
-    return hash;
-}
 
 export function validateEnemyArmyBlueprintGenerationPolicy(policy) {
     requireKeys(policy, ['id', 'version', 'slots'], 'POLICY');
@@ -43,7 +35,9 @@ export function generateEnemyArmyBlueprint({ runSeed, stageId, policy } = {}) {
     const armyId = blueprintArmyId(runSeed, stageId);
     const forces = ENEMY_BLUEPRINT_SLOTS.map(slot => {
         const candidates = policy.slots[slot];
-        const source = new RandomSource(streamSeed(['enemy-army-blueprint-v1', runSeed, stageId, policy.id, policy.version, slot]));
+        const source = new RandomSource(deriveEnemyArmyStreamSeed([
+            'enemy-army-blueprint-v1', runSeed, stageId, policy.id, policy.version, slot
+        ]));
         const total = candidates.reduce((sum, candidate) => sum + candidate.weight, 0);
         const roll = source.nextFloat() * total;
         let cumulative = 0;

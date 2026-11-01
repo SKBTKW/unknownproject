@@ -1,9 +1,9 @@
 import fs from 'node:fs';
 import { createHash } from 'node:crypto';
-import { RandomSource } from '../game/src/core/check_system/random_source.js';
 import { EnemyArmyBlueprint, ENEMY_BLUEPRINT_SPECIES as SPECIES, ENEMY_BLUEPRINT_SLOTS as SLOTS } from '../game/src/trial/domain/enemy_army_blueprint.js';
 import { ACTIVE_EQUIPMENT_TYPES as EQUIPMENT } from '../game/src/trial/systems/enemy_force_terrain_interaction_resolver.js';
 import { generateEnemyArmyBlueprint, validateEnemyArmyBlueprintGenerationPolicy } from '../game/src/trial/systems/enemy_army_blueprint_generator.js';
+import { resolveEnemyArmyTraitGenerationPolicy, selectEnemyArmyTrait } from '../game/src/trial/systems/enemy_army_trait_selector.js';
 
 export const MAX_DISTRIBUTION_SEEDS = 10000;
 export const EXTREME_SPECIES_SHARE = 0.9;
@@ -49,20 +49,23 @@ export function createDistributionPolicies() {
     return Object.fromEntries(Object.entries(data.models).map(([name, model]) => [name, policyFromSlotConfigs(data, model)]));
 }
 
-function streamSeed(parts) {
-    let value = 0x811c9dc5;
-    for (const character of JSON.stringify(parts)) value = Math.imul(value ^ character.charCodeAt(0), 0x01000193) >>> 0;
-    return value;
+function traitSelectionPolicy(model) {
+    return {
+        id: model.id,
+        version: model.version,
+        seedNamespace: 'enemy-army-distribution-army-trait-v1',
+        traits: model.variants.map(variant => ({
+            traitId: variant.id,
+            weight: variant.weight,
+            generationPolicy: { id: `${model.id}-${variant.id}`, version: model.version }
+        }))
+    };
 }
 
 export function selectHierarchicalVariant({ runSeed, stageId = 1, model } = {}) {
     if (!Number.isInteger(runSeed) || runSeed < 0 || runSeed > 0xffffffff || stageId !== 1 || !model) throw Error('DISTRIBUTION_HIERARCHY_INPUT_INVALID');
-    const random = new RandomSource(streamSeed(['enemy-army-distribution-army-trait-v1', runSeed, stageId, model.id, model.version]));
-    const total = model.variants.reduce((sum, variant) => sum + variant.weight, 0);
-    const roll = random.nextFloat() * total;
-    let cursor = 0;
-    for (const variant of model.variants) { cursor += variant.weight; if (roll < cursor) return variant; }
-    return model.variants.at(-1);
+    const selection = selectEnemyArmyTrait({ runSeed, stageId, policy: traitSelectionPolicy(model) });
+    return model.variants.find(variant => variant.id === selection.traitId);
 }
 
 export function createDistributionHypotheses() {
@@ -74,13 +77,16 @@ export function createDistributionHypotheses() {
         const slots = Object.fromEntries(SLOTS.map(slot => [slot, { speciesWeights: variant.speciesWeights, equipmentWeights: variant.equipmentWeights }]));
         return [variant.id, policyFromSlotConfigs(data, { id: `${model.id}-${variant.id}`, version: model.version, slots })];
     }));
+    const selectionPolicy = traitSelectionPolicy(model);
+    const bindings = model.variants.map(variant => ({ traitId: variant.id, generationPolicy: variants[variant.id] }));
     result.E = {
         policy: model,
         generate: ({ runSeed, stageId }) => {
-            const variant = selectHierarchicalVariant({ runSeed, stageId, model });
-            return generateEnemyArmyBlueprint({ runSeed, stageId, policy: variants[variant.id] });
+            const selection = selectEnemyArmyTrait({ runSeed, stageId, policy: selectionPolicy });
+            const policy = resolveEnemyArmyTraitGenerationPolicy({ selection, bindings });
+            return generateEnemyArmyBlueprint({ runSeed, stageId, policy });
         },
-        describe: ({ runSeed, stageId }) => ({ armyTrait: selectHierarchicalVariant({ runSeed, stageId, model }).id })
+        describe: ({ runSeed, stageId }) => ({ armyTrait: selectEnemyArmyTrait({ runSeed, stageId, policy: selectionPolicy }).traitId })
     };
     return result;
 }
