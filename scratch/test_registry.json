@@ -2,6 +2,21 @@
   "schemaVersion": 1,
   "tests": [
     {
+      "path": "scratch/test_enemy_army_trait_selector_regression.mjs",
+      "purpose": "Trait Selector production disconnection, unchanged Trial1 suppression/force count and Bootstrap boundary",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_trait_selector_integration.mjs",
+      "purpose": "Trait selection through explicit policy resolution, Blueprint generation, RNG isolation and restore authority",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_trait_selector_unit.mjs",
+      "purpose": "Deterministic immutable weighted Trait selection and explicit generation-policy binding validation",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_enemy_army_variable_force_policy.mjs",
       "purpose": "Development-only D/E variable-force policies, hierarchical army trait determinism, relationship metrics and RNG isolation",
       "suite": "supplemental"
