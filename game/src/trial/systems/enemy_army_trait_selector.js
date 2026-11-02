@@ -1,4 +1,7 @@
 import { RandomSource } from '../../core/check_system/random_source.js';
+import {
+    EnemyArmyTraitProvenance, ENEMY_ARMY_TRAIT_PROVENANCE_SCHEMA_VERSION
+} from '../domain/enemy_army_trait_provenance.js';
 import { validateEnemyArmyBlueprintGenerationPolicy } from './enemy_army_blueprint_generator.js';
 import { deriveEnemyArmyStreamSeed } from './enemy_army_seed_derivation.js';
 
@@ -88,6 +91,17 @@ export function selectEnemyArmyTrait({ runSeed, stageId, policy } = {}) {
             namespace: policy.seedNamespace,
             seed
         }
+    });
+}
+
+export function createEnemyArmyTraitProvenance(selection) {
+    validateSelection(selection);
+    return new EnemyArmyTraitProvenance({
+        schemaVersion: ENEMY_ARMY_TRAIT_PROVENANCE_SCHEMA_VERSION,
+        stageId: selection.stageId,
+        traitId: selection.traitId,
+        selectionPolicy: selection.selectionPolicy,
+        generationPolicy: selection.generationPolicy
     });
 }
 

@@ -1,5 +1,7 @@
 # Enemy Army Trait Selector Foundation v1
 
+> Phase 7で、Blueprintとは別のoptionalな`EnemyArmyTraitProvenance`保存契約が追加された。現行契約は`enemy_army_trait_provenance_persistence_v1.md`を参照すること。本書の「保存しない」はPhase 6完了時点の境界記録である。
+
 - Status: **IMPLEMENTED FOUNDATION / PRODUCTION DISCONNECTED**
 - Target / base: `AoT261029` / `084827d8ee214d5f0eb729de4ec4ddf50003eeef`
 - Task: `aot-task/AoT261029/trial/enemy-army-trait-selector-foundation-v1`

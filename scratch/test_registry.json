@@ -2,6 +2,26 @@
   "schemaVersion": 1,
   "tests": [
     {
+      "path": "scratch/test_enemy_army_trait_provenance_first_run.mjs",
+      "purpose": "Trait provenance preservation through canonical FirstRun Stage1 completion and no Stage2 generation",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_trait_provenance_regression.mjs",
+      "purpose": "Trait provenance production disconnection, RNG and Truth isolation, unchanged Trial1 and restore non-generation boundary",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_trait_provenance_persistence.mjs",
+      "purpose": "Trait provenance JSON and History persistence, legacy compatibility, atomic validation and rollback",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_trait_provenance_unit.mjs",
+      "purpose": "Immutable trait provenance model, Blueprint association, idempotency, conflict and orphan validation",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_enemy_army_trait_selector_regression.mjs",
       "purpose": "Trait Selector production disconnection, unchanged Trial1 suppression/force count and Bootstrap boundary",
       "suite": "supplemental"
