@@ -140,7 +140,7 @@ const i18n = {
             UI_INVESTIGATION_DICE_LABEL: "観測判定",
             UI_INVESTIGATION_FAILURE_TITLE: "調査中止",
             UI_INVESTIGATION_FAILURE_GENERIC: "調査を実行できませんでした。",
-            UI_CONFIRM: "確認"
+            UI_CLOSE: "閉じる"
         };
         return values[key] || key;
     }
@@ -203,6 +203,7 @@ assert.equal(panel.findByClass("investigation-report-narrative"), null);
 
 const close = panel.findByClass("investigation-report-close");
 assert.ok(close);
+assert.equal(close.textContent, "閉じる");
 assert.equal(mockDocument.activeElement, close, "show must focus the report close action");
 
 let prevented = false;
@@ -232,6 +233,7 @@ assert.equal(
     "まだ調査を行える段階ではありません。"
 );
 assert.equal(mockDocument.activeElement, panel.findByClass("investigation-report-close"));
+assert.equal(panel.findByClass("investigation-report-close").textContent, "閉じる");
 component.hide();
 assert.equal(mockDocument.activeElement, previousFocus);
 

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { TrialActionTrayComponent } from "../game/src/ui/trial_action_tray_component.js";
 import { PLAYER_TRAY_MODES } from "../game/src/ui/layout_state_manager.js";
+import { I18n } from "../game/src/i18n.js";
 
 const read = path => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 const indexSource = read("../game/index.html");
@@ -205,5 +206,30 @@ check(buttons.has("btnFirstRunTrialCausalityConfirm") && !buttons.has("btnTrialA
 ui.getCurrentBattlePresentationReadModel = () => null;
 component.render();
 check(!root.html.includes('id="trialBattleExplanation"') && buttons.has("btnFirstRunTrialCausalityConfirm"), "missing narrative preserves FirstRun progression controls");
+
+lifecycle.reviewRequested = false;
+lifecycle.confirmed = false;
+lifecycle.activated = true;
+lifecycle.battleActive = false;
+lifecycle.battleResolved = false;
+lifecycle.completed = false;
+ui.getTrialAvailableDefense = () => 0;
+ui.getTrialRemainingDefense = () => 0;
+ui.getTrialPlannedDefenseTotal = () => 16;
+ui.getTrialBattleQueue = () => [];
+ui.getFirstRunTrialTutorialPolicy = () => ({ tutorialActive: false, step: null });
+
+I18n.setLanguage("ja");
+component.render();
+check(root.html.includes("配備済み戦力 ⚔ 80"), "activated plan labels committed combat power in Japanese");
+check(root.html.includes("未配備戦力 ⚔ 0"), "activated plan labels remaining combat power in Japanese");
+check(!root.html.includes("80 / 0"), "activated plan does not render the ambiguous 80 / 0 ratio");
+
+I18n.setLanguage("en");
+component.render();
+check(root.html.includes("Deployed Combat Power ⚔ 80"), "activated plan labels committed combat power in English");
+check(root.html.includes("Unallocated Combat Power ⚔ 0"), "activated plan labels remaining combat power in English");
+I18n.setLanguage("ja");
+
 delete globalThis.document;
 console.log(`Trial Action Tray runtime: ${passed}/${passed} PASS`);

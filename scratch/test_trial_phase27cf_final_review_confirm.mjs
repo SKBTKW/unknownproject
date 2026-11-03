@@ -280,7 +280,12 @@ test("F. planned total一致", () => {
     const total = ui.getTrialPlannedDefenseTotal();
     assert.equal(total, 5);
     const budgetUsed = document.querySelector(".trial-budget-used");
-    assert.ok(budgetUsed.innerHTML.includes(String(ui.trialController.powerResolver.resolveDefense(total))));
+    const plannedCombatPower = ui.trialController.powerResolver.resolveDefense(total);
+    assert.equal(
+        budgetUsed.innerHTML.trim(),
+        I18n.t("UI_TRIAL_PLAN_COMBAT_USED", { used: plannedCombatPower })
+    );
+    assert.equal(budgetUsed.innerHTML.includes(" / "), false, "planned allocation must not use an ambiguous ratio");
 });
 
 // G. remaining defense一致
@@ -288,7 +293,12 @@ test("G. remaining defense一致", () => {
     const remaining = ui.getTrialRemainingDefense();
     assert.equal(remaining, availableDefense - 5);
     const budgetRem = document.querySelector(".trial-budget-remaining");
-    assert.ok(budgetRem.innerHTML.includes(String(ui.trialController.powerResolver.resolveDefense(remaining))));
+    assert.equal(
+        budgetRem.innerHTML.trim(),
+        I18n.t("UI_TRIAL_PLAN_COMBAT_REMAINING", {
+            remaining: ui.trialController.powerResolver.resolveDefense(remaining)
+        })
+    );
 });
 
 // H. 「計画を修正」でReview解除
