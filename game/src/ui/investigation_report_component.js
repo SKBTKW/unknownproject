@@ -96,7 +96,7 @@ export class InvestigationReportComponent {
         const close = document.createElement("button");
         close.type = "button";
         close.className = "investigation-report-close";
-        close.textContent = this.i18n?.t?.("UI_CONFIRM");
+        close.textContent = this.i18n?.t?.("UI_CLOSE");
         close.addEventListener("click", () => this.hide(), { once: true });
         actions.appendChild(close);
         panel.appendChild(actions);
@@ -136,7 +136,7 @@ export class InvestigationReportComponent {
         const close = document.createElement("button");
         close.type = "button";
         close.className = "investigation-report-close";
-        close.textContent = this.i18n?.t?.("UI_CONFIRM");
+        close.textContent = this.i18n?.t?.("UI_CLOSE");
         close.addEventListener("click", () => this.hide(), { once: true });
         actions.appendChild(close);
         panel.appendChild(actions);

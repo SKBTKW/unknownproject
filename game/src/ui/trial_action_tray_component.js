@@ -53,13 +53,19 @@ export class TrialActionTrayComponent {
         }
 
         const available = this.ui.getTrialAvailableDefense();
-        const remaining = this.ui.getTrialRemainingDefense();
         const plannedTotal = this.ui.getTrialPlannedDefenseTotal();
+        const planActivated = Boolean(this.ui.isTrialPlanActivated());
+        const remaining = planActivated
+            ? available
+            : this.ui.getTrialRemainingDefense();
         const powerResolver = this.ui.trialController.powerResolver || new InterceptionPowerResolver();
         const combatDefense = value => powerResolver.resolveDefense(value);
         const combatStep = combatDefense(1);
         const routes = this.ui.getTrialPlanningRoutes();
-        const budgetUsedText = I18n.t("UI_TRIAL_PLAN_COMBAT_USED", { used: combatDefense(plannedTotal), total: combatDefense(available) });
+        const budgetUsedText = I18n.t(
+            planActivated ? "UI_TRIAL_PLAN_COMBAT_DEPLOYED" : "UI_TRIAL_PLAN_COMBAT_USED",
+            { used: combatDefense(plannedTotal) }
+        );
         const budgetRemainingText = I18n.t("UI_TRIAL_PLAN_COMBAT_REMAINING", { remaining: combatDefense(remaining) });
         const activeRoute = this.ui.getActiveTrialRoute();
         const activeRouteId = activeRoute?.id || null;
@@ -161,7 +167,7 @@ export class TrialActionTrayComponent {
         }
 
         const isConfirmed = Boolean(this.ui.isTrialPlanningConfirmed());
-        const isActivated = Boolean(this.ui.isTrialPlanActivated());
+        const isActivated = planActivated;
         const isBattleActive = Boolean(this.ui.isTrialBattleActive?.());
         const isBattleResolved = Boolean(this.ui.isTrialBattleResolved?.());
         const isCompleted = Boolean(this.ui.isTrialCompleted?.());
