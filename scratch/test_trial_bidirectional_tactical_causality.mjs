@@ -226,4 +226,64 @@ test("large body is a separate charge requirement and no RNG is consumed", () =>
         assert.deepEqual(restore(JSON.parse(JSON.stringify(result))), result);
     } finally { Math.random = random; }
 });
+test("state transitions expose actor scope, value delta, causal grounding and global order", () => {
+    const result = run(input("GL1_PLAINS", [skirmish, pursue]));
+    assert.equal(result.transitionHistory.length, 2);
+    for (const [order, transition] of result.transitionHistory.entries()) {
+        assert.equal(transition.order, order);
+        assert.equal(transition.target.actor, "ENEMY");
+        assert.equal(transition.target.forceId, "ENEMY_FORCE");
+        assert.equal(typeof transition.state, "string");
+        assert.notDeepEqual(transition.before, transition.after);
+        assert.equal(transition.sourceAction, "e1");
+        assert.equal(typeof transition.sourceCause, "string");
+        assert.equal(transition.sourceFacts.length > 0, true);
+        assert.equal(transition.sourceEvents.includes(transition.eventId), true);
+    }
+});
+test("actor-scoped transitions do not leak state across opposing forces", () => {
+    const captured = run(input("GL1_PLAINS", [capture]));
+    assert.equal(captured.finalState.human.freedom, "CAPTURED");
+    assert.deepEqual(captured.finalState.enemy, input().initialState.enemy);
+    const disrupted = run(input("GL1_PLAINS", [skirmish, pursue]));
+    assert.equal(disrupted.finalState.enemy.formation, "DISRUPTED");
+    assert.deepEqual(disrupted.finalState.human, input().initialState.human);
+});
+test("missing, future and cyclic causal references fail closed", () => {
+    const invalid = run(input("GL1_PLAINS", [{ ...capture,
+        sourceFactIds: ["missing-fact"], sourceCauseIds: ["future-cause"],
+        sourceEventIds: ["future-event"] }]));
+    assert.equal(invalid.history[0].status, "REJECTED");
+    assert.equal(invalid.history[0].reasons.some(reason => reason.startsWith("INVALID_CAUSAL_REFERENCE:")), true);
+    assert.equal(invalid.finalState.human.freedom, "FREE");
+    const collisionSource = input("GL1_PLAINS", [{ ...capture, actionId: "battle-action:0" }]);
+    collisionSource.baseSnapshot = new BattleResolutionSnapshotFactory().create({
+        battleContext: collisionSource.baseSnapshot.battlefieldContext,
+        actions: [{ actionId: "battle-action:0", type: "INTERCEPT", actor: "HUMAN" }]
+    });
+    const collision = run(collisionSource);
+    assert.deepEqual(collision.history[0].reasons, ["DUPLICATE_ACTION_ID"]);
+    const malformed = run(input("GL1_PLAINS", [{ ...capture, sourceFactIds: "not-an-array" }]));
+    assert.equal(malformed.history[0].reasons.includes("INVALID_CAUSAL_REFERENCE_FORMAT:FACT"), true);
+    const malformedObject = run(input("GL1_PLAINS", [{ ...capture, sourceFactIds: {} }]));
+    assert.equal(malformedObject.history[0].status, "REJECTED");
+});
+test("explicit action limit terminates before unprocessed actions", () => {
+    const source = input("GL1_PLAINS", [capture, skirmish]);
+    source.maxActions = 1;
+    const result = run(source);
+    assert.equal(result.stopped, "MAX_ACTIONS_REACHED");
+    assert.equal(result.history.length, 1);
+    assert.deepEqual(result.processedActionIds, ["c1"]);
+    assert.equal(result.finalState.human.freedom, "CAPTURED");
+    assert.deepEqual(restore(JSON.parse(JSON.stringify(result))), result);
+});
+test("external evidence becomes deterministic fact provenance", () => {
+    const result = run(input("GL1_PLAINS", [capture]));
+    const fact = result.history[0].unverifiedExternalFacts[0];
+    assert.equal(fact.factId, "dev-fact:0:0");
+    assert.equal(fact.sourceAction, "c1");
+    assert.equal(result.transitionHistory[0].sourceFacts.includes(fact.factId), true);
+    assert.deepEqual(result, run(input("GL1_PLAINS", [capture])));
+});
 console.log(`Bidirectional tactical causality validation: ${count}/${count} cases PASS`);
