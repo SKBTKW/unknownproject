@@ -137,6 +137,11 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_trial_force_relationship_causal_integration_v1.mjs",
+      "purpose": "Development-only resolved Force action to directed relationship, isolation and known-versus-objective tactic eligibility causal chain",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_battle_opportunity_fortune_runtime_bridge.mjs",
       "purpose": "Fortune runtime bridge pending completion boundary, decline, commit, resolve and finalize ordering",
       "suite": "supplemental"
