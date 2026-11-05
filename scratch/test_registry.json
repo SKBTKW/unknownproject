@@ -132,6 +132,11 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_trial_causal_state_structural_noop_v1.mjs",
+      "purpose": "Actor and Force causal state transitions suppress structurally unchanged objects and ordered arrays",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_trial_force_relationship_foundation_v1.mjs",
       "purpose": "Development-only multi-Force identity, independent state, directed relationships, spatial evidence, isolation and replay foundation",
       "suite": "supplemental"
