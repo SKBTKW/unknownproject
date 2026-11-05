@@ -8,8 +8,14 @@ export function tacticalTokens(context, state, actor) {
     const tokens = [];
     if (actor === "ENEMY") {
         if (context.enemy?.bodySize === "LARGE") tokens.push("LARGE_BODY");
-        if (context.battlefieldCapabilities?.intercept?.capabilities?.frontage === "OPEN") {
+        const deployment = state.enemy.deployment;
+        if ((deployment === undefined
+                && context.battlefieldCapabilities?.intercept?.capabilities?.frontage === "OPEN")
+            || deployment === "UNCONSTRAINED") {
             tokens.push("DEPLOYMENT_SPACE");
+        }
+        if (["CONSTRAINED", "SEVERELY_CONSTRAINED"].includes(deployment)) {
+            tokens.push("DEPLOYMENT_CONSTRAINED");
         }
         if (state.enemy.formation === "ORDERED") tokens.push("ORDERED_FORMATION");
         if (state.enemy.pursuit === "PURSUING") tokens.push("PURSUING");

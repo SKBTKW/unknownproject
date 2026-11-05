@@ -127,6 +127,11 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_trial_causal_interaction_state_transition_v1.mjs",
+      "purpose": "Development-only causal rule to actor-scoped state transition, interaction constraint and bilateral eligibility propagation",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_battle_opportunity_fortune_runtime_bridge.mjs",
       "purpose": "Fortune runtime bridge pending completion boundary, decline, commit, resolve and finalize ordering",
       "suite": "supplemental"
