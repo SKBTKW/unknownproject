@@ -9,6 +9,24 @@ function list(value) {
     return Array.isArray(value) ? value.filter(item => typeof item === "string" && item.length > 0) : [];
 }
 
+function equalBattleStateValue(left, right) {
+    if (Object.is(left, right)) return true;
+    if (left == null || right == null || typeof left !== "object" || typeof right !== "object") {
+        return false;
+    }
+    if (Array.isArray(left) || Array.isArray(right)) {
+        return Array.isArray(left) && Array.isArray(right)
+            && left.length === right.length
+            && left.every((value, index) => equalBattleStateValue(value, right[index]));
+    }
+
+    const leftKeys = Object.keys(left);
+    const rightKeys = Object.keys(right);
+    return leftKeys.length === rightKeys.length
+        && leftKeys.every(key => Object.hasOwn(right, key)
+            && equalBattleStateValue(left[key], right[key]));
+}
+
 function actorForTarget(target) {
     return Object.entries(ACTOR_KEYS).find(([, key]) => key === target)?.[0] || null;
 }
@@ -139,7 +157,7 @@ export function applyActorScopedBattleTransition({
     const transitions = [];
     for (const [stateIndex, [stateKey, after]] of Object.entries(update.resultingState).entries()) {
         const before = state[update.target][stateKey];
-        if (Object.is(before, after)) continue;
+        if (equalBattleStateValue(before, after)) continue;
         next[update.target][stateKey] = copy(after);
         const transitionOrder = order + stateIndex;
         transitions.push({
@@ -186,7 +204,7 @@ export function applyForceScopedBattleTransition({
     const transitions = [];
     for (const [stateIndex, [stateKey, after]] of Object.entries(update.resultingState).entries()) {
         const before = current.state[stateKey];
-        if (Object.is(before, after)) continue;
+        if (equalBattleStateValue(before, after)) continue;
         next[update.forceId].state[stateKey] = copy(after);
         const transitionOrder = order + stateIndex;
         transitions.push({
