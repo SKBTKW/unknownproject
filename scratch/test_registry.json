@@ -122,6 +122,11 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_trial_causal_rule_slice_v1.mjs",
+      "purpose": "Development-only forest deployment, frontal resistance and flank detection causal rule distinctions",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_battle_opportunity_fortune_runtime_bridge.mjs",
       "purpose": "Fortune runtime bridge pending completion boundary, decline, commit, resolve and finalize ordering",
       "suite": "supplemental"
