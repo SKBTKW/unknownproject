@@ -132,6 +132,11 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_trial_force_relationship_foundation_v1.mjs",
+      "purpose": "Development-only multi-Force identity, independent state, directed relationships, spatial evidence, isolation and replay foundation",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_battle_opportunity_fortune_runtime_bridge.mjs",
       "purpose": "Fortune runtime bridge pending completion boundary, decline, commit, resolve and finalize ordering",
       "suite": "supplemental"

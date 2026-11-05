@@ -23,6 +23,33 @@ export function createActorScopedBattleState(initialState = {}) {
     return state;
 }
 
+export function createForceScopedBattleState(forces = []) {
+    if (!Array.isArray(forces)) throw new TypeError("FORCE_LIST_REQUIRED");
+    const state = {};
+    for (const force of forces) {
+        if (!force || typeof force.forceId !== "string" || !force.forceId
+            || !Object.hasOwn(ACTOR_KEYS, force.actor) || state[force.forceId]
+            || !force.state || typeof force.state !== "object" || Array.isArray(force.state)) {
+            throw new TypeError("INVALID_FORCE_SCOPED_STATE");
+        }
+        state[force.forceId] = { actor: force.actor, state: copy(force.state) };
+    }
+    return state;
+}
+
+export function createForceRelationshipState(relations = []) {
+    if (!Array.isArray(relations)) throw new TypeError("FORCE_RELATIONSHIP_LIST_REQUIRED");
+    const state = {};
+    for (const relation of relations) {
+        if (!relation || typeof relation.relationId !== "string" || !relation.relationId
+            || state[relation.relationId]) {
+            throw new TypeError("INVALID_FORCE_RELATIONSHIP_STATE");
+        }
+        state[relation.relationId] = copy(relation);
+    }
+    return state;
+}
+
 export function createBattleCausalReferenceIndex(baseSnapshot = {}) {
     const ids = rows => new Set((Array.isArray(rows) ? rows : [])
         .map(row => row?.actionId || row?.factId || row?.causeId || row?.eventId || row?.type)
@@ -131,4 +158,99 @@ export function applyActorScopedBattleTransition({
         });
     }
     return { state: next, transitions };
+}
+
+export function applyForceScopedBattleTransition({
+    state,
+    update,
+    actionId,
+    causeId,
+    consequenceId,
+    eventId,
+    sourceFactIds = [],
+    sourceEventIds = [],
+    order,
+    step
+} = {}) {
+    const current = state?.[update?.forceId];
+    if (!current || current.actor !== update.actor || !update.resultingState
+        || typeof update.resultingState !== "object" || Array.isArray(update.resultingState)) {
+        throw new TypeError("INVALID_FORCE_SCOPED_TRANSITION");
+    }
+    if (!actionId || !causeId || !consequenceId || !eventId
+        || sourceFactIds.length === 0 || sourceEventIds.length === 0) {
+        throw new TypeError("UNGROUNDED_STATE_TRANSITION");
+    }
+
+    const next = copy(state);
+    const transitions = [];
+    for (const [stateIndex, [stateKey, after]] of Object.entries(update.resultingState).entries()) {
+        const before = current.state[stateKey];
+        if (Object.is(before, after)) continue;
+        next[update.forceId].state[stateKey] = copy(after);
+        const transitionOrder = order + stateIndex;
+        transitions.push({
+            transitionId: `dev-force-transition:${transitionOrder}:${step}:${stateKey}`,
+            eventId,
+            target: { actor: update.actor, forceId: update.forceId },
+            state: stateKey,
+            before: copy(before),
+            after: copy(after),
+            sourceAction: actionId,
+            sourceCause: causeId,
+            sourceConsequence: consequenceId,
+            sourceFacts: [...sourceFactIds],
+            sourceEvents: [...sourceEventIds],
+            order: transitionOrder
+        });
+    }
+    return { state: next, transitions };
+}
+
+export function applyForceRelationshipTransition({
+    relations,
+    update,
+    actionId,
+    causeId,
+    consequenceId,
+    eventId,
+    sourceFactIds = [],
+    sourceEventIds = [],
+    order,
+    step
+} = {}) {
+    const current = relations?.[update?.relationId];
+    if (!current || current.type !== update.type
+        || current.sourceForceId !== update.sourceForceId
+        || current.targetForceId !== update.targetForceId
+        || typeof update.status !== "string" || !update.status) {
+        throw new TypeError("INVALID_FORCE_RELATIONSHIP_TRANSITION");
+    }
+    if (!actionId || !causeId || !consequenceId || !eventId
+        || sourceFactIds.length === 0 || sourceEventIds.length === 0) {
+        throw new TypeError("UNGROUNDED_RELATIONSHIP_TRANSITION");
+    }
+    if (current.status === update.status) return { relations: copy(relations), transitions: [] };
+
+    const next = copy(relations);
+    next[update.relationId].status = update.status;
+    return {
+        relations: next,
+        transitions: [{
+            transitionId: `dev-relation-transition:${order}:${step}:${update.relationId}`,
+            eventId,
+            relationId: update.relationId,
+            relationType: update.type,
+            sourceForceId: update.sourceForceId,
+            targetForceId: update.targetForceId,
+            before: current.status,
+            after: update.status,
+            sourceAction: actionId,
+            sourceCause: causeId,
+            sourceConsequence: consequenceId,
+            sourceFacts: [...sourceFactIds],
+            sourceEvents: [...sourceEventIds],
+            order
+        }]
+    };
 }
