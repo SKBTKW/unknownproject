@@ -2,6 +2,116 @@
   "schemaVersion": 1,
   "tests": [
     {
+      "path": "scratch/test_enemy_army_trait_provenance_first_run.mjs",
+      "purpose": "Trait provenance preservation through canonical FirstRun Stage1 completion and no Stage2 generation",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_trait_provenance_regression.mjs",
+      "purpose": "Trait provenance production disconnection, RNG and Truth isolation, unchanged Trial1 and restore non-generation boundary",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_trait_provenance_persistence.mjs",
+      "purpose": "Trait provenance JSON and History persistence, legacy compatibility, atomic validation and rollback",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_trait_provenance_unit.mjs",
+      "purpose": "Immutable trait provenance model, Blueprint association, idempotency, conflict and orphan validation",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_trait_selector_regression.mjs",
+      "purpose": "Trait Selector production disconnection, unchanged Trial1 suppression/force count and Bootstrap boundary",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_trait_selector_integration.mjs",
+      "purpose": "Trait selection through explicit policy resolution, Blueprint generation, RNG isolation and restore authority",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_trait_selector_unit.mjs",
+      "purpose": "Deterministic immutable weighted Trait selection and explicit generation-policy binding validation",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_variable_force_policy.mjs",
+      "purpose": "Development-only D/E variable-force policies, hierarchical army trait determinism, relationship metrics and RNG isolation",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_generation_distribution_cli.mjs",
+      "purpose": "Distribution CLI deterministic output, model selection and bounded numeric input validation",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_generation_distribution.mjs",
+      "purpose": "Development hypothesis distribution replay, actual-data tally consistency, bulk immutability and RNG/Trial isolation",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_blueprint_stage_first_run.mjs",
+      "purpose": "Canonical FirstRun with Stage adapter, immutable Stage1 blueprint and no Stage2 generation",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_blueprint_stage_integration.mjs",
+      "purpose": "Actual Stage2/3 application, snapshot/restore ordering and RNG/Truth/scenario isolation",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_blueprint_stage_adapter_unit.mjs",
+      "purpose": "Stage applied adapter policy validation, model no-op, registration idempotency and restore suppression",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_blueprint_new_run_first_run.mjs",
+      "purpose": "Automatic opt-in Blueprint creation then Save/Restore and unchanged FirstRun Stage1 completion",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_blueprint_new_run_integration.mjs",
+      "purpose": "Engine initial snapshot, JSON/History restore and live RNG/Truth isolation",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_blueprint_bootstrap_unit.mjs",
+      "purpose": "Exactly-once Blueprint bootstrap, policy gating, restore suppression and atomic failure",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_blueprint_first_run_regression.mjs",
+      "purpose": "Unchanged canonical FirstRun Stage1 completion with a registered Blueprint through Stage2",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_blueprint_persistence_regression.mjs",
+      "purpose": "Blueprint persistence RNG and live Truth isolation without automatic generation",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_blueprint_persistence_integration.mjs",
+      "purpose": "Blueprint JSON and History persistence, legacy restore and atomic failure rollback",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_blueprint_lifecycle_unit.mjs",
+      "purpose": "Blueprint lifecycle registration, idempotency, validation and detached ownership",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_blueprint_integration.mjs",
+      "purpose": "Blueprint observation isolation and production Truth and RNG non-interference",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_army_blueprint_unit.mjs",
+      "purpose": "Immutable blueprint schema, explicit policy validation and independent deterministic generation",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_enemy_truth_known_boundary_guard.mjs",
       "purpose": "Enemy truth observability, known-report-only unlocking and repeated observations",
       "suite": "supplemental"
@@ -9,6 +119,31 @@
     {
       "path": "scratch/test_trial_bidirectional_tactical_causality.mjs",
       "purpose": "Development-only bidirectional tactical state propagation, external evidence validation and deterministic replay",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_trial_causal_rule_slice_v1.mjs",
+      "purpose": "Development-only forest deployment, frontal resistance and flank detection causal rule distinctions",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_trial_causal_interaction_state_transition_v1.mjs",
+      "purpose": "Development-only causal rule to actor-scoped state transition, interaction constraint and bilateral eligibility propagation",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_trial_causal_state_structural_noop_v1.mjs",
+      "purpose": "Actor and Force causal state transitions suppress structurally unchanged objects and ordered arrays",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_trial_force_relationship_foundation_v1.mjs",
+      "purpose": "Development-only multi-Force identity, independent state, directed relationships, spatial evidence, isolation and replay foundation",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_trial_force_relationship_causal_integration_v1.mjs",
+      "purpose": "Development-only resolved Force action to directed relationship, isolation and known-versus-objective tactic eligibility causal chain",
       "suite": "supplemental"
     },
     {

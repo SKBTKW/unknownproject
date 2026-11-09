@@ -1,3 +1,12 @@
+import {
+    ENEMY_BLUEPRINT_LIFECYCLE_SCHEMA_VERSION,
+    freezeBlueprintLifecycleSnapshot
+} from '../trial/domain/enemy_army_blueprint_lifecycle_state.js';
+import {
+    ENEMY_ARMY_TRAIT_PROVENANCE_STATE_SCHEMA_VERSION,
+    freezeEnemyArmyTraitProvenanceState,
+    validateEnemyArmyTraitProvenanceAssociations
+} from '../trial/domain/enemy_army_trait_provenance_state.js';
 import { restoreDiscoveryLedger } from "../investigation/domain/world_discovery.js";
 import { hydrateGameState as hydrateBaseGameState } from "./hydrate_game_state_base.js";
 
@@ -33,9 +42,28 @@ export function hydrateGameState(state, serialized, options = {}) {
         lastInvestigationReport = null,
         lastInvestigationComparison = null,
         scheduledGlobalEvents = [],
+        enemyArmyBlueprintState,
+        enemyArmyTraitProvenanceState,
         ...baseSerialized
     } = serialized;
 
+    // Preflight before the base hydrator can change any live world data.
+    const restoredBlueprintState = Object.hasOwn(serialized, 'enemyArmyBlueprintState')
+        ? freezeBlueprintLifecycleSnapshot(enemyArmyBlueprintState)
+        : null;
+    const restoredProvenanceState = Object.hasOwn(serialized, 'enemyArmyTraitProvenanceState')
+        ? freezeEnemyArmyTraitProvenanceState(enemyArmyTraitProvenanceState)
+        : freezeEnemyArmyTraitProvenanceState({
+            schemaVersion: ENEMY_ARMY_TRAIT_PROVENANCE_STATE_SCHEMA_VERSION,
+            provenances: []
+        });
+    validateEnemyArmyTraitProvenanceAssociations(
+        restoredBlueprintState ?? {
+            schemaVersion: ENEMY_BLUEPRINT_LIFECYCLE_SCHEMA_VERSION,
+            blueprints: []
+        },
+        restoredProvenanceState
+    );
     const restoredDiscoveryLedger = restoreDiscoveryLedger(discoveryLedger);
     const hydrated = hydrateBaseGameState(state, baseSerialized, options);
     hydrated.isGameOver = !!isGameOver;
@@ -52,6 +80,13 @@ export function hydrateGameState(state, serialized, options = {}) {
     hydrated.scheduledGlobalEvents = Array.isArray(scheduledGlobalEvents)
         ? (cloneData(scheduledGlobalEvents) || [])
         : [];
+    if (restoredBlueprintState) hydrated.enemyArmyBlueprintState = restoredBlueprintState;
+    else delete hydrated.enemyArmyBlueprintState; // An old save must not retain a future army.
+    if (restoredProvenanceState.provenances.length) {
+        hydrated.enemyArmyTraitProvenanceState = restoredProvenanceState;
+    } else {
+        delete hydrated.enemyArmyTraitProvenanceState;
+    }
     return hydrated;
 }
 

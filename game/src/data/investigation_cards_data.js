@@ -5,8 +5,8 @@ export const INVESTIGATION_CARDS_MASTER = [
   {
     "id": "INVESTIGATE_FOOTPRINTS",
     "category": "INVESTIGATION",
-    "nameKey": "INVESTIGATE_FOOTPRINTS_NAME",
-    "descriptionKey": "INVESTIGATE_FOOTPRINTS_DESC",
+    "nameKey": "INVESTIGATION_SOURCE_FOOTPRINTS_TITLE",
+    "descriptionKey": "INVESTIGATION_SOURCE_FOOTPRINTS_BODY",
     "cost": {},
     "tags": ["INVESTIGATION", "TRACE"],
     "reqInvestigationUnlocked": true,
@@ -20,8 +20,8 @@ export const INVESTIGATION_CARDS_MASTER = [
   {
     "id": "INVESTIGATE_CAMP_REMAINS",
     "category": "INVESTIGATION",
-    "nameKey": "INVESTIGATE_CAMP_REMAINS_NAME",
-    "descriptionKey": "INVESTIGATE_CAMP_REMAINS_DESC",
+    "nameKey": "INVESTIGATION_SOURCE_CAMP_REMAINS_TITLE",
+    "descriptionKey": "INVESTIGATION_SOURCE_CAMP_REMAINS_BODY",
     "cost": {},
     "tags": ["INVESTIGATION", "TRACE"],
     "reqInvestigationUnlocked": true,
@@ -35,8 +35,8 @@ export const INVESTIGATION_CARDS_MASTER = [
   {
     "id": "INVESTIGATE_SCOUT_SIGHTING",
     "category": "INVESTIGATION",
-    "nameKey": "INVESTIGATE_SCOUT_SIGHTING_NAME",
-    "descriptionKey": "INVESTIGATE_SCOUT_SIGHTING_DESC",
+    "nameKey": "INVESTIGATION_SOURCE_SCOUT_SIGHTING_TITLE",
+    "descriptionKey": "INVESTIGATION_SOURCE_SCOUT_SIGHTING_BODY",
     "cost": {},
     "tags": ["INVESTIGATION", "SCOUT"],
     "reqInvestigationUnlocked": true,

@@ -1,3 +1,4 @@
+import { EnemyArmyBlueprintStageAdapter } from './enemy_army_blueprint_stage_adapter.js';
 import { GameFactHub } from "../../core/game_fact.js";
 import { BoardBattleSiteRecorder } from "../../core/board_battle_site_recorder.js";
 import { attachWarningSubsystem } from "../../warning/integration/warning_bootstrap.js";
@@ -37,6 +38,7 @@ export function attachTrialRuntimeSubsystems(engine, {
     timingOptions = {},
     warningOptions = {},
     warningTimingOptions = {},
+    blueprintStageOptions = {},
     postTrialOptions = {}
 } = {}) {
     if (!engine?.state) {
@@ -84,6 +86,18 @@ export function attachTrialRuntimeSubsystems(engine, {
     if (!engine.trialStageProgressionService) {
         engine.trialStageProgressionService = new TrialStageProgressionService(engine, {
             gameFactHub: factHub
+        });
+    }
+
+    // Observe Stage facts before Post-Trial or later save observers can emit/capture them.
+    if (!engine.enemyArmyBlueprintStageAdapter) {
+        engine.enemyArmyBlueprintStageAdapter = new EnemyArmyBlueprintStageAdapter({
+            ...blueprintStageOptions,
+            gameState: engine.state,
+            gameFactHub: factHub,
+            lifecycleService: engine.enemyArmyBlueprintLifecycleService || null,
+            runSeedProvider: () => engine.runSeed,
+            isRestoring: () => Boolean(engine.historyRestoreService?.isRestoring)
         });
     }
 
@@ -186,6 +200,7 @@ export function attachTrialRuntimeSubsystems(engine, {
         warningTimingAttached: true,
         trialDueAttached: true,
         trialStageProgressionAttached: true,
+        enemyArmyBlueprintStageAdapterAttached: true,
         postTrialStepAuthorityRouterAttached: true,
         postTrialSkillProgressionRouterAttached: true,
         postTrialProgressionAttached: true,
