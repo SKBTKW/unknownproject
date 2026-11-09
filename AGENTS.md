@@ -57,7 +57,7 @@
 7. 統合直前に `node scratch/task_health.mjs --integration-ready` でremote refsを最新化できることを確認し、続けて `python scratch/pre_write_linter.py --integration-ready` でTASKが最新 `origin/<target>` を包含していることを確認する。含まれなければ当該TASKだけを `WAITING_FOR_BASE_UPDATE` とする。
 8. 本流が進んでいた場合、通常作業中の他TASKを止めない。統合順が来たTASKだけ最新本流とreconcileし、全検査を再実行する。Integration Guardがpeer overlapまで確認して独立READYと判定したTASKは、別のREVIEW_REQUIRED / BLOCKED TASKが存在してもそのTASK単体の統合を妨げない。
 9. 統合可否の機械判定SSOTは Merge Decision Proof とする。Proofは対象target SHA、TASK SHA、PR head/base、clean merge preview、PR Full Inspection SUCCESSへ固定し、正常系に人手の再判定を追加しない。人間の判断はREVIEW_REQUIRED / BLOCKED / reconcileが必要な例外へ集中させる。統合実行そのものには従来どおり明示的な統合承認を必要とする。
-10. 統合担当者は同時に一人とし、READY Proofを持つタスクを一件ずつ原則squash mergeする。統合後は対象ブランチ上のFull Inspection SUCCESSとmerged PR head SHA一致を確認する。
+10. 統合担当者は同時に一人とし、READY Proofを持つTASKを一件ずつ原則squash mergeする。このsquash原則は **TASK → AoT統合ブランチ** に限り、**AoT統合ブランチ → main** には適用しない。統合後は対象ブランチ上のFull Inspection SUCCESSとmerged PR head SHA一致を確認する。
 11. Merge Decision Proofと統合後検査が成立し、TASK headがProof生成時から動いておらず、TASK worktreeもcleanである場合、TASK remote branch / worktree / local branchを同じ統合ライフサイクル内で自動削除する。移動・dirty・lockなどの齟齬があれば削除だけを停止する。Task Sweeperはクラッシュ、手動merge、cleanup途中失敗、過去残骸の復旧用とする。未統合ブランチの強制削除を禁止する。
 - `AGENTS.md`、`game/src/i18n.js`、`layout_config.js`、GameEngine、共通JSON、統合テストなどの共有ファイルは同時編集を避け、統合順を先に決める。
 - TASK branchへのpush承認と、統合先branchへのpush承認は別の承認として扱う。
@@ -68,6 +68,18 @@
 - ISOLATEDの自動統合は、記録した基点から対象ブランチが動いておらず、対象worktreeがcleanで全検査合格の場合の `git merge --ff-only` だけを許可する。
 - TASKの統合は統合担当と承認ゲートを経由し、作業担当が直接 `origin/<target>` へpushしてはならない。
 - `git branch -D` による未統合ブランチの削除を禁止する。
+
+### 2.5 日付付きAoT統合ブランチとmainの節目同期（MUST）
+- **役割**: 日付付きの最新 `AoT*` を開発・テストプレイの正本とし、`main` は節目ごとの成果反映先とする。この運用を勝手に変更したり、日常のTASK統合先を `main` に切り替えたりしてはならない。
+- **統合経路**: 通常の機能開発は `aot-task/<target>/...` → 最新AoT、節目同期は最新AoT → `main`。新しい日付付きAoTブランチは旧AoTの最新HEADを祖先に持つ形で作成し、履歴を切り離さない。
+- **マージ方式**: 最新AoT → `main` は双方の履歴を保持する **通常のmerge commit** を使用する。**squash merge、rebase merge、force push、resetによる置換は禁止**。TASK → AoTのsquash原則を誤適用しない。
+- **PR方向の検査**: 節目同期PRの `head` は認可された最新AoT、`base` は `main` であることを確認する。TASK PRの `base` は認可された最新AoTとする。PRタイトルやブランチ名だけで正しい向きと推測しない。
+- **事前検査**: `git fetch origin` 後、両HEAD SHA、merge-base、ahead/behind、`git diff`、マージ可能性、PR検証状態を確認し記録する。`main` 側にAoT未反映の固有変更があれば、その意味を精査し、無条件に捨てない。既存のFull Inspectionと明示承認ゲートを省略しない。
+- **競合時の停止**: 競合がある場合は `main` や最新AoTを直接編集せず、承認された専用TASK/worktreeで解消する。双方の履歴を残し、正本AoTの内容を採用する方針であっても、main固有の実質変更がないことを確認してから進める。自動的な `-X ours/theirs` や無検証のツリー置換は禁止。
+- **統合後の機械検証**: 最新AoT HEADが `main` HEADの祖先であること (`git merge-base --is-ancestor origin/<AoT> origin/main`)、および節目同期直後の追跡ファイル内容が一致すること (`git diff --exit-code origin/<AoT> origin/main`) を確認する。加えてmerge commitが双方の履歴を保有することと、CI/Full Inspection結果を確認する。意図した同期後のmain-onlyコミットは履歴上存在してよいが、ファイル内容の差は認めない。
+- **同期後の運用**: `main` を最新AoTへ無条件に逆マージしない。mainへの緊急修正が必要な場合は、最新AoTに実質変更を取り込み、再検証してから次の節目同期を行う。同期完了後も、テストプレイの参照先は最新AoTのままとする。
+- **自動化（未実装時は必須の手動検問）**: PRのhead/base、AoT → mainでのmerge方式、同期後の祖先関係・ツリー一致をCIまたは専用スクリプトで検査できるよう整備する。ガードが実装されるまでは担当者が同条件を手動で検証し、未検証をPASSと報告してはならない。
+- **権限・承認**: ブランチ作成、push、PRマージにはそれぞれ既存の承認・保護ルールを適用する。この節はPush Gateを緩和せず、ユーザーの明示承認なしにGitHubへ変更を反映してはならない。
 
 ---
 
