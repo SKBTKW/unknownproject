@@ -613,7 +613,7 @@ export class PostTrialProgressionService {
 
         current.status = POST_TRIAL_STEP_STATUS.APPLIED;
         current.result = cloneData(stageProgression);
-        this._emitStageAdvanced(current, stageProgression);
+        this._emitStageAdvanced(current, stageProgression, { appliedNow: true });
         return { success: true, stageProgression };
     }
 
@@ -721,13 +721,14 @@ export class PostTrialProgressionService {
         this._tryCompleteTransition({ emitFact: false });
     }
 
-    _emitStageAdvanced(stageStep, result) {
+    _emitStageAdvanced(stageStep, result, { appliedNow = false } = {}) {
         const transition = this.engine.state.postTrialTransition;
         this._emitFact(GAME_FACT_TYPES.POST_TRIAL_STAGE_ADVANCED, {
             transitionId: transition?.transitionId || null,
             trialIndex: transition?.trialIndex || stageStep?.payload?.trialIndex || null,
             fromStageId: stageStep?.payload?.fromStageId || null,
             toStageId: stageStep?.payload?.toStageId || null,
+            appliedNow,
             result: cloneData(result)
         });
     }

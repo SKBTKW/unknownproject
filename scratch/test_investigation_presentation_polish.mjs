@@ -4,6 +4,8 @@ import { InvestigationReportTextRenderer } from "../game/src/warning/presentatio
 import { InvestigationHistoryPresenter } from "../game/src/warning/presentation/investigation_history_presenter.js";
 import { InvestigationNarrativeComposer } from "../game/src/warning/presentation/investigation_narrative_composer.js";
 import { InvestigationNarrativeTextRenderer } from "../game/src/warning/presentation/investigation_narrative_text_renderer.js";
+import { INVESTIGATION_CARDS_MASTER } from "../game/src/data/investigation_cards_data.js";
+import { I18n } from "../game/src/i18n.js";
 
 const presenter = new InvestigationReportPresenter();
 const renderer = new InvestigationReportTextRenderer({ locale: "ja" });
@@ -89,5 +91,28 @@ assert.ok(narrative.text.includes("次の試練"));
 for (const forbidden of ["TrueEnemyState","strategicSuppression","ingress","route"]) {
     assert.ok(!narrative.text.includes(forbidden));
 }
+
+const originalLanguage = I18n.getLanguage();
+try {
+    for (const language of ["ja", "en"]) {
+        I18n.setLanguage(language);
+        for (const card of INVESTIGATION_CARDS_MASTER) {
+            assert.equal(I18n.has(card.nameKey), true, `${language} name key must exist: ${card.nameKey}`);
+            assert.equal(I18n.has(card.descriptionKey), true, `${language} description key must exist: ${card.descriptionKey}`);
+            assert.notEqual(I18n.t(card.nameKey), card.nameKey, `${language} must resolve card name`);
+            assert.notEqual(I18n.t(card.descriptionKey), card.descriptionKey, `${language} must resolve card description`);
+        }
+        assert.notEqual(I18n.t("UI_CLOSE"), "UI_CLOSE", `${language} must resolve report close action`);
+    }
+} finally {
+    I18n.setLanguage(originalLanguage);
+}
+
+assert.equal(
+    INVESTIGATION_CARDS_MASTER.some(card => /^(INVESTIGATE_.+_(?:NAME|DESC))$/.test(card.nameKey)
+        || /^(INVESTIGATE_.+_(?:NAME|DESC))$/.test(card.descriptionKey)),
+    false,
+    "Investigation card master must not reference legacy unresolved localization keys"
+);
 
 console.log("PASS investigation presentation polish");

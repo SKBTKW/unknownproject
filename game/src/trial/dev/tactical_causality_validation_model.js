@@ -2,8 +2,16 @@ import { createBattleAction } from "../domain/battle_action.js";
 import { freezeBattleResolutionData } from "../domain/battle_resolution_snapshot.js";
 import { BATTLE_CAUSE_TYPES, BATTLE_CAUSE_CATEGORIES } from "../domain/battle_causality_types.js";
 import { BattleCausalEventResolver } from "../systems/battle_causal_event_resolver.js";
-import { evaluateTactics, applyTacticalConsequences, copy } from "./tactical_causality_state.js";
+import { evaluateTactics, copy } from "./tactical_causality_state.js";
 import { resolveTacticalAction } from "./tactical_causality_action.js";
+import {
+    applyActorScopedBattleTransition,
+    createActorScopedBattleState,
+    createBattleCausalReferenceIndex,
+    createExternalBattleFacts,
+    registerBattleCausalReferences,
+    validateBattleCausalReferences
+} from "../domain/battle_causality_execution.js";
 
 const ACTORS = new Set(["HUMAN", "ENEMY"]);
 const validText = value => typeof value === "string" && value.trim().length > 0;
@@ -39,6 +47,10 @@ function validateInput(input) {
         || !validText(input.initialStateReason)) throw new TypeError("INITIAL_STATE_EVIDENCE_REQUIRED");
     // Derived tokens cannot be forged via external token injection.
     if (state.enemy.externalTokens || state.human.externalTokens) throw new TypeError("EXTERNAL_STATE_TOKENS_FORBIDDEN");
+    if (input.maxActions !== undefined
+        && (!Number.isInteger(input.maxActions) || input.maxActions < 0)) {
+        throw new TypeError("INVALID_ACTION_LIMIT");
+    }
 }
 
 /**
@@ -50,70 +62,124 @@ export function validateTacticalCausality(input) {
     validateInput(input);
     const { baseSnapshot, tactics, actions } = copy(input);
     const context = baseSnapshot.battlefieldContext;
-    let state = copy(input.initialState);
+    let state = createActorScopedBattleState(input.initialState);
     let eligibility = evaluateTactics(context, state, tactics);
     const initialEligibility = copy(eligibility);
     const history = [];
     const seen = new Set();
+    const referenceIndex = createBattleCausalReferenceIndex(baseSnapshot);
+    const transitionHistory = [];
+    const maxActions = input.maxActions ?? actions.length;
+    let stopped = "END_OF_INPUT";
     for (const [index, action] of actions.entries()) {
+        if (index >= maxActions) {
+            stopped = "MAX_ACTIONS_REACHED";
+            break;
+        }
         const beforeState = copy(state);
         const beforeEligibility = copy(eligibility);
         const current = eligibility.find(row => row.tacticId === action.tacticId);
-        const duplicate = seen.has(action.actionId);
+        const duplicate = seen.has(action.actionId) || referenceIndex.actions.has(action.actionId);
         seen.add(action.actionId);
         const resolution = duplicate
             ? { reasons: ["DUPLICATE_ACTION_ID"], unverified: [], updates: [] }
             : resolveTacticalAction(action, state, history);
+        const invalidReferences = duplicate ? [] : validateBattleCausalReferences(action, referenceIndex);
         const declared = tactics.find(row => row.tacticId === action.tacticId);
         const reasons = duplicate ? resolution.reasons : [
             ...(!declared.actionTypes.includes(action.type) ? ["ACTION_TACTIC_MISMATCH"] : []),
-            ...(!current.eligible ? ["TACTIC_INELIGIBLE"] : []), ...resolution.reasons
+            ...(!current.eligible ? ["TACTIC_INELIGIBLE"] : []),
+            ...invalidReferences,
+            ...resolution.reasons
         ];
         const causes = [];
         const consequences = [];
         const transitions = [];
+        const actionEvents = [];
+        const externalFacts = reasons.length
+            ? []
+            : createExternalBattleFacts(resolution.unverified, { actionId: action.actionId, actionOrder: index });
+        const sourceFactIds = [
+            ...externalFacts.map(row => row.factId),
+            ...(Array.isArray(action.sourceFactIds) ? action.sourceFactIds : [])
+        ];
+        registerBattleCausalReferences(referenceIndex, { facts: externalFacts });
         if (!reasons.length) {
             for (const [step, update] of resolution.updates.entries()) {
                 if (Object.entries(update.resultingState).every(([key, value]) => state[update.target][key] === value)) continue;
                 const causeId = `dev-cause:${index}:${step}`;
-                const source = causes.length ? [causes.at(-1).causeId] : [];
+                const source = [
+                    ...(Array.isArray(action.sourceCauseIds) ? action.sourceCauseIds : []),
+                    ...(causes.length ? [causes.at(-1).causeId] : [])
+                ];
                 const isolated = update.type === "FORMATION_DISRUPTED";
                 causes.push({ causeId, type: isolated ? BATTLE_CAUSE_TYPES.VANGUARD_ISOLATED : update.type,
                     category: isolated ? BATTLE_CAUSE_CATEGORIES.COHESION : BATTLE_CAUSE_CATEGORIES.MOBILITY,
                     phase: "DEV_VALIDATION", target: update.target,
-                    sourceAction: action.actionId, sourceFacts: [], sourceCauses: source,
-                    derivedFrom: [action.sourceActionId, ...source].filter(Boolean),
+                    sourceAction: action.actionId, sourceFacts: sourceFactIds, sourceCauses: source,
+                    derivedFrom: [
+                        action.sourceActionId,
+                        ...(Array.isArray(action.sourceActionIds) ? action.sourceActionIds : []),
+                        ...(Array.isArray(action.sourceEventIds) ? action.sourceEventIds : []),
+                        ...source
+                    ].filter(Boolean),
                     payload: { reason: action.reason, evidence: copy(action.evidence || {}) } });
                 const consequence = { ...update, consequenceId: `dev-consequence:${index}:${step}`,
                     sourceAction: action.actionId, sourceCauses: [causeId], resolved: true, persistence: "DEV_VALIDATION" };
                 consequences.push(consequence);
                 const priorState = copy(state);
                 const priorEligibility = copy(eligibility);
-                state = applyTacticalConsequences(state, [consequence]);
+                const causalEvent = new BattleCausalEventResolver().resolve([causes.at(-1)])[0]
+                    || { ...causes.at(-1), eventId: `dev-event:${causeId}` };
+                actionEvents.push(causalEvent);
+                registerBattleCausalReferences(referenceIndex, {
+                    causes: [causes.at(-1)], events: [causalEvent]
+                });
+                const applied = applyActorScopedBattleTransition({
+                    state,
+                    update,
+                    actionId: action.actionId,
+                    causeId,
+                    consequenceId: consequence.consequenceId,
+                    eventId: causalEvent.eventId,
+                    sourceFactIds,
+                    sourceEventIds: [causalEvent.eventId, ...(action.sourceEventIds || [])],
+                    order: transitionHistory.length,
+                    step
+                });
+                state = applied.state;
                 eligibility = evaluateTactics(context, state, tactics);
-                transitions.push({ consequenceId: consequence.consequenceId,
+                const detailed = applied.transitions.map(transition => ({ ...transition,
                     beforeState: priorState, afterState: copy(state),
-                    beforeEligibility: priorEligibility, afterEligibility: copy(eligibility) });
+                    beforeEligibility: priorEligibility, afterEligibility: copy(eligibility) }));
+                transitions.push(...detailed);
+                transitionHistory.push(...detailed);
             }
         }
+        registerBattleCausalReferences(referenceIndex, {
+            actionId: action.actionId,
+            executed: reasons.length === 0
+        });
+        const eligibilityEvent = {
+            eventId: `dev-eligibility:${index}`,
+            type: reasons.length ? "ACTION_BLOCKED" : "ACTION_EXECUTED",
+            sourceAction: action.actionId,
+            reasons: copy(reasons),
+            beforeEligibility,
+            afterEligibility: copy(eligibility)
+        };
+        registerBattleCausalReferences(referenceIndex, { events: [eligibilityEvent] });
         history.push({ actionId: action.actionId, type: action.type, order: index,
             action: createBattleAction({ ...action, metadata: { validationInput: action } }),
             status: reasons.length ? "REJECTED" : "EXECUTED", reasons,
-            decisionReason: action.reason || null, unverifiedExternalFacts: resolution.unverified,
+            decisionReason: action.reason || null, unverifiedExternalFacts: externalFacts,
             eligibilityAtAction: copy(current), causes, consequences, transitions,
-            causalEvents: [
-                ...causes.flatMap(row => {
-                    const events = new BattleCausalEventResolver().resolve([row]);
-                    return events.length ? events : [{ ...row, eventId: `dev-event:${row.causeId}` }];
-                }),
-                { eventId: `dev-eligibility:${index}`, type: reasons.length ? "ACTION_BLOCKED" : "ACTION_EXECUTED",
-                    sourceAction: action.actionId, reasons: copy(reasons),
-                    beforeEligibility, afterEligibility: copy(eligibility) }
-            ], beforeState, afterState: copy(state), beforeEligibility, afterEligibility: copy(eligibility) });
+            causalEvents: [...actionEvents, eligibilityEvent],
+            beforeState, afterState: copy(state), beforeEligibility, afterEligibility: copy(eligibility) });
     }
     return freezeBattleResolutionData({ schema: "DEV_TACTICAL_CAUSALITY_V1", status: "DEVELOPMENT_ONLY",
         baseSnapshot, input: copy(input), initialEligibility, history, finalState: state,
-        finalEligibility: eligibility, stopped: "END_OF_INPUT", processedActionIds: [...seen],
+        finalEligibility: eligibility, transitionHistory, stopped, processedActionIds: [...seen],
         externalInitialState: { status: "UNVERIFIED_EXTERNAL_FACT", reason: input.initialStateReason } });
 }
 
