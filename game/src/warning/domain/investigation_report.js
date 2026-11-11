@@ -1,3 +1,5 @@
+import { copyInvestigationObservation } from './enemy_observation_subject.js';
+
 export function createInvestigationReport({
     id,
     observedAtVerse,
@@ -13,7 +15,7 @@ export function createInvestigationReport({
         trialIndex: Number.isInteger(trialIndex) ? trialIndex : null,
         sourceType: sourceType || 'UNKNOWN',
         threatRevision,
-        observations: observations.map(observation => ({ ...observation })),
+        observations: observations.map(copyInvestigationObservation),
         textKey
     };
 }

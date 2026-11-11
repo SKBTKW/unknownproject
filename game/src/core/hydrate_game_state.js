@@ -8,6 +8,7 @@ import {
     validateEnemyArmyTraitProvenanceAssociations
 } from '../trial/domain/enemy_army_trait_provenance_state.js';
 import { restoreDiscoveryLedger } from "../investigation/domain/world_discovery.js";
+import { freezeEnemyInvasionFoundationState } from '../trial/domain/enemy_invasion_foundation_state.js';
 import { hydrateGameState as hydrateBaseGameState } from "./hydrate_game_state_base.js";
 
 function cloneData(value) {
@@ -44,6 +45,7 @@ export function hydrateGameState(state, serialized, options = {}) {
         scheduledGlobalEvents = [],
         enemyArmyBlueprintState,
         enemyArmyTraitProvenanceState,
+        enemyInvasionFoundationState,
         ...baseSerialized
     } = serialized;
 
@@ -65,6 +67,9 @@ export function hydrateGameState(state, serialized, options = {}) {
         restoredProvenanceState
     );
     const restoredDiscoveryLedger = restoreDiscoveryLedger(discoveryLedger);
+    const restoredInvasionState = Object.hasOwn(serialized, 'enemyInvasionFoundationState')
+        ? freezeEnemyInvasionFoundationState(enemyInvasionFoundationState)
+        : null;
     const hydrated = hydrateBaseGameState(state, baseSerialized, options);
     hydrated.isGameOver = !!isGameOver;
     hydrated.runTermination = cloneData(runTermination) ?? null;
@@ -87,6 +92,8 @@ export function hydrateGameState(state, serialized, options = {}) {
     } else {
         delete hydrated.enemyArmyTraitProvenanceState;
     }
+    if (restoredInvasionState) hydrated.enemyInvasionFoundationState = restoredInvasionState;
+    else delete hydrated.enemyInvasionFoundationState;
     return hydrated;
 }
 

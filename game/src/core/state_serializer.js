@@ -4,6 +4,7 @@ import {
     validateEnemyArmyTraitProvenanceAssociations
 } from '../trial/domain/enemy_army_trait_provenance_state.js';
 import { restoreDiscoveryLedger } from "../investigation/domain/world_discovery.js";
+import { readEnemyInvasionFoundationState } from '../trial/domain/enemy_invasion_foundation_state.js';
 import { serializeGameState as serializeBaseGameState } from "./state_serializer_base.js";
 import { createSerializerStateView } from "./state_serializer_state_view.js";
 
@@ -30,6 +31,7 @@ export function serializeGameState(state) {
     ) : null;
     const blueprintState = armyState?.blueprintState ?? null;
     const provenanceState = armyState?.provenanceState ?? null;
+    const invasionState = state ? readEnemyInvasionFoundationState(state) : null;
     const serialized = serializeBaseGameState(createSerializerStateView(state));
     if (!serialized) return serialized;
     return {
@@ -37,6 +39,9 @@ export function serializeGameState(state) {
         ...(blueprintState?.blueprints.length ? { enemyArmyBlueprintState: blueprintState } : {}),
         ...(provenanceState?.provenances.length
             ? { enemyArmyTraitProvenanceState: provenanceState }
+            : {}),
+        ...(invasionState?.directionSnapshots.length || invasionState?.plans.length
+            ? { enemyInvasionFoundationState: invasionState }
             : {}),
         isGameOver: !!state?.isGameOver,
         runTermination: cloneData(state?.runTermination),
