@@ -1265,6 +1265,14 @@
       ]
     },
     {
+      "path": "scratch/test_stage1_threat_board_strategy_foundation.mjs",
+      "purpose": "Stage1 threat land boundaries, legal board strategy, Trial survival, and diagnostic force allocation",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_stage1_trial_threat_policy_v1.mjs",
       "purpose": "canonical Stage1 Trial1 threat policy, one-force route band, and production composition",
       "suite": "existing",
