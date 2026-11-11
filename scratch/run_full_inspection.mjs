@@ -502,6 +502,7 @@ async function main() {
         ["Post-trial stage prelude gate", "node", ["game/src/trial/dev/diagnose_post_trial_stage_prelude_gate.mjs"]],
         ["Post-trial stage gate resume", "node", ["game/src/trial/dev/diagnose_post_trial_stage_gate_resume.mjs"]],
         ["Stage1 Trial1 threat policy v1", "node", ["scratch/test_stage1_trial_threat_policy_v1.mjs"]],
+        ["Stage1 threat, board strategy and survival", "node", ["scratch/test_stage1_threat_board_strategy_foundation.mjs"]],
         ["Enemy army structure", "node", ["game/src/trial/dev/diagnose_enemy_army_structure.mjs"]],
         ["Enemy force deployment", "node", ["game/src/trial/dev/diagnose_enemy_force_deployment.mjs"]],
         ["Enemy force reserve progression", "node", ["game/src/trial/dev/diagnose_enemy_force_reserve_progression.mjs"]],
