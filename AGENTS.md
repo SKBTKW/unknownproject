@@ -31,9 +31,12 @@
    - **DIRECT**: 同名 `origin/<branch>` に対する behind / diverged は STOP。勝手に pull や rebase をしない。
    - **ISOLATED**: 記録したtarget基点の不一致は既存の厳格ルールどおり STOP。
    - **TASK**: `origin/<target>` の前進は `TARGET_DRIFT` として記録し、通常作業は CONTINUE。自動 pull / merge / rebase はしない。同名 `origin/aot-task/...` がlocal TASKに含まれない更新は `REMOTE_TASK_DRIFT` として STOP。記録基点がtarget履歴から失われた `BASE_REWRITE` も STOP。
-4. ユーザーが指定した統合先ブランチをclone-local設定へ記録する: `git config --local aot.authorizedBranch <branch>`。
-   - この設定の新規作成・変更は、ユーザーが作業ブランチを明示した場合に限る。
-5. ファイル編集前に `python scratch/pre_write_linter.py` を実行し、`GIT001` が出た場合は作業を開始せずユーザーへ確認する。
+4. ユーザーが承認した**統合先ブランチ**を `aot.authorizedBranch` として記録する。TASK/ISOLATEDでは、worktreeごとに異なる統合先を安全に扱うため、`extensions.worktreeConfig=true` を確認してから `git config --worktree aot.authorizedBranch <target>` を使用する。DIRECTでもworktree固有設定を利用できる場合は同方式を優先する。
+   - `aot.authorizedBranch` は **TASKブランチ名ではなく統合先**（例: `AoT261110`）である。TASKの実作業ブランチは別の `aot.authorizedTaskBranch` に記録する。
+   - 共有設定の `aot.authorizedBranch=main` が新しいworktreeに継承されても、最新のユーザー承認が `AoT261110` なら、当該TASK worktree内で `aot.authorizedBranch=AoT261110` をworktree-localに記録する。共有設定や他worktreeの値は変更しない。
+   - 設定の新規作成・変更は、ユーザーが統合先と作業TASKを明示的に承認している場合に限る。承認のないブランチを認可するために値を書き換えてはならない。
+   - `git config --show-origin --show-scope --get-all aot.authorizedBranch` 等で設定の出所・有効値を検証する。
+5. ファイル編集前に `python scratch/pre_write_linter.py` を実行する。`GIT001` が出た場合は作業を停止し、現在ブランチ・認可設定・基点SHA・upstreamを照合する。承認済みの値のworktree-localな初期化漏れと確認できた場合のみ§2.2に従って是正し、再実行でPASSを確認する。不一致の理由が不明、またはユーザー承認が不足する場合は停止してユーザーへ確認する。Linterの無効化・迂回は禁止する。
 
 ### 2.2 作業モード（DIRECT / ISOLATED / TASK）
 - **DIRECT**: 小規模な単独作業用。`aot.authorizedBranch` と同名の `origin/<branch>` を追跡する統合先ブランチで直接作業する。
@@ -41,10 +44,18 @@
 - **TASK（並行作業の既定）**: 統合対象となる短命作業用。`aot-task/<target>/<domain>/<task-id>` を最新 `origin/<target>` から別worktreeに作成する。
 - ブランチ／worktreeの作成はユーザーがそのタスクを承認した場合に限る。lintは検証のみを行い、作成・同期・統合・削除を実行しない。
 - 複数worktreeの認可情報を衝突させないため、`extensions.worktreeConfig=true` を使用し、モード固有値は `git config --worktree` へ記録する。
+  - `aot.authorizedBranch=<user-authorized target>`（例: `AoT261110`。TASKの作業ブランチではない）
   - `aot.workMode=DIRECT|ISOLATED|TASK`
   - `aot.authorizedWorkBranch=<ISOLATED branch>`
   - `aot.authorizedTaskBranch=<TASK branch>`
   - `aot.authorizedBaseCommit=<verified origin target HEAD>`
+- TASK worktree初期化では、基点を検証した後、**そのworktree内で**少なくとも以下を設定・照合する（`<target>`・`<task>`・`<base-sha>` は実際に承認・検証した値）。
+  1. `git config --worktree aot.authorizedBranch <target>`
+  2. `git config --worktree aot.workMode TASK`
+  3. `git config --worktree aot.authorizedTaskBranch <task>`
+  4. `git config --worktree aot.authorizedBaseCommit <base-sha>`
+  5. `git config --show-origin --show-scope --get-all aot.authorizedBranch` と各 `aot.*` の有効値を確認後、`python scratch/pre_write_linter.py` を実行する。
+- これらは**既にユーザーが認可したTASKの設定を正しく反映する手順**であり、未承認のTASK作成・ブランチ切替・Pushを許可するものではない。既存の誤設定を修正する際も共有 `--local` / `--global` 設定を変更しない。
 - TASKは初回push前のみupstreamなしを許容する。push後は同名の `origin/aot-task/...` だけを追跡でき、`origin/<target>` をupstreamにしてはならない。
 
 ### 2.3 TASK ライフサイクルと統合キュー
