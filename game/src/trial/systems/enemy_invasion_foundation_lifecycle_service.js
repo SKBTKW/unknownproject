@@ -1,5 +1,6 @@
 import { EnemyActivityDirectionSnapshot } from '../domain/enemy_activity_direction_snapshot.js';
 import { EnemyInvasionPlan } from '../domain/enemy_invasion_plan.js';
+import { EnemyForceConsolidationSnapshot } from '../domain/enemy_force_consolidation_snapshot.js';
 import {
     freezeEnemyInvasionFoundationState,
     readEnemyInvasionFoundationState
@@ -77,6 +78,29 @@ export class EnemyInvasionFoundationLifecycleService {
             entry.stageId === stageId && entry.armyId === armyId
         );
         return value ? EnemyInvasionPlan.fromSnapshot(value) : null;
+    }
+
+    registerConsolidation(value) {
+        const candidate = EnemyForceConsolidationSnapshot.fromSnapshot(
+            value instanceof EnemyForceConsolidationSnapshot ? value.getSnapshot() : value
+        ).getSnapshot();
+        const state = this.getSnapshot();
+        const result = registerImmutable(state.consolidations, candidate, 'CONSOLIDATION');
+        this.#gameState.enemyInvasionFoundationState = freezeEnemyInvasionFoundationState({
+            ...state,
+            consolidations: result.values
+        });
+        return {
+            registered: result.registered,
+            consolidation: EnemyForceConsolidationSnapshot.fromSnapshot(result.value)
+        };
+    }
+
+    getConsolidation(stageId, armyId) {
+        const value = this.getSnapshot().consolidations.find(entry =>
+            entry.stageId === stageId && entry.armyId === armyId
+        );
+        return value ? EnemyForceConsolidationSnapshot.fromSnapshot(value) : null;
     }
 
     getSnapshot() { return readEnemyInvasionFoundationState(this.#gameState); }
