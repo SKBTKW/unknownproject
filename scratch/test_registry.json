@@ -52,6 +52,11 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_enemy_invasion_investigation_foundation.mjs",
+      "purpose": "Deterministic enemy invasion entry, source-force identity observations and persistence foundation",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_enemy_army_blueprint_stage_first_run.mjs",
       "purpose": "Canonical FirstRun with Stage adapter, immutable Stage1 blueprint and no Stage2 generation",
       "suite": "supplemental"

@@ -8,14 +8,17 @@ export function createObservableEnemyProfile({
     movementTraits = [],
     terrainTraits = []
 } = {}) {
+    const copyValues = values => values.map(value =>
+        value && typeof value === 'object' ? structuredClone(value) : value
+    );
     return {
         trialIndex,
         threatRevision,
-        directionHints: [...directionHints],
+        directionHints: copyValues(directionHints),
         scaleBand,
-        physiqueTraits: [...physiqueTraits],
-        equipmentTraits: [...equipmentTraits],
-        movementTraits: [...movementTraits],
-        terrainTraits: [...terrainTraits]
+        physiqueTraits: copyValues(physiqueTraits),
+        equipmentTraits: copyValues(equipmentTraits),
+        movementTraits: copyValues(movementTraits),
+        terrainTraits: copyValues(terrainTraits)
     };
 }
