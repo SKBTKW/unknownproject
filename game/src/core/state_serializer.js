@@ -41,6 +41,7 @@ export function serializeGameState(state) {
             ? { enemyArmyTraitProvenanceState: provenanceState }
             : {}),
         ...(invasionState?.directionSnapshots.length || invasionState?.plans.length
+            || invasionState?.consolidations.length
             ? { enemyInvasionFoundationState: invasionState }
             : {}),
         isGameOver: !!state?.isGameOver,
