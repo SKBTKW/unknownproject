@@ -62,16 +62,16 @@
 1. `git fetch origin <target>` 後の `origin/<target>` SHAを基点として記録し、専用worktreeを作る。
 2. 作業開始前に、Task ID、担当、目的、対象ファイル、共有ファイル、対象外を申告する。
 3. タスク外の修正を混ぜない。本番変更とテスト基盤修正は意味単位でコミットを分ける。
-4. focused test後、未追跡・未コミットファイルのないcleanなTASK worktreeでFull Inspectionを実行する。
+4. focused test後、未追跡・未コミットファイルのないcleanなTASK worktreeでFull Inspectionを実行する。ローカル実行は原則 `node scratch/run_full_inspection_quiet.mjs` を用い、成功時は要約と検査証跡だけを会話へ返す。詳細ログはリポジトリ外へ保存し、失敗時だけ末尾を表示する。
 5. タスクブランチpush後は統合キューで `READY / WAITING_FOR_BASE_UPDATE / CONFLICT / TEST_FAILED / APPROVED / MERGED` のいずれかを管理する。
 6. 通常作業では `scratch/task_health.mjs` によりTARGET_DRIFTと重なりを観測する。TARGET_DRIFTだけで作業を停止しない。shared surfaceまたはcontract overlapは後続統合のreconciliation対象として記録する。
 7. 統合直前に `node scratch/task_health.mjs --integration-ready` でremote refsを最新化できることを確認し、続けて `python scratch/pre_write_linter.py --integration-ready` でTASKが最新 `origin/<target>` を包含していることを確認する。含まれなければ当該TASKだけを `WAITING_FOR_BASE_UPDATE` とする。
 8. 本流が進んでいた場合、通常作業中の他TASKを止めない。統合順が来たTASKだけ最新本流とreconcileし、全検査を再実行する。Integration Guardがpeer overlapまで確認して独立READYと判定したTASKは、別のREVIEW_REQUIRED / BLOCKED TASKが存在してもそのTASK単体の統合を妨げない。
 9. 統合可否の機械判定SSOTは Merge Decision Proof とする。Proofは対象target SHA、TASK SHA、PR head/base、clean merge preview、PR Full Inspection SUCCESSへ固定し、正常系に人手の再判定を追加しない。人間の判断はREVIEW_REQUIRED / BLOCKED / reconcileが必要な例外へ集中させる。統合実行そのものには従来どおり明示的な統合承認を必要とする。
-10. 統合担当者は同時に一人とし、READY Proofを持つTASKを一件ずつ原則squash mergeする。このsquash原則は **TASK → AoT統合ブランチ** に限り、**AoT統合ブランチ → main** には適用しない。統合後は対象ブランチ上のFull Inspection SUCCESSとmerged PR head SHA一致を確認する。
+10. 統合担当者は同時に一人とし、READY Proofを持つTASKを一件ずつ原則squash mergeする。このsquash原則は **TASK → AoT統合ブランチ** に限り、**AoT統合ブランチ → main** には適用しない。統合後は対象ブランチ上のFull Inspection SUCCESSとmerged PR head SHA一致を確認する。ただし §8.4 の検査証跡再利用ゲートが `READY` となり、統合先でpre-write lintと当該TASKのfocused smokeが合格した場合、同一コードに対する2回目のローカルFull Inspectionは省略できる。統合先push後CIのFull Inspectionは省略しない。
 11. Merge Decision Proofと統合後検査が成立し、TASK headがProof生成時から動いておらず、TASK worktreeもcleanである場合、TASK remote branch / worktree / local branchを同じ統合ライフサイクル内で自動削除する。移動・dirty・lockなどの齟齬があれば削除だけを停止する。Task Sweeperはクラッシュ、手動merge、cleanup途中失敗、過去残骸の復旧用とする。未統合ブランチの強制削除を禁止する。
 - `AGENTS.md`、`game/src/i18n.js`、`layout_config.js`、GameEngine、共通JSON、統合テストなどの共有ファイルは同時編集を避け、統合順を先に決める。
-- TASK branchへのpush承認と、統合先branchへのpush承認は別の承認として扱う。
+- TASK branchへのpush承認と、統合先branchへのpush承認は原則別の承認として扱う。ただし §10.3 の条件付き一括承認が成立している場合に限り、二つの承認を事前に一括付与できる。
 
 ### 2.4 ブランチ・履歴保全
 - 指定・認可されたモード以外のブランチを勝手に作成・切り替えてはならない。
@@ -212,6 +212,23 @@ AoT のドメインロジックにおいて、以下の異なる概念を同一�
 あらゆる作業の最終完了時に実行する一方向パイプライン。
 - `Layer 1: Static Lint` ➔ `Layer 2: Spec Assertions` ➔ `Layer 3: Domain Unit Tests` ➔ `Layer 4: Trial Tests` ➔ `Layer 5: UI Lifecycle Tests` ➔ `Layer 6: Integration & Settlement Tests` を順次実行し、全レイヤーの合格を確認する。
 - TASKの統合判定に使うFull Inspectionは、対象TASK以外の未コミット差分や未追跡ファイルが存在しない専用worktreeで実行する。dirtyな統合先worktreeの結果を代用してはならない。
+- ローカルでは `node scratch/run_full_inspection_quiet.mjs` を標準入口とする。検査本体は変更せず、成功時はLayer要約・件数・所要時間・Receiptパスだけを出力する。詳細ログとReceiptはOS一時ディレクトリ等の**リポジトリ外**へ保存する。
+- quiet runnerの終了コードは検査本体とclean-tree検証を反映する。失敗時は失敗末尾と詳細ログパスを表示し、ログ抑制をPASS扱いの根拠にしてはならない。CIは従来どおり検査本体を直接実行して詳細ログを保持する。
+
+### 8.4 Full Inspection検査証跡と同一tree再利用
+- quiet runnerは、TASK HEAD SHA / tree SHA、統合先remote SHA、Node.js・OS・arch、runner hash、test registry hash、依存lock hash、検査件数、実行時刻を含むReceiptを生成する。
+- squash統合後に `node scratch/verify_full_inspection_reuse.mjs --receipt <receipt> --source-ref <task-ref> --integration-ref HEAD` を実行し、次をすべて満たす場合だけ2回目のローカルFull Inspectionをfocused smokeへ縮小できる。
+  1. ReceiptがcleanなFull Inspection PASSで、既定24時間以内である。
+  2. 検査済みTASK headが移動しておらず、TASK treeと統合後treeが一致する。
+  3. 記録済み統合先remote SHAが変化していない。
+  4. Node.js・OS・arch、runner、test registry、依存lockが一致する。
+  5. 統合先worktreeがcleanである。
+- 再利用ゲートが `BLOCKED` の場合は理由を隠さず、統合後Full Inspectionを通常どおり実行する。tree一致は実ブラウザ確認やCI結果を代替しない。
+- 再利用が `READY` でも、統合先で `pre_write_linter.py` と当該TASKのfocused smokeを再実行する。統合先push後CIのFull Inspectionは必須である。
+
+### 8.5 Git preflight要約
+- 状態確認の標準入口として `node scratch/quota_efficient_git_preflight.mjs --target <target> --task <task>` を利用できる。このスクリプトはstatus、SHA、merge-base、target包含、tree、差分統計を要約するread-only検査であり、fetch・push・merge・reset・branch切替を実行しない。
+- remote鮮度が必要な場合は、従来どおり明示的な `git fetch` を先に行う。状態確認と状態変更を同じ隠れた処理へ混在させない。
 
 ---
 
@@ -235,6 +252,11 @@ AoT のドメインロジックにおいて、以下の異なる概念を同一�
 - ユーザーからの指示・質問を受けた際は、AI が勝手に先走って無言でツール実行やファイル修正のループに没頭することを禁止する。
 - まずユーザーの発言を 100% 最優先で受け止め、直接の回答・方針説明を行ってから作業を進めること。
 
+### 9.5 クォータ効率と報告の既定
+- 成功時のチャット報告は、結論、対象branch/SHA、差分統計、検査要約、未検証事項、停止条件だけを既定とする。詳細な実装表・比較表・全ログは要求された場合または判断に必要な場合だけ展開する。
+- 詳細ログや機械可読Receiptはファイルへ保存し、チャットへ全文を貼り付けない。ただし失敗理由、警告、既知問題、承認判断に必要な差分は省略しない。
+- 60秒を超える処理では簡潔な進捗を伝えるが、状態が変化していない同一内容を反復しない。
+
 ---
 
 ## 10. 🔒 Push 承認ゲート実行手順 (Push Gate Protocol)
@@ -257,7 +279,21 @@ Push を提案する際は、必ず以下の情報をユーザーへ完全提示
 - 既知の制約: <none または列挙>
 ```
 
+条件付き一括承認を提案する場合は、上記に加えてTASK push先、統合先、検査済みTASK head/tree、予定する統合方式、統合コミットメッセージ案、承認失効条件を一度に提示する。まだ存在しないsquash commit SHAを推測してはならず、代わりに検査済みtree SHAへ承認を固定する。
+
 ### 10.2 機械的承認ゲート
 - ユーザーの直前発言に「push」の明示的文字列が含まれていない場合、システム的に `git push` コマンドの発行を自動拒否する。
 - いかなる緊急時であっても、ユーザーの明示承認なしに Push を強行してはならない。
-- TASK branchへのpush承認は統合先へのpushを許可しない。統合先への反映には、統合差分と統合後検査結果を提示した別の明示承認が必要である。
+- 通常のTASK branchへのpush承認は統合先へのpushを許可しない。統合先への反映には、統合差分と統合後検査結果を提示した別の明示承認が必要である。§10.3の条件付き一括承認だけを例外とする。
+
+### 10.3 条件付き一括承認
+- ユーザーがPush事前確認を受けた後、「このTASKをpushして、全検査成功・競合なし・driftなしなら `<target>` へ統合してpush」等、**TASK pushと統合先pushの両方を対象branch付きで明示**した場合、二つのPush承認を条件付きで事前付与したものとして扱える。単なる「push」「統合」「問題なければ進めて」は一括承認と見なさない。
+- 一括承認は承認時のTASK head SHA / tree SHA、統合先remote SHA、差分範囲、統合方式、コミットメッセージ案、送信先remoteに固定する。許可される操作はTASK push、必要なPR作成、検査、承認済み方式での統合、統合先pushに限る。
+- 以下を**承認失効条件**とし、一つでも発生した場合は統合先pushを行わず停止して再承認を求める。
+  1. TASK head/treeまたは統合先remote SHAの変化。
+  2. 競合、想定外の差分、scope逸脱、未コミット／未追跡ファイル。
+  3. focused test、Full Inspection、Merge Decision Proof、再利用ゲート、統合前に取得可能な必要CIの失敗・未確認。
+  4. PR head/base、remote、統合方式、コミットメッセージの意味的変更。
+  5. 検査環境fingerprintまたは依存lockの変化。
+- 正常系では、条件付き承認後に同じ内容を再提示して二度目の承認を要求しない。統合後は実際のcommit SHA、remote HEAD一致、検査／CI結果、Receiptを短く報告する。
+- 条件付き一括承認は承認の省略ではなく、検証条件に固定した二つの事前承認である。force push、rebase、未承認の競合解消、別branchへのpush、失敗した検査の無視を許可しない。
