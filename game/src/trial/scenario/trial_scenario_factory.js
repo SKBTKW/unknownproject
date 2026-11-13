@@ -51,6 +51,7 @@ export class TrialScenarioFactory {
         developmentSnapshotService = new CivilizationDevelopmentSnapshotService(),
         threatResolver = new TrialThreatResolver(),
         enemyTruthReadModel = null,
+        enemyParticipationAdapter = null,
         armyStructureResolver = null,
         ingressResolver = null,
         routeGenerator = null,
@@ -62,6 +63,7 @@ export class TrialScenarioFactory {
         this.developmentSnapshotService = developmentSnapshotService;
         this.threatResolver = threatResolver;
         this.enemyTruthReadModel = enemyTruthReadModel;
+        this.enemyParticipationAdapter = enemyParticipationAdapter;
         this.armyStructureResolver = armyStructureResolver;
         this.ingressResolver = ingressResolver;
         this.routeGenerator = routeGenerator;
@@ -87,8 +89,30 @@ export class TrialScenarioFactory {
             return { success: false, errors: [TRIAL_SCENARIO_BUILD_REASONS.THREAT_UNRESOLVED] };
         }
 
+        const ingressCandidates = this.ingressResolver?.listCandidates?.({ gameState }) || [];
+        let enemyParticipation = null;
+        try {
+            enemyParticipation = this.enemyParticipationAdapter?.resolve?.({
+                gameState,
+                trialIndex,
+                strategicSuppression: enemySuppression,
+                ingressCandidates
+            }) ?? null;
+        } catch (error) {
+            return {
+                success: false,
+                errors: [TRIAL_SCENARIO_BUILD_REASONS.ENEMY_PARTICIPATION_UNRESOLVED],
+                diagnostics: { enemyParticipationError: error?.message || String(error) }
+            };
+        }
         const armyStructure = cloneData(
-            truth?.armyStructure
+            enemyParticipation ? {
+                strategicSuppression: enemySuppression,
+                forceCount: enemyParticipation.participantCount,
+                routeCount: enemyParticipation.participantCount,
+                commander: null,
+                forces: enemyParticipation.forces
+            } : truth?.armyStructure
             ?? this.armyStructureResolver?.resolve?.({
                 strategicSuppression: enemySuppression,
                 trialIndex,
@@ -111,7 +135,12 @@ export class TrialScenarioFactory {
             armyStructure
         };
 
-        const ingresses = this.ingressResolver.resolve(context);
+        const ingresses = enemyParticipation
+            ? enemyParticipation.forces.map(force => {
+                const candidate = ingressCandidates.find(entry => entry.id === force.ingressId);
+                return candidate ? cloneData(candidate) : null;
+            }).filter(Boolean)
+            : this.ingressResolver.resolve(context);
         if (!Array.isArray(ingresses) || ingresses.length === 0) {
             return { success: false, errors: [TRIAL_SCENARIO_BUILD_REASONS.INGRESS_UNRESOLVED] };
         }
@@ -157,13 +186,15 @@ export class TrialScenarioFactory {
                 ?? fallbackCommander
             ),
             forces: cloneData(
-                Array.isArray(truth?.forces) && truth.forces.length > 0
+                enemyParticipation ? enemyParticipation.forces
+                    : Array.isArray(truth?.forces) && truth.forces.length > 0
                     ? truth.forces
                     : (Array.isArray(armyStructure?.forces) && armyStructure.forces.length > 0
                         ? armyStructure.forces
                         : fallbackForces)
             ),
-            environment: cloneData(this.environmentResolver?.resolve?.(context) ?? {})
+            environment: cloneData(this.environmentResolver?.resolve?.(context) ?? {}),
+            enemyParticipation: cloneData(enemyParticipation)
         };
 
         return {
@@ -174,6 +205,7 @@ export class TrialScenarioFactory {
                 threat: cloneData(threat),
                 enemyTruth: cloneData(truth),
                 armyStructure: cloneData(armyStructure),
+                enemyParticipation: cloneData(enemyParticipation),
                 ingresses: cloneData(ingresses)
             }
         };

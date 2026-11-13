@@ -34,6 +34,7 @@ const defaultPolicyAttached = attachTrialLaunchSubsystem(defaultPolicyEngine, ui
     enemyTruthReadModel: truth
 });
 assert.equal(defaultPolicyAttached.success, true);
+assert.equal(defaultPolicyAttached.enemyParticipationAdapter, null);
 assert.equal(typeof defaultPolicyAttached.routeCostPolicy?.resolve, "function");
 assert.equal(defaultPolicyEngine.trialLaunchRouteCostPolicy, defaultPolicyAttached.routeCostPolicy);
 
@@ -63,7 +64,35 @@ const repeated = attachTrialLaunchSubsystem(engine, ui, {
 assert.equal(repeated.success, true);
 assert.equal(repeated.alreadyAttached, true);
 assert.equal(repeated.coordinator, attached.coordinator);
+assert.equal(repeated.enemyParticipationAdapter, null);
 assert.equal(repeated.retryPendingTrialLaunch, engine.retryPendingTrialLaunch);
+
+const participationPolicyEngine = baseEngine();
+const participationPolicyAttached = attachTrialLaunchSubsystem(participationPolicyEngine, ui, {
+    enemyTruthReadModel: truth,
+    enemyParticipationPolicy: {
+        enabled: true,
+        id: "bootstrap-test-policy",
+        version: 1,
+        stageId: 1,
+        trialIndex: 1,
+        sourceDisposition: "CONSOLIDATE_ALL_SOURCES",
+        runtimeProfileSource: "PRIMARY_SOURCE",
+        participantBands: [
+            { participantCount: 1, minInclusive: 0, maxExclusive: 10 },
+            { participantCount: 2, minInclusive: 10, maxExclusive: 20 },
+            { participantCount: 3, minInclusive: 20, maxExclusive: null }
+        ],
+        sourceWeights: { A: 3, B: 2, C: 1 },
+        ingressDirectionPriority: ["NORTH", "EAST", "SOUTH", "WEST"]
+    }
+});
+assert.equal(participationPolicyAttached.success, true);
+assert.ok(participationPolicyAttached.enemyParticipationAdapter);
+assert.equal(
+    participationPolicyEngine.trialLaunchEnemyParticipationAdapter,
+    participationPolicyAttached.enemyParticipationAdapter
+);
 
 const activeUi = {
     ...ui,
