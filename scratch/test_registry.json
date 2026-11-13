@@ -2,6 +2,26 @@
   "schemaVersion": 1,
   "tests": [
     {
+      "path": "scratch/test_full_inspection_quiet_runner.mjs",
+      "purpose": "Quiet Full Inspection summary, external log boundary and metric extraction contract",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_full_inspection_reuse.mjs",
+      "purpose": "Full Inspection receipt reuse fails closed on tree, target, environment, runner or cleanliness drift",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_quota_efficient_git_preflight.mjs",
+      "purpose": "Read-only compact Git preflight statistics and no-mutation contract",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_quota_efficient_workflow_contract.mjs",
+      "purpose": "Quota-efficient workflow policy, conditional approval, external logs and reuse gate contract",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_stage1_threat_participation_policy_comparison_v1.mjs",
       "purpose": "Eight-seed Stage1 standard-board prototype policy, participant boundary, interception and Ember damage comparison",
       "suite": "supplemental"
