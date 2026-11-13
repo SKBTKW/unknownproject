@@ -31,7 +31,10 @@ export function isPathInside(parentPath, candidatePath) {
 }
 
 export function parseInspectionMetrics(output) {
-    const match = (pattern) => output.match(pattern)?.slice(1).map(Number) || null;
+    const match = (pattern) => {
+        const matches = [...output.matchAll(new RegExp(pattern.source, `${pattern.flags}g`))];
+        return matches.at(-1)?.slice(1).map(Number) || null;
+    };
     const supplemental = match(/Executed:\s*(\d+);\s*PASS:\s*(\d+);\s*non-PASS:\s*(\d+)/);
     const ui = match(/UI検問結果:\s*(\d+)\s*PASS\s*\/\s*(\d+)\s*FAIL/);
     const stage1E2E = match(/Stage1 E2E audit checks:\s*(\d+)\s*PASS\s*\/\s*(\d+)\s*FAIL/);

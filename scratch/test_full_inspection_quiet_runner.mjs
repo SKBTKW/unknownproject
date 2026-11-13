@@ -8,6 +8,7 @@ import {
 } from './run_full_inspection_quiet.mjs';
 
 const sample = `
+Executed: 0; PASS: 0; non-PASS: 0; not run: 312.
 UI検問結果: 188 PASS / 0 FAIL
 Executed: 108; PASS: 108; non-PASS: 0; not run: 203.
 Stage1 E2E audit checks: 131 PASS / 0 FAIL
