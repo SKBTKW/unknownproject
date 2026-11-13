@@ -2163,6 +2163,11 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_stage1_tactical_decision_causal_impact_v1.mjs",
+      "purpose": "Stage1 tactical decision, interception location, defense allocation, enemy profile, investigation scope and Fact/Cause/Consequence impact audit",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_baseline_economy.mjs",
       "purpose": "Shared economy baseline, Stage2/3 HQ retention and restored tooltip breakdown parity",
       "suite": "existing",
