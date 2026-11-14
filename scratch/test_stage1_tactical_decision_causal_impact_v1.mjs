@@ -69,6 +69,8 @@ const misleading = report.natural
 assert.ok(misleading);
 assert.equal(misleading.causes.includes("TERRAIN_ADVANTAGE"), true);
 assert.equal(misleading.emberDamage, 21);
+assert.equal(misleading.normalOutcome.favorableCauses.includes("TERRAIN_ADVANTAGE"), false);
+assert.equal(misleading.normalOutcome.dangerCauses.includes("TERRAIN_ADVANTAGE"), true);
 
 const deterministicA = runStage1TacticalDecisionCausalImpactAudit({ seeds: [20260920] });
 const deterministicB = runStage1TacticalDecisionCausalImpactAudit({ seeds: [20260920] });

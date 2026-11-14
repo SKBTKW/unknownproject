@@ -4,6 +4,7 @@ import {
     BATTLE_CAUSE_TYPES,
     BATTLE_CONSEQUENCE_TYPES
 } from "../domain/battle_causality_types.js";
+import { MODIFIER_TARGETS } from "../domain/trial_types.js";
 
 const ROUGH_TERRAIN_FACTS = new Set([
     BATTLE_FACT_TYPES.TERRAIN_FOREST,
@@ -122,24 +123,30 @@ export class BattleCausalityResolver {
             }));
         }
 
-        const terrainAdvantageFacts = byType(facts, BATTLE_FACT_TYPES.HIGH_GROUND);
-        const favorableTerrainModifier = (battlefieldContext.combat?.appliedModifiers || []).some(row => {
-            const before = Number(row?.before);
-            const after = Number(row?.after);
-            if (!Number.isFinite(before) || !Number.isFinite(after)) return false;
-            return row.target === "HUMAN_INTERCEPTION"
-                ? after > before
-                : row.target === "ENEMY_SUPPRESSION" && after < before;
-        });
-        if (terrainAdvantageFacts.length > 0 || favorableTerrainModifier) {
+        const terrainAdvantageFacts = byType(facts, BATTLE_FACT_TYPES.HIGH_GROUND)
+            .filter(row => row?.payload?.applied === true);
+        for (const terrainFact of terrainAdvantageFacts) {
+            const beneficiary = terrainFact.payload?.beneficiary;
+            const humanAdvantage = beneficiary === "HUMAN"
+                && terrainFact.payload?.modifierTarget === MODIFIER_TARGETS.HUMAN_INTERCEPTION;
+            const enemyAdvantage = beneficiary === "ENEMY"
+                && terrainFact.payload?.modifierTarget === MODIFIER_TARGETS.ENEMY_SUPPRESSION;
+            if (!humanAdvantage && !enemyAdvantage) continue;
+
             causes.push(cause(BATTLE_CAUSE_TYPES.TERRAIN_ADVANTAGE, {
-                facts: terrainAdvantageFacts,
+                facts: [terrainFact],
                 actions,
-                tags: ["FAVORABLE", "TERRAIN"],
+                target: humanAdvantage ? "ENEMY_FORCE" : "HUMAN_FORCE",
+                tags: humanAdvantage
+                    ? ["FAVORABLE", "TERRAIN"]
+                    : ["DANGER", "UNFAVORABLE", "TERRAIN"],
                 payload: {
-                    modifierSources: (battlefieldContext.combat?.appliedModifiers || [])
-                        .map(row => row?.source)
-                        .filter(Boolean)
+                    beneficiary,
+                    polarity: humanAdvantage ? "FAVORABLE" : "UNFAVORABLE",
+                    modifierTarget: terrainFact.payload.modifierTarget,
+                    modifierSource: "HIGH_GROUND",
+                    before: terrainFact.payload.before,
+                    after: terrainFact.payload.after
                 },
                 index: causes.length
             }));
