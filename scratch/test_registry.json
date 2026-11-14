@@ -2168,6 +2168,11 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_mixed_force_evaluation_foundation_v1.mjs",
+      "purpose": "Opt-in mixed-force terrain evaluation comparing production PRIMARY_SOURCE, independent marginals and explicit joint hypotheses without inventing species-equipment truth",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_baseline_economy.mjs",
       "purpose": "Shared economy baseline, Stage2/3 HQ retention and restored tooltip breakdown parity",
       "suite": "existing",
