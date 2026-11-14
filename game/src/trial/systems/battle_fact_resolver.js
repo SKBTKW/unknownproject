@@ -1,4 +1,8 @@
 import { BATTLE_FACT_TYPES } from "../domain/battle_causality_types.js";
+import {
+    MODIFIER_TARGETS,
+    TRIAL_TERRAIN_EFFECTS
+} from "../domain/trial_types.js";
 
 const TERRAIN_FACTS = Object.freeze({
     GL2_FOREST: BATTLE_FACT_TYPES.TERRAIN_FOREST,
@@ -20,8 +24,49 @@ function pushTerrainFact(facts, cell, role) {
     if (type) facts.push(fact(type, { role, terrainId: cell.terrainId, cellId: cell.cellId || null }, ["TERRAIN"]));
 }
 
-function hasHighGround(context) {
-    return (context.combat?.appliedModifiers || []).some(row => row?.source === "HIGH_GROUND");
+function highGroundFact(context) {
+    const interceptElevation = Number(context.interceptTerrain?.elevation);
+    const approachElevation = Number(context.approachTerrain?.elevation);
+    if (!Number.isFinite(interceptElevation)
+        || !Number.isFinite(approachElevation)
+        || interceptElevation === approachElevation) {
+        return null;
+    }
+
+    const modifier = (context.combat?.appliedModifiers || [])
+        .find(row => row?.source === TRIAL_TERRAIN_EFFECTS.HIGH_GROUND);
+    const target = modifier?.target || null;
+    const beneficiary = target === MODIFIER_TARGETS.HUMAN_INTERCEPTION
+        ? "HUMAN"
+        : target === MODIFIER_TARGETS.ENEMY_SUPPRESSION
+            ? "ENEMY"
+            : null;
+    const applied = beneficiary !== null;
+    const polarity = beneficiary === "HUMAN"
+        ? "FAVORABLE"
+        : beneficiary === "ENEMY"
+            ? "UNFAVORABLE"
+            : "NEUTRAL";
+
+    return fact(BATTLE_FACT_TYPES.HIGH_GROUND, {
+        interceptElevation,
+        approachElevation,
+        higherSide: interceptElevation > approachElevation ? "HUMAN" : "ENEMY",
+        applied,
+        beneficiary,
+        polarity,
+        modifierTarget: target,
+        before: Number.isFinite(Number(modifier?.before)) ? Number(modifier.before) : null,
+        after: Number.isFinite(Number(modifier?.after)) ? Number(modifier.after) : null
+    }, [
+        "TERRAIN",
+        applied ? "APPLIED" : "OBSERVATION",
+        ...(polarity === "FAVORABLE"
+            ? ["FAVORABLE"]
+            : polarity === "UNFAVORABLE"
+                ? ["UNFAVORABLE", "DANGER"]
+                : [])
+    ]);
 }
 
 export class BattleFactResolver {
@@ -30,12 +75,8 @@ export class BattleFactResolver {
         pushTerrainFact(facts, context.interceptTerrain, "INTERCEPT");
         pushTerrainFact(facts, context.approachTerrain, "APPROACH");
 
-        if (hasHighGround(context)) {
-            facts.push(fact(BATTLE_FACT_TYPES.HIGH_GROUND, {
-                interceptElevation: context.interceptTerrain?.elevation ?? null,
-                approachElevation: context.approachTerrain?.elevation ?? null
-            }, ["TERRAIN", "FAVORABLE"]));
-        }
+        const highGround = highGroundFact(context);
+        if (highGround) facts.push(highGround);
 
         if (context.enemy?.bodySize === "LARGE") {
             facts.push(fact(BATTLE_FACT_TYPES.ENEMY_LARGE_BODY, {}, ["ENEMY_PROFILE"]));
