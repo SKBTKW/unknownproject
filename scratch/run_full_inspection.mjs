@@ -506,6 +506,7 @@ async function main() {
         ["Enemy army structure", "node", ["game/src/trial/dev/diagnose_enemy_army_structure.mjs"]],
         ["Enemy force deployment", "node", ["game/src/trial/dev/diagnose_enemy_force_deployment.mjs"]],
         ["Enemy force reserve progression", "node", ["game/src/trial/dev/diagnose_enemy_force_reserve_progression.mjs"]],
+        ["Stage1 reserve / repel causality & advancement audit v1", "node", ["scratch/test_stage1_reserve_repel_causality_advancement_v1.mjs"]],
         ["Enemy force terrain interaction", "node", ["game/src/trial/dev/diagnose_enemy_force_terrain_interaction.mjs"]],
         ["Enemy tactic resolver", "node", ["game/src/trial/dev/diagnose_enemy_tactic_resolver.mjs"]],
         ["Enemy tactic selection", "node", ["game/src/trial/dev/diagnose_enemy_tactic_selection.mjs"]],

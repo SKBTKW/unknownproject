@@ -1294,6 +1294,14 @@
       ]
     },
     {
+      "path": "scratch/test_stage1_reserve_repel_causality_advancement_v1.mjs",
+      "purpose": "Stage1 reserve force, local REPEL, route stop, HQ arrival, causality and restore-boundary audit",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_stage1_resource_sink_budget_probe.mjs",
       "purpose": "Reverse-budget Stage1 pre-Trial and Deployment spend bands against the current AoT260924 Verse15 baseline envelope",
       "suite": "existing",
