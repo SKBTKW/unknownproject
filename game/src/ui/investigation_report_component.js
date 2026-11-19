@@ -10,6 +10,20 @@ function appendText(parent, tagName, className, text) {
     return node;
 }
 
+// The report renderer supplies the observation's semantic facet. Emphasize the
+// observed value, never an inferred enemy purpose or an unobserved conclusion.
+// Rendering uses textContent, not HTML interpolation, to keep reports inert.
+const EMPHASIZED_OBSERVATION_FACETS = new Set([
+    "DIRECTION", "SCALE", "PHYSIQUE", "EQUIPMENT", "MOVEMENT", "TERRAIN"
+]);
+
+function appendObservationValue(parent, observation) {
+    const emphasized = EMPHASIZED_OBSERVATION_FACETS.has(observation?.facet);
+    return appendText(parent, emphasized ? "strong" : "span",
+        emphasized ? "investigation-report-observation-value investigation-report-fact-emphasis"
+            : "investigation-report-observation-value", observation?.value);
+}
+
 export class InvestigationReportComponent {
     constructor({ i18n = I18n } = {}) {
         this.i18n = i18n;
@@ -80,7 +94,7 @@ export class InvestigationReportComponent {
                 const row = document.createElement("div");
                 row.className = "investigation-report-observation";
                 appendText(row, "span", "investigation-report-observation-status", observation.statusLabel);
-                appendText(row, "span", "investigation-report-observation-value", observation.value);
+                appendObservationValue(row, observation);
                 group.appendChild(row);
             }
             panel.appendChild(group);
