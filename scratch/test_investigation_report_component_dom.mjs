@@ -166,6 +166,7 @@ const presentation = {
                 label: "接近・移動",
                 observations: [
                     {
+                        facet: "DIRECTION",
                         statusLabel: "新たに判明",
                         value: "北方で活動の痕跡がある"
                     }
@@ -175,6 +176,7 @@ const presentation = {
                 label: "敵の特徴",
                 observations: [
                     {
+                        facet: "PHYSIQUE",
                         statusLabel: "確認が取れた",
                         value: "大柄な個体が含まれる"
                     }
@@ -200,6 +202,13 @@ assert.equal(panel.findByClass("investigation-report-roll").textContent, "観測
 assert.equal(panel.findAllByClass("investigation-report-group").length, 2);
 assert.equal(panel.findAllByClass("investigation-report-observation").length, 2);
 assert.equal(panel.findByClass("investigation-report-narrative"), null);
+const highlightedFacts = panel.findAllByClass("investigation-report-fact-emphasis");
+assert.equal(highlightedFacts.length, 2, "known semantic observation facets must be emphasized");
+assert.ok(highlightedFacts.every(node => node.tagName === "STRONG"));
+assert.equal(highlightedFacts[0].textContent, "北方で活動の痕跡がある");
+assert.equal(highlightedFacts[1].textContent, "大柄な個体が含まれる");
+assert.equal(panel.findAllByClass("investigation-report-observation-status").length, 2,
+    "observation status and epistemic certainty must remain visible");
 
 const close = panel.findByClass("investigation-report-close");
 assert.ok(close);
