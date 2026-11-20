@@ -330,6 +330,11 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_advisor_topic_evaluation_advice.mjs",
+      "purpose": "Advisor enemy topic evaluation, evidence scope, character-weighted advice and report rendering",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_advisor_topic_report_dom.mjs",
       "purpose": "advisor topic report DOM",
       "suite": "existing",
