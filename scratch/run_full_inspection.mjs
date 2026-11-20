@@ -502,9 +502,11 @@ async function main() {
         ["Post-trial stage prelude gate", "node", ["game/src/trial/dev/diagnose_post_trial_stage_prelude_gate.mjs"]],
         ["Post-trial stage gate resume", "node", ["game/src/trial/dev/diagnose_post_trial_stage_gate_resume.mjs"]],
         ["Stage1 Trial1 threat policy v1", "node", ["scratch/test_stage1_trial_threat_policy_v1.mjs"]],
+        ["Stage1 threat, board strategy and survival", "node", ["scratch/test_stage1_threat_board_strategy_foundation.mjs"]],
         ["Enemy army structure", "node", ["game/src/trial/dev/diagnose_enemy_army_structure.mjs"]],
         ["Enemy force deployment", "node", ["game/src/trial/dev/diagnose_enemy_force_deployment.mjs"]],
         ["Enemy force reserve progression", "node", ["game/src/trial/dev/diagnose_enemy_force_reserve_progression.mjs"]],
+        ["Stage1 reserve / repel causality & advancement audit v1", "node", ["scratch/test_stage1_reserve_repel_causality_advancement_v1.mjs"]],
         ["Enemy force terrain interaction", "node", ["game/src/trial/dev/diagnose_enemy_force_terrain_interaction.mjs"]],
         ["Enemy tactic resolver", "node", ["game/src/trial/dev/diagnose_enemy_tactic_resolver.mjs"]],
         ["Enemy tactic selection", "node", ["game/src/trial/dev/diagnose_enemy_tactic_selection.mjs"]],
@@ -782,6 +784,12 @@ async function main() {
     if (!postTrialAdvisorMeaningBoundaryOk) {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Post-Trial Advisor Meaning Boundary) で不合格が検出されました。");
         process.exit(1);
+    }
+    for (const test of ["scratch/test_advisor_topic_report_projector.mjs", "scratch/test_advisor_topic_report_dom.mjs"]) {
+        if (!(await runCommand("node", [test]))) {
+            console.error("Advisor topic report foundation failed:", test);
+            process.exit(1);
+        }
     }
     const trialUiIsolationTests = [
         ["Trial Normal Input Isolation", "scratch/test_trial_normal_input_isolation.mjs"],

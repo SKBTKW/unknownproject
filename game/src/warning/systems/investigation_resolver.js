@@ -33,8 +33,17 @@ function collectCandidates(profile, allowedFacets) {
         if (!allowedFacets.includes(profileKey)) continue;
         const values = Array.isArray(profile?.[profileKey]) ? profile[profileKey] : [];
         for (const value of values) {
-            if (typeof value !== "string" || value.length === 0) continue;
-            candidates.push({ facet, tag: value });
+            if (typeof value === "string" && value.length > 0) {
+                candidates.push({ facet, tag: value });
+                continue;
+            }
+            if (!value || typeof value !== "object"
+                || typeof value.tag !== "string" || value.tag.length === 0) continue;
+            candidates.push({
+                facet,
+                tag: value.tag,
+                ...(Object.hasOwn(value, 'subject') ? { subject: structuredClone(value.subject) } : {})
+            });
         }
     }
 

@@ -43,12 +43,15 @@ const SHARED_SURFACE_PATHS = new Set([
     'game/src/core/game_engine.js',
     'game/src/core/game_fact.js',
     'scratch/run_full_inspection.mjs',
+    'scratch/run_full_inspection_quiet.mjs',
+    'scratch/verify_full_inspection_reuse.mjs',
     'scratch/test_all_modules.mjs',
 ]);
 
 const CONTRACT_SURFACE_PATHS = new Set([
     'game/src/core/game_fact.js',
     'scratch/task_branch_contract.mjs',
+    'scratch/verify_full_inspection_reuse.mjs',
 ]);
 
 function unique(values) {

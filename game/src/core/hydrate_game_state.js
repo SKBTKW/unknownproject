@@ -8,6 +8,8 @@ import {
     validateEnemyArmyTraitProvenanceAssociations
 } from '../trial/domain/enemy_army_trait_provenance_state.js';
 import { restoreDiscoveryLedger } from "../investigation/domain/world_discovery.js";
+import { freezeEnemyInvasionFoundationState } from '../trial/domain/enemy_invasion_foundation_state.js';
+import { freezeStage1TrialParticipationState } from '../trial/domain/stage1_trial_participation_snapshot.js';
 import { hydrateGameState as hydrateBaseGameState } from "./hydrate_game_state_base.js";
 
 function cloneData(value) {
@@ -44,6 +46,8 @@ export function hydrateGameState(state, serialized, options = {}) {
         scheduledGlobalEvents = [],
         enemyArmyBlueprintState,
         enemyArmyTraitProvenanceState,
+        enemyInvasionFoundationState,
+        stage1TrialParticipationState,
         ...baseSerialized
     } = serialized;
 
@@ -65,6 +69,12 @@ export function hydrateGameState(state, serialized, options = {}) {
         restoredProvenanceState
     );
     const restoredDiscoveryLedger = restoreDiscoveryLedger(discoveryLedger);
+    const restoredInvasionState = Object.hasOwn(serialized, 'enemyInvasionFoundationState')
+        ? freezeEnemyInvasionFoundationState(enemyInvasionFoundationState)
+        : null;
+    const restoredParticipationState = Object.hasOwn(serialized, 'stage1TrialParticipationState')
+        ? freezeStage1TrialParticipationState(stage1TrialParticipationState)
+        : null;
     const hydrated = hydrateBaseGameState(state, baseSerialized, options);
     hydrated.isGameOver = !!isGameOver;
     hydrated.runTermination = cloneData(runTermination) ?? null;
@@ -87,6 +97,10 @@ export function hydrateGameState(state, serialized, options = {}) {
     } else {
         delete hydrated.enemyArmyTraitProvenanceState;
     }
+    if (restoredInvasionState) hydrated.enemyInvasionFoundationState = restoredInvasionState;
+    else delete hydrated.enemyInvasionFoundationState;
+    if (restoredParticipationState) hydrated.stage1TrialParticipationState = restoredParticipationState;
+    else delete hydrated.stage1TrialParticipationState;
     return hydrated;
 }
 

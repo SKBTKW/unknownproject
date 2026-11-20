@@ -6,6 +6,7 @@ import { TrialRouteCostPolicy } from "../scenario/trial_route_cost_policy.js";
 import { TrialRouteSuppressionAllocator } from "../scenario/trial_route_suppression_allocator.js";
 import { TrialScenarioFactory } from "../scenario/trial_scenario_factory.js";
 import { EnemyArmyStructureResolver } from "../systems/enemy_army_structure_resolver.js";
+import { Stage1EnemyParticipationTrialAdapter } from "../systems/stage1_enemy_participation_trial_adapter.js";
 import { TrialLaunchCoordinator } from "./trial_launch_coordinator.js";
 import { FirstRunTrialIngressPolicy } from "../../tutorial/first_run_trial_ingress_policy.js";
 
@@ -47,6 +48,8 @@ export function attachTrialLaunchSubsystem(engine, ui, {
     routeCostPolicy = null,
     roadResolver = null,
     armyStructureResolver = null,
+    enemyParticipationPolicy = null,
+    enemyParticipationAdapter = null,
     ingressJudgementResolver = null,
     ingressSelectionPolicy = null,
     ingressResolver = null,
@@ -79,6 +82,7 @@ export function attachTrialLaunchSubsystem(engine, ui, {
             routeGenerator: engine.trialLaunchRouteGenerator || null,
             routeCostPolicy: engine.trialLaunchRouteCostPolicy || null,
             armyStructureResolver: engine.trialLaunchArmyStructureResolver || null,
+            enemyParticipationAdapter: engine.trialLaunchEnemyParticipationAdapter || null,
             suppressionAllocator: engine.trialLaunchSuppressionAllocator || null,
             retryPendingTrialLaunch: engine.retryPendingTrialLaunch
         };
@@ -90,6 +94,10 @@ export function attachTrialLaunchSubsystem(engine, ui, {
     }
 
     const resolvedArmyStructureResolver = armyStructureResolver || new EnemyArmyStructureResolver();
+    const resolvedEnemyParticipationAdapter = enemyParticipationAdapter
+        || (enemyParticipationPolicy?.enabled === true
+            ? new Stage1EnemyParticipationTrialAdapter({ policy: enemyParticipationPolicy })
+            : null);
     const resolvedIngressJudgementResolver = ingressJudgementResolver || new TrialIngressJudgementResolver();
 
     let resolvedIngressResolver = ingressResolver;
@@ -130,6 +138,7 @@ export function attachTrialLaunchSubsystem(engine, ui, {
     const resolvedSuppressionAllocator = suppressionAllocator || new TrialRouteSuppressionAllocator();
     const resolvedScenarioFactory = scenarioFactory || new TrialScenarioFactory({
         enemyTruthReadModel: truthReadModel,
+        enemyParticipationAdapter: resolvedEnemyParticipationAdapter,
         armyStructureResolver: resolvedArmyStructureResolver,
         ingressResolver: resolvedIngressResolver,
         routeGenerator: resolvedRouteGenerator,
@@ -163,6 +172,7 @@ export function attachTrialLaunchSubsystem(engine, ui, {
     engine.trialLaunchRouteGenerator = resolvedRouteGenerator;
     engine.trialLaunchRouteCostPolicy = resolvedRouteCostPolicy || null;
     engine.trialLaunchArmyStructureResolver = resolvedArmyStructureResolver;
+    engine.trialLaunchEnemyParticipationAdapter = resolvedEnemyParticipationAdapter;
     engine.trialLaunchSuppressionAllocator = resolvedSuppressionAllocator;
     engine.retryPendingTrialLaunch = () => attemptPendingTrialLaunch(engine, coordinator);
     engine.__trialLaunchSubsystemAttached = true;
@@ -175,6 +185,7 @@ export function attachTrialLaunchSubsystem(engine, ui, {
         routeGenerator: resolvedRouteGenerator,
         routeCostPolicy: resolvedRouteCostPolicy || null,
         armyStructureResolver: resolvedArmyStructureResolver,
+        enemyParticipationAdapter: resolvedEnemyParticipationAdapter,
         suppressionAllocator: resolvedSuppressionAllocator,
         retryPendingTrialLaunch: engine.retryPendingTrialLaunch
     };

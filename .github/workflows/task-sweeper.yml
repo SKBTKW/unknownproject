@@ -1,0 +1,159 @@
+name: AoT Task Sweeper
+
+# workflow_dispatch becomes available after this file reaches default branch.
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Authorized AoT integration branch (AoTYYMMDD)'
+        required: true
+        type: string
+        default: 'AoT261110'
+      mode:
+        description: 'audit is read-only; clean requires separate enablement and approval'
+        required: true
+        type: choice
+        options:
+          - audit
+          - clean
+        default: audit
+      confirmation:
+        description: 'For clean only: enter CLEAN explicitly'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: aot-task-sweeper-${{ inputs.target }}
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: Classify TASK branches (read-only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    outputs:
+      target_sha: ${{ steps.pin.outputs.target_sha }}
+    steps:
+      - name: Validate caller input
+        shell: bash
+        env:
+          TARGET: ${{ inputs.target }}
+          MODE: ${{ inputs.mode }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$TARGET" =~ ^AoT[0-9]{6}$ ]]; then
+            echo 'Target must match AoTYYMMDD'; exit 1
+          fi
+          if [[ "$MODE" != audit && "$MODE" != clean ]]; then
+            echo 'Unsupported operation'; exit 1
+          fi
+          if [[ "$MODE" == clean && "$CONFIRMATION" != CLEAN ]]; then
+            echo 'Clean requires an explicit CLEAN confirmation'; exit 1
+          fi
+      - name: Checkout integration target
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.target }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Record immutable target SHA
+        id: pin
+        shell: bash
+        env:
+          TARGET: ${{ inputs.target }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin "+refs/heads/${TARGET}:refs/remotes/origin/${TARGET}"
+          TARGET_SHA="$(git rev-parse "refs/remotes/origin/${TARGET}")"
+          test "$(git rev-parse HEAD)" = "$TARGET_SHA"
+          echo "target_sha=$TARGET_SHA" >> "$GITHUB_OUTPUT"
+      - name: Run Task Sweeper audit
+        shell: bash
+        env:
+          TARGET: ${{ inputs.target }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config --local aot.authorizedBranch "$TARGET"
+          node scratch/task_sweeper.mjs --target "$TARGET" | tee "$RUNNER_TEMP/task-sweeper-audit.log"
+          {
+            echo "### Task Sweeper (read-only audit)"
+            echo "Target: $TARGET"
+            echo "Pinned SHA: $(git rev-parse HEAD)"
+            echo 'Full classification is available in the job logs.'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload audit log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: task-sweeper-audit-${{ github.run_id }}
+          path: ${{ runner.temp }}/task-sweeper-audit.log
+          if-no-files-found: ignore
+          retention-days: 14
+
+  clean:
+    name: Clean only SAFE TASK branches
+    needs: audit
+    # Fail closed until repository admin explicitly enables the cleanup variable.
+    # Also require a protected Environment with mandatory reviewers.
+    if: inputs.mode == 'clean' && inputs.confirmation == 'CLEAN' && vars.AOT_TASK_SWEEPER_CLEAN_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    environment: task-sweeper-cleanup
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - name: Checkout pinned integration target
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.audit.outputs.target_sha }}
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify target has not advanced
+        shell: bash
+        env:
+          TARGET: ${{ inputs.target }}
+          TARGET_SHA: ${{ needs.audit.outputs.target_sha }}
+        run: |
+          set -euo pipefail
+          [[ "$TARGET" =~ ^AoT[0-9]{6}$ ]]
+          test "$(git rev-parse HEAD)" = "$TARGET_SHA"
+          git fetch --no-tags origin "+refs/heads/${TARGET}:refs/remotes/origin/${TARGET}"
+          test "$(git rev-parse "origin/${TARGET}")" = "$TARGET_SHA"
+      - name: Recheck and delete SAFE TASK branches
+        shell: bash
+        env:
+          TARGET: ${{ inputs.target }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config --local aot.authorizedBranch "$TARGET"
+          node scratch/task_sweeper.mjs --target "$TARGET" --execute --confirm CLEAN \
+            | tee "$RUNNER_TEMP/task-sweeper-clean.log"
+          {
+            echo '### Task Sweeper cleanup'
+            echo "Target: $TARGET"
+            echo 'See logs for SAFE classifications, revalidation and deletion.'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload cleanup log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: task-sweeper-clean-${{ github.run_id }}
+          path: ${{ runner.temp }}/task-sweeper-clean.log
+          if-no-files-found: ignore
+          retention-days: 14

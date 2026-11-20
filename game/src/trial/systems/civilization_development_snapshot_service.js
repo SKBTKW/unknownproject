@@ -1,3 +1,4 @@
+import { hasBaseTerrainOccupancy } from "../../core/board_cell_occupancy.js";
 import { isCompletedMergeGroup } from "../../core/merge_rules.js";
 
 function nonNegativeInteger(value) {
@@ -31,6 +32,30 @@ function resolvePlacedBlockCount(state) {
         return nonNegativeInteger(state.gridEngine.getPlacedBlockCount());
     }
     return 0;
+}
+
+function resolveThreatLandCounts(state) {
+    // Headless callers can supply the existing aggregate inputs without a board.
+    if (!Array.isArray(state.grid)) {
+        return {
+            placedBlockCount: resolvePlacedBlockCount(state),
+            territoryTiles: resolveTerritoryTiles(state)
+        };
+    }
+
+    const groups = new Set();
+    let ungrouped = 0;
+    let territoryTiles = 0;
+    for (const row of state.grid) {
+        for (const cell of row || []) {
+            if (!hasBaseTerrainOccupancy(cell) || cell.isHQ || cell.terrain?.isSpecialBlock) continue;
+            // Overlays retain their original land and its placement identity.
+            territoryTiles++;
+            if (cell.placementGroupId == null) ungrouped++;
+            else groups.add(String(cell.placementGroupId));
+        }
+    }
+    return { placedBlockCount: groups.size + ungrouped, territoryTiles };
 }
 
 function resolveCompletedZoneCount(state) {
@@ -74,8 +99,7 @@ export class CivilizationDevelopmentSnapshotService {
 
         const snapshot = {
             stage: Math.max(1, nonNegativeInteger(state.stage?.id) || 1),
-            placedBlockCount: resolvePlacedBlockCount(state),
-            territoryTiles: resolveTerritoryTiles(state),
+            ...resolveThreatLandCounts(state),
             completedZones: resolveCompletedZoneCount(state),
             links: resolveLinkCount(state)
         };

@@ -1,8 +1,12 @@
 import { TrialThreatResolver } from "../systems/trial_threat_resolver.js";
 
 export const STAGE1_TRIAL1_BASE_STRATEGIC_SUPPRESSION = 20;
+export const STAGE1_TRIAL_THREAT_POLICY_ID = "stage1-trial-threat-policy";
+export const STAGE1_TRIAL_THREAT_POLICY_VERSION = 1;
 
 export const STAGE1_TRIAL_THREAT_POLICY_V1 = Object.freeze({
+    id: STAGE1_TRIAL_THREAT_POLICY_ID,
+    version: STAGE1_TRIAL_THREAT_POLICY_VERSION,
     baseThreatByTrial: Object.freeze({
         1: STAGE1_TRIAL1_BASE_STRATEGIC_SUPPRESSION
     }),

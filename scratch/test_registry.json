@@ -2,6 +2,41 @@
   "schemaVersion": 1,
   "tests": [
     {
+      "path": "scratch/test_full_inspection_quiet_runner.mjs",
+      "purpose": "Quiet Full Inspection summary, external log boundary and metric extraction contract",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_full_inspection_reuse.mjs",
+      "purpose": "Full Inspection receipt reuse fails closed on tree, target, environment, runner or cleanliness drift",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_quota_efficient_git_preflight.mjs",
+      "purpose": "Read-only compact Git preflight statistics and no-mutation contract",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_quota_efficient_workflow_contract.mjs",
+      "purpose": "Quota-efficient workflow policy, conditional approval, external logs and reuse gate contract",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_stage1_threat_participation_policy_comparison_v1.mjs",
+      "purpose": "Eight-seed Stage1 standard-board prototype policy, participant boundary, interception and Ember damage comparison",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_stage1_threat_participation_production_integration_v1.mjs",
+      "purpose": "Opt-in Stage1 development threat participation through A/B/C consolidation, routes, battles, damage and persistence",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_stage1_trial_gameplay_foundation_audit_v1.mjs",
+      "purpose": "Stage1 standard-board diagnostic policy comparison, 1-3 participant boundaries and source-identity conservation",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_enemy_army_trait_provenance_first_run.mjs",
       "purpose": "Trait provenance preservation through canonical FirstRun Stage1 completion and no Stage2 generation",
       "suite": "supplemental"
@@ -49,6 +84,16 @@
     {
       "path": "scratch/test_enemy_army_generation_distribution.mjs",
       "purpose": "Development hypothesis distribution replay, actual-data tally consistency, bulk immutability and RNG/Trial isolation",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_invasion_investigation_foundation.mjs",
+      "purpose": "Deterministic enemy invasion entry, source-force identity observations and persistence foundation",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_enemy_force_consolidation_provenance_foundation.mjs",
+      "purpose": "Source-force-preserving participation consolidation, direction conflicts and investigation provenance",
       "suite": "supplemental"
     },
     {
@@ -104,6 +149,11 @@
     {
       "path": "scratch/test_enemy_army_blueprint_integration.mjs",
       "purpose": "Blueprint observation isolation and production Truth and RNG non-interference",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_blueprint_observation_fragment.mjs",
+      "purpose": "Blueprint-backed direct sighting without inference or source-force disclosure",
       "suite": "supplemental"
     },
     {
@@ -273,6 +323,23 @@
       "path": "scratch/test_advisor_threat_language_contract.mjs",
       "purpose": "advisor threat language contract",
       "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_advisor_investigation_record_timeline.mjs",
+      "purpose": "AD DOC investigation and game-log timeline, translated rendering and restore-stable read model",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_advisor_topic_report_dom.mjs",
+      "purpose": "advisor topic report DOM",
+      "suite": "existing",
+      "entryPoints": ["scratch/run_full_inspection.mjs"]
+    },
+    {
+      "path": "scratch/test_advisor_topic_report_projector.mjs",
+      "purpose": "advisor topic report projector",
+      "suite": "existing",
+      "entryPoints": ["scratch/run_full_inspection.mjs"]
     },
     {
       "path": "scratch/test_advisor_ui_shell.mjs",
@@ -1249,6 +1316,14 @@
       ]
     },
     {
+      "path": "scratch/test_stage1_reserve_repel_causality_advancement_v1.mjs",
+      "purpose": "Stage1 reserve force, local REPEL, route stop, HQ arrival, causality and restore-boundary audit",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
       "path": "scratch/test_stage1_resource_sink_budget_probe.mjs",
       "purpose": "Reverse-budget Stage1 pre-Trial and Deployment spend bands against the current AoT260924 Verse15 baseline envelope",
       "suite": "existing",
@@ -1259,6 +1334,14 @@
     {
       "path": "scratch/test_stage1_resource_sink_portfolio.mjs",
       "purpose": "Stage1 resource sink portfolio assumptions across command-card costs, Investigation, Special Blocks and choice Global Events",
+      "suite": "existing",
+      "entryPoints": [
+        "scratch/run_full_inspection.mjs"
+      ]
+    },
+    {
+      "path": "scratch/test_stage1_threat_board_strategy_foundation.mjs",
+      "purpose": "Stage1 threat land boundaries, legal board strategy, Trial survival, and diagnostic force allocation",
       "suite": "existing",
       "entryPoints": [
         "scratch/run_full_inspection.mjs"
@@ -2107,6 +2190,16 @@
     {
       "path": "scratch/test_system_authority_boundaries.mjs",
       "purpose": "Static audit test guarding UI/Warning/Cards/Investigation authority boundaries and DeckManager command branches",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_stage1_tactical_decision_causal_impact_v1.mjs",
+      "purpose": "Stage1 tactical decision, interception location, defense allocation, enemy profile, investigation scope and Fact/Cause/Consequence impact audit",
+      "suite": "supplemental"
+    },
+    {
+      "path": "scratch/test_mixed_force_evaluation_foundation_v1.mjs",
+      "purpose": "Opt-in mixed-force terrain evaluation comparing production PRIMARY_SOURCE, independent marginals and explicit joint hypotheses without inventing species-equipment truth",
       "suite": "supplemental"
     },
     {
