@@ -331,6 +331,14 @@
     border-left: 12px solid rgba(255, 255, 255, 0.97);
 }
 .advisor-report-bubble-text { white-space: pre-line; line-height: 1.5; font-size: 0.9rem; }
+.advisor-report-bubble { max-height: min(560px, calc(100vh - 36px)); overflow-y: auto; }
+.advisor-report-topic { border-top: 1px solid rgba(0, 0, 0, 0.12); padding: 7px 0; }
+.advisor-report-topic-title { cursor: pointer; font-weight: 650; }
+.advisor-report-topic-title:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.advisor-topic-observation { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; }
+.advisor-topic-verse, .advisor-topic-evidence-status { font-size: 0.76rem; opacity: 0.75; }
+.advisor-topic-known-fact { color: #145b82; font-weight: 700; }
+.advisor-content-panel .advisor-topic-known-fact { color: #8ccdf4; }
 
 .advisor-content-panel { color: #dce5ea; background: rgba(14, 24, 31, 0.97); border: 1px solid rgba(90,151,180,.62); box-shadow: 0 12px 36px rgba(0,0,0,.5); }
 .advisor-content-panel--side { position: absolute; right: calc(var(--advisor-expanded-width) + 12px); bottom: 0; width: var(--advisor-side-panel-width); max-width: calc(100vw - var(--advisor-expanded-width) - 64px); max-height: min(560px, calc(100vh - 48px)); padding: 18px; overflow-y: auto; border-radius: 10px; pointer-events: auto; opacity: 0; transform: translateX(8px); transition: opacity var(--advisor-motion-duration) ease-out, transform var(--advisor-motion-duration) ease-out; }
