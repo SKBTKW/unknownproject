@@ -117,7 +117,12 @@ export class AdvisorContentController {
         host.appendChild(this.createTitle("UI_ADVISOR_RECORD_TITLE"));
         const records = getAdvisorRecords(this.stateProvider?.() || {});
         if (!records.length) return this.appendText(host, "UI_ADVISOR_RECORD_EMPTY", {}, "advisor-content-note");
-        records.forEach(record => this.appendText(host, "UI_ADVISOR_RECORD_ROW", { turn: record.turn, message: record.message }, "advisor-record-row"));
+        records.forEach(record => {
+            const message = record.valueKey
+                ? `${this.i18n.t(record.statusKey)}: ${this.i18n.t(record.valueKey)}`
+                : record.message;
+            this.appendText(host, "UI_ADVISOR_RECORD_ROW", { turn: record.turn, message }, "advisor-record-row");
+        });
     }
 
     renderHelp(host) {
