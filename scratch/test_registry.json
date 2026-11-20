@@ -325,6 +325,11 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_advisor_investigation_record_timeline.mjs",
+      "purpose": "AD DOC investigation and game-log timeline, translated rendering and restore-stable read model",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_advisor_topic_report_dom.mjs",
       "purpose": "advisor topic report DOM",
       "suite": "existing",
