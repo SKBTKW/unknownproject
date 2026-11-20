@@ -320,6 +320,18 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_advisor_topic_report_dom.mjs",
+      "purpose": "advisor topic report DOM",
+      "suite": "existing",
+      "entryPoints": ["scratch/run_full_inspection.mjs"]
+    },
+    {
+      "path": "scratch/test_advisor_topic_report_projector.mjs",
+      "purpose": "advisor topic report projector",
+      "suite": "existing",
+      "entryPoints": ["scratch/run_full_inspection.mjs"]
+    },
+    {
       "path": "scratch/test_advisor_ui_shell.mjs",
       "purpose": "advisor ui shell",
       "suite": "existing",
