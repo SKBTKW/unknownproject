@@ -337,6 +337,7 @@
 .advisor-report-topic-title:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
 .advisor-topic-observation { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; }
 .advisor-topic-verse, .advisor-topic-evidence-status { font-size: 0.76rem; opacity: 0.75; }
+.advisor-topic-assessment-title { margin: 12px 0 5px; font-weight: 650; font-size: 0.82rem; }
 .advisor-topic-known-fact { color: #145b82; font-weight: 700; }
 .advisor-content-panel .advisor-topic-known-fact { color: #8ccdf4; }
 

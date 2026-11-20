@@ -43,7 +43,7 @@ export class AdvisorDockComponent {
         this.root = null;
         this.hoverOpenTimer = null;
         this.hoverCloseTimer = null;
-        this.contentController = new AdvisorContentController({ i18n, stateProvider, trialStatusProvider });
+        this.contentController = new AdvisorContentController({ i18n, stateProvider, trialStatusProvider, profile });
         this.contentController.onDepthChange = () => {
             this.renderReportBubble();
             this.renderContent();

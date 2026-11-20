@@ -2,15 +2,18 @@ import { resolveAdvisorStatus } from './advisor_status_resolver.js';
 import { resolveAdvisorAdvice } from './advisor_advice_resolver.js';
 import { getAdvisorRecords } from './advisor_record_adapter.js';
 import { projectAdvisorReportTopics } from './advisor_topic_report_projector.js';
+import { evaluateAdvisorEnemyTopic } from './advisor_topic_evaluation.js';
+import { resolveAdvisorEnemyTopicAdvice } from './advisor_topic_advice.js';
 
 export const ADVISOR_SECTIONS = Object.freeze({ REPORT: "report", RECORD: "record", HELP: "help" });
 export const ADVISOR_REPORT_DEPTHS = Object.freeze(["shallow", "medium", "deep"]);
 
 export class AdvisorContentController {
-    constructor({ i18n, stateProvider = () => ({}), trialStatusProvider = () => ({}) } = {}) {
+    constructor({ i18n, stateProvider = () => ({}), trialStatusProvider = () => ({}), profile = null } = {}) {
         this.i18n = i18n;
         this.stateProvider = stateProvider;
         this.trialStatusProvider = trialStatusProvider;
+        this.profile = profile;
         this.reportDepth = "medium";
         this.onDepthChange = null;
     }
@@ -73,7 +76,8 @@ export class AdvisorContentController {
     // A view of known facts, never a secondary enemy-truth store.
     // Native details/summary keeps the topic list keyboard-accessible.
     renderTopicReport(host) {
-        const topics = projectAdvisorReportTopics(this.stateProvider?.() || {});
+        const state = this.stateProvider?.() || {};
+        const topics = projectAdvisorReportTopics(state);
         for (const topic of topics) {
             const details = document.createElement("details");
             details.className = "advisor-report-topic";
@@ -109,7 +113,28 @@ export class AdvisorContentController {
                     details.appendChild(row);
                 }
             }
+            if (topic.id === "ENEMY") this.renderEnemyTopicAssessment(details, state, topic.entries.length > 0);
             host.appendChild(details);
+        }
+    }
+
+    renderEnemyTopicAssessment(host, state, hasHistory) {
+        const evaluations = evaluateAdvisorEnemyTopic(state.knownEnemyState, state.turn);
+        if (!evaluations.length) {
+            if (hasHistory) this.appendText(host, "UI_ADVISOR_EVALUATION_NO_CURRENT", {}, "advisor-status-row");
+            return;
+        }
+        const limit = this.reportDepth === "shallow" ? 1 : this.reportDepth === "deep" ? evaluations.length : 3;
+        this.appendText(host, "UI_ADVISOR_TOPIC_EVALUATION_TITLE", {}, "advisor-topic-assessment-title");
+        for (const item of evaluations.slice(0, limit)) {
+            this.appendText(host, item.evaluationKey, { evidence: this.i18n.t(item.factKey), verse: item.verse }, "advisor-status-row advisor-topic-evaluation");
+        }
+        const advice = resolveAdvisorEnemyTopicAdvice(evaluations, this.profile, this.reportDepth);
+        if (advice.length) {
+            this.appendText(host, "UI_ADVISOR_TOPIC_ADVICE_TITLE", {}, "advisor-topic-assessment-title");
+            for (const item of advice) {
+                this.appendText(host, "UI_ADVISOR_TOPIC_ADVICE_ROW", { verse: item.verse, evidence: this.i18n.t(item.factKey), advice: this.i18n.t(item.suggestionKey) }, "advisor-status-row advisor-topic-advice");
+            }
         }
     }
 
