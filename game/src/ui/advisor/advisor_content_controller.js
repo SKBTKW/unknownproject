@@ -1,6 +1,7 @@
 import { resolveAdvisorStatus } from './advisor_status_resolver.js';
 import { resolveAdvisorAdvice } from './advisor_advice_resolver.js';
 import { getAdvisorRecords } from './advisor_record_adapter.js';
+import { projectAdvisorReportTopics } from './advisor_topic_report_projector.js';
 
 export const ADVISOR_SECTIONS = Object.freeze({ REPORT: "report", RECORD: "record", HELP: "help" });
 export const ADVISOR_REPORT_DEPTHS = Object.freeze(["shallow", "medium", "deep"]);
@@ -66,12 +67,50 @@ export class AdvisorContentController {
             depthBar.appendChild(button);
         });
         host.appendChild(depthBar);
-        this.getReportLines().forEach(line => {
-            const row = document.createElement("div");
-            row.className = "advisor-status-row";
-            row.textContent = line;
-            host.appendChild(row);
-        });
+        this.renderTopicReport(host);
+    }
+
+    // A view of known facts, never a secondary enemy-truth store.
+    // Native details/summary keeps the topic list keyboard-accessible.
+    renderTopicReport(host) {
+        const topics = projectAdvisorReportTopics(this.stateProvider?.() || {});
+        for (const topic of topics) {
+            const details = document.createElement("details");
+            details.className = "advisor-report-topic";
+            const heading = document.createElement("summary");
+            heading.className = "advisor-report-topic-title";
+            heading.textContent = this.i18n.t(topic.labelKey);
+            details.appendChild(heading);
+            if (topic.id === "STATUS") {
+                for (const line of this.getReportLines()) {
+                    const row = document.createElement("p");
+                    row.className = "advisor-status-row";
+                    row.textContent = line;
+                    details.appendChild(row);
+                }
+            } else if (topic.entries.length === 0) {
+                this.appendText(details, "UI_ADVISOR_TOPIC_NO_EVIDENCE", {}, "advisor-content-note");
+            } else {
+                for (const entry of topic.entries) {
+                    const row = document.createElement("div");
+                    row.className = "advisor-topic-observation";
+                    const verse = document.createElement("span");
+                    verse.className = "advisor-topic-verse";
+                    verse.textContent = Number.isInteger(entry.verse) ? `Verse ${entry.verse}` : "";
+                    row.appendChild(verse);
+                    const fact = document.createElement("strong");
+                    fact.className = "advisor-topic-known-fact";
+                    fact.textContent = this.i18n.t(entry.valueKey);
+                    row.appendChild(fact);
+                    const status = document.createElement("span");
+                    status.className = "advisor-topic-evidence-status";
+                    status.textContent = this.i18n.t(entry.statusKey);
+                    row.appendChild(status);
+                    details.appendChild(row);
+                }
+            }
+            host.appendChild(details);
+        }
     }
 
     renderRecords(host) {

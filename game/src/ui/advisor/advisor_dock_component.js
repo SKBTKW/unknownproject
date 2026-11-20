@@ -422,7 +422,7 @@ export class AdvisorDockComponent {
         bubble.classList.toggle("is-visible", this.reportBubbleOpen);
         if (!this.reportBubbleOpen) return;
         const text = bubble.querySelector(".advisor-report-bubble-text");
-        if (text) text.textContent = this.contentController.getReportText();
+        if (text) { text.replaceChildren(); this.contentController.renderTopicReport(text); }
     }
 
     renderDepthMenu() {
