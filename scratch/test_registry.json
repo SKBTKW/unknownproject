@@ -152,6 +152,11 @@
       "suite": "supplemental"
     },
     {
+      "path": "scratch/test_blueprint_observation_fragment.mjs",
+      "purpose": "Blueprint-backed direct sighting without inference or source-force disclosure",
+      "suite": "supplemental"
+    },
+    {
       "path": "scratch/test_enemy_army_blueprint_unit.mjs",
       "purpose": "Immutable blueprint schema, explicit policy validation and independent deterministic generation",
       "suite": "supplemental"
