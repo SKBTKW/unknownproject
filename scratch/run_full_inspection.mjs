@@ -785,6 +785,12 @@ async function main() {
         console.error("\n❌ [PIPELINE BLOCKED] Layer 5 (Post-Trial Advisor Meaning Boundary) で不合格が検出されました。");
         process.exit(1);
     }
+    for (const test of ["scratch/test_advisor_topic_report_projector.mjs", "scratch/test_advisor_topic_report_dom.mjs"]) {
+        if (!(await runCommand("node", [test]))) {
+            console.error("Advisor topic report foundation failed:", test);
+            process.exit(1);
+        }
+    }
     const trialUiIsolationTests = [
         ["Trial Normal Input Isolation", "scratch/test_trial_normal_input_isolation.mjs"],
         ["Trial FocusLayer Suppression", "scratch/test_trial_focus_layer_suppression.mjs"],
